@@ -12,7 +12,8 @@
 - 最终截图：artifacts/screenshots/section-fixed-{white,color,height4000,rotated,reopened,mobile}-20260906.png。PASS：截面可见且为指定纯色、无大片旧纹理残留、单线轮廓、窄屏面板在边界内；初轮过早截图已由最终完成加载后的截图更新。后续修复：无。
 - 最终日志：.openai/{browser-section-fix-final,typecheck-section-fix-final,tests-section-fix-final,build-section-fix-web,build-section-fix-mobile,diffcheck-section-fix}-20260906.log。浏览器脚本只在独立测试上下文注入地图引用，产品未暴露调试对象。
 - 当前阻塞：无。未测手机真机触控/帧率，未重新打包 APK；既有路线、模型存档、天气模块未修改。
-- 下一步：完成 GitHub 提交、推送及远端 SHA 核对，本地预览继续保留。
+- GitHub 同步：功能提交 `9b735943e184de295dacfca60db729177bcac8e0` 已推送 main，GitHub 官方 refs API 核验与本地一致（PASS）。首次推送连接重置，第二次成功；日志 .openai/{push-section-fix,push-section-fix-retry,sync-section-fix}-20260906.log。后续仅补此交付状态。
+- 下一步：本轮修复、实际浏览器验收和同步完成；localhost:3000 保持运行且 HTTP 200。刷新页面后重新进入剖面即可加载修复。
 
 ## 正在开发：三维地形海拔剖切（2026-09-05）
 - 当前目标：保留 3D 相机，按侧边滑条的真实海拔裁切当前视野山体；剖切面默认白色，可自定义纯色，轮廓单条实线；UI 保持原配色。
