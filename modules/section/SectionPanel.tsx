@@ -16,7 +16,38 @@ export function SectionPanel({
   onRetry: () => void;
 }) {
   const [text, setText] = useState(String(settings.altitude));
+  const [dragging, setDragging] = useState(false);
+  const [range, setRange] = useState(() => ({
+    min: Math.min(status.min, settings.altitude),
+    max: Math.max(status.max, settings.altitude),
+  }));
   useEffect(() => setText(String(settings.altitude)), [settings.altitude]);
+  useEffect(() => {
+    // DEM reloads temporarily report default/partial bounds. They must not
+    // change the pointer-to-altitude mapping, or the native range thumb jumps.
+    if (dragging) return;
+    setRange((previous) => {
+      const complete = status.phase === 'ready' && status.valid > 0;
+      const min = Math.min(
+        complete ? status.min : previous.min,
+        settings.altitude,
+      );
+      const max = Math.max(
+        complete ? status.max : previous.max,
+        settings.altitude,
+      );
+      return min === previous.min && max === previous.max
+        ? previous
+        : { min, max };
+    });
+  }, [
+    dragging,
+    status.phase,
+    status.min,
+    status.max,
+    status.valid,
+    settings.altitude,
+  ]);
   const change = (height: number) => {
     if (Number.isFinite(height))
       onAltitude(Math.max(-32768, Math.min(32767, height)));
@@ -53,20 +84,29 @@ export function SectionPanel({
             onChange={(event) => onColor(event.target.value)}
           />
         </label>
-        <span>{Math.ceil(Math.max(status.max, settings.altitude))} m</span>
+        <span>{Math.ceil(range.max)} m</span>
         <input
           className="section-height-range"
           type="range"
           aria-label="剖切海拔"
           aria-orientation="vertical"
           aria-valuetext={`${settings.altitude} 米`}
-          min={Math.min(status.min, settings.altitude)}
-          max={Math.max(status.max, settings.altitude)}
+          min={range.min}
+          max={range.max}
           step={0.1}
           value={settings.altitude}
+          onPointerDown={(event) => {
+            if (!event.isPrimary || event.button !== 0) return;
+            setDragging(true);
+            event.currentTarget.setPointerCapture(event.pointerId);
+          }}
+          onPointerUp={() => setDragging(false)}
+          onPointerCancel={() => setDragging(false)}
+          onLostPointerCapture={() => setDragging(false)}
+          onBlur={() => setDragging(false)}
           onChange={(event) => change(Number(event.target.value))}
         />
-        <span>{Math.floor(Math.min(status.min, settings.altitude))} m</span>
+        <span>{Math.floor(range.min)} m</span>
         <div className="section-fine">
           <button
             aria-label="降低一米"

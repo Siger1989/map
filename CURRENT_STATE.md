@@ -1,5 +1,16 @@
 # 天气观察软件 · 当前状态
 
+## 当前任务：修复拖动剖面海拔时跳动（2026-09-06）
+- 当前目标：稳定鼠标拖动时的滑条、海拔值及三维剖面更新。
+- 当前进展：真实鼠标单向上拖已复现 5 次数值逆向回跳，范围在 -150/6000 与 -500/9000 之间切换（.openai/section-drag-before-20260906.log）。SectionPanel 改为保留最近完整统计范围，忽略加载中的临时范围；按住期间冻结 min/max，捕获指针并处理松手、取消、失去捕获和失焦。
+- 修改文件：modules/section/SectionPanel.tsx、scripts/verify-section-browser.mjs（新增真实鼠标往返拖动/停住/移出松手断言）、docs/elevation-section.md、本状态。地形计算与既有路线/模型数据不变。
+- 命令：git status、git diff --stat、git pull --ff-only（Already up to date），日志 .openai/pull-section-drag-20260906.log。
+- 验证结果：最终 PASS。修复后同视角 30 步真实鼠标上拖的 min/max 始终 -150/6000，0 次逆向回跳，数值从 1777.6 连续增至 3907.2（.openai/section-drag-after-20260906.log）。完整浏览器回归包含双向各 20 步真实鼠标拖动，跨 ready/loading 状态范围固定、数值单调；按住停留 700ms 无变化，移出后松手保留数值，后续重新调整正常。既有纯色/改色/旋转/反复开关/窄屏/WebGL 检查继续 PASS。
+- 自动检查：TypeScript、107/107 逻辑测试、网页生产构建、Android 静态入口构建、git diff --check 均 PASS。日志 .openai/{browser-section-drag,typecheck-section-drag,tests-section-drag,build-section-drag-web,build-section-drag-mobile,diffcheck-section-drag}-20260906.log。
+- 截图：既有 artifacts/screenshots/section-fixed-{white,color,height4000,rotated,reopened,mobile}-20260906.png 已由本轮重新生成；PASS，切面、紧凑提示和侧边控件保持正常；拖动稳定性以逐步采样和鼠标自动化断言验证。后续修复：无。
+- 当前阻塞：无。
+- 下一步：提交并推送 GitHub，核对远端 SHA。本轮实测桌面鼠标，未进行手机真机触控验证或重新打包 APK。
+
 ## 当前任务：精简左侧剖面提示（2026-09-06）
 - 当前目标：缩小用户截图中的左侧说明框，只保留海拔及必要的加载/异常状态。
 - 当前进展：已移除说明段落、图例和采样间距，正常只显示“剖面 · 海拔 m”；更新/异常时保留短状态与重试。提示框改为内容自适应尺寸，精简边距；剖切计算、右侧控制和路线/模型数据不变。

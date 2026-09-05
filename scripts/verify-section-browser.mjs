@@ -97,6 +97,82 @@ try {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }, color);
   };
+  const checkSliderDrag = async (direction) => {
+    await waitForSection();
+    const slider = page.getByRole('slider', { name: '剖切海拔', exact: true });
+    const box = await slider.boundingBox();
+    assert.ok(box);
+    const bounds = await slider.evaluate((el) => [el.min, el.max]);
+    const values = [],
+      phases = new Set();
+    const start = direction === 'up' ? 0.72 : 0.35;
+    const delta = direction === 'up' ? -0.018 : 0.018;
+    const x = box.x + box.width / 2;
+    await page.mouse.move(x, box.y + box.height * start);
+    await page.mouse.down();
+    try {
+      for (let step = 0; step < 20; step++) {
+        await page.mouse.move(x, box.y + box.height * (start + delta * step));
+        // Span repeated asynchronous DEM rebuilds while the pointer is held.
+        await page.waitForTimeout(70);
+        const state = await slider.evaluate((el) => ({
+          bounds: [el.min, el.max],
+          value: Number(el.value),
+          phase: document.querySelector('.section-caption')?.dataset.phase,
+        }));
+        assert.deepEqual(
+          state.bounds,
+          bounds,
+          'drag scale must not change during terrain reload',
+        );
+        values.push(state.value);
+        phases.add(state.phase);
+      }
+      assert.ok(
+        values
+          .slice(1)
+          .every((value, index) =>
+            direction === 'up'
+              ? value >= values[index]
+              : value <= values[index],
+          ),
+        `${direction}: altitude must follow the pointer without reversals`,
+      );
+      assert.ok(
+        Math.abs(values.at(-1) - values[0]) > 100,
+        'drag must actually change altitude',
+      );
+      await page.waitForTimeout(700);
+      assert.equal(
+        Number(await slider.inputValue()),
+        values.at(-1),
+        'stationary pointer must not change altitude',
+      );
+      // Release beyond the input bounds to exercise pointer capture cleanup.
+      await page.mouse.move(
+        box.x - 25,
+        box.y + box.height * (start + delta * 19),
+      );
+    } finally {
+      await page.mouse.up();
+    }
+    const released = Number(await slider.inputValue());
+    await waitForSection();
+    assert.equal(
+      Number(await slider.inputValue()),
+      released,
+      'release must preserve the chosen altitude',
+    );
+    console.log(
+      JSON.stringify({
+        drag: direction,
+        bounds,
+        first: values[0],
+        last: values.at(-1),
+        phases: [...phases],
+      }),
+    );
+  };
   const pixels = async (color, region) =>
     page.evaluate(
       ({ color, region }) =>
@@ -216,6 +292,9 @@ try {
   await page.getByRole('button', { name: '海拔剖面', exact: true }).click();
   await setHeight(3000);
   await record('section-fixed-reopened', '#ffffff');
+  await checkSliderDrag('up');
+  await checkSliderDrag('down');
+  await setHeight(3000);
   await page.setViewportSize({ width: 430, height: 780 });
   await waitForSection();
   await record('section-fixed-mobile', '#ffffff');
@@ -225,7 +304,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   console.log(
-    'PASS: actual cut pixels, color, altitude, rotation, repeated open/close, mobile bounds, WebGL',
+    'PASS: actual cut pixels, color, altitude, stable mouse drag/release, rotation, repeated open/close, mobile bounds, WebGL',
   );
 } finally {
   clearTimeout(timeout);
