@@ -1,0 +1,255 @@
+.track-drawing {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 8;
+  pointer-events: none;
+}
+.track-drawing > * {
+  pointer-events: none;
+}
+.track-tools {
+  position: absolute;
+  z-index: 11;
+  bottom: calc(59px + var(--safe-bottom));
+  left: var(--edge-left);
+  max-width: calc(100% - var(--edge-left) - 126px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 6px;
+  border-radius: 9px;
+  font-size: 10px;
+}
+.track-tools > span {
+  color: var(--muted);
+  padding: 0 4px;
+}
+.track-tools button {
+  background: #ffffff0b;
+  color: var(--accent);
+  font-size: 10px;
+  min-height: 30px;
+  border-radius: 5px;
+  padding: 0 6px;
+}
+.track-draw-hint {
+  position: absolute;
+  top: calc(52px + var(--safe-top));
+  left: var(--edge-left);
+  right: 58px;
+  z-index: 9;
+  font-size: 11px;
+  padding: 7px;
+  border-radius: 8px;
+}
+.track-name {
+  width: 100%;
+  font-size: 12px;
+  height: 36px;
+  color: var(--text);
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff09;
+}
+.track-saved-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 11px;
+}
+.track-saved-heading button {
+  font-size: 10px;
+  min-height: 32px;
+  color: var(--accent);
+  background: transparent;
+}
+.track-saved {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  padding: 5px 0;
+}
+.track-open {
+  background: transparent;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+}
+.track-open strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.track-open small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.track-delete {
+  background: transparent;
+  color: #ffb78a;
+  font-size: 10px;
+  min-height: 36px;
+}
+.route-tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.route-tabs button {
+  flex: 1;
+  min-height: 32px;
+  font-size: 11px;
+  background: #ffffff06;
+  border-radius: 6px;
+  color: var(--muted);
+}
+.route-tabs button[aria-pressed='true'] {
+  color: var(--accent);
+  background: #9de8c41a;
+}
+.track-input-active {
+  touch-action: none;
+  cursor: crosshair;
+}
+.observatory[data-editing-track='true'] .maplibregl-ctrl-bottom-left {
+  bottom: calc(106px + var(--safe-bottom)) !important;
+}
+.track-draw-hint {
+  top: calc(46px + var(--safe-top));
+  right: auto;
+  max-width: calc(100% - 66px);
+  padding: 4px 7px;
+  font-size: 10px;
+  pointer-events: none;
+}
+.track-tools {
+  max-width: calc(100% - var(--edge-left) - 120px);
+  padding: 3px;
+  bottom: calc(54px + var(--safe-bottom));
+}
+.track-tools button {
+  min-height: 28px;
+  padding: 0 5px;
+}
+.track-tools button[aria-pressed='true'] {
+  background: #9de8c430;
+}
+.point-magnifier {
+  position: absolute;
+  width: 96px;
+  height: 115px;
+  z-index: 12;
+  pointer-events: none;
+  border-radius: 9px;
+  border: 1px solid #9de8c4;
+  background: #10212b;
+  overflow: hidden;
+  box-shadow: 0 3px 12px #0008;
+}
+.point-magnifier canvas {
+  display: block;
+  width: 96px;
+  height: 96px;
+}
+.point-magnifier svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 96px;
+  height: 96px;
+}
+.point-magnifier span {
+  display: block;
+  text-align: center;
+  line-height: 17px;
+  font-size: 9px;
+}
+.track-snap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 11px;
+  margin: 7px 0;
+}
+.track-snap input {
+  accent-color: var(--accent);
+}
+.track-snap span {
+  font-size: 9px;
+  color: var(--muted);
+}
+.track-settings summary {
+  color: var(--accent);
+  cursor: pointer;
+  padding: 7px 0;
+  font-size: 11px;
+}
+.track-style-controls {
+  margin: 8px 0;
+}
+.track-color-options {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.track-color-options button {
+  min-width: 26px;
+  height: 28px;
+  border-radius: 5px;
+  border: 2px solid transparent;
+  padding: 5px;
+  background: transparent;
+}
+.track-color-options button[aria-pressed='true'] {
+  border-color: #ffffff;
+}
+.track-color-options button i {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+.track-color-options input[type='color'] {
+  width: 26px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  padding: 1px;
+}
+.track-custom-color {
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  color: var(--muted);
+}
+.track-style-sample {
+  display: block;
+  width: 100%;
+  height: 18px;
+}
+.track-panel .route-result {
+  flex-wrap: wrap;
+}
+.track-panel .route-result button {
+  background: transparent;
+  color: var(--accent);
+  font-size: 10px;
+  min-height: 30px;
+}
+.track-record {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+}
+.track-record .track-saved {
+  border: none;
+}

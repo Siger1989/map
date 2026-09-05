@@ -1,4 +1,4 @@
-import { CloudSun, Droplets, RefreshCw, Wind } from 'lucide-react';
+import { CloudSun, Droplets, Mountain, RefreshCw, Wind } from 'lucide-react';
 import {
   describeWeather,
   nearestCell,
@@ -25,7 +25,19 @@ export function WeatherPanel({
   const show = (n: number | null | undefined, digits = 0) =>
     n == null ? '—' : n.toFixed(digits);
   return (
-    <section className="weather-card glass" aria-label="所选地点的模型天气">
+    <section className="weather-card" aria-label="所选地点的模型天气">
+      <div className="point-details">
+        <span>
+          {point.lat.toFixed(3)}° N · {point.lng.toFixed(3)}° E
+        </span>
+        <span>
+          <Mountain size={14} />{' '}
+          {point.elevation == null
+            ? '—'
+            : Math.round(point.elevation).toLocaleString()}{' '}
+          m
+        </span>
+      </div>
       <div className="weather-heading">
         <span className="eyebrow">所选地点 · 模型预报</span>
         <button
@@ -87,6 +99,12 @@ export function WeatherPanel({
           (data
             ? '区域 25 点采样 · 附近模型网格值'
             : '正在从 Open-Meteo 获取数据')}
+      </p>
+      <p className="weather-footnote">
+        云雨为模型示意；卫星影像保持其拍摄日期。
+        <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">
+          天气数据 Open-Meteo · CC BY 4.0
+        </a>
       </p>
     </section>
   );

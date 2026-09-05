@@ -41,6 +41,13 @@ const ITEMS = [
     color: 'amber',
   },
   {
+    key: 'geology',
+    label: '地质图投射',
+    detail: '岩性 · 地层年代 · 构造线',
+    icon: Layers,
+    color: 'amber',
+  },
+  {
     key: 'roads',
     label: '道路与河流',
     detail: '公路 · 铁路 · 路名',
@@ -81,14 +88,10 @@ export function LayerPanel({
   satelliteStatus?: string;
 }) {
   return (
-    <aside className="layer-panel glass" aria-label="地图图层">
+    <section className="layer-panel" aria-label="地图图层">
       <div className="panel-heading">
         <div>
-          <span className="eyebrow">YOUR VIEW</span>
-          <h2>
-            <Layers size={19} />
-            图层控制
-          </h2>
+          <span className="eyebrow">开启需要的图层</span>
         </div>
         <span className="layer-count">
           {ITEMS.filter(({ key }) => settings[key]).length} / {ITEMS.length}
@@ -142,6 +145,28 @@ export function LayerPanel({
           最新云况影像
         </button>
       </div>
+      {settings.geology && (
+        <>
+          <div className="geology-opacity">
+            <label className="slider-label" htmlFor="geology-opacity">
+              地质图不透明度{' '}
+              <span>{Math.round(settings.geologyOpacity * 100)}%</span>
+            </label>
+            <input
+              id="geology-opacity"
+              type="range"
+              min="0.15"
+              max="1"
+              step="0.05"
+              value={settings.geologyOpacity}
+              onChange={(e) =>
+                onChange({ geologyOpacity: Number(e.target.value) })
+              }
+            />
+            <p>地质着色与海拔着色互相切换，避免颜色混淆。</p>
+          </div>
+        </>
+      )}
       <div className="panel-sliders">
         <label className="slider-label" htmlFor="weather-opacity">
           云雨透明度 <span>{Math.round(settings.opacity * 100)}%</span>
@@ -178,6 +203,6 @@ export function LayerPanel({
         <Info size={15} />
         <p>云的高度与形态为简化示意。数值以数据面板为准。</p>
       </div>
-    </aside>
+    </section>
   );
 }

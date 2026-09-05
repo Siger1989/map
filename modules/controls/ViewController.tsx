@@ -5,12 +5,10 @@ export function ViewController({
   view,
   onView,
   onReset,
-  withPanel,
 }: {
   view: ViewState;
   onView: (pitch: number, bearing: number, animate?: boolean) => void;
   onReset: () => void;
-  withPanel: boolean;
 }) {
   const drag = useRef<{
     x: number;
@@ -19,10 +17,7 @@ export function ViewController({
     bearing: number;
   } | null>(null);
   return (
-    <section
-      className={`view-controller glass ${withPanel ? 'with-panel' : ''}`}
-      aria-label="视角控制器"
-    >
+    <section className="view-controller" aria-label="视角控制器">
       <div className="view-heading">
         <span>
           <Move size={14} />

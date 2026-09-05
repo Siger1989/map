@@ -39,4 +39,15 @@ next-env.d.ts
 /.openai/*.log
 /.openai/*.xml
 /.openai/openfreemap-style.json
+/.openai/live-route-*.json
+/.openai/probe-*.mjs
+/.openai/verify-*.mjs
+/.openai/*-notes.md
 /tsconfig.tsbuildinfo
+/mobile/dist/
+/mobile/.build/
+/APK/
+*.jks
+*.keystore
+*.p12
+*.pfx

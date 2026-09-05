@@ -8,18 +8,18 @@ export function ElevationLegend() {
       </strong>
       <div className="elevation-bands">
         {ELEVATION_COLORS.map(([height, color], index) => (
-          <div key={height}>
+          <div
+            key={height}
+            title={`${height}–${ELEVATION_COLORS[index + 1]?.[0] ?? '以上'} 米`}
+          >
             <i style={{ backgroundColor: color }} />
             <span>
-              {height.toLocaleString()}
-              {index < ELEVATION_COLORS.length - 1
-                ? `–${ELEVATION_COLORS[index + 1][0].toLocaleString()}`
-                : '+'}
+              {height}
+              {index === ELEVATION_COLORS.length - 1 ? '+' : ''}
             </span>
           </div>
         )).reverse()}
       </div>
-      <p>分段设色 · 原始海拔</p>
     </aside>
   );
 }
