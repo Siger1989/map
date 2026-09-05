@@ -23,6 +23,11 @@ import {
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
 import { snapMapRoad } from './roadSnap';
+import {
+  FeatureDragBridge,
+  type DragTarget,
+  type FeatureMove,
+} from './FeatureDragBridge';
 import type { RoadSnapper } from '../tracks/roadSnapping';
 import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
@@ -72,6 +77,11 @@ type Props = {
   annotationSelected: string | null;
   onAnnotationSelect: (id: string) => void;
   roadSnapping: boolean;
+  pickingActive: boolean;
+  onTrackSelect: (id: string) => void;
+  onDragBegin: (target: DragTarget) => void;
+  onDragPreview: (move: FeatureMove | null) => void;
+  onDragCommit: (move: FeatureMove) => void;
 };
 export const TerrainMap = forwardRef<MapHandle, Props>(
   function TerrainMap(props, ref) {
@@ -85,6 +95,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const routeRef = useRef<RouteLayer | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
+    const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
     const satelliteAbort = useRef<AbortController | null>(null);
@@ -354,6 +365,32 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             latest.current.onDrawingInput(input),
           );
           drawingRef.current.configure(latest.current.drawingActive);
+          featureDragRef.current = new FeatureDragBridge(map, {
+            enabled: () =>
+              !latest.current.drawingActive && !latest.current.pickingActive,
+            hit: (point, element) => {
+              const marker =
+                element instanceof Element
+                  ? element.closest<HTMLElement>('[data-annotation-id]')
+                  : null;
+              const id = marker?.dataset.annotationId;
+              const item = latest.current.annotations.find(
+                (a) => a.id === id && a.visible,
+              );
+              if (item)
+                return {
+                  kind: 'annotation',
+                  id: item.id,
+                  coordinate: item.coordinates,
+                };
+              if (element !== map.getCanvas()) return null;
+              const node = trackRef.current?.pickNode(point);
+              return node ? { kind: 'track', node } : null;
+            },
+            begin: (target) => latest.current.onDragBegin(target),
+            preview: (move) => latest.current.onDragPreview(move),
+            commit: (move) => latest.current.onDragCommit(move),
+          });
           map.addControl(
             new maplibre.AttributionControl({ compact: true }),
             'bottom-left',
@@ -392,9 +429,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               const { AnnotationLayer } =
                 await import('../annotations/AnnotationLayer');
               if (disposed) return;
-              annotationRef.current = new AnnotationLayer((id) =>
-                latest.current.onAnnotationSelect(id),
-              );
+              annotationRef.current = new AnnotationLayer((id) => {
+                if (
+                  !latest.current.drawingActive &&
+                  !latest.current.pickingActive
+                )
+                  latest.current.onAnnotationSelect(id);
+              });
               map.addLayer(annotationRef.current);
             } catch {
               if (!disposed)
@@ -440,7 +481,23 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('click', (event) => {
-            if (latest.current.drawingActive) return;
+            if (
+              latest.current.drawingActive ||
+              featureDragRef.current?.blocksClick()
+            )
+              return;
+            if (!latest.current.pickingActive) {
+              const annotation = annotationRef.current?.pick(event.point);
+              if (annotation) {
+                latest.current.onAnnotationSelect(annotation);
+                return;
+              }
+              const track = trackRef.current?.pickTrack(event.point);
+              if (track) {
+                latest.current.onTrackSelect(track);
+                return;
+              }
+            }
             pick(event.lngLat.lng, event.lngLat.lat);
             latest.current.onMapPick([event.lngLat.lng, event.lngLat.lat]);
           });
@@ -460,6 +517,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', () => {
+            trackRef.current?.sync(latest.current.trackOverlay);
             const p = map.getCenter();
             if (
               Math.abs(p.lng - weatherAnchor[0]) +
@@ -504,6 +562,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         trackRef.current = null;
         positionRef.current = null;
         annotationRef.current = null;
+        featureDragRef.current?.dispose();
+        featureDragRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         mapRef.current?.remove();
@@ -535,8 +595,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         );
     }, [props.annotations, props.annotationSelected]);
     useEffect(() => {
+      if (props.drawingActive || props.pickingActive)
+        featureDragRef.current?.cancel();
       drawingRef.current?.configure(props.drawingActive);
-    }, [props.drawingActive]);
+    }, [props.drawingActive, props.pickingActive]);
     useEffect(() => {
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
@@ -545,6 +607,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       <div
         ref={container}
         className="map-canvas"
+        data-picking={props.pickingActive || props.drawingActive}
         aria-label="成都与川西三维地形地图"
       />
     );

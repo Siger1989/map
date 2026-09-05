@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
 import { trackDistance } from './drawing';
@@ -9,15 +9,31 @@ export function TrackPanel({
   tracks: t,
   onDraw,
   onShow,
+  onEditNodes,
 }: {
   tracks: ManualTracksState;
   onDraw: () => void;
   onShow: (points: Coordinate[]) => void;
+  onEditNodes: (id: string) => void;
 }) {
-  const [name, setName] = useState(''),
-    [details, setDetails] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const details = t.selectedId,
+    setDetails = t.select;
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const record = Array.from(
+        section.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [],
+      ).find((element) => element.dataset.trackId === details);
+      record?.scrollIntoView({ block: 'start', behavior: 'auto' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [details]);
   return (
-    <section className="track-panel" aria-label="手绘轨迹">
+    <section ref={section} className="track-panel" aria-label="手绘轨迹">
+      <p className="route-note">
+        点地图上的线路查看详情。完成绘制后，长按圆形节点约半秒可拖动；放大地图可调整更多节点。
+      </p>
       <div className="route-tabs" aria-label="绘制方式">
         <button
           aria-pressed={t.mode === 'freehand'}
@@ -72,7 +88,7 @@ export function TrackPanel({
       </button>
       {!!t.draft.length && (
         <>
-          <div className="route-result">
+          <div className="route-result" data-track-id="draft">
             <strong>
               {t.editingId ? '正在续画' : '草稿'}{' '}
               {formatDistance(trackDistance(t.draft))}
@@ -87,6 +103,7 @@ export function TrackPanel({
             <JourneyPanel segments={t.draft} onLocate={(p) => onShow([p])} />
           )}
           <div className="route-edit-actions">
+            <button onClick={() => onEditNodes('draft')}>调整节点</button>
             <button disabled={!t.canUndo} onClick={t.undo}>
               撤销
             </button>
@@ -109,7 +126,6 @@ export function TrackPanel({
             onClick={() => {
               if (t.save(name)) {
                 setName('');
-                setDetails(null);
               }
             }}
           >
@@ -132,12 +148,18 @@ export function TrackPanel({
         </button>
       </div>
       {t.saved.map((track) => (
-        <div className="track-record" key={track.id}>
+        <div
+          className="track-record"
+          key={track.id}
+          data-track-id={track.id}
+          data-selected={details === track.id}
+        >
           <div className="track-saved">
             <button
               className="track-open"
               onClick={() => {
                 t.setVisible(true);
+                t.select(track.id);
                 onShow(track.segments.flat());
               }}
             >
@@ -154,6 +176,12 @@ export function TrackPanel({
             </button>
           </div>
           <div className="route-edit-actions">
+            <button
+              disabled={t.editingId === track.id}
+              onClick={() => onEditNodes(track.id)}
+            >
+              调整节点
+            </button>
             <button
               onClick={() => setDetails(details === track.id ? null : track.id)}
             >
@@ -172,6 +200,33 @@ export function TrackPanel({
           </div>
           {details === track.id && (
             <>
+              <label className="track-rename">
+                线路名称
+                <input
+                  className="track-name"
+                  defaultValue={track.name}
+                  maxLength={60}
+                  onBlur={(event) => {
+                    t.rename(track.id, event.target.value);
+                    if (!event.target.value.trim())
+                      event.target.value = track.name;
+                  }}
+                />
+              </label>
+              <p className="route-note">
+                {track.segments.length} 段 ·{' '}
+                {track.segments.reduce((n, line) => n + line.length, 0)} 个节点
+                <br />
+                创建于 {new Date(track.createdAt).toLocaleString('zh-CN')}
+                <br />
+                长按移动后自动保存到本机，可撤销最近的节点移动。
+              </p>
+              <button
+                disabled={t.nodeUndoId !== track.id || t.editingId === track.id}
+                onClick={t.undoNodeMove}
+              >
+                撤销节点移动
+              </button>
               <TrackStyleControls
                 style={normalizeTrackStyle(track.style)}
                 onChange={(style) => t.updateStyle(track.id, style)}

@@ -55,6 +55,54 @@
   border-radius: 8px;
   background: #ffffff09;
 }
+.track-record[data-selected='true'] {
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
+  scroll-margin-top: 8px;
+}
+.track-rename {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.selection-tools {
+  position: absolute;
+  z-index: 11;
+  left: var(--edge-left);
+  bottom: calc(59px + var(--safe-bottom));
+  width: min(330px, calc(100% - var(--edge-left) - 65px));
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.selection-tools strong,
+.selection-tools span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.selection-tools span {
+  color: var(--muted);
+  margin: 5px 0 8px;
+}
+.selection-tools > div:last-child {
+  display: flex;
+  gap: 5px;
+}
+.selection-tools button {
+  background: #ffffff12;
+  border-radius: 6px;
+  min-height: 36px;
+  padding: 5px 8px;
+  flex: 1;
+  font-size: 12px;
+}
+.selection-tools p {
+  color: #ffbf98;
+}
+.feature-drag-active,
+.feature-drag-active .maplibregl-canvas {
+  cursor: grabbing;
+}
 .track-saved-heading {
   display: flex;
   align-items: center;

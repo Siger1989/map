@@ -1,5 +1,17 @@
 # 天气观察软件 · 当前状态
 
+## 最新开发：路线点选与长按节点编辑（2026-09-05）
+- 当前目标：地图上点选手绘路线/标记，打开详情继续编辑；长按节点或标记后拖动位置。
+- 当前进展：已补路线 ID/容差拾取/高亮和详情联动；节点及标记支持长按 480ms 后拖动预览，松手提交；取消、失焦和双指切换不提交。已保存路线及标记可撤销移动，草稿纳入原撤销；接点同步移动、续画保留已改节点。模型实体也接入点击拾取。
+- 修改范围：tracks、annotations、map 交互适配和页面接线，不改天气/地形/道路吸附算法。
+- 已执行：git status、git diff --stat、git pull --ff-only（已最新）、读取模块/状态/规则。
+- 已修改：app/page.tsx；map/{TerrainMap,FeatureDragBridge}；tracks/{TrackLayer,TrackPanel,useManualTracks,draft,editing,tracks.css}；annotations/{AnnotationLayer,AnnotationPanel,useAnnotations,annotations.css}；新增 tests/selection-editing.test.mjs、docs/selection-and-node-editing.md，更新 README。
+- 已执行：npx tsc --noEmit、node --experimental-strip-types --test tests/selection-editing.test.mjs tests/track-interaction.test.mjs、限定文件 oxfmt；日志 .openai/{typecheck-selection,tests-selection,tests-selection-model,format-selection}-20260905.log。
+- 验证结果：PASS。完整 85/85 测试（含新增 17 项）、TypeScript、网页生产构建、Android 静态入口构建、git diff --check 均通过；本地 localhost:3000 HTTP 200 / 43420 字节。模型专项含实际 Three.js 拾取数学和 DOM/几何复用适配测试，不等同真实浏览器渲染验收。
+- 完整日志：.openai/{typecheck-selection-final,tests-selection-final,build-selection-web,build-selection-mobile,diffcheck-selection,preview-selection}-20260905.log。构建仅有既有地图引擎大分包/框架路由分类提示；无构建错误。
+- 当前阻塞：无。本轮没有浏览器截图/真实地图触控或手机实机验证，没有重新打包 APK；旧 APK 不包含本轮功能。预览继续保留 localhost:3000，会话 27863。
+- 下一步：提交本轮源码与说明并推送 origin/main、核验远程 SHA；后续可在手机验收长按时长、节点密度与三维视角下的拖动手感。
+
 ## 最新开发：国内图源适配、道路吸附与地表/地下标记模型（2026-09-05）
 - 当前目标：寻找国内免费底图，改善依赖 VPN 才能浏览的问题；补全用户明确要求的“吸附地图上的道路和山间小路”，不是只连接已保存轨迹的节点。
 - 用户追加目标：地图标记与基础几何模型（长方体/圆柱等），可设置名称、颜色、真实米制尺寸、位置和角度；地表/地下切换与埋深，地下模型透过地表半透明可见，用于洞穴/开挖标注和比例参考。独立 annotations 模块，本机存储并提供参数编辑。

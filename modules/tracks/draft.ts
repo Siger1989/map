@@ -1,15 +1,24 @@
 import type { Coordinate } from '../navigation/types';
+import { equalCoordinate, moveSegmentsNode } from './editing.ts';
 export type DrawingMode = 'points' | 'freehand';
-type Operation = {
-  kind: 'point' | 'stroke';
-  segment: number;
-  seeded?: boolean;
-};
+type Operation =
+  | {
+      kind: 'point' | 'stroke';
+      segment: number;
+      seeded?: boolean;
+    }
+  | {
+      kind: 'move';
+      segments: Coordinate[][];
+      nodes?: Coordinate[];
+      pointLine: number | null;
+    };
 export type TrackDraft = {
   segments: Coordinate[][];
   kinds: DrawingMode[];
   history: Operation[];
   pointLine: number | null;
+  nodes?: Coordinate[];
 };
 export const EMPTY_DRAFT: TrackDraft = {
   segments: [],
@@ -27,6 +36,7 @@ export function appendVertex(draft: TrackDraft, point: Coordinate): TrackDraft {
     kinds.push('points');
   } else segments[index].push(point);
   return {
+    ...draft,
     segments,
     kinds,
     pointLine: index,
@@ -42,6 +52,7 @@ export function appendStroke(
 ): TrackDraft {
   if (points.length < 2) return draft;
   return {
+    ...draft,
     segments: [...draft.segments, points],
     kinds: [...draft.kinds, 'freehand'],
     pointLine: null,
@@ -54,6 +65,14 @@ export function appendStroke(
 export function undoDraft(draft: TrackDraft): TrackDraft {
   const operation = draft.history.at(-1);
   if (!operation) return draft;
+  if (operation.kind === 'move')
+    return {
+      ...draft,
+      segments: operation.segments,
+      nodes: operation.nodes,
+      pointLine: operation.pointLine,
+      history: draft.history.slice(0, -1),
+    };
   const segments = draft.segments.map((line) => line.slice()),
     kinds = [...draft.kinds],
     history = draft.history.slice(0, -1);
@@ -68,14 +87,51 @@ export function undoDraft(draft: TrackDraft): TrackDraft {
   }
   const prior = history.at(-1);
   return {
+    ...draft,
     segments,
     kinds,
     history,
-    pointLine: prior?.kind === 'point' ? prior.segment : null,
+    pointLine:
+      prior?.kind === 'point'
+        ? prior.segment
+        : prior?.kind === 'move'
+          ? prior.pointLine
+          : null,
   };
 }
 export function draftVertices(draft: TrackDraft) {
-  return draft.segments.flatMap((line, i) =>
-    draft.kinds[i] === 'points' ? line : [],
-  );
+  return [
+    ...(draft.nodes ?? []),
+    ...draft.segments.flatMap((line, i) =>
+      draft.kinds[i] === 'points' ? line : [],
+    ),
+  ];
+}
+
+export function moveDraftNode(
+  draft: TrackDraft,
+  from: Coordinate,
+  to: Coordinate,
+): TrackDraft {
+  if (
+    equalCoordinate(from, to) ||
+    !draft.segments.some((line) => line.some((p) => equalCoordinate(p, from)))
+  )
+    return draft;
+  return {
+    ...draft,
+    segments: moveSegmentsNode(draft.segments, from, to),
+    nodes: draft.nodes?.map((point) =>
+      equalCoordinate(point, from) ? [...to] : point,
+    ),
+    history: [
+      ...draft.history,
+      {
+        kind: 'move',
+        segments: draft.segments,
+        nodes: draft.nodes,
+        pointLine: draft.pointLine,
+      },
+    ],
+  };
 }

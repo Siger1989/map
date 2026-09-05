@@ -18,7 +18,8 @@ export class AnnotationLayer implements CustomLayerInterface {
   private renderer?: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.Camera();
-  private markers: Marker[] = [];
+  private markers = new globalThis.Map<string, Marker>();
+  private frames = new globalThis.Map<string, THREE.Group>();
   private items: Annotation[] = [];
   private selected: string | null = null;
   private settings: Pick<LayerSettings, 'terrain' | 'exaggeration'> = {
@@ -49,6 +50,45 @@ export class AnnotationLayer implements CustomLayerInterface {
       this.settings.exaggeration === settings.exaggeration
     )
       return;
+    // During dragging only position changes. Retain DOM targets and GPU geometry.
+    const movingOnly =
+      this.selected === selected &&
+      this.settings.terrain === settings.terrain &&
+      this.settings.exaggeration === settings.exaggeration &&
+      items.length === this.items.length &&
+      items.every((item, index) => {
+        const old = this.items[index];
+        return Object.keys(old).every(
+          (key) =>
+            key === 'coordinates' ||
+            old[key as keyof Annotation] === item[key as keyof Annotation],
+        );
+      });
+    if (movingOnly) {
+      const unit = this.origin.meterInMercatorCoordinateUnits();
+      items.forEach((item, index) => {
+        if (item === this.items[index]) return;
+        this.markers.get(item.id)?.setLngLat(item.coordinates);
+        const frame = this.frames.get(item.id);
+        if (frame && item.groundElevation !== null) {
+          const mercator = MercatorCoordinate.fromLngLat(item.coordinates);
+          const ratio = mercator.meterInMercatorCoordinateUnits() / unit;
+          const range = altitudeRange(
+            item,
+            settings.terrain ? item.groundElevation * settings.exaggeration : 0,
+          )!;
+          frame.position.set(
+            (mercator.x - this.origin.x) / unit,
+            (mercator.y - this.origin.y) / unit,
+            range.center * ratio,
+          );
+          frame.scale.set(ratio, -ratio, ratio);
+        }
+      });
+      this.items = items;
+      this.map?.triggerRepaint();
+      return;
+    }
     this.items = items;
     this.selected = selected;
     this.settings = {
@@ -57,9 +97,11 @@ export class AnnotationLayer implements CustomLayerInterface {
     };
     this.rebuild();
   }
-  private clear() {
-    this.markers.forEach((marker) => marker.remove());
-    this.markers = [];
+  private clear(removeMarkers = true) {
+    if (removeMarkers) {
+      this.markers.forEach((marker) => marker.remove());
+      this.markers.clear();
+    }
     this.scene.traverse((object) => {
       if (
         object instanceof THREE.Mesh ||
@@ -73,11 +115,19 @@ export class AnnotationLayer implements CustomLayerInterface {
       }
     });
     this.scene.clear();
+    this.frames.clear();
+    this.hasRendered = false;
   }
   private rebuild() {
-    this.clear();
+    this.clear(false);
     const map = this.map;
     if (!map) return;
+    for (const [id, marker] of this.markers) {
+      if (!this.items.some((item) => item.id === id && item.visible)) {
+        marker.remove();
+        this.markers.delete(id);
+      }
+    }
     const first = this.items.find((a) => a.visible);
     this.origin = MercatorCoordinate.fromLngLat(
       first?.coordinates ?? [103.28, 31.08],
@@ -85,22 +135,28 @@ export class AnnotationLayer implements CustomLayerInterface {
     const originUnit = this.origin.meterInMercatorCoordinateUnits();
     for (const item of this.items) {
       if (!item.visible) continue;
-      const element = document.createElement('button');
+      const existing = this.markers.get(item.id);
+      const element =
+        existing?.getElement() ?? document.createElement('button');
       element.className = `annotation-marker ${item.id === this.selected ? 'is-selected' : ''} ${item.placement === 'underground' ? 'is-underground' : ''}`;
       element.style.setProperty('--marker-color', item.color);
-      element.type = 'button';
+      element.setAttribute('type', 'button');
+      element.dataset.annotationId = item.id;
       element.textContent = `${item.placement === 'underground' ? '▽ ' : '● '}${item.name || '未命名'}`;
-      element.title = `${item.name} · 点击编辑`;
+      element.title = `${item.name} · 点击查看，长按拖动位置`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
         event.stopPropagation();
         this.onSelect(item.id);
       };
-      this.markers.push(
-        new Marker({ element, anchor: 'bottom' })
-          .setLngLat(item.coordinates)
-          .addTo(map),
-      );
+      if (existing) existing.setLngLat(item.coordinates);
+      else
+        this.markers.set(
+          item.id,
+          new Marker({ element, anchor: 'bottom' })
+            .setLngLat(item.coordinates)
+            .addTo(map),
+        );
       if (item.kind === 'pin' || item.groundElevation === null) continue;
       const ground = this.settings.terrain
         ? item.groundElevation * this.settings.exaggeration
@@ -129,6 +185,7 @@ export class AnnotationLayer implements CustomLayerInterface {
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.userData.annotationId = item.id;
       const frame = new THREE.Group();
       frame.position.set(
         (mercator.x - this.origin.x) / originUnit,
@@ -151,7 +208,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       const edges = new THREE.LineSegments(
         new THREE.EdgesGeometry(geometry, item.kind === 'box' ? 1 : 18),
         new THREE.LineBasicMaterial({
-          color: item.color,
+          color: item.id === this.selected ? '#ffffff' : item.color,
           transparent: true,
           opacity: item.id === this.selected ? 1 : 0.8,
           depthWrite: false,
@@ -161,6 +218,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       rotation.add(edges);
       frame.add(rotation);
       this.scene.add(frame);
+      this.frames.set(item.id, frame);
       mesh.renderOrder = underground ? 20 : 0;
       edges.renderOrder = underground ? 21 : 1;
       mesh.frustumCulled = false;
@@ -168,6 +226,26 @@ export class AnnotationLayer implements CustomLayerInterface {
     }
     map.triggerRepaint();
   }
+  /** The custom layer uses a combined view/projection matrix in local metre space. */
+  pick(point: { x: number; y: number }): string | null {
+    if (!this.map || !this.scene.children.length || !this.hasRendered)
+      return null;
+    const canvas = this.map.getCanvas();
+    const x = (point.x / canvas.clientWidth) * 2 - 1;
+    const y = 1 - (point.y / canvas.clientHeight) * 2;
+    const inverse = this.camera.projectionMatrix.clone().invert();
+    const near = new THREE.Vector3(x, y, -1).applyMatrix4(inverse);
+    const far = new THREE.Vector3(x, y, 1).applyMatrix4(inverse);
+    this.scene.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster(near, far.sub(near).normalize());
+    return (
+      ray
+        .intersectObjects(this.scene.children, true)
+        .find((hit) => hit.object instanceof THREE.Mesh)?.object.userData
+        .annotationId ?? null
+    );
+  }
+  private hasRendered = false;
   render(_gl: WebGL2RenderingContext, input: CustomRenderMethodInput) {
     if (!this.renderer || !this.map || !this.scene.children.length) return;
     const unit = this.origin.meterInMercatorCoordinateUnits();
@@ -177,6 +255,7 @@ export class AnnotationLayer implements CustomLayerInterface {
     this.camera.projectionMatrix
       .fromArray(input.defaultProjectionData.mainMatrix)
       .multiply(local);
+    this.hasRendered = true;
     this.renderer.resetState();
     this.renderer.setViewport(
       0,

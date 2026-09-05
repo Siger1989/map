@@ -12,6 +12,7 @@ import {
 } from './data';
 
 export function useAnnotations() {
+  const [moveHistory, setMoveHistory] = useState<Annotation[]>([]);
   const [items, setItems] = useState<Annotation[]>([]);
   const current = useRef(items);
   current.current = items;
@@ -93,7 +94,21 @@ export function useAnnotations() {
     setPicking,
     error,
     reading,
-    select: (id: string) => {
+    moveUndoId: moveHistory.at(-1)?.id ?? null,
+    undoMove: () => {
+      const prior = moveHistory.at(-1);
+      if (!prior || !current.current.some((a) => a.id === prior.id)) return;
+      lookup.current?.abort();
+      setReading(false);
+      if (
+        update(prior.id, {
+          coordinates: prior.coordinates,
+          groundElevation: prior.groundElevation,
+        })
+      )
+        setMoveHistory((history) => history.slice(0, -1));
+    },
+    select: (id: string | null) => {
       setSelected(id);
       setPicking(null);
     },
@@ -120,21 +135,32 @@ export function useAnnotations() {
               newAnnotation(picking, coordinates, null, id),
             ]);
       if (!okay) return false;
+      // A map re-pick starts a new position-edit sequence.
+      if (picking === 'move') setMoveHistory([]);
       setSelected(id);
       setPicking(null);
       void refreshElevation(id, coordinates);
       return true;
     },
     move: (id: string, coordinates: Coordinate) => {
-      if (update(id, { coordinates, groundElevation: null }))
+      const prior = current.current.find((a) => a.id === id);
+      if (!prior || prior.coordinates.every((n, i) => n === coordinates[i]))
+        return false;
+      if (update(id, { coordinates, groundElevation: null })) {
+        setMoveHistory((history) => [...history.slice(-19), prior]);
         void refreshElevation(id, coordinates);
+        return true;
+      }
+      return false;
     },
     remove: (id: string) => {
       if (
         persist(current.current.filter((a) => a.id !== id)) &&
         selected === id
-      )
+      ) {
         setSelected(null);
+        setMoveHistory((history) => history.filter((a) => a.id !== id));
+      }
     },
     duplicate: (id: string) => {
       const item = current.current.find((a) => a.id === id);

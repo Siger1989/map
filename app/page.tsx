@@ -25,6 +25,8 @@ import {
   TRAVEL_MODES,
 } from '@/modules/navigation/types';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
+import { DRAFT_ID } from '@/modules/tracks/editing';
+import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
 import { KINDS } from '@/modules/annotations/data';
@@ -76,6 +78,28 @@ export default function Home() {
   const position = usePosition();
   const tracks = useManualTracks();
   const annotations = useAnnotations();
+  const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
+  const annotationOverlay = useMemo(() => {
+    const target = featureMove?.target;
+    return target?.kind === 'annotation' && featureMove
+      ? annotations.items.map((item) =>
+          item.id === target.id
+            ? { ...item, coordinates: featureMove.coordinate }
+            : item,
+        )
+      : annotations.items;
+  }, [annotations.items, featureMove]);
+  const selectedAnnotation = annotations.items.find(
+    (item) => item.id === annotations.selected,
+  );
+  const selectedTrack = tracks.saved.find(
+    (track) => track.id === tracks.selectedId,
+  );
+  const selectedDraft =
+    tracks.selectedId === DRAFT_ID && tracks.draft.length > 0;
+  const selectionName = selectedAnnotation
+    ? selectedAnnotation.name || '未命名标记'
+    : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
   useEffect(() => {
     if (
       position.direction === 'device' &&
@@ -99,6 +123,14 @@ export default function Home() {
       visible: tracks.visible,
       style: tracks.style,
       nodes: tracks.vertices,
+      selectedId: tracks.selectedId,
+      preview:
+        featureMove?.target.kind === 'track'
+          ? {
+              node: featureMove.target.node,
+              coordinate: featureMove.coordinate,
+            }
+          : null,
     }),
     [
       tracks.overlaySaved,
@@ -106,6 +138,8 @@ export default function Home() {
       tracks.visible,
       tracks.style,
       tracks.vertices,
+      tracks.selectedId,
+      featureMove,
     ],
   );
   const update = (patch: Partial<LayerSettings>) =>
@@ -187,12 +221,37 @@ export default function Home() {
         onDrawingInput={(event) => drawing.current?.input(event)}
         position={position.fix}
         onManualRotate={position.free}
-        annotations={annotations.items}
+        annotations={annotationOverlay}
         roadSnapping={tracks.roadSnapping}
         annotationSelected={annotations.selected}
+        pickingActive={Boolean(annotations.picking || navigation.picking)}
+        onTrackSelect={(id) => {
+          tracks.select(id);
+          annotations.select(null);
+          tracks.finish();
+          setPanel('track');
+        }}
+        onDragBegin={(target) => {
+          position.free();
+          tracks.finish();
+          if (target.kind === 'track') {
+            tracks.select(target.node.trackId);
+            annotations.select(null);
+          } else {
+            annotations.select(target.id);
+            tracks.select(null);
+          }
+          setPanel(null);
+        }}
+        onDragPreview={setFeatureMove}
+        onDragCommit={({ target, coordinate }) => {
+          if (target.kind === 'track') tracks.moveNode(target.node, coordinate);
+          else annotations.move(target.id, coordinate);
+        }}
         onAnnotationSelect={(id) => {
           annotations.select(id);
-          tracks.pause();
+          tracks.select(null);
+          tracks.finish();
           navigation.setPicking(null);
           setPanel('annotations');
         }}
@@ -206,6 +265,10 @@ export default function Home() {
             return;
           }
           if (navigation.pick(coordinates)) setPanel('route');
+          else {
+            tracks.select(null);
+            annotations.select(null);
+          }
         }}
       />
       <TrackDrawing
@@ -234,7 +297,7 @@ export default function Home() {
         toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
         onStroke={tracks.addStroke}
       />
-      {tracks.editing && (
+      {tracks.editing && tracks.drawing && panel === null && (
         <TrackTools
           tracks={tracks}
           onLocate={(point) => map.current?.focusPoint(point)}
@@ -244,6 +307,65 @@ export default function Home() {
           }}
         />
       )}
+      {selectionName &&
+        !tracks.drawing &&
+        !annotations.picking &&
+        !navigation.picking &&
+        panel === null && (
+          <div className="selection-tools glass" aria-label="选中对象编辑工具">
+            <div role="status">
+              <strong>{selectionName}</strong>
+              <span>
+                {featureMove
+                  ? '正在调整位置 · 松手确认，双指取消'
+                  : '长按节点或标记约半秒，再拖动位置'}
+              </span>
+            </div>
+            {(selectedAnnotation ? annotations.error : tracks.error) && (
+              <p role="alert">
+                {selectedAnnotation ? annotations.error : tracks.error}
+              </p>
+            )}
+            <div>
+              <button
+                disabled={!!featureMove}
+                onClick={() =>
+                  setPanel(selectedAnnotation ? 'annotations' : 'track')
+                }
+              >
+                详情 / 编辑
+              </button>
+              <button
+                disabled={
+                  !!featureMove ||
+                  (selectedAnnotation
+                    ? annotations.moveUndoId !== selectedAnnotation.id
+                    : selectedDraft
+                      ? !tracks.canUndo
+                      : tracks.nodeUndoId !== tracks.selectedId)
+                }
+                onClick={() =>
+                  selectedAnnotation
+                    ? annotations.undoMove()
+                    : selectedDraft
+                      ? tracks.undo()
+                      : tracks.undoNodeMove()
+                }
+              >
+                撤销
+              </button>
+              <button
+                disabled={!!featureMove}
+                onClick={() => {
+                  tracks.select(null);
+                  annotations.select(null);
+                }}
+              >
+                完成调整
+              </button>
+            </div>
+          </div>
+        )}
       <header className="topbar glass">
         <div className="brand">
           <span className="brand-icon">
@@ -462,6 +584,8 @@ export default function Home() {
             onTrack={(id) => {
               const track = tracks.saved.find((t) => t.id === id);
               if (track) {
+                tracks.select(id);
+                annotations.select(null);
                 tracks.setVisible(true);
                 map.current?.fitRoute(track.segments.flat());
                 setPanel('track');
@@ -472,11 +596,18 @@ export default function Home() {
         {panel === 'track' && (
           <TrackPanel
             tracks={tracks}
+            onEditNodes={(id) => {
+              tracks.select(id);
+              tracks.setVisible(true);
+              annotations.select(null);
+              tracks.finish();
+              setPanel(null);
+            }}
             onDraw={() => {
               map.current?.stop();
               navigation.setPicking(null);
               tracks.start();
-              annotations.setPicking(null);
+              annotations.select(null);
               setPanel(null);
             }}
             onShow={(points) => {

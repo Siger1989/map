@@ -112,8 +112,20 @@ function Editor({
       </div>
       <div className="annotation-actions">
         <button onClick={() => onPick('move')}>地图重选位置</button>
-        <button onClick={() => onLocate(item.coordinates)}>查看位置</button>
+        <button onClick={() => onLocate(item.coordinates)}>
+          地图上长按调整
+        </button>
+        <button
+          disabled={state.moveUndoId !== item.id}
+          onClick={state.undoMove}
+        >
+          撤销移动
+        </button>
       </div>
+      <p className="annotation-note">
+        点击地图上的标记名称或模型可查看和编辑。长按标记名称约半秒，再拖动位置，松手自动保存；双指或
+        Esc 取消。
+      </p>
       {item.kind !== 'pin' && (
         <>
           <div className="annotation-grid">

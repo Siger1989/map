@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Coordinate } from '../navigation/types';
+import { coordinate, type Coordinate } from '../navigation/types';
+import {
+  DRAFT_ID,
+  equalCoordinate,
+  moveTrackNode,
+  type TrackNode,
+} from './editing';
 import {
   DEFAULT_TRACK_STYLE,
   normalizeTrackStyle,
@@ -18,6 +24,7 @@ import {
   draftVertices,
   EMPTY_DRAFT,
   undoDraft,
+  moveDraftNode,
   type DrawingMode,
 } from './draft';
 import {
@@ -34,6 +41,8 @@ export function useManualTracks() {
   const [mode, setMode] = useState<DrawingMode>('freehand');
   const [anchor, setAnchor] = useState<Coordinate | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedId, select] = useState<string | null>(null);
+  const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
   const [snapping, setSnapping] = useState(true);
   const [roadSnapping, setRoadSnapping] = useState(false);
   const [editing, setEditing] = useState(false),
@@ -105,6 +114,64 @@ export function useManualTracks() {
     anchor,
     setAnchor,
     editingId,
+    selectedId,
+    select,
+    nodeUndoId: nodeHistory.at(-1)?.id ?? null,
+    moveNode: (node: TrackNode, to: Coordinate) => {
+      if (!coordinate(to) || equalCoordinate(node.coordinate, to)) return false;
+      if (node.trackId === DRAFT_ID) {
+        const next = moveDraftNode(draftRef.current, node.coordinate, to);
+        if (next === draftRef.current) return false;
+        draftRef.current = next;
+        setDraftState(next);
+        if (anchor && equalCoordinate(anchor, node.coordinate)) setAnchor(to);
+        select(DRAFT_ID);
+        setError('');
+        return true;
+      }
+      const track = saved.find((t) => t.id === node.trackId);
+      if (
+        !track ||
+        track.id === editingId ||
+        !track.segments.some((line) =>
+          line.some((p) => equalCoordinate(p, node.coordinate)),
+        )
+      )
+        return false;
+      const next = moveTrackNode(track, node.coordinate, to);
+      if (!persist(saved.map((t) => (t.id === track.id ? next : t))))
+        return false;
+      setNodeHistory((history) => [...history.slice(-19), track]);
+      select(track.id);
+      setError('');
+      return true;
+    },
+    undoNodeMove: () => {
+      const prior = nodeHistory.at(-1);
+      if (
+        !prior ||
+        prior.id === editingId ||
+        !saved.some((t) => t.id === prior.id)
+      )
+        return;
+      if (
+        persist(
+          saved.map((t) =>
+            t.id === prior.id
+              ? { ...t, segments: prior.segments, nodes: prior.nodes }
+              : t,
+          ),
+        )
+      ) {
+        setNodeHistory((history) => history.slice(0, -1));
+        setError('');
+      }
+    },
+    rename: (id: string, name: string) => {
+      const value = name.trim().slice(0, 60);
+      if (value)
+        persist(saved.map((t) => (t.id === id ? { ...t, name: value } : t)));
+    },
     snapping,
     setSnapping,
     roadSnapping,
@@ -133,6 +200,7 @@ export function useManualTracks() {
       }
     },
     start: () => {
+      select(DRAFT_ID);
       setEditing(true);
       setDrawing(true);
       setVisible(true);
@@ -168,6 +236,7 @@ export function useManualTracks() {
       setAnchor(next.segments.at(-1)?.at(-1) ?? null);
     },
     clearDraft: () => {
+      select(editingId);
       setDraftState(EMPTY_DRAFT);
       setAnchor(null);
       setEditingId(null);
@@ -185,7 +254,10 @@ export function useManualTracks() {
         kinds: track.segments.map(() => 'freehand'),
         history: [],
         pointLine: null,
+        nodes: track.nodes,
       });
+      select(DRAFT_ID);
+      setNodeHistory([]);
       setEditingId(id);
       setAnchor(track.segments.at(-1)?.at(-1) ?? null);
       setMode('freehand');
@@ -218,10 +290,7 @@ export function useManualTracks() {
         segments: joinSegments(draftState.segments),
         createdAt: prior?.createdAt ?? Date.now(),
         style,
-        nodes: [...(prior?.nodes ?? []), ...vertices].slice(
-          0,
-          MAX_TRACK_POINTS,
-        ),
+        nodes: vertices.slice(0, MAX_TRACK_POINTS),
       };
       if (
         !persist(
@@ -232,6 +301,7 @@ export function useManualTracks() {
       )
         return false;
       setDraftState(EMPTY_DRAFT);
+      select(track.id);
       setEditingId(null);
       setAnchor(null);
       setError('');
@@ -239,20 +309,29 @@ export function useManualTracks() {
       setDrawing(false);
       return true;
     },
-    remove: (id: string) => persist(saved.filter((track) => track.id !== id)),
-    reverseTrack: (id: string) =>
-      persist(
-        saved.map((track) =>
-          track.id === id
-            ? {
-                ...track,
-                segments: joinSegments(track.segments)
-                  .reverse()
-                  .map((line) => line.slice().reverse()),
-              }
-            : track,
-        ),
-      ),
+    remove: (id: string) => {
+      if (persist(saved.filter((track) => track.id !== id))) {
+        setNodeHistory((history) => history.filter((t) => t.id !== id));
+        if (selectedId === id) select(null);
+      }
+    },
+    reverseTrack: (id: string) => {
+      if (
+        persist(
+          saved.map((track) =>
+            track.id === id
+              ? {
+                  ...track,
+                  segments: joinSegments(track.segments)
+                    .reverse()
+                    .map((line) => line.slice().reverse()),
+                }
+              : track,
+          ),
+        )
+      )
+        setNodeHistory([]);
+    },
     mergeTrack: (id: string) => {
       const seed = saved.find((t) => t.id === id);
       if (!seed) return;
@@ -284,8 +363,10 @@ export function useManualTracks() {
             .filter((t) => !ids.has(t.id) || t.id === seed.id)
             .map((t) => (t.id === seed.id ? merged : t)),
         )
-      )
+      ) {
         setError('');
+        setNodeHistory([]);
+      }
     },
     updateStyle: (id: string, next: TrackStyle) =>
       persist(
