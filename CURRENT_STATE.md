@@ -1,5 +1,19 @@
 # 天气观察软件 · 当前状态
 
+## 最新修复：剖面缺失与画面叠乱（2026-09-06）
+- 当前目标：按用户明确要求查看实际页面，修复 3D 剖面不可见和图层叠乱，保留原 UI、可选纯色截面和单线轮廓。
+- 当前进展：已在独立 Edge/Playwright 上以用户相同 URL/视角复现。确认 tileSize 256→512 导致共享 RTT 从 1024→2048 后帧缓冲尺寸不兼容（状态 36057，GL 1286），旧纹理残留且填色不绘制。改回 256 后 GL=0；填充改读同一裁切 DEM，轮廓按更细瓦片覆盖范围裁掉粗层级的重复线。
+- 修改文件：SectionLayer、contourCoverage、新增 coverage 测试和浏览器渲染验证脚本、section-terrain 回归约束、.gitignore 截图排除、文档/状态。
+- 命令/日志：git status、git diff --stat、git pull --ff-only（Already up to date）；.openai/pull-section-fix-20260906.log。
+- 验证结果：最终 PASS。完整 107/107 逻辑测试、TypeScript、网页生产构建、Android 静态入口构建、git diff --check 均通过。真实 Edge 浏览器六场景 PASS：白色/自定义蓝色、2000→4000→3000m、缩放/旋转、反复开关、430×780 窄屏；全部 GL=0、RTT=1024，保留指定 65°/55° 视角。初始白色切面像素 423469/1003000；原接缝区域 4752/4760 像素为纯色，通过 >99.5% 断言。
+- 截图检查（均位于 artifacts/screenshots/）：section-before、section-before-height2500-20260906.png，FAIL，块状残留且无截面；section-normal-baseline-20260906.png，PASS，普通地图对照；section-size-fix-20260906.png，PASS，白色恢复/GL=0，随后继续处理轮廓；section-same-dem、section-near-same-dem、section-near-loaded-20260906.png，FAIL，加载阶段及粗细层级线未清理；section-contours-fix、section-color-fixed-20260906.png，PASS，纯色切面/无穿越切面的粗线，下一步回归更多视角。
+- 浏览器验证补充：首轮白色、改色、4000m、旋转 GL=0，但重复开启像素断言 FAIL。复现诊断确认是 isSourceLoaded 在 setTiles 尚未开始请求时短暂为真，截图落在加载阶段；等待剖面状态完成与两个数据源就绪后，重复开启 PASS（section-reopen-loaded-20260906.png）。已修正验收脚本等待条件，继续全流程。
+- 广角截图复核：多场景脚本已 PASS，但人工看到一条透明接缝。隔离轮廓层后仍存在；全覆盖填色与 nearest 采样均使它消失，确认来自 DEM 边缘插值。剖面填色改 nearest，保留单线轮廓；section-seam-nearest、section-nearest-near-20260906.png PASS。已追加原缺陷区域的纯色像素断言，再跑最终验证。
+- 最终截图：artifacts/screenshots/section-fixed-{white,color,height4000,rotated,reopened,mobile}-20260906.png。PASS：截面可见且为指定纯色、无大片旧纹理残留、单线轮廓、窄屏面板在边界内；初轮过早截图已由最终完成加载后的截图更新。后续修复：无。
+- 最终日志：.openai/{browser-section-fix-final,typecheck-section-fix-final,tests-section-fix-final,build-section-fix-web,build-section-fix-mobile,diffcheck-section-fix}-20260906.log。浏览器脚本只在独立测试上下文注入地图引用，产品未暴露调试对象。
+- 当前阻塞：无。未测手机真机触控/帧率，未重新打包 APK；既有路线、模型存档、天气模块未修改。
+- 下一步：完成 GitHub 提交、推送及远端 SHA 核对，本地预览继续保留。
+
 ## 正在开发：三维地形海拔剖切（2026-09-05）
 - 当前目标：保留 3D 相机，按侧边滑条的真实海拔裁切当前视野山体；剖切面默认白色，可自定义纯色，轮廓单条实线；UI 保持原配色。
 - 当前进展：已移除临时二维俯视实现，改用原生三维 DEM 裁切、纯色切口、连续轮廓；模型按同一真实海拔裁切并封口。进入临时按 1× 海拔显示，退出恢复原图层/起伏设置。路线与模型编辑在剖面关闭后恢复。

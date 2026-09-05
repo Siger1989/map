@@ -14,6 +14,7 @@ import {
   type SectionStatus,
 } from './types';
 import { sectionFill, sectionOutline } from './appearance';
+import { coveredContours } from './contourCoverage';
 type Protocols = {
   addProtocol: (name: string, action: AddProtocolAction) => void;
   removeProtocol: (name: string) => void;
@@ -99,7 +100,9 @@ export class SectionLayer {
       type: 'raster-dem',
       tiles: [this.url()],
       encoding: 'terrarium',
-      tileSize: 512,
+      // Match the base terrain. Changing this during a terrain swap resizes the
+      // shared RTT color target without a compatible depth target in MapLibre 6.7.
+      tileSize: 256,
       maxzoom: TERRAIN_MAXZOOM,
     });
     this.map.setSourceTileLodParams(4, 1, DEM);
@@ -114,8 +117,11 @@ export class SectionLayer {
       {
         id: FILL,
         type: 'color-relief',
-        source: 'shading',
+        // The cap must use the same clipped samples and LOD as its 3D surface.
+        source: DEM,
         paint: {
+          // Interpolating padded DEM borders can reopen a hairline inside a flat cap.
+          resampling: 'nearest',
           'color-relief-color': sectionFill(this.applied, this.settings.color),
           'color-relief-opacity': 1,
         },
@@ -262,13 +268,8 @@ export class SectionLayer {
     const features: GeoJSON.Feature<GeoJSON.MultiLineString>[] = [];
     let tiles = 0;
     const bounds = this.map.getBounds();
-    for (const {
-      tile,
-      min: low,
-      max: high,
-      valid: count,
-      lines,
-    } of this.tiles.values()) {
+    const entries = [...this.tiles.values()];
+    for (const { tile, min: low, max: high, valid: count, lines } of entries) {
       // Keep cached contours cheap; only publish entries intersecting the current viewport.
       const sw = tileCoordinate(tile, 0, 256),
         ne = tileCoordinate(tile, 256, 0);
@@ -294,11 +295,12 @@ export class SectionLayer {
         (40075016.686 * Math.cos((latitude * Math.PI) / 180)) /
           (2 ** tile.z * 256),
       );
-      if (lines.length)
+      const visibleLines = coveredContours({ tile, lines }, entries);
+      if (visibleLines.length)
         features.push({
           type: 'Feature',
           properties: {},
-          geometry: { type: 'MultiLineString', coordinates: lines },
+          geometry: { type: 'MultiLineString', coordinates: visibleLines },
         });
     }
     let models = 0;

@@ -170,6 +170,16 @@ test('section retains the 3D camera, uses native terrain and a white cut face wi
     source: 'section-elevation',
     exaggeration: 1,
   });
+  assert.equal(
+    f.sources.get('section-elevation').spec.tileSize,
+    256,
+    'terrain swaps must keep the base 256px size to avoid incompatible shared RTT attachments',
+  );
+  assert.equal(
+    f.layers.get('section-cut-fill').source,
+    'section-elevation',
+    'cap color must use the same clipped DEM as its 3D surface',
+  );
   const style = {
     version: 8,
     sources: {
