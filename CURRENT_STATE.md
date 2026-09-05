@@ -9,7 +9,8 @@
 - 浏览器截图：artifacts/screenshots/section-caption-compact-{desktop,mobile}-20260906.png；PASS，同用户视角/4049.3m，1180×850 与 430×780 下提示框均约 104×33px，单行且不遮挡侧栏。初次点击时页面未完成初始化导致定位输入框超时，初始化后重新打开正常。下一步修复：无。
 - 日志：.openai/{format-section-compact,typecheck-section-compact,tests-section-compact,build-section-compact-web,build-section-compact-mobile,check-section-compact-script,diffcheck-section-compact}-20260906.log。
 - 当前阻塞：无。
-- 下一步：提交同步 GitHub 并核对远端 SHA；本地预览保持运行。本轮仅浏览器验证，未重新打包 APK。
+- GitHub 同步：功能提交 `474351f4b45706a93dc7ee41b00a40b86ceace38` 已推送 main，官方 refs API 核验 SHA 一致（PASS）。日志 .openai/{push-section-compact,sync-section-compact}-20260906.log，后续仅补交付状态。
+- 下一步：本轮精简和验证完成，本地预览保持运行；刷新即可查看。本轮仅浏览器验证，未重新打包 APK。
 
 ## 最新修复：剖面缺失与画面叠乱（2026-09-06）
 - 当前目标：按用户明确要求查看实际页面，修复 3D 剖面不可见和图层叠乱，保留原 UI、可选纯色截面和单线轮廓。
