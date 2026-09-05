@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import type { SectionSettings, SectionStatus } from './types';
-import { sectionOutline } from './appearance';
 export function SectionPanel({
   settings,
   status,
@@ -84,43 +83,24 @@ export function SectionPanel({
         </div>
         <button onClick={onClose}>退出剖面</button>
       </aside>
-      <div className="section-caption glass">
+      <div
+        className="section-caption glass"
+        data-phase={status.phase}
+        role="status"
+      >
         <strong>
-          三维水平剖切 ·{' '}
+          剖面 ·{' '}
           {settings.altitude.toLocaleString('zh-CN', {
             maximumFractionDigits: 1,
           })}{' '}
           m
         </strong>
-        <p role="status">
-          {loading
-            ? '正在更新当前视野的三维切面…'
-            : status.phase === 'error'
-              ? '地形暂未取得，可重试加载'
-              : `${status.phase === 'partial' ? '部分区域缺测 · ' : ''}当前视野 · 约 ${Math.max(1, Math.round(status.spacing)).toLocaleString('zh-CN')} m 采样间距`}
-        </p>
-        <div className="section-key">
-          <span>
-            <i
-              className="section-solid"
-              style={{ background: settings.color }}
-            />
-            山体切面
-          </span>
-          <span>
-            <i
-              className="section-rim"
-              style={{ background: sectionOutline(settings.color) }}
-            />
-            剖切边缘
-          </span>
-        </div>
-        <p>
-          移除海拔以上部分，保留下面的三维地形；彩色为模型截面。可旋转、倾斜查看，移动后更新视野。剖切按真实海拔
-          1× 显示。
-        </p>
+        {loading && <span>更新中…</span>}
         {(status.phase === 'error' || status.phase === 'partial') && (
-          <button onClick={onRetry}>重新加载当前视野</button>
+          <>
+            <span>{status.phase === 'error' ? '加载失败' : '部分缺测'}</span>
+            <button onClick={onRetry}>重试</button>
+          </>
         )}
       </div>
     </>

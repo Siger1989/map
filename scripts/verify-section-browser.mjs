@@ -54,11 +54,9 @@ try {
     await page.waitForFunction(
       () => {
         const m = window.__sectionTestMap;
-        const status = document.querySelector(
-          '.section-caption [role="status"]',
-        )?.textContent;
+        const phase = document.querySelector('.section-caption')?.dataset.phase;
         return (
-          status?.startsWith('当前视野') &&
+          phase === 'ready' &&
           m.isSourceLoaded('section-elevation') &&
           m.isSourceLoaded('section-cut-edges')
         );

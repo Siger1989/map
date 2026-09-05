@@ -1,5 +1,16 @@
 # 天气观察软件 · 当前状态
 
+## 当前任务：精简左侧剖面提示（2026-09-06）
+- 当前目标：缩小用户截图中的左侧说明框，只保留海拔及必要的加载/异常状态。
+- 当前进展：已移除说明段落、图例和采样间距，正常只显示“剖面 · 海拔 m”；更新/异常时保留短状态与重试。提示框改为内容自适应尺寸，精简边距；剖切计算、右侧控制和路线/模型数据不变。
+- 修改文件：modules/section/{SectionPanel.tsx,section.css}、scripts/verify-section-browser.mjs（加载判断改读 phase）、docs/elevation-section.md、本状态。删除废弃图例样式，无新增文件。
+- 命令：git status、git diff --stat、git pull --ff-only（Already up to date），日志 .openai/pull-section-compact-20260906.log。
+- 验证结果：PASS。TypeScript、107/107 既有逻辑测试、网页生产构建、Android 静态入口构建、脚本语法及差异检查通过；本轮未新增测试或修改剖切算法。
+- 浏览器截图：artifacts/screenshots/section-caption-compact-{desktop,mobile}-20260906.png；PASS，同用户视角/4049.3m，1180×850 与 430×780 下提示框均约 104×33px，单行且不遮挡侧栏。初次点击时页面未完成初始化导致定位输入框超时，初始化后重新打开正常。下一步修复：无。
+- 日志：.openai/{format-section-compact,typecheck-section-compact,tests-section-compact,build-section-compact-web,build-section-compact-mobile,check-section-compact-script,diffcheck-section-compact}-20260906.log。
+- 当前阻塞：无。
+- 下一步：提交同步 GitHub 并核对远端 SHA；本地预览保持运行。本轮仅浏览器验证，未重新打包 APK。
+
 ## 最新修复：剖面缺失与画面叠乱（2026-09-06）
 - 当前目标：按用户明确要求查看实际页面，修复 3D 剖面不可见和图层叠乱，保留原 UI、可选纯色截面和单线轮廓。
 - 当前进展：已在独立 Edge/Playwright 上以用户相同 URL/视角复现。确认 tileSize 256→512 导致共享 RTT 从 1024→2048 后帧缓冲尺寸不兼容（状态 36057，GL 1286），旧纹理残留且填色不绘制。改回 256 后 GL=0；填充改读同一裁切 DEM，轮廓按更细瓦片覆盖范围裁掉粗层级的重复线。
