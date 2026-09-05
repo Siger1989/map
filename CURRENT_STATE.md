@@ -10,7 +10,9 @@
 - 本地产物：APK/Guanyun-0.1.4-test.apk，55,055,209 字节；SHA-256 `65CC6EF1CDB7FC9E3A5DC22346DA509A3BF800FCFF8A39DB66F72182A2399136`。旁附 .sha256 和 INSTALL-0.1.4.txt。新签名证书 SHA-256 `a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c`，私钥只保留本机、不上传。
 - 日志：.openai/{build-apk-web-014,build-apk-014,typecheck-apk-014,tests-apk-014,verify-apk-assets-014}-20260906.log。
 - 当前阻塞：无，独立测试版可继续构建；覆盖更新仍需要原签名。
-- 下一步：同步版本源码，上传新测试版 Release 附件并核验服务器大小/哈希后公开下载。
+- GitHub 同步：构建源码提交 `b16b40911bc4adbdadcc1b1f99c40efb1e9cca39` 已推送 main，并核验远端 SHA 一致。Release `v0.1.4-test` 已公开发布（prerelease=true/draft=false），目标为该提交；APK、SHA256 与安装说明三份附件均 uploaded，服务器大小与 SHA-256 全部匹配本地。地址 https://github.com/Siger1989/map/releases/tag/v0.1.4-test 。
+- 发布日志：.openai/{push-apk-014,sync-apk-014,upload-apk-014,publish-apk-014}-20260906.log 和 .openai/release-apk-014-verified.log。没有上传签名密钥或运行日志；后续仅补交付状态。
+- 下一步：本轮打包与下载交付完成；可安装独立“观云测试版”，无需卸载旧版。手机真机安装、触控和性能仍待用户设备验证。
 
 ## 当前任务：修复拖动剖面海拔时跳动（2026-09-06）
 - 当前目标：稳定鼠标拖动时的滑条、海拔值及三维剖面更新。
