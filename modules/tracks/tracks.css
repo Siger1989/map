@@ -115,7 +115,8 @@
   color: var(--accent);
   background: #9de8c41a;
 }
-.track-input-active {
+.maplibregl-canvas-container.track-input-active,
+.maplibregl-canvas-container.track-input-active .maplibregl-canvas {
   touch-action: none;
   cursor: crosshair;
 }

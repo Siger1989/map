@@ -11,6 +11,14 @@ import { Timeline } from '@/modules/controls/Timeline';
 import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
+import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
+import { FavoritesPanel } from '@/modules/navigation/FavoritesPanel';
+import { useRouteJourney } from '@/modules/journey/useRouteJourney';
+import {
+  RouteWeatherRail,
+  RouteWeatherSettings,
+} from '@/modules/journey/RouteWeatherRail';
+import { usePosition } from '@/modules/position/usePosition';
 import {
   formatDistance,
   formatDuration,
@@ -60,7 +68,18 @@ export default function Home() {
   const [playing, setPlaying] = useState(false);
   const weather = useWeather(anchor);
   const navigation = useNavigation();
+  const favorites = useRouteFavorites();
+  const routeJourney = useRouteJourney(navigation.route);
+  const position = usePosition();
   const tracks = useManualTracks();
+  useEffect(() => {
+    if (
+      position.direction === 'device' &&
+      position.heading !== null &&
+      !tracks.drawing
+    )
+      map.current?.view(view.pitch, position.heading, false);
+  }, [position.direction, position.heading, tracks.drawing]);
   const routeOverlay = useMemo(
     () => ({
       start: navigation.start,
@@ -128,6 +147,7 @@ export default function Home() {
       data-drawing={tracks.drawing && panel === null}
       data-editing-track={tracks.editing}
       data-picking-route={Boolean(navigation.picking)}
+      data-route-rail={Boolean(navigation.route)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
         if (navigation.picking) {
@@ -156,6 +176,8 @@ export default function Home() {
         trackOverlay={trackOverlay}
         drawingActive={tracks.drawing && panel === null}
         onDrawingInput={(event) => drawing.current?.input(event)}
+        position={position.fix}
+        onManualRotate={position.free}
         onMapPick={(coordinates) => {
           if (navigation.pick(coordinates)) setPanel('route');
         }}
@@ -246,11 +268,58 @@ export default function Home() {
           />
         )}
       </div>
+      {navigation.route && (
+        <RouteWeatherRail
+          route={navigation.route}
+          journey={routeJourney}
+          fix={position.fix}
+          onSettings={() => {
+            tracks.pause();
+            setPanel('route');
+          }}
+        />
+      )}
+      {(position.locationError ||
+        position.directionError ||
+        position.locating) && (
+        <div className="position-status glass" role="status">
+          <span>
+            {position.locationError ||
+              position.directionError ||
+              '正在获取当前位置…'}
+          </span>
+          <button
+            aria-label="收起定位提示"
+            onClick={() =>
+              position.locating
+                ? position.stopLocation()
+                : position.clearError()
+            }
+          >
+            ×
+          </button>
+        </div>
+      )}
       <MapActions
         terrain={layers.terrain}
         bearing={view.bearing}
         onZoom={(amount) => map.current?.zoom(amount)}
-        onNorth={() => map.current?.north()}
+        onNorth={() => {
+          position.north();
+          map.current?.north();
+        }}
+        onLocate={() =>
+          position.locate((fix) => map.current?.focusPoint(fix.coordinates))
+        }
+        locating={position.locating}
+        watching={position.watching}
+        onStopLocation={position.stopLocation}
+        direction={position.direction}
+        onDevice={() =>
+          position.direction === 'device'
+            ? position.free()
+            : void position.device()
+        }
         onDimension={() => {
           update({ terrain: !layers.terrain });
           map.current?.view(layers.terrain ? 0 : 62, view.bearing);
@@ -293,7 +362,7 @@ export default function Home() {
           />
         }
       >
-        {(panel === 'route' || panel === 'track') && (
+        {(panel === 'route' || panel === 'track' || panel === 'favorites') && (
           <nav className="route-tabs" aria-label="路线类型">
             <button
               aria-pressed={panel === 'route'}
@@ -307,7 +376,32 @@ export default function Home() {
             >
               手绘轨迹
             </button>
+            <button
+              aria-pressed={panel === 'favorites'}
+              onClick={() => setPanel('favorites')}
+            >
+              收藏夹
+            </button>
           </nav>
+        )}
+        {panel === 'favorites' && (
+          <FavoritesPanel
+            favorites={favorites}
+            tracks={tracks}
+            onRoute={(favorite) => {
+              navigation.restore(favorite);
+              map.current?.fitRoute(favorite.route.coordinates);
+              setPanel(null);
+            }}
+            onTrack={(id) => {
+              const track = tracks.saved.find((t) => t.id === id);
+              if (track) {
+                tracks.setVisible(true);
+                map.current?.fitRoute(track.segments.flat());
+                setPanel('track');
+              }
+            }}
+          />
         )}
         {panel === 'track' && (
           <TrackPanel
@@ -328,6 +422,29 @@ export default function Home() {
           <RoutePanel
             navigation={navigation}
             near={[point.lng, point.lat]}
+            onSave={() => {
+              if (navigation.start && navigation.end && navigation.route)
+                favorites.save(
+                  navigation.start,
+                  navigation.end,
+                  navigation.route,
+                );
+            }}
+            saveMessage={
+              favorites.messageRoute === navigation.route?.createdAt
+                ? favorites.message
+                : ''
+            }
+            locating={position.locating}
+            onCurrentPosition={() =>
+              position.locate((fix) => {
+                navigation.place('start', {
+                  name: '当前位置',
+                  coordinates: fix.coordinates,
+                });
+                map.current?.focusPoint(fix.coordinates);
+              })
+            }
             onPick={(slot) => {
               navigation.setPicking(slot);
               setPanel(null);
@@ -338,6 +455,9 @@ export default function Home() {
               setPanel(null);
             }}
           />
+        )}
+        {panel === 'route' && navigation.route && (
+          <RouteWeatherSettings journey={routeJourney} />
         )}
         {panel === 'weather' && (
           <WeatherPanel
@@ -401,6 +521,7 @@ export default function Home() {
       <CameraGizmo
         view={view}
         onView={(pitch, bearing) => {
+          position.free();
           if (pitch > 0 && !layers.terrain) update({ terrain: true });
           map.current?.view(pitch, bearing, false);
         }}

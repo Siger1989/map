@@ -84,7 +84,12 @@ test('public bridge preserves native two-finger events and restores map controls
   const map = {
     on: (n, f) => handlers.set(n, f),
     off: (n) => handlers.delete(n),
-    getCanvasContainer: () => canvas,
+    getCanvasContainer: () => ({
+      ...canvas,
+      clientHeight: 0,
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 0 }),
+    }),
+    getCanvas: () => canvas,
     dragPan: control(),
     doubleClickZoom: control(),
     stop() {},
@@ -107,6 +112,11 @@ test('public bridge preserves native two-finger events and restores map controls
   });
   const one = event(1);
   handlers.get('touchstart')(one);
+  assert.deepEqual(
+    emitted[0].point,
+    { x: 50, y: 100 },
+    'zero-height wrapper cannot corrupt canvas coordinates',
+  );
   assert.equal(one.prevented, true);
   assert.equal(map.dragPan.active, false);
   const two = event(2);

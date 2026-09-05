@@ -68,4 +68,4 @@ node --experimental-strip-types --test tests/*.test.mjs
 npm run build
 ```
 
-0.1.2发布时47项检查通过，并检查APK签名和资源；没有新版手机手势/渲染/性能实测。地图资源来源和非商业许可情况见 `docs/data-sources.md`；公开源码与免费数据不代表所有功能已获得商用授权。
+0.1.3发布时55项检查通过，网页/APK构建完成，并检查APK签名和资源；没有新版手机定位权限/方向传感器/手势/渲染/性能实测。新版操作见 `docs/navigation-weather-location.md`。地图资源来源和非商业许可情况见 `docs/data-sources.md`；公开源码与免费数据不代表所有功能已获得商用授权。

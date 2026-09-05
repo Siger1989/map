@@ -112,10 +112,18 @@ export class DrawingGestureBridge {
     }
   }
   private contacts(e: MapTouchEvent): Contact[] {
-    const canvas = this.map.getCanvasContainer(),
+    const container = this.map.getCanvasContainer(),
+      canvas = this.map.getCanvas(),
       rect = canvas.getBoundingClientRect();
+    if (
+      !rect.width ||
+      !rect.height ||
+      !canvas.clientWidth ||
+      !canvas.clientHeight
+    )
+      return [];
     return Array.from(e.originalEvent.touches)
-      .filter((t) => canvas.contains(t.target as Node))
+      .filter((t) => container.contains(t.target as Node))
       .map((t) => ({
         id: t.identifier,
         point: {

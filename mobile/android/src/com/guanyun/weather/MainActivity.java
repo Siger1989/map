@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 /** A bundled client, with no remote start page and no JavaScript-to-Java bridge. */
 public final class MainActivity extends Activity {
     private WebView webView;
+    private LocationPermissions locationPermissions;
     private static final String START = "https://appassets.androidplatform.net/index.html";
 
     @Override public void onCreate(Bundle state) {
@@ -39,7 +40,7 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
-        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.1.2");
+        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.1.3");
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setUseWideViewPort(true);
@@ -50,7 +51,9 @@ public final class MainActivity extends Activity {
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setSupportZoom(false); // The map, not the whole document, handles pinch gestures.
         settings.setMediaPlaybackRequiresUserGesture(true);
-        webView.setWebChromeClient(new WebChromeClient());
+        settings.setGeolocationEnabled(true);
+        locationPermissions = new LocationPermissions(this);
+        webView.setWebChromeClient(locationPermissions);
         final LocalGateway gateway = new LocalGateway(getApplicationContext());
         webView.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -92,5 +95,9 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onPause() { webView.onPause(); webView.pauseTimers(); super.onPause(); }
     @Override protected void onResume() { super.onResume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } }
-    @Override protected void onDestroy() { if (webView != null) webView.destroy(); super.onDestroy(); }
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == LocationPermissions.REQUEST && locationPermissions != null) locationPermissions.resolve();
+    }
+    @Override protected void onDestroy() { if (locationPermissions != null) locationPermissions.cancel(); if (webView != null) webView.destroy(); super.onDestroy(); }
 }

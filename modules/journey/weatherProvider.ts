@@ -37,13 +37,13 @@ export function parseForecast(payload: unknown, count: number): RouteHour[][] {
   });
 }
 export function matchForecast(
-  hours: RouteHour[],
+  hours: RouteHour[] | undefined,
   arrival: number,
 ): RouteHour | null {
   // Nearest hourly forecast. Precipitation is the preceding hour at that timestamp.
   if (
     !Number.isFinite(arrival) ||
-    !hours.length ||
+    !hours?.length ||
     arrival < hours[0].time ||
     arrival > hours.at(-1)!.time
   )

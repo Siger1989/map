@@ -7,6 +7,7 @@ export type ControlPanel =
   | 'layers'
   | 'route'
   | 'track'
+  | 'favorites'
   | null;
 const PANELS = [
   { id: 'time', label: '时间', icon: Clock3 },
@@ -38,7 +39,7 @@ export function ControlDock({
     onActive(null);
     root.current
       ?.querySelector<HTMLButtonElement>(
-        `[data-panel-toggle="${active === 'track' ? 'route' : active}"]`,
+        `[data-panel-toggle="${active === 'track' || active === 'favorites' ? 'route' : active}"]`,
       )
       ?.focus({ preventScroll: true });
   };
@@ -77,9 +78,11 @@ export function ControlDock({
                 ? '地点天气'
                 : active === 'track'
                   ? '手绘轨迹'
-                  : active === 'route'
-                    ? '路线规划'
-                    : PANELS.find((p) => p.id === active)?.label}
+                  : active === 'favorites'
+                    ? '路线收藏夹'
+                    : active === 'route'
+                      ? '路线规划'
+                      : PANELS.find((p) => p.id === active)?.label}
             </h2>
             <button
               ref={closeButton}

@@ -19,12 +19,20 @@ export function RoutePanel({
   onPick,
   onPlace,
   onShow,
+  onSave,
+  saveMessage,
+  onCurrentPosition,
+  locating,
 }: {
   navigation: NavigationState;
   near: Coordinate;
   onPick: (slot: Endpoint) => void;
   onPlace: (place: RoutePlace) => void;
   onShow: (route: PlannedRoute) => void;
+  onSave: () => void;
+  saveMessage: string;
+  onCurrentPosition: () => void;
+  locating: boolean;
 }) {
   const [target, setTarget] = useState<Endpoint>('start');
   const [query, setQuery] = useState('');
@@ -88,6 +96,9 @@ export function RoutePanel({
         ))}
       </div>
       <div className="route-edit-actions">
+        <button disabled={locating} onClick={onCurrentPosition}>
+          {locating ? '正在定位…' : '当前位置作起点'}
+        </button>
         <button onClick={n.swap}>
           <ArrowDownUp size={13} />
           交换起终点
@@ -200,7 +211,13 @@ export function RoutePanel({
             <strong>{formatDistance(n.route.distance)}</strong>
             <span>预计 {formatDuration(n.route.duration)}</span>
             <button onClick={() => onShow(n.route!)}>看全程</button>
+            <button onClick={onSave}>收藏路线</button>
           </div>
+          {saveMessage && (
+            <p className="route-note" role="status">
+              {saveMessage}
+            </p>
+          )}
           {snapped > 100 && (
             <p className="route-error">
               起终点已匹配附近道路，最大偏移 {Math.round(snapped)}{' '}
@@ -221,7 +238,7 @@ export function RoutePanel({
         </>
       )}
       <p className="route-note">
-        道路规划预估，不含实时路况、封路与沿途天气；暂不提供实时跟随和语音导航。
+        道路规划预估，不含实时路况和封路；左侧色带显示沿途模型天气，定位用于标记行程位置，尚无语音导航和偏航重算。
       </p>
       <p className="route-note">
         请求发送至{' '}

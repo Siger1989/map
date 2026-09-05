@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { planRoute } from './provider';
+import { validFavorite, type RouteFavorite } from './favorites';
 import type {
   Coordinate,
   Endpoint,
@@ -40,6 +41,18 @@ export function useNavigation() {
     error,
     place,
     setPicking,
+    restore: (favorite: RouteFavorite) => {
+      if (!validFavorite(favorite)) {
+        setError('收藏路线数据无效，请重新规划。');
+        return;
+      }
+      invalidate();
+      setPicking(null);
+      setStart(favorite.start);
+      setEnd(favorite.end);
+      setMode(favorite.route.mode);
+      setRoute(favorite.route);
+    },
     setMode: (value: TravelMode) => {
       invalidate();
       setMode(value);

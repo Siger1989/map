@@ -91,8 +91,8 @@ export const TrackDrawing = forwardRef<
     (p.mode === 'points'
       ? '准星定点 · 松手连接 · 双指控图'
       : p.anchor
-        ? '拖绿色环平滑续画 · 双指控图'
-        : '先用准星定起点 · 松手确认');
+        ? '② 起点已定：按住绿色环拖动即可画线'
+        : '① 按住地图移动准星，松手只确认起点');
   return (
     <>
       <svg ref={svg} className="track-drawing" aria-hidden="true">

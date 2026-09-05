@@ -9,12 +9,10 @@ export function observeMagnifier(
   const context = target.getContext('2d');
   if (!context) return () => {};
   const capture = () => {
-    const source = map.getCanvas(),
-      container = map.getCanvasContainer();
-    if (!source.width || !container.clientWidth || !container.clientHeight)
-      return;
-    const sx = source.width / container.clientWidth,
-      sy = source.height / container.clientHeight;
+    const source = map.getCanvas();
+    if (!source.width || !source.clientWidth || !source.clientHeight) return;
+    const sx = source.width / source.clientWidth,
+      sy = source.height / source.clientHeight;
     const area = 96 / 3;
     context.fillStyle = '#10212b';
     context.fillRect(0, 0, target.width, target.height);

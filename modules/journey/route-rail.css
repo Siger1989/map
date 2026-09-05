@@ -1,0 +1,153 @@
+.route-weather-rail {
+  --rail-height: clamp(80px, 24dvh, 220px);
+  position: absolute;
+  z-index: 6;
+  left: var(--edge-left);
+  top: calc(80px + var(--safe-top));
+  width: 62px;
+  border-radius: 8px;
+  padding: 5px 6px;
+  font-size: 9px;
+}
+.rail-heading,
+.rail-retry,
+.rail-legend-toggle {
+  font-size: 9px;
+  min-height: 23px;
+  padding: 0;
+  color: var(--accent);
+  background: transparent;
+  width: 100%;
+}
+.rail-columns {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+}
+.rail-end,
+.rail-progress-label,
+.rail-status {
+  display: block;
+  text-align: center;
+  font-size: 8px;
+  color: var(--muted);
+  line-height: 15px;
+  white-space: nowrap;
+}
+.rail-colors {
+  height: var(--rail-height);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 2px 5px;
+}
+.rail-stop {
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex: 1;
+  gap: 5px;
+  background: transparent;
+  min-height: 0;
+}
+.rail-stop:first-child,
+.rail-stop:last-of-type {
+  flex: 0.5;
+}
+.rail-stop > span {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 1px solid #10212b45;
+}
+.rail-stop[aria-pressed='true'] {
+  outline: 1px solid white;
+  outline-offset: 1px;
+  z-index: 1;
+}
+.rail-progress {
+  position: absolute;
+  left: -3px;
+  transform: translateY(-50%);
+  height: 2px;
+  background: white;
+  width: calc(100% + 6px);
+  pointer-events: none;
+  color: white;
+  font-size: 8px;
+  text-indent: 45px;
+  white-space: nowrap;
+  line-height: 0;
+  text-shadow: 0 1px 3px black;
+}
+.rail-progress i {
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 3px black;
+}
+.rail-detail {
+  position: absolute;
+  left: 68px;
+  top: 0;
+  width: 146px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 10px;
+}
+.rail-detail small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+.rail-close {
+  position: absolute;
+  right: 2px;
+  top: 1px;
+  min-width: 25px;
+  min-height: 25px;
+  background: transparent;
+  color: var(--muted);
+}
+.rail-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.rail-scale span {
+  font-size: 8px;
+  border-top: 5px solid;
+  padding-top: 2px;
+}
+.observatory[data-route-rail='true'] .map-legends {
+  top: calc(193px + var(--safe-top) + clamp(80px, 24dvh, 220px));
+  max-height: max(
+    45px,
+    min(
+      22dvh,
+      calc(
+        100dvh - var(--safe-top) - var(--safe-bottom) - 330px -
+          clamp(80px, 24dvh, 220px)
+      )
+    )
+  );
+}
+.observatory[data-drawing='true'] .route-weather-rail {
+  opacity: 0.65;
+}
+@media (max-height: 500px) {
+  .route-weather-rail {
+    top: calc(56px + var(--safe-top));
+    --rail-height: 80px;
+  }
+  .observatory[data-route-rail='true'] .map-legends {
+    top: calc(266px + var(--safe-top));
+    max-height: max(30px, calc(100dvh - 320px));
+  }
+}

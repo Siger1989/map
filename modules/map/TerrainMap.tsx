@@ -22,6 +22,8 @@ import {
   type DrawingInput,
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
+import { PositionLayer } from '../position/PositionLayer';
+import type { PositionFix } from '../position/types';
 import {
   INITIAL_VIEW,
   type LayerSettings,
@@ -58,6 +60,8 @@ type Props = {
   trackOverlay: TrackOverlay;
   drawingActive: boolean;
   onDrawingInput: (event: DrawingInput) => void;
+  position: PositionFix | null;
+  onManualRotate: () => void;
 };
 export const TerrainMap = forwardRef<MapHandle, Props>(
   function TerrainMap(props, ref) {
@@ -71,6 +75,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const routeRef = useRef<RouteLayer | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
+    const positionRef = useRef<PositionLayer | null>(null);
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
@@ -154,6 +159,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       geologyRef.current?.sync(s);
       routeRef.current?.sync(latest.current.routeOverlay);
       trackRef.current?.sync(latest.current.trackOverlay);
+      positionRef.current?.sync(latest.current.position);
     };
     useImperativeHandle(
       ref,
@@ -310,6 +316,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             );
             routeRef.current = new RouteLayer(map);
             trackRef.current = new TrackLayer(map);
+            positionRef.current = new PositionLayer(map);
             sync();
             const initialCenter = map.getCenter();
             weatherAnchor = initialCenter.toArray();
@@ -364,6 +371,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 });
             });
           });
+          map.on('rotatestart', (event) => {
+            if (event.originalEvent) latest.current.onManualRotate();
+          });
           map.on('moveend', () => {
             const p = map.getCenter();
             if (
@@ -407,6 +417,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         geologyRef.current = null;
         routeRef.current = null;
         trackRef.current = null;
+        positionRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         mapRef.current?.remove();
@@ -423,6 +434,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       if (loaded.current) trackRef.current?.sync(props.trackOverlay);
     }, [props.trackOverlay]);
+    useEffect(() => {
+      if (loaded.current) positionRef.current?.sync(props.position);
+    }, [props.position]);
     useEffect(() => {
       drawingRef.current?.configure(props.drawingActive);
     }, [props.drawingActive]);
