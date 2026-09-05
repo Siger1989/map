@@ -38,6 +38,14 @@ export function TrackPanel({
       <label className="track-snap">
         <input
           type="checkbox"
+          checked={t.roadSnapping}
+          onChange={(e) => t.setRoadSnapping(e.target.checked)}
+        />
+        道路吸附<span>贴着地图中的道路和小路画；拖离可自由绘制</span>
+      </label>
+      <label className="track-snap">
+        <input
+          type="checkbox"
           checked={t.snapping}
           onChange={(e) => t.setSnapping(e.target.checked)}
         />
@@ -193,7 +201,7 @@ export function TrackPanel({
         </div>
       ))}
       <p className="route-note">
-        相接端点保存时合并；有分岔或未接上的部分分别保留。手绘线未匹配道路，不表示可通行。轨迹只存本机，清除应用数据会丢失。
+        道路吸附需放大地图并加载道路，缺少数据时自由绘制；吸附不代表道路当前可通行。相接端点保存时合并，轨迹只存本机。
       </p>
     </section>
   );
@@ -216,10 +224,16 @@ export function TrackTools({
         {t.mode === 'freehand' ? '平滑画' : '逐点'}
       </button>
       <button
+        aria-pressed={t.roadSnapping}
+        onClick={() => t.setRoadSnapping(!t.roadSnapping)}
+      >
+        道路{t.roadSnapping ? '吸附' : '自由'}
+      </button>
+      <button
         aria-pressed={t.snapping}
         onClick={() => t.setSnapping(!t.snapping)}
       >
-        吸附{t.snapping ? '开' : '关'}
+        节点{t.snapping ? '开' : '关'}
       </button>
       {t.mode === 'freehand' && (
         <button onClick={() => t.setAnchor(null)}>

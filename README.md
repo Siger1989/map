@@ -1,5 +1,7 @@
 # 观云 · 三维天气观察
 
+新增：手绘道路/小路吸附、地图标记、米制长方体/圆柱/球体与地下半透明模型，以及天地图国内底图配置。使用方法、参数定义和国内接入边界见 [道路、模型与国内图源](docs/roads-models-domestic.md)。天地图真实服务仍需本应用有效 Key，不能视为全功能无 VPN 验收通过。
+
 面向手机和电脑浏览器的天气与三维地形工作台。默认在川西卧龙附近，支持地图拖动、旋转、俯视/斜视/侧视、海拔读取、高清地表和最近卫星观测、带米数等高线、中文地名、道路河流、模型驱动的简化三维云雨、逐小时时间轴。
 
 代码同步：[Siger1989/map](https://github.com/Siger1989/map) · [下载安装包](https://github.com/Siger1989/map/releases) · [回家继续开发](docs/continue-development.md)。最新进度在 `CURRENT_STATE.md`，后续同步规则在 `AGENTS.md`。
@@ -33,7 +35,7 @@
 - **道路地名**：OpenFreeMap / OpenMapTiles / OpenStreetMap，优先中文字段；数据完整程度随地区不同。底图层仅展示道路；路线由独立 navigation 模块请求道路规划服务。https://openfreemap.org/quick_start/
 - **天气**：Open-Meteo 通过 best-match 模型提供预报，25 点采样不是密集实测网格。雨量是对应一小时的 rain 累积毫米数，雨雪分开。免费 API 限非商业用途。https://open-meteo.com/en/docs
 - **三维云雨是示意**：低/中/高云量决定云团数量，高度、形状和雨滴轨迹不是雷达实测三维重建。零雨不画雨；缺失值保留为空。卫星拍摄时间不跟随预报时间轴改变。
-- 无需 API 密钥；所有数据署名在地图底部与时间轴显示。
+- 国际演示图源无需 API 密钥；可选国内天地图需要本应用 Key。所有数据署名在地图底部与时间轴显示。
 
 ## 验证与回滚
 

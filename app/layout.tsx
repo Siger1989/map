@@ -9,6 +9,7 @@ import '@/modules/tracks/tracks.css';
 import '@/modules/journey/journey.css';
 import '@/modules/journey/route-rail.css';
 import '@/modules/position/position.css';
+import '@/modules/annotations/annotations.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

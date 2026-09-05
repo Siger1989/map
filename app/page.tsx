@@ -25,6 +25,9 @@ import {
   TRAVEL_MODES,
 } from '@/modules/navigation/types';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
+import { useAnnotations } from '@/modules/annotations/useAnnotations';
+import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
+import { KINDS } from '@/modules/annotations/data';
 import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
 import {
   TrackDrawing,
@@ -72,6 +75,7 @@ export default function Home() {
   const routeJourney = useRouteJourney(navigation.route);
   const position = usePosition();
   const tracks = useManualTracks();
+  const annotations = useAnnotations();
   useEffect(() => {
     if (
       position.direction === 'device' &&
@@ -148,9 +152,14 @@ export default function Home() {
       data-editing-track={tracks.editing}
       data-picking-route={Boolean(navigation.picking)}
       data-route-rail={Boolean(navigation.route)}
+      data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
-        if (navigation.picking) {
+        if (annotations.picking) {
+          event.preventDefault();
+          annotations.setPicking(null);
+          setPanel('annotations');
+        } else if (navigation.picking) {
           event.preventDefault();
           navigation.setPicking(null);
           setPanel('route');
@@ -178,7 +187,24 @@ export default function Home() {
         onDrawingInput={(event) => drawing.current?.input(event)}
         position={position.fix}
         onManualRotate={position.free}
+        annotations={annotations.items}
+        roadSnapping={tracks.roadSnapping}
+        annotationSelected={annotations.selected}
+        onAnnotationSelect={(id) => {
+          annotations.select(id);
+          tracks.pause();
+          navigation.setPicking(null);
+          setPanel('annotations');
+        }}
         onMapPick={(coordinates) => {
+          if (annotations.picking) {
+            const kind = annotations.picking;
+            if (annotations.place(coordinates))
+              map.current?.focusPoint(coordinates, kind === 'pin' ? 15 : 18);
+            else annotations.setPicking(null);
+            setPanel('annotations');
+            return;
+          }
           if (navigation.pick(coordinates)) setPanel('route');
         }}
       />
@@ -191,6 +217,13 @@ export default function Home() {
         anchor={tracks.anchor}
         candidates={tracks.candidates}
         snapping={tracks.snapping}
+        roadSnapping={tracks.roadSnapping}
+        snapRoad={(point, previous) =>
+          map.current?.snapRoad(point, previous) ?? {
+            status: 'loading',
+            match: null,
+          }
+        }
         lastVertex={tracks.draft.at(-1)?.at(-1) ?? null}
         toScreen={(point) => map.current?.toScreen(point) ?? null}
         magnify={(canvas, point) =>
@@ -232,7 +265,22 @@ export default function Home() {
           <RotateCcw size={15} />
         </button>
       </header>
-      {navigation.picking ? (
+      {annotations.picking ? (
+        <div className="route-map-notice glass" role="status">
+          点击地图
+          {annotations.picking === 'move'
+            ? '移动标记'
+            : `放置${KINDS[annotations.picking]}`}
+          <button
+            onClick={() => {
+              annotations.setPicking(null);
+              setPanel('annotations');
+            }}
+          >
+            取消
+          </button>
+        </div>
+      ) : navigation.picking ? (
         <div className="route-map-notice glass" role="status">
           点击地图设置{navigation.picking === 'start' ? '起点' : '终点'}
           <button
@@ -331,6 +379,7 @@ export default function Home() {
           if (next) {
             tracks.pause();
             navigation.setPicking(null);
+            annotations.setPicking(null);
           }
           setPanel(next);
         }}
@@ -346,6 +395,7 @@ export default function Home() {
             onOpen={() => {
               tracks.pause();
               navigation.setPicking(null);
+              annotations.setPicking(null);
               setPanel(panel === 'weather' ? null : 'weather');
             }}
           />
@@ -362,6 +412,22 @@ export default function Home() {
           />
         }
       >
+        {panel === 'annotations' && (
+          <AnnotationPanel
+            state={annotations}
+            onPick={(kind) => {
+              tracks.pause();
+              navigation.setPicking(null);
+              annotations.setPicking(kind);
+              map.current?.stop();
+              setPanel(null);
+            }}
+            onLocate={(coordinates) => {
+              map.current?.focusPoint(coordinates, 18);
+              setPanel(null);
+            }}
+          />
+        )}
         {(panel === 'route' || panel === 'track' || panel === 'favorites') && (
           <nav className="route-tabs" aria-label="路线类型">
             <button
@@ -410,6 +476,7 @@ export default function Home() {
               map.current?.stop();
               navigation.setPicking(null);
               tracks.start();
+              annotations.setPicking(null);
               setPanel(null);
             }}
             onShow={(points) => {
@@ -446,6 +513,7 @@ export default function Home() {
               })
             }
             onPick={(slot) => {
+              annotations.setPicking(null);
               navigation.setPicking(slot);
               setPanel(null);
             }}

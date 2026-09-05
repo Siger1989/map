@@ -1,0 +1,166 @@
+.annotation-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+}
+.annotation-panel button,
+.annotation-panel input,
+.annotation-panel select,
+.annotation-panel textarea {
+  font-size: 14px;
+}
+.annotation-add,
+.annotation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.annotation-panel button {
+  min-height: 36px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: #28454e;
+}
+.annotation-note {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.annotation-error {
+  color: #ffbf98;
+  margin: 0;
+}
+.annotation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 170px;
+  overflow: auto;
+}
+.annotation-list > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.annotation-list button {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  text-align: left;
+  align-items: center;
+}
+.annotation-list button[aria-pressed='true'] {
+  outline: 1px solid var(--accent);
+  background: #21483e;
+}
+.annotation-list i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.annotation-list span {
+  overflow-wrap: anywhere;
+}
+.annotation-list small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.annotation-editor {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.annotation-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.annotation-field input,
+.annotation-field select,
+.annotation-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  background: #0d222b;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 6px;
+}
+.annotation-field input[type='color'] {
+  padding: 2px;
+}
+.annotation-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.annotation-actions button {
+  flex: 1;
+}
+.annotation-details summary {
+  cursor: pointer;
+  padding: 7px 0;
+}
+.annotation-details[open] > :not(summary) {
+  margin-top: 8px;
+}
+.annotation-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+  border-radius: 7px;
+  background: #203c43;
+  font-variant-numeric: tabular-nums;
+}
+.annotation-comparison {
+  overflow: auto;
+}
+.annotation-comparison table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.annotation-comparison td,
+.annotation-comparison th {
+  padding: 7px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.annotation-marker {
+  --marker-color: #f2b45f;
+  pointer-events: auto;
+  background: #122932df;
+  color: var(--marker-color);
+  border: 1px solid var(--marker-color);
+  border-radius: 7px 7px 7px 0;
+  padding: 4px 7px;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  box-shadow: 0 2px 8px #0005;
+}
+.annotation-marker.is-underground {
+  border-style: dashed;
+  background: #122932ad;
+}
+.annotation-marker.is-selected {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.observatory[data-panel='annotations'] .control-popover {
+  width: min(360px, calc(100% - 16px));
+  max-height: min(66dvh, calc(100dvh - 150px));
+}
+.observatory[data-placing-annotation='true'] .map-canvas {
+  cursor: crosshair;
+}

@@ -1,5 +1,19 @@
 # 天气观察软件 · 当前状态
 
+## 最新开发：国内图源适配、道路吸附与地表/地下标记模型（2026-09-05）
+- 当前目标：寻找国内免费底图，改善依赖 VPN 才能浏览的问题；补全用户明确要求的“吸附地图上的道路和山间小路”，不是只连接已保存轨迹的节点。
+- 用户追加目标：地图标记与基础几何模型（长方体/圆柱等），可设置名称、颜色、真实米制尺寸、位置和角度；地表/地下切换与埋深，地下模型透过地表半透明可见，用于洞穴/开挖标注和比例参考。独立 annotations 模块，本机存储并提供参数编辑。
+- 当前进展：已接入独立道路吸附开关和地图道路查询（保留节点吸附）；已接入 annotations 模块，支持地点/长方体/圆柱/球体、米制尺寸/角度/地面海拔/埋深、地下透明显示、本机存储、复制和参数导出。底图/地名/外部高程/天气/导航分别依赖不同境外服务，不能仅改底图后宣称全部服务国内化。
+- 计划范围：tracks 绘制与道路匹配模块、map 公共接口、手绘控件及相关测试；国内图源按官方公开接口与免费条件核验后再选择。保留原视角/双指交互、存档、地形算法和天气计算。
+- 已修改文件：本状态文件、app/page.tsx、app/layout.tsx、mobile/main.tsx、modules/controls/ControlDock.tsx、modules/map/TerrainMap.tsx、modules/tracks/{DrawingSession,TrackDrawing,TrackPanel,useManualTracks}；新增 modules/tracks/roadSnapping.ts、modules/map/roadSnap.ts 与 modules/annotations/。研究请求输出存放 .openai/domestic-*.log（忽略）。
+- 已执行命令：git status、git diff --stat、git pull --ff-only、源码检索与说明读取；curl 对候选国内服务执行有超时的连接/元数据探测。
+- 验证结果：最终 PASS（npm ci、TypeScript、68/68 测试，含新增13项、网页生产构建、安卓静态入口构建、git diff --check、localhost:3000 HTTP 200、本地字形 HTTP 200 / 76580 字节）。国内图源真实服务仍 BLOCKED（无本应用 Key，公开免 Key 候选未验证）。
+- 当前阻塞：天地图需应用 Key；GeoQ 免费平台说明不能单独证明公开切片可作为本应用图源，且本机直连其切片域名超时。不能盗用他人示例 Key。
+- 国内图源代码：新增 modules/cartography/basemaps.ts 与 config/domestic-maps.env.example；有自有天地图浏览器 Key 后启用国内 WMTS 影像/底图/中文注记，无 Key 保留原图源；国内模式等高线字体改为本地 public/fonts/，NASA 最新观测停用，国际道路数据按开启道路吸附才加载。天气/导航/区域外高程仍可能依赖境外服务。
+- 新增说明：docs/roads-models-domestic.md、LOG.md、public/fonts/README.md/授权；README 已链接。Android 返回键补充取消模型放置；新模型参数导出在浏览器下载、WebView 可复制。
+- 日志：.openai/{typecheck-roads-models-final-20260905,tests-roads-models-final-20260905,build-roads-models-web-final-20260905,build-roads-models-mobile-final-20260905,diffcheck-roads-models-20260905}.log；本地预览 http://localhost:3000/，会话 27863。新增模型按需加载，避免扩大初始地图包；生产构建仍有地图引擎大分包提示。
+- 下一步：提交与推送本轮源码并核对远程 SHA。后续可配置自己的天地图 Key 进行国内实网验证，以及在手机验收道路触控、地下透视与性能。尚未重新打包 APK，已安装 0.1.3 APK 不会自动更新；未执行浏览器或真机视觉/触控验收。
+
 ## 最新交付：2026-09-05，0.1.3-test
 - 新增道路路线左侧气温/降水双列色带，按里程选点与各路段耗时匹配预计到达时间预报；可查看数值/颜色图例和设置出发时间。当前位置有效且靠近路线时显示实际进度；未定位、过期、精度不足或偏离路线时明确提示。
 - 新增独立 position 模块：当前位置蓝点/精度圈、停止定位、当前位置作起点；正北/手机绝对方向切换，绘制时暂停自动转图，手动旋转退出方向跟随。Android 仅按需申请前台位置权限，没有后台定位或语音导航。

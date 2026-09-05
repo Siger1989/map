@@ -22,6 +22,11 @@ import {
   type DrawingInput,
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
+import { snapMapRoad } from './roadSnap';
+import type { RoadSnapper } from '../tracks/roadSnapping';
+import type { AnnotationLayer } from '../annotations/AnnotationLayer';
+import type { Annotation } from '../annotations/data';
+import { basemapConfiguration } from '../cartography/basemaps';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
 import {
@@ -31,6 +36,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  snapRoad: RoadSnapper;
   zoom: (amount: number) => void;
   north: () => void;
   reset: () => void;
@@ -38,7 +44,7 @@ export type MapHandle = {
   refreshSatellite: () => void;
   refreshGeology: () => void;
   inspect: () => unknown;
-  focusPoint: (coordinates: Coordinate) => void;
+  focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
@@ -62,6 +68,10 @@ type Props = {
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
   onManualRotate: () => void;
+  annotations: Annotation[];
+  annotationSelected: string | null;
+  onAnnotationSelect: (id: string) => void;
+  roadSnapping: boolean;
 };
 export const TerrainMap = forwardRef<MapHandle, Props>(
   function TerrainMap(props, ref) {
@@ -76,9 +86,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const trackRef = useRef<TrackLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
+    const annotationRef = useRef<AnnotationLayer | null>(null);
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
+    const domestic = basemapConfiguration().domestic;
     const syncSatellite = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
@@ -88,6 +100,20 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const center = map.getCenter();
       if (map.getLayer('satellite')) map.removeLayer('satellite');
       if (map.getSource('satellite')) map.removeSource('satellite');
+      if (
+        domestic ||
+        !latest.current.settings.satellite ||
+        latest.current.settings.imageryMode !== 'latest'
+      ) {
+        latest.current.onSatellite({
+          date: '',
+          ready: false,
+          status: domestic
+            ? '天地图地表影像，非实时云况；拍摄日期由图源提供'
+            : '选择最新云况影像时获取卫星观测',
+        });
+        return;
+      }
       latest.current.onSatellite({
         date: '',
         ready: false,
@@ -113,6 +139,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const map = mapRef.current;
       if (!map || !loaded.current) return;
       const s = latest.current.settings;
+      if (!domestic || latest.current.roadSnapping) addCartography(map);
       const terrain = map.getTerrain();
       if (
         s.terrain
@@ -142,11 +169,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           map.setLayoutProperty(
             id,
             'visibility',
-            s.satellite &&
-              (id === 'relief' ||
-                (id === 'detail'
-                  ? s.imageryMode === 'detail'
-                  : s.imageryMode === 'latest'))
+            (
+              domestic && id !== 'satellite'
+                ? id === 'relief'
+                  ? !s.satellite
+                  : s.satellite
+                : s.satellite &&
+                  (id === 'relief' ||
+                    (id === 'detail'
+                      ? s.imageryMode === 'detail'
+                      : s.imageryMode === 'latest'))
+            )
               ? 'visible'
               : 'none',
           );
@@ -155,15 +188,49 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         latest.current.hourIndex,
         s,
       );
-      syncCartography(map, s);
+      syncCartography(
+        map,
+        domestic
+          ? {
+              ...s,
+              roads: s.roads && latest.current.roadSnapping,
+              labels: false,
+            }
+          : s,
+      );
+      if (domestic) {
+        for (const id of ['road-names', 'road-numbers'])
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+        for (const id of ['domestic-labels-image', 'domestic-labels-map'])
+          if (map.getLayer(id))
+            map.setLayoutProperty(
+              id,
+              'visibility',
+              s.labels && (id.endsWith('image') ? s.satellite : !s.satellite)
+                ? 'visible'
+                : 'none',
+            );
+      }
       geologyRef.current?.sync(s);
       routeRef.current?.sync(latest.current.routeOverlay);
       trackRef.current?.sync(latest.current.trackOverlay);
       positionRef.current?.sync(latest.current.position);
+      annotationRef.current?.update(
+        latest.current.annotations,
+        latest.current.annotationSelected,
+        s,
+      );
     };
     useImperativeHandle(
       ref,
       () => ({
+        snapRoad: (point, previous) =>
+          snapMapRoad(
+            mapRef.current,
+            point,
+            previous,
+            latest.current.settings.roads,
+          ),
         zoom: (amount) =>
           mapRef.current?.zoomTo((mapRef.current?.getZoom() ?? 9) + amount),
         north: () => mapRef.current?.easeTo({ bearing: 0 }),
@@ -193,8 +260,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ? p
             : null;
         },
-        focusPoint: (center) =>
-          mapRef.current?.flyTo({ center, zoom: 13, duration: 700 }),
+        focusPoint: (center, zoom = 13) =>
+          mapRef.current?.flyTo({
+            center,
+            zoom: Math.max(3, Math.min(20, zoom)),
+            duration: 700,
+          }),
         fitRoute: (coordinates) => {
           const m = mapRef.current;
           if (!m || !coordinates.length) return;
@@ -269,7 +340,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ...INITIAL_VIEW,
             hash: true,
             maxPitch: 80,
-            maxZoom: 16,
+            maxZoom: 20,
             minZoom: 3,
             attributionControl: false,
             // Native two-finger handlers keep single-finger drags as panning.
@@ -317,6 +388,19 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             routeRef.current = new RouteLayer(map);
             trackRef.current = new TrackLayer(map);
             positionRef.current = new PositionLayer(map);
+            try {
+              const { AnnotationLayer } =
+                await import('../annotations/AnnotationLayer');
+              if (disposed) return;
+              annotationRef.current = new AnnotationLayer((id) =>
+                latest.current.onAnnotationSelect(id),
+              );
+              map.addLayer(annotationRef.current);
+            } catch {
+              if (!disposed)
+                latest.current.onStatus('标记模型暂未加载，地图仍可使用');
+            }
+            if (disposed) return;
             sync();
             const initialCenter = map.getCenter();
             weatherAnchor = initialCenter.toArray();
@@ -350,7 +434,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 latest.current.onStatus('三维云雨暂未加载，数值面板仍可使用');
             }
             if (!disposed) {
-              addCartography(map);
+              if (map.getLayer('annotation-models'))
+                map.moveLayer('annotation-models');
               sync();
             }
           });
@@ -418,6 +503,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         routeRef.current = null;
         trackRef.current = null;
         positionRef.current = null;
+        annotationRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         mapRef.current?.remove();
@@ -427,7 +513,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     }, []);
     useEffect(() => {
       sync();
-    }, [settings, props.weather, props.hourIndex]);
+    }, [settings, props.weather, props.hourIndex, props.roadSnapping]);
+    useEffect(() => {
+      syncSatellite();
+    }, [settings.imageryMode, settings.satellite]);
     useEffect(() => {
       if (loaded.current) routeRef.current?.sync(props.routeOverlay);
     }, [props.routeOverlay]);
@@ -437,6 +526,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       if (loaded.current) positionRef.current?.sync(props.position);
     }, [props.position]);
+    useEffect(() => {
+      if (loaded.current)
+        annotationRef.current?.update(
+          props.annotations,
+          props.annotationSelected,
+          latest.current.settings,
+        );
+    }, [props.annotations, props.annotationSelected]);
     useEffect(() => {
       drawingRef.current?.configure(props.drawingActive);
     }, [props.drawingActive]);

@@ -13,6 +13,7 @@ import type { DrawingMode } from './draft';
 import { DrawingSession, type DrawingPreview } from './DrawingSession';
 import { handlePoint } from './precision';
 import { PointMagnifier, type MagnifierObserver } from './PointMagnifier';
+import type { RoadSnapper } from './roadSnapping';
 export type TrackDrawingHandle = { input: (event: DrawingInput) => void };
 
 /** Visual-only overlay: touches continue to the map's native two-finger handlers. */
@@ -26,6 +27,8 @@ export const TrackDrawing = forwardRef<
     anchor: Coordinate | null;
     candidates: Coordinate[];
     snapping: boolean;
+    roadSnapping: boolean;
+    snapRoad: RoadSnapper;
     lastVertex: Coordinate | null;
     toCoordinate: (point: ScreenPoint) => Coordinate | null;
     toScreen: (point: Coordinate) => ScreenPoint | null;
@@ -72,6 +75,8 @@ export const TrackDrawing = forwardRef<
         length: p.length,
         candidates: p.candidates,
         snapping: p.snapping,
+        roadSnapping: p.roadSnapping,
+        snapRoad: p.snapRoad,
         project: p.toScreen,
         unproject: p.toCoordinate,
       });

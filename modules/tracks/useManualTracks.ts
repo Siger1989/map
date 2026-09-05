@@ -35,6 +35,7 @@ export function useManualTracks() {
   const [anchor, setAnchor] = useState<Coordinate | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [snapping, setSnapping] = useState(true);
+  const [roadSnapping, setRoadSnapping] = useState(false);
   const [editing, setEditing] = useState(false),
     [drawing, setDrawing] = useState(false);
   const [rodLength, setRodLength] = useState(48);
@@ -106,6 +107,8 @@ export function useManualTracks() {
     editingId,
     snapping,
     setSnapping,
+    roadSnapping,
+    setRoadSnapping,
     canUndo: draftState.history.length > 0,
     setMode: (next: DrawingMode) => {
       setMode(next);

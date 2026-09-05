@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Clock3, Layers, Route, X } from 'lucide-react';
+import { Clock3, Layers, Route, MapPinPlus, X } from 'lucide-react';
 
 export type ControlPanel =
   | 'weather'
@@ -8,11 +8,13 @@ export type ControlPanel =
   | 'route'
   | 'track'
   | 'favorites'
+  | 'annotations'
   | null;
 const PANELS = [
   { id: 'time', label: '时间', icon: Clock3 },
   { id: 'layers', label: '图层', icon: Layers },
   { id: 'route', label: '路线', icon: Route },
+  { id: 'annotations', label: '标记', icon: MapPinPlus },
 ] as const;
 
 /** Small map tools with one dismissible popover; never a persistent bottom sheet. */
@@ -74,15 +76,17 @@ export function ControlDock({
         >
           <div className="dock-heading">
             <h2 id="dock-title">
-              {active === 'weather'
-                ? '地点天气'
-                : active === 'track'
-                  ? '手绘轨迹'
-                  : active === 'favorites'
-                    ? '路线收藏夹'
-                    : active === 'route'
-                      ? '路线规划'
-                      : PANELS.find((p) => p.id === active)?.label}
+              {active === 'annotations'
+                ? '标记与模型'
+                : active === 'weather'
+                  ? '地点天气'
+                  : active === 'track'
+                    ? '手绘轨迹'
+                    : active === 'favorites'
+                      ? '路线收藏夹'
+                      : active === 'route'
+                        ? '路线规划'
+                        : PANELS.find((p) => p.id === active)?.label}
             </h2>
             <button
               ref={closeButton}

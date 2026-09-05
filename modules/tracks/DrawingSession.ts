@@ -4,6 +4,12 @@ import { aimPoint, handlePoint, nearHandle } from './precision.ts';
 import { findSnap, sameNode } from './snapping.ts';
 import type { DrawingInput } from './DrawingGestureBridge';
 import type { DrawingMode } from './draft';
+import {
+  roadHint,
+  roadSection,
+  type RoadMatch,
+  type RoadSnapper,
+} from './roadSnapping.ts';
 
 export type DrawingPreview = {
   kind: 'aim' | 'ink';
@@ -27,6 +33,8 @@ type Options = {
   height: number;
   candidates: Coordinate[];
   snapping: boolean;
+  roadSnapping?: boolean;
+  snapRoad?: RoadSnapper;
   project: (point: Coordinate) => ScreenPoint | null;
   unproject: (point: ScreenPoint) => Coordinate | null;
 };
@@ -40,6 +48,7 @@ export class DrawingSession {
     path: string;
     travelled: number;
     snap: Coordinate | null;
+    road: RoadMatch | null;
   } | null = null;
   clear() {
     this.aim = null;
@@ -57,7 +66,12 @@ export class DrawingSession {
       this.clear();
       if (s && s.points.length > 1) {
         // The visible magnet is the final geographic endpoint, never the finger.
-        if (s.snap) s.points.push(s.snap);
+        if (
+          s.snap &&
+          !sameNode(s.points.at(-1)!, s.snap) &&
+          s.points.length < MAX_TRACK_POINTS
+        )
+          s.points.push(s.snap);
         return { ...empty, stroke: s.points };
       }
       if (aim && event.reason === 'release')
@@ -94,6 +108,7 @@ export class DrawingSession {
           path: `M ${tip.x} ${tip.y}`,
           travelled: 0,
           snap: null,
+          road: null,
         };
         return {
           ...empty,
@@ -115,6 +130,7 @@ export class DrawingSession {
       const point = o.unproject(tip);
       if (!point) {
         s.snap = null;
+        s.road = null;
         return {
           preview: {
             kind: 'ink',
@@ -126,31 +142,57 @@ export class DrawingSession {
           hint: '已到地面边界，松手后双指调整地图。',
         };
       }
+      const road = o.roadSnapping ? o.snapRoad?.(tip, s.road) : undefined;
+      let roadMatch = road?.match ?? null;
+      const section =
+        s.road && roadMatch ? roadSection(s.road, roadMatch, o.project) : null;
       if (
-        Math.hypot(tip.x - s.sample.x, tip.y - s.sample.y) >= 2 &&
-        s.points.length < MAX_TRACK_POINTS - 1
-      ) {
-        s.points.push(point);
-        s.sample = tip;
-        s.path += ` L ${tip.x.toFixed(1)} ${tip.y.toFixed(1)}`;
-      }
+        s.road &&
+        roadMatch &&
+        s.road.line.id === roadMatch.line.id &&
+        !section
+      )
+        roadMatch = null;
+      const output = roadMatch?.screen ?? tip;
+      if (Math.hypot(output.x - s.sample.x, output.y - s.sample.y) >= 2) {
+        const points = roadMatch
+          ? (section ?? [roadMatch.coordinate])
+          : [point];
+        if (s.points.length + points.length < MAX_TRACK_POINTS) {
+          for (const next of points) {
+            const screen = o.project(next);
+            if (!screen) continue;
+            s.points.push(next);
+            s.sample = screen;
+            s.path += ` L ${screen.x.toFixed(1)} ${screen.y.toFixed(1)}`;
+          }
+          s.road = roadMatch;
+        }
+      } else if (!roadMatch) s.road = null;
       const candidates =
         s.travelled > o.length * 2
           ? [...o.candidates, s.points[0]]
           : o.candidates.filter((c) => !sameNode(c, s.points[0]));
       const snap =
-        o.snapping && s.points.length > 1
+        o.snapping && !roadMatch && s.points.length > 1
           ? findSnap(tip, candidates, o.project)
           : null;
-      s.snap = snap?.coordinate ?? null;
+      s.snap = snap?.coordinate ?? roadMatch?.coordinate ?? null;
       return {
-        hint: snap ? '已吸附 · 松手连接' : '',
+        hint: snap
+          ? '已吸附节点 · 松手连接'
+          : road
+            ? roadHint({ ...road, match: roadMatch })
+            : '',
         preview: {
           kind: 'ink',
           finger,
-          tip: snap?.screen ?? tip,
-          path: s.path + (snap ? ` L ${snap.screen.x} ${snap.screen.y}` : ''),
-          snapped: !!snap,
+          tip: snap?.screen ?? output,
+          path:
+            s.path +
+            (snap || roadMatch ? ` L ${output.x} ${output.y}` : '') +
+            (snap ? ` L ${snap.screen.x} ${snap.screen.y}` : ''),
+          snapped: !!snap || !!roadMatch,
         },
       };
     }
@@ -163,15 +205,22 @@ export class DrawingSession {
       return { ...empty, hint: '准星需要对准地面，双指可调整视角。' };
     }
     const snap = o.snapping ? findSnap(aim, o.candidates, o.project) : null;
-    this.aim = snap?.coordinate ?? ground;
+    const road = o.roadSnapping ? o.snapRoad?.(aim, null) : undefined;
+    this.aim = road?.match?.coordinate ?? snap?.coordinate ?? ground;
     return {
-      hint: snap ? '已吸附 · 松手定点' : '',
+      hint: road?.match
+        ? roadHint(road)
+        : snap
+          ? '已吸附节点 · 松手定点'
+          : road
+            ? roadHint(road)
+            : '',
       preview: {
         kind: 'aim',
-        tip: snap?.screen ?? aim,
+        tip: road?.match?.screen ?? snap?.screen ?? aim,
         finger,
         path: '',
-        snapped: !!snap,
+        snapped: !!snap || !!road?.match,
       },
     };
   }

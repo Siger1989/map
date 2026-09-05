@@ -1,15 +1,23 @@
 import type { Map, StyleSpecification } from 'maplibre-gl';
 import { elevationExpression } from './elevationColors';
+import {
+  basemapConfiguration,
+  tiandituTiles,
+  TIANDITU_CREDIT,
+} from '../cartography/basemaps';
 export const TERRAIN_URL = '/api/terrain/{z}/{x}/{y}.png';
 export const TERRAIN_MAXZOOM = 12;
 export const TERRAIN_CREDIT =
   '<a href="https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn" target="_blank">成都区域 FABDEM V1-2 · Hawker / Neal · CC BY-NC-SA 4.0</a> · <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">其他区域 Mapzen / SRTM</a>';
 export function baseStyle(): StyleSpecification {
   const tiles = [window.location.origin + TERRAIN_URL];
+  const { domestic, token } = basemapConfiguration();
   return {
     version: 8,
     terrain: { source: 'elevation', exaggeration: 1 },
-    glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    glyphs: domestic
+      ? window.location.origin + '/fonts/{fontstack}/{range}.pbf'
+      : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
       elevation: {
         type: 'raster-dem',
@@ -28,24 +36,48 @@ export function baseStyle(): StyleSpecification {
       },
       relief: {
         type: 'raster',
-        tiles: [
-          'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
-        ],
+        tiles: domestic
+          ? tiandituTiles('vec', token)
+          : [
+              'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
+            ],
         tileSize: 256,
-        maxzoom: 8,
-        attribution:
-          '<a href="https://earthdata.nasa.gov/gibs" target="_blank">NASA GIBS</a>',
+        maxzoom: domestic ? 18 : 8,
+        attribution: domestic
+          ? TIANDITU_CREDIT
+          : '<a href="https://earthdata.nasa.gov/gibs" target="_blank">NASA GIBS</a>',
       },
       detail: {
         type: 'raster',
-        tiles: [
-          'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg',
-        ],
+        tiles: domestic
+          ? tiandituTiles('img', token)
+          : [
+              'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg',
+            ],
         tileSize: 256,
-        maxzoom: 14,
-        attribution:
-          '<a href="https://s2maps.eu" target="_blank">Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2024) · CC BY-NC-SA 4.0</a>',
+        maxzoom: domestic ? 18 : 14,
+        attribution: domestic
+          ? TIANDITU_CREDIT
+          : '<a href="https://s2maps.eu" target="_blank">Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2024) · CC BY-NC-SA 4.0</a>',
       },
+      ...(domestic
+        ? {
+            'domestic-labels-image': {
+              type: 'raster' as const,
+              tiles: tiandituTiles('cia', token),
+              tileSize: 256,
+              maxzoom: 18,
+              attribution: TIANDITU_CREDIT,
+            },
+            'domestic-labels-map': {
+              type: 'raster' as const,
+              tiles: tiandituTiles('cva', token),
+              tileSize: 256,
+              maxzoom: 18,
+              attribution: TIANDITU_CREDIT,
+            },
+          }
+        : {}),
     },
     layers: [
       {
@@ -86,6 +118,21 @@ export function baseStyle(): StyleSpecification {
           'hillshade-illumination-direction': 315,
         },
       },
+      ...(domestic
+        ? [
+            {
+              id: 'domestic-labels-image',
+              type: 'raster' as const,
+              source: 'domestic-labels-image',
+            },
+            {
+              id: 'domestic-labels-map',
+              type: 'raster' as const,
+              source: 'domestic-labels-map',
+              layout: { visibility: 'none' as const },
+            },
+          ]
+        : []),
     ],
   };
 }
