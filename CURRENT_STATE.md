@@ -10,13 +10,14 @@
 - 日志：.openai/{typecheck-013-final,tests-013,build-web-013,build-apk-013,route-journey-013-live,diffcheck-013}.log。完整职责/文件/操作/回滚见 docs/navigation-weather-location.md。
 - 修改范围为 position、journey、navigation、tracks及地图/页面/控件接口、双入口样式与Android前台权限。只替换错误坐标来源和旧提示，不删除业务功能；地形/卫星/地质/云雨数据算法与道路服务保持。
 - 验证边界：adb无设备，没有新版手机权限、罗盘、手感、渲染/性能实测；没有浏览器视觉/触控自动化。没有语音导航、偏航重算、实时路况或自动地图跟随。现有非商业来源/地质云授权限制保持，本包是测试原型。
-- 新代码与APK已完成，正在同步 GitHub 和发布 v0.1.3-test；下方同步记录将在远程核验后更新。本地预览继续保留，不重新发布私有 Sites。
+- 新代码与APK已同步 GitHub，v0.1.3-test 测试版已公开发布并核验；代码提交/标签为 2ac408cd6070e1b69519d064cdd5891aeefdfe51，后续提交仅补交付状态。本地预览继续保留，不重新发布私有 Sites。
 
 ## 跨设备同步：2026-09-05
 - 用户指定后续统一同步到 https://github.com/Siger1989/map ，用于在家继续研究。已配置 origin；远程初始为空、主分支 main。写入 AGENTS.md 作为后续工作规则。
 - 新增 docs/continue-development.md，包含首次克隆/运行、两台电脑拉取提交、APK下载与可配置SDK/JDK构建、测试签名私密迁移说明；README链接指向仓库与Releases。
 - 首次快照整理同步配置、忽略规则和说明；代码/测试/473地形PNG进Git；APK/校验/安装说明走测试版Release；Token、签名密钥、依赖及日志排除。用户后来追加的0.1.3新功能一并继续同步。
-- 首次正式推送已核验：origin/main = 61ba1c63c10a31c8986e2dcfb018fdb00518f22b。0.1.3新源码与Release正在最终上传，核验后补充结果。
+- 首次正式推送已核验：61ba1c63c10a31c8986e2dcfb018fdb00518f22b；0.1.3新源码也已推送 main，远程提交和 v0.1.3-test 标签均核对为 2ac408cd6070e1b69519d064cdd5891aeefdfe51。新增34文件变更检查无凭证模式或被排除路径混入。
+- Release：https://github.com/Siger1989/map/releases/tag/v0.1.3-test ，draft=false / prerelease=true；APK、SHA256文件、INSTALL.txt三份附件全部 uploaded，服务器大小与SHA256逐一匹配本地。APK为53,328,190字节，哈希见顶部；核验日志 .openai/github-013-release-verify.log。没有上传环境文件或签名密钥，也没有改变仓库可见性。
 
 ## 历史交付：2026-09-05，0.1.2-test
 - 用户本轮连续要求均已实现：单指绘制/真实双指平移缩放旋转俯仰；默认放大镜/偏移准星精确定起点再牵引平滑画，也保留逐点连线；下一笔精确续接端点；14px节点吸附与可见提示；笔画保存时连接、已保存线路续画/反向/合并相接线路；可调0.5–5px线宽和颜色；手机浮窗缩至252px/44dvh。
@@ -179,7 +180,7 @@
 
 - 0.1.2最终收尾：47/47检查、类型/网页/APK构建、真实两地168小时预报、签名匹配和打包功能/473瓦片核验完成。无剩余本轮编码/打包项；真机手感/性能验收尚无连接设备。具体哈希与验证边界见顶部最新交付。
 
-## 0.1.3 导航进度、收藏与传感器开发记录（实现与构建已完成）
+## 0.1.3 导航进度、收藏与传感器开发记录（以下为过程，最终结果见顶部）
 - 用户追加：已规划导航左侧两条颜色进度带（气温/雨量）、当前位置进度；画线实际画不了；路线收藏夹；当前定位按钮；正北/跟随手机方向切换。此前GitHub同步目标仍有效，完成新功能后继续同步。
 - 已找到一项具体绘制缺陷：DrawingGestureBridge与map/magnifier用getCanvasContainer().clientHeight/rect换算。MapLibre的canvas是绝对定位，外层canvas-container没有独立高度，触摸可能得到NaN坐标、放大镜无法取样。将改用真实getCanvas()的CSS尺寸/rect，并增加零高容器回归检查。
 - 计划：独立position模块管理用户主动启动的定位/方向传感器，Android WebChromeClient桥接本地HTTPS源定位权限；navigation收藏存档与恢复；journey按路段累计耗时匹配沿途预报与左侧窄色带；使用props/MapHandle连接。原始地图/地质/卫星数据不改。
