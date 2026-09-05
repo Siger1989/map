@@ -12,7 +12,8 @@
 - 国内图源代码：新增 modules/cartography/basemaps.ts 与 config/domestic-maps.env.example；有自有天地图浏览器 Key 后启用国内 WMTS 影像/底图/中文注记，无 Key 保留原图源；国内模式等高线字体改为本地 public/fonts/，NASA 最新观测停用，国际道路数据按开启道路吸附才加载。天气/导航/区域外高程仍可能依赖境外服务。
 - 新增说明：docs/roads-models-domestic.md、LOG.md、public/fonts/README.md/授权；README 已链接。Android 返回键补充取消模型放置；新模型参数导出在浏览器下载、WebView 可复制。
 - 日志：.openai/{typecheck-roads-models-final-20260905,tests-roads-models-final-20260905,build-roads-models-web-final-20260905,build-roads-models-mobile-final-20260905,diffcheck-roads-models-20260905}.log；本地预览 http://localhost:3000/，会话 27863。新增模型按需加载，避免扩大初始地图包；生产构建仍有地图引擎大分包提示。
-- 下一步：提交与推送本轮源码并核对远程 SHA。后续可配置自己的天地图 Key 进行国内实网验证，以及在手机验收道路触控、地下透视与性能。尚未重新打包 APK，已安装 0.1.3 APK 不会自动更新；未执行浏览器或真机视觉/触控验收。
+- GitHub 同步：功能源码提交 `829645e6258ee40fa89009bd05766a405f3e5721` 已推送 main；通过 git ls-remote 实时核对与本地 SHA 一致（PASS）。本地未设置 Git 作者，使用单次 Codex 代理身份提交，没有修改全局 Git 配置。后续仅补交付状态。
+- 下一步：配置自己的天地图 Key 进行国内实网验证，并在手机验收道路触控、地下透视与性能。本轮代码、文档和自动检查已完成；真实国内服务因 Key 缺失待验证。尚未重新打包 APK，已安装 0.1.3 APK 不会自动更新；未执行浏览器或真机视觉/触控验收。
 
 ## 最新交付：2026-09-05，0.1.3-test
 - 新增道路路线左侧气温/降水双列色带，按里程选点与各路段耗时匹配预计到达时间预报；可查看数值/颜色图例和设置出发时间。当前位置有效且靠近路线时显示实际进度；未定位、过期、精度不足或偏离路线时明确提示。
