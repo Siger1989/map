@@ -9,7 +9,8 @@
 - 验证结果：PASS。类型检查、完整 91/91 测试、网页生产构建、Android 静态入口构建、git diff --check、本地 localhost:3000 HTTP 200 / 43432 字节均通过。包含新增 6 种模型/地表地下组合验证；首轮还原高度断言的约 1e-13 米浮点舍入已改用 1e-9 容差断言。
 - 日志：.openai/{format-model-body,tests-model-body,typecheck-model-body,tests-model-body-final,build-model-body-web,build-model-body-mobile,diffcheck-model-body,preview-model-body}-20260905.log。未重新打包 APK，未做浏览器或真机触控验收。
 - 当前阻塞：无。
-- 下一步：提交并同步 GitHub、核对远程 SHA；本地预览保持当前地图视角，刷新可用。
+- GitHub 同步：功能提交 `48b946e978426b3cd55853c6d4b9f22ee229888a` 已推送 main；Git 远程核验遇连接重置/慢连接，改用 GitHub 官方 refs API 实时核验 SHA 与本地一致（PASS）。日志 .openai/{push-model-body,sync-model-body-api}-20260905.log；后续仅补本交付状态。
+- 下一步：本轮实现、验证和功能同步已完成，本地预览保持当前地图视角，刷新后可长按模型本体拖动；实机手感和新版 APK 待后续验收。
 
 ## 最新开发：路线点选与长按节点编辑（2026-09-05）
 - 当前目标：地图上点选手绘路线/标记，打开详情继续编辑；长按节点或标记后拖动位置。
