@@ -1,5 +1,17 @@
 # 天气观察软件 · 当前状态
 
+## 当前任务：打包最新 APK（2026-09-06）
+- 当前目标：将当前所有功能及剖面修复打成可安装 APK，校验后提供下载。
+- 当前进展：已检查干净工作区、读取构建说明。原脚本默认路径在本机不存在，已找到实际 SDK D:/GodotAndroid/android-sdk、JDK D:/GodotAndroid/jdk-17；可通过既有参数指定。最新远端 Release 为 0.1.3-test/code4。
+- 签名状态：本项目与指定备份/工作区中未找到 guanyun-test.jks。已询问安装偏好并等待期间准备网页构建；暂无回复，按已说明的推荐方式先生成可并存的独立测试包，不覆盖旧版。应用名“观云测试版”、包名 com.guanyun.weather.preview，使用新本地测试签名，旧数据不自动迁移。
+- 修改文件：AndroidManifest 升至 0.1.4-test/code5 并使用独立包名、显式启动类；MainActivity 用户代理升至 0.1.4；本状态和安装说明。业务代码保持本轮已验收版本。
+- 命令：git status、git diff --stat、构建工具与签名路径检查、官方 Releases API 查询、git pull --ff-only；日志 .openai/pull-apk-20260906.log。
+- 验证结果：APK 编译、v2/v3 签名、启动 Activity、versionCode5 和包名、473 张地形/worker/覆盖索引/私有文件排除 PASS；517 个 APK 静态资源逐项 SHA-256 与当前 mobile/dist 一致。TypeScript、107/107 逻辑测试 PASS；ADB 无设备，未做真机安装验证。git pull SSL 超时后已用官方 refs API 核验构建前 main 与本地一致。
+- 本地产物：APK/Guanyun-0.1.4-test.apk，55,055,209 字节；SHA-256 `65CC6EF1CDB7FC9E3A5DC22346DA509A3BF800FCFF8A39DB66F72182A2399136`。旁附 .sha256 和 INSTALL-0.1.4.txt。新签名证书 SHA-256 `a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c`，私钥只保留本机、不上传。
+- 日志：.openai/{build-apk-web-014,build-apk-014,typecheck-apk-014,tests-apk-014,verify-apk-assets-014}-20260906.log。
+- 当前阻塞：无，独立测试版可继续构建；覆盖更新仍需要原签名。
+- 下一步：同步版本源码，上传新测试版 Release 附件并核验服务器大小/哈希后公开下载。
+
 ## 当前任务：修复拖动剖面海拔时跳动（2026-09-06）
 - 当前目标：稳定鼠标拖动时的滑条、海拔值及三维剖面更新。
 - 当前进展：真实鼠标单向上拖已复现 5 次数值逆向回跳，范围在 -150/6000 与 -500/9000 之间切换（.openai/section-drag-before-20260906.log）。SectionPanel 改为保留最近完整统计范围，忽略加载中的临时范围；按住期间冻结 min/max，捕获指针并处理松手、取消、失去捕获和失焦。

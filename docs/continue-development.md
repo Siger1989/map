@@ -44,7 +44,7 @@ git push
 
 ## 下载安装包
 
-从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。已有旧版时直接覆盖更新；电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
+从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。0.1.4-test 为“观云测试版”（com.guanyun.weather.preview），可与旧“观云”并存，数据独立；不能用它覆盖旧版。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
 
 ## 在家构建安卓
 
@@ -56,7 +56,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -S
 
 上面的路径只是示例；脚本默认的 `D:\GodotAndroid\...` 是当前开发机器路径。构建产物在 `APK/`，临时构建目录在 `mobile/.build/`。
 
-**签名密钥不会进 GitHub。** 当前测试签名位于原电脑 `mobile/.build/guanyun-test.jks`。若希望家里构建的包也能覆盖更新已安装版本，请通过自己的可信私密方式把这个文件放到家里同一相对位置。没有该文件时脚本会生成新的测试签名，新签名的包不能直接覆盖旧签名安装；不要为此先卸载而丢失本机轨迹。现成的 GitHub Release APK 保持原签名，可以直接使用。
+**签名密钥不会进 GitHub。** 测试签名位于各自构建电脑的 `mobile/.build/guanyun-test.jks`。若希望另一台电脑构建的包也能覆盖更新同一版本系列，请通过自己的可信私密方式迁移对应文件。0.1.4-test 的签名为本机新建，只用于独立测试版；0.1.3 及更早的原“观云”仍需原电脑的旧签名。没有对应文件时脚本会生成新签名，新签名不能直接覆盖旧签名安装；不要为此先卸载而丢失本机轨迹。
 
 地图地质服务的 `.env.local` 同样不上传。普通原型运行无需它；1:20万地质云配置与授权步骤见 `docs/geocloud-integration.md`。
 
