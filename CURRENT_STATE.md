@@ -1,5 +1,16 @@
 # 天气观察软件 · 当前状态
 
+## 最新开发：直接拖动模型本体并同步位置（2026-09-05）
+- 当前目标：长按三维模型本体直接调整位置，模型/名称标记/坐标读数同步，松手沿原路径保存并支持撤销。
+- 当前进展：已增加模型本体拖动拾取，优先于被模型覆盖的路线节点；沿原有预览/保存/撤销流程同步模型、名称和坐标，工具条显示实时经纬度。使用真实地面锚点作为移动原点，保留尺寸/旋转/埋深。
+- 修改范围：地图拖动拾取、模型接口、页面坐标反馈、使用说明和相关测试；保留原路线编辑与参数定义。
+- 已执行：git status、git diff --stat、读取 README/AGENTS/CURRENT_STATE/LOG、模块检索。
+- 已修改：modules/annotations/{AnnotationLayer,AnnotationPanel}、modules/map/TerrainMap、app/page.tsx、tests/selection-editing.test.mjs、README、docs/selection-and-node-editing.md。
+- 验证结果：PASS。类型检查、完整 91/91 测试、网页生产构建、Android 静态入口构建、git diff --check、本地 localhost:3000 HTTP 200 / 43432 字节均通过。包含新增 6 种模型/地表地下组合验证；首轮还原高度断言的约 1e-13 米浮点舍入已改用 1e-9 容差断言。
+- 日志：.openai/{format-model-body,tests-model-body,typecheck-model-body,tests-model-body-final,build-model-body-web,build-model-body-mobile,diffcheck-model-body,preview-model-body}-20260905.log。未重新打包 APK，未做浏览器或真机触控验收。
+- 当前阻塞：无。
+- 下一步：提交并同步 GitHub、核对远程 SHA；本地预览保持当前地图视角，刷新可用。
+
 ## 最新开发：路线点选与长按节点编辑（2026-09-05）
 - 当前目标：地图上点选手绘路线/标记，打开详情继续编辑；长按节点或标记后拖动位置。
 - 当前进展：已补路线 ID/容差拾取/高亮和详情联动；节点及标记支持长按 480ms 后拖动预览，松手提交；取消、失焦和双指切换不提交。已保存路线及标记可撤销移动，草稿纳入原撤销；接点同步移动、续画保留已改节点。模型实体也接入点击拾取。

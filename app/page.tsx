@@ -89,7 +89,7 @@ export default function Home() {
         )
       : annotations.items;
   }, [annotations.items, featureMove]);
-  const selectedAnnotation = annotations.items.find(
+  const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
   const selectedTrack = tracks.saved.find(
@@ -318,8 +318,17 @@ export default function Home() {
               <span>
                 {featureMove
                   ? '正在调整位置 · 松手确认，双指取消'
-                  : '长按节点或标记约半秒，再拖动位置'}
+                  : selectedAnnotation
+                    ? '长按模型本体或名称约半秒，再拖动位置'
+                    : '长按节点约半秒，再拖动位置'}
               </span>
+              {selectedAnnotation && (
+                <span>
+                  经度 {selectedAnnotation.coordinates[0].toFixed(6)} · 纬度{' '}
+                  {selectedAnnotation.coordinates[1].toFixed(6)}
+                  {featureMove?.target.kind === 'annotation' ? '（预览）' : ''}
+                </span>
+              )}
             </div>
             {(selectedAnnotation ? annotations.error : tracks.error) && (
               <p role="alert">

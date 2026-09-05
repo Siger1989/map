@@ -384,6 +384,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   coordinate: item.coordinates,
                 };
               if (element !== map.getCanvas()) return null;
+              const model = annotationRef.current?.pickForMove(point);
+              if (model) return { kind: 'annotation', ...model };
               const node = trackRef.current?.pickNode(point);
               return node ? { kind: 'track', node } : null;
             },

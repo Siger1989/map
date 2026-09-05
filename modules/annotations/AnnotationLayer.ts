@@ -227,6 +227,14 @@ export class AnnotationLayer implements CustomLayerInterface {
     map.triggerRepaint();
   }
   /** The custom layer uses a combined view/projection matrix in local metre space. */
+  pickForMove(point: { x: number; y: number }) {
+    const id = this.pick(point);
+    const item = this.items.find(
+      (candidate) => candidate.id === id && candidate.visible,
+    );
+    // Use the stored ground anchor, not the hit face's elevated/buried position.
+    return item ? { id: item.id, coordinate: item.coordinates } : null;
+  }
   pick(point: { x: number; y: number }): string | null {
     if (!this.map || !this.scene.children.length || !this.hasRendered)
       return null;

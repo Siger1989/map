@@ -94,6 +94,10 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
     .multiply(camera.matrixWorldInverse);
   layer.hasRendered = true;
   assert.equal(layer.pick({ x: 200, y: 200 }), item.id);
+  assert.deepEqual(layer.pickForMove({ x: 200, y: 200 }), {
+    id: item.id,
+    coordinate: item.coordinates,
+  });
   assert.equal(layer.pick({ x: 2, y: 2 }), null);
   const frame = layer.frames.get(item.id),
     geometry = frame.children[0].children[0].geometry;
@@ -106,6 +110,53 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
   layer.update([{ ...item, visible: false }], item.id, settings);
   assert.equal(marker.removed, true);
   assert.equal(layer.pick({ x: 200, y: 200 }), null);
+  assert.equal(layer.pickForMove({ x: 200, y: 200 }), null);
+  for (const kind of ['box', 'cylinder', 'sphere']) {
+    for (const placement of ['surface', 'underground']) {
+      await t.test(
+        `${placement} ${kind}: body drag keeps model, label and coordinates synchronized`,
+        () => {
+          const source = {
+            ...newAnnotation(kind, a, 1000, `${kind}-${placement}`),
+            placement,
+          };
+          const snapshot = structuredClone(source);
+          layer.update([source], source.id, settings);
+          layer.camera.projectionMatrix
+            .copy(camera.projectionMatrix)
+            .multiply(camera.matrixWorldInverse);
+          layer.hasRendered = true;
+          const hit = layer.pickForMove({ x: 200, y: 200 });
+          assert.deepEqual(hit, { id: source.id, coordinate: a });
+          const previewCoordinate = [104.0001, 30.0001];
+          const preview = { ...source, coordinates: previewCoordinate };
+          const label = layer.markers.get(source.id);
+          const beforeFrame = layer.frames.get(source.id);
+          const beforePosition = beforeFrame.position.clone();
+          layer.update([preview], source.id, settings);
+          assert.deepEqual(label.coordinate, previewCoordinate);
+          assert.strictEqual(layer.frames.get(source.id), beforeFrame);
+          assert.notDeepEqual(
+            beforeFrame.position.toArray(),
+            beforePosition.toArray(),
+          );
+          assert.deepEqual(layer.items[0].coordinates, previewCoordinate);
+          assert.deepEqual(
+            source,
+            snapshot,
+            'drag preview must not mutate saved parameters',
+          );
+          layer.update([source], source.id, settings);
+          assert.deepEqual(
+            label.coordinate,
+            a,
+            'cancellation restores the same label',
+          );
+          assert.ok(beforeFrame.position.distanceTo(beforePosition) < 1e-9);
+        },
+      );
+    }
+  }
   layer.onRemove();
 });
 
