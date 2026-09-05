@@ -36,6 +36,7 @@ export function useMapTools(actions: Actions) {
       'terrain',
       'satellite',
       'contours',
+      'elevationColors',
       'roads',
       'labels',
       'clouds',

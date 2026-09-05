@@ -15,6 +15,7 @@ import { LayerPanel } from '@/modules/controls/LayerPanel';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { Timeline } from '@/modules/controls/Timeline';
 import { ViewController } from '@/modules/controls/ViewController';
+import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { useWeather } from '@/modules/weather/useWeather';
 import { useMapTools } from '@/modules/controls/useMapTools';
 import type { SatelliteState } from '@/modules/satellite/satellite';
@@ -177,6 +178,7 @@ export default function Home() {
           satelliteStatus={satellite.status}
         />
       )}
+      {layers.elevationColors && <ElevationLegend />}
       <ViewController
         view={view}
         onView={(pitch, bearing, animate) => {

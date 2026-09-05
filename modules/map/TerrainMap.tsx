@@ -97,6 +97,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             'visibility',
             s.contours ? 'visible' : 'none',
           );
+      if (map.getLayer('elevation-colors'))
+        map.setLayoutProperty(
+          'elevation-colors',
+          'visibility',
+          s.elevationColors ? 'visible' : 'none',
+        );
       for (const id of ['relief', 'detail', 'satellite'])
         if (map.getLayer(id))
           map.setLayoutProperty(
@@ -144,12 +150,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             pitch: map.getPitch(),
             bearing: map.getBearing(),
             zoom: map.getZoom(),
-            layers: map
-              .getStyle()
-              .layers.map((l) => ({
-                id: l.id,
-                visible: l.layout?.visibility !== 'none',
-              })),
+            layers: map.getStyle().layers.map((l) => ({
+              id: l.id,
+              visible: l.layout?.visibility !== 'none',
+            })),
           };
         },
       }),
@@ -171,6 +175,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             container: container.current,
             style: baseStyle(),
             ...INITIAL_VIEW,
+            hash: true,
             maxPitch: 80,
             maxZoom: 16,
             minZoom: 3,
@@ -207,7 +212,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (disposed) return;
             loaded.current = true;
             sync();
-            pick(...INITIAL_VIEW.center);
+            const initialCenter = map.getCenter();
+            weatherAnchor = initialCenter.toArray();
+            latest.current.onAnchor(weatherAnchor);
+            latest.current.onView({
+              pitch: map.getPitch(),
+              bearing: map.getBearing(),
+              zoom: map.getZoom(),
+            });
+            pick(initialCenter.lng, initialCenter.lat);
             syncSatellite();
             latest.current.onStatus('真实地形 · 点击地图读取海拔');
             try {

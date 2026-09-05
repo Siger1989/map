@@ -8,6 +8,7 @@ import {
   Spline,
   Route,
   MapPin,
+  Palette,
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 const ITEMS = [
@@ -24,6 +25,13 @@ const ITEMS = [
     detail: '地表影像 · 独立日期',
     icon: Satellite,
     color: 'blue',
+  },
+  {
+    key: 'elevationColors',
+    label: '海拔着色',
+    detail: '500 米分色 · 海拔区间图例',
+    icon: Palette,
+    color: 'amber',
   },
   {
     key: 'contours',
@@ -131,7 +139,7 @@ export function LayerPanel({
           aria-pressed={settings.imageryMode === 'latest'}
           onClick={() => onChange({ imageryMode: 'latest', satellite: true })}
         >
-          最新观测
+          最新云况影像
         </button>
       </div>
       <div className="panel-sliders">
@@ -164,7 +172,7 @@ export function LayerPanel({
       <p className="satellite-note" role="status">
         {settings.imageryMode === 'detail'
           ? 'EOX / Sentinel-2 · 2024 年无云合成。10 米级影像适合看地表细节；当天云况请切换最新观测。'
-          : satelliteStatus || '正在查询卫星影像…'}
+          : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
       </p>
       <div className="layer-note">
         <Info size={15} />

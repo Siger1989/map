@@ -2,6 +2,7 @@ export type LayerSettings = {
   terrain: boolean;
   satellite: boolean;
   contours: boolean;
+  elevationColors: boolean;
   clouds: boolean;
   rain: boolean;
   roads: boolean;
@@ -14,12 +15,13 @@ export const DEFAULT_LAYERS: LayerSettings = {
   terrain: true,
   satellite: true,
   contours: true,
+  elevationColors: false,
   clouds: true,
   rain: true,
   roads: true,
   labels: true,
   opacity: 0.6,
-  exaggeration: 1.3,
+  exaggeration: 1,
   imageryMode: 'detail',
 };
 export type Point = { lng: number; lat: number; elevation: number | null };

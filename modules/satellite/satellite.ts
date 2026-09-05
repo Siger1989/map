@@ -92,7 +92,7 @@ export async function loadLatestSatellite(
           'raster-fade-duration': 400,
         },
       },
-      'hillshade',
+      'elevation-colors',
     );
     return {
       date: candidate,

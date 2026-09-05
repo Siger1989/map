@@ -1,28 +1,30 @@
 import type { Map, StyleSpecification } from 'maplibre-gl';
-export const TERRAIN_URL =
-  'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png';
+import { elevationExpression } from './elevationColors';
+export const TERRAIN_URL = '/api/terrain/{z}/{x}/{y}.png';
+export const TERRAIN_MAXZOOM = 12;
 export const TERRAIN_CREDIT =
-  '<a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">Terrain: Mapzen / USGS / SRTM</a>';
+  '<a href="https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn" target="_blank">成都区域 FABDEM V1-2 · Hawker / Neal · CC BY-NC-SA 4.0</a> · <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">其他区域 Mapzen / SRTM</a>';
 export function baseStyle(): StyleSpecification {
+  const tiles = [window.location.origin + TERRAIN_URL];
   return {
     version: 8,
-    terrain: { source: 'elevation', exaggeration: 1.3 },
+    terrain: { source: 'elevation', exaggeration: 1 },
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
       elevation: {
         type: 'raster-dem',
-        tiles: [TERRAIN_URL],
+        tiles,
         encoding: 'terrarium',
         tileSize: 256,
-        maxzoom: 14,
+        maxzoom: TERRAIN_MAXZOOM,
         attribution: TERRAIN_CREDIT,
       },
       shading: {
         type: 'raster-dem',
-        tiles: [TERRAIN_URL],
+        tiles,
         encoding: 'terrarium',
         tileSize: 256,
-        maxzoom: 14,
+        maxzoom: TERRAIN_MAXZOOM,
       },
       relief: {
         type: 'raster',
@@ -64,6 +66,16 @@ export function baseStyle(): StyleSpecification {
         paint: { 'raster-saturation': -0.1, 'raster-brightness-max': 0.93 },
       },
       {
+        id: 'elevation-colors',
+        type: 'color-relief',
+        source: 'shading',
+        layout: { visibility: 'none' },
+        paint: {
+          'color-relief-color': elevationExpression,
+          'color-relief-opacity': 1,
+        },
+      },
+      {
         id: 'hillshade',
         type: 'hillshade',
         source: 'shading',
@@ -84,9 +96,9 @@ export async function addContours(map: Map) {
   ]);
   if (map.getSource('contour-lines')) return;
   const dem = new contour.DemSource({
-    url: TERRAIN_URL,
+    url: window.location.origin + TERRAIN_URL,
     encoding: 'terrarium',
-    maxzoom: 14,
+    maxzoom: TERRAIN_MAXZOOM,
     worker: true,
     cacheSize: 60,
     timeoutMs: 15000,

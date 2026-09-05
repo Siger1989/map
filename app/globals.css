@@ -1250,3 +1250,57 @@ input[type='range'] {
     max-height: calc(100dvh - 323px);
   }
 }
+.elevation-legend {
+  position: absolute;
+  z-index: 5;
+  left: 24px;
+  bottom: 218px;
+  width: 148px;
+  padding: 15px;
+  border-radius: 16px;
+}
+.elevation-legend strong {
+  font-size: 13px;
+}
+.elevation-legend small {
+  color: #aac1c9;
+  font-weight: 400;
+}
+.elevation-legend p {
+  margin: 0;
+  font-size: 10px;
+  color: #aac1c9;
+}
+.elevation-bands {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+}
+.elevation-bands > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.elevation-bands i {
+  width: 22px;
+  height: 13px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+@media (min-width: 1000px) {
+  .elevation-legend {
+    left: 288px;
+  }
+}
+@media (max-height: 720px) {
+  .elevation-legend {
+    bottom: 218px;
+  }
+}
+@media (min-width: 1200px) {
+  .elevation-legend {
+    left: 328px;
+  }
+}
