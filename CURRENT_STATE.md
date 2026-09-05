@@ -10,7 +10,8 @@
 - 验证结果：PASS。完整 85/85 测试（含新增 17 项）、TypeScript、网页生产构建、Android 静态入口构建、git diff --check 均通过；本地 localhost:3000 HTTP 200 / 43420 字节。模型专项含实际 Three.js 拾取数学和 DOM/几何复用适配测试，不等同真实浏览器渲染验收。
 - 完整日志：.openai/{typecheck-selection-final,tests-selection-final,build-selection-web,build-selection-mobile,diffcheck-selection,preview-selection}-20260905.log。构建仅有既有地图引擎大分包/框架路由分类提示；无构建错误。
 - 当前阻塞：无。本轮没有浏览器截图/真实地图触控或手机实机验证，没有重新打包 APK；旧 APK 不包含本轮功能。预览继续保留 localhost:3000，会话 27863。
-- 下一步：提交本轮源码与说明并推送 origin/main、核验远程 SHA；后续可在手机验收长按时长、节点密度与三维视角下的拖动手感。
+- GitHub 同步：功能提交 `380c2b615950f3aa22911bf255bb76e50b17b9c1` 已推送 origin/main，git ls-remote 实时核验与本地一致（PASS）；后续仅补此交付状态。日志 .openai/{push-selection,sync-selection}-20260905.log。
+- 下一步：本轮实现、文档、自动检查及 GitHub 同步完成；手机触控体验待实机验收。可在预览中完成绘制后点选路线/标记，长按节点调整位置。
 
 ## 最新开发：国内图源适配、道路吸附与地表/地下标记模型（2026-09-05）
 - 当前目标：寻找国内免费底图，改善依赖 VPN 才能浏览的问题；补全用户明确要求的“吸附地图上的道路和山间小路”，不是只连接已保存轨迹的节点。
