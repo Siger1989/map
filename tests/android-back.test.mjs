@@ -12,7 +12,7 @@ const java = readFileSync(
 const source = JSON.parse(
   java.match(/evaluateJavascript\(("(?:\\.|[^"\\])*"), result/)[1],
 );
-function pressBack({ panel = false, editing = false } = {}) {
+function pressBack({ panel = false, editing = false, section = false } = {}) {
   const calls = [];
   const context = {
     KeyboardEvent: class {
@@ -27,9 +27,11 @@ function pressBack({ panel = false, editing = false } = {}) {
           ? panel
             ? 'panel'
             : null
-          : editing
-            ? 'editing'
-            : null;
+          : section && selector.includes('data-section')
+            ? 'section'
+            : editing
+              ? 'editing'
+              : null;
         return target
           ? {
               dispatchEvent(event) {
@@ -58,4 +60,10 @@ test('普通地图页未消费返回键，交回系统', () => {
   const result = pressBack();
   assert.equal(result.handled, false);
   assert.equal(result.calls.length, 0);
+});
+test('安卓返回优先退出全屏海拔剖面', () => {
+  const result = pressBack({ section: true });
+  assert.equal(result.handled, true);
+  assert.equal(result.calls[0].target, 'section');
+  assert.equal(result.calls[0].key, 'Escape');
 });

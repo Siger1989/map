@@ -8,6 +8,7 @@ import {
 } from 'maplibre-gl';
 import { altitudeRange, dimensions, type Annotation } from './data';
 import type { LayerSettings } from '../map/types';
+import { modelSection } from '../section/models';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -22,6 +23,7 @@ export class AnnotationLayer implements CustomLayerInterface {
   private frames = new globalThis.Map<string, THREE.Group>();
   private items: Annotation[] = [];
   private selected: string | null = null;
+  private sectionAltitude: number | null = null;
   private settings: Pick<LayerSettings, 'terrain' | 'exaggeration'> = {
     terrain: true,
     exaggeration: 1,
@@ -36,6 +38,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       antialias: true,
     });
     this.renderer.autoClear = false;
+    this.renderer.localClippingEnabled = true;
     this.rebuild();
   }
   update(
@@ -103,10 +106,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       this.markers.clear();
     }
     this.scene.traverse((object) => {
-      if (
-        object instanceof THREE.Mesh ||
-        object instanceof THREE.LineSegments
-      ) {
+      if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
         object.geometry.dispose();
         for (const material of Array.isArray(object.material)
           ? object.material
@@ -224,7 +224,93 @@ export class AnnotationLayer implements CustomLayerInterface {
       mesh.frustumCulled = false;
       edges.frustumCulled = false;
     }
+    this.updateSections();
     map.triggerRepaint();
+  }
+  /** Clip in the same local metre space as the combined map projection. */
+  setSectionAltitude(altitude: number | null) {
+    if (altitude === this.sectionAltitude) return;
+    this.sectionAltitude = altitude;
+    this.updateSections();
+    this.map?.triggerRepaint();
+  }
+  private updateSections() {
+    for (const item of this.items) {
+      const frame = this.frames.get(item.id);
+      if (!frame || item.groundElevation === null) continue;
+      const old = frame.getObjectByName('section-cap');
+      if (old) {
+        old.traverse((child) => {
+          if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+            child.geometry.dispose();
+            for (const material of Array.isArray(child.material)
+              ? child.material
+              : [child.material])
+              material.dispose();
+          }
+        });
+        frame.remove(old);
+      }
+      const altitude = this.sectionAltitude;
+      const range = altitudeRange(
+        item,
+        this.settings.terrain
+          ? item.groundElevation * this.settings.exaggeration
+          : 0,
+      )!;
+      frame.visible = altitude === null || range.bottom <= altitude;
+      const plane = new THREE.Plane(
+        new THREE.Vector3(0, 0, -1),
+        (altitude ?? 0) * frame.scale.z,
+      );
+      frame.traverse((child) => {
+        if (child instanceof THREE.Mesh || child instanceof THREE.Line) {
+          for (const material of Array.isArray(child.material)
+            ? child.material
+            : [child.material]) {
+            const hadPlane = Boolean(material.clippingPlanes?.length);
+            material.clippingPlanes = altitude === null ? [] : [plane];
+            if (hadPlane !== (altitude !== null)) material.needsUpdate = true;
+          }
+        }
+      });
+      if (altitude === null || !frame.visible) continue;
+      const points = modelSection(item, altitude);
+      if (points.length < 3) continue;
+      const cap = new THREE.Group();
+      cap.name = 'section-cap';
+      cap.position.z = altitude - range.center;
+      const shape = new THREE.Shape(
+        points.map(([x, y]) => new THREE.Vector2(x, y)),
+      );
+      const face = new THREE.Mesh(
+        new THREE.ShapeGeometry(shape),
+        new THREE.MeshBasicMaterial({
+          color: item.color,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: 0.88,
+          depthWrite: false,
+          depthTest: false,
+        }),
+      );
+      const edge = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(
+          points.map(([x, y]) => new THREE.Vector3(x, y, 0)),
+        ),
+        new THREE.LineBasicMaterial({
+          color: '#334155',
+          depthWrite: false,
+          depthTest: false,
+        }),
+      );
+      face.renderOrder = 30;
+      edge.renderOrder = 31;
+      face.frustumCulled = false;
+      edge.frustumCulled = false;
+      cap.add(face, edge);
+      frame.add(cap);
+    }
   }
   /** The custom layer uses a combined view/projection matrix in local metre space. */
   pickForMove(point: { x: number; y: number }) {

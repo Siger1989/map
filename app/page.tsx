@@ -27,6 +27,11 @@ import {
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
+import { SectionPanel } from '@/modules/section/SectionPanel';
+import {
+  INITIAL_SECTION_STATUS,
+  type SectionSettings,
+} from '@/modules/section/types';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
 import { KINDS } from '@/modules/annotations/data';
@@ -79,6 +84,30 @@ export default function Home() {
   const tracks = useManualTracks();
   const annotations = useAnnotations();
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
+  const [section, setSection] = useState<SectionSettings>({
+    enabled: false,
+    altitude: 1500,
+    color: '#ffffff',
+  });
+  const [sectionStatus, setSectionStatus] = useState(INITIAL_SECTION_STATUS);
+  const toggleSection = () => {
+    if (section.enabled) {
+      setSection((current) => ({ ...current, enabled: false }));
+      return;
+    }
+    tracks.finish();
+    tracks.select(null);
+    annotations.select(null);
+    navigation.setPicking(null);
+    position.free();
+    setPanel(null);
+    setSectionStatus(INITIAL_SECTION_STATUS);
+    setSection({
+      enabled: true,
+      altitude: Math.round(point.elevation ?? 1500),
+      color: section.color,
+    });
+  };
   const annotationOverlay = useMemo(() => {
     const target = featureMove?.target;
     return target?.kind === 'annotation' && featureMove
@@ -181,6 +210,7 @@ export default function Home() {
     <main
       className="observatory"
       data-panel={panel ?? 'map'}
+      data-section={section.enabled}
       data-route-notice={Boolean(navigation.picking || navigation.route)}
       data-drawing={tracks.drawing && panel === null}
       data-editing-track={tracks.editing}
@@ -189,6 +219,11 @@ export default function Home() {
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (section.enabled) {
+          event.preventDefault();
+          setSection((current) => ({ ...current, enabled: false }));
+          return;
+        }
         if (annotations.picking) {
           event.preventDefault();
           annotations.setPicking(null);
@@ -206,6 +241,8 @@ export default function Home() {
     >
       <TerrainMap
         ref={map}
+        section={section}
+        onSectionStatus={setSectionStatus}
         settings={layers}
         onPoint={setPoint}
         onStatus={setMapStatus}
@@ -447,7 +484,7 @@ export default function Home() {
           />
         )}
       </div>
-      {navigation.route && (
+      {navigation.route && !section.enabled && (
         <RouteWeatherRail
           route={navigation.route}
           journey={routeJourney}
@@ -480,6 +517,8 @@ export default function Home() {
         </div>
       )}
       <MapActions
+        sectionActive={section.enabled}
+        onSection={toggleSection}
         terrain={layers.terrain}
         bearing={view.bearing}
         onZoom={(amount) => map.current?.zoom(amount)}
@@ -726,11 +765,26 @@ export default function Home() {
           </p>
         )}
       </ControlDock>
+      {section.enabled && (
+        <SectionPanel
+          settings={section}
+          status={sectionStatus}
+          onAltitude={(altitude) =>
+            setSection((current) => ({ ...current, altitude }))
+          }
+          onColor={(color) => setSection((current) => ({ ...current, color }))}
+          onClose={() =>
+            setSection((current) => ({ ...current, enabled: false }))
+          }
+          onRetry={() => map.current?.refreshSection()}
+        />
+      )}
       <CameraGizmo
         view={view}
         onView={(pitch, bearing) => {
           position.free();
-          if (pitch > 0 && !layers.terrain) update({ terrain: true });
+          if (pitch > 0 && !layers.terrain && !section.enabled)
+            update({ terrain: true });
           map.current?.view(pitch, bearing, false);
         }}
       />

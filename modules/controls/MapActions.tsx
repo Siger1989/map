@@ -13,6 +13,8 @@ export function MapActions({
   direction,
   onDevice,
   onStopLocation,
+  sectionActive,
+  onSection,
 }: {
   terrain: boolean;
   bearing: number;
@@ -25,6 +27,8 @@ export function MapActions({
   direction: DirectionMode;
   onDevice: () => void;
   onStopLocation: () => void;
+  sectionActive: boolean;
+  onSection: () => void;
 }) {
   return (
     <nav className="map-actions glass" aria-label="地图快捷操作">
@@ -72,6 +76,7 @@ export function MapActions({
       <button
         className="icon-button direction-button"
         aria-label="跟随手机方向"
+        disabled={sectionActive}
         aria-pressed={direction === 'device'}
         onClick={onDevice}
       >
@@ -80,11 +85,20 @@ export function MapActions({
       </button>
       <button
         className="dimension-button"
+        disabled={sectionActive}
         aria-label={terrain ? '切换二维地图' : '切换三维地形'}
         aria-pressed={terrain}
         onClick={onDimension}
       >
         {terrain ? '3D' : '2D'}
+      </button>
+      <button
+        className="section-button"
+        aria-label="海拔剖面"
+        aria-pressed={sectionActive}
+        onClick={onSection}
+      >
+        剖面
       </button>
     </nav>
   );

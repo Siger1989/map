@@ -1,5 +1,15 @@
 # 天气观察软件 · 当前状态
 
+## 正在开发：三维地形海拔剖切（2026-09-05）
+- 当前目标：保留 3D 相机，按侧边滑条的真实海拔裁切当前视野山体；剖切面默认白色，可自定义纯色，轮廓单条实线；UI 保持原配色。
+- 当前进展：已移除临时二维俯视实现，改用原生三维 DEM 裁切、纯色切口、连续轮廓；模型按同一真实海拔裁切并封口。进入临时按 1× 海拔显示，退出恢复原图层/起伏设置。路线与模型编辑在剖面关闭后恢复。
+- 性能反馈：用户报告明显卡顿。已删除移动后整批 DEM 重载，改由原生视锥加载；剖面数据源采用较低显示采样密度及 LOD 数量约束，滑条 350ms 合并更新，移动中延后重建；轮廓片段连接并去共线点，统计结果复用，250ms 合并发布。缓存原始 DEM 48 张、轮廓元数据 128 张，读取最多 3 并发。
+- 修改文件：新增 modules/section/{types,appearance,terrainMath,elevation,models,SectionLayer,SectionPanel,section.css}；修改 TerrainMap、AnnotationLayer、MapActions、app/page、双入口样式和 Android 返回；新增 section/section-terrain 测试，更新 android-back 与模型适配测试。
+- 已执行：启动检查与项目文件阅读；旧二维专项后已重写验证；三维专项首轮 15/15 PASS，TypeScript PASS；已查阅本地 MapLibre 6.7 渲染实现，修正 color-relief 只解析 Interpolate 的兼容问题。
+- 验证结果：PASS。完整 105/105 测试、TypeScript、网页生产构建与 Android 静态入口构建通过；localhost:3000 HTTP 200 / 44606 字节。差异检查发现状态文件尾部空行，已清理。未测实际浏览器帧率或真机触控，未重新打包 APK。
+- 当前阻塞：无。
+- 日志：.openai/{tests-section-final,typecheck-section-final,build-section-web,build-section-mobile,diffcheck-section,preview-section}-20260905.log。专项验证含纯色改变零 DEM 重载、连续 100 次移动零额外重载、连续轮廓合并、过期结果和模型封口。
+- 下一步：提交并推送 main，核对 GitHub 提交；本地预览保持运行，刷新后检查当前视角实际流畅度。
 ## 最新开发：直接拖动模型本体并同步位置（2026-09-05）
 - 当前目标：长按三维模型本体直接调整位置，模型/名称标记/坐标读数同步，松手沿原路径保存并支持撤销。
 - 当前进展：已增加模型本体拖动拾取，优先于被模型覆盖的路线节点；沿原有预览/保存/撤销流程同步模型、名称和坐标，工具条显示实时经纬度。使用真实地面锚点作为移动原点，保留尺寸/旋转/埋深。

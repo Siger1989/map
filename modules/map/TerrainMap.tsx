@@ -31,6 +31,8 @@ import {
 import type { RoadSnapper } from '../tracks/roadSnapping';
 import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
+import { SectionLayer } from '../section/SectionLayer';
+import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
@@ -41,6 +43,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  refreshSection: () => void;
   snapRoad: RoadSnapper;
   zoom: (amount: number) => void;
   north: () => void;
@@ -57,6 +60,8 @@ export type MapHandle = {
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
 };
 type Props = {
+  section: SectionSettings;
+  onSectionStatus: (status: SectionStatus) => void;
   settings: LayerSettings;
   onPoint: (point: Point) => void;
   onStatus: (status: string) => void;
@@ -98,6 +103,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
+    const sectionRef = useRef<SectionLayer | null>(null);
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
@@ -149,13 +155,29 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const sync = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
-      const s = latest.current.settings;
+      const s = latest.current.section.enabled
+        ? {
+            ...latest.current.settings,
+            terrain: true,
+            exaggeration: 1,
+            clouds: false,
+            rain: false,
+            geology: false,
+            contours: false,
+            elevationColors: false,
+            roads: false,
+            labels: false,
+          }
+        : latest.current.settings;
       if (!domestic || latest.current.roadSnapping) addCartography(map);
       const terrain = map.getTerrain();
       if (
-        s.terrain
-          ? !terrain || terrain.exaggeration !== s.exaggeration
-          : Boolean(terrain)
+        !latest.current.section.enabled &&
+        (s.terrain
+          ? !terrain ||
+            terrain.source !== 'elevation' ||
+            terrain.exaggeration !== s.exaggeration
+          : Boolean(terrain))
       )
         map.setTerrain(
           s.terrain
@@ -231,10 +253,21 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         latest.current.annotationSelected,
         s,
       );
+      if (map.getLayer('hillshade'))
+        map.setLayoutProperty(
+          'hillshade',
+          'visibility',
+          latest.current.section.enabled ? 'none' : 'visible',
+        );
+      sectionRef.current?.configure(
+        latest.current.section,
+        latest.current.annotations,
+      );
     };
     useImperativeHandle(
       ref,
       () => ({
+        refreshSection: () => sectionRef.current?.refresh(),
         snapRoad: (point, previous) =>
           snapMapRoad(
             mapRef.current,
@@ -367,7 +400,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           drawingRef.current.configure(latest.current.drawingActive);
           featureDragRef.current = new FeatureDragBridge(map, {
             enabled: () =>
-              !latest.current.drawingActive && !latest.current.pickingActive,
+              !latest.current.drawingActive &&
+              !latest.current.pickingActive &&
+              !latest.current.section.enabled,
             hit: (point, element) => {
               const marker =
                 element instanceof Element
@@ -427,6 +462,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             routeRef.current = new RouteLayer(map);
             trackRef.current = new TrackLayer(map);
             positionRef.current = new PositionLayer(map);
+            sectionRef.current = new SectionLayer(
+              map,
+              (status) => latest.current.onSectionStatus(status),
+              maplibre,
+              (altitude) => annotationRef.current?.setSectionAltitude(altitude),
+            );
             try {
               const { AnnotationLayer } =
                 await import('../annotations/AnnotationLayer');
@@ -434,7 +475,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               annotationRef.current = new AnnotationLayer((id) => {
                 if (
                   !latest.current.drawingActive &&
-                  !latest.current.pickingActive
+                  !latest.current.pickingActive &&
+                  !latest.current.section.enabled
                 )
                   latest.current.onAnnotationSelect(id);
               });
@@ -483,6 +525,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('click', (event) => {
+            if (latest.current.section.enabled) return;
             if (
               latest.current.drawingActive ||
               featureDragRef.current?.blocksClick()
@@ -564,6 +607,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         trackRef.current = null;
         positionRef.current = null;
         annotationRef.current = null;
+        sectionRef.current?.dispose();
+        sectionRef.current = null;
         featureDragRef.current?.dispose();
         featureDragRef.current = null;
         drawingRef.current?.dispose();
@@ -575,7 +620,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     }, []);
     useEffect(() => {
       sync();
-    }, [settings, props.weather, props.hourIndex, props.roadSnapping]);
+    }, [
+      settings,
+      props.weather,
+      props.hourIndex,
+      props.roadSnapping,
+      props.section.enabled,
+    ]);
+    useEffect(() => {
+      sectionRef.current?.configure(props.section, props.annotations);
+    }, [props.section, props.annotations]);
     useEffect(() => {
       syncSatellite();
     }, [settings.imageryMode, settings.satellite]);
@@ -593,14 +647,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         annotationRef.current?.update(
           props.annotations,
           props.annotationSelected,
-          latest.current.settings,
+          props.section.enabled
+            ? { ...latest.current.settings, terrain: true, exaggeration: 1 }
+            : latest.current.settings,
         );
-    }, [props.annotations, props.annotationSelected]);
+    }, [props.annotations, props.annotationSelected, props.section.enabled]);
     useEffect(() => {
-      if (props.drawingActive || props.pickingActive)
+      if (props.drawingActive || props.pickingActive || props.section.enabled)
         featureDragRef.current?.cancel();
       drawingRef.current?.configure(props.drawingActive);
-    }, [props.drawingActive, props.pickingActive]);
+    }, [props.drawingActive, props.pickingActive, props.section.enabled]);
     useEffect(() => {
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
@@ -609,7 +665,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       <div
         ref={container}
         className="map-canvas"
-        data-picking={props.pickingActive || props.drawingActive}
+        data-picking={
+          props.pickingActive || props.drawingActive || props.section.enabled
+        }
         aria-label="成都与川西三维地形地图"
       />
     );

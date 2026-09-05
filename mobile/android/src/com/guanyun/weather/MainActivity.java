@@ -89,7 +89,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        webView.evaluateJavascript("(function(){var p=document.querySelector('.control-dock.is-expanded')||document.querySelector('.observatory[data-editing-track=\"true\"],.observatory[data-picking-route=\"true\"],.observatory[data-placing-annotation=\"true\"]');if(!p)return false;p.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;})()", result -> {
+        webView.evaluateJavascript("(function(){var p=document.querySelector('.control-dock.is-expanded')||document.querySelector('.observatory[data-section=\"true\"],.observatory[data-editing-track=\"true\"],.observatory[data-picking-route=\"true\"],.observatory[data-placing-annotation=\"true\"]');if(!p)return false;p.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;})()", result -> {
             if (!"true".equals(result)) MainActivity.super.onBackPressed();
         });
     }

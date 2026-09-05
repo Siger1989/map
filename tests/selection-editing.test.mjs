@@ -12,7 +12,7 @@ import {
   draftVertices,
   EMPTY_DRAFT,
 } from '../modules/tracks/draft.ts';
-import { newAnnotation } from '../modules/annotations/data.ts';
+import { newAnnotation, altitudeRange } from '../modules/annotations/data.ts';
 import { parseSavedTracks } from '../modules/tracks/drawing.ts';
 
 test('model bodies are selectable; drag updates retain the pressed marker and geometry, hidden models cannot be picked', async (t) => {
@@ -122,6 +122,38 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
           };
           const snapshot = structuredClone(source);
           layer.update([source], source.id, settings);
+          const range = altitudeRange(source);
+          layer.setSectionAltitude(range.center);
+          const sectionFrame = layer.frames.get(source.id);
+          const cap = sectionFrame.getObjectByName('section-cap');
+          assert.ok(cap, 'intersected solid gets a horizontal cap');
+          sectionFrame.updateMatrixWorld(true);
+          const capMesh = cap.children[0];
+          for (
+            let vertex = 0;
+            vertex < capMesh.geometry.attributes.position.count;
+            vertex++
+          ) {
+            const point = new THREE.Vector3()
+              .fromBufferAttribute(capMesh.geometry.attributes.position, vertex)
+              .applyMatrix4(capMesh.matrixWorld);
+            assert.ok(
+              Math.abs(point.z - range.center) < 1e-6,
+              'cap vertices lie at the requested true altitude',
+            );
+          }
+          const material = sectionFrame.children[0].children[0].material;
+          assert.ok(
+            material.clippingPlanes[0].distanceToPoint(
+              new THREE.Vector3(0, 0, range.center + 1),
+            ) < 0,
+          );
+          layer.setSectionAltitude(range.bottom - 1);
+          assert.equal(sectionFrame.visible, false);
+          layer.setSectionAltitude(null);
+          assert.equal(sectionFrame.visible, true);
+          assert.equal(sectionFrame.getObjectByName('section-cap'), undefined);
+          assert.equal(material.clippingPlanes.length, 0);
           layer.camera.projectionMatrix
             .copy(camera.projectionMatrix)
             .multiply(camera.matrixWorldInverse);
