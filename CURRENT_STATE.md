@@ -10,8 +10,8 @@
 - 日志：.openai/{typecheck-free-plane-final,tests-free-plane-final,browser-free-plane-final2,build-free-plane-web,build-free-plane-mobile}-20260906.log。初次 dev 尚未就绪连接失败、两次短屏遮挡过程保留在 browser-free-plane* 日志；长日志/截图已被 Git 忽略。
 - 验证限制：这是原地形 GPU 显示裁切，不是通用网格 CSG；切面轮廓受 64×32 网格与当前 DEM/LOD 精度限制，开口两侧不补实体墙。适配器针对 MapLibre 6.7，升级须重跑 shader 与浏览器检查。没有手机触控/帧率实测；没有重打 APK，手机上已安装的 0.1.5 不会自动获得此次改动。
 - 当前阻塞：无。
-- GitHub 同步：本轮正在提交与推送 main，尚待最终远程 SHA 核验。
-- 下一步：完成 GitHub 同步并交付本地预览；如需手机安装新功能，后续另行构建新版 APK。真机性能与手感待设备验证。
+- GitHub 同步：功能提交 55dff54b4a761cb10a5f42ad3be724b97e12fc33 已推送 origin/main，git ls-remote 核验远程与本地 SHA 一致。本状态收尾随后提交同步，最终 main 以 git log 为准。
+- 下一步：本轮功能实现、验证和源码同步完成，本地预览 localhost:3000 可用；如需手机安装新功能，后续另行构建新版 APK。真机性能与手感待设备验证。
 
 # 天气观察软件 · 当前状态
 
