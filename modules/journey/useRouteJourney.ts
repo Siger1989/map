@@ -69,7 +69,26 @@ export function useRouteJourney(route: PlannedRoute | null) {
       })),
     [stops, forecast, departureTime],
   );
+  const alternatives = [-2, 0, 2].map((offset) => {
+    const time = departureTime + offset * 3600000;
+    const hours = stops.map((stop, i) =>
+      forecast
+        ? matchForecast(forecast.points[i], time + stop.seconds * 1000)
+        : null,
+    );
+    const complete =
+      hours.length > 0 &&
+      hours.every((h) => h && h.precipitation !== null && h.wind !== null);
+    return {
+      offset,
+      time,
+      complete,
+      rain: complete ? Math.max(...hours.map((h) => h!.precipitation!)) : null,
+      wind: complete ? Math.max(...hours.map((h) => h!.wind!)) : null,
+    };
+  });
   return {
+    alternatives,
     departure,
     setDeparture,
     entries,

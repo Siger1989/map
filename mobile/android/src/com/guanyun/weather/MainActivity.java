@@ -16,10 +16,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
-/** A bundled client, with no remote start page and no JavaScript-to-Java bridge. */
+/** A bundled client, with a narrow local recording and document bridge. */
 public final class MainActivity extends Activity {
     private WebView webView;
     private LocationPermissions locationPermissions;
+    private AppFiles appFiles;
+    private NativeBridge nativeBridge;
+    private boolean foreground;
+    boolean trustedForeground() { return foreground && webView != null && webView.getUrl() != null && webView.getUrl().startsWith(START); }
     private static final String START = "https://appassets.androidplatform.net/index.html";
 
     @Override public void onCreate(Bundle state) {
@@ -40,19 +44,22 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
-        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.1.5");
+        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.0");
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
         settings.setAllowFileAccess(false);
-        settings.setAllowContentAccess(false);
+        settings.setAllowContentAccess(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setSupportZoom(false); // The map, not the whole document, handles pinch gestures.
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setGeolocationEnabled(true);
-        locationPermissions = new LocationPermissions(this);
+        appFiles = new AppFiles(this);
+        nativeBridge = new NativeBridge(this, appFiles);
+        webView.addJavascriptInterface(nativeBridge, "GuanyunNative");
+        locationPermissions = new LocationPermissions(this, appFiles);
         webView.setWebChromeClient(locationPermissions);
         final LocalGateway gateway = new LocalGateway(getApplicationContext());
         webView.setWebViewClient(new WebViewClient() {
@@ -93,11 +100,13 @@ public final class MainActivity extends Activity {
             if (!"true".equals(result)) MainActivity.super.onBackPressed();
         });
     }
-    @Override protected void onPause() { webView.onPause(); webView.pauseTimers(); super.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } }
+    @Override protected void onPause() { foreground = false; webView.onPause(); webView.pauseTimers(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); foreground = true; if (webView != null) { webView.resumeTimers(); webView.onResume(); } }
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
+        if (requestCode == NativeBridge.REQUEST && nativeBridge != null) nativeBridge.resolve();
         if (requestCode == LocationPermissions.REQUEST && locationPermissions != null) locationPermissions.resolve();
     }
-    @Override protected void onDestroy() { if (locationPermissions != null) locationPermissions.cancel(); if (webView != null) webView.destroy(); super.onDestroy(); }
+    @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request,result,data); if(appFiles!=null)appFiles.result(request,result,data); }
+    @Override protected void onDestroy() { if(appFiles!=null)appFiles.close(); if (locationPermissions != null) locationPermissions.cancel(); if (webView != null) webView.destroy(); super.onDestroy(); }
 }

@@ -33,6 +33,22 @@ export function useAnnotations() {
     }
     return () => lookup.current?.abort();
   }, []);
+  useEffect(() => {
+    const reload = () => {
+      try {
+        const saved = parseAnnotations(
+          localStorage.getItem(ANNOTATION_STORAGE),
+        );
+        current.current = saved;
+        setItems(saved);
+        writable.current = true;
+      } catch {
+        /* Existing state remains available. */
+      }
+    };
+    window.addEventListener('guanyun-data-changed', reload);
+    return () => window.removeEventListener('guanyun-data-changed', reload);
+  }, []);
   const persist = (next: Annotation[]) => {
     if (!writable.current) {
       setError('标记存档不可写，请先备份原数据。');

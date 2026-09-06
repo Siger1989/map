@@ -6,7 +6,11 @@ import {
   precipitationColor,
   temperatureColor,
 } from './routeProgress';
-import { beijingTime, type RouteJourneyState } from './useRouteJourney';
+import {
+  beijingInput,
+  beijingTime,
+  type RouteJourneyState,
+} from './useRouteJourney';
 export function RouteWeatherRail({
   route,
   journey: j,
@@ -173,6 +177,35 @@ export function RouteWeatherSettings({
       <p className="route-note">
         按各路段预计耗时匹配沿途预报，左侧上方为起点、下方为终点。未计实时路况或休息。
       </p>
+      {j.forecast && (
+        <>
+          <p className="route-note">
+            {j.forecast.stale ? '离线 / 旧预报快照' : '预报更新'} ·{' '}
+            {beijingTime(j.forecast.fetchedAt)}
+          </p>
+          <div className="departure-options" aria-label="出发时间天气比较">
+            {j.alternatives.map((option) => (
+              <button
+                key={option.offset}
+                disabled={!j.validTime}
+                onClick={() => j.setDeparture(beijingInput(option.time))}
+              >
+                {option.offset === 0
+                  ? '当前时间'
+                  : option.offset < 0
+                    ? '提前 2 小时'
+                    : '推迟 2 小时'}
+                {option.complete
+                  ? ` · 最大时雨量 ${option.rain} mm · 风 ${option.wind} m/s`
+                  : ' · 超出预报范围或缺测'}
+              </button>
+            ))}
+          </div>
+          <p className="route-note">
+            比较沿途采样点的最大时雨量与风速，不能代表整条路线的全部天气。
+          </p>
+        </>
+      )}
       {!j.validTime && <p className="route-error">请填写有效时间。</p>}
       {j.error && <p className="route-error">{j.error}</p>}
       <button className="route-primary" disabled={j.loading} onClick={j.retry}>

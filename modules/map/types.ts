@@ -16,14 +16,14 @@ export type LayerSettings = {
 };
 export const DEFAULT_LAYERS: LayerSettings = {
   terrain: true,
-  satellite: true,
-  contours: true,
+  satellite: false,
+  contours: false,
   elevationColors: false,
   geology: false,
   geologySource: 'world',
   geologyOpacity: 0.85,
-  clouds: true,
-  rain: true,
+  clouds: false,
+  rain: false,
   roads: true,
   labels: true,
   opacity: 0.6,
@@ -31,7 +31,10 @@ export const DEFAULT_LAYERS: LayerSettings = {
   imageryMode: 'detail',
 };
 /** Thematic colours must not blend into a misleading combined legend. */
-export function applyLayerPatch(current: LayerSettings, patch: Partial<LayerSettings>): LayerSettings {
+export function applyLayerPatch(
+  current: LayerSettings,
+  patch: Partial<LayerSettings>,
+): LayerSettings {
   const next = { ...current, ...patch };
   if (patch.geology === true) next.elevationColors = false;
   else if (patch.elevationColors === true) next.geology = false;

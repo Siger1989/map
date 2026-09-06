@@ -11,6 +11,7 @@ export type ManualTrack = {
   segments: Coordinate[][];
   createdAt: number;
   style?: TrackStyle;
+  samples?: { time: number | null; altitude: number | null }[][];
   nodes?: Coordinate[];
 };
 export const MAX_TRACK_POINTS = 6000;
@@ -61,6 +62,23 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
           (line: unknown) =>
             Array.isArray(line) && line.length >= 2 && line.every(coordinate),
         ) &&
+        (v.samples === undefined ||
+          (Array.isArray(v.samples) &&
+            v.samples.length === v.segments.length &&
+            v.samples.every(
+              (line: unknown, index: number) =>
+                Array.isArray(line) &&
+                line.length === v.segments[index].length &&
+                line.every(
+                  (sample) =>
+                    sample &&
+                    (sample.time === null ||
+                      (Number.isFinite(sample.time) &&
+                        Math.abs(sample.time) <= 8640000000000000)) &&
+                    (sample.altitude === null ||
+                      Number.isFinite(sample.altitude)),
+                ),
+            ))) &&
         v.segments.reduce((n: number, line: unknown[]) => n + line.length, 0) <=
           MAX_TRACK_POINTS,
     );

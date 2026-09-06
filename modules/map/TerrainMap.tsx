@@ -1,4 +1,5 @@
-'use client';
+import { offlineProtocol, offlineTransform } from '../outdoor/offline';
+('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Map } from 'maplibre-gl';
 import { addContours, baseStyle } from '../terrain/terrain';
@@ -408,9 +409,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           // DEM and vector decoding do not silently wait on an HTML fallback URL.
           maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
           maplibre.setWorkerCount(2);
+          maplibre.addProtocol('tripcache', offlineProtocol);
           const map = new maplibre.Map({
             container: container.current,
             style: baseStyle(),
+            transformRequest: offlineTransform,
+            pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
             ...INITIAL_VIEW,
             hash: true,
             maxPitch: 80,
@@ -466,6 +470,28 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             new maplibre.AttributionControl({ compact: true }),
             'bottom-left',
           );
+          const attribution = container.current.querySelector(
+            'details.maplibregl-ctrl-attrib',
+          );
+          if (attribution) {
+            const minimize = () => {
+              if (!attribution.classList.contains('maplibregl-compact')) return;
+              attribution.classList.remove('maplibregl-compact-show');
+              attribution.removeAttribute('open');
+              observer.disconnect();
+            };
+            const observer = new MutationObserver(minimize);
+            observer.observe(attribution, {
+              attributes: true,
+              childList: true,
+              subtree: true,
+            });
+            minimize();
+            attribution
+              .querySelector('summary')
+              ?.setAttribute('aria-label', '地图数据来源');
+            map.on('remove', () => observer.disconnect());
+          }
           map.addControl(
             new maplibre.ScaleControl({ maxWidth: 100, unit: 'metric' }),
             'bottom-left',

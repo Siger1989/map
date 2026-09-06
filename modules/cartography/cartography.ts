@@ -36,6 +36,25 @@ export function addCartography(map: Map) {
     type: 'vector',
     url: 'https://tiles.openfreemap.org/planet',
   });
+  for (const [id, sourceLayer, color] of [
+    ['open-landcover', 'landcover', '#36524b'],
+    ['open-water', 'water', '#285368'],
+    ['open-buildings', 'building', '#72857c'],
+  ])
+    map.addLayer(
+      {
+        id,
+        type: 'fill',
+        source: 'openmaptiles',
+        'source-layer': sourceLayer,
+        layout: { visibility: 'none' },
+        paint: {
+          'fill-color': color,
+          'fill-opacity': id === 'open-landcover' ? 0.45 : 0.85,
+        },
+      },
+      'hillshade',
+    );
   map.addLayer({
     id: 'rivers',
     type: 'line',
@@ -220,6 +239,10 @@ export function addCartography(map: Map) {
 }
 export function syncCartography(map: Map, settings: LayerSettings) {
   for (const [ids, visible] of [
+    [
+      ['open-landcover', 'open-water', 'open-buildings'],
+      !settings.satellite && !settings.geology && !settings.elevationColors,
+    ],
     [ROAD_IDS, settings.roads],
     [LABEL_IDS, settings.labels],
   ] as const) {

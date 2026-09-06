@@ -78,6 +78,17 @@ export function useManualTracks() {
       );
     } catch {}
   }, []);
+  useEffect(() => {
+    const reload = () => {
+      try {
+        setSaved(parseSavedTracks(localStorage.getItem(TRACK_STORAGE)));
+      } catch {
+        /* Existing state remains available. */
+      }
+    };
+    window.addEventListener('guanyun-data-changed', reload);
+    return () => window.removeEventListener('guanyun-data-changed', reload);
+  }, []);
   const persist = (tracks: ManualTrack[]) => {
     try {
       localStorage.setItem(TRACK_STORAGE, JSON.stringify(tracks));

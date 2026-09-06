@@ -6,7 +6,11 @@ export type RouteHour = {
   wind: number | null;
   code: number | null;
 };
-export type RouteForecast = { fetchedAt: number; points: RouteHour[][] };
+export type RouteForecast = {
+  fetchedAt: number;
+  stale?: boolean;
+  points: RouteHour[][];
+};
 const cache = new Map<string, RouteForecast>();
 export function parseForecast(payload: unknown, count: number): RouteHour[][] {
   const records = Array.isArray(payload) ? payload : [payload];
@@ -57,6 +61,24 @@ export async function fetchRouteWeather(
   stops: JourneySample[],
   signal: AbortSignal,
 ): Promise<RouteForecast> {
+  try {
+    if (!cache.size && typeof localStorage !== 'undefined') {
+      const stored = JSON.parse(
+        localStorage.getItem('guanyun.route-weather.v1') ?? '[]',
+      );
+      for (const [key, value] of stored.slice(0, 8))
+        if (
+          typeof key === 'string' &&
+          Number.isFinite(value?.fetchedAt) &&
+          Array.isArray(value.points) &&
+          value.points.every(
+            (p: unknown) =>
+              Array.isArray(p) && p.every((h) => h && Number.isFinite(h.time)),
+          )
+        )
+          cache.set(key, value);
+    }
+  } catch {}
   const key = stops.map((s) => s.coordinates.join(',')).join(';'),
     cached = cache.get(key);
   if (cached && Date.now() - cached.fetchedAt < 15 * 60000) return cached;
@@ -69,21 +91,33 @@ export async function fetchRouteWeather(
     timezone: 'GMT',
     wind_speed_unit: 'ms',
   });
-  const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?${query}`,
-    { signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]) },
-  );
-  if (!response.ok)
-    throw new Error(
-      response.status === 429
-        ? '天气服务请求较多，请稍后重试。'
-        : `沿途天气暂不可用（${response.status}）`,
+  try {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?${query}`,
+      { signal: AbortSignal.any([signal, AbortSignal.timeout(25000)]) },
     );
-  const result = {
-    fetchedAt: Date.now(),
-    points: parseForecast(await response.json(), stops.length),
-  };
-  if (cache.size >= 12) cache.delete(cache.keys().next().value!);
-  cache.set(key, result);
-  return result;
+    if (!response.ok)
+      throw new Error(
+        response.status === 429
+          ? '天气服务请求较多，请稍后重试。'
+          : `沿途天气暂不可用（${response.status}）`,
+      );
+    const result = {
+      fetchedAt: Date.now(),
+      points: parseForecast(await response.json(), stops.length),
+    };
+    if (cache.size >= 12) cache.delete(cache.keys().next().value!);
+    cache.set(key, result);
+    try {
+      if (typeof localStorage !== 'undefined')
+        localStorage.setItem(
+          'guanyun.route-weather.v1',
+          JSON.stringify([...cache.entries()].slice(-8)),
+        );
+    } catch {}
+    return result;
+  } catch (e) {
+    if (cached && !signal.aborted) return { ...cached, stale: true };
+    throw e;
+  }
 }

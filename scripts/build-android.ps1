@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$SdkRoot = 'D:\GodotAndroid\sdk',
   [string]$JdkRoot = 'D:\GodotAndroid\jdk-17-portable\jdk-17.0.19+10',
   [switch]$SkipWebBuild
@@ -71,7 +71,7 @@ try {
     & $keytoolExe -genkeypair -keystore $keyStore -storepass android -keypass android -alias guanyun-test -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Guanyun Local Test' -noprompt
     Check-Tool 'Test signing key'
   }
-  [xml]$manifest = Get-Content -LiteralPath (Join-Path $androidRoot 'AndroidManifest.xml') -Raw
+  [xml]$manifest = Get-Content -LiteralPath (Join-Path $androidRoot 'AndroidManifest.xml') -Raw -Encoding UTF8
   $versionName = $manifest.manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
   if ($versionName -notmatch '^[0-9A-Za-z.-]+$') { throw 'Invalid APK version name' }
   $apkName = "Guanyun-$versionName.apk"

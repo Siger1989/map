@@ -1,5 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Clock3, Layers, Route, MapPinPlus, X } from 'lucide-react';
+import {
+  Clock3,
+  Layers,
+  Route,
+  MapPinPlus,
+  X,
+  Menu,
+  Footprints,
+  Orbit,
+} from 'lucide-react';
 
 export type ControlPanel =
   | 'weather'
@@ -9,8 +18,12 @@ export type ControlPanel =
   | 'track'
   | 'favorites'
   | 'annotations'
+  | 'tools'
+  | 'outdoor'
   | null;
 const PANELS = [
+  { id: 'outdoor', label: '行程', icon: Footprints },
+  { id: 'tools', label: '工具', icon: Menu },
   { id: 'time', label: '时间', icon: Clock3 },
   { id: 'layers', label: '图层', icon: Layers },
   { id: 'route', label: '路线', icon: Route },
@@ -25,7 +38,11 @@ export function ControlDock({
   timeline,
   timeLabel = '时间',
   children,
+  cameraOpen,
+  onCamera,
 }: {
+  cameraOpen: boolean;
+  onCamera: () => void;
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
   summary: ReactNode;
@@ -98,38 +115,63 @@ export function ControlDock({
             </button>
           </div>
           <div className="dock-content" key={active}>
-            {active === 'time' ? timeline : children}
+            {active === 'tools' ? (
+              <div className="tool-grid">
+                {PANELS.filter((p) => !['tools', 'outdoor'].includes(p.id)).map(
+                  ({ id, label, icon: Icon }) => (
+                    <button key={id} onClick={() => onActive(id)}>
+                      <Icon size={18} />
+                      {id === 'time' ? timeLabel : label}
+                    </button>
+                  ),
+                )}
+                <button aria-pressed={cameraOpen} onClick={onCamera}>
+                  <Orbit size={18} />
+                  视角盘
+                </button>
+                <button onClick={() => onActive('outdoor')}>
+                  <Footprints size={18} />
+                  行程与数据
+                </button>
+              </div>
+            ) : active === 'time' ? (
+              timeline
+            ) : (
+              children
+            )}
           </div>
         </section>
       )}
       <div className="map-toolbar">
         {summary}
         <nav className="dock-navigation glass" aria-label="地图功能">
-          {PANELS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              data-panel-toggle={id}
-              aria-label={id === 'time' ? `天气时间轴，${timeLabel}` : label}
-              aria-expanded={
-                active === id || (id === 'route' && active === 'track')
-              }
-              aria-controls={
-                active === id || (id === 'route' && active === 'track')
-                  ? 'map-control-panel'
-                  : undefined
-              }
-              onClick={() =>
-                onActive(
+          {[PANELS[0], PANELS.find((p) => p.id === 'route')!, PANELS[1]].map(
+            ({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                data-panel-toggle={id}
+                aria-label={id === 'time' ? `天气时间轴，${timeLabel}` : label}
+                aria-expanded={
                   active === id || (id === 'route' && active === 'track')
-                    ? null
-                    : id,
-                )
-              }
-            >
-              <Icon size={16} />
-              <span>{id === 'time' ? timeLabel : label}</span>
-            </button>
-          ))}
+                }
+                aria-controls={
+                  active === id || (id === 'route' && active === 'track')
+                    ? 'map-control-panel'
+                    : undefined
+                }
+                onClick={() =>
+                  onActive(
+                    active === id || (id === 'route' && active === 'track')
+                      ? null
+                      : id,
+                  )
+                }
+              >
+                <Icon size={16} />
+                <span>{id === 'time' ? timeLabel : label}</span>
+              </button>
+            ),
+          )}
         </nav>
       </div>
     </section>

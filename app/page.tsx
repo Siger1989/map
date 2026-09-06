@@ -1,5 +1,8 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRecording } from '@/modules/outdoor/useRecording';
+import { useOffline } from '@/modules/outdoor/useOffline';
+import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { CloudSun, Mountain, RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerPanel } from '@/modules/controls/LayerPanel';
@@ -84,6 +87,16 @@ export default function Home() {
   const position = usePosition();
   const tracks = useManualTracks();
   const annotations = useAnnotations();
+  const recorder = useRecording();
+  const offline = useOffline();
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const recordedSegments = useMemo(
+    () =>
+      recorder.record.segments
+        .filter((s) => s.length >= 2)
+        .map((s) => s.map((p) => p.coordinates)),
+    [recorder.record],
+  );
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
   const [sectionDraft, setSection] = useState<SectionSettings>({
     enabled: false,
@@ -166,9 +179,19 @@ export default function Home() {
   );
   const trackOverlay = useMemo(
     () => ({
-      saved: tracks.overlaySaved,
+      saved: recordedSegments.length
+        ? [
+            ...tracks.overlaySaved,
+            {
+              id: 'live-recording',
+              name: '实走记录',
+              createdAt: recorder.record.startedAt,
+              segments: recordedSegments,
+            },
+          ]
+        : tracks.overlaySaved,
       draft: tracks.draft,
-      visible: tracks.visible,
+      visible: tracks.visible || recorder.record.phase !== 'idle',
       style: tracks.style,
       nodes: tracks.vertices,
       selectedId: tracks.selectedId,
@@ -181,6 +204,9 @@ export default function Home() {
           : null,
     }),
     [
+      recordedSegments,
+      recorder.record.startedAt,
+      recorder.record.phase,
       tracks.overlaySaved,
       tracks.draft,
       tracks.visible,
@@ -496,7 +522,7 @@ export default function Home() {
           </button>
         )
       )}
-      <div className="map-legends">
+      <div className="map-legends" hidden={panel !== 'layers'}>
         {layers.elevationColors && <ElevationLegend />}
         {layers.geology && (
           <GeologyPanel
@@ -566,8 +592,22 @@ export default function Home() {
           map.current?.view(layers.terrain ? 0 : 62, view.bearing);
         }}
       />
+      {recorder.record.phase !== 'idle' && (
+        <button
+          className="recording-chip glass"
+          onClick={() => setPanel('outdoor')}
+        >
+          {recorder.record.phase === 'recording' ? '● 记录中' : '记录待处理'} ·{' '}
+          {recorder.record.segments.reduce((n, s) => n + s.length, 0)} 点
+        </button>
+      )}
       <ControlDock
         active={panel}
+        cameraOpen={cameraOpen}
+        onCamera={() => {
+          setCameraOpen((v) => !v);
+          setPanel(null);
+        }}
         onActive={(next) => {
           if (next) {
             tracks.pause();
@@ -605,6 +645,36 @@ export default function Home() {
           />
         }
       >
+        {panel === 'outdoor' && (
+          <OutdoorPanel
+            recorder={recorder}
+            offline={offline}
+            points={
+              selectedTrack?.segments.flat() ??
+              navigation.route?.coordinates ?? [[point.lng, point.lat]]
+            }
+            name={
+              selectedTrack?.name ??
+              (navigation.route ? '当前规划路线' : '地图选点周边')
+            }
+            onShow={(points) => {
+              map.current?.fitRoute(points);
+              setPanel(null);
+            }}
+            onOpenMap={() =>
+              update({
+                satellite: false,
+                contours: false,
+                clouds: false,
+                rain: false,
+                geology: false,
+                elevationColors: false,
+                roads: true,
+                labels: true,
+              })
+            }
+          />
+        )}
         {panel === 'annotations' && (
           <AnnotationPanel
             state={annotations}
@@ -808,15 +878,17 @@ export default function Home() {
           onRetry={() => map.current?.refreshSection()}
         />
       )}
-      <CameraGizmo
-        view={view}
-        onView={(pitch, bearing) => {
-          position.free();
-          if (pitch > 0 && !layers.terrain && !section.enabled)
-            update({ terrain: true });
-          map.current?.view(pitch, bearing, false);
-        }}
-      />
+      {cameraOpen && (
+        <CameraGizmo
+          view={view}
+          onView={(pitch, bearing) => {
+            position.free();
+            if (pitch > 0 && !layers.terrain && !section.enabled)
+              update({ terrain: true });
+            map.current?.view(pitch, bearing, false);
+          }}
+        />
+      )}
     </main>
   );
 }

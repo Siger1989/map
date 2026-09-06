@@ -1,4 +1,12 @@
-import { Compass, LocateFixed, Minus, Plus, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Compass,
+  LocateFixed,
+  Minus,
+  Plus,
+  Smartphone,
+  MoreHorizontal,
+} from 'lucide-react';
 import type { DirectionMode } from '../position/types';
 import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 
@@ -31,6 +39,7 @@ export function MapActions({
   sectionActive: boolean;
   onSection: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   return (
     <nav className="map-actions glass" aria-label="地图快捷操作">
       <button
@@ -51,39 +60,46 @@ export function MapActions({
           停定位
         </button>
       )}
-      <button
-        className="icon-button"
-        aria-label="放大地图"
-        onClick={() => onZoom(1)}
-      >
-        <Plus size={21} />
-      </button>
-      <button
-        className="icon-button"
-        aria-label="缩小地图"
-        onClick={() => onZoom(-1)}
-      >
-        <Minus size={21} />
-      </button>
-      <button
-        className="icon-button direction-button"
-        aria-label="正北朝上"
-        aria-pressed={direction === 'north'}
-        onClick={onNorth}
-      >
-        <Compass size={22} style={{ transform: `rotate(${-bearing}deg)` }} />
-        <small>北</small>
-      </button>
-      <button
-        className="icon-button direction-button"
-        aria-label="跟随手机方向"
-        disabled={sectionActive}
-        aria-pressed={direction === 'device'}
-        onClick={onDevice}
-      >
-        <Smartphone size={19} />
-        <small>随</small>
-      </button>
+      {expanded && (
+        <>
+          <button
+            className="icon-button"
+            aria-label="放大地图"
+            onClick={() => onZoom(1)}
+          >
+            <Plus size={21} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="缩小地图"
+            onClick={() => onZoom(-1)}
+          >
+            <Minus size={21} />
+          </button>
+          <button
+            className="icon-button direction-button"
+            aria-label="正北朝上"
+            aria-pressed={direction === 'north'}
+            onClick={onNorth}
+          >
+            <Compass
+              size={22}
+              style={{ transform: `rotate(${-bearing}deg)` }}
+            />
+            <small>北</small>
+          </button>
+          <button
+            className="icon-button direction-button"
+            aria-label="跟随手机方向"
+            disabled={sectionActive}
+            aria-pressed={direction === 'device'}
+            onClick={onDevice}
+          >
+            <Smartphone size={19} />
+            <small>随</small>
+          </button>
+        </>
+      )}
       <button
         className="dimension-button"
         disabled={sectionActive}
@@ -92,6 +108,14 @@ export function MapActions({
         onClick={onDimension}
       >
         {terrain ? '3D' : '2D'}
+      </button>
+      <button
+        className="icon-button"
+        aria-label="更多地图操作"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <MoreHorizontal size={21} />
       </button>
       {TERRAIN_SECTION_ENABLED && (
         <button

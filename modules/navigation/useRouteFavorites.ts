@@ -17,6 +17,17 @@ export function useRouteFavorites() {
       setMessage('收藏夹暂时无法读取。');
     }
   }, []);
+  useEffect(() => {
+    const reload = () => {
+      try {
+        setItems(parseFavorites(localStorage.getItem(FAVORITES_STORAGE)));
+      } catch {
+        /* Existing state remains available. */
+      }
+    };
+    window.addEventListener('guanyun-data-changed', reload);
+    return () => window.removeEventListener('guanyun-data-changed', reload);
+  }, []);
   const persist = (next: RouteFavorite[]) => {
     try {
       localStorage.setItem(FAVORITES_STORAGE, JSON.stringify(next));

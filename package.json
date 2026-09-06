@@ -24,6 +24,7 @@
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.2",
     "fast-xml-parser": "^5.11.1",
+    "fflate": "0.8.3",
     "input-otp": "1.4.2",
     "lucide-react": "1.31.0",
     "maplibre-contour": "^0.1.0",
