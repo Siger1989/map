@@ -1,4 +1,4 @@
-# 当前任务：户外实用版与极简地图 UI（2026-09-07，进行中）
+# 当前交付：户外实用版与极简地图 UI（2026-09-07，完成）
 - 当前目标：按用户授权优化可靠轨迹记录、离线行程、标准文件导入导出、沿途天气与地图性能；减少常驻 UI 占用，优先国内免费图源，完成新版 APK 和 GitHub Release。
 - 当前进展：已接入独立 outdoor 模块（轨迹记录、GPX/KML/KMZ 导入与数据备份、可续传离线包）、Android 定位前台服务/文件选择器；UI 三入口和折叠视角盘、默认开源底图及较少动态图层。剖面继续停用。
 - 实施顺序：独立 outdoor 模块负责记录、文件交换/备份和离线行程；安卓 location 前台服务和用户文件选择/导出；地图原生协议离线缓存；紧凑工具入口、默认减少云雨/等高线负担；沿途天气出发时间比较；双入口和 APK 验证。
@@ -7,13 +7,16 @@
 - 命令：git status、git diff --stat、git pull --ff-only、读取 AGENTS/README/CURRENT_STATE/LOG 和相关源码；官方资料检索。
 - 验证结果：PASS。最终 TypeScript、118/118 测试、双手机尺寸 UI、GPX/KML/KMZ 交换与非法文件拒绝、真实离线缓存渲染、网页和 APK 构建、v2/v3 签名及 541 项静态资源逐项哈希均通过。ADB 无设备，真机未验证。
 - 当前阻塞：无。用户询问其他开源来源，已采用无 Key 的 OpenFreeMap / OSM，不声称其服务器位于国内。
-- 下一步：提交推送并核验 origin/main，再上传/发布 GitHub 0.2.0-test Release 和附件校验。
+- 下一步：本轮开发、构建与交付完成。可覆盖安装 0.2.0-test；用户真机短途、锁屏定位和耗电体验待反馈。
 - 本轮验证：PASS。118 项逻辑测试；390×844 / 360×780 UI（地图优先、浮窗 ≤38dvh/320px、避开快捷按钮、无横向溢出）、GPX 导入/JSON 下载、视角盘开合、记录暂停继续、页面异常均通过。截图 artifacts/screenshots/outdoor-{map,panel}-{390-844,360-780}.png；PASS。地图来源收起后可点开，剖面停用。
 - 离线验证：PASS。独立上下文下载 298 项 / 39,796,624 字节，切断外网和 /api/terrain 后重新加载仍有 4 张可渲染矢量瓦片和道路要素；删除一个字体缓存后完整性报告缺失 1 项。截图 artifacts/screenshots/outdoor-offline-390.png；PASS。首次离线脚本使用 MapLibre 旧私有 _tiles 字段失败，改用当前 getRenderableIds 后通过，产品离线下载本身成功。
 - 构建验证：网页生产构建和第三轮 APK 编译/DEX/签名 PASS，473 张内置地形完整；最终 APK 已包含后续 GPX 元数据/界面修正。ADB 无连接设备，原生锁屏定位、安装、触控和耗电未实测。日志 .openai/{tests-outdoor-final,browser-outdoor-final,offline-outdoor-second,build-outdoor-web,build-apk-outdoor-third}.log。
 
 - 最终 APK：APK/Guanyun-0.2.0-test.apk，56,974,093 字节，SHA-256 ba1409082d2074c1176936af3b07fd45866f7ddc221db307548e1a1800b573e8；包名 preview，versionCode 7；沿用 0.1.4/0.1.5 签名 a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c，可覆盖安装。APK/校验/安装说明不进入源码 Git；签名密钥未上传。
 - 最终日志：.openai/{typecheck-outdoor-final,tests-outdoor-final,browser-outdoor-final,exchange-outdoor,offline-outdoor-second,build-outdoor-web-final,build-apk-outdoor-final,verify-apk-outdoor-assets}.log。无删除业务文件。标记/手绘/收藏存档保持兼容，剖面仍为 false。
+
+- GitHub 交付：功能提交 6cd41327f96346b155c88b40f3a8239f7529771b 已推送 origin/main 并通过 ls-remote 核验。Release https://github.com/Siger1989/map/releases/tag/v0.2.0-test 已公开发布（draft=false、prerelease=true），指向该构建提交；APK/校验/安装说明三个附件均 uploaded，服务器大小与 SHA-256 匹配本地。签名密钥和本机日志未上传。最终状态收尾随后提交同步，不涉及构建源码修改。
+- 发布日志：.openai/{sync-outdoor,upload-apk-020,publish-apk-020,release-apk-020-verified}.log。
 
 # 当前任务：暂时停用剖面（2026-09-06）
 - 当前目标：按用户“先不要这个功能”的要求停用全部剖面入口及运行接入。
