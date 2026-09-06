@@ -1,12 +1,14 @@
-# 当前任务：地点直接输入、途经点排序与细长可拖行程条（2026-09-07）
+# 当前交付：地点直接输入、途经点排序与细长可拖行程条（2026-09-07，完成）
 - 当前目标：按用户截图改进路线操作；起终点就地输入搜索、添加途经点、手机拖柄排序；左侧行程条更长更细，拖动联动地图预览和沿途天气。
 - 当前进展：地点栏改为直接输入与原位搜索结果，支持 8 个途经点、增删、地图选点及触摸/键盘排序；多点请求、途经点地图编号和收藏恢复已接通。细长色带连续预览，独立游标同步地图中心，保留真实 GPS 进度；预览时不触发普通 moveend 的轨迹重传/卫星天气请求。原 3D 控制器仍默认显示。
 - 文件：navigation 地点列表/provider/类型/收藏与 RoutePanel；journey 预览采样/RouteWeatherRail/CSS；地图预览游标接口、app 接入；版本与文档/验证。
 - 命令：git status、git diff --stat、读取项目规范、git pull --ff-only（已同步）；查阅 Valhalla 官方 API，确认 locations 按顺序访问、break 支持独立路段。
 - 验证结果：首轮 PASS。TypeScript、122/122 逻辑测试；真实 Valhalla 三点请求返回 3 个吸附点、10 个步骤。390×844 / 360×780 浏览器通过直接输入、地图起点选择、真实触摸拖柄排序、请求顺序、连续进度拖动、收藏恢复和 460px 键盘压缩视口。截图 artifacts/screenshots/route-{input,scrub}-{390-844,360-780}.png 与 route-keyboard-{390,360}.png；PASS。首次脚本搜索结果正则漏空格，修正定位器后通过，非产品故障。
 - 当前阻塞：无。
-- 下一步：源码同步与发布 APK 0.2.2-test/code9。最终 TypeScript、122/122 测试、网页和安卓构建 PASS；548 项静态资源逐项哈希一致，v2/v3 签名保持旧测试证书。APK 57568587 字节，SHA-256 588c97933a538ae9a7896d87f1b6a008b002a4bef150340ee7ab203589c5a334。原 3D 控制器保持默认显示；剖面仍停用。
+- 下一步：本轮开发、验证、构建与交付完成，可覆盖安装 0.2.2-test/code9，真机体验待用户反馈。最终 TypeScript、122/122 测试、网页和安卓构建 PASS；548 项静态资源逐项哈希一致，v2/v3 签名保持旧测试证书。APK 57568587 字节，SHA-256 588c97933a538ae9a7896d87f1b6a008b002a4bef150340ee7ab203589c5a334。原 3D 控制器保持默认显示；剖面仍停用。
 - 最终日志：.openai/{typecheck-routes-final,tests-routes-final,browser-routes-final,live-route-multistop,build-web-routes-022,build-apk-routes-022,verify-apk-routes-022}.log。Android 增加 IME inset/adjustResize；无连接真机，系统键盘和触控仍待设备实测。未新增依赖、未删除业务文件，旧收藏与户外存档保持兼容。
+
+- 发布结果：PASS。源码 ea7506a1a775ec26c34e8e9aec2cfa1250550282 已推送 origin/main 并核验远端一致；https://github.com/Siger1989/map/releases/tag/v0.2.2-test 公开发布（prerelease=true、draft=false），指向该构建提交，APK/校验/说明三份附件状态、大小和 SHA-256 与本地一致。日志 .openai/{sync-routes-022,upload-apk-022,publish-apk-022,release-apk-022-verified}.log；最终状态随后单独提交，不涉及构建源码修改。
 
 # 当前交付：恢复原 3D 控制器（2026-09-07，完成）
 - 当前目标：按用户要求保留原有绿色模型与圆环 3D 视角控制器，默认常驻，再交付 APK。
