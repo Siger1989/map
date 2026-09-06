@@ -1,144 +1,183 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { SectionSettings, SectionStatus } from './types';
 export function SectionPanel({
   settings,
   status,
-  onAltitude,
-  onColor,
+  onChange,
   onClose,
   onRetry,
+  onCenter,
 }: {
   settings: SectionSettings;
   status: SectionStatus;
-  onAltitude: (height: number) => void;
-  onColor: (color: string) => void;
+  onChange: (settings: SectionSettings) => void;
   onClose: () => void;
   onRetry: () => void;
+  onCenter: () => void;
 }) {
-  const [text, setText] = useState(String(settings.altitude));
-  const [dragging, setDragging] = useState(false);
-  const [range, setRange] = useState(() => ({
-    min: Math.min(status.min, settings.altitude),
-    max: Math.max(status.max, settings.altitude),
-  }));
-  useEffect(() => setText(String(settings.altitude)), [settings.altitude]);
-  useEffect(() => {
-    // DEM reloads temporarily report default/partial bounds. They must not
-    // change the pointer-to-altitude mapping, or the native range thumb jumps.
-    if (dragging) return;
-    setRange((previous) => {
-      const complete = status.phase === 'ready' && status.valid > 0;
-      const min = Math.min(
-        complete ? status.min : previous.min,
-        settings.altitude,
-      );
-      const max = Math.max(
-        complete ? status.max : previous.max,
-        settings.altitude,
-      );
-      return min === previous.min && max === previous.max
-        ? previous
-        : { min, max };
-    });
-  }, [
-    dragging,
-    status.phase,
-    status.min,
-    status.max,
-    status.valid,
-    settings.altitude,
-  ]);
-  const change = (height: number) => {
-    if (Number.isFinite(height))
-      onAltitude(Math.max(-32768, Math.min(32767, height)));
+  const [expanded, setExpanded] = useState(false);
+  const [group, setGroup] = useState<'position' | 'angle' | 'size'>('angle');
+  const plane = settings.plane!;
+  const patch = (key: string, value: number) => {
+    if (!Number.isFinite(value)) return;
+    if (key === 'altitude')
+      onChange({
+        ...settings,
+        altitude: Math.max(-12000, Math.min(20000, value)),
+      });
+    else onChange({ ...settings, plane: { ...plane, [key]: value } });
   };
-  const loading = status.phase === 'loading' || status.phase === 'idle';
+  const field = (
+    name: string,
+    key: string,
+    value: number,
+    min: number,
+    max: number,
+    step = 1,
+  ) => (
+    <label className="section-field">
+      {name}
+      <input
+        type="number"
+        aria-label={name}
+        min={min}
+        max={max}
+        step={step}
+        value={Math.round(value * 10) / 10}
+        onChange={(e) => {
+          if (e.target.value !== '')
+            patch(key, Math.max(min, Math.min(max, Number(e.target.value))));
+        }}
+      />
+    </label>
+  );
   return (
     <>
-      <aside className="section-slider glass" aria-label="海拔剖面控制">
-        <strong>3D 海拔剖面</strong>
-        <label htmlFor="section-height-number">切面海拔（米）</label>
-        <input
-          id="section-height-number"
-          type="number"
-          min={-32768}
-          max={32767}
-          step={0.1}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') event.currentTarget.blur();
-          }}
-          onBlur={() => {
-            if (text.trim() && Number.isFinite(Number(text)))
-              change(Number(text));
-            else setText(String(settings.altitude));
-          }}
-        />
-        <label className="section-color-control">
-          剖面颜色
-          <input
-            type="color"
-            aria-label="剖面颜色"
-            value={settings.color}
-            onChange={(event) => onColor(event.target.value)}
-          />
-        </label>
-        <span>{Math.ceil(range.max)} m</span>
-        <input
-          className="section-height-range"
-          type="range"
-          aria-label="剖切海拔"
-          aria-orientation="vertical"
-          aria-valuetext={`${settings.altitude} 米`}
-          min={range.min}
-          max={range.max}
-          step={0.1}
-          value={settings.altitude}
-          onPointerDown={(event) => {
-            if (!event.isPrimary || event.button !== 0) return;
-            setDragging(true);
-            event.currentTarget.setPointerCapture(event.pointerId);
-          }}
-          onPointerUp={() => setDragging(false)}
-          onPointerCancel={() => setDragging(false)}
-          onLostPointerCapture={() => setDragging(false)}
-          onBlur={() => setDragging(false)}
-          onChange={(event) => change(Number(event.target.value))}
-        />
-        <span>{Math.floor(range.min)} m</span>
-        <div className="section-fine">
+      <aside className="section-panel glass" aria-label="矩形剖面控制">
+        <header>
+          <strong>矩形剖面</strong>
           <button
-            aria-label="降低一米"
-            onClick={() => change(settings.altitude - 1)}
+            onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
           >
-            −1 m
+            {expanded ? '收起' : '调整'}
           </button>
-          <button
-            aria-label="升高一米"
-            onClick={() => change(settings.altitude + 1)}
-          >
-            ＋1 m
+          <button onClick={onClose} aria-label="退出剖面">
+            退出
           </button>
-        </div>
-        <button onClick={onClose}>退出剖面</button>
+        </header>
+        {!expanded && <p>拖中心移动 · 拉角点缩放</p>}
+        {expanded && (
+          <div className="section-panel-body">
+            <nav aria-label="切面参数分组">
+              {(
+                [
+                  ['position', '位置'],
+                  ['angle', '角度'],
+                  ['size', '尺寸'],
+                ] as const
+              ).map(([key, title]) => (
+                <button
+                  key={key}
+                  aria-pressed={group === key}
+                  onClick={() => setGroup(key)}
+                >
+                  {title}
+                </button>
+              ))}
+            </nav>
+            {group === 'position' && (
+              <>
+                <div className="section-fields">
+                  {field(
+                    '中心海拔（米）',
+                    'altitude',
+                    settings.altitude,
+                    -12000,
+                    20000,
+                  )}
+                  <button onClick={onCenter}>移到视野中心</button>
+                </div>
+                <p>拖动 ✥ 平移位置，海拔控制上下移动。</p>
+              </>
+            )}
+            {group === 'angle' && (
+              <>
+                <label className="section-range">
+                  方位 {Math.round(plane.heading)}°
+                  <input
+                    type="range"
+                    aria-label="切面方位"
+                    min={-180}
+                    max={180}
+                    value={plane.heading}
+                    onChange={(e) => patch('heading', +e.target.value)}
+                  />
+                </label>
+                <label className="section-range">
+                  倾斜 {Math.round(plane.tilt)}°
+                  <input
+                    type="range"
+                    aria-label="切面倾斜"
+                    min={-90}
+                    max={90}
+                    value={plane.tilt}
+                    onChange={(e) => patch('tilt', +e.target.value)}
+                  />
+                </label>
+                <label className="section-range">
+                  面内 {Math.round(plane.roll ?? 0)}°
+                  <input
+                    type="range"
+                    aria-label="切面面内旋转"
+                    min={-180}
+                    max={180}
+                    value={plane.roll ?? 0}
+                    onChange={(e) => patch('roll', +e.target.value)}
+                  />
+                </label>
+                <div className="section-presets">
+                  <button onClick={() => patch('tilt', 0)}>竖直</button>
+                  <button onClick={() => patch('tilt', 90)}>水平</button>
+                </div>
+              </>
+            )}
+            {group === 'size' && (
+              <>
+                <div className="section-fields">
+                  {field('宽度（米）', 'width', plane.width, 50, 200000, 50)}
+                  {field('高度（米）', 'height', plane.height, 50, 30000, 50)}
+                </div>
+                <label className="section-color-control">
+                  剖面颜色
+                  <input
+                    type="color"
+                    aria-label="剖面颜色"
+                    value={settings.color}
+                    onChange={(e) =>
+                      onChange({ ...settings, color: e.target.value })
+                    }
+                  />
+                </label>
+              </>
+            )}
+          </div>
+        )}
       </aside>
       <div
         className="section-caption glass"
-        data-phase={status.phase}
         role="status"
+        data-phase={status.phase}
       >
-        <strong>
-          剖面 ·{' '}
-          {settings.altitude.toLocaleString('zh-CN', {
-            maximumFractionDigits: 1,
-          })}{' '}
-          m
-        </strong>
-        {loading && <span>更新中…</span>}
-        {(status.phase === 'error' || status.phase === 'partial') && (
+        <strong>裁去靠近视点的一侧</strong>
+        {(status.phase === 'loading' || status.phase === 'idle') && (
+          <span>等待地形…</span>
+        )}
+        {(status.phase === 'partial' || status.phase === 'error') && (
           <>
-            <span>{status.phase === 'error' ? '加载失败' : '部分缺测'}</span>
+            <span>
+              {status.phase === 'error' ? '裁切暂不可用' : '部分地形未加载'}
+            </span>
             <button onClick={onRetry}>重试</button>
           </>
         )}

@@ -102,10 +102,21 @@ export default function Home() {
     position.free();
     setPanel(null);
     setSectionStatus(INITIAL_SECTION_STATUS);
+    const placement = map.current?.sectionCenter();
     setSection({
       enabled: true,
-      altitude: Math.round(point.elevation ?? 1500),
+      altitude: placement?.altitude ?? Math.round(point.elevation ?? 1500),
       color: section.color,
+      plane: {
+        center: placement?.center ?? [point.lng, point.lat],
+        width: placement?.width ?? 5000,
+        height: Math.min(
+          30000,
+          Math.max(2000, (placement?.width ?? 5000) * 0.65),
+        ),
+        heading: placement?.heading ?? view.bearing,
+        tilt: 0,
+      },
     });
   };
   const annotationOverlay = useMemo(() => {
@@ -243,6 +254,7 @@ export default function Home() {
         ref={map}
         section={section}
         onSectionStatus={setSectionStatus}
+        onSectionChange={setSection}
         settings={layers}
         onPoint={setPoint}
         onStatus={setMapStatus}
@@ -772,10 +784,16 @@ export default function Home() {
         <SectionPanel
           settings={section}
           status={sectionStatus}
-          onAltitude={(altitude) =>
-            setSection((current) => ({ ...current, altitude }))
-          }
-          onColor={(color) => setSection((current) => ({ ...current, color }))}
+          onChange={setSection}
+          onCenter={() => {
+            const placement = map.current?.sectionCenter();
+            if (placement)
+              setSection((current) => ({
+                ...current,
+                altitude: placement.altitude,
+                plane: { ...current.plane!, center: placement.center },
+              }));
+          }}
           onClose={() =>
             setSection((current) => ({ ...current, enabled: false }))
           }

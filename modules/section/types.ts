@@ -2,6 +2,15 @@ export type SectionSettings = {
   enabled: boolean;
   altitude: number;
   color: string;
+  plane?: SectionPlane;
+};
+export type SectionPlane = {
+  center: [number, number];
+  width: number;
+  height: number;
+  heading: number;
+  tilt: number;
+  roll?: number;
 };
 export type SectionStatus = {
   phase: 'idle' | 'loading' | 'ready' | 'partial' | 'error';

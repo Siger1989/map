@@ -9,6 +9,8 @@ import {
 import { altitudeRange, dimensions, type Annotation } from './data';
 import type { LayerSettings } from '../map/types';
 import { modelSection } from '../section/models';
+import { applyModelPlane } from '../section/planeModels';
+import type { SectionSettings } from '../section/types';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -24,6 +26,8 @@ export class AnnotationLayer implements CustomLayerInterface {
   private items: Annotation[] = [];
   private selected: string | null = null;
   private sectionAltitude: number | null = null;
+  private freeSection: SectionSettings | null = null;
+  private freeSectionSide = 1;
   private settings: Pick<LayerSettings, 'terrain' | 'exaggeration'> = {
     terrain: true,
     exaggeration: 1,
@@ -225,9 +229,22 @@ export class AnnotationLayer implements CustomLayerInterface {
       edges.frustumCulled = false;
     }
     this.updateSections();
+    if (this.freeSection)
+      applyModelPlane(
+        this.scene,
+        this.origin,
+        this.freeSection,
+        this.freeSectionSide,
+      );
     map.triggerRepaint();
   }
   /** Clip in the same local metre space as the combined map projection. */
+  setSectionPlane(settings: SectionSettings | null, side: number) {
+    if (this.freeSection === settings && this.freeSectionSide === side) return;
+    this.freeSection = settings;
+    this.freeSectionSide = side;
+    applyModelPlane(this.scene, this.origin, settings, side);
+  }
   setSectionAltitude(altitude: number | null) {
     if (altitude === this.sectionAltitude) return;
     this.sectionAltitude = altitude;

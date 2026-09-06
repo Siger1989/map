@@ -31,7 +31,8 @@ import {
 import type { RoadSnapper } from '../tracks/roadSnapping';
 import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
-import { SectionLayer } from '../section/SectionLayer';
+import { PlaneSectionLayer } from '../section/PlaneSectionLayer';
+import { TerrainClip } from '../section/terrainClip';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { PositionLayer } from '../position/PositionLayer';
@@ -43,6 +44,12 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  sectionCenter: () => {
+    center: [number, number];
+    altitude: number;
+    width: number;
+    heading: number;
+  } | null;
   refreshSection: () => void;
   snapRoad: RoadSnapper;
   zoom: (amount: number) => void;
@@ -62,6 +69,7 @@ export type MapHandle = {
 type Props = {
   section: SectionSettings;
   onSectionStatus: (status: SectionStatus) => void;
+  onSectionChange: (settings: SectionSettings) => void;
   settings: LayerSettings;
   onPoint: (point: Point) => void;
   onStatus: (status: string) => void;
@@ -103,7 +111,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
-    const sectionRef = useRef<SectionLayer | null>(null);
+    const sectionRef = useRef<PlaneSectionLayer | null>(null);
+    const sectionClipRef = useRef<TerrainClip | null>(null);
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
@@ -267,6 +276,26 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        sectionCenter: () => {
+          const m = mapRef.current;
+          if (!m) return null;
+          const center = m.getCenter().toArray() as [number, number];
+          const metersPerPixel =
+            (40075016.68557849 * Math.cos((center[1] * Math.PI) / 180)) /
+            (512 * 2 ** m.getZoom());
+          return {
+            center,
+            altitude: Math.round(m.queryTerrainElevation(center) ?? 1500),
+            width: Math.max(
+              100,
+              Math.min(
+                200000,
+                metersPerPixel * m.getCanvas().clientWidth * 0.6,
+              ),
+            ),
+            heading: m.getBearing(),
+          };
+        },
         refreshSection: () => sectionRef.current?.refresh(),
         snapRoad: (point, previous) =>
           snapMapRoad(
@@ -394,6 +423,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const sectionGl = map.getCanvas().getContext('webgl2');
+          if (sectionGl) sectionClipRef.current = new TerrainClip(sectionGl);
           drawingRef.current = new DrawingGestureBridge(map, (input) =>
             latest.current.onDrawingInput(input),
           );
@@ -462,12 +493,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             routeRef.current = new RouteLayer(map);
             trackRef.current = new TrackLayer(map);
             positionRef.current = new PositionLayer(map);
-            sectionRef.current = new SectionLayer(
-              map,
-              (status) => latest.current.onSectionStatus(status),
-              maplibre,
-              (altitude) => annotationRef.current?.setSectionAltitude(altitude),
-            );
             try {
               const { AnnotationLayer } =
                 await import('../annotations/AnnotationLayer');
@@ -481,6 +506,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   latest.current.onAnnotationSelect(id);
               });
               map.addLayer(annotationRef.current);
+              if (sectionClipRef.current) {
+                sectionRef.current = new PlaneSectionLayer(
+                  map,
+                  (status) => latest.current.onSectionStatus(status),
+                  sectionClipRef.current,
+                  (settings) => latest.current.onSectionChange(settings),
+                  (settings, side) =>
+                    annotationRef.current?.setSectionPlane(settings, side),
+                );
+                map.addLayer(sectionRef.current, 'annotation-models');
+              }
             } catch {
               if (!disposed)
                 latest.current.onStatus('标记模型暂未加载，地图仍可使用');
@@ -609,6 +645,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         annotationRef.current = null;
         sectionRef.current?.dispose();
         sectionRef.current = null;
+        sectionClipRef.current?.dispose();
+        sectionClipRef.current = null;
         featureDragRef.current?.dispose();
         featureDragRef.current = null;
         drawingRef.current?.dispose();

@@ -1,3 +1,18 @@
+# 当前交付：自由矩形剖面（2026-09-06）
+
+- 当前目标：把固定海拔削顶改成可摆放的矩形剖切面，裁去观察侧山体并显示相交轮廓。
+- 当前进展：实现并验证完成。点击剖面创建当前视野的矩形；中心拖动、四角缩放，位置/海拔、方位/倾斜/面内旋转及颜色可调。矩形外与背侧地形保留，转到背面自动换侧；模型同步裁切封口。原 elevation DEM 保持不变。
+- 修改文件：新增 modules/section/{PlaneSectionLayer,planeMath,planeModels,terrainClip}.ts、scripts/verify-plane-browser.mjs、tests/section-plane.test.mjs；修改 SectionPanel.tsx、section.css、types.ts、TerrainMap.tsx、AnnotationLayer.ts、MapActions.tsx、app/page.tsx、README、docs/elevation-section、LOG 与本状态。没有删除文件；旧水平算法保留用于历史回归但产品入口改用新平面。天气、导航、数据来源、模型/轨迹存档不变。
+- 命令：git status、git diff --stat、git pull --ff-only；oxfmt；npx tsc --noEmit；node --experimental-strip-types --test tests/*.test.mjs；node scripts/verify-plane-browser.mjs；npm run build；npm run build:android:web；git diff --check；本地 HTTP 请求。
+- 验证结果：PASS。TypeScript、113/113 逻辑测试、网页生产构建、安卓静态页面构建和本地 HTTP 200。真实 Edge WebGL 像素、中心拖动、角点缩放、倾斜/面内旋转/水平面、背面换侧、改色、退出重开全部通过；操作时原 elevation 的 setTiles 调用为 0，WebGL/page errors 为空。
+- 手机截图：artifacts/screenshots/free-plane-mobile-{390-844,360-780,360-460}-20260906.png；PASS，390/360 竖屏不横向溢出，调整面板低于 38dvh/320px 且避开右侧工具；360×460 短屏参数内部滚动，退出后重新进入可操作。最初发现短屏视角盘/展开署名挡入口，已将视角盘移左并提高右侧工具层级；最终通过。
+- 地形截图：artifacts/screenshots/free-plane-{front,tilted,rolled,horizontal,back,color}-20260906.png；PASS，真实川西地形被有限矩形切开、轮廓与白/红封口可见，换侧/角度正确；未加载部分不补零。
+- 日志：.openai/{typecheck-free-plane-final,tests-free-plane-final,browser-free-plane-final2,build-free-plane-web,build-free-plane-mobile}-20260906.log。初次 dev 尚未就绪连接失败、两次短屏遮挡过程保留在 browser-free-plane* 日志；长日志/截图已被 Git 忽略。
+- 验证限制：这是原地形 GPU 显示裁切，不是通用网格 CSG；切面轮廓受 64×32 网格与当前 DEM/LOD 精度限制，开口两侧不补实体墙。适配器针对 MapLibre 6.7，升级须重跑 shader 与浏览器检查。没有手机触控/帧率实测；没有重打 APK，手机上已安装的 0.1.5 不会自动获得此次改动。
+- 当前阻塞：无。
+- GitHub 同步：本轮正在提交与推送 main，尚待最终远程 SHA 核验。
+- 下一步：完成 GitHub 同步并交付本地预览；如需手机安装新功能，后续另行构建新版 APK。真机性能与手感待设备验证。
+
 # 天气观察软件 · 当前状态
 
 ## 当前任务：手机标记面板减少遮挡（2026-09-06）
@@ -308,3 +323,19 @@
 - 0.1.3主要源码已接线：position模块的主动定位/绝对方向/误差圈，原生LocationPermissions仅允许本地HTTPS资源域且走Android前台位置权限；路线收藏与恢复、统一收藏夹；journey根据路段耗时计算8点以内的ETA预报，左侧两色带/颜色说明/当前进度，旧定位或偏离路线不强行给进度。
 - 绘制已改为getCanvas()真实CSS尺寸，触摸与放大镜不再依赖零高外层；补充同场景测试。绘制CSS提高触摸优先级，避免禁单指地图平移后浏览器接管拖动；提示分成①定起点②拖绿色环。版本已升0.1.3-test/code4，尚待最终检查/构建。
 - GitHub首次推送已成功：origin/main = 61ba1c63c10a31c8986e2dcfb018fdb00518f22b，与本地首次快照一致。当前功能新增仍未提交/上传；完成0.1.3后再次同步并发测试版Release。不要报告全部新需求已上传。
+
+## 当前任务：自由矩形剖切面（2026-09-06，进行中）
+- 当前目标：将水平海拔剖面改成可拖动、缩放、自由旋转的有限矩形切面，裁掉靠近观察者的一侧并显示相交轮廓。
+- 当前进展：完成项目检查、干净工作区快进同步及 MapLibre 6.7/Three.js 渲染路径核实。采用独立 GPU 裁切适配器与自定义切面图层；原始 DEM 不再因调整切面而改写或 setTiles。保留旧水平算法用于已有测试，产品入口切换至新实现。
+- 涉及文件：modules/section/ 新平面数学、GPU 适配器、图层及控件；TerrainMap、AnnotationLayer、app/page.tsx 接线；相关测试与文档。
+- 已执行命令：git status --short、git diff --stat、git pull --ff-only；读取项目规范、模块源码及安装的 MapLibre 6.7 源码。
+- 验证结果：进行中，尚不可交付。
+- 当前阻塞：无；GPU 接入与真实画面需要专项验证。
+- 下一步：实现有限矩形裁切和交互，检查手机 390×844/360×780 及真实 WebGL 效果，类型/逻辑/双入口构建后同步 GitHub。
+
+### 自由剖面首轮验证
+- 已完成：GPU 裁切、有限矩形边界、实时观察侧选择、DEM 求交填充与单线轮廓、五个拖动手柄、位置/角度/尺寸紧凑分组、模型同面裁切与封口。地图持续使用 elevation 原源。
+- 文件：新增 planeMath.ts、terrainClip.ts、PlaneSectionLayer.ts、planeModels.ts、section-plane.test.mjs；修改 SectionPanel/section.css/types、TerrainMap、AnnotationLayer、app/page.tsx。
+- 命令：npx tsc --noEmit PASS；node --experimental-strip-types --test tests/section-plane.test.mjs，5/5 PASS；oxfmt PASS。初次浏览器在 dev server 未就绪前连接失败，服务就绪后有界复测 PASS。
+- 截图：artifacts/screenshots/free-plane-initial-20260906.png；PASS，真实川西山体沿矩形面裁切、白色轮廓贴合山脊、外侧山体保留；WebGL/page errors 为零，原 elevation 源保持。截图有开口延伸向观察者，为有限矩形沿法线裁切的预期效果。
+- 当前阻塞：无；尚待拖动/角度/背面/手机和完整回归。下一步：专项交互与 GPU 像素验证。

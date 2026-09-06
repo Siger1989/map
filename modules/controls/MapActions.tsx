@@ -94,7 +94,7 @@ export function MapActions({
       </button>
       <button
         className="section-button"
-        aria-label="海拔剖面"
+        aria-label="矩形剖面"
         aria-pressed={sectionActive}
         onClick={onSection}
       >
