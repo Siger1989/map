@@ -28,6 +28,7 @@ import { useManualTracks } from '@/modules/tracks/useManualTracks';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionPanel } from '@/modules/section/SectionPanel';
+import { TERRAIN_SECTION_ENABLED } from '@/config/features';
 import {
   INITIAL_SECTION_STATUS,
   type SectionSettings,
@@ -84,11 +85,18 @@ export default function Home() {
   const tracks = useManualTracks();
   const annotations = useAnnotations();
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
-  const [section, setSection] = useState<SectionSettings>({
+  const [sectionDraft, setSection] = useState<SectionSettings>({
     enabled: false,
     altitude: 1500,
     color: '#ffffff',
   });
+  const section = useMemo(
+    () =>
+      TERRAIN_SECTION_ENABLED
+        ? sectionDraft
+        : { ...sectionDraft, enabled: false },
+    [sectionDraft],
+  );
   const [sectionStatus, setSectionStatus] = useState(INITIAL_SECTION_STATUS);
   const toggleSection = () => {
     if (section.enabled) {

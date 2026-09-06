@@ -1,5 +1,6 @@
 import { Compass, LocateFixed, Minus, Plus, Smartphone } from 'lucide-react';
 import type { DirectionMode } from '../position/types';
+import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 
 export function MapActions({
   terrain,
@@ -92,14 +93,16 @@ export function MapActions({
       >
         {terrain ? '3D' : '2D'}
       </button>
-      <button
-        className="section-button"
-        aria-label="矩形剖面"
-        aria-pressed={sectionActive}
-        onClick={onSection}
-      >
-        剖面
-      </button>
+      {TERRAIN_SECTION_ENABLED && (
+        <button
+          className="section-button"
+          aria-label="矩形剖面"
+          aria-pressed={sectionActive}
+          onClick={onSection}
+        >
+          剖面
+        </button>
+      )}
     </nav>
   );
 }

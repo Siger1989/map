@@ -1,3 +1,12 @@
+# 当前任务：暂时停用剖面（2026-09-06）
+- 当前目标：按用户“先不要这个功能”的要求停用全部剖面入口及运行接入。
+- 当前进展：新增统一功能开关为 false；入口隐藏，剖面状态强制关闭，地图不创建 GPU 包装器和切面图层。历史实现保留，不恢复旧剖面。
+- 文件：config/features.ts、app/page.tsx、TerrainMap.tsx、MapActions.tsx、README、docs/elevation-section、LOG、CURRENT_STATE。无文件删除，其他业务模块和存档不改。
+- 命令：git status、git diff --stat、git pull --ff-only、读取当前说明及接入文件。
+- 验证结果：PASS。TypeScript、113/113 逻辑测试、网页与安卓静态页面构建通过；390×844/360×780 浏览器确认无剖面入口/面板/手柄/图层，WebGL shaderSource 为原生函数，无横向溢出，二维/三维切换和页面错误检查通过。截图 artifacts/screenshots/section-disabled-{390-844,360-780}-20260906.png；PASS，正常地图和右侧工具可达。日志 .openai/{typecheck,tests,browser,build}-disable-section*。
+- 当前阻塞：无。
+- 下一步：保持剖面停用，等待后续指示；本轮不重打 APK。源码按项目规范同步 main，最终远程核验记入 .openai/sync-disable-section-20260906.log。
+
 # 当前交付：自由矩形剖面（2026-09-06）
 
 - 当前目标：把固定海拔削顶改成可摆放的矩形剖切面，裁去观察侧山体并显示相交轮廓。

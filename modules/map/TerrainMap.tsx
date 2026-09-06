@@ -33,6 +33,7 @@ import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
 import { PlaneSectionLayer } from '../section/PlaneSectionLayer';
 import { TerrainClip } from '../section/terrainClip';
+import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { PositionLayer } from '../position/PositionLayer';
@@ -423,7 +424,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
-          const sectionGl = map.getCanvas().getContext('webgl2');
+          const sectionGl = TERRAIN_SECTION_ENABLED
+            ? map.getCanvas().getContext('webgl2')
+            : null;
           if (sectionGl) sectionClipRef.current = new TerrainClip(sectionGl);
           drawingRef.current = new DrawingGestureBridge(map, (input) =>
             latest.current.onDrawingInput(input),
