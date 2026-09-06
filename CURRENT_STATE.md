@@ -11,7 +11,9 @@
 - 构建验证：TypeScript、107/107 逻辑测试、网页生产构建、Android 静态入口及 APK 编译、git diff --check PASS。APK v2/v3 签名、包名 preview/versionCode6、启动 Activity 和 473 张地形瓦片 PASS；521 个 APK 静态资源逐项 SHA-256 与 mobile/dist 一致。ADB 无设备，未做真机安装/触控验收。
 - 本地产物：APK/Guanyun-0.1.5-test.apk，55,219,375 字节，SHA-256 `ACB560A59BA40F5FC24927124B3686392FF95E08D33BFE54A3B5F9BA96F7ED33`；沿用 0.1.4 证书 SHA-256 `a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c`。无需卸载，可覆盖 0.1.4 并保留数据。
 - 构建日志：.openai/{typecheck-mobile-ui,tests-mobile-ui,build-mobile-ui-web,build-apk-015,verify-apk-assets-015}-20260906.log。
-- 下一步：同步源码，上传并校验 0.1.5 Release。
+- GitHub 同步：源码提交 `b94e2bf15bc1dc604d804d13afa0f18089cb92e2` 已推送 main，官方 refs API 核验一致。Release https://github.com/Siger1989/map/releases/tag/v0.1.5-test 已公开发布（prerelease=true、draft=false），目标为该源码提交；APK、SHA256、安装说明均 uploaded，服务器大小和 SHA-256 与本地一致。签名密钥和日志未上传。
+- 发布日志：.openai/{push-mobile-ui,sync-mobile-ui,upload-apk-015,publish-apk-015}-20260906.log 与 release-apk-015-verified.log。
+- 下一步：本轮修改、验证、构建与交付完成；本地预览 localhost:3000 保持运行。手机安装 0.1.5 覆盖 0.1.4 查看新界面，后续 UI 继续遵循 AGENTS 手机尺寸与低遮挡要求。真机手感待设备验证。
 
 ## 当前任务：打包最新 APK（2026-09-06）
 - 当前目标：将当前所有功能及剖面修复打成可安装 APK，校验后提供下载。
