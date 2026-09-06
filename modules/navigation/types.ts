@@ -19,14 +19,16 @@ export type PlannedRoute = {
   duration: number;
   steps: RouteStep[];
   snapped: Coordinate[];
+  stops?: RoutePlace[];
   createdAt: number;
 };
 export type RouteOverlay = {
   start: RoutePlace | null;
   end: RoutePlace | null;
   route: PlannedRoute | null;
+  via?: (RoutePlace | null)[];
 };
-export type Endpoint = 'start' | 'end';
+export type Endpoint = 'start' | 'end' | number;
 export const TRAVEL_MODES: { id: TravelMode; label: string }[] = [
   { id: 'auto', label: '驾车' },
   { id: 'bicycle', label: '骑行' },

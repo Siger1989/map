@@ -6,6 +6,7 @@ import {
   type RoutePlace,
   type TravelMode,
 } from './types.ts';
+import { MAX_ROUTE_STOPS } from './stops.ts';
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
@@ -14,13 +15,27 @@ export const NAVIGATION_SERVICES = {
   search: 'https://photon.komoot.io/api/',
 };
 const cache = new Map<string, { time: number; data: unknown }>();
-let nextRequestAt = 0;
+const nextRequestAt = new Map<string, number>();
 async function requestJSON(url: string, signal: AbortSignal) {
   signal.throwIfAborted();
   const hit = cache.get(url);
   if (hit && Date.now() - hit.time < 15 * 60_000) return hit.data;
-  if (Date.now() < nextRequestAt) throw new Error('操作稍快，请一秒后再试。');
-  nextRequestAt = Date.now() + 1100;
+  const service = new URL(url).host;
+  const wait = Math.max(0, (nextRequestAt.get(service) ?? 0) - Date.now());
+  nextRequestAt.set(service, Date.now() + wait + 1100);
+  if (wait)
+    await new Promise<void>((resolve, reject) => {
+      const cancel = () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      };
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', cancel);
+        resolve();
+      }, wait);
+      signal.addEventListener('abort', cancel, { once: true });
+    });
+  signal.throwIfAborted();
   const response = await fetch(url, {
     signal: AbortSignal.any([signal, AbortSignal.timeout(25_000)]),
     headers: { Accept: 'application/json' },
@@ -107,12 +122,20 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
   const coordinates = line(route.geometry.coordinates);
   let elapsedSeconds = 0;
   const steps = (route.legs ?? [])
-    .flatMap((leg) => leg.steps ?? [])
+    .flatMap((leg, index) =>
+      (leg.steps ?? []).map((step) => ({
+        ...step,
+        viaIndex: index < (route.legs?.length ?? 0) - 1 ? index + 1 : 0,
+      })),
+    )
     .map((step) => {
       if (!metric(step.distance) || !metric(step.duration))
         throw new Error('路线分段数据无效。');
       const result = {
-        instruction: instruction(step),
+        instruction:
+          step.maneuver?.type === 'arrive' && step.viaIndex
+            ? `到达途经点 ${step.viaIndex}`
+            : instruction(step),
         distance: step.distance,
         duration: step.duration,
         elapsedSeconds,
@@ -131,19 +154,28 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
     createdAt: Date.now(),
   };
 }
-export function routeURL(start: RoutePlace, end: RoutePlace, mode: TravelMode) {
+export function routeURL(
+  start: RoutePlace,
+  end: RoutePlace,
+  mode: TravelMode,
+  via: RoutePlace[] = [],
+) {
+  const stops = [start, ...via, end];
   if (
-    !coordinate(start.coordinates) ||
-    !coordinate(end.coordinates) ||
+    stops.length > MAX_ROUTE_STOPS ||
+    !stops.every((p) => p && coordinate(p.coordinates)) ||
     !['auto', 'bicycle', 'pedestrian'].includes(mode)
   )
-    throw new Error('起终点或出行方式无效。');
-  const distance = metresBetween(start.coordinates, end.coordinates);
-  if (distance < 20) throw new Error('起点和终点太近，请选择不同地点。');
-  if (distance > 500_000)
-    throw new Error('测试服务请分成 500 公里以内的路段规划。');
+    throw new Error('地点或出行方式无效，最多支持 8 个途经点。');
+  const distances = stops
+    .slice(1)
+    .map((p, i) => metresBetween(stops[i].coordinates, p.coordinates));
+  if (distances.some((d) => d < 20))
+    throw new Error('相邻地点太近，请间隔至少 20 米。');
+  if (distances.reduce((sum, d) => sum + d, 0) > 500000)
+    throw new Error('测试服务请分成总长 500 公里以内的行程规划。');
   const query = {
-    locations: [start, end].map((p) => ({
+    locations: stops.map((p) => ({
       lon: p.coordinates[0],
       lat: p.coordinates[1],
       type: 'break',
@@ -165,11 +197,15 @@ export async function planRoute(
   end: RoutePlace,
   mode: TravelMode,
   signal: AbortSignal,
+  via: RoutePlace[] = [],
 ) {
-  return normalizeRoute(
-    await requestJSON(routeURL(start, end, mode), signal),
+  const route = normalizeRoute(
+    await requestJSON(routeURL(start, end, mode, via), signal),
     mode,
   );
+  if (route.snapped.length !== via.length + 2)
+    throw new Error('路线服务返回的途经点数量不一致，请重试。');
+  return { ...route, stops: [start, ...via, end] };
 }
 export function normalizePlaces(input: unknown): RoutePlace[] {
   const raw = input as {

@@ -1,7 +1,7 @@
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import type { Map } from 'maplibre-gl';
+import type { Map, Marker } from 'maplibre-gl';
 import { addContours, baseStyle } from '../terrain/terrain';
 import { readElevation } from '../terrain/elevation';
 import {
@@ -63,6 +63,7 @@ export type MapHandle = {
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
+  previewRoute: (coordinates: Coordinate | null) => void;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
@@ -103,6 +104,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
     const mapRef = useRef<Map | null>(null);
+    const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
     latest.current = props;
     const weatherRef = useRef<WeatherLayer | null>(null);
@@ -335,6 +337,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ? p
             : null;
         },
+        previewRoute: (center) => {
+          const marker = previewRef.current,
+            map = mapRef.current;
+          if (!marker || !map) return;
+          if (!center) {
+            marker.remove();
+            return;
+          }
+          marker.setLngLat(center);
+          if (!marker.getElement().isConnected) marker.addTo(map);
+          map.jumpTo({ center }, { routePreview: true });
+        },
         focusPoint: (center, zoom = 13) =>
           mapRef.current?.flyTo({
             center,
@@ -428,6 +442,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const preview = document.createElement('div');
+          preview.className = 'route-preview-cursor';
+          preview.setAttribute('aria-label', '行程预览位置');
+          preview.textContent = '览';
+          previewRef.current = new maplibre.Marker({
+            element: preview,
+            anchor: 'center',
+          });
+
           const sectionGl = TERRAIN_SECTION_ENABLED
             ? map.getCanvas().getContext('webgl2')
             : null;
@@ -626,7 +649,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           map.on('rotatestart', (event) => {
             if (event.originalEvent) latest.current.onManualRotate();
           });
-          map.on('moveend', () => {
+          map.on('moveend', (event) => {
+            if ('routePreview' in event && event.routePreview) return;
             trackRef.current?.sync(latest.current.trackOverlay);
             const p = map.getCenter();
             if (
@@ -661,6 +685,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         }
       });
       return () => {
+        previewRef.current?.remove();
+        previewRef.current = null;
         disposed = true;
         loaded.current = false;
         cancelAnimationFrame(cameraFrame);

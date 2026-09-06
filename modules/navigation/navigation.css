@@ -202,3 +202,106 @@
 .observatory[data-route-notice='true'] .map-legends {
   top: calc(94px + var(--safe-top));
 }
+
+/* Each place is edited in its own row. Handles use pointer events on phones. */
+.route-stop-list {
+  display: grid;
+  gap: 0;
+}
+.route-stop-row {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  border-bottom: 1px solid var(--border);
+  gap: 2px;
+}
+.route-stop-row input {
+  width: 0;
+  min-width: 0;
+  flex: 1;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0 4px;
+  font-size: 13px;
+  outline-offset: -2px;
+}
+.route-stop-row input:focus {
+  background: #ffffff08;
+}
+.route-dot.via {
+  background: #cae3ff;
+}
+.stop-icon,
+.stop-drag {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.stop-drag {
+  touch-action: none;
+  cursor: grab;
+}
+.route-stop-block.is-dragging {
+  background: #9de8c41a;
+}
+.route-stop-block.is-drop-target {
+  box-shadow: inset 0 2px #9de8c4;
+}
+.stop-edit-options {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stop-edit-options button {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  background: transparent;
+  color: var(--accent);
+}
+.route-sort-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.route-edit-actions button,
+.route-primary,
+.route-modes button {
+  min-height: 44px;
+}
+.route-provider-note {
+  font-size: 10px;
+  margin-top: 8px;
+  color: var(--muted);
+}
+.control-dock:has(.route-panel) .control-popover {
+  max-height: min(56dvh, 420px);
+}
+.route-preview-cursor {
+  width: 26px;
+  height: 26px;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #217987;
+  box-shadow: 0 0 0 4px #072d3b66;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  pointer-events: none;
+}
+@media (max-height: 600px) {
+  .control-dock:has(.route-panel) .control-popover {
+    max-height: calc(100dvh - 122px);
+  }
+}

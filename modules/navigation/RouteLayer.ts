@@ -42,6 +42,8 @@ export class RouteLayer {
             ['get', 'slot'],
             'start',
             '#9de8c4',
+            'via',
+            '#cae3ff',
             '#ffb78a',
           ],
           'circle-radius': 10,
@@ -76,6 +78,13 @@ export class RouteLayer {
           type: 'Feature',
           properties: { slot, label: slot === 'start' ? '起' : '终' },
           geometry: { type: 'Point', coordinates: state[slot]!.coordinates },
+        });
+    for (const [index, place] of (state.via ?? []).entries())
+      if (place)
+        features.push({
+          type: 'Feature',
+          properties: { slot: 'via', label: String(index + 1) },
+          geometry: { type: 'Point', coordinates: place.coordinates },
         });
     (m.getSource('planned-route') as GeoJSONSource).setData({
       type: 'FeatureCollection',

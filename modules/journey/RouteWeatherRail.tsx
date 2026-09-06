@@ -1,11 +1,18 @@
-import { useEffect, useState } from 'react';
-import { formatDistance, type PlannedRoute } from '../navigation/types';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import {
+  formatDistance,
+  type Coordinate,
+  type PlannedRoute,
+} from '../navigation/types';
 import type { PositionFix } from '../position/types';
 import {
   locateProgress,
   precipitationColor,
   temperatureColor,
+  secondsAlong,
 } from './routeProgress';
+import { railFraction, routePositionIndex } from './scrub';
+import { matchForecast } from './weatherProvider';
 import {
   beijingInput,
   beijingTime,
@@ -16,144 +23,239 @@ export function RouteWeatherRail({
   journey: j,
   fix,
   onSettings,
+  onPreview,
 }: {
   route: PlannedRoute;
   journey: RouteJourneyState;
   fix: PositionFix | null;
   onSettings: () => void;
+  onPreview: (coordinates: Coordinate | null) => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null),
-    progress = locateProgress(route, fix);
-  useEffect(() => setSelected(null), [route]);
-  const entry = selected === null ? null : j.entries[selected];
+    [legend, setLegend] = useState(false);
+  const callback = useRef(onPreview);
+  callback.current = onPreview;
+  const pending = useRef<{ fraction: number; frame: number } | null>(null),
+    pointer = useRef<number | null>(null);
+  const positionAt = useMemo(
+    () => routePositionIndex(route.coordinates),
+    [route],
+  );
+  const progress = locateProgress(route, fix),
+    fraction = selected ?? progress.fraction ?? 0;
+  useEffect(() => {
+    setSelected(null);
+    setLegend(false);
+    return () => {
+      if (pending.current) cancelAnimationFrame(pending.current.frame);
+      pending.current = null;
+      pointer.current = null;
+      callback.current(null);
+    };
+  }, [route]);
+  const select = (value: number) => {
+    const f = Math.max(0, Math.min(1, value));
+    setSelected(f);
+    callback.current(positionAt(f));
+  };
+  const fromPointer = (e: PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect(),
+      f = railFraction(e.clientY, r.top, r.height);
+    if (pending.current) {
+      pending.current.fraction = f;
+      return;
+    }
+    pending.current = {
+      fraction: f,
+      frame: requestAnimationFrame(() => {
+        const current = pending.current;
+        pending.current = null;
+        if (current) select(current.fraction);
+      }),
+    };
+  };
+  const release = (e: PointerEvent<HTMLDivElement>) => {
+    if (pointer.current !== e.pointerId) return;
+    if (pending.current) {
+      cancelAnimationFrame(pending.current.frame);
+      pending.current = null;
+    }
+    const r = e.currentTarget.getBoundingClientRect();
+    select(railFraction(e.clientY, r.top, r.height));
+    pointer.current = null;
+  };
+  const nearest = Math.min(
+    j.entries.length - 1,
+    Math.round(fraction * (j.entries.length - 1)),
+  );
+  const arrival =
+    new Date(j.departure + '+08:00').getTime() +
+    secondsAlong(route, route.distance * fraction) * 1000;
+  const weather = j.forecast
+    ? matchForecast(j.forecast.points[nearest], arrival)
+    : null;
+  const gradient = (kind: 'temperature' | 'precipitation') => {
+    const color =
+      kind === 'temperature' ? temperatureColor : precipitationColor;
+    const entries = j.entries.map(
+      (s, i) =>
+        `${color(s.weather?.[kind] ?? null)} ${(i / Math.max(1, j.entries.length - 1)) * 100}%`,
+    );
+    return entries.length > 1
+      ? `linear-gradient(to bottom, ${entries.join(',')})`
+      : '#64747d';
+  };
   return (
     <aside
-      className="route-weather-rail glass"
+      className="route-weather-rail"
       aria-label="沿路线里程的气温和雨量进度带"
     >
-      <button className="rail-heading" onClick={onSettings}>
-        沿途天气
+      <button
+        className="rail-heading glass"
+        onClick={onSettings}
+        aria-label="沿途天气设置"
+      >
+        沿途
       </button>
-      <div className="rail-columns">
-        <span>气温</span>
-        <span>降水</span>
-      </div>
-      <span className="rail-end">起点 · 0</span>
+      <span className="rail-end">起点</span>
       <div
         className="rail-colors"
-        role="group"
-        aria-label="点按色带查看地点天气"
+        role="slider"
+        tabIndex={0}
+        aria-orientation="vertical"
+        aria-label="拖动浏览行程"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Number((fraction * 100).toFixed(1))}
+        aria-valuetext={`${selected === null && progress.fraction !== null ? '当前位置' : '预览'} ${formatDistance(route.distance * fraction)}，全程 ${formatDistance(route.distance)}`}
+        onPointerDown={(e) => {
+          if (!e.isPrimary || e.button !== 0) return;
+          e.preventDefault();
+          pointer.current = e.pointerId;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          fromPointer(e);
+        }}
+        onPointerMove={(e) => {
+          if (pointer.current === e.pointerId) fromPointer(e);
+        }}
+        onPointerUp={release}
+        onPointerCancel={() => {
+          pointer.current = null;
+          if (pending.current) cancelAnimationFrame(pending.current.frame);
+          pending.current = null;
+        }}
+        onLostPointerCapture={() => {
+          pointer.current = null;
+        }}
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? 0.1 : 0.01;
+          if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+            e.preventDefault();
+            select(
+              e.key === 'Home'
+                ? 0
+                : e.key === 'End'
+                  ? 1
+                  : fraction + (e.key === 'ArrowDown' ? step : -step),
+            );
+          }
+        }}
       >
-        {j.entries.map((stop, i) => (
-          <button
-            key={i}
-            className="rail-stop"
-            aria-label={`${formatDistance(stop.distance)}处天气${stop.weather ? `，气温${stop.weather.temperature ?? '缺测'}度，降水${stop.weather.precipitation ?? '缺测'}毫米` : '暂缺'}`}
-            aria-pressed={selected === i}
-            onClick={() => setSelected(selected === i ? null : i)}
-          >
-            <span
-              style={{
-                background: temperatureColor(stop.weather?.temperature ?? null),
-              }}
-            />
-            <span
-              style={{
-                background: precipitationColor(
-                  stop.weather?.precipitation ?? null,
-                ),
-              }}
-            />
-          </button>
-        ))}
+        <div className="rail-tracks">
+          <span style={{ background: gradient('temperature') }} />
+          <span style={{ background: gradient('precipitation') }} />
+        </div>
+        <div className="rail-ticks" aria-hidden="true">
+          {Array.from({ length: 21 }, (_, i) => (
+            <i key={i} style={{ top: `${i * 5}%` }} data-major={i % 5 === 0} />
+          ))}
+        </div>
         {progress.fraction !== null && (
           <span
-            className="rail-progress"
+            className="rail-gps"
+            title="真实定位进度"
             style={{ top: `${progress.fraction * 100}%` }}
-          >
-            <i />
-            当前位置
-          </span>
+          />
         )}
+        <span
+          className="rail-thumb"
+          data-preview={selected !== null || progress.fraction === null}
+          style={{ top: `${fraction * 100}%` }}
+        />
       </div>
-      <span className="rail-end">
-        终点 · {(route.distance / 1000).toFixed(1)}km
-      </span>
-      <span className="rail-progress-label">{progress.label}</span>
-      {j.loading ? (
-        <span className="rail-status">加载预报…</span>
-      ) : j.error ? (
-        <button className="rail-retry" title={j.error} onClick={j.retry}>
-          天气重试
-        </button>
-      ) : (
-        <button
-          className="rail-legend-toggle"
-          onClick={() => setSelected(selected === null ? 0 : null)}
-        >
-          颜色说明
-        </button>
-      )}
-      {entry && (
+      <span className="rail-end">{(route.distance / 1000).toFixed(1)}km</span>
+      <button
+        className="rail-legend-toggle glass"
+        aria-label="行程色带说明"
+        onClick={() => setLegend((v) => !v)}
+      >
+        图例
+      </button>
+      {(selected !== null || legend) && (
         <div className="rail-detail glass">
           <button
             className="rail-close"
-            onClick={() => setSelected(null)}
-            aria-label="收起色带说明"
+            aria-label="关闭行程预览"
+            onClick={() => {
+              setSelected(null);
+              setLegend(false);
+              callback.current(null);
+            }}
           >
             ×
           </button>
-          <strong>{formatDistance(entry.distance)}</strong>
-          <span>
-            预计 {j.validTime ? beijingTime(entry.arrival) : '出发时间无效'}
-          </span>
-          <b>
-            {entry.weather
-              ? `${entry.weather.temperature ?? '—'}°C · ${entry.weather.precipitation ?? '—'}mm`
-              : j.forecast
-                ? '超出预报范围或缺测'
-                : '暂无天气数据'}
-          </b>
-          <small>降水为预报整点前一小时雨雪总量</small>
-          <div className="rail-scale">
-            {[-5, 5, 15, 25, 32, 38].map((t) => (
-              <span key={t} style={{ borderColor: temperatureColor(t) }}>
-                {t === -5
-                  ? '＜0'
-                  : t === 38
-                    ? '≥35'
-                    : t === 5
-                      ? '0–10'
-                      : t === 15
-                        ? '10–20'
-                        : t === 25
-                          ? '20–30'
-                          : '30–35'}
-                °
+          <strong>
+            {selected === null
+              ? '沿途天气'
+              : `预览 ${formatDistance(route.distance * fraction)}`}
+          </strong>
+          {selected !== null && (
+            <>
+              <span>
+                {(fraction * 100).toFixed(1)}% · 预计{' '}
+                {j.validTime ? beijingTime(arrival) : '时间无效'}
               </span>
-            ))}
-          </div>
-          <div className="rail-scale">
-            {[0, 0.5, 2, 7, 12].map((r) => (
-              <span key={r} style={{ borderColor: precipitationColor(r) }}>
-                {r === 0
-                  ? '＜0.1'
-                  : r === 0.5
-                    ? '0.1–1'
-                    : r === 2
-                      ? '1–4'
-                      : r === 7
-                        ? '4–10'
-                        : '≥10'}
-                mm
-              </span>
-            ))}
-          </div>
-          <small>
-            灰色缺测 · 稀疏模型采样
-            <br />
-            点“沿途天气”调整出发时间
-          </small>
+              <b>
+                {weather
+                  ? `${weather.temperature ?? '—'}°C · ${weather.precipitation ?? '—'} mm · ${weather.wind ?? '—'} m/s`
+                  : '预报暂缺或超出时段'}
+              </b>
+              <small>附近采样点预报 · 时雨雪总量</small>
+            </>
+          )}
+          <small>定位：{progress.label}</small>
+          {j.loading && <small>读取预报…</small>}
+          {j.error && (
+            <button className="rail-retry" onClick={j.retry}>
+              天气重试
+            </button>
+          )}
+          {j.forecast?.stale && (
+            <small>旧预报 {beijingTime(j.forecast.fetchedAt)}</small>
+          )}
+          {legend && (
+            <>
+              <small>
+                左：气温 ·
+                右：时雨雪量。拖色带浏览全程；白色滑块为预览，绿色点为定位。
+              </small>
+              <div className="rail-scale">
+                {[-5, 5, 15, 25, 32, 38].map((t) => (
+                  <span key={t} style={{ borderColor: temperatureColor(t) }}>
+                    {t}°
+                  </span>
+                ))}
+              </div>
+              <div className="rail-scale">
+                {[0, 0.5, 2, 7, 12].map((r) => (
+                  <span key={r} style={{ borderColor: precipitationColor(r) }}>
+                    {r}mm
+                  </span>
+                ))}
+              </div>
+              <small>灰色为缺测。渐变用于浏览，不增加预报采样精度。</small>
+            </>
+          )}
         </div>
       )}
     </aside>

@@ -174,8 +174,9 @@ export default function Home() {
       start: navigation.start,
       end: navigation.end,
       route: navigation.route,
+      via: navigation.via,
     }),
-    [navigation.start, navigation.end, navigation.route],
+    [navigation.start, navigation.end, navigation.route, navigation.via],
   );
   const trackOverlay = useMemo(
     () => ({
@@ -256,10 +257,12 @@ export default function Home() {
       className="observatory"
       data-panel={panel ?? 'map'}
       data-section={section.enabled}
-      data-route-notice={Boolean(navigation.picking || navigation.route)}
+      data-route-notice={Boolean(
+        navigation.picking !== null || navigation.route,
+      )}
       data-drawing={tracks.drawing && panel === null}
       data-editing-track={tracks.editing}
-      data-picking-route={Boolean(navigation.picking)}
+      data-picking-route={navigation.picking !== null}
       data-route-rail={Boolean(navigation.route)}
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
@@ -273,7 +276,7 @@ export default function Home() {
           event.preventDefault();
           annotations.setPicking(null);
           setPanel('annotations');
-        } else if (navigation.picking) {
+        } else if (navigation.picking !== null) {
           event.preventDefault();
           navigation.setPicking(null);
           setPanel('route');
@@ -307,7 +310,9 @@ export default function Home() {
         annotations={annotationOverlay}
         roadSnapping={tracks.roadSnapping}
         annotationSelected={annotations.selected}
-        pickingActive={Boolean(annotations.picking || navigation.picking)}
+        pickingActive={Boolean(
+          annotations.picking || navigation.picking !== null,
+        )}
         onTrackSelect={(id) => {
           tracks.select(id);
           annotations.select(null);
@@ -393,7 +398,7 @@ export default function Home() {
       {selectionName &&
         !tracks.drawing &&
         !annotations.picking &&
-        !navigation.picking &&
+        navigation.picking === null &&
         panel === null && (
           <div
             className={`selection-tools glass${selectedAnnotation ? ' is-annotation' : ''}`}
@@ -497,9 +502,9 @@ export default function Home() {
             取消
           </button>
         </div>
-      ) : navigation.picking ? (
+      ) : navigation.picking !== null ? (
         <div className="route-map-notice glass" role="status">
-          点击地图设置{navigation.picking === 'start' ? '起点' : '终点'}
+          点击地图设置{navigation.pickingLabel}
           <button
             onClick={() => {
               navigation.setPicking(null);
@@ -537,6 +542,10 @@ export default function Home() {
         <RouteWeatherRail
           route={navigation.route}
           journey={routeJourney}
+          onPreview={(coordinates) => {
+            if (coordinates) position.free();
+            map.current?.previewRoute(coordinates);
+          }}
           fix={position.fix}
           onSettings={() => {
             tracks.pause();

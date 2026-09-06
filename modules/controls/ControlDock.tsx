@@ -150,7 +150,7 @@ export function ControlDock({
               <button
                 key={id}
                 data-panel-toggle={id}
-                aria-label={id === 'time' ? `天气时间轴，${timeLabel}` : label}
+                aria-label={label}
                 aria-expanded={
                   active === id || (id === 'route' && active === 'track')
                 }
@@ -168,7 +168,7 @@ export function ControlDock({
                 }
               >
                 <Icon size={16} />
-                <span>{id === 'time' ? timeLabel : label}</span>
+                <span>{label}</span>
               </button>
             ),
           )}

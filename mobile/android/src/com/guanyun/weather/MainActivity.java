@@ -34,7 +34,8 @@ public final class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                root.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                int keyboard = insets.getInsets(WindowInsets.Type.ime()).bottom;
+                root.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, keyboard));
                 // The native root already keeps content clear of bars/cutouts.
                 // Do not apply the same inset again inside the WebView's CSS.
                 return WindowInsets.CONSUMED;
@@ -44,7 +45,7 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
-        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.1");
+        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.2");
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setUseWideViewPort(true);
