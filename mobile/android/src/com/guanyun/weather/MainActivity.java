@@ -44,7 +44,7 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
-        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.0");
+        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.1");
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setUseWideViewPort(true);

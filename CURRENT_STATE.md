@@ -1,3 +1,12 @@
+# 当前任务：恢复原 3D 控制器（2026-09-07）
+- 当前目标：按用户要求保留原有绿色模型与圆环 3D 视角控制器，默认常驻，再交付 APK。
+- 当前进展：仅把 CameraGizmo 默认开关恢复为 true；保留原组件外观、手势、尺寸与位置。版本升至 0.2.1-test/code8；已有工具开关仍可临时收起，剖面保持停用。
+- 文件：app/page.tsx、AndroidManifest、MainActivity 版本标识、既有浏览器验证默认值、README/mobile README、本状态和 LOG。无新增业务模块、无删除文件，其余户外功能和存档不变。
+- 命令：git status、git diff --stat、读取项目说明、git pull --ff-only（已同步）。
+- 验证结果：PASS。TypeScript、118/118 测试、网页/APK 构建；390×844 和 360×780 默认显示、真实拖动俯仰/旋转、工具收起重开、无溢出及避开底栏通过。截图 artifacts/screenshots/camera-restored-{390-844,360-780}.png，PASS；无须调整控制器样式。APK 544 项静态资源哈希匹配，v2/v3 签名与旧版一致。无真机触控验收。
+- 当前阻塞：无。
+- 下一步：源码同步与发布 0.2.1-test。APK 大小 57248773，SHA-256 9e8cc86bac4f3b05154fa71fd068a22c233af0e23f91ef7b91935955ca1e34e8。日志 .openai/{typecheck-camera-021,tests-camera-021,browser-camera-021,build-web-camera-021,build-apk-camera-021,verify-apk-camera-021}.log。
+
 # 当前交付：户外实用版与极简地图 UI（2026-09-07，完成）
 - 当前目标：按用户授权优化可靠轨迹记录、离线行程、标准文件导入导出、沿途天气与地图性能；减少常驻 UI 占用，优先国内免费图源，完成新版 APK 和 GitHub Release。
 - 当前进展：已接入独立 outdoor 模块（轨迹记录、GPX/KML/KMZ 导入与数据备份、可续传离线包）、Android 定位前台服务/文件选择器；UI 三入口和折叠视角盘、默认开源底图及较少动态图层。剖面继续停用。

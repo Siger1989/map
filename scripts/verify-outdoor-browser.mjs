@@ -42,7 +42,7 @@ try {
     [360, 780],
   ]) {
     await page.setViewportSize({ width, height });
-    assert.equal(await page.locator('.camera-gizmo').count(), 0);
+    assert.equal(await page.locator('.camera-gizmo').count(), 1);
     assert.equal(await page.locator('.section-button').count(), 0);
     assert.equal(
       await page.evaluate(
@@ -88,7 +88,7 @@ try {
         .isVisible(),
     );
     await page.getByRole('button', { name: '视角盘', exact: true }).click();
-    assert.equal(await page.locator('.camera-gizmo').count(), 1);
+    assert.equal(await page.locator('.camera-gizmo').count(), 0);
     await page.getByRole('button', { name: '工具', exact: true }).click();
     await page.getByRole('button', { name: '视角盘', exact: true }).click();
     console.log('PASS mobile UI import/export/tools', width, height);

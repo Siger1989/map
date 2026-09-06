@@ -89,7 +89,7 @@ export default function Home() {
   const annotations = useAnnotations();
   const recorder = useRecording();
   const offline = useOffline();
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(true);
   const recordedSegments = useMemo(
     () =>
       recorder.record.segments
