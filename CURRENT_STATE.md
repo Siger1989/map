@@ -1,5 +1,18 @@
 # 天气观察软件 · 当前状态
 
+## 当前任务：手机标记面板减少遮挡（2026-09-06）
+- 当前目标：按用户手机竖屏截图优化标记与模型面板，分开列表/编辑与参数分组，地图调整时收起；将手机遮挡检查写入项目规范。
+- 当前进展：列表与编辑分开，参数分尺寸/外观/位置/更多；编辑入口固定、内容内部滚动，面板左上限高 38dvh / 320px，避开右侧地图工具。地图调整收起参数，只保留紧凑工具条。AGENTS 已记录后续手机 UI 规范。
+- 修改文件：AGENTS.md、AnnotationPanel.tsx、annotations.css、app/page.tsx（标记选中提示）；AndroidManifest / MainActivity 升 0.1.5-test/code6；mobile/README、continue-development、本状态。未改地图/路线/模型算法及存档格式。
+- 命令：git status、git diff --stat、git pull --ff-only；日志 .openai/pull-mobile-ui-20260906.log。原 localhost 服务未运行，正在启动独立本地预览。
+- 验证结果：浏览器 PASS，390×844 编辑框 328×272px、列表 290px 高；360×780 编辑框 298×272px，25 项列表不超过 296.4px。360×460 短屏可滚动编辑，582×1280 检查通过，无横向溢出且所有场景避开右侧工具。尺寸/颜色/名称/地下/角度/备注保存、地图放置、收起与返回编辑、显隐、复制/删除、长名选择、25 项对比/导出通过。初轮自动化错误使用 select 精确标签匹配而超时，改用实际标签定位后通过，产品未因此改动。
+- 截图：artifacts/screenshots/annotation-mobile-{editor-390,editor-360,list-390,adjust-390,long-list-360}-20260906.png；PASS，地图中心与右侧工具可见、面板内滚动、长名称截断、调整工具条 99px 高。截图为独立浏览器测试数据；没有修改用户存档。下一步修复：无。
+- 日志：.openai/browser-mobile-ui-20260906.log、format/typecheck-mobile-ui-20260906.log；当前阻塞：无，未做真机验收。
+- 构建验证：TypeScript、107/107 逻辑测试、网页生产构建、Android 静态入口及 APK 编译、git diff --check PASS。APK v2/v3 签名、包名 preview/versionCode6、启动 Activity 和 473 张地形瓦片 PASS；521 个 APK 静态资源逐项 SHA-256 与 mobile/dist 一致。ADB 无设备，未做真机安装/触控验收。
+- 本地产物：APK/Guanyun-0.1.5-test.apk，55,219,375 字节，SHA-256 `ACB560A59BA40F5FC24927124B3686392FF95E08D33BFE54A3B5F9BA96F7ED33`；沿用 0.1.4 证书 SHA-256 `a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c`。无需卸载，可覆盖 0.1.4 并保留数据。
+- 构建日志：.openai/{typecheck-mobile-ui,tests-mobile-ui,build-mobile-ui-web,build-apk-015,verify-apk-assets-015}-20260906.log。
+- 下一步：同步源码，上传并校验 0.1.5 Release。
+
 ## 当前任务：打包最新 APK（2026-09-06）
 - 当前目标：将当前所有功能及剖面修复打成可安装 APK，校验后提供下载。
 - 当前进展：已检查干净工作区、读取构建说明。原脚本默认路径在本机不存在，已找到实际 SDK D:/GodotAndroid/android-sdk、JDK D:/GodotAndroid/jdk-17；可通过既有参数指定。最新远端 Release 为 0.1.3-test/code4。

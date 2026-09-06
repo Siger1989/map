@@ -44,7 +44,7 @@ git push
 
 ## 下载安装包
 
-从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。0.1.4-test 为“观云测试版”（com.guanyun.weather.preview），可与旧“观云”并存，数据独立；不能用它覆盖旧版。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
+从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。0.1.5-test 为“观云测试版”（com.guanyun.weather.preview），沿用 0.1.4 签名，可覆盖更新 0.1.4 并保留数据；可与原“观云”并存，数据独立。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
 
 ## 在家构建安卓
 

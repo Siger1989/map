@@ -1,8 +1,10 @@
 .annotation-panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
   font-size: 14px;
+  min-height: 0;
+  overflow: hidden;
 }
 .annotation-panel button,
 .annotation-panel input,
@@ -35,8 +37,6 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 170px;
-  overflow: auto;
 }
 .annotation-list > div {
   display: flex;
@@ -45,6 +45,7 @@
 }
 .annotation-list button {
   flex: 1;
+  min-width: 0;
   display: flex;
   gap: 8px;
   text-align: left;
@@ -61,7 +62,9 @@
   flex-shrink: 0;
 }
 .annotation-list span {
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .annotation-list small {
   display: block;
@@ -69,11 +72,11 @@
   color: var(--muted);
 }
 .annotation-editor {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  min-height: 0;
+  gap: 6px;
+  overflow: hidden;
 }
 .annotation-field {
   display: flex;
@@ -165,9 +168,105 @@
   outline-offset: 2px;
 }
 .observatory[data-panel='annotations'] .control-popover {
-  width: min(360px, calc(100% - 16px));
-  max-height: min(66dvh, calc(100dvh - 150px));
+  left: var(--edge-left);
+  right: auto;
+  width: min(360px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
+  max-height: min(
+    38dvh,
+    320px,
+    calc(100dvh - var(--safe-top) - var(--safe-bottom) - 112px)
+  );
+  padding: 0 8px 8px;
+}
+.observatory[data-panel='annotations'] .dock-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 6px;
+}
+.annotation-toolbar,
+.annotation-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.annotation-toolbar select {
+  flex: 1;
+  min-width: 0;
+  background: #0d222b;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+.annotation-toolbar button {
+  flex-shrink: 0;
+}
+.annotation-tabs button {
+  flex: 1;
+  background: transparent;
+}
+.annotation-tabs button[aria-pressed='true'] {
+  background: #21483e;
+  color: var(--accent);
+}
+.annotation-browse {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 6px;
+}
+.annotation-add {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  flex-shrink: 0;
+}
+.annotation-add button {
+  padding: 6px 2px;
+}
+.annotation-fields,
+.annotation-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px;
+}
+.annotation-fields > *,
+.annotation-scroll > * {
+  flex-shrink: 0;
+}
+.annotation-list input[type='checkbox'] {
+  width: 24px;
+  height: 36px;
+  margin: 0;
+  flex-shrink: 0;
+}
+@media (max-width: 400px) {
+  .annotation-panel button,
+  .annotation-panel select {
+    font-size: 13px;
+  }
+  .annotation-toolbar button {
+    padding-inline: 6px;
+  }
 }
 .observatory[data-placing-annotation='true'] .map-canvas {
   cursor: crosshair;
+}
+.selection-tools.is-annotation {
+  top: calc(52px + var(--safe-top));
+  bottom: auto;
+  width: min(360px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
+  padding: 8px;
+}
+.selection-tools.is-annotation strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.selection-tools.is-annotation span {
+  margin: 3px 0 6px;
 }

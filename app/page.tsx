@@ -349,17 +349,20 @@ export default function Home() {
         !annotations.picking &&
         !navigation.picking &&
         panel === null && (
-          <div className="selection-tools glass" aria-label="选中对象编辑工具">
+          <div
+            className={`selection-tools glass${selectedAnnotation ? ' is-annotation' : ''}`}
+            aria-label="选中对象编辑工具"
+          >
             <div role="status">
               <strong>{selectionName}</strong>
               <span>
                 {featureMove
                   ? '正在调整位置 · 松手确认，双指取消'
                   : selectedAnnotation
-                    ? '长按模型本体或名称约半秒，再拖动位置'
+                    ? '长按模型后拖动 · 松手保存'
                     : '长按节点约半秒，再拖动位置'}
               </span>
-              {selectedAnnotation && (
+              {selectedAnnotation && featureMove && (
                 <span>
                   经度 {selectedAnnotation.coordinates[0].toFixed(6)} · 纬度{' '}
                   {selectedAnnotation.coordinates[1].toFixed(6)}
