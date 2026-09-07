@@ -208,6 +208,50 @@ try {
       .getByRole('button', { name: '关闭行程预览', exact: true })
       .click();
     assert.equal(await page.locator('.route-preview-cursor').count(), 0);
+    // Following exits the preview; a new scrub pauses following again.
+    await page.evaluate(() =>
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: {
+          watchPosition(callback) {
+            callback({
+              coords: { longitude: 104.066, latitude: 30.659, accuracy: 5 },
+              timestamp: Date.now(),
+            });
+            return 1;
+          },
+          clearWatch() {},
+        },
+      }),
+    );
+    await slider.press('End');
+    await page
+      .getByRole('button', { name: '跟随当前位置', exact: true })
+      .click();
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.location-button')
+          ?.getAttribute('aria-pressed') === 'true',
+    );
+    assert.equal(await page.locator('.route-preview-cursor').count(), 0);
+    assert.equal(
+      await page
+        .getByRole('button', { name: '关闭行程预览', exact: true })
+        .count(),
+      0,
+    );
+    await slider.press('End');
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('.location-button')
+          ?.getAttribute('aria-pressed') === 'false',
+    );
+    assert.equal(await page.locator('.route-preview-cursor').count(), 1);
+    await page
+      .getByRole('button', { name: '关闭行程预览', exact: true })
+      .click();
     await page.getByRole('button', { name: '路线', exact: true }).click();
     await page.getByRole('button', { name: '收藏路线', exact: true }).click();
     assert.equal(

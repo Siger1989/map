@@ -1,3 +1,7 @@
+# 0.2.3-test 记录位置跟随
+
+versionCode 10，沿用包名与签名。开始/继续实走记录时自动跟随，拖动地图暂停，点击右侧定位按钮恢复；不重置原有 3D 角度和缩放。普通定位也可持续跟随。详见 [跟随说明](../docs/position-follow.md)。
+
 # 0.2.2-test 直接输入、途经点与拖动进度
 
 versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接输入，途经点支持手机拖柄排序；行程条细长、支持拖动联动地图。安卓键盘使用 IME inset/adjustResize，已检查压缩视口，但未连接真机验收。
@@ -12,7 +16,7 @@ versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接�
 
 # 观云安卓测试版
 
-当前安装包：[Guanyun-0.2.2-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.2-test/Guanyun-0.2.2-test.apk)（本地产物 `APK/Guanyun-0.2.2-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 9。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.1 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
+当前安装包：[Guanyun-0.2.3-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.3-test/Guanyun-0.2.3-test.apk)（本地产物 `APK/Guanyun-0.2.3-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 10。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.2 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
 
 ## 安装与使用
 

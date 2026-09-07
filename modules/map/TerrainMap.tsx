@@ -64,6 +64,7 @@ export type MapHandle = {
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
+  followPosition: (coordinates: Coordinate, animate?: boolean) => boolean;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
@@ -89,6 +90,7 @@ type Props = {
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
   onManualRotate: () => void;
+  onBrowse: () => void;
   annotations: Annotation[];
   annotationSelected: string | null;
   onAnnotationSelect: (id: string) => void;
@@ -311,7 +313,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         zoom: (amount) =>
           mapRef.current?.zoomTo((mapRef.current?.getZoom() ?? 9) + amount),
         north: () => mapRef.current?.easeTo({ bearing: 0 }),
-        reset: () => mapRef.current?.flyTo(INITIAL_VIEW),
+        reset: () => {
+          latest.current.onBrowse();
+          mapRef.current?.flyTo(INITIAL_VIEW);
+        },
         stop: () => {
           mapRef.current?.stop();
         },
@@ -337,6 +342,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ? p
             : null;
         },
+        followPosition: (center, animate = true) => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return false;
+          // Keep the user's zoom, pitch and bearing; only follow geographic position.
+          m.easeTo(
+            { center, duration: animate ? 650 : 0 },
+            { positionFollow: true },
+          );
+          return true;
+        },
         previewRoute: (center) => {
           const marker = previewRef.current,
             map = mapRef.current;
@@ -345,19 +360,23 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             marker.remove();
             return;
           }
+          latest.current.onBrowse();
           marker.setLngLat(center);
           if (!marker.getElement().isConnected) marker.addTo(map);
           map.jumpTo({ center }, { routePreview: true });
         },
-        focusPoint: (center, zoom = 13) =>
+        focusPoint: (center, zoom = 13) => {
+          latest.current.onBrowse();
           mapRef.current?.flyTo({
             center,
             zoom: Math.max(3, Math.min(20, zoom)),
             duration: 700,
-          }),
+          });
+        },
         fitRoute: (coordinates) => {
           const m = mapRef.current;
           if (!m || !coordinates.length) return;
+          latest.current.onBrowse();
           const min: Coordinate = [Infinity, Infinity],
             max: Coordinate = [-Infinity, -Infinity];
           for (const c of coordinates) {
@@ -646,12 +665,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 });
             });
           });
+          map.on('dragstart', (event) => {
+            if (event.originalEvent) latest.current.onBrowse();
+          });
           map.on('rotatestart', (event) => {
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', (event) => {
             if ('routePreview' in event && event.routePreview) return;
-            trackRef.current?.sync(latest.current.trackOverlay);
+            if (!('positionFollow' in event && event.positionFollow))
+              trackRef.current?.sync(latest.current.trackOverlay);
             const p = map.getCenter();
             if (
               Math.abs(p.lng - weatherAnchor[0]) +

@@ -1,3 +1,14 @@
+# 当前任务：实走记录的位置跟随（2026-09-07）
+- 当前目标：修复记录轨迹时地图不跟随，自动跟随新定位、支持手动浏览/恢复，交付新版 APK 并同步 GitHub。
+- 当前进展：跟随已接通；开始/继续记录自动开启，手动拖图与其他位置浏览暂停、按钮恢复。复用记录点同步相机/位置图层/行程进度，保留原缩放俯仰朝向，处理旧点/重复快照、地图未就绪、前后台和编辑互斥。
+- 文件：新增 modules/position/{follow.ts,useFollowPosition.ts}、tests/position-follow.test.mjs、scripts/verify-position-follow.mjs、docs/position-follow.md；更新 TerrainMap / MapActions / RouteWeatherRail / app、路线回归脚本、文档及安卓版本。无业务文件删除；原 3D 控制器和记录存档格式保留，剖面仍停用。
+- 命令：git status、git diff --stat、git pull --ff-only（已同步）；读取项目规范、说明、定位/记录与相机源码。
+- 验证结果：PASS。TypeScript、124/124 测试；浏览器 390×844 模拟 GPS 与 360×780 模拟安卓记录桥均通过自动跟随、触摸拖图暂停、恢复、相机参数保留、重复快照、过旧点等待、记录暂停/继续/结束与普通位置跟随。旧路线脚本两尺寸及预览/跟随互斥回归通过。位置与高频罗盘同时跟随、缩放后继续跟随通过。最终独立浏览器回归日志 .openai/browser-follow-delivery-final.log。截图 artifacts/screenshots/follow-{web-390-844,native-360-780}.png，已查看 PASS，无溢出、原控制器可见。日志 .openai/{typecheck-follow-final,tests-follow-023,browser-follow-023-final,browser-routes-follow-regression}.log。
+- 当前阻塞：无。
+- 构建结果：PASS。最终网页/安卓构建、TypeScript、124/124 测试、v2/v3 签名通过，554 项静态资源逐项哈希一致（含 473 张地形瓦片）。APK/Guanyun-0.2.3-test.apk，58126139 字节，SHA-256 a66ef5786d5d212f34513fb82de1756bd9cc0efe9217e0f6a366a2d925c24bec；code10，包名 preview 与 0.1.4 起签名一致。日志 .openai/{build-web-follow-final,build-apk-follow-final,verify-apk-follow-023,typecheck-follow-final,tests-follow-final}.log。
+- 验证过程：并行生产构建期间的回归遇到页面导航重载而超时；构建完成后独立重跑两尺寸全部通过。ADB 无设备，模拟记录桥不能代替真机 GPS/触控/锁屏/耗电验收。
+- 下一步：实现、验证和 APK 完成，提交推送源码并发布 0.2.3-test；安装包不能随本地代码自动更新手机。
+
 # 当前任务：同步 GitHub 与完善最新说明（2026-09-07）
 - 当前目标：同步源码，补齐 0.2.2 使用说明并更新 GitHub Release 下载页。
 - 当前进展：已新增最新详细说明，修正 README/安卓/跨设备文档中旧版本、旧菜单、剖面开启和无原生桥等过时描述；GitHub 0.2.2 Release 正文已更新。

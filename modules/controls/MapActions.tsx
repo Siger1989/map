@@ -19,6 +19,8 @@ export function MapActions({
   onLocate,
   locating,
   watching,
+  following,
+  followBlocked,
   direction,
   onDevice,
   onStopLocation,
@@ -33,6 +35,8 @@ export function MapActions({
   onLocate: () => void;
   locating: boolean;
   watching: boolean;
+  following: boolean;
+  followBlocked: boolean;
   direction: DirectionMode;
   onDevice: () => void;
   onStopLocation: () => void;
@@ -43,15 +47,23 @@ export function MapActions({
   return (
     <nav className="map-actions glass" aria-label="地图快捷操作">
       <button
-        className="icon-button location-button"
-        aria-label={locating ? '正在定位' : '定位到当前位置'}
-        aria-pressed={watching}
-        disabled={locating}
+        className="icon-button location-button direction-button"
+        aria-label={
+          following
+            ? locating
+              ? '等待定位，点击暂停跟随'
+              : '暂停位置跟随'
+            : '跟随当前位置'
+        }
+        disabled={followBlocked}
+        title={followBlocked ? '结束地图编辑后可跟随' : undefined}
+        aria-pressed={following}
         onClick={onLocate}
       >
         <LocateFixed size={20} />
+        <small>{following ? (locating ? '等待' : '跟随') : '浏览'}</small>
       </button>
-      {watching && (
+      {watching && expanded && (
         <button
           className="location-stop"
           onClick={onStopLocation}

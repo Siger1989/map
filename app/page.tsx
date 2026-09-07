@@ -22,6 +22,8 @@ import {
   RouteWeatherSettings,
 } from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
+import { recordingPosition } from '@/modules/position/follow';
+import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import {
   formatDistance,
   formatDuration,
@@ -111,6 +113,35 @@ export default function Home() {
     [sectionDraft],
   );
   const [sectionStatus, setSectionStatus] = useState(INITIAL_SECTION_STATUS);
+  const recordingFix = useMemo(
+    () => recordingPosition(recorder.record),
+    [recorder.record],
+  );
+  const cameraFix =
+    recorder.record.phase === 'recording' ? recordingFix : position.fix;
+  const displayedFix =
+    recorder.record.phase === 'recording'
+      ? recordingFix
+      : recorder.record.phase !== 'idle' &&
+          recordingFix &&
+          (!position.fix || recordingFix.timestamp >= position.fix.timestamp)
+        ? recordingFix
+        : position.fix;
+  const follow = useFollowPosition({
+    fix: cameraFix,
+    phase: recorder.record.phase,
+    blocked:
+      tracks.editing ||
+      !!annotations.picking ||
+      navigation.picking !== null ||
+      !!featureMove ||
+      section.enabled,
+    onFollow: (coordinates) =>
+      map.current?.followPosition(
+        coordinates,
+        position.direction !== 'device',
+      ) ?? false,
+  });
   const toggleSection = () => {
     if (section.enabled) {
       setSection((current) => ({ ...current, enabled: false }));
@@ -305,7 +336,8 @@ export default function Home() {
         trackOverlay={trackOverlay}
         drawingActive={tracks.drawing && panel === null}
         onDrawingInput={(event) => drawing.current?.input(event)}
-        position={position.fix}
+        position={displayedFix}
+        onBrowse={follow.pause}
         onManualRotate={position.free}
         annotations={annotationOverlay}
         roadSnapping={tracks.roadSnapping}
@@ -546,7 +578,8 @@ export default function Home() {
             if (coordinates) position.free();
             map.current?.previewRoute(coordinates);
           }}
-          fix={position.fix}
+          fix={displayedFix}
+          following={follow.following}
           onSettings={() => {
             tracks.pause();
             setPanel('route');
@@ -584,12 +617,28 @@ export default function Home() {
           position.north();
           map.current?.north();
         }}
-        onLocate={() =>
-          position.locate((fix) => map.current?.focusPoint(fix.coordinates))
+        onLocate={() => {
+          if (follow.following) {
+            follow.pause();
+            map.current?.stop();
+          } else {
+            map.current?.previewRoute(null);
+            follow.resume();
+            if (recorder.record.phase !== 'recording') position.locate();
+          }
+        }}
+        following={follow.following}
+        followBlocked={follow.blocked}
+        locating={
+          follow.following &&
+          (follow.waiting ||
+            (recorder.record.phase !== 'recording' && position.locating))
         }
-        locating={position.locating}
         watching={position.watching}
-        onStopLocation={position.stopLocation}
+        onStopLocation={() => {
+          follow.pause();
+          position.stopLocation();
+        }}
         direction={position.direction}
         onDevice={() =>
           position.direction === 'device'

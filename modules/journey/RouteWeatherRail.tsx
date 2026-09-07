@@ -24,10 +24,12 @@ export function RouteWeatherRail({
   fix,
   onSettings,
   onPreview,
+  following = false,
 }: {
   route: PlannedRoute;
   journey: RouteJourneyState;
   fix: PositionFix | null;
+  following?: boolean;
   onSettings: () => void;
   onPreview: (coordinates: Coordinate | null) => void;
 }) {
@@ -53,6 +55,14 @@ export function RouteWeatherRail({
       callback.current(null);
     };
   }, [route]);
+  useEffect(() => {
+    if (!following) return;
+    if (pending.current) cancelAnimationFrame(pending.current.frame);
+    pending.current = null;
+    pointer.current = null;
+    setSelected(null);
+    callback.current(null);
+  }, [following]);
   const select = (value: number) => {
     const f = Math.max(0, Math.min(1, value));
     setSelected(f);
