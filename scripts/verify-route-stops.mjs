@@ -1,7 +1,8 @@
 import { browserRuntime } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
+import { verifyPreviewCamera } from './camera-gesture-checks.mjs';
 const { chromium } = browserRuntime();
-const timer = setTimeout(() => process.exit(2), 150000),
+const timer = setTimeout(() => process.exit(2), 180000),
   browser = await chromium.launch({
     headless: true,
     executablePath:
@@ -196,6 +197,7 @@ try {
     await page.screenshot({
       path: `artifacts/screenshots/route-scrub-${width}-${height}.png`,
     });
+    await verifyPreviewCamera(page, context, width);
     await slider.focus();
     await slider.press('End');
     assert.equal(Number(await slider.getAttribute('aria-valuenow')), 100);

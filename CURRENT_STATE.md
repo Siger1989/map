@@ -1,3 +1,10 @@
+# 当前任务：路线预览中镜头拖动无响应（2026-09-07）
+- 用户确认右下角绿色镜头控件拖动没反应。开始 main 干净，pull --ff-only 确认 78407cc 最新。隔离路线预览复测竖拖/外圈旋转可用，尚未复现所有方向完全失灵；代码确认绿色模型忽略横向拖动，且失焦/隐藏页面缺少拖动会话清理，按此范围修正，不声称已查明所有无响应原因。
+- 范围：controls/CameraGizmo.tsx、cameraGesture.ts、workspace.css；绿色模型二维拖动和键盘左右转向、稳定 SVG 捕获与中断恢复。app/page.tsx 手动镜头操作暂停位置跟随，避免自动回中断开操作；路线预览位置/读数保持。补对应逻辑与浏览器验证、说明；路线/照片/标记/地形数据不改，无依赖或功能删除。回滚控件及这一处回调即可。
+- 验证完成：TypeScript、15/15 镜头/轨迹/位置跟随/路线预览逻辑测试通过；390×844、360×780 浏览器实际鼠标横/竖/斜拖、触摸拖出模型仍响应、外圈旋转、pointercancel/失焦后恢复、方向键与预览保留通过，并完成原途经点/拖动排序/收藏恢复/定位与预览切换/键盘小屏回归，无页面错误。两尺寸截图 artifacts/screenshots/preview-camera-fixed-{390,360}.png 已查看。
+- 网页 build 与安卓网页资源 build 均通过，未修改安卓 Java/签名，未生成本轮 APK 或 Release；现有 APK 不包含本轮镜头改动，尚未真机验收。日志 .openai/{typecheck-preview-camera,tests-preview-camera,browser-preview-camera,build-preview-camera,build-mobile-preview-camera}.log。
+- 文件：app/page.tsx、controls/{CameraGizmo.tsx,cameraGesture.ts,workspace.css}、scripts/verify-route-stops.mjs 与本状态；新增 tests/camera-gesture.test.mjs、scripts/camera-gesture-checks.mjs、docs/preview-camera.md，无文件/功能删除。源码提交推送 main，完成后的远程 SHA 核验见 .openai/sync-preview-camera.log。
+
 # 当前任务：修复鄂陵湖附近地形尖刺（2026-09-07）
 - 用户截图位置 #13.64/34.85086/97.76257/0/80；开始 main 干净，pull --ff-only 确认 3ba8e87 最新。实测全球 Mapzen z12/3160/1624 原始 PNG 存在 2988/5585m 相邻异常点，周围约 4270m；同位置 z13 数据范围 4259–4365m，无千米级突跳，z11 也含异常。属于上游低级瓦片数据异常。
 - 修复方案：只重建已检查的 z12 九瓦片区域及其 z7–11 父级局部像素，使用同源 z13 原始海拔做数值面积采样，边缘融合；不对全球山峰做阈值削平。新增独立可复现生成脚本、修复覆盖/署名及资源，网页/安卓统一路由优先修复瓦片，缓存版本避免继续读旧坏瓦片。成都 FABDEM、其他地区与路线/照片/标记/操控器保持。

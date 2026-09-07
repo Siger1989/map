@@ -421,9 +421,10 @@
   cursor: grab;
 }
 .camera-model {
-  cursor: ns-resize;
+  cursor: grab;
 }
-.camera-ring:active {
+.camera-ring:active,
+.camera-model:active {
   cursor: grabbing;
 }
 .camera-ring:focus-visible,

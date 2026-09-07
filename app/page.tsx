@@ -1248,6 +1248,7 @@ export default function Home() {
       <CameraGizmo
         view={view}
         onView={(pitch, bearing) => {
+          follow.pause();
           position.free();
           if (pitch > 0 && !layers.terrain && !section.enabled)
             update({ terrain: true });

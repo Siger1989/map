@@ -1,8 +1,14 @@
-import { useRef, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, type PointerEvent } from 'react';
 import type { ViewState } from '../map/types';
-import { clampPitch, ringAngle, ringDelta, wrapBearing } from './cameraGesture';
+import {
+  clampPitch,
+  orbitCamera,
+  ringAngle,
+  ringDelta,
+  wrapBearing,
+} from './cameraGesture';
 
-/** The model pivots at its feet; the ellipse controls heading, not map position. */
+/** The model orbits/tilts around the map centre; the ring changes heading only. */
 export function CameraGizmo({
   view,
   onView,
@@ -13,12 +19,46 @@ export function CameraGizmo({
   const svg = useRef<SVGSVGElement>(null);
   const drag = useRef<{
     pointer: number;
-    kind: 'pitch' | 'bearing';
+    kind: 'orbit' | 'bearing';
+    x: number;
     y: number;
     pitch: number;
     angle: number;
     bearing: number;
   } | null>(null);
+  const cancel = useCallback(() => {
+    const current = drag.current;
+    drag.current = null;
+    if (current && svg.current?.hasPointerCapture(current.pointer))
+      svg.current.releasePointerCapture(current.pointer);
+  }, []);
+  const end = useCallback(
+    (event: { pointerId: number }) => {
+      if (drag.current?.pointer === event.pointerId) cancel();
+    },
+    [cancel],
+  );
+  useEffect(() => {
+    const visibility = () => {
+      if (document.hidden) cancel();
+    };
+    const anotherPointer = (event: globalThis.PointerEvent) => {
+      if (drag.current && event.pointerId !== drag.current.pointer) cancel();
+    };
+    window.addEventListener('blur', cancel);
+    window.addEventListener('pointerdown', anotherPointer, true);
+    window.addEventListener('pointerup', end, true);
+    window.addEventListener('pointercancel', end, true);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      cancel();
+      window.removeEventListener('blur', cancel);
+      window.removeEventListener('pointerdown', anotherPointer, true);
+      window.removeEventListener('pointerup', end, true);
+      window.removeEventListener('pointercancel', end, true);
+      document.removeEventListener('visibilitychange', visibility);
+    };
+  }, [cancel, end]);
   const position = (e: PointerEvent) => {
     const rect = svg.current!.getBoundingClientRect();
     return {
@@ -26,35 +66,39 @@ export function CameraGizmo({
       y: ((e.clientY - rect.top) * 118) / rect.height,
     };
   };
-  const begin = (kind: 'pitch' | 'bearing', e: PointerEvent<SVGGElement>) => {
-    if (!e.isPrimary || e.button !== 0 || drag.current) return;
+  const begin = (kind: 'orbit' | 'bearing', e: PointerEvent<SVGGElement>) => {
+    if (!e.isPrimary || e.button !== 0) return;
     e.preventDefault();
+    cancel();
     const p = position(e);
     drag.current = {
       pointer: e.pointerId,
       kind,
+      x: p.x,
       y: p.y,
       pitch: view.pitch,
       angle: ringAngle(p.x - 55, p.y - 81),
       bearing: view.bearing,
     };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    svg.current!.setPointerCapture(e.pointerId);
   };
-  const move = (e: PointerEvent<SVGGElement>) => {
+  const move = (e: PointerEvent<SVGSVGElement>) => {
     const d = drag.current;
     if (!d || d.pointer !== e.pointerId) return;
+    if (e.pointerType === 'mouse' && !(e.buttons & 1)) {
+      cancel();
+      return;
+    }
     const p = position(e);
-    if (d.kind === 'pitch')
-      onView(clampPitch(d.pitch + (d.y - p.y) * 1.35), d.bearing);
-    else {
+    if (d.kind === 'orbit') {
+      const next = orbitCamera(d, p.x - d.x, p.y - d.y);
+      onView(next.pitch, next.bearing);
+    } else {
       const next = ringAngle(p.x - 55, p.y - 81);
       d.bearing = wrapBearing(d.bearing + ringDelta(d.angle, next));
       d.angle = next;
       onView(d.pitch, d.bearing);
     }
-  };
-  const end = (event: PointerEvent<SVGGElement>) => {
-    if (drag.current?.pointer === event.pointerId) drag.current = null;
   };
   const y = 70 - 40 * Math.sin((view.pitch * Math.PI) / 180);
   const rad = (-view.bearing * Math.PI) / 180;
@@ -62,9 +106,16 @@ export function CameraGizmo({
   return (
     <aside
       className="camera-gizmo"
-      aria-label="地图视角：拖绿色模型调俯仰，沿圆环滑动调旋转"
+      aria-label="地图视角：拖绿色模型上下调俯仰、左右旋转，外圈控制方向"
     >
-      <svg ref={svg} viewBox="0 0 110 118">
+      <svg
+        ref={svg}
+        viewBox="0 0 110 118"
+        onPointerMove={move}
+        onPointerUp={end}
+        onPointerCancel={end}
+        onLostPointerCapture={end}
+      >
         <ellipse
           cx="55"
           cy="81"
@@ -84,10 +135,6 @@ export function CameraGizmo({
           aria-valuenow={Math.round(wrapBearing(view.bearing))}
           aria-valuetext={`${Math.round(wrapBearing(view.bearing))} 度`}
           onPointerDown={(e) => begin('bearing', e)}
-          onPointerMove={move}
-          onPointerUp={end}
-          onPointerCancel={end}
-          onLostPointerCapture={end}
           onKeyDown={(e) => {
             if (['ArrowLeft', 'ArrowRight', 'Home'].includes(e.key)) {
               e.preventDefault();
@@ -136,31 +183,52 @@ export function CameraGizmo({
           className="camera-model"
           role="slider"
           tabIndex={0}
-          aria-label="俯仰角度，上下拖动绿色模型"
+          aria-label="镜头角度：拖动绿色模型，上下俯仰、左右旋转"
           aria-valuemin={0}
           aria-valuemax={80}
           aria-valuenow={Math.round(view.pitch)}
-          aria-valuetext={`${Math.round(view.pitch)} 度`}
-          onPointerDown={(e) => begin('pitch', e)}
-          onPointerMove={move}
-          onPointerUp={end}
-          onPointerCancel={end}
-          onLostPointerCapture={end}
+          aria-valuetext={`俯仰 ${Math.round(view.pitch)} 度，方向 ${Math.round(wrapBearing(view.bearing))} 度`}
+          onPointerDown={(e) => begin('orbit', e)}
           onKeyDown={(e) => {
-            if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) {
+            if (
+              [
+                'ArrowUp',
+                'ArrowDown',
+                'ArrowLeft',
+                'ArrowRight',
+                'Home',
+                'End',
+              ].includes(e.key)
+            ) {
               e.preventDefault();
               onView(
                 e.key === 'Home'
                   ? 0
                   : e.key === 'End'
                     ? 80
-                    : clampPitch(view.pitch + (e.key === 'ArrowUp' ? 5 : -5)),
-                view.bearing,
+                    : clampPitch(
+                        view.pitch +
+                          (e.key === 'ArrowUp'
+                            ? 5
+                            : e.key === 'ArrowDown'
+                              ? -5
+                              : 0),
+                      ),
+                wrapBearing(
+                  view.bearing +
+                    (e.key === 'ArrowRight'
+                      ? 5
+                      : e.key === 'ArrowLeft'
+                        ? -5
+                        : 0),
+                ),
               );
             }
           }}
         >
-          <title>上下拖动调俯仰；底部固定，方向键上下微调</title>
+          <title>
+            上下拖动调俯仰，左右拖动旋转；方向键微调，Home 俯视，End 最大倾斜
+          </title>
           <rect x="31" y="19" width="48" height="64" fill="transparent" />
           <path
             d={`M 55 81 L 35 ${y + 6} L 76 ${y} Z`}
