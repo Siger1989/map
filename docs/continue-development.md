@@ -44,7 +44,7 @@ git push
 
 ## 下载安装包
 
-从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。[0.2.4-test](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) 为“观云测试版”（com.guanyun.weather.preview），沿用 0.1.4 签名，可覆盖更新 0.1.4–0.2.3 测试版并保留数据；可与原“观云”并存，数据独立。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
+从 [0.2.5 独立山兔测试版](https://github.com/Siger1989/map/releases/tag/v0.2.5-test-standalone) 下载 APK、SHA-256 校验文件和安装说明；它与旧版并存、数据独立，完整说明见 [独立版发行文档](release-0.2.5-standalone.md)。旧包名的 [0.2.4-test](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) 为“观云测试版”（com.guanyun.weather.preview），沿用 0.1.4 签名，可覆盖更新 0.1.4–0.2.3 测试版并保留数据；可与原“观云”并存，数据独立。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
 
 ## 在家构建安卓
 
@@ -57,6 +57,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -S
 上面的路径只是示例；脚本默认的 `D:\GodotAndroid\...` 是当前开发机器路径。构建产物在 `APK/`，临时构建目录在 `mobile/.build/`。
 
 **签名密钥不会进 GitHub。** 0.1.4 起测试版原签名位于生成这些版本的电脑 `mobile/.build/guanyun-test.jks`。另一台电脑要覆盖更新同一系列，需要通过可信私密方式迁移原文件，可用环境变量 `GUANYUN_SIGNING_KEY` 或构建参数 `-SigningKey` 指定路径。构建现在根据 `config/android-signing.json` 的公开证书指纹检查一致性；缺少原密钥或指纹不同会停止，不再生成替代签名。`-UnsignedOnly` 可检查全部编译及资产，产物位于 `mobile/.build`，不能安装。0.1.3 及更早的原“观云”使用不同签名；不要卸载旧应用来绕过签名问题，以免丢失本机轨迹及照片。
+
+**独立山兔版**：用户在 2026-09-07 授权没有旧密钥时制作可安装的新测试应用。构建命令增加 `-StandaloneTest`，使用 `config/android-standalone-signing.json` 和对应本机私有测试密钥（公开证书指纹为 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`）。它不覆盖旧 `com.guanyun.weather.preview`，照片分享 provider 也独立。另一台电脑仍需要私密迁移这一版的密钥；构建不会自动生成替代证书。打包默认无损压缩，`-SkipCompression` 可对照原流程，源码地形不改。
 
 地图地质服务的 `.env.local` 同样不上传。普通原型运行无需它；1:20万地质云配置与授权步骤见 `docs/geocloud-integration.md`。
 

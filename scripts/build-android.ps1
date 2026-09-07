@@ -3,7 +3,9 @@
   [string]$JdkRoot = 'D:\GodotAndroid\jdk-17-portable\jdk-17.0.19+10',
   [switch]$SkipWebBuild,
   [string]$SigningKey = $env:GUANYUN_SIGNING_KEY,
-  [switch]$UnsignedOnly
+  [switch]$UnsignedOnly,
+  [switch]$StandaloneTest,
+  [switch]$SkipCompression
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -33,6 +35,17 @@ try {
   [xml]$manifest = Get-Content -LiteralPath (Join-Path $androidRoot 'AndroidManifest.xml') -Raw -Encoding UTF8
   $signing = Get-Content -LiteralPath (Join-Path $projectRoot 'config\android-signing.json') -Raw | ConvertFrom-Json
   if ($manifest.manifest.package -ne $signing.package) { throw 'Package does not match the configured signing identity' }
+  $manifestPath = Join-Path $androidRoot 'AndroidManifest.xml'
+  if ($StandaloneTest) {
+    $signing = Get-Content -LiteralPath (Join-Path $projectRoot 'config\android-standalone-signing.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $manifest.manifest.SetAttribute('package', $signing.package)
+    $manifest.manifest.application.SetAttribute('label', 'http://schemas.android.com/apk/res/android', $signing.applicationLabel) | Out-Null
+    $manifest.manifest.application.provider.SetAttribute('authorities', 'http://schemas.android.com/apk/res/android', ($signing.package + '.photos')) | Out-Null
+    New-Item -ItemType Directory -Path $stage -Force | Out-Null
+    $manifestPath = Join-Path $stage 'AndroidManifest.xml'
+    $manifest.Save($manifestPath)
+    Write-Output "Independent test package: $($signing.package); data is separate from the original preview app"
+  }
   if ($UnsignedOnly) { $outputRoot = $buildRoot }
   New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
   $keyStore = if ($SigningKey) { [IO.Path]::GetFullPath($SigningKey) } else { Join-Path $buildRoot 'guanyun-test.jks' }
@@ -54,7 +67,7 @@ try {
   $baseApk = Join-Path $stage 'base.apk'
   $alignedApk = Join-Path $stage 'aligned.apk'
   & $aapt compile --dir (Native-Path (Join-Path $androidRoot 'res')) -o (Native-Path $resources); Check-Tool 'Resource compilation'
-  & $aapt link -o (Native-Path $baseApk) -I $platformJar --manifest (Native-Path (Join-Path $androidRoot 'AndroidManifest.xml')) -A (Native-Path $webRoot) --java (Native-Path (Join-Path $stage 'generated')) --min-sdk-version 26 --target-sdk-version 35 (Native-Path $resources); Check-Tool 'Resource linking'
+  & $aapt link -o (Native-Path $baseApk) -I $platformJar --manifest (Native-Path $manifestPath) -A (Native-Path $webRoot) --java (Native-Path (Join-Path $stage 'generated')) --min-sdk-version 26 --target-sdk-version 35 (Native-Path $resources); Check-Tool 'Resource linking'
   # AAPT2 35 on this Windows host emits backslashes in nested asset ZIP names.
   # Android AssetManager resolves POSIX paths; normalize before alignment/signing.
   Add-Type -AssemblyName System.IO.Compression
@@ -78,11 +91,17 @@ try {
   $classes = @(Get-ChildItem -LiteralPath (Join-Path $stage 'classes') -Filter '*.class' -Recurse | ForEach-Object { $_.FullName })
   & $javaExe -cp (Join-Path $toolRoot 'lib\d8.jar') com.android.tools.r8.D8 --lib $platformJar --min-api 26 --output (Join-Path $stage 'dex') @classes; Check-Tool 'DEX compilation'
   & $jarExe uf $baseApk -C (Join-Path $stage 'dex') classes.dex; Check-Tool 'DEX packaging'
-  & (Join-Path $toolRoot 'zipalign.exe') -p -f 4 (Native-Path $baseApk) (Native-Path $alignedApk); Check-Tool 'APK alignment'
+  $packagedApk = $baseApk
+  if (!$SkipCompression) {
+    $packagedApk = Join-Path $stage 'compressed.apk'
+    & node (Join-Path $PSScriptRoot 'optimize-apk.mjs') $baseApk $packagedApk; Check-Tool 'Lossless APK compression'
+  }
+  & (Join-Path $toolRoot 'zipalign.exe') -p -f 4 (Native-Path $packagedApk) (Native-Path $alignedApk); Check-Tool 'APK alignment'
 
   $versionName = $manifest.manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
   if ($versionName -notmatch '^[0-9A-Za-z.-]+$') { throw 'Invalid APK version name' }
-  $apkName = if ($UnsignedOnly) { "Shantu-$versionName-unsigned.apk" } else { "Shantu-$versionName.apk" }
+  $variant = if ($StandaloneTest) { '-standalone' } else { '' }
+  $apkName = if ($UnsignedOnly) { "Shantu-$versionName$variant-unsigned.apk" } else { "Shantu-$versionName$variant.apk" }
   $apk = Join-Path $outputRoot $apkName
   $signer = Join-Path $toolRoot 'lib\apksigner.jar'
   if ($UnsignedOnly) { Copy-Item -LiteralPath $alignedApk -Destination $apk }
@@ -91,6 +110,7 @@ try {
     & $javaExe -jar $signer verify --verbose --print-certs $apk; Check-Tool 'Signature verification'
   }
   & $aapt dump badging (Native-Path $apk); Check-Tool 'Manifest verification'
+  & (Join-Path $toolRoot 'zipalign.exe') -c -p 4 (Native-Path $apk); Check-Tool 'Final APK alignment verification'
 
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $archive = [IO.Compression.ZipFile]::OpenRead($apk)

@@ -1,18 +1,18 @@
-# 山兔 0.2.5 源码（待原签名打包）
+# 山兔 0.2.5 独立测试版
 
-同一待签名版本新增 [矩形交线剖面与对象 Gizmo](../docs/elevation-section.md)：完整模型保留，剖面/标记共用箭头移动、圆环旋转、方块拉伸；详情滑杆读取交线点的海拔/坐标，并保存附详细信息的图片。手机主界面同步引入操控器样式；安卓返回按详情、操作、剖面逐层退出。
+同一版本新增 [矩形交线剖面与对象 Gizmo](../docs/elevation-section.md)：完整模型保留，剖面/标记共用箭头移动、圆环旋转、方块拉伸；详情滑杆读取交线点的海拔/坐标，并保存附详细信息的图片。手机主界面同步引入操控器样式；安卓返回按详情、操作、剖面逐层退出。
 
-同一待签名版本新增 [地图图源选择、二维码与在线 / 离线地图导入](../docs/map-sources.md)：XYZ / TMS、WMTS / WMS3857、栅格 TileJSON / MOBAC XML、栅格 MBTiles 与部分 GeoTIFF；工具和图层页均有入口。相机扫码使用受控视频权限，离线解析模块与 SQL WASM 随应用打包；不支持奥维加密 `.ovmap`。原生相机仍待真机验证。
+同一版本新增 [地图图源选择、二维码与在线 / 离线地图导入](../docs/map-sources.md)：XYZ / TMS、WMTS / WMS3857、栅格 TileJSON / MOBAC XML、栅格 MBTiles 与部分 GeoTIFF；工具和图层页均有入口。相机扫码使用受控视频权限，离线解析模块与 SQL WASM 随应用打包；不支持奥维加密 `.ovmap`。原生相机仍待真机验证。
 
-产品显示名称已改为“山兔”，首次打开世界地图，去掉固定成都/川西文案。新构建输出`APK/Shantu-0.2.5-test.apk`，未签名验证包为`mobile/.build/Shantu-0.2.5-test-unsigned.apk`。沿用原包名/签名配置和本机数据键；当前机器缺原签名，旧Release及以下0.2.4下载仍叫观云。见 [更名与全球入口说明](../docs/shantu-global.md)。
+产品面向全球，首次打开世界地图。当前安装包为 [Shantu-0.2.5-test-standalone.apk](https://github.com/Siger1989/map/releases/download/v0.2.5-test-standalone/Shantu-0.2.5-test-standalone.apk)，安装名“山兔测试版”，包名 `com.guanyun.weather.shantu.preview`。按用户授权使用独立签名与包名，可与旧版并存、数据独立；完整更新、压缩和校验见 [0.2.5 发行说明](../docs/release-0.2.5-standalone.md)。
 
-新增 [照片全屏放大、编辑/标记、系统分享/保存、海拔和拍摄天气](../docs/photo-details.md)，同一待签名版本；旧APK不包含这些源码更新。
+新增 [照片全屏放大、编辑/标记、系统分享/保存、海拔和拍摄天气](../docs/photo-details.md)，同一版本；旧APK不包含这些源码更新。
 
-同一待签名版本新增“实走记录 → 记录精度”：默认20米，可设置5–80米的最大估计误差，后续定位点即时按设置筛选；见 [精度设置与刷新说明](../docs/recording-accuracy.md)。
+同一版本新增“实走记录 → 记录精度”：默认20米，可设置5–80米的最大估计误差，后续定位点即时按设置筛选；见 [精度设置与刷新说明](../docs/recording-accuracy.md)。
 
-versionCode 12：实走保存保留来源与逐点时间，重开后可选作照片匹配；原始记录改线另存手绘副本；新增照片文件夹导入。详见 [修复说明](../docs/recording-photos-fix.md)。当前机器缺少 0.2.4 的原签名，没有发布 0.2.5 安装包。打包已固定公开证书指纹，拒绝使用不同证书；通过 `-SigningKey` / `GUANYUN_SIGNING_KEY` 指定原密钥，或在原签名电脑构建。`-UnsignedOnly` 仅供编译检查，不能安装。
+versionCode 12：实走保存保留来源与逐点时间，重开后可选作照片匹配；原始记录改线另存手绘副本；新增照片文件夹导入。详见 [修复说明](../docs/recording-photos-fix.md)。本机缺少 0.2.4 的原签名，独立版使用 `-StandaloneTest` 构建。默认原包名仍固定旧证书指纹，拒绝不同证书；`-SigningKey` / `GUANYUN_SIGNING_KEY` 可指定所选版本对应的私密密钥。`-UnsignedOnly` 仅供编译检查，不能安装。
 
-# 0.2.4-test 行程照片地图（最新已发布包）
+# 0.2.4-test 行程照片地图（旧包名最新版本）
 
 versionCode 11，沿用包名与签名，可覆盖 0.2.3。行程 → 照片支持系统多选图片，按拍摄时间匹配实走/GPX 轨迹，在地图显示缩略图和本机预览。详见 [照片说明](../docs/trip-photos.md)。安卓多选和真机 HEIC 解码待设备验证；不申请整个相册的读取权限。
 
@@ -34,11 +34,11 @@ versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接�
 
 # 观云安卓测试版
 
-当前安装包：[Guanyun-0.2.4-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk)（本地产物 `APK/Guanyun-0.2.4-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 11。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.3 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
+旧包名安装包：[Guanyun-0.2.4-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk)（本地产物 `APK/Guanyun-0.2.4-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 11。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.3 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
 
 ## 安装与使用
 
-1. 把 APK 传到手机，在文件管理器打开安装；新版显示为“观云测试版”，原“观云”及其数据保留。电脑页面修改不会自动进入手机，必须安装新版 APK。
+1. 把最新山兔 APK 传到手机，在文件管理器打开安装；新版显示为“山兔测试版”，原“观云”/“观云测试版”及其数据保留，应用数据独立。电脑页面修改不会自动进入手机，必须安装新版 APK。
 2. 要求 Android 8.0+、OpenGL ES 3 / WebGL 2，Android System WebView 或 Chrome 120+。
 3. 界面与成都区域高程内置；道路、卫星图、天气、地质概览及路线服务联网获取，不要求电脑开机或登录 OpenAI。不是全国离线地图包。
 4. 默认没有上拉大面板：点左下温度/海拔看天气，右下“行程 / 路线 / 工具”打开小浮窗，时间与图层位于“工具”中，点 ×、地图或返回键关闭。海拔/地质图例常驻小色带。
@@ -58,12 +58,12 @@ versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接�
 - `NativeBridge.java` / `RecordingService.java` / `RecordingStore.java` / `AppFiles.java`：受限命令桥、带持续通知的定位前台服务、原生记录存储与系统文件导入导出。浏览器仅前台记录；安卓锁屏定位代码已接入，实际持续性受系统和厂商省电策略影响，待真机验证。
 - `LocalGateway.java`：固定 APK 资源域 `appassets.androidplatform.net`。地形范围内读取本地瓦片，其他区域请求固定 S3；地质概览代理 Macrostrat；卫星日期读取 NASA 元数据；地质云明确未授权。与网页端共享约定的请求接口。
 - `DataTransport.java`：固定 HTTPS 源、超时/响应体限制、瓦片校验、日期解析与 64MiB 私有缓存。路线/地名通过网页端 HTTPS+CORS 请求，由 navigation 适配器管理，没有把 Token 放入包内。
-- `scripts/build-android.ps1`：Vite / AAPT2 / Javac / D8 / zipalign / 独立测试签名；从 AndroidManifest 读取版本生成文件名，验证签名和 473 张地形瓦片，使用 .NET SHA-256 生成旁边的校验文件。保留本机 `mobile/.build/guanyun-test.jks` 才能持续覆盖更新本轮独立测试版；此文件不是旧版密钥，测试签名不用于正式发行。
+- `scripts/build-android.ps1`：Vite / AAPT2 / Javac / D8 / 无损 PNG/ZIP 压缩 / zipalign / 测试签名；从 Manifest 读取版本，验证签名、473 张地形与 23 张修复瓦片并输出 SHA-256。`-StandaloneTest` 切换独立包名与证书，保留对应私密密钥才能持续覆盖同一路版本。测试签名不用于正式发行。
 - 新的功能模块边界、公共服务条件和回滚说明见 `docs/mobile-controls-and-routes.md`。
 
 ## 构建与验证
 
-项目根目录 `npm run build:apk`。默认 SDK 为 `D:/GodotAndroid/sdk`（platform 35 / build-tools 35.0.0），JDK 17；脚本支持 `-SdkRoot` / `-JdkRoot` 参数。网站单独运行 `npm run build`。
+独立山兔版在项目根目录运行 `npm run build:apk -- -StandaloneTest`；原包名构建仍用 `npm run build:apk` 且需要原签名。默认 SDK 为 `D:/GodotAndroid/sdk`（platform 35 / build-tools 35.0.0），JDK 17；脚本支持 `-SdkRoot` / `-JdkRoot` 参数。网站单独运行 `npm run build`。
 
 检查覆盖 TypeScript、天气/地质回归、导航响应与边界、牵引算法/轨迹存档、旋转边界、安卓返回脚本；实际调用路线三种方式及中文搜索。APK 检查包含启动 Activity、版本、v2/v3 签名、静态 worker、覆盖索引、473 张地形瓦片，以及不混入 .env/密钥/开发文件。
 
