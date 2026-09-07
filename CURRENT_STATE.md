@@ -7,7 +7,8 @@
 - 当前阻塞：无。
 - 构建结果：PASS。网页及安卓编译完成，APK v2/v3 签名与旧测试版一致；559 项静态资源逐项哈希匹配（含473张地形），照片 EXIF/存储/地图代码已包含。APK/Guanyun-0.2.4-test.apk，58736849 字节，SHA-256 a3a7c582b8de33ee7844b7d33e2373cac93ac0c1ac5a4508ff957ee72d0acafb。未连接 Android 真机，系统多选/HEIC/触控待设备验收。
 - 最终日志：.openai/{tests-photos-final,typecheck-photos-final,browser-photos-quota-final,browser-follow-photos-regression,browser-routes-photos-regression,build-web-photos,build-apk-photos,verify-apk-photos-024}.log。
-- 下一步：实现、验证和构建完成，提交推送源码并发布 0.2.4-test/code11 APK。
+- 发布结果：PASS。源码 ad63b4e00308841126d3066e5f0023ebb0ca043d 已推送 main 并核验远端一致；https://github.com/Siger1989/map/releases/tag/v0.2.4-test 已公开发布（draft=false、prerelease=true），指向该构建提交。APK/校验/安装说明三个附件均 uploaded，服务器大小/哈希与本地一致。日志 .openai/{sync-photos-024,upload-apk-024,publish-apk-024,release-apk-024-verified}.log。
+- 下一步：本轮完成，提供网页下载链接，可覆盖 0.2.3；安卓系统选图和真机体验待用户反馈。本状态收尾单独提交，最终 main 核验写 .openai/sync-photos-024-final.log。
 
 # 当前任务：实走记录的位置跟随（2026-09-07）
 - 当前目标：修复记录轨迹时地图不跟随，自动跟随新定位、支持手动浏览/恢复，交付新版 APK 并同步 GitHub。
