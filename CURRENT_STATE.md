@@ -1,3 +1,8 @@
+# 交接：同步后关机（2026-09-08）
+- 用户最新明确要求弄好上传GitHub后关机，覆盖此前先别关机的要求。关机前工作区干净，main本地与远端52f6f65一致；再次验证v0.2.6-test公开测试发行的APK/SHA/说明三项digest一致，日志.openai/verify-before-shutdown.log。
+- 续画和原生重复刷新优化已完成交付。地图闪烁仍待具体环境与症状复现，不宣称已彻底解决；无新代码改动或重复打包。下一次启动先读取上述待复现记录。
+- 本交接记录同步并核对远端后执行Windows关机，不强制丢弃应用未保存内容；本条为执行前记录，不等于断电完成证明。
+
 # 当前追加：地图仍闪烁（2026-09-08，确定刷新问题已优化、现场闪烁待复现）
 - 交付：源码2ff45502371a12f3a526cf128eb65ecfdf534d4a已push并核对origin/main一致。GitHub v0.2.6-test已发布（非draft、prerelease），APK/SHA/详细说明3个资产服务端digest与本机一致；规范下载URL实际HTTP206、APK MIME与ZIP头PASS。日志.openai/{sync-apk-026,publish-apk-026,verify-release-026}.log。下载：https://github.com/Siger1989/map/releases/download/v0.2.6-test/Shantu-0.2.6-test.apk 。
 - 发布前最终网页构建PASS。原现场地图同一实例82.249秒→188.054秒期间render=36、sourcedata=160、sourcedataloading=84均未增加，无上下文丢失/恢复，视角仍为原用户地点/52.3°方向/26°俯仰。日志.openai/flicker-idle-comparison.log；此窗口不能证明所有环境无闪。
