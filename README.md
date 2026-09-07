@@ -1,8 +1,12 @@
 # 观云 · 三维地图与沿途天气
 
-当前测试版 **0.2.3-test / versionCode 10**（2026-09-07）。手机优先，尽量把屏幕留给地图；原绿色模型与圆环 3D 控制器默认显示，剖面功能停用。
+当前测试版 **0.2.4-test / versionCode 11**（2026-09-07）。手机优先，尽量把屏幕留给地图；原绿色模型与圆环 3D 控制器默认显示，剖面功能停用。
 
-[直接下载 APK](https://github.com/Siger1989/map/releases/download/v0.2.3-test/Guanyun-0.2.3-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.3-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
+[直接下载 APK](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
+
+## 0.2.4 更新：行程照片地图
+
+“行程 → 照片”选择带时间的轨迹和手机照片，按拍摄时间匹配位置；地图显示小缩略图，密集处合并数量，点击查看预览。支持时区解析、逐张补时间与整体校时、去重、显隐和移除；仅在本机处理所选照片，不改动或上传原图。断点/缺时间不猜位置，照片预览单独保存，暂不包含在普通 JSON/GPX 备份中。详见 [行程照片说明](docs/trip-photos.md)。
 
 ## 0.2.3 更新：实走记录自动跟随
 
@@ -91,7 +95,7 @@
 
 ## 安卓安装包
 
-`npm run build:apk` 生成 `APK/Guanyun-0.2.3-test.apk`。使用同一签名时，已安装旧版可直接覆盖更新，不需要卸载；电脑本地修改不会自动更新手机。应用联网获取公开数据，不依赖电脑 localhost。安装要求及架构见 [安卓测试版说明](mobile/README.md)。
+`npm run build:apk` 生成 `APK/Guanyun-0.2.4-test.apk`。使用同一签名时，已安装旧版可直接覆盖更新，不需要卸载；电脑本地修改不会自动更新手机。应用联网获取公开数据，不依赖电脑 localhost。安装要求及架构见 [安卓测试版说明](mobile/README.md)。
 
 公共路线/搜索实例适合小量测试，正式销售需要有保障的服务与合法数据授权；其他来源中的非商业限制尚未全部替换。1∶20万地质云仍缺授权。0.2.2 发布验证包括 TypeScript、122 项逻辑测试、双手机尺寸浏览器交互、真实三点路线请求、网页/安卓构建与 APK 签名及资源哈希检查；真机输入法、触控、锁屏定位和耗电仍待验收。
 ## 0.1.2 精确轨迹与整线分析

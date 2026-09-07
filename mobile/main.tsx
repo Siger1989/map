@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import Home from '../app/page';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '../modules/photos/photos.css';
 import '../app/globals.css';
 import '../modules/controls/workspace.css';
 import '../modules/controls/panels.css';

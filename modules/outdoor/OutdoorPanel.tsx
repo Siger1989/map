@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { trackDistance } from '../tracks/drawing';
 import { nearestOnRoute } from '../journey/routeProgress';
@@ -20,6 +20,7 @@ export function OutdoorPanel({
   name,
   onShow,
   onOpenMap,
+  photos,
 }: {
   recorder: ReturnType<typeof useRecording>;
   offline: ReturnType<typeof useOffline>;
@@ -27,8 +28,11 @@ export function OutdoorPanel({
   name: string;
   onShow: (points: Coordinate[]) => void;
   onOpenMap: () => void;
+  photos: ReactNode;
 }) {
-  const [tab, setTab] = useState<'record' | 'files' | 'offline'>('record'),
+  const [tab, setTab] = useState<'record' | 'files' | 'offline' | 'photos'>(
+      'record',
+    ),
     [message, setMessage] = useState(''),
     [pending, setPending] = useState<Transfer | null>(null),
     [loading, setLoading] = useState(false);
@@ -70,7 +74,7 @@ export function OutdoorPanel({
   return (
     <div className="outdoor-panel">
       <nav className="route-tabs" aria-label="行程工具">
-        {(['record', 'files', 'offline'] as const).map((id, i) => (
+        {(['record', 'files', 'offline', 'photos'] as const).map((id, i) => (
           <button
             key={id}
             aria-pressed={tab === id}
@@ -79,10 +83,11 @@ export function OutdoorPanel({
               setMessage('');
             }}
           >
-            {['实走记录', '数据', '离线'][i]}
+            {['实走记录', '数据', '离线', '照片'][i]}
           </button>
         ))}
       </nav>
+      {tab === 'photos' && photos}
       {tab === 'record' && (
         <>
           <div className="trip-metrics">

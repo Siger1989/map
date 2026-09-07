@@ -1,5 +1,8 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTripPhotos } from '@/modules/photos/useTripPhotos';
+import { PhotoPanel } from '@/modules/photos/PhotoPanel';
+import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
@@ -91,6 +94,30 @@ export default function Home() {
   const annotations = useAnnotations();
   const recorder = useRecording();
   const offline = useOffline();
+  const photos = useTripPhotos();
+  const [photoGroup, setPhotoGroup] = useState<string[]>([]);
+  const photoOverlay = useMemo(
+    () => (photos.visible ? photos.items : []),
+    [photos.visible, photos.items],
+  );
+  const photoTracks = useMemo(() => {
+    const record = recorder.record;
+    if (!record.id || !record.segments.some((s) => s.length))
+      return tracks.saved;
+    return [
+      {
+        id: record.id,
+        name: '当前实走记录',
+        createdAt: record.startedAt,
+        segments: record.segments.map((s) => s.map((p) => p.coordinates)),
+        samples: record.segments.map((s) =>
+          s.map((p) => ({ time: p.time, altitude: p.altitude })),
+        ),
+      },
+      ...tracks.saved.filter((t) => t.id !== record.id),
+    ];
+  }, [tracks.saved, recorder.record]);
+  const selectedPhoto = photos.items.find((p) => p.id === photos.selected);
   const [cameraOpen, setCameraOpen] = useState(true);
   const recordedSegments = useMemo(
     () =>
@@ -336,6 +363,14 @@ export default function Home() {
         trackOverlay={trackOverlay}
         drawingActive={tracks.drawing && panel === null}
         onDrawingInput={(event) => drawing.current?.input(event)}
+        photos={photoOverlay}
+        onPhotoSelect={(ids) => {
+          follow.pause();
+          map.current?.stop();
+          setPanel(null);
+          setPhotoGroup(ids);
+          photos.setSelected(ids[0]);
+        }}
         position={displayedFix}
         onBrowse={follow.pause}
         onManualRotate={position.free}
@@ -498,6 +533,15 @@ export default function Home() {
             </div>
           </div>
         )}
+      {selectedPhoto && panel === null && (
+        <PhotoViewer
+          photo={selectedPhoto}
+          group={photos.items.filter((p) => photoGroup.includes(p.id))}
+          onSelect={photos.setSelected}
+          onClose={() => photos.setSelected(null)}
+          onRemove={photos.remove}
+        />
+      )}
       <header className="topbar glass">
         <div className="brand">
           <span className="brand-icon">
@@ -668,6 +712,7 @@ export default function Home() {
         }}
         onActive={(next) => {
           if (next) {
+            photos.setSelected(null);
             tracks.pause();
             navigation.setPicking(null);
             annotations.setPicking(null);
@@ -706,6 +751,21 @@ export default function Home() {
         {panel === 'outdoor' && (
           <OutdoorPanel
             recorder={recorder}
+            photos={
+              <PhotoPanel
+                tracks={photoTracks}
+                preferred={tracks.selectedId}
+                photos={photos}
+                onOpen={(id) => {
+                  const p = photos.items.find((p) => p.id === id);
+                  if (!p) return;
+                  setPhotoGroup([id]);
+                  photos.setSelected(id);
+                  map.current?.focusPoint(p.coordinates, view.zoom);
+                  setPanel(null);
+                }}
+              />
+            }
             offline={offline}
             points={
               selectedTrack?.segments.flat() ??

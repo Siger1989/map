@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import '@/modules/photos/photos.css';
 import './globals.css';
 import '@/modules/controls/workspace.css';
 import '@/modules/controls/panels.css';

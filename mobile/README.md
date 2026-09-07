@@ -1,3 +1,7 @@
+# 0.2.4-test 行程照片地图
+
+versionCode 11，沿用包名与签名，可覆盖 0.2.3。行程 → 照片支持系统多选图片，按拍摄时间匹配实走/GPX 轨迹，在地图显示缩略图和本机预览。详见 [照片说明](../docs/trip-photos.md)。安卓多选和真机 HEIC 解码待设备验证；不申请整个相册的读取权限。
+
 # 0.2.3-test 记录位置跟随
 
 versionCode 10，沿用包名与签名。开始/继续实走记录时自动跟随，拖动地图暂停，点击右侧定位按钮恢复；不重置原有 3D 角度和缩放。普通定位也可持续跟随。详见 [跟随说明](../docs/position-follow.md)。
@@ -16,7 +20,7 @@ versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接�
 
 # 观云安卓测试版
 
-当前安装包：[Guanyun-0.2.3-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.3-test/Guanyun-0.2.3-test.apk)（本地产物 `APK/Guanyun-0.2.3-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 10。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.2 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
+当前安装包：[Guanyun-0.2.4-test.apk](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk)（本地产物 `APK/Guanyun-0.2.4-test.apk`），应用名“观云测试版”，包名 `com.guanyun.weather.preview`，版本代码 11。沿用 0.1.4 起的本地测试签名，可直接覆盖更新 0.1.4–0.2.3 测试版并保留其本机数据；可与原“观云”并存，不能覆盖原版，数据不会自动迁移。
 
 ## 安装与使用
 

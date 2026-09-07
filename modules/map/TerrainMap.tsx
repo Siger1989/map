@@ -37,6 +37,8 @@ import { TerrainClip } from '../section/terrainClip';
 import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
+import { PhotoLayer } from '../photos/PhotoLayer';
+import type { VisiblePhoto } from '../photos/storage';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
 import {
@@ -89,6 +91,8 @@ type Props = {
   drawingActive: boolean;
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
+  photos: VisiblePhoto[];
+  onPhotoSelect: (ids: string[]) => void;
   onManualRotate: () => void;
   onBrowse: () => void;
   annotations: Annotation[];
@@ -116,6 +120,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
+    const photosRef = useRef<PhotoLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
     const sectionRef = useRef<PlaneSectionLayer | null>(null);
     const sectionClipRef = useRef<TerrainClip | null>(null);
@@ -564,6 +569,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             routeRef.current = new RouteLayer(map);
             trackRef.current = new TrackLayer(map);
             positionRef.current = new PositionLayer(map);
+            photosRef.current = new PhotoLayer(map, (ids) =>
+              latest.current.onPhotoSelect(ids),
+            );
+            photosRef.current.sync(latest.current.photos);
             try {
               const { AnnotationLayer } =
                 await import('../annotations/AnnotationLayer');
@@ -719,6 +728,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         geologyRef.current = null;
         routeRef.current = null;
         trackRef.current = null;
+        photosRef.current?.dispose();
+        photosRef.current = null;
         positionRef.current = null;
         annotationRef.current = null;
         sectionRef.current?.dispose();
@@ -758,6 +769,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       if (loaded.current) positionRef.current?.sync(props.position);
     }, [props.position]);
+    useEffect(() => {
+      if (loaded.current) photosRef.current?.sync(props.photos);
+    }, [props.photos]);
     useEffect(() => {
       if (loaded.current)
         annotationRef.current?.update(

@@ -12,7 +12,12 @@ const java = readFileSync(
 const source = JSON.parse(
   java.match(/evaluateJavascript\(("(?:\\.|[^"\\])*"), result/)[1],
 );
-function pressBack({ panel = false, editing = false, section = false } = {}) {
+function pressBack({
+  panel = false,
+  editing = false,
+  section = false,
+  photo = false,
+} = {}) {
   const calls = [];
   const context = {
     KeyboardEvent: class {
@@ -23,15 +28,19 @@ function pressBack({ panel = false, editing = false, section = false } = {}) {
     },
     document: {
       querySelector(selector) {
-        const target = selector.includes('control-dock')
-          ? panel
-            ? 'panel'
+        const target = selector.includes('trip-photo-viewer')
+          ? photo
+            ? 'photo'
             : null
-          : section && selector.includes('data-section')
-            ? 'section'
-            : editing
-              ? 'editing'
-              : null;
+          : selector.includes('control-dock')
+            ? panel
+              ? 'panel'
+              : null
+            : section && selector.includes('data-section')
+              ? 'section'
+              : editing && selector.includes('observatory')
+                ? 'editing'
+                : null;
         return target
           ? {
               dispatchEvent(event) {
@@ -66,4 +75,10 @@ test('安卓返回优先退出全屏海拔剖面', () => {
   assert.equal(result.handled, true);
   assert.equal(result.calls[0].target, 'section');
   assert.equal(result.calls[0].key, 'Escape');
+});
+
+test('安卓返回关闭照片预览，保留底下的编辑状态', () => {
+  const result = pressBack({ photo: true, editing: true });
+  assert.equal(result.handled, true);
+  assert.equal(result.calls[0].target, 'photo');
 });

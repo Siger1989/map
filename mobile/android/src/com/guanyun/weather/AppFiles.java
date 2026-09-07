@@ -14,10 +14,15 @@ final class AppFiles {
     private ValueCallback<Uri[]> pending;
     private byte[] output;
     AppFiles(Activity activity) { this.activity=activity; }
-    boolean choose(ValueCallback<Uri[]> callback) {
+    boolean choose(ValueCallback<Uri[]> callback, android.webkit.WebChromeClient.FileChooserParams params) {
         if (pending != null) pending.onReceiveValue(null);
         pending=callback;
-        try { activity.startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),OPEN); }
+        try {
+            boolean images = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> t.startsWith("image/"));
+            Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(images ? "image/*" : "*/*");
+            picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE);
+            activity.startActivityForResult(picker, OPEN);
+        }
         catch(Exception e) { pending.onReceiveValue(null);pending=null; }
         return true;
     }
@@ -30,7 +35,15 @@ final class AppFiles {
     }
     void result(int request,int result,Intent intent) {
         Uri uri = result==Activity.RESULT_OK && intent!=null ? intent.getData():null;
-        if (request==OPEN && pending!=null) { pending.onReceiveValue(uri==null?null:new Uri[]{uri});pending=null; }
+        if (request==OPEN && pending!=null) {
+            Uri[] selected = uri==null?null:new Uri[]{uri};
+            if (result==Activity.RESULT_OK && intent!=null && intent.getClipData()!=null) {
+                int count=intent.getClipData().getItemCount();
+                if(count>30) { selected=null;android.widget.Toast.makeText(activity,"每次最多选择30张照片",0).show(); }
+                else { selected=new Uri[count]; for(int i=0;i<count;i++) selected[i]=intent.getClipData().getItemAt(i).getUri(); }
+            }
+            pending.onReceiveValue(selected);pending=null;
+        }
         if (request==SAVE && output!=null) {
             if (uri!=null) try(OutputStream stream=activity.getContentResolver().openOutputStream(uri,"wt")) { if(stream==null)throw new Exception();stream.write(output);android.widget.Toast.makeText(activity,"文件已保存",0).show(); }
             catch(Exception e) { android.widget.Toast.makeText(activity,"文件保存失败，请重试",0).show(); }

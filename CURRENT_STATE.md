@@ -1,3 +1,14 @@
+# 当前任务：轨迹时间匹配相册照片（2026-09-07）
+- 当前目标：选择手机照片，按拍摄时间匹配已有实走/带时间 GPX 轨迹，地图缩略图与预览，打包并同步 GitHub。
+- 当前进展：photos 模块已接通 EXIF 原始时间/时区解析、同段两分钟内估算匹配、逐张时间/整体分钟校正、IndexedDB 去重存储、地图小图聚合与查看/移除。Android 文件选择器按类型与多选模式返回所选 URI，不申请整库相册权限；新增照片预览返回键处理。
+- 文件：新增 modules/photos/ 的匹配/导入/存储/hook/PhotoPanel/PhotoLayer/PhotoViewer/样式、tests/photo-matching.test.mjs 与三张合成图片样本、scripts/verify-trip-photos.mjs、docs/trip-photos.md；更新 outdoor/app/map 接口、双入口样式、安卓多选与返回、版本/依赖和说明。无业务文件删除；记录及原 3D 控制器保留，剖面停用。
+- 命令：git status、git diff --stat、git pull --ff-only；核对轨迹和安卓接口；查阅 exifr 与 Android FileChooserParams 官方说明，安装 exifr 7.1.3。
+- 验证结果：PASS。TypeScript、128/128 测试；真实生成 JPEG EXIF 原始时间与时区，断点/缺时间/歧义/日期线、安卓返回优先级通过。首轮 390×844/360×780 浏览器实际文件导入、校时、按时间定位、去重、竖拍旋转、IndexedDB 重载、照片聚合/翻页/显隐/移除和无溢出通过。已查看 artifacts/screenshots/photos-{match-390-844,map-360-780}.png，地图预览限高且原控制器可见；导入已压缩为选择/确认两步，校时折叠、确认按钮固定，最终照片配额事务和 UI 回归通过，原位置跟随与路线/途经点/行程预览两尺寸回归全部 PASS。日志 .openai/{tests-photos-second,browser-photos,typecheck-photos-final}.log。
+- 当前阻塞：无。
+- 构建结果：PASS。网页及安卓编译完成，APK v2/v3 签名与旧测试版一致；559 项静态资源逐项哈希匹配（含473张地形），照片 EXIF/存储/地图代码已包含。APK/Guanyun-0.2.4-test.apk，58736849 字节，SHA-256 a3a7c582b8de33ee7844b7d33e2373cac93ac0c1ac5a4508ff957ee72d0acafb。未连接 Android 真机，系统多选/HEIC/触控待设备验收。
+- 最终日志：.openai/{tests-photos-final,typecheck-photos-final,browser-photos-quota-final,browser-follow-photos-regression,browser-routes-photos-regression,build-web-photos,build-apk-photos,verify-apk-photos-024}.log。
+- 下一步：实现、验证和构建完成，提交推送源码并发布 0.2.4-test/code11 APK。
+
 # 当前任务：实走记录的位置跟随（2026-09-07）
 - 当前目标：修复记录轨迹时地图不跟随，自动跟随新定位、支持手动浏览/恢复，交付新版 APK 并同步 GitHub。
 - 当前进展：跟随已接通；开始/继续记录自动开启，手动拖图与其他位置浏览暂停、按钮恢复。复用记录点同步相机/位置图层/行程进度，保留原缩放俯仰朝向，处理旧点/重复快照、地图未就绪、前后台和编辑互斥。
