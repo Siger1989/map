@@ -1,3 +1,12 @@
+# 当前任务：只保留逐点连线，吸附默认全开（2026-09-08，完成验证）
+- 用户要求移除平滑画，直接使用逐点模式，道路与节点吸附默认开启。
+- 启动status/diff干净，pull已最新ff41142；已读项目说明。修改useManualTracks固定points（包括续画），roads默认true；TrackPanel移除模式标签、底部模式切换、平滑专用牵引杆与另起段入口，更新提示和线条样式标题。
+- 保留既有保存轨迹及底层折线处理，不迁移存储；吸附开关仍可手动关闭。文件：modules/tracks/{useManualTracks,TrackPanel}、README、mobile/README、docs/road-segment-snapping、LOG、本状态。
+- 验证 PASS：oxfmt、npx tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs（226/226）、npm run build、npm run build:android:web。日志.openai/*points-only.log。无新增依赖，不改道路寻路、GPS、照片或存储格式。
+- 浏览器 PASS：新开tab16，两项吸附未操作即为开启；无平滑模式入口/牵引杆设置；直接进入逐点绘制，浮条只保留吸附、节点、撤销、完成；道路开关可关闭再开启。390×844与360×780 DOM无横向溢出，开始/关闭/绘制浮条按钮可达。
+- 截图：artifacts/screenshots/points-only-panel.png（正常视口布局PASS）、points-only-390.png、points-only-360.png、points-only-toolbar-360.png（DOM布局PASS；手机截图仍有既有缩放捕获异常，精确视觉与真机触控待验证）。未创建保存轨迹，测试页关闭，视口恢复。
+- 下一步：按授权提交推送main，核对远端SHA；同步日志.openai/sync-points-only.log。无阻塞；本轮无新APK/鸿蒙包。
+
 # 当前交接：后续出包增加鸿蒙（2026-09-08，要求已记录）
 - 用户要求以后生成APK时同时提供鸿蒙可用安装交付。已写AGENTS.md长期出包目标、mobile/README.md平台状态；不代表本轮要求立刻打包。
 - 启动：status/diff干净，pull确认bdce7e6最新，已读项目状态/说明。当前只有Android Java/WebView原生工程，未找到build-profile.json5/oh-package.json5/hvigorfile.ts等鸿蒙工程文件。

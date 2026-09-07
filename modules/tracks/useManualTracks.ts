@@ -27,7 +27,6 @@ import {
   EMPTY_DRAFT,
   undoDraft,
   moveDraftNode,
-  type DrawingMode,
 } from './draft';
 import {
   connectedTracks,
@@ -40,17 +39,15 @@ export function useManualTracks() {
   const [draftState, setDraftState] = useState(EMPTY_DRAFT);
   const draftRef = useRef(draftState);
   draftRef.current = draftState;
-  const [mode, setMode] = useState<DrawingMode>('freehand');
   const [anchor, setAnchor] = useState<Coordinate | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copyName, setCopyName] = useState<string | null>(null);
   const [selectedId, select] = useState<string | null>(null);
   const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
   const [snapping, setSnapping] = useState(true);
-  const [roadSnapping, setRoadSnapping] = useState(false);
+  const [roadSnapping, setRoadSnapping] = useState(true);
   const [editing, setEditing] = useState(false),
     [drawing, setDrawing] = useState(false);
-  const [rodLength, setRodLength] = useState(48);
   const [style, setStyle] = useState<TrackStyle>(DEFAULT_TRACK_STYLE);
   const [visible, setVisible] = useState(true),
     [error, setError] = useState('');
@@ -124,7 +121,7 @@ export function useManualTracks() {
     draft: draftState.segments,
     vertices,
     candidates,
-    mode,
+    mode: 'points' as const,
     anchor,
     setAnchor,
     editingId,
@@ -193,18 +190,12 @@ export function useManualTracks() {
     roadSnapping,
     setRoadSnapping,
     canUndo: draftState.history.length > 0,
-    setMode: (next: DrawingMode) => {
-      setMode(next);
-      if (next === 'freehand')
-        setAnchor(draftRef.current.segments.at(-1)?.at(-1) ?? null);
-    },
     editing,
     drawing,
-    rodLength,
+    rodLength: 48,
     style,
     visible,
     error,
-    setRodLength,
     setVisible,
     setStyle: (next: TrackStyle) => {
       const value = normalizeTrackStyle(next);
@@ -286,7 +277,6 @@ export function useManualTracks() {
       // Editing a recorded/imported time series starts a copy; its original stays immutable.
       setEditingId(keepsOriginalPoints(track) ? null : id);
       setAnchor(track.segments.at(-1)?.at(-1) ?? null);
-      setMode('freehand');
       setStyle(normalizeTrackStyle(track.style));
       setEditing(true);
       setDrawing(true);

@@ -39,25 +39,11 @@ export function TrackPanel({
       <p className="route-note">
         点线路查看详情。实走与带时间轨迹保留原始记录；需要改线时，可复制为手绘。
       </p>
-      <div className="route-tabs" aria-label="绘制方式">
-        <button
-          aria-pressed={t.mode === 'freehand'}
-          onClick={() => t.setMode('freehand')}
-        >
-          精定位＋平滑画
-        </button>
-        <button
-          aria-pressed={t.mode === 'points'}
-          onClick={() => t.setMode('points')}
-        >
-          逐点连线
-        </button>
-      </div>
       <button className="route-primary" onClick={onDraw}>
         {t.draft.length || t.anchor ? '继续绘制轨迹' : '在地图上画轨迹'}
       </button>
       <p className="route-note">
-        松手确认准星位置；平滑模式随后拖绿色牵引环。单指画，双指直接移动、缩放和调角度。
+        逐点选位置，松手连线。道路、节点吸附默认开启；双指移动、缩放和调角度。
       </p>
       <label className="track-snap">
         <input
@@ -77,20 +63,8 @@ export function TrackPanel({
         节点吸附<span>靠近时锁定，松手连接</span>
       </label>
       <details className="track-settings">
-        <summary>线条与防抖设置</summary>
+        <summary>线条样式</summary>
         <TrackStyleControls style={t.style} onChange={t.setStyle} />
-        <label className="slider-label" htmlFor="track-rod">
-          牵引杆长度 <span>{t.rodLength}px</span>
-        </label>
-        <input
-          id="track-rod"
-          type="range"
-          min="24"
-          max="80"
-          step="4"
-          value={t.rodLength}
-          onChange={(e) => t.setRodLength(Number(e.target.value))}
-        />
       </details>
       {!!t.draft.length && (
         <>
@@ -301,12 +275,6 @@ export function TrackTools({
   return (
     <div className="track-tools glass" aria-label="绘制工具">
       <button
-        aria-label="切换绘制方式"
-        onClick={() => t.setMode(t.mode === 'freehand' ? 'points' : 'freehand')}
-      >
-        {t.mode === 'freehand' ? '平滑画' : '逐点'}
-      </button>
-      <button
         aria-pressed={t.roadSnapping}
         onClick={() => t.setRoadSnapping(!t.roadSnapping)}
       >
@@ -318,11 +286,6 @@ export function TrackTools({
       >
         节点{t.snapping ? '开' : '关'}
       </button>
-      {t.mode === 'freehand' && (
-        <button onClick={() => t.setAnchor(null)}>
-          {t.anchor && !t.draft.length ? '重定起点' : '另起一段'}
-        </button>
-      )}
       {t.anchor && (
         <button onClick={() => onLocate(t.anchor!)}>定位端点</button>
       )}
