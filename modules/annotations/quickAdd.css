@@ -1,0 +1,94 @@
+.quick-add {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+}
+.quick-add-anchor {
+  position: absolute;
+  left: var(--press-x);
+  top: var(--press-y);
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #53cb92;
+  box-shadow: 0 0 0 5px #53cb9233;
+}
+.quick-add-card {
+  --card-width: min(
+    240px,
+    calc(100% - var(--edge-left) - var(--edge-right) - 52px)
+  );
+  position: absolute;
+  width: var(--card-width);
+  left: clamp(
+    var(--edge-left),
+    calc(var(--press-x) - 120px),
+    calc(100% - var(--edge-right) - 52px - var(--card-width))
+  );
+  top: clamp(
+    calc(56px + var(--safe-top)),
+    calc(var(--press-y) + 14px),
+    calc(100% - var(--safe-bottom) - 424px)
+  );
+  max-height: min(38dvh, 220px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  pointer-events: auto;
+  overflow: hidden;
+}
+.quick-add-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 10px;
+  min-height: 44px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.quick-add-card header button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+.quick-add-content {
+  padding: 0 10px 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.quick-add-content p {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.quick-add-content [role='alert'] {
+  margin: 8px 0 0;
+  color: #ffbf98;
+}
+.quick-add-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.quick-add-options button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 7px;
+  background: #28454e;
+  font-size: 14px;
+}
+.quick-add-options button:first-child {
+  color: var(--accent);
+  background: #21483e;
+}
+.map-hold-ready canvas {
+  cursor: crosshair;
+}

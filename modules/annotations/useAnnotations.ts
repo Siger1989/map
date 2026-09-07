@@ -103,7 +103,24 @@ export function useAnnotations() {
       if (!controller.signal.aborted) setReading(false);
     }
   };
+  const add = (kind: AnnotationKind, coordinates: Coordinate) => {
+    if (current.current.length >= MAX_ANNOTATIONS) {
+      setError(`最多保存 ${MAX_ANNOTATIONS} 个标记。`);
+      return false;
+    }
+    const item = newAnnotation(kind, coordinates, null, crypto.randomUUID());
+    if (!validAnnotation(item)) {
+      setError('标记位置或类型无效。');
+      return false;
+    }
+    if (!persist([...current.current, item])) return false;
+    setSelected(item.id);
+    setPicking(null);
+    void refreshElevation(item.id, coordinates);
+    return true;
+  };
   return {
+    add,
     items,
     selected,
     picking,
@@ -137,19 +154,10 @@ export function useAnnotations() {
     },
     place: (coordinates: Coordinate) => {
       if (!picking) return false;
-      const id = picking === 'move' ? selected : crypto.randomUUID();
+      if (picking !== 'move') return add(picking, coordinates);
+      const id = selected;
       if (!id) return false;
-      if (picking !== 'move' && current.current.length >= MAX_ANNOTATIONS) {
-        setError(`最多保存 ${MAX_ANNOTATIONS} 个标记。`);
-        return false;
-      }
-      const okay =
-        picking === 'move'
-          ? update(id, { coordinates, groundElevation: null })
-          : persist([
-              ...current.current,
-              newAnnotation(picking, coordinates, null, id),
-            ]);
+      const okay = update(id, { coordinates, groundElevation: null });
       if (!okay) return false;
       // A map re-pick starts a new position-edit sequence.
       if (picking === 'move') setMoveHistory([]);

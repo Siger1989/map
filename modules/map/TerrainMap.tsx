@@ -20,6 +20,7 @@ import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
 import type { ScreenPoint } from '../tracks/drawing';
+import { MapLongPress, type MapHold } from './MapLongPress';
 import {
   DrawingGestureBridge,
   type DrawingInput,
@@ -92,6 +93,7 @@ type Props = {
   hourIndex: number;
   routeOverlay: RouteOverlay;
   onMapPick: (coordinates: Coordinate) => void;
+  onMapHold?: (hold: MapHold) => void;
   trackOverlay: TrackOverlay;
   drawingActive: boolean;
   onDrawingInput: (event: DrawingInput) => void;
@@ -125,6 +127,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const trackRef = useRef<TrackLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
+    const longPressRef = useRef<MapLongPress | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
     const photosRef = useRef<PhotoLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
@@ -538,6 +541,19 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             preview: (move) => latest.current.onDragPreview(move),
             commit: (move) => latest.current.onDragCommit(move),
           });
+          longPressRef.current = new MapLongPress(map, {
+            enabled: () =>
+              loaded.current &&
+              !!latest.current.onMapHold &&
+              !latest.current.drawingActive &&
+              !latest.current.pickingActive &&
+              !latest.current.section.enabled,
+            occupied: (point) =>
+              !!annotationRef.current?.pick(point) ||
+              !!trackRef.current?.pickNode(point) ||
+              !!trackRef.current?.pickTrack(point),
+            hold: (value) => latest.current.onMapHold?.(value),
+          });
           map.addControl(
             new maplibre.AttributionControl({ compact: true }),
             'bottom-left',
@@ -670,7 +686,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (latest.current.section.enabled) return;
             if (
               latest.current.drawingActive ||
-              featureDragRef.current?.blocksClick()
+              featureDragRef.current?.blocksClick() ||
+              longPressRef.current?.blocksClick()
             )
               return;
             if (!latest.current.pickingActive) {
@@ -771,6 +788,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         sectionClipRef.current = null;
         featureDragRef.current?.dispose();
         featureDragRef.current = null;
+        longPressRef.current?.dispose();
+        longPressRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         sourceRef.current?.clear();
@@ -820,8 +839,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         );
     }, [props.annotations, props.annotationSelected, props.section.enabled]);
     useEffect(() => {
-      if (props.drawingActive || props.pickingActive || props.section.enabled)
+      if (props.drawingActive || props.pickingActive || props.section.enabled) {
         featureDragRef.current?.cancel();
+        longPressRef.current?.cancel();
+      }
       drawingRef.current?.configure(props.drawingActive);
     }, [props.drawingActive, props.pickingActive, props.section.enabled]);
     useEffect(() => {

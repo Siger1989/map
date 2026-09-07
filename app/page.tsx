@@ -48,6 +48,8 @@ import {
 } from '@/modules/section/types';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
+import { QuickAdd } from '@/modules/annotations/QuickAdd';
+import type { MapHold } from '@/modules/map/MapLongPress';
 import { KINDS } from '@/modules/annotations/data';
 import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
 import {
@@ -125,6 +127,7 @@ export default function Home() {
     [recorder.record],
   );
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
+  const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
   const [sectionDraft, setSection] = useState<SectionSettings>({
     enabled: false,
     altitude: 1500,
@@ -160,6 +163,7 @@ export default function Home() {
       !!annotations.picking ||
       navigation.picking !== null ||
       !!featureMove ||
+      !!quickAdd ||
       section.enabled,
     onFollow: (coordinates) =>
       map.current?.followPosition(
@@ -353,7 +357,10 @@ export default function Home() {
         settings={layers}
         onPoint={setPoint}
         onStatus={setMapStatus}
-        onView={setView}
+        onView={(value) => {
+          setView(value);
+          setQuickAdd(null);
+        }}
         onAnchor={setAnchor}
         onCenter={setMapCenter}
         onSatellite={setSatellite}
@@ -411,6 +418,14 @@ export default function Home() {
           navigation.setPicking(null);
           setPanel('annotations');
         }}
+        onMapHold={(value) => {
+          follow.pause();
+          position.free();
+          tracks.select(null);
+          annotations.select(null);
+          setPanel(null);
+          setQuickAdd(value);
+        }}
         onMapPick={(coordinates) => {
           if (annotations.picking) {
             const kind = annotations.picking;
@@ -427,6 +442,16 @@ export default function Home() {
           }
         }}
       />
+      {quickAdd && (
+        <QuickAdd
+          at={quickAdd}
+          error={annotations.error}
+          onClose={() => setQuickAdd(null)}
+          onAdd={(kind) => {
+            if (annotations.add(kind, quickAdd.coordinate)) setQuickAdd(null);
+          }}
+        />
+      )}
       <TrackDrawing
         ref={drawing}
         enabled={tracks.drawing && panel === null}

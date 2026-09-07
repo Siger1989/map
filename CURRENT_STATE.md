@@ -1,3 +1,13 @@
+# 当前任务：长按地图直接添加标记（2026-09-07）
+- 用户要求空白地图长按添加标记、已有标记后续长按拖动；工作区干净，pull --ff-only确认9597cb1最新。
+- 范围：map新增MapLongPress，只识别空白画布550ms静止长按；annotations新增QuickAdd小卡片和统一add接口；TerrainMap/app通过onMapHold接线；Android返回键关闭卡片。已有FeatureDragBridge负责480ms长按拖动、松手保存和撤销，存储格式不变。
+- 实现已接通：长按后松手出现四种标记选项，点击即存；移动超过8px、双指、相机移动、失焦、取消或Escape不添加。路线/模型/现有标记优先编辑；绘制与选点模式禁用新增入口。卡片支持外点/地图移动/关闭退出，跟随定位暂停。
+- 原轨迹、照片、GPS、地图图源和高程算法保持；没有新增依赖或删除文件。回滚撤销新增手势/卡片与公共props接线即可，已保存标记兼容旧版。
+- 最终TypeScript、58/58相关逻辑测试通过；390×844与360×780浏览器验证直接创建图钉/模型、精确目标坐标、真实Chromium触摸长按/双指取消、已有标记拖动预览不写入/松手保存/撤销/重载、Escape/Android返回/外点/地图移动取消、存储配额失败重试通过。卡片44px目标、≤38dvh/320px、右侧3D控制与底部导航无遮挡，无横向溢出/运行错误；关键地形背景截图已查看。测试显式等待地图移动后布局稳定，避免相机未停稳的长按被正确取消误判为失败。日志.openai/{typecheck-map-hold-final,tests-map-hold-final,browser-map-hold-final}.log。
+- 构建通过：网页与Android Java/DEX完整未签名构建成功，APK内500项资源逐项SHA-256与mobile/dist一致，已检查新增卡片JS/CSS和原生返回选择器。mobile/.build/Shantu-0.2.5-test-unsigned.apk为53999032字节，SHA-256 b0051be3ca1919423931b831622c2af20fa41af84793cf4d7f91b26fed5f39a8。日志.openai/{build-web-map-hold,build-android-map-hold,verify-map-hold-apk}.log；不可安装，无新Release，原签名限制保持。
+- 补验通过：在两种尺寸使用真实Chromium触摸事件长按已有图钉并拖动，确认预览不写入、松手保存、撤销与重新载入；鼠标与触摸两条完整流程均通过，日志.openai/browser-map-hold-delivery.log。仅浏览器模拟，未做安卓真机验收。
+- 文件清单：新增MapLongPress.ts、QuickAdd.tsx/quickAdd.css、tests/map-long-press.test.mjs、scripts/verify-map-hold-browser.mjs、docs/map-long-press.md；修改TerrainMap.tsx、useAnnotations.ts、app/page.tsx、MainActivity.java、tests/android-back.test.mjs、README.md与本状态文件。原菜单保留，无文件删除/依赖/存储格式改变；远端main无新提交，准备同步本轮成果。
+
 # 当前任务：山兔标题后显示当前地名（2026-09-07）
 - 用户要求“山兔”后加入当前地方名字；按地图中心理解，拖动地图后更新，世界总览显示世界地图。工作区干净，pull --ff-only确认e186637为最新。
 - 范围：navigation新增地名解析/React查询hook，provider复用现有Photon/限速/缓存加入逆地理查询；controls新增页头地名组件、workspace.css限制长地名占位；TerrainMap通过公共onCenter回调在就绪/移动结束报告中心，app接线。地图中心取两位小数查询，900ms防抖，旧位置响应不能覆盖新位置；失败/无结果显示明确状态与坐标提示。无定位权限新增，轨迹/照片/GPS/地形算法和数据格式保持，回滚撤销本轮组件与回调即可。

@@ -17,6 +17,7 @@ function pressBack({
   editing = false,
   section = false,
   photo = false,
+  quickAdd = false,
 } = {}) {
   const calls = [];
   const context = {
@@ -32,15 +33,19 @@ function pressBack({
           ? photo
             ? 'photo'
             : null
-          : selector.includes('control-dock')
-            ? panel
-              ? 'panel'
+          : selector.includes('quick-add')
+            ? quickAdd
+              ? 'quickAdd'
               : null
-            : section && selector.includes('data-section')
-              ? 'section'
-              : editing && selector.includes('observatory')
-                ? 'editing'
-                : null;
+            : selector.includes('control-dock')
+              ? panel
+                ? 'panel'
+                : null
+              : section && selector.includes('data-section')
+                ? 'section'
+                : editing && selector.includes('observatory')
+                  ? 'editing'
+                  : null;
         return target
           ? {
               dispatchEvent(event) {
@@ -69,6 +74,12 @@ test('普通地图页未消费返回键，交回系统', () => {
   const result = pressBack();
   assert.equal(result.handled, false);
   assert.equal(result.calls.length, 0);
+});
+test('安卓返回先关闭地图添加卡片，不退出应用或底层编辑', () => {
+  const result = pressBack({ quickAdd: true, panel: true, editing: true });
+  assert.equal(result.handled, true);
+  assert.equal(result.calls[0].target, 'quickAdd');
+  assert.equal(result.calls[0].key, 'Escape');
 });
 test('安卓返回优先退出全屏海拔剖面', () => {
   const result = pressBack({ section: true });
