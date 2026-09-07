@@ -1,3 +1,12 @@
+# 当前任务：静止地图闪烁排查与 UI 参考（2026-09-07，本轮调查完成；手机根因待复现）
+- 目标：调查用户反馈的地图不动也闪；检查现有 UI，提供网上真实产品参考供用户选择，暂不重做 UI。
+- 启动：main 干净，git pull --ff-only 确认 77b6354 最新；已读项目说明。公司新增依赖本地缺失，npm install 补齐，开发进程已退出，正在恢复本地预览。
+- 已确认并最小修复：Vite 开发服务禁止从 public 导入 JSON，terrain/tiles.ts 原导入导致 HTTP 500。新增模块内 repair-coverage.json，生成脚本同步两个清单，增加清单一致性测试；像素、覆盖区、Android 资产路径及业务 UI 保持。npm 产生的无关 lockfile 变化已撤回。
+- 命令：git status / diff / pull；源码检索 TerrainMap、WeatherLayer、SectionSurfaceLayer、AnnotationLayer、MapSourceLayer；npm install --no-audit --no-fund。
+- 验证：依赖安装 PASS；5/5 地形测试 PASS，TypeScript PASS，重启旧开发进程后 HTTP 200、浏览器主界面恢复。网页构建 PASS；APK 静止闪烁仍未复现/未真机测试。
+- 日志：.openai/dependencies-ui-audit.log、.openai/dev-ui-audit*.log。截图将存 artifacts/screenshots/。
+- 本轮调查/参考完成：默认 598×628 主界面/路线/图层截图已查看；390 覆盖截图缩放异常已拒绝并恢复视口。静止山体两帧相隔约 100.5 秒像素相同，不能排除中途瞬时闪烁。未修改整体 UI。详见 docs/ui-audit-2026-09-07.md。
+- 下一步：用户选择 Organic Maps / Komoot / Gaia GPS 参考后再调整 UI；在实际 APK 按跟随/天气/图层组合继续复现静止闪烁。本轮最小修复与调查记录提交同步 GitHub，未发布 APK。
 # 当前交付：无损压缩 APK 与 GitHub 独立测试版（2026-09-07，完成）
 - 用户要求继续打包、压缩并上传 GitHub；开始 main 干净，pull --ff-only 确认 80ec939 最新。GitHub API 凭据已验证，可读取现有 Release。
 - 0.2.4 公开证书为 a3aa453c…91cd29c，本机现有测试密钥证书为 4a941b9d…623e6f9f，确实不一致。用户已明确没有原密钥，“反正发一个可以安装的就行”；据此制作独立包名的山兔测试版，允许与原版并存、数据独立，不替换原版签名配置，不要求卸载原应用。

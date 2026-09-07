@@ -46,3 +46,8 @@ test('offline protocol bypasses cached bad tile but preserves unaffected offline
     assert.equal(fetched.length, 1);
   } finally { globalThis.caches = cachesBefore; globalThis.fetch = fetchBefore; }
 });
+
+test('module and bundled Android repair manifests stay identical', async () => {
+  const read = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), 'utf8'));
+  assert.deepEqual(await read('../modules/terrain/repair-coverage.json'), await read('../public/terrain/repairs-v1/coverage.json'));
+});

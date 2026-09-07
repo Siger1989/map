@@ -1,4 +1,4 @@
-import repairs from '../../public/terrain/repairs-v1/coverage.json' with { type: 'json' };
+import repairs from './repair-coverage.json' with { type: 'json' };
 
 /** Shared terrain URL/cache revision. Consumers still receive 256px Terrarium. */
 export const TERRAIN_URL = '/api/terrain/{z}/{x}/{y}.png?revision=repairs-v1';

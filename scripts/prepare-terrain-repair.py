@@ -125,6 +125,7 @@ def build():
             target_mask[rows, cols] |= affected
         current = {key: (write(key, heights), mask) for key, (heights, mask) in parents.items()}
     (OUT / 'coverage.json').write_text(json.dumps(coverage, indent=2) + '\n', encoding='utf-8')
+    (ROOT / 'modules/terrain/repair-coverage.json').write_text(json.dumps(coverage, indent=2) + '\n', encoding='utf-8')
     outputs = {f'{z}/{xy}.png': hashlib.sha256((OUT / f'{z}/{xy}.png').read_bytes()).hexdigest()
                for z, tiles in coverage.items() for xy in tiles}
     (OUT / 'SOURCE.json').write_text(json.dumps({
