@@ -1,3 +1,14 @@
+# 当前任务：二级UI统一与断路跨越（2026-09-08，完成验证）
+- 目标：二级页面/独立浮窗统一浅色磨砂紧凑样式；用户追加道路吸附开启时允许跨越未连通路段。
+- 启动：status/diff干净，pull最新c587755，读取AGENTS/README/状态/LOG。UI原因：modern.css枚举主容器遗漏独立glass浮窗，子页硬编码颜色/圆角不一致。
+- 文件：modules/controls/modern.css共享glass主题、二级按钮/字体/状态、触屏绘制按钮44px；modules/tracks/{DrawingSession,TrackDrawing,TrackPanel}新增断口直线跨越与虚线预览、提示，tests/road-path.test.mjs更新行为回归；README/LOG/docs/{secondary-ui,road-segment-snapping}/本状态。
+- 逻辑：有连通路径正常沿路；目标点吸附到道路但无路径时允许直线跨越，下一次仍开启吸附；取消不提交，整段撤销。目标处无可吸附道路仍需移动准星或加载道路。
+- 命令验证 PASS：oxfmt、npx tsc --noEmit、226/226测试、npm run build、npm run build:android:web。日志.openai/*secondary-crossing*.log；前一轮纯样式双构建也PASS。
+- UI PASS：正常视口画线浮条、行程/照片子页使用浅色磨砂；收藏新建表单12px蓝底白字主操作、返回可用，未保存测试分组；390/360 DOM无横向溢出，收藏编辑与绘制按钮在屏内。截图secondary-*.png，窄屏截图仍有既有半尺寸缩放捕获异常，精确手机视觉/真机触控待验收；无已有照片，照片全屏仅样式接入未实测。
+- 跨越验证 PASS：浏览器道路吸附保持开启，将未连通道路点直线接到目标路，出现「已直线跨越断路」且可继续绘制；清理4次测试选点。跨越后恢复完整道路section、取消、撤销由逻辑回归验证。截图road-crossing-after.png / road-crossing-resume.png。
+- 临时tab15已关闭，视口已恢复；无用户已有轨迹/分组/照片数据修改。图源/GPS/存储/签名保持，无新APK。
+- 交付：按授权提交推送main并核验远端，记录.openai/sync-secondary-crossing.log；无阻塞，下一步用户体验与真机验收。
+
 # 当前任务：整段沿路与按距离吸附（2026-09-08，完成验证）
 - 目标：两点间整段沿道路弯曲连接；按用户追加要求主要按距离吸附，不因桥隧/道路层级断开。
 - 启动：status/diff干净，pull已最新6516a1a，已读项目说明。原DrawingSession只输出端点、预览/保存直连；初版过严区分layer，真实区域MVT证实桥头因此断连，最终改为距离连接。

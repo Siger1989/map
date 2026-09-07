@@ -66,7 +66,7 @@ export function TrackPanel({
           onChange={(e) => t.setRoadSnapping(e.target.checked)}
         />
         道路吸附
-        <span>逐点模式：两点间整段沿道路/小路连接；未连通时提示补点</span>
+        <span>逐点沿路连接；断路时直线跨越，下个点继续吸附</span>
       </label>
       <label className="track-snap">
         <input
@@ -284,7 +284,7 @@ export function TrackPanel({
         </div>
       ))}
       <p className="route-note">
-        道路吸附需放大地图并加载道路；逐点连接失败时可沿路补点，或关闭吸附画直线。吸附不代表道路当前可通行，轨迹只存本机。
+        道路吸附需放大地图并加载道路；虚线预览表示此段直线跨越断路，松手后继续沿路。吸附不代表道路当前可通行，轨迹只存本机。
       </p>
     </section>
   );

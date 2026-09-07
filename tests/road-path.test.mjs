@@ -165,7 +165,7 @@ test('draft commits one road leg, keeps only chosen edit handles and undoes the 
     [a.coordinate, ...points],
   ]);
 });
-test('preview and committed leg use identical road geometry; disconnected roads reject a straight-line commit', () => {
+test('connected roads follow curves; disconnected roads cross explicitly and resume road snapping', () => {
   const a = match(bend, 0, 0.5),
     b = match(bend, 2, 0.5),
     section = roadPath(a, b, [bend]);
@@ -193,18 +193,52 @@ test('preview and committed leg use identical road geometry; disconnected roads 
     session.input({ type: 'end', reason: 'release' }, options).section,
     section,
   );
-  const blocked = {
+  const crossing = {
     ...options,
     snapRoad: () => ({ status: 'ready', match: b, section: null }),
+  };
+  const previewCrossing = session.input(
+    { type: 'start', point: { x: 250, y: 244 } },
+    crossing,
+  );
+  assert.equal(previewCrossing.preview.crossing, true);
+  assert.equal(previewCrossing.preview.blocked, false);
+  assert.match(previewCrossing.hint, /跨越断路/);
+  const result = session.input({ type: 'end', reason: 'release' }, crossing);
+  assert.deepEqual(result.section, [b.coordinate]);
+  assert.deepEqual(result.vertex, b.coordinate);
+  assert.match(result.hint, /已直线跨越/);
+  const draft = appendVertex(EMPTY_DRAFT, a.coordinate);
+  const crossed = appendRoadVertex(draft, result.section);
+  assert.deepEqual(undoDraft(crossed).segments, draft.segments);
+  const resumed = session.input(
+    { type: 'start', point: { x: 250, y: 244 } },
+    options,
+  );
+  assert.equal(resumed.preview.crossing, false);
+  assert.deepEqual(
+    session.input({ type: 'end', reason: 'release' }, options).section,
+    section,
+  );
+  session.input({ type: 'start', point: { x: 250, y: 244 } }, crossing);
+  assert.equal(session.input({ type: 'cancel' }, crossing).vertex, undefined);
+  assert.equal(
+    session.input({ type: 'end', reason: 'release' }, crossing).vertex,
+    undefined,
+  );
+  const blocked = {
+    ...options,
+    snapRoad: () => ({ status: 'ready', match: null }),
   };
   assert.equal(
     session.input({ type: 'start', point: { x: 250, y: 244 } }, blocked).preview
       .blocked,
     true,
   );
-  const result = session.input({ type: 'end', reason: 'release' }, blocked);
-  assert.equal(result.vertex, undefined);
-  assert.match(result.hint, /未连通/);
+  assert.equal(
+    session.input({ type: 'end', reason: 'release' }, blocked).vertex,
+    undefined,
+  );
   const free = { ...blocked, roadSnapping: false };
   session.input({ type: 'start', point: { x: 250, y: 244 } }, free);
   assert.deepEqual(

@@ -1,16 +1,6 @@
 /* TheTrail-inspired chrome. Scope light tokens to controls, preserving map
    overlays, user-selected annotation colors and the original green camera. */
-.observatory
-  :is(
-    .topbar,
-    .map-actions,
-    .map-layer-toggle,
-    .control-popover,
-    .dock-navigation,
-    .weather-summary,
-    .section-profile,
-    .object-gizmo
-  ) {
+.observatory .glass {
   color-scheme: light;
   --panel: rgba(241, 243, 236, 0.96);
   --text: #202725;
@@ -29,17 +19,7 @@
 /* Blur only the small control surfaces, never the map or the text. The opaque
    base above remains readable on WebViews without backdrop-filter support. */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .observatory
-    :is(
-      .topbar,
-      .map-actions,
-      .map-layer-toggle,
-      .control-popover,
-      .dock-navigation,
-      .weather-summary,
-      .section-profile,
-      .object-gizmo
-    ) {
+  .observatory .glass {
     --panel: rgba(242, 244, 235, 0.5);
     -webkit-backdrop-filter: blur(14px) saturate(0.85) brightness(1.35);
     backdrop-filter: blur(14px) saturate(0.85) brightness(1.35);
@@ -360,6 +340,11 @@
     .track-actions button,
     .annotation-panel button,
     .photo-actions button,
+    .photo-visibility,
+    .outdoor-panel button,
+    .collections-panel button,
+    .route-tabs button,
+    .track-style-presets button,
     .photo-picker .import-file,
     .map-sources button,
     .map-file-button,
@@ -772,17 +757,7 @@
   }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .observatory
-    :is(
-      .topbar,
-      .map-actions,
-      .map-layer-toggle,
-      .control-popover,
-      .dock-navigation,
-      .weather-summary,
-      .section-profile,
-      .object-gizmo
-    ) {
+  .observatory .glass {
     --panel: rgb(242, 244, 235);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -793,4 +768,172 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+/* Secondary surfaces share the same chrome as the dock. Keep map geometry,
+   semantic colour swatches and the photo image stage outside these rules. */
+.observatory
+  :is(.quick-add-card, .guidance-card, .trip-photo-viewer, .section-panel) {
+  border-radius: 18px;
+  font-size: 12px;
+}
+.observatory :is(.track-tools, .rail-detail, .geology-card, .elevation-legend) {
+  border-radius: 14px;
+  font-size: 12px;
+}
+.observatory :is(.track-draw-hint, .section-caption) {
+  font-size: 10px;
+}
+.observatory :is(.quick-add-card, .guidance-card, .trip-photo-viewer) header {
+  border-bottom: 1px solid var(--border);
+}
+.observatory
+  :is(.quick-add-card, .guidance-card, .trip-photo-viewer)
+  header
+  strong {
+  font-size: 13px;
+}
+.observatory :is(.quick-add-content, .guidance-content) {
+  padding: 5px 8px 8px;
+}
+.observatory
+  :is(
+    .quick-add-card,
+    .guidance-card,
+    .trip-photo-viewer,
+    .section-panel,
+    .track-tools,
+    .rail-detail,
+    .geology-card
+  )
+  button {
+  background: #ffffff24;
+  color: var(--text);
+  border-color: var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+}
+.observatory
+  :is(.quick-add-card, .guidance-card, .trip-photo-viewer)
+  header
+  button {
+  background: transparent;
+  min-width: 44px;
+  min-height: 44px;
+}
+.observatory
+  :is(.quick-add-options, .guidance-actions, .trip-photo-viewer)
+  button {
+  min-height: 44px;
+}
+.observatory
+  :is(
+    .quick-add-card,
+    .guidance-card,
+    .trip-photo-viewer,
+    .section-panel,
+    .track-tools,
+    .rail-detail,
+    .geology-card
+  )
+  button[aria-pressed='true'] {
+  color: var(--accent);
+  background: #ffffff70;
+  border-color: #ffffff30;
+}
+.observatory
+  :is(
+    .quick-add-content [role='alert'],
+    .guidance-content .guidance-error,
+    .collections-panel .collection-delete
+  ) {
+  color: #ae392d;
+}
+.observatory .guidance-card[data-status='off-route'] .guidance-status {
+  color: #754609;
+}
+.observatory
+  :is(.outdoor-panel, .collections-panel, .collection-editor, .photo-panel) {
+  font-size: 12px;
+}
+.observatory
+  :is(
+    .collection-open strong,
+    .collection-empty,
+    .recording-precision summary
+  ) {
+  font-size: 12px;
+}
+.observatory .collection-editor {
+  gap: 6px;
+}
+.observatory .route-tabs {
+  gap: 3px;
+  margin-bottom: 6px;
+}
+.observatory .control-popover .route-tabs button {
+  border-radius: 14px;
+  padding: 0 5px;
+}
+.observatory .control-popover .recording-precision summary {
+  padding: 6px 0;
+}
+.observatory .control-popover .photo-visibility {
+  color: var(--text);
+}
+.observatory .track-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-width: calc(100% - var(--edge-left) - 66px);
+}
+.observatory .track-tools button {
+  min-height: 32px;
+  padding: 0 7px;
+}
+@media (pointer: coarse) {
+  .observatory .track-tools button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+/* Fullscreen photo chrome uses the same palette; only the image stage is dark. */
+.observatory .photo-lightbox {
+  color-scheme: light;
+  --text: #202725;
+  --muted: #394740;
+  --accent: #2348ef;
+  --border: rgba(42, 54, 47, 0.1);
+  background: #f1f3ec;
+  color: var(--text);
+  font-size: 12px;
+}
+.observatory .photo-lightbox button {
+  background: #ffffff70;
+  color: var(--text);
+  border-color: var(--border);
+  border-radius: 14px;
+  font-size: 12px;
+}
+.observatory .photo-lightbox button[aria-pressed='true'] {
+  background: #2348ef12;
+  color: var(--accent);
+  border-color: #2348ef55;
+}
+.observatory .photo-lightbox :is(.photo-summary, .photo-zoom-tools small) {
+  color: var(--muted);
+}
+.observatory .photo-editor :is(input, textarea) {
+  background: #ffffff70;
+  color: var(--text);
+  border-color: var(--border);
+  font-size: 13px;
+}
+/* Keep primary and destructive collection actions above generic button chrome. */
+.observatory .control-popover .collections-panel .collection-primary {
+  background: var(--accent);
+  color: white;
+}
+.observatory .control-popover .collections-panel .collection-delete {
+  color: #ae392d;
 }

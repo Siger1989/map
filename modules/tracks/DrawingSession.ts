@@ -18,6 +18,7 @@ export type DrawingPreview = {
   path: string;
   snapped: boolean;
   blocked?: boolean;
+  crossing?: boolean;
 };
 export type DrawingResult = {
   preview: DrawingPreview | null;
@@ -46,6 +47,7 @@ export class DrawingSession {
   private aim: Coordinate | null = null;
   private aimSection: Coordinate[] | undefined;
   private aimHint = '';
+  private crossing = false;
   private stroke: {
     tip: ScreenPoint;
     sample: ScreenPoint;
@@ -59,6 +61,7 @@ export class DrawingSession {
     this.aim = null;
     this.aimSection = undefined;
     this.aimHint = '';
+    this.crossing = false;
     this.stroke = null;
   }
   input(event: DrawingInput, o: Options): DrawingResult {
@@ -71,7 +74,8 @@ export class DrawingSession {
       const s = this.stroke,
         aim = this.aim,
         section = this.aimSection,
-        hint = this.aimHint;
+        hint = this.aimHint,
+        crossing = this.crossing;
       this.clear();
       if (s && s.points.length > 1) {
         // The visible magnet is the final geographic endpoint, never the finger.
@@ -85,7 +89,12 @@ export class DrawingSession {
       }
       if (aim && event.reason === 'release')
         return o.mode === 'points'
-          ? { ...empty, vertex: aim, ...(section ? { section } : {}) }
+          ? {
+              ...empty,
+              hint: crossing ? '已直线跨越断路 · 下个点继续沿路吸附' : '',
+              vertex: aim,
+              ...(section ? { section } : {}),
+            }
           : { ...empty, anchor: aim };
       return { ...empty, hint };
     }
@@ -218,21 +227,31 @@ export class DrawingSession {
     const road = o.roadSnapping
       ? o.snapRoad?.(aim, null, from ?? undefined)
       : undefined;
-    const blocked = !!(
+    const blocked = !!(o.roadSnapping && from && !road?.match);
+    this.crossing = !!(
       o.roadSnapping &&
       from &&
-      (!road?.match || !road.section?.length)
+      road?.match &&
+      !road.section?.length
     );
     this.aim = blocked
       ? null
       : (road?.match?.coordinate ?? snap?.coordinate ?? ground);
     this.aimSection =
-      !blocked && from ? (road?.section ?? undefined) : undefined;
+      !blocked && from
+        ? road?.section?.length
+          ? road.section
+          : this.crossing
+            ? [road!.match!.coordinate]
+            : undefined
+        : undefined;
     this.aimHint = blocked
-      ? '道路未连通 · 请沿路补点，或关闭道路吸附后画直线'
-      : this.aimSection
-        ? '整段沿道路连接 · 松手确认'
-        : '';
+      ? '目标处没有可吸附道路 · 请放大地图或把准星移到道路上'
+      : this.crossing
+        ? '跨越断路 · 松手直线连接，下个点继续沿路'
+        : this.aimSection
+          ? '整段沿道路连接 · 松手确认'
+          : '';
     const start = from && o.project(from);
     const path =
       start && this.aimSection
@@ -260,6 +279,7 @@ export class DrawingSession {
         finger,
         path,
         blocked,
+        crossing: this.crossing,
         snapped: !blocked && (!!snap || !!road?.match),
       },
     };
