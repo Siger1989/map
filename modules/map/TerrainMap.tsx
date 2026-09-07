@@ -353,12 +353,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           };
         },
         refreshSection: () => sectionRef.current?.refresh(),
-        snapRoad: (point, previous) =>
+        snapRoad: (point, previous, from) =>
           snapMapRoad(
             mapRef.current,
             point,
             previous,
             latest.current.settings.roads,
+            from,
           ),
         zoom: (amount) =>
           mapRef.current?.zoomTo((mapRef.current?.getZoom() ?? 9) + amount),

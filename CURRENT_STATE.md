@@ -1,3 +1,15 @@
+# 当前任务：整段沿路与按距离吸附（2026-09-08，完成验证）
+- 目标：两点间整段沿道路弯曲连接；按用户追加要求主要按距离吸附，不因桥隧/道路层级断开。
+- 启动：status/diff干净，pull已最新6516a1a，已读项目说明。原DrawingSession只输出端点、预览/保存直连；初版过严区分layer，真实区域MVT证实桥头因此断连，最终改为距离连接。
+- 改动：roadPath本地道路图最短路径、3米端点接缝；roadSnap缓存已渲染道路；DrawingSession/TrackDrawing整段预览提交；draft/useManualTracks整段存储与一次撤销；TrackLayer绘制时只显示选择端点。TrackPanel说明更新。
+- 文件：app/page.tsx、modules/map/{TerrainMap,roadSnap}、modules/tracks/{DrawingSession,TrackDrawing,TrackLayer,TrackPanel,draft,roadSnapping,roadPath,useManualTracks}；新增tests/road-path.test.mjs及公开道路fixture；docs/road-segment-snapping.md、README/LOG/本状态。
+- 命令/验证 PASS：oxfmt、npx tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs（226/226）、npm run build、npm run build:android:web、git diff --check。初次撤销联合类型报错已修复。
+- 真实道路13/14级跨桥跨图块回归PASS；浏览器13.9级两点之间整段弯曲连接PASS，一次撤销只留起点，再次撤销为空PASS。截图 artifacts/screenshots/road-distance-bridge.png / road-distance-undo.png。
+- 390/360 DOM无横向溢出、绘制按钮在屏内PASS，截图road-tools-390.png / road-tools-360.png已存；精确手机截图仍受既有缩放问题限制，触屏手感未真机验收。
+- 浏览器旧会话坐标不准、不支持position定位选项；重置CUA后按正式API及原始截图操作通过。仅独立tab14临时草稿，已清理并关闭，临时视口已恢复。
+- 范围：已加载矢量道路，新绘制路段；不更改既有保存轨迹、自由绘制、路线服务、照片/GPS、存储/签名/图源。未生成APK。日志.openai/*road-path*.log；无代码阻塞。
+- 交付：按长期授权提交推送main并核验远端SHA，同步记录.openai/sync-road-path.log。下一步为用户体验；真机验收待后续。
+
 # 当前任务：顶部直接搜索地点（2026-09-07，完成验证）
 - 目标：地图上方常驻紧凑搜索框，输入地点/山峰并选择结果移动地图，结果用完收起。
 - 启动：status/diff干净，pull --ff-only 已最新83309f5，读取项目状态/说明。复用现有Photon搜索接口、缓存和节流。

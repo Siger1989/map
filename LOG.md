@@ -1,3 +1,10 @@
+# 2026-09-08 整段道路吸附与距离连接
+- 原逐点只吸附端点，用直线保存/预览。新增roadPath道路折线最短路径，DrawingSession/TrackDrawing传递整段，draft原子提交/撤销，TrackLayer绘制时只显示选择节点。
+- 用户指出稍远不能连接；真实道路MVT确认桥梁与普通道路被layer隔离。按用户后续「不细分，主要看距离」要求，统一使用距离判定、3米端点接缝，不再按layer阻断。
+- 新增7项回归（含公开道路13/14级跨桥/跨图块fixture），226/226全量、TypeScript、网页/安卓网页构建PASS。浏览器13.9级较远两点整段沿曲线、单次整段撤销和二次清空PASS。
+- 类型检查曾因撤销历史联合类型未缩窄失败，改成明确stroke操作后PASS。浏览器旧会话坐标操作不准确、locator不支持position选项；重置并读取正式API后原生截图坐标验证通过，不改应用绕开验证。
+- 无新增依赖、未改已保存轨迹、照片/GPS/路线服务/存储格式，未生成APK。说明见docs/road-segment-snapping.md，截图/运行日志不提交。
+
 # 2026-09-07 顶部地点搜索
 - 新增PlaceSearch，复用现有Photon searchPlaces服务；500ms延迟、中文组合输入保护、AbortController取消旧请求，提供清空/关闭/短输入/无结果/网络异常提示及上下键选择。
 - PlaceName提取当前中心地名hook供搜索占位复用，page将搜索放入原44px顶栏；选中暂停跟随并focusPoint。modern.css结果内部滚动，避开右侧图层按钮。

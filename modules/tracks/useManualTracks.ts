@@ -22,6 +22,7 @@ import {
 import {
   appendStroke,
   appendVertex,
+  appendRoadVertex,
   draftVertices,
   EMPTY_DRAFT,
   undoDraft,
@@ -233,7 +234,12 @@ export function useManualTracks() {
         setAnchor(points.at(-1)!);
       }
     },
-    addVertex: (point: Coordinate) => {
+    addVertex: (point: Coordinate, section?: Coordinate[]) => {
+      if (section?.length) {
+        if (withinLimit(section.length + 1, true))
+          setDraftState((d) => appendRoadVertex(d, section));
+        return;
+      }
       if (
         withinLimit(
           draftRef.current.pointLine === null &&

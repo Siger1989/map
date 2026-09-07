@@ -17,12 +17,14 @@ export type DrawingPreview = {
   finger: ScreenPoint;
   path: string;
   snapped: boolean;
+  blocked?: boolean;
 };
 export type DrawingResult = {
   preview: DrawingPreview | null;
   hint: string;
   anchor?: Coordinate;
   vertex?: Coordinate;
+  section?: Coordinate[];
   stroke?: Coordinate[];
 };
 type Options = {
@@ -35,12 +37,15 @@ type Options = {
   snapping: boolean;
   roadSnapping?: boolean;
   snapRoad?: RoadSnapper;
+  lastVertex?: Coordinate | null;
   project: (point: Coordinate) => ScreenPoint | null;
   unproject: (point: ScreenPoint) => Coordinate | null;
 };
 /** Input state is separate from rendering so handoff and exact endpoints can be checked. */
 export class DrawingSession {
   private aim: Coordinate | null = null;
+  private aimSection: Coordinate[] | undefined;
+  private aimHint = '';
   private stroke: {
     tip: ScreenPoint;
     sample: ScreenPoint;
@@ -52,6 +57,8 @@ export class DrawingSession {
   } | null = null;
   clear() {
     this.aim = null;
+    this.aimSection = undefined;
+    this.aimHint = '';
     this.stroke = null;
   }
   input(event: DrawingInput, o: Options): DrawingResult {
@@ -62,7 +69,9 @@ export class DrawingSession {
     }
     if (event.type === 'end') {
       const s = this.stroke,
-        aim = this.aim;
+        aim = this.aim,
+        section = this.aimSection,
+        hint = this.aimHint;
       this.clear();
       if (s && s.points.length > 1) {
         // The visible magnet is the final geographic endpoint, never the finger.
@@ -76,9 +85,9 @@ export class DrawingSession {
       }
       if (aim && event.reason === 'release')
         return o.mode === 'points'
-          ? { ...empty, vertex: aim }
+          ? { ...empty, vertex: aim, ...(section ? { section } : {}) }
           : { ...empty, anchor: aim };
-      return empty;
+      return { ...empty, hint };
     }
     const finger = event.point;
     if (event.type === 'start') {
@@ -205,22 +214,53 @@ export class DrawingSession {
       return { ...empty, hint: '准星需要对准地面，双指可调整视角。' };
     }
     const snap = o.snapping ? findSnap(aim, o.candidates, o.project) : null;
-    const road = o.roadSnapping ? o.snapRoad?.(aim, null) : undefined;
-    this.aim = road?.match?.coordinate ?? snap?.coordinate ?? ground;
+    const from = o.mode === 'points' ? o.lastVertex : null;
+    const road = o.roadSnapping
+      ? o.snapRoad?.(aim, null, from ?? undefined)
+      : undefined;
+    const blocked = !!(
+      o.roadSnapping &&
+      from &&
+      (!road?.match || !road.section?.length)
+    );
+    this.aim = blocked
+      ? null
+      : (road?.match?.coordinate ?? snap?.coordinate ?? ground);
+    this.aimSection =
+      !blocked && from ? (road?.section ?? undefined) : undefined;
+    this.aimHint = blocked
+      ? '道路未连通 · 请沿路补点，或关闭道路吸附后画直线'
+      : this.aimSection
+        ? '整段沿道路连接 · 松手确认'
+        : '';
+    const start = from && o.project(from);
+    const path =
+      start && this.aimSection
+        ? `M ${start.x} ${start.y}` +
+          this.aimSection
+            .map((point) => {
+              const screen = o.project(point);
+              return screen ? ` L ${screen.x} ${screen.y}` : '';
+            })
+            .join('')
+        : '';
     return {
-      hint: road?.match
-        ? roadHint(road)
-        : snap
-          ? '已吸附节点 · 松手定点'
-          : road
-            ? roadHint(road)
-            : '',
+      hint:
+        this.aimHint ||
+        (road?.match
+          ? roadHint(road)
+          : snap
+            ? '已吸附节点 · 松手定点'
+            : road
+              ? roadHint(road)
+              : ''),
       preview: {
         kind: 'aim',
         tip: road?.match?.screen ?? snap?.screen ?? aim,
         finger,
-        path: '',
-        snapped: !!snap || !!road?.match,
+        path,
+        blocked,
+        snapped: !blocked && (!!snap || !!road?.match),
       },
     };
   }

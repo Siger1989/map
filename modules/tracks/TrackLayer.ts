@@ -17,6 +17,7 @@ export type TrackOverlay = {
   style: TrackStyle;
   nodes: Coordinate[];
   selectedId?: string | null;
+  drawing?: boolean;
   preview?: { node: TrackNode; coordinate: Coordinate } | null;
 };
 export class TrackLayer {
@@ -166,7 +167,7 @@ export class TrackLayer {
         const positions = nodeHandles(
           track.segments,
           track.nodes ?? [],
-          selected,
+          selected && !(state.drawing && track.id === DRAFT_ID),
           (point) => m.project(point),
         );
         data.features.push(

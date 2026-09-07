@@ -6,6 +6,8 @@ type Operation =
       kind: 'point' | 'stroke';
       segment: number;
       seeded?: boolean;
+      restoreNodes?: boolean;
+      nodes?: Coordinate[];
     }
   | {
       kind: 'move';
@@ -62,6 +64,32 @@ export function appendStroke(
     ],
   };
 }
+/** One click commits one complete road leg; intermediate bends are not edit handles. */
+export function appendRoadVertex(
+  draft: TrackDraft,
+  points: Coordinate[],
+): TrackDraft {
+  const start = draft.segments.at(-1)?.at(-1);
+  if (!start || !points.length) return draft;
+  const next = appendStroke(draft, [start, ...points]);
+  const existing = draftVertices(draft);
+  const end = points.at(-1)!;
+  return {
+    ...next,
+    nodes: existing.some((p) => equalCoordinate(p, end))
+      ? draft.nodes
+      : [...(draft.nodes ?? []), end],
+    history: [
+      ...draft.history,
+      {
+        kind: 'stroke',
+        segment: draft.segments.length,
+        restoreNodes: true,
+        nodes: draft.nodes,
+      },
+    ],
+  };
+}
 export function undoDraft(draft: TrackDraft): TrackDraft {
   const operation = draft.history.at(-1);
   if (!operation) return draft;
@@ -88,6 +116,7 @@ export function undoDraft(draft: TrackDraft): TrackDraft {
   const prior = history.at(-1);
   return {
     ...draft,
+    ...(operation.restoreNodes ? { nodes: operation.nodes } : {}),
     segments,
     kinds,
     history,

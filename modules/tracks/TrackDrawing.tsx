@@ -34,7 +34,7 @@ export const TrackDrawing = forwardRef<
     toScreen: (point: Coordinate) => ScreenPoint | null;
     magnify: MagnifierObserver;
     onAnchor: (point: Coordinate) => void;
-    onVertex: (point: Coordinate) => void;
+    onVertex: (point: Coordinate, section?: Coordinate[]) => void;
     onStroke: (points: Coordinate[]) => void;
   }
 >(function TrackDrawing(p, ref) {
@@ -77,13 +77,14 @@ export const TrackDrawing = forwardRef<
         snapping: p.snapping,
         roadSnapping: p.roadSnapping,
         snapRoad: p.snapRoad,
+        lastVertex: p.lastVertex,
         project: p.toScreen,
         unproject: p.toCoordinate,
       });
       setPreview(result.preview);
       setHint(result.hint);
       if (result.anchor) p.onAnchor(result.anchor);
-      if (result.vertex) p.onVertex(result.vertex);
+      if (result.vertex) p.onVertex(result.vertex, result.section);
       if (result.stroke) p.onStroke(result.stroke);
     },
   }));
@@ -135,17 +136,21 @@ export const TrackDrawing = forwardRef<
         )}
         {preview && (
           <g>
-            {preview.kind === 'aim' && p.mode === 'points' && last && (
-              <line
-                x1={last.x}
-                y1={last.y}
-                x2={preview.tip.x}
-                y2={preview.tip.y}
-                stroke={p.style.color}
-                strokeWidth={p.style.width}
-                strokeDasharray="4 3"
-              />
-            )}
+            {preview.kind === 'aim' &&
+              p.mode === 'points' &&
+              last &&
+              !preview.path &&
+              !preview.blocked && (
+                <line
+                  x1={last.x}
+                  y1={last.y}
+                  x2={preview.tip.x}
+                  y2={preview.tip.y}
+                  stroke={p.style.color}
+                  strokeWidth={p.style.width}
+                  strokeDasharray="4 3"
+                />
+              )}
             <path
               d={preview.path}
               fill="none"

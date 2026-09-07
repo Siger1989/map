@@ -3,7 +3,12 @@ import type { ScreenPoint } from './drawing';
 
 export const ROAD_SNAP_RADIUS = 14;
 export const ROAD_RELEASE_RADIUS = 22;
-export type RoadLine = { id: string; name: string; coordinates: Coordinate[] };
+export type RoadLine = {
+  id: string;
+  name: string;
+  coordinates: Coordinate[];
+  level?: number;
+};
 export type RoadMatch = {
   line: RoadLine;
   index: number;
@@ -13,11 +18,13 @@ export type RoadMatch = {
 };
 export type RoadSnapResult = {
   match: RoadMatch | null;
+  section?: Coordinate[] | null;
   status: 'ready' | 'zoom' | 'hidden' | 'loading' | 'unavailable';
 };
 export type RoadSnapper = (
   point: ScreenPoint,
   previous: RoadMatch | null,
+  from?: Coordinate,
 ) => RoadSnapResult;
 type Project = (point: Coordinate) => ScreenPoint | null;
 const classes = new Set([
@@ -64,13 +71,15 @@ export function roadLines(
       )
         continue;
       if (count + points.length > 6000) continue;
-      const id = points.map((p) => p.join(',')).join(';');
+      const level = Number(feature.properties?.layer) || 0;
+      const id = `${level}:` + points.map((p) => p.join(',')).join(';');
       if (lines.has(id)) continue;
       count += points.length;
       const rawName =
         feature.properties?.['name:zh'] ?? feature.properties?.name;
       lines.set(id, {
         id,
+        level,
         coordinates: points,
         name: typeof rawName === 'string' ? rawName.slice(0, 60) : '',
       });

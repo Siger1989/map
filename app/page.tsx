@@ -400,6 +400,7 @@ export default function Home() {
       visible: tracks.visible || recorder.record.phase !== 'idle',
       style: tracks.style,
       nodes: tracks.vertices,
+      drawing: tracks.drawing,
       selectedId: tracks.selectedId,
       preview:
         featureMove?.target.kind === 'track'
@@ -418,6 +419,7 @@ export default function Home() {
       tracks.visible,
       tracks.style,
       tracks.vertices,
+      tracks.drawing,
       tracks.selectedId,
       featureMove,
     ],
@@ -631,8 +633,8 @@ export default function Home() {
         candidates={tracks.candidates}
         snapping={tracks.snapping}
         roadSnapping={tracks.roadSnapping}
-        snapRoad={(point, previous) =>
-          map.current?.snapRoad(point, previous) ?? {
+        snapRoad={(point, previous, from) =>
+          map.current?.snapRoad(point, previous, from) ?? {
             status: 'loading',
             match: null,
           }

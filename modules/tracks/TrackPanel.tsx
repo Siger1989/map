@@ -65,7 +65,8 @@ export function TrackPanel({
           checked={t.roadSnapping}
           onChange={(e) => t.setRoadSnapping(e.target.checked)}
         />
-        道路吸附<span>贴着地图中的道路和小路画；拖离可自由绘制</span>
+        道路吸附
+        <span>逐点模式：两点间整段沿道路/小路连接；未连通时提示补点</span>
       </label>
       <label className="track-snap">
         <input
@@ -283,7 +284,7 @@ export function TrackPanel({
         </div>
       ))}
       <p className="route-note">
-        道路吸附需放大地图并加载道路，缺少数据时自由绘制；吸附不代表道路当前可通行。相接端点保存时合并，轨迹只存本机。
+        道路吸附需放大地图并加载道路；逐点连接失败时可沿路补点，或关闭吸附画直线。吸附不代表道路当前可通行，轨迹只存本机。
       </p>
     </section>
   );
