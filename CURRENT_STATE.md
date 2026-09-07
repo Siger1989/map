@@ -1,4 +1,5 @@
 # 当前任务：在线图源、二维码与离线地图导入（2026-09-07）
+- 状态：功能、验证与源码同步完成；本机预览可用，手机原生权限与触控仍待真机验收，原签名APK限制保持。
 - 用户要求图源选择、常见地图格式/二维码导入，已明确在线和离线两种都用。开始时main干净，已pull到8d3b14d；官方资料确认奥维二维码/ovmap含专有格式，不能声称全部通用兼容。
 - 设计：新增独立modules/mapSources，类型/配置解析/IndexedDB/地图适配器/面板/二维码/离线Worker分开；工具→地图图源，以及图层页入口；切换保留地图实例与轨迹/照片/定位/天气叠加。在线优先XYZ/TMS、WMTS、WMS3857、TileJSON/常见XML配置；离线优先栅格MBTiles与GeoTIFF影像，读取与重投影放Worker，限定文件/像素/空间用量。
 - 实现边界：只读取用户选择的文件；二维码先识别/预览，确认后添加。专有/加密ovmap、未知坐标或缺地理参考明确报错，不猜测地图位置。GCJ/BD偏移坐标不能冒充WGS84对齐；不代理任意图源URL，不把私人URL/密钥写进Git。原缓存只服务既有图源，不擅自批量下载新在线服务。
@@ -11,6 +12,7 @@
 - 构建与交付验证完成：网页和Android Java/DEX完整未签名构建成功；APK内500项资产与mobile/dist逐项SHA-256一致，含SQL WASM、离线Worker和473张地形。未签名产物mobile/.build/Shantu-0.2.5-test-unsigned.apk，53995625字节，SHA-256为65bca3357baf33525753c0f35bb06bd93c1f42d056c7bc685fe72aeb080d2a4f，不可安装。通过生产资源模拟本机HTTPS网关，网络完全断开时MBTiles/GeoTIFF导入、重开、切换成功（浏览器模拟，非安卓真机）；关键截图已查看。日志.openai/{build-web-map-sources,build-android-map-sources,verify-map-source-bundle}.log。
 - 交付文档docs/map-sources.md与mobile/README.md包含格式矩阵、限额、模块接口和回滚；新增4个运行依赖/SQL类型、14个图源模块文件、原生相机权限适配、3个验证/样本生成脚本与测试。无业务文件删除；轨迹/照片存储、GPS精度、天气/高程算法、包名与预期证书保持。源码待本轮提交推送main；无新Release，原APK不含本轮更新，仍需原签名电脑打包。
 - 提交前核对：远程origin/main无新增提交；无业务文件删除、无私钥或本机地图进入Git。加强瓦片验证（MapLibre完整SourceCache就绪、生产Worker实际返回PNG瓦片字节）后两尺寸与断网生产资源回归通过，日志.openai/{browser-map-sources-delivery,verify-map-source-bundle-final}.log。截图仅合成测试地图，不含用户数据。
+- 已同步：功能提交70408a3a55308aa0dfedbfd89aeb54e32f5b0f2d已推送origin/main，git ls-remote核验一致，日志.openai/sync-map-sources.log；状态收尾另行提交，最终远端SHA见.openai/sync-map-sources-final.log。无新Release，旧0.2.4安装包不含本轮功能。
 
 # 当前任务：山兔更名与全球地图入口（2026-09-07）
 - 用户要求去掉左上角成都/川西地址，改为面向全球，软件更名“山兔”。开始时main干净，git pull --ff-only已同步bf78f13。
