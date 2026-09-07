@@ -174,8 +174,6 @@ export function routeURL(
     .map((p, i) => metresBetween(stops[i].coordinates, p.coordinates));
   if (distances.some((d) => d < 20))
     throw new Error('相邻地点太近，请间隔至少 20 米。');
-  if (distances.reduce((sum, d) => sum + d, 0) > 500000)
-    throw new Error('测试服务请分成总长 500 公里以内的行程规划。');
   const query = {
     locations: stops.map((p) => ({
       lon: p.coordinates[0],

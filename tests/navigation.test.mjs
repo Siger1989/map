@@ -68,14 +68,20 @@ test('空路线、非有限坐标、负距离不能显示为成功路线', () =>
   negative.routes[0].distance = -1;
   assert.throws(() => normalizeRoute(negative, 'auto'));
 });
-test('过近、超出测试范围和非法端点在请求前被拒绝', () => {
+test('拒绝过近或非法端点，长距离路线在三种出行模式下均可提交', () => {
   assert.throws(() => routeURL(start, start, 'auto'));
   assert.throws(() =>
     routeURL(start, { name: 'bad', coordinates: [190, 31] }, 'auto'),
   );
-  assert.throws(() =>
-    routeURL(start, { name: 'far', coordinates: [120, 31] }, 'auto'),
-  );
+  const lhasa = { name: '拉萨', coordinates: [91.132, 29.66] };
+  for (const mode of ['auto', 'bicycle', 'pedestrian']) {
+    const payload = JSON.parse(
+      new URL(routeURL(start, lhasa, mode)).searchParams.get('json'),
+    );
+    assert.equal(payload.costing, mode);
+    assert.equal(payload.locations.at(-1).lon, lhasa.coordinates[0]);
+    assert.equal(payload.locations.at(-1).lat, lhasa.coordinates[1]);
+  }
 });
 test('地点搜索只取有效坐标并保留中文名字', () => {
   const r = normalizePlaces({

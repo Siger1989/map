@@ -1,3 +1,11 @@
+# 当前任务：取消规划路线 500 公里限制（2026-09-07）
+- 用户明确要求删除公里数限制；开始 main 干净，pull --ff-only 确认 ff75533 最新。
+- 修改 navigation/provider.ts，移除请求前累计直线距离超过 500 公里的拦截与提示；驾车、骑行、步行统一生效。更新 tests/navigation.test.mjs 原校验用例，成都到拉萨允许生成请求。保留非法坐标、过近地点和途经点数量校验，原服务超时/失败处理不变。
+- 收藏、轨迹、照片、导航与天气算法/存档均不变，无新增依赖或文件删除。回滚只需恢复两行距离校验；不改变上游服务能力，也未新增自动分段。
+- 验证完成：TypeScript、22/22 导航/途经点/偏航相关测试通过；网页与 Android Java/DEX 完整未签名构建通过，500 项 APK 资源逐项 SHA-256 与 mobile/dist 一致，已确认旧 500 公里提示不再进入代码包。localhost:3000 返回 200。日志 .openai/{typecheck-route-distance,tests-route-distance,build-web-route-distance,build-android-route-distance,verify-route-distance-apk}.log。
+- 产物 mobile/.build/Shantu-0.2.5-test-unsigned.apk，54008200 字节，SHA-256 ec36dde638940f71fce0bd7249bfc1e7dddc2dd4c1a069f4b89bb641b8a294e4。原签名限制保持，不可安装、无新 Release。未新增或声称长距离服务/真机实地验收；本轮只取消客户端上限。
+- 本轮仅修改 provider.ts、navigation.test.mjs 与本状态文件。源码/状态一并提交，origin/main 同步与最终 SHA 核验见 .openai/sync-route-distance.log。
+
 # 当前任务：独立收藏菜单与彩色分组（2026-09-07）
 - 用户要求收藏路线独立菜单、不同分类颜色、自建分组和拖动整理。开始 main 工作区干净，pull --ff-only 确认最新 9dedca3。
 - 范围：新增 modules/collections 独立分类/排序元数据、触屏手柄拖动和编辑面板；ControlDock 增底部收藏入口，app 替换旧列表，移除道路规划内收藏标签；outdoor/exchange 通过独立接口将可选分组信息纳入 JSON 备份。
