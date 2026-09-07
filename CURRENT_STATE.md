@@ -7,7 +7,8 @@
 - 当前阻塞：无。
 - 构建结果：PASS。最终网页/安卓构建、TypeScript、124/124 测试、v2/v3 签名通过，554 项静态资源逐项哈希一致（含 473 张地形瓦片）。APK/Guanyun-0.2.3-test.apk，58126139 字节，SHA-256 a66ef5786d5d212f34513fb82de1756bd9cc0efe9217e0f6a366a2d925c24bec；code10，包名 preview 与 0.1.4 起签名一致。日志 .openai/{build-web-follow-final,build-apk-follow-final,verify-apk-follow-023,typecheck-follow-final,tests-follow-final}.log。
 - 验证过程：并行生产构建期间的回归遇到页面导航重载而超时；构建完成后独立重跑两尺寸全部通过。ADB 无设备，模拟记录桥不能代替真机 GPS/触控/锁屏/耗电验收。
-- 下一步：实现、验证和 APK 完成，提交推送源码并发布 0.2.3-test；安装包不能随本地代码自动更新手机。
+- 发布结果：PASS。源码 7997bc0d5b886fa45eb7b19ea19e3f6fd95ac669 已推送 main 并核验远端一致；https://github.com/Siger1989/map/releases/tag/v0.2.3-test 已公开发布（draft=false、prerelease=true），指向该构建提交，APK/校验/安装说明三个附件 uploaded，服务器大小/哈希与本地一致。日志 .openai/{sync-follow-023,upload-apk-023-second,publish-apk-023,release-apk-023-verified}.log。
+- 下一步：本轮完成；提供网页下载链接，可覆盖安装 0.2.2，真机 GPS/触控体验待用户反馈。本状态收尾单独提交，最终 main 核验写 .openai/sync-follow-023-final.log。
 
 # 当前任务：同步 GitHub 与完善最新说明（2026-09-07）
 - 当前目标：同步源码，补齐 0.2.2 使用说明并更新 GitHub Release 下载页。
