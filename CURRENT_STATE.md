@@ -7,7 +7,8 @@
 - 最终源码验证通过：TypeScript、32/32相关逻辑测试，两尺寸完整浏览器回归通过；地图跟随与位置点复用导航接受的位置，查询中人已离开返回路径时拒收旧结果，返回几何终点≤20米以满足接回判断。补验原先开启定位在导航结束后仍保留、用户主动停止才释放。真实calculateRejoin接口含20米端点校验通过。日志.openai/{typecheck-guidance-final,tests-guidance-final,browser-guidance-delivery,live-guidance-final}.log。
 - 网页与Android Java/DEX完整未签名构建成功；500项APK资源与mobile/dist逐项SHA-256一致，含导航卡片、独立接回线与样式。mobile/.build/Shantu-0.2.5-test-unsigned.apk为54003161字节，SHA-256 bde19fb2c5538bb6500fa952ad15f98796ce78c9ba7a986115893d369638c7df。日志.openai/{build-web-guidance,build-android-guidance,verify-guidance-apk}.log；原签名限制保持，不可安装、无新Release。
 - 文件清单：新增modules/guidance/{geometry.ts,session.ts,rejoin.ts,useGuidance.ts,GuidanceLayer.ts,GuidanceCard.tsx,guidance.css}、tests/guidance.test.mjs、scripts/verify-guidance-browser.mjs、docs/route-guidance.md；修改TerrainMap.tsx、RoutePanel.tsx、app/page.tsx、README.md与本状态文件。无业务文件删除/新依赖/存储迁移，轨迹/照片/标记与原规划数据不变；未新增后台/语音服务，未做手机实地验收。
-- localhost:3000返回200，网页预览已更新。远端main无新增提交，准备提交推送本轮成果。
+- localhost:3000返回200，网页预览已更新。源码功能提交6c32dfea50028b2728459b1659b647c7a48336ca已推送origin/main，git ls-remote核验一致，日志.openai/sync-guidance.log；状态收尾单独提交，最终SHA见.openai/sync-guidance-final.log。
+
 # 当前任务：长按地图直接添加标记（2026-09-07）
 - 用户要求空白地图长按添加标记、已有标记后续长按拖动；工作区干净，pull --ff-only确认9597cb1最新。
 - 范围：map新增MapLongPress，只识别空白画布550ms静止长按；annotations新增QuickAdd小卡片和统一add接口；TerrainMap/app通过onMapHold接线；Android返回键关闭卡片。已有FeatureDragBridge负责480ms长按拖动、松手保存和撤销，存储格式不变。
