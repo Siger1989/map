@@ -1,3 +1,12 @@
+# 当前任务：2公里比例尺道路吸附（2026-09-08，完成验证）
+- 用户在zoom11.49道路可见但无法吸附；定位roadSnap.ts硬编码zoom<12直接返回。主道路图层从zoom6显示，吸附门槛与显示不一致。
+- 启动status/diff干净、pull确认ca9ba7e最新，已读项目说明。先扩展适配器回归覆盖11.49/10/8级完整弯道、距离拒绝、未加载/隐藏道路；再移除缩放硬门槛。
+- 文件：modules/map/roadSnap.ts移除zoom<12拒绝；modules/tracks/roadSnapping.ts删除不再产生的zoom状态，TrackPanel说明改为已显示道路可吸附；tests/roads-models.test.mjs、README、docs/road-segment-snapping、LOG、本状态。保持距离半径、图层显示策略、缓存和道路计算上限，不改变GPS/照片/保存数据。
+- 验证 PASS：新增场景先在旧代码失败（zoom11.49返回zoom而非ready，.openai/test-road-zoom-before.log），修复后226/226、TypeScript、网页和安卓网页构建均PASS，日志.openai/*road-zoom.log。
+- 浏览器 PASS：独立tab17打开用户同地点#11.49/24.1926/48.0579，比例尺2km、默认两项吸附开启；起点→较远终点沿弯道连上，再点更远处可继续；3次撤销清空，结束并关闭测试页，无保存轨迹。截图artifacts/screenshots/road-zoom-2km-connected.png、road-zoom-2km-continue.png。
+- 限制：真实路口线条有绕行/重叠迹象，当前验证吸附不再被缩放阻断，不宣称路口选线已精确最优；后续如需处理应单独复现路口图拓扑。未显示的小路仍需放大加载，无真机验证，本轮无新安装包。
+- 下一步：按授权提交推送main并核对远端，记录.openai/sync-road-zoom.log。当前缩放问题无阻塞。
+
 # 当前任务：只保留逐点连线，吸附默认全开（2026-09-08，完成验证）
 - 用户要求移除平滑画，直接使用逐点模式，道路与节点吸附默认开启。
 - 启动status/diff干净，pull已最新ff41142；已读项目说明。修改useManualTracks固定points（包括续画），roads默认true；TrackPanel移除模式标签、底部模式切换、平滑专用牵引杆与另起段入口，更新提示和线条样式标题。

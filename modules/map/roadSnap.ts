@@ -26,7 +26,7 @@ export function snapMapRoad(
 ): RoadSnapResult {
   if (!map) return { status: 'loading', match: null };
   if (!roadsVisible) return { status: 'hidden', match: null };
-  if (map.getZoom() < 12) return { status: 'zoom', match: null };
+  // Use visible road geometry at any scale, including main roads below zoom 12.
   if (!map.getSource('openmaptiles'))
     return { status: 'unavailable', match: null };
   const layers = ['main-roads', 'local-roads'].filter((id) => map.getLayer(id));

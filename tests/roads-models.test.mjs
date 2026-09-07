@@ -224,10 +224,60 @@ test('map adapter matches loaded road vectors while other tiles are still loadin
     'hidden',
   );
   assert.equal(queries, 1);
+  // Visible roads remain usable at the reported 2 km scale (zoom 11.49)
+  // and farther out; preserve bends between selected points as well.
+  const coordinates = [
+    [1, 1],
+    [2, 1],
+    [2, 2],
+    [3, 2],
+  ];
+  for (const zoom of [11.49, 10, 8]) {
+    const zoomedMap = {
+      ...map,
+      getZoom: () => zoom,
+      getCenter: () => ({ lng: 2, lat: 1.5 }),
+      getBearing: () => 0,
+      getPitch: () => 0,
+      queryRenderedFeatures: () => [
+        {
+          properties: { class: 'trunk' },
+          geometry: { type: 'LineString', coordinates },
+        },
+      ],
+    };
+    const alongRoad = snapMapRoad(
+      zoomedMap,
+      { x: 300, y: 200 },
+      null,
+      true,
+      [1, 1],
+    );
+    assert.equal(alongRoad.status, 'ready', `visible road at zoom ${zoom}`);
+    assert.ok(alongRoad.match);
+    assert.deepEqual(alongRoad.section, coordinates.slice(1));
+    assert.equal(
+      snapMapRoad(zoomedMap, { x: 340, y: 240 }, null, true).match,
+      null,
+    );
+  }
+  const emptyMap = {
+    ...map,
+    getZoom: () => 11.49,
+    queryRenderedFeatures: () => [],
+  };
   assert.equal(
-    snapMapRoad({ ...map, getZoom: () => 10 }, { x: 108, y: 220 }, null, true)
-      .status,
-    'zoom',
+    snapMapRoad(emptyMap, { x: 108, y: 220 }, null, true).status,
+    'loading',
+  );
+  assert.equal(
+    snapMapRoad(
+      { ...emptyMap, isSourceLoaded: () => true },
+      { x: 108, y: 220 },
+      null,
+      true,
+    ).match,
+    null,
   );
 });
 test('model dimensions and volumes keep absolute metres across primitives', () => {

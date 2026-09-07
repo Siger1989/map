@@ -19,7 +19,7 @@ export type RoadMatch = {
 export type RoadSnapResult = {
   match: RoadMatch | null;
   section?: Coordinate[] | null;
-  status: 'ready' | 'zoom' | 'hidden' | 'loading' | 'unavailable';
+  status: 'ready' | 'hidden' | 'loading' | 'unavailable';
 };
 export type RoadSnapper = (
   point: ScreenPoint,
@@ -217,7 +217,6 @@ export function roadHint(result: RoadSnapResult) {
       : '已吸附道路 / 小路';
   return {
     ready: '附近没有可吸附道路 · 自由绘制',
-    zoom: '请放大地图以加载道路和山间小路',
     hidden: '开启“道路与河流”后可吸附地图道路',
     loading: '道路数据加载中 · 暂按自由线绘制',
     unavailable: '道路数据不可用 · 暂按自由线绘制',
