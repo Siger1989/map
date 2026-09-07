@@ -34,6 +34,8 @@ export function TrackPanel({
     !!continuation || (continueId === 'draft' && !!t.draft.length);
   const details = t.selectedId,
     setDetails = t.select;
+  const selectedTrack = records.find((track) => track.id === details);
+  const selectedDraft = details === 'draft' && t.draft.length > 0;
   const section = useRef<HTMLElement>(null);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -60,16 +62,31 @@ export function TrackPanel({
         </button>
         <button
           className="track-continue-toggle"
-          aria-expanded={choosing}
-          aria-controls="track-continue-picker"
-          onClick={() => setChoosing(!choosing)}
+          aria-expanded={selectedTrack || selectedDraft ? undefined : choosing}
+          aria-controls={
+            selectedTrack || selectedDraft ? undefined : 'track-continue-picker'
+          }
+          title={selectedTrack ? `继续 ${selectedTrack.name}` : undefined}
+          onClick={() => {
+            if (selectedDraft) {
+              t.start();
+              onDraw(t.draft.at(-1)?.at(-1));
+            } else if (selectedTrack) {
+              if (t.continueTrack(selectedTrack.id))
+                onDraw(selectedTrack.segments.at(-1)?.at(-1));
+            } else setChoosing(!choosing);
+          }}
         >
           <History size={14} aria-hidden="true" />
           继续绘制
-          <ChevronDown size={14} aria-hidden="true" />
+          {selectedTrack || selectedDraft ? (
+            <Play size={14} aria-hidden="true" />
+          ) : (
+            <ChevronDown size={14} aria-hidden="true" />
+          )}
         </button>
       </div>
-      {choosing && (
+      {choosing && !selectedTrack && !selectedDraft && (
         <div id="track-continue-picker" className="track-continue-picker">
           <label htmlFor="continue-track">选择要继续绘制的轨迹</label>
           <select

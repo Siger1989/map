@@ -1,3 +1,13 @@
+# 当前任务：选中线路直接续画并交付APK（2026-09-08，验证PASS、待发布）
+- 用户要求选中轨迹后继续无需二次选择，并打包APK。启动status/diff干净、pull最新51f5b7e，读取项目状态/说明/构建脚本。
+- TrackPanel顶部继续优先selectedId（含当前草稿），无有效选择才打开选择器；保持新建优先、自动存档。安卓版本升0.2.6-test/code13。修改文件TrackPanel、AndroidManifest、README、mobile/README、docs/drawing-archive、docs/release-0.2.6、LOG、本状态。
+- 构建签名发现本机只保有0.2.4原系列a3aa签名，StandaloneTest被签名约束正确拒绝（.openai/build-apk-026.log）；检查项目/旧工作目录后确认公司0.2.5独立版4a94私钥不在本机。已告知用户改用原包名com.guanyun.weather.preview，可覆盖旧观云、与0.2.5独立山兔并存且数据不自动迁移。未替换签名配置或私钥。
+- PASS：oxfmt、npx tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs（230/230）、npm run build。完整APK执行scripts/build-android.ps1，SDK D:/GodotAndroid/android-sdk、JDK D:/GodotAndroid/jdk-17，包含安卓网页构建、签名及清单检查。日志.openai/*selected-continue.log、build-apk-026-original.log。
+- APK/Shantu-0.2.6-test.apk：75,192,962字节；SHA256 deef0966ee92b9986d901682bad02b6e1f3b1f4b544611348f1fb422467c42e6。独立ZIP CRC、689个网页资源核对PASS，470张重压缩PNG解码像素一致，内置473张地形瓦片。日志.openai/verify-apk-026.log；adb devices为空，真机安装/触控/后台定位未验收。
+- 浏览器独立[::1]:3000 PASS：新建两条，选择第一条后顶部继续直接进入绘制并定位末端，无选择器；完成后第一条长度更新，第二条4.5公里与总数2不变。未选择时继续仍打开列表。截图artifacts/screenshots/selected-continue-direct.png，视觉PASS。道路续段存在此前已记录的绕行迹象，非本轮选中对象修复范围。
+- 390×844/360×780 DOM布局PASS：无横向溢出，新建/继续/关闭约44px高且可达；截图artifacts/screenshots/selected-continue-{390,360}.png，工具移动截图存在既有缩放捕获限制，不作为真机验收。两条测试记录已删除确认0，测试tab21/22关闭、视口恢复，用户localhost数据未动。
+- 下一步提交/push main核对远端，然后发布v0.2.6-test与APK、SHA、发行说明并核对服务端digest。此前鸿蒙机型/版本仍待确认，本仓库无原生鸿蒙工程，原生包未交付；Android当前无阻塞。
+
 # 当前任务：新建优先、选择续画、自动时间位置存档（2026-09-08，完成验证）
 - 用户要求新建作为主操作、续画可选具体线路、自动记录绘制时间和大概位置。启动status/diff干净，pull最新9fc7611，读取项目状态及相关模块。
 - 根因finish仅停止交互不存档，start沿用draft。修改TrackPanel双入口与续画选择；useManualTracks完成/新建/切换前保存有效草稿，失败保留草稿；时间取开始绘制，续画保留原创建时间并记录更新时间。archive新增命名/位置生成，旧记录派生位置，新增可选元数据读取兼容。
