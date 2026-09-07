@@ -6,7 +6,8 @@
 - 最终TypeScript、58/58相关逻辑测试通过；390×844与360×780浏览器验证直接创建图钉/模型、精确目标坐标、真实Chromium触摸长按/双指取消、已有标记拖动预览不写入/松手保存/撤销/重载、Escape/Android返回/外点/地图移动取消、存储配额失败重试通过。卡片44px目标、≤38dvh/320px、右侧3D控制与底部导航无遮挡，无横向溢出/运行错误；关键地形背景截图已查看。测试显式等待地图移动后布局稳定，避免相机未停稳的长按被正确取消误判为失败。日志.openai/{typecheck-map-hold-final,tests-map-hold-final,browser-map-hold-final}.log。
 - 构建通过：网页与Android Java/DEX完整未签名构建成功，APK内500项资源逐项SHA-256与mobile/dist一致，已检查新增卡片JS/CSS和原生返回选择器。mobile/.build/Shantu-0.2.5-test-unsigned.apk为53999032字节，SHA-256 b0051be3ca1919423931b831622c2af20fa41af84793cf4d7f91b26fed5f39a8。日志.openai/{build-web-map-hold,build-android-map-hold,verify-map-hold-apk}.log；不可安装，无新Release，原签名限制保持。
 - 补验通过：在两种尺寸使用真实Chromium触摸事件长按已有图钉并拖动，确认预览不写入、松手保存、撤销与重新载入；鼠标与触摸两条完整流程均通过，日志.openai/browser-map-hold-delivery.log。仅浏览器模拟，未做安卓真机验收。
-- 文件清单：新增MapLongPress.ts、QuickAdd.tsx/quickAdd.css、tests/map-long-press.test.mjs、scripts/verify-map-hold-browser.mjs、docs/map-long-press.md；修改TerrainMap.tsx、useAnnotations.ts、app/page.tsx、MainActivity.java、tests/android-back.test.mjs、README.md与本状态文件。原菜单保留，无文件删除/依赖/存储格式改变；远端main无新提交，准备同步本轮成果。
+- 文件清单：新增MapLongPress.ts、QuickAdd.tsx/quickAdd.css、tests/map-long-press.test.mjs、scripts/verify-map-hold-browser.mjs、docs/map-long-press.md；修改TerrainMap.tsx、useAnnotations.ts、app/page.tsx、MainActivity.java、tests/android-back.test.mjs、README.md与本状态文件。原菜单保留，无文件删除/依赖/存储格式改变。
+- 源码已同步：功能提交754f9de6c87e37d85228dcaf1d59e8446fa03885已推送origin/main，git ls-remote核验一致，日志.openai/sync-map-hold.log；localhost:3000返回200，网页预览已更新。状态收尾单独提交，最终SHA见.openai/sync-map-hold-final.log。
 
 # 当前任务：山兔标题后显示当前地名（2026-09-07）
 - 用户要求“山兔”后加入当前地方名字；按地图中心理解，拖动地图后更新，世界总览显示世界地图。工作区干净，pull --ff-only确认e186637为最新。
