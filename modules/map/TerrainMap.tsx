@@ -219,12 +219,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             'visibility',
             s.contours ? 'visible' : 'none',
           );
-      if (map.getLayer('elevation-colors'))
+      if (map.getLayer('elevation-colors')) {
         map.setLayoutProperty(
           'elevation-colors',
           'visibility',
           s.elevationColors ? 'visible' : 'none',
         );
+        map.setPaintProperty(
+          'elevation-colors',
+          'color-relief-opacity',
+          s.elevationColorsOpacity ?? 1,
+        );
+      }
       for (const id of ['relief', 'detail', 'satellite'])
         if (map.getLayer(id))
           map.setLayoutProperty(

@@ -263,6 +263,7 @@
   margin-top: 14px;
 }
 .geology-opacity p,
+.elevation-opacity p,
 .satellite-note,
 .layer-note,
 .gesture-help {
@@ -272,6 +273,17 @@
 }
 .satellite-note {
   margin: 12px 0;
+}
+.elevation-opacity {
+  grid-column: 1 / -1;
+  width: 100%;
+  flex-basis: 100%;
+}
+.layer-row:has(.elevation-opacity) {
+  flex-wrap: wrap;
+}
+.elevation-opacity input[type='range'] {
+  height: 44px;
 }
 .layer-note {
   display: flex;

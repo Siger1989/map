@@ -3,6 +3,7 @@ export type LayerSettings = {
   satellite: boolean;
   contours: boolean;
   elevationColors: boolean;
+  elevationColorsOpacity: number;
   geology: boolean;
   geologySource: 'world' | 'geocloud20w';
   geologyOpacity: number;
@@ -19,6 +20,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   satellite: false,
   contours: false,
   elevationColors: false,
+  elevationColorsOpacity: 1,
   geology: false,
   geologySource: 'world',
   geologyOpacity: 0.85,

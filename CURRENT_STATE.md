@@ -1,3 +1,12 @@
+# 当前任务：海拔着色透明度（2026-09-07）
+- 用户要求海拔着色可调透明度。工作区干净，pull --ff-only确认最新1a444d8。
+- 范围：map/types新增elevationColorsOpacity（默认1），LayerPanel开关下显示0–100%不透明度滑杆，panels.css提供44px触控区；TerrainMap同步color-relief-opacity；cartography地表填充放在海拔着色下方、半透明时显示底图；useMapTools同步现有配置接口。
+- 高程算法、色带、地质/海拔互斥、其他图层与轨迹/照片/GPS不变。无新增依赖；关闭着色或窗口保留本次选择，仍沿用现有页面内图层设置生命周期。回滚撤销本轮参数/面板/图层顺序修改即可。
+- 界面与逻辑验证通过：390×844、360×780检查0/50/100%实际MapLibre绘制参数、底图顺序、键盘/指针调整、关闭着色/窗口再开保留值、地质互斥与天气不透明度保持；44px滑杆、窗口≤38dvh/320px，无溢出或运行错误，关键截图已查看。TypeScript及14/14地质/高程相关测试通过，日志.openai/{typecheck-elevation-opacity,browser-elevation-opacity,tests-elevation-opacity}.log。
+- 构建与资产核对通过：网页、Android Java/DEX完整未签名构建成功；APK内500项资源逐项SHA-256与mobile/dist一致，并含本轮透明度代码与样式。产物mobile/.build/Shantu-0.2.5-test-unsigned.apk为53996323字节，SHA-256 4bbd31dfba76578268865a944123cd3b3ccea65bedba42e81f51b83514c31076。日志.openai/{build-web-elevation-opacity,build-android-elevation-opacity,verify-elevation-apk}.log。
+- 文件清单：修改modules/map/{types.ts,TerrainMap.tsx}、modules/cartography/cartography.ts、modules/controls/{LayerPanel.tsx,panels.css,useMapTools.ts}与本状态文件；新增透明度参数/滑杆，调整底图叠放，无文件删除，无新增依赖。网页预览已更新；原签名限制保持，本轮未签名APK不可安装，无新Release、未做安卓真机验收。
+- 提交前fetch核对origin/main无新增提交，差异检查通过；准备同步本轮源码到main。
+
 # 当前任务：图层移出工具栏（2026-09-07）
 - 状态：独立窗口、验证与源码同步完成；当前网页预览已更新，APK仍待原签名打包。
 - 用户要求图层放到外部窗口，不放工具栏。开始工作区干净，pull --ff-only确认最新0070eb0。

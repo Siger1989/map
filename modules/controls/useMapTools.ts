@@ -71,6 +71,7 @@ export function useMapTools(actions: Actions) {
             imageryMode: { type: 'string', enum: ['detail', 'latest'] },
             geologySource: { type: 'string', enum: ['world', 'geocloud20w'] },
             geologyOpacity: { type: 'number', minimum: 0.15, maximum: 1 },
+            elevationColorsOpacity: { type: 'number', minimum: 0, maximum: 1 },
             pitch: { type: 'number', minimum: 0, maximum: 80 },
             bearing: { type: 'number', minimum: -180, maximum: 180 },
           },
@@ -83,7 +84,17 @@ export function useMapTools(actions: Actions) {
           const args = input as Record<string, unknown>;
           const patch: Partial<LayerSettings> = {};
           for (const key of Object.keys(args)) {
-            if (![...booleans, 'imageryMode', 'geologySource', 'geologyOpacity', 'pitch', 'bearing'].includes(key))
+            if (
+              ![
+                ...booleans,
+                'imageryMode',
+                'geologySource',
+                'geologyOpacity',
+                'elevationColorsOpacity',
+                'pitch',
+                'bearing',
+              ].includes(key)
+            )
               throw new Error('Unknown view field: ' + key);
           }
           for (const key of booleans)
@@ -98,11 +109,16 @@ export function useMapTools(actions: Actions) {
             patch.imageryMode = args.imageryMode;
           }
           if ('geologySource' in args) {
-            if (args.geologySource !== 'world' && args.geologySource !== 'geocloud20w') throw new Error('Invalid geology source');
+            if (
+              args.geologySource !== 'world' &&
+              args.geologySource !== 'geocloud20w'
+            )
+              throw new Error('Invalid geology source');
             patch.geologySource = args.geologySource;
           }
           for (const [key, min, max] of [
             ['geologyOpacity', 0.15, 1],
+            ['elevationColorsOpacity', 0, 1],
             ['pitch', 0, 80],
             ['bearing', -180, 180],
           ] as const)
@@ -114,7 +130,10 @@ export function useMapTools(actions: Actions) {
                 args[key] > max)
             )
               throw new Error('Invalid ' + key);
-          if (typeof args.geologyOpacity === 'number') patch.geologyOpacity = args.geologyOpacity;
+          if (typeof args.geologyOpacity === 'number')
+            patch.geologyOpacity = args.geologyOpacity;
+          if (typeof args.elevationColorsOpacity === 'number')
+            patch.elevationColorsOpacity = args.elevationColorsOpacity;
           if (typeof args.pitch === 'number' && args.pitch > 0)
             patch.terrain = true;
           flushSync(() =>

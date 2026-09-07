@@ -53,7 +53,7 @@ export function addCartography(map: Map) {
           'fill-opacity': id === 'open-landcover' ? 0.45 : 0.85,
         },
       },
-      'hillshade',
+      map.getLayer('elevation-colors') ? 'elevation-colors' : 'hillshade',
     );
   map.addLayer({
     id: 'rivers',
@@ -241,7 +241,10 @@ export function syncCartography(map: Map, settings: LayerSettings) {
   for (const [ids, visible] of [
     [
       ['open-landcover', 'open-water', 'open-buildings'],
-      !settings.satellite && !settings.geology && !settings.elevationColors,
+      !settings.satellite &&
+        !settings.geology &&
+        (!settings.elevationColors ||
+          (settings.elevationColorsOpacity ?? 1) < 1),
     ],
     [ROAD_IDS, settings.roads],
     [LABEL_IDS, settings.labels],

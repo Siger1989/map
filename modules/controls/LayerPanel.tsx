@@ -142,6 +142,35 @@ export function LayerPanel({
               >
                 <span />
               </button>
+              {key === 'elevationColors' && settings.elevationColors && (
+                <div className="elevation-opacity">
+                  <label
+                    className="slider-label"
+                    htmlFor="elevation-colors-opacity"
+                  >
+                    海拔着色不透明度{' '}
+                    <span>
+                      {Math.round((settings.elevationColorsOpacity ?? 1) * 100)}
+                      %
+                    </span>
+                  </label>
+                  <input
+                    id="elevation-colors-opacity"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={settings.elevationColorsOpacity ?? 1}
+                    aria-valuetext={`${Math.round((settings.elevationColorsOpacity ?? 1) * 100)}%${settings.elevationColorsOpacity === 0 ? '，完全透明' : ''}`}
+                    onChange={(e) =>
+                      onChange({
+                        elevationColorsOpacity: Number(e.target.value),
+                      })
+                    }
+                  />
+                  <p>0% 完全透明，100% 完全显示。</p>
+                </div>
+              )}
             </div>
           ),
         )}
