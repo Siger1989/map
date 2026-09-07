@@ -30,6 +30,9 @@ export function RoutePanel({
   saveMessage,
   onCurrentPosition,
   locating,
+  onStartNavigation,
+  navigating,
+  guidanceError,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -40,6 +43,9 @@ export function RoutePanel({
   saveMessage: string;
   onCurrentPosition: () => void;
   locating: boolean;
+  onStartNavigation: () => void;
+  navigating: boolean;
+  guidanceError: string;
 }) {
   const [active, setActive] = useState<string | null>(null),
     [results, setResults] = useState<RoutePlace[]>([]),
@@ -428,6 +434,18 @@ export function RoutePanel({
             <button onClick={() => onShow(n.route!)}>看全程</button>
             <button onClick={onSave}>收藏路线</button>
           </div>
+          <button
+            className="route-start-navigation"
+            onClick={onStartNavigation}
+            disabled={navigating}
+          >
+            {navigating ? '正在导航' : '开始导航'}
+          </button>
+          {guidanceError && !navigating && (
+            <p className="route-error" role="alert">
+              {guidanceError}
+            </p>
+          )}
           {saveMessage && (
             <p className="route-note" role="status">
               {saveMessage}

@@ -16,6 +16,7 @@ import { addCartography, syncCartography } from '../cartography/cartography';
 import { GeologyLayer } from '../geology/GeologyLayer';
 import type { GeologyState } from '../geology/data';
 import { RouteLayer } from '../navigation/RouteLayer';
+import { GuidanceLayer, type GuidanceOverlay } from '../guidance/GuidanceLayer';
 import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
@@ -92,6 +93,7 @@ type Props = {
   weather: WeatherData | null;
   hourIndex: number;
   routeOverlay: RouteOverlay;
+  guidanceOverlay?: GuidanceOverlay;
   onMapPick: (coordinates: Coordinate) => void;
   onMapHold?: (hold: MapHold) => void;
   trackOverlay: TrackOverlay;
@@ -124,6 +126,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const weatherRef = useRef<WeatherLayer | null>(null);
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
+    const guidanceRef = useRef<GuidanceLayer | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
@@ -608,6 +611,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               latest.current.onGeology(state),
             );
             routeRef.current = new RouteLayer(map);
+            guidanceRef.current = new GuidanceLayer(map);
+            guidanceRef.current.sync(latest.current.guidanceOverlay ?? null);
             trackRef.current = new TrackLayer(map);
             positionRef.current = new PositionLayer(map);
             photosRef.current = new PhotoLayer(map, (ids) =>
@@ -790,6 +795,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         featureDragRef.current = null;
         longPressRef.current?.dispose();
         longPressRef.current = null;
+        guidanceRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         sourceRef.current?.clear();
@@ -819,6 +825,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       if (loaded.current) routeRef.current?.sync(props.routeOverlay);
     }, [props.routeOverlay]);
+    useEffect(() => {
+      if (loaded.current)
+        guidanceRef.current?.sync(props.guidanceOverlay ?? null);
+    }, [props.guidanceOverlay]);
     useEffect(() => {
       if (loaded.current) trackRef.current?.sync(props.trackOverlay);
     }, [props.trackOverlay]);

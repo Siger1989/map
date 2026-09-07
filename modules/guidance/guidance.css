@@ -1,0 +1,122 @@
+.guidance-card {
+  position: absolute;
+  z-index: 9;
+  top: calc(56px + var(--safe-top));
+  left: var(--edge-left);
+  width: min(320px, calc(100% - var(--edge-left) - var(--edge-right) - 56px));
+  max-height: min(38dvh, 320px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.guidance-card header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding-left: 10px;
+  flex-shrink: 0;
+}
+.guidance-card header strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.guidance-card header button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+.guidance-content {
+  padding: 0 10px 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.guidance-content p {
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+.guidance-status {
+  font-size: 14px;
+  color: var(--accent);
+}
+.guidance-card[data-status='off-route'] .guidance-status,
+.guidance-error {
+  color: #ffc084;
+}
+.guidance-instruction {
+  font-size: 14px;
+}
+.guidance-content dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 8px 0;
+  gap: 8px;
+}
+.guidance-content dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.guidance-content dd {
+  margin: 0;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.guidance-note,
+.guidance-error {
+  font-size: 12px;
+  color: var(--muted);
+}
+.guidance-content .guidance-error {
+  color: #ffc084;
+}
+.guidance-actions {
+  display: flex;
+  gap: 6px;
+}
+.guidance-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  flex: 1;
+  background: #24424a;
+  border-radius: 7px;
+  font-size: 14px;
+}
+.route-map-notice.route-start-notice {
+  padding: 0 4px 0 8px;
+  max-width: calc(100% - var(--edge-left) - var(--edge-right) - 56px);
+  gap: 6px;
+}
+.route-start-notice > button {
+  min-height: 44px;
+  font-size: 13px;
+}
+.route-start-notice > button:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.route-start-notice > button:last-child {
+  color: var(--accent);
+  flex-shrink: 0;
+  font-weight: 650;
+  padding: 0 6px;
+}
+.route-start-navigation {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 8px;
+  background: #285544;
+  color: var(--accent);
+  font-size: 14px;
+  margin: 6px 0;
+}

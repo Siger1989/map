@@ -1,0 +1,72 @@
+import type { Map, GeoJSONSource } from 'maplibre-gl';
+import type { Feature } from 'geojson';
+import type { Coordinate } from '../navigation/types';
+export type GuidanceOverlay = {
+  coordinates: Coordinate[];
+  target: Coordinate;
+} | null;
+/** A temporary road route back to the unchanged planned route. */
+export class GuidanceLayer {
+  private map: Map;
+  constructor(map: Map) {
+    this.map = map;
+  }
+  sync(overlay: GuidanceOverlay) {
+    const m = this.map;
+    if (!m.getSource('route-guidance'))
+      m.addSource('route-guidance', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    if (!m.getLayer('guidance-path')) {
+      m.addLayer({
+        id: 'guidance-outline',
+        type: 'line',
+        source: 'route-guidance',
+        filter: ['==', '$type', 'LineString'],
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#30261d', 'line-width': 9 },
+      });
+      m.addLayer({
+        id: 'guidance-path',
+        type: 'line',
+        source: 'route-guidance',
+        filter: ['==', '$type', 'LineString'],
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': '#ffb052', 'line-width': 5 },
+      });
+      m.addLayer({
+        id: 'guidance-target',
+        type: 'circle',
+        source: 'route-guidance',
+        filter: ['==', '$type', 'Point'],
+        paint: {
+          'circle-color': '#ffb052',
+          'circle-radius': 7,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+    }
+    const features: Feature[] = overlay
+      ? [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: overlay.coordinates },
+          },
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'Point', coordinates: overlay.target },
+          },
+        ]
+      : [];
+    (m.getSource('route-guidance') as GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features,
+    });
+    for (const id of ['guidance-outline', 'guidance-path', 'guidance-target'])
+      m.moveLayer(id);
+  }
+}

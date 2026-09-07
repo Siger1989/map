@@ -22,6 +22,8 @@ import { Timeline } from '@/modules/controls/Timeline';
 import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
+import { useGuidance } from '@/modules/guidance/useGuidance';
+import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { FavoritesPanel } from '@/modules/navigation/FavoritesPanel';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
@@ -104,6 +106,13 @@ export default function Home() {
   const offline = useOffline();
   const photos = useTripPhotos();
   const mapSources = useMapSources();
+  const guidance = useGuidance(
+    navigation.route,
+    position.fix,
+    position.locationError,
+  );
+  const guidanceOwnsLocation = useRef(false),
+    guidanceFocused = useRef(false);
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
   const photoOverlay = useMemo(
     () => (photos.visible ? photos.items : []),
@@ -145,10 +154,16 @@ export default function Home() {
     () => recordingPosition(recorder.record),
     [recorder.record],
   );
-  const cameraFix =
-    recorder.record.phase === 'recording' ? recordingFix : position.fix;
-  const displayedFix =
-    recorder.record.phase === 'recording'
+  const cameraFix = guidance.active
+    ? guidance.session?.quality
+      ? null
+      : (guidance.session?.last ?? null)
+    : recorder.record.phase === 'recording'
+      ? recordingFix
+      : position.fix;
+  const displayedFix = guidance.active
+    ? (guidance.session?.last ?? null)
+    : recorder.record.phase === 'recording'
       ? recordingFix
       : recorder.record.phase !== 'idle' &&
           recordingFix &&
@@ -171,6 +186,53 @@ export default function Home() {
         position.direction !== 'device',
       ) ?? false,
   });
+  useEffect(() => {
+    if (!guidance.active && guidanceOwnsLocation.current) {
+      guidanceOwnsLocation.current = false;
+      position.stopLocation();
+      if (recorder.record.phase !== 'recording') follow.pause();
+    }
+    const s = guidance.session;
+    if (s?.last && !s.quality && !guidanceFocused.current) {
+      guidanceFocused.current = true;
+      map.current?.focusPoint(
+        s.last.coordinates,
+        s.route.mode === 'auto' ? 16 : 17,
+      );
+      follow.resume();
+    }
+  }, [
+    guidance.active,
+    guidance.session?.last?.timestamp,
+    guidance.session?.quality,
+  ]);
+  const startGuidance = () => {
+    if (!guidance.start()) {
+      setPanel('route');
+      return;
+    }
+    guidanceOwnsLocation.current = !position.watching;
+    guidanceFocused.current = false;
+    tracks.finish();
+    tracks.select(null);
+    annotations.select(null);
+    navigation.setPicking(null);
+    setQuickAdd(null);
+    setPanel(null);
+    position.free();
+    map.current?.previewRoute(null);
+    position.locate();
+  };
+  const guidanceOverlay = useMemo(
+    () =>
+      guidance.rejoin
+        ? {
+            coordinates: guidance.rejoin.route.coordinates,
+            target: guidance.rejoin.target.point,
+          }
+        : null,
+    [guidance.rejoin],
+  );
   const toggleSection = () => {
     if (section.enabled) {
       setSection((current) => ({ ...current, enabled: false }));
@@ -368,6 +430,7 @@ export default function Home() {
         weather={weather.data}
         hourIndex={hourIndex}
         routeOverlay={routeOverlay}
+        guidanceOverlay={guidanceOverlay}
         trackOverlay={trackOverlay}
         drawingActive={tracks.drawing && panel === null}
         onDrawingInput={(event) => drawing.current?.input(event)}
@@ -618,18 +681,45 @@ export default function Home() {
           </button>
         </div>
       ) : (
-        navigation.route && (
-          <button
-            className="route-map-notice glass"
-            onClick={() => setPanel(panel === 'route' ? null : 'route')}
-            aria-label="查看路线详情"
-          >
-            {TRAVEL_MODES.find((m) => m.id === navigation.mode)?.label} ·{' '}
-            {formatDistance(navigation.route.distance)} · 预计{' '}
-            {formatDuration(navigation.route.duration)}
-          </button>
+        navigation.route &&
+        !guidance.active && (
+          <div className="route-map-notice route-start-notice glass">
+            <button
+              onClick={() => setPanel(panel === 'route' ? null : 'route')}
+              aria-label="查看路线详情"
+            >
+              {TRAVEL_MODES.find((m) => m.id === navigation.mode)?.label} ·{' '}
+              {formatDistance(navigation.route.distance)} · 预计{' '}
+              {formatDuration(navigation.route.duration)}
+            </button>
+            <button onClick={startGuidance}>开始导航</button>
+          </div>
         )
       )}
+      {guidance.active &&
+        !section.enabled &&
+        !annotations.picking &&
+        navigation.picking === null &&
+        !selectionName &&
+        !quickAdd &&
+        !tracks.editing && (
+          <GuidanceCard
+            guidance={guidance}
+            following={follow.following}
+            onStop={guidance.stop}
+            onFollow={() => {
+              follow.resume();
+              if (!position.watching || position.locationError)
+                position.locate();
+            }}
+            onShow={() => {
+              if (guidance.rejoin) {
+                follow.pause();
+                map.current?.fitRoute(guidance.rejoin.route.coordinates);
+              }
+            }}
+          />
+        )}
       <div className="map-legends" hidden={panel !== 'layers'}>
         {layers.elevationColors && <ElevationLegend />}
         {layers.geology && (
@@ -641,7 +731,7 @@ export default function Home() {
           />
         )}
       </div>
-      {navigation.route && !section.enabled && (
+      {navigation.route && !section.enabled && !guidance.active && (
         <RouteWeatherRail
           route={navigation.route}
           journey={routeJourney}
@@ -657,9 +747,9 @@ export default function Home() {
           }}
         />
       )}
-      {(position.locationError ||
-        position.directionError ||
-        position.locating) && (
+      {(position.directionError ||
+        (!guidance.active &&
+          (position.locationError || position.locating))) && (
         <div className="position-status glass" role="status">
           <span>
             {position.locationError ||
@@ -726,6 +816,7 @@ export default function Home() {
         }
         watching={position.watching}
         onStopLocation={() => {
+          guidance.stop();
           follow.pause();
           position.stopLocation();
         }}
@@ -939,6 +1030,9 @@ export default function Home() {
         {panel === 'route' && (
           <RoutePanel
             navigation={navigation}
+            onStartNavigation={startGuidance}
+            navigating={guidance.active}
+            guidanceError={guidance.error}
             near={[point.lng, point.lat]}
             onSave={() => {
               if (navigation.start && navigation.end && navigation.route)
