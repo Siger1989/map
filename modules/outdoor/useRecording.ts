@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRecordingPreferences } from './useRecordingPreferences';
 import { recordingAccuracyMessage } from './recordingPreferences';
+import { nativeRecordingSnapshot } from './nativeRecordingSnapshot';
 import {
   appendFix,
   emptyRecording,
@@ -51,11 +52,16 @@ export function useRecording() {
     const bridge = window.GuanyunNative;
     setNative(!!bridge);
     if (bridge) {
+      const snapshot = nativeRecordingSnapshot();
       const read = () => {
         try {
-          setRecord(readRecording(bridge.recordState()));
+          setRecord(snapshot(bridge.recordState()));
         } catch {
-          setRecord((r) => ({ ...r, error: '原生记录暂时无法读取' }));
+          setRecord((r) =>
+            r.error === '原生记录暂时无法读取'
+              ? r
+              : { ...r, error: '原生记录暂时无法读取' },
+          );
         }
       };
       read();

@@ -27,6 +27,7 @@ import {
   type DrawingInput,
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
+import { observeMapRendering } from './renderDiagnostics';
 import { snapMapRoad } from './roadSnap';
 import {
   FeatureDragBridge,
@@ -130,6 +131,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
     const mapRef = useRef<Map | null>(null);
+    const diagnostics = useRef<ReturnType<typeof observeMapRendering> | null>(
+      null,
+    );
     const sourceRef = useRef<MapSourceLayer | null>(null);
     const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
@@ -463,6 +467,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           if (!map || !loaded.current) return { ready: false };
           return {
             ready: true,
+            rendering: diagnostics.current?.snapshot(),
             terrain: map.getTerrain(),
             elevationReady: map.isSourceLoaded('elevation'),
             renderedElevation: map.queryTerrainElevation(map.getCenter()),
@@ -513,6 +518,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          diagnostics.current = observeMapRendering(map);
           sourceRef.current = new MapSourceLayer(map, (text) =>
             latest.current.onSourceStatus?.(text),
           );
@@ -842,6 +848,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         sourceRef.current = null;
         releaseSourceProtocol?.();
         mapRef.current?.remove();
+        diagnostics.current?.dispose();
+        diagnostics.current = null;
         mapRef.current = null;
         weatherRef.current = null;
       };
