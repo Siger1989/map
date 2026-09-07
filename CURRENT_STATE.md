@@ -5,7 +5,8 @@
 - 已实现：modelLabel按相同Three渲染矩阵投影模型轮廓，名称下缘固定距轮廓6px；模型Marker保留原坐标用于点击/拖动，仅更新屏幕偏移，近裁面异常隐藏名称。移除cameraOpen条件与“视角盘”隐藏入口，原绿色模型/旋转环常驻；无新增依赖。
 - 验证通过：TypeScript与38/38相关测试（投影间距/近裁面、三种模型/地上地下、选择拖动保留DOM与几何、路线节点拖动）；390×844、360×780实际名称间距、俯仰/旋转/缩放、地上地下切换、点击编辑与长按保存、键盘/指针控制杆、图层窗口互不遮挡、无溢出/运行错误通过。截图检查额外修复了模型名称被原地面遮挡判断误压暗，最终类型/逻辑/浏览器回归均通过。日志.openai/{typecheck-model-label-final,tests-model-label-final,browser-model-label-final}.log。
 - 构建交付检查完成：最终网页与Android Java/DEX完整未签名构建成功，500项APK资源与mobile/dist逐项SHA-256一致。产物mobile/.build/Shantu-0.2.5-test-unsigned.apk为53996567字节，SHA-256 65c319fecda70ef3763de15d0ccf07eb95bb3ad49334811c98b01c6b89796f8a。日志.openai/{build-web-model-label-final,build-android-model-label-final,verify-model-label-apk}.log。交付截图两尺寸已查看，另一次等待地形就绪再放置/居中核验通过，日志.openai/browser-model-label-delivery.log。
-- 文件清单：新增annotations/modelLabel.ts、tests/model-label.test.mjs、scripts/verify-model-label-browser.mjs；修改AnnotationLayer.ts、app/page.tsx、controls/ControlDock.tsx、tests/selection-editing.test.mjs、scripts/verify-outdoor-browser.mjs、README.md、docs/roads-models-domestic.md与本状态文件。删除视角盘隐藏入口/条件，无业务文件删除，无依赖或数据格式改变。原签名限制保持，无可安装新APK或Release，手机触控未做真机验收。远程main无新增提交，待推送本轮成果。
+- 文件清单：新增annotations/modelLabel.ts、tests/model-label.test.mjs、scripts/verify-model-label-browser.mjs；修改AnnotationLayer.ts、app/page.tsx、controls/ControlDock.tsx、tests/selection-editing.test.mjs、scripts/verify-outdoor-browser.mjs、README.md、docs/roads-models-domestic.md与本状态文件。删除视角盘隐藏入口/条件，无业务文件删除，无依赖或数据格式改变。原签名限制保持，无可安装新APK或Release，手机触控未做真机验收。
+- 源码已同步：功能提交82df2d353d1042337bcb04a25e2138940311b9af已推送origin/main，git ls-remote核验一致，日志.openai/sync-model-label.log。状态收尾单独提交，最终SHA见.openai/sync-model-label-final.log。
 
 # 当前任务：海拔着色透明度（2026-09-07）
 - 用户要求海拔着色可调透明度。工作区干净，pull --ff-only确认最新1a444d8。
