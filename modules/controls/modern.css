@@ -166,6 +166,20 @@
 .observatory .dock-heading h2 {
   font-size: 13px;
 }
+.observatory .dock-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 3px;
+  flex-shrink: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  white-space: nowrap;
+}
 .observatory .dock-heading .icon-button {
   width: 44px;
   height: 44px;

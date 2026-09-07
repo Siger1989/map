@@ -14,16 +14,24 @@ import { basemapConfiguration } from '../cartography/basemaps';
 import './mapSources.css';
 
 type Pending = { draft: MapDraft; blob?: Blob };
+export type MapSourcesNavigation = {
+  title: string;
+  label: string;
+  onClick: () => void;
+  disabled: boolean;
+};
 export function MapSourcesPanel({
   sources,
   builtin,
   onBuiltin,
   onFocus,
+  onNavigation,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
   onBuiltin: (id: 'terrain' | 'detail' | 'latest') => void;
   onFocus: (bounds: Bounds) => void;
+  onNavigation?: (navigation: MapSourcesNavigation | null) => void;
 }) {
   const [step, setStep] = useState<'list' | 'add' | 'camera' | 'preview'>(
     'list',
@@ -39,6 +47,31 @@ export function MapSourcesPanel({
   const work = useRef<AbortController | null>(null);
   const root = useRef<HTMLElement>(null);
   const alert = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    onNavigation?.(
+      step === 'list'
+        ? null
+        : {
+            title:
+              step === 'add'
+                ? '添加地图'
+                : step === 'preview'
+                  ? '图源预览'
+                  : '扫描二维码',
+            label: step === 'add' ? '返回图源列表' : '返回添加地图',
+            disabled: step === 'preview' && busy,
+            onClick: () => {
+              work.current?.abort();
+              work.current = null;
+              setBusy(false);
+              setError('');
+              setPending([]);
+              setStep(step === 'add' ? 'list' : 'add');
+            },
+          },
+    );
+  }, [step, busy, onNavigation]);
+  useEffect(() => () => onNavigation?.(null), [onNavigation]);
   useEffect(() => {
     const scroller = root.current?.closest('.dock-content');
     if (scroller) scroller.scrollTop = 0;
@@ -243,15 +276,17 @@ export function MapSourcesPanel({
       {step === 'add' && (
         <>
           <div className="map-source-actions">
-            <button
-              onClick={() => {
-                cancel();
-                setStep('list');
-                setError('');
-              }}
-            >
-              返回列表
-            </button>
+            {!onNavigation && (
+              <button
+                onClick={() => {
+                  cancel();
+                  setStep('list');
+                  setError('');
+                }}
+              >
+                返回列表
+              </button>
+            )}
             <button
               disabled={busy}
               onClick={() => {
@@ -379,15 +414,17 @@ export function MapSourcesPanel({
             瓦片。识别配置成功不代表服务已连通。
           </p>
           <div className="map-source-actions">
-            <button
-              disabled={busy}
-              onClick={() => {
-                setPending([]);
-                setStep('add');
-              }}
-            >
-              返回修改
-            </button>
+            {!onNavigation && (
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setPending([]);
+                  setStep('add');
+                }}
+              >
+                返回修改
+              </button>
+            )}
             <button
               disabled={busy}
               onClick={() =>

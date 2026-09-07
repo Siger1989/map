@@ -10,6 +10,7 @@ import {
   Bookmark,
   PencilLine,
   ScanLine,
+  ChevronLeft,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -44,6 +45,8 @@ export function ControlDock({
   onSection,
   sectionActive = false,
   sectionReady = true,
+  back,
+  title,
   children,
 }: {
   active: ControlPanel;
@@ -54,6 +57,8 @@ export function ControlDock({
   onSection?: () => void;
   sectionActive?: boolean;
   sectionReady?: boolean;
+  back?: { label: string; onClick: () => void; disabled?: boolean };
+  title?: string;
   children: ReactNode;
 }) {
   const root = useRef<HTMLElement>(null);
@@ -98,18 +103,31 @@ export function ControlDock({
           id="map-control-panel"
         >
           <div className="dock-heading">
+            {back && (
+              <button
+                className="dock-back"
+                aria-label={back.label}
+                title={back.label}
+                disabled={back.disabled}
+                onClick={back.onClick}
+              >
+                <ChevronLeft size={16} aria-hidden="true" />
+                返回
+              </button>
+            )}
             <h2 id="dock-title">
-              {active === 'annotations'
-                ? '标记与模型'
-                : active === 'weather'
-                  ? '地点天气'
-                  : active === 'track'
-                    ? '画线与轨迹'
-                    : active === 'favorites'
-                      ? '收藏路线与轨迹'
-                      : active === 'route'
-                        ? '路线规划'
-                        : PANELS.find((p) => p.id === active)?.label}
+              {title ??
+                (active === 'annotations'
+                  ? '标记与模型'
+                  : active === 'weather'
+                    ? '地点天气'
+                    : active === 'track'
+                      ? '画线与轨迹'
+                      : active === 'favorites'
+                        ? '收藏路线与轨迹'
+                        : active === 'route'
+                          ? '路线规划'
+                          : PANELS.find((p) => p.id === active)?.label)}
             </h2>
             {(active === 'route' || active === 'track') && (
               <button

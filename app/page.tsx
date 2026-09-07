@@ -2,7 +2,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PRODUCT_NAME } from '@/config/product';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
-import { MapSourcesPanel } from '@/modules/mapSources/MapSourcesPanel';
+import {
+  MapSourcesPanel,
+  type MapSourcesNavigation,
+} from '@/modules/mapSources/MapSourcesPanel';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
 import { recordingTrack } from '@/modules/outdoor/savedRecording';
@@ -103,6 +106,11 @@ export default function Home() {
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanel] = useState<ControlPanel>(null);
+  const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools'>(
+    'tools',
+  );
+  const [sourcesNavigation, setSourcesNavigation] =
+    useState<MapSourcesNavigation | null>(null);
   const [anchor, setAnchor] = useState<[number, number]>(INITIAL_VIEW.center);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
@@ -884,7 +892,11 @@ export default function Home() {
         settings={layers}
         onChange={update}
         customSource={mapSources.source?.name}
-        onOpenSources={() => setPanel('sources')}
+        onOpenSources={() => {
+          setSourcesParent('layers');
+          setSourcesNavigation(null);
+          setPanel('sources');
+        }}
         satelliteDate={satellite.date}
         satelliteStatus={satellite.status}
         mapStatus={mapStatus}
@@ -946,7 +958,20 @@ export default function Home() {
         sectionActive={sectionEditing}
         sectionReady={sectionReady}
         active={panel === 'layers' ? null : panel}
+        title={panel === 'sources' ? sourcesNavigation?.title : undefined}
+        back={
+          panel === 'sources'
+            ? (sourcesNavigation ?? {
+                label: sourcesParent === 'layers' ? '返回图层' : '返回工具',
+                onClick: () => setPanel(sourcesParent),
+              })
+            : undefined
+        }
         onActive={(next) => {
+          if (next === 'sources') {
+            setSourcesParent('tools');
+            setSourcesNavigation(null);
+          }
           if (next) {
             photos.setSelected(null);
             tracks.pause();
@@ -986,6 +1011,7 @@ export default function Home() {
       >
         {panel === 'sources' && (
           <MapSourcesPanel
+            onNavigation={setSourcesNavigation}
             sources={mapSources}
             builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
             onBuiltin={(id) => {

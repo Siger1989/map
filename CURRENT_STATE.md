@@ -1,3 +1,10 @@
+# 当前任务：图源页面逐级返回（2026-09-07，完成验证）
+- 目标：图层→图源、工具→图源、图源→添加/扫码/预览均可返回，标题栏固定入口，保留关闭。
+- 启动：status/diff 干净，pull --ff-only 已最新 08176ab；读取项目说明。
+- 已改：page 记录来源，ControlDock 标题栏返回，MapSourcesPanel 上报当前步骤返回行为，modern.css 紧凑按钮。未改地图渲染、存储格式或图源服务。
+- 验证 PASS：npx tsc --noEmit；219/219 逻辑测试；npm run build 与 npm run build:android:web。浏览器实际点击图层→图源→返回图层、工具→图源→返回工具、添加→预览→返回添加→返回列表；预览返回保留名称/地址，关闭仍有效。390×844 / 360×780 无横向溢出，内容滚动153px后返回/关闭仍在标题栏，返回52×44px。
+- 截图：artifacts/screenshots/sources-header-back.png 正常视口 PASS；sources-back-390.png / sources-back-360.png 有既有截图缩放异常，精确手机截图 BLOCKED，但 DOM 布局/点击 PASS；真机触控与相机硬件未验收。日志 .openai/*sources-back*.log，布局 .openai/sources-back-layout.log。未生成APK。
+- 下一步：按长期授权提交并推送 main，核对远端 SHA；无代码阻塞。
 # 当前任务：剖面移入工具、恢复明显的画线入口（2026-09-07，完成源码与验证）
 - 启动 status/diff 干净，pull --ff-only 已最新 c618a3c。已确认画线未删除，但入口藏在路线标题“轨迹管理”，开始按钮在多段说明/设置后。
 - 范围：ControlDock/MapActions/page 接线和 TrackPanel 按钮顺序；工具首行放画线/剖面，右侧移除剖面，保留原画线逻辑和剖面数据。
