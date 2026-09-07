@@ -17,7 +17,7 @@ npm run dev
 
 然后用编辑器或 Codex 打开整个 `map` 文件夹，先读 `CURRENT_STATE.md`；功能文件职责分别见 `README.md`、`docs/track-drawing-and-journey.md` 和 `docs/mobile-controls-and-routes.md`。不要把旧开发机器的 `node_modules/`、缓存或运行日志复制到新电脑。
 
-本轮已完成：手机紧凑界面、真实地形/贴图/等高线、地图图层、道路路线、双指控图、精确定位与平滑手绘、节点吸附/续画/合并、整线高程统计和手绘沿途天气。待继续的重点是真机手感/性能、云层效果、商用数据替换，以及取得地质云1:20万服务授权；它们不能因为代码已上传而视为完成。
+当前功能与验证以 [0.2.2 详细说明](release-0.2.2.md) 为准，新增多途经点直接输入与排序、可拖行程条、实走记录、离线包与文件交换。已完成：手机紧凑界面、真实地形/贴图/等高线、地图图层、道路路线、双指控图、精确定位与平滑手绘、节点吸附/续画/合并、整线高程统计和手绘沿途天气。待继续的重点是真机手感/性能、云层效果、商用数据替换，以及取得地质云1:20万服务授权；它们不能因为代码已上传而视为完成。
 
 ## 以后在两台电脑之间切换
 
@@ -44,7 +44,7 @@ git push
 
 ## 下载安装包
 
-从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。0.1.5-test 为“观云测试版”（com.guanyun.weather.preview），沿用 0.1.4 签名，可覆盖更新 0.1.4 并保留数据；可与原“观云”并存，数据独立。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
+从 [Releases](https://github.com/Siger1989/map/releases) 下载当前测试版 APK、SHA-256 校验文件和安装说明。[0.2.2-test](https://github.com/Siger1989/map/releases/tag/v0.2.2-test) 为“观云测试版”（com.guanyun.weather.preview），沿用 0.1.4 签名，可覆盖更新 0.1.4–0.2.1 测试版并保留数据；可与原“观云”并存，数据独立。电脑修改不会自动进入手机。APK 中的界面是构建时的快照，源代码继续修改后需要重新打包。
 
 ## 在家构建安卓
 
@@ -68,4 +68,4 @@ node --experimental-strip-types --test tests/*.test.mjs
 npm run build
 ```
 
-0.1.3发布时55项检查通过，网页/APK构建完成，并检查APK签名和资源；没有新版手机定位权限/方向传感器/手势/渲染/性能实测。新版操作见 `docs/navigation-weather-location.md`。地图资源来源和非商业许可情况见 `docs/data-sources.md`；公开源码与免费数据不代表所有功能已获得商用授权。
+0.2.2 发布时 122 项逻辑测试及 TypeScript、网页/APK 构建、双手机尺寸浏览器交互通过，并检查 APK 签名和静态资源哈希；未连接 Android 真机，系统输入法、定位权限/传感器、锁屏记录及耗电仍待实测。新版操作见 `docs/navigation-weather-location.md`。地图资源来源和非商业许可情况见 `docs/data-sources.md`；公开源码与免费数据不代表所有功能已获得商用授权。

@@ -1,3 +1,12 @@
+# 当前任务：同步 GitHub 与完善最新说明（2026-09-07）
+- 当前目标：同步源码，补齐 0.2.2 使用说明并更新 GitHub Release 下载页。
+- 当前进展：已新增最新详细说明，修正 README/安卓/跨设备文档中旧版本、旧菜单、剖面开启和无原生桥等过时描述；GitHub 0.2.2 Release 正文已更新。
+- 文件：README.md、mobile/README.md、docs/continue-development.md、新增 docs/release-0.2.2.md、CURRENT_STATE.md、LOG.md；仅文档，不重新构建 APK。
+- 命令：git status、git diff --stat、git fetch origin main、git pull --ff-only、git rev-list --left-right --count HEAD...origin/main；读取项目规范及相关源码。
+- 验证结果：PASS。文档本地链接、版本与清单、功能接口、git diff --check 核对通过；GitHub Release 正文回读一致，标签/构建提交/名称/发布状态及全部附件 ID、大小、哈希保持原样，APK SHA-256 与本地一致。仅文档改动，未重跑业务测试或构建；122 项测试等为原 0.2.2 发布验证记录。日志 .openai/{docs-sync-022-validation,docs-release-022-verified}.log。
+- 当前阻塞：无。
+- 下一步：文档完成，提交推送 main 后核验远端 SHA；最终同步结果记录 .openai/docs-sync-022-remote.log。本轮不重新构建 APK；未新增/删除业务模块，地图与手机数据不受文档更新影响。
+
 # 当前交付：地点直接输入、途经点排序与细长可拖行程条（2026-09-07，完成）
 - 当前目标：按用户截图改进路线操作；起终点就地输入搜索、添加途经点、手机拖柄排序；左侧行程条更长更细，拖动联动地图预览和沿途天气。
 - 当前进展：地点栏改为直接输入与原位搜索结果，支持 8 个途经点、增删、地图选点及触摸/键盘排序；多点请求、途经点地图编号和收藏恢复已接通。细长色带连续预览，独立游标同步地图中心，保留真实 GPS 进度；预览时不触发普通 moveend 的轨迹重传/卫星天气请求。原 3D 控制器仍默认显示。
