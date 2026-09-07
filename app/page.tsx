@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PRODUCT_NAME } from '@/config/product';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
 import { MapSourcesPanel } from '@/modules/mapSources/MapSourcesPanel';
@@ -42,7 +42,19 @@ import {
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
-import { SectionPanel } from '@/modules/section/SectionPanel';
+import { SectionProfile } from '@/modules/section/SectionProfile';
+import type {
+  SectionProfileData,
+  ProfilePoint,
+} from '@/modules/section/contours';
+import { ObjectGizmo } from '@/modules/objectTransform/ObjectGizmo';
+import type { WatchProjection } from '@/modules/objectTransform/projection';
+import {
+  annotationPose,
+  planePose,
+  applyAnnotationPose,
+  applyPlanePose,
+} from '@/modules/objectTransform/math';
 import { TERRAIN_SECTION_ENABLED } from '@/config/features';
 import {
   INITIAL_SECTION_STATUS,
@@ -52,7 +64,7 @@ import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
 import { QuickAdd } from '@/modules/annotations/QuickAdd';
 import type { MapHold } from '@/modules/map/MapLongPress';
-import { KINDS } from '@/modules/annotations/data';
+import { KINDS, type Annotation } from '@/modules/annotations/data';
 import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
 import {
   TrackDrawing,
@@ -75,6 +87,10 @@ import {
 
 export default function Home() {
   const map = useRef<MapHandle>(null);
+  const watchObjectProjection = useCallback<WatchProjection>(
+    (listener) => map.current?.watchObjectProjection(listener) ?? (() => {}),
+    [],
+  );
   const drawing = useRef<TrackDrawingHandle>(null);
   const [layers, setLayers] = useState<LayerSettings>(DEFAULT_LAYERS);
   const [geology, setGeology] = useState(INITIAL_GEOLOGY);
@@ -142,12 +158,24 @@ export default function Home() {
     altitude: 1500,
     color: '#ffffff',
   });
+  const [planePreview, setPlanePreview] = useState<SectionSettings | null>(
+    null,
+  );
+  const [annotationPreview, setAnnotationPreview] = useState<Annotation | null>(
+    null,
+  );
+  const [sectionHistory, setSectionHistory] = useState<SectionSettings[]>([]);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileData, setProfileData] = useState<SectionProfileData | null>(
+    null,
+  );
+  const [sectionCursor, setSectionCursor] = useState<ProfilePoint | null>(null);
   const section = useMemo(
     () =>
       TERRAIN_SECTION_ENABLED
-        ? sectionDraft
+        ? (planePreview ?? sectionDraft)
         : { ...sectionDraft, enabled: false },
-    [sectionDraft],
+    [sectionDraft, planePreview],
   );
   const [sectionStatus, setSectionStatus] = useState(INITIAL_SECTION_STATUS);
   const recordingFix = useMemo(
@@ -212,6 +240,8 @@ export default function Home() {
       return;
     }
     guidanceOwnsLocation.current = !position.watching;
+    setSection((current) => ({ ...current, enabled: false }));
+    setProfileOpen(false);
     guidanceFocused.current = false;
     tracks.finish();
     tracks.select(null);
@@ -234,6 +264,9 @@ export default function Home() {
     [guidance.rejoin],
   );
   const toggleSection = () => {
+    setProfileOpen(false);
+    setPlanePreview(null);
+    setSectionHistory([]);
     if (section.enabled) {
       setSection((current) => ({ ...current, enabled: false }));
       return;
@@ -264,6 +297,10 @@ export default function Home() {
   };
   const annotationOverlay = useMemo(() => {
     const target = featureMove?.target;
+    if (annotationPreview)
+      return annotations.items.map((item) =>
+        item.id === annotationPreview.id ? annotationPreview : item,
+      );
     return target?.kind === 'annotation' && featureMove
       ? annotations.items.map((item) =>
           item.id === target.id
@@ -271,10 +308,17 @@ export default function Home() {
             : item,
         )
       : annotations.items;
-  }, [annotations.items, featureMove]);
+  }, [annotations.items, featureMove, annotationPreview]);
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
+  const selectedPose = selectedAnnotation
+    ? annotationPose(selectedAnnotation)
+    : null;
+  const changeSection = (next: SectionSettings) => {
+    setSectionHistory((history) => [...history.slice(-19), sectionDraft]);
+    setSection(next);
+  };
   const selectedTrack = tracks.saved.find(
     (track) => track.id === tracks.selectedId,
   );
@@ -389,6 +433,17 @@ export default function Home() {
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (profileOpen) {
+          event.preventDefault();
+          setProfileOpen(false);
+          return;
+        }
+        if (annotations.selected && !annotations.picking) {
+          event.preventDefault();
+          annotations.select(null);
+          setPanel(null);
+          return;
+        }
         if (section.enabled) {
           event.preventDefault();
           setSection((current) => ({ ...current, enabled: false }));
@@ -416,6 +471,13 @@ export default function Home() {
         section={section}
         onSectionStatus={setSectionStatus}
         onSectionChange={setSection}
+        onSectionProfile={setProfileData}
+        sectionCursor={sectionCursor}
+        onSectionSelect={() => {
+          annotations.select(null);
+          setPanel(null);
+          setProfileOpen(true);
+        }}
         settings={layers}
         onPoint={setPoint}
         onStatus={setMapStatus}
@@ -475,6 +537,7 @@ export default function Home() {
           else annotations.move(target.id, coordinate);
         }}
         onAnnotationSelect={(id) => {
+          setProfileOpen(false);
           annotations.select(id);
           tracks.select(null);
           tracks.finish();
@@ -552,6 +615,7 @@ export default function Home() {
         />
       )}
       {selectionName &&
+        !selectedPose &&
         !tracks.drawing &&
         !annotations.picking &&
         navigation.picking === null &&
@@ -1085,26 +1149,99 @@ export default function Home() {
           </p>
         )}
       </ControlDock>
-      {section.enabled && (
-        <SectionPanel
-          settings={section}
-          status={sectionStatus}
-          onChange={setSection}
-          onCenter={() => {
-            const placement = map.current?.sectionCenter();
-            if (placement)
-              setSection((current) => ({
-                ...current,
-                altitude: placement.altitude,
-                plane: { ...current.plane!, center: placement.center },
-              }));
-          }}
-          onClose={() =>
-            setSection((current) => ({ ...current, enabled: false }))
-          }
-          onRetry={() => map.current?.refreshSection()}
-        />
-      )}
+      {section.enabled &&
+        profileOpen &&
+        panel === null &&
+        !selectedAnnotation && (
+          <SectionProfile
+            data={profileData}
+            settings={section}
+            onCursor={setSectionCursor}
+            onChange={changeSection}
+            onClose={() => setProfileOpen(false)}
+            onRetry={() => map.current?.refreshSection()}
+          />
+        )}
+      {!tracks.editing &&
+        !annotations.picking &&
+        navigation.picking === null &&
+        !selectedPhoto &&
+        !featureMove &&
+        (panel === null || panel === 'annotations') &&
+        (selectedAnnotation && selectedPose ? (
+          <ObjectGizmo
+            key={selectedAnnotation.id}
+            name={selectedAnnotation.name || '标记'}
+            kind={selectedAnnotation.kind}
+            pose={selectedPose}
+            watchProjection={watchObjectProjection}
+            onLocate={() =>
+              map.current?.focusPoint(selectedAnnotation.coordinates, view.zoom)
+            }
+            error={annotations.error}
+            canUndo={annotations.moveUndoId === selectedAnnotation.id}
+            onBegin={() => {
+              map.current?.stop();
+              position.free();
+              follow.pause();
+              setPanel(null);
+            }}
+            onPreview={(pose) =>
+              setAnnotationPreview(
+                pose ? applyAnnotationPose(selectedAnnotation, pose) : null,
+              )
+            }
+            onCommit={(pose) => {
+              annotations.transform(
+                applyAnnotationPose(selectedAnnotation, pose),
+              );
+            }}
+            onUndo={annotations.undoMove}
+            onDetails={() =>
+              setPanel(panel === 'annotations' ? null : 'annotations')
+            }
+            onClose={() => {
+              annotations.select(null);
+              setPanel(null);
+            }}
+          />
+        ) : section.enabled && section.plane && panel === null ? (
+          <ObjectGizmo
+            key="section-plane"
+            name="矩形剖面"
+            kind="plane"
+            pose={planePose(section)}
+            watchProjection={watchObjectProjection}
+            canUndo={sectionHistory.length > 0}
+            onLocate={() =>
+              map.current?.focusPoint(section.plane!.center, view.zoom)
+            }
+            onBegin={() => {
+              map.current?.stop();
+              position.free();
+              follow.pause();
+              setProfileOpen(false);
+            }}
+            onPreview={(pose) =>
+              setPlanePreview(pose ? applyPlanePose(sectionDraft, pose) : null)
+            }
+            onCommit={(pose) =>
+              changeSection(applyPlanePose(sectionDraft, pose))
+            }
+            onUndo={() => {
+              const prior = sectionHistory.at(-1);
+              if (prior) {
+                setSection(prior);
+                setSectionHistory((h) => h.slice(0, -1));
+              }
+            }}
+            onDetails={() => setProfileOpen((open) => !open)}
+            onClose={() => {
+              setSection((s) => ({ ...s, enabled: false }));
+              setProfileOpen(false);
+            }}
+          />
+        ) : null)}
       <CameraGizmo
         view={view}
         onView={(pitch, bearing) => {

@@ -69,6 +69,11 @@ export function useAnnotations() {
     const old = current.current.find((a) => a.id === id);
     if (!old) return false;
     const next = { ...old, ...patch, id: old.id, kind: old.kind };
+    if (
+      (patch.placement !== undefined || patch.offset !== undefined) &&
+      !Object.hasOwn(patch, 'centerAltitude')
+    )
+      delete next.centerAltitude;
     if (!validAnnotation(next)) {
       setError('参数无效：尺寸应为 0.1–10000 米，请检查数值。');
       return false;
@@ -128,6 +133,27 @@ export function useAnnotations() {
     error,
     reading,
     moveUndoId: moveHistory.at(-1)?.id ?? null,
+    transform: (item: Annotation) => {
+      const prior = current.current.find((a) => a.id === item.id);
+      if (!prior) return false;
+      if (
+        !update(item.id, {
+          coordinates: item.coordinates,
+          centerAltitude: item.centerAltitude,
+          width: item.width,
+          length: item.length,
+          height: item.height,
+          heading: item.heading,
+          pitch: item.pitch,
+          roll: item.roll,
+        })
+      )
+        return false;
+      setMoveHistory((history) => [...history.slice(-19), prior]);
+      if (prior.coordinates.some((n, i) => n !== item.coordinates[i]))
+        void refreshElevation(item.id, item.coordinates);
+      return true;
+    },
     undoMove: () => {
       const prior = moveHistory.at(-1);
       if (!prior || !current.current.some((a) => a.id === prior.id)) return;
@@ -137,6 +163,15 @@ export function useAnnotations() {
         update(prior.id, {
           coordinates: prior.coordinates,
           groundElevation: prior.groundElevation,
+          centerAltitude: prior.centerAltitude,
+          width: prior.width,
+          length: prior.length,
+          height: prior.height,
+          heading: prior.heading,
+          pitch: prior.pitch,
+          roll: prior.roll,
+          placement: prior.placement,
+          offset: prior.offset,
         })
       )
         setMoveHistory((history) => history.slice(0, -1));

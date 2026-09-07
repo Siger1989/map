@@ -17,6 +17,8 @@ export type Annotation = {
   color: string;
   coordinates: Coordinate;
   groundElevation: number | null;
+  /** Optional absolute centre altitude for free 3D manipulation; old saves stay relative. */
+  centerAltitude?: number;
   placement: 'surface' | 'underground';
   offset: number;
   width: number;
@@ -47,6 +49,8 @@ export function validAnnotation(value: unknown): value is Annotation {
     coordinate(a.coordinates) &&
     Math.abs(a.coordinates[1]) <= 85 &&
     (a.groundElevation === null || bounded(a.groundElevation, -12000, 10000)) &&
+    (a.centerAltitude === undefined ||
+      bounded(a.centerAltitude, -12000, 30000)) &&
     ['surface', 'underground'].includes(a.placement) &&
     bounded(a.offset, 0, 10000) &&
     [a.width, a.length, a.height].every((v) => bounded(v, 0.1, 10000)) &&
@@ -122,12 +126,17 @@ export function verticalHalfExtent(a: Annotation) {
   );
 }
 export function altitudeRange(a: Annotation, ground = a.groundElevation) {
-  if (ground === null || !Number.isFinite(ground)) return null;
+  if (
+    a.centerAltitude === undefined &&
+    (ground === null || !Number.isFinite(ground))
+  )
+    return null;
   const half = verticalHalfExtent(a);
   const center =
-    a.placement === 'underground'
-      ? ground - a.offset - half
-      : ground + a.offset + half;
+    a.centerAltitude ??
+    (a.placement === 'underground'
+      ? ground! - a.offset - half
+      : ground! + a.offset + half);
   return { bottom: center - half, center, top: center + half };
 }
 export function dimensionLabel(a: Annotation) {

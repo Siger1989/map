@@ -36,8 +36,14 @@ import {
 import type { RoadSnapper } from '../tracks/roadSnapping';
 import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
-import { PlaneSectionLayer } from '../section/PlaneSectionLayer';
-import { TerrainClip } from '../section/terrainClip';
+import { SectionSurfaceLayer } from '../section/SectionSurfaceLayer';
+import type { ProfilePoint, SectionProfileData } from '../section/contours';
+import { loadedTerrainSampler } from '../section/loadedTerrain';
+import {
+  ObjectProjectionLayer,
+  type ProjectionFrame,
+  type WatchProjection,
+} from '../objectTransform/projection';
 import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
@@ -52,6 +58,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  watchObjectProjection: WatchProjection;
   sectionCenter: () => {
     center: [number, number];
     altitude: number;
@@ -82,6 +89,9 @@ type Props = {
   section: SectionSettings;
   onSectionStatus: (status: SectionStatus) => void;
   onSectionChange: (settings: SectionSettings) => void;
+  onSectionProfile: (data: SectionProfileData) => void;
+  onSectionSelect: () => void;
+  sectionCursor: ProfilePoint | null;
   settings: LayerSettings;
   onPoint: (point: Point) => void;
   onStatus: (status: string) => void;
@@ -134,8 +144,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const positionRef = useRef<PositionLayer | null>(null);
     const photosRef = useRef<PhotoLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
-    const sectionRef = useRef<PlaneSectionLayer | null>(null);
-    const sectionClipRef = useRef<TerrainClip | null>(null);
+    const sectionRef = useRef<SectionSurfaceLayer | null>(null);
+    const projectionFrame = useRef<ProjectionFrame | null>(null);
+    const projectionListeners = useRef(
+      new Set<(frame: ProjectionFrame) => void>(),
+    );
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
@@ -193,13 +206,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ...latest.current.settings,
             terrain: true,
             exaggeration: 1,
-            clouds: false,
-            rain: false,
-            geology: false,
-            contours: false,
-            elevationColors: false,
-            roads: false,
-            labels: false,
           }
         : latest.current.settings;
       const custom = Boolean(latest.current.mapSource);
@@ -207,12 +213,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (!domestic || latest.current.roadSnapping) addCartography(map);
       const terrain = map.getTerrain();
       if (
-        !latest.current.section.enabled &&
-        (s.terrain
+        s.terrain
           ? !terrain ||
             terrain.source !== 'elevation' ||
             terrain.exaggeration !== s.exaggeration
-          : Boolean(terrain))
+          : Boolean(terrain)
       )
         map.setTerrain(
           s.terrain
@@ -312,6 +317,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        watchObjectProjection: (listener) => {
+          projectionListeners.current.add(listener);
+          if (projectionFrame.current) listener(projectionFrame.current);
+          mapRef.current?.triggerRepaint();
+          return () => {
+            projectionListeners.current.delete(listener);
+          };
+        },
         sectionCenter: () => {
           const m = mapRef.current;
           if (!m) return null;
@@ -321,7 +334,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             (512 * 2 ** m.getZoom());
           return {
             center,
-            altitude: Math.round(m.queryTerrainElevation(center) ?? 1500),
+            altitude: Math.round(
+              loadedTerrainSampler(m)(center) ??
+                latest.current.annotations.find(
+                  (a) => a.visible && a.groundElevation !== null,
+                )?.groundElevation ??
+                1500,
+            ),
             width: Math.max(
               100,
               Math.min(
@@ -506,10 +525,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             anchor: 'center',
           });
 
-          const sectionGl = TERRAIN_SECTION_ENABLED
-            ? map.getCanvas().getContext('webgl2')
-            : null;
-          if (sectionGl) sectionClipRef.current = new TerrainClip(sectionGl);
           drawingRef.current = new DrawingGestureBridge(map, (input) =>
             latest.current.onDrawingInput(input),
           );
@@ -626,22 +641,33 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               annotationRef.current = new AnnotationLayer((id) => {
                 if (
                   !latest.current.drawingActive &&
-                  !latest.current.pickingActive &&
-                  !latest.current.section.enabled
+                  !latest.current.pickingActive
                 )
                   latest.current.onAnnotationSelect(id);
               });
               map.addLayer(annotationRef.current);
-              if (sectionClipRef.current) {
-                sectionRef.current = new PlaneSectionLayer(
+              map.addLayer(
+                new ObjectProjectionLayer((matrix) => {
+                  const canvas = map.getCanvas(),
+                    frame = {
+                      matrix,
+                      width: canvas.clientWidth,
+                      height: canvas.clientHeight,
+                      longitude: map.getCenter().lng,
+                    };
+                  projectionFrame.current = frame;
+                  projectionListeners.current.forEach((listener) =>
+                    listener(frame),
+                  );
+                }),
+              );
+              if (TERRAIN_SECTION_ENABLED) {
+                sectionRef.current = new SectionSurfaceLayer(
                   map,
+                  (data) => latest.current.onSectionProfile(data),
                   (status) => latest.current.onSectionStatus(status),
-                  sectionClipRef.current,
-                  (settings) => latest.current.onSectionChange(settings),
-                  (settings, side) =>
-                    annotationRef.current?.setSectionPlane(settings, side),
                 );
-                map.addLayer(sectionRef.current, 'annotation-models');
+                map.addLayer(sectionRef.current);
               }
             } catch {
               if (!disposed)
@@ -684,11 +710,20 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (!disposed) {
               if (map.getLayer('annotation-models'))
                 map.moveLayer('annotation-models');
+              if (map.getLayer('section-plane')) map.moveLayer('section-plane');
               sync();
             }
           });
           map.on('click', (event) => {
-            if (latest.current.section.enabled) return;
+            if (latest.current.section.enabled) {
+              if (sectionRef.current?.pick(event.point))
+                latest.current.onSectionSelect();
+              else {
+                const id = annotationRef.current?.pick(event.point);
+                if (id) latest.current.onAnnotationSelect(id);
+              }
+              return;
+            }
             if (
               latest.current.drawingActive ||
               featureDragRef.current?.blocksClick() ||
@@ -789,8 +824,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         annotationRef.current = null;
         sectionRef.current?.dispose();
         sectionRef.current = null;
-        sectionClipRef.current?.dispose();
-        sectionClipRef.current = null;
         featureDragRef.current?.dispose();
         featureDragRef.current = null;
         longPressRef.current?.dispose();
@@ -819,6 +852,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       sectionRef.current?.configure(props.section, props.annotations);
     }, [props.section, props.annotations]);
+    useEffect(() => {
+      sectionRef.current?.setCursor(props.sectionCursor);
+    }, [props.sectionCursor]);
     useEffect(() => {
       syncSatellite();
     }, [settings.imageryMode, settings.satellite, props.mapSource]);

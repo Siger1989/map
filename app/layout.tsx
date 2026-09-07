@@ -13,6 +13,7 @@ import '@/modules/journey/route-rail.css';
 import '@/modules/position/position.css';
 import '@/modules/annotations/annotations.css';
 import '@/modules/section/section.css';
+import '@/modules/objectTransform/objectTransform.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

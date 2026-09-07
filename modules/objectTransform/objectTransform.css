@@ -1,0 +1,114 @@
+.object-gizmo-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 8;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+}
+.object-gizmo-canvas .gizmo-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+  cursor: grab;
+}
+.object-gizmo-canvas .gizmo-hit-ring {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 44;
+  pointer-events: stroke;
+  cursor: grab;
+}
+.object-gizmo-canvas[data-active='true'] {
+  cursor: grabbing;
+}
+.object-gizmo-canvas .gizmo-line-shadow {
+  fill: none;
+  stroke: #0a121acc;
+  stroke-width: 5;
+  pointer-events: none;
+}
+.object-gizmo-canvas .gizmo-line {
+  fill: none;
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+.object-gizmo-canvas .gizmo-solid {
+  stroke: #102532;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.object-gizmo-canvas .gizmo-axis-label {
+  font: bold 13px sans-serif;
+  paint-order: stroke;
+  stroke: #102532;
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.object-gizmo-canvas g:focus .gizmo-line,
+.object-gizmo-canvas g:hover > .gizmo-line {
+  stroke-width: 5;
+}
+.object-gizmo-canvas g:focus .gizmo-solid {
+  stroke: white;
+  stroke-width: 3;
+}
+.object-gizmo {
+  position: absolute;
+  left: var(--edge-left);
+  bottom: calc(68px + var(--safe-bottom));
+  width: min(260px, calc(100% - 132px));
+  max-height: min(38dvh, 320px);
+  padding: 5px;
+  border-radius: 10px;
+  z-index: 13;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  overflow: auto;
+}
+.object-gizmo header,
+.object-gizmo-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.object-gizmo header strong {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 5px;
+}
+.object-gizmo button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 7px;
+  background: #9de8c414;
+  border-radius: 7px;
+  color: var(--accent);
+  user-select: none;
+}
+.object-gizmo button:focus-visible {
+  outline: 2px solid white;
+}
+.object-gizmo button:disabled {
+  opacity: 0.3;
+}
+.object-gizmo small,
+.object-gizmo-actions span {
+  color: var(--muted);
+  line-height: 16px;
+  font-size: 11px;
+}
+.object-gizmo-actions span {
+  margin-left: auto;
+}
+.object-gizmo p {
+  margin: 3px;
+  color: #ffce9a;
+}

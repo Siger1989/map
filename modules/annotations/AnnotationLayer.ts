@@ -12,6 +12,7 @@ import { modelSection } from '../section/models';
 import { applyModelPlane } from '../section/planeModels';
 import type { SectionSettings } from '../section/types';
 import { modelLabelAnchor } from './modelLabel';
+import { modelGeometry, modelRotation } from './modelGeometry';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -66,10 +67,24 @@ export class AnnotationLayer implements CustomLayerInterface {
       items.length === this.items.length &&
       items.every((item, index) => {
         const old = this.items[index];
-        return Object.keys(old).every(
-          (key) =>
-            key === 'coordinates' ||
-            old[key as keyof Annotation] === item[key as keyof Annotation],
+        return (
+          (altitudeRange(old) === null) === (altitudeRange(item) === null) &&
+          [...new Set([...Object.keys(old), ...Object.keys(item)])].every(
+            (key) =>
+              [
+                'coordinates',
+                'centerAltitude',
+                'groundElevation',
+                'heading',
+                'pitch',
+                'roll',
+                'width',
+                'length',
+                'height',
+                'offset',
+              ].includes(key) ||
+              old[key as keyof Annotation] === item[key as keyof Annotation],
+          )
         );
       });
     if (movingOnly) {
@@ -78,12 +93,14 @@ export class AnnotationLayer implements CustomLayerInterface {
         if (item === this.items[index]) return;
         this.markers.get(item.id)?.setLngLat(item.coordinates);
         const frame = this.frames.get(item.id);
-        if (frame && item.groundElevation !== null) {
+        if (frame && altitudeRange(item)) {
           const mercator = MercatorCoordinate.fromLngLat(item.coordinates);
           const ratio = mercator.meterInMercatorCoordinateUnits() / unit;
           const range = altitudeRange(
             item,
-            settings.terrain ? item.groundElevation * settings.exaggeration : 0,
+            settings.terrain
+              ? (item.groundElevation ?? 0) * settings.exaggeration
+              : 0,
           )!;
           frame.position.set(
             (mercator.x - this.origin.x) / unit,
@@ -91,6 +108,15 @@ export class AnnotationLayer implements CustomLayerInterface {
             range.center * ratio,
           );
           frame.scale.set(ratio, -ratio, ratio);
+          const rotation = frame.children[0] as THREE.Group;
+          rotation.rotation.copy(modelRotation(item));
+          const base = rotation.userData.baseDimensions as number[];
+          const size = dimensions(item);
+          rotation.scale.set(
+            size[0] / base[0],
+            size[1] / base[1],
+            size[2] / base[2],
+          );
         }
       });
       this.items = items;
@@ -170,26 +196,17 @@ export class AnnotationLayer implements CustomLayerInterface {
         .get(item.id)!
         .setOpacity(
           1,
-          item.kind !== 'pin' && item.groundElevation !== null ? 1 : 0.2,
+          item.kind !== 'pin' && altitudeRange(item) !== null ? 1 : 0.2,
         );
-      if (item.kind === 'pin' || item.groundElevation === null) continue;
+      if (item.kind === 'pin' || altitudeRange(item) === null) continue;
       const ground = this.settings.terrain
-        ? item.groundElevation * this.settings.exaggeration
+        ? (item.groundElevation ?? 0) * this.settings.exaggeration
         : 0;
       const range = altitudeRange(item, ground);
       if (!range) continue;
       const mercator = MercatorCoordinate.fromLngLat(item.coordinates);
       const localUnit = mercator.meterInMercatorCoordinateUnits();
-      const [width, length, height] = dimensions(item);
-      let geometry: THREE.BufferGeometry;
-      if (item.kind === 'box')
-        geometry = new THREE.BoxGeometry(width, length, height);
-      else if (item.kind === 'sphere')
-        geometry = new THREE.SphereGeometry(width / 2, 32, 20);
-      else {
-        geometry = new THREE.CylinderGeometry(width / 2, width / 2, height, 48);
-        geometry.rotateX(Math.PI / 2);
-      }
+      const geometry = modelGeometry(item);
       const underground = item.placement === 'underground';
       const material = new THREE.MeshBasicMaterial({
         color: item.color,
@@ -213,6 +230,7 @@ export class AnnotationLayer implements CustomLayerInterface {
         localUnit / originUnit,
       );
       const rotation = new THREE.Group();
+      rotation.userData.baseDimensions = dimensions(item);
       rotation.rotation.set(
         (item.pitch * Math.PI) / 180,
         (item.roll * Math.PI) / 180,

@@ -281,6 +281,21 @@ function Editor({
               max={10000}
               onValue={(value) => state.manualElevation(item.id, value)}
             />
+            {item.centerAltitude !== undefined && (
+              <>
+                <NumberField
+                  label="模型中心海拔（米）"
+                  value={item.centerAltitude}
+                  min={-12000}
+                  max={30000}
+                  onValue={(centerAltitude) => change({ centerAltitude })}
+                />
+                <p>操控球已固定模型中心海拔。修改离地/埋深可恢复随地形放置。</p>
+                <button onClick={() => change({ centerAltitude: undefined })}>
+                  恢复随地形放置
+                </button>
+              </>
+            )}
             <button
               disabled={state.reading}
               onClick={() =>

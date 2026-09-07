@@ -1,3 +1,19 @@
+# 当前任务：交线剖面、共用球形操控器与图片导出（2026-09-07）
+- 最终交付：本轮实现/检查已完成，正在提交同步 main。修改模块/文件为 objectTransform（math/projection/gizmoHandles/ObjectGizmo/CSS）、section（contours/loadedTerrain/SectionSurfaceLayer/SectionProfile/profileExport/CSS）、annotations（data/modelGeometry/AnnotationLayer/useAnnotations/AnnotationPanel）、map/TerrainMap、app/page/layout、features 开关、mobile/main 与 MainActivity 返回、README/mobileREADME/docs/elevation-section、本状态及新增逻辑/浏览器测试。新增有限面交线/详情/导出、共用对象 Gizmo 与兼容绝对中心海拔；移除产品旧裁切接线与独立模式面板，未删除历史裁切研究文件。收藏/路线/GPS记录/照片/地图图源的数据与算法未改；开始导航时正常结束剖面编辑。
+- 最终校验：TypeScript 通过；198/198 测试通过；两尺寸浏览器与 JPEG、触摸单次保存/取消、点击真实剖面开窗通过；网页 build 和 Android Java/DEX 未签名完整构建通过。APK 500 项资源逐项 SHA-256 与 mobile/dist 一致，含 Gizmo CSS、交线/图片代码与新返回处理。产物 mobile/.build/Shantu-0.2.5-test-unsigned.apk，54016614 字节，SHA-256 b3f1f52534bf33e6fefbb18282963a12ba66c8ddd047ab798f63a8cb1194408e。原签名缺失，未发布新 Release，未真机验收。
+- 证据日志 .openai/{typecheck-section-final,tests-section-final,browser-section-profile,browser-section-real,build-web-section-profile,build-android-section-profile,verify-section-apk}.log；截图 artifacts/screenshots/section-{gizmo,profile}-{390,360}.png、section-export-{390,360}.jpg、section-real-terrain.png，均已查看。来源/采样精度、U/V 与绝对海拔区别、剖面会话不持久化已写说明。远程开始/提交前无新增提交（0 0），完成后的 SHA 核验见 .openai/sync-section-profile.log。
+- 本轮已完成实现和网页验证：按 Maxon 官方参考重做为对象中心同时可用的箭头/圆环/方块/中心黄块，随实际模型投影与姿态，局部轴移动/旋转/拉伸、屏幕移动/旋转、Shift 5°、键盘微调；旧独立球形面板及其未用数学已移除。gizmoHandles / projection / math / ObjectGizmo 分工；撤销、指针取消/失焦/第二指取消及单次保存保持。
+- 198/198 全量逻辑测试、最终 TypeScript 已通过。390×844 和 360×780 浏览器检查通过：真实平面点击开窗、交线选择/滑杆/地图白点联动、完整模型无裁切、直接拖箭头/方块/环微调、取消与撤销、实际触摸预览不写盘/松手一次写盘、触摸取消；布局与右下相机控制器不重叠，无页面错误。两张 1600×1458 JPEG 已真实下载并查看，底部所有元数据可读。真实 DEM 另测读到中心约 2015m、交线点约 1557.88m，避免了未加载 0m 假线。
+- 文档 docs/elevation-section.md 与 README 更新当前行为和局限；新增 mobile/main.tsx 样式导入、MainActivity 返回优先级。网页构建已通过；正在完成最后安卓未签名构建和产物校验，随后提交同步。
+- 最新纠正：用户指出第一版独立球形面板不符合 ZBrush，要求上网核对。已重新查 Maxon 官方 Gizmo 3D 文档及原图：同一操控器贴在对象中心，箭头移动、环旋转、轴方块拉伸、中心黄块等比缩放、灰环屏幕转动，无须切换三种模式。当前 ObjectGizmo 初版须重做为对象上直接操作的共用 Gizmo，保留交线/图片等已写模块。
+- 已新增 objectTransform/math.ts、ObjectGizmo 初版、section/contours.ts、SectionSurfaceLayer、SectionProfile、profileExport 与 loadedTerrain 适配，标记可选 centerAltitude、共享模型几何及一次保存/撤销接线，地图不再接入旧 TerrainClip。12 个纯几何/变换测试首轮 11 通过、1 个竖直移动经纬度舍入缺陷已修；TypeScript 首轮通过。真实浏览器截图发现 MapLibre 未加载 DEM 时 queryTerrainElevation 返回占位 0，已改为严格 loadedTerrainSampler，尚待复测。
+- 尚未完成真实对象 Gizmo、完整浏览器交互/导出、最终测试/构建/推送。不要把当前预览说成完成或手机验收。
+- 用户要求矩形面可拉伸/旋转，剖面和原标记共用类似 ZBrush Gizmo 的移动/旋转/缩放操作；点击面打开交线轮廓，横向滑杆查看具体点海拔。用户已确认保留完整模型，只显示面和交线；追加详细信息与图片下载，图片下方列坐标等信息。
+- 开始 main 干净，pull --ff-only 确认 2b40bc8 最新。已查现有 section（停用的旧 GPU 裁切）、annotations/地图投影与保存接口，并核对 Maxon Gizmo 3D 和 Three.js 官方操作文档。
+- 设计：新增独立 objectTransform 控件/姿态适配与拖动预览，松手原子保存/取消还原；section 新交线采样、有限矩形/模型网格求交、轮廓串接/逐点读数和图片导出。地图与窗口复用同一交线数据，断线不桥接，未知地形留空；模型几何/同源地形估计分别标来源。
+- 修改范围：section、annotations 的可选绝对中心海拔/共用模型几何、TerrainMap/app 公共 props、剖面开关/入口与返回处理；不启用旧 terrainClip，不裁切或重写地形，不改变收藏/路线导航/GPS记录/照片/图源数据。旧标记数据通过可选字段保持兼容，新增模块可独立回滚。
+- 尚在实现，未验证/构建/同步本轮功能。原签名限制保持，不发布错误签名 APK；后续按 390×844/360×780 验证拖动/交线/滑杆/导出/回滚，更新本状态并提交推送。
+
 # 当前任务：途经点常驻删除按钮（2026-09-07）
 - 用户反馈途经点没有明显删除入口，要求增加 X。开始 main 干净，pull --ff-only 确认 c9df117 最新；原删除操作只在输入框聚焦后的编辑选项中显示。
 - 修改 navigation/RoutePanel.tsx 与 navigation.css：每个中间途经点行末常驻 44px X，移除隐藏编辑区重复删除按钮；复用 useNavigation.remove，删除清空旧规划/取消请求并保留起终点，拖动中禁用删除。收藏、轨迹/照片、定位、导航算法与原数据格式保持，无新依赖/文件删除；回滚恢复原入口即可。
