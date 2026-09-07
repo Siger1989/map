@@ -5,7 +5,8 @@
 - 验证计划：手机390×844/360×780页头与世界视角、海外坐标/重置/URL位置恢复、已有备份兼容，类型检查/相关测试/网页与安卓构建，再提交推送main。本机仍缺原私钥，不发布错误签名APK。
 - 实现与界面验证完成：页头只保留“山兔”与世界地图按钮，网页/安卓名称、照片和备份导出文案更新；旧存储标识与签名配置保持。TypeScript、140/140既有测试通过；390×844与360×780检查默认世界视角、最小缩放、伦敦/东京坐标、URL重载恢复及世界视角按钮通过，无横向溢出/运行错误。已查看世界地图两尺寸及伦敦关键截图；日志 .openai/{typecheck-shantu,tests-shantu,browser-shantu-global-final}.log。
 - 构建与资源核对通过：网页、安卓Java/DEX/完整未签名构建成功，aapt确认application-label为“山兔”；489项内置资产逐项SHA-256与mobile/dist一致（含473张地形）。未签名产物mobile/.build/Shantu-0.2.5-test-unsigned.apk，53429228字节，不可安装。日志 .openai/{build-web-shantu,build-android-shantu,verify-shantu-apk-assets}.log。
-- 交付范围：文件清单与回滚见docs/shantu-global.md，删除固定地区页头/样式，无业务文件删除，无新增依赖；原轨迹/照片、包名/签名、服务算法不变。没有发布新Release，没有宣称安卓真机已改名；源码即将提交同步main。
+- 交付范围：文件清单与回滚见docs/shantu-global.md，删除固定地区页头/样式，无业务文件删除，无新增依赖；原轨迹/照片、包名/签名、服务算法不变。没有发布新Release，没有宣称安卓真机已改名。
+- 源码已同步：d07e7217d8211585c7593b65b435cec4aab3d470已推送origin/main并经git ls-remote核验一致，日志.openai/sync-shantu.log；状态收尾另行提交，最终远端SHA记录.openai/sync-shantu-final.log。
 
 # 当前任务：照片放大、编辑标记、分享与拍摄环境（2026-09-07）
 - 已同步 main（efe2336），工作区原本干净。现有照片仅960px预览，无缩放/编辑/分享；导入未读取EXIF海拔。
