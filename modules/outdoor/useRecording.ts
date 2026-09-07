@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useRecordingPreferences } from './useRecordingPreferences';
+import { recordingAccuracyMessage } from './recordingPreferences';
 import {
   appendFix,
   emptyRecording,
@@ -14,12 +16,19 @@ declare global {
       recordState(): string;
       saveFile(name: string, mime: string, text: string): void;
       photoFolders?(): boolean;
+      recordingAccuracy?(): number;
+      setRecordingAccuracy?(metres: number): boolean;
     };
   }
 }
 export function useRecording() {
   const [record, setRecord] = useState<Recording>(emptyRecording);
   const [native, setNative] = useState(false);
+  const preferences = useRecordingPreferences();
+  const maximum = useRef(preferences.maximum);
+  maximum.current = preferences.maximum;
+  const [qualityNote, setQualityNote] = useState('');
+  useEffect(() => setQualityNote(''), [preferences.maximum]);
   const current = useRef(record);
   current.current = record;
   const writable = useRef(true);
@@ -27,6 +36,7 @@ export function useRecording() {
     if (!writable.current) return;
     try {
       localStorage.setItem(RECORDING_KEY, JSON.stringify(next));
+      current.current = next;
       setRecord(next);
     } catch {
       setRecord({
@@ -88,15 +98,23 @@ export function useRecording() {
       return;
     }
     const watch = navigator.geolocation.watchPosition(
-      (p) =>
-        persist(
-          appendFix(current.current, {
+      (p) => {
+        setQualityNote(
+          recordingAccuracyMessage(p.coords.accuracy, maximum.current),
+        );
+        const next = appendFix(
+          current.current,
+          {
             coordinates: [p.coords.longitude, p.coords.latitude],
             accuracy: p.coords.accuracy,
             altitude: p.coords.altitude,
             time: p.timestamp,
-          }),
-        ),
+          },
+          Date.now(),
+          maximum.current,
+        );
+        if (next !== current.current) persist(next);
+      },
       (e) =>
         persist({
           ...current.current,
@@ -123,6 +141,7 @@ export function useRecording() {
   const command = (
     action: 'start' | 'pause' | 'resume' | 'finish' | 'clear',
   ) => {
+    setQualityNote('');
     if (window.GuanyunNative) {
       window.GuanyunNative.record(action);
       return;
@@ -149,5 +168,5 @@ export function useRecording() {
       setRecord((r) => ({ ...r, error: (e as Error).message }));
     }
   };
-  return { record, native, command };
+  return { record, native, command, preferences, qualityNote };
 }

@@ -14,6 +14,7 @@ import {
 import type { useRecording } from './useRecording';
 import type { useOffline } from './useOffline';
 import { recordingTransfer, saveRecording } from './savedRecording';
+import { RecordingPrecision } from './RecordingPrecision';
 export function OutdoorPanel({
   recorder,
   offline,
@@ -91,6 +92,7 @@ export function OutdoorPanel({
               }
             </span>
           </div>
+          <RecordingPrecision preferences={recorder.preferences} />
           <p className="route-note">
             {native
               ? '开始后显示系统记录通知，锁屏后继续定位。'
@@ -98,7 +100,7 @@ export function OutdoorPanel({
           </p>
           {last && (
             <p className="route-note">
-              定位精度 ±{Math.round(last.accuracy)} m · 最新{' '}
+              最近记录点估计误差 {Math.round(last.accuracy)} m ·{' '}
               {new Date(last.time).toLocaleTimeString('zh-CN')}
             </p>
           )}
@@ -165,9 +167,9 @@ export function OutdoorPanel({
               </>
             )}
           </div>
-          {record.error && (
+          {(record.error || recorder.qualityNote) && (
             <p role="status" className="route-error">
-              {record.error}
+              {record.error || recorder.qualityNote}
             </p>
           )}
         </>

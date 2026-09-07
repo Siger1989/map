@@ -489,6 +489,46 @@
   justify-content: space-between;
   gap: 8px;
 }
+.recording-precision {
+  font-size: 14px;
+}
+.recording-precision summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.recording-precision summary::before {
+  content: '▸';
+  margin-right: 6px;
+}
+.recording-precision[open] summary::before {
+  content: '▾';
+}
+.recording-precision label {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.recording-precision .recording-precision-row {
+  display: grid;
+  grid-template-columns: minmax(52px, 1fr) auto auto;
+  gap: 5px;
+}
+.recording-precision-row button {
+  padding-inline: 7px;
+}
+.recording-precision input {
+  width: 100%;
+  min-height: 44px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #ffffff30;
+  border-radius: 6px;
+  background: #183039;
+  color: var(--text);
+  font-size: 16px;
+}
 .trip-metrics strong {
   font-size: 22px;
 }

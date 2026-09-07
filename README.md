@@ -4,6 +4,8 @@
 
 当前源码另含 **0.2.5 待签名修复**：实走存档来源与时间保护、照片轨迹选择、整文件夹导入。没有发布新版 APK，以下链接仍是 0.2.4；见 [修复与构建状态](docs/recording-photos-fix.md)。
 
+同一待签名源码新增 [手动记录精度门槛](docs/recording-accuracy.md)：默认20米，可设5–80米，只筛选后续定位点，不改变历史轨迹，也不保证GPS实际误差达到该数值。
+
 [直接下载 APK](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图

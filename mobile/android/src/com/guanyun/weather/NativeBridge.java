@@ -15,6 +15,12 @@ final class NativeBridge {
     NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files; }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
+    @JavascriptInterface public int recordingAccuracy() { return RecordingPreferences.accuracy(activity); }
+    @JavascriptInterface public boolean setRecordingAccuracy(double metres) {
+        boolean saved = RecordingPreferences.saveAccuracy(activity, metres);
+        if (saved) RecordingStore.clearQuality();
+        return saved;
+    }
     @JavascriptInterface public void saveFile(String name,String mime,String text) { activity.runOnUiThread(()->{ if(activity.trustedForeground())files.save(name,mime,text); }); }
     @JavascriptInterface public void record(String action) {
         if (!java.util.Arrays.asList("start","resume","pause","finish","clear").contains(action)) return;

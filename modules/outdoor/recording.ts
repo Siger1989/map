@@ -3,6 +3,10 @@ import {
   metresBetween,
   type Coordinate,
 } from '../navigation/types.ts';
+import {
+  DEFAULT_RECORDING_ACCURACY,
+  readRecordingAccuracy,
+} from './recordingPreferences.ts';
 export type Fix = {
   coordinates: Coordinate;
   time: number;
@@ -56,10 +60,12 @@ export function appendFix(
   record: Recording,
   fix: Fix,
   now = Date.now(),
+  maximumAccuracy = DEFAULT_RECORDING_ACCURACY,
 ): Recording {
   if (
     record.phase !== 'recording' ||
     !validFix(fix) ||
+    fix.accuracy > readRecordingAccuracy(maximumAccuracy) ||
     now - fix.time > 20000 ||
     fix.time > now + 5000
   )

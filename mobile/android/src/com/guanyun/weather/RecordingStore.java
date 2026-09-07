@@ -13,6 +13,8 @@ import java.nio.charset.StandardCharsets;
 final class RecordingStore {
     private static JSONObject data;
     private static boolean broken;
+    private static String qualityMessage = "";
+    static synchronized void clearQuality() { qualityMessage = ""; }
     static synchronized JSONObject load(Context context) throws Exception {
         if (data != null) return data;
         AtomicFile file = file(context);
@@ -25,13 +27,20 @@ final class RecordingStore {
     private static AtomicFile file(Context c) { return new AtomicFile(new File(c.getFilesDir(), "recording-v1.json")); }
     private static JSONObject empty() throws Exception { return new JSONObject().put("id", "").put("phase", "idle").put("startedAt", 0).put("segments", new JSONArray()).put("error", ""); }
     static synchronized String snapshot(Context c) {
-        try { return load(c).toString(); }
+        try {
+            JSONObject current = load(c);
+            if (qualityMessage.isEmpty() || !current.optString("error").isEmpty()) return current.toString();
+            JSONObject snapshot = new JSONObject(current.toString());
+            if (!qualityMessage.isEmpty() && snapshot.optString("error").isEmpty()) snapshot.put("error", qualityMessage);
+            return snapshot.toString();
+        }
         catch (Exception e) { try { return empty().put("error", "原生存档损坏，未覆盖原文件").toString(); } catch (Exception ignored) { return "{}"; } }
     }
     static synchronized void command(Context c, String action) throws Exception {
         JSONObject value = load(c);
         if (broken) throw new Exception("记录存档无法读取");
         String phase = value.optString("phase");
+        qualityMessage = "";
         if ("start".equals(action)) {
             if (!"idle".equals(phase)) throw new Exception("请先保存当前记录");
             data = empty().put("id", java.util.UUID.randomUUID().toString()).put("startedAt", System.currentTimeMillis());
@@ -52,7 +61,13 @@ final class RecordingStore {
     }
     static synchronized void add(Context c, Location p) throws Exception {
         JSONObject value = load(c);
-        if (!"recording".equals(value.optString("phase")) || !p.hasAccuracy() || p.getAccuracy() > 80 || p.getAccuracy() < 0 || Math.abs(p.getLatitude()) > 85 || Math.abs(p.getLongitude()) > 180 || p.getTime() > System.currentTimeMillis()+5000 || System.currentTimeMillis()-p.getTime() > 20000) return;
+        if (!"recording".equals(value.optString("phase")) || !p.hasAccuracy() || Float.isNaN(p.getAccuracy()) || Float.isInfinite(p.getAccuracy()) || p.getAccuracy() < 0 || Math.abs(p.getLatitude()) > 85 || Math.abs(p.getLongitude()) > 180 || p.getTime() > System.currentTimeMillis()+5000 || System.currentTimeMillis()-p.getTime() > 20000) return;
+        int maximum = RecordingPreferences.accuracy(c);
+        if (p.getAccuracy() > maximum) {
+            qualityMessage = "当前估计误差 " + (int)Math.ceil(p.getAccuracy()) + " 米，超过设置的 " + maximum + " 米；该点未记录，等待更好信号";
+            return;
+        }
+        qualityMessage = "";
         JSONArray segments = value.getJSONArray("segments");
         int count = 0; for (int i=0;i<segments.length();i++) count += segments.getJSONArray(i).length();
         if (count >= 6000) { command(c, "pause"); error(c, "已达 6000 点，请结束保存"); return; }
