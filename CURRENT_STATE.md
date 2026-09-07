@@ -1,3 +1,12 @@
+# 当前任务：图层移出工具栏（2026-09-07）
+- 用户要求图层放到外部窗口，不放工具栏。开始工作区干净，pull --ff-only确认最新0070eb0。
+- 范围：新增controls/LayerWindow.tsx和layerWindow.css，将观察模式与LayerPanel装入独立窗口，右上角44px常驻“图层”入口；app只接公共props与互斥panel状态；ControlDock移除图层菜单并不再承载图层窗口；Android返回键优先关闭新窗口。
+- 保持：图层开关/图源功能、地图渲染、轨迹/照片/GPS与数据库不变；无新增依赖。回滚撤销本轮入口和窗口接线即可。
+- 验证计划：390×844、360×780入口常驻、工具菜单移除、独立窗口开关/外点/Escape/安卓返回事件、图层切换与图源链接、关闭后状态保留、面板尺寸/遮挡/无溢出；类型检查与网页/安卓构建，再提交推送main。
+- 实现与界面验证完成：右上角独立“图层”按钮与浮窗已接通；原工具菜单入口删除，ControlDock不承载此窗口，图源管理仍可从窗口进入。类型检查通过、localhost:3000返回200；390×844/360×780图层实际显隐、状态保留、按钮/外点/Escape/原生返回JS、图源跳转、面板互斥和遮挡检查通过。已查看layer-window-{390,360}.png，44px入口、≤38dvh/320px窗口，无横向溢出。日志.openai/{typecheck-layer-window,browser-layer-window}.log；网页与安卓构建开始。
+- 构建验证完成：网页、安卓Java/DEX/完整未签名构建通过；500项APK资产逐项与mobile/dist一致，已检查独立窗口JS/CSS与DEX内返回键选择器。未签名包mobile/.build/Shantu-0.2.5-test-unsigned.apk为53996099字节，SHA-256 e66fad3efdb0069ae0e5928a6127ebbb4694ab5e7d22a053f1fe674f77c850a5；不可安装、无新Release，手机相机/触控未做真机验收。日志.openai/{build-web-layer-window,build-android-layer-window,verify-layer-apk}.log。
+- 文件清单：新增modules/controls/{LayerWindow.tsx,layerWindow.css}；修改app/page.tsx、controls/ControlDock.tsx、Android MainActivity.java、docs/map-sources.md和本状态文件。删除工具菜单中的“图层”入口，无业务文件删除；无依赖/包名/签名变化，轨迹/照片/GPS/地图数据算法保持。远程main无新增提交，准备同步本轮成果。
+
 # 当前任务：在线图源、二维码与离线地图导入（2026-09-07）
 - 状态：功能、验证与源码同步完成；本机预览可用，手机原生权限与触控仍待真机验收，原签名APK限制保持。
 - 用户要求图源选择、常见地图格式/二维码导入，已明确在线和离线两种都用。开始时main干净，已pull到8d3b14d；官方资料确认奥维二维码/ovmap含专有格式，不能声称全部通用兼容。

@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Clock3,
-  Layers,
   Route,
   MapPinPlus,
   X,
@@ -27,7 +26,6 @@ const PANELS = [
   { id: 'outdoor', label: '行程', icon: Footprints },
   { id: 'tools', label: '工具', icon: Menu },
   { id: 'time', label: '时间', icon: Clock3 },
-  { id: 'layers', label: '图层', icon: Layers },
   { id: 'sources', label: '地图图源', icon: MapIcon },
   { id: 'route', label: '路线', icon: Route },
   { id: 'annotations', label: '标记', icon: MapPinPlus },

@@ -1,0 +1,43 @@
+.map-layer-control {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+.map-layer-toggle {
+  position: absolute;
+  top: calc(8px + var(--safe-top));
+  right: var(--edge-right);
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 10px;
+  color: var(--text);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.map-layer-toggle span {
+  font-size: 10px;
+  line-height: 13px;
+}
+.map-layer-toggle[aria-expanded='true'] {
+  color: var(--accent);
+  background: #21483e;
+  border-color: #9de8c470;
+}
+.map-layer-control .layer-window {
+  top: calc(56px + var(--safe-top));
+  max-height: min(38dvh, 320px);
+}
+.layer-window .dock-heading {
+  height: 44px;
+}
+.layer-window .dock-heading .icon-button {
+  width: 44px;
+  height: 44px;
+}

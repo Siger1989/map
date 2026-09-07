@@ -10,9 +10,9 @@ import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
-import { CloudSun, Mountain, RotateCcw } from 'lucide-react';
+import { CloudSun, RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
-import { LayerPanel } from '@/modules/controls/LayerPanel';
+import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
@@ -650,6 +650,25 @@ export default function Home() {
           </button>
         </div>
       )}
+      <LayerWindow
+        open={panel === 'layers'}
+        onOpen={(open) => {
+          if (open) {
+            photos.setSelected(null);
+            tracks.pause();
+            navigation.setPicking(null);
+            annotations.setPicking(null);
+          }
+          setPanel(open ? 'layers' : null);
+        }}
+        settings={layers}
+        onChange={update}
+        customSource={mapSources.source?.name}
+        onOpenSources={() => setPanel('sources')}
+        satelliteDate={satellite.date}
+        satelliteStatus={satellite.status}
+        mapStatus={mapStatus}
+      />
       <MapActions
         sectionActive={section.enabled}
         onSection={toggleSection}
@@ -703,7 +722,7 @@ export default function Home() {
         </button>
       )}
       <ControlDock
-        active={panel}
+        active={panel === 'layers' ? null : panel}
         cameraOpen={cameraOpen}
         onCamera={() => {
           setCameraOpen((v) => !v);
@@ -949,49 +968,7 @@ export default function Home() {
             }}
           />
         )}
-        {panel === 'layers' && (
-          <>
-            <div className="view-presets" aria-label="观察模式">
-              <button
-                aria-pressed={layers.clouds || layers.rain}
-                onClick={() =>
-                  update({
-                    terrain: true,
-                    clouds: true,
-                    rain: true,
-                    contours: false,
-                  })
-                }
-              >
-                <CloudSun size={18} />
-                天气总览
-              </button>
-              <button
-                aria-pressed={!layers.clouds && !layers.rain}
-                onClick={() =>
-                  update({
-                    terrain: true,
-                    clouds: false,
-                    rain: false,
-                    contours: true,
-                  })
-                }
-              >
-                <Mountain size={18} />
-                看清地形
-              </button>
-            </div>
-            <LayerPanel
-              customSource={mapSources.source?.name}
-              onOpenSources={() => setPanel('sources')}
-              settings={layers}
-              onChange={update}
-              satelliteDate={satellite.date}
-              satelliteStatus={satellite.status}
-            />
-          </>
-        )}
-        {(panel === 'weather' || panel === 'layers') && (
+        {panel === 'weather' && (
           <p className="map-status" role="status">
             {mapStatus}
           </p>
