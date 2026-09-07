@@ -245,6 +245,14 @@
   background: var(--accent);
   color: white;
 }
+@media (max-width: 600px) {
+  .observatory .dock-navigation button {
+    flex-direction: column;
+    padding: 0;
+    gap: 1px;
+    font-size: 11px;
+  }
+}
 .observatory .weather-summary {
   min-height: 44px;
   padding: 0 9px;

@@ -1,3 +1,10 @@
+# 当前任务：突出画线入口（2026-09-08，完成验证）
+- 用户要求功能明显一些；已询问是画线入口还是吸附开关，暂无回复，按当前主界面缺少画线入口推进并告知假设。
+- 启动status/diff干净、pull最新d68591d，读取项目状态/README/LOG/AGENTS。ControlDock底部增加独立画线，选中/关闭焦点回到画线；保留工具与路线页的原入口。modern.css手机五项使用图标上、文字下44px按钮控制宽度。
+- 文件ControlDock.tsx、modern.css、README、docs/road-segment-snapping、LOG、本状态；无存储/GPS/吸附逻辑改动。TypeScript、网页与安卓网页构建PASS，日志.openai/*draw-entry.log；单纯入口/UI修改未重复全套业务回归。
+- 浏览器PASS：底部一次点击画线打开面板，仅画线高亮；Escape关闭后焦点回画线；路线入口与标题切换保留。360×780/390×844无横向溢出，五个按钮均44×44 CSS像素，天气与导航无重叠。截图artifacts/screenshots/draw-entry-{360,390,desktop}.png；桌面视觉PASS，手机截图存在既有缩放捕获异常，DOM检查PASS，真机触控未验收。
+- 独立tab18已关闭、视口已恢复，无保存数据修改，无新APK。下一步按授权推送main核对SHA，记录.openai/sync-draw-entry.log；无阻塞。
+
 # 当前任务：2公里比例尺道路吸附（2026-09-08，完成验证）
 - 用户在zoom11.49道路可见但无法吸附；定位roadSnap.ts硬编码zoom<12直接返回。主道路图层从zoom6显示，吸附门槛与显示不一致。
 - 启动status/diff干净、pull确认ca9ba7e最新，已读项目说明。先扩展适配器回归覆盖11.49/10/8级完整弯道、距离拒绝、未加载/隐藏道路；再移除缩放硬门槛。

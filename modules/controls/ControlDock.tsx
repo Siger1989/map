@@ -33,6 +33,7 @@ const PANELS = [
   { id: 'route', label: '路线', icon: Route },
   { id: 'annotations', label: '标记', icon: MapPinPlus },
   { id: 'favorites', label: '收藏', icon: Bookmark },
+  { id: 'track', label: '画线', icon: PencilLine },
 ] as const;
 
 /** Small map tools with one dismissible popover; never a persistent bottom sheet. */
@@ -69,7 +70,7 @@ export function ControlDock({
     onActive(null);
     root.current
       ?.querySelector<HTMLButtonElement>(
-        `[data-panel-toggle="${active === 'track' ? 'route' : active === 'sources' ? 'tools' : active}"]`,
+        `[data-panel-toggle="${active === 'sources' ? 'tools' : active}"]`,
       )
       ?.focus({ preventScroll: true });
   };
@@ -165,7 +166,8 @@ export function ControlDock({
                   </button>
                 )}
                 {PANELS.filter(
-                  (p) => !['tools', 'outdoor', 'favorites'].includes(p.id),
+                  (p) =>
+                    !['tools', 'outdoor', 'favorites', 'track'].includes(p.id),
                 ).map(({ id, label, icon: Icon }) => (
                   <button key={id} onClick={() => onActive(id)}>
                     <Icon size={18} />
@@ -191,6 +193,7 @@ export function ControlDock({
           {[
             PANELS[0],
             PANELS.find((p) => p.id === 'route')!,
+            PANELS.find((p) => p.id === 'track')!,
             PANELS.find((p) => p.id === 'favorites')!,
             PANELS[1],
           ].map(({ id, label, icon: Icon }) => (
@@ -198,21 +201,9 @@ export function ControlDock({
               key={id}
               data-panel-toggle={id}
               aria-label={label}
-              aria-expanded={
-                active === id || (id === 'route' && active === 'track')
-              }
-              aria-controls={
-                active === id || (id === 'route' && active === 'track')
-                  ? 'map-control-panel'
-                  : undefined
-              }
-              onClick={() =>
-                onActive(
-                  active === id || (id === 'route' && active === 'track')
-                    ? null
-                    : id,
-                )
-              }
+              aria-expanded={active === id}
+              aria-controls={active === id ? 'map-control-panel' : undefined}
+              onClick={() => onActive(active === id ? null : id)}
             >
               <Icon size={16} />
               <span>{label}</span>
