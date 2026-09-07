@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { PRODUCT_NAME } from '@/config/product';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
 import { recordingTrack } from '@/modules/outdoor/savedRecording';
@@ -542,17 +543,15 @@ export default function Home() {
           <span className="brand-icon">
             <CloudSun size={17} />
           </span>
-          <h1>观云</h1>
+          <h1>{PRODUCT_NAME}</h1>
         </div>
-        <div className="region">
-          <strong>成都 · 川西</strong>
-          <span title={mapStatus} role="status">
-            {mapStatus}
-          </span>
-        </div>
+        <span className="map-load-status" role="status">
+          {mapStatus}
+        </span>
         <button
           className="icon-button"
-          aria-label="返回成都川西视角"
+          aria-label="查看世界地图"
+          title="查看世界地图"
           onClick={resetView}
         >
           <RotateCcw size={15} />

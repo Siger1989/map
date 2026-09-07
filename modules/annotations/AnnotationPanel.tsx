@@ -362,7 +362,7 @@ export function AnnotationPanel({
     const url = URL.createObjectURL(blob),
       anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = '观云-标记模型参数.json';
+    anchor.download = '山兔-标记模型参数.json';
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };

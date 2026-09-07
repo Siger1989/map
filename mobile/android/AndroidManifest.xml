@@ -8,7 +8,7 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-feature android:glEsVersion="0x00030000" android:required="true" />
-  <application android:label="观云测试版" android:icon="@drawable/ic_launcher" android:theme="@style/AppTheme"
+  <application android:label="山兔" android:icon="@drawable/ic_launcher" android:theme="@style/AppTheme"
     android:allowBackup="false" android:usesCleartextTraffic="false" android:hardwareAccelerated="true" android:supportsRtl="true">
     <service android:name="com.guanyun.weather.RecordingService" android:exported="false" android:foregroundServiceType="location" />
     <provider android:name="com.guanyun.weather.PhotoShareProvider" android:authorities="com.guanyun.weather.preview.photos" android:exported="false" android:grantUriPermissions="true" />

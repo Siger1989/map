@@ -1,4 +1,5 @@
 import type { TripPhoto } from './storage';
+import { PRODUCT_NAME, EXPORT_PREFIX } from '../../config/product';
 import { altitudeLabel, weatherSource } from './details';
 import { describeWeather } from '../weather/data';
 export function weatherLabel(photo: TripPhoto) {
@@ -106,7 +107,7 @@ export async function renderPhotoExport(
         0.88,
       ),
     );
-    return new File([blob], `Guanyun-photo-${photo.time}.jpg`, {
+    return new File([blob], `${EXPORT_PREFIX}-photo-${photo.time}.jpg`, {
       type: 'image/jpeg',
     });
   } finally {
@@ -133,7 +134,7 @@ export async function deliverPhoto(file: File, share: boolean) {
   if (share) {
     if (!navigator.canShare?.({ files: [file] }))
       throw new Error('此浏览器不支持文件分享，可点“保存图片”后分享');
-    await navigator.share({ files: [file], title: '观云行程照片' });
+    await navigator.share({ files: [file], title: `${PRODUCT_NAME}行程照片` });
     return '已交给系统分享';
   }
   const url = URL.createObjectURL(file),

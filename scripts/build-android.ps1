@@ -82,7 +82,7 @@ try {
 
   $versionName = $manifest.manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
   if ($versionName -notmatch '^[0-9A-Za-z.-]+$') { throw 'Invalid APK version name' }
-  $apkName = if ($UnsignedOnly) { "Guanyun-$versionName-unsigned.apk" } else { "Guanyun-$versionName.apk" }
+  $apkName = if ($UnsignedOnly) { "Shantu-$versionName-unsigned.apk" } else { "Shantu-$versionName.apk" }
   $apk = Join-Path $outputRoot $apkName
   $signer = Join-Path $toolRoot 'lib\apksigner.jar'
   if ($UnsignedOnly) { Copy-Item -LiteralPath $alignedApk -Destination $apk }

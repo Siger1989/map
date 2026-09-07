@@ -45,7 +45,7 @@ public final class PhotoShareProvider extends ContentProvider {
             MatrixCursor cursor = new MatrixCursor(columns, 1);
             Object[] values = new Object[columns.length];
             for (int i=0; i<columns.length; i++) {
-                if (OpenableColumns.DISPLAY_NAME.equals(columns[i])) values[i]="Guanyun-photo.jpg";
+                if (OpenableColumns.DISPLAY_NAME.equals(columns[i])) values[i]="Shantu-photo.jpg";
                 else if (OpenableColumns.SIZE.equals(columns[i])) values[i]=file.length();
             }
             cursor.addRow(values); return cursor;

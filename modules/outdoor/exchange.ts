@@ -244,7 +244,8 @@ export async function parseFile(file: File): Promise<Transfer> {
         addPin(label(pm), list[0]);
       }
     }
-  } else throw new Error('请选择 GPX、KML、KMZ 或观云 JSON 备份');
+  } else
+    throw new Error('请选择 GPX、KML、KMZ 或山兔 JSON 备份（兼容旧版观云）');
   if (!data.tracks.length && !data.annotations.length)
     throw new Error('文件中没有可导入的点或轨迹');
   return validateTransfer(data);

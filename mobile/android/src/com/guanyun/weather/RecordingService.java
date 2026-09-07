@@ -18,7 +18,7 @@ public final class RecordingService extends Service implements LocationListener 
     private Notification notification() {
         PendingIntent open = PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent pause = PendingIntent.getService(this,1,new Intent(this,RecordingService.class).setAction("pause"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);
-        return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("观云正在记录轨迹").setContentText("锁屏后继续记录 · 点击返回地图").setOngoing(true).setContentIntent(open).addAction(new Notification.Action.Builder(null,"暂停",pause).build()).build();
+        return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("山兔正在记录轨迹").setContentText("锁屏后继续记录 · 点击返回地图").setOngoing(true).setContentIntent(open).addAction(new Notification.Action.Builder(null,"暂停",pause).build()).build();
     }
     @Override public int onStartCommand(Intent intent,int flags,int id) {
         String action = intent == null ? "pause" : intent.getAction();

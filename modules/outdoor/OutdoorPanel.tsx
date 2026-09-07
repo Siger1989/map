@@ -144,7 +144,7 @@ export function OutdoorPanel({
                   onClick={() =>
                     act(() =>
                       saveFile(
-                        'guanyun-recording.gpx',
+                        'Shantu-recording.gpx',
                         'application/gpx+xml',
                         exportGPX(recordingData()),
                       ),
@@ -228,7 +228,7 @@ export function OutdoorPanel({
               onClick={() =>
                 act(() =>
                   saveFile(
-                    'guanyun-backup.json',
+                    'Shantu-backup.json',
                     'application/json',
                     JSON.stringify(collectData(), null, 2),
                   ),
@@ -241,7 +241,7 @@ export function OutdoorPanel({
               onClick={() =>
                 act(() =>
                   saveFile(
-                    'guanyun-tracks.gpx',
+                    'Shantu-tracks.gpx',
                     'application/gpx+xml',
                     exportGPX(collectData()),
                   ),
@@ -254,7 +254,7 @@ export function OutdoorPanel({
               onClick={() =>
                 act(() =>
                   saveFile(
-                    'guanyun-tracks.kml',
+                    'Shantu-tracks.kml',
                     'application/vnd.google-earth.kml+xml',
                     exportKML(collectData()),
                   ),

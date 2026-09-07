@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { PRODUCT_NAME, PRODUCT_DESCRIPTION } from '@/config/product';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '@/modules/photos/photos.css';
 import './globals.css';
@@ -19,8 +20,8 @@ export const viewport: Viewport = {
   themeColor: '#10212b',
 };
 export const metadata: Metadata = {
-  title: '观云 · 三维天气观察',
-  description: '在真实三维地形上观察卫星影像、海拔等高线与天气变化。',
+  title: `${PRODUCT_NAME} · 三维地图与沿途天气`,
+  description: PRODUCT_DESCRIPTION,
 };
 export default function RootLayout({
   children,

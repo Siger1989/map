@@ -16,7 +16,7 @@ final class NativeBridge {
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {
-        if (name == null || !name.matches("Guanyun-photo-[0-9]{1,16}\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
+        if (name == null || !name.matches("(?:Shantu|Guanyun)-photo-[0-9]{1,16}\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
         final byte[] bytes;
         try { bytes = android.util.Base64.decode(encoded, android.util.Base64.DEFAULT); }
         catch (Exception e) { return "图片编码无效"; }
@@ -31,7 +31,7 @@ final class NativeBridge {
                         if (!activity.trustedForeground()) return;
                         try {
                             Intent intent = new Intent(Intent.ACTION_SEND).setType("image/jpeg").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            intent.setClipData(android.content.ClipData.newRawUri("观云行程照片", uri));
+                            intent.setClipData(android.content.ClipData.newRawUri("山兔行程照片", uri));
                             activity.startActivity(Intent.createChooser(intent, "分享行程照片"));
                         } catch (Exception e) { android.widget.Toast.makeText(activity,"无法打开系统分享，请尝试保存图片",0).show(); }
                     });

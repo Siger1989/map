@@ -43,8 +43,8 @@ export function applyLayerPatch(
 export type Point = { lng: number; lat: number; elevation: number | null };
 export type ViewState = { bearing: number; pitch: number; zoom: number };
 export const INITIAL_VIEW = {
-  center: [103.28, 31.08] as [number, number],
-  zoom: 10.5,
-  pitch: 65,
-  bearing: -24,
+  center: [0, 20] as [number, number],
+  zoom: 1,
+  pitch: 0,
+  bearing: 0,
 };

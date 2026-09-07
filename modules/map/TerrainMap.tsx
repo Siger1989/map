@@ -457,7 +457,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             hash: true,
             maxPitch: 80,
             maxZoom: 20,
-            minZoom: 3,
+            minZoom: 0,
             attributionControl: false,
             // Native two-finger handlers keep single-finger drags as panning.
             touchZoomRotate: true,
@@ -798,7 +798,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         data-picking={
           props.pickingActive || props.drawingActive || props.section.enabled
         }
-        aria-label="成都与川西三维地形地图"
+        aria-label="全球三维地形地图"
       />
     );
   },
