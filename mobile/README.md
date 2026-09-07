@@ -72,3 +72,12 @@ versionCode 9，签名与包名不变，可覆盖安装。路线地点可直接�
 0.1.2 详细交互、统计定义、模块接口及验证：见 docs/track-drawing-and-journey.md。
 
 0.1.3新增道路天气色带、路线收藏、定位与方向切换，并修复手机绘制坐标：见docs/navigation-weather-location.md。定位由用户按钮触发，需要系统允许位置权限。
+
+
+## 后续鸿蒙安装交付
+
+用户在2026-09-08要求以后生成APK时也提供鸿蒙可用的安装交付，已加入项目AGENTS.md。具体机型和HarmonyOS版本等待确认；本次只记录目标，没有构建新包。
+
+当前仓库原生代码为Android Java/WebView，没有HarmonyOS原生工程。兼容安卓的鸿蒙设备需测试APK实际安装；原生鸿蒙/NEXT需新增原生工程与定位、后台记录、文件/照片、分享等桥接，完成签名及设备安装验证后再随版本发布。测试产物与正式上架包按所用分发流程区分，不能仅更改APK扩展名。
+
+华为官方说明：[鸿蒙应用开发与提交](https://developer.huawei.com/consumer/cn/app/submit/)、[HarmonyOS 5及以上下载安装方式](https://consumer.huawei.com/cn/support/content/zh-cn16061787/)。第三方兼容环境对APK的支持以实际环境为准，不作为本项目原生鸿蒙适配已完成的依据。

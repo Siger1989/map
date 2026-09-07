@@ -1,3 +1,11 @@
+# 当前交接：后续出包增加鸿蒙（2026-09-08，要求已记录）
+- 用户要求以后生成APK时同时提供鸿蒙可用安装交付。已写AGENTS.md长期出包目标、mobile/README.md平台状态；不代表本轮要求立刻打包。
+- 启动：status/diff干净，pull确认bdce7e6最新，已读项目状态/说明。当前只有Android Java/WebView原生工程，未找到build-profile.json5/oh-package.json5/hvigorfile.ts等鸿蒙工程文件。
+- 已询问具体HarmonyOS版本/机型，回复待定；旧版兼容Android与原生NEXT交付路线不同。已查华为官方开发/发布资料。
+- 文件：AGENTS.md、mobile/README.md、LOG.md、本状态。验证：文档范围与git diff --check PASS；仅文档无需运行构建。本次无新APK/鸿蒙包。
+- 下一步：收到设备版本后确定目标；后续出包先完成相应适配、签名、安装验证并分别列明产物。原生鸿蒙开发待开展，非本轮已完成功能。
+- 同步：按授权提交推送main，核验记录.openai/sync-harmony-target.log。
+
 # 当前任务：二级UI统一与断路跨越（2026-09-08，完成验证）
 - 目标：二级页面/独立浮窗统一浅色磨砂紧凑样式；用户追加道路吸附开启时允许跨越未连通路段。
 - 启动：status/diff干净，pull最新c587755，读取AGENTS/README/状态/LOG。UI原因：modern.css枚举主容器遗漏独立glass浮窗，子页硬编码颜色/圆角不一致。
