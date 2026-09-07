@@ -25,7 +25,7 @@ import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
-import { FavoritesPanel } from '@/modules/navigation/FavoritesPanel';
+import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -961,7 +961,7 @@ export default function Home() {
             }}
           />
         )}
-        {(panel === 'route' || panel === 'track' || panel === 'favorites') && (
+        {(panel === 'route' || panel === 'track') && (
           <nav className="route-tabs" aria-label="路线类型">
             <button
               aria-pressed={panel === 'route'}
@@ -975,16 +975,10 @@ export default function Home() {
             >
               轨迹管理
             </button>
-            <button
-              aria-pressed={panel === 'favorites'}
-              onClick={() => setPanel('favorites')}
-            >
-              收藏夹
-            </button>
           </nav>
         )}
         {panel === 'favorites' && (
-          <FavoritesPanel
+          <CollectionsPanel
             favorites={favorites}
             tracks={tracks}
             onRoute={(favorite) => {

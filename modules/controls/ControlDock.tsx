@@ -7,6 +7,7 @@ import {
   Menu,
   Footprints,
   Map as MapIcon,
+  Bookmark,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -28,6 +29,7 @@ const PANELS = [
   { id: 'sources', label: '地图图源', icon: MapIcon },
   { id: 'route', label: '路线', icon: Route },
   { id: 'annotations', label: '标记', icon: MapPinPlus },
+  { id: 'favorites', label: '收藏', icon: Bookmark },
 ] as const;
 
 /** Small map tools with one dismissible popover; never a persistent bottom sheet. */
@@ -54,7 +56,7 @@ export function ControlDock({
     onActive(null);
     root.current
       ?.querySelector<HTMLButtonElement>(
-        `[data-panel-toggle="${active === 'track' || active === 'favorites' ? 'route' : active === 'sources' ? 'tools' : active}"]`,
+        `[data-panel-toggle="${active === 'track' ? 'route' : active === 'sources' ? 'tools' : active}"]`,
       )
       ?.focus({ preventScroll: true });
   };
@@ -96,7 +98,7 @@ export function ControlDock({
                   : active === 'track'
                     ? '轨迹管理'
                     : active === 'favorites'
-                      ? '路线收藏夹'
+                      ? '收藏路线与轨迹'
                       : active === 'route'
                         ? '路线规划'
                         : PANELS.find((p) => p.id === active)?.label}
@@ -113,14 +115,14 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
-                {PANELS.filter((p) => !['tools', 'outdoor'].includes(p.id)).map(
-                  ({ id, label, icon: Icon }) => (
-                    <button key={id} onClick={() => onActive(id)}>
-                      <Icon size={18} />
-                      {id === 'time' ? timeLabel : label}
-                    </button>
-                  ),
-                )}
+                {PANELS.filter(
+                  (p) => !['tools', 'outdoor', 'favorites'].includes(p.id),
+                ).map(({ id, label, icon: Icon }) => (
+                  <button key={id} onClick={() => onActive(id)}>
+                    <Icon size={18} />
+                    {id === 'time' ? timeLabel : label}
+                  </button>
+                ))}
                 <button onClick={() => onActive('outdoor')}>
                   <Footprints size={18} />
                   行程与数据
@@ -137,33 +139,36 @@ export function ControlDock({
       <div className="map-toolbar">
         {summary}
         <nav className="dock-navigation glass" aria-label="地图功能">
-          {[PANELS[0], PANELS.find((p) => p.id === 'route')!, PANELS[1]].map(
-            ({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                data-panel-toggle={id}
-                aria-label={label}
-                aria-expanded={
+          {[
+            PANELS[0],
+            PANELS.find((p) => p.id === 'route')!,
+            PANELS.find((p) => p.id === 'favorites')!,
+            PANELS[1],
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              data-panel-toggle={id}
+              aria-label={label}
+              aria-expanded={
+                active === id || (id === 'route' && active === 'track')
+              }
+              aria-controls={
+                active === id || (id === 'route' && active === 'track')
+                  ? 'map-control-panel'
+                  : undefined
+              }
+              onClick={() =>
+                onActive(
                   active === id || (id === 'route' && active === 'track')
-                }
-                aria-controls={
-                  active === id || (id === 'route' && active === 'track')
-                    ? 'map-control-panel'
-                    : undefined
-                }
-                onClick={() =>
-                  onActive(
-                    active === id || (id === 'route' && active === 'track')
-                      ? null
-                      : id,
-                  )
-                }
-              >
-                <Icon size={16} />
-                <span>{label}</span>
-              </button>
-            ),
-          )}
+                    ? null
+                    : id,
+                )
+              }
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
         </nav>
       </div>
     </section>

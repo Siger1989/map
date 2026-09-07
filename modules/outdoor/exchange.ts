@@ -1,4 +1,12 @@
 import { unzipSync, strFromU8 } from 'fflate';
+import {
+  COLLECTION_STORAGE,
+  entriesFor,
+  parseLayout,
+  validateLayout,
+  type CollectionLayout,
+} from '../collections/data.ts';
+import { mergeCollections } from '../collections/transfer.ts';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import {
   parseSavedTracks,
@@ -22,6 +30,7 @@ export type Transfer = {
   tracks: ManualTrack[];
   annotations: Annotation[];
   favorites: RouteFavorite[];
+  collections?: CollectionLayout;
 };
 export const DATA_CHANGED = 'guanyun-data-changed';
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -55,6 +64,7 @@ export function validateTransfer(v: unknown): Transfer {
   )
     throw new Error('备份含无效轨迹，未导入');
   parseAnnotations(JSON.stringify(data.annotations));
+  if (data.collections !== undefined) validateLayout(data.collections);
   for (const items of [data.tracks, data.annotations, data.favorites])
     if (new Set(items.map((i) => i.id)).size !== items.length)
       throw new Error('文件含重复编号');
@@ -69,6 +79,9 @@ export function collectData(
     tracks: JSON.parse(storage.getItem(TRACK_STORAGE) ?? '[]'),
     annotations: JSON.parse(storage.getItem(ANNOTATION_STORAGE) ?? '[]'),
     favorites: JSON.parse(storage.getItem(FAVORITES_STORAGE) ?? '[]'),
+    ...(storage.getItem(COLLECTION_STORAGE) === null
+      ? {}
+      : { collections: parseLayout(storage.getItem(COLLECTION_STORAGE)) }),
   });
 }
 /** Validate the entire merge before any write, roll back if a quota write fails. */
@@ -76,8 +89,10 @@ export function mergeData(
   incoming: Transfer,
   storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = localStorage,
 ) {
+  validateTransfer(incoming);
   const before = collectData(storage);
-  const merge = <T extends { id: string }>(a: T[], b: T[]) => [
+  const importedKeys = new Map<string, string>();
+  const merge = <T extends { id: string }>(a: T[], b: T[], kind?: string) => [
     ...a,
     ...b
       .filter(
@@ -87,23 +102,37 @@ export function mergeData(
               old.id === v.id && JSON.stringify(old) === JSON.stringify(v),
           ),
       )
-      .map((v) =>
-        a.some((old) => old.id === v.id)
+      .map((v) => {
+        const next = a.some((old) => old.id === v.id)
           ? { ...v, id: crypto.randomUUID() }
-          : v,
-      ),
+          : v;
+        if (kind) importedKeys.set(`${kind}:${v.id}`, `${kind}:${next.id}`);
+        return next;
+      }),
   ];
   const next = validateTransfer({
     ...before,
-    tracks: merge(before.tracks, incoming.tracks),
+    tracks: merge(before.tracks, incoming.tracks, 'track'),
     annotations: merge(before.annotations, incoming.annotations),
-    favorites: merge(before.favorites, incoming.favorites),
+    favorites: merge(before.favorites, incoming.favorites, 'route'),
+    collections: mergeCollections(
+      before.collections,
+      incoming.collections,
+      importedKeys,
+      new Map(
+        entriesFor(incoming.favorites, incoming.tracks).map((e) => [
+          e.key,
+          e.defaultGroup,
+        ]),
+      ),
+    ),
   });
-  const values = [
+  const values: [string, unknown][] = [
     [TRACK_STORAGE, next.tracks],
     [ANNOTATION_STORAGE, next.annotations],
     [FAVORITES_STORAGE, next.favorites],
-  ] as const;
+  ];
+  if (next.collections) values.push([COLLECTION_STORAGE, next.collections]);
   const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
   try {
     for (const [key, data] of values)

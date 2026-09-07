@@ -1,0 +1,227 @@
+.control-dock:has(.collections-panel) .control-popover {
+  max-height: min(56dvh, 440px);
+}
+.control-dock:has(.collections-panel) .dock-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.control-dock:has(.collections-panel) .dock-heading {
+  min-height: 44px;
+}
+.control-dock:has(.collections-panel) .dock-heading .icon-button {
+  width: 44px;
+  height: 44px;
+}
+.collections-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-size: 14px;
+  gap: 5px;
+}
+.collections-panel button,
+.collections-panel select,
+.collections-panel input {
+  min-height: 44px;
+}
+.collections-panel button {
+  background: #ffffff09;
+  border-radius: 6px;
+  color: var(--text);
+}
+.collections-panel button:disabled {
+  opacity: 0.45;
+}
+.collection-actions {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.collection-actions button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 13px;
+}
+.collection-tabs {
+  display: flex;
+  overflow-x: auto;
+  flex-shrink: 0;
+  gap: 5px;
+  padding-bottom: 4px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.collection-tabs button {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+}
+.collection-tabs button[aria-pressed='true'] {
+  border-color: var(--collection-color, var(--accent));
+  background: #ffffff16;
+}
+.collection-tabs i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--collection-color);
+}
+.collection-tabs small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.collection-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.collection-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  border-left: 3px solid var(--collection-color);
+  border-radius: 7px;
+  background: #ffffff06;
+}
+.collections-panel .collection-open {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 6px;
+  background: transparent;
+  text-align: left;
+}
+.collection-open strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.collection-open small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 3px 0;
+}
+.collection-badge {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--collection-color);
+}
+.collections-panel .collection-icon {
+  width: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+}
+.collection-grip {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.collection-row.is-dragging {
+  opacity: 0.6;
+}
+.collections-panel .is-drop-target {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: #9de8c426;
+}
+.collection-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+}
+.collection-status {
+  font-size: 12px;
+  color: var(--accent);
+  margin: 0;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+}
+.collection-status:empty {
+  display: none;
+}
+.collection-empty {
+  font-size: 14px;
+  color: var(--muted);
+  padding: 12px 2px;
+  line-height: 1.6;
+}
+.collection-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.collection-editor > strong {
+  overflow-wrap: anywhere;
+}
+.collection-editor label {
+  display: grid;
+  gap: 5px;
+}
+.collection-editor input,
+.collection-editor select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 8px;
+  background: #183440;
+  color: var(--text);
+  font-size: 16px;
+}
+.collection-editor fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.collection-colors {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+}
+.collection-colors button {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.collection-colors i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.collection-colors span {
+  position: absolute;
+  color: #132d38;
+  font-weight: 800;
+}
+.collection-colors button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.collections-panel .collection-primary {
+  background: var(--accent);
+  color: #10392d;
+  flex-shrink: 0;
+}
+.collections-panel .collection-delete {
+  color: #ffc0a8;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.collection-back {
+  text-align: left;
+  padding: 0 8px;
+  flex-shrink: 0;
+}

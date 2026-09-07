@@ -1,9 +1,6 @@
-import { createRequire } from 'node:module';
+import { browserRuntime } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
-const require = createRequire(import.meta.url),
-  {
-    chromium,
-  } = require('C:/Users/sigeryang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const { chromium } = browserRuntime();
 const timer = setTimeout(() => process.exit(2), 150000),
   browser = await chromium.launch({
     headless: true,
@@ -263,7 +260,7 @@ try {
       3,
     );
     await page.getByRole('button', { name: '清除', exact: true }).click();
-    await page.getByRole('button', { name: '收藏夹', exact: true }).click();
+    await page.getByRole('button', { name: '收藏', exact: true }).click();
     // Restore via the saved route's real button.
     const saved = page.getByRole('button', { name: /锦里.*龙泉驿/ }).first();
     await saved.click();

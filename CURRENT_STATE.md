@@ -1,3 +1,12 @@
+# 当前任务：独立收藏菜单与彩色分组（2026-09-07）
+- 用户要求收藏路线独立菜单、不同分类颜色、自建分组和拖动整理。开始 main 工作区干净，pull --ff-only 确认最新 9dedca3。
+- 范围：新增 modules/collections 独立分类/排序元数据、触屏手柄拖动和编辑面板；ControlDock 增底部收藏入口，app 替换旧列表，移除道路规划内收藏标签；outdoor/exchange 通过独立接口将可选分组信息纳入 JSON 备份。
+- 默认驾车/骑行/步行/实走/导入/手绘六色分类，支持新建、改名/改色、组排序、条目排序与跨组移动，删除分组转未分组。拖动只改整理元数据，路线几何/GPS/照片/标记及导航算法不改；无新依赖。回滚本轮模块和接线即可，旧存档和旧备份保持兼容。
+- 实现与验证已通过：TypeScript、40/40 收藏/备份/路线/导航/安卓返回相关测试；390×844、360×780 实际 Chromium 触摸与鼠标拖动换组/双向排序/取消、分组改名改色与删除保留条目、键盘、边缘自动滚动、存储失败重试、重载、旧路线恢复通过。截图已查看，窗口≤56dvh/440px，44px 操作目标，地图控制/底部天气互不遮挡、无横向溢出或运行错误。日志 .openai/{typecheck-collections-final,tests-collections-final,browser-collections-final}.log。
+- 网页与 Android Java/DEX 完整未签名构建通过；500 项 APK 资源逐项 SHA-256 与 mobile/dist 一致，含收藏菜单/独立元数据/拖动样式。产物 mobile/.build/Shantu-0.2.5-test-unsigned.apk，54008261 字节，SHA-256 bc5f001f1b6c643ac49a875f6d3c2ef209130ce7edab6300dc7bf7a625424204。日志 .openai/{build-web-collections,build-android-collections,verify-collections-apk}.log。原签名限制保持，不可安装、无新 Release，未做安卓真机触控验收。
+- 多途经点道路规划/触摸排序/连续预览/收藏恢复/键盘小屏回归在两种尺寸通过，日志 .openai/browser-route-stops-collections.log；该脚本改用项目可配置 browserRuntime，去掉旧电脑固定路径。localhost:3000 返回 200，最终截图已查看；远程 origin/main 仍为 9dedca3。
+- 文件清单：新增 modules/collections/{data.ts,transfer.ts,useCollections.ts,useCollectionDrag.ts,CollectionsPanel.tsx,GroupEditor.tsx,collections.css}、tests/collections.test.mjs、scripts/verify-collections-browser.mjs、docs/route-collections.md；修改 app/page.tsx、controls/ControlDock.tsx、outdoor/exchange.ts、scripts/verify-route-stops.mjs、README.md 与本状态。删除旧 navigation/FavoritesPanel.tsx 和道路规划内收藏标签；无依赖、包名签名、原路线/轨迹/照片/标记/GPS/天气/地图算法变更。待提交推送 main 并核验远端 SHA。
+
 # 当前任务：规划路线开始导航与偏航接回（2026-09-07）
 - 用户要求开始导航、已走距离、偏离后计算回归原路线的导航路径。工作区干净，pull --ff-only确认d967454最新。
 - 设计：新增独立modules/guidance：路线投影/连续进度与GPS距离过滤、会话与偏航状态、道路接回查询、导航卡片和临时地图叠加层；复用position的前台定位与navigation/provider道路规划。原路线/途经点保留，接回线单独显示；连续可靠定位确认偏航，限频重算，断网/无可通行道路时明确提示。
