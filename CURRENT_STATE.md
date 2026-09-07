@@ -4,7 +4,8 @@
 - 实现完成：已查Photon官方API与演示服务说明，复用1.1秒请求间隔、15分钟/24条内存缓存；12秒超时与网络恢复重试，无结果/失败有明确状态。地区地名与街边店铺名区分，3–7级显示国家/省州，8级起城市/区县，超长名称省略、悬停完整信息，页头给右侧图层入口留位。
 - 验证完成：最终TypeScript、14/14相关地名/导航/路线检查通过；真实Photon请求成都附近返回“成都市 · 灌口街道”，伦敦返回“London · City of Westminster”，携带网页/HTTPS Origin核对CORS返回*。390×844、360×780检查世界总览不查询、两位小数/真实拖动中心通知、缩放地区层级、长名省略/控件无遮挡、旧响应取消、无结果/失败/恢复联网、URL重载、无溢出和运行错误通过，关键中英文截图已查看。日志.openai/{typecheck-place-name-final,tests-place-name,live-place-name,place-name-cors,browser-place-name}.log。
 - 构建通过：网页与Android Java/DEX完整未签名构建成功；500项APK资源与mobile/dist逐项SHA-256一致。mobile/.build/Shantu-0.2.5-test-unsigned.apk为53997340字节，SHA-256 878c4b3c3fa6adcc4e3df918232cc1ff9d9eb50fd64664e420dd4f62e4dc6a4e。日志.openai/{build-web-place-name,build-android-place-name,verify-place-name-apk}.log。无可安装新包/Release，原签名限制与未做安卓真机验收保持。
-- 文件清单：新增navigation/{placeName.ts,usePlaceName.ts}、controls/PlaceName.tsx、tests/place-name.test.mjs、docs/current-place.md；修改navigation/provider.ts、TerrainMap.tsx、app/page.tsx、controls/workspace.css、README.md、本状态文件。无文件删除或新增依赖，原轨迹/照片/GPS/地图算法与存储保持。远程main无新增提交，待同步本轮成果。
+- 文件清单：新增navigation/{placeName.ts,usePlaceName.ts}、controls/PlaceName.tsx、tests/place-name.test.mjs、docs/current-place.md；修改navigation/provider.ts、TerrainMap.tsx、app/page.tsx、controls/workspace.css、README.md、本状态文件。无文件删除或新增依赖，原轨迹/照片/GPS/地图算法与存储保持。
+- 源码已同步：功能提交75ef5c89db30f7953ed1dfc6a8dd6ffd2cac37a8已推送origin/main，git ls-remote核验一致，日志.openai/sync-place-name.log。状态收尾单独提交，最终SHA见.openai/sync-place-name-final.log。
 
 # 当前任务：模型名称贴近与3D控制杆常驻（2026-09-07）
 - 用户反馈添加标记名称离模型太远、3D控制杆消失；工作区干净，pull --ff-only确认e5d1c69为最新。
