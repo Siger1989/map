@@ -3,6 +3,7 @@ import type { RouteFavorite } from './favorites';
 import type { RouteFavoritesState } from './useRouteFavorites';
 import type { ManualTracksState } from '../tracks/useManualTracks';
 import { trackDistance } from '../tracks/drawing';
+import { trackSourceLabel } from '../tracks/provenance';
 export function FavoritesPanel({
   favorites: f,
   tracks,
@@ -48,16 +49,19 @@ export function FavoritesPanel({
         </p>
       )}
       <strong className="journey-subtitle">
-        手绘线路 · {tracks.saved.length}/20
+        已保存轨迹 · {tracks.saved.length}/20
       </strong>
       {!tracks.saved.length && (
-        <p className="route-note">手绘线路保存后也会列在这里。</p>
+        <p className="route-note">实走、导入与手绘轨迹保存后都列在这里。</p>
       )}
       {tracks.saved.map((track) => (
         <div className="track-saved" key={track.id}>
           <button className="track-open" onClick={() => onTrack(track.id)}>
             <strong>{track.name}</strong>
-            <small>{formatDistance(trackDistance(track.segments))}</small>
+            <small>
+              {trackSourceLabel(track)} ·{' '}
+              {formatDistance(trackDistance(track.segments))}
+            </small>
           </button>
         </div>
       ))}

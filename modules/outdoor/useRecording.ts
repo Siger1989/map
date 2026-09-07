@@ -13,6 +13,7 @@ declare global {
       record(command: string): void;
       recordState(): string;
       saveFile(name: string, mime: string, text: string): void;
+      photoFolders?(): boolean;
     };
   }
 }

@@ -14,6 +14,7 @@ final class NativeBridge {
     private String pending;
     NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files; }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
+    @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public void saveFile(String name,String mime,String text) { activity.runOnUiThread(()->{ if(activity.trustedForeground())files.save(name,mime,text); }); }
     @JavascriptInterface public void record(String action) {
         if (!java.util.Arrays.asList("start","resume","pause","finish","clear").contains(action)) return;

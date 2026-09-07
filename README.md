@@ -2,6 +2,8 @@
 
 当前测试版 **0.2.4-test / versionCode 11**（2026-09-07）。手机优先，尽量把屏幕留给地图；原绿色模型与圆环 3D 控制器默认显示，剖面功能停用。
 
+当前源码另含 **0.2.5 待签名修复**：实走存档来源与时间保护、照片轨迹选择、整文件夹导入。没有发布新版 APK，以下链接仍是 0.2.4；见 [修复与构建状态](docs/recording-photos-fix.md)。
+
 [直接下载 APK](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图

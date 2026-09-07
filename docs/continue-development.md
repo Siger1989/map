@@ -56,7 +56,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -S
 
 上面的路径只是示例；脚本默认的 `D:\GodotAndroid\...` 是当前开发机器路径。构建产物在 `APK/`，临时构建目录在 `mobile/.build/`。
 
-**签名密钥不会进 GitHub。** 测试签名位于各自构建电脑的 `mobile/.build/guanyun-test.jks`。若希望另一台电脑构建的包也能覆盖更新同一版本系列，请通过自己的可信私密方式迁移对应文件。0.1.4-test 的签名为本机新建，只用于独立测试版；0.1.3 及更早的原“观云”仍需原电脑的旧签名。没有对应文件时脚本会生成新签名，新签名不能直接覆盖旧签名安装；不要为此先卸载而丢失本机轨迹。
+**签名密钥不会进 GitHub。** 0.1.4 起测试版原签名位于生成这些版本的电脑 `mobile/.build/guanyun-test.jks`。另一台电脑要覆盖更新同一系列，需要通过可信私密方式迁移原文件，可用环境变量 `GUANYUN_SIGNING_KEY` 或构建参数 `-SigningKey` 指定路径。构建现在根据 `config/android-signing.json` 的公开证书指纹检查一致性；缺少原密钥或指纹不同会停止，不再生成替代签名。`-UnsignedOnly` 可检查全部编译及资产，产物位于 `mobile/.build`，不能安装。0.1.3 及更早的原“观云”使用不同签名；不要卸载旧应用来绕过签名问题，以免丢失本机轨迹及照片。
 
 地图地质服务的 `.env.local` 同样不上传。普通原型运行无需它；1:20万地质云配置与授权步骤见 `docs/geocloud-integration.md`。
 

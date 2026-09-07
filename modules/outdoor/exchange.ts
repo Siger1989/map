@@ -175,6 +175,7 @@ export async function parseFile(file: File): Promise<Transfer> {
       id: crypto.randomUUID(),
       name,
       createdAt: Date.now(),
+      source: doc.documentElement.localName === 'gpx' ? 'gpx' : 'kml',
       segments,
     });
   };

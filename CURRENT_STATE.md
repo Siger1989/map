@@ -1,3 +1,17 @@
+# 当前任务：实走存档分类与照片文件夹导入（2026-09-07）
+- 用户反馈：实走保存后显示为手绘，照片页不能选择；照片选择器没有文件夹入口。
+- 已定位：列表标题统一写成手绘；续画保存重建对象时丢失 samples，反向/合并也可能破坏时间点对应；照片页 preferred/target 无效时未回退。正常“保存到轨迹”路径本身包含时间。
+- 修改范围：tracks 分类与原始记录保护、outdoor 保存接口、photos 轨迹选择/文件夹导入、Android AppFiles 目录选择；仅通过公共类型/props 接线。地形、天气、地质和路线计算不改；旧草稿继续保留在 stash。
+- 验证计划：保存后重载/照片匹配、旧格式、手绘副本不破坏原始记录、目录筛选/限额/取消；390×844 与 360×780 界面、类型检查、全套测试和构建。只保留关键截图及 .openai 日志。
+- 当前限制：本机缺少 0.2.4 使用的签名文件，现有证书不同，已询问文件路径；不得声称新包可覆盖安装。ADB 无设备。
+- 实现完成：新增 tracks/provenance、outdoor/savedRecording、photos/PhotoPicker/selection 和 Android PhotoDirectory；记录保存读回确认后再清理检查点并进入照片页，旧 samples 兼容，原始记录节点保护/手绘副本、失效选择回退、目录递归筛选及数量限制已接通。未删除业务文件。
+- 逻辑验证：TypeScript 与 132/132 测试通过；新增保存/重载/真实时间对齐、缺时间与暂停、存储失败/静默写失败、旧轨迹及目录过滤/200张限制测试。浏览器两尺寸回归正在执行，尚未声称安卓目录实机可用。
+- 签名核查：本机 mobile/.build/guanyun-test.jks 证书为 4a941b9d…，已发布 0.2.4 为 a3aa453c…；已查项目/下载/开发目录，没有同证书的本机密钥。新增 config/android-signing.json 固定预览包名及公开证书指纹；build-android.ps1 支持 SigningKey / GUANYUN_SIGNING_KEY 并拒绝缺失/不匹配证书，已实际验证阻止错误签名。UnsignedOnly 仅用于完整编译与资产验证，不是可安装交付。
+- 最终功能验证：TypeScript、132/132 逻辑测试、390×844/360×780 保存→重载→照片匹配→手绘副本→原始记录一致全部 PASS；原照片 EXIF/校时/去重/重载/聚合/显隐/移除两尺寸回归 PASS。安卓目录桥 Java 编译 PASS，浏览器真实文件夹导入 PASS；原生系统选择器仍缺真机验收。
+- 界面检查：查看 recording-photo-picker-360-780、recording-photos-360-780、recording-preserved-390-844 等关键截图。初查目录选择落入滚动区域，已改为并排44px入口，两尺寸最终回归通过；无横向溢出、原3D控制器可见。截图在 artifacts/screenshots，未入 Git。
+- 构建：网页与完整安卓未签名构建 PASS；489 项静态资源逐项SHA-256对应（含473张地形）。产物 mobile/.build/Guanyun-0.2.5-test-unsigned.apk 不能安装，不是发布包。错误证书拒签回归PASS。日志 .openai/{typecheck-record-photos-final,tests-record-photos-final,browser-record-photos-compact-025,browser-existing-photos-025,build-web-record-photos-final,build-android-record-photos-final,verify-unsigned-apk-025,signing-guard-025}.log。
+- 交付限制：源码修复完成，准备同步 main；0.2.5-test/code12 仍待原签名打包，没有新 Release，也没有替换 0.2.4。原签名电脑拉取后可直接按既有命令构建；本机不能从公开证书或APK还原私钥。原始地形、天气、地质、卫星和路线计算不变，无业务文件删除，无密钥/本机数据/旧草稿上传。
+
 # 当前任务：轨迹时间匹配相册照片（2026-09-07）
 - 当前目标：选择手机照片，按拍摄时间匹配已有实走/带时间 GPX 轨迹，地图缩略图与预览，打包并同步 GitHub。
 - 当前进展：photos 模块已接通 EXIF 原始时间/时区解析、同段两分钟内估算匹配、逐张时间/整体分钟校正、IndexedDB 去重存储、地图小图聚合与查看/移除。Android 文件选择器按类型与多选模式返回所选 URI，不申请整库相册权限；新增照片预览返回键处理。

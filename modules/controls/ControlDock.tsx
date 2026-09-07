@@ -98,7 +98,7 @@ export function ControlDock({
                 : active === 'weather'
                   ? '地点天气'
                   : active === 'track'
-                    ? '手绘轨迹'
+                    ? '轨迹管理'
                     : active === 'favorites'
                       ? '路线收藏夹'
                       : active === 'route'

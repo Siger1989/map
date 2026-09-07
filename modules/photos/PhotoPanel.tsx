@@ -3,6 +3,13 @@ import type { ManualTrack } from '../tracks/drawing';
 import { localPhotoInput, matchPhoto } from './matching';
 import { readPhoto, type PhotoDraft } from './import';
 import type { useTripPhotos } from './useTripPhotos';
+import { PhotoPicker } from './PhotoPicker';
+import { selectPhotoFiles } from './selection';
+import {
+  hasTrackTime,
+  photoTrackChoice,
+  trackSourceLabel,
+} from '../tracks/provenance';
 
 function DraftImage({ blob, name }: { blob: Blob; name: string }) {
   const [url, setUrl] = useState('');
@@ -24,16 +31,18 @@ export function PhotoPanel({
   photos: ReturnType<typeof useTripPhotos>;
   onOpen: (id: string) => void;
 }) {
-  const timed = tracks.filter((t) =>
-    t.samples?.some((s) => s.some((p) => p.time !== null)),
-  );
+  const timed = tracks.filter(hasTrackTime);
   const [target, setTarget] = useState(preferred ?? timed[0]?.id ?? '');
-  const track =
-    timed.find((t) => t.id === target) ?? (!target ? timed[0] : undefined);
   const [drafts, setDrafts] = useState<PhotoDraft[]>([]),
     [shift, setShift] = useState(0);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
+  const track = photoTrackChoice(
+    tracks,
+    target,
+    preferred,
+    drafts.length > 0 || busy,
+  );
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
@@ -53,6 +62,40 @@ export function PhotoPanel({
     [drafts, shift, track],
   );
   const count = matches.filter((p) => p.match).length;
+  const loadFiles = async (selected: File[], folder: boolean) => {
+    let files: File[];
+    try {
+      files = selectPhotoFiles(selected, folder);
+    } catch (error) {
+      setMessage((error as Error).message);
+      return;
+    }
+    if (track) setTarget(track.id);
+    setBusy(true);
+    setDrafts([]);
+    setShift(0);
+    setMessage('正在读取拍摄时间和生成预览…');
+    const next: PhotoDraft[] = [],
+      failed: string[] = [];
+    for (const file of files) {
+      if (!active.current) return;
+      try {
+        next.push(await readPhoto(file));
+      } catch (error) {
+        failed.push(
+          `${file.name}：${error instanceof Error ? error.message : '无法解码，请选择 JPEG 原片'}`,
+        );
+      }
+    }
+    if (!active.current) return;
+    setDrafts(next);
+    setBusy(false);
+    setMessage(
+      failed.length
+        ? failed.join('；')
+        : `已读取 ${next.length} 张照片，请检查匹配结果`,
+    );
+  };
   return (
     <div className="photo-panel">
       <div className="photo-choose" hidden={drafts.length > 0}>
@@ -65,61 +108,21 @@ export function PhotoPanel({
             aria-label="照片匹配轨迹"
           >
             {!track && <option value="">请选择带时间的轨迹</option>}
-            {timed.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            {tracks.map((t) => (
+              <option key={t.id} value={t.id} disabled={!hasTrackTime(t)}>
+                {t.name} · {trackSourceLabel(t)}
+                {!hasTrackTime(t) ? '（无时间，不能匹配）' : ''}
               </option>
             ))}
           </select>
         </label>
-        <label className="import-file">
-          选择行程照片
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-            multiple
-            disabled={busy || !track}
-            onChange={async (e) => {
-              const files = Array.from(e.target.files ?? []);
-              e.target.value = '';
-              if (!files.length) return;
-              if (files.length > 30) {
-                setMessage('每次最多选择 30 张，请分批添加');
-                return;
-              }
-              if (track) setTarget(track.id);
-              setBusy(true);
-              setDrafts([]);
-              setShift(0);
-              setMessage('正在读取拍摄时间和生成预览…');
-              const next: PhotoDraft[] = [],
-                failed: string[] = [];
-              for (const file of files) {
-                if (!active.current) return;
-                try {
-                  next.push(await readPhoto(file));
-                } catch (error) {
-                  failed.push(
-                    `${file.name}：${error instanceof Error ? error.message : '无法解码，请选择 JPEG 原片'}`,
-                  );
-                }
-              }
-              if (!active.current) return;
-              setDrafts(next);
-              setBusy(false);
-              setMessage(
-                failed.length
-                  ? failed.join('；')
-                  : '已读取拍摄时间，请检查匹配结果',
-              );
-            }}
-          />
-        </label>
+        <PhotoPicker disabled={busy || !track} onFiles={loadFiles} />
       </div>
       {!timed.length && (
         <p className="route-note">
           先保存一次实走记录，或导入含时间的
-          GPX。手绘线和普通道路规划没有真实拍摄时间轴。
+          GPX。无时间的旧轨迹无法自动定位照片；若有原始 GPX
+          可重新导入，普通手绘线不能补出真实拍摄时间轴。
         </p>
       )}
       {!!drafts.length && (

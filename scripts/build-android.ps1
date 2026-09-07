@@ -1,7 +1,9 @@
 ﻿param(
   [string]$SdkRoot = 'D:\GodotAndroid\sdk',
   [string]$JdkRoot = 'D:\GodotAndroid\jdk-17-portable\jdk-17.0.19+10',
-  [switch]$SkipWebBuild
+  [switch]$SkipWebBuild,
+  [string]$SigningKey = $env:GUANYUN_SIGNING_KEY,
+  [switch]$UnsignedOnly
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -28,6 +30,19 @@ function Native-Path([string]$path) {
 }
 Push-Location -LiteralPath $projectRoot
 try {
+  [xml]$manifest = Get-Content -LiteralPath (Join-Path $androidRoot 'AndroidManifest.xml') -Raw -Encoding UTF8
+  $signing = Get-Content -LiteralPath (Join-Path $projectRoot 'config\android-signing.json') -Raw | ConvertFrom-Json
+  if ($manifest.manifest.package -ne $signing.package) { throw 'Package does not match the configured signing identity' }
+  if ($UnsignedOnly) { $outputRoot = $buildRoot }
+  New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
+  $keyStore = if ($SigningKey) { [IO.Path]::GetFullPath($SigningKey) } else { Join-Path $buildRoot 'guanyun-test.jks' }
+  if (!$UnsignedOnly) {
+    if (!(Test-Path -LiteralPath $keyStore)) { throw 'Matching signing key is missing. Set GUANYUN_SIGNING_KEY or use -SigningKey. Do not generate a replacement key for this package.' }
+    $publicCertificate = Join-Path $buildRoot 'signing-certificate.der'
+    & $keytoolExe -exportcert -keystore $keyStore -storepass android -alias guanyun-test -file $publicCertificate; Check-Tool 'Signing certificate export'
+    $certificateHash = (Get-FileHash -LiteralPath $publicCertificate -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($certificateHash -ne $signing.certificateSha256) { throw 'Signing certificate does not match the published preview APK. Build stopped to protect in-place updates. Supply the original signing key, or use -UnsignedOnly for a non-installable build check.' }
+  }
   if (!$SkipWebBuild) { & npm.cmd run build:android:web; Check-Tool 'Web build' }
   if (!(Test-Path -LiteralPath (Join-Path $webRoot 'index.html'))) { throw 'Mobile entry point missing' }
   foreach ($dir in @($stage, $outputRoot, (Join-Path $stage 'classes'), (Join-Path $stage 'dex'), (Join-Path $stage 'generated'), (Join-Path $webRoot 'native'))) {
@@ -65,20 +80,16 @@ try {
   & $jarExe uf $baseApk -C (Join-Path $stage 'dex') classes.dex; Check-Tool 'DEX packaging'
   & (Join-Path $toolRoot 'zipalign.exe') -p -f 4 (Native-Path $baseApk) (Native-Path $alignedApk); Check-Tool 'APK alignment'
 
-  # A project-local test certificate, separate from any existing game or release keys.
-  $keyStore = Join-Path $buildRoot 'guanyun-test.jks'
-  if (!(Test-Path -LiteralPath $keyStore)) {
-    & $keytoolExe -genkeypair -keystore $keyStore -storepass android -keypass android -alias guanyun-test -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Guanyun Local Test' -noprompt
-    Check-Tool 'Test signing key'
-  }
-  [xml]$manifest = Get-Content -LiteralPath (Join-Path $androidRoot 'AndroidManifest.xml') -Raw -Encoding UTF8
   $versionName = $manifest.manifest.GetAttribute('versionName', 'http://schemas.android.com/apk/res/android')
   if ($versionName -notmatch '^[0-9A-Za-z.-]+$') { throw 'Invalid APK version name' }
-  $apkName = "Guanyun-$versionName.apk"
+  $apkName = if ($UnsignedOnly) { "Guanyun-$versionName-unsigned.apk" } else { "Guanyun-$versionName.apk" }
   $apk = Join-Path $outputRoot $apkName
   $signer = Join-Path $toolRoot 'lib\apksigner.jar'
-  & $javaExe -jar $signer sign --ks $keyStore --ks-key-alias guanyun-test --ks-pass pass:android --key-pass pass:android --out $apk $alignedApk; Check-Tool 'APK signing'
-  & $javaExe -jar $signer verify --verbose --print-certs $apk; Check-Tool 'Signature verification'
+  if ($UnsignedOnly) { Copy-Item -LiteralPath $alignedApk -Destination $apk }
+  else {
+    & $javaExe -jar $signer sign --ks $keyStore --ks-key-alias guanyun-test --ks-pass pass:android --key-pass pass:android --out $apk $alignedApk; Check-Tool 'APK signing'
+    & $javaExe -jar $signer verify --verbose --print-certs $apk; Check-Tool 'Signature verification'
+  }
   & $aapt dump badging (Native-Path $apk); Check-Tool 'Manifest verification'
 
   Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -98,7 +109,8 @@ try {
   $apkStream = [IO.File]::OpenRead($apk)
   try { $digest = [BitConverter]::ToString($hashAlgorithm.ComputeHash($apkStream)).Replace('-', '') }
   finally { $apkStream.Dispose(); $hashAlgorithm.Dispose() }
-  [IO.File]::WriteAllText((Join-Path $outputRoot "Guanyun-$versionName.sha256"), "$digest  $apkName`n", (New-Object System.Text.UTF8Encoding($false)))
-  Write-Output "APK: $apk"
+  [IO.File]::WriteAllText((Join-Path $outputRoot ($apkName -replace '\.apk$', '.sha256')), "$digest  $apkName`n", (New-Object System.Text.UTF8Encoding($false)))
+  if ($UnsignedOnly) { Write-Output "Unsigned build only (not installable): $apk" }
+  else { Write-Output "APK: $apk" }
   Write-Output "Bytes: $((Get-Item -LiteralPath $apk).Length)"
 } finally { Pop-Location }

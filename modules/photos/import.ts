@@ -1,4 +1,5 @@
 import { photoTime } from './matching';
+import { imageMime } from './selection';
 export type PhotoDraft = {
   hash: string;
   name: string;
@@ -8,8 +9,9 @@ export type PhotoDraft = {
 };
 export async function readPhoto(file: File): Promise<PhotoDraft> {
   if (file.size > 20 * 1024 * 1024) throw new Error('照片超过 20 MB');
-  if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(file.type))
-    throw new Error('请选择 JPEG、PNG、WebP 或设备可解码的 HEIC 照片');
+  const mime = imageMime(file);
+  if (!mime) throw new Error('请选择 JPEG、PNG、WebP 或设备可解码的 HEIC 照片');
+  if (file.type !== mime) file = new File([file], file.name, { type: mime });
   const buffer = await file.arrayBuffer();
   const { parse } = await import('exifr');
   let meta: Record<string, unknown> | undefined;

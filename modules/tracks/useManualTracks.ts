@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { coordinate, type Coordinate } from '../navigation/types';
+import { keepsOriginalPoints } from './provenance';
 import {
   DRAFT_ID,
   equalCoordinate,
@@ -41,6 +42,7 @@ export function useManualTracks() {
   const [mode, setMode] = useState<DrawingMode>('freehand');
   const [anchor, setAnchor] = useState<Coordinate | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [copyName, setCopyName] = useState<string | null>(null);
   const [selectedId, select] = useState<string | null>(null);
   const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
   const [snapping, setSnapping] = useState(true);
@@ -125,6 +127,7 @@ export function useManualTracks() {
     anchor,
     setAnchor,
     editingId,
+    draftName: copyName,
     selectedId,
     select,
     nodeUndoId: nodeHistory.at(-1)?.id ?? null,
@@ -143,6 +146,7 @@ export function useManualTracks() {
       const track = saved.find((t) => t.id === node.trackId);
       if (
         !track ||
+        keepsOriginalPoints(track) ||
         track.id === editingId ||
         !track.segments.some((line) =>
           line.some((p) => equalCoordinate(p, node.coordinate)),
@@ -247,6 +251,7 @@ export function useManualTracks() {
       setAnchor(next.segments.at(-1)?.at(-1) ?? null);
     },
     clearDraft: () => {
+      setCopyName(null);
       select(editingId);
       setDraftState(EMPTY_DRAFT);
       setAnchor(null);
@@ -260,6 +265,9 @@ export function useManualTracks() {
       }
       const track = saved.find((t) => t.id === id);
       if (!track) return false;
+      setCopyName(
+        keepsOriginalPoints(track) ? `${track.name} · 手绘副本` : null,
+      );
       setDraftState({
         segments: track.segments,
         kinds: track.segments.map(() => 'freehand'),
@@ -269,7 +277,8 @@ export function useManualTracks() {
       });
       select(DRAFT_ID);
       setNodeHistory([]);
-      setEditingId(id);
+      // Editing a recorded/imported time series starts a copy; its original stays immutable.
+      setEditingId(keepsOriginalPoints(track) ? null : id);
       setAnchor(track.segments.at(-1)?.at(-1) ?? null);
       setMode('freehand');
       setStyle(normalizeTrackStyle(track.style));
@@ -297,9 +306,11 @@ export function useManualTracks() {
         name:
           name.trim().slice(0, 60) ||
           prior?.name ||
+          copyName ||
           `手绘轨迹 ${new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`,
         segments: joinSegments(draftState.segments),
         createdAt: prior?.createdAt ?? Date.now(),
+        source: 'manual',
         style,
         nodes: vertices.slice(0, MAX_TRACK_POINTS),
       };
@@ -313,6 +324,7 @@ export function useManualTracks() {
         return false;
       setDraftState(EMPTY_DRAFT);
       select(track.id);
+      setCopyName(null);
       setEditingId(null);
       setAnchor(null);
       setError('');
@@ -327,6 +339,7 @@ export function useManualTracks() {
       }
     },
     reverseTrack: (id: string) => {
+      if (saved.some((t) => t.id === id && keepsOriginalPoints(t))) return;
       if (
         persist(
           saved.map((track) =>
@@ -345,8 +358,11 @@ export function useManualTracks() {
     },
     mergeTrack: (id: string) => {
       const seed = saved.find((t) => t.id === id);
-      if (!seed) return;
-      const connected = connectedTracks(seed, saved),
+      if (!seed || keepsOriginalPoints(seed)) return;
+      const connected = connectedTracks(
+          seed,
+          saved.filter((t) => !keepsOriginalPoints(t)),
+        ),
         segments = joinSegments(connected.flatMap((t) => t.segments));
       if (connected.length < 2) {
         setError('没有端点相接的已保存线路；先开启吸附将端点接上。');

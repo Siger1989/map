@@ -1,9 +1,6 @@
-import { createRequire } from 'node:module';
+import { browserRuntime } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
-const require = createRequire(import.meta.url),
-  {
-    chromium,
-  } = require('C:/Users/sigeryang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const { chromium } = browserRuntime();
 const timer = setTimeout(() => process.exit(2), 150000);
 const browser = await chromium.launch({
   headless: true,
@@ -73,7 +70,7 @@ try {
       await page.getByRole('button', { name: '照片', exact: true }).click();
     };
     await open();
-    const choose = page.locator('.photo-panel input[type=file]');
+    const choose = page.locator('.photo-panel input[type=file]').first();
     await choose.setInputFiles([
       'tests/fixtures/photos/timed.jpg',
       'tests/fixtures/photos/timed-second.jpg',

@@ -1,5 +1,6 @@
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
+import { keepsOriginalPoints } from './provenance.ts';
 
 export type TrackNode = { trackId: string; coordinate: Coordinate };
 export const DRAFT_ID = 'draft';
@@ -22,6 +23,7 @@ export function moveTrackNode(
   from: Coordinate,
   to: Coordinate,
 ): ManualTrack {
+  if (keepsOriginalPoints(track)) return track;
   return {
     ...track,
     segments: moveSegmentsNode(track.segments, from, to),

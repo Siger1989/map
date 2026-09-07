@@ -11,6 +11,7 @@ export type ManualTrack = {
   segments: Coordinate[][];
   createdAt: number;
   style?: TrackStyle;
+  source?: 'recorded' | 'gpx' | 'kml' | 'manual';
   samples?: { time: number | null; altitude: number | null }[][];
   nodes?: Coordinate[];
 };
@@ -52,6 +53,8 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         typeof v.id === 'string' &&
         typeof v.name === 'string' &&
         Number.isFinite(v.createdAt) &&
+        (v.source === undefined ||
+          ['recorded', 'gpx', 'kml', 'manual'].includes(v.source)) &&
         (v.nodes === undefined ||
           (Array.isArray(v.nodes) &&
             v.nodes.length <= MAX_TRACK_POINTS &&

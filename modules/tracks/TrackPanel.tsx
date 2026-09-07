@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
 import { trackDistance } from './drawing';
+import {
+  keepsOriginalPoints,
+  trackSourceLabel,
+  hasTrackTime,
+} from './provenance';
 import { TrackStyleControls } from './TrackStyleControls';
 import { normalizeTrackStyle } from './style';
 import type { ManualTracksState } from './useManualTracks';
@@ -16,7 +21,7 @@ export function TrackPanel({
   onShow: (points: Coordinate[]) => void;
   onEditNodes: (id: string) => void;
 }) {
-  const [name, setName] = useState('');
+  const [name, setName] = useState(t.draftName ?? '');
   const details = t.selectedId,
     setDetails = t.select;
   const section = useRef<HTMLElement>(null);
@@ -30,9 +35,9 @@ export function TrackPanel({
     return () => cancelAnimationFrame(frame);
   }, [details]);
   return (
-    <section ref={section} className="track-panel" aria-label="手绘轨迹">
+    <section ref={section} className="track-panel" aria-label="轨迹管理">
       <p className="route-note">
-        点地图上的线路查看详情。完成绘制后，长按圆形节点约半秒可拖动；放大地图可调整更多节点。
+        点线路查看详情。实走与带时间轨迹保留原始记录；需要改线时，可复制为手绘。
       </p>
       <div className="route-tabs" aria-label="绘制方式">
         <button
@@ -164,7 +169,10 @@ export function TrackPanel({
               }}
             >
               <strong>{track.name}</strong>
-              <small>{formatDistance(trackDistance(track.segments))}</small>
+              <small>
+                {trackSourceLabel(track)} ·{' '}
+                {formatDistance(trackDistance(track.segments))}
+              </small>
             </button>
             <button
               className="track-delete"
@@ -177,8 +185,13 @@ export function TrackPanel({
           </div>
           <div className="route-edit-actions">
             <button
-              disabled={t.editingId === track.id}
+              disabled={keepsOriginalPoints(track) || t.editingId === track.id}
               onClick={() => onEditNodes(track.id)}
+              title={
+                keepsOriginalPoints(track)
+                  ? '原始记录受保护，请先复制为手绘'
+                  : undefined
+              }
             >
               调整节点
             </button>
@@ -190,12 +203,17 @@ export function TrackPanel({
             <button
               onClick={() => {
                 if (t.continueTrack(track.id)) {
+                  setName(
+                    keepsOriginalPoints(track)
+                      ? `${track.name} · 手绘副本`
+                      : track.name,
+                  );
                   setDetails(null);
                   onDraw();
                 }
               }}
             >
-              续画
+              {keepsOriginalPoints(track) ? '复制为手绘' : '续画'}
             </button>
           </div>
           {details === track.id && (
@@ -214,15 +232,24 @@ export function TrackPanel({
                 />
               </label>
               <p className="route-note">
+                {trackSourceLabel(track)}
+                {hasTrackTime(track) ? ' · 可匹配照片' : ' · 无拍摄时间轴'}
+                <br />
                 {track.segments.length} 段 ·{' '}
                 {track.segments.reduce((n, line) => n + line.length, 0)} 个节点
                 <br />
                 创建于 {new Date(track.createdAt).toLocaleString('zh-CN')}
                 <br />
-                长按移动后自动保存到本机，可撤销最近的节点移动。
+                {keepsOriginalPoints(track)
+                  ? '原始坐标和时间受保护；重命名或改线条样式不会改变记录。'
+                  : '长按移动后自动保存到本机，可撤销最近的节点移动。'}
               </p>
               <button
-                disabled={t.nodeUndoId !== track.id || t.editingId === track.id}
+                disabled={
+                  keepsOriginalPoints(track) ||
+                  t.nodeUndoId !== track.id ||
+                  t.editingId === track.id
+                }
                 onClick={t.undoNodeMove}
               >
                 撤销节点移动
@@ -240,13 +267,13 @@ export function TrackPanel({
           {details === track.id && (
             <div className="route-edit-actions">
               <button
-                disabled={!!t.draft.length}
+                disabled={keepsOriginalPoints(track) || !!t.draft.length}
                 onClick={() => t.reverseTrack(track.id)}
               >
                 交换起终点
               </button>
               <button
-                disabled={!!t.draft.length}
+                disabled={keepsOriginalPoints(track) || !!t.draft.length}
                 onClick={() => t.mergeTrack(track.id)}
               >
                 合并相接线路

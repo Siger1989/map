@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
+import { recordingTrack } from '@/modules/outdoor/savedRecording';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
@@ -105,15 +106,7 @@ export default function Home() {
     if (!record.id || !record.segments.some((s) => s.length))
       return tracks.saved;
     return [
-      {
-        id: record.id,
-        name: '当前实走记录',
-        createdAt: record.startedAt,
-        segments: record.segments.map((s) => s.map((p) => p.coordinates)),
-        samples: record.segments.map((s) =>
-          s.map((p) => ({ time: p.time, altitude: p.altitude })),
-        ),
-      },
+      { ...recordingTrack(record, true), name: '当前实走记录' },
       ...tracks.saved.filter((t) => t.id !== record.id),
     ];
   }, [tracks.saved, recorder.record]);
@@ -751,6 +744,7 @@ export default function Home() {
         {panel === 'outdoor' && (
           <OutdoorPanel
             recorder={recorder}
+            onSavedTrack={tracks.select}
             photos={
               <PhotoPanel
                 tracks={photoTracks}
@@ -821,7 +815,7 @@ export default function Home() {
               aria-pressed={panel === 'track'}
               onClick={() => setPanel('track')}
             >
-              手绘轨迹
+              轨迹管理
             </button>
             <button
               aria-pressed={panel === 'favorites'}

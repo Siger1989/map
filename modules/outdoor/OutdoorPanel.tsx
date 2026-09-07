@@ -13,6 +13,7 @@ import {
 } from './exchange';
 import type { useRecording } from './useRecording';
 import type { useOffline } from './useOffline';
+import { recordingTransfer, saveRecording } from './savedRecording';
 export function OutdoorPanel({
   recorder,
   offline,
@@ -21,6 +22,7 @@ export function OutdoorPanel({
   onShow,
   onOpenMap,
   photos,
+  onSavedTrack,
 }: {
   recorder: ReturnType<typeof useRecording>;
   offline: ReturnType<typeof useOffline>;
@@ -29,6 +31,7 @@ export function OutdoorPanel({
   onShow: (points: Coordinate[]) => void;
   onOpenMap: () => void;
   photos: ReactNode;
+  onSavedTrack: (id: string) => void;
 }) {
   const [tab, setTab] = useState<'record' | 'files' | 'offline' | 'photos'>(
       'record',
@@ -54,23 +57,7 @@ export function OutdoorPanel({
       setMessage((e as Error).message);
     }
   };
-  const recordingData = (): Transfer => ({
-    format: 'guanyun-backup',
-    version: 1,
-    tracks: [
-      {
-        id: record.id,
-        name: `实走 ${new Date(record.startedAt).toLocaleString('zh-CN')}`,
-        createdAt: record.startedAt,
-        segments,
-        samples: record.segments
-          .filter((s) => s.length >= 2)
-          .map((s) => s.map((p) => ({ time: p.time, altitude: p.altitude }))),
-      },
-    ],
-    annotations: [],
-    favorites: [],
-  });
+  const recordingData = () => recordingTransfer(record);
   return (
     <div className="outdoor-panel">
       <nav className="route-tabs" aria-label="行程工具">
@@ -140,8 +127,10 @@ export function OutdoorPanel({
                     disabled={!segments.length}
                     onClick={() =>
                       act(() => {
-                        mergeData(recordingData());
+                        const saved = saveRecording(record);
+                        onSavedTrack(saved.id);
                         command('clear');
+                        setTab('photos');
                       })
                     }
                   >
