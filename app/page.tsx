@@ -18,7 +18,7 @@ import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
-import { PlaceName } from '@/modules/controls/PlaceName';
+import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -747,7 +747,24 @@ export default function Home() {
           </span>
           <h1>{PRODUCT_NAME}</h1>
         </div>
-        <PlaceName center={mapCenter} zoom={view.zoom} />
+        <PlaceSearch
+          center={mapCenter}
+          zoom={view.zoom}
+          onOpen={() => {
+            setPanel(null);
+            photos.setSelected(null);
+            tracks.pause();
+          }}
+          onSelect={(place) => {
+            setPanel(null);
+            follow.pause();
+            position.free();
+            navigation.setPicking(null);
+            annotations.setPicking(null);
+            setQuickAdd(null);
+            map.current?.focusPoint(place.coordinates, 14);
+          }}
+        />
         <span className="map-load-status" role="status">
           {mapStatus}
         </span>

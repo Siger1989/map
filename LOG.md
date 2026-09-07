@@ -1,3 +1,8 @@
+# 2026-09-07 顶部地点搜索
+- 新增PlaceSearch，复用现有Photon searchPlaces服务；500ms延迟、中文组合输入保护、AbortController取消旧请求，提供清空/关闭/短输入/无结果/网络异常提示及上下键选择。
+- PlaceName提取当前中心地名hook供搜索占位复用，page将搜索放入原44px顶栏；选中暂停跟随并focusPoint。modern.css结果内部滚动，避开右侧图层按钮。
+- PASS：TypeScript、219/219测试、网页与安卓网页构建；真实成都搜索与键盘跳转至30.65987/104.06331；清空/短输入/Esc/点图层收起；390/360 DOM无溢出。
+- 手机截图有既有缩放捕获异常，精确视觉、软键盘、输入法和触控待真机验证；未生成APK。截图/日志与范围见docs/top-place-search.md。
 # 2026-09-07 细图层列表
 - modern.css 缩窄图层浮窗到248px，去掉图源入口大胶囊底色，12px文字/16px细描边图标/28×16px细开关；鼠标主输入32px行，触屏主输入44px目标。
 - 首次验证发现此Windows浏览器同时报告鼠标与触屏能力，any-pointer排除规则令行高仍44px；改用主输入 pointer:fine + hover:hover 判断后，实测行高32px，双构建重跑通过。

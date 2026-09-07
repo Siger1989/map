@@ -1,3 +1,10 @@
+# 当前任务：顶部直接搜索地点（2026-09-07，完成验证）
+- 目标：地图上方常驻紧凑搜索框，输入地点/山峰并选择结果移动地图，结果用完收起。
+- 启动：status/diff干净，pull --ff-only 已最新83309f5，读取项目状态/说明。复用现有Photon搜索接口、缓存和节流。
+- 已改：PlaceSearch新增自动搜索/中文输入法保护/中止过期请求/键盘选择/清空与关闭；PlaceName提取当前地点标签供搜索占位显示，page接线，modern.css合并同一44px顶栏。
+- 验证 PASS：TypeScript、219/219测试、网页/安卓网页构建；真实搜索成都返回结果，方向键选中并回车后地图URL为#14/30.65987/104.06331，结果收起；清空/单字提示/Esc/点击图层收起搜索均通过。390/360 DOM无横向溢出，顶栏与图层按钮间隔约8px。
+- 文件：PlaceSearch/PlaceName/page/modern.css，docs/top-place-search.md，README/LOG/本状态。截图 artifacts/screenshots/top-search-*.png；日志 .openai/*place-search*.log 和 top-search-layout.log。精确手机截图受既有缩放问题限制，实际软键盘/输入法/触屏待真机验收。
+- 同步：按长期授权提交main并核验远端，记录 .openai/sync-place-search.log；未生成APK。下一步：用户体验顶部直接搜索。
 # 当前任务：图层控件进一步变细与紧凑参考（2026-09-07，完成验证）
 - 目标：针对用户图层截图收窄浮窗、细化开关与图标，保留磨砂和可达操作；网上寻找紧凑 UI 参考。
 - 启动：status/diff 干净，pull --ff-only 已最新 12eb940；读取 README/AGENTS/CURRENT_STATE/LOG。Product Design 无已保存上下文。
