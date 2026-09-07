@@ -10,7 +10,8 @@
 - 最终功能验证：TypeScript、132/132 逻辑测试、390×844/360×780 保存→重载→照片匹配→手绘副本→原始记录一致全部 PASS；原照片 EXIF/校时/去重/重载/聚合/显隐/移除两尺寸回归 PASS。安卓目录桥 Java 编译 PASS，浏览器真实文件夹导入 PASS；原生系统选择器仍缺真机验收。
 - 界面检查：查看 recording-photo-picker-360-780、recording-photos-360-780、recording-preserved-390-844 等关键截图。初查目录选择落入滚动区域，已改为并排44px入口，两尺寸最终回归通过；无横向溢出、原3D控制器可见。截图在 artifacts/screenshots，未入 Git。
 - 构建：网页与完整安卓未签名构建 PASS；489 项静态资源逐项SHA-256对应（含473张地形）。产物 mobile/.build/Guanyun-0.2.5-test-unsigned.apk 不能安装，不是发布包。错误证书拒签回归PASS。日志 .openai/{typecheck-record-photos-final,tests-record-photos-final,browser-record-photos-compact-025,browser-existing-photos-025,build-web-record-photos-final,build-android-record-photos-final,verify-unsigned-apk-025,signing-guard-025}.log。
-- 交付限制：源码修复完成，准备同步 main；0.2.5-test/code12 仍待原签名打包，没有新 Release，也没有替换 0.2.4。原签名电脑拉取后可直接按既有命令构建；本机不能从公开证书或APK还原私钥。原始地形、天气、地质、卫星和路线计算不变，无业务文件删除，无密钥/本机数据/旧草稿上传。
+- 源码交付：功能提交 3c1cfb9d31ff1e0020bfa0d6870268a5dc05a993 已推送 origin/main，git ls-remote 核验一致；最终状态单独提交。同步日志 .openai/sync-record-photos-025.log，收尾 SHA 见 .openai/sync-record-photos-final.log。
+- 交付限制：0.2.5-test/code12 仍待原签名打包，没有新 Release，也没有替换 0.2.4。原签名电脑拉取后可直接按既有命令构建；本机不能从公开证书或APK还原私钥。原始地形、天气、地质、卫星和路线计算不变，无业务文件删除，无密钥/本机数据/旧草稿上传。
 
 # 当前任务：轨迹时间匹配相册照片（2026-09-07）
 - 当前目标：选择手机照片，按拍摄时间匹配已有实走/带时间 GPX 轨迹，地图缩略图与预览，打包并同步 GitHub。
