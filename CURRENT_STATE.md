@@ -1,3 +1,9 @@
+# 当前任务：关闭图层窗口后保留海拔图例（2026-09-07）
+- 用户截图显示：海拔着色仍开启，但关闭图层窗口后左下角海拔颜色图例消失。开始工作区干净，pull --ff-only 确认 a257509 最新。
+- 原因是 app/page.tsx 的 map-legends 容器仅在 panel=layers 时显示。最小修复增加海拔着色开启时保持可见的条件；色阶、透明度、地形渲染、地质面板原有显示行为及其他模块不变，不新增功能文件/依赖。
+- 验证完成：TypeScript 与网页构建通过；390×844 / 360×780 浏览器检查通过，覆盖关闭按钮、Escape、点击窗口外、打开工具菜单、重开窗口、关闭着色、图例滚动与布局，无页面错误。已查看两尺寸截图，图例不遮挡底部与右侧控件；本轮仅验证图例界面，未重新验收地形画面或安卓真机。
+- 证据：.openai/{typecheck-elevation-legend,build-elevation-legend,browser-elevation-legend}.log；artifacts/screenshots/elevation-legend-closed-{390,360}.png。本轮只修改 app/page.tsx 与本状态，无删除文件，无新依赖；未生成 APK 或发布 Release。提交推送 main，完成后的远程 SHA 核验记录在 .openai/sync-elevation-legend.log。
+
 # 当前任务：交线剖面、共用球形操控器与图片导出（2026-09-07）
 - 最终交付：本轮实现/检查已完成，正在提交同步 main。修改模块/文件为 objectTransform（math/projection/gizmoHandles/ObjectGizmo/CSS）、section（contours/loadedTerrain/SectionSurfaceLayer/SectionProfile/profileExport/CSS）、annotations（data/modelGeometry/AnnotationLayer/useAnnotations/AnnotationPanel）、map/TerrainMap、app/page/layout、features 开关、mobile/main 与 MainActivity 返回、README/mobileREADME/docs/elevation-section、本状态及新增逻辑/浏览器测试。新增有限面交线/详情/导出、共用对象 Gizmo 与兼容绝对中心海拔；移除产品旧裁切接线与独立模式面板，未删除历史裁切研究文件。收藏/路线/GPS记录/照片/地图图源的数据与算法未改；开始导航时正常结束剖面编辑。
 - 最终校验：TypeScript 通过；198/198 测试通过；两尺寸浏览器与 JPEG、触摸单次保存/取消、点击真实剖面开窗通过；网页 build 和 Android Java/DEX 未签名完整构建通过。APK 500 项资源逐项 SHA-256 与 mobile/dist 一致，含 Gizmo CSS、交线/图片代码与新返回处理。产物 mobile/.build/Shantu-0.2.5-test-unsigned.apk，54016614 字节，SHA-256 b3f1f52534bf33e6fefbb18282963a12ba66c8ddd047ab798f63a8cb1194408e。原签名缺失，未发布新 Release，未真机验收。

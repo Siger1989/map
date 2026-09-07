@@ -784,7 +784,10 @@ export default function Home() {
             }}
           />
         )}
-      <div className="map-legends" hidden={panel !== 'layers'}>
+      <div
+        className="map-legends"
+        hidden={panel !== 'layers' && !layers.elevationColors}
+      >
         {layers.elevationColors && <ElevationLegend />}
         {layers.geology && (
           <GeologyPanel
