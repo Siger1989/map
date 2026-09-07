@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/postcss';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ mode }) => ({
+  worker: { format: 'es' },
   define: {
     'process.env.NEXT_PUBLIC_TIANDITU_KEY': JSON.stringify(
       loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '')

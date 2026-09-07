@@ -1,5 +1,7 @@
 # 山兔 0.2.5 源码（待原签名打包）
 
+同一待签名版本新增 [地图图源选择、二维码与在线 / 离线地图导入](../docs/map-sources.md)：XYZ / TMS、WMTS / WMS3857、栅格 TileJSON / MOBAC XML、栅格 MBTiles 与部分 GeoTIFF；工具和图层页均有入口。相机扫码使用受控视频权限，离线解析模块与 SQL WASM 随应用打包；不支持奥维加密 `.ovmap`。原生相机仍待真机验证。
+
 产品显示名称已改为“山兔”，首次打开世界地图，去掉固定成都/川西文案。新构建输出`APK/Shantu-0.2.5-test.apk`，未签名验证包为`mobile/.build/Shantu-0.2.5-test-unsigned.apk`。沿用原包名/签名配置和本机数据键；当前机器缺原签名，旧Release及以下0.2.4下载仍叫观云。见 [更名与全球入口说明](../docs/shantu-global.md)。
 
 新增 [照片全屏放大、编辑/标记、系统分享/保存、海拔和拍摄天气](../docs/photo-details.md)，同一待签名版本；旧APK不包含这些源码更新。

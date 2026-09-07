@@ -1,3 +1,17 @@
+# 当前任务：在线图源、二维码与离线地图导入（2026-09-07）
+- 用户要求图源选择、常见地图格式/二维码导入，已明确在线和离线两种都用。开始时main干净，已pull到8d3b14d；官方资料确认奥维二维码/ovmap含专有格式，不能声称全部通用兼容。
+- 设计：新增独立modules/mapSources，类型/配置解析/IndexedDB/地图适配器/面板/二维码/离线Worker分开；工具→地图图源，以及图层页入口；切换保留地图实例与轨迹/照片/定位/天气叠加。在线优先XYZ/TMS、WMTS、WMS3857、TileJSON/常见XML配置；离线优先栅格MBTiles与GeoTIFF影像，读取与重投影放Worker，限定文件/像素/空间用量。
+- 实现边界：只读取用户选择的文件；二维码先识别/预览，确认后添加。专有/加密ovmap、未知坐标或缺地理参考明确报错，不猜测地图位置。GCJ/BD偏移坐标不能冒充WGS84对齐；不代理任意图源URL，不把私人URL/密钥写进Git。原缓存只服务既有图源，不擅自批量下载新在线服务。
+- 跨模块：app/ControlDock/LayerPanel接公共props；TerrainMap接独立图源适配器，底图显示由当前图源决定；安卓扫码增加受控相机权限，文件仍用系统选择器。业务轨迹/照片数据库、包名签名、地形高程数据算法保持，回滚可撤销本轮源码并保留新独立数据库。
+- 已查资料：奥维137268-2/142734-2、MapLibre raster/image sources、Mapbox MBTiles1.3、jsQR/sql.js/geotiff.js/proj4官方。新增依赖安装中。下一步先完成图源选择/链接入口，再离线/扫码，验证两手机尺寸、格式/坐标/失败回滚/重载、类型检查/构建，提交推送main；原签名限制仍在。
+- 实现已接通：modules/mapSources 的类型/在线配置/本机库/hook/面板/扫码/离线Worker/MapSourceLayer；支持栅格XYZ/TMS、WMTS地址、WMS3857、TileJSON、MOBAC XML，栅格MBTiles与WGS84/3857/UTM北向8位GeoTIFF（64MB/1600万像素/2048显示副本）。工具/图层入口、内置底图切换、离线范围定位及原叠加层保留已接线；相机新增仅本机HTTPS前台页面视频授权。
+- 第一轮类型检查已修复通过；8项新增逻辑测试通过（真实SQL/TMS行号、GeoTIFF地理范围/UTM转换、非法投影/矢量/超限拒绝、配置相对地址）。localhost:3000返回200，已查看390px图源列表关键截图。两尺寸真实文件/二维码、离线显示与数据库重载回归运行中，尚未完成构建和交付。
+- 最终源码与浏览器验证：TypeScript、148/148逻辑测试通过；390×844、360×780实际图源请求、二维码图片识别、相机拒权回退/真实Canvas视频流解码与结束释放、MBTiles Worker断网显示、GeoTIFF投影定位、3项保存/重载、移除回退、既有叠加层保留及配额事务回滚通过。修复开发环境Worker错误file://地址、透明缺瓦片、图源协议/旧Worker清理、当前项排序及冲突影像控件；已查看列表/MBTiles/GeoTIFF关键截图，面板≤38dvh/320px，无横向溢出。日志.openai/{typecheck-map-sources-final,tests-map-sources-final,browser-map-sources-final}.log。
+- 网页与安卓完整未签名构建进行中；待检查Worker/WASM与APK静态资产一致，补交付状态、提交推送main。原密钥缺失限制保持，不发布错误签名包。
+- 构建与交付验证完成：网页和Android Java/DEX完整未签名构建成功；APK内500项资产与mobile/dist逐项SHA-256一致，含SQL WASM、离线Worker和473张地形。未签名产物mobile/.build/Shantu-0.2.5-test-unsigned.apk，53995625字节，SHA-256为65bca3357baf33525753c0f35bb06bd93c1f42d056c7bc685fe72aeb080d2a4f，不可安装。通过生产资源模拟本机HTTPS网关，网络完全断开时MBTiles/GeoTIFF导入、重开、切换成功（浏览器模拟，非安卓真机）；关键截图已查看。日志.openai/{build-web-map-sources,build-android-map-sources,verify-map-source-bundle}.log。
+- 交付文档docs/map-sources.md与mobile/README.md包含格式矩阵、限额、模块接口和回滚；新增4个运行依赖/SQL类型、14个图源模块文件、原生相机权限适配、3个验证/样本生成脚本与测试。无业务文件删除；轨迹/照片存储、GPS精度、天气/高程算法、包名与预期证书保持。源码待本轮提交推送main；无新Release，原APK不含本轮更新，仍需原签名电脑打包。
+- 提交前核对：远程origin/main无新增提交；无业务文件删除、无私钥或本机地图进入Git。加强瓦片验证（MapLibre完整SourceCache就绪、生产Worker实际返回PNG瓦片字节）后两尺寸与断网生产资源回归通过，日志.openai/{browser-map-sources-delivery,verify-map-source-bundle-final}.log。截图仅合成测试地图，不含用户数据。
+
 # 当前任务：山兔更名与全球地图入口（2026-09-07）
 - 用户要求去掉左上角成都/川西地址，改为面向全球，软件更名“山兔”。开始时main干净，git pull --ff-only已同步bf78f13。
 - 范围：config/product、网页/安卓名称与分享/导出文案，页头移除固定地区，INITIAL_VIEW改世界地图视角、最低缩放3→0、无地域无障碍标签；AGENTS/说明记录新定位。地图搜索已有全球坐标输入和近点排序，无国家范围过滤。

@@ -82,15 +82,24 @@ export function LayerPanel({
   onChange,
   satelliteDate,
   satelliteStatus,
+  onOpenSources,
+  customSource,
 }: {
   settings: LayerSettings;
   onChange: (patch: Partial<LayerSettings>) => void;
   satelliteDate?: string;
   satelliteStatus?: string;
+  onOpenSources?: () => void;
+  customSource?: string;
 }) {
   const domestic = basemapConfiguration().domestic;
   return (
     <section className="layer-panel" aria-label="地图图层">
+      {onOpenSources && (
+        <button className="map-source-link" onClick={onOpenSources}>
+          地图图源 · {customSource || '内置地图'} · 选择 / 导入
+        </button>
+      )}
       <div className="panel-heading">
         <div>
           <span className="eyebrow">开启需要的图层</span>
@@ -100,56 +109,60 @@ export function LayerPanel({
         </span>
       </div>
       <div className="layer-list">
-        {ITEMS.map(({ key, label, detail, icon: Icon, color }) => (
-          <div className="layer-row" key={key}>
-            <div className={`layer-icon ${color}`}>
-              <Icon size={21} />
+        {ITEMS.filter(({ key }) => !customSource || key !== 'satellite').map(
+          ({ key, label, detail, icon: Icon, color }) => (
+            <div className="layer-row" key={key}>
+              <div className={`layer-icon ${color}`}>
+                <Icon size={21} />
+              </div>
+              <div className="layer-text">
+                <label id={`${key}-label`} htmlFor={`${key}-toggle`}>
+                  {label}
+                </label>
+                <p>
+                  {key === 'satellite'
+                    ? settings.imageryMode === 'detail'
+                      ? domestic
+                        ? '天地图地表影像 · 非实时云况'
+                        : '10 米级地表 · 2024 年合成'
+                      : satelliteDate
+                        ? `影像日期 ${satelliteDate}`
+                        : '正在获取最新可用日期'
+                    : detail}
+                </p>
+              </div>
+              <button
+                id={`${key}-toggle`}
+                type="button"
+                className="switch"
+                role="switch"
+                aria-checked={settings[key]}
+                aria-labelledby={`${key}-label`}
+                onClick={() => onChange({ [key]: !settings[key] })}
+              >
+                <span />
+              </button>
             </div>
-            <div className="layer-text">
-              <label id={`${key}-label`} htmlFor={`${key}-toggle`}>
-                {label}
-              </label>
-              <p>
-                {key === 'satellite'
-                  ? settings.imageryMode === 'detail'
-                    ? domestic
-                      ? '天地图地表影像 · 非实时云况'
-                      : '10 米级地表 · 2024 年合成'
-                    : satelliteDate
-                      ? `影像日期 ${satelliteDate}`
-                      : '正在获取最新可用日期'
-                  : detail}
-              </p>
-            </div>
-            <button
-              id={`${key}-toggle`}
-              type="button"
-              className="switch"
-              role="switch"
-              aria-checked={settings[key]}
-              aria-labelledby={`${key}-label`}
-              onClick={() => onChange({ [key]: !settings[key] })}
-            >
-              <span />
-            </button>
-          </div>
-        ))}
+          ),
+        )}
       </div>
-      <div className="imagery-selector" aria-label="卫星影像类型">
-        <button
-          aria-pressed={settings.imageryMode === 'detail'}
-          onClick={() => onChange({ imageryMode: 'detail', satellite: true })}
-        >
-          高清地表
-        </button>
-        <button
-          aria-pressed={settings.imageryMode === 'latest'}
-          disabled={domestic}
-          onClick={() => onChange({ imageryMode: 'latest', satellite: true })}
-        >
-          最新云况影像
-        </button>
-      </div>
+      {!customSource && (
+        <div className="imagery-selector" aria-label="卫星影像类型">
+          <button
+            aria-pressed={settings.imageryMode === 'detail'}
+            onClick={() => onChange({ imageryMode: 'detail', satellite: true })}
+          >
+            高清地表
+          </button>
+          <button
+            aria-pressed={settings.imageryMode === 'latest'}
+            disabled={domestic}
+            onClick={() => onChange({ imageryMode: 'latest', satellite: true })}
+          >
+            最新云况影像
+          </button>
+        </div>
+      )}
       {settings.geology && (
         <>
           <div className="geology-opacity">

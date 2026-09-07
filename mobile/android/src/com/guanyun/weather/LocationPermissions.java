@@ -14,7 +14,10 @@ final class LocationPermissions extends WebChromeClient {
     private GeolocationPermissions.Callback pending;
     private String origin;
     private final AppFiles files;
-    LocationPermissions(Activity activity, AppFiles files) { this.activity = activity; this.files=files; }
+    final CameraPermissions camera;
+    LocationPermissions(MainActivity activity, AppFiles files) { this.activity = activity; this.files=files; this.camera = new CameraPermissions(activity); }
+    @Override public void onPermissionRequest(android.webkit.PermissionRequest request) { camera.request(request); }
+    @Override public void onPermissionRequestCanceled(android.webkit.PermissionRequest request) { camera.canceled(request); }
     @Override public boolean onShowFileChooser(android.webkit.WebView view, android.webkit.ValueCallback<Uri[]> callback, FileChooserParams params) { return files.choose(callback, params); }
     @Override public void onGeolocationPermissionsShowPrompt(String value, GeolocationPermissions.Callback callback) {
         Uri uri = Uri.parse(value);

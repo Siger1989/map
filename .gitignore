@@ -45,6 +45,7 @@ next-env.d.ts
 /.openai/*-notes.md
 /tsconfig.tsbuildinfo
 /artifacts/screenshots/
+/artifacts/map-source-fixtures/
 /mobile/dist/
 /mobile/.build/
 /APK/

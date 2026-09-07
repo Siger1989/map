@@ -1,4 +1,6 @@
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
+import { MapSourceLayer } from '../mapSources/MapSourceLayer';
+import { SOURCE_ID, type MapSource } from '../mapSources/types';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
@@ -73,6 +75,8 @@ export type MapHandle = {
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
 };
 type Props = {
+  mapSource?: MapSource | null;
+  onSourceStatus?: (status: string) => void;
   section: SectionSettings;
   onSectionStatus: (status: SectionStatus) => void;
   onSectionChange: (settings: SectionSettings) => void;
@@ -110,6 +114,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
     const mapRef = useRef<Map | null>(null);
+    const sourceRef = useRef<MapSourceLayer | null>(null);
     const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
     latest.current = props;
@@ -138,6 +143,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (map.getLayer('satellite')) map.removeLayer('satellite');
       if (map.getSource('satellite')) map.removeSource('satellite');
       if (
+        latest.current.mapSource ||
         domestic ||
         !latest.current.settings.satellite ||
         latest.current.settings.imageryMode !== 'latest'
@@ -189,6 +195,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             labels: false,
           }
         : latest.current.settings;
+      const custom = Boolean(latest.current.mapSource);
+      void sourceRef.current?.select(latest.current.mapSource ?? null);
       if (!domestic || latest.current.roadSnapping) addCartography(map);
       const terrain = map.getTerrain();
       if (
@@ -222,8 +230,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           map.setLayoutProperty(
             id,
             'visibility',
-            (
-              domestic && id !== 'satellite'
+            !custom &&
+              (domestic && id !== 'satellite'
                 ? id === 'relief'
                   ? !s.satellite
                   : s.satellite
@@ -231,8 +239,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   (id === 'relief' ||
                     (id === 'detail'
                       ? s.imageryMode === 'detail'
-                      : s.imageryMode === 'latest'))
-            )
+                      : s.imageryMode === 'latest')))
               ? 'visible'
               : 'none',
           );
@@ -251,6 +258,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           : s,
       );
+      if (custom)
+        for (const id of ['open-landcover', 'open-water', 'open-buildings'])
+          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       if (domestic) {
         for (const id of ['road-names', 'road-numbers'])
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
@@ -259,7 +269,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             map.setLayoutProperty(
               id,
               'visibility',
-              s.labels && (id.endsWith('image') ? s.satellite : !s.satellite)
+              !custom &&
+                s.labels &&
+                (id.endsWith('image') ? s.satellite : !s.satellite)
                 ? 'visible'
                 : 'none',
             );
@@ -440,6 +452,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       let selected: [number, number] = INITIAL_VIEW.center;
       let weatherAnchor: [number, number] = INITIAL_VIEW.center;
       let cameraFrame = 0;
+      let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
         try {
@@ -466,6 +479,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          sourceRef.current = new MapSourceLayer(map, (text) =>
+            latest.current.onSourceStatus?.(text),
+          );
+          maplibre.addProtocol('shantu-map', sourceRef.current.protocol);
+          releaseSourceProtocol = () => maplibre.removeProtocol('shantu-map');
           const preview = document.createElement('div');
           preview.className = 'route-preview-cursor';
           preview.setAttribute('aria-label', '行程预览位置');
@@ -700,6 +718,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('error', (event) => {
+            if ('sourceId' in event && event.sourceId === SOURCE_ID) {
+              latest.current.onSourceStatus?.(
+                '部分地图未能加载，请检查网络、授权、跨域设置或文件完整性',
+              );
+              return;
+            }
             if (
               'sourceId' in event &&
               typeof event.sourceId === 'string' &&
@@ -740,6 +764,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         featureDragRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
+        sourceRef.current?.clear();
+        sourceRef.current = null;
+        releaseSourceProtocol?.();
         mapRef.current?.remove();
         mapRef.current = null;
         weatherRef.current = null;
@@ -753,13 +780,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       props.hourIndex,
       props.roadSnapping,
       props.section.enabled,
+      props.mapSource,
     ]);
     useEffect(() => {
       sectionRef.current?.configure(props.section, props.annotations);
     }, [props.section, props.annotations]);
     useEffect(() => {
       syncSatellite();
-    }, [settings.imageryMode, settings.satellite]);
+    }, [settings.imageryMode, settings.satellite, props.mapSource]);
     useEffect(() => {
       if (loaded.current) routeRef.current?.sync(props.routeOverlay);
     }, [props.routeOverlay]);

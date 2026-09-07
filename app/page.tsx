@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PRODUCT_NAME } from '@/config/product';
+import { useMapSources } from '@/modules/mapSources/useMapSources';
+import { MapSourcesPanel } from '@/modules/mapSources/MapSourcesPanel';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
 import { recordingTrack } from '@/modules/outdoor/savedRecording';
@@ -97,6 +99,7 @@ export default function Home() {
   const recorder = useRecording();
   const offline = useOffline();
   const photos = useTripPhotos();
+  const mapSources = useMapSources();
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
   const photoOverlay = useMemo(
     () => (photos.visible ? photos.items : []),
@@ -340,6 +343,8 @@ export default function Home() {
       }}
     >
       <TerrainMap
+        mapSource={mapSources.source}
+        onSourceStatus={mapSources.setStatus}
         ref={map}
         section={section}
         onSectionStatus={setSectionStatus}
@@ -742,6 +747,25 @@ export default function Home() {
           />
         }
       >
+        {panel === 'sources' && (
+          <MapSourcesPanel
+            sources={mapSources}
+            builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
+            onBuiltin={(id) => {
+              mapSources.select('');
+              update({
+                satellite: id !== 'terrain',
+                ...(id !== 'terrain' ? { imageryMode: id } : {}),
+              });
+            }}
+            onFocus={(bounds) =>
+              map.current?.fitRoute([
+                [bounds[0], bounds[1]],
+                [bounds[2], bounds[3]],
+              ])
+            }
+          />
+        )}
         {panel === 'outdoor' && (
           <OutdoorPanel
             recorder={recorder}
@@ -958,6 +982,8 @@ export default function Home() {
               </button>
             </div>
             <LayerPanel
+              customSource={mapSources.source?.name}
+              onOpenSources={() => setPanel('sources')}
               settings={layers}
               onChange={update}
               satelliteDate={satellite.date}
