@@ -1,3 +1,9 @@
+# 2026-09-07 细图层列表
+- modern.css 缩窄图层浮窗到248px，去掉图源入口大胶囊底色，12px文字/16px细描边图标/28×16px细开关；鼠标主输入32px行，触屏主输入44px目标。
+- 首次验证发现此Windows浏览器同时报告鼠标与触屏能力，any-pointer排除规则令行高仍44px；改用主输入 pointer:fine + hover:hover 判断后，实测行高32px，双构建重跑通过。
+- PASS：TypeScript、网页和安卓网页构建、598×628前后截图、390/360 DOM无溢出、图层开关/展开参数/图源返回/关闭。
+- 精确手机截图因既有捕获缩放问题 BLOCKED；本轮未验收真机。Dribbble页面Human Verification，未操作验证；研究来源与范围见 docs/slim-layers-ui.md。
+- 仅CSS和文档，无新依赖、图源/存储/渲染改动，未生成APK。运行记录 .openai/*slim-layers*.log；截图 artifacts/screenshots/layers-slim-*.png。
 # 2026-09-07 图源页面返回入口
 - 原因：图层进入地图图源时未保存父入口，仅有关闭；添加/预览的返回位于滚动内容中。
 - 修复：page 保存图层/工具来源；ControlDock 复用44px标题栏显示返回；MapSourcesPanel 上报步骤标题和返回行为，删除接入标题栏后的重复内容按钮。读取时返回取消请求；保存提交中的预览返回暂禁用；返回修改保留表单，扫码退出沿用组件卸载停止相机逻辑。

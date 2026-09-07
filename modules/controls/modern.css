@@ -352,12 +352,13 @@
   gap: 7px;
   width: 100%;
   min-height: 44px;
-  margin: 0 0 3px;
-  padding: 0 8px;
-  background: #ffffff26;
+  margin: 0;
+  padding: 0 3px;
+  background: transparent;
   color: var(--text);
   border: 0;
-  border-radius: 16px;
+  border-radius: 0;
+  box-shadow: inset 0 -1px var(--border);
   font-size: 12px;
 }
 .observatory .map-source-link span {
@@ -370,11 +371,13 @@
 .observatory .control-popover .layer-row {
   min-height: 44px;
   padding: 0;
-  gap: 8px;
+  gap: 6px;
+  border-bottom: 0;
+  box-shadow: inset 0 -1px var(--border);
 }
 .observatory .layer-icon {
-  width: 24px;
-  height: 28px;
+  width: 20px;
+  height: 24px;
   background: transparent;
 }
 .observatory
@@ -383,7 +386,49 @@
   color: #52635b;
 }
 .observatory .layer-text label {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 0;
+}
+.observatory .layer-window.control-popover {
+  width: min(248px, calc(100% - 74px));
+  padding: 0 8px 6px;
+  border-radius: 14px;
+}
+.observatory .layer-panel :is(.layer-icon, .map-source-link) svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.65;
+}
+/* Keep touch targets generous while drawing a much slimmer switch inside. */
+.observatory .layer-panel .switch::before {
+  left: calc(50% - 14px);
+  top: calc(50% - 8px);
+  width: 28px;
+  height: 16px;
+}
+.observatory .layer-panel .switch span {
+  left: calc(50% - 12px);
+  top: calc(50% - 6px);
+  width: 12px;
+  height: 12px;
+}
+.observatory .layer-panel .switch[aria-checked='true'] span {
+  transform: translateX(12px);
+}
+/* Dense rows when a mouse is the primary input; touch-first devices keep 44px. */
+@media (hover: hover) and (pointer: fine) {
+  .observatory .layer-window .layer-row,
+  .observatory .layer-window .map-source-link {
+    min-height: 32px;
+  }
+  .observatory .layer-window .layer-panel .switch {
+    width: 36px;
+    min-width: 36px;
+    height: 32px;
+    min-height: 32px;
+  }
 }
 .observatory .layer-text p {
   margin: 0;

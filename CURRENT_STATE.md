@@ -1,3 +1,11 @@
+# 当前任务：图层控件进一步变细与紧凑参考（2026-09-07，完成验证）
+- 目标：针对用户图层截图收窄浮窗、细化开关与图标，保留磨砂和可达操作；网上寻找紧凑 UI 参考。
+- 启动：status/diff 干净，pull --ff-only 已最新 12eb940；读取 README/AGENTS/CURRENT_STATE/LOG。Product Design 无已保存上下文。
+- 改动：modern.css 范围限于图层窗/列表/开关，304→248px，开关36×22→28×16px，12px字/16px图标；仅鼠标设备32px行，触控保留44px。
+- 验证 PASS：类型检查、网页/安卓网页构建；598×628 同视口前后对照，面板304→248px宽、行45→32px；开关开/关、图源返回、关闭通过。390×844 / 360×780 DOM无溢出、名称完整，展开海拔透明度参数无溢出。日志 .openai/*slim-layers*.log。
+- 截图：artifacts/screenshots/layers-slim-before.png / layers-slim-after.png 正常视口 PASS；layers-slim-390.png / layers-slim-360.png 窄屏仍有既有截图缩放异常，精确手机视觉 BLOCKED。触屏44px规则保留；浏览器实际为鼠标主输入，真机待验收。
+- 参考：Mapbox Studio 官方图层说明、CalTopo 官方菜单新旧对照、Glare 概念图。Dribbble 浏览器遇 Human Verification，未尝试验证；可提供原文链接。
+- 文件：modern.css、docs/slim-layers-ui.md、README/LOG/本状态。代码与说明按授权同步main，核验记录 .openai/sync-slim-layers.log；未生成APK。下一步：用户查看当前细列表与参考方向，手机触控待验收。
 # 当前任务：图源页面逐级返回（2026-09-07，完成验证）
 - 目标：图层→图源、工具→图源、图源→添加/扫码/预览均可返回，标题栏固定入口，保留关闭。
 - 启动：status/diff 干净，pull --ff-only 已最新 08176ab；读取项目说明。
