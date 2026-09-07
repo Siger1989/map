@@ -1,4 +1,5 @@
 import coverage from '@/modules/terrain/ground-coverage.json';
+import { terrainRepairPath } from '@/modules/terrain/tiles';
 
 // Both the visible mesh, contour worker and point picker use this same resolver.
 export async function GET(
@@ -20,9 +21,12 @@ export async function GET(
   const range = (coverage as Record<string, number[]>)[z];
   const local =
     range && x >= range[0] && x <= range[1] && y >= range[2] && y <= range[3];
-  const destination = local
-    ? new URL(`/terrain/fabdem-v1-2/${z}/${x}/${y}.png`, request.url).href
-    : `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
+  const repair = terrainRepairPath(z, x, y);
+  const destination = repair
+    ? new URL(repair, request.url).href
+    : local
+      ? new URL(`/terrain/fabdem-v1-2/${z}/${x}/${y}.png`, request.url).href
+      : `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
   return new Response(null, {
     status: 302,
     headers: {

@@ -1,0 +1,205 @@
+{
+  "dataset": "Mapzen / Tilezen Terrarium, Eling Lake low-zoom repair v1",
+  "retrieved": "2026-09-07",
+  "source": "https://elevation-tiles-prod.s3.amazonaws.com/terrarium/{z}/{x}/{y}.png",
+  "attribution": "Mapzen, SRTM and underlying contributors",
+  "license_reference": "https://github.com/tilezen/joerd/blob/master/docs/attribution.md",
+  "processing": "Decoded z13 elevations area-averaged to z12; 16px perimeter transition. Only covered pixels propagated to z7-11 parents. No invented heights or global clipping.",
+  "limits": "Repair covers reviewed z12 tiles only; does not guarantee all upstream defects are removed. Rebuilt cells remain raster estimates.",
+  "inputs_sha256": {
+    "10/789/405.png": "f48417aede3047c32e7ca1bbd9722be2c1f87cf1adae01e55b928d171750c094",
+    "10/789/406.png": "e9769603d4a730cc08c861048191c8cb1a6a241bef4544536c77a64b998660d8",
+    "10/790/405.png": "11e951a834017fe02964140799ce9b81c2540ac3fe05850ca8b093751f043f76",
+    "10/790/406.png": "b780aef5dd79352befe1ec42fc1f4c8c6a1c1be46bccf921798c2b1a90e58745",
+    "11/1579/811.png": "1b03674d7dfd1b3822b67445f24669d7a5631867385af96c028471a582d808fc",
+    "11/1579/812.png": "82899a460b7648ada98f8c6be8abc8f34eae2ef0ce7c990da52b8540633750ca",
+    "11/1580/811.png": "6c8f9234a93136edac39587a84de9f571a8e84d0a60c04367f94787530a9d442",
+    "11/1580/812.png": "b2c47b9081b2c0b61956efdeaa39c609ca0ea05b21baa345fe32c7eb52675c26",
+    "12/3159/1623.png": "a3b8e992af007a381244f48dbfd4304cfc38f20ceb13defde9d0e4204494c006",
+    "12/3159/1624.png": "0fc1cfa87e8ac65b934b56356d75386c9e299cea5c0a2d1d7ffa70087e0e9d5c",
+    "12/3159/1625.png": "a105f4b5dd178f735d31b9dac35d201d63e5465130b4fd33aca11e40f821afcc",
+    "12/3160/1623.png": "2314e1807f68287a4676318fd9a15e6b1a87a5b24e70af123c7ae4be1bee7f2a",
+    "12/3160/1624.png": "4a2360f86277cf908e39ee61800515eb7faaea733f8372821107d4381361f9cd",
+    "12/3160/1625.png": "5122e419906b6dd0ccf59a35b9ed5d5b8a68b263af91f7c87f7700de7daf9624",
+    "12/3161/1623.png": "415dd390ba43324de4caef73c3839ba8ad6686f1f3a5666c2ef60ff1ec901bfc",
+    "12/3161/1624.png": "ac37549f3f2b8bdc7aa5b9c7a1fc8de2a90bf3dcb142bdf8e12b047df8e909c9",
+    "12/3161/1625.png": "6cc8f3da8e1d66726a78da5f06cddd715cd933a5d298783586903f3241944a0c",
+    "13/6318/3246.png": "e243ac29b6aaff302ac071533a19c6b8eb3bc7110dbb1f246020ef7c52a1d86d",
+    "13/6318/3247.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6318/3248.png": "98762e302e0be3438613c272f849490afa2df9d3c8a94e47af46d8a6d5266db0",
+    "13/6318/3249.png": "4a12babeea05c9e30d0686ce4ab2e4e4394e6835542f4be9632207661f7ea91e",
+    "13/6318/3250.png": "40bdb3f467b4184075be106983570ca0a3edf8236c0128a5afa602f0beeb63f6",
+    "13/6318/3251.png": "7a7b6adc99eef1aac94cfac206f6a3b0175230257d01d7137cfd80d50ca8e900",
+    "13/6319/3246.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6319/3247.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6319/3248.png": "01b63d94d0f621fd3b607422383016495d6945bc6b87d227bd877253adae47c0",
+    "13/6319/3249.png": "b7da16d82c6ba208bfa5c38e7bb7340c1a1aff5183ceea9f677c064b293b9332",
+    "13/6319/3250.png": "bfea2ae50d9caf9e3666bb06ef54e3e286c2f905259d11d5a68980af12b0ef4d",
+    "13/6319/3251.png": "d6e60d9a96a8d1caad7ae9adef984aed5ed102026c70d27f699abe143d55717d",
+    "13/6320/3246.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6320/3247.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6320/3248.png": "08ebef465807d2e9936b2d37c09a1ca1d58c565a112b8423fb724a7c0636aa7f",
+    "13/6320/3249.png": "3d1b287d23e121ab9b630d823290cc1010ba4445436c044ce87bf5c1fccc699b",
+    "13/6320/3250.png": "c2c243f8ad06e89c02bd613f03bdef74fd8d2c4d2b5a95bd827ec8f27bcbc5d0",
+    "13/6320/3251.png": "b809f065297803a310adac76bd783a56d1ec35f41ecb63e121c1f41c96c84df4",
+    "13/6321/3246.png": "97663f6ed2364fb08a6225a27568bd38e627cd59157b0512185b189c4ce07467",
+    "13/6321/3247.png": "2bc393382b702442f3eb05517448868cc95b43e5250b53b6a0878d1c796244d6",
+    "13/6321/3248.png": "277a11f8d3df56a2ffe1278740b2f89f168e725324dae413fbc68268e1b5e094",
+    "13/6321/3249.png": "163246ff4eaa276715aeb8af9a20379a3f74b5e04e47a395c4948a299592da1c",
+    "13/6321/3250.png": "2c385c56ce2e672b87e8cb1e3665503d816d6d25abcd735b3eae1cdedc848ebc",
+    "13/6321/3251.png": "d3c141ac98f7772b4b66570e5aa24e0e86dd04ba79d76e22598a62abdfce8c6f",
+    "13/6322/3246.png": "1b7c5d92434d75b4c994405b49ff153b0111f01471070c730d4deec90ae04786",
+    "13/6322/3247.png": "0fcede7accc0b5ab6b5d621383d5feefa6b0e673438504f97a45e0b2041aaa23",
+    "13/6322/3248.png": "e5caad54a69e67dd45e0dac3f4cc5611093bc6eb319f80a8c6c55c64d3d54e6e",
+    "13/6322/3249.png": "0cd1001c63ffe3286804b4f90a503bd4d8546c19f418637dfad59b6b32f52ef1",
+    "13/6322/3250.png": "9bc1f4f4ce9948c08f0b2d2e93d347dc8ad8e47db713b0ad52a74e619f53b888",
+    "13/6322/3251.png": "11a5a9f6efd8c91851fa93951cf68a27d82e6c8f1bba29038c5cb851ffe58852",
+    "13/6323/3246.png": "99934280244a5c1cf355059e3dbd380664074cdf7225fde0ede5b2be5641dd49",
+    "13/6323/3247.png": "cf72199b380f336eba6ee31aa338991d7421527e8eac562295043a662be7031a",
+    "13/6323/3248.png": "484ffe8fbdbea6043bcdc5d12d9b9c4837a6d16d14dea5da4a75a7fc62ecf454",
+    "13/6323/3249.png": "fc9e7b81455f66b4bfb02540c1cf0e43578f14940e8c74094e0a54d46dcc9000",
+    "13/6323/3250.png": "085835c5a188e58392a0d0923f86d4e5f2ed69d473d2df14305304105a49d4a7",
+    "13/6323/3251.png": "370279d426b5b237ab18b663140102b670044572eab80d36a36c0d9caf85afff",
+    "7/98/50.png": "7976e26d80635351f1b0ce8ac70e3bf4789eb260fd305de2ec2ce9f53aee7c17",
+    "8/197/101.png": "3ff7c228c47e19e047c89665c6f5920fe40a1c19dfb6406153305a6a2346af4e",
+    "9/394/202.png": "58080ad204d958eff5485575c1d49b2419faacc8f3857e5026f0cf2f65962e95",
+    "9/394/203.png": "7d90d719bf962679369e90d07ce1e50dd7c7b7898efed8cf2443576a3ce53296",
+    "9/395/202.png": "bfcce6e4c7aff43057fc18e039085b1b27080d707ed39c84e50bd52b4206f892",
+    "9/395/203.png": "e6523e84f0023fce99d3bd4ff570317658275ffc6bb542ab3325479a56cc1d91"
+  },
+  "outputs_sha256": {
+    "12/3159/1623.png": "a142171f7b683289109f1fbaaa5c48be96e1c3d973dc3cfd9e394cf31981e28e",
+    "12/3159/1624.png": "94df18bcf399407a3181221c7d4611aedd084fd45d06bfb3b643dd57097b87f6",
+    "12/3159/1625.png": "1e52eda88dd5c87f9aa3dbed2bd235ad84f35f41b6374393c126ea1bf25b2631",
+    "12/3160/1623.png": "c3bc04b60f07fddb50d9af1527eb5d076b16683e3bfd26a47e829c4304022fd3",
+    "12/3160/1624.png": "08ada7e8dd77d5217879ae0e510c8124004fbce4f183ffdbdb9baa2a00025e73",
+    "12/3160/1625.png": "7cc6463b62e88f8f29d1c8445380d4f358d330f591d66fad0703cfb3862c5547",
+    "12/3161/1623.png": "1c246817980b2ebb9921c8bec8393882ec0d19bd8549239e9794efad7c135849",
+    "12/3161/1624.png": "255796a4ca9ca412b3d97121f0f96dce546e195d56728d9eedfecada636ce088",
+    "12/3161/1625.png": "4fa6c6c15e995704e22033854acb68128f3f19522591ea315afdbdac0e6f1e19",
+    "11/1579/811.png": "5d36e8cdeffa3082b96fbc03d643a91b60b560242f4e63216b76b4c5752288df",
+    "11/1579/812.png": "f5248ce5c84a467909031aeaf24a2875b4ca537fa8d54a1854cf5d0f10f5223f",
+    "11/1580/811.png": "ed209a2003d7264166a4812c8d1286462d9ece534149024dcb69f7468550ca7c",
+    "11/1580/812.png": "449ccd389f041bde624a472df04ef86a06677bc7af66b3a95a602e663f253c14",
+    "10/789/405.png": "c7a229c607dd815e7202044418235e2e96228de4ae421fa2f209f4341f609176",
+    "10/789/406.png": "e173c1026c259b7643b9c666a5ed8c87c93f8a71a5f1430cb7ce1c302296b69a",
+    "10/790/405.png": "6d95fbc0148f4c83d0533023508c30824de9e8dea76370c1ec39326210db9366",
+    "10/790/406.png": "e4c1eb22529fd8b73c3ecdf23dbe57d7d699ccce3540841ef1d7296d348566c4",
+    "9/394/202.png": "9df1ab6aab286ec65e3669720f324bfff6af1951a58df9e2552dee13110e3aba",
+    "9/394/203.png": "0a2746ae978805ed8ff11cb8ae7b796f748f5ca036277da6d4f8919e157f8938",
+    "9/395/202.png": "4b412b0c48e6ca158e96498fabb108354233ce74567490a07aed3730e7221266",
+    "9/395/203.png": "eb6f95c89544cec048ef195814ecae944927eb8d2b5ad39af7b70b3b7dcb2af2",
+    "8/197/101.png": "c4bed9410c66c4f8774584504f223b6b86ea7160c57f2d64332c65d32c1962b4",
+    "7/98/50.png": "14b001bec4be35e9b7c715f3127b752589f05d6415669329a2402f44aa5b923f"
+  },
+  "checks": [
+    {
+      "tile": [
+        12,
+        3159,
+        1623
+      ],
+      "before_min": 4264.890625,
+      "before_max": 4359.0,
+      "after_min": 4264.8984375,
+      "after_max": 4359.09375,
+      "largest_change_m": 13.421875
+    },
+    {
+      "tile": [
+        12,
+        3159,
+        1624
+      ],
+      "before_min": 4200.0,
+      "before_max": 4334.0,
+      "after_min": 4263.9453125,
+      "after_max": 4333.5,
+      "largest_change_m": 74.4921875
+    },
+    {
+      "tile": [
+        12,
+        3159,
+        1625
+      ],
+      "before_min": 4152.0,
+      "before_max": 4398.0,
+      "after_min": 4260.25,
+      "after_max": 4398.25,
+      "largest_change_m": 118.8515625
+    },
+    {
+      "tile": [
+        12,
+        3160,
+        1623
+      ],
+      "before_min": 4255.0,
+      "before_max": 4429.0,
+      "after_min": 4263.80078125,
+      "after_max": 4429.0,
+      "largest_change_m": 17.5
+    },
+    {
+      "tile": [
+        12,
+        3160,
+        1624
+      ],
+      "before_min": 2988.0,
+      "before_max": 5585.0,
+      "after_min": 4264.6015625,
+      "after_max": 4364.0,
+      "largest_change_m": 1296.25
+    },
+    {
+      "tile": [
+        12,
+        3160,
+        1625
+      ],
+      "before_min": 4168.0,
+      "before_max": 4435.0,
+      "after_min": 4265.25,
+      "after_max": 4436.0,
+      "largest_change_m": 101.71875
+    },
+    {
+      "tile": [
+        12,
+        3161,
+        1623
+      ],
+      "before_min": 4283.0,
+      "before_max": 4552.0,
+      "after_min": 4283.0,
+      "after_max": 4550.5,
+      "largest_change_m": 10.25
+    },
+    {
+      "tile": [
+        12,
+        3161,
+        1624
+      ],
+      "before_min": 4246.0,
+      "before_max": 4523.0,
+      "after_min": 4264.6640625,
+      "after_max": 4523.0,
+      "largest_change_m": 48.25
+    },
+    {
+      "tile": [
+        12,
+        3161,
+        1625
+      ],
+      "before_min": 4018.0,
+      "before_max": 4552.0,
+      "after_min": 4264.75,
+      "after_max": 4551.5,
+      "largest_change_m": 251.8828125
+    }
+  ]
+}

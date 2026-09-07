@@ -5,7 +5,8 @@ import {
   tiandituTiles,
   TIANDITU_CREDIT,
 } from '../cartography/basemaps';
-export const TERRAIN_URL = '/api/terrain/{z}/{x}/{y}.png';
+import { TERRAIN_URL } from './tiles';
+export { TERRAIN_URL } from './tiles';
 export const TERRAIN_MAXZOOM = 12;
 export const TERRAIN_CREDIT =
   '<a href="https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn" target="_blank">成都区域 FABDEM V1-2 · Hawker / Neal · CC BY-NC-SA 4.0</a> · <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">其他区域 Mapzen / SRTM</a>';

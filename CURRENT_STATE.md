@@ -1,3 +1,12 @@
+# 当前任务：修复鄂陵湖附近地形尖刺（2026-09-07）
+- 用户截图位置 #13.64/34.85086/97.76257/0/80；开始 main 干净，pull --ff-only 确认 3ba8e87 最新。实测全球 Mapzen z12/3160/1624 原始 PNG 存在 2988/5585m 相邻异常点，周围约 4270m；同位置 z13 数据范围 4259–4365m，无千米级突跳，z11 也含异常。属于上游低级瓦片数据异常。
+- 修复方案：只重建已检查的 z12 九瓦片区域及其 z7–11 父级局部像素，使用同源 z13 原始海拔做数值面积采样，边缘融合；不对全球山峰做阈值削平。新增独立可复现生成脚本、修复覆盖/署名及资源，网页/安卓统一路由优先修复瓦片，缓存版本避免继续读旧坏瓦片。成都 FABDEM、其他地区与路线/照片/标记/操控器保持。
+- 已生成 23 张同源修复资源，两个已知异常点恢复为 4275.75/4288.75m，主瓦片 4264.60–4364m。新增 terrain/tiles.ts 与 public/terrain/repairs-v1 覆盖清单；网页 API、安卓 LocalGateway 统一优先修复资源。新版 URL 防旧跳转缓存，outdoor/offline 在修复区外保留旧离线包；构建脚本逐张确认修复资源入包。无全局高度截断，无新增依赖或文件删除。
+- 验证完成：TypeScript、19/19 地形/离线/剖面相关测试、网页构建与安卓 Java/DEX 未签名构建通过。780×844 原视角复现尖刺并确认修复；390×844 / 360×780 同视角、缩放 11/12/14、网格/点选海拔、API 返回资源一致、成都与区外仍用旧来源检查通过。截图已查看，无横向溢出/页面错误。并行构建期间一次截图遇开发热重载，构建结束后增加视角/DOM 就绪断言重跑，三个尺寸均通过。
+- 文件：terrain/{tiles.ts,terrain.ts}、网页 terrain API、outdoor/offline.ts、安卓 LocalGateway、build-android.ps1；新增 prepare-terrain-repair.py、verify-terrain-repair.mjs、terrain-repair.test.mjs、docs/terrain-repairs.md 与 public/terrain/repairs-v1（23 PNG、coverage/SOURCE）。无业务功能删除；图片/路线/标记/操控器未改。
+- 日志 .openai/{terrain-repair-build,typecheck-terrain-repair,tests-terrain-repair,browser-terrain-repair,build-terrain-repair,build-android-terrain-repair,verify-terrain-repair-assets,verify-terrain-repair-apk}.log；截图 artifacts/screenshots/terrain-spikes-{before,after-780,after-390,after-360}.png。APK 525 项资源逐项 SHA-256 与 mobile/dist 一致，内含 23 张修复瓦片；mobile/.build/Shantu-0.2.5-test-unsigned.apk，55205847 字节，SHA-256 0f79aacd347f5cd64a16d1ccbc34f8d6c3b11de6d4d65d72d514f78eeb3ae651。原签名缺失，未发布 Release，未真机验收。
+- 本轮只修复已核查的鄂陵湖附近区域，不承诺全球异常全部消除。修复区旧离线包需要联网补新版高程，新版安卓资源已内置。源码/资源提交推送 main；完成后的远程 SHA 核验见 .openai/sync-terrain-repair.log。
+
 # 当前任务：关闭图层窗口后保留海拔图例（2026-09-07）
 - 用户截图显示：海拔着色仍开启，但关闭图层窗口后左下角海拔颜色图例消失。开始工作区干净，pull --ff-only 确认 a257509 最新。
 - 原因是 app/page.tsx 的 map-legends 容器仅在 panel=layers 时显示。最小修复增加海拔着色开启时保持可见的条件；色阶、透明度、地形渲染、地质面板原有显示行为及其他模块不变，不新增功能文件/依赖。

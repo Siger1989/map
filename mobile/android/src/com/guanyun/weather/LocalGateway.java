@@ -22,6 +22,7 @@ final class LocalGateway {
     private static final Pattern GEOLOGY = Pattern.compile("^/api/geology/tiles/(\\d)/(\\d{1,3})/(\\d{1,3})$");
     private final Context context;
     private final JSONObject coverage;
+    private final JSONObject repairs;
     private String satelliteDate;
     private long satelliteCachedAt;
 
@@ -32,6 +33,9 @@ final class LocalGateway {
             found = new JSONObject(new String(DataTransport.readLimited(stream, 16384), StandardCharsets.UTF_8));
         } catch (Exception error) { throw new IllegalStateException("Bundled terrain coverage missing", error); }
         coverage = found;
+        try (InputStream stream = context.getAssets().open("terrain/repairs-v1/coverage.json")) {
+            repairs = new JSONObject(new String(DataTransport.readLimited(stream, 16384), StandardCharsets.UTF_8));
+        } catch (Exception error) { throw new IllegalStateException("Bundled terrain repairs missing", error); }
         try { if (HttpResponseCache.getInstalled() == null) HttpResponseCache.install(new File(context.getCacheDir(), "map-http"), 64L * 1024 * 1024); }
         catch (Exception ignored) { }
     }
@@ -65,6 +69,11 @@ final class LocalGateway {
     private WebResourceResponse terrain(Matcher tile) throws Exception {
         int z = Integer.parseInt(tile.group(1)), x = Integer.parseInt(tile.group(2)), y = Integer.parseInt(tile.group(3));
         if (!DataTransport.validTile(z, x, y, 14)) return text(400, "Invalid terrain tile");
+        JSONArray corrected = repairs.optJSONArray(Integer.toString(z));
+        if (corrected != null) for (int i = 0; i < corrected.length(); i++) {
+            if ((x + "/" + y).equals(corrected.getString(i)))
+                return response(200, "image/png", context.getAssets().open("terrain/repairs-v1/" + z + "/" + x + "/" + y + ".png"), "public, max-age=86400");
+        }
         JSONArray range = coverage.optJSONArray(Integer.toString(z));
         boolean local = range != null && x >= range.getInt(0) && x <= range.getInt(1) && y >= range.getInt(2) && y <= range.getInt(3);
         if (local) return response(200, "image/png", context.getAssets().open("terrain/fabdem-v1-2/" + z + "/" + x + "/" + y + ".png"), "public, max-age=86400");

@@ -97,11 +97,18 @@ try {
   try {
     $names = @($archive.Entries | ForEach-Object { $_.FullName })
     if (@($names | Where-Object { $_.Contains('\') }).Count) { throw 'Non-portable APK asset names' }
-    foreach ($required in @('AndroidManifest.xml', 'classes.dex', 'assets/index.html', 'assets/native/ground-coverage.json', 'assets/vendor/maplibre/maplibre-gl-worker.mjs')) {
+    foreach ($required in @('AndroidManifest.xml', 'classes.dex', 'assets/index.html', 'assets/native/ground-coverage.json', 'assets/terrain/repairs-v1/coverage.json', 'assets/terrain/repairs-v1/SOURCE.json', 'assets/vendor/maplibre/maplibre-gl-worker.mjs')) {
       if ($names -notcontains $required) { throw "APK missing required file: $required" }
     }
     $tileCount = @($names | Where-Object { $_ -match '^assets/terrain/fabdem-v1-2/.+\.png$' }).Count
     if ($tileCount -ne 473) { throw "Terrain tile count mismatch: $tileCount" }
+    $repairCoverage = Get-Content -LiteralPath (Join-Path $webRoot 'terrain\repairs-v1\coverage.json') -Raw | ConvertFrom-Json
+    foreach ($level in $repairCoverage.PSObject.Properties) {
+      foreach ($tile in $level.Value) {
+        $repairName = "assets/terrain/repairs-v1/$($level.Name)/$tile.png"
+        if ($names -notcontains $repairName) { throw "APK missing terrain repair: $repairName" }
+      }
+    }
     if (@($names | Where-Object { $_ -match '(^|/)\.env|\.jks$|\.keystore$|node_modules/|\.openai/' }).Count) { throw 'Private build files found in APK' }
     Write-Output "Bundled terrain tiles verified: $tileCount"
   } finally { $archive.Dispose() }

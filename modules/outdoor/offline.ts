@@ -1,5 +1,6 @@
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
+import { TERRAIN_URL, legacyTerrainCacheUrl } from '../terrain/tiles.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1',
   INDEX = 'guanyun.trips.v1';
@@ -48,7 +49,10 @@ export const offlineProtocol: AddProtocolAction = async (
   const url = decodeURIComponent(request.url.slice('tripcache://'.length));
   let cached: Response | undefined;
   try {
-    cached = await (await caches.open(CACHE)).match(url);
+    const cache = await caches.open(CACHE);
+    cached = await cache.match(url);
+    const legacy = legacyTerrainCacheUrl(url);
+    if (!cached && legacy) cached = await cache.match(legacy);
   } catch {
     /* WebView storage unavailable: online still works. */
   }
@@ -150,7 +154,7 @@ export async function prepareTrip(
     ...regionTiles(
       bounds,
       12,
-      window.location.origin + '/api/terrain/{z}/{x}/{y}.png',
+      window.location.origin + TERRAIN_URL,
     ),
   ];
   // Chinese labels may use any BMP glyph; retain the complete font ranges.
