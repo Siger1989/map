@@ -7,12 +7,14 @@ import {
   type TravelMode,
 } from './types.ts';
 import { MAX_ROUTE_STOPS } from './stops.ts';
+import { normalizePlaceName } from './placeName.ts';
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
 export const NAVIGATION_SERVICES = {
   route: 'https://valhalla1.openstreetmap.de/route',
   search: 'https://photon.komoot.io/api/',
+  reverse: 'https://photon.komoot.io/reverse',
 };
 const cache = new Map<string, { time: number; data: unknown }>();
 const nextRequestAt = new Map<string, number>();
@@ -253,5 +255,18 @@ export async function searchPlaces(
   });
   return normalizePlaces(
     await requestJSON(NAVIGATION_SERVICES.search + '?' + params, signal),
+  );
+}
+
+export async function reversePlace(center: Coordinate, signal: AbortSignal) {
+  const params = new URLSearchParams({
+    lon: String(center[0]),
+    lat: String(center[1]),
+    radius: '10',
+    limit: '1',
+  });
+  return normalizePlaceName(
+    await requestJSON(NAVIGATION_SERVICES.reverse + '?' + params, signal),
+    center,
   );
 }

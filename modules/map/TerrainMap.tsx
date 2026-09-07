@@ -85,6 +85,7 @@ type Props = {
   onStatus: (status: string) => void;
   onView: (view: ViewState) => void;
   onAnchor: (anchor: [number, number]) => void;
+  onCenter?: (center: [number, number]) => void;
   onSatellite: (satellite: SatelliteState) => void;
   onGeology: (state: GeologyState) => void;
   weather: WeatherData | null;
@@ -628,6 +629,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (disposed) return;
             sync();
             const initialCenter = map.getCenter();
+            latest.current.onCenter?.(initialCenter.wrap().toArray());
             weatherAnchor = initialCenter.toArray();
             latest.current.onAnchor(weatherAnchor);
             latest.current.onView({
@@ -705,6 +707,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', (event) => {
+            latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) return;
             if (!('positionFollow' in event && event.positionFollow))
               trackRef.current?.sync(latest.current.trackOverlay);

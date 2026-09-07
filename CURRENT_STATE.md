@@ -1,3 +1,11 @@
+# 当前任务：山兔标题后显示当前地名（2026-09-07）
+- 用户要求“山兔”后加入当前地方名字；按地图中心理解，拖动地图后更新，世界总览显示世界地图。工作区干净，pull --ff-only确认e186637为最新。
+- 范围：navigation新增地名解析/React查询hook，provider复用现有Photon/限速/缓存加入逆地理查询；controls新增页头地名组件、workspace.css限制长地名占位；TerrainMap通过公共onCenter回调在就绪/移动结束报告中心，app接线。地图中心取两位小数查询，900ms防抖，旧位置响应不能覆盖新位置；失败/无结果显示明确状态与坐标提示。无定位权限新增，轨迹/照片/GPS/地形算法和数据格式保持，回滚撤销本轮组件与回调即可。
+- 实现完成：已查Photon官方API与演示服务说明，复用1.1秒请求间隔、15分钟/24条内存缓存；12秒超时与网络恢复重试，无结果/失败有明确状态。地区地名与街边店铺名区分，3–7级显示国家/省州，8级起城市/区县，超长名称省略、悬停完整信息，页头给右侧图层入口留位。
+- 验证完成：最终TypeScript、14/14相关地名/导航/路线检查通过；真实Photon请求成都附近返回“成都市 · 灌口街道”，伦敦返回“London · City of Westminster”，携带网页/HTTPS Origin核对CORS返回*。390×844、360×780检查世界总览不查询、两位小数/真实拖动中心通知、缩放地区层级、长名省略/控件无遮挡、旧响应取消、无结果/失败/恢复联网、URL重载、无溢出和运行错误通过，关键中英文截图已查看。日志.openai/{typecheck-place-name-final,tests-place-name,live-place-name,place-name-cors,browser-place-name}.log。
+- 构建通过：网页与Android Java/DEX完整未签名构建成功；500项APK资源与mobile/dist逐项SHA-256一致。mobile/.build/Shantu-0.2.5-test-unsigned.apk为53997340字节，SHA-256 878c4b3c3fa6adcc4e3df918232cc1ff9d9eb50fd64664e420dd4f62e4dc6a4e。日志.openai/{build-web-place-name,build-android-place-name,verify-place-name-apk}.log。无可安装新包/Release，原签名限制与未做安卓真机验收保持。
+- 文件清单：新增navigation/{placeName.ts,usePlaceName.ts}、controls/PlaceName.tsx、tests/place-name.test.mjs、docs/current-place.md；修改navigation/provider.ts、TerrainMap.tsx、app/page.tsx、controls/workspace.css、README.md、本状态文件。无文件删除或新增依赖，原轨迹/照片/GPS/地图算法与存储保持。远程main无新增提交，待同步本轮成果。
+
 # 当前任务：模型名称贴近与3D控制杆常驻（2026-09-07）
 - 用户反馈添加标记名称离模型太远、3D控制杆消失；工作区干净，pull --ff-only确认e5d1c69为最新。
 - 原因：模型按保存高程/偏移/埋深渲染，名称却使用地面Marker投影；相机俯仰与真实高度放大差距。cameraOpen受工具菜单“视角盘”反向开关控制，可被隐藏。

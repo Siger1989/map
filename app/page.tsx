@@ -15,6 +15,7 @@ import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
+import { PlaceName } from '@/modules/controls/PlaceName';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -81,6 +82,7 @@ export default function Home() {
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanel] = useState<ControlPanel>(null);
   const [anchor, setAnchor] = useState<[number, number]>(INITIAL_VIEW.center);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
   const [satellite, setSatellite] = useState<SatelliteState>({
     date: '',
@@ -353,6 +355,7 @@ export default function Home() {
         onStatus={setMapStatus}
         onView={setView}
         onAnchor={setAnchor}
+        onCenter={setMapCenter}
         onSatellite={setSatellite}
         onGeology={setGeology}
         weather={weather.data}
@@ -549,6 +552,7 @@ export default function Home() {
           </span>
           <h1>{PRODUCT_NAME}</h1>
         </div>
+        <PlaceName center={mapCenter} zoom={view.zoom} />
         <span className="map-load-status" role="status">
           {mapStatus}
         </span>

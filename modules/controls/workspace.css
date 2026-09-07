@@ -22,7 +22,7 @@
   top: calc(8px + var(--safe-top));
   left: var(--edge-left);
   height: 36px;
-  max-width: calc(100% - var(--edge-left) - var(--edge-right));
+  max-width: calc(100% - var(--edge-left) - var(--edge-right) - 52px);
   padding-left: 9px;
   display: flex;
   align-items: center;
@@ -44,6 +44,20 @@
   font-size: 14px;
   letter-spacing: 1px;
   font-weight: 650;
+}
+.current-place {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  color: var(--text);
+}
+.current-place > span {
+  color: var(--muted);
+}
+.topbar > .icon-button {
+  flex-shrink: 0;
 }
 .map-load-status {
   position: absolute;
