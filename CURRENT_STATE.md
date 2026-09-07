@@ -5,7 +5,8 @@
 - 命令：git status、git diff --stat、git fetch origin main、git pull --ff-only、git rev-list --left-right --count HEAD...origin/main；读取项目规范及相关源码。
 - 验证结果：PASS。文档本地链接、版本与清单、功能接口、git diff --check 核对通过；GitHub Release 正文回读一致，标签/构建提交/名称/发布状态及全部附件 ID、大小、哈希保持原样，APK SHA-256 与本地一致。仅文档改动，未重跑业务测试或构建；122 项测试等为原 0.2.2 发布验证记录。日志 .openai/{docs-sync-022-validation,docs-release-022-verified}.log。
 - 当前阻塞：无。
-- 下一步：文档完成，提交推送 main 后核验远端 SHA；最终同步结果记录 .openai/docs-sync-022-remote.log。本轮不重新构建 APK；未新增/删除业务模块，地图与手机数据不受文档更新影响。
+- 同步结果：PASS。文档提交 068c5ef 已推送 main，git ls-remote 核验与本地一致；Release 正文已更新，APK 和三个既有附件保持不变。本状态收尾另行提交，最终 SHA 记录 .openai/docs-sync-022-remote.log。
+- 下一步：本轮完成。本轮不重新构建 APK；未新增/删除业务模块，地图与手机数据不受文档更新影响。
 
 # 当前交付：地点直接输入、途经点排序与细长可拖行程条（2026-09-07，完成）
 - 当前目标：按用户截图改进路线操作；起终点就地输入搜索、添加途经点、手机拖柄排序；左侧行程条更长更细，拖动联动地图预览和沿途天气。
