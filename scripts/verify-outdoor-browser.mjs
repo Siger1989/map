@@ -82,15 +82,13 @@ try {
     assert.equal((await download).suggestedFilename(), 'guanyun-backup.json');
     await page.getByRole('button', { name: '关闭面板', exact: true }).click();
     await page.getByRole('button', { name: '工具', exact: true }).click();
-    assert.ok(
-      await page
-        .getByRole('button', { name: '视角盘', exact: true })
-        .isVisible(),
+    assert.equal(
+      await page.getByRole('button', { name: '视角盘', exact: true }).count(),
+      0,
     );
-    await page.getByRole('button', { name: '视角盘', exact: true }).click();
-    assert.equal(await page.locator('.camera-gizmo').count(), 0);
-    await page.getByRole('button', { name: '工具', exact: true }).click();
-    await page.getByRole('button', { name: '视角盘', exact: true }).click();
+    assert.ok(await page.locator('.camera-gizmo').isVisible());
+    await page.getByRole('button', { name: '关闭面板', exact: true }).click();
+    assert.ok(await page.locator('.camera-gizmo').isVisible());
     console.log('PASS mobile UI import/export/tools', width, height);
   }
   await page.getByRole('button', { name: '行程', exact: true }).click();

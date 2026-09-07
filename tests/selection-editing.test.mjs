@@ -40,6 +40,8 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
           constructor({ element }) { this.element = element; }
           getElement() { return this.element; }
           setLngLat(p) { this.coordinate = p; return this; }
+          setOffset(p) { this.offset = p; return this; }
+          setOpacity() { return this; }
           addTo() { return this; }
           remove() { this.removed = true; }
         }

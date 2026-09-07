@@ -115,7 +115,6 @@ export default function Home() {
     ];
   }, [tracks.saved, recorder.record]);
   const selectedPhoto = photos.items.find((p) => p.id === photos.selected);
-  const [cameraOpen, setCameraOpen] = useState(true);
   const recordedSegments = useMemo(
     () =>
       recorder.record.segments
@@ -723,11 +722,6 @@ export default function Home() {
       )}
       <ControlDock
         active={panel === 'layers' ? null : panel}
-        cameraOpen={cameraOpen}
-        onCamera={() => {
-          setCameraOpen((v) => !v);
-          setPanel(null);
-        }}
         onActive={(next) => {
           if (next) {
             photos.setSelected(null);
@@ -994,17 +988,15 @@ export default function Home() {
           onRetry={() => map.current?.refreshSection()}
         />
       )}
-      {cameraOpen && (
-        <CameraGizmo
-          view={view}
-          onView={(pitch, bearing) => {
-            position.free();
-            if (pitch > 0 && !layers.terrain && !section.enabled)
-              update({ terrain: true });
-            map.current?.view(pitch, bearing, false);
-          }}
-        />
-      )}
+      <CameraGizmo
+        view={view}
+        onView={(pitch, bearing) => {
+          position.free();
+          if (pitch > 0 && !layers.terrain && !section.enabled)
+            update({ terrain: true });
+          map.current?.view(pitch, bearing, false);
+        }}
+      />
     </main>
   );
 }

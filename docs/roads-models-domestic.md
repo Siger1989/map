@@ -52,6 +52,7 @@ NEXT_PUBLIC_TIANDITU_KEY=
 - `modules/tracks/roadSnapping.ts`：筛选道路、投影匹配、弯道跟随；`modules/map/roadSnap.ts` 通过地图公共查询接口提供几何。
 - `DrawingSession` / `TrackDrawing` / `TrackPanel` / `useManualTracks`：绘制接线和独立开关。
 - `modules/annotations/data.ts`：参数校验、尺寸/体积、旋转后的高度边界；`useAnnotations.ts`：本机存档及海拔读取；`AnnotationLayer.ts`：米制 Three.js 模型与地图标签；`AnnotationPanel.tsx`：编辑与对比。
+- `modules/annotations/modelLabel.ts`：接收模型网格、渲染矩阵和CSS视口尺寸，返回模型轮廓上方6px的名称锚点，近裁面异常时返回null。AnnotationLayer只更新Marker屏幕偏移，坐标仍供原选择/拖动接口使用；名称随高度、埋深、旋转、相机变化同步，不修改存档。回滚可撤销此投影接线恢复地面标签。
 - `modules/cartography/basemaps.ts` / `modules/terrain/terrain.ts` / `LayerPanel`：可配置国内影像和注记；`public/fonts/`：本地数字字形及授权。
 - `app/page.tsx` / `TerrainMap` / `ControlDock` 和网页/安卓样式入口：模块组合；Android 返回键支持退出放置状态。
 - 无删除业务模块；没有更换天气模型、地形原始数据、已有路线服务、存档格式或重新发布 Sites。旧用户轨迹保持原格式，新模型另用独立存档键。

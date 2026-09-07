@@ -6,7 +6,6 @@ import {
   X,
   Menu,
   Footprints,
-  Orbit,
   Map as MapIcon,
 } from 'lucide-react';
 
@@ -39,11 +38,7 @@ export function ControlDock({
   timeline,
   timeLabel = '时间',
   children,
-  cameraOpen,
-  onCamera,
 }: {
-  cameraOpen: boolean;
-  onCamera: () => void;
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
   summary: ReactNode;
@@ -126,10 +121,6 @@ export function ControlDock({
                     </button>
                   ),
                 )}
-                <button aria-pressed={cameraOpen} onClick={onCamera}>
-                  <Orbit size={18} />
-                  视角盘
-                </button>
                 <button onClick={() => onActive('outdoor')}>
                   <Footprints size={18} />
                   行程与数据

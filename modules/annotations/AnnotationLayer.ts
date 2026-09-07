@@ -11,6 +11,7 @@ import type { LayerSettings } from '../map/types';
 import { modelSection } from '../section/models';
 import { applyModelPlane } from '../section/planeModels';
 import type { SectionSettings } from '../section/types';
+import { modelLabelAnchor } from './modelLabel';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -153,13 +154,23 @@ export class AnnotationLayer implements CustomLayerInterface {
         event.stopPropagation();
         this.onSelect(item.id);
       };
-      if (existing) existing.setLngLat(item.coordinates);
-      else
+      if (existing) {
+        existing.setLngLat(item.coordinates);
+        existing.setOffset([0, 0]);
+        element.style.visibility = '';
+      } else
         this.markers.set(
           item.id,
-          new Marker({ element, anchor: 'bottom' })
+          new Marker({ element, anchor: 'bottom', subpixelPositioning: true })
             .setLngLat(item.coordinates)
             .addTo(map),
+        );
+      // A model label is projected from its mesh, not the terrain anchor tested by Marker.
+      this.markers
+        .get(item.id)!
+        .setOpacity(
+          1,
+          item.kind !== 'pin' && item.groundElevation !== null ? 1 : 0.2,
         );
       if (item.kind === 'pin' || item.groundElevation === null) continue;
       const ground = this.settings.terrain
@@ -357,6 +368,35 @@ export class AnnotationLayer implements CustomLayerInterface {
     );
   }
   private hasRendered = false;
+  private updateModelLabels() {
+    const map = this.map;
+    if (!map) return;
+    const canvas = map.getCanvas();
+    for (const [id, frame] of this.frames) {
+      const marker = this.markers.get(id);
+      const mesh = frame.children[0]?.children[0];
+      if (!marker || !(mesh instanceof THREE.Mesh)) continue;
+      const anchor = frame.visible
+        ? modelLabelAnchor(
+            mesh,
+            this.camera.projectionMatrix,
+            canvas.clientWidth,
+            canvas.clientHeight,
+          )
+        : null;
+      marker.getElement().style.visibility = anchor ? '' : 'hidden';
+      if (!anchor) continue;
+      // Keep the stored map coordinate for selection/dragging; only move its label.
+      const ground = map.project(marker.getLngLat());
+      const offset = { x: anchor.x - ground.x, y: anchor.y - ground.y };
+      const previous = marker.getOffset();
+      if (
+        Math.abs(offset.x - previous.x) > 0.1 ||
+        Math.abs(offset.y - previous.y) > 0.1
+      )
+        marker.setOffset([offset.x, offset.y]);
+    }
+  }
   render(_gl: WebGL2RenderingContext, input: CustomRenderMethodInput) {
     if (!this.renderer || !this.map || !this.scene.children.length) return;
     const unit = this.origin.meterInMercatorCoordinateUnits();
@@ -375,6 +415,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       this.map.getCanvas().height,
     );
     this.renderer.render(this.scene, this.camera);
+    this.updateModelLabels();
     this.renderer.resetState();
   }
   onRemove() {
