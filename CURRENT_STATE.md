@@ -1,13 +1,15 @@
-# 当前任务：无损压缩 APK 与 GitHub 独立测试版（2026-09-07）
+# 当前交付：无损压缩 APK 与 GitHub 独立测试版（2026-09-07，完成）
 - 用户要求继续打包、压缩并上传 GitHub；开始 main 干净，pull --ff-only 确认 80ec939 最新。GitHub API 凭据已验证，可读取现有 Release。
 - 0.2.4 公开证书为 a3aa453c…91cd29c，本机现有测试密钥证书为 4a941b9d…623e6f9f，确实不一致。用户已明确没有原密钥，“反正发一个可以安装的就行”；据此制作独立包名的山兔测试版，允许与原版并存、数据独立，不替换原版签名配置，不要求卸载原应用。
 - 范围：scripts/build-android.ps1 增加独立测试构建选项与签名前无损压缩步骤；独立签名公开配置、压缩脚本/测试、README/mobileREADME/跨设备与本轮发行说明。业务 UI、导航、剖面、照片、GPS、地形像素及原存储键保持，原始资源不删减。通过临时 Manifest 隔离包名/provider 与标签，回滚本轮构建接线即可。
-- 已测 APK 约 55.2 MB，绝大部分是已压缩地形 PNG；保持所有海拔像素的压缩空间有限。正在实现 PNG IDAT 无损重压缩及 ZIP 条目压缩选择，之后执行类型检查、逻辑测试、网页/完整 APK 构建、资源/签名/对齐校验，并发布带校验文件的 GitHub 预发布版本。
+- 已测 APK 约 55.2 MB，绝大部分是已压缩地形 PNG；保持所有海拔像素的压缩空间有限。已完成 PNG IDAT 无损重压缩及 ZIP 条目压缩选择；构建、校验与发行结果如下。
 - 构建/验证完成：TypeScript、216/216 测试、网页与完整安卓构建通过。独立 APK 为 APK/Shantu-0.2.5-test-standalone.apk，55,019,071 字节；SHA-256 4cd978cebdc6062af14e9a8537318b5a76ae4fc1f6bde1a15d28ee4dfdf50525。v2/v3 签名、最终对齐、code12/包名/标签与独立 provider 均核验；原包名遇不匹配证书仍拒绝。
 - 压缩前后（同次构建、对齐签名前）55,214,513 → 54,966,979 字节，减少 247,534 字节/0.45%，未删减资源。独立 Pillow 对比 496 PNG 像素与元数据完全一致，其余 29 资源 SHA-256 一致，共 525 项；ZIP CRC、资源表不压缩且对齐、无私密文件通过。
 - 文件：修改 scripts/build-android.ps1、README.md、mobile/README.md、docs/continue-development.md、docs/recording-photos-fix.md 与本状态；新增 scripts/optimize-apk.mjs、tests/apk-compression.test.mjs、config/android-standalone-signing.json、docs/release-0.2.5-standalone.md。无新增依赖、业务改动或文件/数据删除；原 Manifest 与原签名配置未改。
 - 证据：.openai/{typecheck-apk-standalone,tests-apk-standalone,build-web-apk-standalone,build-apk-standalone,verify-apk-standalone-assets,verify-apk-standalone-manifest,verify-apk-original-signing-guard}.log。首次压缩测试 fixture 的 CRC 错误已修正，最终全量通过。
-- 正在提交推送 main 与发布 v0.2.5-test-standalone；APK、SHA256 与安装说明走 Release，私有密钥/日志不上传。adb 无连接设备，未真机安装/触控/GPS验收。
+- 发布完成：https://github.com/Siger1989/map/releases/tag/v0.2.5-test-standalone ，draft=false/prerelease=true。源码提交与远端标签均为 325c0bda6e66a51ccf9bd74b7b9b3978d8cde8f9；APK、SHA256 与安装说明三附件 uploaded，GitHub 大小与 SHA-256 均逐项匹配本地。最初直连大文件上传未完成，停止本任务上传进程并沿用 Git 已配置的本机代理重传后成功；未影响 Codex 或原 Release。
+- 发布证据：.openai/{sync-apk-025,push-apk-025,upload-apk-025-proxy,verify-apk-025-draft,publish-apk-025,verify-apk-025-published}.log。无私有密钥/日志上传；本状态收尾单独提交，最终 main SHA 核验写 .openai/sync-apk-025-final.log。
+- 本轮打包/压缩/上传完成，无待交付文件。adb 无连接设备，实际真机安装、触控、WebView、GPS/锁屏记录仍未验收；独立版与旧版数据不自动迁移。
 
 # 当前任务：剖面比例尺、尺寸档位和交线测点（2026-09-07）
 - 实现与主要验证完成：212/212 全量逻辑测试、最终 TypeScript；390×844 / 360×780 剖面浏览器通过颜色独立/图线与滑条拖动/单次保存/真实触摸与取消/键盘/选择后数据按钮与减号、编辑自定义字段、存储失败重试、比例尺单位与间隔、宽高档位、对象关闭/隐藏/删除/刷新和档案恢复，以及旧对象变换/撤销/图片导出。已查看两尺寸图与设置/编辑界面、1600×1827 JPEG，图片带 km 刻度/比例尺/颜色编号及完整数据页脚。
