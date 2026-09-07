@@ -14,6 +14,7 @@ import '@/modules/position/position.css';
 import '@/modules/annotations/annotations.css';
 import '@/modules/section/section.css';
 import '@/modules/objectTransform/objectTransform.css';
+import '@/modules/controls/modern.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

@@ -88,36 +88,6 @@ export function LayerWindow({
             </button>
           </div>
           <div className="dock-content">
-            <div className="view-presets" aria-label="观察模式">
-              <button
-                aria-pressed={settings.clouds || settings.rain}
-                onClick={() =>
-                  onChange({
-                    terrain: true,
-                    clouds: true,
-                    rain: true,
-                    contours: false,
-                  })
-                }
-              >
-                <CloudSun size={18} />
-                天气总览
-              </button>
-              <button
-                aria-pressed={!settings.clouds && !settings.rain}
-                onClick={() =>
-                  onChange({
-                    terrain: true,
-                    clouds: false,
-                    rain: false,
-                    contours: true,
-                  })
-                }
-              >
-                <Mountain size={18} />
-                看清地形
-              </button>
-            </div>
             <LayerPanel
               customSource={customSource}
               onOpenSources={onOpenSources}
@@ -126,6 +96,39 @@ export function LayerWindow({
               satelliteDate={satelliteDate}
               satelliteStatus={satelliteStatus}
             />
+            <details className="layer-presets">
+              <summary>场景预设</summary>
+              <div className="view-presets" aria-label="观察模式">
+                <button
+                  aria-pressed={settings.clouds || settings.rain}
+                  onClick={() =>
+                    onChange({
+                      terrain: true,
+                      clouds: true,
+                      rain: true,
+                      contours: false,
+                    })
+                  }
+                >
+                  <CloudSun size={18} />
+                  天气总览
+                </button>
+                <button
+                  aria-pressed={!settings.clouds && !settings.rain}
+                  onClick={() =>
+                    onChange({
+                      terrain: true,
+                      clouds: false,
+                      rain: false,
+                      contours: true,
+                    })
+                  }
+                >
+                  <Mountain size={18} />
+                  看清地形
+                </button>
+              </div>
+            </details>
             <p className="map-status" role="status">
               {mapStatus}
             </p>

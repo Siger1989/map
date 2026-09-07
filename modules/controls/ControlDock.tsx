@@ -103,6 +103,14 @@ export function ControlDock({
                         ? '路线规划'
                         : PANELS.find((p) => p.id === active)?.label}
             </h2>
+            {(active === 'route' || active === 'track') && (
+              <button
+                className="dock-section-link"
+                onClick={() => onActive(active === 'route' ? 'track' : 'route')}
+              >
+                {active === 'route' ? '轨迹管理' : '道路规划'}
+              </button>
+            )}
             <button
               ref={closeButton}
               className="icon-button"

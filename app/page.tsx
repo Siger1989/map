@@ -1063,22 +1063,6 @@ export default function Home() {
             }}
           />
         )}
-        {(panel === 'route' || panel === 'track') && (
-          <nav className="route-tabs" aria-label="路线类型">
-            <button
-              aria-pressed={panel === 'route'}
-              onClick={() => setPanel('route')}
-            >
-              道路规划
-            </button>
-            <button
-              aria-pressed={panel === 'track'}
-              onClick={() => setPanel('track')}
-            >
-              轨迹管理
-            </button>
-          </nav>
-        )}
         {panel === 'favorites' && (
           <CollectionsPanel
             favorites={favorites}

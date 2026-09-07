@@ -1,3 +1,14 @@
+# 当前任务：A / TheTrail 紧凑 UI（2026-09-07，实现与构建完成，手机视觉待验收）
+- 目标：按用户选择的 A 参考，浅色悬浮面板、亮蓝强调色、小字号与紧凑布局；保留真实地图和绿色三维相机。
+- 启动：git status / diff 干净，pull --ff-only 已是最新 cadfbec；已读项目规则及状态，实际查看 TheTrail 参考图。
+- 范围：共享控件样式、路线标题栏、图层参数渐进展开；不改地图渲染、定位、存储、签名和图源。
+- 已改：modern.css 统一轻浅面板与蓝色状态，两个网页入口接入；ControlDock 标题内切换路线/轨迹，page 移除重复切换行；LayerPanel 隐藏未开启图层的参数、说明展开，LayerWindow 预设折叠。保留 44px 主要触控区与 12–13px 字号。
+- 验证：初次 TypeScript PASS。390/360 DOM 宽度无横向溢出，360 路线框约 286×343、绿色相机与右工具/底栏不相交；图层参数条件显示、来源说明展开、路线/轨迹切换、新增途经点 PASS。浅色标记按钮对比度问题已修正。
+- 截图：正常视口外观可检查；手机视口覆盖捕获出现内容约半尺寸的工具缩放异常，手机截图视觉验收 BLOCKED，未当作应用布局缺陷或真机 PASS。
+- 最终验证：TypeScript PASS、217/217 测试 PASS、网页及安卓网页资源最终构建 PASS；图源入口、照片空态、收藏、标记浏览、Escape 关闭 PASS。按钮浅色对比度与图层展开蓝色状态二轮截图通过；无新增浏览器错误。标记窗最终收窄到与普通面板一致，避开右工具。
+- 文件：新增 modern.css、docs/compact-thetrail-ui.md、design-qa.md；修改两入口、page/ControlDock/LayerPanel/LayerWindow、README/LOG/本状态。无依赖或图源变化。日志 .openai/{typecheck,tests,build,build-mobile}-ui-a*.log；截图 artifacts/screenshots/ui-a-*.png。
+- 交付：本轮源码与详细说明同步 origin/main，最后 Git 命令与远端 SHA 核验记录 .openai/sync-ui-a.log；未生成 APK。下一步为手机尺寸视觉/真机验收；静止闪烁根因仍未解决。
+
 # 当前任务：静止地图闪烁排查与 UI 参考（2026-09-07，本轮调查完成；手机根因待复现）
 - 目标：调查用户反馈的地图不动也闪；检查现有 UI，提供网上真实产品参考供用户选择，暂不重做 UI。
 - 启动：main 干净，git pull --ff-only 确认 77b6354 最新；已读项目说明。公司新增依赖本地缺失，npm install 补齐，开发进程已退出，正在恢复本地预览。
