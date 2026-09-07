@@ -1,4 +1,6 @@
 # 当前追加：地图仍闪烁（2026-09-08，确定刷新问题已优化、现场闪烁待复现）
+- 交付：源码2ff45502371a12f3a526cf128eb65ecfdf534d4a已push并核对origin/main一致。GitHub v0.2.6-test已发布（非draft、prerelease），APK/SHA/详细说明3个资产服务端digest与本机一致；规范下载URL实际HTTP206、APK MIME与ZIP头PASS。日志.openai/{sync-apk-026,publish-apk-026,verify-release-026}.log。下载：https://github.com/Siger1989/map/releases/download/v0.2.6-test/Shantu-0.2.6-test.apk 。
+- 发布前最终网页构建PASS。原现场地图同一实例82.249秒→188.054秒期间render=36、sourcedata=160、sourcedataloading=84均未增加，无上下文丢失/恢复，视角仍为原用户地点/52.3°方向/26°俯仰。日志.openai/flicker-idle-comparison.log；此窗口不能证明所有环境无闪。
 - 用户要求先别关机并反馈地图仍闪。未执行或安排任何关机；已告知暂缓发布APK，先继续调查。续画修复与0.2.6打包记录见下，已本地提交1094b0b，尚未推送/发布。
 - 已询问电脑网页或手机APK、全图白黑或局部闪；正在等待。读取当前用户tab6，只读截图，保留6条用户轨迹与3个标记，不改变用户数据/图层。
 - 初次24帧截图仅覆盖0.57秒，不能据此断言稳定。现有调查文档明确上次未解决静止闪烁；正在检查渲染/自定义图层/数据刷新，而非继续用开发热更新解释APK问题。
@@ -7,7 +9,7 @@
 - 确认Android useRecording每1.5秒JSON解析相同原生快照仍替换record/segments，引发重复覆盖层提交。新增nativeRecordingSnapshot成功快照缓存，重复失败同样不更新状态；新定位/命令/精度提示和恢复仍更新。不是已确认的全部闪烁根因。
 - 修改modules/outdoor/{nativeRecordingSnapshot,useRecording}、modules/map/{renderDiagnostics,TerrainMap}、tests/native-recording-snapshot.test.mjs及发行/排查说明。格式/类型、233项全量PASS，3项新回归覆盖重复轮询、真实更新、错误恢复；完整APK重建PASS，日志.openai/*native-refresh*.log、build-apk-026-refresh.log。
 - 最终APK替换同一未发布0.2.6：75,901,898字节，SHA256 a6e9ee491b10ff3d514a3b0dc92b11b212c716585213107f4e6bc0b0eb917020；ZIP/签名/693资源核对PASS，470PNG像素一致、473地形瓦片。下方旧包hash仅为本轮初构建历史，不发布。
-- 下一步发布包含确定修复的测试包并同步说明，明确闪烁尚未复现；待用户补充电脑或APK及闪烁形态后继续。无真机可连，鸿蒙原生包未生成。未关机、未配置关机或系统电源选项。
+- 下一步待用户补充电脑或APK及闪烁形态后继续定位；不能把已发布测试包称作闪烁全面修复。无真机可连，鸿蒙原生包未生成。未关机、未配置关机或系统电源选项。
 
 # 当前任务：选中线路直接续画并交付APK（2026-09-08，验证PASS、待发布）
 - 用户要求选中轨迹后继续无需二次选择，并打包APK。启动status/diff干净、pull最新51f5b7e，读取项目状态/说明/构建脚本。
