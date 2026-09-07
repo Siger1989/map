@@ -16,6 +16,7 @@ declare global {
       recordState(): string;
       saveFile(name: string, mime: string, text: string): void;
       photoFolders?(): boolean;
+      photoOutput?(name: string, base64: string, share: boolean): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;
     };

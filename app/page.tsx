@@ -533,6 +533,8 @@ export default function Home() {
           onSelect={photos.setSelected}
           onClose={() => photos.setSelected(null)}
           onRemove={photos.remove}
+          onUpdate={photos.update}
+          track={photoTracks.find((t) => t.id === selectedPhoto.trackId)}
         />
       )}
       <header className="topbar glass">

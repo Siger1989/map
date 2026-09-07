@@ -1,3 +1,15 @@
+# 当前任务：照片放大、编辑标记、分享与拍摄环境（2026-09-07）
+- 已同步 main（efe2336），工作区原本干净。现有照片仅960px预览，无缩放/编辑/分享；导入未读取EXIF海拔。
+- 设计：photos 独立详情/手势/批注/导出/拍摄天气模块，保留小地图预览，主动放大进入全屏；查看副本最长边2560px，旧照片兼容。非破坏性标题备注/旋转/画线，分享生成带拍摄信息的图片副本。
+- 范围：modules/photos、app/page.tsx props、安卓独立照片分享provider/bridge/manifest；记录筛选、地图算法、天气图层不改。通过可选字段兼容旧IndexedDB，原图不修改；回滚可撤销本轮源码，保留照片数据。
+- 环境信息：海拔优先EXIF，再取同段对应轨迹点/插值并标来源；拍摄天气用Open-Meteo历史ERA5或最近日期模型数据，保存来源/时次/获取时间，缺失明确提示并可重试。不能称现场实测。
+- 状态：功能与验证完成，正在同步GitHub；原APK签名限制仍在，不发布错误签名包。
+- 实现完成：独立 details/weather/PhotoStage/PhotoLightbox/export；1–6倍缩放、双指/拖动、旋转/标题/备注、三色画线/撤销/清空、可预览的信息分享图；原生JPEG保存与只读临时分享provider。元数据补写使用原子patch，删除后不复活，重导入保留编辑；查询并发2个、15秒超时、15分钟内存缓存，失败可重试。
+- 已验证：TypeScript、140/140逻辑测试；390×844 / 360×780实际文件导入、Chromium真实双指事件、旋转画线/单点标记/撤销、天气失败重试、JPEG下载、系统分享边界模拟、重导入/重载/并发写/清晰副本尺寸均通过。原照片导入回归两尺寸通过。已查看最终关键截图与导出JPEG，修正旧预览CSS覆盖详情字号，标记线宽与导出一致；真实EXIF字节方向标志读取负海拔回归通过。
+- 真实接口：Open-Meteo ERA5查询2026-08-20 02:00UTC成都位置成功，返回25.3℃/0.2mm/1.65m/s；仅证明指定历史时次接口可达，非照片现场实测。日志 .openai/live-photo-weather.log。
+- 最终构建：网页、安卓Java/DEX/完整未签名包通过；489项资产逐项SHA-256与mobile/dist一致，含473张地形。产物mobile/.build/Guanyun-0.2.5-test-unsigned.apk，53429254字节，不可安装。最终日志 .openai/{tests-photo-detail-final,typecheck-photo-detail-delivery,browser-photo-details-delivery,browser-photos-regression,build-web-photo-details-delivery,build-android-photo-details-delivery,verify-photo-apk-assets}.log。
+- 交付范围与限制：文件清单/接口/回滚见 docs/photo-details.md；无新增依赖、无业务文件删除、无原图修改。记录/地图/天气图层算法保持。原0.2.4 APK没有变化，无新Release；原生分享选择器和手机触控仍缺真机验收。
+
 # 当前任务：手动记录精度门槛（2026-09-07）
 - 用户询问记录点与刷新点关系、反馈飘移并要求可调 GPS 精度。已核对：安卓 GPS/网络均请求最小4秒/5米；网页约1.5秒读取原生存档，地图跟随最后接受的记录点。旧门槛固定80米，另有20秒过期、80m/s跳变与5米/30秒采样过滤，刷新不等于新增记录。
 - 本轮范围：新增 outdoor 记录精度偏好与折叠设置UI，recording/useRecording 与 Android RecordingStore/NativeBridge 配置筛选；默认20米，整数5–80米。设置只影响后续定位点，旧存档继续按历史格式读取。地形、天气、照片匹配、路线算法与原生定位请求频率保持。

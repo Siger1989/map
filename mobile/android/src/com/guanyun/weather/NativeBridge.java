@@ -15,6 +15,31 @@ final class NativeBridge {
     NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files; }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
+    @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {
+        if (name == null || !name.matches("Guanyun-photo-[0-9]{1,16}\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
+        final byte[] bytes;
+        try { bytes = android.util.Base64.decode(encoded, android.util.Base64.DEFAULT); }
+        catch (Exception e) { return "图片编码无效"; }
+        if (bytes.length < 3 || bytes.length > 8*1024*1024 || (bytes[0]&255)!=255 || (bytes[1]&255)!=216 || (bytes[2]&255)!=255) return "请选择有效JPEG图片";
+        activity.runOnUiThread(() -> {
+            if (!activity.trustedForeground()) return;
+            if (!share) { files.savePhoto(name, bytes); return; }
+            new Thread(() -> {
+                try {
+                    android.net.Uri uri = PhotoShareProvider.prepare(activity, bytes);
+                    activity.runOnUiThread(() -> {
+                        if (!activity.trustedForeground()) return;
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_SEND).setType("image/jpeg").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            intent.setClipData(android.content.ClipData.newRawUri("观云行程照片", uri));
+                            activity.startActivity(Intent.createChooser(intent, "分享行程照片"));
+                        } catch (Exception e) { android.widget.Toast.makeText(activity,"无法打开系统分享，请尝试保存图片",0).show(); }
+                    });
+                } catch (Exception e) { activity.runOnUiThread(() -> android.widget.Toast.makeText(activity,"分享图片生成失败，请检查存储空间",0).show()); }
+            }, "guanyun-photo-share").start();
+        });
+        return "ok";
+    }
     @JavascriptInterface public int recordingAccuracy() { return RecordingPreferences.accuracy(activity); }
     @JavascriptInterface public boolean setRecordingAccuracy(double metres) {
         boolean saved = RecordingPreferences.saveAccuracy(activity, metres);

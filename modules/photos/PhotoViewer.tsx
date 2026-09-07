@@ -1,20 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { VisiblePhoto } from './storage';
+import type { ManualTrack } from '../tracks/drawing';
+import type { PhotoDetails } from './details';
+import { matchPhoto } from './matching';
+import { PhotoLightbox } from './PhotoLightbox';
 export function PhotoViewer({
   photo,
   group,
   onSelect,
   onClose,
   onRemove,
+  onUpdate,
+  track,
 }: {
   photo: VisiblePhoto;
   group: VisiblePhoto[];
   onSelect: (id: string) => void;
   onClose: () => void;
   onRemove: (id: string) => Promise<void>;
+  onUpdate: (id: string, patch: Omit<PhotoDetails, 'detail'>) => Promise<void>;
+  track?: ManualTrack;
 }) {
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (photo.altitude || !track) return;
+    const altitude = matchPhoto(track, photo.time)?.altitude;
+    if (altitude)
+      void onUpdate(photo.id, { altitude }).catch(() =>
+        setError('海拔信息保存失败，请重试'),
+      );
+  }, [photo.id, photo.altitude, photo.time, track, onUpdate]);
   const index = group.findIndex((p) => p.id === photo.id);
   return (
     <section
@@ -24,17 +41,25 @@ export function PhotoViewer({
       onKeyDown={(e) => {
         if (e.key === 'Escape') {
           e.stopPropagation();
-          onClose();
+          if (expanded) setExpanded(false);
+          else onClose();
         }
       }}
     >
       <header>
-        <strong>{photo.name}</strong>
+        <strong>{photo.title || photo.name}</strong>
         <button aria-label="关闭照片预览" onClick={onClose}>
           ×
         </button>
       </header>
-      <img src={photo.url} alt={photo.name} />
+      <button
+        className="photo-expand"
+        onClick={() => setExpanded(true)}
+        aria-label="放大查看照片"
+      >
+        <img src={photo.url} alt={photo.title || photo.name} />
+        <span>放大查看 · 编辑 / 标记 / 分享</span>
+      </button>
       <p>
         {new Date(photo.time).toLocaleString('zh-CN')} ·{' '}
         {photo.kind === 'point' ? '对应轨迹点' : '轨迹时间估算位置'}
@@ -79,6 +104,14 @@ export function PhotoViewer({
         </button>
       </footer>
       {error && <p role="status">{error}</p>}
+      {expanded && (
+        <PhotoLightbox
+          key={photo.id}
+          photo={photo}
+          onClose={() => setExpanded(false)}
+          onUpdate={onUpdate}
+        />
+      )}
     </section>
   );
 }

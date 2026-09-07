@@ -6,6 +6,8 @@
 
 同一待签名源码新增 [手动记录精度门槛](docs/recording-accuracy.md)：默认20米，可设5–80米，只筛选后续定位点，不改变历史轨迹，也不保证GPS实际误差达到该数值。
 
+另已接通 [照片放大、编辑标记、分享与拍摄环境](docs/photo-details.md)：点图全屏缩放，保存标题/备注/旋转/画线，导出带海拔和拍摄天气说明的图片副本。原图不改；旧预览可重新导入升级清晰度，天气明确标明模型或历史再分析来源。
+
 [直接下载 APK](https://github.com/Siger1989/map/releases/download/v0.2.4-test/Guanyun-0.2.4-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.4-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图

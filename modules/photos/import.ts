@@ -1,10 +1,13 @@
 import { photoTime } from './matching';
 import { imageMime } from './selection';
+import { exifAltitude, type PhotoAltitude } from './details';
 export type PhotoDraft = {
   hash: string;
   name: string;
   time: number | null;
   preview: Blob;
+  detail: Blob;
+  altitude?: PhotoAltitude;
   zone: string;
 };
 export async function readPhoto(file: File): Promise<PhotoDraft> {
@@ -17,8 +20,14 @@ export async function readPhoto(file: File): Promise<PhotoDraft> {
   let meta: Record<string, unknown> | undefined;
   try {
     meta = await parse(buffer, {
-      pick: ['DateTimeOriginal', 'OffsetTimeOriginal'],
+      pick: [
+        'DateTimeOriginal',
+        'OffsetTimeOriginal',
+        'GPSAltitude',
+        'GPSAltitudeRef',
+      ],
       reviveValues: false,
+      translateValues: false,
     });
   } catch {
     /* Images without EXIF need a user-entered capture time. */
@@ -26,7 +35,7 @@ export async function readPhoto(file: File): Promise<PhotoDraft> {
   const bitmap = await createImageBitmap(file, {
     imageOrientation: 'from-image',
   });
-  let preview: Blob;
+  let preview: Blob, detail: Blob;
   try {
     const scale = Math.min(1, 960 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement('canvas');
@@ -42,6 +51,22 @@ export async function readPhoto(file: File): Promise<PhotoDraft> {
         0.78,
       ),
     );
+    const detailScale = Math.min(
+      1,
+      2560 / Math.max(bitmap.width, bitmap.height),
+    );
+    canvas.width = Math.max(1, Math.round(bitmap.width * detailScale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * detailScale));
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    detail = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('清晰副本生成失败'))),
+        'image/jpeg',
+        0.86,
+      ),
+    );
+    if (detail.size > 4 * 1024 * 1024)
+      throw new Error('清晰副本超过4MB，请先缩小此照片');
   } finally {
     bitmap.close();
   }
@@ -53,6 +78,8 @@ export async function readPhoto(file: File): Promise<PhotoDraft> {
     name: file.name.slice(0, 200),
     time: photoTime(meta?.DateTimeOriginal, meta?.OffsetTimeOriginal),
     preview,
+    detail,
+    altitude: exifAltitude(meta),
     zone: meta?.OffsetTimeOriginal
       ? `拍摄时区 ${meta.OffsetTimeOriginal}`
       : '无时区信息，按本机时区解释',

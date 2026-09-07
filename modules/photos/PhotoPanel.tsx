@@ -219,6 +219,8 @@ export function PhotoPanel({
                               id: `${draft.hash}:${track.id}`,
                               name: draft.name,
                               preview: draft.preview,
+                              detail: draft.detail,
+                              altitude: draft.altitude ?? match.altitude,
                               time,
                               coordinates: match.coordinates,
                               kind: match.kind,
@@ -278,9 +280,10 @@ export function PhotoPanel({
           ))}
       </div>
       <p className="route-note">
-        只读取所选照片，在本机匹配并保存压缩预览；不修改或上传原图。每张 ≤20
-        MB，本机最多 200 张 / 40 MB。照片独立存储，暂不包含在普通 JSON/GPX
-        备份中。
+        原图保留不变，本机保存预览和最长边2560px的查看副本。每张 ≤20
+        MB，本机最多200张 /
+        200MB（预览≤40MB）。导入后按拍摄时间、位置向Open-Meteo查询天气，不上传图片。照片独立存储，暂不包含在普通
+        JSON/GPX 备份中。
       </p>
       {(message || photos.error) && (
         <p className="route-note" role="status">

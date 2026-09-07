@@ -1,4 +1,5 @@
 import type { ManualTrack } from '../tracks/drawing.ts';
+import { validAltitude, type PhotoAltitude } from './details.ts';
 import {
   coordinate,
   metresBetween,
@@ -47,6 +48,7 @@ export function photoTime(raw: unknown, offset?: unknown): number | null {
 export type PhotoMatch = {
   coordinates: Coordinate;
   kind: 'point' | 'interpolated';
+  altitude?: PhotoAltitude;
 };
 /** Never interpolate over pauses, missing timestamps or gaps longer than two minutes. */
 export function matchPhoto(
@@ -68,7 +70,15 @@ export function matchPhoto(
         !coordinate(line[i])
       )
         continue;
-      if (t === time) matches.push({ coordinates: line[i], kind: 'point' });
+      const altitude = times[i]?.altitude;
+      if (t === time)
+        matches.push({
+          coordinates: line[i],
+          kind: 'point',
+          ...(validAltitude(altitude)
+            ? { altitude: { metres: altitude, source: 'track' as const } }
+            : {}),
+        });
       const next = times[i + 1]?.time,
         end = line[i + 1];
       if (
@@ -91,6 +101,14 @@ export function matchPhoto(
           line[i][1] + (end[1] - line[i][1]) * f,
         ],
         kind: 'interpolated',
+        ...(validAltitude(altitude) && validAltitude(times[i + 1]?.altitude)
+          ? {
+              altitude: {
+                metres: altitude + (times[i + 1].altitude! - altitude) * f,
+                source: 'interpolated' as const,
+              },
+            }
+          : {}),
       });
     }
   }
