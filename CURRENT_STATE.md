@@ -6,7 +6,8 @@
 - 验证：TypeScript、135/135逻辑测试通过；390×844浏览器真实回调模拟验证10米门槛拒绝30米、接受8米，以及运行中50米接受后续30米；360×780模拟原生配置桥验证校验、保存/重载。两尺寸无横向溢出，已查看关键截图；设置控件压为一行，窄屏应用按钮可达。Android Java编译通过。日志 .openai/{tests-recording-accuracy,browser-recording-accuracy-final,typecheck-recording-accuracy-final,java-recording-accuracy}.log。
 - 最终界面回归：输入4米被拒绝、恢复默认20米、10米设置重载保留、运行中放宽到50米均通过。实际截图确认360窄屏输入/应用/恢复同一行可达；过滤点未进入存档，有效点正常计数。日志 .openai/browser-recording-accuracy-delivery.log。
 - 构建验证：网页与完整安卓未签名构建通过，473张内置地形和必要资源校验通过；最终类型检查退出0。日志 .openai/{build-web-recording-accuracy,build-android-recording-accuracy,typecheck-recording-accuracy-final}.log。
-- 交付：准备同步main。沿用0.2.5待签名源码版本，原私钥缺失，不能发布可覆盖新包；没有声称真机漂移/耗电得到改善。文件及回滚说明见 docs/recording-accuracy.md；本轮无删除业务文件，没有改照片/轨迹存档/地图算法。
+- 源码同步：415b0a3c896cb2be19e5baf258185dfc7648cd3e 已推送main并通过 git ls-remote 核验一致；日志 .openai/sync-recording-accuracy.log，最终状态收尾另行同步并记录 .openai/sync-recording-accuracy-final.log。
+- 交付限制：沿用0.2.5待签名源码版本，原私钥缺失，不能发布可覆盖新包；没有声称真机漂移/耗电得到改善。文件及回滚说明见 docs/recording-accuracy.md；本轮无删除业务文件，没有改照片/轨迹存档/地图算法。
 
 # 当前任务：实走存档分类与照片文件夹导入（2026-09-07）
 - 用户反馈：实走保存后显示为手绘，照片页不能选择；照片选择器没有文件夹入口。
