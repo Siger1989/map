@@ -1,29 +1,9 @@
 import { deliverPhoto } from '../photos/export';
 import type { Contour, ProfilePoint, SectionProfileData } from './contours';
-
-export function chartFrame(curves: Contour[], width: number, height: number) {
-  const points = curves.flatMap((c) => c.points),
-    us = points.map((p) => p.u),
-    vs = points.map((p) => p.v);
-  const minU = points.length ? Math.min(...us) : -1,
-    maxU = points.length ? Math.max(...us) : 1,
-    minV = points.length ? Math.min(...vs) : -1,
-    maxV = points.length ? Math.max(...vs) : 1;
-  const scale = Math.min(
-    (width - 40) / Math.max(1, maxU - minU),
-    (height - 32) / Math.max(1, maxV - minV),
-  );
-  return {
-    x: (p: Pick<ProfilePoint, 'u'>) =>
-      width / 2 + (p.u - (minU + maxU) / 2) * scale,
-    y: (p: Pick<ProfilePoint, 'v'>) =>
-      height / 2 - (p.v - (minV + maxV) / 2) * scale,
-    minU,
-    maxU,
-    minV,
-    maxV,
-  };
-}
+import { chartFrame } from './chartFrame';
+import { scaleLabel } from './scale';
+import { noteDetails, noteColor, type ProfileNote } from './profileNotes';
+export { chartFrame } from './chartFrame';
 export function profileDetails(
   data: SectionProfileData,
   curve: Contour | undefined,
@@ -66,6 +46,10 @@ export function profileDetails(
     ],
     ['剖面尺寸', `宽 ${p.width.toFixed(2)} m × 高 ${p.height.toFixed(2)} m`],
     [
+      '比例尺设置',
+      `单位 ${s.scale?.unit ?? 'm'}；基础间隔 ${s.scale?.interval === undefined || s.scale.interval === 'auto' ? '自动' : `${scaleLabel(s.scale.interval, s.scale.unit)} ${s.scale.unit}`}，密集时显示整数倍主刻度`,
+    ],
+    [
       '剖面姿态',
       `方向 ${p.heading.toFixed(2)}°；倾角 ${p.tilt.toFixed(2)}°；面内转角 ${(p.roll ?? 0).toFixed(2)}°`,
     ],
@@ -98,8 +82,9 @@ export function profileDetails(
 /** Chart and footer share the exact snapshot and interpolated cursor used on screen. */
 export async function downloadProfile(
   data: SectionProfileData,
-  curve: Contour,
+  curve: Contour | undefined,
   point: ProfilePoint & { distance: number },
+  notes: ProfileNote[] = [],
 ) {
   const width = 1600,
     chartHeight = 660,
@@ -111,9 +96,17 @@ export async function downloadProfile(
   if (!ctx) throw new Error('此设备暂时无法生成图片');
   ctx.font = `${fontSize}px sans-serif`;
   const rows: string[] = [];
-  for (const [label, value] of profileDetails(data, curve, point)) {
+  for (const [label, value] of [
+    ...profileDetails(data, curve, point),
+    ...noteDetails(notes),
+  ]) {
     let row = '';
     for (const ch of `${label}：${value}`) {
+      if (ch === '\n') {
+        rows.push(row);
+        row = '    ';
+        continue;
+      }
       if (ctx.measureText(row + ch).width > width - 2 * padding) {
         rows.push(row);
         row = '    ';
@@ -123,56 +116,123 @@ export async function downloadProfile(
     rows.push(row);
   }
   canvas.width = width;
-  canvas.height = chartHeight + 176 + rows.length * lineHeight + 48;
-  ctx.fillStyle = '#f6faf8';
-  ctx.fillRect(0, 0, width, canvas.height);
-  ctx.fillStyle = '#123b40';
-  ctx.font = 'bold 44px sans-serif';
-  ctx.fillText('山兔 · 剖面交线与海拔', padding, 65);
-  ctx.font = '25px sans-serif';
-  ctx.fillText('完整模型保留 · 橙色为当前交线 · 圆点为所选位置', padding, 109);
-  const f = chartFrame(data.curves, width - 2 * padding, chartHeight);
-  ctx.save();
-  ctx.translate(padding, 132);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width - 2 * padding, chartHeight);
-  ctx.strokeStyle = '#d2ded8';
-  ctx.strokeRect(1, 1, width - 2 * padding - 2, chartHeight - 2);
-  for (const c of data.curves) {
-    ctx.beginPath();
-    c.points.forEach((p, i) => {
-      if (i === 0) ctx.moveTo(f.x(p), f.y(p));
-      else ctx.lineTo(f.x(p), f.y(p));
+  const pageRows = 250,
+    pages = Math.max(1, Math.ceil(rows.length / pageRows));
+  let result = '';
+  for (let page = 0; page < pages; page++) {
+    const footer = rows.slice(page * pageRows, (page + 1) * pageRows);
+    canvas.height = chartHeight + 176 + footer.length * lineHeight + 48;
+    ctx.fillStyle = '#f6faf8';
+    ctx.fillRect(0, 0, width, canvas.height);
+    ctx.fillStyle = '#123b40';
+    ctx.font = 'bold 44px sans-serif';
+    ctx.fillText('山兔 · 剖面交线与海拔', padding, 65);
+    ctx.font = '25px sans-serif';
+    ctx.fillText(
+      `橙色为当前交线 · 白芯为所选位置 · 彩色编号为保存测点${pages > 1 ? ` · 第 ${page + 1}/${pages} 张` : ''}`,
+      padding,
+      109,
+    );
+    const f = chartFrame(
+      data.curves,
+      width - 2 * padding,
+      chartHeight,
+      notes.map((n) => n.point),
+      23,
+      data.settings.scale?.interval ?? 'auto',
+    );
+    const unit = data.settings.scale?.unit ?? 'm';
+    ctx.save();
+    ctx.translate(padding, 132);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width - 2 * padding, chartHeight);
+    ctx.strokeStyle = '#d2ded8';
+    ctx.strokeRect(1, 1, width - 2 * padding - 2, chartHeight - 2);
+    ctx.font = '23px sans-serif';
+    ctx.lineWidth = 1;
+    ctx.fillStyle = '#193c41';
+    ctx.strokeStyle = '#d2ded8';
+    for (const u of f.uTicks.ticks) {
+      const x = f.x({ u });
+      ctx.beginPath();
+      ctx.moveTo(x, f.top);
+      ctx.lineTo(x, f.bottom);
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillText(scaleLabel(u, unit), x, f.bottom + 30);
+    }
+    for (const v of f.vTicks.ticks) {
+      const y = f.y({ v });
+      ctx.beginPath();
+      ctx.moveTo(f.left, y);
+      ctx.lineTo(f.right, y);
+      ctx.stroke();
+      ctx.textAlign = 'right';
+      ctx.fillText(scaleLabel(v, unit), f.left - 10, y + 8);
+    }
+    ctx.textAlign = 'left';
+    for (const c of data.curves) {
+      ctx.beginPath();
+      c.points.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(f.x(p), f.y(p));
+        else ctx.lineTo(f.x(p), f.y(p));
+      });
+      ctx.strokeStyle = c.id === curve?.id ? '#c65f12' : '#84aaa2';
+      ctx.lineWidth = c.id === curve?.id ? 4 : 2;
+      ctx.stroke();
+    }
+    notes.forEach((n, i) => {
+      ctx.beginPath();
+      ctx.arc(f.x(n.point), f.y(n.point), 12, 0, Math.PI * 2);
+      ctx.fillStyle = noteColor(n, i);
+      ctx.fill();
+      ctx.fillText(String(i + 1), f.x(n.point) + 16, f.y(n.point) - 12);
     });
-    ctx.strokeStyle = c.id === curve.id ? '#c65f12' : '#84aaa2';
-    ctx.lineWidth = c.id === curve.id ? 4 : 2;
+    ctx.beginPath();
+    ctx.arc(f.x(point), f.y(point), 9, 0, Math.PI * 2);
+    ctx.fillStyle = '#123b40';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(f.x(point), f.y(point), 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.fillStyle = '#123b40';
+    ctx.font = '23px sans-serif';
+    ctx.fillText(`V / ${unit}`, 12, 28);
+    ctx.fillText(`U / ${unit}`, width - 2 * padding - 105, chartHeight - 12);
+    ctx.beginPath();
+    ctx.moveTo(f.right - f.bar * f.scale, 30);
+    ctx.lineTo(f.right - f.bar * f.scale, 40);
+    ctx.lineTo(f.right, 40);
+    ctx.lineTo(f.right, 30);
+    ctx.strokeStyle = '#193c41';
+    ctx.lineWidth = 2;
     ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.fillText(
+      `${scaleLabel(f.bar, unit)} ${unit}`,
+      f.right - (f.bar * f.scale) / 2,
+      28,
+    );
+    ctx.textAlign = 'left';
+    ctx.restore();
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillStyle = '#193c41';
+    footer.forEach((row, i) =>
+      ctx.fillText(row, padding, chartHeight + 176 + i * lineHeight),
+    );
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('图片编码失败'))),
+        'image/jpeg',
+        0.94,
+      ),
+    );
+    const name = `山兔-剖面-${new Date(data.createdAt).toISOString().replace(/[:.]/g, '-')}${pages > 1 ? `-${page + 1}` : ''}.jpg`;
+    result = await deliverPhoto(
+      new File([blob], name, { type: 'image/jpeg' }),
+      false,
+    );
   }
-  ctx.beginPath();
-  ctx.arc(f.x(point), f.y(point), 9, 0, Math.PI * 2);
-  ctx.fillStyle = '#123b40';
-  ctx.fill();
-  ctx.font = '23px sans-serif';
-  ctx.fillText('V / m', 12, 28);
-  ctx.fillText('U / m', width - 2 * padding - 85, chartHeight - 12);
-  ctx.fillText(
-    `U ${f.minU.toFixed(1)} ～ ${f.maxU.toFixed(1)} m；V ${f.minV.toFixed(1)} ～ ${f.maxV.toFixed(1)} m`,
-    15,
-    chartHeight - 12,
-  );
-  ctx.restore();
-  ctx.font = `${fontSize}px sans-serif`;
-  ctx.fillStyle = '#193c41';
-  rows.forEach((row, i) =>
-    ctx.fillText(row, padding, chartHeight + 176 + i * lineHeight),
-  );
-  const blob = await new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (b) => (b ? resolve(b) : reject(new Error('图片编码失败'))),
-      'image/jpeg',
-      0.94,
-    ),
-  );
-  const name = `山兔-剖面-${new Date(data.createdAt).toISOString().replace(/[:.]/g, '-')}.jpg`;
-  return deliverPhoto(new File([blob], name, { type: 'image/jpeg' }), false);
+  return pages > 1 ? `已分为 ${pages} 张图片，${result}` : result;
 }

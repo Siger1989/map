@@ -1,50 +1,93 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   pointOnContour,
   type ProfilePoint,
   type SectionProfileData,
 } from './contours';
-import { chartFrame, downloadProfile, profileDetails } from './profileExport';
+import { downloadProfile, profileDetails } from './profileExport';
 import type { SectionSettings } from './types';
+import { ProfileChart } from './ProfileChart';
+import { SectionScaleControls } from './SectionScaleControls';
+import { ProfileNoteEditor } from './ProfileNoteEditor';
+import { useProfileNotes } from './useProfileNotes';
+import {
+  sectionKey,
+  nextNoteColor,
+  noteColor,
+  previewProfileNotes,
+  type ProfileNote,
+} from './profileNotes';
+import { ContourScrubber } from './ContourScrubber';
+import { moveProfileNote } from './notePosition';
+import type { PointActions } from './useContourPointDrag';
 
 type Props = {
   data: SectionProfileData | null;
   settings: SectionSettings;
   onCursor: (p: ProfilePoint | null) => void;
   onChange: (s: SectionSettings) => void;
+  onRestore: (s: SectionSettings) => void;
   onClose: () => void;
   onRetry: () => void;
+  onHide: () => void;
+  onDelete: () => void;
 };
 export function SectionProfile({
   data,
   settings,
   onCursor,
   onChange,
+  onRestore,
   onClose,
   onRetry,
+  onHide,
+  onDelete,
 }: Props) {
   const [id, setId] = useState(''),
     [fraction, setFraction] = useState(0),
     [busy, setBusy] = useState(false),
-    [message, setMessage] = useState('');
+    [message, setMessage] = useState(''),
+    [draft, setDraft] = useState<ProfileNote | null>(null),
+    [dragged, setDragged] = useState<ProfileNote | null>(null),
+    [activeNote, setActiveNote] = useState('');
+  const saved = useProfileNotes(settings),
+    key = sectionKey(settings);
+  const scaleControls = useRef<HTMLDivElement>(null);
   const current = data?.settings === settings ? data : null;
   const curves = current?.curves ?? [],
     curve = curves.find((c) => c.id === id) ?? curves[0];
   const point =
     curve && current ? pointOnContour(curve, fraction, current.settings) : null;
-  const f = chartFrame(curves, 300, 112);
+  const displayedNotes = dragged
+    ? saved.notes.map((n) => (n.id === dragged.id ? dragged : n))
+    : saved.notes;
+  const focusedNote = displayedNotes.find((n) => n.id === activeNote),
+    cursor = focusedNote?.point ?? point;
+  const focusedCurve = focusedNote
+    ? curves.find(
+        (c) =>
+          c.name === focusedNote.curveName && c.source === focusedNote.source,
+      )
+    : curve;
   useEffect(() => {
-    onCursor(point);
+    setDraft(null);
+    setDragged(null);
+    setActiveNote('');
+  }, [key]);
+  useEffect(() => {
+    onCursor(cursor);
     return () => onCursor(null);
-  }, [current, curve?.id, fraction]);
+  }, [current, curve?.id, fraction, activeNote, saved.notes, dragged]);
   useEffect(() => setMessage(''), [settings, curve?.id]);
   const download = async () => {
-    if (!current || !curve || !point) return;
+    if (!current || !curve || !cursor) return;
     setBusy(true);
     setMessage('');
     try {
-      setMessage(await downloadProfile(current, curve, point));
+      setMessage(
+        await downloadProfile(current, focusedCurve, cursor, saved.notes),
+      );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : '图片保存失败，请重试');
     } finally {
@@ -80,6 +123,83 @@ export function SectionProfile({
     </label>
   );
   const p = settings.plane!;
+  const addPoint = () => {
+    if (!point || !curve || !current) return;
+    setActiveNote('');
+    const occupied = saved.notes.filter(
+      (n) => n.curveName === curve.name && n.source === curve.source,
+    );
+    const available =
+      [fraction, ...Array.from({ length: 19 }, (_, i) => (i + 1) / 20)].find(
+        (f) =>
+          occupied.every(
+            (n) =>
+              Math.abs(
+                f - (n.fraction ?? n.point.distance / (curve.length || 1)),
+              ) > 0.04,
+          ),
+      ) ?? fraction;
+    const added = moveProfileNote(
+      {
+        id: crypto.randomUUID(),
+        color: nextNoteColor(saved.notes),
+        name: `测点 ${saved.notes.length + 1}`,
+        note: '',
+        fields: [],
+        point: structuredClone(point),
+        curveName: curve.name,
+        source: curve.source,
+        sampledAt: current.createdAt,
+      },
+      curve,
+      available,
+      settings,
+      current.createdAt,
+    );
+    if (saved.save(added.id, added)) {
+      setActiveNote(added.id);
+      setMessage('已增加彩色拖动点；点按选择，拖动调整，点“数据”填写信息。');
+    }
+  };
+  const removePoint = (id: string) => {
+    if (saved.save(id, null)) {
+      if (draft?.id === id) setDraft(null);
+      if (activeNote === id) setActiveNote('');
+      setDragged(null);
+    }
+  };
+  const pointActions: PointActions = {
+    disabled: !!draft,
+    onSelect: (note) => {
+      setActiveNote(note.id);
+    },
+    onEdit: (note) => {
+      const selected = curves.find(
+        (c) => c.name === note.curveName && c.source === note.source,
+      );
+      if (selected) setId(selected.id);
+      setActiveNote(note.id);
+      setDraft(note);
+    },
+    onPreview: (note) => {
+      setDragged(note);
+      setActiveNote(note.id);
+      previewProfileNotes(
+        settings,
+        saved.notes.map((n) => (n.id === note.id ? note : n)),
+      );
+    },
+    onCommit: (note) => {
+      setDragged(null);
+      setActiveNote(note.id);
+      if (!saved.save(note.id, note))
+        previewProfileNotes(settings, saved.notes);
+    },
+    onCancel: () => {
+      setDragged(null);
+      previewProfileNotes(settings, saved.notes);
+    },
+  };
   return (
     <section
       className="section-profile glass"
@@ -110,6 +230,7 @@ export function SectionProfile({
               onChange={(e) => {
                 setId(e.target.value);
                 setFraction(0);
+                setActiveNote('');
               }}
             >
               {curves.map((c) => (
@@ -118,63 +239,43 @@ export function SectionProfile({
                 </option>
               ))}
             </select>
-            <svg
-              className="section-chart"
-              viewBox="0 0 300 112"
-              role="img"
-              aria-label="交界轮廓图，横轴U纵轴V为剖面内米数"
-            >
-              <rect
-                x=".5"
-                y=".5"
-                width="299"
-                height="111"
-                rx="5"
-                fill="#102532"
-                stroke="#52756e"
-              />
-              {curves.map((c) => (
-                <polyline
-                  key={c.id}
-                  points={c.points.map((p) => `${f.x(p)},${f.y(p)}`).join(' ')}
-                  fill="none"
-                  stroke={c.id === curve.id ? '#ffb85f' : '#5e8f83'}
-                  strokeWidth={c.id === curve.id ? 2 : 1}
-                />
-              ))}
-              {point && (
-                <circle
-                  cx={f.x(point)}
-                  cy={f.y(point)}
-                  r="4"
-                  fill="white"
-                  stroke="#ffb85f"
-                />
-              )}
-              <text x="5" y="12">
-                V / m
-              </text>
-              <text x="266" y="105">
-                U / m
-              </text>
-            </svg>
-            <label className="section-scrubber">
-              沿交线选点
-              <input
-                aria-label="沿交线查看点海拔"
-                type="range"
-                min="0"
-                max="1000"
-                step="1"
-                value={Math.round(fraction * 1000)}
-                onChange={(e) => setFraction(Number(e.target.value) / 1000)}
-              />
-            </label>
+            <ProfileChart
+              curves={curves}
+              curveId={curve.id}
+              point={cursor}
+              notes={displayedNotes}
+              onAdd={addPoint}
+              canAdd={!!point && saved.ready && !draft}
+              settings={settings}
+              sampledAt={current?.createdAt ?? 0}
+              actions={pointActions}
+              onRemove={() => removePoint(activeNote)}
+              onEdit={() => {
+                if (focusedNote) pointActions.onEdit(focusedNote);
+              }}
+              canRemove={!!focusedNote && !dragged}
+              onScale={() =>
+                scaleControls.current?.scrollIntoView({ block: 'start' })
+              }
+            />
+            <ContourScrubber
+              curve={curve}
+              settings={settings}
+              sampledAt={current?.createdAt ?? 0}
+              notes={displayedNotes}
+              fraction={fraction}
+              onFraction={(n) => {
+                setFraction(n);
+                setActiveNote('');
+              }}
+              actions={pointActions}
+            />
             <output className="section-readout" aria-live="polite">
-              海拔 <b>{point?.altitude.toFixed(2)} m</b> · 沿线{' '}
-              {point?.distance.toFixed(1)} m<br />
-              经度 {point?.coordinates[0].toFixed(7)}° · 纬度{' '}
-              {point?.coordinates[1].toFixed(7)}°
+              {focusedNote ? `${focusedNote.name} · ` : ''}海拔{' '}
+              <b>{cursor?.altitude.toFixed(2)} m</b> · 沿线{' '}
+              {cursor?.distance.toFixed(1)} m<br />
+              经度 {cursor?.coordinates[0].toFixed(7)}° · 纬度{' '}
+              {cursor?.coordinates[1].toFixed(7)}°
             </output>
           </>
         ) : (
@@ -188,17 +289,101 @@ export function SectionProfile({
                   : '当前矩形范围内没有交线，可移动或拉伸剖面。'}
           </p>
         )}
+        <div ref={scaleControls}>
+          <SectionScaleControls settings={settings} onChange={onChange} />
+        </div>
         {current?.phase === 'partial' && (
           <p className="section-partial">
             地形覆盖不完整，缺失处留空；模型交线仍可查看。
           </p>
         )}
         {message && <p role="status">{message}</p>}
+        {saved.error && (
+          <p className="section-partial" role="alert">
+            {saved.error}
+          </p>
+        )}
+        {draft && (
+          <ProfileNoteEditor
+            key={draft.id}
+            initial={draft}
+            onCancel={() => setDraft(null)}
+            onSave={(note) => {
+              if (saved.save(note.id, note)) {
+                setDraft(null);
+                setActiveNote(note.id);
+                setMessage('测点已保存到本机，保存图片会包含全部测点。');
+              }
+            }}
+          />
+        )}
+        {saved.notes.length > 0 && (
+          <div className="section-notes" aria-label="已保存测点">
+            <p>点按彩色点选中，拖动调整位置；“数据”编辑，“－”删除。</p>
+            {saved.notes.map((n, i) => (
+              <div className="section-note-row" key={n.id}>
+                <button
+                  aria-label={`编辑测点 ${n.name}`}
+                  onClick={() => {
+                    pointActions.onEdit(n);
+                  }}
+                >
+                  <b style={{ color: noteColor(n, i) }}>
+                    {i + 1} · {n.name}
+                  </b>
+                  <small>
+                    海拔 {n.point.altitude.toFixed(2)} m · {n.fields.length}{' '}
+                    项数据
+                  </small>
+                </button>
+                <button
+                  aria-label={`删除测点 ${n.name}`}
+                  onClick={() => removePoint(n.id)}
+                >
+                  －
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {saved.records.length > 0 && (
+          <label className="section-field">
+            已保存测点的剖面
+            <select
+              value={
+                saved.records.some((s) => sectionKey(s.settings) === key)
+                  ? key
+                  : ''
+              }
+              onChange={(e) => {
+                const record = saved.records.find(
+                  (s) => sectionKey(s.settings) === e.target.value,
+                );
+                if (record) onRestore({ ...record.settings, enabled: true });
+              }}
+            >
+              <option value="" disabled>
+                选择原剖面以查看测点
+              </option>
+              {saved.records.map((s) => (
+                <option
+                  key={sectionKey(s.settings)}
+                  value={sectionKey(s.settings)}
+                >
+                  {s.notes.length} 点 ·{' '}
+                  {Number(s.settings.plane!.width.toFixed(1))}×
+                  {Number(s.settings.plane!.height.toFixed(1))} m ·{' '}
+                  {s.settings.plane!.center.map((n) => n.toFixed(4)).join(', ')}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <details>
           <summary>坐标、海拔与数据详情</summary>
           <dl>
             {current &&
-              profileDetails(current, curve, point).map(([k, v]) => (
+              profileDetails(current, focusedCurve, cursor).map(([k, v]) => (
                 <div key={k}>
                   <dt>{k}</dt>
                   <dd>{v}</dd>
@@ -246,6 +431,10 @@ export function SectionProfile({
           </div>
         </details>
         <button onClick={onRetry}>重新采样</button>
+        <div className="section-note-actions">
+          <button onClick={onHide}>隐藏剖面</button>
+          <button onClick={onDelete}>删除剖面</button>
+        </div>
         <p>
           点地图上的矩形面可再次打开。图内 U/V 是面内距离，海拔以选点读数为准。
         </p>

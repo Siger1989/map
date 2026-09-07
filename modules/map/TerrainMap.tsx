@@ -87,6 +87,7 @@ type Props = {
   mapSource?: MapSource | null;
   onSourceStatus?: (status: string) => void;
   section: SectionSettings;
+  sectionEditing: boolean;
   onSectionStatus: (status: SectionStatus) => void;
   onSectionChange: (settings: SectionSettings) => void;
   onSectionProfile: (data: SectionProfileData) => void;
@@ -533,7 +534,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             enabled: () =>
               !latest.current.drawingActive &&
               !latest.current.pickingActive &&
-              !latest.current.section.enabled,
+              !latest.current.sectionEditing,
             hit: (point, element) => {
               const marker =
                 element instanceof Element
@@ -565,7 +566,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               !!latest.current.onMapHold &&
               !latest.current.drawingActive &&
               !latest.current.pickingActive &&
-              !latest.current.section.enabled,
+              !latest.current.sectionEditing,
             occupied: (point) =>
               !!annotationRef.current?.pick(point) ||
               !!trackRef.current?.pickNode(point) ||
@@ -715,21 +716,26 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('click', (event) => {
-            if (latest.current.section.enabled) {
-              if (sectionRef.current?.pick(event.point))
-                latest.current.onSectionSelect();
-              else {
-                const id = annotationRef.current?.pick(event.point);
-                if (id) latest.current.onAnnotationSelect(id);
-              }
-              return;
-            }
             if (
               latest.current.drawingActive ||
               featureDragRef.current?.blocksClick() ||
               longPressRef.current?.blocksClick()
             )
               return;
+            if (
+              latest.current.section.enabled &&
+              !latest.current.pickingActive &&
+              !latest.current.drawingActive
+            ) {
+              if (sectionRef.current?.pick(event.point)) {
+                latest.current.onSectionSelect();
+                return;
+              } else if (latest.current.sectionEditing) {
+                const id = annotationRef.current?.pick(event.point);
+                if (id) latest.current.onAnnotationSelect(id);
+                return;
+              }
+            }
             if (!latest.current.pickingActive) {
               const annotation = annotationRef.current?.pick(event.point);
               if (annotation) {
@@ -885,12 +891,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         );
     }, [props.annotations, props.annotationSelected, props.section.enabled]);
     useEffect(() => {
-      if (props.drawingActive || props.pickingActive || props.section.enabled) {
+      if (props.drawingActive || props.pickingActive || props.sectionEditing) {
         featureDragRef.current?.cancel();
         longPressRef.current?.cancel();
       }
       drawingRef.current?.configure(props.drawingActive);
-    }, [props.drawingActive, props.pickingActive, props.section.enabled]);
+    }, [props.drawingActive, props.pickingActive, props.sectionEditing]);
     useEffect(() => {
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
@@ -900,7 +906,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         ref={container}
         className="map-canvas"
         data-picking={
-          props.pickingActive || props.drawingActive || props.section.enabled
+          props.pickingActive || props.drawingActive || props.sectionEditing
         }
         aria-label="全球三维地形地图"
       />

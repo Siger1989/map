@@ -59,7 +59,151 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 112px;
+  max-height: 160px;
+  margin-top: 3px;
+}
+.section-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.section-chart-toolbar small {
+  color: var(--muted);
+}
+.section-chart-toolbar button {
+  font-size: 22px;
+}
+.section-chart-toolbar .section-scale-link {
+  font-size: 11px;
+}
+.section-chart-toolbar .section-point-data {
+  font-size: 11px;
+  padding: 4px;
+}
+.section-scale-controls {
+  padding-top: 8px;
+}
+.section-save-error {
+  position: absolute;
+  z-index: 20;
+  bottom: 88px;
+  left: var(--edge-left);
+  max-width: calc(100% - 72px);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+.section-size-presets {
+  margin: 4px 0 8px;
+}
+.section-chart-note text {
+  fill: #e7b6ff;
+  font-weight: bold;
+}
+.section-chart-plot {
+  position: relative;
+}
+.section-chart-plot .section-chart {
+  margin: 0;
+}
+.section-point-tools {
+  display: flex;
+  gap: 4px;
+}
+.section-multi-track {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  margin: 0 14px;
+}
+.section-multi-track input {
+  width: 100%;
+  margin: 0;
+}
+.section-profile .section-point-handle,
+.section-profile .section-chart-point-handle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.section-profile .section-point-handle {
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+}
+.section-point-handle span {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+  border: 2px solid #102532;
+  font-size: 0;
+  box-shadow: 0 0 0 1px currentColor;
+}
+.section-profile .section-chart-point-handle {
+  transform: translate(-50%, -50%);
+}
+.section-point-handle:active,
+.section-chart-point-handle:active {
+  cursor: grabbing;
+}
+.section-note-editor {
+  margin: 8px 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.section-note-editor textarea {
+  width: 100%;
+  min-height: 70px;
+  resize: vertical;
+  padding: 6px;
+  background: #102532;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+}
+.section-note-field {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin: 10px 0;
+}
+.section-note-field button {
+  justify-self: end;
+}
+.section-note-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.section-note-row {
+  display: flex;
+  gap: 4px;
+  margin: 5px 0;
+}
+.section-note-row button:first-child {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.section-note-row small {
+  display: block;
+  color: var(--muted);
   margin-top: 3px;
 }
 .section-chart text {

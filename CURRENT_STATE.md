@@ -1,3 +1,23 @@
+# 当前任务：剖面比例尺、尺寸档位和交线测点（2026-09-07）
+- 实现与主要验证完成：212/212 全量逻辑测试、最终 TypeScript；390×844 / 360×780 剖面浏览器通过颜色独立/图线与滑条拖动/单次保存/真实触摸与取消/键盘/选择后数据按钮与减号、编辑自定义字段、存储失败重试、比例尺单位与间隔、宽高档位、对象关闭/隐藏/删除/刷新和档案恢复，以及旧对象变换/撤销/图片导出。已查看两尺寸图与设置/编辑界面、1600×1827 JPEG，图片带 km 刻度/比例尺/颜色编号及完整数据页脚。
+- 补充修正：恢复小剖面时按对象尺寸回中，避免仍停在大剖面的远距离视角；重新选择已存剖面会结束路线选点/轨迹编辑。最终两尺寸路线集成回归通过，含已有可见剖面下开始导航不隐藏、退出导航后进度条恢复、路线选点切剖面再返回，以及镜头、GPS进度、途经点/收藏全部既有流程。
+- 网页 build 与安卓网页资源 build 均通过（.openai/build-section-points.log、build-mobile-section-points.log），无新依赖。未生成 APK 或 Release，现有 APK 不包含本轮修改；未真机验收。源码/说明提交同步 main，远程 SHA 核验记录在 .openai/sync-section-points.log。
+- 文件与模块：app/page.tsx、map/TerrainMap.tsx；section 修改 SectionProfile/SectionSurfaceLayer/profileExport/types/section.css，新增 scale/chartFrame/SectionRuler/SectionScaleControls/ProfileChart/ContourScrubber/notePosition/useContourPointDrag/profileNotes/useProfileNotes/ProfileNoteEditor/savedSection/useSavedSection；journey 修改 RouteWeatherRail/route-rail.css/scrub。测试/脚本新增 section-notes-scale、rail-progress-checks、section-note-checks、section-point-drag-checks、section-state-checks，扩展 route-stops-scrub、verify-route-stops、verify-section-profile；docs/elevation-section、route-stops-and-scrub 与本状态同步。无新依赖、无文件或业务功能删除；地形/标记几何、照片、GPS记录、收藏和路线算法及其存档格式未改。
+- 存档边界：本机当前一个剖面对象；测点档案可恢复已存几何，删除对象后档案保留。全局备份/云同步尚未接入这些新存档，图片可下载全部测点数据。日志 .openai/{typecheck-section-points,tests-section-points,tests-section-all,browser-section-points,browser-route-rail}.log。截图 artifacts/screenshots/section-{points-chart,point-data,scale-settings,gizmo}-{390,360}.png 与 section-export-{390,360}.jpg。
+- 最新追加：用户要求剖面添加后一直保留，仅手动隐藏/删除才消失。新增 savedSection/useSavedSection，保存对象几何与可见状态，编辑选中状态独立。app 与 TerrainMap 通过 sectionEditing 区分编辑/可见；关闭详情、完成操控、Escape、开始导航不再隐式隐藏剖面；详情提供隐藏/删除，右侧入口恢复显示原剖面，刷新恢复对象。跨模块为解开原 enabled 同时控制显示/编辑/导航的耦合；回滚本轮持久化 hook、app/Map props 与分支即可。
+- 比例尺追加：窗口内“比例尺设置”可切米/千米、自动或 100…10000 m 间隔及自定义，图内明确比例尺线段，图/面/导出同步。密集刻度按基础间隔整数倍显示并标实际数值；单位/刻度改变不改变物理尺寸或测点归属。
+- 最新纠正：用户明确“＋”要直接增加不同颜色的独立拖动点，在交线和下方滑条显示，并追加“－”删除。正在按此修正：＋立即增加并保存彩色点，交线/滑条均可拖动，地图交线上同步显示；拖动预览不写盘，松手保存，取消还原。点按编辑原名称/备注/数据，－删除选中点，数据行也保留减号。新增 ContourScrubber、useContourPointDrag、notePosition，剖面层通过事件接收已保存点与临时预览。
+- 用户追加比例尺与“＋”测点，已确认方形面显示米制刻度、宽高可选 100/200/500/1000/2000/5000/10000 m 两种都要；测点自动带坐标海拔，可填名称/备注/自定义字段。
+- 方案与范围：section 内新增 scale、SectionRuler、SectionScaleControls、profileChart/ProfileChart、profileNotes/useProfileNotes/ProfileNoteEditor；SectionSurfaceLayer 只添加按同一面内基底绘制的标尺；SectionProfile 接入尺寸和测点，profileExport 同步刻度/编号/数据，信息超长时分图片。交线计算、地形与标记/对象操控器、路线/GPS均不改，无新依赖或功能删除，可独立回滚剖面新增模块与接线。
+- 测点保存到本机 shantu.section-points.v1，记录添加时的坐标/海拔/来源和剖面几何，按几何区分；变换后的新剖面不会冒用旧点，保存列表可恢复原剖面。读取/写入失败提示且不覆盖坏存档，写入成功才确认保存。
+- 以上设计均已实现，最终验证与构建结果见本节顶部；测试模拟数据只验证功能，不代表野外测量精度。
+
+# 当前任务：路线进度带方向与公里读数（2026-09-07）
+- 用户要求上下颠倒进度带起终点，并在滑块旁显示小公里数，确认行进时自动更新。开始 main 干净，pull --ff-only 确认 303e59f 最新。
+- 修改范围：journey/RouteWeatherRail.tsx、route-rail.css、scrub.ts；只反转显示与输入方向，保持原路线几何和 fraction=0 起点、1 终点语义。新增紧凑公里标签，预览标“览”、真实定位绿色，无有效定位时显示空值；预览窗口为标签留出横向空间。导航算法、地图镜头、记录/照片/标记/地形数据不改，无依赖或功能删除。
+- 已确认：现有持续定位会更新真实进度；手动预览期间滑块停在预览位置、绿点仍跟随定位，关闭预览或恢复跟随后回到定位进度。进入导航时原逻辑使用导航卡片，行程天气带隐藏，本轮保持该布局；公里读数为沿路线距起点的位置，不是累计实走总里程。
+- 初轮 TypeScript 与 9 项相关逻辑检查通过，之后纳入本轮 212 项全量测试；390×844、360×780 浏览器通过向上触摸/方向键、天气渐变、公里标签无重叠、连续模拟 GPS 自动前进与无效定位、预览/跟随/真实定位分离及原镜头/途经点/收藏回归，无页面错误。已查看 route-rail-{reversed,live}-{390,360}.png 关键截图。与用户追加的剖面需求一同通过最终构建并同步源码，未生成 APK。
+
 # 当前任务：路线预览中镜头拖动无响应（2026-09-07）
 - 用户确认右下角绿色镜头控件拖动没反应。开始 main 干净，pull --ff-only 确认 78407cc 最新。隔离路线预览复测竖拖/外圈旋转可用，尚未复现所有方向完全失灵；代码确认绿色模型忽略横向拖动，且失焦/隐藏页面缺少拖动会话清理，按此范围修正，不声称已查明所有无响应原因。
 - 范围：controls/CameraGizmo.tsx、cameraGesture.ts、workspace.css；绿色模型二维拖动和键盘左右转向、稳定 SVG 捕获与中断恢复。app/page.tsx 手动镜头操作暂停位置跟随，避免自动回中断开操作；路线预览位置/读数保持。补对应逻辑与浏览器验证、说明；路线/照片/标记/地形数据不改，无依赖或功能删除。回滚控件及这一处回调即可。

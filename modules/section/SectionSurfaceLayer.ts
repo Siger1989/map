@@ -13,6 +13,15 @@ import {
   type SectionProfileData,
 } from './contours';
 import { loadedTerrainSampler } from './loadedTerrain';
+import { SectionRuler } from './SectionRuler';
+import {
+  PROFILE_NOTES_KEY,
+  PROFILE_NOTES_CHANGED,
+  readSavedSections,
+  sectionKey,
+  noteColor,
+  type ProfileNote,
+} from './profileNotes';
 
 /** Non-destructive overlay. Never patches terrain shaders or clips model materials. */
 export class SectionSurfaceLayer implements CustomLayerInterface {
@@ -27,6 +36,17 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
   private items: Annotation[] = [];
   private renderer?: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
+  private ruler = new SectionRuler();
+  private marks = new THREE.Points(
+    new THREE.BufferGeometry(),
+    new THREE.PointsMaterial({
+      vertexColors: true,
+      size: 12,
+      sizeAttenuation: false,
+      depthTest: false,
+      depthWrite: false,
+    }),
+  );
   private camera = new THREE.Camera();
   private inverse = new THREE.Matrix4();
   private rendered = false;
@@ -77,6 +97,8 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
   ) {
     map.on('sourcedata', this.onData);
     map.on('moveend', this.schedule);
+    window.addEventListener(PROFILE_NOTES_CHANGED, this.updateNotes);
+    window.addEventListener('storage', this.updateNotes);
   }
   onAdd(_map: TerrainMap, gl: WebGL2RenderingContext) {
     this.renderer = new THREE.WebGLRenderer({
@@ -84,11 +106,14 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
       context: gl,
     });
     this.renderer.autoClear = false;
-    [this.glass, this.guide, this.rim, this.cursor].forEach((o, i) => {
-      o.frustumCulled = false;
-      o.renderOrder = i;
-      this.scene.add(o);
-    });
+    this.scene.add(this.ruler);
+    [this.glass, this.guide, this.rim, this.marks, this.cursor].forEach(
+      (o, i) => {
+        o.frustumCulled = false;
+        o.renderOrder = i;
+        this.scene.add(o);
+      },
+    );
   }
   configure(settings: SectionSettings, items: Annotation[]) {
     const old = this.settings,
@@ -129,6 +154,8 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
     ]);
     this.glass.material.color.set(settings.color);
     this.guide.material.color.set(settings.color);
+    this.ruler.configure(settings);
+    this.updateNotes();
     this.replace(this.rim, []);
     this.setCursor(null);
     this.rendered = false;
@@ -158,6 +185,38 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
     );
     this.map.triggerRepaint();
   }
+  private updateNotes = (event?: Event) => {
+    const key = sectionKey(this.settings);
+    const preview = (
+      event as CustomEvent<{ key: string; notes: ProfileNote[] }> | undefined
+    )?.detail;
+    let notes: ProfileNote[] = [];
+    try {
+      notes =
+        preview?.key === key
+          ? preview.notes
+          : (readSavedSections(localStorage.getItem(PROFILE_NOTES_KEY)).find(
+              (s) => sectionKey(s.settings) === key,
+            )?.notes ?? []);
+    } catch {
+      /* Keep invalid stored measurements out of the renderer. */
+    }
+    this.replace(
+      this.marks,
+      notes.map((n) => new THREE.Vector3().fromArray(n.point.local)),
+    );
+    this.marks.geometry.setAttribute(
+      'color',
+      new THREE.Float32BufferAttribute(
+        notes.flatMap((n, i) => {
+          const c = new THREE.Color(noteColor(n, i));
+          return [c.r, c.g, c.b];
+        }),
+        3,
+      ),
+    );
+    this.map.triggerRepaint();
+  };
   private onData = (e: { sourceId?: string; sourceDataType?: string }) => {
     if (e.sourceId === 'elevation' && e.sourceDataType === 'content')
       this.schedule();
@@ -274,10 +333,13 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
     this.timer = null;
     this.map.off('sourcedata', this.onData);
     this.map.off('moveend', this.schedule);
+    window.removeEventListener(PROFILE_NOTES_CHANGED, this.updateNotes);
+    window.removeEventListener('storage', this.updateNotes);
   }
   onRemove() {
     this.dispose();
-    [this.glass, this.guide, this.rim, this.cursor].forEach((o) => {
+    this.ruler.dispose();
+    [this.glass, this.guide, this.rim, this.marks, this.cursor].forEach((o) => {
       o.geometry.dispose();
       o.material.dispose();
     });

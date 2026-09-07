@@ -85,7 +85,14 @@ test('continuous scrub follows geometry, clamps endpoints and handles the dateli
     ) < 1e-8,
   );
   assert.equal(routePositionIndex([])(0.5), null);
-  assert.equal(railFraction(50, 100, 400), 0);
+});
+test('vertical rail advances upwards from bottom origin to top destination', () => {
+  assert.equal(railFraction(50, 100, 400), 1);
+  assert.equal(railFraction(100, 100, 400), 1);
+  assert.equal(railFraction(200, 100, 400), 0.75);
   assert.equal(railFraction(300, 100, 400), 0.5);
-  assert.equal(railFraction(900, 100, 400), 1);
+  assert.equal(railFraction(500, 100, 400), 0);
+  assert.equal(railFraction(900, 100, 400), 0);
+  assert.equal(railFraction(NaN, 100, 400), 0);
+  assert.equal(railFraction(100, 100, 0), 0);
 });

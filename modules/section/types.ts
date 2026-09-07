@@ -2,6 +2,7 @@ export type SectionSettings = {
   enabled: boolean;
   altitude: number;
   color: string;
+  scale?: { unit: 'm' | 'km'; interval: number | 'auto' };
   plane?: SectionPlane;
 };
 export type SectionPlane = {

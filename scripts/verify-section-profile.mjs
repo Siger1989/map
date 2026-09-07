@@ -1,6 +1,7 @@
 import { browserRuntime } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
+import { verifySectionNotes } from './section-note-checks.mjs';
 const browser = await browserRuntime().chromium.launch({
   headless: true,
   executablePath:
@@ -8,9 +9,9 @@ const browser = await browserRuntime().chromium.launch({
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
 });
 const timeout = setTimeout(() => {
-  console.error('Section QA exceeded 240s');
+  console.error('Section QA exceeded 420s');
   process.exit(2);
-}, 240000);
+}, 420000);
 await mkdir('artifacts/screenshots', { recursive: true });
 try {
   for (const [width, height] of [
@@ -142,6 +143,9 @@ try {
     assert.equal(readout.clips, null);
     assert.equal(readout.point.length, 3);
     assert.ok(readout.rim > 0);
+    await verifySectionNotes(page, profile, width);
+    await page.getByRole('button', { name: '回到对象', exact: true }).click();
+    await page.waitForFunction(() => !window.__map.isMoving());
     const downloadEvent = page.waitForEvent('download');
     await profile
       .getByRole('button', { name: '保存图片', exact: true })

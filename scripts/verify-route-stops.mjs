@@ -1,6 +1,11 @@
 import { browserRuntime } from './browser-runtime.mjs';
 import assert from 'node:assert/strict';
 import { verifyPreviewCamera } from './camera-gesture-checks.mjs';
+import {
+  installRailPositionMock,
+  verifyRailPreviewLayout,
+  verifyRailPositionProgress,
+} from './rail-progress-checks.mjs';
 const { chromium } = browserRuntime();
 const timer = setTimeout(() => process.exit(2), 180000),
   browser = await chromium.launch({
@@ -21,6 +26,25 @@ try {
       errors = [];
     let payload;
     page.on('pageerror', (e) => errors.push(String(e)));
+    // A saved visible plane must not keep the app in section editing mode.
+    await page.addInitScript(() => {
+      if (!localStorage.getItem('shantu.section-object.v1'))
+        localStorage.setItem(
+          'shantu.section-object.v1',
+          JSON.stringify({
+            enabled: true,
+            altitude: 2000,
+            color: '#ffffff',
+            plane: {
+              center: [105, 32],
+              width: 1000,
+              height: 1000,
+              heading: 0,
+              tilt: 0,
+            },
+          }),
+        );
+    });
     await page.route('**/modules/map/TerrainMap.tsx*', async (route) => {
       const r = await route.fetch();
       await route.fulfill({
@@ -118,6 +142,29 @@ try {
     await page
       .getByRole('button', { name: '在地图选择起点', exact: true })
       .click();
+    await page.getByRole('button', { name: '矩形剖面', exact: true }).click();
+    assert.equal(
+      await page.locator('.observatory').getAttribute('data-picking-route'),
+      'false',
+    );
+    await page
+      .getByRole('button', { name: '关闭剖面详情', exact: true })
+      .click();
+    await page
+      .getByRole('button', { name: '结束对象操作', exact: true })
+      .click();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.__map.getLayer('section-plane').implementation.settings
+            .enabled,
+      ),
+      true,
+    );
+    await page.getByRole('button', { name: '路线', exact: true }).click();
+    await page
+      .getByRole('button', { name: '在地图选择起点', exact: true })
+      .click();
     await page
       .locator('.maplibregl-canvas')
       .click({ position: { x: width / 2, y: height / 2 } });
@@ -181,9 +228,15 @@ try {
       box = await slider.boundingBox();
     assert.equal(box.width, 44);
     assert.ok(box.height > 300);
-    await touch('touchStart', box.x + 22, box.y + box.height * 0.15);
+    assert.match(
+      await page.locator('.rail-end').first().textContent(),
+      /^终点/,
+    );
+    assert.match(await page.locator('.rail-end').last().textContent(), /^起点/);
+    assert.equal(await page.locator('.rail-distance').textContent(), '— km');
+    await touch('touchStart', box.x + 22, box.y + box.height * 0.85);
     for (let i = 2; i <= 8; i++) {
-      await touch('touchMove', box.x + 22, box.y + (box.height * i) / 10);
+      await touch('touchMove', box.x + 22, box.y + box.height * (1 - i / 10));
       await page.waitForTimeout(30);
     }
     await touch('touchEnd', 0, 0);
@@ -197,32 +250,25 @@ try {
     await page.screenshot({
       path: `artifacts/screenshots/route-scrub-${width}-${height}.png`,
     });
+    await verifyRailPreviewLayout(page, width);
     await verifyPreviewCamera(page, context, width);
     await slider.focus();
     await slider.press('End');
     assert.equal(Number(await slider.getAttribute('aria-valuenow')), 100);
     await slider.press('Home');
     assert.equal(Number(await slider.getAttribute('aria-valuenow')), 0);
+    await slider.press('ArrowUp');
+    assert.equal(Number(await slider.getAttribute('aria-valuenow')), 1);
+    await slider.press('Shift+ArrowUp');
+    assert.equal(Number(await slider.getAttribute('aria-valuenow')), 11);
+    await slider.press('ArrowDown');
+    assert.equal(Number(await slider.getAttribute('aria-valuenow')), 10);
     await page
       .getByRole('button', { name: '关闭行程预览', exact: true })
       .click();
     assert.equal(await page.locator('.route-preview-cursor').count(), 0);
     // Following exits the preview; a new scrub pauses following again.
-    await page.evaluate(() =>
-      Object.defineProperty(navigator, 'geolocation', {
-        configurable: true,
-        value: {
-          watchPosition(callback) {
-            callback({
-              coords: { longitude: 104.066, latitude: 30.659, accuracy: 5 },
-              timestamp: Date.now(),
-            });
-            return 1;
-          },
-          clearWatch() {},
-        },
-      }),
-    );
+    await installRailPositionMock(page);
     await slider.press('End');
     await page
       .getByRole('button', { name: '跟随当前位置', exact: true })
@@ -240,6 +286,23 @@ try {
         .count(),
       0,
     );
+    await verifyRailPositionProgress(page, width);
+    assert.equal(
+      await page.locator('.observatory').getAttribute('data-section'),
+      'false',
+    );
+    await page.getByRole('button', { name: '开始导航', exact: true }).click();
+    await page.getByRole('region', { name: '路线导航', exact: true }).waitFor();
+    assert.equal(
+      await page.evaluate(
+        () =>
+          window.__map.getLayer('section-plane').implementation.settings
+            .enabled,
+      ),
+      true,
+    );
+    await page.getByRole('button', { name: '结束导航', exact: true }).click();
+    await slider.waitFor();
     await slider.press('End');
     await page.waitForFunction(
       () =>
@@ -341,7 +404,7 @@ try {
       'PASS',
       width,
       height,
-      'direct inputs, map origin, touch reorder, request order, continuous rail, restore, visible waypoint delete, saved data retained, keyboard viewport',
+      'direct inputs, map origin, touch reorder, request order, upward rail, inline km, automatic GPS progress, preview separation, invalid fixes, restore, visible waypoint delete, saved data retained, keyboard viewport',
     );
     await context.close();
   }

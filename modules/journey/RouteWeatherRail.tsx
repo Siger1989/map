@@ -44,7 +44,15 @@ export function RouteWeatherRail({
     [route],
   );
   const progress = locateProgress(route, fix),
-    fraction = selected ?? progress.fraction ?? 0;
+    fraction = selected ?? progress.fraction ?? 0,
+    previewing = selected !== null,
+    located = progress.fraction !== null,
+    positionLabel = previewing
+      ? '预览位置'
+      : located
+        ? '当前位置'
+        : progress.label,
+    kilometres = ((route.distance * fraction) / 1000).toFixed(1);
   useEffect(() => {
     setSelected(null);
     setLegend(false);
@@ -112,7 +120,7 @@ export function RouteWeatherRail({
         `${color(s.weather?.[kind] ?? null)} ${(i / Math.max(1, j.entries.length - 1)) * 100}%`,
     );
     return entries.length > 1
-      ? `linear-gradient(to bottom, ${entries.join(',')})`
+      ? `linear-gradient(to top, ${entries.join(',')})`
       : '#64747d';
   };
   return (
@@ -127,7 +135,12 @@ export function RouteWeatherRail({
       >
         沿途
       </button>
-      <span className="rail-end">起点</span>
+      <span
+        className="rail-end"
+        title={`终点 · 全程 ${formatDistance(route.distance)}`}
+      >
+        终点<small>{(route.distance / 1000).toFixed(1)} km</small>
+      </span>
       <div
         className="rail-colors"
         role="slider"
@@ -137,7 +150,7 @@ export function RouteWeatherRail({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Number((fraction * 100).toFixed(1))}
-        aria-valuetext={`${selected === null && progress.fraction !== null ? '当前位置' : '预览'} ${formatDistance(route.distance * fraction)}，全程 ${formatDistance(route.distance)}`}
+        aria-valuetext={`${positionLabel}${previewing || located ? ` ${formatDistance(route.distance * fraction)}` : ''}，全程 ${formatDistance(route.distance)}`}
         onPointerDown={(e) => {
           if (!e.isPrimary || e.button !== 0) return;
           e.preventDefault();
@@ -166,7 +179,7 @@ export function RouteWeatherRail({
                 ? 0
                 : e.key === 'End'
                   ? 1
-                  : fraction + (e.key === 'ArrowDown' ? step : -step),
+                  : fraction + (e.key === 'ArrowUp' ? step : -step),
             );
           }
         }}
@@ -184,16 +197,33 @@ export function RouteWeatherRail({
           <span
             className="rail-gps"
             title="真实定位进度"
-            style={{ top: `${progress.fraction * 100}%` }}
+            style={{ top: `${(1 - progress.fraction) * 100}%` }}
           />
         )}
         <span
           className="rail-thumb"
           data-preview={selected !== null || progress.fraction === null}
-          style={{ top: `${fraction * 100}%` }}
+          style={{ top: `${(1 - fraction) * 100}%` }}
         />
+        <span
+          className="rail-distance"
+          data-preview={previewing}
+          data-unavailable={!previewing && !located}
+          style={{ top: `${(1 - fraction) * 100}%` }}
+          title={
+            previewing || located
+              ? `${positionLabel} · 距起点 ${kilometres} 公里`
+              : progress.label
+          }
+          aria-hidden="true"
+        >
+          {previewing ? '览 ' : ''}
+          {previewing || located ? kilometres : '—'} km
+        </span>
       </div>
-      <span className="rail-end">{(route.distance / 1000).toFixed(1)}km</span>
+      <span className="rail-end">
+        起点<small>0 km</small>
+      </span>
       <button
         className="rail-legend-toggle glass"
         aria-label="行程色带说明"
@@ -247,7 +277,8 @@ export function RouteWeatherRail({
             <>
               <small>
                 左：气温 ·
-                右：时雨雪量。拖色带浏览全程；白色滑块为预览，绿色点为定位。
+                右：时雨雪量。下方起点，上方终点；公里数表示沿路线距起点的位置。
+                持续定位时自动更新，白色滑块为预览，绿色点为定位。关闭预览可回到定位进度。
               </small>
               <div className="rail-scale">
                 {[-5, 5, 15, 25, 32, 38].map((t) => (
@@ -287,7 +318,7 @@ export function RouteWeatherSettings({
         />
       </label>
       <p className="route-note">
-        按各路段预计耗时匹配沿途预报，左侧上方为起点、下方为终点。未计实时路况或休息。
+        按各路段预计耗时匹配沿途预报，左侧下方为起点、上方为终点。未计实时路况或休息。
       </p>
       {j.forecast && (
         <>

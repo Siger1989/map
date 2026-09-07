@@ -26,6 +26,13 @@
   color: #d9e7e9;
   text-shadow: 0 1px 3px #10212b;
 }
+.rail-end small {
+  display: block;
+  font-size: 8px;
+  line-height: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .rail-colors {
   position: relative;
   width: 44px;
@@ -94,11 +101,32 @@
   border: 1px solid #164d37;
   pointer-events: none;
 }
+.rail-distance {
+  position: absolute;
+  left: 38px;
+  max-width: 70px;
+  padding: 2px 4px;
+  transform: translateY(-50%);
+  border-radius: 4px;
+  background: #10212be8;
+  color: #b6edce;
+  font-size: 9px;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.rail-distance[data-preview='true'] {
+  color: white;
+}
+.rail-distance[data-unavailable='true'] {
+  color: var(--muted);
+}
 .rail-detail {
   position: absolute;
-  left: 48px;
+  left: 112px;
   top: 36px;
-  width: min(194px, calc(100vw - 122px));
+  width: min(194px, calc(100vw - 186px));
   max-height: min(38dvh, 300px);
   overflow: auto;
   display: flex;

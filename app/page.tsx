@@ -43,6 +43,8 @@ import { useManualTracks } from '@/modules/tracks/useManualTracks';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionProfile } from '@/modules/section/SectionProfile';
+import { useSavedSection } from '@/modules/section/useSavedSection';
+import { EMPTY_SECTION } from '@/modules/section/savedSection';
 import type {
   SectionProfileData,
   ProfilePoint,
@@ -153,11 +155,13 @@ export default function Home() {
   );
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
-  const [sectionDraft, setSection] = useState<SectionSettings>({
-    enabled: false,
-    altitude: 1500,
-    color: '#ffffff',
-  });
+  const {
+    settings: sectionDraft,
+    set: setSection,
+    error: sectionSaveError,
+    ready: sectionReady,
+  } = useSavedSection();
+  const [sectionEditing, setSectionEditing] = useState(false);
   const [planePreview, setPlanePreview] = useState<SectionSettings | null>(
     null,
   );
@@ -207,7 +211,7 @@ export default function Home() {
       navigation.picking !== null ||
       !!featureMove ||
       !!quickAdd ||
-      section.enabled,
+      sectionEditing,
     onFollow: (coordinates) =>
       map.current?.followPosition(
         coordinates,
@@ -240,7 +244,7 @@ export default function Home() {
       return;
     }
     guidanceOwnsLocation.current = !position.watching;
-    setSection((current) => ({ ...current, enabled: false }));
+    setSectionEditing(false);
     setProfileOpen(false);
     guidanceFocused.current = false;
     tracks.finish();
@@ -263,14 +267,41 @@ export default function Home() {
         : null,
     [guidance.rejoin],
   );
+  const focusSection = (value: SectionSettings) => {
+    if (!value.plane) return;
+    map.current?.stop();
+    map.current?.focusPoint(
+      value.plane.center,
+      Math.max(
+        3,
+        Math.min(
+          20,
+          Math.log2(
+            40075016 / (Math.max(value.plane.width, value.plane.height) * 2),
+          ),
+        ),
+      ),
+    );
+  };
   const toggleSection = () => {
+    if (!sectionReady) return;
     setProfileOpen(false);
     setPlanePreview(null);
     setSectionHistory([]);
-    if (section.enabled) {
-      setSection((current) => ({ ...current, enabled: false }));
+    if (sectionDraft.plane) {
+      tracks.finish();
+      tracks.select(null);
+      navigation.setPicking(null);
+      position.free();
+      if (!sectionDraft.enabled) setSection({ ...sectionDraft, enabled: true });
+      setSectionEditing(true);
+      setProfileOpen(true);
+      setPanel(null);
+      annotations.select(null);
+      focusSection(sectionDraft);
       return;
     }
+    setSectionEditing(true);
     tracks.finish();
     tracks.select(null);
     annotations.select(null);
@@ -422,7 +453,7 @@ export default function Home() {
     <main
       className="observatory"
       data-panel={panel ?? 'map'}
-      data-section={section.enabled}
+      data-section={sectionEditing}
       data-route-notice={Boolean(
         navigation.picking !== null || navigation.route,
       )}
@@ -444,9 +475,9 @@ export default function Home() {
           setPanel(null);
           return;
         }
-        if (section.enabled) {
+        if (sectionEditing) {
           event.preventDefault();
-          setSection((current) => ({ ...current, enabled: false }));
+          setSectionEditing(false);
           return;
         }
         if (annotations.picking) {
@@ -469,11 +500,15 @@ export default function Home() {
         onSourceStatus={mapSources.setStatus}
         ref={map}
         section={section}
+        sectionEditing={sectionEditing}
         onSectionStatus={setSectionStatus}
         onSectionChange={setSection}
         onSectionProfile={setProfileData}
         sectionCursor={sectionCursor}
         onSectionSelect={() => {
+          tracks.finish();
+          tracks.select(null);
+          setSectionEditing(true);
           annotations.select(null);
           setPanel(null);
           setProfileOpen(true);
@@ -761,7 +796,7 @@ export default function Home() {
         )
       )}
       {guidance.active &&
-        !section.enabled &&
+        !sectionEditing &&
         !annotations.picking &&
         navigation.picking === null &&
         !selectionName &&
@@ -798,7 +833,7 @@ export default function Home() {
           />
         )}
       </div>
-      {navigation.route && !section.enabled && !guidance.active && (
+      {navigation.route && !sectionEditing && !guidance.active && (
         <RouteWeatherRail
           route={navigation.route}
           journey={routeJourney}
@@ -855,7 +890,7 @@ export default function Home() {
         mapStatus={mapStatus}
       />
       <MapActions
-        sectionActive={section.enabled}
+        sectionActive={sectionEditing}
         onSection={toggleSection}
         terrain={layers.terrain}
         bearing={view.bearing}
@@ -1152,7 +1187,13 @@ export default function Home() {
           </p>
         )}
       </ControlDock>
+      {sectionSaveError && (
+        <p className="section-save-error glass" role="alert">
+          {sectionSaveError}
+        </p>
+      )}
       {section.enabled &&
+        sectionEditing &&
         profileOpen &&
         panel === null &&
         !selectedAnnotation && (
@@ -1161,7 +1202,25 @@ export default function Home() {
             settings={section}
             onCursor={setSectionCursor}
             onChange={changeSection}
+            onRestore={(value) => {
+              changeSection(value);
+              focusSection(value);
+            }}
             onClose={() => setProfileOpen(false)}
+            onHide={() => {
+              setSection((s) => ({ ...s, enabled: false }));
+              setPlanePreview(null);
+              setProfileOpen(false);
+              setSectionEditing(false);
+            }}
+            onDelete={() => {
+              setSection(EMPTY_SECTION);
+              setPlanePreview(null);
+              setProfileOpen(false);
+              setSectionEditing(false);
+              setSectionHistory([]);
+              setProfileData(null);
+            }}
             onRetry={() => map.current?.refreshSection()}
           />
         )}
@@ -1208,7 +1267,10 @@ export default function Home() {
               setPanel(null);
             }}
           />
-        ) : section.enabled && section.plane && panel === null ? (
+        ) : section.enabled &&
+          sectionEditing &&
+          section.plane &&
+          panel === null ? (
           <ObjectGizmo
             key="section-plane"
             name="矩形剖面"
@@ -1216,9 +1278,7 @@ export default function Home() {
             pose={planePose(section)}
             watchProjection={watchObjectProjection}
             canUndo={sectionHistory.length > 0}
-            onLocate={() =>
-              map.current?.focusPoint(section.plane!.center, view.zoom)
-            }
+            onLocate={() => focusSection(section)}
             onBegin={() => {
               map.current?.stop();
               position.free();
@@ -1240,7 +1300,8 @@ export default function Home() {
             }}
             onDetails={() => setProfileOpen((open) => !open)}
             onClose={() => {
-              setSection((s) => ({ ...s, enabled: false }));
+              setSectionEditing(false);
+              setPlanePreview(null);
               setProfileOpen(false);
             }}
           />

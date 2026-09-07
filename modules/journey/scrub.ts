@@ -1,7 +1,7 @@
 import { metresBetween, type Coordinate } from '../navigation/types.ts';
 export function railFraction(y: number, top: number, height: number) {
   return Number.isFinite(y) && height > 0
-    ? Math.max(0, Math.min(1, (y - top) / height))
+    ? Math.max(0, Math.min(1, 1 - (y - top) / height))
     : 0;
 }
 /** Index route geometry once; pointer movement then uses a binary search. */
