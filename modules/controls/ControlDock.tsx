@@ -8,6 +8,8 @@ import {
   Footprints,
   Map as MapIcon,
   Bookmark,
+  PencilLine,
+  ScanLine,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -39,6 +41,9 @@ export function ControlDock({
   summary,
   timeline,
   timeLabel = '时间',
+  onSection,
+  sectionActive = false,
+  sectionReady = true,
   children,
 }: {
   active: ControlPanel;
@@ -46,6 +51,9 @@ export function ControlDock({
   summary: ReactNode;
   timeline: ReactNode;
   timeLabel?: string;
+  onSection?: () => void;
+  sectionActive?: boolean;
+  sectionReady?: boolean;
   children: ReactNode;
 }) {
   const root = useRef<HTMLElement>(null);
@@ -96,7 +104,7 @@ export function ControlDock({
                 : active === 'weather'
                   ? '地点天气'
                   : active === 'track'
-                    ? '轨迹管理'
+                    ? '画线与轨迹'
                     : active === 'favorites'
                       ? '收藏路线与轨迹'
                       : active === 'route'
@@ -108,7 +116,7 @@ export function ControlDock({
                 className="dock-section-link"
                 onClick={() => onActive(active === 'route' ? 'track' : 'route')}
               >
-                {active === 'route' ? '轨迹管理' : '道路规划'}
+                {active === 'route' ? '画线 / 轨迹' : '道路规划'}
               </button>
             )}
             <button
@@ -123,6 +131,21 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
+                <button onClick={() => onActive('track')}>
+                  <PencilLine size={18} />
+                  画线
+                </button>
+                {onSection && (
+                  <button
+                    onClick={onSection}
+                    aria-label="矩形剖面"
+                    aria-pressed={sectionActive}
+                    disabled={!sectionReady}
+                  >
+                    <ScanLine size={18} />
+                    剖面
+                  </button>
+                )}
                 {PANELS.filter(
                   (p) => !['tools', 'outdoor', 'favorites'].includes(p.id),
                 ).map(({ id, label, icon: Icon }) => (

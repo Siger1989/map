@@ -53,6 +53,9 @@ export function TrackPanel({
           逐点连线
         </button>
       </div>
+      <button className="route-primary" onClick={onDraw}>
+        {t.draft.length || t.anchor ? '继续绘制轨迹' : '在地图上画轨迹'}
+      </button>
       <p className="route-note">
         松手确认准星位置；平滑模式随后拖绿色牵引环。单指画，双指直接移动、缩放和调角度。
       </p>
@@ -88,9 +91,6 @@ export function TrackPanel({
           onChange={(e) => t.setRodLength(Number(e.target.value))}
         />
       </details>
-      <button className="route-primary" onClick={onDraw}>
-        {t.draft.length || t.anchor ? '继续绘制轨迹' : '在地图上画轨迹'}
-      </button>
       {!!t.draft.length && (
         <>
           <div className="route-result" data-track-id="draft">

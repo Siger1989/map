@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import type { DirectionMode } from '../position/types';
-import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 
 export function MapActions({
   terrain,
@@ -25,7 +24,6 @@ export function MapActions({
   onDevice,
   onStopLocation,
   sectionActive,
-  onSection,
 }: {
   terrain: boolean;
   bearing: number;
@@ -41,7 +39,6 @@ export function MapActions({
   onDevice: () => void;
   onStopLocation: () => void;
   sectionActive: boolean;
-  onSection: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -129,16 +126,6 @@ export function MapActions({
       >
         <MoreHorizontal size={21} />
       </button>
-      {TERRAIN_SECTION_ENABLED && (
-        <button
-          className="section-button"
-          aria-label="矩形剖面"
-          aria-pressed={sectionActive}
-          onClick={onSection}
-        >
-          剖面
-        </button>
-      )}
     </nav>
   );
 }

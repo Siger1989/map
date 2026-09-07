@@ -1,3 +1,10 @@
+# 当前任务：剖面移入工具、恢复明显的画线入口（2026-09-07，完成源码与验证）
+- 启动 status/diff 干净，pull --ff-only 已最新 c618a3c。已确认画线未删除，但入口藏在路线标题“轨迹管理”，开始按钮在多段说明/设置后。
+- 范围：ControlDock/MapActions/page 接线和 TrackPanel 按钮顺序；工具首行放画线/剖面，右侧移除剖面，保留原画线逻辑和剖面数据。
+- 已改：工具第一行“画线/剖面”、路线标题“画线 / 轨迹”；绘制按钮提前。从剖面开始画线会退出剖面操作并保留数据，避免两种地图交互同时活动。
+- 验证 PASS：TypeScript、219/219测试、网页与安卓网页构建；浏览器逐点模式真实点击生成9.5km线段后清空本轮草稿，恢复平滑模式；剖面入口恢复原对象，右侧剖面按钮数量0。390/360菜单面板约250px高、全部菜单按钮在内部，无横向溢出。
+- 文件：ControlDock/MapActions/page/TrackPanel，README/LOG/docs/compact-thetrail-ui.md/本状态。日志 .openai/*tools-entry*.log；截图 artifacts/screenshots/tools-draw-section.png。代码按授权同步main，远端SHA核验写 .openai/sync-tools-entry.log。未生成APK；手机精确截图/真机触控仍待后续验收。
+
 # 当前任务：玻璃质感、数值旋转与剖面紧凑布局（2026-09-07，实现/构建完成，手机待验收）
 - 用户指出上一版缺少参考图的模糊效果、视觉不符。目标：真实背景模糊、半透明暖灰表面、减少嵌套实色块，同时保留紧凑字号和绿色相机。
 - 启动：git status/diff 干净，pull --ff-only 已是最新 412c937；重新查看原 TheTrail 参考。范围限定 modern.css 与说明文件，不改业务、地图图源、定位、存储。

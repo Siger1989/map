@@ -891,7 +891,6 @@ export default function Home() {
       />
       <MapActions
         sectionActive={sectionEditing}
-        onSection={toggleSection}
         terrain={layers.terrain}
         bearing={view.bearing}
         onZoom={(amount) => map.current?.zoom(amount)}
@@ -943,6 +942,9 @@ export default function Home() {
         </button>
       )}
       <ControlDock
+        onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
+        sectionActive={sectionEditing}
+        sectionReady={sectionReady}
         active={panel === 'layers' ? null : panel}
         onActive={(next) => {
           if (next) {
@@ -1096,6 +1098,9 @@ export default function Home() {
             }}
             onDraw={() => {
               map.current?.stop();
+              setSectionEditing(false);
+              setProfileOpen(false);
+              setPlanePreview(null);
               navigation.setPicking(null);
               tracks.start();
               annotations.select(null);
