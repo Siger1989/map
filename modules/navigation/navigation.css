@@ -247,6 +247,9 @@
   touch-action: none;
   cursor: grab;
 }
+.stop-remove {
+  color: #ffb9a8;
+}
 .route-stop-block.is-dragging {
   background: #9de8c41a;
 }

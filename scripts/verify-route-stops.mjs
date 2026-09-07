@@ -271,6 +271,51 @@ try {
         .inputValue(),
       '天府广场',
     );
+    // The delete action is visible without focusing the waypoint input.
+    const removeVia = page.getByRole('button', {
+      name: '删除途经点 1',
+      exact: true,
+    });
+    await removeVia.scrollIntoViewIfNeeded();
+    assert.equal(await page.locator('.stop-edit-options').count(), 0);
+    assert.equal(await page.locator('.stop-remove').count(), 1);
+    const removeBox = await removeVia.boundingBox();
+    assert.ok(removeBox.width >= 44 && removeBox.height >= 44);
+    assert.ok(removeBox.x >= 0 && removeBox.x + removeBox.width <= width);
+    await page.screenshot({
+      path: `artifacts/screenshots/route-waypoint-delete-${width}.png`,
+    });
+    await removeVia.tap();
+    assert.equal(await page.locator('[data-stop-id]').count(), 2);
+    assert.equal(await page.locator('.stop-remove').count(), 0);
+    assert.equal(
+      await page
+        .getByRole('textbox', { name: '起点', exact: true })
+        .inputValue(),
+      '锦里',
+    );
+    assert.equal(
+      await page
+        .getByRole('textbox', { name: '终点', exact: true })
+        .inputValue(),
+      '龙泉驿',
+    );
+    assert.equal(await page.locator('.route-start-notice').count(), 0);
+    assert.equal(
+      await page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('guanyun.route-favorites.v1'))[0]
+            .route.stops.length,
+      ),
+      3,
+    );
+    // Newly added empty waypoints can also be removed after their editor is closed.
+    await page.getByRole('button', { name: '途经点', exact: true }).click();
+    await page
+      .getByRole('button', { name: '完成编辑途经点 1', exact: true })
+      .click();
+    await removeVia.tap();
+    assert.equal(await page.locator('[data-stop-id]').count(), 2);
     await page.setViewportSize({ width, height: 460 });
     await page.getByRole('textbox', { name: '起点', exact: true }).fill('天府');
     await page
@@ -294,7 +339,7 @@ try {
       'PASS',
       width,
       height,
-      'direct inputs, map origin, touch reorder, request order, continuous rail, restore, keyboard viewport',
+      'direct inputs, map origin, touch reorder, request order, continuous rail, restore, visible waypoint delete, saved data retained, keyboard viewport',
     );
     await context.close();
   }

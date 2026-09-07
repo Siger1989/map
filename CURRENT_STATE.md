@@ -1,3 +1,10 @@
+# 当前任务：途经点常驻删除按钮（2026-09-07）
+- 用户反馈途经点没有明显删除入口，要求增加 X。开始 main 干净，pull --ff-only 确认 c9df117 最新；原删除操作只在输入框聚焦后的编辑选项中显示。
+- 修改 navigation/RoutePanel.tsx 与 navigation.css：每个中间途经点行末常驻 44px X，移除隐藏编辑区重复删除按钮；复用 useNavigation.remove，删除清空旧规划/取消请求并保留起终点，拖动中禁用删除。收藏、轨迹/照片、定位、导航算法与原数据格式保持，无新依赖/文件删除；回滚恢复原入口即可。
+- 验证完成：TypeScript、22/22 导航/途经点/偏航相关测试通过；390×844、360×780 未聚焦时 X 常驻、44px 点击区、实际触摸删除空/已选途经点、保留起终点与原三点收藏、删除后旧规划失效、排序/搜索/收藏恢复/460px 键盘视口回归通过。两尺寸截图已查看，无新增遮挡/溢出或运行错误。日志 .openai/{typecheck-waypoint-delete,tests-waypoint-delete,browser-waypoint-delete}.log。
+- 网页与 Android Java/DEX 完整未签名构建通过；500 项 APK 资源逐项 SHA-256 与 mobile/dist 一致，含常驻 X 和样式。产物 mobile/.build/Shantu-0.2.5-test-unsigned.apk，54008247 字节，SHA-256 eb562cb9883eb94eecf440e85035715ae081486182413063ff77012df453a9d7。日志 .openai/{build-web-waypoint-delete,build-android-waypoint-delete,verify-waypoint-delete-apk}.log；localhost:3000 返回 200。原签名限制保持，不可安装、无新 Release，未做真机触控验收。
+- 文件：RoutePanel.tsx、navigation.css、scripts/verify-route-stops.mjs、docs/route-stops-and-scrub.md 与本状态；说明更新常驻删除入口，并纠正前轮遗漏的旧 500 km 限制文案。源码/状态一并提交，origin/main 同步与最终 SHA 核验见 .openai/sync-waypoint-delete.log。
+
 # 当前任务：取消规划路线 500 公里限制（2026-09-07）
 - 用户明确要求删除公里数限制；开始 main 干净，pull --ff-only 确认 ff75533 最新。
 - 修改 navigation/provider.ts，移除请求前累计直线距离超过 500 公里的拦截与提示；驾车、骑行、步行统一生效。更新 tests/navigation.test.mjs 原校验用例，成都到拉萨允许生成请求。保留非法坐标、过近地点和途经点数量校验，原服务超时/失败处理不变。

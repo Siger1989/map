@@ -303,6 +303,23 @@ export function RoutePanel({
                 >
                   <GripVertical size={18} />
                 </button>
+                {index > 0 && index < n.stops.length - 1 && (
+                  <button
+                    type="button"
+                    className="stop-icon stop-remove"
+                    aria-label={`删除${label}`}
+                    title={`删除${label}`}
+                    disabled={dragging !== null}
+                    onClick={() => {
+                      request.current?.abort();
+                      setActive(null);
+                      n.remove(index);
+                      setAnnouncement(`已删除${label}`);
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                )}
               </form>
               {focused && (
                 <div className="stop-edit-options">
@@ -317,17 +334,6 @@ export function RoutePanel({
                   </button>
                   {s.query && (
                     <button onClick={() => n.edit(index, '')}>清空</button>
-                  )}
-                  {index > 0 && index < n.stops.length - 1 && (
-                    <button
-                      onClick={() => {
-                        request.current?.abort();
-                        setActive(null);
-                        n.remove(index);
-                      }}
-                    >
-                      删除途经点
-                    </button>
                   )}
                   <button
                     aria-label={`完成编辑${label}`}
