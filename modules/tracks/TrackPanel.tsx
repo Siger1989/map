@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
 import { trackDistance } from './drawing';
@@ -10,6 +11,7 @@ import {
 import { TrackStyleControls } from './TrackStyleControls';
 import { normalizeTrackStyle } from './style';
 import type { ManualTracksState } from './useManualTracks';
+import { drawingArea, drawingTime } from './archive';
 export function TrackPanel({
   tracks: t,
   onDraw,
@@ -17,11 +19,19 @@ export function TrackPanel({
   onEditNodes,
 }: {
   tracks: ManualTracksState;
-  onDraw: () => void;
+  onDraw: (endpoint?: Coordinate) => void;
   onShow: (points: Coordinate[]) => void;
   onEditNodes: (id: string) => void;
 }) {
   const [name, setName] = useState(t.draftName ?? '');
+  const [choosing, setChoosing] = useState(false);
+  const [continueId, setContinueId] = useState('');
+  const records = [...t.saved].sort(
+    (a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt),
+  );
+  const continuation = records.find((track) => track.id === continueId);
+  const canContinue =
+    !!continuation || (continueId === 'draft' && !!t.draft.length);
   const details = t.selectedId,
     setDetails = t.select;
   const section = useRef<HTMLElement>(null);
@@ -36,15 +46,89 @@ export function TrackPanel({
   }, [details]);
   return (
     <section ref={section} className="track-panel" aria-label="轨迹管理">
+      <div className="track-start-actions">
+        <button
+          className="route-primary"
+          onClick={() => {
+            if (t.startNew(name)) {
+              setName('');
+              onDraw();
+            }
+          }}
+        >
+          新建轨迹
+        </button>
+        <button
+          className="track-continue-toggle"
+          aria-expanded={choosing}
+          aria-controls="track-continue-picker"
+          onClick={() => setChoosing(!choosing)}
+        >
+          <History size={14} aria-hidden="true" />
+          继续绘制
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
+      </div>
+      {choosing && (
+        <div id="track-continue-picker" className="track-continue-picker">
+          <label htmlFor="continue-track">选择要继续绘制的轨迹</label>
+          <select
+            id="continue-track"
+            value={canContinue ? continueId : ''}
+            onChange={(e) => setContinueId(e.target.value)}
+          >
+            <option value="">请选择轨迹</option>
+            {!!t.draft.length && (
+              <option value="draft">
+                当前未完成草稿 · {formatDistance(trackDistance(t.draft))}
+              </option>
+            )}
+            {records.map((track) => (
+              <option key={track.id} value={track.id}>
+                {track.name} · {formatDistance(trackDistance(track.segments))}
+              </option>
+            ))}
+          </select>
+          {continuation && (
+            <small className="track-continue-meta">
+              {drawingTime(continuation.createdAt)} · 起点附近：
+              {drawingArea(continuation)}
+            </small>
+          )}
+          {!records.length && !t.draft.length && (
+            <p className="route-note">暂无可续画轨迹，请先新建。</p>
+          )}
+          <button
+            className="route-primary track-continue-start"
+            disabled={!canContinue}
+            onClick={() => {
+              if (!canContinue) return;
+              if (continueId === 'draft') {
+                t.start();
+                onDraw(t.draft.at(-1)?.at(-1));
+              } else if (t.continueTrack(continueId)) {
+                onDraw(
+                  records
+                    .find((track) => track.id === continueId)
+                    ?.segments.at(-1)
+                    ?.at(-1),
+                );
+              }
+            }}
+          >
+            <Play size={14} aria-hidden="true" />
+            继续所选轨迹
+          </button>
+        </div>
+      )}
       <p className="route-note">
-        点线路查看详情。实走与带时间轨迹保留原始记录；需要改线时，可复制为手绘。
+        完成时自动保存时间与起点附近位置。逐点松手连线，双指控图；吸附默认开启。
       </p>
-      <button className="route-primary" onClick={onDraw}>
-        {t.draft.length || t.anchor ? '继续绘制轨迹' : '在地图上画轨迹'}
-      </button>
-      <p className="route-note">
-        逐点选位置，松手连线。道路、节点吸附默认开启；双指移动、缩放和调角度。
-      </p>
+      {t.error && (
+        <p className="route-error" role="alert">
+          {t.error}
+        </p>
+      )}
       <label className="track-snap">
         <input
           type="checkbox"
@@ -113,11 +197,6 @@ export function TrackPanel({
           </button>
         </>
       )}
-      {t.error && (
-        <p className="route-error" role="alert">
-          {t.error}
-        </p>
-      )}
       <div className="track-saved-heading">
         <strong>已保存 {t.saved.length}/20</strong>
         <button
@@ -127,7 +206,7 @@ export function TrackPanel({
           {t.visible ? '隐藏轨迹' : '显示轨迹'}
         </button>
       </div>
-      {t.saved.map((track) => (
+      {records.map((track) => (
         <div
           className="track-record"
           key={track.id}
@@ -147,6 +226,9 @@ export function TrackPanel({
               <small>
                 {trackSourceLabel(track)} ·{' '}
                 {formatDistance(trackDistance(track.segments))}
+              </small>
+              <small>
+                {drawingTime(track.createdAt)} · {drawingArea(track)}
               </small>
             </button>
             <button
@@ -184,7 +266,7 @@ export function TrackPanel({
                       : track.name,
                   );
                   setDetails(null);
-                  onDraw();
+                  onDraw(track.segments.at(-1)?.at(-1));
                 }
               }}
             >
@@ -214,6 +296,11 @@ export function TrackPanel({
                 {track.segments.reduce((n, line) => n + line.length, 0)} 个节点
                 <br />
                 创建于 {new Date(track.createdAt).toLocaleString('zh-CN')}
+                {track.updatedAt && (
+                  <> · 更新于 {drawingTime(track.updatedAt)}</>
+                )}
+                <br />
+                起点附近：{drawingArea(track)}
                 <br />
                 {keepsOriginalPoints(track)
                   ? '原始坐标和时间受保护；重命名或改线条样式不会改变记录。'

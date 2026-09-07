@@ -945,3 +945,46 @@
 .observatory .control-popover .collections-panel .collection-delete {
   color: #ae392d;
 }
+.observatory .control-popover .track-continue-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  min-height: 44px;
+  border-radius: 22px;
+  border: 1px solid #244dfc66;
+  background: #ffffff99;
+  color: #193ad0;
+  font-weight: 600;
+  cursor: pointer;
+}
+.observatory .control-popover .track-start-actions .route-primary {
+  margin: 0;
+}
+.observatory .control-popover .track-continue-toggle[aria-expanded='true'] {
+  background: #e0e7ff;
+  border-color: #244dfc;
+}
+.observatory .track-continue-toggle[aria-expanded='true'] svg:last-child {
+  transform: rotate(180deg);
+}
+.observatory .control-popover .track-continue-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  cursor: pointer;
+}
+.observatory .control-popover .track-continue-start:disabled {
+  background: #ffffff50;
+  color: #59686d;
+  cursor: not-allowed;
+}
+.observatory .track-continue-meta {
+  font-size: 11px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}

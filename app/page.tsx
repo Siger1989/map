@@ -654,7 +654,7 @@ export default function Home() {
           tracks={tracks}
           onLocate={(point) => map.current?.focusPoint(point)}
           onFinish={() => {
-            tracks.finish();
+            tracks.complete();
             setPanel('track');
           }}
         />
@@ -1141,15 +1141,15 @@ export default function Home() {
               tracks.finish();
               setPanel(null);
             }}
-            onDraw={() => {
+            onDraw={(endpoint) => {
               map.current?.stop();
               setSectionEditing(false);
               setProfileOpen(false);
               setPlanePreview(null);
               navigation.setPicking(null);
-              tracks.start();
               annotations.select(null);
               setPanel(null);
+              if (endpoint) map.current?.focusPoint(endpoint);
             }}
             onShow={(points) => {
               map.current?.fitRoute(points);

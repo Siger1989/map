@@ -10,6 +10,8 @@ export type ManualTrack = {
   name: string;
   segments: Coordinate[][];
   createdAt: number;
+  updatedAt?: number;
+  drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual';
   samples?: { time: number | null; altitude: number | null }[][];
@@ -84,5 +86,23 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
             ))) &&
         v.segments.reduce((n: number, line: unknown[]) => n + line.length, 0) <=
           MAX_TRACK_POINTS,
-    );
+    )
+    .map((track) => {
+      // Optional new metadata must not make an otherwise valid legacy track disappear.
+      const { updatedAt, drawingLocation, ...rest } = track;
+      return {
+        ...rest,
+        ...(Number.isFinite(updatedAt) ? { updatedAt } : {}),
+        ...(drawingLocation &&
+        coordinate(drawingLocation.coordinate) &&
+        typeof drawingLocation.label === 'string'
+          ? {
+              drawingLocation: {
+                coordinate: drawingLocation.coordinate,
+                label: drawingLocation.label.slice(0, 120),
+              },
+            }
+          : {}),
+      };
+    });
 }

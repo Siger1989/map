@@ -302,3 +302,29 @@
 .track-record .track-saved {
   border: none;
 }
+.track-start-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.track-start-actions button {
+  min-height: 44px;
+}
+.track-continue-picker {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.track-continue-picker label {
+  font-size: 12px;
+}
+.track-continue-picker select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}

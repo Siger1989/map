@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { coordinate, type Coordinate } from '../navigation/types';
 import { keepsOriginalPoints } from './provenance';
+import { usePlaceName } from '../navigation/usePlaceName';
+import { drawingRecord, storeDrawingRecord } from './archive';
 import {
   DRAFT_ID,
   equalCoordinate,
@@ -28,14 +30,12 @@ import {
   undoDraft,
   moveDraftNode,
 } from './draft';
-import {
-  connectedTracks,
-  endpoints,
-  hasLoosePoints,
-  joinSegments,
-} from './snapping';
+import { connectedTracks, endpoints, joinSegments } from './snapping';
 export function useManualTracks() {
   const [saved, setSaved] = useState<ManualTrack[]>([]);
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  const startedAt = useRef(Date.now());
   const [draftState, setDraftState] = useState(EMPTY_DRAFT);
   const draftRef = useRef(draftState);
   draftRef.current = draftState;
@@ -52,6 +52,7 @@ export function useManualTracks() {
   const [visible, setVisible] = useState(true),
     [error, setError] = useState('');
   const vertices = useMemo(() => draftVertices(draftState), [draftState]);
+  const place = usePlaceName(draftState.segments[0]?.[0] ?? null, true);
   const candidates = useMemo(
     () => [
       ...endpoints(draftState.segments),
@@ -92,6 +93,7 @@ export function useManualTracks() {
   const persist = (tracks: ManualTrack[]) => {
     try {
       localStorage.setItem(TRACK_STORAGE, JSON.stringify(tracks));
+      savedRef.current = tracks;
       setSaved(tracks);
       return true;
     } catch {
@@ -114,6 +116,52 @@ export function useManualTracks() {
     setError('轨迹点数已达上限，请先保存。');
     setDrawing(false);
     return false;
+  };
+  const resetDraft = () => {
+    draftRef.current = EMPTY_DRAFT;
+    setDraftState(EMPTY_DRAFT);
+    setCopyName(null);
+    setEditingId(null);
+    setAnchor(null);
+    setNodeHistory([]);
+    startedAt.current = Date.now();
+  };
+  const saveDraft = (name = '') => {
+    try {
+      const records = savedRef.current;
+      if (!editingId && records.length >= 20)
+        throw new Error(
+          '已保存 20 条轨迹，请先删除不需要的轨迹。当前草稿已保留。',
+        );
+      const prior = records.find((t) => t.id === editingId);
+      const track = drawingRecord({
+        segments: draftRef.current.segments,
+        nodes: draftVertices(draftRef.current).slice(0, MAX_TRACK_POINTS),
+        prior,
+        id: crypto.randomUUID(),
+        name: name || copyName || '',
+        style,
+        createdAt: startedAt.current,
+        now: Date.now(),
+        place: place?.place?.local,
+      });
+      const next = storeDrawingRecord(track, localStorage);
+      savedRef.current = next;
+      setSaved(next);
+      resetDraft();
+      select(null);
+      setError('');
+      setEditing(false);
+      setDrawing(false);
+      return true;
+    } catch (error) {
+      setError(
+        error instanceof Error && error.name !== 'QuotaExceededError'
+          ? `${error.message} 当前草稿已保留。`
+          : '本机存储空间不足，当前草稿已保留，请释放空间后重试保存。',
+      );
+      return false;
+    }
   };
   return {
     saved,
@@ -213,9 +261,24 @@ export function useManualTracks() {
       setVisible(true);
       setError('');
     },
+    startNew: (name = '') => {
+      if (draftRef.current.segments.length && !saveDraft(name)) return false;
+      resetDraft();
+      select(DRAFT_ID);
+      setEditing(true);
+      setDrawing(true);
+      setVisible(true);
+      setError('');
+      return true;
+    },
     pause: () => setDrawing(false),
     resume: () => setDrawing(true),
     finish: () => {
+      setDrawing(false);
+      setEditing(false);
+    },
+    complete: () => {
+      if (draftRef.current.segments.length) saveDraft();
       setDrawing(false);
       setEditing(false);
     },
@@ -248,30 +311,27 @@ export function useManualTracks() {
       setAnchor(next.segments.at(-1)?.at(-1) ?? null);
     },
     clearDraft: () => {
-      setCopyName(null);
       select(editingId);
-      setDraftState(EMPTY_DRAFT);
-      setAnchor(null);
-      setEditingId(null);
+      resetDraft();
       setError('');
     },
     continueTrack: (id: string) => {
-      if (draftRef.current.segments.length) {
-        setError('请先保存或清空当前草稿，再续画其他线路。');
-        return false;
-      }
-      const track = saved.find((t) => t.id === id);
+      if (draftRef.current.segments.length && !saveDraft()) return false;
+      const track = savedRef.current.find((t) => t.id === id);
       if (!track) return false;
       setCopyName(
         keepsOriginalPoints(track) ? `${track.name} · 手绘副本` : null,
       );
-      setDraftState({
+      const nextDraft = {
         segments: track.segments,
-        kinds: track.segments.map(() => 'freehand'),
+        kinds: track.segments.map(() => 'freehand' as const),
         history: [],
         pointLine: null,
         nodes: track.nodes,
-      });
+      };
+      draftRef.current = nextDraft;
+      setDraftState(nextDraft);
+      startedAt.current = Date.now();
       select(DRAFT_ID);
       setNodeHistory([]);
       // Editing a recorded/imported time series starts a copy; its original stays immutable.
@@ -284,50 +344,7 @@ export function useManualTracks() {
       setError('');
       return true;
     },
-    save: (name: string) => {
-      if (
-        !draftState.segments.some((line) => line.length >= 2) ||
-        hasLoosePoints(draftState.segments)
-      ) {
-        setError('每段至少需要两个位置，请继续点选或撤销孤立点。');
-        return false;
-      }
-      if (!editingId && saved.length >= 20) {
-        setError('已保存 20 条轨迹，请先删除不需要的轨迹。');
-        return false;
-      }
-      const prior = saved.find((t) => t.id === editingId);
-      const track: ManualTrack = {
-        id: prior?.id ?? crypto.randomUUID(),
-        name:
-          name.trim().slice(0, 60) ||
-          prior?.name ||
-          copyName ||
-          `手绘轨迹 ${new Date().toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`,
-        segments: joinSegments(draftState.segments),
-        createdAt: prior?.createdAt ?? Date.now(),
-        source: 'manual',
-        style,
-        nodes: vertices.slice(0, MAX_TRACK_POINTS),
-      };
-      if (
-        !persist(
-          prior
-            ? saved.map((t) => (t.id === prior.id ? track : t))
-            : [...saved, track],
-        )
-      )
-        return false;
-      setDraftState(EMPTY_DRAFT);
-      select(track.id);
-      setCopyName(null);
-      setEditingId(null);
-      setAnchor(null);
-      setError('');
-      setEditing(false);
-      setDrawing(false);
-      return true;
-    },
+    save: saveDraft,
     remove: (id: string) => {
       if (persist(saved.filter((track) => track.id !== id))) {
         setNodeHistory((history) => history.filter((t) => t.id !== id));
