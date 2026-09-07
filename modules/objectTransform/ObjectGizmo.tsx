@@ -6,7 +6,12 @@ import {
   type PointerEvent,
   type KeyboardEvent,
 } from 'react';
-import type { Pose } from './math';
+import {
+  rotationDegrees,
+  withRotationAxis,
+  uprightPose,
+  type Pose,
+} from './math';
 import {
   objectProjector,
   transformAt,
@@ -36,7 +41,8 @@ type Props = {
 /** Object-centred universal Gizmo: arrows, rings and boxes are live together. */
 export function ObjectGizmo(props: Props) {
   const [frame, setFrame] = useState<ProjectionFrame | null>(null),
-    [active, setActive] = useState('');
+    [active, setActive] = useState(''),
+    [previewPose, setPreviewPose] = useState<Pose | null>(null);
   const latest = useRef(props);
   latest.current = props;
   const gesture = useRef<{
@@ -55,6 +61,7 @@ export function ObjectGizmo(props: Props) {
     if (!g) return;
     gesture.current = null;
     setActive('');
+    setPreviewPose(null);
     if (commit && g.moved) latest.current.onCommit(g.next);
     latest.current.onPreview(null);
   };
@@ -148,6 +155,7 @@ export function ObjectGizmo(props: Props) {
       e.shiftKey,
     );
     props.onPreview(g.next);
+    setPreviewPose(g.next);
   };
   const keyboard = (e: KeyboardEvent<SVGGElement>, key: string) => {
     const t = targets.find((t) => t.key === key);
@@ -190,6 +198,12 @@ export function ObjectGizmo(props: Props) {
     points
       .map((a, i) => `${i ? 'L' : 'M'}${a.x.toFixed(2)},${a.y.toFixed(2)}`)
       .join(' ');
+  const angles = rotationDegrees(previewPose ?? props.pose);
+  const commitRotation = (pose: Pose) => {
+    if (gesture.current) return;
+    props.onBegin();
+    props.onCommit(pose);
+  };
   return (
     <>
       <svg
@@ -354,6 +368,55 @@ export function ObjectGizmo(props: Props) {
             ✓
           </button>
         </header>
+        <div className="object-rotation" aria-label="对象旋转角度">
+          {(['X', 'Y', 'Z'] as const).map((axis, index) => {
+            const value = Number(angles[index].toFixed(1));
+            return (
+              <label key={axis}>
+                <span>{axis}</span>
+                <input
+                  key={`${axis}:${value}`}
+                  type="number"
+                  step="0.1"
+                  min="-360"
+                  max="360"
+                  aria-label={`${axis} 旋转角度（度）`}
+                  defaultValue={value}
+                  disabled={!!active}
+                  onBlur={(e) => {
+                    const next = e.currentTarget.valueAsNumber;
+                    if (
+                      Number.isFinite(next) &&
+                      Math.abs(next) <= 360 &&
+                      next !== value
+                    )
+                      commitRotation(
+                        withRotationAxis(
+                          latest.current.pose,
+                          index as 0 | 1 | 2,
+                          next,
+                        ),
+                      );
+                    else e.currentTarget.value = String(value);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.value = String(value);
+                      e.currentTarget.blur();
+                    }
+                  }}
+                />
+                <small>°</small>
+              </label>
+            );
+          })}
+        </div>
         <div className="object-gizmo-actions">
           <button
             disabled={!!active || !props.canUndo}
@@ -362,18 +425,21 @@ export function ObjectGizmo(props: Props) {
           >
             撤销
           </button>
+          <button
+            disabled={!!active}
+            title={
+              props.kind === 'plane'
+                ? '恢复竖直朝北，保留位置和尺寸'
+                : '旋转角度归零，保留位置和尺寸'
+            }
+            onClick={() => commitRotation(uprightPose(props.pose, props.kind))}
+          >
+            归正
+          </button>
           <button disabled={!!active} onClick={props.onLocate}>
             回到对象
           </button>
-          {active ? (
-            <button onClick={() => finish(false)}>取消</button>
-          ) : (
-            <span>
-              箭头移动 · 圆环旋转
-              <br />
-              方块拉伸 · 黄块等比
-            </span>
-          )}
+          {active ? <button onClick={() => finish(false)}>取消</button> : null}
         </div>
         {active && <small>{active} · 松手保存 / Esc 取消</small>}
         {!visible && <small>对象在视野外，可点“回到对象”。</small>}

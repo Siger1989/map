@@ -379,59 +379,61 @@ export function SectionProfile({
             </select>
           </label>
         )}
-        <details>
-          <summary>坐标、海拔与数据详情</summary>
-          <dl>
-            {current &&
-              profileDetails(current, focusedCurve, cursor).map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-          </dl>
-        </details>
-        <details>
-          <summary>精确设置剖面</summary>
-          <div className="section-fields">
-            {number('中心经度', p.center[0], -180, 180, (n) =>
-              onChange({
-                ...settings,
-                plane: { ...p, center: [n, p.center[1]] },
-              }),
-            )}
-            {number('中心纬度', p.center[1], -85, 85, (n) =>
-              onChange({
-                ...settings,
-                plane: { ...p, center: [p.center[0], n] },
-              }),
-            )}
-          </div>
-          <div className="section-fields">
-            {number('中心海拔 m', settings.altitude, -12000, 30000, (n) =>
-              onChange({ ...settings, altitude: n }),
-            )}
-            {number('宽 m', p.width, 0.1, 200000, (n) =>
-              onChange({ ...settings, plane: { ...p, width: n } }),
-            )}
-            {number('高 m', p.height, 0.1, 200000, (n) =>
-              onChange({ ...settings, plane: { ...p, height: n } }),
-            )}
-          </div>
-          <div className="section-fields">
-            {number('方向 °', p.heading, -360, 360, (n) =>
-              onChange({ ...settings, plane: { ...p, heading: n } }),
-            )}
-            {number('倾角 °', p.tilt, -90, 90, (n) =>
-              onChange({ ...settings, plane: { ...p, tilt: n } }),
-            )}
-            {number('面内转角 °', p.roll ?? 0, -360, 360, (n) =>
-              onChange({ ...settings, plane: { ...p, roll: n } }),
-            )}
-          </div>
-        </details>
-        <button onClick={onRetry}>重新采样</button>
-        <div className="section-note-actions">
+        <div className="section-options">
+          <details>
+            <summary aria-label="坐标、海拔与数据详情">坐标与数据</summary>
+            <dl>
+              {current &&
+                profileDetails(current, focusedCurve, cursor).map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+            </dl>
+          </details>
+          <details>
+            <summary aria-label="精确设置剖面">精确设置</summary>
+            <div className="section-fields">
+              {number('中心经度', p.center[0], -180, 180, (n) =>
+                onChange({
+                  ...settings,
+                  plane: { ...p, center: [n, p.center[1]] },
+                }),
+              )}
+              {number('中心纬度', p.center[1], -85, 85, (n) =>
+                onChange({
+                  ...settings,
+                  plane: { ...p, center: [p.center[0], n] },
+                }),
+              )}
+            </div>
+            <div className="section-fields">
+              {number('中心海拔 m', settings.altitude, -12000, 30000, (n) =>
+                onChange({ ...settings, altitude: n }),
+              )}
+              {number('宽 m', p.width, 0.1, 200000, (n) =>
+                onChange({ ...settings, plane: { ...p, width: n } }),
+              )}
+              {number('高 m', p.height, 0.1, 200000, (n) =>
+                onChange({ ...settings, plane: { ...p, height: n } }),
+              )}
+            </div>
+            <div className="section-fields">
+              {number('方向 °', p.heading, -360, 360, (n) =>
+                onChange({ ...settings, plane: { ...p, heading: n } }),
+              )}
+              {number('倾角 °', p.tilt, -90, 90, (n) =>
+                onChange({ ...settings, plane: { ...p, tilt: n } }),
+              )}
+              {number('面内转角 °', p.roll ?? 0, -360, 360, (n) =>
+                onChange({ ...settings, plane: { ...p, roll: n } }),
+              )}
+            </div>
+          </details>
+        </div>
+        <div className="section-note-actions section-footer-actions">
+          <button onClick={onRetry}>重新采样</button>
           <button onClick={onHide}>隐藏剖面</button>
           <button onClick={onDelete}>删除剖面</button>
         </div>

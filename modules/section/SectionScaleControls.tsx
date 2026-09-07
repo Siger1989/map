@@ -18,8 +18,9 @@ export function SectionScaleControls({
       <strong>比例尺设置</strong>
       <div className="section-fields">
         <label className="section-field">
-          比例尺单位
+          单位
           <select
+            aria-label="比例尺单位"
             value={scale.unit}
             onChange={(e) =>
               onChange({
@@ -33,8 +34,9 @@ export function SectionScaleControls({
           </select>
         </label>
         <label className="section-field">
-          刻度间隔
+          间隔
           <select
+            aria-label="刻度间隔"
             value={
               scale.interval === 'auto'
                 ? 'auto'
@@ -99,8 +101,9 @@ export function SectionScaleControls({
       <div className="section-fields section-size-presets">
         {(['width', 'height'] as const).map((axis) => (
           <label className="section-field" key={axis}>
-            {axis === 'width' ? '剖面宽度' : '剖面高度'}
+            {axis === 'width' ? '宽度' : '高度'}
             <select
+              aria-label={axis === 'width' ? '剖面宽度' : '剖面高度'}
               value={SECTION_SIZES.includes(p[axis]) ? p[axis] : 'custom'}
               onChange={(e) => {
                 const size = Number(e.target.value);
@@ -109,7 +112,7 @@ export function SectionScaleControls({
               }}
             >
               <option value="custom" disabled>
-                自定 {Number(p[axis].toFixed(2))} m
+                {Number(p[axis].toFixed(2))} m
               </option>
               {SECTION_SIZES.map((size) => (
                 <option key={size} value={size}>

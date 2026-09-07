@@ -7,23 +7,58 @@
     .map-layer-toggle,
     .control-popover,
     .dock-navigation,
-    .weather-summary
+    .weather-summary,
+    .section-profile,
+    .object-gizmo
   ) {
   color-scheme: light;
-  --panel: rgba(248, 250, 255, 0.97);
-  --text: #1c2940;
-  --muted: #59677d;
-  --border: #dbe1ec;
-  --accent: #2452e8;
-  --cyan: #2452e8;
+  --panel: rgba(241, 243, 236, 0.96);
+  --text: #202725;
+  --muted: #394740;
+  --border: rgba(42, 54, 47, 0.1);
+  --accent: #2348ef;
+  --cyan: #2348ef;
   color: var(--text);
   background: var(--panel);
-  border-color: #ffffffa6;
-  box-shadow: 0 3px 14px #12244026;
+  border-color: #ffffff40;
+  box-shadow:
+    0 5px 20px #101d221c,
+    inset 0 1px #ffffff40;
   font-size: 13px;
 }
+/* Blur only the small control surfaces, never the map or the text. The opaque
+   base above remains readable on WebViews without backdrop-filter support. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .observatory
+    :is(
+      .topbar,
+      .map-actions,
+      .map-layer-toggle,
+      .control-popover,
+      .dock-navigation,
+      .weather-summary,
+      .section-profile,
+      .object-gizmo
+    ) {
+    --panel: rgba(242, 244, 235, 0.5);
+    -webkit-backdrop-filter: blur(14px) saturate(0.85) brightness(1.35);
+    backdrop-filter: blur(14px) saturate(0.85) brightness(1.35);
+  }
+  .observatory
+    :is(
+      .topbar,
+      .map-actions,
+      .map-layer-toggle,
+      .dock-navigation,
+      .weather-summary
+    ) {
+    --panel: rgba(242, 244, 235, 0.52);
+    -webkit-backdrop-filter: blur(16px) saturate(0.85) brightness(1.12);
+    backdrop-filter: blur(16px) saturate(0.85) brightness(1.12);
+  }
+}
 .observatory :is(.topbar, .dock-navigation, .weather-summary) {
-  border-radius: 18px;
+  border-radius: 24px;
 }
 .observatory .topbar {
   gap: 7px;
@@ -37,10 +72,33 @@
   font-size: 13px;
 }
 .observatory .map-actions {
-  border-radius: 16px;
+  border-radius: 24px;
+  gap: 4px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.observatory
+  .map-actions
+  :is(.icon-button, .dimension-button, .section-button) {
+  border-radius: 50%;
+  background: var(--panel);
+  box-shadow:
+    inset 0 1px #ffffff35,
+    0 2px 8px #101d2217;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .observatory
+    .map-actions
+    :is(.icon-button, .dimension-button, .section-button) {
+    -webkit-backdrop-filter: blur(16px) saturate(0.85) brightness(1.12);
+    backdrop-filter: blur(16px) saturate(0.85) brightness(1.12);
+  }
 }
 .observatory .map-layer-toggle {
-  border-radius: 15px;
+  border-radius: 50%;
 }
 .observatory .map-layer-toggle[aria-expanded='true'] {
   background: var(--accent);
@@ -48,12 +106,16 @@
   border-color: var(--accent);
 }
 .observatory .map-actions .icon-button[aria-pressed='true'] {
-  background: #e4ebff;
+  background: #ffffff55;
   color: var(--accent);
 }
 .observatory .map-actions .dimension-button {
-  background: #e4ebff;
-  color: var(--accent);
+  background: #26312aeb;
+  color: white;
+}
+.observatory .map-actions .dimension-button[aria-pressed='true'] {
+  background: #26312aeb;
+  color: white;
 }
 .observatory .dock-navigation {
   gap: 1px;
@@ -65,7 +127,7 @@
   padding: 0 8px;
   gap: 4px;
   font-size: 12px;
-  border-radius: 15px;
+  border-radius: 22px;
   color: var(--muted);
 }
 .observatory .dock-navigation button[aria-expanded='true'] {
@@ -78,7 +140,7 @@
   gap: 5px;
 }
 .observatory .weather-summary[aria-expanded='true'] {
-  background: #e4ebff;
+  background: #ffffff80;
 }
 .observatory .weather-summary strong {
   font-size: 14px;
@@ -87,7 +149,7 @@
   top: calc(56px + var(--safe-top));
   width: min(304px, calc(100% - 74px));
   padding: 0 9px 8px;
-  border-radius: 16px;
+  border-radius: 22px;
   max-height: min(38dvh, 320px);
 }
 .observatory .control-dock:has(.route-panel) .control-popover {
@@ -128,13 +190,13 @@
     [type='checkbox']
   ) {
   color: var(--text);
-  background: #edf1f8;
+  background: #ffffff35;
   border-color: var(--border);
   font-size: 13px;
 }
 .observatory .control-popover input::placeholder,
 .observatory .control-popover textarea::placeholder {
-  color: #65748a;
+  color: #53615c;
   opacity: 1;
 }
 .observatory .control-popover :is(button, summary):focus-visible,
@@ -158,11 +220,11 @@
     .map-file-button,
     .route-start-navigation
   ) {
-  background: #eaf0f9;
+  background: #ffffff24;
   border-color: var(--border);
   color: var(--text);
   font-size: 12px;
-  border-radius: 10px;
+  border-radius: 16px;
   min-height: 44px;
 }
 .observatory
@@ -171,9 +233,9 @@
     button[aria-pressed='true'],
     .annotation-tabs button[aria-selected='true']
   ) {
-  background: #e0e8ff;
+  background: #ffffff70;
   color: var(--accent);
-  border-color: #b5c7ff;
+  border-color: #ffffff30;
 }
 .observatory .control-popover :is(.route-primary, .collection-primary) {
   background: var(--accent);
@@ -198,7 +260,7 @@
 .observatory
   .control-popover
   :is(.annotation-metrics, .map-source-actions:first-child) {
-  background: #edf1f8;
+  background: #edf1e7e8;
 }
 .observatory
   .control-popover
@@ -223,8 +285,21 @@
   color: var(--muted);
 }
 .observatory .route-modes {
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 4px;
+  padding: 2px;
+  border-radius: 22px;
+  background: #2032260c;
+}
+.observatory .control-popover .route-panel .route-modes button {
+  background: transparent;
+  border: 0;
+  border-radius: 20px;
+}
+.observatory .control-popover .route-modes button[aria-pressed='true'] {
+  background: #ffffff75;
+  color: var(--text);
+  box-shadow: 0 1px 4px #13251d12;
 }
 .observatory .route-edit-actions {
   margin: 0;
@@ -232,7 +307,10 @@
 .observatory .route-stop-row {
   min-height: 44px;
 }
-.observatory .control-popover .route-stop-row input {
+.observatory
+  .control-popover
+  .route-stop-row
+  input:not([type='range']):not([type='color']):not([type='checkbox']) {
   background: transparent;
 }
 .observatory .control-popover .route-stop-row input:focus {
@@ -240,8 +318,13 @@
 }
 .observatory .route-primary {
   margin-top: 4px;
-  border-radius: 11px;
+  border-radius: 22px;
   font-size: 13px;
+}
+.observatory .control-popover .route-primary:disabled {
+  background: #23382a1a;
+  color: #3c4c43;
+  opacity: 1;
 }
 .observatory .route-stop-block.is-dragging {
   background: #e0e8ff;
@@ -257,10 +340,10 @@
   min-height: 44px;
   margin: 0 0 3px;
   padding: 0 8px;
-  background: #eaf0f9;
-  color: var(--accent);
+  background: #ffffff26;
+  color: var(--text);
   border: 0;
-  border-radius: 10px;
+  border-radius: 16px;
   font-size: 12px;
 }
 .observatory .map-source-link span {
@@ -283,7 +366,7 @@
 .observatory
   .control-popover
   .layer-icon:is(.green, .blue, .amber, .white, .cyan) {
-  color: #536783;
+  color: #52635b;
 }
 .observatory .layer-text label {
   font-size: 13px;
@@ -295,7 +378,7 @@
   color: var(--muted);
 }
 .observatory .switch::before {
-  background: #b9c4d6;
+  background: #24372e30;
 }
 .observatory .switch[aria-checked='true']::before {
   background: var(--accent);
@@ -372,8 +455,152 @@
     padding: 0 7px;
   }
 }
+.observatory :is(.section-profile, .object-gizmo) {
+  border-radius: 18px;
+  padding: 4px 6px;
+  font-size: 12px;
+}
+.observatory .section-profile {
+  width: min(304px, calc(100% - 74px));
+}
+.observatory .section-profile-body,
+.observatory .object-gizmo {
+  scrollbar-width: thin;
+  scrollbar-color: #2c403a55 transparent;
+}
+.observatory :is(.section-profile, .object-gizmo) button {
+  background: #ffffff24;
+  color: var(--text);
+  border-radius: 14px;
+  padding: 2px 6px;
+  font-size: 12px;
+}
+.observatory
+  :is(.section-profile, .object-gizmo)
+  :is(button, input, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.observatory .section-profile :is(input, select, textarea) {
+  background: #ffffff2e;
+  color: var(--text);
+  border-color: var(--border);
+  font-size: 12px;
+}
+.observatory .section-profile option {
+  background: #edf0e8;
+  color: var(--text);
+}
+.observatory .section-profile .section-field {
+  gap: 2px;
+}
+.observatory .section-profile .section-fields {
+  gap: 4px;
+  margin: 3px 0;
+}
+.observatory .section-scale-controls {
+  padding-top: 3px;
+}
+.observatory .section-scale-controls > strong {
+  font-size: 12px;
+}
+.observatory .section-scale-controls .section-fields .section-field {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+}
+.observatory .section-profile .section-scale-controls select {
+  padding: 2px;
+  margin: 0;
+}
+.observatory .section-profile .section-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.observatory .section-options details {
+  min-width: 0;
+  margin: 0;
+}
+.observatory .section-options details[open] {
+  grid-column: 1 / -1;
+}
+.observatory .section-profile summary {
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  padding: 0 3px;
+  line-height: 44px;
+  font-size: 12px;
+}
+.observatory .section-profile .section-footer-actions {
+  gap: 4px;
+  margin-top: 3px;
+}
+.observatory .section-footer-actions button {
+  flex: 1;
+}
+.observatory .section-profile dl > div {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 4px;
+}
+.observatory .section-profile :is(dt, dd) {
+  margin: 2px 0;
+  font-size: 11px;
+}
+.observatory .section-profile p {
+  margin: 3px 0;
+  font-size: 11px;
+}
+.observatory .section-profile .section-chart-plot {
+  background: #102a28;
+  border-radius: 8px;
+}
+.observatory .section-profile .section-readout b,
+.observatory .section-profile .section-partial {
+  color: #754609;
+}
+.observatory .section-profile .section-point-handle,
+.observatory .section-profile .section-chart-point-handle {
+  background: transparent;
+}
+.observatory .object-gizmo header strong {
+  padding-left: 2px;
+}
+.observatory .object-gizmo p {
+  color: #8f3527;
+}
+.observatory .object-rotation input {
+  font-size: 12px;
+}
 @media (max-height: 600px) {
   .observatory .control-dock:has(.route-panel) .control-popover {
     max-height: calc(100dvh - 122px);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .observatory
+    :is(
+      .topbar,
+      .map-actions,
+      .map-layer-toggle,
+      .control-popover,
+      .dock-navigation,
+      .weather-summary,
+      .section-profile,
+      .object-gizmo
+    ) {
+    --panel: rgb(242, 244, 235);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .observatory
+    .map-actions
+    :is(.icon-button, .dimension-button, .section-button) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

@@ -1,3 +1,12 @@
+# 当前任务：玻璃质感、数值旋转与剖面紧凑布局（2026-09-07，实现/构建完成，手机待验收）
+- 用户指出上一版缺少参考图的模糊效果、视觉不符。目标：真实背景模糊、半透明暖灰表面、减少嵌套实色块，同时保留紧凑字号和绿色相机。
+- 启动：git status/diff 干净，pull --ff-only 已是最新 412c937；重新查看原 TheTrail 参考。范围限定 modern.css 与说明文件，不改业务、地图图源、定位、存储。
+- 用户追加：对象左下角显示/编辑旋转角度并归正；剖面大折叠栏和尺寸框要紧凑。已实现 X/Y/Z 实时读数、失焦/回车提交、无效值恢复、归正/撤销；剖面尺寸横排、两个折叠入口同排、底部操作同排。
+- 代码：modern.css 磨砂透明度/14px 模糊、圆形浮动控件、剖面/对象浅色适配；ObjectGizmo/math/CSS 接入数值姿态；SectionProfile/SectionScaleControls 压缩结构。未改图源、签名或存储格式。
+- 验证：TypeScript PASS；剖面 14/14 测试 PASS，新增数值姿态/归正保留位置尺寸测试；初次测试仅 -0 严格相等断言失败，改为角度容差后通过。浏览器 X 改 45.5、单次撤销恢复 107.5；归正显示 90/0/0，撤销恢复；无效500恢复且无撤销记录 PASS。原剖面测试后已撤销恢复。
+- 最终：TypeScript PASS、219/219测试 PASS、网页与安卓网页构建 PASS；390/360 DOM 无横向溢出，旋转栏与绿色相机无重叠、剖面折叠入口同排。正常598×628截图与参考同屏对照，磨砂色块/数值栏/紧凑字段可见；手机捕获缩放仍 BLOCKED，真实手机GPU模糊开销与静止闪烁待验收。
+- 说明：README/LOG、docs/compact-thetrail-ui.md、新增docs/object-rotation.md、design-qa.md、本状态；日志 .openai/*glass*.log 与tests-rotation.log；截图artifacts/screenshots/glass-*.png。本轮沿用授权提交推送main并核对远端SHA，记录 .openai/sync-glass.log；无新APK。
+
 # 当前任务：A / TheTrail 紧凑 UI（2026-09-07，实现与构建完成，手机视觉待验收）
 - 目标：按用户选择的 A 参考，浅色悬浮面板、亮蓝强调色、小字号与紧凑布局；保留真实地图和绿色三维相机。
 - 启动：git status / diff 干净，pull --ff-only 已是最新 cadfbec；已读项目规则及状态，实际查看 TheTrail 参考图。

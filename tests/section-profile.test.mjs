@@ -31,6 +31,9 @@ import {
   applyPlanePose,
   annotationPose,
   applyAnnotationPose,
+  rotationDegrees,
+  withRotationAxis,
+  uprightPose,
 } from '../modules/objectTransform/math.ts';
 const settings = {
   enabled: true,
@@ -196,6 +199,63 @@ test('plane quaternion roundtrips through tilt poles and arbitrary rotations', (
           0.00001,
         );
       }
+});
+test('numeric rotation preserves position and size and agrees with rendered plane geometry', () => {
+  const pose = planePose(settings);
+  for (const axis of [0, 1, 2]) {
+    const edited = withRotationAxis(pose, axis, 32.5);
+    near(rotationDegrees(edited)[axis], 32.5, 0.00001);
+    assert.deepEqual(edited.coordinates, pose.coordinates);
+    assert.deepEqual(edited.size, pose.size);
+    assert.equal(edited.altitude, pose.altitude);
+    const converted = planePose(applyPlanePose(settings, edited));
+    for (const basis of [new Vector3(1, 0, 0), new Vector3(0, 1, 0)]) {
+      const a = basis
+        .clone()
+        .applyQuaternion({
+          x: edited.rotation[0],
+          y: edited.rotation[1],
+          z: edited.rotation[2],
+          w: edited.rotation[3],
+        });
+      const b = basis
+        .clone()
+        .applyQuaternion({
+          x: converted.rotation[0],
+          y: converted.rotation[1],
+          z: converted.rotation[2],
+          w: converted.rotation[3],
+        });
+      near(a.distanceTo(b), 0, 0.00001);
+    }
+  }
+  for (const value of [NaN, Infinity, -361, 361])
+    assert.equal(withRotationAxis(pose, 0, value), pose);
+});
+test('upright reset restores north-facing vertical plane without moving or resizing it', () => {
+  const tilted = {
+    ...settings,
+    altitude: 1234,
+    plane: {
+      ...settings.plane,
+      center: [103, 31],
+      width: 278,
+      height: 95,
+      heading: 48,
+      tilt: 35,
+      roll: 63,
+    },
+  };
+  const reset = applyPlanePose(tilted, uprightPose(planePose(tilted), 'plane'));
+  near(reset.plane.heading, 0, 0.00001);
+  near(reset.plane.tilt, 0, 0.00001);
+  near(reset.plane.roll, 0, 0.00001);
+  assert.deepEqual(reset.plane.center, tilted.plane.center);
+  assert.equal(reset.plane.width, 278);
+  assert.equal(reset.plane.height, 95);
+  assert.equal(reset.altitude, 1234);
+  for (const angle of rotationDegrees(uprightPose(planePose(tilted), 'box')))
+    near(angle, 0, 0.00001);
 });
 test('on-object rays translate along the rendered local axes and keep the opposite coordinates', () => {
   const pose = annotationPose({ ...box, centerAltitude: 0 }),
