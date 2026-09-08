@@ -4,7 +4,7 @@
 - 验证PASS：oxfmt、npx tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs（238/238）、npm run build；日志.openai/*road-diagnostics.log。git diff --check通过。
 - 浏览器：同山区zoom13.14的三维28.823秒窗口render=111/道路加载事件30/错误0不变，二维49.891秒窗口render=166/道路加载事件30/错误0不变。仅此窗口未复现，不能宣称已修复；两个独立测试页已关闭，用户存档未改。
 - 截图artifacts/screenshots/roads-static-3d.png与roads-static-2d.png，道路存在/可见PASS；单张截图不能验证持续不闪。计数记录.openai/roads-*.log。
-- 当前阻碍：待确认闪动形态、手机APK或电脑网页，以及关闭三维地形是否仍闪；下一步按用户实际设备和症状复现后最小修复。未新增APK，0.2.7不含本次诊断。代码和说明待本轮提交推送并核对远端SHA。
+- 当前阻碍：待确认闪动形态、手机APK或电脑网页，以及关闭三维地形是否仍闪；下一步按用户实际设备和症状复现后最小修复。未新增APK，0.2.7不含本次诊断。代码和说明81d31d8已推送main，远端SHA核对一致。
 # 当前任务：手绘与收藏导航、0.2.7交付（2026-09-08）
 - 已完成：画线列表和所选轨迹直接导航，收藏规划/轨迹直接导航；适配器保留线形，收藏保留模式/途经点/步骤。显式目标避免旧状态串线；切换导航保留定位所有权，结束时可停止本次导航开启的定位。
 - 修改：app/page、guidance/useGuidance与新增savedRoute、navigation/useNavigation、TrackPanel/tracks.css、CollectionsPanel/collections.css；新增3项saved-navigation回归与使用说明，README/mobile说明、manifest14/0.2.7、发行说明。存储格式、原始存档、GPS精度和图源未变。
