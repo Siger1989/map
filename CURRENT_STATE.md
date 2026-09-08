@@ -1,3 +1,7 @@
+# 当前预览：右侧PC手机比例测试（2026-09-08）
+- 用户要求右侧可操作的手机比例PC预览。已打开IAB tab2，保留390×844视口，网址http://127.0.0.1:9178，使用0.2.12 APK构建的mobile/.build/apk-20260908-225414/web原始网页资源；API代理原localhost:3000，用户原服务未改动。
+- 原3000页面停在SSR加载、无canvas；改用Vite preview独立9178后地图canvas生成并显示卫星。启动命令：SHANTU_DEV_API_URL=http://localhost:3000，vite preview --config mobile/vite.config.ts --outDir <上述web目录> --host 127.0.0.1 --port 9178 --strictPort；服务会话94497，日志logs/preview_apk_0212_9178.log。
+- 验证PASS：DOM视口390×844、canvas同尺寸、无横向溢出；截图artifacts/screenshots/preview-0212-phone-390.png。浏览器截图有缩放呈现，以DOM尺寸辅助核对。已标记交付保留标签；这是PC网页预览，不是Android系统模拟器。无业务源码改动，本轮仅打开现有0.2.12产物，不另发相同APK。下一步用户直接操作测试；当前阻碍无。
 # 当前任务：每轮改动自动更新APK，0.2.12补齐交付（2026-09-08，已公开交付PASS）
 - 目标：用户要求每次改动更新APK；已写入AGENTS长期项目约定。本轮将e1d7658节点网络/彩色文件夹/卫星与方向功能打包为0.2.12-test、versionCode19。
 - 启动：git status/diff干净；pull --ff-only确认最新；读AGENTS/README/LOG/状态/Android构建与平台说明。上一轮305逻辑、types、网页/Android网页及真实UI已PASS，本轮没有业务代码改动。
