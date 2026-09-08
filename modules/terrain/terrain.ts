@@ -1,5 +1,5 @@
 import type { Map, StyleSpecification } from 'maplibre-gl';
-import { elevationExpression } from './elevationColors';
+import { elevationExpression, contourColorExpression } from './elevationColors';
 import {
   basemapConfiguration,
   tiandituTiles,
@@ -176,8 +176,8 @@ export async function addContours(map: Map) {
     'source-layer': 'contours',
     minzoom: 7,
     paint: {
-      'line-color': '#ebd59d',
-      'line-opacity': 0.4,
+      'line-color': contourColorExpression,
+      'line-opacity': 0.8,
       'line-width': ['case', ['>', ['get', 'level'], 0], 1.05, 0.45],
     },
   });

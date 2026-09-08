@@ -39,7 +39,7 @@ const ITEMS = [
   {
     key: 'elevationColors',
     label: '海拔着色',
-    detail: '500 米分色 · 海拔区间图例',
+    detail: '每50米细分色阶 · 海拔区间图例',
     icon: Palette,
     color: 'amber',
   },

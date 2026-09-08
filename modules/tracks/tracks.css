@@ -349,3 +349,37 @@
   border: 1px solid currentColor;
   padding: 0 6px;
 }
+.track-photos {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 0;
+}
+.track-photo-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.track-photo-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  min-width: 0;
+  padding-bottom: 3px;
+}
+.track-photo-strip button {
+  flex: 0 0 76px;
+  padding: 0;
+  overflow: hidden;
+}
+.track-photo-strip img {
+  display: block;
+  width: 76px;
+  height: 60px;
+  object-fit: cover;
+}
+.track-photo-strip small {
+  display: block;
+  padding: 2px;
+}

@@ -1,10 +1,10 @@
-> 0.2.10：[扫码先看轨迹、标记属性与Excel、全部收藏、区域/轮廓模型和剖面平面地图](docs/markers-areas-and-collections.md)。修复标记名称偏移、地质图例及地质云入口。
+> 0.2.11：[路线照片与ZIP、收藏打包、中心准星、键盘编辑和默认关闭的河流吸附](docs/route-photo-archives-and-river-snapping.md)。包含0.2.10：[扫码先看轨迹、标记属性与Excel、全部收藏、区域/轮廓模型和剖面平面地图](docs/markers-areas-and-collections.md)。修复标记名称偏移、地质图例及地质云入口。
 
 # 山兔 · 三维地图与沿途天气
 
-最新0.2.9新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
+0.2.9起新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
-**最新安装包：0.2.10-test 独立版 / versionCode 17**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.10-test-standalone/Shantu-0.2.10-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.10-standalone.md)。沿用公司0.2.5独立山兔签名，可覆盖该系列和0.2.9；与0.2.6/0.2.7原观云系列并存，数据不自动迁移。朋友的HarmonyOS6.1原生包仍未交付。
+**最新安装包：0.2.11-test 独立版 / versionCode 18**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.11-test-standalone/Shantu-0.2.11-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.11-standalone.md)。沿用公司0.2.5独立山兔签名，可覆盖该系列和0.2.9；与0.2.6/0.2.7原观云系列并存，数据不自动迁移。朋友的HarmonyOS6.1原生包仍未交付。
 
 **手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 
@@ -44,7 +44,7 @@
 
 另已接通 [照片放大、编辑标记、分享与拍摄环境](docs/photo-details.md)：点图全屏缩放，保存标题/备注/旋转/画线，导出带海拔和拍摄天气说明的图片副本。原图不改；旧预览可重新导入升级清晰度，天气明确标明模型或历史再分析来源。
 
-[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.10-test-standalone/Shantu-0.2.10-test-standalone.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.10-test-standalone) · [位置跟随说明](docs/position-follow.md) · [历史功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
+[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.11-test-standalone/Shantu-0.2.11-test-standalone.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.11-test-standalone) · [位置跟随说明](docs/position-follow.md) · [历史功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图
 

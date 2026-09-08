@@ -1,3 +1,5 @@
+> 此版本保留为内部构建草稿，未单独公开；全部变更包含在[0.2.11发行版](release-0.2.11-standalone.md)。
+
 # 山兔 0.2.10 独立测试版（2026-09-08）
 
 [下载APK](https://github.com/Siger1989/map/releases/download/v0.2.10-test-standalone/Shantu-0.2.10-test-standalone.apk) · [发行与校验](https://github.com/Siger1989/map/releases/tag/v0.2.10-test-standalone)

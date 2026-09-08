@@ -388,17 +388,20 @@ export function AnnotationPanel({
   onPick,
   onLocate,
   onArea,
+  onShare,
   terrainStatus,
 }: {
   state: AnnotationsState;
   onPick: (kind: AnnotationKind | 'move') => void;
   onLocate: (coordinate: Coordinate) => void;
   onArea: () => void;
+  onShare: (id: string) => void;
   terrainStatus?: string;
 }) {
   const selected = state.items.find((a) => a.id === state.selected);
   const [exportText, setExportText] = useState('');
   const [showList, setShowList] = useState(!selected);
+  const [typing, setTyping] = useState(false);
   useEffect(() => {
     if (selected) setShowList(false);
   }, [selected?.id]);
@@ -442,9 +445,32 @@ export function AnnotationPanel({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return (
-    <section className="annotation-panel" aria-label="标记与模型">
+    <section
+      className="annotation-panel"
+      aria-label="标记与模型"
+      data-typing={typing}
+      onFocusCapture={(e) => {
+        if (
+          e.target.matches(
+            'textarea, input:not([type="checkbox"]):not([type="color"]):not([type="range"])',
+          )
+        )
+          setTyping(true);
+      }}
+    >
       {selected && !showList ? (
         <>
+          {typing && (
+            <button
+              className="annotation-input-done"
+              onClick={() => {
+                (document.activeElement as HTMLElement)?.blur();
+                setTyping(false);
+              }}
+            >
+              完成输入
+            </button>
+          )}
           <div className="annotation-toolbar">
             <button onClick={() => setShowList(true)}>‹ 列表</button>
             <select
@@ -461,6 +487,7 @@ export function AnnotationPanel({
             <button onClick={() => onLocate(selected.coordinates)}>
               地图调整
             </button>
+            <button onClick={() => onShare(selected.id)}>导出</button>
           </div>
           {state.error && (
             <p className="annotation-error" role="status">

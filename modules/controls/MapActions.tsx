@@ -48,7 +48,10 @@ export function MapActions({
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <nav className="map-actions glass" aria-label="地图快捷操作">
+    <nav
+      className={`map-actions glass${expanded ? ' is-expanded' : ''}`}
+      aria-label="地图快捷操作"
+    >
       <button
         className="icon-button location-button direction-button"
         aria-label={

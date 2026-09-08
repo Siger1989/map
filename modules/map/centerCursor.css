@@ -1,0 +1,59 @@
+.map-center-cursor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+  filter: drop-shadow(0 1px 1px #000);
+}
+.map-center-cursor i,
+.map-center-cursor b {
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 0 0 1px #173833;
+  border-radius: 2px;
+}
+.map-center-cursor i {
+  width: 22px;
+  height: 2px;
+  top: 10px;
+}
+.map-center-cursor b {
+  width: 2px;
+  height: 22px;
+  left: 10px;
+}
+.center-add {
+  position: absolute;
+  right: var(--edge-right);
+  top: calc(var(--safe-top) + 249px);
+  z-index: 8;
+  width: 44px;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid #ffffff80;
+  border-radius: 23px;
+  color: #23382d;
+  background: #f1f5e8ee;
+  font-size: 11px;
+  padding: 3px;
+}
+.center-error {
+  position: absolute;
+  left: var(--edge-left);
+  top: 48%;
+  max-width: calc(100% - 80px);
+  z-index: 9;
+  font-size: 12px;
+  padding: 10px;
+}
+.observatory:has(.map-actions.is-expanded) .center-add {
+  display: none;
+}

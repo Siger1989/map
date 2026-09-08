@@ -14,6 +14,7 @@ import { DrawingSession, type DrawingPreview } from './DrawingSession';
 import { handlePoint } from './precision';
 import { PointMagnifier, type MagnifierObserver } from './PointMagnifier';
 import type { RoadSnapper } from './roadSnapping';
+import { riverHint } from './riverSnapping';
 export type TrackDrawingHandle = { input: (event: DrawingInput) => void };
 
 /** Visual-only overlay: touches continue to the map's native two-finger handlers. */
@@ -28,6 +29,7 @@ export const TrackDrawing = forwardRef<
     candidates: Coordinate[];
     snapping: boolean;
     roadSnapping: boolean;
+    riverSnapping?: boolean;
     snapRoad: RoadSnapper;
     lastVertex: Coordinate | null;
     toCoordinate: (point: ScreenPoint) => Coordinate | null;
@@ -61,7 +63,7 @@ export const TrackDrawing = forwardRef<
   useEffect(() => {
     session.current.clear();
     setPreview(null);
-  }, [p.mode, p.anchor]);
+  }, [p.mode, p.anchor, p.roadSnapping, p.riverSnapping]);
   useImperativeHandle(ref, () => ({
     input: (event) => {
       if (!p.enabled) {
@@ -76,13 +78,14 @@ export const TrackDrawing = forwardRef<
         candidates: p.candidates,
         snapping: p.snapping,
         roadSnapping: p.roadSnapping,
+        strictNetwork: p.riverSnapping,
         snapRoad: p.snapRoad,
         lastVertex: p.lastVertex,
         project: p.toScreen,
         unproject: p.toCoordinate,
       });
       setPreview(result.preview);
-      setHint(result.hint);
+      setHint(p.riverSnapping ? riverHint(result.hint) : result.hint);
       if (result.anchor) p.onAnchor(result.anchor);
       if (result.vertex) p.onVertex(result.vertex, result.section);
       if (result.stroke) p.onStroke(result.stroke);
@@ -95,7 +98,9 @@ export const TrackDrawing = forwardRef<
   const instruction =
     hint ||
     (p.mode === 'points'
-      ? '准星定点 · 松手连接 · 双指控图'
+      ? p.riverSnapping
+        ? '河流吸附 · 准星沿河定点 · 双指控图'
+        : '准星定点 · 松手连接 · 双指控图'
       : p.anchor
         ? '② 起点已定：按住绿色环拖动即可画线'
         : '① 按住地图移动准星，松手只确认起点');

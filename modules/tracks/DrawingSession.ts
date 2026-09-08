@@ -37,6 +37,7 @@ type Options = {
   candidates: Coordinate[];
   snapping: boolean;
   roadSnapping?: boolean;
+  strictNetwork?: boolean;
   snapRoad?: RoadSnapper;
   lastVertex?: Coordinate | null;
   project: (point: Coordinate) => ScreenPoint | null;
@@ -160,10 +161,31 @@ export class DrawingSession {
           hint: '已到地面边界，松手后双指调整地图。',
         };
       }
-      const road = o.roadSnapping ? o.snapRoad?.(tip, s.road) : undefined;
+      const road = o.roadSnapping
+        ? o.snapRoad?.(
+            tip,
+            s.road,
+            o.strictNetwork ? s.points.at(-1) : undefined,
+          )
+        : undefined;
       let roadMatch = road?.match ?? null;
       const section =
-        s.road && roadMatch ? roadSection(s.road, roadMatch, o.project) : null;
+        road?.section ??
+        (s.road && roadMatch
+          ? roadSection(s.road, roadMatch, o.project)
+          : null);
+      if (o.strictNetwork && (!roadMatch || !section?.length))
+        return {
+          hint: '水系尚未连接 · 保留上一个点，请沿河继续',
+          preview: {
+            kind: 'ink',
+            finger,
+            tip: s.sample,
+            path: s.path,
+            snapped: false,
+            blocked: true,
+          },
+        };
       if (
         s.road &&
         roadMatch &&
@@ -227,8 +249,13 @@ export class DrawingSession {
     const road = o.roadSnapping
       ? o.snapRoad?.(aim, null, from ?? undefined)
       : undefined;
-    const blocked = !!(o.roadSnapping && from && !road?.match);
+    const blocked = !!(
+      o.roadSnapping &&
+      ((from && !road?.match) ||
+        (o.strictNetwork && (!road?.match || (from && !road.section?.length))))
+    );
     this.crossing = !!(
+      !blocked &&
       o.roadSnapping &&
       from &&
       road?.match &&
@@ -246,7 +273,9 @@ export class DrawingSession {
             : undefined
         : undefined;
     this.aimHint = blocked
-      ? '目标处没有可吸附道路 · 请放大地图或把准星移到道路上'
+      ? o.strictNetwork
+        ? '此处没有连通水系 · 放大地图并沿河移动准星，不自动直线跨越'
+        : '目标处没有可吸附道路 · 请放大地图或把准星移到道路上'
       : this.crossing
         ? '跨越断路 · 松手直线连接，下个点继续沿路'
         : this.aimSection

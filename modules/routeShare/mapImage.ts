@@ -134,6 +134,11 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       id: 'share-stop-names',
       type: 'symbol',
       source: 'share-stops',
+      filter: [
+        'all',
+        ['!=', ['get', 'label'], '起点'],
+        ['!=', ['get', 'label'], '终点'],
+      ],
       layout: {
         'text-field': ['get', 'label'],
         'text-font': ['Noto Sans Regular'],
@@ -194,7 +199,10 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 4;
       ctx.stroke();
-      const text = endpoint.label + ' · ' + endpoint.name,
+      const text =
+          endpoint.name === endpoint.label
+            ? endpoint.label
+            : endpoint.label + ' · ' + endpoint.name,
         width = Math.min(570, ctx.measureText(text).width + 30),
         x = Math.max(20, Math.min(1180 - width, p.x + 18));
       let y = Math.max(140, Math.min(1170, p.y - 25));
@@ -218,7 +226,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
     ctx.font = '25px sans-serif';
     endpoints.forEach((p, i) =>
       ctx.fillText(
-        `${p.label}：${p.name} · ${p.point[1].toFixed(5)}, ${p.point[0].toFixed(5)}`,
+        `${p.name === p.label ? p.label : p.label + '：' + p.name} · ${p.point[1].toFixed(5)}, ${p.point[0].toFixed(5)}`,
         40,
         48 + i * 42,
         1120,

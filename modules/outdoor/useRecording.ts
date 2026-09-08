@@ -20,6 +20,10 @@ declare global {
       photoFolders?(): boolean;
       photoOutput?(name: string, base64: string, share: boolean): string;
       routeOutput?(name: string, base64: string, share: boolean): string;
+      archiveBegin?(name: string, size: number): string;
+      archiveAppend?(token: string, offset: number, base64: string): string;
+      archiveFinish?(token: string, share: boolean): string;
+      archiveCancel?(token: string): void;
       routeLinkShare?(url: string): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;

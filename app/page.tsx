@@ -44,6 +44,7 @@ import {
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
+import { CenterCursor } from '@/modules/map/CenterCursor';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -208,6 +209,14 @@ export default function Home() {
     import('@/modules/tracks/editing').TrackNode | null
   >(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
+  const [collectionOutputKey, setCollectionOutputKey] = useState<string | null>(
+    null,
+  );
+  const [outdoorPhotos, setOutdoorPhotos] = useState(false);
+  useEffect(() => {
+    if (panel !== 'favorites') setCollectionOutputKey(null);
+    if (panel !== 'outdoor') setOutdoorPhotos(false);
+  }, [panel]);
   const sections = useSavedSection();
   const startArea = () => {
     tracks.pause();
@@ -746,6 +755,7 @@ export default function Home() {
         onManualRotate={position.free}
         annotations={annotationOverlay}
         roadSnapping={tracks.roadSnapping}
+        riverSnapping={tracks.riverSnapping}
         annotationSelected={annotations.selected}
         pickingActive={Boolean(
           annotations.picking || navigation.picking !== null,
@@ -849,6 +859,32 @@ export default function Home() {
           }}
         />
       )}
+      {panel === null &&
+        !tracks.drawing &&
+        !areas.drawing &&
+        !annotations.picking &&
+        !navigation.picking &&
+        !sectionEditing &&
+        !selectedAnnotation &&
+        !selectedPhoto &&
+        !featureMove &&
+        !guidance.active && (
+          <CenterCursor
+            map={() => map.current}
+            onAdd={(coordinates) => {
+              map.current?.stop();
+              position.free();
+              follow.pause();
+              if (annotations.add('pin', coordinates)) {
+                tracks.select(null);
+                areas.select(null);
+                setQuickAdd(null);
+                setProfileOpen(false);
+                setPanel('annotations');
+              }
+            }}
+          />
+        )}
       <TrackDrawing
         ref={drawing}
         enabled={tracks.drawing && !areas.drawing && panel === null}
@@ -858,9 +894,12 @@ export default function Home() {
         anchor={tracks.anchor}
         candidates={tracks.candidates}
         snapping={tracks.snapping}
-        roadSnapping={tracks.roadSnapping}
+        roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+        riverSnapping={tracks.riverSnapping}
         snapRoad={(point, previous, from) =>
-          map.current?.snapRoad(point, previous, from) ?? {
+          (tracks.riverSnapping
+            ? map.current?.snapRiver(point, previous, from)
+            : map.current?.snapRoad(point, previous, from)) ?? {
             status: 'loading',
             match: null,
           }
@@ -1397,6 +1436,7 @@ export default function Home() {
         )}
         {panel === 'outdoor' && (
           <OutdoorPanel
+            initialTab={outdoorPhotos ? 'photos' : 'record'}
             recorder={recorder}
             onSavedTrack={tracks.select}
             photos={
@@ -1443,6 +1483,10 @@ export default function Home() {
         )}
         {panel === 'annotations' && (
           <AnnotationPanel
+            onShare={(id) => {
+              setCollectionOutputKey(`annotation:${id}`);
+              setPanel('favorites');
+            }}
             terrainStatus={modelTerrainStatus}
             onArea={startArea}
             state={annotations}
@@ -1461,6 +1505,8 @@ export default function Home() {
         )}
         {panel === 'favorites' && (
           <CollectionsPanel
+            initialOutputKey={collectionOutputKey}
+            photos={photos.items}
             areas={areas.items}
             onArea={(id) => {
               const a = areas.items.find((a) => a.id === id);
@@ -1519,6 +1565,20 @@ export default function Home() {
         )}
         {panel === 'track' && (
           <TrackPanel
+            photos={photos.items}
+            onPhoto={(id) => {
+              const p = photos.items.find((p) => p.id === id);
+              if (!p) return;
+              setPhotoGroup([id]);
+              photos.setSelected(id);
+              map.current?.focusPoint(p.coordinates, view.zoom);
+              setPanel(null);
+            }}
+            onAddPhotos={(id) => {
+              tracks.select(id);
+              setOutdoorPhotos(true);
+              setPanel('outdoor');
+            }}
             onShare={shareTrackById}
             tracks={tracks}
             onNavigate={navigateTrack}
@@ -1670,7 +1730,7 @@ export default function Home() {
         navigation.picking === null &&
         !selectedPhoto &&
         !featureMove &&
-        (panel === null || panel === 'annotations') &&
+        panel === null &&
         (selectedAnnotation && selectedPose ? (
           <ObjectGizmo
             key={selectedAnnotation.id}
@@ -1762,7 +1822,11 @@ export default function Home() {
         />
       )}
       {shareTarget && (
-        <RouteShare data={shareTarget} onClose={() => setShareTarget(null)} />
+        <RouteShare
+          data={shareTarget}
+          photos={photos.items}
+          onClose={() => setShareTarget(null)}
+        />
       )}
       {routeQr !== null && (
         <RouteQrReader

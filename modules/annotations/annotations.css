@@ -89,7 +89,7 @@
 .annotation-field textarea {
   width: 100%;
   min-width: 0;
-  min-height: 36px;
+  min-height: 44px;
   background: #0d222b;
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -277,6 +277,34 @@
 }
 .annotation-toolbar button {
   flex-shrink: 0;
+}
+.annotation-panel[data-typing='true'] .annotation-toolbar {
+  display: none;
+}
+.observatory[data-panel='annotations']:has(
+    .annotation-panel[data-typing='true']
+  )
+  .control-popover {
+  max-height: min(
+    320px,
+    calc(100dvh - var(--safe-top) - var(--safe-bottom) - 112px)
+  );
+}
+.observatory[data-panel='annotations']:has(
+    .annotation-panel[data-typing='true']
+  )
+  .dock-heading {
+  display: none;
+}
+.annotation-input-done {
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+.observatory:has(.annotation-panel[data-typing='true']) .camera-gizmo {
+  visibility: hidden;
+}
+.annotation-fields {
+  scroll-padding-block: 10px;
 }
 .annotation-tabs button {
   flex: 1;

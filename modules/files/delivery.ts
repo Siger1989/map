@@ -1,8 +1,25 @@
+import { sendArchive, type ArchiveBridge } from './nativeArchive';
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
-export async function deliverFile(file: File, share: boolean) {
-  if (file.size > 8 * 1024 * 1024)
-    throw new Error('文件超过 8 MB，请减少勾选数量后重试');
+export async function deliverFile(
+  file: File,
+  share: boolean,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
   if (window.GuanyunNative) {
+    if (file.name.endsWith('.zip')) {
+      const native = window.GuanyunNative;
+      if (
+        !native.archiveBegin ||
+        !native.archiveAppend ||
+        !native.archiveFinish ||
+        !native.archiveCancel
+      )
+        throw new Error('此 APK 尚不支持 ZIP 输出，请安装新版');
+      return sendArchive(file, share, native as ArchiveBridge, signal);
+    }
+    if (file.size > 8 * 1024 * 1024)
+      throw new Error('单个文件超过 8 MB，请选择 ZIP 打包导出');
     if (!window.GuanyunNative.routeOutput)
       throw new Error('此 APK 不支持该文件输出，请安装新版');
     const encoded = await new Promise<string>((resolve, reject) => {

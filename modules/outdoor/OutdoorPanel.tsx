@@ -25,6 +25,7 @@ export function OutdoorPanel({
   onOpenMap,
   photos,
   onSavedTrack,
+  initialTab = 'record',
 }: {
   recorder: ReturnType<typeof useRecording>;
   offline: ReturnType<typeof useOffline>;
@@ -34,9 +35,10 @@ export function OutdoorPanel({
   onOpenMap: () => void;
   photos: ReactNode;
   onSavedTrack: (id: string) => void;
+  initialTab?: 'record' | 'photos';
 }) {
   const [tab, setTab] = useState<'record' | 'files' | 'offline' | 'photos'>(
-      'record',
+      initialTab,
     ),
     [message, setMessage] = useState(''),
     [pending, setPending] = useState<Transfer | null>(null),

@@ -13,6 +13,8 @@ import { TrackStyleControls } from './TrackStyleControls';
 import { normalizeTrackStyle } from './style';
 import type { ManualTracksState } from './useManualTracks';
 import { drawingArea, drawingTime } from './archive';
+import type { VisiblePhoto } from '../photos/storage';
+import { TrackPhotoGallery } from '../photos/TrackPhotoGallery';
 export function TrackPanel({
   tracks: t,
   onDraw,
@@ -21,6 +23,9 @@ export function TrackPanel({
   onNavigate,
   onShare,
   navigationError,
+  photos,
+  onPhoto,
+  onAddPhotos,
 }: {
   tracks: ManualTracksState;
   onDraw: (endpoint?: Coordinate) => void;
@@ -29,6 +34,9 @@ export function TrackPanel({
   onNavigate: (id: string) => void;
   onShare: (id: string) => void;
   navigationError: string;
+  photos: VisiblePhoto[];
+  onPhoto: (id: string) => void;
+  onAddPhotos: (trackId: string) => void;
 }) {
   const [name, setName] = useState(t.draftName ?? '');
   const [choosing, setChoosing] = useState(false);
@@ -65,6 +73,14 @@ export function TrackPanel({
         onNavigate={() => onNavigate(selectedTrack.id)}
         onShare={() => onShare(selectedTrack.id)}
         error={navigationError}
+        photos={
+          <TrackPhotoGallery
+            track={selectedTrack}
+            photos={photos}
+            onOpen={onPhoto}
+            onAdd={() => onAddPhotos(selectedTrack.id)}
+          />
+        }
       />
     );
   return (
@@ -200,6 +216,23 @@ export function TrackPanel({
       <details className="track-settings">
         <summary>线条样式</summary>
         <TrackStyleControls style={t.style} onChange={t.setStyle} />
+      </details>
+      <details className="track-settings">
+        <summary>更多吸附 · {t.riverSnapping ? '河流已开启' : '河流'}</summary>
+        <label className="track-snap">
+          <input
+            type="checkbox"
+            checked={t.riverSnapping}
+            onChange={(e) => t.setRiverSnapping(e.target.checked)}
+          />
+          河流吸附
+          <span>
+            默认关闭；开启后只沿河流、溪流和运河中心线，停用道路吸附。
+          </span>
+        </label>
+        <small>
+          依赖当前地图的水系线数据；请放大地图。水面没有中心线或水系断开时不自动跨越，需关闭吸附再手动连接。
+        </small>
       </details>
       {!!t.draft.length && (
         <>
@@ -339,6 +372,12 @@ export function TrackPanel({
           </div>
           {details === track.id && (
             <>
+              <TrackPhotoGallery
+                track={track}
+                photos={photos}
+                onOpen={onPhoto}
+                onAdd={() => onAddPhotos(track.id)}
+              />
               {track.sharedRoute && (
                 <div className="route-note">
                   {track.sharedRoute.stops.map((s, i) => (
@@ -454,10 +493,16 @@ export function TrackTools({
   return (
     <div className="track-tools glass" aria-label="绘制工具">
       <button
-        aria-pressed={t.roadSnapping}
-        onClick={() => t.setRoadSnapping(!t.roadSnapping)}
+        aria-pressed={t.riverSnapping || t.roadSnapping}
+        onClick={() =>
+          t.riverSnapping
+            ? t.setRiverSnapping(false)
+            : t.setRoadSnapping(!t.roadSnapping)
+        }
       >
-        道路{t.roadSnapping ? '吸附' : '自由'}
+        {t.riverSnapping
+          ? '河流吸附'
+          : `道路${t.roadSnapping ? '吸附' : '自由'}`}
       </button>
       <button
         aria-pressed={t.snapping}

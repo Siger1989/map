@@ -1,4 +1,10 @@
-import { useMemo, useState, type ComponentProps } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from 'react';
 import { RouteCollectionsPanel } from './RouteCollectionsPanel';
 import {
   catalogEntries,
@@ -17,6 +23,9 @@ import type { Annotation } from '../annotations/data';
 import type { SectionObject } from '../section/sectionObjects';
 import type { MapArea } from '../areas/data';
 import './collections.css';
+import { collectionArchive } from './archive';
+import { ZIP_MIME } from '../files/archive';
+import type { TripPhoto } from '../photos/storage';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   annotations: Annotation[];
   sections: SectionObject[];
@@ -24,6 +33,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onArea: (id: string) => void;
   onAnnotation: (id: string) => void;
   onSection: (id: string) => void;
+  initialOutputKey?: string | null;
+  photos: TripPhoto[];
 };
 export function CollectionsPanel(props: Props) {
   const entries = useMemo(
@@ -48,15 +59,19 @@ export function CollectionsPanel(props: Props) {
     [type, setType] = useState<keyof typeof CATALOG_TYPES>('all'),
     [search, setSearch] = useState('');
   const [batch, setBatch] = useState(false),
-    [selected, setSelected] = useState<string[]>([]),
+    [selected, setSelected] = useState<string[]>(
+      props.initialOutputKey ? [props.initialOutputKey] : [],
+    ),
     [editing, setEditing] = useState<string | null>(null);
   const [province, setProvince] = useState(''),
     [city, setCity] = useState(''),
     [country, setCountry] = useState('');
-  const [output, setOutput] = useState(false),
-    [format, setFormat] = useState<'json' | 'xlsx'>('json'),
+  const [output, setOutput] = useState(!!props.initialOutputKey),
+    [format, setFormat] = useState<'zip' | 'json' | 'xlsx'>('zip'),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
+  const abort = useRef<AbortController | null>(null);
+  useEffect(() => () => abort.current?.abort(), []);
   const shown = entries.filter((e) => {
     const r = regionFor(e, regions.regions);
     return (
@@ -92,27 +107,50 @@ export function CollectionsPanel(props: Props) {
     if (busy) return;
     setBusy(true);
     setMessage('');
+    const controller = new AbortController();
+    abort.current = controller;
     try {
       const content =
-        format === 'json'
-          ? JSON.stringify(
-              collectionTransfer(chosen, regions.regions, localStorage),
-              null,
-              2,
+        format === 'zip'
+          ? await collectionArchive(
+              chosen,
+              regions.regions,
+              localStorage,
+              props.photos,
+              controller.signal,
+              setMessage,
             )
-          : new Uint8Array(
-              collectionSpreadsheet(chosen, regions.regions, localStorage),
-            );
+          : format === 'json'
+            ? JSON.stringify(
+                collectionTransfer(chosen, regions.regions, localStorage),
+                null,
+                2,
+              )
+            : new Uint8Array(
+                collectionSpreadsheet(chosen, regions.regions, localStorage),
+              );
       setMessage(
         await deliverFile(
           new File([content], `Shantu-collection-${Date.now()}.${format}`, {
-            type: format === 'json' ? 'application/json' : XLSX_MIME,
+            type:
+              format === 'zip'
+                ? ZIP_MIME
+                : format === 'json'
+                  ? 'application/json'
+                  : XLSX_MIME,
           }),
           send,
+          controller.signal,
         ),
       );
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '导出失败，请重试');
+      setMessage(
+        e instanceof Error
+          ? e.name === 'AbortError'
+            ? '已取消，未输出不完整压缩包'
+            : e.message
+          : '导出失败，请重试',
+      );
     } finally {
       setBusy(false);
     }
@@ -142,15 +180,20 @@ export function CollectionsPanel(props: Props) {
             文件格式
             <select
               value={format}
+              disabled={busy}
               onChange={(e) => setFormat(e.target.value as typeof format)}
             >
+              <option value="zip">
+                压缩包 · ZIP（路线图 / 照片 / 全部数据）
+              </option>
               <option value="json">山兔数据 · JSON（可重新载入）</option>
               <option value="xlsx">Excel 表格 · XLSX</option>
             </select>
           </label>
           <p className="collection-hint">
-            JSON 保留完整路线、标记属性、剖面与测点；Excel
-            按工作表列出数据与坐标。
+            ZIP 包含勾选条目的 JSON、Excel
+            和通用地理文件；路线另附二维码全程图与关联照片。模型完整参数保存在
+            JSON 中。
           </p>
           <div className="collection-actions">
             <button
@@ -166,6 +209,9 @@ export function CollectionsPanel(props: Props) {
               系统分享
             </button>
           </div>
+          {busy && (
+            <button onClick={() => abort.current?.abort()}>取消生成</button>
+          )}
         </div>
       ) : item ? (
         <div className="collection-editor collection-scroll">

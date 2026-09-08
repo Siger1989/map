@@ -46,6 +46,7 @@ export function useManualTracks() {
   const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
   const [snapping, setSnapping] = useState(true);
   const [roadSnapping, setRoadSnapping] = useState(true);
+  const [riverSnapping, setRiverSnapping] = useState(false);
   const [editing, setEditing] = useState(false),
     [drawing, setDrawing] = useState(false);
   const [style, setStyle] = useState<TrackStyle>(DEFAULT_TRACK_STYLE);
@@ -236,7 +237,15 @@ export function useManualTracks() {
     snapping,
     setSnapping,
     roadSnapping,
-    setRoadSnapping,
+    setRoadSnapping: (enabled: boolean) => {
+      setRoadSnapping(enabled);
+      if (enabled) setRiverSnapping(false);
+    },
+    riverSnapping,
+    setRiverSnapping: (enabled: boolean) => {
+      setRiverSnapping(enabled);
+      if (enabled) setRoadSnapping(false);
+    },
     canUndo: draftState.history.length > 0,
     editing,
     drawing,

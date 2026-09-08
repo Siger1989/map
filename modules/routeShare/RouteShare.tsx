@@ -5,12 +5,19 @@ import { deliverRouteFile } from './delivery';
 import { renderRouteImage } from './image';
 import '../guidance/navigationStart.css';
 import './routeShare.css';
+import { routeArchiveEntries } from './archive';
+import { archiveBlob } from '../files/archive';
+import { deliverFile } from '../files/delivery';
+import type { TripPhoto } from '../photos/storage';
+import { photosForTrack } from '../photos/trackPhotos';
 export function RouteShare({
   data,
   onClose,
+  photos,
 }: {
   data: ShareRoute;
   onClose: () => void;
+  photos: TripPhoto[];
 }) {
   const [image, setImage] = useState<File | null>(null),
     [preview, setPreview] = useState(''),
@@ -73,6 +80,30 @@ export function RouteShare({
       ),
     );
   const links = externalLegs({ ...data, mode });
+  const photoCount = photosForTrack(data.track, photos).length;
+  const bundle = (share: boolean) =>
+    run(async () => {
+      const controller = new AbortController();
+      abort.current = controller;
+      setMessage('正在生成二维码全程图并打包照片…');
+      const picture =
+        image ?? (await renderRouteImage(data, controller.signal));
+      if (!image) {
+        if (url.current) URL.revokeObjectURL(url.current);
+        url.current = URL.createObjectURL(picture);
+        setImage(picture);
+        setPreview(url.current);
+      }
+      const blob = await archiveBlob(
+        routeArchiveEntries(data, photos, picture),
+        controller.signal,
+      );
+      return deliverFile(
+        new File([blob], `Shantu-route-${Date.now()}.zip`, { type: blob.type }),
+        share,
+        controller.signal,
+      );
+    });
   return (
     <div className="route-dialog-backdrop">
       <section
@@ -96,6 +127,21 @@ export function RouteShare({
           {data.name}
           {data.approach ? ' · 含到起点路线' : ''}
         </p>
+        <div className="route-share-bundle">
+          <strong>整条路线打包 · {photoCount} 张照片</strong>
+          <small>二维码路线图＋照片副本＋GPX/KML＋路线数据</small>
+          <div className="route-share-actions">
+            <button disabled={busy} onClick={() => void bundle(false)}>
+              保存 ZIP
+            </button>
+            <button disabled={busy} onClick={() => void bundle(true)}>
+              分享 ZIP
+            </button>
+            {busy && (
+              <button onClick={() => abort.current?.abort()}>取消生成</button>
+            )}
+          </div>
+        </div>
         <div className="route-share-actions">
           <button disabled={busy} onClick={() => void generate()}>
             {image ? '重新生成图片' : '生成全程图片'}
@@ -134,7 +180,10 @@ export function RouteShare({
         <p role="status">{message}</p>
         <details>
           <summary>通用路线文件 · GPX / KML</summary>
-          <p>保留完整线形和原始轨迹时间，可导入支持轨迹的地图应用。</p>
+          <p>
+            两种文件保留完整线形；GPX 另保留已有拍摄时间轴和海拔，KML
+            用于通用点线交换。
+          </p>
           <div className="route-share-actions">
             {(['gpx', 'kml'] as const).map((f) => (
               <div key={f}>

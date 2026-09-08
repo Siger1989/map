@@ -63,3 +63,12 @@
 .route-external-leg button {
   flex-shrink: 0;
 }
+.route-share-bundle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #60857877;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}

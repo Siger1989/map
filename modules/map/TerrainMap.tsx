@@ -65,6 +65,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  centerCoordinate: () => Coordinate | null;
   watchObjectProjection: WatchProjection;
   sectionCenter: () => {
     center: [number, number];
@@ -74,6 +75,7 @@ export type MapHandle = {
   } | null;
   refreshSection: () => void;
   snapRoad: RoadSnapper;
+  snapRiver: RoadSnapper;
   zoom: (amount: number) => void;
   north: () => void;
   reset: () => void;
@@ -135,6 +137,7 @@ type Props = {
   annotationSelected: string | null;
   onAnnotationSelect: (id: string) => void;
   roadSnapping: boolean;
+  riverSnapping: boolean;
   pickingActive: boolean;
   onTrackSelect: (id: string) => void;
   onTrackNodeSelect: (node: import('../tracks/editing').TrackNode) => void;
@@ -236,7 +239,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         : latest.current.settings;
       const custom = Boolean(latest.current.mapSource);
       void sourceRef.current?.select(latest.current.mapSource ?? null);
-      if (!domestic || latest.current.roadSnapping) addCartography(map);
+      if (
+        !domestic ||
+        latest.current.roadSnapping ||
+        latest.current.riverSnapping
+      )
+        addCartography(map);
       temperatureRef.current ??= new TemperatureLayer(map);
       temperatureRef.current.update(
         latest.current.weather,
@@ -308,6 +316,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           : s,
       );
+      if (latest.current.riverSnapping && map.getLayer('rivers'))
+        map.setLayoutProperty('rivers', 'visibility', 'visible');
       if (custom)
         for (const id of ['open-landcover', 'open-water', 'open-buildings'])
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
@@ -355,6 +365,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        centerCoordinate: () => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return null;
+          const x = m.getCanvas().clientWidth / 2,
+            y = m.getCanvas().clientHeight / 2;
+          const p = m.unproject([x, y]).toArray();
+          if (!coordinate(p)) return null;
+          const screen = m.project(p);
+          return Math.hypot(screen.x - x, screen.y - y) < 8 ? p : null;
+        },
         watchObjectProjection: (listener) => {
           projectionListeners.current.add(listener);
           if (projectionFrame.current) listener(projectionFrame.current);
@@ -390,6 +410,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           };
         },
         refreshSection: () => sectionRef.current?.refresh(),
+        snapRiver: (point, previous, from) =>
+          snapMapRoad(mapRef.current, point, previous, true, from, 'river'),
         snapRoad: (point, previous, from) =>
           snapMapRoad(
             mapRef.current,
@@ -950,6 +972,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       props.weather,
       props.hourIndex,
       props.roadSnapping,
+      props.riverSnapping,
       props.section.enabled,
       props.mapSource,
     ]);

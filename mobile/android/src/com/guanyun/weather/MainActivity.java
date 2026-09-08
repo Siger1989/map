@@ -111,5 +111,5 @@ public final class MainActivity extends Activity {
         if (requestCode == ForegroundLocation.REQUEST && nativeBridge != null) nativeBridge.position.resolvePermission();
     }
     @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request,result,data); if(appFiles!=null)appFiles.result(request,result,data); }
-    @Override protected void onDestroy() { if(nativeBridge!=null)nativeBridge.position.stop(); if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if(nativeBridge!=null){nativeBridge.position.stop();nativeBridge.archive.transfer.close();} if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
 }

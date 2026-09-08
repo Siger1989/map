@@ -2,6 +2,7 @@ import type { ManualTrack } from './drawing';
 import type { Coordinate } from '../navigation/types';
 import { TRAVEL_MODES } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
+import type { ReactNode } from 'react';
 
 /** Scanned routes open as geographic information; guidance is an explicit action. */
 export function SharedTrackDetails({
@@ -12,6 +13,7 @@ export function SharedTrackDetails({
   onNavigate,
   onShare,
   error,
+  photos,
 }: {
   track: ManualTrack;
   onBack: () => void;
@@ -20,6 +22,7 @@ export function SharedTrackDetails({
   onNavigate: () => void;
   onShare: () => void;
   error: string;
+  photos: ReactNode;
 }) {
   const shared = track.sharedRoute!;
   return (
@@ -70,6 +73,7 @@ export function SharedTrackDetails({
           {error}
         </p>
       )}
+      {photos}
       <JourneyPanel
         segments={track.segments}
         mode={track.navigationMode}

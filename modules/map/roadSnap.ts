@@ -10,6 +10,7 @@ import type { ScreenPoint } from '../tracks/drawing';
 import type { Coordinate } from '../navigation/types';
 import { roadPath } from '../tracks/roadPath';
 import type { RoadLine } from '../tracks/roadSnapping';
+import { riverLines } from '../tracks/riverSnapping';
 
 const networkCache = new WeakMap<
   Map,
@@ -23,13 +24,17 @@ export function snapMapRoad(
   previous: RoadMatch | null,
   roadsVisible: boolean,
   from?: Coordinate,
+  network: 'road' | 'river' = 'road',
 ): RoadSnapResult {
   if (!map) return { status: 'loading', match: null };
   if (!roadsVisible) return { status: 'hidden', match: null };
   // Use visible road geometry at any scale, including main roads below zoom 12.
   if (!map.getSource('openmaptiles'))
     return { status: 'unavailable', match: null };
-  const layers = ['main-roads', 'local-roads'].filter((id) => map.getLayer(id));
+  const layers = (
+    network === 'river' ? ['rivers'] : ['main-roads', 'local-roads']
+  ).filter((id) => map.getLayer(id));
+  const readLines = network === 'river' ? riverLines : roadLines;
   if (!layers.length) return { status: 'unavailable', match: null };
   try {
     const radius = ROAD_RELEASE_RADIUS;
@@ -42,7 +47,7 @@ export function snapMapRoad(
     );
     const match = nearestRoad(
       point,
-      roadLines(features),
+      readLines(features),
       (coordinate) => map.project(coordinate),
       previous,
     );
@@ -52,7 +57,7 @@ export function snapMapRoad(
       const startScreen = map.project(from);
       const start = nearestRoad(
         startScreen,
-        roadLines(
+        readLines(
           map.queryRenderedFeatures(
             [
               [startScreen.x - radius, startScreen.y - radius],
@@ -66,6 +71,7 @@ export function snapMapRoad(
       if (start) {
         const center = map.getCenter();
         const key = [
+          network,
           center.lng,
           center.lat,
           map.getZoom(),
@@ -77,7 +83,7 @@ export function snapMapRoad(
           cached = {
             key,
             expires: Date.now() + 300,
-            lines: roadLines(map.queryRenderedFeatures(undefined, { layers })),
+            lines: readLines(map.queryRenderedFeatures(undefined, { layers })),
           };
           networkCache.set(map, cached);
         }

@@ -47,11 +47,13 @@ export function roadLines(
     properties?: Record<string, unknown> | null;
     geometry: unknown;
   }[],
+  allowedClasses: ReadonlySet<string> = classes,
+  namespace = '',
 ): RoadLine[] {
   const lines = new Map<string, RoadLine>();
   let count = 0;
   for (const feature of features) {
-    if (!classes.has(String(feature.properties?.class))) continue;
+    if (!allowedClasses.has(String(feature.properties?.class))) continue;
     const geometry = feature.geometry as {
       type?: string;
       coordinates?: unknown;
@@ -72,7 +74,8 @@ export function roadLines(
         continue;
       if (count + points.length > 6000) continue;
       const level = Number(feature.properties?.layer) || 0;
-      const id = `${level}:` + points.map((p) => p.join(',')).join(';');
+      const id =
+        `${namespace}${level}:` + points.map((p) => p.join(',')).join(';');
       if (lines.has(id)) continue;
       count += points.length;
       const rawName =

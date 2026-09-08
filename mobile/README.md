@@ -1,6 +1,6 @@
-# 当前安装包：山兔0.2.10-test独立版（2026-09-08）
+# 当前安装包：山兔0.2.11-test独立版（2026-09-08）
 
-扫码先进入轨迹信息/海拔，点击导航才开始选择；标记logo/属性模板/Excel、统一省市收藏/批量分享、区域与轮廓拉伸模型、地形开挖亮色交界和剖面图下方地图坐标表。修复名称定位类丢失和地质入口。见[使用与模块](../docs/markers-areas-and-collections.md)、[安装/平台/校验](../docs/release-0.2.10-standalone.md)。版本17，仍用独立签名，可覆盖同系列0.2.9；与原系列并存，鸿蒙6.1原生未交付。
+本版增加路线照片和ZIP、收藏多选打包、中心准星、键盘编辑避让、50米色阶与默认关闭的河流吸附，见[0.2.11使用说明](../docs/route-photo-archives-and-river-snapping.md)。扫码先进入轨迹信息/海拔，点击导航才开始选择；标记logo/属性模板/Excel、统一省市收藏/批量分享、区域与轮廓拉伸模型、地形开挖亮色交界和剖面图下方地图坐标表。修复名称定位类丢失和地质入口。见[使用与模块](../docs/markers-areas-and-collections.md)、[安装/平台/校验](../docs/release-0.2.11-standalone.md)。版本18，仍用独立签名，可覆盖同系列0.2.9；与原系列并存，鸿蒙6.1原生未交付。
 
 浏览器预览移动入口时，先运行`npm run dev -- --port 3108`作为API后端，再运行`npx vite --config mobile/vite.config.ts --host 127.0.0.1 --port 9174`。`/api`默认代理到localhost:3108，可设`SHANTU_DEV_API_URL`；APK本地网关不依赖开发服务器。
 

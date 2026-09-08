@@ -13,7 +13,12 @@ final class NativeBridge {
     private final AppFiles files;
     private String pending;
     final ForegroundLocation position;
-    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity); }
+    final ArchiveOutput archive;
+    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity);this.archive=new ArchiveOutput(activity,files); }
+    @JavascriptInterface public String archiveBegin(String name, int size) { return archive.transfer.begin(name, size); }
+    @JavascriptInterface public String archiveAppend(String token, int offset, String encoded) { return archive.transfer.append(token, offset, encoded); }
+    @JavascriptInterface public String archiveFinish(String token, boolean share) { return archive.finish(token, share); }
+    @JavascriptInterface public void archiveCancel(String token) { archive.transfer.cancel(token); }
     @JavascriptInterface public String locationState() { return position.snapshot(); }
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
