@@ -1,3 +1,11 @@
+# 当前任务：HarmonyOS 6.1 原生安装包（2026-09-08，路线核查完成，构建待工具与账号）
+- 用户要求朋友的 HarmonyOS 6.1 可用安装包，并明确追问原生包；本轮按原生开发推进，卓易通仅为备选兼容试装。具体机型未知，无 USB 设备；用户回复没有或不确定是否有实名认证华为开发者账号。
+- 起点 main=9abf224，工作区原干净、pull最新。已核实仓库只有 Android Java/WebView；PATH 和常见目录未找到 DevEco/HarmonyOS SDK/ohpm/hvigor/hdc。官方工具下载跳转华为账号登录页，用户回复暂时无法登录；未下载工具链。
+- 用户提出可能用 Vue 直接转换。已核查 DCloud 官方：uni-app x 的 uvue/UTS 支持编译鸿蒙原生应用；HBuilderX 可生成工程，但仍依赖 DevEco、没有鸿蒙云打包，自动申请签名仍需华为账号授权。现有入口为 React，不能把现成 APK 或 React 源码视作 uni-app 工程。可优先验证独立 web-view 容器复用地图，业务页仍由网页内核渲染；方案尚未实现。
+- 完成文件：新增 docs/harmonyos-6.1-install.md，更新 AGENTS.md、mobile/README.md、本状态。说明包含本地资源/网关、GuanyunNative 记录与文件桥接、Windows 中文路径处理、签名和邀请测试路线；卓易通仅列备选。本轮仅文档修改，无代码、依赖、资源或安装包增删，Android 签名/存档和地图业务未变。
+- 验证：当前源码/移动入口和官方文档已核对，git diff --check 通过，fetch 后本地与 origin/main 均为 9abf224。没有原生工程/HAP/APP、没有开发者应用或测试邀请；本轮仅文档改动，未跑类型/逻辑测试/构建，也未做真机验证，不能报告鸿蒙已可用或道路闪烁已解决。
+- 下一步：用户可登录后取得官方工具链，先完成独立容器与地图资源验证，再接入平台能力、签名和设备验证。当前缺少工具链及账号，原生安装交付未完成。文档将按长期授权提交推送 main，并核对远端 SHA。
+
 # 当前任务：开始实走记录前选择样式（2026-09-08，完成）
 - 目标：在记录窗口直接选择颜色/自定义色与线宽，实时预览，持久记住并随轨迹保存。启动status/diff干净，pull最新f1e25ee；读取README/LOG/状态与记录模块。
 - 修改：新增outdoor/useRecordingStyle，用独立本机设置避免原生轮询覆盖样式；useRecording稳定合并样式，recording类型与savedRecording保留样式，app/page实时覆盖层使用实走样式；OutdoorPanel复用TrackStyleControls，modern.css局部紧凑布局。新增存档样式与GPS样本不变回归。
