@@ -1066,3 +1066,4 @@
 - 360与390天气小卡均x56/y90/164px宽，高度124/123px，关闭及重试44px，实际拖动99%→44%卡片仍靠边，页面无横溢、仅一个进度组件PASS。截图weather-preview-0214-360/390、route-delete-0214-360、route-details-delete-0214-390、route-branch-precision/closed-0214-360。正文已嵌入360天气卡。
 - design-qa.md已按同图对比要求检查三张comparison board及重点截图，浏览器范围PASS；部分实时天气/DEM缺测状态按真实缺失显示—。无真机GPS/触控/性能验收。
 - 生成docs/release-0.2.14.md、APK安装说明与发行说明，更新mobile/README。最终APK与332逻辑/types/web/资源/签名验证沿用本节之前的最终结果，无后续业务源码改动。下一步git提交推送和测试Release。
+- 发布前diff检查发现Manifest文件尾多一个空行，已移除并完整重出APK，未改业务语义。最终以apk-20260909-073707/web为准：55,219,775字节，SHA256 a5a13e86c26671a819082950669748cc40da53ed8d03217f029e0358eda917ff。独立525资源/496PNG/473FABDEM/CRC校验再次PASS；前f4a8包为中间构建，未公开交付。

@@ -26,7 +26,7 @@
 
 - Android 8.0及以上，版本 **0.2.14-test / code21**，包名 `com.guanyun.weather.preview`。
 - 原系列本机签名，可覆盖0.2.12、0.2.13等原系列；0.2.11独立版包名不同，与之并存，不能覆盖该独立版。现有存储格式保持兼容。
-- APK：55,219,775字节；SHA256：`f4a8e9c054b6df797c53ae58d716139843e14c0ae962eda09afe592dae03af50`。
+- APK：55,219,775字节；SHA256：`a5a13e86c26671a819082950669748cc40da53ed8d03217f029e0358eda917ff`。
 - 证书SHA256：`a3aa453c7fa05d8a5d54a11c648edbcc02297b064db50e44bcfea2b0b91cd29c`。v2/v3、zipalign、ZIP CRC通过；525项网页资源逐项核对，496PNG解码像素相同，其中473个FABDEM基础瓦片。
 - HarmonyOS 6.1原生HAP/APP尚未交付：缺原生工程、工具链及账号签名/分发与设备验证。本APK不能作为已支持鸿蒙6.1原生的证明。
 
