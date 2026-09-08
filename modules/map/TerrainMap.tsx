@@ -11,6 +11,7 @@ import {
   type SatelliteState,
 } from '../satellite/satellite';
 import type { WeatherLayer } from '../weather/WeatherLayer';
+import { TemperatureLayer } from '../weather/TemperatureLayer';
 import type { WeatherData } from '../weather/data';
 import { addCartography, syncCartography } from '../cartography/cartography';
 import { GeologyLayer } from '../geology/GeologyLayer';
@@ -38,6 +39,8 @@ import type { RoadSnapper } from '../tracks/roadSnapping';
 import type { AnnotationLayer } from '../annotations/AnnotationLayer';
 import type { Annotation } from '../annotations/data';
 import { SectionSurfaceLayer } from '../section/SectionSurfaceLayer';
+import { SectionCollectionLayer } from '../section/SectionCollectionLayer';
+import type { SectionObject } from '../section/sectionObjects';
 import type { ProfilePoint, SectionProfileData } from '../section/contours';
 import { loadedTerrainSampler } from '../section/loadedTerrain';
 import {
@@ -92,11 +95,13 @@ type Props = {
   mapSource?: MapSource | null;
   onSourceStatus?: (status: string) => void;
   section: SectionSettings;
+  sectionItems: SectionObject[];
+  selectedSectionId: string | null;
   sectionEditing: boolean;
   onSectionStatus: (status: SectionStatus) => void;
   onSectionChange: (settings: SectionSettings) => void;
   onSectionProfile: (data: SectionProfileData) => void;
-  onSectionSelect: () => void;
+  onSectionSelect: (id?: string) => void;
   sectionCursor: ProfilePoint | null;
   settings: LayerSettings;
   onPoint: (point: Point) => void;
@@ -143,6 +148,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const latest = useRef(props);
     latest.current = props;
     const weatherRef = useRef<WeatherLayer | null>(null);
+    const temperatureRef = useRef<TemperatureLayer | null>(null);
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
@@ -154,6 +160,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const photosRef = useRef<PhotoLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
     const sectionRef = useRef<SectionSurfaceLayer | null>(null);
+    const sectionCollectionRef = useRef<SectionCollectionLayer | null>(null);
     const projectionFrame = useRef<ProjectionFrame | null>(null);
     const projectionListeners = useRef(
       new Set<(frame: ProjectionFrame) => void>(),
@@ -220,6 +227,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const custom = Boolean(latest.current.mapSource);
       void sourceRef.current?.select(latest.current.mapSource ?? null);
       if (!domestic || latest.current.roadSnapping) addCartography(map);
+      temperatureRef.current ??= new TemperatureLayer(map);
+      temperatureRef.current.update(
+        latest.current.weather,
+        latest.current.hourIndex,
+        s.temperature,
+      );
       const terrain = map.getTerrain();
       if (
         s.terrain
@@ -320,6 +333,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         );
       sectionRef.current?.configure(
         latest.current.section,
+        latest.current.annotations,
+      );
+      sectionCollectionRef.current?.configure(
+        latest.current.sectionItems,
+        latest.current.selectedSectionId,
         latest.current.annotations,
       );
     };
@@ -686,6 +704,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   (status) => latest.current.onSectionStatus(status),
                 );
                 map.addLayer(sectionRef.current);
+                sectionCollectionRef.current = new SectionCollectionLayer(map);
               }
             } catch {
               if (!disposed)
@@ -740,12 +759,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             )
               return;
             if (
-              latest.current.section.enabled &&
+              (latest.current.section.enabled ||
+                latest.current.sectionItems.some((s) => s.settings.enabled)) &&
               !latest.current.pickingActive &&
               !latest.current.drawingActive
             ) {
               if (sectionRef.current?.pick(event.point)) {
                 latest.current.onSectionSelect();
+                return;
+              }
+              const savedId = sectionCollectionRef.current?.pick(event.point);
+              if (savedId) {
+                latest.current.onSectionSelect(savedId);
                 return;
               } else if (latest.current.sectionEditing) {
                 const id = annotationRef.current?.pick(event.point);
@@ -847,6 +872,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         annotationRef.current = null;
         sectionRef.current?.dispose();
         sectionRef.current = null;
+        sectionCollectionRef.current?.dispose();
+        sectionCollectionRef.current = null;
         featureDragRef.current?.dispose();
         featureDragRef.current = null;
         longPressRef.current?.dispose();
@@ -862,6 +889,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         diagnostics.current = null;
         mapRef.current = null;
         weatherRef.current = null;
+        temperatureRef.current = null;
       };
     }, []);
     useEffect(() => {
@@ -876,7 +904,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     ]);
     useEffect(() => {
       sectionRef.current?.configure(props.section, props.annotations);
-    }, [props.section, props.annotations]);
+      sectionCollectionRef.current?.configure(
+        props.sectionItems,
+        props.selectedSectionId,
+        props.annotations,
+      );
+    }, [
+      props.section,
+      props.annotations,
+      props.sectionItems,
+      props.selectedSectionId,
+    ]);
     useEffect(() => {
       sectionRef.current?.setCursor(props.sectionCursor);
     }, [props.sectionCursor]);

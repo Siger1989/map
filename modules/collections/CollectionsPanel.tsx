@@ -36,6 +36,8 @@ export function CollectionsPanel({
   onTrack,
   onNavigateRoute,
   onNavigateTrack,
+  onShareRoute,
+  onShareTrack,
   navigationError,
 }: {
   favorites: RouteFavoritesState;
@@ -44,6 +46,8 @@ export function CollectionsPanel({
   onTrack: (id: string) => void;
   onNavigateRoute: (route: RouteFavorite) => void;
   onNavigateTrack: (id: string) => void;
+  onShareRoute: (route: RouteFavorite) => void;
+  onShareTrack: (id: string) => void;
   navigationError: string;
 }) {
   const c = useCollections(),
@@ -310,6 +314,17 @@ export function CollectionsPanel({
                         }
                       >
                         导航
+                      </button>
+                      <button
+                        className="collection-navigate"
+                        aria-label={`分享 ${e.name}`}
+                        onClick={() =>
+                          e.kind === 'route'
+                            ? onShareRoute(e.route)
+                            : onShareTrack(e.track.id)
+                        }
+                      >
+                        分享
                       </button>
                       <button
                         className="collection-icon"

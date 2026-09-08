@@ -134,7 +134,10 @@ export function useNavigation() {
     calculate: async () => {
       const places = current.current.map((s) => s.place);
       if (places.some((p) => !p)) {
-        setError('请为每个地点选择搜索结果或地图位置。');
+        const index = places.findIndex((p) => !p);
+        setError(
+          `请为${stopLabel(index, places.length)}选择搜索结果，或点右侧图钉在地图选点；只输入文字还没有坐标。`,
+        );
         return null;
       }
       invalidate();

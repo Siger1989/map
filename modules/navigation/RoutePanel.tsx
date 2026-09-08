@@ -33,6 +33,7 @@ export function RoutePanel({
   onStartNavigation,
   navigating,
   guidanceError,
+  onShare,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -46,6 +47,7 @@ export function RoutePanel({
   onStartNavigation: () => void;
   navigating: boolean;
   guidanceError: string;
+  onShare: () => void;
 }) {
   const [active, setActive] = useState<string | null>(null),
     [results, setResults] = useState<RoutePlace[]>([]),
@@ -217,6 +219,11 @@ export function RoutePanel({
     : 0;
   return (
     <div className="route-panel">
+      {n.error && (
+        <p role="alert" className="route-error">
+          {n.error}
+        </p>
+      )}
       <div className="route-modes" aria-label="出行方式">
         {TRAVEL_MODES.map((m) => (
           <button
@@ -416,10 +423,18 @@ export function RoutePanel({
       </div>
       <button
         className="route-primary"
-        disabled={n.loading || n.stops.some((s) => !s.place)}
+        disabled={n.loading}
         onClick={async () => {
-          setActive(null);
+          const missing = n.stops.find((s) => !s.place);
+          setActive(missing?.id ?? null);
           const route = await n.calculate();
+          if (missing) {
+            rows.current
+              ?.querySelector<HTMLInputElement>(
+                `[data-stop-id="${missing.id}"] input`,
+              )
+              ?.focus({ preventScroll: true });
+          }
           if (route) onShow(route);
         }}
       >
@@ -427,9 +442,9 @@ export function RoutePanel({
           ? '规划中…'
           : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
       </button>
-      {n.error && (
-        <p role="alert" className="route-error">
-          {n.error}
+      {n.stops.some((s) => !s.place) && (
+        <p className="route-note">
+          输入地名后请选择搜索结果，或点地点栏右侧图钉在地图选点。
         </p>
       )}
       {n.route && (
@@ -439,6 +454,7 @@ export function RoutePanel({
             <span>{formatDuration(n.route.duration)}</span>
             <button onClick={() => onShow(n.route!)}>看全程</button>
             <button onClick={onSave}>收藏路线</button>
+            <button onClick={onShare}>分享路线</button>
           </div>
           <button
             className="route-start-navigation"

@@ -1,6 +1,10 @@
 import type { ManualTrack } from '../tracks/drawing';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping.ts';
-import { coordinate, type Coordinate } from '../navigation/types.ts';
+import {
+  coordinate,
+  type Coordinate,
+  type TravelMode,
+} from '../navigation/types.ts';
 import type { RouteFavorite } from '../navigation/favorites';
 import { pathOf } from './geometry.ts';
 
@@ -8,6 +12,7 @@ import { pathOf } from './geometry.ts';
 export function trackNavigation(
   track: ManualTrack,
   now = Date.now(),
+  mode: TravelMode = track.navigationMode ?? 'pedestrian',
 ): RouteFavorite {
   if (!track.segments.every((line) => line.every(coordinate)))
     throw new Error('轨迹坐标无效，无法导航。');
@@ -29,10 +34,13 @@ export function trackNavigation(
     start,
     end,
     route: {
-      mode: 'pedestrian',
+      mode,
+      geometryKind: 'track',
       coordinates,
       distance,
-      duration: distance / (4000 / 3600),
+      duration:
+        distance /
+        ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[mode] / 3600),
       steps: [],
       snapped: [start.coordinates, end.coordinates],
       stops: [start, end],

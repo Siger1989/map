@@ -41,7 +41,7 @@ export function validFavorite(value: unknown): value is RouteFavorite {
     (r.stops === undefined ||
       (Array.isArray(r.stops) &&
         r.stops.length >= 2 &&
-        r.stops.length <= 10 &&
+        r.stops.length <= 12 &&
         r.stops.every(place) &&
         r.stops[0].coordinates[0] === f.start.coordinates[0] &&
         r.stops[0].coordinates[1] === f.start.coordinates[1] &&

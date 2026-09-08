@@ -79,6 +79,16 @@
   display: flex;
   gap: 6px;
 }
+.guidance-share {
+  min-height: 44px;
+  width: 100%;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--accent);
+  background: transparent;
+  font-size: 14px;
+}
 .guidance-actions button {
   display: flex;
   align-items: center;

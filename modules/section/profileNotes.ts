@@ -66,6 +66,7 @@ export function sectionKey(s: SectionSettings) {
           p.heading,
           p.tilt,
           p.roll ?? 0,
+          ...(s.objectId ? [s.objectId] : []),
         ]
       : null,
   );
@@ -74,6 +75,9 @@ export function validSection(s: SectionSettings) {
   const p = s?.plane;
   return (
     !!p &&
+    (s.objectId === undefined ||
+      (typeof s.objectId === 'string' &&
+        /^[a-zA-Z0-9-]{1,80}$/.test(s.objectId))) &&
     Array.isArray(p.center) &&
     p.center.length === 2 &&
     p.center.every(Number.isFinite) &&

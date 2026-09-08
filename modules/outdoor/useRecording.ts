@@ -19,6 +19,8 @@ declare global {
       saveFile(name: string, mime: string, text: string): void;
       photoFolders?(): boolean;
       photoOutput?(name: string, base64: string, share: boolean): string;
+      routeOutput?(name: string, base64: string, share: boolean): string;
+      routeLinkShare?(url: string): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;
       locate?(mode: string): void;

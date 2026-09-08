@@ -9,27 +9,38 @@ export function GuidanceCard({
   onFollow,
   onShow,
   following,
+  onShare,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
   onFollow: () => void;
   onShow: () => void;
   following: boolean;
+  onShare: () => void;
 }) {
   const s = g.session;
   if (!s) return null;
-  const status = s.arrived
-    ? '已到达终点'
-    : s.quality ||
-      (s.offRoute
-        ? g.loading
-          ? '正在计算接回路线…'
-          : g.rejoin
-            ? '沿橙线接回原路线'
-            : `已偏离约${formatDistance(s.offset)}`
-        : s.offSince !== null
-          ? '可能偏离，正在确认…'
-          : '沿原路线导航');
+  const status = s.departurePending
+    ? g.loading
+      ? '正在计算当前位置到起点的路线…'
+      : g.departureMessage
+    : s.departureLength > 0 &&
+        s.nextCheckpoint === 0 &&
+        !s.quality &&
+        !s.offRoute
+      ? '正在前往主体起点 · 与主体出行方式一致'
+      : s.arrived
+        ? '已到达终点'
+        : s.quality ||
+          (s.offRoute
+            ? g.loading
+              ? '正在计算接回路线…'
+              : g.rejoin
+                ? '沿橙线接回原路线'
+                : `已偏离约${formatDistance(s.offset)}`
+            : s.offSince !== null
+              ? '可能偏离，正在确认…'
+              : '沿原路线导航');
   return (
     <section
       className="guidance-card glass"
@@ -76,18 +87,31 @@ export function GuidanceCard({
             </dd>
           </div>
           <div>
-            <dt>{s.offRoute && !g.rejoin ? '原路线剩余' : '剩余约'}</dt>
+            <dt>
+              {s.departurePending
+                ? '主体里程'
+                : s.offRoute && !g.rejoin
+                  ? '原路线剩余'
+                  : '剩余约'}
+            </dt>
             <dd data-testid="guidance-remaining">
               {formatDistance(g.remaining)}
             </dd>
           </div>
         </dl>
+        <button
+          className="guidance-share"
+          onClick={onShare}
+          disabled={s.departurePending}
+        >
+          分享全程路线
+        </button>
         {s.nextCheckpoint < s.checkpoints.length && (
           <p className="guidance-note">
             下一途经点 {s.nextCheckpoint + 1} / {s.checkpoints.length}
           </p>
         )}
-        {s.offRoute && !g.online && (
+        {(s.offRoute || s.departurePending) && !g.online && (
           <p className="guidance-error" role="status">
             网络已断开，接回路线需要联网计算。
           </p>
@@ -103,10 +127,12 @@ export function GuidanceCard({
               <LocateFixed size={16} />
               {following ? '当前位置' : '恢复跟随'}
             </button>
-            {s.offRoute && (
+            {(s.offRoute || s.departurePending) && (
               <button
                 onClick={g.rejoin ? onShow : g.retry}
-                disabled={g.loading || !!s.quality || !g.online}
+                disabled={
+                  g.loading || (!s.departurePending && !!s.quality) || !g.online
+                }
               >
                 {g.rejoin ? (
                   '看接回路线'

@@ -1,4 +1,7 @@
-# 当前安装包：山兔0.2.8-test独立版（2026-09-08）
+# 当前安装包：山兔0.2.9-test独立版（2026-09-08）
+
+新增气温图层、导航模式和同模式接入起点、完整路线图片/高程图/GPX/KML/高德链接分享，以及可大幅简化的离线路线二维码。修复规划按钮无说明灰色。见[功能与模块](../docs/temperature-navigation-sharing.md)及[安装/平台/校验](../docs/release-0.2.9-standalone.md)。版本16，沿用独立系列包名与签名，原系列并存，鸿蒙6.1原生包未交付。
+# 历史构建基线：山兔0.2.8-test独立版（2026-09-08）
 
 [下载APK](https://github.com/Siger1989/map/releases/download/v0.2.8-test-standalone/Shantu-0.2.8-test-standalone.apk) · [完整发行与校验](../docs/release-0.2.8-standalone.md)。新增室内网络定位、完整扫码画面与镜头切换、地图重复刷新/小幅跟随抖动修复，包含记录样式选择。见[模块接口与验证](../docs/indoor-position-and-camera.md)。
 

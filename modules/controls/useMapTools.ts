@@ -42,6 +42,7 @@ export function useMapTools(actions: Actions) {
       'labels',
       'clouds',
       'rain',
+      'temperature',
     ] as const;
     const tools: Tool[] = [
       {

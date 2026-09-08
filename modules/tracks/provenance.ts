@@ -15,6 +15,7 @@ export function keepsOriginalPoints(track: ManualTrack) {
 }
 
 export function trackSourceLabel(track: ManualTrack) {
+  if (track.source === 'shared') return '扫码分享路线';
   if (track.source === 'recorded') return '实走轨迹';
   if (track.source === 'gpx') return 'GPX 轨迹';
   if (track.source === 'kml') return 'KML 轨迹';

@@ -1,4 +1,5 @@
 export type SectionSettings = {
+  objectId?: string;
   enabled: boolean;
   altitude: number;
   color: string;

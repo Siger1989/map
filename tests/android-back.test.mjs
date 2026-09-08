@@ -18,6 +18,8 @@ function pressBack({
   section = false,
   photo = false,
   quickAdd = false,
+  modal = false,
+  sectionList = false,
 } = {}) {
   const calls = [];
   const context = {
@@ -29,23 +31,32 @@ function pressBack({
     },
     document: {
       querySelector(selector) {
-        const target = selector.includes('trip-photo-viewer')
-          ? photo
-            ? 'photo'
-            : null
-          : selector.includes('quick-add')
-            ? quickAdd
-              ? 'quickAdd'
+        const target =
+          selector === '.route-dialog'
+            ? modal
+              ? 'modal'
               : null
-            : selector.includes('control-dock')
-              ? panel
-                ? 'panel'
+            : selector === '.section-list'
+              ? sectionList
+                ? 'sectionList'
                 : null
-              : section && selector.includes('data-section')
-                ? 'section'
-                : editing && selector.includes('observatory')
-                  ? 'editing'
-                  : null;
+              : selector.includes('trip-photo-viewer')
+                ? photo
+                  ? 'photo'
+                  : null
+                : selector.includes('quick-add')
+                  ? quickAdd
+                    ? 'quickAdd'
+                    : null
+                  : selector.includes('control-dock')
+                    ? panel
+                      ? 'panel'
+                      : null
+                    : section && selector.includes('data-section')
+                      ? 'section'
+                      : editing && selector.includes('observatory')
+                        ? 'editing'
+                        : null;
         return target
           ? {
               dispatchEvent(event) {
@@ -92,4 +103,15 @@ test('安卓返回关闭照片预览，保留底下的编辑状态', () => {
   const result = pressBack({ photo: true, editing: true });
   assert.equal(result.handled, true);
   assert.equal(result.calls[0].target, 'photo');
+});
+
+test('安卓返回优先关闭路线对话框或多剖面列表', () => {
+  assert.equal(
+    pressBack({ modal: true, sectionList: true, panel: true }).calls[0].target,
+    'modal',
+  );
+  assert.equal(
+    pressBack({ sectionList: true, panel: true }).calls[0].target,
+    'sectionList',
+  );
 });

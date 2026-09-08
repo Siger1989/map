@@ -18,6 +18,7 @@ export function TrackPanel({
   onShow,
   onEditNodes,
   onNavigate,
+  onShare,
   navigationError,
 }: {
   tracks: ManualTracksState;
@@ -25,6 +26,7 @@ export function TrackPanel({
   onShow: (points: Coordinate[]) => void;
   onEditNodes: (id: string) => void;
   onNavigate: (id: string) => void;
+  onShare: (id: string) => void;
   navigationError: string;
 }) {
   const [name, setName] = useState(t.draftName ?? '');
@@ -281,6 +283,12 @@ export function TrackPanel({
               aria-label={`导航 ${track.name}`}
             >
               导航
+            </button>
+            <button
+              onClick={() => onShare(track.id)}
+              aria-label={`分享 ${track.name}`}
+            >
+              分享
             </button>
             <button
               disabled={keepsOriginalPoints(track) || t.editingId === track.id}

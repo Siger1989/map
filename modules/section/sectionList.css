@@ -1,0 +1,74 @@
+.section-list {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  left: var(--edge-left);
+  width: min(340px, calc(100% - 72px));
+  max-height: min(38dvh, 320px);
+  z-index: 16;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+.section-list header {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.section-list header strong {
+  flex: 1;
+  padding-left: 8px;
+}
+.section-list button {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+}
+.section-list button[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--panel);
+}
+.section-list-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.section-list-body p {
+  padding: 0 8px;
+}
+.section-list-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-top: 1px solid var(--border);
+  padding: 4px 0;
+}
+.section-list-row > div {
+  min-width: 0;
+  flex: 1;
+}
+.section-list-row input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0 6px;
+  font-size: 13px;
+}
+.section-list-row small {
+  display: block;
+  color: var(--muted);
+  padding-left: 6px;
+}
+.section-list-undo {
+  width: 100%;
+  color: var(--accent) !important;
+}

@@ -13,6 +13,7 @@ export type RouteStep = {
   coordinates: Coordinate[];
 };
 export type PlannedRoute = {
+  geometryKind?: 'track';
   mode: TravelMode;
   coordinates: Coordinate[];
   distance: number;

@@ -28,6 +28,14 @@ import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
 import { trackNavigation } from '@/modules/guidance/savedRoute';
 import { createSession } from '@/modules/guidance/session';
+import { NavigationStart } from '@/modules/guidance/NavigationStart';
+import { RouteShare } from '@/modules/routeShare/RouteShare';
+import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
+import {
+  sharePlanned,
+  shareTrack,
+  type ShareRoute,
+} from '@/modules/routeShare/data';
 import {
   validFavorite,
   type RouteFavorite,
@@ -53,6 +61,7 @@ import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionProfile } from '@/modules/section/SectionProfile';
 import { useSavedSection } from '@/modules/section/useSavedSection';
+import { SectionList } from '@/modules/section/SectionList';
 import { EMPTY_SECTION } from '@/modules/section/savedSection';
 import type {
   SectionProfileData,
@@ -85,6 +94,7 @@ import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { INITIAL_GEOLOGY } from '@/modules/geology/data';
 import { GeologyPanel } from '@/modules/geology/GeologyPanel';
 import { useWeather } from '@/modules/weather/useWeather';
+import { TemperatureLegend } from '@/modules/weather/TemperatureLegend';
 import { useMapTools } from '@/modules/controls/useMapTools';
 import type { SatelliteState } from '@/modules/satellite/satellite';
 import {
@@ -146,6 +156,22 @@ export default function Home() {
   const guidanceOwnsLocation = useRef(false),
     guidanceFocused = useRef(false);
   const [savedNavigationError, setSavedNavigationError] = useState('');
+  const [navigationTarget, setNavigationTarget] =
+    useState<RouteFavorite | null>(null);
+  const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
+  const [routeQr, setRouteQr] = useState<string | null>(null);
+  const shareTrackById = (id: string) => {
+    const track = tracks.saved.find((t) => t.id === id);
+    if (track) {
+      try {
+        setShareTarget(shareTrack(track));
+      } catch (e) {
+        setSavedNavigationError(
+          e instanceof Error ? e.message : '无法分享轨迹',
+        );
+      }
+    }
+  };
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
   const photoOverlay = useMemo(
     () => (photos.visible ? photos.items : []),
@@ -170,12 +196,14 @@ export default function Home() {
   );
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
+  const sections = useSavedSection();
+  const [sectionListOpen, setSectionListOpen] = useState(false);
   const {
     settings: sectionDraft,
     set: setSection,
     error: sectionSaveError,
     ready: sectionReady,
-  } = useSavedSection();
+  } = sections;
   const [sectionEditing, setSectionEditing] = useState(false);
   const [planePreview, setPlanePreview] = useState<SectionSettings | null>(
     null,
@@ -272,10 +300,24 @@ export default function Home() {
     setPanel(null);
     position.free();
     map.current?.previewRoute(null);
-    position.locate();
+    if (position.mode === 'network') position.changeMode('auto');
+    else position.locate();
   };
-  const startGuidance = () => activateGuidance();
-  const navigateFavorite = (favorite: RouteFavorite) => {
+  const startGuidance = () => {
+    const route = navigation.route;
+    if (route && navigation.start && navigation.end)
+      setNavigationTarget({
+        id: 'current-route',
+        name: `${navigation.start.name} → ${navigation.end.name}`,
+        savedAt: Date.now(),
+        start: navigation.start,
+        end: navigation.end,
+        route,
+      });
+  };
+  const navigateFavorite = (favorite: RouteFavorite) =>
+    setNavigationTarget(favorite);
+  const beginFavorite = (favorite: RouteFavorite) => {
     setSavedNavigationError('');
     try {
       if (!validFavorite(favorite))
@@ -284,6 +326,7 @@ export default function Home() {
       if (!navigation.restore(favorite)) return;
       map.current?.fitRoute(favorite.route.coordinates);
       activateGuidance(favorite.route);
+      setNavigationTarget(null);
     } catch (error) {
       setSavedNavigationError(
         error instanceof Error ? error.message : '无法开始导航。',
@@ -328,48 +371,70 @@ export default function Home() {
       ),
     );
   };
-  const toggleSection = () => {
-    if (!sectionReady) return;
-    setProfileOpen(false);
-    setPlanePreview(null);
-    setSectionHistory([]);
-    if (sectionDraft.plane) {
-      tracks.finish();
-      tracks.select(null);
-      navigation.setPicking(null);
-      position.free();
-      if (!sectionDraft.enabled) setSection({ ...sectionDraft, enabled: true });
-      setSectionEditing(true);
-      setProfileOpen(true);
-      setPanel(null);
-      annotations.select(null);
-      focusSection(sectionDraft);
-      return;
-    }
-    setSectionEditing(true);
+  const prepareSectionEditing = () => {
     tracks.finish();
     tracks.select(null);
     annotations.select(null);
     navigation.setPicking(null);
     position.free();
     setPanel(null);
-    setSectionStatus(INITIAL_SECTION_STATUS);
+    setPlanePreview(null);
+    setSectionHistory([]);
+    setSectionListOpen(false);
+    setSectionCursor(null);
+    setSectionEditing(true);
+  };
+  const openSection = (id: string) => {
+    const item = sections.items.find((s) => s.id === id);
+    if (!item) return;
+    sections.select(id);
+    if (
+      !item.settings.enabled &&
+      !setSection({ ...item.settings, enabled: true })
+    )
+      return;
+    prepareSectionEditing();
+    setProfileOpen(true);
+    focusSection(item.settings);
+  };
+  const toggleSection = () => {
+    if (!sectionReady) return;
+    tracks.finish();
+    tracks.select(null);
+    annotations.select(null);
+    navigation.setPicking(null);
+    position.free();
+    setPanel(null);
+    setProfileOpen(false);
+    setPlanePreview(null);
+    setSectionEditing(false);
+    setSectionListOpen((open) => !open);
+  };
+  const createSection = () => {
     const placement = map.current?.sectionCenter();
-    setSection({
-      enabled: true,
-      altitude: placement?.altitude ?? Math.round(point.elevation ?? 1500),
-      color: section.color,
-      plane: {
-        center: placement?.center ?? [point.lng, point.lat],
-        width: placement?.width ?? 5000,
-        height: Math.min(
-          30000,
-          Math.max(2000, (placement?.width ?? 5000) * 0.65),
-        ),
-        heading: placement?.heading ?? view.bearing,
-        tilt: 0,
-      },
-    });
+    if (
+      !sections.create({
+        enabled: true,
+        altitude: placement?.altitude ?? Math.round(point.elevation ?? 1500),
+        color: ['#9de8c4', '#ffbc70', '#87c7ff', '#ef9bda'][
+          sections.items.length % 4
+        ],
+        plane: {
+          center: placement?.center ?? [point.lng, point.lat],
+          width: placement?.width ?? 5000,
+          height: Math.min(
+            30000,
+            Math.max(2000, (placement?.width ?? 5000) * 0.65),
+          ),
+          heading: placement?.heading ?? view.bearing,
+          tilt: 0,
+        },
+      })
+    )
+      return;
+    prepareSectionEditing();
+    setProfileOpen(false);
+    setSectionStatus(INITIAL_SECTION_STATUS);
   };
   const annotationOverlay = useMemo(() => {
     const target = featureMove?.target;
@@ -415,10 +480,16 @@ export default function Home() {
     () => ({
       start: navigation.start,
       end: navigation.end,
-      route: navigation.route,
+      route: guidance.session?.route ?? navigation.route,
       via: navigation.via,
     }),
-    [navigation.start, navigation.end, navigation.route, navigation.via],
+    [
+      navigation.start,
+      navigation.end,
+      navigation.route,
+      navigation.via,
+      guidance.session?.route,
+    ],
   );
   const trackOverlay = useMemo(
     () => ({
@@ -513,6 +584,19 @@ export default function Home() {
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (
+          routeQr !== null ||
+          shareTarget ||
+          navigationTarget ||
+          sectionListOpen
+        ) {
+          event.preventDefault();
+          if (routeQr !== null) setRouteQr(null);
+          else if (shareTarget) setShareTarget(null);
+          else if (navigationTarget) setNavigationTarget(null);
+          else setSectionListOpen(false);
+          return;
+        }
         if (profileOpen) {
           event.preventDefault();
           setProfileOpen(false);
@@ -549,18 +633,16 @@ export default function Home() {
         onSourceStatus={mapSources.setStatus}
         ref={map}
         section={section}
+        sectionItems={sections.items}
+        selectedSectionId={sections.selectedId}
         sectionEditing={sectionEditing}
         onSectionStatus={setSectionStatus}
         onSectionChange={setSection}
         onSectionProfile={setProfileData}
         sectionCursor={sectionCursor}
-        onSectionSelect={() => {
-          tracks.finish();
-          tracks.select(null);
-          setSectionEditing(true);
-          annotations.select(null);
-          setPanel(null);
-          setProfileOpen(true);
+        onSectionSelect={(id) => {
+          const selected = id ?? sections.selectedId;
+          if (selected) openSection(selected);
         }}
         settings={layers}
         onPoint={setPoint}
@@ -869,6 +951,13 @@ export default function Home() {
         !quickAdd &&
         !tracks.editing && (
           <GuidanceCard
+            onShare={() => {
+              const s = guidance.session;
+              if (s)
+                setShareTarget(
+                  sharePlanned(s.route, '当前导航全程', s.departureLength > 0),
+                );
+            }}
             guidance={guidance}
             following={follow.following}
             onStop={guidance.stop}
@@ -886,9 +975,19 @@ export default function Home() {
           />
         )}
       <div
-        className="map-legends"
-        hidden={panel !== 'layers' && !layers.elevationColors}
+        className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
+        hidden={
+          panel !== 'layers' && !layers.elevationColors && !layers.temperature
+        }
       >
+        {layers.temperature && (
+          <TemperatureLegend
+            data={weather.data}
+            index={hourIndex}
+            loading={weather.loading}
+            error={weather.error}
+          />
+        )}
         {layers.elevationColors && <ElevationLegend />}
         {layers.geology && (
           <GeologyPanel
@@ -1036,6 +1135,10 @@ export default function Home() {
         </button>
       )}
       <ControlDock
+        onScanRoute={() => {
+          setPanel(null);
+          setRouteQr('');
+        }}
         onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
         sectionActive={sectionEditing}
         sectionReady={sectionReady}
@@ -1093,6 +1196,10 @@ export default function Home() {
       >
         {panel === 'sources' && (
           <MapSourcesPanel
+            onRouteQr={(text) => {
+              setPanel(null);
+              setRouteQr(text);
+            }}
             onNavigation={setSourcesNavigation}
             sources={mapSources}
             builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
@@ -1175,6 +1282,10 @@ export default function Home() {
         )}
         {panel === 'favorites' && (
           <CollectionsPanel
+            onShareRoute={(favorite) =>
+              setShareTarget(sharePlanned(favorite.route, favorite.name))
+            }
+            onShareTrack={shareTrackById}
             favorites={favorites}
             tracks={tracks}
             onNavigateRoute={navigateFavorite}
@@ -1199,6 +1310,7 @@ export default function Home() {
         )}
         {panel === 'track' && (
           <TrackPanel
+            onShare={shareTrackById}
             tracks={tracks}
             onNavigate={navigateTrack}
             navigationError={savedNavigationError}
@@ -1227,6 +1339,10 @@ export default function Home() {
         )}
         {panel === 'route' && (
           <RoutePanel
+            onShare={() => {
+              if (navigation.route)
+                setShareTarget(sharePlanned(navigation.route));
+            }}
             navigation={navigation}
             onStartNavigation={startGuidance}
             navigating={guidance.active}
@@ -1294,18 +1410,32 @@ export default function Home() {
           {sectionSaveError}
         </p>
       )}
+      {sectionListOpen && (
+        <SectionList
+          state={sections}
+          onCreate={createSection}
+          onSelect={openSection}
+          onClose={() => setSectionListOpen(false)}
+        />
+      )}
       {section.enabled &&
         sectionEditing &&
         profileOpen &&
         panel === null &&
         !selectedAnnotation && (
           <SectionProfile
+            key={sections.selectedId}
+            name={
+              sections.items.find((s) => s.id === sections.selectedId)?.name
+            }
             data={profileData}
             settings={section}
             onCursor={setSectionCursor}
             onChange={changeSection}
             onRestore={(value) => {
-              changeSection(value);
+              if (!sections.restore(value)) return;
+              setSectionHistory([]);
+              setPlanePreview(null);
               focusSection(value);
             }}
             onClose={() => setProfileOpen(false)}
@@ -1374,8 +1504,11 @@ export default function Home() {
           section.plane &&
           panel === null ? (
           <ObjectGizmo
-            key="section-plane"
-            name="矩形剖面"
+            key={`section-${sections.selectedId}`}
+            name={
+              sections.items.find((s) => s.id === sections.selectedId)?.name ??
+              '矩形剖面'
+            }
             kind="plane"
             pose={planePose(section)}
             watchProjection={watchObjectProjection}
@@ -1408,6 +1541,29 @@ export default function Home() {
             }}
           />
         ) : null)}
+      {navigationTarget && (
+        <NavigationStart
+          key={navigationTarget.id}
+          target={navigationTarget}
+          onStart={beginFavorite}
+          onClose={() => setNavigationTarget(null)}
+        />
+      )}
+      {shareTarget && (
+        <RouteShare data={shareTarget} onClose={() => setShareTarget(null)} />
+      )}
+      {routeQr !== null && (
+        <RouteQrReader
+          initial={routeQr}
+          onClose={() => setRouteQr(null)}
+          onLoaded={(favorite, points) => {
+            setRouteQr(null);
+            if (favorite) navigation.restore(favorite);
+            map.current?.fitRoute(points);
+            setPanel(favorite ? 'route' : 'favorites');
+          }}
+        />
+      )}
       <CameraGizmo
         view={view}
         onView={(pitch, bearing) => {

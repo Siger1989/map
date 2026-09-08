@@ -1,0 +1,109 @@
+import { useEffect, useRef, useState } from 'react';
+import type { RouteFavorite } from '../navigation/favorites';
+import {
+  TRAVEL_MODES,
+  formatDistance,
+  type TravelMode,
+} from '../navigation/types';
+import { planRoute } from '../navigation/provider';
+import './navigationStart.css';
+export function NavigationStart({
+  target,
+  onStart,
+  onClose,
+}: {
+  target: RouteFavorite;
+  onStart: (value: RouteFavorite) => void;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<TravelMode>(target.route.mode),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
+  const start = async () => {
+    const abort = new AbortController();
+    request.current = abort;
+    setBusy(true);
+    setError('');
+    try {
+      let route = target.route;
+      if (route.mode !== mode) {
+        if (route.geometryKind === 'track')
+          route = {
+            ...route,
+            mode,
+            duration:
+              route.distance /
+              ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[mode] / 3600),
+          };
+        else {
+          const stops = route.stops ?? [target.start, target.end];
+          route = await planRoute(
+            stops[0],
+            stops.at(-1)!,
+            mode,
+            abort.signal,
+            stops.slice(1, -1),
+          );
+        }
+      }
+      if (!abort.signal.aborted) onStart({ ...target, route });
+    } catch (e) {
+      if (!abort.signal.aborted)
+        setError(e instanceof Error ? e.message : '路线计算失败');
+    } finally {
+      if (!abort.signal.aborted) setBusy(false);
+    }
+  };
+  return (
+    <div className="route-dialog-backdrop">
+      <section
+        className="route-dialog glass"
+        role="dialog"
+        aria-modal="true"
+        aria-label="导航出行方式"
+      >
+        <header>
+          <strong>开始导航</strong>
+          <button onClick={onClose} aria-label="取消导航">
+            关闭
+          </button>
+        </header>
+        <p>
+          {target.name} · {formatDistance(target.route.distance)}
+        </p>
+        <div className="route-modes">
+          {TRAVEL_MODES.map((m) => (
+            <button
+              key={m.id}
+              disabled={busy}
+              aria-pressed={mode === m.id}
+              onClick={() => setMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p>不在起点时，先按相同方式规划到起点的路线，再继续主体线路。</p>
+        {target.route.geometryKind === 'track' && (
+          <p className="route-note">
+            保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="route-error">
+            {error}
+          </p>
+        )}
+        <button
+          className="route-primary"
+          disabled={busy}
+          onClick={() => void start()}
+        >
+          {busy ? '正在按出行方式规划…' : '定位并开始导航'}
+        </button>
+      </section>
+    </div>
+  );
+}

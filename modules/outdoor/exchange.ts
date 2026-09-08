@@ -1,5 +1,12 @@
 import { unzipSync, strFromU8 } from 'fflate';
 import {
+  SECTION_OBJECTS_KEY,
+  readSectionObjects,
+  validateSectionObjects,
+  type SectionObject,
+} from '../section/sectionObjects.ts';
+import { SAVED_SECTION_KEY } from '../section/savedSection.ts';
+import {
   COLLECTION_STORAGE,
   entriesFor,
   parseLayout,
@@ -31,6 +38,7 @@ export type Transfer = {
   annotations: Annotation[];
   favorites: RouteFavorite[];
   collections?: CollectionLayout;
+  sections?: SectionObject[];
 };
 export const DATA_CHANGED = 'guanyun-data-changed';
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -65,6 +73,7 @@ export function validateTransfer(v: unknown): Transfer {
     throw new Error('备份含无效轨迹，未导入');
   parseAnnotations(JSON.stringify(data.annotations));
   if (data.collections !== undefined) validateLayout(data.collections);
+  if (data.sections !== undefined) validateSectionObjects(data.sections);
   for (const items of [data.tracks, data.annotations, data.favorites])
     if (new Set(items.map((i) => i.id)).size !== items.length)
       throw new Error('文件含重复编号');
@@ -82,6 +91,15 @@ export function collectData(
     ...(storage.getItem(COLLECTION_STORAGE) === null
       ? {}
       : { collections: parseLayout(storage.getItem(COLLECTION_STORAGE)) }),
+    ...(storage.getItem(SECTION_OBJECTS_KEY) === null &&
+    storage.getItem(SAVED_SECTION_KEY) === null
+      ? {}
+      : {
+          sections: readSectionObjects(
+            storage.getItem(SECTION_OBJECTS_KEY),
+            storage.getItem(SAVED_SECTION_KEY),
+          ),
+        }),
   });
 }
 /** Validate the entire merge before any write, roll back if a quota write fails. */
@@ -115,6 +133,16 @@ export function mergeData(
     tracks: merge(before.tracks, incoming.tracks, 'track'),
     annotations: merge(before.annotations, incoming.annotations),
     favorites: merge(before.favorites, incoming.favorites, 'route'),
+    ...(before.sections || incoming.sections
+      ? {
+          sections: merge(before.sections ?? [], incoming.sections ?? []).map(
+            (s) =>
+              s.settings.objectId && s.settings.objectId !== s.id
+                ? { ...s, settings: { ...s.settings, objectId: s.id } }
+                : s,
+          ),
+        }
+      : {}),
     collections: mergeCollections(
       before.collections,
       incoming.collections,
@@ -133,6 +161,7 @@ export function mergeData(
     [FAVORITES_STORAGE, next.favorites],
   ];
   if (next.collections) values.push([COLLECTION_STORAGE, next.collections]);
+  if (next.sections) values.push([SECTION_OBJECTS_KEY, next.sections]);
   const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
   try {
     for (const [key, data] of values)

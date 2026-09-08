@@ -94,7 +94,9 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
     private map: TerrainMap,
     private notify: (data: SectionProfileData) => void,
     private status: (s: SectionStatus) => void,
+    private options: { id?: string; passive?: boolean } = {},
   ) {
+    this.id = options.id ?? 'section-plane';
     map.on('sourcedata', this.onData);
     map.on('moveend', this.schedule);
     window.addEventListener(PROFILE_NOTES_CHANGED, this.updateNotes);
@@ -107,6 +109,11 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
     });
     this.renderer.autoClear = false;
     this.scene.add(this.ruler);
+    if (this.options.passive) {
+      this.ruler.visible = false;
+      this.marks.visible = false;
+      this.glass.material.opacity = 0.06;
+    }
     [this.glass, this.guide, this.rim, this.marks, this.cursor].forEach(
       (o, i) => {
         o.frustumCulled = false;
@@ -120,7 +127,7 @@ export class SectionSurfaceLayer implements CustomLayerInterface {
       changed = old !== settings || this.items !== items;
     this.settings = settings;
     this.items = items;
-    if (!old.enabled && settings.enabled) {
+    if (!this.options.passive && !old.enabled && settings.enabled) {
       this.originalPitch = this.map.getPitch() < 5 ? this.map.getPitch() : null;
       if (this.originalPitch !== null) this.map.jumpTo({ pitch: 55 });
     }

@@ -9,6 +9,7 @@ export type LayerSettings = {
   geologyOpacity: number;
   clouds: boolean;
   rain: boolean;
+  temperature: boolean;
   roads: boolean;
   labels: boolean;
   opacity: number;
@@ -26,6 +27,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   geologyOpacity: 0.85,
   clouds: false,
   rain: false,
+  temperature: false,
   roads: true,
   labels: true,
   opacity: 0.6,
@@ -38,8 +40,16 @@ export function applyLayerPatch(
   patch: Partial<LayerSettings>,
 ): LayerSettings {
   const next = { ...current, ...patch };
-  if (patch.geology === true) next.elevationColors = false;
-  else if (patch.elevationColors === true) next.geology = false;
+  if (patch.temperature === true) {
+    next.elevationColors = false;
+    next.geology = false;
+  } else if (patch.geology === true) {
+    next.elevationColors = false;
+    next.temperature = false;
+  } else if (patch.elevationColors === true) {
+    next.geology = false;
+    next.temperature = false;
+  }
   return next;
 }
 export type Point = { lng: number; lat: number; elevation: number | null };

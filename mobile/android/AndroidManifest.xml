@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="15" android:versionName="0.2.8-test">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="16" android:versionName="0.2.9-test">
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.CAMERA" />
@@ -14,6 +14,7 @@
     android:allowBackup="false" android:usesCleartextTraffic="false" android:hardwareAccelerated="true" android:supportsRtl="true">
     <service android:name="com.guanyun.weather.RecordingService" android:exported="false" android:foregroundServiceType="location" />
     <provider android:name="com.guanyun.weather.PhotoShareProvider" android:authorities="com.guanyun.weather.preview.photos" android:exported="false" android:grantUriPermissions="true" />
+    <provider android:name="com.guanyun.weather.RouteShareProvider" android:authorities="com.guanyun.weather.preview.routes" android:exported="false" android:grantUriPermissions="true" />
     <activity android:name="com.guanyun.weather.MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize"
       android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode|density">
       <intent-filter>

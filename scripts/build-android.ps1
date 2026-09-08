@@ -40,7 +40,10 @@ try {
     $signing = Get-Content -LiteralPath (Join-Path $projectRoot 'config\android-standalone-signing.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     $manifest.manifest.SetAttribute('package', $signing.package)
     $manifest.manifest.application.SetAttribute('label', 'http://schemas.android.com/apk/res/android', $signing.applicationLabel) | Out-Null
-    $manifest.manifest.application.provider.SetAttribute('authorities', 'http://schemas.android.com/apk/res/android', ($signing.package + '.photos')) | Out-Null
+    foreach ($provider in $manifest.manifest.application.provider) {
+      $suffix = if ($provider.GetAttribute('name', 'http://schemas.android.com/apk/res/android') -eq 'com.guanyun.weather.RouteShareProvider') { '.routes' } else { '.photos' }
+      $provider.SetAttribute('authorities', 'http://schemas.android.com/apk/res/android', ($signing.package + $suffix)) | Out-Null
+    }
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     $manifestPath = Join-Path $stage 'AndroidManifest.xml'
     $manifest.Save($manifestPath)

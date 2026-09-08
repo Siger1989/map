@@ -8,6 +8,10 @@ import { pathOf, project, type Path, type Projection } from './geometry.ts';
 
 export type GuidanceSession = {
   route: PlannedRoute;
+  originalRoute: PlannedRoute;
+  departurePending: boolean;
+  departureLength: number;
+  departureRoute: PlannedRoute | null;
   path: Path;
   checkpoints: Projection[];
   nextCheckpoint: number;
@@ -49,6 +53,10 @@ export function createSession(
   });
   return {
     route,
+    originalRoute: route,
+    departurePending: false,
+    departureLength: 0,
+    departureRoute: null,
     path,
     checkpoints,
     nextCheckpoint: 0,
@@ -69,13 +77,18 @@ export function createSession(
 export function checkpointLimit(s: GuidanceSession) {
   return s.checkpoints[s.nextCheckpoint]?.distance ?? s.path.length;
 }
+export function checkpointFloor(s: GuidanceSession) {
+  return s.nextCheckpoint > 0
+    ? s.checkpoints[s.nextCheckpoint - 1].distance
+    : 0;
+}
 export function rejoinTarget(s: GuidanceSession): Projection | null {
   if (!s.last) return null;
   // Retain the next unvisited via point; a detour must not skip it.
   return project(
     s.path,
     s.last.coordinates,
-    Math.max(0, s.progress - 30),
+    Math.max(checkpointFloor(s), s.progress - 30),
     checkpointLimit(s),
     s.progress,
   );
@@ -138,7 +151,7 @@ export function advance(
   const hit = project(
     s.path,
     fix.coordinates,
-    Math.max(0, s.progress - (s.offRoute ? 30 : window)),
+    Math.max(checkpointFloor(s), s.progress - (s.offRoute ? 30 : window)),
     s.last && !gap && !s.offRoute ? Math.min(max, s.progress + window) : max,
     s.progress,
   );

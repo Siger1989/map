@@ -1,0 +1,65 @@
+.route-share summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.route-share details {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.route-qr-file {
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #294b52;
+  color: #e9f5ef;
+  cursor: pointer;
+}
+.route-qr-file input {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.route-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.route-share-actions button,
+.route-external-leg button {
+  padding: 8px 12px;
+  background: #294b52;
+  color: #e9f5ef;
+  border-radius: 9px;
+}
+.route-share-actions > div {
+  display: flex;
+  gap: 8px;
+}
+.route-share-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+.route-external-leg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.route-external-leg a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.route-external-leg button {
+  flex-shrink: 0;
+}

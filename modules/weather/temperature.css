@@ -1,0 +1,51 @@
+.temperature-legend {
+  width: min(220px, calc(100vw - 100px));
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+.temperature-legend summary {
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.temperature-legend summary::-webkit-details-marker {
+  display: none;
+}
+.temperature-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.temperature-title strong {
+  font-size: 12px;
+}
+.temperature-title > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+.temperature-ramp {
+  height: 7px;
+  border-radius: 5px;
+  margin-top: 5px;
+}
+.temperature-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+}
+.temperature-legend p {
+  margin: 6px 0 0;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.observatory[data-panel] .map-legends.map-legends-temperature {
+  top: auto;
+  bottom: calc(112px + var(--safe-bottom));
+}
+.observatory[data-route-rail='true'] .temperature-legend {
+  margin-left: 44px;
+  width: min(220px, calc(100vw - 130px));
+}

@@ -10,10 +10,18 @@ import {
   MapPin,
   Palette,
   ChevronRight,
+  Thermometer,
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 const ITEMS = [
+  {
+    key: 'temperature',
+    label: '气温',
+    detail: '2 米气温预报 · 当前区域颜色分布',
+    icon: Thermometer,
+    color: 'amber',
+  },
   {
     key: 'terrain',
     label: '三维地形',

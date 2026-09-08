@@ -49,6 +49,7 @@ export function ControlDock({
   back,
   title,
   children,
+  onScanRoute,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -61,6 +62,7 @@ export function ControlDock({
   back?: { label: string; onClick: () => void; disabled?: boolean };
   title?: string;
   children: ReactNode;
+  onScanRoute?: () => void;
 }) {
   const root = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -150,6 +152,12 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
+                {onScanRoute && (
+                  <button onClick={onScanRoute}>
+                    <ScanLine size={18} />
+                    扫码载入路线
+                  </button>
+                )}
                 <button onClick={() => onActive('track')}>
                   <PencilLine size={18} />
                   画线

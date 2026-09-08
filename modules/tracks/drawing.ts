@@ -13,7 +13,8 @@ export type ManualTrack = {
   updatedAt?: number;
   drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
-  source?: 'recorded' | 'gpx' | 'kml' | 'manual';
+  source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
+  navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   samples?: { time: number | null; altitude: number | null }[][];
   nodes?: Coordinate[];
 };
@@ -56,7 +57,7 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         typeof v.name === 'string' &&
         Number.isFinite(v.createdAt) &&
         (v.source === undefined ||
-          ['recorded', 'gpx', 'kml', 'manual'].includes(v.source)) &&
+          ['recorded', 'gpx', 'kml', 'manual', 'shared'].includes(v.source)) &&
         (v.nodes === undefined ||
           (Array.isArray(v.nodes) &&
             v.nodes.length <= MAX_TRACK_POINTS &&
@@ -89,9 +90,12 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
     )
     .map((track) => {
       // Optional new metadata must not make an otherwise valid legacy track disappear.
-      const { updatedAt, drawingLocation, ...rest } = track;
+      const { updatedAt, drawingLocation, navigationMode, ...rest } = track;
       return {
         ...rest,
+        ...(['auto', 'bicycle', 'pedestrian'].includes(navigationMode ?? '')
+          ? { navigationMode }
+          : {}),
         ...(Number.isFinite(updatedAt) ? { updatedAt } : {}),
         ...(drawingLocation &&
         coordinate(drawingLocation.coordinate) &&

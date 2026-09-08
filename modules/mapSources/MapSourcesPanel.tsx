@@ -10,6 +10,7 @@ import { parseMapConfig, resolveMapInput } from './online';
 import { inspectOffline } from './offlineClient';
 import { readQr } from './qr';
 import { QrCamera } from './QrCamera';
+import { ROUTE_QR_PREFIX } from '../routeShare/qrCodec';
 import { basemapConfiguration } from '../cartography/basemaps';
 import './mapSources.css';
 
@@ -26,12 +27,14 @@ export function MapSourcesPanel({
   onBuiltin,
   onFocus,
   onNavigation,
+  onRouteQr,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
   onBuiltin: (id: 'terrain' | 'detail' | 'latest') => void;
   onFocus: (bounds: Bounds) => void;
   onNavigation?: (navigation: MapSourcesNavigation | null) => void;
+  onRouteQr?: (text: string) => void;
 }) {
   const [step, setStep] = useState<'list' | 'add' | 'camera' | 'preview'>(
     'list',
@@ -167,6 +170,10 @@ export function MapSourcesPanel({
     });
   };
   const qr = (text: string) => {
+    if (text.startsWith(ROUTE_QR_PREFIX) && onRouteQr) {
+      onRouteQr(text);
+      return;
+    }
     setInput(text);
     setName('');
     setStep('add');

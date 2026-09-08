@@ -10,9 +10,11 @@ import {
 export function QrCamera({
   onRead,
   onClose,
+  label = '对准地图图源或山兔路线二维码',
 }: {
   onRead: (text: string) => void;
   onClose: () => void;
+  label?: string;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState('');
@@ -115,7 +117,7 @@ export function QrCamera({
   }, [deviceId, attempt]);
   return (
     <div className="map-camera">
-      <p>对准地图图源二维码</p>
+      <p>{label}</p>
       <video ref={video} muted autoPlay playsInline aria-label="扫码相机预览" />
       {!ready && !error && <p role="status">正在打开后置镜头…</p>}
       {cameras.length > 1 && (

@@ -23,6 +23,7 @@ import { moveProfileNote } from './notePosition';
 import type { PointActions } from './useContourPointDrag';
 
 type Props = {
+  name?: string;
   data: SectionProfileData | null;
   settings: SectionSettings;
   onCursor: (p: ProfilePoint | null) => void;
@@ -34,6 +35,7 @@ type Props = {
   onDelete: () => void;
 };
 export function SectionProfile({
+  name = '剖面交线',
   data,
   settings,
   onCursor,
@@ -213,7 +215,7 @@ export function SectionProfile({
       }}
     >
       <header>
-        <strong>剖面交线</strong>
+        <strong>{name}</strong>
         <button disabled={!curve || busy} onClick={download}>
           {busy ? '生成中…' : '保存图片'}
         </button>
