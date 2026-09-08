@@ -1,10 +1,10 @@
-# 当前任务：开始实走记录前选择样式（2026-09-08，完成，待同步）
+# 当前任务：开始实走记录前选择样式（2026-09-08，完成）
 - 目标：在记录窗口直接选择颜色/自定义色与线宽，实时预览，持久记住并随轨迹保存。启动status/diff干净，pull最新f1e25ee；读取README/LOG/状态与记录模块。
 - 修改：新增outdoor/useRecordingStyle，用独立本机设置避免原生轮询覆盖样式；useRecording稳定合并样式，recording类型与savedRecording保留样式，app/page实时覆盖层使用实走样式；OutdoorPanel复用TrackStyleControls，modern.css局部紧凑布局。新增存档样式与GPS样本不变回归。
 - 不变：原生GPS命令、定位精度、地图图源、历史轨迹、手绘偏好。尚未构建APK；此前道路闪烁根因仍待复现。
 - 验证PASS：oxfmt、npx tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs（239/239）、npm run build，日志.openai/*recording-style*.log。新增回归确认保存重读样式一致、GPS样本不变。
 - UI：Chrome蓝色3px选择/刷新恢复PASS；应用内浏览器自定义紫色预览PASS。390/360 DOM无横溢，顶部蓝色开始按钮44px高可见。截图初版发现开始按钮被挤到下面，已移到里程行，并修正通用按钮样式覆盖。最终artifacts/screenshots/recording-style-panel-final.png可见开始/线宽/色彩PASS；窗口可内部滚动查看预览和精度。
-- 限制：Chrome截屏两次5秒超时，应用内窄屏截图画布缩放异常，窄屏采用DOM+交互验证；不声称真机验收。两测试页关闭、临时视口恢复。新增docs/recording-style.md与README说明；下一步提交推送并核对SHA。无当前阻碍。
+- 限制：Chrome截屏两次5秒超时，应用内窄屏截图画布缩放异常，窄屏采用DOM+交互验证；不声称真机验收。两测试页关闭、临时视口恢复。新增docs/recording-style.md与README说明；实现a467cd1已推送main，远端SHA核对一致。下一步手机体验反馈，无当前阻碍。
 
 # 当前任务：道路闪烁定向排查（2026-09-08，诊断完成，根因待复现）
 - 目标：定位静止时道路闪烁。启动status/diff干净，pull确认32b41a2最新；读取README/状态/LOG/AGENTS及旧调查。道路样式无动画，未发现重复重载道路源的应用代码；没有证据支持调整渲染参数。
