@@ -507,3 +507,26 @@ test('an isolated draft point can be deleted while preserving the rest, and dire
     [b, loose],
   ]);
 });
+
+test('precision drawing can join an existing node even when road snapping has no road there', () => {
+  const node = [100.1, 20];
+  const o = {
+    ...options,
+    mode: 'points',
+    lastVertex: [100.05, 18],
+    candidates: [node],
+    roadSnapping: true,
+    snapRoad: () => ({ status: 'ready', match: null }),
+  };
+  const s = new DrawingSession();
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+  assert.equal(
+    s.input({ type: 'end', reason: 'navigation' }, o).vertex,
+    undefined,
+  );
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+  assert.strictEqual(
+    s.input({ type: 'end', reason: 'release' }, o).vertex,
+    node,
+  );
+});

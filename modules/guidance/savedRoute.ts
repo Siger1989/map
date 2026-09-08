@@ -8,6 +8,7 @@ import {
 import type { RouteFavorite } from '../navigation/favorites';
 import { pathOf, project } from './geometry.ts';
 import { connectedNetwork, networkPath } from './network.ts';
+import { trackAlternatives } from '../tracks/alternatives.ts';
 
 /** Adapt saved geometry without requesting a replacement road route or editing the archive. */
 export function trackNavigation(
@@ -15,6 +16,7 @@ export function trackNavigation(
   now = Date.now(),
   mode: TravelMode = track.navigationMode ?? 'pedestrian',
   tracks: ManualTrack[] = [],
+  alternativeId = 'main',
 ): RouteFavorite {
   if (!track.segments.every((line) => line.every(coordinate)))
     throw new Error('轨迹坐标无效，无法导航。');
@@ -22,10 +24,18 @@ export function trackNavigation(
   if (!lines.length || hasLoosePoints(track.segments))
     throw new Error('轨迹含不相接的线段，请先连接成连续路线再导航。');
   const trackNetwork = connectedNetwork({ ...track, segments: lines }, tracks);
+  const variants = trackAlternatives(
+    lines.length === 1 ? lines : track.segments,
+  );
+  const preferred = (
+    variants.find((v) => v.id === alternativeId) ?? variants[0]
+  )?.coordinates;
   const coordinates = (
-    lines.length === 1
-      ? lines[0]
-      : networkPath(trackNetwork, lines[0][0], lines[0].at(-1)!).coordinates
+    preferred?.length
+      ? preferred
+      : lines.length === 1
+        ? lines[0]
+        : networkPath(trackNetwork, lines[0][0], lines[0].at(-1)!).coordinates
   ).map((p) => [...p] as Coordinate);
   const distance = pathOf(coordinates).length;
   if (distance < 20) throw new Error('轨迹不足20米，请延长后再导航。');
@@ -58,6 +68,7 @@ export function trackNavigation(
       mode,
       geometryKind: 'track',
       trackNetwork,
+      preferredTrackPath: coordinates,
       coordinates,
       distance,
       duration:

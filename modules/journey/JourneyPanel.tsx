@@ -7,6 +7,7 @@ import {
 } from '../navigation/types';
 import { describeWeather } from '../weather/data';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping';
+import { routeConnectionLabel } from '../tracks/routeInfo';
 import {
   elevationStats,
   lineLength,
@@ -164,7 +165,7 @@ export function JourneyPanel({
         <span>
           {chains.length === 1 && !incomplete
             ? '连续线路'
-            : `${chains.length} 段 · 尚未连成一条`}
+            : `${chains.length} 段 · ${routeConnectionLabel({ segments })}`}
         </span>
       </div>
       <dl className="journey-stats">

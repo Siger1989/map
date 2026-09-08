@@ -232,40 +232,53 @@ export function RouteWeatherRail({
         图例
       </button>
       {(selected !== null || legend) && (
-        <div className="rail-detail glass">
-          <button
-            className="rail-close"
-            aria-label="关闭行程预览"
-            onClick={() => {
-              setSelected(null);
-              setLegend(false);
-              callback.current(null);
-            }}
-          >
-            ×
-          </button>
-          <strong>
-            {selected === null
-              ? '沿途天气'
-              : `预览 ${formatDistance(route.distance * fraction)}`}
-          </strong>
+        <div
+          className="rail-detail rail-detail-compact glass"
+          data-legend={legend}
+        >
+          <header>
+            <strong>
+              {selected === null
+                ? '沿途天气'
+                : `${formatDistance(route.distance * fraction)} · ${(fraction * 100).toFixed(0)}%`}
+            </strong>
+            <button
+              className="rail-close"
+              aria-label="关闭行程预览"
+              onClick={() => {
+                setSelected(null);
+                setLegend(false);
+                callback.current(null);
+              }}
+            >
+              ×
+            </button>
+          </header>
           {selected !== null && (
             <>
               <span>
-                {(fraction * 100).toFixed(1)}% · 预计{' '}
-                {j.validTime ? beijingTime(arrival) : '时间无效'}
+                预计到达 {j.validTime ? beijingTime(arrival) : '时间无效'}
               </span>
-              <b>
-                {weather
-                  ? `${weather.temperature ?? '—'}°C · ${weather.precipitation ?? '—'} mm · ${weather.wind ?? '—'} m/s`
-                  : '预报暂缺或超出时段'}
-              </b>
-              <small>附近采样点预报 · 时雨雪总量</small>
+              <div className="rail-weather-summary">
+                <b>
+                  {weather
+                    ? `${weather.temperature ?? '—'}°C · ${weather.precipitation ?? '—'} mm · ${weather.wind ?? '—'} m/s`
+                    : '暂无该时段预报'}
+                </b>
+                {j.error && (
+                  <button
+                    className="rail-retry"
+                    aria-label="重试沿途天气"
+                    onClick={j.retry}
+                  >
+                    重试
+                  </button>
+                )}
+              </div>
             </>
           )}
-          <small>定位：{progress.label}</small>
           {j.loading && <small>读取预报…</small>}
-          {j.error && (
+          {j.error && selected === null && (
             <button className="rail-retry" onClick={j.retry}>
               天气重试
             </button>
@@ -275,6 +288,7 @@ export function RouteWeatherRail({
           )}
           {legend && (
             <>
+              <small>定位：{progress.label} · 附近采样点预报，时雨雪总量</small>
               <small>
                 左：气温 ·
                 右：时雨雪量。下方起点，上方终点；公里数表示沿路线距起点的位置。

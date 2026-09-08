@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { coordinate, type Coordinate } from '../navigation/types';
 import { keepsOriginalPoints } from './provenance';
+import { storeRouteEdit, type RouteEditSession } from './routeEdit';
 import { usePlaceName } from '../navigation/usePlaceName';
 import { drawingRecord, storeDrawingRecord } from './archive';
 import {
@@ -70,12 +71,14 @@ export function useManualTracks() {
   const candidates = useMemo(
     () => [
       ...draftSnapNodes(draftState.segments),
-      ...saved.flatMap((t) => [...endpoints(t.segments), ...(t.nodes ?? [])]),
+      ...saved
+        .filter((t) => !t.hidden)
+        .flatMap((t) => [...endpoints(t.segments), ...(t.nodes ?? [])]),
     ],
     [draftState.segments, saved],
   );
   const overlaySaved = useMemo(
-    () => saved.filter((t) => t.id !== editingId),
+    () => saved.filter((t) => t.id !== editingId && !t.hidden),
     [saved, editingId],
   );
   useEffect(() => {
@@ -192,6 +195,34 @@ export function useManualTracks() {
     setError('');
   };
   return {
+    commitEdit: (session: RouteEditSession) => {
+      try {
+        const result = storeRouteEdit(
+          session,
+          localStorage,
+          crypto.randomUUID(),
+          Date.now(),
+        );
+        savedRef.current = result.records;
+        setSaved(result.records);
+        if (session.original.id === DRAFT_ID) resetDraft();
+        select(result.track.id);
+        setEditing(false);
+        setDrawing(false);
+        setError('');
+        return { track: result.track, error: '' };
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : '保存失败，当前编辑已保留。';
+        return { track: null, error: message };
+      }
+    },
+    showTrack: (id: string, show = true) =>
+      persist(
+        savedRef.current.map((t) =>
+          t.id === id ? { ...t, hidden: !show } : t,
+        ),
+      ),
     insertNode: (id: string, point: Coordinate, distance?: number) => {
       try {
         if (id === DRAFT_ID) {
@@ -490,9 +521,10 @@ export function useManualTracks() {
       setEditing(false);
     },
     complete: () => {
-      if (draftRef.current.segments.length) saveDraft();
+      if (draftRef.current.segments.length && !saveDraft()) return false;
       setDrawing(false);
       setEditing(false);
+      return true;
     },
     addStroke: (points: Coordinate[]) => {
       if (points.length >= 2 && withinLimit(points.length, true)) {
@@ -561,7 +593,9 @@ export function useManualTracks() {
       if (persist(saved.filter((track) => track.id !== id))) {
         setNodeHistory((history) => history.filter((t) => t.id !== id));
         if (selectedId === id) select(null);
+        return true;
       }
+      return false;
     },
     reverseTrack: (id: string) => {
       if (saved.some((t) => t.id === id && keepsOriginalPoints(t))) return;

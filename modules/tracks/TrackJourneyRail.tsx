@@ -17,7 +17,10 @@ export function TrackJourneyRail({
   activeAlternative,
   onAlternative,
 }: {
-  track: Pick<ManualTrack, 'id' | 'segments' | 'name' | 'style'>;
+  track: Pick<
+    ManualTrack,
+    'id' | 'segments' | 'name' | 'style' | 'sourceTrackIds'
+  >;
   markers: Annotation[];
   selected: TrackLinePoint | null;
   onPoint: (point: TrackLinePoint) => void;
@@ -32,7 +35,7 @@ export function TrackJourneyRail({
     normalizeTrackStyle(track.style).color,
   );
   const multiple = variants.length > 1;
-  const choices = multiple
+  const choices = variants.length
     ? variants
     : [
         {
@@ -46,8 +49,16 @@ export function TrackJourneyRail({
       ];
   const active = choices.find((v) => v.id === activeAlternative) ?? choices[0];
   const linesFor = (id: string) =>
-    multiple ? [choices.find((v) => v.id === id)!.coordinates] : track.segments;
-  const linked = markers.filter((m) => m.trackAnchor?.trackId === track.id);
+    variants.length
+      ? [choices.find((v) => v.id === id)!.coordinates]
+      : track.segments;
+  const linked = markers.filter(
+    (m) =>
+      m.trackAnchor &&
+      [track.id, ...(track.sourceTrackIds ?? [])].includes(
+        m.trackAnchor.trackId,
+      ),
+  );
   const entries = linked
     .map((marker) => ({
       marker,
@@ -93,7 +104,7 @@ export function TrackJourneyRail({
         aria-label={`行程标记 ${entries.length} 个`}
         aria-expanded={list}
       >
-        标记<small>{entries.length}</small>
+        标记 {entries.length}
       </button>
       {multiple && (
         <button
@@ -177,7 +188,7 @@ export function TrackJourneyRail({
             aria-label={`${choice.label}进度轨道`}
             title={choice.label}
             style={{
-              left: multiple ? 9 + index * 16 : 17,
+              left: multiple ? 12 + index * 12 : 19,
               background: choice.color,
             }}
           >

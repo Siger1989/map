@@ -28,6 +28,11 @@ export function validFavorite(value: unknown): value is RouteFavorite {
     place(f.start) &&
     place(f.end) &&
     !!r &&
+    (r.preferredTrackPath === undefined ||
+      (Array.isArray(r.preferredTrackPath) &&
+        r.preferredTrackPath.length >= 2 &&
+        r.preferredTrackPath.length <= 100000 &&
+        r.preferredTrackPath.every(coordinate))) &&
     (r.trackNetwork === undefined ||
       (Array.isArray(r.trackNetwork) &&
         r.trackNetwork.length <= 2000 &&

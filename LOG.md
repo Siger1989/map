@@ -261,3 +261,7 @@
 - OutdoorPanel复用TrackStyleControls，六色/自定义色/0.5–5px及预览，开始按钮移至顶部。新增useRecordingStyle持久偏好，与原生轮询分开；稳定合并到record，实时覆盖层及保存轨迹继承样式。
 - 新增保存重读样式/GPS不变回归，239/239、类型、网页构建PASS。390/360无横溢、开始按钮可见；蓝色3px刷新恢复、自定义紫色预览PASS。最终截图artifacts/screenshots/recording-style-panel-final.png。
 - Chrome截图5秒超时两次，改用应用内截图；窄屏截图缩放异常，采用DOM和交互检查，不冒充真机测试。无新APK，0.2.7未变；道路闪烁仍待复现。
+
+## 2026-09-09 浏览器回归连接中断
+最小问题：cua.getState可间歇返回IAB标签，但getTab/createBrowserTab30秒超时，随后browsers为空。9192Vite曾随会话中断停止，已用前台exec重启；后台Start-Process策略拒绝，未改系统设置。旧失败页为ERR_CONNECTION_REFUSED，不是证书问题；读取该data错误页又触发工具URL策略，未绕过策略。保留用户9191来源，改做类型/逻辑/APK资源验证，待连接可用后补最后三处UI。已查工具返回的官方API使用说明，按documented getState/getTab恢复，不尝试未授权浏览器控制技术。
+恢复结果：07:20后CUA重新可用，9192 HTTP200；已完成末尾新增手势/删除取消/天气侧卡两尺寸截图与实际拖动，不再阻塞浏览器交付。API/在线数据暂缺按缺测状态验证，真机仍未验证。

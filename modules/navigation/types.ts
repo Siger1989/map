@@ -15,6 +15,8 @@ export type RouteStep = {
 export type PlannedRoute = {
   /** Connected saved-track geometry for nearest entry and branch navigation. */
   trackNetwork?: Coordinate[][];
+  /** User-selected original/alternative itinerary, preserved at equal-distance junctions. */
+  preferredTrackPath?: Coordinate[];
   geometryKind?: 'track';
   mode: TravelMode;
   coordinates: Coordinate[];

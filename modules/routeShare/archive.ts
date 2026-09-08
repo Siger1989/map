@@ -35,14 +35,21 @@ export function routeArchiveEntries(
     { path: '路线图-含二维码.jpg', data: image },
     { path: '完整路线.gpx', data: routeFileText(data, 'gpx') },
     { path: '完整路线.kml', data: routeFileText(data, 'kml') },
-    ...(data.markers?.length ? [{ path: '行程标记.xlsx', data: spreadsheetBytes([annotationSheet(data.markers)]) }] : []),
+    ...(data.markers?.length
+      ? [
+          {
+            path: '行程标记.xlsx',
+            data: spreadsheetBytes([annotationSheet(data.markers)]),
+          },
+        ]
+      : []),
     {
       path: '山兔路线.json',
       data: JSON.stringify(
         {
           format: 'guanyun-backup',
           version: 1,
-          tracks: [track],
+          tracks: [track, ...(data.sourceTracks ?? [])],
           favorites: [],
           annotations: data.markers ?? [],
         },

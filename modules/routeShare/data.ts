@@ -16,6 +16,7 @@ export type ShareRoute = {
   mode: TravelMode;
   stops: RoutePlace[];
   track?: ManualTrack;
+  sourceTracks?: ManualTrack[];
   markers?: Annotation[];
   estimated: boolean;
   approach?: boolean;
@@ -42,6 +43,7 @@ export function sharePlanned(
 export function shareTrack(
   track: ManualTrack,
   annotations: Annotation[] = [],
+  tracks: ManualTrack[] = [],
 ): ShareRoute {
   const points = track.segments.flat();
   if (points.length < 2) throw new Error('至少两个轨迹点才能分享路线');
@@ -56,7 +58,14 @@ export function shareTrack(
       { name: '终点', coordinates: points.at(-1)! },
     ],
     track,
-    markers: annotations.filter((a) => a.trackAnchor?.trackId === track.id),
+    sourceTracks: tracks.filter((t) => track.sourceTrackIds?.includes(t.id)),
+    markers: annotations.filter(
+      (a) =>
+        a.trackAnchor &&
+        [track.id, ...(track.sourceTrackIds ?? [])].includes(
+          a.trackAnchor.trackId,
+        ),
+    ),
     estimated: true,
   };
 }

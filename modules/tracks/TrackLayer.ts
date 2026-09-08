@@ -22,6 +22,8 @@ export type TrackOverlay = {
   selectedId?: string | null;
   drawing?: boolean;
   connecting?: boolean;
+  editing?: boolean;
+  movableTrackId?: string | null;
   alternativeId?: string;
   activeNode?: TrackNode | null;
   linePoint?: TrackLinePoint | null;
@@ -47,8 +49,8 @@ export class TrackLayer {
     const hits = this.map
       .queryRenderedFeatures(
         [
-          [point.x - 14, point.y - 14],
-          [point.x + 14, point.y + 14],
+          [point.x - 22, point.y - 22],
+          [point.x + 22, point.y + 22],
         ],
         { layers: ['manual-track-node'] },
       )
@@ -62,7 +64,7 @@ export class TrackLayer {
           distance: Math.hypot(screen.x - point.x, screen.y - point.y),
         };
       })
-      .filter((hit) => hit.distance <= 14)
+      .filter((hit) => hit.distance <= 22)
       .sort((a, b) => a.distance - b.distance);
     return hits[0] ?? null;
   }
@@ -229,6 +231,11 @@ export class TrackLayer {
           nodes: state.nodes,
         },
       ]) {
+        if (
+          state.editing === false ||
+          (state.editing && track.id !== state.selectedId && !state.connecting)
+        )
+          continue;
         const color = normalizeTrackStyle(track.style).color;
         const branchColors = new Map(
           trackAlternatives(track.segments, color)

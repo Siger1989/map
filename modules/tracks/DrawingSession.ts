@@ -250,12 +250,14 @@ export class DrawingSession {
       ? o.snapRoad?.(aim, null, from ?? undefined)
       : undefined;
     const blocked = !!(
+      !snap &&
       o.roadSnapping &&
       ((from && !road?.match) ||
         (o.strictNetwork && (!road?.match || (from && !road.section?.length))))
     );
     this.crossing = !!(
       !blocked &&
+      !snap &&
       o.roadSnapping &&
       from &&
       road?.match &&
@@ -263,9 +265,9 @@ export class DrawingSession {
     );
     this.aim = blocked
       ? null
-      : (road?.match?.coordinate ?? snap?.coordinate ?? ground);
+      : (snap?.coordinate ?? road?.match?.coordinate ?? ground);
     this.aimSection =
-      !blocked && from
+      !blocked && !snap && from
         ? road?.section?.length
           ? road.section
           : this.crossing

@@ -140,7 +140,9 @@ type Props = {
   riverSnapping: boolean;
   pickingActive: boolean;
   onTrackSelect: (id: string) => void;
-  onTrackLineSelect: (point: import('../tracks/linePoint').TrackLinePoint) => void;
+  onTrackLineSelect: (
+    point: import('../tracks/linePoint').TrackLinePoint,
+  ) => void;
   onTrackNodeSelect: (node: import('../tracks/editing').TrackNode) => void;
   onDragBegin: (target: DragTarget) => void;
   onDragPreview: (move: FeatureMove | null) => void;
@@ -607,6 +609,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               !latest.current.pickingActive &&
               !latest.current.sectionEditing,
             hit: (point, element) => {
+              if (
+                latest.current.trackOverlay.editing &&
+                !latest.current.drawingActive
+              ) {
+                const node = trackRef.current?.pickNode(point);
+                return node &&
+                  latest.current.trackOverlay.movableTrackId === node.trackId
+                  ? { kind: 'track', node }
+                  : null;
+              }
               const marker =
                 element instanceof Element
                   ? element.closest<HTMLElement>('[data-annotation-id]')
@@ -627,7 +639,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               const areaNode = areaRef.current?.pickNode(point);
               if (areaNode) return areaNode;
               const node = trackRef.current?.pickNode(point);
-              return node ? { kind: 'track', node } : null;
+              const movable = latest.current.trackOverlay.movableTrackId;
+              return node && (movable === undefined || movable === node.trackId)
+                ? { kind: 'track', node }
+                : null;
             },
             begin: (target) => latest.current.onDragBegin(target),
             direct: (target) =>
@@ -839,6 +854,23 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               }
             }
             if (!latest.current.pickingActive) {
+              if (
+                latest.current.trackOverlay.editing &&
+                !latest.current.drawingActive
+              ) {
+                const node = trackRef.current?.pickNode(event.point);
+                if (node) latest.current.onTrackNodeSelect(node);
+                else {
+                  const point = trackRef.current?.pickLine(event.point);
+                  if (point) latest.current.onTrackLineSelect(point);
+                  else
+                    latest.current.onMapPick([
+                      event.lngLat.lng,
+                      event.lngLat.lat,
+                    ]);
+                }
+                return;
+              }
               const annotation = annotationRef.current?.pick(event.point);
               if (annotation) {
                 latest.current.onAnnotationSelect(annotation);

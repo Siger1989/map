@@ -112,9 +112,10 @@ function toward(graph: Graph, goal: string, blocked?: [string, string]) {
 
 /** Capture only the seed's connected component, excluding unrelated or detached branches. */
 export function connectedNetwork(seed: ManualTrack, tracks: ManualTrack[]) {
-  const all = [seed, ...tracks.filter((t) => t.id !== seed.id)].flatMap(
-    (t) => t.segments,
-  );
+  const all = [
+    seed,
+    ...tracks.filter((t) => t.id !== seed.id && !t.hidden),
+  ].flatMap((t) => t.segments);
   const graph = graphOf(all),
     root = vertexKey(seed.segments[0][0]);
   const reachable = toward(graph, root).costs;
@@ -208,8 +209,24 @@ export function routeOnNetwork(
 ) {
   if (!route.trackNetwork)
     return { route, offset: project(pathOf(route.coordinates), from).offset };
-  const hit = networkPath(route.trackNetwork, from, destination, headingFrom),
-    distance = pathOf(hit.coordinates).length;
+  const hit = networkPath(route.trackNetwork, from, destination, headingFrom);
+  if (route.preferredTrackPath?.length && !headingFrom) {
+    const preferred = pathOf(route.preferredTrackPath),
+      selected = project(preferred, from);
+    // Nearest entry wins; when the chosen itinerary is equally near, do not shortcut its detour.
+    if (
+      selected.offset <= hit.offset + 0.05 &&
+      vertexKey(preferred.points.at(-1)!) === vertexKey(destination)
+    ) {
+      const rest = preferred.points.filter(
+        (_, i) => preferred.cumulative[i] > selected.distance + 0.001,
+      );
+      hit.coordinates = [selected.point, ...rest];
+      if (hit.coordinates.length < 2) hit.coordinates.push(destination);
+      hit.offset = selected.offset;
+    }
+  }
+  const distance = pathOf(hit.coordinates).length;
   return {
     offset: hit.offset,
     route: {

@@ -177,3 +177,43 @@
     --rail-height: clamp(80px, calc(100dvh - 256px), 230px);
   }
 }
+
+/* Keep scrub information beside the rail instead of over the route centre. */
+.observatory .rail-detail-compact {
+  left: 48px;
+  top: 0;
+  width: min(164px, calc(100vw - 130px));
+  padding: 4px 8px 8px;
+  gap: 3px;
+  font-size: 11px;
+  line-height: 1.35;
+  max-height: min(30dvh, 230px);
+}
+.rail-detail-compact header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  gap: 2px;
+}
+.rail-detail-compact .rail-close {
+  position: static;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.rail-detail-compact .rail-weather-summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.rail-detail-compact .rail-weather-summary b {
+  flex: 1;
+  font-weight: 500;
+}
+.rail-detail-compact .rail-retry {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 4px;
+}

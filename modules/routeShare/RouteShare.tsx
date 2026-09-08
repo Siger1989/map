@@ -10,6 +10,7 @@ import { archiveBlob } from '../files/archive';
 import { deliverFile } from '../files/delivery';
 import type { TripPhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos';
+import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
 export function RouteShare({
   data,
   onClose,
@@ -19,6 +20,7 @@ export function RouteShare({
   onClose: () => void;
   photos: TripPhoto[];
 }) {
+  const dialog = useRouteDialogFocus(onClose);
   const [image, setImage] = useState<File | null>(null),
     [preview, setPreview] = useState(''),
     [busy, setBusy] = useState(false),
@@ -107,6 +109,7 @@ export function RouteShare({
   return (
     <div className="route-dialog-backdrop">
       <section
+        ref={dialog}
         className="route-dialog route-share glass"
         role="dialog"
         aria-modal="true"
@@ -120,7 +123,7 @@ export function RouteShare({
               onClose();
             }}
           >
-            关闭
+            ← 返回
           </button>
         </header>
         <p>
@@ -128,7 +131,10 @@ export function RouteShare({
           {data.approach ? ' · 含到起点路线' : ''}
         </p>
         <div className="route-share-bundle">
-          <strong>整条路线打包 · {photoCount} 张照片 · {data.markers?.length ?? 0} 个标记</strong>
+          <strong>
+            整条路线打包 · {photoCount} 张照片 · {data.markers?.length ?? 0}{' '}
+            个标记
+          </strong>
           <small>二维码路线图＋照片副本＋GPX/KML＋路线及标记数据</small>
           <div className="route-share-actions">
             <button disabled={busy} onClick={() => void bundle(false)}>

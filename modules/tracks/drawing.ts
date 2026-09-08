@@ -11,6 +11,8 @@ export type ManualTrack = {
   segments: Coordinate[][];
   createdAt: number;
   updatedAt?: number;
+  hidden?: boolean;
+  sourceTrackIds?: string[];
   drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
@@ -100,10 +102,27 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         drawingLocation,
         navigationMode,
         sharedRoute,
+        hidden,
+        sourceTrackIds,
         ...rest
       } = track;
       return {
         ...rest,
+        ...(hidden === true ? { hidden: true } : {}),
+        ...(Array.isArray(sourceTrackIds)
+          ? {
+              sourceTrackIds: [
+                ...new Set(
+                  sourceTrackIds.filter(
+                    (id: unknown): id is string =>
+                      typeof id === 'string' &&
+                      id !== track.id &&
+                      id.length <= 200,
+                  ),
+                ),
+              ].slice(0, 100),
+            }
+          : {}),
         ...(sharedRoute &&
         Array.isArray(sharedRoute.stops) &&
         sharedRoute.stops.length >= 2 &&

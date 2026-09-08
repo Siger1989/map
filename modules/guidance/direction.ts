@@ -2,6 +2,7 @@ import type { RouteFavorite } from '../navigation/favorites';
 import type { RoutePlace, TravelMode } from '../navigation/types';
 import { pathOf } from './geometry.ts';
 import { networkPath, vertexKey } from './network.ts';
+import { preferredPath } from './preferredPath.ts';
 
 /** Reorient a track copy. Road directions must instead be replanned by their provider. */
 export function orientTrack(
@@ -24,12 +25,22 @@ export function orientTrack(
     ? reverseLoop
       ? original.coordinates.slice().reverse()
       : original.coordinates.slice()
-    : original.trackNetwork
-      ? networkPath(original.trackNetwork, start.coordinates, end.coordinates)
-          .coordinates
-      : reverse
-        ? original.coordinates.slice().reverse()
-        : original.coordinates.slice();
+    : original.preferredTrackPath && original.trackNetwork
+      ? preferredPath(
+          original.trackNetwork,
+          original.preferredTrackPath,
+          start.coordinates,
+          end.coordinates,
+          reverseLoop,
+        )
+      : original.trackNetwork
+        ? networkPath(original.trackNetwork, start.coordinates, end.coordinates)
+            .coordinates
+        : reverse
+          ? original.coordinates.slice().reverse()
+          : original.coordinates.slice();
+  if (coordinates.length < 2)
+    throw new Error('起终点之间不足20米，请选择不同节点。');
   const distance = pathOf(coordinates).length;
   if (distance < 20) throw new Error('起终点之间不足20米，请选择不同节点。');
   return {
@@ -40,6 +51,9 @@ export function orientTrack(
       ...original,
       mode,
       coordinates,
+      ...(original.preferredTrackPath
+        ? { preferredTrackPath: coordinates }
+        : {}),
       distance,
       duration:
         distance /

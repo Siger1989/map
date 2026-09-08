@@ -19,6 +19,7 @@ export function TrackPanel({
   tracks: t,
   onDraw,
   onShow,
+  onOpen,
   onEditNodes,
   onNavigate,
   onShare,
@@ -30,6 +31,7 @@ export function TrackPanel({
   tracks: ManualTracksState;
   onDraw: (endpoint?: Coordinate) => void;
   onShow: (points: Coordinate[]) => void;
+  onOpen?: (id: string) => void;
   onEditNodes: (id: string) => void;
   onNavigate: (id: string) => void;
   onShare: (id: string) => void;
@@ -303,7 +305,8 @@ export function TrackPanel({
               onClick={() => {
                 t.setVisible(true);
                 t.select(track.id);
-                onShow(track.segments.flat());
+                if (onOpen) onOpen(track.id);
+                else onShow(track.segments.flat());
               }}
             >
               <strong>{track.name}</strong>
@@ -314,6 +317,12 @@ export function TrackPanel({
               <small>
                 {drawingTime(track.createdAt)} · {drawingArea(track)}
               </small>
+            </button>
+            <button
+              onClick={() => t.showTrack(track.id, !!track.hidden)}
+              aria-label={`${track.hidden ? '显示' : '隐藏'}路线 ${track.name}`}
+            >
+              {track.hidden ? '显示' : '隐藏'}
             </button>
             <button
               className="track-delete"

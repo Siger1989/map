@@ -48,10 +48,32 @@ import { catalogEntries } from '@/modules/collections/catalog';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
 import { CenterCursor } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
-import { TrackPointTools } from '@/modules/tracks/TrackPointTools';
-import { TrackNodeTools } from '@/modules/tracks/TrackNodeTools';
+import {
+  RouteCard,
+  RouteDetails,
+  RouteEditToolbar,
+  RouteMarkerTypes,
+  RouteUnsavedDialog,
+} from '@/modules/tracks/RouteViews';
+import { useRouteEditor } from '@/modules/tracks/useRouteEditor';
+import {
+  appendEditBranch,
+  selectEditNode,
+  moveEditNode,
+  insertEditNode,
+  removeEditNode,
+  toggleEditBranch,
+  undoRouteEdit,
+  styleRouteEdit,
+} from '@/modules/tracks/routeEdit';
+import { trackAlternatives } from '@/modules/tracks/alternatives';
+import { equalCoordinate } from '@/modules/tracks/editing';
+import { readElevation } from '@/modules/terrain/elevation';
+import type { ManualTrack } from '@/modules/tracks/drawing';
+
 import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
+import { markerChainage } from '@/modules/tracks/linePoint';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -64,7 +86,9 @@ import {
   formatDistance,
   formatDuration,
   TRAVEL_MODES,
+  type Coordinate,
 } from '@/modules/navigation/types';
+import { normalizeTrackStyle } from '@/modules/tracks/style';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
 import { keepsOriginalPoints } from '@/modules/tracks/provenance';
 import { DRAFT_ID } from '@/modules/tracks/editing';
@@ -184,7 +208,7 @@ export default function Home() {
     const track = tracks.saved.find((t) => t.id === id);
     if (track) {
       try {
-        setShareTarget(shareTrack(track, annotations.items));
+        setShareTarget(shareTrack(track, annotations.items, tracks.saved));
       } catch (e) {
         setSavedNavigationError(
           e instanceof Error ? e.message : '无法分享轨迹',
@@ -214,6 +238,14 @@ export default function Home() {
         .map((s) => s.map((p) => p.coordinates)),
     [recorder.record],
   );
+  const editor = useRouteEditor();
+  const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker'>(
+    'card',
+  );
+  const [unsavedExit, setUnsavedExit] = useState(false);
+  const [routeChild, setRouteChild] = useState(false);
+  const [routeAltitude, setRouteAltitude] = useState<number | null>(null);
+  const routeReturnPoint = useRef<TrackLinePoint | null>(null);
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
   const [activeTrackNode, setActiveTrackNode] = useState<
     import('@/modules/tracks/editing').TrackNode | null
@@ -415,12 +447,14 @@ export default function Home() {
     try {
       const track = tracks.saved.find((item) => item.id === id);
       if (!track) throw new Error('轨迹已不存在，请重新选择。');
+      if (tracks.selectedId !== id) openRoute(id);
       navigateFavorite(
         trackNavigation(
           track,
           Date.now(),
           track.navigationMode ?? 'pedestrian',
           tracks.saved,
+          activeAlternative,
         ),
       );
     } catch (error) {
@@ -552,9 +586,23 @@ export default function Home() {
   const railTrack =
     selectedTrack ??
     (selectedDraft
-      ? { id: DRAFT_ID, name: '路线草稿', segments: tracks.draft }
+      ? {
+          id: DRAFT_ID,
+          name: tracks.draftName || '路线草稿',
+          createdAt: 0,
+          segments: tracks.draft,
+          style: tracks.style,
+          nodes: tracks.vertices,
+        }
       : null);
   const [activeAlternative, setActiveAlternative] = useState('main');
+  const selectedAlternatives = useMemo(
+    () =>
+      selectedTrack
+        ? trackAlternatives(selectedTrack.segments, selectedTrack.style?.color)
+        : [],
+    [selectedTrack?.segments, selectedTrack?.style?.color],
+  );
   useEffect(
     () => setActiveAlternative('main'),
     [tracks.selectedId, selectedTrack?.segments, tracks.draft],
@@ -572,17 +620,18 @@ export default function Home() {
       point?.trackId === tracks.selectedId ? point : null,
     );
   }, [tracks.selectedId]);
-  useEffect(() => {
-    setTrackLinePoint(null);
-  }, [
-    tracks.draft,
-    tracks.saved,
-    tracks.drawing,
-    areas.drawing,
-    annotations.picking,
-    sectionEditing,
-  ]);
   const selectLinePoint = (point: TrackLinePoint) => {
+    if (editor.session) {
+      if (editor.session.branch !== null)
+        editor.change((value) => appendEditBranch(value, point.coordinate));
+      else if (point.trackId === editor.session.track.id) {
+        setTrackLinePoint(point);
+        editor.change((value) => ({ ...value, selected: null }));
+      }
+      return;
+    }
+    setRouteWindow('card');
+    setRouteChild(false);
     position.free();
     follow.pause();
     tracks.select(point.trackId);
@@ -594,6 +643,109 @@ export default function Home() {
     setPanel(null);
     setTrackLinePoint(point);
   };
+  const openRoute = (id: string) => {
+    setSavedNavigationError('');
+    const track = tracks.saved.find((t) => t.id === id);
+    if (!track) return;
+    if (track.hidden) tracks.showTrack(id);
+    tracks.finish();
+    tracks.setVisible(true);
+    selectLinePoint({
+      trackId: id,
+      coordinate: track.segments[0][0],
+      distance: 0,
+    });
+  };
+  const closeEditor = () => {
+    editor.close();
+    setUnsavedExit(false);
+    setRouteWindow('card');
+    setActiveTrackNode(null);
+    setTrackLinePoint(routeReturnPoint.current);
+  };
+  const saveEditor = () => {
+    if (!editor.session) return;
+    const result = tracks.commitEdit(editor.session);
+    if (!result.track) {
+      editor.setError(result.error);
+      setUnsavedExit(false);
+      return;
+    }
+    const previous =
+      routeReturnPoint.current?.coordinate ?? result.track.segments[0][0];
+    closeEditor();
+    setTrackLinePoint({
+      trackId: result.track.id,
+      coordinate: previous,
+      distance: 0,
+    });
+  };
+  const backEditor = () =>
+    editor.session?.history.length ? setUnsavedExit(true) : closeEditor();
+  const beginRouteEdit = (track: ManualTrack) => {
+    setSavedNavigationError('');
+    routeReturnPoint.current = trackLinePoint;
+    tracks.select(track.id);
+    tracks.finish();
+    setPanel(null);
+    setRouteWindow('card');
+    setRouteChild(false);
+    annotations.select(null);
+    editor.start(track);
+  };
+  const addEditPoint = () => {
+    const current = editor.session;
+    if (!current) return;
+    if (current.selected) {
+      const segment = current.track.segments.find((l) =>
+        l.some((p) => equalCoordinate(p, current.selected!)),
+      );
+      const index =
+        segment?.findIndex((p) => equalCoordinate(p, current.selected!)) ?? -1;
+      const other = segment?.[index + 1] ?? segment?.[index - 1];
+      if (other)
+        editor.change((v) =>
+          insertEditNode(v, [
+            (current.selected![0] + other[0]) / 2,
+            (current.selected![1] + other[1]) / 2,
+          ]),
+        );
+    } else if (trackLinePoint?.trackId === current.track.id)
+      editor.change((v) =>
+        insertEditNode(
+          v,
+          trackLinePoint.coordinate,
+          trackLinePoint.sourceDistance ?? trackLinePoint.distance,
+        ),
+      );
+    else editor.setError('请先点选需要添加节点的线段。');
+  };
+  useEffect(() => {
+    setRouteAltitude(null);
+    if (!linePoint) return;
+    const request = new AbortController(),
+      timer = setTimeout(() => request.abort(), 15000);
+    void readElevation(
+      linePoint.coordinate[0],
+      linePoint.coordinate[1],
+      request.signal,
+    )
+      .then((value) => {
+        if (!request.signal.aborted) setRouteAltitude(value);
+      })
+      .catch(() => {})
+      .finally(() => clearTimeout(timer));
+    return () => {
+      clearTimeout(timer);
+      request.abort();
+    };
+  }, [linePoint?.coordinate[0], linePoint?.coordinate[1]]);
+  const routeVisible =
+    !!railTrack &&
+    !tracks.drawing &&
+    !guidance.active &&
+    !areas.drawing &&
+    !sectionEditing;
   const selectionName = selectedAnnotation
     ? selectedAnnotation.name || '未命名标记'
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
@@ -624,7 +776,13 @@ export default function Home() {
     () => ({
       saved: recordedSegments.length
         ? [
-            ...tracks.overlaySaved,
+            ...tracks.overlaySaved.filter(
+              (t) =>
+                !editor.session?.sources.some((source) => source.id === t.id),
+            ),
+            ...(editor.session && editor.session.track.id !== DRAFT_ID
+              ? [editor.session.track]
+              : []),
             {
               id: 'live-recording',
               name: '实走记录',
@@ -633,15 +791,39 @@ export default function Home() {
               segments: recordedSegments,
             },
           ]
-        : tracks.overlaySaved,
-      draft: tracks.draft,
+        : editor.session
+          ? [
+              ...tracks.overlaySaved.filter(
+                (t) =>
+                  !editor.session!.sources.some((source) => source.id === t.id),
+              ),
+              ...(editor.session.track.id !== DRAFT_ID
+                ? [editor.session.track]
+                : []),
+            ]
+          : tracks.overlaySaved,
+      draft: editor.session
+        ? editor.session.original.id === DRAFT_ID
+          ? editor.session.track.segments
+          : []
+        : tracks.draft,
       visible: tracks.visible || recorder.record.phase !== 'idle',
-      style: tracks.style,
-      nodes: tracks.vertices,
+      style: editor.session?.track.style ?? tracks.style,
+      nodes: editor.session?.track.nodes ?? tracks.vertices,
       drawing: tracks.drawing,
       selectedId: tracks.selectedId,
-      activeNode: activeTrackNode,
-      connecting: !!connectingNode,
+      activeNode: editor.session?.selected
+        ? {
+            trackId: editor.session.track.id,
+            coordinate: editor.session.selected,
+          }
+        : null,
+      editing: !!editor.session || tracks.drawing,
+      movableTrackId:
+        editor.session && editor.session.branch === null
+          ? editor.session.track.id
+          : null,
+      connecting: editor.session?.branch != null,
       alternativeId: activeAlternative,
       linePoint: panel === null ? linePoint : null,
       preview:
@@ -654,6 +836,7 @@ export default function Home() {
     }),
     [
       recordedSegments,
+      editor.session,
       activeTrackNode,
       connectingNode,
       activeAlternative,
@@ -707,6 +890,39 @@ export default function Home() {
     update({ terrain: true });
     map.current?.reset();
   };
+  const branchEditing = !!editor.session && editor.session.branch !== null;
+  const branchTip = branchEditing
+    ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
+    : null;
+  const branchCandidates = branchEditing
+    ? [
+        ...editor.session!.track.segments.flat(),
+        ...tracks.saved
+          .filter(
+            (t) =>
+              !t.hidden && !editor.session!.sources.some((s) => s.id === t.id),
+          )
+          .flatMap((t) => t.segments.flat()),
+      ]
+    : [];
+  const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
+    editor.change((value) =>
+      appendEditBranch(
+        value,
+        point,
+        tracks.saved.find(
+          (t) =>
+            !t.hidden &&
+            t.id !== value.track.id &&
+            !value.sources.some((s) => s.id === t.id) &&
+            t.segments.some((line) =>
+              line.some((p) => equalCoordinate(p, point)),
+            ),
+        ),
+        section,
+      ),
+    );
+  };
   return (
     <main
       className="observatory"
@@ -716,12 +932,25 @@ export default function Home() {
         navigation.picking !== null || navigation.route,
       )}
       data-drawing={tracks.drawing && panel === null}
-      data-editing-track={tracks.editing}
+      data-route-window={routeVisible || !!editor.session || !!navigationTarget}
+      data-route-edit={!!editor.session}
+      data-editing-track={tracks.editing || !!editor.session}
       data-picking-route={navigation.picking !== null}
       data-route-rail={Boolean(navigation.route)}
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (editor.session) {
+          event.preventDefault();
+          backEditor();
+          return;
+        }
+        if (routeVisible && panel === null) {
+          event.preventDefault();
+          if (routeWindow !== 'card') setRouteWindow('card');
+          else tracks.select(null);
+          return;
+        }
         if (
           routeQr !== null ||
           shareTarget ||
@@ -818,6 +1047,7 @@ export default function Home() {
         areaOverlay={areaOverlay}
         onModelTerrainStatus={setModelTerrainStatus}
         onAreaSelect={(id) => {
+          if (editor.session) return;
           areas.select(id);
           annotations.select(null);
           tracks.select(null);
@@ -826,7 +1056,9 @@ export default function Home() {
           setAreaEditing(true);
           setPanel(null);
         }}
-        drawingActive={(tracks.drawing || areas.drawing) && panel === null}
+        drawingActive={
+          (branchEditing || tracks.drawing || areas.drawing) && panel === null
+        }
         onDrawingInput={(event) =>
           areas.drawing
             ? areaDrawing.current?.input(event)
@@ -834,6 +1066,7 @@ export default function Home() {
         }
         photos={photoOverlay}
         onPhotoSelect={(ids) => {
+          if (editor.session) return;
           follow.pause();
           map.current?.stop();
           setPanel(null);
@@ -851,36 +1084,31 @@ export default function Home() {
           annotations.picking || navigation.picking !== null,
         )}
         onTrackSelect={(id) => {
-          setTrackLinePoint(null);
-          setActiveTrackNode(null);
-          tracks.select(id);
-          annotations.select(null);
-          tracks.finish();
-          setPanel('track');
+          if (!editor.session) openRoute(id);
         }}
         onTrackLineSelect={selectLinePoint}
         onTrackNodeSelect={(node) => {
-          setTrackLinePoint(null);
           if (node.trackId === 'live-recording') return;
-          const savedTrack = tracks.saved.find((t) => t.id === node.trackId);
-          if (savedTrack && keepsOriginalPoints(savedTrack)) {
-            tracks.select(node.trackId);
-            setPanel('track');
+          if (editor.session) {
+            if (editor.session.branch !== null)
+              editor.change((value) =>
+                appendEditBranch(
+                  value,
+                  node.coordinate,
+                  node.trackId === value.track.id
+                    ? undefined
+                    : tracks.saved.find((t) => t.id === node.trackId),
+                ),
+              );
+            else if (node.trackId === editor.session.track.id)
+              editor.change((value) => selectEditNode(value, node.coordinate));
             return;
           }
-          if (connectingNode) {
-            if (tracks.connectNodes(connectingNode, node)) {
-              setConnectingNode(null);
-              setActiveTrackNode(null);
-            }
-            return;
-          }
-          setActiveTrackNode(node);
-          tracks.select(node.trackId);
-          annotations.select(null);
-          areas.select(null);
-          tracks.finish();
-          setPanel(null);
+          selectLinePoint({
+            trackId: node.trackId,
+            coordinate: node.coordinate,
+            distance: 0,
+          });
         }}
         onDragBegin={(target) => {
           position.free();
@@ -901,7 +1129,12 @@ export default function Home() {
         }}
         onDragPreview={setFeatureMove}
         onDragCommit={({ target, coordinate }) => {
-          if (target.kind === 'track') {
+          if (target.kind === 'track' && editor.session) {
+            editor.change((value) =>
+              moveEditNode(value, target.node.coordinate, coordinate),
+            );
+            setFeatureMove(null);
+          } else if (target.kind === 'track') {
             if (tracks.moveNode(target.node, coordinate))
               setActiveTrackNode({ ...target.node, coordinate });
           } else if (target.kind === 'area')
@@ -909,6 +1142,7 @@ export default function Home() {
           else annotations.move(target.id, coordinate);
         }}
         onAnnotationSelect={(id) => {
+          if (editor.session) return;
           setTrackLinePoint(null);
           setActiveTrackNode(null);
           areas.select(null);
@@ -923,6 +1157,7 @@ export default function Home() {
           setPanel('annotations');
         }}
         onMapHold={(value) => {
+          if (editor.session) return;
           follow.pause();
           position.free();
           tracks.select(null);
@@ -931,6 +1166,11 @@ export default function Home() {
           setQuickAdd(value);
         }}
         onMapPick={(coordinates) => {
+          if (editor.session) {
+            if (editor.session.branch !== null)
+              editor.change((value) => appendEditBranch(value, coordinates));
+            return;
+          }
           if (annotations.picking) {
             const kind = annotations.picking;
             if (annotations.place(coordinates))
@@ -947,52 +1187,136 @@ export default function Home() {
           }
         }}
       />
-      {linePoint && panel === null && !guidance.active && (
-        <TrackPointTools
-          point={linePoint}
-          draft={linePoint.trackId === DRAFT_ID}
-          onInsert={
-            selectedTrack && !keepsOriginalPoints(selectedTrack)
-              ? () => {
-                  if (
-                    tracks.insertNode(
-                      linePoint.trackId,
-                      linePoint.coordinate,
-                      linePoint.sourceDistance ?? linePoint.distance,
-                    )
-                  ) {
-                    setActiveTrackNode({
-                      trackId: linePoint.trackId,
-                      coordinate: linePoint.coordinate,
-                    });
-                    setTrackLinePoint(null);
+      {routeVisible &&
+        railTrack &&
+        panel === null &&
+        !editor.session &&
+        !routeChild &&
+        !selectedPhoto &&
+        !navigationTarget &&
+        !shareTarget && (
+          <>
+            {routeWindow === 'card' && (
+              <RouteCard
+                track={railTrack}
+                point={linePoint}
+                altitude={routeAltitude}
+                alternative={activeAlternative}
+                error={savedNavigationError || tracks.error}
+                onBack={() => {
+                  tracks.select(null);
+                  setTrackLinePoint(null);
+                }}
+                onNavigate={() => {
+                  if (railTrack.id !== DRAFT_ID) {
+                    navigateTrack(railTrack.id);
+                    return;
                   }
-                }
-              : undefined
+                  const id = tracks.saveForMarker();
+                  if (!id) return;
+                  try {
+                    setNavigationTarget(
+                      trackNavigation(
+                        { ...railTrack, id },
+                        Date.now(),
+                        'pedestrian',
+                        tracks.saved,
+                        activeAlternative,
+                      ),
+                    );
+                  } catch (e) {
+                    setSavedNavigationError(
+                      e instanceof Error ? e.message : '无法导航',
+                    );
+                  }
+                }}
+                onMarker={() => setRouteWindow('marker')}
+                onEdit={() => beginRouteEdit(railTrack)}
+                onDetails={() => setRouteWindow('details')}
+              />
+            )}
+            {routeWindow === 'details' && (
+              <RouteDetails
+                track={railTrack}
+                alternative={activeAlternative}
+                markers={annotations.items}
+                photos={photos.items}
+                onBack={() => setRouteWindow('card')}
+                onShare={() => shareTrackById(railTrack.id)}
+                deleteError={tracks.error}
+                onDelete={() => {
+                  if (!tracks.remove(railTrack.id)) return false;
+                  setTrackLinePoint(null);
+                  setRouteWindow('card');
+                  return true;
+                }}
+                onMarker={(id) => {
+                  annotations.select(id);
+                  setRouteChild(true);
+                  setPanel('annotations');
+                }}
+                onPhoto={(id) => {
+                  photos.setSelected(id);
+                  setPhotoGroup([id]);
+                }}
+              />
+            )}
+            {routeWindow === 'marker' && (
+              <RouteMarkerTypes
+                error={annotations.error || tracks.error}
+                onBack={() => setRouteWindow('card')}
+                onAdd={(kind) => {
+                  if (!linePoint) return;
+                  const id =
+                    railTrack.id === DRAFT_ID
+                      ? tracks.saveForMarker()
+                      : railTrack.id;
+                  if (!id) return;
+                  if (
+                    annotations.add(kind, linePoint.coordinate, {
+                      trackId: id,
+                      distance: markerChainage(
+                        railTrack.segments,
+                        linePoint.coordinate,
+                      ).distance,
+                    })
+                  ) {
+                    setRouteWindow('card');
+                    setRouteChild(true);
+                    setPanel('annotations');
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+      {editor.session && (
+        <RouteEditToolbar
+          session={editor.session}
+          snapping={tracks.snapping}
+          roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+          onSnapping={() => tracks.setSnapping(!tracks.snapping)}
+          onRoadSnapping={() => {
+            if (tracks.riverSnapping) tracks.setRiverSnapping(false);
+            else tracks.setRoadSnapping(!tracks.roadSnapping);
+          }}
+          error={editor.error}
+          onBack={backEditor}
+          onSave={saveEditor}
+          onAdd={addEditPoint}
+          onRemove={() => editor.change(removeEditNode)}
+          onBranch={() => editor.change(toggleEditBranch)}
+          onUndo={() => editor.change(undoRouteEdit)}
+          onStyle={(style) =>
+            editor.change((value) => styleRouteEdit(value, style))
           }
-          error={annotations.error || tracks.error}
-          onClose={() => setTrackLinePoint(null)}
-          onDetails={() => {
-            setTrackLinePoint(null);
-            setPanel('track');
-          }}
-          onAdd={() => {
-            const id =
-              linePoint.trackId === DRAFT_ID
-                ? tracks.saveForMarker()
-                : linePoint.trackId;
-            if (!id) return;
-            if (
-              annotations.add('pin', linePoint.coordinate, {
-                trackId: id,
-                distance: linePoint.sourceDistance ?? linePoint.distance,
-              })
-            ) {
-              tracks.select(id);
-              setTrackLinePoint(null);
-              setPanel('annotations');
-            }
-          }}
+        />
+      )}
+      {editor.session && unsavedExit && (
+        <RouteUnsavedDialog
+          onSave={saveEditor}
+          onDiscard={closeEditor}
+          onContinue={() => setUnsavedExit(false)}
         />
       )}
       <FreeMapCredit id={mapSources.selected} />
@@ -1040,12 +1364,18 @@ export default function Home() {
         )}
       <TrackDrawing
         ref={drawing}
-        enabled={tracks.drawing && !areas.drawing && panel === null}
+        enabled={
+          (branchEditing || tracks.drawing) && !areas.drawing && panel === null
+        }
         length={tracks.rodLength}
-        style={tracks.style}
-        mode={tracks.mode}
-        anchor={tracks.anchor}
-        candidates={tracks.candidates}
+        style={
+          branchEditing
+            ? normalizeTrackStyle(editor.session!.track.style)
+            : tracks.style
+        }
+        mode={branchEditing ? 'points' : tracks.mode}
+        anchor={branchEditing ? branchTip : tracks.anchor}
+        candidates={branchEditing ? branchCandidates : tracks.candidates}
         snapping={tracks.snapping}
         roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
         riverSnapping={tracks.riverSnapping}
@@ -1057,13 +1387,15 @@ export default function Home() {
             match: null,
           }
         }
-        lastVertex={tracks.draft.at(-1)?.at(-1) ?? null}
+        lastVertex={
+          branchEditing ? branchTip : (tracks.draft.at(-1)?.at(-1) ?? null)
+        }
         toScreen={(point) => map.current?.toScreen(point) ?? null}
         magnify={(canvas, point) =>
           map.current?.magnify(canvas, point) ?? (() => {})
         }
-        onAnchor={tracks.setAnchor}
-        onVertex={tracks.addVertex}
+        onAnchor={branchEditing ? () => {} : tracks.setAnchor}
+        onVertex={branchEditing ? drawBranchVertex : tracks.addVertex}
         toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
         onStroke={tracks.addStroke}
       />
@@ -1141,12 +1473,12 @@ export default function Home() {
           tracks={tracks}
           onLocate={(point) => map.current?.focusPoint(point)}
           onFinish={() => {
-            tracks.complete();
-            setPanel('track');
+            if (tracks.complete()) setRouteWindow('card');
           }}
         />
       )}
-      {selectionName &&
+      {selectedAnnotation &&
+        selectionName &&
         (!activeTrackNode || selectedAnnotation) &&
         !linePoint &&
         !selectedPose &&
@@ -1219,31 +1551,6 @@ export default function Home() {
               </button>
             </div>
           </div>
-        )}
-      {activeTrackNode &&
-        !selectedAnnotation &&
-        !tracks.drawing &&
-        panel === null && (
-          <TrackNodeTools
-            tracks={tracks}
-            node={activeTrackNode}
-            onNode={setActiveTrackNode}
-            onBranch={() => {
-              setConnectingNode(null);
-              setPanel(null);
-            }}
-            connecting={!!connectingNode}
-            onConnect={() =>
-              setConnectingNode(connectingNode ? null : activeTrackNode)
-            }
-            onDone={() => {
-              if (activeTrackNode.trackId === DRAFT_ID && !tracks.save())
-                return;
-              setConnectingNode(null);
-              setActiveTrackNode(null);
-              tracks.select(null);
-            }}
-          />
         )}
       {selectedPhoto && panel === null && (
         <PhotoViewer
@@ -1395,6 +1702,12 @@ export default function Home() {
         )}
       </div>
       {railTrack &&
+        !editor.session &&
+        panel === null &&
+        routeWindow === 'card' &&
+        !routeChild &&
+        !navigationTarget &&
+        !shareTarget &&
         tracks.visible &&
         !tracks.drawing &&
         !areas.drawing &&
@@ -1406,7 +1719,6 @@ export default function Home() {
             activeAlternative={activeAlternative}
             onAlternative={(id) => {
               setActiveAlternative(id);
-              setTrackLinePoint(null);
             }}
             markers={annotations.items}
             selected={linePoint}
@@ -1610,14 +1922,27 @@ export default function Home() {
         active={panel === 'layers' ? null : panel}
         title={panel === 'sources' ? sourcesNavigation?.title : undefined}
         back={
-          panel === 'sources'
-            ? (sourcesNavigation ?? {
-                label: sourcesParent === 'layers' ? '返回图层' : '返回工具',
-                onClick: () => setPanel(sourcesParent),
-              })
-            : undefined
+          routeChild
+            ? {
+                label: '返回路线',
+                onClick: () => {
+                  setRouteChild(false);
+                  annotations.select(null);
+                  setPanel(null);
+                },
+              }
+            : panel === 'sources'
+              ? (sourcesNavigation ?? {
+                  label: sourcesParent === 'layers' ? '返回图层' : '返回工具',
+                  onClick: () => setPanel(sourcesParent),
+                })
+              : undefined
         }
         onActive={(next) => {
+          if (!next && routeChild) {
+            setRouteChild(false);
+            annotations.select(null);
+          }
           if (next === 'sources') {
             setSourcesParent('tools');
             setSourcesNavigation(null);
@@ -1803,19 +2128,15 @@ export default function Home() {
               setPanel(null);
             }}
             onTrack={(id) => {
+              openRoute(id);
               const track = tracks.saved.find((t) => t.id === id);
-              if (track) {
-                tracks.select(id);
-                annotations.select(null);
-                tracks.setVisible(true);
-                map.current?.fitRoute(track.segments.flat());
-                setPanel('track');
-              }
+              if (track) map.current?.fitRoute(track.segments.flat());
             }}
           />
         )}
         {panel === 'track' && (
           <TrackPanel
+            onOpen={openRoute}
             photos={photos.items}
             onPhoto={(id) => {
               const p = photos.items.find((p) => p.id === id);
@@ -1835,11 +2156,8 @@ export default function Home() {
             onNavigate={navigateTrack}
             navigationError={savedNavigationError}
             onEditNodes={(id) => {
-              tracks.select(id);
-              tracks.setVisible(true);
-              annotations.select(null);
-              tracks.finish();
-              setPanel(null);
+              const track = tracks.saved.find((t) => t.id === id);
+              if (track) beginRouteEdit(track);
             }}
             onDraw={(endpoint) => {
               map.current?.stop();
@@ -2068,6 +2386,14 @@ export default function Home() {
         <NavigationStart
           key={navigationTarget.id}
           target={navigationTarget}
+          alternatives={
+            selectedTrack && selectedTrack.id === navigationTarget.id
+              ? selectedAlternatives
+              : []
+          }
+          alternativeId={activeAlternative}
+          onAlternative={setActiveAlternative}
+          startError={savedNavigationError}
           onStart={beginFavorite}
           onClose={() => setNavigationTarget(null)}
         />

@@ -160,9 +160,25 @@ export function mergeData(
         return next;
       }),
   ];
+  const mergedTracks = merge(before.tracks, incoming.tracks, 'track');
+  const incomingIds = new Set(
+    [...importedKeys]
+      .filter(([key]) => key.startsWith('track:'))
+      .map(([, value]) => value.slice(6)),
+  );
   const next = validateTransfer({
     ...before,
-    tracks: merge(before.tracks, incoming.tracks, 'track'),
+    tracks: mergedTracks.map((t) =>
+      !before.tracks.includes(t) && incomingIds.has(t.id) && t.sourceTrackIds
+        ? {
+            ...t,
+            sourceTrackIds: t.sourceTrackIds.flatMap((id) => {
+              const mapped = importedKeys.get(`track:${id}`);
+              return mapped ? [mapped.slice(6)] : [];
+            }),
+          }
+        : t,
+    ),
     annotations: merge(
       before.annotations,
       incoming.annotations.map((a) => {

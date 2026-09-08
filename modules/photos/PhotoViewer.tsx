@@ -48,8 +48,8 @@ export function PhotoViewer({
     >
       <header>
         <strong>{photo.title || photo.name}</strong>
-        <button aria-label="关闭照片预览" onClick={onClose}>
-          ×
+        <button aria-label="返回上一级" onClick={onClose}>
+          ← 返回
         </button>
       </header>
       <button
