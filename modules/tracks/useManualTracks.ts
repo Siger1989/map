@@ -29,8 +29,16 @@ import {
   EMPTY_DRAFT,
   undoDraft,
   moveDraftNode,
+  replaceDraftGeometry,
+  branchDraft,
+  removeDraftNode,
 } from './draft';
-import { connectedTracks, endpoints, joinSegments } from './snapping';
+import {
+  connectedTracks,
+  endpoints,
+  joinSegments,
+  draftSnapNodes,
+} from './snapping';
 import {
   insertTrackNode,
   removeTrackNode,
@@ -61,11 +69,10 @@ export function useManualTracks() {
   const place = usePlaceName(draftState.segments[0]?.[0] ?? null, true);
   const candidates = useMemo(
     () => [
-      ...endpoints(draftState.segments),
-      ...vertices,
+      ...draftSnapNodes(draftState.segments),
       ...saved.flatMap((t) => [...endpoints(t.segments), ...(t.nodes ?? [])]),
     ],
-    [draftState.segments, vertices, saved],
+    [draftState.segments, saved],
   );
   const overlaySaved = useMemo(
     () => saved.filter((t) => t.id !== editingId),
@@ -169,9 +176,35 @@ export function useManualTracks() {
       return false;
     }
   };
+  const draftTrack = (): ManualTrack => ({
+    id: DRAFT_ID,
+    name: copyName || '路线草稿',
+    createdAt: startedAt.current,
+    source: 'manual',
+    style,
+    segments: draftRef.current.segments,
+    nodes: draftVertices(draftRef.current),
+  });
+  const applyDraft = (next: typeof EMPTY_DRAFT) => {
+    draftRef.current = next;
+    setDraftState(next);
+    setAnchor(next.segments.at(-1)?.at(-1) ?? null);
+    setError('');
+  };
   return {
     insertNode: (id: string, point: Coordinate, distance?: number) => {
       try {
+        if (id === DRAFT_ID) {
+          const next = insertTrackNode(draftTrack(), point, distance);
+          applyDraft(
+            replaceDraftGeometry(
+              draftRef.current,
+              next.segments,
+              next.nodes ?? [],
+            ),
+          );
+          return true;
+        }
         const track = savedRef.current.find((t) => t.id === id);
         if (!track) return false;
         const next = insertTrackNode(track, point, distance);
@@ -188,6 +221,10 @@ export function useManualTracks() {
     },
     removeNode: (node: TrackNode) => {
       try {
+        if (node.trackId === DRAFT_ID) {
+          applyDraft(removeDraftNode(draftRef.current, node.coordinate));
+          return true;
+        }
         const track = savedRef.current.find((t) => t.id === node.trackId);
         if (!track) return false;
         const next = removeTrackNode(track, node.coordinate);
@@ -206,6 +243,47 @@ export function useManualTracks() {
     },
     connectNodes: (from: TrackNode, to: TrackNode) => {
       try {
+        if (from.trackId === DRAFT_ID || to.trackId === DRAFT_ID) {
+          const a =
+            from.trackId === DRAFT_ID
+              ? draftTrack()
+              : savedRef.current.find((t) => t.id === from.trackId);
+          const b =
+            to.trackId === DRAFT_ID
+              ? draftTrack()
+              : savedRef.current.find((t) => t.id === to.trackId);
+          if (!a || !b) throw new Error('连接节点已变化，请重新选择。');
+          // Keep draft geometry first so active stroke kinds/indices remain aligned.
+          const next =
+            from.trackId === DRAFT_ID
+              ? connectTrackNodes(
+                  a,
+                  from.coordinate,
+                  b,
+                  to.coordinate,
+                  DRAFT_ID,
+                )
+              : connectTrackNodes(
+                  b,
+                  to.coordinate,
+                  a,
+                  from.coordinate,
+                  DRAFT_ID,
+                );
+          applyDraft(
+            replaceDraftGeometry(
+              draftRef.current,
+              next.segments,
+              next.nodes ?? [],
+              next.segments.map(
+                (_, i) => draftRef.current.kinds[i] ?? 'freehand',
+              ),
+              null,
+            ),
+          );
+          select(DRAFT_ID);
+          return true;
+        }
         const a = savedRef.current.find((t) => t.id === from.trackId),
           b = savedRef.current.find((t) => t.id === to.trackId);
         if (!a || !b) throw new Error('请选择两条已保存路线的节点。');
@@ -230,6 +308,16 @@ export function useManualTracks() {
     },
     branchFrom: (node: TrackNode) => {
       try {
+        if (node.trackId === DRAFT_ID) {
+          if (!withinLimit(1, true)) return false;
+          applyDraft(branchDraft(draftRef.current, node.coordinate));
+          setAnchor(node.coordinate);
+          select(DRAFT_ID);
+          setDrawing(true);
+          setEditing(true);
+          setVisible(true);
+          return true;
+        }
         if (draftRef.current.segments.length && !saveDraft()) return false;
         const track = savedRef.current.find((t) => t.id === node.trackId);
         if (!track || keepsOriginalPoints(track))

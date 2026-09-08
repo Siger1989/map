@@ -14,6 +14,7 @@ type Operation =
       segments: Coordinate[][];
       nodes?: Coordinate[];
       pointLine: number | null;
+      kinds?: DrawingMode[];
     };
 export type TrackDraft = {
   segments: Coordinate[][];
@@ -99,6 +100,7 @@ export function undoDraft(draft: TrackDraft): TrackDraft {
       segments: operation.segments,
       nodes: operation.nodes,
       pointLine: operation.pointLine,
+      kinds: operation.kinds ?? draft.kinds,
       history: draft.history.slice(0, -1),
     };
   const segments = draft.segments.map((line) => line.slice()),
@@ -135,6 +137,76 @@ export function draftVertices(draft: TrackDraft) {
       draft.kinds[i] === 'points' ? line : [],
     ),
   ];
+}
+
+/** Node toolbar edits remain part of the unsaved draft and share its undo stack. */
+export function replaceDraftGeometry(
+  draft: TrackDraft,
+  segments: Coordinate[][],
+  nodes: Coordinate[],
+  kinds = draft.kinds,
+  pointLine = draft.pointLine,
+): TrackDraft {
+  return {
+    ...draft,
+    segments,
+    nodes,
+    kinds,
+    pointLine,
+    history: [
+      ...draft.history,
+      {
+        kind: 'move',
+        segments: draft.segments,
+        nodes: draft.nodes,
+        pointLine: draft.pointLine,
+        kinds: draft.kinds,
+      },
+    ],
+  };
+}
+
+export function branchDraft(draft: TrackDraft, point: Coordinate): TrackDraft {
+  if (
+    !draft.segments.some((line) => line.some((p) => equalCoordinate(p, point)))
+  )
+    throw new Error('节点已变化，请重新选择。');
+  return replaceDraftGeometry(
+    draft,
+    [...draft.segments, [point]],
+    [...draftVertices(draft), point],
+    [...draft.kinds, 'points'],
+    draft.segments.length,
+  );
+}
+
+export function removeDraftNode(
+  draft: TrackDraft,
+  point: Coordinate,
+): TrackDraft {
+  const segments: Coordinate[][] = [],
+    kinds: DrawingMode[] = [];
+  let pointLine: number | null = null;
+  draft.segments.forEach((line, i) => {
+    const next = line.filter((p) => !equalCoordinate(p, point));
+    if (next.length === line.length) {
+      // Keep unrelated, unfinished strokes intact.
+    } else if (line.length > 1 && next.length < 2) {
+      throw new Error('每段至少保留两个节点；请选择中间节点。');
+    }
+    if (next.length) {
+      if (i === draft.pointLine) pointLine = segments.length;
+      segments.push(next);
+      kinds.push(draft.kinds[i]);
+    }
+  });
+  return replaceDraftGeometry(
+    draft,
+    segments,
+    draftVertices(draft).filter((p) => !equalCoordinate(p, point)),
+    kinds,
+    pointLine,
+  );
 }
 
 export function moveDraftNode(

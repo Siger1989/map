@@ -12,18 +12,28 @@ import {
   joinSegments,
   connectedTracks,
   hasLoosePoints,
+  draftSnapNodes,
 } from '../modules/tracks/snapping.ts';
 import {
   appendStroke,
   appendVertex,
   undoDraft,
   EMPTY_DRAFT,
+  branchDraft,
+  removeDraftNode,
+  replaceDraftGeometry,
 } from '../modules/tracks/draft.ts';
 import {
   DEFAULT_TRACK_STYLE,
   normalizeTrackStyle,
 } from '../modules/tracks/style.ts';
 import { parseSavedTracks } from '../modules/tracks/drawing.ts';
+import { drawingRecord } from '../modules/tracks/archive.ts';
+import { networkPath, vertexKey } from '../modules/guidance/network.ts';
+import {
+  insertTrackNode,
+  connectTrackNodes,
+} from '../modules/tracks/nodeOperations.ts';
 const a = [104, 30],
   b = [104.001, 30],
   c = [104.002, 30],
@@ -335,6 +345,7 @@ test('map style is valid and solitary precision points never become invalid line
     getStyle: () => ({ layers }),
     addLayer: (l) => layers.push(l),
     moveLayer() {},
+    project: (p) => ({ x: (p[0] - 104) * 50000, y: p[1] }),
   };
   const controller = new TrackLayer(map),
     state = {
@@ -360,4 +371,139 @@ test('map style is valid and solitary precision points never become invalid line
   );
   controller.sync({ ...state, draft: [[a, b]], visible: false });
   assert.equal(data.features.length, 0);
+  // A legacy route has no explicit middle nodes. Starting a branch must keep
+  // the previously visible, selectable middle handles in the drawing overlay.
+  controller.sync({
+    ...state,
+    draft: [[a, b, c, d], [c]],
+    nodes: [c],
+    selectedId: 'draft',
+    drawing: true,
+  });
+  const handles = data.features.filter((f) => f.geometry.type === 'Point');
+  assert.ok(handles.some((f) => f.geometry.coordinates[0] === b[0]));
+  assert.ok(handles.some((f) => f.geometry.coordinates[0] === c[0]));
+  assert.equal(handles.length, 4, 'shared branch origin is not duplicated');
+});
+
+test('a branch snaps exactly back to a legacy interior node and survives save, reload and undo', () => {
+  const A = [100.05, 20],
+    B = [100.1, 20],
+    C = [100.2, 20],
+    D = [100.3, 20];
+  const away = [100.2, 25],
+    returning = [100.1, 25];
+  const original = [[A, B, C, D]],
+    before = JSON.stringify(original);
+  const base = {
+    segments: [...original, [C]],
+    kinds: ['freehand', 'points'],
+    nodes: [C],
+    pointLine: 1,
+    history: [],
+  };
+  const draft = appendVertex(appendVertex(base, away), returning);
+  const candidates = draftSnapNodes(draft.segments);
+  assert.equal(candidates.filter((p) => p === C).length, 1);
+  assert.ok(
+    candidates.includes(B),
+    'unlisted legacy middle node is a snap target',
+  );
+  const session = new DrawingSession();
+  const o = { ...options, mode: 'points', lastVertex: returning, candidates };
+  const preview = session.input(
+    { type: 'start', point: { x: 104, y: 246 } },
+    o,
+  );
+  assert.equal(preview.preview.snapped, true);
+  const result = session.input({ type: 'end', reason: 'release' }, o);
+  assert.strictEqual(
+    result.vertex,
+    B,
+    'coordinate identity closes the network without a tiny gap',
+  );
+  const closed = appendVertex(draft, result.vertex);
+  const record = drawingRecord({
+    segments: closed.segments,
+    nodes: [C, away, returning, B],
+    style: DEFAULT_TRACK_STYLE,
+    id: 'loop',
+    name: 'loop',
+    createdAt: 1,
+    now: 2,
+  });
+  const loaded = parseSavedTracks(JSON.stringify([record]))[0];
+  assert.deepEqual(loaded.segments, [original[0], [C, away, returning, B]]);
+  assert.deepEqual(
+    networkPath(loaded.segments, B, C).coordinates.map(vertexKey),
+    [B, C].map(vertexKey),
+  );
+  assert.deepEqual(
+    networkPath([loaded.segments[1]], B, C).coordinates.map(vertexKey),
+    [B, returning, away, C].map(vertexKey),
+  );
+  assert.deepEqual(undoDraft(closed).segments, draft.segments);
+  assert.equal(
+    JSON.stringify(original),
+    before,
+    'original route geometry stays unchanged',
+  );
+});
+
+test('draft node toolbar edits and branch creation undo without saving or losing the old baseline', () => {
+  const base = {
+    segments: [[a, b, c, d]],
+    kinds: ['points'],
+    pointLine: 0,
+    history: [],
+  };
+  const branched = branchDraft(base, b);
+  assert.deepEqual(branched.segments, [[a, b, c, d], [b]]);
+  assert.deepEqual(undoDraft(branched), { ...base, nodes: undefined });
+  const continued = appendVertex(branched, [104.001, 30.001]);
+  assert.deepEqual(undoDraft(continued).segments, branched.segments);
+  const middle = [104.0005, 30];
+  const inserted = insertTrackNode(
+    { id: 'draft', name: 'draft', createdAt: 1, ...base },
+    middle,
+  );
+  const edited = replaceDraftGeometry(base, inserted.segments, inserted.nodes);
+  assert.deepEqual(edited.segments[0], [a, middle, b, c, d]);
+  const removed = removeDraftNode(edited, middle);
+  assert.deepEqual(removed.segments, base.segments);
+  assert.deepEqual(undoDraft(removed).segments, edited.segments);
+  assert.deepEqual(undoDraft(edited), { ...base, nodes: undefined });
+  assert.throws(
+    () => removeDraftNode({ ...base, segments: [[a, b]] }, a),
+    /至少保留/,
+  );
+});
+
+test('an isolated draft point can be deleted while preserving the rest, and direct node connection closes a loop', () => {
+  const loose = [104.005, 30.002];
+  const base = {
+    segments: [[a, b, c, d], [loose]],
+    kinds: ['freehand', 'points'],
+    pointLine: 1,
+    history: [],
+  };
+  const removed = removeDraftNode(base, loose);
+  assert.deepEqual(removed.segments, [[a, b, c, d]]);
+  assert.equal(removed.pointLine, null);
+  assert.deepEqual(undoDraft(removed), { ...base, nodes: undefined });
+  const track = {
+    id: 'draft',
+    name: 'draft',
+    createdAt: 1,
+    segments: [
+      [a, b, c, d],
+      [b, loose],
+    ],
+  };
+  const joined = connectTrackNodes(track, loose, track, c, 'draft');
+  assert.deepEqual(joined.segments, [...track.segments, [loose, c]]);
+  assert.deepEqual(track.segments, [
+    [a, b, c, d],
+    [b, loose],
+  ]);
 });

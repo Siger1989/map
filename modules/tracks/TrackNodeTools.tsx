@@ -1,144 +1,110 @@
-import { useState } from 'react';
 import type { ManualTracksState } from './useManualTracks';
-import type { TrackNode } from './editing';
-import { equalCoordinate } from './editing';
+import { DRAFT_ID, equalCoordinate, type TrackNode } from './editing';
 import { keepsOriginalPoints } from './provenance';
 import { pathOf, pointAt } from '../guidance/geometry';
 
+/** Selecting a node exposes its actions directly, for saved routes and drafts. */
 export function TrackNodeTools({
   tracks,
   node,
   onNode,
   onBranch,
+  connecting,
+  onConnect,
+  onDone,
 }: {
   tracks: ManualTracksState;
-  node: TrackNode | null;
+  node: TrackNode;
   onNode: (node: TrackNode | null) => void;
   onBranch: () => void;
+  connecting: boolean;
+  onConnect: () => void;
+  onDone: () => void;
 }) {
-  const [joining, setJoining] = useState(false),
-    [target, setTarget] = useState(''),
-    [index, setIndex] = useState(0);
-  const track = tracks.saved.find((t) => t.id === tracks.selectedId);
-  if (!track || keepsOriginalPoints(track)) return null;
-  const selected = node?.trackId === track.id ? node : null;
-  const other = tracks.saved.find((t) => t.id === target);
-  const nodes = other
-    ? [...new Map(other.segments.flat().map((p) => [p.join(','), p])).values()]
-    : [];
-  const candidates = tracks.saved.filter((t) => !keepsOriginalPoints(t));
+  const draft = node.trackId === DRAFT_ID;
+  const saved = tracks.saved.find((t) => t.id === node.trackId);
+  if (!draft && (!saved || keepsOriginalPoints(saved))) return null;
+  const segments = draft ? tracks.draft : saved!.segments;
+  const line = segments.find(
+    (l) => l.length >= 2 && l.some((p) => equalCoordinate(p, node.coordinate)),
+  );
   return (
-    <div className="track-node-controls">
-      <div className="track-node-actions">
+    <div className="track-node-toolbar glass" aria-label="节点操作">
+      <div
+        className="track-node-actions"
+        role="toolbar"
+        aria-label="直接操作选中节点"
+      >
         <button
           aria-label="添加中间节点"
-          title="在所选节点后一段添加中点，可拖动调整"
+          title="在选中节点旁添加中间点"
+          disabled={!line || connecting}
           onClick={() => {
-            const line =
-              track.segments.find(
-                (l) =>
-                  selected &&
-                  l.some((p) => equalCoordinate(p, selected.coordinate)),
-              ) ?? track.segments[0];
-            const i = selected
-              ? Math.max(
-                  0,
-                  line.findIndex((p) =>
-                    equalCoordinate(p, selected.coordinate),
-                  ),
-                )
-              : 0;
-            const at = Math.min(i, line.length - 2),
-              path = pathOf([line[at], line[at + 1]]),
+            if (!line) return;
+            const at = Math.min(
+              line.findIndex((p) => equalCoordinate(p, node.coordinate)),
+              line.length - 2,
+            );
+            const path = pathOf([line[at], line[at + 1]]),
               point = pointAt(path, path.length / 2);
-            if (tracks.insertNode(track.id, point))
-              onNode({ trackId: track.id, coordinate: point });
+            if (tracks.insertNode(node.trackId, point))
+              onNode({ trackId: node.trackId, coordinate: point });
           }}
         >
-          ＋ 节点
+          ＋
         </button>
         <button
           aria-label="删除选中节点"
-          disabled={!selected}
+          title="删除节点，前后两点直接连接"
+          disabled={connecting}
           onClick={() => {
-            if (selected && tracks.removeNode(selected)) onNode(null);
+            if (tracks.removeNode(node)) onNode(null);
           }}
         >
-          − 节点
+          −
         </button>
         <button
-          disabled={!selected}
+          aria-label="从选中节点拉分叉"
+          disabled={connecting}
           onClick={() => {
-            if (selected && tracks.branchFrom(selected)) {
+            if (tracks.branchFrom(node)) {
               onNode(null);
               onBranch();
             }
           }}
         >
-          拉分叉
+          分叉
         </button>
         <button
-          disabled={!selected}
-          aria-expanded={joining}
-          onClick={() => setJoining(!joining)}
+          aria-label={connecting ? '取消节点连接' : '连接另一个节点'}
+          aria-pressed={connecting}
+          onClick={onConnect}
         >
-          连接
+          {connecting ? '取消' : '连接'}
+        </button>
+        <button
+          aria-label="撤销节点操作"
+          disabled={
+            connecting ||
+            (draft ? !tracks.canUndo : tracks.nodeUndoId !== node.trackId)
+          }
+          onClick={() => {
+            if (draft) tracks.undo();
+            else tracks.undoNodeMove();
+            onNode(null);
+          }}
+        >
+          撤销
+        </button>
+        <button
+          aria-label={draft ? '保存草稿并完成节点编辑' : '完成节点编辑'}
+          onClick={onDone}
+        >
+          完成
         </button>
       </div>
-      {joining && selected && (
-        <div className="track-node-join">
-          <label>
-            连接到路线
-            <select
-              value={target}
-              onChange={(e) => {
-                setTarget(e.target.value);
-                setIndex(0);
-              }}
-            >
-              <option value="">选择路线</option>
-              {candidates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            连接节点
-            <select
-              value={index}
-              disabled={!other}
-              onChange={(e) => setIndex(Number(e.target.value))}
-            >
-              {nodes.map((p, i) => (
-                <option key={i} value={i}>
-                  {i + 1} · {p[1].toFixed(5)}, {p[0].toFixed(5)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            disabled={!other || !nodes[index]}
-            onClick={() => {
-              if (
-                other &&
-                nodes[index] &&
-                tracks.connectNodes(selected, {
-                  trackId: other.id,
-                  coordinate: nodes[index],
-                })
-              ) {
-                onNode(null);
-                setJoining(false);
-              }
-            }}
-          >
-            连接为一条（保留原线）
-          </button>
-          <small>节点间新增直线；重合节点直接相接。</small>
-        </div>
-      )}
+      {connecting && <p role="status">点地图上另一个节点，直接连接</p>}
+      {tracks.error && <p role="alert">{tracks.error}</p>}
     </div>
   );
 }

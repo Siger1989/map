@@ -1,3 +1,14 @@
+# 当前任务补充：0.2.13分叉闭环、节点直操、紧凑备选进度条（2026-09-08，验证PASS，待发布）
+- 三项用户追加均已实现。315逻辑PASS、types PASS；左侧多条进度轨道合用44px宽的触控区，每条视觉10px，顶端44px按钮循环切换，拖动按下时锁定所选轨道。节点工具条268px宽、6个44px按钮。
+- 注意：用户已开始在原独立QA9191页面画真实路线并打开分享，故该来源现在视为用户数据，不能清理其localStorage/关闭或强制刷新丢失草稿。原9178也保留。qa-branch.html还在mobile中，是临时入口，不打入APK、不提交；最终应在保留9191来源数据的前提下转为普通入口，若仍在编辑则不强制刷新。
+- 新增alternatives.ts与tests/track-alternatives.test.mjs；修改TrackLayer、TrackJourneyRail、TrackNodeTools、draft/useManualTracks/snapping/linePoint、CSS和app接线。Android版本0.2.13-test/code20，沿用本机原系列签名。下一步最终UI回归、网页与APK构建/签名资源校验/发布，阻碍无。
+- 最终PASS：网页与APK构建、签名v2/v3/zipalign、525资源/496PNG/473地形CRC比对；APK55,117,375字节，SHA256 4e835c1eb58bf075532a09569009db551cbc328c46c87ffd92a49129ca912b4a。日志logs/*0213*。独立9192真实组件增删、草稿分叉/接回/保存同ID通过；完整地图原578m→备1023m、End100%、颜色/淡化和节点工具条通过。截图detour-rail-0213-360.png、node-toolbar-0213-360.png、node-detour-0213-390.png；两尺寸无横溢，轨道44px/工具条268×50px。9192临时页与脚本已删除、服务/标签关闭；9191页面已被用户用来画真实线，继续保留服务/页面/存档，qa-branch.html仅本机排除，不打包、不提交；没有清理用户数据。下一步提交发布并核服务器hash。
+
+# 当前任务：分叉接回旧节点闭环（2026-09-08，进行中）
+- 用户截图复现：拉分叉时旧路线中间节点消失，无法精确接回闭环。git状态干净、pull最新，已读AGENTS/状态和轨迹绘制/吸附模块。
+- 根因：TrackLayer在drawing草稿显式禁用选中路线的中间handle；useManualTracks候选仅端点和explicit nodes，漏掉旧freehand/road几何节点。
+- 修改：TrackLayer保留选中草稿中间handle；snapping新增去重精确draftSnapNodes并接入useManualTracks。不更改旧线几何、照片、签名或存档格式。下一步回归节点显示/吸附/闭环保存与撤销、双手机UI；出0.2.13 APK并更新右侧预览。验证进行中，阻碍无。
+
 # 当前预览：右侧PC手机比例测试（2026-09-08）
 - 用户要求右侧可操作的手机比例PC预览。已打开IAB tab2，保留390×844视口，网址http://127.0.0.1:9178，使用0.2.12 APK构建的mobile/.build/apk-20260908-225414/web原始网页资源；API代理原localhost:3000，用户原服务未改动。
 - 原3000页面停在SSR加载、无canvas；改用Vite preview独立9178后地图canvas生成并显示卫星。启动命令：SHANTU_DEV_API_URL=http://localhost:3000，vite preview --config mobile/vite.config.ts --outDir <上述web目录> --host 127.0.0.1 --port 9178 --strictPort；服务会话94497，日志logs/preview_apk_0212_9178.log。
@@ -1016,3 +1027,6 @@
 - GitHub连接恢复：0.2.8草稿id384434144，APK服务端digest已匹配797d5eb...，仍未发布。将由0.2.9完成包交付，不声称旧草稿公开可下载。
 - 当前自建dev进程session40756端口3108；浏览器IAB tab3，route-share对话框可能仍打开。工具脚本.openai/probe-gh-028.py、verify-apk-028.py未跟踪；Harmony6文件保持未动。下一步完成UI/扫码/模拟定位的集成验证，再全量检查、更新版本16/0.2.9、双构建、APK核对、提交推送和发布测试Release。
 - 构建校验发现旧mobile/dist累计多个历史index散列文件；scripts/build-android.ps1改为每次完整构建使用新stage/web目录，不删除旧文件。首包不发布，重新构建后核对完整资源；SkipWebBuild仍显式使用既有dist。
+- 逻辑验证PASS：types及306/306全量测试通过。新增旧路线中间handle在drawing时保留、原值吸附闭环、主线/分支两条通路、保存重读和撤销回归；首轮导航计算浮点舍入差异改按既有vertexKey精度比较。独立UI端口9180已被其他服务占用，未干预，改9191；用户9178数据保留。
+- 用户追加精简操作：草稿节点也须直接操作。已改为选中即出现单排＋/−/分叉/连接/撤销/完成；连接改地图点选目标节点，去掉路线/坐标下拉菜单。draft.ts增加草稿增删/分叉/连接共享撤销快照，保留kinds/pointLine；孤立单点可删除，草稿拉分叉不先保存。UI与新增回归验证进行中。
+- 用户追加备选绕路：新增alternatives.ts按真实共同节点识别回接绕路，原路顺序默认不变；备选完整线替换两连接点之间原段，左右段仅计一次。地图绕路用区别于主线的颜色，选备选时淡化被跳过原段；TrackJourneyRail并列独立进度条可点选/拖动，沿线标记用各自线形重算距离。正在检查类型、复杂连接/闭环回归与UI。

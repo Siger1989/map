@@ -6,6 +6,8 @@ export type TrackLinePoint = {
   trackId: string;
   coordinate: Coordinate;
   distance: number;
+  /** Original archive chainage when browsing a replacement detour. */
+  sourceDistance?: number;
 };
 export type TrackAnchor = { trackId: string; distance: number };
 export function validTrackAnchor(value: unknown): value is TrackAnchor {

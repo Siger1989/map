@@ -384,44 +384,36 @@
   padding: 2px;
 }
 
-.selection-tools .track-node-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
+.track-node-toolbar {
+  position: absolute;
+  z-index: 12;
+  left: var(--edge-left);
+  bottom: calc(59px + var(--safe-bottom));
+  width: min(268px, calc(100% - var(--edge-left) - 8px));
+  padding: 2px;
+  border-radius: 6px;
 }
 .track-node-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
+  gap: 0;
 }
-.selection-tools .track-node-actions button {
+.track-node-toolbar button {
   min-width: 44px;
   min-height: 44px;
-  flex: 1 0 44px;
-  padding: 0 5px;
-}
-.track-node-join {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 180px;
-  overflow: auto;
-  width: 100%;
-}
-.track-node-join label {
-  display: flex;
-  flex-direction: column;
+  padding: 0;
+  border-radius: 5px;
+  background: #ffffff18;
   font-size: 12px;
 }
-.track-node-join select {
-  width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  color: #142b40;
-  background: #f0f5fa;
+.track-node-toolbar button[aria-pressed='true'] {
+  background: #9de8c466;
 }
-.selection-tools:has(.track-node-controls) {
-  max-height: min(38dvh, 320px);
-  overflow-y: auto;
+.track-node-toolbar p {
+  margin: 4px 2px 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.track-node-toolbar [role='alert'] {
+  color: #ffbf98;
 }

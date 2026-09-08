@@ -10,6 +10,15 @@ export function endpoints(segments: Coordinate[][]): Coordinate[] {
     line.length ? [line[0], line.at(-1)!] : [],
   );
 }
+/** A continued/branched draft must reconnect to interior vertices, including
+ * legacy freehand/road bends without an explicit nodes list. Keep exact values. */
+export function draftSnapNodes(segments: Coordinate[][]): Coordinate[] {
+  return [
+    ...new Map(
+      segments.flat().map((point) => [point.join(','), point]),
+    ).values(),
+  ];
+}
 export function hasLoosePoints(segments: Coordinate[][]) {
   const ends = endpoints(segments.filter((line) => line.length >= 2));
   return segments.some(

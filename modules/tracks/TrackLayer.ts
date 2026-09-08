@@ -1,4 +1,5 @@
-import type { Map } from 'maplibre-gl';
+import type { Map as MapLibreMap } from 'maplibre-gl';
+import { alternativeLineParts, trackAlternatives } from './alternatives';
 import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection } from 'geojson';
 import type { Coordinate } from '../navigation/types';
@@ -20,13 +21,15 @@ export type TrackOverlay = {
   nodes: Coordinate[];
   selectedId?: string | null;
   drawing?: boolean;
+  connecting?: boolean;
+  alternativeId?: string;
   activeNode?: TrackNode | null;
   linePoint?: TrackLinePoint | null;
   preview?: { node: TrackNode; coordinate: Coordinate } | null;
 };
 export class TrackLayer {
   private state: TrackOverlay | null = null;
-  constructor(private map: Map) {}
+  constructor(private map: MapLibreMap) {}
   pickLine(point: ScreenPoint): TrackLinePoint | null {
     const id = this.pickTrack(point),
       state = this.state;
@@ -181,26 +184,34 @@ export class TrackLayer {
             },
           ]
             .filter((t) => t.segments.length)
-            .map((t) => ({
-              type: 'Feature',
-              properties: {
-                trackId: t.trackId,
-                selected: t.trackId === state.selectedId,
-                draft: t.draft,
-                ...t.style,
-              },
-              geometry: {
-                type: 'MultiLineString',
-                coordinates: (state.preview?.node.trackId === t.trackId
-                  ? moveSegmentsNode(
-                      t.segments,
-                      state.preview.node.coordinate,
-                      state.preview.coordinate,
-                    )
-                  : t.segments
-                ).filter((line) => line.length >= 2),
-              },
-            }))
+            .flatMap((t) =>
+              alternativeLineParts(
+                t.segments,
+                t.trackId === state.selectedId ? state.alternativeId : 'main',
+                t.style.color,
+              ).map((part) => ({
+                type: 'Feature',
+                properties: {
+                  trackId: t.trackId,
+                  selected: t.trackId === state.selectedId,
+                  draft: t.draft,
+                  ...t.style,
+                  color: part.color ?? t.style.color,
+                  opacity: (t.style.opacity ?? 1) * (part.muted ? 0.3 : 1),
+                },
+                geometry: {
+                  type: 'MultiLineString',
+                  coordinates: (state.preview?.node.trackId === t.trackId
+                    ? moveSegmentsNode(
+                        [part.coordinates],
+                        state.preview.node.coordinate,
+                        state.preview.coordinate,
+                      )
+                    : [part.coordinates]
+                  ).filter((line) => line.length >= 2),
+                },
+              })),
+            )
         : [],
     };
     data.features = data.features.filter(
@@ -219,11 +230,19 @@ export class TrackLayer {
         },
       ]) {
         const color = normalizeTrackStyle(track.style).color;
+        const branchColors = new Map(
+          trackAlternatives(track.segments, color)
+            .slice(1)
+            .reverse()
+            .flatMap((v) =>
+              v.detour.slice(1, -1).map((p) => [p.join(','), v.color] as const),
+            ),
+        );
         const selected = track.id === state.selectedId;
         const positions = nodeHandles(
           track.segments,
           track.nodes ?? [],
-          selected && !(state.drawing && track.id === DRAFT_ID),
+          selected || !!state.connecting,
           (point) => m.project(point),
         );
         if (
@@ -246,7 +265,7 @@ export class TrackLayer {
             return {
               type: 'Feature' as const,
               properties: {
-                color,
+                color: branchColors.get(point.join(',')) ?? color,
                 selected,
                 active:
                   state.activeNode?.trackId === track.id &&

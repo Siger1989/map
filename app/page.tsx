@@ -219,6 +219,12 @@ export default function Home() {
     import('@/modules/tracks/editing').TrackNode | null
   >(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
+  const [connectingNode, setConnectingNode] = useState<
+    import('@/modules/tracks/editing').TrackNode | null
+  >(null);
+  useEffect(() => {
+    if (!activeTrackNode || panel !== null) setConnectingNode(null);
+  }, [activeTrackNode, panel]);
   const [trackLinePoint, setTrackLinePoint] = useState<TrackLinePoint | null>(
     null,
   );
@@ -548,6 +554,11 @@ export default function Home() {
     (selectedDraft
       ? { id: DRAFT_ID, name: '路线草稿', segments: tracks.draft }
       : null);
+  const [activeAlternative, setActiveAlternative] = useState('main');
+  useEffect(
+    () => setActiveAlternative('main'),
+    [tracks.selectedId, selectedTrack?.segments, tracks.draft],
+  );
   const linePoint =
     trackLinePoint?.trackId === tracks.selectedId &&
     !tracks.drawing &&
@@ -630,6 +641,8 @@ export default function Home() {
       drawing: tracks.drawing,
       selectedId: tracks.selectedId,
       activeNode: activeTrackNode,
+      connecting: !!connectingNode,
+      alternativeId: activeAlternative,
       linePoint: panel === null ? linePoint : null,
       preview:
         featureMove?.target.kind === 'track'
@@ -642,6 +655,8 @@ export default function Home() {
     [
       recordedSegments,
       activeTrackNode,
+      connectingNode,
+      activeAlternative,
       linePoint,
       panel,
       recorder.record.startedAt,
@@ -853,6 +868,13 @@ export default function Home() {
             setPanel('track');
             return;
           }
+          if (connectingNode) {
+            if (tracks.connectNodes(connectingNode, node)) {
+              setConnectingNode(null);
+              setActiveTrackNode(null);
+            }
+            return;
+          }
           setActiveTrackNode(node);
           tracks.select(node.trackId);
           annotations.select(null);
@@ -936,7 +958,7 @@ export default function Home() {
                     tracks.insertNode(
                       linePoint.trackId,
                       linePoint.coordinate,
-                      linePoint.distance,
+                      linePoint.sourceDistance ?? linePoint.distance,
                     )
                   ) {
                     setActiveTrackNode({
@@ -963,7 +985,7 @@ export default function Home() {
             if (
               annotations.add('pin', linePoint.coordinate, {
                 trackId: id,
-                distance: linePoint.distance,
+                distance: linePoint.sourceDistance ?? linePoint.distance,
               })
             ) {
               tracks.select(id);
@@ -1125,6 +1147,7 @@ export default function Home() {
         />
       )}
       {selectionName &&
+        (!activeTrackNode || selectedAnnotation) &&
         !linePoint &&
         !selectedPose &&
         !tracks.drawing &&
@@ -1156,14 +1179,6 @@ export default function Home() {
               <p role="alert">
                 {selectedAnnotation ? annotations.error : tracks.error}
               </p>
-            )}
-            {!selectedAnnotation && (
-              <TrackNodeTools
-                tracks={tracks}
-                node={activeTrackNode}
-                onNode={setActiveTrackNode}
-                onBranch={() => setPanel(null)}
-              />
             )}
             <div>
               <button
@@ -1204,6 +1219,31 @@ export default function Home() {
               </button>
             </div>
           </div>
+        )}
+      {activeTrackNode &&
+        !selectedAnnotation &&
+        !tracks.drawing &&
+        panel === null && (
+          <TrackNodeTools
+            tracks={tracks}
+            node={activeTrackNode}
+            onNode={setActiveTrackNode}
+            onBranch={() => {
+              setConnectingNode(null);
+              setPanel(null);
+            }}
+            connecting={!!connectingNode}
+            onConnect={() =>
+              setConnectingNode(connectingNode ? null : activeTrackNode)
+            }
+            onDone={() => {
+              if (activeTrackNode.trackId === DRAFT_ID && !tracks.save())
+                return;
+              setConnectingNode(null);
+              setActiveTrackNode(null);
+              tracks.select(null);
+            }}
+          />
         )}
       {selectedPhoto && panel === null && (
         <PhotoViewer
@@ -1363,6 +1403,11 @@ export default function Home() {
           <TrackJourneyRail
             key={railTrack.id}
             track={railTrack}
+            activeAlternative={activeAlternative}
+            onAlternative={(id) => {
+              setActiveAlternative(id);
+              setTrackLinePoint(null);
+            }}
             markers={annotations.items}
             selected={linePoint}
             onPoint={selectLinePoint}

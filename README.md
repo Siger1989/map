@@ -2,11 +2,11 @@
 
 # 山兔 · 三维地图与沿途天气
 
-**最新源码**：[默认卫星图、节点增删/连接/分叉、最近接入与相连分叉导航、起终点方向选择、彩色收藏文件夹](docs/track-network-and-folders.md)。已包含在0.2.12 APK中。
+**最新源码**：[默认卫星图、节点增删/连接/分叉、最近接入与相连分叉导航、起终点方向选择、彩色收藏文件夹](docs/track-network-and-folders.md)。已包含在0.2.13 APK中，新增[闭环节点修复、节点直接操作与紧凑备选绕路进度条](docs/release-0.2.13.md)。
 
 0.2.9起新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
-**最新安装包：0.2.12-test 原系列 / versionCode 19**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.12-test/Shantu-0.2.12-test.apk) · [详细发行与平台说明](docs/release-0.2.12.md)。按用户选择使用本机原签名，可覆盖0.2.7等原系列；与0.2.11独立版并存，数据不自动迁移。HarmonyOS6.1原生包仍未交付。以后每轮改动同步更新APK。
+**最新安装包：0.2.13-test 原系列 / versionCode 20**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.13-test/Shantu-0.2.13-test.apk) · [详细发行与平台说明](docs/release-0.2.13.md)。按用户选择使用本机原签名，可覆盖0.2.12/0.2.7等原系列；与0.2.11独立版并存，数据不自动迁移。HarmonyOS6.1原生包仍未交付。以后每轮改动同步更新APK。
 
 **手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 
@@ -46,7 +46,7 @@
 
 另已接通 [照片放大、编辑标记、分享与拍摄环境](docs/photo-details.md)：点图全屏缩放，保存标题/备注/旋转/画线，导出带海拔和拍摄天气说明的图片副本。原图不改；旧预览可重新导入升级清晰度，天气明确标明模型或历史再分析来源。
 
-[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.12-test/Shantu-0.2.12-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.12-test) · [位置跟随说明](docs/position-follow.md) · [历史功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
+[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.13-test/Shantu-0.2.13-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.13-test) · [位置跟随说明](docs/position-follow.md) · [历史功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图
 
@@ -141,7 +141,7 @@
 
 ## 安卓安装包
 
-当前源码执行 `npm run build:apk`，使用原签名生成 `APK/Shantu-0.2.12-test.apk`，桌面名称为“山兔”。SDK/JDK路径可通过构建脚本参数指定；每轮完整构建在新的临时目录生成网页资源，避免旧散列文件混入。旧版同包名、同签名才可覆盖更新；电脑修改后需在手机安装新APK。应用联网获取公开数据，不依赖电脑localhost。安装要求及架构见[安卓测试版说明](mobile/README.md)。
+当前源码执行 `npm run build:apk`，使用原签名生成 `APK/Shantu-0.2.13-test.apk`，桌面名称为“山兔”。SDK/JDK路径可通过构建脚本参数指定；每轮完整构建在新的临时目录生成网页资源，避免旧散列文件混入。旧版同包名、同签名才可覆盖更新；电脑修改后需在手机安装新APK。应用联网获取公开数据，不依赖电脑localhost。安装要求及架构见[安卓测试版说明](mobile/README.md)。
 
 公共路线/搜索实例适合小量测试，正式销售需要有保障的服务与合法数据授权；其他来源中的非商业限制尚未全部替换。1∶20万地质云仍缺授权。0.2.2 发布验证包括 TypeScript、122 项逻辑测试、双手机尺寸浏览器交互、真实三点路线请求、网页/安卓构建与 APK 签名及资源哈希检查；真机输入法、触控、锁屏定位和耗电仍待验收。
 ## 0.1.2 精确轨迹与整线分析
