@@ -1,4 +1,11 @@
 # 当前交接：0.2.10最终构建阶段（2026-09-08）
+- 最终追加构建完成：APK/Shantu-0.2.10-test-standalone.apk仍55,088,703字节，最新SHA256 **fb2eb196cd42d7ea5b2f992f8138a6f416abdabd36a67372a48caa72efb92043**。包内已核对新增摇杆避让CSS变量和缩短提示，525资源/473地形/470PNG/CRC与签名通过。下方9d6342…是未发行旧构建，不能交付；现在需要替换草稿的APK/sha256/发行说明并更新target到新提交后公开。
+- 追加两项最终验证PASS：独立9176/tab6，区域浮栏390为252×100、360为222×100；轨迹编辑360为222×110，标题单行省略/提示缩短，按钮44px，与110px摇杆水平间隔12px，无横向溢出。规划面板360高296.39px、底352.39px，摇杆顶584px，互不重叠。截图area-gizmo-clear/route-panel-gizmo-clear/track-edit-gizmo-clear-0210-*.png。
+- 地下50米长方体实际DEM显示完整半透明被遮挡部分和亮黄接触面PASS：underground-transparent-contact-0210-360.png。新增数据仅9176，本机用户9174/9175数据保留。视口已恢复；类型、275回归、网页重新构建PASS，正在重新生成native APK。
+- 用户最新明确地下被遮挡部分也要半透明可见，仅接触面高亮：AnnotationLayer已恢复地下模型/边线depthTest=false，不因局部裁切开关改变；保留DEM接触面和侧壁。下方“开启裁切时使用深度遮挡”为已撤销的中间方案，不是最终行为。
+- 用户最新反馈“规划区UI遮挡右下摇杆”：已暂停公开Release。源码ffa4438已推送；0.2.10 Release id384532138目前draft=true，三个旧构建资产已上传，旧APK SHA9d6342…，必须替换再公开。
+- 修复仅布局：workspace.css统一110px摇杆占位和12px间隔；areas绘制浮栏靠左收窄；tracks选中浮栏/modern绘制工具限宽，按钮44px；路线规划面板降至38dvh/320px。待390/360界面实测、必要检查、重新网页/APK构建及更新哈希/资产/代码目标。
+- 注意9175现在也被用户打开使用，不能清空/删除其数据。后续布局测试用新9176独立页面，保留9174/9175服务。
 - 最终构建已PASS：类型、275全部逻辑（concurrency4）、网页、移动网页与全部Java/native APK，签名/zipalign/CRC/525网页资源/473地形/470PNG解码一致。APK/Shantu-0.2.10-test-standalone.apk：55,088,703字节，SHA256 9d63420d66266865323cd11b607fd26a6d5251c7e9605be7211a77ab9cc87b4f，code17；无QAHTML/环境/密钥。ADB无设备。
 - 最后小UI修正已验：区域按钮白字44px/360无溢出；临时profile测试页已删除，视口恢复。README/mobile/LOG/两个新模块与发行文档已更新。下一步仅交付同步：提交推送main核SHA，创建0.2.10测试Release并核三个资产digest；旧0.2.9不覆盖。
 - 最新扫码要求已实现：全部QR导入轨迹并打开SharedTrackDetails，可查看全程/真实DEM海拔/统计/起终点名称坐标；手动点击导航才弹出驾车/骑行/步行选择。真实QR图片经导入界面→详情→模式选择已通过，未启动真实GPS导航。

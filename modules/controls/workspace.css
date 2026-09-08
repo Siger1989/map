@@ -4,6 +4,11 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --edge-left: max(8px, env(safe-area-inset-left, 0px));
   --edge-right: max(8px, env(safe-area-inset-right, 0px));
+  --camera-gizmo-width: 110px;
+  --bottom-tool-width: calc(
+    100% - var(--edge-left) - var(--edge-right) - var(--camera-gizmo-width) -
+      12px
+  );
   position: relative;
   height: 100vh;
   height: 100dvh;
@@ -405,7 +410,7 @@
   z-index: 7;
   right: var(--edge-right);
   bottom: calc(78px + var(--safe-bottom));
-  width: 110px;
+  width: var(--camera-gizmo-width);
   height: 118px;
   user-select: none;
   pointer-events: none;

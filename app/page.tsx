@@ -971,7 +971,7 @@ export default function Home() {
                   ? '正在调整位置 · 松手确认，双指取消'
                   : selectedAnnotation
                     ? '长按模型后拖动 · 松手保存'
-                    : '点一下节点显示选中圈，再按住圈直接拖动'}
+                    : '点选节点出圈，再拖动调整'}
               </span>
               {selectedAnnotation && featureMove && (
                 <span>

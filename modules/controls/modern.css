@@ -272,7 +272,7 @@
   max-height: min(38dvh, 320px);
 }
 .observatory .control-dock:has(.route-panel) .control-popover {
-  max-height: min(44dvh, 370px);
+  max-height: min(38dvh, 320px);
 }
 .observatory[data-panel='annotations'] .control-popover {
   width: min(304px, calc(100% - 74px));
@@ -761,7 +761,7 @@
 }
 @media (max-height: 600px) {
   .observatory .control-dock:has(.route-panel) .control-popover {
-    max-height: calc(100dvh - 122px);
+    max-height: min(38dvh, 320px);
   }
 }
 @media (prefers-reduced-transparency: reduce) {
@@ -943,7 +943,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
-  max-width: calc(100% - var(--edge-left) - 66px);
+  max-width: min(268px, var(--bottom-tool-width));
 }
 .observatory .track-tools button {
   min-height: 32px;

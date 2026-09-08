@@ -223,7 +223,8 @@ export class AnnotationLayer implements CustomLayerInterface {
         transparent: true,
         opacity: underground ? Math.min(item.opacity, 0.45) : item.opacity,
         depthWrite: false,
-        depthTest: !underground || item.terrainCut !== false,
+        // Keep buried portions visible as a translucent reference; contact faces are a separate layer.
+        depthTest: !underground,
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geometry, material);
@@ -255,7 +256,7 @@ export class AnnotationLayer implements CustomLayerInterface {
           transparent: true,
           opacity: item.id === this.selected ? 1 : 0.8,
           depthWrite: false,
-          depthTest: !underground || item.terrainCut !== false,
+          depthTest: !underground,
         }),
       );
       rotation.add(edges);

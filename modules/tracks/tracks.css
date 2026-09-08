@@ -99,6 +99,19 @@
 .selection-tools p {
   color: #ffbf98;
 }
+.selection-tools:not(.is-annotation) {
+  width: min(268px, var(--bottom-tool-width));
+  padding: 6px;
+}
+.selection-tools:not(.is-annotation) button {
+  min-height: 44px;
+  padding: 0 4px;
+}
+.selection-tools:not(.is-annotation) strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .feature-drag-active,
 .feature-drag-active .maplibregl-canvas {
   cursor: grabbing;

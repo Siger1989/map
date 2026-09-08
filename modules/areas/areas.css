@@ -1,17 +1,17 @@
 .area-drawing-tools {
   position: absolute;
   left: var(--edge-left);
-  right: var(--edge-right);
-  bottom: calc(var(--safe-bottom) + 122px);
+  width: min(268px, var(--bottom-tool-width));
+  bottom: calc(var(--safe-bottom) + 60px);
   z-index: 11;
-  padding: 8px;
+  padding: 4px 6px;
   border-radius: 9px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  font-size: 13px;
+  gap: 2px;
+  font-size: 12px;
 }
 .area-drawing-tools > div {
   display: flex;
