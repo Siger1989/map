@@ -17,11 +17,15 @@ export function TrackPanel({
   onDraw,
   onShow,
   onEditNodes,
+  onNavigate,
+  navigationError,
 }: {
   tracks: ManualTracksState;
   onDraw: (endpoint?: Coordinate) => void;
   onShow: (points: Coordinate[]) => void;
   onEditNodes: (id: string) => void;
+  onNavigate: (id: string) => void;
+  navigationError: string;
 }) {
   const [name, setName] = useState(t.draftName ?? '');
   const [choosing, setChoosing] = useState(false);
@@ -86,6 +90,19 @@ export function TrackPanel({
           )}
         </button>
       </div>
+      {selectedTrack && (
+        <button
+          className="primary"
+          onClick={() => onNavigate(selectedTrack.id)}
+        >
+          导航所选轨迹
+        </button>
+      )}
+      {navigationError && (
+        <p className="route-error" role="alert">
+          {navigationError}
+        </p>
+      )}
       {choosing && !selectedTrack && !selectedDraft && (
         <div id="track-continue-picker" className="track-continue-picker">
           <label htmlFor="continue-track">选择要继续绘制的轨迹</label>
@@ -258,6 +275,13 @@ export function TrackPanel({
             </button>
           </div>
           <div className="route-edit-actions">
+            <button
+              className="track-navigate"
+              onClick={() => onNavigate(track.id)}
+              aria-label={`导航 ${track.name}`}
+            >
+              导航
+            </button>
             <button
               disabled={keepsOriginalPoints(track) || t.editingId === track.id}
               onClick={() => onEditNodes(track.id)}

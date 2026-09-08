@@ -26,6 +26,12 @@ import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
+import { trackNavigation } from '@/modules/guidance/savedRoute';
+import { createSession } from '@/modules/guidance/session';
+import {
+  validFavorite,
+  type RouteFavorite,
+} from '@/modules/navigation/favorites';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
@@ -139,6 +145,7 @@ export default function Home() {
   );
   const guidanceOwnsLocation = useRef(false),
     guidanceFocused = useRef(false);
+  const [savedNavigationError, setSavedNavigationError] = useState('');
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
   const photoOverlay = useMemo(
     () => (photos.visible ? photos.items : []),
@@ -246,12 +253,13 @@ export default function Home() {
     guidance.session?.last?.timestamp,
     guidance.session?.quality,
   ]);
-  const startGuidance = () => {
-    if (!guidance.start()) {
+  const activateGuidance = (route = navigation.route) => {
+    if (!guidance.start(route)) {
       setPanel('route');
       return;
     }
-    guidanceOwnsLocation.current = !position.watching;
+    guidanceOwnsLocation.current =
+      guidanceOwnsLocation.current || !position.watching;
     setSectionEditing(false);
     setProfileOpen(false);
     guidanceFocused.current = false;
@@ -264,6 +272,34 @@ export default function Home() {
     position.free();
     map.current?.previewRoute(null);
     position.locate();
+  };
+  const startGuidance = () => activateGuidance();
+  const navigateFavorite = (favorite: RouteFavorite) => {
+    setSavedNavigationError('');
+    try {
+      if (!validFavorite(favorite))
+        throw new Error('收藏路线数据无效，无法导航。');
+      createSession(favorite.route);
+      if (!navigation.restore(favorite)) return;
+      map.current?.fitRoute(favorite.route.coordinates);
+      activateGuidance(favorite.route);
+    } catch (error) {
+      setSavedNavigationError(
+        error instanceof Error ? error.message : '无法开始导航。',
+      );
+    }
+  };
+  const navigateTrack = (id: string) => {
+    setSavedNavigationError('');
+    try {
+      const track = tracks.saved.find((item) => item.id === id);
+      if (!track) throw new Error('轨迹已不存在，请重新选择。');
+      navigateFavorite(trackNavigation(track));
+    } catch (error) {
+      setSavedNavigationError(
+        error instanceof Error ? error.message : '无法开始轨迹导航。',
+      );
+    }
   };
   const guidanceOverlay = useMemo(
     () =>
@@ -1114,6 +1150,9 @@ export default function Home() {
           <CollectionsPanel
             favorites={favorites}
             tracks={tracks}
+            onNavigateRoute={navigateFavorite}
+            onNavigateTrack={navigateTrack}
+            navigationError={savedNavigationError}
             onRoute={(favorite) => {
               navigation.restore(favorite);
               map.current?.fitRoute(favorite.route.coordinates);
@@ -1134,6 +1173,8 @@ export default function Home() {
         {panel === 'track' && (
           <TrackPanel
             tracks={tracks}
+            onNavigate={navigateTrack}
+            navigationError={savedNavigationError}
             onEditNodes={(id) => {
               tracks.select(id);
               tracks.setVisible(true);

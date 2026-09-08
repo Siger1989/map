@@ -94,7 +94,7 @@ export function useNavigation() {
     restore: (favorite: RouteFavorite) => {
       if (!validFavorite(favorite)) {
         setError('收藏路线数据无效，请重新规划。');
-        return;
+        return false;
       }
       invalidate();
       setPicking(null);
@@ -107,6 +107,7 @@ export function useNavigation() {
       );
       setMode(favorite.route.mode);
       setRoute(favorite.route);
+      return true;
     },
     setMode: (value: TravelMode) => {
       invalidate();

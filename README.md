@@ -1,6 +1,8 @@
 # 山兔 · 三维地图与沿途天气
 
-**最新安装包：0.2.6-test / versionCode 13**（2026-09-08）。包含下述画线、吸附与紧凑UI更新。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.6-test/Shantu-0.2.6-test.apk) · [详细发行与平台说明](docs/release-0.2.6.md)。本版使用旧观云原包名/签名，可覆盖0.2.4系列；与0.2.5独立山兔版并存，数据不自动迁移。鸿蒙原生包未生成。
+**最新安装包：0.2.7-test / versionCode 14**（2026-09-08）。包含下述画线、吸附与紧凑UI更新。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [详细发行与平台说明](docs/release-0.2.7.md)。本版使用旧观云原包名/签名，可覆盖0.2.4系列；与0.2.5独立山兔版并存，数据不自动迁移。鸿蒙原生包未生成。
+
+**手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 
 **静止刷新排查**：消除Android原生记录快照不变时每1.5秒触发的重复地图数据更新；新定位和状态变化仍更新。用户反馈的闪烁尚未复现，不宣称全部解决。[证据与待验范围](docs/map-flicker-investigation.md)。
 
@@ -38,7 +40,7 @@
 
 另已接通 [照片放大、编辑标记、分享与拍摄环境](docs/photo-details.md)：点图全屏缩放，保存标题/备注/旋转/画线，导出带海拔和拍摄天气说明的图片副本。原图不改；旧预览可重新导入升级清晰度，天气明确标明模型或历史再分析来源。
 
-[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.6-test/Shantu-0.2.6-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.6-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
+[直接下载山兔 APK](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [下载页与校验文件](https://github.com/Siger1989/map/releases/tag/v0.2.6-test) · [位置跟随说明](docs/position-follow.md) · [完整功能说明](docs/release-0.2.2.md) · [安卓安装与构建](mobile/README.md)
 
 ## 0.2.4 更新：行程照片地图
 

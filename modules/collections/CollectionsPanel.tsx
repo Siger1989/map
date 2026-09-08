@@ -34,11 +34,17 @@ export function CollectionsPanel({
   tracks,
   onRoute,
   onTrack,
+  onNavigateRoute,
+  onNavigateTrack,
+  navigationError,
 }: {
   favorites: RouteFavoritesState;
   tracks: ManualTracksState;
   onRoute: (route: RouteFavorite) => void;
   onTrack: (id: string) => void;
+  onNavigateRoute: (route: RouteFavorite) => void;
+  onNavigateTrack: (id: string) => void;
+  navigationError: string;
 }) {
   const c = useCollections(),
     root = useRef<HTMLElement>(null);
@@ -107,6 +113,11 @@ export function CollectionsPanel({
       className="collections-panel"
       aria-label="收藏路线与轨迹"
     >
+      {navigationError && (
+        <p className="route-error" role="alert">
+          {navigationError}
+        </p>
+      )}
       {editing ? (
         <GroupEditor
           key={editing.id}
@@ -288,6 +299,17 @@ export function CollectionsPanel({
                         <strong>{e.name}</strong>
                         <small>{e.detail}</small>
                         <span className="collection-badge">{g.name}</span>
+                      </button>
+                      <button
+                        className="collection-navigate"
+                        aria-label={`导航 ${e.name}`}
+                        onClick={() =>
+                          e.kind === 'route'
+                            ? onNavigateRoute(e.route)
+                            : onNavigateTrack(e.track.id)
+                        }
+                      >
+                        导航
                       </button>
                       <button
                         className="collection-icon"

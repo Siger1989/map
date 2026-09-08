@@ -124,6 +124,14 @@
   place-items: center;
   background: transparent;
 }
+.collections-panel .collection-navigate {
+  flex-shrink: 0;
+  min-width: 44px;
+  padding: 0 6px;
+  color: var(--accent);
+  border: 1px solid currentColor;
+  font-size: 12px;
+}
 .collection-grip {
   touch-action: none;
   cursor: grab;

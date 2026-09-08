@@ -1,8 +1,10 @@
-# 当前安装包：山兔0.2.6-test（2026-09-08）
+# 当前安装包：山兔0.2.7-test（2026-09-08）
 
-[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.6-test/Shantu-0.2.6-test.apk) · [完整发行、校验与鸿蒙状态](../docs/release-0.2.6.md)。versionCode13，包名`com.guanyun.weather.preview`，安装名「山兔」，使用原签名，可覆盖0.2.4原系列。与0.2.5独立山兔版并存，数据不自动迁移。本机保有原系列密钥，缺少公司0.2.5独立版密钥，下文0.2.5的机器说明是历史情况。
+[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [完整发行、校验与鸿蒙状态](../docs/release-0.2.7.md)。versionCode14，包名`com.guanyun.weather.preview`，安装名「山兔」，使用原签名，可覆盖0.2.4原系列。与0.2.5独立山兔版并存，数据不自动迁移。本机保有原系列密钥，缺少公司0.2.5独立版密钥，下文0.2.5的机器说明是历史情况。
 
-已选中轨迹后，顶部「继续绘制」直接续画该条；未选中才出现选择器。包含下列新建/自动存档、逐点吸附、紧凑UI与顶部搜索更新。追加原生记录相同快照不重复提交地图数据，闪烁仍待复现。签名、资源、类型、233项回归和浏览器流程通过，无已连接真机；原生鸿蒙包尚未生成。
+新增手绘与收藏直接导航，保留原线形并支持导航中切换所选路线；详细行为见[保存路线导航](../docs/saved-route-navigation.md)。
+
+已选中轨迹后，顶部「继续绘制」直接续画该条；未选中才出现选择器。包含下列新建/自动存档、逐点吸附、紧凑UI与顶部搜索更新。追加原生记录相同快照不重复提交地图数据，闪烁仍待复现。签名、资源、类型、236项回归和浏览器流程通过，无已连接真机；原生鸿蒙包尚未生成。
 
 构建命令：`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -SdkRoot <Android SDK路径> -JdkRoot <JDK17路径>`。本次使用原系列密钥，不传`-StandaloneTest`；不同系列密钥不能混用。
 

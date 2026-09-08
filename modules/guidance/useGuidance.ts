@@ -191,12 +191,12 @@ export function useGuidance(
     online,
     remaining,
     instruction,
-    start: () => {
+    start: (target = route) => {
       stop();
       nextRequest.current = 0;
-      if (!route) return false;
+      if (!target) return false;
       try {
-        setSession(createSession(route));
+        setSession(createSession(target));
         return true;
       } catch (e) {
         setError(e instanceof Error ? e.message : '请重新规划路线');
