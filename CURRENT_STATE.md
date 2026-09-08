@@ -3,11 +3,11 @@
 - 修改：app/page、guidance/useGuidance与新增savedRoute、navigation/useNavigation、TrackPanel/tracks.css、CollectionsPanel/collections.css；新增3项saved-navigation回归与使用说明，README/mobile说明、manifest14/0.2.7、发行说明。存储格式、原始存档、GPS精度和图源未变。
 - 验证PASS：tsc、236/236回归、网页构建、APK构建；apksigner/包名版本/473地形瓦片、ZIP CRC与707项网页资源核对通过，470重压缩PNG解码一致。日志.openai/*saved-navigation*、build-apk-027.log、verify-apk-027.log。
 - 浏览器PASS：Chrome安装包网页，手绘/选中导航、收藏导航、结束、导航中1.0km切换1.8km符合所选目标。390/360文档无横溢；手绘行新增导航及收藏导航均约44×44px，修复原20px宽点击范围。独立来源测试数据已通过UI清理，测试页关闭，无用户来源存档改动。
-- 截图：artifacts/screenshots/saved-navigation-manual.png（IAB启动），saved-navigation-favorite.png（Chrome收藏导航），saved-navigation-track-final.png（最终列表）PASS。390截屏曾超时、视口重置捕获滞后，窄屏采用DOM尺寸检查，不能等同真机触控验收。
+- 截图：artifacts/screenshots/saved-navigation-manual.png（IAB启动），saved-navigation-favorite.png（Chrome收藏导航），saved-navigation-track-final.png（面板顶部，未滚动到新增按钮，仅留作界面记录）。前两图导航卡片PASS，列表按钮采用DOM与交互验收。390截屏曾超时、视口重置捕获滞后，窄屏采用DOM尺寸检查，不能等同真机触控验收。
 - 诊断：IAB定位后按钮/键盘操作不送达window点击监听，Chrome同产物可正常退出；临时日志已移除。新增hook热更新曾触发开发环境hook队列错误，完整刷新恢复。无证据支持修改导航停止逻辑；资料https://react.dev/reference/react-dom/client/createRoot。
 - APK：APK/Shantu-0.2.7-test.apk，78,135,358字节，SHA256 5998b13a9ad9af427fe25e975d39179f4a3bdc0685cfb48d92182dd9065a5a70；原包名/原签名，可覆盖0.2.6，与公司0.2.5独立版并存，数据不自动迁移。
 - 限制/BLOCKED：ADB无设备，真实道路导航未验收；原生鸿蒙缺少工程/签名与目标系统确认，未交付；闪烁未彻底复现/解决。手绘断开的多段需要先连接，不能虚构可通行连接或转向。
-- 下一步：提交并推送main、发布v0.2.7-test三个资产并核对digest和远端SHA；完成后不执行旧关机请求。
+- 源码已提交a190b9b并推送main，远端SHA核对一致；v0.2.7-test公开测试发行已发布，APK/SHA/发行说明三个服务端digest与本机一致，日志.openai/publish-027.log、verify-release-027.log。后续待手机实测与鸿蒙系统确认。提交身份按历史Codex/codex@openai.com仅本次命令设置，未更改全局配置。完成后不执行旧关机请求。
 # 当前任务：手绘轨迹与收藏路线导航（2026-09-08，实施中）
 - 用户反馈手绘/收藏均不能导航。启动工作区干净，pull确认88d0d50最新，读取说明/状态/模块。根因手绘无导航适配器、收藏列表仅打开路线；当前useGuidance只取当前规划，切换收藏并立即开始还需避免旧React状态。
 - 新增guidance/savedRoute保留原几何适配步行导航，按4km/h估算时间，不调用重新规划；仅合并明确相连段，不跨越未保存的空隙。手绘顶部所选导航和列表导航、收藏每行导航接入同一启动流程，原收藏保留出行模式/途经点/步骤；useGuidance.start允许明确目标，避免同一事件取旧路线。
