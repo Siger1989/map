@@ -1,11 +1,13 @@
-# 当前完成：0.2.11最终追加已验证，正在替换发行资产（2026-09-08）
+# 当前交付：0.2.11最终追加已上传GitHub并公开测试Release（2026-09-08）
 - 最新要求已完成：标记“信息”第一页在名称下新增WGS84坐标、地面海拔、国家/省/市/区县/乡镇/社区/道路，内部滚动，调整坐标跳转位置页。Photon附近地址缺项显示—，人工省市保留，自动名称使用当地文字。AnnotationLocation为独立模块。
 - 新增密集收藏/省市与当前全选/滑选边缘滚动/确认批量删除、地图框选完整对象、2000地点+80模型、标记深底白字、Excel共享字符串/A1/地名坐标在前/空属性列、沿线绿点和行程标记、12免Key图源、透明度、浅色区域输入、小圆角、唯一定位与框内标签、准星先选择标记种类。完整文件/接口/回滚范围见docs/collections-selection-and-map-library.md。
 - 最终类型检查、292/292全量逻辑、网页和Android编译打包通过。APK/Shantu-0.2.11-test-standalone.apk：**55,109,183字节**；SHA256 **1281249c2b33041ae86e1899fca848746387542b498e33a5c5acfe846c01b65b**。code18/0.2.11-test、com.guanyun.weather.shantu.preview、证书4a941b9d…；525网页/473地形/470PNG解码/CRC/签名/zipalign通过。下方66b20等均为未公开旧构建，不能交付。
 - 独立QA9176：120合成地点真实导入；城市全选80/省全选120、滑选五个同时scrollTop53、单个确认删除、框选一项→收藏一项通过。实际XLSX独立openpyxl读取120行中文/数值坐标/00000/空类目/A1/左上对齐通过。
 - 360×780和新tab10实际390×844均无横向溢出、44px条目/右侧标签无越界，标记第一页查得四川/成都/玉林街道；轨迹透明度5%、区域浅底深字、12图源抽样HTTP200/图像/CORS和切换记忆通过。沿线绿点223米及关联提示、此前路线照片ZIP/QR/模拟键盘/河流验证保留。截图artifacts/screenshots/*0211*，视口已恢复。
 - 7页PDF output/pdf/山兔-2026-09-08-版本更新.pdf已生成，逐页渲染目视通过，文本4590字符；脚本scripts/build-version-summary.py和两张合成数据截图可复现。按今日0.2.6—0.2.11记录，明确0.2.8/0.2.10内部草稿并入0.2.11。
-- 目前远端main仍90c7525，0.2.11 Release id384582744仍私有草稿且含旧66b20资产。下一步：提交推送追加→替换APK/SHA/说明并上传PDF→核服务端digest→公开→记录最终SHA。不得直接公开旧草稿。
+- 功能提交**6b9cabaab179c8b6e0f44c6bf6060815bcdec004**已推送main并核对远端一致。0.2.11 Release id384582744于2026-09-08 18:31（北京时间）公开，draft=false、prerelease=true、target为6b9c；四个资产均uploaded，逐个大小和服务端SHA256与本地一致，旧66b20包已替换。发行：https://github.com/Siger1989/map/releases/tag/v0.2.11-test-standalone 。本条交接文档随随后main提交同步。
+- APK SHA256为1281249c…01b65b；7页PDF 254573字节、SHA256 63417e48ab715801cc7ee9e2bdc4414ccf6904bfb0eb91c9df732ceeecd6793e，Release资产名Shantu-2026-09-08-release-summary.pdf，中文label保留。源码内PDF与逐页检查文件字节完全一致；.gitattributes把PDF声明为binary避免换行转换。
+- 当前授权工作已完成；下次开始读本节并核git状态，继续用户新反馈或真机验收。0.2.8/0.2.10继续保留历史内部草稿，不单独宣称已公开。测试输入与工具已归档到忽略的.openai/*.log，PDF逐页截图保存在artifacts/screenshots/pdf-reviewed-0211-*.png。
 - 原用户9174/9175数据和服务未修改；六个Harmony未跟踪原稿保留不提交。没有连接OPPO X8 Ultra，真机相机/触控/闪烁/定位/导航/分享未验收；HarmonyOS6.1原生无HAP/APP/邀请链接，缺工具链/账号签名与安装验证。
 
 ## 以下为过程历史（以上方最新状态为准）
