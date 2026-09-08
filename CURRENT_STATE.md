@@ -1,8 +1,9 @@
-# 当前任务补充：0.2.13分叉闭环、节点直操、紧凑备选进度条（2026-09-08，验证PASS，待发布）
+# 当前任务补充：0.2.13分叉闭环、节点直操、紧凑备选进度条（2026-09-08，已公开交付PASS）
 - 三项用户追加均已实现。315逻辑PASS、types PASS；左侧多条进度轨道合用44px宽的触控区，每条视觉10px，顶端44px按钮循环切换，拖动按下时锁定所选轨道。节点工具条268px宽、6个44px按钮。
 - 注意：用户已开始在原独立QA9191页面画真实路线并打开分享，故该来源现在视为用户数据，不能清理其localStorage/关闭或强制刷新丢失草稿。原9178也保留。qa-branch.html还在mobile中，是临时入口，不打入APK、不提交；最终应在保留9191来源数据的前提下转为普通入口，若仍在编辑则不强制刷新。
 - 新增alternatives.ts与tests/track-alternatives.test.mjs；修改TrackLayer、TrackJourneyRail、TrackNodeTools、draft/useManualTracks/snapping/linePoint、CSS和app接线。Android版本0.2.13-test/code20，沿用本机原系列签名。下一步最终UI回归、网页与APK构建/签名资源校验/发布，阻碍无。
 - 最终PASS：网页与APK构建、签名v2/v3/zipalign、525资源/496PNG/473地形CRC比对；APK55,117,375字节，SHA256 4e835c1eb58bf075532a09569009db551cbc328c46c87ffd92a49129ca912b4a。日志logs/*0213*。独立9192真实组件增删、草稿分叉/接回/保存同ID通过；完整地图原578m→备1023m、End100%、颜色/淡化和节点工具条通过。截图detour-rail-0213-360.png、node-toolbar-0213-360.png、node-detour-0213-390.png；两尺寸无横溢，轨道44px/工具条268×50px。9192临时页与脚本已删除、服务/标签关闭；9191页面已被用户用来画真实线，继续保留服务/页面/存档，qa-branch.html仅本机排除，不打包、不提交；没有清理用户数据。下一步提交发布并核服务器hash。
+- 发布PASS：北京时间2026-09-08 23:35:05，v0.2.13-test（Release id384858896）已公开；源码1b2bb03d3ca9aa9773ae7d2295a5bb06643fcf04已推main并核远端一致，三项资产uploaded/大小/服务器SHA256全部一致。下载https://github.com/Siger1989/map/releases/tag/v0.2.13-test 。此行仅发布记录，不改包内源码。用户正在使用的9191预览是本轮最新代码，9178保留0.2.12静态预览以免丢失草稿，不主动刷新或清理二者；315逻辑、双尺寸UI及构建校验PASS，无真机验收/HarmonyOS原生产物。当前授权工作完成，下一步用户反馈。
 
 # 当前任务：分叉接回旧节点闭环（2026-09-08，进行中）
 - 用户截图复现：拉分叉时旧路线中间节点消失，无法精确接回闭环。git状态干净、pull最新，已读AGENTS/状态和轨迹绘制/吸附模块。
