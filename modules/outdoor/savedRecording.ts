@@ -1,6 +1,7 @@
 import type { ManualTrack } from '../tracks/drawing.ts';
 import type { Recording } from './recording.ts';
 import { collectData, mergeData, type Transfer } from './exchange.ts';
+import { normalizeTrackStyle } from '../tracks/style.ts';
 
 /** Coordinates and samples are derived from the same segments, including pause boundaries. */
 export function recordingTrack(
@@ -12,6 +13,7 @@ export function recordingTrack(
   );
   return {
     id: record.id,
+    ...(record.style ? { style: normalizeTrackStyle(record.style) } : {}),
     name: `实走 ${new Date(record.startedAt).toLocaleString('zh-CN')}`,
     source: 'recorded',
     createdAt: record.startedAt,

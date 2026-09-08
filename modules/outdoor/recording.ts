@@ -7,6 +7,7 @@ import {
   DEFAULT_RECORDING_ACCURACY,
   readRecordingAccuracy,
 } from './recordingPreferences.ts';
+import type { TrackStyle } from '../tracks/style';
 export type Fix = {
   coordinates: Coordinate;
   time: number;
@@ -14,6 +15,7 @@ export type Fix = {
   altitude: number | null;
 };
 export type Recording = {
+  style?: TrackStyle;
   id: string;
   phase: 'idle' | 'recording' | 'paused' | 'finished';
   startedAt: number;

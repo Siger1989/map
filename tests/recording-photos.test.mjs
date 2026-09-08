@@ -64,6 +64,18 @@ test('finished recording saves real time and pause alignment; reloaded track sti
   assert.equal(record.segments.length, 4);
 });
 
+test('recording appearance survives saving and reload without changing GPS samples', () => {
+  const storage = memory();
+  const styled = { ...record, style: { color: '#55d6ff', width: 3 } };
+  const saved = saveRecording(styled, storage);
+  assert.deepEqual(saved.style, styled.style);
+  const restored = parseSavedTracks(storage.getItem(TRACK_STORAGE))[0];
+  assert.deepEqual(restored.style, styled.style);
+  assert.deepEqual(restored.segments, recordingTrack(record).segments);
+  assert.deepEqual(restored.samples, recordingTrack(record).samples);
+  assert.equal(recordingTrack(record).style, undefined);
+});
+
 test('failed persistence cannot report a successful save or alter the original checkpoint', () => {
   const before = JSON.stringify(record);
   assert.throws(

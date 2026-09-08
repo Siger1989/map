@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRecordingStyle } from './useRecordingStyle';
 import { useRecordingPreferences } from './useRecordingPreferences';
 import { recordingAccuracyMessage } from './recordingPreferences';
 import { nativeRecordingSnapshot } from './nativeRecordingSnapshot';
@@ -27,6 +28,7 @@ export function useRecording() {
   const [record, setRecord] = useState<Recording>(emptyRecording);
   const [native, setNative] = useState(false);
   const preferences = useRecordingPreferences();
+  const appearance = useRecordingStyle();
   const maximum = useRef(preferences.maximum);
   maximum.current = preferences.maximum;
   const [qualityNote, setQualityNote] = useState('');
@@ -175,5 +177,16 @@ export function useRecording() {
       setRecord((r) => ({ ...r, error: (e as Error).message }));
     }
   };
-  return { record, native, command, preferences, qualityNote };
+  const styledRecord = useMemo(
+    () => ({ ...record, style: appearance.style }),
+    [record, appearance.style],
+  );
+  return {
+    record: styledRecord,
+    native,
+    command,
+    preferences,
+    qualityNote,
+    appearance,
+  };
 }

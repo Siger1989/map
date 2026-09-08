@@ -428,6 +428,7 @@ export default function Home() {
               id: 'live-recording',
               name: '实走记录',
               createdAt: recorder.record.startedAt,
+              style: recorder.record.style,
               segments: recordedSegments,
             },
           ]
@@ -449,6 +450,7 @@ export default function Home() {
     [
       recordedSegments,
       recorder.record.startedAt,
+      recorder.record.style,
       recorder.record.phase,
       tracks.overlaySaved,
       tracks.draft,

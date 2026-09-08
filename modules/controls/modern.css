@@ -886,6 +886,56 @@
 .observatory .control-popover .recording-precision summary {
   padding: 6px 0;
 }
+.observatory .recording-appearance .track-style-controls {
+  margin: 0;
+}
+.observatory .recording-appearance .slider-label {
+  color: var(--text);
+}
+.observatory .control-popover .outdoor-panel .recording-start {
+  min-height: 44px;
+  padding: 0 10px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+.observatory .recording-appearance .track-color-options {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.observatory .recording-appearance .track-color-options button,
+.observatory .recording-appearance .track-custom-color {
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  justify-content: center;
+}
+.observatory .recording-appearance .track-color-options button i {
+  margin: auto;
+  width: 18px;
+  height: 18px;
+}
+.observatory
+  .recording-appearance
+  .track-color-options
+  button[aria-pressed='true'] {
+  border-color: var(--accent);
+}
+.observatory .recording-appearance .track-custom-color {
+  position: relative;
+}
+.observatory .recording-appearance .track-custom-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.observatory .recording-appearance .track-custom-color:focus-within {
+  outline: 2px solid var(--accent);
+}
 .observatory .control-popover .photo-visibility {
   color: var(--text);
 }

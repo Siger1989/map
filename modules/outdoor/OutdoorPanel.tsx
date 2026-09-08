@@ -15,6 +15,7 @@ import type { useRecording } from './useRecording';
 import type { useOffline } from './useOffline';
 import { recordingTransfer, saveRecording } from './savedRecording';
 import { RecordingPrecision } from './RecordingPrecision';
+import { TrackStyleControls } from '../tracks/TrackStyleControls';
 export function OutdoorPanel({
   recorder,
   offline,
@@ -91,7 +92,26 @@ export function OutdoorPanel({
                 }[record.phase]
               }
             </span>
+            {record.phase === 'idle' && (
+              <button
+                className="recording-start"
+                onClick={() => command('start')}
+              >
+                开始记录
+              </button>
+            )}
           </div>
+          <section className="recording-appearance" aria-label="实走轨迹样式">
+            <TrackStyleControls
+              style={recorder.appearance.style}
+              onChange={recorder.appearance.update}
+            />
+            {recorder.appearance.error && (
+              <p role="status" className="route-error">
+                {recorder.appearance.error}
+              </p>
+            )}
+          </section>
           <RecordingPrecision preferences={recorder.preferences} />
           <p className="route-note">
             {native
@@ -111,9 +131,7 @@ export function OutdoorPanel({
             </p>
           )}
           <div className="outdoor-actions">
-            {record.phase === 'idle' ? (
-              <button onClick={() => command('start')}>开始记录</button>
-            ) : (
+            {record.phase !== 'idle' && (
               <>
                 {record.phase === 'recording' && (
                   <button onClick={() => command('pause')}>暂停</button>
