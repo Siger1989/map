@@ -59,7 +59,13 @@ try {
     $certificateHash = (Get-FileHash -LiteralPath $publicCertificate -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($certificateHash -ne $signing.certificateSha256) { throw 'Signing certificate does not match the published preview APK. Build stopped to protect in-place updates. Supply the original signing key, or use -UnsignedOnly for a non-installable build check.' }
   }
-  if (!$SkipWebBuild) { & npm.cmd run build:android:web; Check-Tool 'Web build' }
+  if (!$SkipWebBuild) {
+    # Build into a fresh staging directory so cached mobile/dist files cannot
+    # leak into a release, even when a bundler leaves obsolete hashed assets.
+    $webRoot = Join-Path $stage 'web'
+    if (Test-Path -LiteralPath $webRoot) { throw 'Fresh APK web staging directory already exists' }
+    & npm.cmd run build:android:web -- --outDir $webRoot; Check-Tool 'Web build'
+  }
   if (!(Test-Path -LiteralPath (Join-Path $webRoot 'index.html'))) { throw 'Mobile entry point missing' }
   foreach ($dir in @($stage, $outputRoot, (Join-Path $stage 'classes'), (Join-Path $stage 'dex'), (Join-Path $stage 'generated'), (Join-Path $webRoot 'native'))) {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
