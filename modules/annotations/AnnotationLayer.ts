@@ -8,11 +8,12 @@ import {
 } from 'maplibre-gl';
 import { altitudeRange, dimensions, type Annotation } from './data';
 import type { LayerSettings } from '../map/types';
-import { modelSection } from '../section/models';
+import { modelSectionLoops } from '../section/models';
 import { applyModelPlane } from '../section/planeModels';
 import type { SectionSettings } from '../section/types';
 import { modelLabelAnchor } from './modelLabel';
 import { modelGeometry, modelRotation } from './modelGeometry';
+import { markerIconElement } from './icons';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -169,11 +170,20 @@ export class AnnotationLayer implements CustomLayerInterface {
       const existing = this.markers.get(item.id);
       const element =
         existing?.getElement() ?? document.createElement('button');
-      element.className = `annotation-marker ${item.id === this.selected ? 'is-selected' : ''} ${item.placement === 'underground' ? 'is-underground' : ''}`;
+      // Marker owns its positioning classes. Replacing className detaches labels
+      // from their geographic anchor after a selection or parameter edit.
+      element.classList.add('annotation-marker');
+      element.classList.toggle('is-selected', item.id === this.selected);
+      element.classList.toggle(
+        'is-underground',
+        item.placement === 'underground',
+      );
       element.style.setProperty('--marker-color', item.color);
       element.setAttribute('type', 'button');
       element.dataset.annotationId = item.id;
-      element.textContent = `${item.placement === 'underground' ? '▽ ' : '● '}${item.name || '未命名'}`;
+      const label = document.createElement('span');
+      label.textContent = `${item.placement === 'underground' ? '▽ ' : ''}${item.name || '未命名'}`;
+      element.replaceChildren(markerIconElement(item.icon), label);
       element.title = `${item.name} · 点击查看，长按拖动位置`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
@@ -213,7 +223,7 @@ export class AnnotationLayer implements CustomLayerInterface {
         transparent: true,
         opacity: underground ? Math.min(item.opacity, 0.45) : item.opacity,
         depthWrite: false,
-        depthTest: !underground,
+        depthTest: !underground || item.terrainCut !== false,
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geometry, material);
@@ -245,7 +255,7 @@ export class AnnotationLayer implements CustomLayerInterface {
           transparent: true,
           opacity: item.id === this.selected ? 1 : 0.8,
           depthWrite: false,
-          depthTest: !underground,
+          depthTest: !underground || item.terrainCut !== false,
         }),
       );
       rotation.add(edges);
@@ -321,40 +331,42 @@ export class AnnotationLayer implements CustomLayerInterface {
         }
       });
       if (altitude === null || !frame.visible) continue;
-      const points = modelSection(item, altitude);
-      if (points.length < 3) continue;
+      const loops = modelSectionLoops(item, altitude);
+      if (!loops.length) continue;
       const cap = new THREE.Group();
       cap.name = 'section-cap';
       cap.position.z = altitude - range.center;
-      const shape = new THREE.Shape(
-        points.map(([x, y]) => new THREE.Vector2(x, y)),
-      );
-      const face = new THREE.Mesh(
-        new THREE.ShapeGeometry(shape),
-        new THREE.MeshBasicMaterial({
-          color: item.color,
-          side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.88,
-          depthWrite: false,
-          depthTest: false,
-        }),
-      );
-      const edge = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          points.map(([x, y]) => new THREE.Vector3(x, y, 0)),
-        ),
-        new THREE.LineBasicMaterial({
-          color: '#334155',
-          depthWrite: false,
-          depthTest: false,
-        }),
-      );
-      face.renderOrder = 30;
-      edge.renderOrder = 31;
-      face.frustumCulled = false;
-      edge.frustumCulled = false;
-      cap.add(face, edge);
+      for (const points of loops) {
+        const shape = new THREE.Shape(
+          points.map(([x, y]) => new THREE.Vector2(x, y)),
+        );
+        const face = new THREE.Mesh(
+          new THREE.ShapeGeometry(shape),
+          new THREE.MeshBasicMaterial({
+            color: item.color,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.88,
+            depthWrite: false,
+            depthTest: false,
+          }),
+        );
+        const edge = new THREE.LineLoop(
+          new THREE.BufferGeometry().setFromPoints(
+            points.map(([x, y]) => new THREE.Vector3(x, y, 0)),
+          ),
+          new THREE.LineBasicMaterial({
+            color: '#334155',
+            depthWrite: false,
+            depthTest: false,
+          }),
+        );
+        face.renderOrder = 30;
+        edge.renderOrder = 31;
+        face.frustumCulled = false;
+        edge.frustumCulled = false;
+        cap.add(face, edge);
+      }
       frame.add(cap);
     }
   }

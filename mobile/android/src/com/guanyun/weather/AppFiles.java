@@ -41,9 +41,12 @@ final class AppFiles {
         catch(Exception e) { output=null;android.widget.Toast.makeText(activity,"无法打开系统文件保存器",0).show(); }
     }
     void savePhoto(String name, byte[] bytes) {
+        saveBytes(name, "image/jpeg", bytes);
+    }
+    void saveBytes(String name, String mime, byte[] bytes) {
         if (output != null) { android.widget.Toast.makeText(activity,"请先完成当前文件保存",0).show(); return; }
         output = bytes;
-        try { activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/jpeg").putExtra(Intent.EXTRA_TITLE,name),SAVE); }
+        try { activity.startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(mime).putExtra(Intent.EXTRA_TITLE,name),SAVE); }
         catch(Exception e) { output=null; android.widget.Toast.makeText(activity,"无法打开图片保存器",0).show(); }
     }
     void result(int request,int result,Intent intent) {

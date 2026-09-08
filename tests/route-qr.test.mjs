@@ -10,6 +10,8 @@ import {
 } from '../modules/routeShare/qrCodec.ts';
 import { qrTransfer } from '../modules/routeShare/qrImport.ts';
 import { validFavorite } from '../modules/navigation/favorites.ts';
+import { trackNavigation } from '../modules/guidance/savedRoute.ts';
+import { parseSavedTracks } from '../modules/tracks/drawing.ts';
 const data = {
   name: '成都东站 → 春熙路',
   mode: 'bicycle',
@@ -54,7 +56,13 @@ test('offline QR round trips mode, names, endpoints and is readable by the app Q
             pixels[i] = pixels[i + 1] = pixels[i + 2] = 0;
           }
   assert.equal(jsQR(pixels, size, size)?.data, qr.text);
-  assert.ok(validFavorite(qrTransfer(value, 1000).favorite));
+  const imported = qrTransfer(value, 1000);
+  assert.equal(imported.transfer.favorites.length, 0);
+  const [track] = parseSavedTracks(JSON.stringify(imported.transfer.tracks));
+  assert.deepEqual(track.sharedRoute.stops, data.stops);
+  assert.equal(track.navigationMode, 'bicycle');
+  assert.ok(validFavorite(trackNavigation(track)));
+  assert.deepEqual(trackNavigation(track).route.stops, data.stops);
 });
 test('complex routes aggressively simplify QR only while retaining protected stops and original image/file geometry', () => {
   const points = Array.from({ length: 2500 }, (_, i) => [
@@ -77,7 +85,10 @@ test('complex routes aggressively simplify QR only while retaining protected sto
     value.segments[0].some((p) => Math.abs(p[0] - points[1200][0]) < 0.000001),
   );
   assert.deepEqual(value.stops, stops);
-  assert.ok(validFavorite(qrTransfer(value, 1000).favorite));
+  const imported = qrTransfer(value, 1000);
+  assert.equal(imported.transfer.favorites.length, 0);
+  assert.equal(imported.track.sharedRoute.tolerance, value.tolerance);
+  assert.ok(validFavorite(trackNavigation(imported.track)));
 });
 test('corrupt, oversized and decompression length abuse are rejected before import', () => {
   assert.throws(() => readRouteQr('https://tiles.example.org'), /不是/);

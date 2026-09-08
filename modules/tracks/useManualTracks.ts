@@ -359,6 +359,14 @@ export function useManualTracks() {
             track.id === id
               ? {
                   ...track,
+                  ...(track.sharedRoute
+                    ? {
+                        sharedRoute: {
+                          ...track.sharedRoute,
+                          stops: track.sharedRoute.stops.slice().reverse(),
+                        },
+                      }
+                    : {}),
                   segments: joinSegments(track.segments)
                     .reverse()
                     .map((line) => line.slice().reverse()),
@@ -392,6 +400,7 @@ export function useManualTracks() {
       const ids = new Set(connected.map((t) => t.id));
       const merged = {
         ...seed,
+        sharedRoute: undefined,
         segments,
         nodes: connected
           .flatMap((t) => t.nodes ?? [])

@@ -27,6 +27,19 @@ export function moveTrackNode(
   return {
     ...track,
     segments: moveSegmentsNode(track.segments, from, to),
+    ...(track.sharedRoute
+      ? {
+          sharedRoute: {
+            ...track.sharedRoute,
+            duration: null,
+            stops: track.sharedRoute.stops.map((s) =>
+              equalCoordinate(s.coordinates, from)
+                ? { ...s, coordinates: [...to] as Coordinate }
+                : s,
+            ),
+          },
+        }
+      : {}),
     nodes: track.nodes?.map((point) =>
       equalCoordinate(point, from) ? [...to] : point,
     ),

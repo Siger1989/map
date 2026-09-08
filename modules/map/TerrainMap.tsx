@@ -21,6 +21,9 @@ import { GuidanceLayer, type GuidanceOverlay } from '../guidance/GuidanceLayer';
 import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
+import { AreaLayer, type AreaOverlay } from '../areas/AreaLayer';
+import { TerrainModelMask } from '../modelTerrain/terrainMask';
+import { ModelTerrainLayer } from '../modelTerrain/ModelTerrainLayer';
 import type { ScreenPoint } from '../tracks/drawing';
 import { MapLongPress, type MapHold } from './MapLongPress';
 import {
@@ -118,6 +121,9 @@ type Props = {
   onMapPick: (coordinates: Coordinate) => void;
   onMapHold?: (hold: MapHold) => void;
   trackOverlay: TrackOverlay;
+  areaOverlay: AreaOverlay;
+  onAreaSelect: (id: string) => void;
+  onModelTerrainStatus: (message: string) => void;
   drawingActive: boolean;
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
@@ -131,6 +137,7 @@ type Props = {
   roadSnapping: boolean;
   pickingActive: boolean;
   onTrackSelect: (id: string) => void;
+  onTrackNodeSelect: (node: import('../tracks/editing').TrackNode) => void;
   onDragBegin: (target: DragTarget) => void;
   onDragPreview: (move: FeatureMove | null) => void;
   onDragCommit: (move: FeatureMove) => void;
@@ -153,6 +160,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
+    const areaRef = useRef<AreaLayer | null>(null);
+    const modelMaskRef = useRef<TerrainModelMask | null>(null);
+    const modelTerrainRef = useRef<ModelTerrainLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const longPressRef = useRef<MapLongPress | null>(null);
@@ -319,6 +329,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       geologyRef.current?.sync(s);
       routeRef.current?.sync(latest.current.routeOverlay);
       trackRef.current?.sync(latest.current.trackOverlay);
+      areaRef.current?.sync(latest.current.areaOverlay);
       positionRef.current?.sync(latest.current.position);
       annotationRef.current?.update(
         latest.current.annotations,
@@ -546,6 +557,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const terrainGL = map.getCanvas().getContext('webgl2');
+          if (terrainGL) modelMaskRef.current = new TerrainModelMask(terrainGL);
           diagnostics.current = observeMapRendering(map);
           sourceRef.current = new MapSourceLayer(map, (text) =>
             latest.current.onSourceStatus?.(text),
@@ -588,10 +601,20 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               if (element !== map.getCanvas()) return null;
               const model = annotationRef.current?.pickForMove(point);
               if (model) return { kind: 'annotation', ...model };
+              const areaNode = areaRef.current?.pickNode(point);
+              if (areaNode) return areaNode;
               const node = trackRef.current?.pickNode(point);
               return node ? { kind: 'track', node } : null;
             },
             begin: (target) => latest.current.onDragBegin(target),
+            direct: (target) =>
+              target.kind === 'track' &&
+              latest.current.trackOverlay.activeNode?.trackId ===
+                target.node.trackId &&
+              latest.current.trackOverlay.activeNode.coordinate[0] ===
+                target.node.coordinate[0] &&
+              latest.current.trackOverlay.activeNode.coordinate[1] ===
+                target.node.coordinate[1],
             preview: (move) => latest.current.onDragPreview(move),
             commit: (move) => latest.current.onDragCommit(move),
           });
@@ -665,6 +688,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             guidanceRef.current = new GuidanceLayer(map);
             guidanceRef.current.sync(latest.current.guidanceOverlay ?? null);
             trackRef.current = new TrackLayer(map);
+            areaRef.current = new AreaLayer(map);
+            areaRef.current.sync(latest.current.areaOverlay);
             positionRef.current = new PositionLayer(map);
             photosRef.current = new PhotoLayer(map, (ids) =>
               latest.current.onPhotoSelect(ids),
@@ -682,6 +707,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   latest.current.onAnnotationSelect(id);
               });
               map.addLayer(annotationRef.current);
+              if (modelMaskRef.current) {
+                modelTerrainRef.current = new ModelTerrainLayer(
+                  map,
+                  modelMaskRef.current,
+                  (message) => latest.current.onModelTerrainStatus(message),
+                );
+                map.addLayer(modelTerrainRef.current);
+                modelTerrainRef.current.configure(
+                  latest.current.annotations,
+                  latest.current.settings,
+                );
+              }
               map.addLayer(
                 new ObjectProjectionLayer((matrix) => {
                   const canvas = map.getCanvas(),
@@ -785,8 +822,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 return;
               }
               const track = trackRef.current?.pickTrack(event.point);
+              const node = trackRef.current?.pickNode(event.point);
+              if (node) {
+                latest.current.onTrackNodeSelect(node);
+                return;
+              }
               if (track) {
                 latest.current.onTrackSelect(track);
+                return;
+              }
+              const area = areaRef.current?.pick(event.point);
+              if (area) {
+                latest.current.onAreaSelect(area);
                 return;
               }
             }
@@ -812,6 +859,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', (event) => {
+            areaRef.current?.sync(latest.current.areaOverlay);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) return;
             if (!('positionFollow' in event && event.positionFollow))
@@ -885,6 +933,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         sourceRef.current = null;
         releaseSourceProtocol?.();
         mapRef.current?.remove();
+        modelTerrainRef.current = null;
+        modelMaskRef.current?.dispose();
+        modelMaskRef.current = null;
         diagnostics.current?.dispose();
         diagnostics.current = null;
         mapRef.current = null;
@@ -931,6 +982,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       if (loaded.current) trackRef.current?.sync(props.trackOverlay);
     }, [props.trackOverlay]);
+    useEffect(() => {
+      modelTerrainRef.current?.configure(props.annotations, settings);
+    }, [props.annotations, settings]);
+    useEffect(() => {
+      if (loaded.current) areaRef.current?.sync(props.areaOverlay);
+    }, [props.areaOverlay]);
     useEffect(() => {
       if (loaded.current) positionRef.current?.sync(props.position);
     }, [props.position]);

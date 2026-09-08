@@ -13,6 +13,15 @@ export default defineConfig(({ mode }) => ({
   },
   root: fileURLToPath(new URL('.', import.meta.url)),
   publicDir: fileURLToPath(new URL('../public', import.meta.url)),
+  // APK requests use LocalGateway. Browser-only mobile previews need the web API server.
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.SHANTU_DEV_API_URL || 'http://localhost:3108',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
   plugins: [react()],
   css: { postcss: { plugins: [tailwindcss()] } },

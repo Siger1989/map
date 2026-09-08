@@ -31,6 +31,7 @@ import { createSession } from '@/modules/guidance/session';
 import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
 import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
+import { annotationViewZoom } from '@/modules/annotations/view';
 import {
   sharePlanned,
   shareTrack,
@@ -57,6 +58,7 @@ import {
   TRAVEL_MODES,
 } from '@/modules/navigation/types';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
+import { keepsOriginalPoints } from '@/modules/tracks/provenance';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionProfile } from '@/modules/section/SectionProfile';
@@ -93,6 +95,9 @@ import {
 import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { INITIAL_GEOLOGY } from '@/modules/geology/data';
 import { GeologyPanel } from '@/modules/geology/GeologyPanel';
+import { useAreas } from '@/modules/areas/useAreas';
+import { AreaTools } from '@/modules/areas/AreaTools';
+import { outlineModel } from '@/modules/areas/extrude';
 import { useWeather } from '@/modules/weather/useWeather';
 import { TemperatureLegend } from '@/modules/weather/TemperatureLegend';
 import { useMapTools } from '@/modules/controls/useMapTools';
@@ -113,6 +118,10 @@ export default function Home() {
     [],
   );
   const drawing = useRef<TrackDrawingHandle>(null);
+  const areaDrawing = useRef<TrackDrawingHandle>(null);
+  const areas = useAreas();
+  const [areaEditing, setAreaEditing] = useState(false);
+  const [modelTerrainStatus, setModelTerrainStatus] = useState('');
   const [layers, setLayers] = useState<LayerSettings>(DEFAULT_LAYERS);
   const [geology, setGeology] = useState(INITIAL_GEOLOGY);
   const [point, setPoint] = useState<Point>({
@@ -195,8 +204,40 @@ export default function Home() {
     [recorder.record],
   );
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
+  const [activeTrackNode, setActiveTrackNode] = useState<
+    import('@/modules/tracks/editing').TrackNode | null
+  >(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
   const sections = useSavedSection();
+  const startArea = () => {
+    tracks.pause();
+    setActiveTrackNode(null);
+    annotations.select(null);
+    navigation.setPicking(null);
+    setProfileOpen(false);
+    setSectionEditing(false);
+    setPanel(null);
+    setQuickAdd(null);
+    map.current?.stop();
+    areas.start();
+    setAreaEditing(true);
+  };
+  const areaOverlay = useMemo(
+    () => ({
+      items: areas.items,
+      selected: areas.selected,
+      draft: areas.draft,
+      preview:
+        featureMove?.target.kind === 'area'
+          ? {
+              id: featureMove.target.id,
+              index: featureMove.target.index,
+              coordinate: featureMove.coordinate,
+            }
+          : null,
+    }),
+    [areas.items, areas.selected, areas.draft, featureMove],
+  );
   const [sectionListOpen, setSectionListOpen] = useState(false);
   const {
     settings: sectionDraft,
@@ -249,6 +290,7 @@ export default function Home() {
     fix: cameraFix,
     phase: recorder.record.phase,
     blocked:
+      areas.drawing ||
       tracks.editing ||
       !!annotations.picking ||
       navigation.picking !== null ||
@@ -511,6 +553,7 @@ export default function Home() {
       nodes: tracks.vertices,
       drawing: tracks.drawing,
       selectedId: tracks.selectedId,
+      activeNode: activeTrackNode,
       preview:
         featureMove?.target.kind === 'track'
           ? {
@@ -521,6 +564,7 @@ export default function Home() {
     }),
     [
       recordedSegments,
+      activeTrackNode,
       recorder.record.startedAt,
       recorder.record.style,
       recorder.record.phase,
@@ -602,6 +646,18 @@ export default function Home() {
           setProfileOpen(false);
           return;
         }
+        if (activeTrackNode) {
+          event.preventDefault();
+          setActiveTrackNode(null);
+          return;
+        }
+        if (areas.drawing || areas.selected) {
+          event.preventDefault();
+          if (areas.drawing) areas.pause();
+          else if (areaEditing) setAreaEditing(false);
+          else areas.select(null);
+          return;
+        }
         if (annotations.selected && !annotations.picking) {
           event.preventDefault();
           annotations.select(null);
@@ -660,8 +716,23 @@ export default function Home() {
         routeOverlay={routeOverlay}
         guidanceOverlay={guidanceOverlay}
         trackOverlay={trackOverlay}
-        drawingActive={tracks.drawing && panel === null}
-        onDrawingInput={(event) => drawing.current?.input(event)}
+        areaOverlay={areaOverlay}
+        onModelTerrainStatus={setModelTerrainStatus}
+        onAreaSelect={(id) => {
+          areas.select(id);
+          annotations.select(null);
+          tracks.select(null);
+          tracks.pause();
+          setProfileOpen(false);
+          setAreaEditing(true);
+          setPanel(null);
+        }}
+        drawingActive={(tracks.drawing || areas.drawing) && panel === null}
+        onDrawingInput={(event) =>
+          areas.drawing
+            ? areaDrawing.current?.input(event)
+            : drawing.current?.input(event)
+        }
         photos={photoOverlay}
         onPhotoSelect={(ids) => {
           follow.pause();
@@ -680,10 +751,26 @@ export default function Home() {
           annotations.picking || navigation.picking !== null,
         )}
         onTrackSelect={(id) => {
+          setActiveTrackNode(null);
           tracks.select(id);
           annotations.select(null);
           tracks.finish();
           setPanel('track');
+        }}
+        onTrackNodeSelect={(node) => {
+          if (node.trackId === 'live-recording') return;
+          const savedTrack = tracks.saved.find((t) => t.id === node.trackId);
+          if (savedTrack && keepsOriginalPoints(savedTrack)) {
+            tracks.select(node.trackId);
+            setPanel('track');
+            return;
+          }
+          setActiveTrackNode(node);
+          tracks.select(node.trackId);
+          annotations.select(null);
+          areas.select(null);
+          tracks.finish();
+          setPanel(null);
         }}
         onDragBegin={(target) => {
           position.free();
@@ -691,6 +778,11 @@ export default function Home() {
           if (target.kind === 'track') {
             tracks.select(target.node.trackId);
             annotations.select(null);
+          } else if (target.kind === 'area') {
+            areas.select(target.id);
+            setAreaEditing(false);
+            annotations.select(null);
+            tracks.select(null);
           } else {
             annotations.select(target.id);
             tracks.select(null);
@@ -699,10 +791,16 @@ export default function Home() {
         }}
         onDragPreview={setFeatureMove}
         onDragCommit={({ target, coordinate }) => {
-          if (target.kind === 'track') tracks.moveNode(target.node, coordinate);
+          if (target.kind === 'track') {
+            if (tracks.moveNode(target.node, coordinate))
+              setActiveTrackNode({ ...target.node, coordinate });
+          } else if (target.kind === 'area')
+            areas.move(target.id, target.index, coordinate);
           else annotations.move(target.id, coordinate);
         }}
         onAnnotationSelect={(id) => {
+          setActiveTrackNode(null);
+          areas.select(null);
           setProfileOpen(false);
           annotations.select(id);
           tracks.select(null);
@@ -729,6 +827,7 @@ export default function Home() {
           }
           if (navigation.pick(coordinates)) setPanel('route');
           else {
+            setActiveTrackNode(null);
             tracks.select(null);
             annotations.select(null);
           }
@@ -736,17 +835,23 @@ export default function Home() {
       />
       {quickAdd && (
         <QuickAdd
+          onArea={startArea}
           at={quickAdd}
           error={annotations.error}
           onClose={() => setQuickAdd(null)}
           onAdd={(kind) => {
-            if (annotations.add(kind, quickAdd.coordinate)) setQuickAdd(null);
+            if (annotations.add(kind, quickAdd.coordinate)) {
+              areas.select(null);
+              setQuickAdd(null);
+              setProfileOpen(false);
+              setPanel('annotations');
+            }
           }}
         />
       )}
       <TrackDrawing
         ref={drawing}
-        enabled={tracks.drawing && panel === null}
+        enabled={tracks.drawing && !areas.drawing && panel === null}
         length={tracks.rodLength}
         style={tracks.style}
         mode={tracks.mode}
@@ -770,7 +875,76 @@ export default function Home() {
         toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
         onStroke={tracks.addStroke}
       />
-      {tracks.editing && tracks.drawing && panel === null && (
+      <TrackDrawing
+        ref={areaDrawing}
+        enabled={areas.drawing && panel === null}
+        length={tracks.rodLength}
+        style={{ color: '#66cfa2', width: 3 }}
+        mode="points"
+        anchor={null}
+        candidates={areas.draft}
+        snapping={true}
+        roadSnapping={areas.roadSnapping}
+        snapRoad={(point, previous, from) =>
+          map.current?.snapRoad(point, previous, from) ?? {
+            status: 'loading',
+            match: null,
+          }
+        }
+        lastVertex={areas.draft.at(-1) ?? null}
+        toScreen={(p) => map.current?.toScreen(p) ?? null}
+        toCoordinate={(p) => map.current?.toCoordinate(p) ?? null}
+        magnify={(canvas, point) =>
+          map.current?.magnify(canvas, point) ?? (() => {})
+        }
+        onAnchor={() => {}}
+        onVertex={areas.add}
+        onStroke={() => {}}
+      />
+      {(areas.drawing || (areas.selected && areaEditing)) && panel === null && (
+        <AreaTools
+          key={areas.selected ?? 'draft-area'}
+          state={areas}
+          onHide={() => setAreaEditing(false)}
+          onExtrude={(height) => {
+            const area = areas.items.find((a) => a.id === areas.selected);
+            if (!area) return '请先闭合轮廓';
+            try {
+              if (!annotations.addOutline(outlineModel(area, height)))
+                return '轮廓模型保存失败，请检查标记数量和存储空间';
+              areas.update(area.id, { visible: false });
+              areas.select(null);
+              setPanel('annotations');
+              return null;
+            } catch (e) {
+              return e instanceof Error ? e.message : '拉伸失败';
+            }
+          }}
+          onFinish={() => {
+            const first = areas.draft[0],
+              last = areas.draft.at(-1),
+              pixel = first && map.current?.toScreen(first);
+            const result =
+              areas.roadSnapping && pixel
+                ? map.current?.snapRoad(pixel, null, last)
+                : null;
+            if (result?.section?.length)
+              areas.add(first, [...result.section.slice(0, -1), first]);
+            else areas.finish();
+          }}
+        />
+      )}
+      {areas.selected && !areaEditing && !areas.drawing && panel === null && (
+        <div className="area-selection glass">
+          <button onClick={() => setAreaEditing(true)}>区域编辑</button>
+          <button disabled={!areas.canUndo} onClick={areas.undoMove}>
+            撤销调点
+          </button>
+          <button onClick={() => areas.select(null)}>关闭</button>
+          {areas.error && <p role="status">{areas.error}</p>}
+        </div>
+      )}
+      {tracks.editing && tracks.drawing && !areas.drawing && panel === null && (
         <TrackTools
           tracks={tracks}
           onLocate={(point) => map.current?.focusPoint(point)}
@@ -797,7 +971,7 @@ export default function Home() {
                   ? '正在调整位置 · 松手确认，双指取消'
                   : selectedAnnotation
                     ? '长按模型后拖动 · 松手保存'
-                    : '长按节点约半秒，再拖动位置'}
+                    : '点一下节点显示选中圈，再按住圈直接拖动'}
               </span>
               {selectedAnnotation && featureMove && (
                 <span>
@@ -977,7 +1151,10 @@ export default function Home() {
       <div
         className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
         hidden={
-          panel !== 'layers' && !layers.elevationColors && !layers.temperature
+          panel !== 'layers' &&
+          !layers.elevationColors &&
+          !layers.temperature &&
+          !layers.geology
         }
       >
         {layers.temperature && (
@@ -1266,6 +1443,8 @@ export default function Home() {
         )}
         {panel === 'annotations' && (
           <AnnotationPanel
+            terrainStatus={modelTerrainStatus}
+            onArea={startArea}
             state={annotations}
             onPick={(kind) => {
               tracks.pause();
@@ -1282,6 +1461,36 @@ export default function Home() {
         )}
         {panel === 'favorites' && (
           <CollectionsPanel
+            areas={areas.items}
+            onArea={(id) => {
+              const a = areas.items.find((a) => a.id === id);
+              if (a) {
+                areas.select(id);
+                annotations.select(null);
+                tracks.select(null);
+                map.current?.fitRoute(a.boundary);
+                setAreaEditing(true);
+                setPanel(null);
+              }
+            }}
+            annotations={annotations.items}
+            sections={sections.items}
+            onAnnotation={(id) => {
+              const item = annotations.items.find((a) => a.id === id);
+              if (!item) return;
+              annotations.select(id);
+              tracks.select(null);
+              setProfileOpen(false);
+              map.current?.focusPoint(
+                item.coordinates,
+                annotationViewZoom(item),
+              );
+              setPanel('annotations');
+            }}
+            onSection={(id) => {
+              setPanel(null);
+              openSection(id);
+            }}
             onShareRoute={(favorite) =>
               setShareTarget(sharePlanned(favorite.route, favorite.name))
             }
@@ -1470,7 +1679,10 @@ export default function Home() {
             pose={selectedPose}
             watchProjection={watchObjectProjection}
             onLocate={() =>
-              map.current?.focusPoint(selectedAnnotation.coordinates, view.zoom)
+              map.current?.focusPoint(
+                selectedAnnotation.coordinates,
+                annotationViewZoom(selectedAnnotation),
+              )
             }
             error={annotations.error}
             canUndo={annotations.moveUndoId === selectedAnnotation.id}
@@ -1556,11 +1768,16 @@ export default function Home() {
         <RouteQrReader
           initial={routeQr}
           onClose={() => setRouteQr(null)}
-          onLoaded={(favorite, points) => {
+          onLoaded={(track) => {
             setRouteQr(null);
-            if (favorite) navigation.restore(favorite);
-            map.current?.fitRoute(points);
-            setPanel(favorite ? 'route' : 'favorites');
+            tracks.pause();
+            tracks.select(track.id);
+            tracks.setVisible(true);
+            setActiveTrackNode(null);
+            annotations.select(null);
+            areas.select(null);
+            map.current?.fitRoute(track.segments.flat());
+            setPanel('track');
           }}
         />
       )}

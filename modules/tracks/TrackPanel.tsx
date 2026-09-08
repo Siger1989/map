@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
+import { SharedTrackDetails } from './SharedTrackDetails';
 import { trackDistance } from './drawing';
 import {
   keepsOriginalPoints,
@@ -32,6 +33,7 @@ export function TrackPanel({
   const [name, setName] = useState(t.draftName ?? '');
   const [choosing, setChoosing] = useState(false);
   const [continueId, setContinueId] = useState('');
+  const [editShared, setEditShared] = useState(false);
   const records = [...t.saved].sort(
     (a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt),
   );
@@ -44,6 +46,7 @@ export function TrackPanel({
   const selectedDraft = details === 'draft' && t.draft.length > 0;
   const section = useRef<HTMLElement>(null);
   useEffect(() => {
+    setEditShared(false);
     const frame = requestAnimationFrame(() => {
       const record = Array.from(
         section.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [],
@@ -52,6 +55,18 @@ export function TrackPanel({
     });
     return () => cancelAnimationFrame(frame);
   }, [details]);
+  if (selectedTrack?.sharedRoute && !editShared)
+    return (
+      <SharedTrackDetails
+        track={selectedTrack}
+        onBack={() => t.select(null)}
+        onEdit={() => setEditShared(true)}
+        onShow={onShow}
+        onNavigate={() => onNavigate(selectedTrack.id)}
+        onShare={() => onShare(selectedTrack.id)}
+        error={navigationError}
+      />
+    );
   return (
     <section ref={section} className="track-panel" aria-label="轨迹管理">
       <div className="track-start-actions">
@@ -324,6 +339,32 @@ export function TrackPanel({
           </div>
           {details === track.id && (
             <>
+              {track.sharedRoute && (
+                <div className="route-note">
+                  {track.sharedRoute.stops.map((s, i) => (
+                    <div key={i}>
+                      {i === 0
+                        ? '起点'
+                        : i === track.sharedRoute!.stops.length - 1
+                          ? '终点'
+                          : `途经 ${i}`}
+                      ：{s.name}
+                      <br />
+                      {s.coordinates[1].toFixed(6)}°,{' '}
+                      {s.coordinates[0].toFixed(6)}°
+                    </div>
+                  ))}
+                  <p>
+                    {track.sharedRoute.tolerance > 0
+                      ? `二维码线形已简化（约 ${track.sharedRoute.tolerance} 米），海拔沿当前线形重新采样。完整精度请另导入 GPX/KML。`
+                      : '海拔由地形数据采样；未缓存地形时需联网加载。'}
+                  </p>
+                  <JourneyPanel
+                    segments={track.segments}
+                    onLocate={(p) => onShow([p])}
+                  />
+                </div>
+              )}
               <label className="track-rename">
                 线路名称
                 <input
@@ -353,7 +394,7 @@ export function TrackPanel({
                 <br />
                 {keepsOriginalPoints(track)
                   ? '原始坐标和时间受保护；重命名或改线条样式不会改变记录。'
-                  : '长按移动后自动保存到本机，可撤销最近的节点移动。'}
+                  : '点选节点出现选中圈，再按住圈直接拖动；松手保存，可撤销。'}
               </p>
               <button
                 disabled={
@@ -369,10 +410,12 @@ export function TrackPanel({
                 style={normalizeTrackStyle(track.style)}
                 onChange={(style) => t.updateStyle(track.id, style)}
               />
-              <JourneyPanel
-                segments={track.segments}
-                onLocate={(p) => onShow([p])}
-              />
+              {!track.sharedRoute && (
+                <JourneyPanel
+                  segments={track.segments}
+                  onLocate={(p) => onShow([p])}
+                />
+              )}
             </>
           )}
           {details === track.id && (

@@ -50,8 +50,10 @@ export function drawingRecord(input: {
     label: input.place?.trim().slice(0, 120) || '',
   };
   const createdAt = input.prior?.createdAt ?? input.createdAt;
+  const prior = { ...input.prior };
+  delete prior.sharedRoute;
   return {
-    ...input.prior,
+    ...prior,
     id: input.prior?.id ?? input.id,
     name:
       input.name.trim().slice(0, 60) ||

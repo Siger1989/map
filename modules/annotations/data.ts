@@ -1,4 +1,7 @@
 import { coordinate, type Coordinate } from '../navigation/types.ts';
+import { MARKER_ICONS, type MarkerIconId } from './icons.ts';
+import { validAttributes, type AnnotationAttribute } from './attributes.ts';
+import { validFootprint, footprintArea, type Footprint } from './footprint.ts';
 
 export const ANNOTATION_STORAGE = 'guanyun.annotations.v1';
 export const MAX_ANNOTATIONS = 80;
@@ -7,6 +10,7 @@ export const KINDS = {
   box: '长方体',
   cylinder: '圆柱',
   sphere: '球体',
+  prism: '轮廓模型',
 } as const;
 export type AnnotationKind = keyof typeof KINDS;
 export type Annotation = {
@@ -14,6 +18,11 @@ export type Annotation = {
   kind: AnnotationKind;
   name: string;
   note: string;
+  icon?: MarkerIconId;
+  attributes?: AnnotationAttribute[];
+  footprint?: Footprint;
+  terrainCut?: boolean;
+  terrainIntersection?: boolean;
   color: string;
   coordinates: Coordinate;
   groundElevation: number | null;
@@ -44,6 +53,12 @@ export function validAnnotation(value: unknown): value is Annotation {
     a.name.length <= 60 &&
     typeof a.note === 'string' &&
     a.note.length <= 500 &&
+    (a.icon === undefined || Object.hasOwn(MARKER_ICONS, a.icon)) &&
+    (a.attributes === undefined || validAttributes(a.attributes)) &&
+    (a.kind !== 'prism' || validFootprint(a.footprint)) &&
+    (a.terrainCut === undefined || typeof a.terrainCut === 'boolean') &&
+    (a.terrainIntersection === undefined ||
+      typeof a.terrainIntersection === 'boolean') &&
     typeof a.color === 'string' &&
     /^#[0-9a-f]{6}$/i.test(a.color) &&
     coordinate(a.coordinates) &&
@@ -96,6 +111,15 @@ export function newAnnotation(
     roll: 0,
     opacity: 0.55,
     visible: true,
+    ...(kind === 'prism'
+      ? {
+          footprint: [
+            [-0.5, -0.5],
+            [0.5, -0.5],
+            [0, 0.5],
+          ] as Footprint,
+        }
+      : {}),
   };
 }
 export function dimensions(a: Annotation): [number, number, number] {
@@ -105,6 +129,8 @@ export function dimensions(a: Annotation): [number, number, number] {
 }
 export function volume(a: Annotation) {
   if (a.kind === 'pin') return null;
+  if (a.kind === 'prism')
+    return footprintArea(a.footprint!) * a.width * a.length * a.height;
   if (a.kind === 'sphere') return (Math.PI * a.width ** 3) / 6;
   if (a.kind === 'cylinder') return Math.PI * (a.width / 2) ** 2 * a.height;
   return a.width * a.length * a.height;
@@ -117,6 +143,10 @@ export function verticalHalfExtent(a: Annotation) {
     y = Math.cos(roll) * Math.sin(pitch),
     z = Math.cos(roll) * Math.cos(pitch);
   if (a.kind === 'pin') return 0;
+  if (a.kind === 'prism') {
+    const [lo, hi] = prismVerticalRange(a);
+    return (hi - lo) / 2;
+  }
   if (a.kind === 'sphere') return a.width / 2;
   if (a.kind === 'cylinder')
     return (a.width / 2) * Math.hypot(x, y) + (a.height / 2) * Math.abs(z);
@@ -132,6 +162,15 @@ export function altitudeRange(a: Annotation, ground = a.groundElevation) {
   )
     return null;
   const half = verticalHalfExtent(a);
+  if (a.kind === 'prism') {
+    const [lo, hi] = prismVerticalRange(a);
+    const center =
+      a.centerAltitude ??
+      (a.placement === 'underground'
+        ? ground! - a.offset - hi
+        : ground! + a.offset - lo);
+    return { bottom: center + lo, center, top: center + hi };
+  }
   const center =
     a.centerAltitude ??
     (a.placement === 'underground'
@@ -141,7 +180,23 @@ export function altitudeRange(a: Annotation, ground = a.groundElevation) {
 }
 export function dimensionLabel(a: Annotation) {
   if (a.kind === 'pin') return '地点';
+  if (a.kind === 'prism')
+    return `轮廓 ${a.footprint!.length} 点 · ${a.width.toFixed(1)} × ${a.length.toFixed(1)} × ${a.height.toFixed(1)} m`;
   if (a.kind === 'sphere') return `直径 ${a.width} m`;
   if (a.kind === 'cylinder') return `直径 ${a.width} × 高 ${a.height} m`;
   return `宽 ${a.width} × 长 ${a.length} × 高 ${a.height} m`;
+}
+function prismVerticalRange(a: Annotation): [number, number] {
+  const pitch = (a.pitch * Math.PI) / 180,
+    roll = (a.roll * Math.PI) / 180;
+  const z = a.footprint!.map(
+    ([x, y]) =>
+      -Math.sin(roll) * x * a.width +
+      Math.cos(roll) * Math.sin(pitch) * y * a.length,
+  );
+  const half = Math.abs((Math.cos(roll) * Math.cos(pitch) * a.height) / 2);
+  return [
+    z.reduce((lo, v) => Math.min(lo, v), Infinity) - half,
+    z.reduce((hi, v) => Math.max(hi, v), -Infinity) + half,
+  ];
 }

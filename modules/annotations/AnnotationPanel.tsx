@@ -9,6 +9,10 @@ import {
   type AnnotationKind,
 } from './data';
 import type { AnnotationsState } from './useAnnotations';
+import { AnnotationIdentity } from './AnnotationIdentity';
+import { annotationSpreadsheet } from './spreadsheet';
+import { XLSX_MIME } from '../files/spreadsheet';
+import { deliverFile } from '../files/delivery';
 
 function NumberField({
   label,
@@ -65,21 +69,24 @@ function Editor({
   state,
   onLocate,
   onPick,
+  terrainStatus,
 }: {
   item: Annotation;
   state: AnnotationsState;
   onLocate: (coordinate: Coordinate) => void;
   onPick: (kind: AnnotationKind | 'move') => void;
+  terrainStatus?: string;
 }) {
   const change = (patch: Partial<Annotation>) => state.update(item.id, patch);
   const [removing, setRemoving] = useState(false);
-  const [tab, setTab] = useState(item.kind === 'pin' ? 'appearance' : 'size');
+  const [tab, setTab] = useState('identity');
   const range = altitudeRange(item),
     size = volume(item);
   return (
     <div className="annotation-editor">
       <nav className="annotation-tabs" aria-label="标记参数分组">
         {[
+          ['identity', '信息'],
           ...(item.kind === 'pin' ? [] : [['size', '尺寸']]),
           ['appearance', '外观'],
           ['position', '位置'],
@@ -91,16 +98,15 @@ function Editor({
         ))}
       </nav>
       <div className="annotation-fields" key={tab}>
+        {tab === 'identity' && (
+          <AnnotationIdentity
+            item={item}
+            change={change}
+            remember={() => state.rememberAttributes(item.id)}
+          />
+        )}
         {tab === 'appearance' && (
           <>
-            <label className="annotation-field">
-              <span>名称</span>
-              <input
-                value={item.name}
-                maxLength={60}
-                onChange={(event) => change({ name: event.target.value })}
-              />
-            </label>
             <div className="annotation-grid">
               <label className="annotation-field">
                 <span>颜色</span>
@@ -151,13 +157,17 @@ function Editor({
               <>
                 <div className="annotation-grid">
                   <NumberField
-                    label={item.kind === 'box' ? '宽度（米）' : '直径（米）'}
+                    label={
+                      item.kind === 'box' || item.kind === 'prism'
+                        ? '宽度（米）'
+                        : '直径（米）'
+                    }
                     value={item.width}
                     min={0.1}
                     max={10000}
                     onValue={(width) => change({ width })}
                   />
-                  {item.kind === 'box' && (
+                  {(item.kind === 'box' || item.kind === 'prism') && (
                     <NumberField
                       label="长度（米）"
                       value={item.length}
@@ -191,6 +201,31 @@ function Editor({
             )}
             {tab === 'appearance' && (
               <>
+                <label className="annotation-toggle">
+                  <input
+                    type="checkbox"
+                    checked={
+                      item.terrainCut ?? item.placement === 'underground'
+                    }
+                    onChange={(e) => change({ terrainCut: e.target.checked })}
+                  />
+                  局部剖切地表
+                </label>
+                <label className="annotation-toggle">
+                  <input
+                    type="checkbox"
+                    checked={item.terrainIntersection !== false}
+                    onChange={(e) =>
+                      change({ terrainIntersection: e.target.checked })
+                    }
+                  />
+                  亮色显示山体交界
+                </label>
+                {terrainStatus && (
+                  <p className="annotation-note" role="status">
+                    {terrainStatus}
+                  </p>
+                )}
                 <div className="annotation-grid">
                   <NumberField
                     label="朝向（°，北为0）"
@@ -352,14 +387,39 @@ export function AnnotationPanel({
   state,
   onPick,
   onLocate,
+  onArea,
+  terrainStatus,
 }: {
   state: AnnotationsState;
   onPick: (kind: AnnotationKind | 'move') => void;
   onLocate: (coordinate: Coordinate) => void;
+  onArea: () => void;
+  terrainStatus?: string;
 }) {
   const selected = state.items.find((a) => a.id === state.selected);
   const [exportText, setExportText] = useState('');
   const [showList, setShowList] = useState(!selected);
+  useEffect(() => {
+    if (selected) setShowList(false);
+  }, [selected?.id]);
+  const [exportStatus, setExportStatus] = useState('');
+  const exportExcel = async () => {
+    try {
+      const bytes = annotationSpreadsheet(state.items);
+      setExportStatus(
+        await deliverFile(
+          new File(
+            [new Uint8Array(bytes)],
+            `Shantu-markers-${Date.now()}.xlsx`,
+            { type: XLSX_MIME },
+          ),
+          false,
+        ),
+      );
+    } catch (e) {
+      setExportStatus(e instanceof Error ? e.message : '表格导出失败');
+    }
+  };
   const exportData = () => {
     const text = JSON.stringify(
       {
@@ -408,6 +468,7 @@ export function AnnotationPanel({
             </p>
           )}
           <Editor
+            terrainStatus={terrainStatus}
             key={selected.id}
             item={selected}
             state={state}
@@ -418,8 +479,14 @@ export function AnnotationPanel({
       ) : (
         <div className="annotation-browse">
           <div className="annotation-add">
+            <button onClick={onArea}>＋划区域</button>
             {Object.entries(KINDS).map(([kind, label]) => (
-              <button key={kind} onClick={() => onPick(kind as AnnotationKind)}>
+              <button
+                key={kind}
+                onClick={() =>
+                  kind === 'prism' ? onArea() : onPick(kind as AnnotationKind)
+                }
+              >
                 ＋{kind === 'pin' ? '地点' : label}
               </button>
             ))}
@@ -433,6 +500,15 @@ export function AnnotationPanel({
                 {state.error}
               </p>
             )}
+            {!!state.items.length && (
+              <button
+                className="annotation-export"
+                onClick={() => void exportExcel()}
+              >
+                导出 Excel 表格
+              </button>
+            )}
+            {exportStatus && <p role="status">{exportStatus}</p>}
             {!!state.items.length && (
               <div className="annotation-list">
                 {state.items.map((item) => (

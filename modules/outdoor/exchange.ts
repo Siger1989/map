@@ -7,6 +7,19 @@ import {
 } from '../section/sectionObjects.ts';
 import { SAVED_SECTION_KEY } from '../section/savedSection.ts';
 import {
+  PROFILE_NOTES_KEY,
+  readSavedSections,
+  sectionKey,
+  type SavedSection,
+} from '../section/profileNotes.ts';
+import {
+  REGION_STORAGE,
+  readRegions,
+  validateRegions,
+  type CollectionRegions,
+} from '../collections/regions.ts';
+import { AREA_STORAGE, parseAreas, type MapArea } from '../areas/data.ts';
+import {
   COLLECTION_STORAGE,
   entriesFor,
   parseLayout,
@@ -39,6 +52,9 @@ export type Transfer = {
   favorites: RouteFavorite[];
   collections?: CollectionLayout;
   sections?: SectionObject[];
+  sectionNotes?: SavedSection[];
+  regions?: CollectionRegions;
+  areas?: MapArea[];
 };
 export const DATA_CHANGED = 'guanyun-data-changed';
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -74,6 +90,10 @@ export function validateTransfer(v: unknown): Transfer {
   parseAnnotations(JSON.stringify(data.annotations));
   if (data.collections !== undefined) validateLayout(data.collections);
   if (data.sections !== undefined) validateSectionObjects(data.sections);
+  if (data.sectionNotes !== undefined)
+    readSavedSections(JSON.stringify(data.sectionNotes));
+  if (data.regions !== undefined) validateRegions(data.regions);
+  if (data.areas !== undefined) parseAreas(JSON.stringify(data.areas));
   for (const items of [data.tracks, data.annotations, data.favorites])
     if (new Set(items.map((i) => i.id)).size !== items.length)
       throw new Error('文件含重复编号');
@@ -88,6 +108,17 @@ export function collectData(
     tracks: JSON.parse(storage.getItem(TRACK_STORAGE) ?? '[]'),
     annotations: JSON.parse(storage.getItem(ANNOTATION_STORAGE) ?? '[]'),
     favorites: JSON.parse(storage.getItem(FAVORITES_STORAGE) ?? '[]'),
+    ...(storage.getItem(AREA_STORAGE) === null
+      ? {}
+      : { areas: parseAreas(storage.getItem(AREA_STORAGE)) }),
+    ...(storage.getItem(PROFILE_NOTES_KEY) === null
+      ? {}
+      : {
+          sectionNotes: readSavedSections(storage.getItem(PROFILE_NOTES_KEY)),
+        }),
+    ...(storage.getItem(REGION_STORAGE) === null
+      ? {}
+      : { regions: readRegions(storage.getItem(REGION_STORAGE)) }),
     ...(storage.getItem(COLLECTION_STORAGE) === null
       ? {}
       : { collections: parseLayout(storage.getItem(COLLECTION_STORAGE)) }),
@@ -113,13 +144,14 @@ export function mergeData(
   const merge = <T extends { id: string }>(a: T[], b: T[], kind?: string) => [
     ...a,
     ...b
-      .filter(
-        (v) =>
-          !a.some(
-            (old) =>
-              old.id === v.id && JSON.stringify(old) === JSON.stringify(v),
-          ),
-      )
+      .filter((v) => {
+        const same = a.some(
+          (old) => old.id === v.id && JSON.stringify(old) === JSON.stringify(v),
+        );
+        if (same && kind)
+          importedKeys.set(`${kind}:${v.id}`, `${kind}:${v.id}`);
+        return !same;
+      })
       .map((v) => {
         const next = a.some((old) => old.id === v.id)
           ? { ...v, id: crypto.randomUUID() }
@@ -131,15 +163,21 @@ export function mergeData(
   const next = validateTransfer({
     ...before,
     tracks: merge(before.tracks, incoming.tracks, 'track'),
-    annotations: merge(before.annotations, incoming.annotations),
+    annotations: merge(before.annotations, incoming.annotations, 'annotation'),
+    ...(before.areas || incoming.areas
+      ? { areas: merge(before.areas ?? [], incoming.areas ?? [], 'area') }
+      : {}),
     favorites: merge(before.favorites, incoming.favorites, 'route'),
     ...(before.sections || incoming.sections
       ? {
-          sections: merge(before.sections ?? [], incoming.sections ?? []).map(
-            (s) =>
-              s.settings.objectId && s.settings.objectId !== s.id
-                ? { ...s, settings: { ...s.settings, objectId: s.id } }
-                : s,
+          sections: merge(
+            before.sections ?? [],
+            incoming.sections ?? [],
+            'section',
+          ).map((s) =>
+            s.settings.objectId && s.settings.objectId !== s.id
+              ? { ...s, settings: { ...s.settings, objectId: s.id } }
+              : s,
           ),
         }
       : {}),
@@ -155,6 +193,54 @@ export function mergeData(
       ),
     ),
   });
+  if (incoming.regions) {
+    next.regions = { ...before.regions };
+    for (const [key, region] of Object.entries(incoming.regions)) {
+      const mapped = importedKeys.get(key);
+      if (mapped && !next.regions[mapped]) next.regions[mapped] = region;
+    }
+  }
+  if (incoming.sectionNotes) {
+    next.sectionNotes = [...(before.sectionNotes ?? [])];
+    for (const record of incoming.sectionNotes) {
+      const owner = incoming.sections?.find((s) =>
+        s.settings.objectId
+          ? s.settings.objectId === record.settings.objectId
+          : !record.settings.objectId &&
+            sectionKey(s.settings) === sectionKey(record.settings),
+      );
+      if (!owner) continue;
+      const mapped = importedKeys.get(`section:${owner.id}`)?.slice(8);
+      if (!mapped) continue;
+      const settings =
+        mapped === owner.id
+          ? record.settings
+          : { ...record.settings, objectId: mapped };
+      const object = next.sections?.find((s) => s.id === mapped);
+      if (object && mapped !== owner.id)
+        object.settings = { ...object.settings, objectId: mapped };
+      const old: SavedSection | undefined = next.sectionNotes.find(
+        (s) => sectionKey(s.settings) === sectionKey(settings),
+      );
+      if (!old) next.sectionNotes.push({ ...record, settings });
+      else {
+        const notes: SavedSection['notes'] = [...old.notes];
+        for (const note of record.notes) {
+          if (notes.some((n) => JSON.stringify(n) === JSON.stringify(note)))
+            continue;
+          notes.push(
+            notes.some((n) => n.id === note.id)
+              ? { ...note, id: crypto.randomUUID() }
+              : note,
+          );
+        }
+        next.sectionNotes = next.sectionNotes.map(
+          (s): SavedSection => (s === old ? { ...s, notes } : s),
+        );
+      }
+    }
+  }
+  validateTransfer(next);
   const values: [string, unknown][] = [
     [TRACK_STORAGE, next.tracks],
     [ANNOTATION_STORAGE, next.annotations],
@@ -162,6 +248,9 @@ export function mergeData(
   ];
   if (next.collections) values.push([COLLECTION_STORAGE, next.collections]);
   if (next.sections) values.push([SECTION_OBJECTS_KEY, next.sections]);
+  if (next.sectionNotes) values.push([PROFILE_NOTES_KEY, next.sectionNotes]);
+  if (next.regions) values.push([REGION_STORAGE, next.regions]);
+  if (next.areas) values.push([AREA_STORAGE, next.areas]);
   const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
   try {
     for (const [key, data] of values)

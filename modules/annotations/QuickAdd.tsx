@@ -15,11 +15,13 @@ export function QuickAdd({
   at,
   error,
   onAdd,
+  onArea,
   onClose,
 }: {
   at: MapHold;
   error: string;
   onAdd: (kind: AnnotationKind) => void;
+  onArea: () => void;
   onClose: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null),
@@ -76,6 +78,13 @@ export function QuickAdd({
             {at.coordinate[1].toFixed(5)}°, {at.coordinate[0].toFixed(5)}°
           </p>
           <div className="quick-add-options">
+            <button type="button" onClick={onArea}>
+              ▱ 划区域
+            </button>
+            <button type="button" onClick={onArea}>
+              <Box size={18} />
+              轮廓模型
+            </button>
             {OPTIONS.map(({ kind, Icon }) => (
               <button key={kind} type="button" onClick={() => onAdd(kind)}>
                 <Icon size={18} />

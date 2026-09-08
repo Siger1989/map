@@ -5,7 +5,7 @@ import { readRouteQr, qrAccuracy, qrDistance, type RouteQr } from './qrCodec';
 import { qrTransfer } from './qrImport';
 import { mergeData } from '../outdoor/exchange';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
-import type { RouteFavorite } from '../navigation/favorites';
+import type { ManualTrack } from '../tracks/drawing';
 import '../mapSources/mapSources.css';
 import './routeShare.css';
 export function RouteQrReader({
@@ -14,10 +14,7 @@ export function RouteQrReader({
   onClose,
 }: {
   initial?: string;
-  onLoaded: (
-    favorite: RouteFavorite | null,
-    points: [number, number][],
-  ) => void;
+  onLoaded: (track: ManualTrack) => void;
   onClose: () => void;
 }) {
   const parseInitial = () => {
@@ -46,7 +43,7 @@ export function RouteQrReader({
     try {
       const value = qrTransfer(data!);
       mergeData(value.transfer);
-      onLoaded(value.favorite, data!.segments.flat());
+      onLoaded(value.track);
     } catch (e) {
       setError(e instanceof Error ? e.message : '路线未载入');
     }
@@ -116,10 +113,10 @@ export function RouteQrReader({
                 </p>
                 <p>{qrAccuracy(data)}</p>
                 <p>
-                  此窗口仅预览；载入后保存在本机收藏或轨迹列表，可看全程再选择导航。
+                  载入为本机轨迹，先看全程、线路数据与海拔图。需要时再点导航。
                 </p>
                 <button className="route-primary" onClick={load}>
-                  载入路线并看全程
+                  载入轨迹并查看详情
                 </button>
               </>
             )}

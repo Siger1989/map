@@ -44,9 +44,9 @@ export function shareTrack(track: ManualTrack): ShareRoute {
     name: track.name,
     segments: track.segments,
     distance: trackDistance(track.segments),
-    duration: null,
+    duration: track.sharedRoute?.duration ?? null,
     mode: track.navigationMode ?? 'pedestrian',
-    stops: [
+    stops: track.sharedRoute?.stops ?? [
       { name: '起点', coordinates: points[0] },
       { name: '终点', coordinates: points.at(-1)! },
     ],

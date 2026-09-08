@@ -3,6 +3,7 @@ import {
   formatDistance,
   formatDuration,
   type Coordinate,
+  type TravelMode,
 } from '../navigation/types';
 import { describeWeather } from '../weather/data';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping';
@@ -73,9 +74,11 @@ function Profile({ samples }: { samples: ElevationSample[] }) {
 export function JourneyPanel({
   segments,
   onLocate,
+  mode = 'pedestrian',
 }: {
   segments: Coordinate[][];
   onLocate: (point: Coordinate) => void;
+  mode?: TravelMode;
 }) {
   const chains = useMemo(() => joinSegments(segments), [segments]);
   const distance = useMemo(
@@ -96,7 +99,9 @@ export function JourneyPanel({
   const [departure, setDeparture] = useState(() =>
       new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16),
     ),
-    [speed, setSpeed] = useState('4');
+    [speed, setSpeed] = useState(
+      { auto: '50', bicycle: '15', pedestrian: '4' }[mode],
+    );
   const weatherRequest = useRef<AbortController | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => {

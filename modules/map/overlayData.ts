@@ -3,6 +3,9 @@ import type { FeatureCollection } from 'geojson';
 
 const snapshots = new WeakMap<GeoJSONSource, string>();
 const overlayOrder = [
+  'area-fill',
+  'area-border',
+  'area-nodes',
   'route-outline',
   'route-path',
   'route-points',
@@ -10,6 +13,8 @@ const overlayOrder = [
   'manual-track-outline',
   'manual-track-line',
   'manual-track-node',
+  'manual-track-selected-node',
+  'manual-track-endpoint-label',
   'guidance-outline',
   'guidance-path',
   'guidance-target',

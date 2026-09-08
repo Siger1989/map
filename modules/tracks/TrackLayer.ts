@@ -19,6 +19,7 @@ export type TrackOverlay = {
   nodes: Coordinate[];
   selectedId?: string | null;
   drawing?: boolean;
+  activeNode?: TrackNode | null;
   preview?: { node: TrackNode; coordinate: Coordinate } | null;
 };
 export class TrackLayer {
@@ -107,6 +108,43 @@ export class TrackLayer {
           'circle-stroke-width': 1,
         },
       });
+      m.addLayer({
+        id: 'manual-track-selected-node',
+        type: 'circle',
+        source: 'manual-tracks',
+        filter: [
+          'all',
+          ['==', ['geometry-type'], 'Point'],
+          ['==', ['get', 'active'], true],
+        ],
+        paint: {
+          'circle-radius': 12,
+          'circle-color': '#9de8c4',
+          'circle-opacity': 0.14,
+          'circle-stroke-color': '#aaffd8',
+          'circle-stroke-width': 3,
+        },
+      });
+      m.addLayer({
+        id: 'manual-track-endpoint-label',
+        type: 'symbol',
+        source: 'manual-tracks',
+        filter: ['has', 'endpointLabel'],
+        layout: {
+          'text-field': ['get', 'endpointLabel'],
+          'text-size': 12,
+          'text-font': ['Noto Sans Regular'],
+          'text-anchor': 'bottom',
+          'text-offset': [0, -1],
+          'text-max-width': 12,
+          'text-allow-overlap': true,
+        },
+        paint: {
+          'text-color': '#fff5cf',
+          'text-halo-color': '#163c3c',
+          'text-halo-width': 2,
+        },
+      });
     }
     const data: FeatureCollection = {
       type: 'FeatureCollection',
@@ -171,6 +209,16 @@ export class TrackLayer {
           selected && !(state.drawing && track.id === DRAFT_ID),
           (point) => m.project(point),
         );
+        if (
+          state.activeNode?.trackId === track.id &&
+          !positions.some((p) =>
+            equalCoordinate(p, state.activeNode!.coordinate),
+          ) &&
+          track.segments.some((s) =>
+            s.some((p) => equalCoordinate(p, state.activeNode!.coordinate)),
+          )
+        )
+          positions.push(state.activeNode.coordinate);
         data.features.push(
           ...positions.map((point) => {
             const coordinates =
@@ -183,7 +231,28 @@ export class TrackLayer {
               properties: {
                 color,
                 selected,
+                active:
+                  state.activeNode?.trackId === track.id &&
+                  equalCoordinate(point, state.activeNode.coordinate),
                 trackId: track.id,
+                ...(selected &&
+                (equalCoordinate(point, track.segments[0][0]) ||
+                  equalCoordinate(point, track.segments.at(-1)!.at(-1)!))
+                  ? {
+                      endpointLabel: equalCoordinate(
+                        point,
+                        track.segments[0][0],
+                      )
+                        ? 'sharedRoute' in track &&
+                          track.sharedRoute?.stops[0].name
+                          ? `起点 · ${track.sharedRoute.stops[0].name}`
+                          : '起点'
+                        : 'sharedRoute' in track &&
+                            track.sharedRoute?.stops.at(-1)?.name
+                          ? `终点 · ${track.sharedRoute.stops.at(-1)!.name}`
+                          : '终点',
+                    }
+                  : {}),
                 lng: coordinates[0],
                 lat: coordinates[1],
               },

@@ -5,7 +5,9 @@ import {
   type ProfilePoint,
   type SectionProfileData,
 } from './contours';
-import { downloadProfile, profileDetails } from './profileExport';
+import { profileImages, profileDetails } from './profileExport';
+import { deliverPhoto } from '../photos/export';
+import { ProfileImagePages } from './ProfileImagePages';
 import type { SectionSettings } from './types';
 import { ProfileChart } from './ProfileChart';
 import { SectionScaleControls } from './SectionScaleControls';
@@ -56,6 +58,9 @@ export function SectionProfile({
   const saved = useProfileNotes(settings),
     key = sectionKey(settings);
   const scaleControls = useRef<HTMLDivElement>(null);
+  const exportJob = useRef<AbortController | null>(null);
+  const [imagePages, setImagePages] = useState<File[]>([]);
+  useEffect(() => () => exportJob.current?.abort(), []);
   const current = data?.settings === settings ? data : null;
   const curves = current?.curves ?? [],
     curve = curves.find((c) => c.id === id) ?? curves[0];
@@ -83,17 +88,35 @@ export function SectionProfile({
   }, [current, curve?.id, fraction, activeNote, saved.notes, dragged]);
   useEffect(() => setMessage(''), [settings, curve?.id]);
   const download = async () => {
-    if (!current || !curve || !cursor) return;
+    if (!current || !curve || !cursor || exportJob.current) return;
+    const job = new AbortController();
+    exportJob.current = job;
     setBusy(true);
-    setMessage('');
+    setMessage('正在生成剖面与平面地图，请保持联网…');
+    setImagePages([]);
     try {
-      setMessage(
-        await downloadProfile(current, focusedCurve, cursor, saved.notes),
-      );
+      const pages: File[] = [];
+      for await (const file of profileImages(
+        current,
+        focusedCurve,
+        cursor,
+        saved.notes,
+        job.signal,
+        name,
+      ))
+        pages.push(file);
+      job.signal.throwIfAborted();
+      if (pages.length === 1) setMessage(await deliverPhoto(pages[0], false));
+      else {
+        setImagePages(pages);
+        setMessage(`数据较多，已生成 ${pages.length} 张完整图片，请逐张保存。`);
+      }
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '图片保存失败，请重试');
+      if (!job.signal.aborted)
+        setMessage(e instanceof Error ? e.message : '图片保存失败，请重试');
     } finally {
-      setBusy(false);
+      exportJob.current = null;
+      if (!job.signal.aborted) setBusy(false);
     }
   };
   const number = (
@@ -224,6 +247,7 @@ export function SectionProfile({
         </button>
       </header>
       <div className="section-profile-body">
+        {imagePages.length > 1 && <ProfileImagePages files={imagePages} />}
         {curves.length > 0 ? (
           <>
             <select

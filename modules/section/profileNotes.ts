@@ -53,7 +53,7 @@ export type SavedSection = {
   notes: ProfileNote[];
   savedAt: number;
 };
-/** Geometry only: colour, visibility and object identity do not detach saved measurements. */
+/** Geometry and optional stable object ID isolate measurements; colour/visibility do not detach them. */
 export function sectionKey(s: SectionSettings) {
   const p = s.plane;
   return JSON.stringify(

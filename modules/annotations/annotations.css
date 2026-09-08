@@ -19,7 +19,7 @@
   gap: 8px;
 }
 .annotation-panel button {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 8px;
   border-radius: 7px;
   background: #28454e;
@@ -138,6 +138,9 @@
   border-bottom: 1px solid var(--border);
 }
 .annotation-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -155,6 +158,80 @@
   white-space: nowrap;
   font-size: 13px;
   box-shadow: 0 2px 8px #0005;
+}
+.annotation-marker svg {
+  flex-shrink: 0;
+}
+.annotation-marker span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.annotation-logo-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+.annotation-logo-current span {
+  margin-left: auto;
+  font-size: 12px;
+}
+.annotation-logo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+.annotation-logo-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 1px;
+}
+.annotation-logo-grid button[aria-pressed='true'] {
+  outline: 1px solid var(--accent);
+}
+.annotation-logo-grid small {
+  font-size: 11px;
+}
+.annotation-logo-current path,
+.annotation-logo-grid path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.annotation-attributes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.annotation-attribute-head {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 44px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.annotation-attribute-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 44px;
+  gap: 3px;
+}
+.annotation-attribute-row input,
+.annotation-attribute-row textarea {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px;
+  background: #0d222b;
+  color: var(--text);
+}
+.annotation-attribute-row textarea {
+  resize: vertical;
+  font: inherit;
 }
 .map-canvas[data-picking='true'] .annotation-marker {
   pointer-events: none;

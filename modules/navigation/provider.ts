@@ -8,6 +8,7 @@ import {
 } from './types.ts';
 import { MAX_ROUTE_STOPS } from './stops.ts';
 import { normalizePlaceName } from './placeName.ts';
+import { normalizeRegion } from '../collections/regions.ts';
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
@@ -266,5 +267,17 @@ export async function reversePlace(center: Coordinate, signal: AbortSignal) {
   return normalizePlaceName(
     await requestJSON(NAVIGATION_SERVICES.reverse + '?' + params, signal),
     center,
+  );
+}
+/** Administrative grouping shares the existing reverse-geocode request cache and rate limit. */
+export async function reverseRegion(center: Coordinate, signal: AbortSignal) {
+  const params = new URLSearchParams({
+    lon: String(center[0]),
+    lat: String(center[1]),
+    radius: '10',
+    limit: '1',
+  });
+  return normalizeRegion(
+    await requestJSON(NAVIGATION_SERVICES.reverse + '?' + params, signal),
   );
 }

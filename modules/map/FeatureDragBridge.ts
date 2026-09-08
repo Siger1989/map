@@ -5,6 +5,7 @@ import type { TrackNode } from '../tracks/editing';
 
 export type DragTarget =
   | { kind: 'track'; node: TrackNode }
+  | { kind: 'area'; id: string; index: number; coordinate: Coordinate }
   | { kind: 'annotation'; id: string; coordinate: Coordinate };
 export type FeatureMove = { target: DragTarget; coordinate: Coordinate };
 type Options = {
@@ -13,6 +14,7 @@ type Options = {
   begin: (target: DragTarget) => void;
   preview: (move: FeatureMove | null) => void;
   commit: (move: FeatureMove) => void;
+  direct?: (target: DragTarget) => boolean;
 };
 type Control = {
   isEnabled: () => boolean;
@@ -84,7 +86,7 @@ export class FeatureDragBridge {
     if (!target) return;
     this.map.stop();
     this.pending = { id: event.pointerId, point, target };
-    this.timer = setTimeout(() => {
+    const activate = () => {
       this.timer = null;
       if (!this.pending || this.contacts.size !== 1 || !this.options.enabled())
         return;
@@ -111,7 +113,9 @@ export class FeatureDragBridge {
         coordinate:
           target.kind === 'track' ? target.node.coordinate : target.coordinate,
       });
-    }, 480);
+    };
+    if (this.options.direct?.(target)) activate();
+    else this.timer = setTimeout(activate, 480);
   };
   private move = (event: PointerEvent) => {
     if (!this.pending || event.pointerId !== this.pending.id) return;

@@ -184,6 +184,26 @@ export function LayerPanel({
                   <p>0% 完全透明，100% 完全显示。</p>
                 </div>
               )}
+              {key === 'geology' && settings.geology && (
+                <div
+                  className="elevation-opacity geology-source-choice"
+                  role="group"
+                  aria-label="地质图源"
+                >
+                  <button
+                    aria-pressed={settings.geologySource === 'world'}
+                    onClick={() => onChange({ geologySource: 'world' })}
+                  >
+                    全球地质
+                  </button>
+                  <button
+                    aria-pressed={settings.geologySource === 'geocloud20w'}
+                    onClick={() => onChange({ geologySource: 'geocloud20w' })}
+                  >
+                    1∶20 万 · 地质云
+                  </button>
+                </div>
+              )}
             </div>
           ),
         )}

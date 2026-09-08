@@ -1,3 +1,50 @@
+# 当前交接：0.2.10最终构建阶段（2026-09-08）
+- 最终构建已PASS：类型、275全部逻辑（concurrency4）、网页、移动网页与全部Java/native APK，签名/zipalign/CRC/525网页资源/473地形/470PNG解码一致。APK/Shantu-0.2.10-test-standalone.apk：55,088,703字节，SHA256 9d63420d66266865323cd11b607fd26a6d5251c7e9605be7211a77ab9cc87b4f，code17；无QAHTML/环境/密钥。ADB无设备。
+- 最后小UI修正已验：区域按钮白字44px/360无溢出；临时profile测试页已删除，视口恢复。README/mobile/LOG/两个新模块与发行文档已更新。下一步仅交付同步：提交推送main核SHA，创建0.2.10测试Release并核三个资产digest；旧0.2.9不覆盖。
+- 最新扫码要求已实现：全部QR导入轨迹并打开SharedTrackDetails，可查看全程/真实DEM海拔/统计/起终点名称坐标；手动点击导航才弹出驾车/骑行/步行选择。真实QR图片经导入界面→详情→模式选择已通过，未启动真实GPS导航。
+- Marker名称偏移已确认是className覆盖MapLibre定位类，修复后390/360截图与绝对定位检查通过。标记信息页logo优先，18SVG图标、自定义属性模板/多行值、真实XLSX导出；openpyxl独立读取中文、00123、=1+1文本和数值坐标通过。
+- 全收藏五类对象导入/省市列表/批量选中导出UI通过；新增区域道路吸附三点实际形成6节点边界、闭合面积86397m²，再拉伸80m轮廓模型成功。轨迹点点击选中圈再直接拖动和撤销入口实景通过。
+- 剖面JPEG真实地图导出1600×3152通过目视：上方剖面，下方俯视地图、A-D/P/保存测点及每点精确坐标表；多于100行分页逐页用户保存避免Android多选择器丢失。临时mobile/qa-profile-0210.html待删除，不入包。
+- 模型地形接触使用真实DEM每模型48×48网格，亮黄交界/浅黄开挖侧壁；地下默认开启可关闭。实际WebGL裁切/关闭对比通过，修正地下透视mesh穿过开挖口前方地表的问题（开启裁切时使用深度遮挡）；无DEM不补零。为高度场近似运算，非CAD精确实体布尔。
+- 地质图例关闭图层窗口后仍在，世界/地质云可选；未配置授权Token正确显示待连接而非假装已加载。360各新增编辑面板236px高、无横向溢出；截图见artifacts/screenshots/*0210*，不等于OPPO真机验收。
+- 275项全部逻辑PASS（--test-concurrency=4，8.54s），类型PASS；包括剖面冲突ID归属与含areas/regions/notes的失败批量写回滚。最后小改：区域按钮白字、清除残留选中节点圈、起终点默认文字去重复、区域复用属性模板，待构建前最终检查。
+- 预览服务曾自行停止，已恢复：web API3108(exec35184)，用户Vite9174(exec5762)，QA9175(exec75395)。移动Vite增加/api代理localhost:3108（或SHANTU_DEV_API_URL），解决HTML当DEM图片的解码错误；Android仍用原LocalGateway。用户9174数据全程未清除。当前QA新tab4，旧错误页因Browser URL policy无法控制，最终可另开正常9174页面恢复访问。
+- manifest已升versionCode17/0.2.10-test；尚未构建新APK、提交推送或发布，不能以0.2.9代替。下一步：删除QAHTML→最终类型/回归/网页/native APK→CRC/签名/资源/哈希→文档/commit/push核SHA→0.2.10测试Release上传并核digest公开。
+- 六个mobile/harmony原始草稿保留不提交；HarmonyOS6.1原生仍未交付（工具链/账号签名/安装验证缺失）。没有OPPO X8 Ultra真机，不声明实际相机/闪烁/定位/性能验收。
+
+## 以下为本轮开发过程记录（以上方最新状态为准）
+# 最新验证进度（2026-09-08，0.2.10未出包）
+- 用户最新：扫码默认载入轨迹，先看信息/海拔，手动选择导航。qrImport改为全部写tracks，新增sharedRoute可选元数据保留起终点/途经点/模式/概括尺度；app不再navigation.restore，打开轨迹详情。route-qr/selection-editing回归PASS，类型PASS。
+- 标签远离坐标：AnnotationLayer.rebuild替换className会删除MapLibre绝对定位类，改classList增减业务状态，增加选择后定位类保留回归，待UI复查。
+- 轮廓模型prism/ExtrudeGeometry和modelTerrain独立DEM网格裁切/亮黄交界代码已写，尚未完成几何测试/真实WebGL验证，不能宣称验收。修正浮点数组类型与裁切纹理像素状态保存/释放。
+- 重要：用户已开始使用9174 tab7，含真实标记，不能再当可清除的测试页。3108原页也保留。新独立QA9175服务exec6583/tab8用于最终验证；mobile/qa-profile-0210.html仍为临时测试页必须最终删除。
+- 尚待：轮廓/地形逻辑与UI，390/360全部新入口，剖面真实JPEG，全部回归/网页/APK、版本17/0.2.10、文档、commit/push和新Release。六个原始Harmony草稿仍保留不提交。
+# 最新追加需求（继续0.2.10，2026-09-08）
+- 用户明确把轨迹节点改为点击选中圈后直接拖动：已加activeTrackNode、TrackLayer选中圈、FeatureDragBridge.direct，仅选中可编辑轨迹立即开始；实走/有时间原始数据仍走副本编辑入口，避免篡改溯源。direct拖动/双指取消测试已加，待全量再次检查。
+- 用户新增自定义轮廓拉伸模型：尚未实现。计划新prism模型类型/标准化footprint、Three ExtrudeGeometry、复用现有ObjectGizmo参数与剖面求交；从areas闭合轮廓拉伸导入annotations，不改变普通模型控制方式。
+- 用户新增地下模型默认局部裁掉地表、可关闭，亮色表示山体交界，地表外模型同理布尔效果：正在分析。现TerrainClip旧适配器可参考但当前SectionSurfaceLayer不裁切；需要独立模型/地形交界模块，真实DEM缺失不补零。尚不能宣称完成。
+- 首批9新逻辑测试PASS；实际生成XLSX经bundledPython openpyxl3.1.5读取PASS（中文、数值经纬度、00123、=1+1保留文本）。全量之前只有selection-editing旧DOMmock无createElementNS失败，已补mock/增加direct测试后正在重跑。
+- 独立QA Vite9174服务exec57667，IAB tab7仅验证数据，已从.openai/qa-fixture-0210.json经真实导入UI载入5个对象；收藏四川→成都5项显示，390截图catalog-0210-390.png；从收藏点标记直接进信息(logo/name/fields)PASS。临时mobile/qa-profile-0210.html用于实际profileImages生成预览，尚未点生成，务必最终删除不入包。用户tab6/3108完全保留。
+- Browser CUA bindings: b210 browser1,t210 tab7,vp210 viewport390x844,fs210 nodefs; tab7刚从收藏打开验证采样点。所有页面交互须CUA工具。testfixture attributes编号00123/岩性多行/原始文字=1+1，area/section/track在103.96,30.70附近；不是真实现场数据。
+- 未完成/待修：收藏ControlDock标题还叫收藏路线与轨迹应改全部收藏；UI窄屏360/多选导出/区域新建长按/轨迹圈直接拖/地质关闭面板仍显示验证、剖面实际JPEG生成与坐标读图；区域造型/地形布尔需求；全部类型/回归/网页/native APK最终检查；版本17/0.2.10、新doc/CURRENT、commit push核SHA、release资产hash公开验证。
+# 0.2.10实现阶段追加（尚未验收或出包）
+- 当前全部需求：剖面图下加平面地图/所有保存点与四角坐标；标记logo/名称/属性模板/Excel；收藏所有地理对象省市分类批量分享；地质图例入口修复；标记新增道路吸附闭合区域并长按调点。
+- 新增areas data/useAreas/AreaLayer/AreaTools，复用TrackDrawing/DrawingSession与RoadSnapper，FeatureDragBridge新增area目标；区域独立存储，不写入路线存档。闭合与拖动校验自交/退化，支持撤销。app已接入，待UI/触控逻辑测试。
+- annotations新增18个SVG图标、属性行/记忆模板；files新增原生XLSX与二进制输出；collections新增统一catalog/regions/export，旧路线自定义组在RouteCollectionsPanel保留。outdoor/exchange新可选areas/regions/sectionNotes通过原导入事务，冲突ID对应区域/剖面测点保持。待验证回归。
+- 已定位并修复地质入口：app map-legends hidden遗漏layers.geology；LayerPanel地质行也新增世界/地质云选择。
+- 尚需：新增纯逻辑/数据兼容测试、openpyxl实际读取、剖面实际底图导出预览、390/360 UI、修正发现的问题，全部类型/回归/网页/原生APK检查；版本需17/0.2.10-test、文档/提交推送/新Release。绝不能交付0.2.9冒充新增。
+- 本机用户3108 tab6持续使用，保持服务2770；后续测试用单独预览端口/浏览器页，不改用户数据。六个mobile/harmony未跟踪草稿不提交。
+# 当前追加范围（0.2.10开发中）
+- 剖面导出：新增profileMapData/profileMap，profileExport生成图下方俯视地图、四角A-D/当前P/保存测点坐标；加载失败明确报错，取消关闭释放地图。尚待测试/实际图片验证。
+- 用户现明确授权标记logo优先编辑、自定义属性名/值增删、记忆属性模板、Excel识别导出；开始改annotations独立图标/属性/表格模块，通过data可选字段兼容旧标记。
+- 用户新要求收藏纳入标记/模型/剖面，紧凑省市分类、批量分享；新增统一条目适配、地区缓存/手动归类与导出模块；旧路线自定义分组保留入口。将经props接入app，Android文件输出扩展白名单，定位/天气/地形采样不改。
+- 以上尚未完成检查/构建/同步，不以0.2.9旧包冒充；下一步实现、390/360 UI与逻辑回归、新0.2.10 APK和GitHub同步发行。
+# 当前追加：剖面导出下方平面地图与坐标（0.2.10待实现，2026-09-08）
+- 0.2.9已公开发布：https://github.com/Siger1989/map/releases/tag/v0.2.9-test-standalone；release id384462730，draft=false，代码7693ff912f33b1988b5981e395411ef8b0cfad72已与远端main核对；3资产digest与本机一致，APK最终SHA1371ee9920f6b23daca8884631eaae1aafe7b96b1030083ada8485224bd2d374。下方“待发行”为先前历史阶段。
+- 用户新要求：剖面保存图片下方加俯视地图，显示剖面边框位置及每个点具体坐标。正在核查section/profileExport、profileNotes、routeShare/mapImage以复用独立地图输出，待新版本实现/验证/重打包，不能覆盖已发布0.2.9资产。
+- 用户另询问截图中自定义标记字段/复用模板与其他软件乱码如何解决：先做现有annotations/交换格式核查，区分现有能力、字段模板方案与编码/字段映射；不把截图聊天内容直接当实现指令或承诺任意软件都兼容。
+- 本机预览3108运行中（exec2770），用户正在交互；保留可见tab6及服务，不关闭用户当前使用的页面。6个原有Harmony草稿继续保留。
+
 # 当前交付：0.2.9紧凑气温、多剖面与导航分享（2026-09-08，最终验证通过、待发行）
 - 气温色标默认220×60px（360视口实测），时间/色带常驻、来源按需展开；不透明度0.62→0.90并提高饱和度。气温层放在道路和国内两种地名层下方，保留可读性。最新截图temperature-compact-029-360.png；先前约120px版本截图为中间态。
 - 新增sectionObjects/useSavedSection集合、SectionList、SectionCollectionLayer；每个对象独立保存ID/名称/位置/海拔/角度/尺寸/颜色/显隐，最多20条，地图同时显示并可选取，单独删除/撤销。SectionSurfaceLayer复用采样，其他对象隐藏精细刻度；SectionProfile展示当前名称。

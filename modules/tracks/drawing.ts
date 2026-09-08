@@ -15,6 +15,11 @@ export type ManualTrack = {
   style?: TrackStyle;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
+  sharedRoute?: {
+    stops: { name: string; coordinates: Coordinate }[];
+    duration: number | null;
+    tolerance: number;
+  };
   samples?: { time: number | null; altitude: number | null }[][];
   nodes?: Coordinate[];
 };
@@ -90,9 +95,33 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
     )
     .map((track) => {
       // Optional new metadata must not make an otherwise valid legacy track disappear.
-      const { updatedAt, drawingLocation, navigationMode, ...rest } = track;
+      const {
+        updatedAt,
+        drawingLocation,
+        navigationMode,
+        sharedRoute,
+        ...rest
+      } = track;
       return {
         ...rest,
+        ...(sharedRoute &&
+        Array.isArray(sharedRoute.stops) &&
+        sharedRoute.stops.length >= 2 &&
+        sharedRoute.stops.length <= 24 &&
+        sharedRoute.stops.every(
+          (s) =>
+            s &&
+            typeof s.name === 'string' &&
+            s.name.length <= 120 &&
+            coordinate(s.coordinates),
+        ) &&
+        (sharedRoute.duration === null ||
+          (Number.isFinite(sharedRoute.duration) &&
+            sharedRoute.duration >= 0)) &&
+        Number.isFinite(sharedRoute.tolerance) &&
+        sharedRoute.tolerance >= 0
+          ? { sharedRoute }
+          : {}),
         ...(['auto', 'bicycle', 'pedestrian'].includes(navigationMode ?? '')
           ? { navigationMode }
           : {}),

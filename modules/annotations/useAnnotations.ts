@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import { readElevation } from '../terrain/elevation';
 import {
+  ATTRIBUTE_TEMPLATE_KEY,
+  blankAttributes,
+  readAttributeTemplate,
+  rememberAttributes,
+} from './attributes';
+import {
   ANNOTATION_STORAGE,
   MAX_ANNOTATIONS,
   newAnnotation,
@@ -114,6 +120,14 @@ export function useAnnotations() {
       return false;
     }
     const item = newAnnotation(kind, coordinates, null, crypto.randomUUID());
+    try {
+      item.attributes = blankAttributes(
+        readAttributeTemplate(localStorage.getItem(ATTRIBUTE_TEMPLATE_KEY)),
+      );
+    } catch {
+      setError('属性模板读取失败，原模板已保留。');
+      return false;
+    }
     if (!validAnnotation(item)) {
       setError('标记位置或类型无效。');
       return false;
@@ -125,6 +139,37 @@ export function useAnnotations() {
     return true;
   };
   return {
+    addOutline: (
+      shape: Pick<
+        Annotation,
+        | 'coordinates'
+        | 'width'
+        | 'length'
+        | 'height'
+        | 'footprint'
+        | 'color'
+        | 'name'
+        | 'attributes'
+      >,
+    ) => {
+      if (current.current.length >= MAX_ANNOTATIONS) {
+        setError(`最多保存 ${MAX_ANNOTATIONS} 个标记`);
+        return false;
+      }
+      const item = {
+        ...newAnnotation('prism', shape.coordinates, null, crypto.randomUUID()),
+        ...shape,
+      };
+      if (!validAnnotation(item)) {
+        setError('轮廓模型参数无效');
+        return false;
+      }
+      if (!persist([...current.current, item])) return false;
+      setSelected(item.id);
+      setPicking(null);
+      void refreshElevation(item.id, item.coordinates);
+      return true;
+    },
     add,
     items,
     selected,
@@ -181,6 +226,21 @@ export function useAnnotations() {
       setPicking(null);
     },
     update,
+    rememberAttributes: (id: string) => {
+      const item = current.current.find((a) => a.id === id);
+      if (!item) return;
+      try {
+        const previous = readAttributeTemplate(
+          localStorage.getItem(ATTRIBUTE_TEMPLATE_KEY),
+        );
+        localStorage.setItem(
+          ATTRIBUTE_TEMPLATE_KEY,
+          JSON.stringify(rememberAttributes(previous, item.attributes ?? [])),
+        );
+      } catch {
+        setError('属性已保存在标记中，但模板保存失败，请释放本机空间后重试。');
+      }
+    },
     refreshElevation,
     manualElevation: (id: string, value: number) => {
       lookup.current?.abort();

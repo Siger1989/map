@@ -172,5 +172,9 @@
   flex-direction: column;
 }
 .geology-source-choice button {
-  min-height: 30px;
+  min-height: 44px;
+}
+.layer-panel .geology-source-choice {
+  flex-direction: row;
+  width: 100%;
 }

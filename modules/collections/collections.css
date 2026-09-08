@@ -233,3 +233,129 @@
   padding: 0 8px;
   flex-shrink: 0;
 }
+.catalog-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px 46px;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.catalog-search input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 7px;
+  background: #183440;
+  color: var(--text);
+}
+.catalog-types {
+  padding: 0;
+  gap: 2px;
+}
+.catalog-types button {
+  gap: 3px;
+  padding: 0 8px;
+  font-size: 13px;
+}
+.catalog-types small {
+  font-size: 11px;
+}
+.catalog-province > summary,
+.catalog-city > summary {
+  cursor: pointer;
+  min-height: 44px;
+  align-content: center;
+  padding: 0 6px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+.catalog-province > summary {
+  background: #9de8c414;
+}
+.catalog-city > summary {
+  padding-left: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.catalog-province summary small {
+  float: right;
+  font-size: 11px;
+  margin-right: 5px;
+}
+.catalog-row {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  border-bottom: 1px solid #ffffff09;
+}
+.catalog-row .collection-open {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+}
+.catalog-row .collection-open span {
+  min-width: 0;
+  flex: 1;
+}
+.catalog-row .collection-open svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.catalog-row path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.catalog-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 2px 0 0;
+  font-size: 11px;
+}
+.catalog-row strong {
+  font-size: 13px;
+}
+.catalog-more,
+.catalog-check {
+  flex-shrink: 0;
+  width: 44px;
+}
+.catalog-check {
+  display: grid;
+  place-items: center;
+  height: 44px;
+}
+.catalog-check input {
+  min-height: 20px;
+  width: 20px;
+  height: 20px;
+}
+.catalog-source {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.catalog-source button {
+  font-size: 11px;
+  padding: 0 8px;
+}
+.catalog-region-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.catalog-legacy {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.catalog-batch {
+  font-size: 12px;
+}

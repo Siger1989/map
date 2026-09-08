@@ -1,8 +1,9 @@
-import { deliverPhoto } from '../photos/export';
 import type { Contour, ProfilePoint, SectionProfileData } from './contours';
 import { chartFrame } from './chartFrame';
 import { scaleLabel } from './scale';
 import { noteDetails, noteColor, type ProfileNote } from './profileNotes';
+import { profileMapData, profileCoordinateRows } from './profileMapData';
+import { renderProfileMap } from './profileMap';
 export { chartFrame } from './chartFrame';
 export function profileDetails(
   data: SectionProfileData,
@@ -80,11 +81,13 @@ export function profileDetails(
   ];
 }
 /** Chart and footer share the exact snapshot and interpolated cursor used on screen. */
-export async function downloadProfile(
+export async function* profileImages(
   data: SectionProfileData,
   curve: Contour | undefined,
   point: ProfilePoint & { distance: number },
   notes: ProfileNote[] = [],
+  signal: AbortSignal = new AbortController().signal,
+  title = '剖面交线与海拔',
 ) {
   const width = 1600,
     chartHeight = 660,
@@ -94,9 +97,16 @@ export async function downloadProfile(
   const canvas = document.createElement('canvas'),
     ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('此设备暂时无法生成图片');
+  const plan = profileMapData(data, point, notes);
+  const map = await renderProfileMap(data, curve, plan, signal);
   ctx.font = `${fontSize}px sans-serif`;
   const rows: string[] = [];
   for (const [label, value] of [
+    [
+      '点位坐标',
+      'WGS84，经度在前、纬度在后；A–D 对应剖面四角，P 为当前点，数字对应上方保存测点。',
+    ],
+    ...profileCoordinateRows(plan.points),
     ...profileDetails(data, curve, point),
     ...noteDetails(notes),
   ]) {
@@ -116,17 +126,19 @@ export async function downloadProfile(
     rows.push(row);
   }
   canvas.width = width;
-  const pageRows = 250,
+  const mapTop = chartHeight + 250,
+    footerTop = mapTop + map.height + 64,
+    pageRows = 100,
     pages = Math.max(1, Math.ceil(rows.length / pageRows));
-  let result = '';
   for (let page = 0; page < pages; page++) {
+    signal.throwIfAborted();
     const footer = rows.slice(page * pageRows, (page + 1) * pageRows);
-    canvas.height = chartHeight + 176 + footer.length * lineHeight + 48;
+    canvas.height = footerTop + footer.length * lineHeight + 48;
     ctx.fillStyle = '#f6faf8';
     ctx.fillRect(0, 0, width, canvas.height);
     ctx.fillStyle = '#123b40';
     ctx.font = 'bold 44px sans-serif';
-    ctx.fillText('山兔 · 剖面交线与海拔', padding, 65);
+    ctx.fillText(`山兔 · ${title}`, padding, 65, width - 2 * padding);
     ctx.font = '25px sans-serif';
     ctx.fillText(
       `橙色为当前交线 · 白芯为所选位置 · 彩色编号为保存测点${pages > 1 ? ` · 第 ${page + 1}/${pages} 张` : ''}`,
@@ -216,10 +228,20 @@ export async function downloadProfile(
     );
     ctx.textAlign = 'left';
     ctx.restore();
+    ctx.fillStyle = '#123b40';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.fillText('剖面位置 · 平面地图', padding, chartHeight + 194);
+    ctx.font = '24px sans-serif';
+    ctx.fillText(
+      '虚线为边框的垂直投影；竖直面上下边重合，同位置编号合并显示，全部坐标列于下方。',
+      padding,
+      chartHeight + 233,
+    );
+    ctx.drawImage(map, padding, mapTop);
     ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = '#193c41';
     footer.forEach((row, i) =>
-      ctx.fillText(row, padding, chartHeight + 176 + i * lineHeight),
+      ctx.fillText(row, padding, footerTop + i * lineHeight),
     );
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
@@ -229,10 +251,7 @@ export async function downloadProfile(
       ),
     );
     const name = `山兔-剖面-${new Date(data.createdAt).toISOString().replace(/[:.]/g, '-')}${pages > 1 ? `-${page + 1}` : ''}.jpg`;
-    result = await deliverPhoto(
-      new File([blob], name, { type: 'image/jpeg' }),
-      false,
-    );
+    signal.throwIfAborted();
+    yield new File([blob], name, { type: 'image/jpeg' });
   }
-  return pages > 1 ? `已分为 ${pages} 张图片，${result}` : result;
 }

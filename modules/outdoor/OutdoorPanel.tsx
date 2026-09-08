@@ -222,6 +222,7 @@ export function OutdoorPanel({
               <p>
                 {pending.tracks.length} 条轨迹 · {pending.annotations.length}{' '}
                 个标记 · {pending.favorites.length} 条收藏
+                {` · ${pending.areas?.length ?? 0} 个区域 · ${pending.sections?.length ?? 0} 个剖面`}
               </p>
               <p className="route-note">
                 合并到本机；保留已有数据。相同内容不会重复导入。
@@ -283,7 +284,7 @@ export function OutdoorPanel({
             </button>
           </div>
           <p className="route-note">
-            JSON 保留标记模型、手绘轨迹和路线收藏。GPX / KML
+            JSON 保留标记属性、模型、区域、剖面测点及路线收藏。GPX / KML
             交换点线；不含模型外观、KML 原文件时间与海拔。每个文件 ≤8
             MB、每条轨迹 ≤6000 点，本机最多 20 条轨迹 / 20 条收藏 / 80 个标记。
           </p>

@@ -1,6 +1,33 @@
 import { altitudeRange, type Annotation } from '../annotations/data.ts';
+import { modelSegments, stitchSegments } from './contours.ts';
 type XY = [number, number];
 type XYZ = [number, number, number];
+/** A concave outline can intersect the plane in multiple disconnected rings. */
+export function modelSectionLoops(item: Annotation, altitude: number): XY[][] {
+  if (item.kind !== 'prism') {
+    const points = modelSection(item, altitude);
+    return points.length ? [points] : [];
+  }
+  const size = Math.hypot(item.width, item.length, item.height) * 2 + 1;
+  return stitchSegments(
+    modelSegments(item, {
+      enabled: true,
+      altitude,
+      color: item.color,
+      plane: {
+        center: item.coordinates,
+        width: size,
+        height: size,
+        heading: 0,
+        tilt: 90,
+      },
+    }),
+  )
+    .filter(
+      (line) => line.length >= 4 && line[0].distanceTo(line.at(-1)!) < 0.001,
+    )
+    .map((line) => line.slice(0, -1).map((p) => [p.x, -p.y] as XY));
+}
 function rotate([x, y, z]: XYZ, item: Annotation): XYZ {
   const p = (item.pitch * Math.PI) / 180,
     r = (item.roll * Math.PI) / 180,
@@ -41,6 +68,7 @@ function hull(points: XY[]): XY[] {
 }
 /** Real-metre horizontal intersection, with the same ZYX rotations as AnnotationLayer. */
 export function modelSection(item: Annotation, altitude: number): XY[] {
+  if (item.kind === 'prism') return modelSectionLoops(item, altitude)[0] ?? [];
   const range = altitudeRange(item);
   if (
     !item.visible ||

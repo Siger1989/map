@@ -42,7 +42,7 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
           setLngLat(p) { this.coordinate = p; return this; }
           setOffset(p) { this.offset = p; return this; }
           setOpacity() { return this; }
-          addTo() { return this; }
+          addTo() { this.element.classList.add('maplibregl-marker', 'maplibregl-marker-anchor-bottom'); return this; }
           remove() { this.removed = true; }
         }
         export class MercatorCoordinate {
@@ -59,10 +59,13 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
   );
   const originalDocument = globalThis.document;
   globalThis.document = {
+    createElementNS: () => ({ setAttribute() {}, appendChild() {} }),
     createElement: () => ({
+      classList: { values: new Set(), add(...values) { values.forEach(v => this.values.add(v)); }, toggle(value, on) { if(on) this.values.add(value); else this.values.delete(value); }, contains(value) { return this.values.has(value); } },
       style: { setProperty() {} },
       dataset: {},
       setAttribute() {},
+      replaceChildren() {},
     }),
   };
   t.after(() => {
@@ -82,6 +85,9 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
   marker.getElement().onclick({ stopPropagation() {} });
   assert.deepEqual(selected, [item.id]);
   layer.update([item], item.id, settings);
+  assert.ok(marker.getElement().classList.contains('maplibregl-marker'), 'selection retains absolute map positioning');
+  assert.ok(marker.getElement().classList.contains('maplibregl-marker-anchor-bottom'));
+  assert.ok(marker.getElement().classList.contains('is-selected'));
   assert.strictEqual(
     layer.markers.get(item.id),
     marker,
@@ -291,7 +297,7 @@ function emitter() {
   };
 }
 
-function fixture(t, kind = 'track') {
+function fixture(t, kind = 'track', direct = false) {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
   const win = emitter(),
     container = emitter(),
@@ -347,6 +353,7 @@ function fixture(t, kind = 'track') {
       ? { kind, node: { trackId: 't1', coordinate: [10, 20] } }
       : { kind, id: 'a1', coordinate: [10, 20] };
   const bridge = new FeatureDragBridge(map, {
+    direct: () => direct,
     enabled: () => enabled,
     hit: () => target,
     begin: (value) => begins.push(value),
@@ -425,6 +432,21 @@ test('node hold previews without writes, release commits once and suppresses fol
   t.mock.timers.tick(601);
   assert.equal(f.bridge.blocksClick(), false);
   assert.equal(f.classes.size, 0);
+});
+
+test('selected node begins dragging immediately, commits on release and cancels on second touch', (t) => {
+  const f = fixture(t, 'track', true);
+  f.win.fire('pointerdown', f.event());
+  assert.equal(f.begins.length, 1);
+  assert.equal(f.map.dragPan.active, false);
+  f.win.fire('pointermove', f.event(1, 130, 240));
+  f.win.fire('pointerup', f.event(1, 130, 240));
+  assert.deepEqual(f.commits[0].coordinate, [13, 24]);
+  f.win.fire('pointerdown', f.event());
+  f.win.fire('pointermove', f.event(1, 110, 210));
+  f.win.fire('pointerdown', f.event(2));
+  assert.equal(f.commits.length, 1);
+  assert.equal(f.map.dragPan.active, true);
 });
 
 test('marker label drag preserves finger offset rather than jumping its ground anchor', (t) => {

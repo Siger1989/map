@@ -6,7 +6,7 @@ import {
   type TravelMode,
 } from '../navigation/types.ts';
 import type { RouteFavorite } from '../navigation/favorites';
-import { pathOf } from './geometry.ts';
+import { pathOf, project } from './geometry.ts';
 
 /** Adapt saved geometry without requesting a replacement road route or editing the archive. */
 export function trackNavigation(
@@ -22,11 +22,25 @@ export function trackNavigation(
   const coordinates = lines[0].map((p) => [...p] as Coordinate);
   const distance = pathOf(coordinates).length;
   if (distance < 20) throw new Error('轨迹不足20米，请延长后再导航。');
-  const start = { name: `${track.name} · 起点`, coordinates: coordinates[0] };
-  const end = {
+  const stops = track.sharedRoute?.stops;
+  const start = stops?.[0] ?? {
+    name: `${track.name} · 起点`,
+    coordinates: coordinates[0],
+  };
+  const end = stops?.at(-1) ?? {
     name: `${track.name} · 终点`,
     coordinates: coordinates.at(-1)!,
   };
+  let floor = 0;
+  const routeStops = stops ?? [start, end],
+    path = pathOf(coordinates);
+  const snapped = routeStops.map((s, i) => {
+    if (i === 0) return coordinates[0];
+    if (i === routeStops.length - 1) return coordinates.at(-1)!;
+    const p = project(path, s.coordinates, floor);
+    floor = p.distance;
+    return p.point;
+  });
   return {
     id: track.id,
     name: track.name,
@@ -42,8 +56,8 @@ export function trackNavigation(
         distance /
         ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[mode] / 3600),
       steps: [],
-      snapped: [start.coordinates, end.coordinates],
-      stops: [start, end],
+      snapped,
+      stops: routeStops,
       createdAt: now,
     },
   };

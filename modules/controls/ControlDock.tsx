@@ -127,7 +127,7 @@ export function ControlDock({
                     : active === 'track'
                       ? '画线与轨迹'
                       : active === 'favorites'
-                        ? '收藏路线与轨迹'
+                        ? '全部收藏'
                         : active === 'route'
                           ? '路线规划'
                           : PANELS.find((p) => p.id === active)?.label)}
