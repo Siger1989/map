@@ -33,7 +33,7 @@ export function CenterCursor({
         }}
       >
         <MapPinPlus size={18} />
-        <span>加点</span>
+        <span>标记</span>
       </button>
       {error && (
         <button

@@ -248,6 +248,7 @@ export async function searchPlaces(
     throw new Error('请输入至少两个字，或使用地图选点。');
   const params = new URLSearchParams({
     q: query.trim().slice(0, 120),
+    lang: 'default',
     limit: '5',
     lat: String(near[1]),
     lon: String(near[0]),
@@ -259,6 +260,7 @@ export async function searchPlaces(
 
 export async function reversePlace(center: Coordinate, signal: AbortSignal) {
   const params = new URLSearchParams({
+    lang: 'default',
     lon: String(center[0]),
     lat: String(center[1]),
     radius: '10',
@@ -272,6 +274,7 @@ export async function reversePlace(center: Coordinate, signal: AbortSignal) {
 /** Administrative grouping shares the existing reverse-geocode request cache and rate limit. */
 export async function reverseRegion(center: Coordinate, signal: AbortSignal) {
   const params = new URLSearchParams({
+    lang: 'default',
     lon: String(center[0]),
     lat: String(center[1]),
     radius: '10',

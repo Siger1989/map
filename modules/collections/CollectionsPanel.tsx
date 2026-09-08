@@ -13,6 +13,8 @@ import {
   regionFor,
   type CatalogEntry,
 } from './catalog';
+import { removeEntries } from './remove';
+import { useSwipeSelection } from './useSwipeSelection';
 import { useRegions } from './useRegions';
 import { coordinateKey } from './regions';
 import { collectionTransfer, collectionSpreadsheet } from './export';
@@ -34,6 +36,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onAnnotation: (id: string) => void;
   onSection: (id: string) => void;
   initialOutputKey?: string | null;
+  initialSelectedKeys?: string[];
   photos: TripPhoto[];
 };
 export function CollectionsPanel(props: Props) {
@@ -58,9 +61,11 @@ export function CollectionsPanel(props: Props) {
   const [legacy, setLegacy] = useState(false),
     [type, setType] = useState<keyof typeof CATALOG_TYPES>('all'),
     [search, setSearch] = useState('');
-  const [batch, setBatch] = useState(false),
+  const [batch, setBatch] = useState(!!props.initialSelectedKeys?.length),
     [selected, setSelected] = useState<string[]>(
-      props.initialOutputKey ? [props.initialOutputKey] : [],
+      props.initialOutputKey
+        ? [props.initialOutputKey]
+        : (props.initialSelectedKeys ?? []),
     ),
     [editing, setEditing] = useState<string | null>(null);
   const [province, setProvince] = useState(''),
@@ -88,6 +93,29 @@ export function CollectionsPanel(props: Props) {
     setSelected((a) =>
       a.includes(key) ? a.filter((k) => k !== key) : [...a, key],
     );
+  const [deleting, setDeleting] = useState(false);
+  const paint = (keys: string[], checked: boolean) =>
+    setSelected((old) =>
+      checked
+        ? [...new Set([...old, ...keys])]
+        : old.filter((k) => !keys.includes(k)),
+    );
+  const swipe = useSwipeSelection(paint);
+  const groupSelect = (list: CatalogEntry[]) =>
+    paint(
+      list.map((e) => e.key),
+      !list.every((e) => selected.includes(e.key)),
+    );
+  const deleteSelected = () => {
+    try {
+      removeEntries(chosen.map((e) => e.key));
+      setSelected([]);
+      setDeleting(false);
+      setMessage(`已删除 ${chosen.length} 项`);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : '删除失败');
+    }
+  };
   const open = (e: CatalogEntry) => {
     if (e.kind === 'route') props.onRoute(e.route);
     else if (e.kind === 'track') props.onTrack(e.track.id);
@@ -166,7 +194,27 @@ export function CollectionsPanel(props: Props) {
     );
   return (
     <section className="collections-panel catalog-panel" aria-label="全部收藏">
-      {output ? (
+      {deleting ? (
+        <div className="collection-editor collection-scroll">
+          <strong>删除选中的 {chosen.length} 项？</strong>
+          <p className="collection-hint">
+            只删除已选条目及其分类记录。照片副本保留；未选中的行程标记保留为独立标记。此操作无法撤销。
+          </p>
+          <p className="collection-hint">
+            {chosen
+              .slice(0, 8)
+              .map((e) => e.name)
+              .join('、')}
+            {chosen.length > 8 ? '…' : ''}
+          </p>
+          <div className="collection-actions">
+            <button onClick={() => setDeleting(false)}>返回</button>
+            <button className="catalog-danger" onClick={deleteSelected}>
+              确认删除 {chosen.length} 项
+            </button>
+          </div>
+        </div>
+      ) : output ? (
         <div className="collection-editor collection-scroll">
           <button
             className="collection-back"
@@ -192,7 +240,7 @@ export function CollectionsPanel(props: Props) {
           </label>
           <p className="collection-hint">
             ZIP 包含勾选条目的 JSON、Excel
-            和通用地理文件；路线另附二维码全程图与关联照片。模型完整参数保存在
+            和通用地理文件；路线另附二维码全程图、行程标记与关联照片。模型完整参数保存在
             JSON 中。
           </p>
           <div className="collection-actions">
@@ -312,10 +360,24 @@ export function CollectionsPanel(props: Props) {
           <div className="catalog-search">
             <input
               aria-label="搜索收藏"
-              placeholder="搜索名称 / 省 / 市"
+              placeholder="名称 / 省 / 市"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <select
+              aria-label="收藏类型"
+              value={type}
+              onChange={(e) => setType(e.target.value as typeof type)}
+            >
+              {Object.entries(CATALOG_TYPES).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}{' '}
+                  {key === 'all'
+                    ? entries.length
+                    : entries.filter((e) => e.kind === key).length}
+                </option>
+              ))}
+            </select>
             <button
               aria-pressed={batch}
               onClick={() => {
@@ -323,104 +385,100 @@ export function CollectionsPanel(props: Props) {
                 setSelected([]);
               }}
             >
-              {batch ? '取消' : '多选'}
-            </button>
-            <button aria-label="路线自定义分组" onClick={() => setLegacy(true)}>
-              分组
+              {batch ? '完成' : '多选'}
             </button>
           </div>
-          <nav className="collection-tabs catalog-types" aria-label="收藏类型">
-            {Object.entries(CATALOG_TYPES).map(([key, label]) => (
-              <button
-                key={key}
-                aria-pressed={type === key}
-                onClick={() => setType(key as typeof type)}
-              >
-                {label}
-                <small>
-                  {key === 'all'
-                    ? entries.length
-                    : entries.filter((e) => e.kind === key).length}
-                </small>
-              </button>
-            ))}
-          </nav>
-          {batch && (
-            <div className="collection-actions catalog-batch">
-              <button
-                onClick={() =>
-                  setSelected((a) =>
-                    shown.every((e) => a.includes(e.key))
-                      ? a.filter((k) => !shown.some((e) => e.key === k))
-                      : [...new Set([...a, ...shown.map((e) => e.key)])],
-                  )
-                }
-              >
-                全选当前 {shown.length}
-              </button>
-              <button disabled={!chosen.length} onClick={() => setOutput(true)}>
-                分享 / 导出 {chosen.length}
-              </button>
-            </div>
-          )}
           <div
             className="collection-scroll catalog-list"
+            ref={swipe.list}
             aria-label="省市收藏列表"
           >
             {!shown.length && (
               <p className="collection-empty">
                 {entries.length
                   ? '没有匹配的收藏'
-                  : '地图标记、模型、保存的剖面与路线都会出现在这里'}
+                  : '地图标记、模型、剖面与路线保存在这里'}
               </p>
             )}
-            {groups.map((g) => (
-              <details key={g.key} className="catalog-province" open>
-                <summary>
-                  {g.name}
-                  <small>
-                    {g.cities.reduce((n, [, list]) => n + list.length, 0)}
-                  </small>
-                </summary>
-                {g.cities.map(([city, list]) => (
-                  <details key={city} className="catalog-city" open>
-                    <summary>
-                      {city}
+            {groups.map((g) =>
+              g.cities.map(([city, list]) => (
+                <section className="catalog-group" key={g.key + city}>
+                  <div
+                    className={`catalog-group-heading${batch ? ' is-batch' : ''}`}
+                  >
+                    <span title={`${g.name} / ${city}`}>
+                      {g.name.split(' · ')[0]} / {city}{' '}
                       <small>{list.length}</small>
-                    </summary>
-                    {list.map((e) => (
-                      <div className="catalog-row" key={e.key}>
-                        {batch && (
-                          <label className="catalog-check">
-                            <input
-                              type="checkbox"
-                              aria-label={`选择 ${e.name}`}
-                              checked={selected.includes(e.key)}
-                              onChange={() => toggle(e.key)}
-                            />
-                          </label>
-                        )}
+                    </span>
+                    {batch && (
+                      <>
                         <button
-                          className="collection-open"
-                          onClick={() => (batch ? toggle(e.key) : open(e))}
+                          aria-label={`${g.name} 省分组全选`}
+                          aria-pressed={g.cities
+                            .flatMap(([, items]) => items)
+                            .every((e) => selected.includes(e.key))}
+                          onClick={() =>
+                            groupSelect(g.cities.flatMap(([, items]) => items))
+                          }
                         >
-                          {'annotation' in e && (
-                            <svg
-                              viewBox="0 0 24 24"
-                              width="21"
-                              height="21"
-                              aria-hidden="true"
-                            >
-                              <path d={markerIcon(e.annotation.icon).path} />
-                            </svg>
-                          )}
-                          <span>
-                            <strong>{e.name}</strong>
-                            <small>
-                              {CATALOG_TYPES[e.kind]} · {e.detail}
-                            </small>
-                          </span>
+                          省选
                         </button>
+                        <button
+                          aria-label={`${city} 城市全选`}
+                          aria-pressed={list.every((e) =>
+                            selected.includes(e.key),
+                          )}
+                          onClick={() => groupSelect(list)}
+                        >
+                          市选
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  {list.map((e) => (
+                    <div
+                      className={`catalog-row${selected.includes(e.key) && batch ? ' is-selected' : ''}`}
+                      key={e.key}
+                    >
+                      {batch && (
+                        <button
+                          className="catalog-check"
+                          role="checkbox"
+                          aria-label={`选择 ${e.name}`}
+                          aria-checked={selected.includes(e.key)}
+                          data-select-key={e.key}
+                          onPointerDown={(event) =>
+                            swipe.start(event, !selected.includes(e.key))
+                          }
+                          onClick={(event) => {
+                            if (event.detail === 0) toggle(e.key);
+                          }}
+                        >
+                          <span>{selected.includes(e.key) ? '✓' : ''}</span>
+                        </button>
+                      )}
+                      <button
+                        className="collection-open"
+                        onClick={() => (batch ? toggle(e.key) : open(e))}
+                      >
+                        {'annotation' in e && (
+                          <svg
+                            viewBox="0 0 24 24"
+                            width="18"
+                            height="18"
+                            aria-hidden="true"
+                          >
+                            <path d={markerIcon(e.annotation.icon).path} />
+                          </svg>
+                        )}
+                        <span>
+                          <strong>{e.name}</strong>
+                          <small>
+                            {CATALOG_TYPES[e.kind]} · {e.detail}
+                          </small>
+                        </span>
+                      </button>
+                      {!batch && (
                         <button
                           className="catalog-more"
                           aria-label={`整理 ${e.name}`}
@@ -428,21 +486,46 @@ export function CollectionsPanel(props: Props) {
                         >
                           •••
                         </button>
-                      </div>
-                    ))}
-                  </details>
-                ))}
-              </details>
-            ))}
+                      )}
+                    </div>
+                  ))}
+                </section>
+              )),
+            )}
+            <div className="catalog-source">
+              <button disabled={regions.loading} onClick={regions.retry}>
+                {regions.loading ? '识别地区…' : '重试地区'}
+              </button>
+              <button onClick={() => setLegacy(true)}>路线自定义分组</button>
+            </div>
           </div>
-          <div className="catalog-source">
-            <span>
-              {regions.loading ? '正在识别省市…' : '省 → 市 · 路线按起点归类'}
-            </span>
-            <button disabled={regions.loading} onClick={regions.retry}>
-              重试地区
-            </button>
-          </div>
+          {batch && (
+            <div className="collection-actions catalog-batch">
+              <button
+                aria-pressed={
+                  !!shown.length && shown.every((e) => selected.includes(e.key))
+                }
+                onClick={() => groupSelect(shown)}
+              >
+                全选 {shown.length}
+              </button>
+              <button disabled={!chosen.length} onClick={() => setOutput(true)}>
+                导出 {chosen.length}
+              </button>
+              <button
+                className="catalog-danger"
+                disabled={!chosen.length}
+                onClick={() => setDeleting(true)}
+              >
+                删除
+              </button>
+            </div>
+          )}
+          {batch && (
+            <small className="catalog-swipe-hint">
+              沿左侧勾选栏滑动连选，靠近边缘自动滚动
+            </small>
+          )}
         </>
       )}
       {(message || regions.message || props.navigationError) && (

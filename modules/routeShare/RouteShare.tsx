@@ -128,8 +128,8 @@ export function RouteShare({
           {data.approach ? ' · 含到起点路线' : ''}
         </p>
         <div className="route-share-bundle">
-          <strong>整条路线打包 · {photoCount} 张照片</strong>
-          <small>二维码路线图＋照片副本＋GPX/KML＋路线数据</small>
+          <strong>整条路线打包 · {photoCount} 张照片 · {data.markers?.length ?? 0} 个标记</strong>
+          <small>二维码路线图＋照片副本＋GPX/KML＋路线及标记数据</small>
           <div className="route-share-actions">
             <button disabled={busy} onClick={() => void bundle(false)}>
               保存 ZIP

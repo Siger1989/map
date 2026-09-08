@@ -6,6 +6,8 @@ import {
   Plus,
   Smartphone,
   MoreHorizontal,
+  Scan,
+  Settings2,
 } from 'lucide-react';
 import type { DirectionMode } from '../position/types';
 
@@ -27,6 +29,7 @@ export function MapActions({
   networkAvailable,
   networkMode,
   onNetwork,
+  onBoxSelect,
 }: {
   terrain: boolean;
   bearing: number;
@@ -45,8 +48,10 @@ export function MapActions({
   networkAvailable: boolean;
   networkMode: boolean;
   onNetwork: () => void;
+  onBoxSelect: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [locationSettings, setLocationSettings] = useState(false);
   return (
     <nav
       className={`map-actions glass${expanded ? ' is-expanded' : ''}`}
@@ -69,31 +74,52 @@ export function MapActions({
         <LocateFixed size={20} />
         <small>{following ? (locating ? '等待' : '跟随') : '浏览'}</small>
       </button>
-      {watching && expanded && (
-        <button
-          className="location-stop"
-          onClick={onStopLocation}
-          aria-label="停止持续定位"
-        >
-          停定位
-        </button>
+      {locationSettings && (
+        <section className="map-location-settings" aria-label="定位设置">
+          <header>
+            <strong>定位设置</strong>
+            <button
+              onClick={() => setLocationSettings(false)}
+              aria-label="关闭定位设置"
+            >
+              ×
+            </button>
+          </header>
+          <p>{networkMode ? '基站 / Wi-Fi 大致位置' : '自动定位 · 优先 GPS'}</p>
+          {networkAvailable && (
+            <button
+              disabled={followBlocked}
+              onClick={() => {
+                onNetwork();
+                setLocationSettings(false);
+              }}
+            >
+              {networkMode ? '切回自动定位' : '使用室内网络定位'}
+            </button>
+          )}
+          {watching && (
+            <button
+              onClick={() => {
+                onStopLocation();
+                setLocationSettings(false);
+              }}
+            >
+              停止持续定位
+            </button>
+          )}
+        </section>
       )}
       {expanded && (
         <>
-          {networkAvailable && (
-            <button
-              className="icon-button direction-button"
-              aria-label={
-                networkMode ? '切回自动定位' : '室内网络定位（基站与 Wi-Fi）'
-              }
-              aria-pressed={networkMode}
-              disabled={followBlocked}
-              onClick={onNetwork}
-            >
-              <LocateFixed size={20} />
-              <small>{networkMode ? '自动' : '室内'}</small>
-            </button>
-          )}
+          <button
+            className="icon-button direction-button"
+            aria-label="定位设置"
+            aria-expanded={locationSettings}
+            onClick={() => setLocationSettings(!locationSettings)}
+          >
+            <Settings2 size={20} />
+            <small>设置</small>
+          </button>
           <button
             className="icon-button"
             aria-label="放大地图"
@@ -145,9 +171,20 @@ export function MapActions({
         className="icon-button"
         aria-label="更多地图操作"
         aria-expanded={expanded}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => {
+          setExpanded((v) => !v);
+          setLocationSettings(false);
+        }}
       >
         <MoreHorizontal size={21} />
+      </button>
+      <button
+        className="icon-button direction-button"
+        aria-label="框选标记与路线"
+        onClick={onBoxSelect}
+      >
+        <Scan size={21} />
+        <small>框选</small>
       </button>
     </nav>
   );

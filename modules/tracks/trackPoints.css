@@ -1,0 +1,18 @@
+.track-point-tools { position: absolute; z-index: 12; left: var(--edge-left); bottom: calc(var(--safe-bottom) + 72px); width: min(280px, calc(100vw - var(--edge-left) - var(--camera-gizmo-size, 110px) - 24px)); padding: 8px 10px; border-radius: 14px; font-size: 12px; }
+.track-point-tools > div { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.track-point-tools small { display: block; color: var(--muted); font-size: 10px; }
+.track-point-tools button { min-height: 44px; min-width: 44px; background: transparent; color: var(--text); border-radius: 8px; }
+.track-point-tools .track-point-add { background: #217652; color: white; flex: 1; padding: 0 6px; }
+.track-point-tools p { margin: 4px 0; }
+.track-journey-rail .rail-heading { min-height: 44px; width: 44px; }
+.track-journey-rail .rail-heading small { display: block; }
+.track-journey-rail .track-mileage-color { width: 10px; background: linear-gradient(to top, #329e88, #b3d16e); }
+.rail-track-marker { position: absolute; left: 29px; width: 8px; height: 8px; border: 1px solid white; transform: translateY(-50%) rotate(45deg); pointer-events: none; box-shadow: 0 1px 3px #0009; }
+.rail-track-preview { position: absolute; left: 14px; width: 16px; height: 16px; border: 2px solid white; background: #20dc84; border-radius: 50%; transform: translateY(-50%); pointer-events: none; }
+.track-marker-list { position: absolute; top: 0; left: 52px; width: min(220px, calc(100vw - 126px)); max-height: min(38dvh, 320px); padding: 8px; border-radius: 12px; overflow: auto; font-size: 12px; }
+.track-marker-list header { display: flex; align-items: center; justify-content: space-between; }
+.track-marker-list button { display: flex; align-items: center; gap: 6px; min-height: 44px; width: 100%; text-align: left; background: transparent; color: var(--text); }
+.track-marker-list header button { width: 44px; justify-content: center; }
+.track-marker-list button i { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.track-marker-list button span { overflow-wrap: anywhere; }
+.track-marker-list small { display: block; color: var(--muted); }

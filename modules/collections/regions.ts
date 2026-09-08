@@ -5,6 +5,11 @@ export type CollectionRegion = {
   city: string;
   source: 'auto' | 'manual';
   checkedAt: number;
+  language?: 'local';
+  district?: string;
+  township?: string;
+  street?: string;
+  locality?: string;
 };
 export type CollectionRegions = Record<string, CollectionRegion>;
 export const REGION_STORAGE = 'shantu.collection-regions.v1';
@@ -15,7 +20,7 @@ export function validateRegions(v: unknown): CollectionRegions {
     !v ||
     typeof v !== 'object' ||
     Array.isArray(v) ||
-    Object.keys(v).length > 1000 ||
+    Object.keys(v).length > 3000 ||
     !Object.entries(v).every(
       ([key, r]) =>
         /^(route|track|annotation|section|area):.{1,200}$/.test(key) &&
@@ -24,6 +29,9 @@ export function validateRegions(v: unknown): CollectionRegions {
         /^-?\d{1,3}\.\d{6},-?\d{1,2}\.\d{6}$/.test(r.coordinateKey) &&
         [r.country, r.province, r.city].every(
           (s) => typeof s === 'string' && s.length <= 80,
+        ) &&
+        [r.district, r.township, r.street, r.locality].every(
+          (s) => s === undefined || (typeof s === 'string' && s.length <= 80),
         ) &&
         ['auto', 'manual'].includes(r.source) &&
         Number.isFinite(r.checkedAt),
@@ -36,7 +44,16 @@ export const readRegions = (raw: string | null) =>
   raw === null ? {} : validateRegions(JSON.parse(raw));
 export function normalizeRegion(
   raw: unknown,
-): Pick<CollectionRegion, 'country' | 'province' | 'city'> {
+): Pick<
+  CollectionRegion,
+  | 'country'
+  | 'province'
+  | 'city'
+  | 'district'
+  | 'township'
+  | 'street'
+  | 'locality'
+> {
   const features = (
     raw as { features?: { properties?: Record<string, unknown> }[] }
   )?.features;
@@ -48,5 +65,9 @@ export function normalizeRegion(
     country: text(p.country),
     province: text(p.state),
     city: text(p.city || p.county),
+    ...(!!p.county && { district: text(p.county) }),
+    ...(!!p.district && { township: text(p.district) }),
+    ...(!!p.street && { street: text(p.street) }),
+    ...(!!p.locality && { locality: text(p.locality) }),
   };
 }

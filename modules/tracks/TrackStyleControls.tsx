@@ -23,6 +23,21 @@ export function TrackStyleControls({
         value={style.width}
         onChange={(e) => onChange({ ...style, width: Number(e.target.value) })}
       />
+      <label htmlFor={`${id}-opacity`} className="slider-label">
+        透明度 <span>{Math.round((1 - (style.opacity ?? 1)) * 100)}%</span>
+      </label>
+      <input
+        id={`${id}-opacity`}
+        aria-label="轨迹透明度"
+        type="range"
+        min="0"
+        max="90"
+        step="5"
+        value={Math.round((1 - (style.opacity ?? 1)) * 100)}
+        onChange={(e) =>
+          onChange({ ...style, opacity: 1 - Number(e.target.value) / 100 })
+        }
+      />
       <div className="track-color-options" role="group" aria-label="轨迹颜色">
         {TRACK_COLORS.map((color, i) => (
           <button
@@ -53,6 +68,7 @@ export function TrackStyleControls({
           d="M 4 9 Q 30 0 57 7 T 100 5 T 176 7"
           fill="none"
           stroke={style.color}
+          strokeOpacity={style.opacity ?? 1}
           strokeWidth={style.width}
           strokeLinecap="round"
         />

@@ -359,3 +359,109 @@
 .catalog-batch {
   font-size: 12px;
 }
+.observatory .control-dock:has(.catalog-panel) .control-popover {
+  height: min(44dvh, 360px);
+  max-height: min(44dvh, 360px);
+  padding: 0 6px 6px;
+  border-radius: 10px;
+}
+.observatory .catalog-panel {
+  flex: 1;
+  gap: 2px;
+}
+.observatory .catalog-panel button {
+  border-radius: 5px;
+}
+.observatory .catalog-search {
+  grid-template-columns: minmax(0, 1fr) 78px 44px;
+}
+.observatory .catalog-search :is(input, select) {
+  font-size: 13px;
+  padding: 0 5px;
+  color: #20363b;
+  background: #f8faf6;
+  border: 1px solid #91a49e;
+  min-width: 0;
+  border-radius: 5px;
+}
+.catalog-list {
+  flex: 1;
+  overflow-anchor: none;
+}
+.catalog-group-heading {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  background: #d9e7df;
+  color: #314d50;
+  font-size: 11px;
+  padding-left: 5px;
+}
+.catalog-group-heading > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.catalog-group-heading button {
+  flex-shrink: 0;
+  width: 44px;
+  padding: 0;
+  font-size: 12px;
+}
+.catalog-group-heading button[aria-pressed='true'],
+.catalog-batch button[aria-pressed='true'] {
+  background: #d2e4ff;
+  color: #183fd1;
+}
+.observatory .catalog-row {
+  min-height: 44px;
+  border-bottom: 1px solid #65807730;
+  border-radius: 0;
+}
+.observatory .catalog-row .collection-open {
+  height: 44px;
+  min-height: 44px;
+  padding: 2px 4px;
+  gap: 4px;
+  border-radius: 0;
+}
+.observatory .catalog-row strong {
+  font-size: 13px;
+  line-height: 17px;
+}
+.observatory .catalog-row small {
+  margin: 0;
+  font-size: 11px;
+  line-height: 15px;
+}
+.catalog-row.is-selected {
+  background: #d7e7ff;
+}
+.catalog-check {
+  touch-action: none;
+  user-select: none;
+  padding: 0;
+}
+.catalog-check span {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #627a78;
+  border-radius: 3px;
+  font-size: 16px;
+  color: #fff;
+}
+.catalog-check[aria-checked='true'] span {
+  background: #234aeb;
+  border-color: #234aeb;
+}
+.observatory .catalog-danger {
+  color: #a92828;
+}
+.catalog-swipe-hint {
+  color: #425653;
+  font-size: 10px;
+  line-height: 14px;
+  flex-shrink: 0;
+}

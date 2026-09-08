@@ -43,8 +43,14 @@ import {
 } from '@/modules/navigation/favorites';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
+import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
+import { catalogEntries } from '@/modules/collections/catalog';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
 import { CenterCursor } from '@/modules/map/CenterCursor';
+import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
+import { TrackPointTools } from '@/modules/tracks/TrackPointTools';
+import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
+import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -174,7 +180,7 @@ export default function Home() {
     const track = tracks.saved.find((t) => t.id === id);
     if (track) {
       try {
-        setShareTarget(shareTrack(track));
+        setShareTarget(shareTrack(track, annotations.items));
       } catch (e) {
         setSavedNavigationError(
           e instanceof Error ? e.message : '无法分享轨迹',
@@ -209,12 +215,22 @@ export default function Home() {
     import('@/modules/tracks/editing').TrackNode | null
   >(null);
   const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
+  const [trackLinePoint, setTrackLinePoint] = useState<TrackLinePoint | null>(
+    null,
+  );
   const [collectionOutputKey, setCollectionOutputKey] = useState<string | null>(
     null,
   );
+  const [boxSelecting, setBoxSelecting] = useState(false);
+  const [collectionSelectedKeys, setCollectionSelectedKeys] = useState<
+    string[]
+  >([]);
   const [outdoorPhotos, setOutdoorPhotos] = useState(false);
   useEffect(() => {
-    if (panel !== 'favorites') setCollectionOutputKey(null);
+    if (panel !== 'favorites') {
+      setCollectionOutputKey(null);
+      setCollectionSelectedKeys([]);
+    }
     if (panel !== 'outdoor') setOutdoorPhotos(false);
   }, [panel]);
   const sections = useSavedSection();
@@ -516,6 +532,46 @@ export default function Home() {
   );
   const selectedDraft =
     tracks.selectedId === DRAFT_ID && tracks.draft.length > 0;
+  const railTrack =
+    selectedTrack ??
+    (selectedDraft
+      ? { id: DRAFT_ID, name: '路线草稿', segments: tracks.draft }
+      : null);
+  const linePoint =
+    trackLinePoint?.trackId === tracks.selectedId &&
+    !tracks.drawing &&
+    !areas.drawing &&
+    !annotations.picking &&
+    !sectionEditing
+      ? trackLinePoint
+      : null;
+  useEffect(() => {
+    setTrackLinePoint((point) =>
+      point?.trackId === tracks.selectedId ? point : null,
+    );
+  }, [tracks.selectedId]);
+  useEffect(() => {
+    setTrackLinePoint(null);
+  }, [
+    tracks.draft,
+    tracks.saved,
+    tracks.drawing,
+    areas.drawing,
+    annotations.picking,
+    sectionEditing,
+  ]);
+  const selectLinePoint = (point: TrackLinePoint) => {
+    position.free();
+    follow.pause();
+    tracks.select(point.trackId);
+    annotations.select(null);
+    areas.select(null);
+    setActiveTrackNode(null);
+    setQuickAdd(null);
+    setProfileOpen(false);
+    setPanel(null);
+    setTrackLinePoint(point);
+  };
   const selectionName = selectedAnnotation
     ? selectedAnnotation.name || '未命名标记'
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
@@ -563,6 +619,7 @@ export default function Home() {
       drawing: tracks.drawing,
       selectedId: tracks.selectedId,
       activeNode: activeTrackNode,
+      linePoint: panel === null ? linePoint : null,
       preview:
         featureMove?.target.kind === 'track'
           ? {
@@ -574,6 +631,8 @@ export default function Home() {
     [
       recordedSegments,
       activeTrackNode,
+      linePoint,
+      panel,
       recorder.record.startedAt,
       recorder.record.style,
       recorder.record.phase,
@@ -653,6 +712,11 @@ export default function Home() {
         if (profileOpen) {
           event.preventDefault();
           setProfileOpen(false);
+          return;
+        }
+        if (trackLinePoint) {
+          event.preventDefault();
+          setTrackLinePoint(null);
           return;
         }
         if (activeTrackNode) {
@@ -761,13 +825,16 @@ export default function Home() {
           annotations.picking || navigation.picking !== null,
         )}
         onTrackSelect={(id) => {
+          setTrackLinePoint(null);
           setActiveTrackNode(null);
           tracks.select(id);
           annotations.select(null);
           tracks.finish();
           setPanel('track');
         }}
+        onTrackLineSelect={selectLinePoint}
         onTrackNodeSelect={(node) => {
+          setTrackLinePoint(null);
           if (node.trackId === 'live-recording') return;
           const savedTrack = tracks.saved.find((t) => t.id === node.trackId);
           if (savedTrack && keepsOriginalPoints(savedTrack)) {
@@ -809,11 +876,15 @@ export default function Home() {
           else annotations.move(target.id, coordinate);
         }}
         onAnnotationSelect={(id) => {
+          setTrackLinePoint(null);
           setActiveTrackNode(null);
           areas.select(null);
           setProfileOpen(false);
           annotations.select(id);
-          tracks.select(null);
+          tracks.select(
+            annotations.items.find((a) => a.id === id)?.trackAnchor?.trackId ??
+              null,
+          );
           tracks.finish();
           navigation.setPicking(null);
           setPanel('annotations');
@@ -843,6 +914,36 @@ export default function Home() {
           }
         }}
       />
+      {linePoint && panel === null && !guidance.active && (
+        <TrackPointTools
+          point={linePoint}
+          draft={linePoint.trackId === DRAFT_ID}
+          error={annotations.error || tracks.error}
+          onClose={() => setTrackLinePoint(null)}
+          onDetails={() => {
+            setTrackLinePoint(null);
+            setPanel('track');
+          }}
+          onAdd={() => {
+            const id =
+              linePoint.trackId === DRAFT_ID
+                ? tracks.saveForMarker()
+                : linePoint.trackId;
+            if (!id) return;
+            if (
+              annotations.add('pin', linePoint.coordinate, {
+                trackId: id,
+                distance: linePoint.distance,
+              })
+            ) {
+              tracks.select(id);
+              setTrackLinePoint(null);
+              setPanel('annotations');
+            }
+          }}
+        />
+      )}
+      <FreeMapCredit id={mapSources.selected} />
       {quickAdd && (
         <QuickAdd
           onArea={startArea}
@@ -868,20 +969,20 @@ export default function Home() {
         !selectedAnnotation &&
         !selectedPhoto &&
         !featureMove &&
-        !guidance.active && (
+        !guidance.active &&
+        !boxSelecting && (
           <CenterCursor
             map={() => map.current}
             onAdd={(coordinates) => {
               map.current?.stop();
               position.free();
               follow.pause();
-              if (annotations.add('pin', coordinates)) {
-                tracks.select(null);
-                areas.select(null);
-                setQuickAdd(null);
-                setProfileOpen(false);
-                setPanel('annotations');
-              }
+              const screen = map.current?.toScreen(coordinates);
+              if (!screen) return;
+              tracks.select(null);
+              areas.select(null);
+              setProfileOpen(false);
+              setQuickAdd({ coordinate: coordinates, point: screen });
             }}
           />
         )}
@@ -994,6 +1095,7 @@ export default function Home() {
         />
       )}
       {selectionName &&
+        !linePoint &&
         !selectedPose &&
         !tracks.drawing &&
         !annotations.picking &&
@@ -1214,22 +1316,50 @@ export default function Home() {
           />
         )}
       </div>
-      {navigation.route && !sectionEditing && !guidance.active && (
-        <RouteWeatherRail
-          route={navigation.route}
-          journey={routeJourney}
-          onPreview={(coordinates) => {
-            if (coordinates) position.free();
-            map.current?.previewRoute(coordinates);
-          }}
-          fix={displayedFix}
-          following={follow.following}
-          onSettings={() => {
-            tracks.pause();
-            setPanel('route');
-          }}
-        />
-      )}
+      {railTrack &&
+        tracks.visible &&
+        !tracks.drawing &&
+        !areas.drawing &&
+        !sectionEditing &&
+        !guidance.active && (
+          <TrackJourneyRail
+            key={railTrack.id}
+            track={railTrack}
+            markers={annotations.items}
+            selected={linePoint}
+            onPoint={selectLinePoint}
+            onMarker={(id) => {
+              const marker = annotations.items.find((a) => a.id === id);
+              if (!marker) return;
+              map.current?.focusPoint(
+                marker.coordinates,
+                Math.max(15, view.zoom),
+              );
+              annotations.select(id);
+              setTrackLinePoint(null);
+              setPanel('annotations');
+            }}
+          />
+        )}
+      {navigation.route &&
+        !railTrack &&
+        !sectionEditing &&
+        !guidance.active && (
+          <RouteWeatherRail
+            route={navigation.route}
+            journey={routeJourney}
+            onPreview={(coordinates) => {
+              if (coordinates) position.free();
+              map.current?.previewRoute(coordinates);
+            }}
+            fix={displayedFix}
+            following={follow.following}
+            onSettings={() => {
+              tracks.pause();
+              setPanel('route');
+            }}
+          />
+        )}
       {(position.directionError ||
         (!guidance.active &&
           (position.locationError ||
@@ -1283,7 +1413,43 @@ export default function Home() {
         satelliteStatus={satellite.status}
         mapStatus={mapStatus}
       />
+      {boxSelecting && (
+        <MapBoxSelect
+          entries={catalogEntries(
+            favorites.items.filter(
+              (f) => f.route.createdAt === routeOverlay.route?.createdAt,
+            ),
+            tracks.visible ? tracks.overlaySaved : [],
+            annotations.items,
+            sections.items,
+            areas.items,
+          )}
+          project={(p) => map.current?.toScreen(p) ?? null}
+          onCancel={() => setBoxSelecting(false)}
+          onDone={(keys) => {
+            setBoxSelecting(false);
+            setCollectionOutputKey(null);
+            setCollectionSelectedKeys(keys);
+            setPanel('favorites');
+          }}
+        />
+      )}
       <MapActions
+        onBoxSelect={() => {
+          follow.pause();
+          map.current?.stop();
+          tracks.pause();
+          annotations.select(null);
+          annotations.setPicking(null);
+          navigation.setPicking(null);
+          setSectionEditing(false);
+          setAreaEditing(false);
+          setProfileOpen(false);
+          setQuickAdd(null);
+          setTrackLinePoint(null);
+          setPanel(null);
+          setBoxSelecting(true);
+        }}
         networkAvailable={
           position.networkAvailable &&
           recorder.record.phase !== 'recording' &&
@@ -1506,6 +1672,7 @@ export default function Home() {
         {panel === 'favorites' && (
           <CollectionsPanel
             initialOutputKey={collectionOutputKey}
+            initialSelectedKeys={collectionSelectedKeys}
             photos={photos.items}
             areas={areas.items}
             onArea={(id) => {

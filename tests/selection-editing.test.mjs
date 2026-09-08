@@ -536,7 +536,7 @@ test('rendered route features carry selection IDs and exact draggable coordinate
     addSource: (id) =>
       sources.set(id, {
         setData: (next) => {
-          data = next;
+          if (id === 'manual-tracks') data = next;
         },
       }),
     getLayer: (id) => layers.get(id),

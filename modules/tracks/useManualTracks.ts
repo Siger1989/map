@@ -165,6 +165,12 @@ export function useManualTracks() {
     }
   };
   return {
+    saveForMarker: () => {
+      const priorIds = new Set(savedRef.current.map(t => t.id));
+      const prior = editingId;
+      if (!saveDraft()) return null;
+      return prior ?? savedRef.current.find(t => !priorIds.has(t.id))?.id ?? null;
+    },
     saved,
     overlaySaved,
     draft: draftState.segments,

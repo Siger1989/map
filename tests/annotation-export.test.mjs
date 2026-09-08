@@ -84,10 +84,11 @@ test('XLSX is UTF-8 OOXML, preserves leading zeroes and formula-looking text wit
     files = unzipSync(bytes);
   assert.ok(files['[Content_Types].xml']);
   const sheet = strFromU8(files['xl/worksheets/sheet1.xml']);
-  assert.match(sheet, /00123/);
-  assert.match(sheet, /=1\+1/);
-  assert.match(sheet, /砂岩，含水/);
-  assert.match(sheet, /&amp; &lt;低&gt;/);
+  const strings = strFromU8(files['xl/sharedStrings.xml']);
+  assert.match(strings, /00123/);
+  assert.match(strings, /=1\+1/);
+  assert.match(strings, /砂岩，含水/);
+  assert.match(strings, /&amp; &lt;低&gt;/);
   assert.doesNotMatch(sheet, /<f[ >]/);
   assert.match(sheet, /t="n"><v>104.06/);
   const duplicates = annotationSheet([
@@ -100,5 +101,5 @@ test('XLSX is UTF-8 OOXML, preserves leading zeroes and formula-looking text wit
       ],
     },
   ]);
-  assert.deepEqual(duplicates.rows[1].slice(-3), ['a', 'b', 'c']);
+  assert.deepEqual(duplicates.rows[1].slice(4, 7), ['a', 'b', 'c']);
 });

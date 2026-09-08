@@ -206,7 +206,7 @@ export class AnnotationLayer implements CustomLayerInterface {
         .get(item.id)!
         .setOpacity(
           1,
-          item.kind !== 'pin' && altitudeRange(item) !== null ? 1 : 0.2,
+          1,
         );
       if (item.kind === 'pin' || altitudeRange(item) === null) continue;
       const ground = this.settings.terrain

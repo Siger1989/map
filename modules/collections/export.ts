@@ -11,6 +11,7 @@ import {
 import { annotationSheet } from '../annotations/spreadsheet.ts';
 import { CATALOG_TYPES, regionFor, type CatalogEntry } from './catalog.ts';
 import type { CollectionRegions } from './regions';
+import { ANNOTATION_STORAGE, parseAnnotations } from '../annotations/data.ts';
 export function collectionTransfer(
   entries: CatalogEntry[],
   regions: CollectionRegions,
@@ -20,6 +21,21 @@ export function collectionTransfer(
   const sections = entries.flatMap((e) =>
     e.kind === 'section' ? [e.section] : [],
   );
+  const selectedTracks = new Set(
+    entries.flatMap((e) => (e.kind === 'track' ? [e.track.id] : [])),
+  );
+  const pins = entries.flatMap((e) =>
+    'annotation' in e ? [e.annotation] : [],
+  );
+  if (selectedTracks.size)
+    for (const pin of parseAnnotations(storage.getItem(ANNOTATION_STORAGE))) {
+      if (
+        pin.trackAnchor &&
+        selectedTracks.has(pin.trackAnchor.trackId) &&
+        !pins.some((p) => p.id === pin.id)
+      )
+        pins.push(pin);
+    }
   const sectionNotes = sections.length
     ? readSavedSections(storage.getItem(PROFILE_NOTES_KEY)).filter((r) =>
         sections.some((s) =>
@@ -35,9 +51,7 @@ export function collectionTransfer(
     version: 1,
     tracks: entries.flatMap((e) => (e.kind === 'track' ? [e.track] : [])),
     favorites: entries.flatMap((e) => (e.kind === 'route' ? [e.route] : [])),
-    annotations: entries.flatMap((e) =>
-      'annotation' in e ? [e.annotation] : [],
-    ),
+    annotations: pins,
     sections,
     sectionNotes,
     areas: entries.flatMap((e) => (e.kind === 'area' ? [e.area] : [])),
@@ -57,39 +71,39 @@ export function collectionSpreadsheet(
   const transfer = collectionTransfer(entries, regions, storage);
   const rows: SpreadsheetSheet['rows'] = [
     [
-      'ID',
-      '名称',
+      '地名',
+      '经度（WGS84）',
+      '纬度（WGS84）',
       '类型',
       '国家',
       '省/州',
       '市',
-      '经度（WGS84）',
-      '纬度（WGS84）',
       '地区来源',
       '说明',
+      'ID',
     ],
   ];
   entries.forEach((e) => {
     const r = regionFor(e, regions);
     rows.push([
-      e.key,
       e.name,
+      ...e.coordinates,
       CATALOG_TYPES[e.kind],
       r?.country ?? '',
       r?.province ?? '',
       r?.city ?? '',
-      ...e.coordinates,
       r?.source === 'manual'
         ? '手动填写'
         : r
           ? 'Photon / OpenStreetMap'
           : '待归类',
       e.detail,
+      e.key,
     ]);
   });
   const sheets: SpreadsheetSheet[] = [{ name: '收藏目录', rows }];
   if (transfer.annotations.length)
-    sheets.push(annotationSheet(transfer.annotations));
+    sheets.unshift(annotationSheet(transfer.annotations, regions));
   if (transfer.sections?.length)
     sheets.push({
       name: '剖面参数',

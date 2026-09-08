@@ -49,13 +49,19 @@ export function useRegions(entries: CatalogEntry[]) {
           old = current.current[entry.key];
         if (
           old?.coordinateKey === c &&
-          (old.province ||
-            Date.now() - old.checkedAt < (retry ? 0 : 30 * 60000))
+          (old.source === 'manual' ||
+            (old.language === 'local' &&
+              (old.province ||
+                Date.now() - old.checkedAt < (retry ? 0 : 30 * 60000))))
         )
           continue;
         try {
           const shared = Object.values(current.current).find(
-            (r) => r.coordinateKey === c && r.source === 'auto' && r.province,
+            (r) =>
+              r.coordinateKey === c &&
+              r.source === 'auto' &&
+              r.language === 'local' &&
+              r.province,
           );
           const region =
             shared ?? (await reverseRegion(entry.coordinates, job.signal));
@@ -70,6 +76,7 @@ export function useRegions(entries: CatalogEntry[]) {
               ...region,
               coordinateKey: c,
               source: 'auto',
+              language: 'local',
               checkedAt: Date.now(),
             });
         } catch {
@@ -87,6 +94,7 @@ export function useRegions(entries: CatalogEntry[]) {
                 province: '',
                 city: '',
                 source: 'auto',
+                language: 'local',
                 checkedAt: Date.now(),
               });
           }

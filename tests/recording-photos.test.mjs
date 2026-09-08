@@ -66,7 +66,7 @@ test('finished recording saves real time and pause alignment; reloaded track sti
 
 test('recording appearance survives saving and reload without changing GPS samples', () => {
   const storage = memory();
-  const styled = { ...record, style: { color: '#55d6ff', width: 3 } };
+  const styled = { ...record, style: { color: '#55d6ff', width: 3, opacity: .4 } };
   const saved = saveRecording(styled, storage);
   assert.deepEqual(saved.style, styled.style);
   const restored = parseSavedTracks(storage.getItem(TRACK_STORAGE))[0];

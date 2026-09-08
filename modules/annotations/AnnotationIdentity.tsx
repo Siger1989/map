@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { Annotation } from './data';
 import { MARKER_ICONS, markerIcon } from './icons';
 import {
@@ -11,12 +11,14 @@ export function AnnotationIdentity({
   item,
   change,
   remember,
+  location,
 }: {
   item: Pick<Annotation, 'name' | 'attributes' | 'icon'>;
   change: (
     patch: Partial<Pick<Annotation, 'name' | 'attributes' | 'icon'>>,
   ) => boolean;
   remember: () => void;
+  location?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [recent] = useState(() => {
@@ -75,6 +77,7 @@ export function AnnotationIdentity({
           onChange={(e) => change({ name: e.target.value })}
         />
       </label>
+      {location}
       <div className="annotation-attributes" aria-label="自定义属性">
         <span className="annotation-attribute-head">
           属性条目 <span>具体数据</span>

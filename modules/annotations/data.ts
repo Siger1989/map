@@ -2,9 +2,18 @@ import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { MARKER_ICONS, type MarkerIconId } from './icons.ts';
 import { validAttributes, type AnnotationAttribute } from './attributes.ts';
 import { validFootprint, footprintArea, type Footprint } from './footprint.ts';
+import { validTrackAnchor, type TrackAnchor } from '../tracks/linePoint.ts';
 
 export const ANNOTATION_STORAGE = 'guanyun.annotations.v1';
-export const MAX_ANNOTATIONS = 80;
+export const MAX_ANNOTATIONS = 2080;
+export const MAX_PINS = 2000;
+export const MAX_MODELS = 80;
+export function canAddAnnotation(items: Annotation[], kind: AnnotationKind) {
+  return (
+    items.filter((a) => (a.kind === 'pin') === (kind === 'pin')).length <
+    (kind === 'pin' ? MAX_PINS : MAX_MODELS)
+  );
+}
 export const KINDS = {
   pin: '地点标记',
   box: '长方体',
@@ -18,6 +27,7 @@ export type Annotation = {
   kind: AnnotationKind;
   name: string;
   note: string;
+  trackAnchor?: TrackAnchor;
   icon?: MarkerIconId;
   attributes?: AnnotationAttribute[];
   footprint?: Footprint;
@@ -53,6 +63,7 @@ export function validAnnotation(value: unknown): value is Annotation {
     a.name.length <= 60 &&
     typeof a.note === 'string' &&
     a.note.length <= 500 &&
+    (a.trackAnchor === undefined || validTrackAnchor(a.trackAnchor)) &&
     (a.icon === undefined || Object.hasOwn(MARKER_ICONS, a.icon)) &&
     (a.attributes === undefined || validAttributes(a.attributes)) &&
     (a.kind !== 'prism' || validFootprint(a.footprint)) &&
@@ -80,7 +91,9 @@ export function parseAnnotations(raw: string | null): Annotation[] {
   if (
     !Array.isArray(value) ||
     value.length > MAX_ANNOTATIONS ||
-    !value.every(validAnnotation)
+    !value.every(validAnnotation) ||
+    value.filter((a) => a.kind === 'pin').length > MAX_PINS ||
+    value.filter((a) => a.kind !== 'pin').length > MAX_MODELS
   )
     throw new Error('标记存档格式无效，原存档未覆盖。');
   if (new Set(value.map((v) => v.id)).size !== value.length)

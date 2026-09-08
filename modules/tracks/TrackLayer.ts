@@ -4,6 +4,7 @@ import type { FeatureCollection } from 'geojson';
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
 import { normalizeTrackStyle, type TrackStyle } from './style';
+import { pickLinePoint, type TrackLinePoint } from './linePoint';
 import {
   DRAFT_ID,
   moveSegmentsNode,
@@ -20,10 +21,24 @@ export type TrackOverlay = {
   selectedId?: string | null;
   drawing?: boolean;
   activeNode?: TrackNode | null;
+  linePoint?: TrackLinePoint | null;
   preview?: { node: TrackNode; coordinate: Coordinate } | null;
 };
 export class TrackLayer {
+  private state: TrackOverlay | null = null;
   constructor(private map: Map) {}
+  pickLine(point: ScreenPoint): TrackLinePoint | null {
+    const id = this.pickTrack(point),
+      state = this.state;
+    if (!id || !state?.visible || id === 'live-recording') return null;
+    const segments =
+      id === DRAFT_ID
+        ? state.draft
+        : state.saved.find((t) => t.id === id)?.segments;
+    return segments
+      ? pickLinePoint(id, segments, point, (p) => this.map.project(p))
+      : null;
+  }
   pickNode(point: ScreenPoint): TrackNode | null {
     if (!this.map.getLayer('manual-track-node')) return null;
     const hits = this.map
@@ -62,6 +77,7 @@ export class TrackLayer {
     return hits[0]?.properties.trackId ?? null;
   }
   sync(state: TrackOverlay) {
+    this.state = state;
     const m = this.map;
     if (!m.getSource('manual-tracks'))
       m.addSource('manual-tracks', {
@@ -77,7 +93,7 @@ export class TrackLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['case', ['get', 'selected'], '#ffffff', '#10212b'],
-          'line-opacity': 0.65,
+          'line-opacity': ['*', 0.65, ['get', 'opacity']],
           'line-width': [
             '+',
             ['get', 'width'],
@@ -93,6 +109,7 @@ export class TrackLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['get', 'color'],
+          'line-opacity': ['get', 'opacity'],
           'line-width': ['get', 'width'],
         },
       });
@@ -263,5 +280,38 @@ export class TrackLayer {
       }
     }
     syncOverlayData(m, 'manual-tracks', data);
+    if (!m.getSource('track-line-selection'))
+      m.addSource('track-line-selection', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    if (!m.getLayer('track-line-selection'))
+      m.addLayer({
+        id: 'track-line-selection',
+        type: 'circle',
+        source: 'track-line-selection',
+        paint: {
+          'circle-color': '#20dc84',
+          'circle-radius': 7,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+      });
+    syncOverlayData(m, 'track-line-selection', {
+      type: 'FeatureCollection',
+      features:
+        state.visible && state.linePoint
+          ? [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'Point',
+                  coordinates: state.linePoint.coordinate,
+                },
+              },
+            ]
+          : [],
+    });
   }
 }

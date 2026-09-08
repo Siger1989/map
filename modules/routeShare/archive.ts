@@ -4,6 +4,7 @@ import { spreadsheetBytes } from '../files/spreadsheet.ts';
 import type { TripPhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos.ts';
 import { routeFileText, type ShareRoute } from './data.ts';
+import { annotationSheet } from '../annotations/spreadsheet.ts';
 
 /** Image generation is provided by the caller; package assembly stays testable offline. */
 export function routeArchiveEntries(
@@ -34,6 +35,7 @@ export function routeArchiveEntries(
     { path: '路线图-含二维码.jpg', data: image },
     { path: '完整路线.gpx', data: routeFileText(data, 'gpx') },
     { path: '完整路线.kml', data: routeFileText(data, 'kml') },
+    ...(data.markers?.length ? [{ path: '行程标记.xlsx', data: spreadsheetBytes([annotationSheet(data.markers)]) }] : []),
     {
       path: '山兔路线.json',
       data: JSON.stringify(
@@ -42,7 +44,7 @@ export function routeArchiveEntries(
           version: 1,
           tracks: [track],
           favorites: [],
-          annotations: [],
+          annotations: data.markers ?? [],
         },
         null,
         2,

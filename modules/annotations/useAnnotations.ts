@@ -9,7 +9,7 @@ import {
 } from './attributes';
 import {
   ANNOTATION_STORAGE,
-  MAX_ANNOTATIONS,
+  canAddAnnotation,
   newAnnotation,
   parseAnnotations,
   validAnnotation,
@@ -114,12 +114,21 @@ export function useAnnotations() {
       if (!controller.signal.aborted) setReading(false);
     }
   };
-  const add = (kind: AnnotationKind, coordinates: Coordinate) => {
-    if (current.current.length >= MAX_ANNOTATIONS) {
-      setError(`最多保存 ${MAX_ANNOTATIONS} 个标记。`);
+  const add = (
+    kind: AnnotationKind,
+    coordinates: Coordinate,
+    trackAnchor?: Annotation['trackAnchor'],
+  ) => {
+    if (!canAddAnnotation(current.current, kind)) {
+      setError('最多保存 2000 个地点标记、80 个模型。');
       return false;
     }
     const item = newAnnotation(kind, coordinates, null, crypto.randomUUID());
+    if (trackAnchor) {
+      item.trackAnchor = trackAnchor;
+      item.color = '#23bd7e';
+      item.name = '行程标记';
+    }
     try {
       item.attributes = blankAttributes(
         readAttributeTemplate(localStorage.getItem(ATTRIBUTE_TEMPLATE_KEY)),
@@ -152,8 +161,8 @@ export function useAnnotations() {
         | 'attributes'
       >,
     ) => {
-      if (current.current.length >= MAX_ANNOTATIONS) {
-        setError(`最多保存 ${MAX_ANNOTATIONS} 个标记`);
+      if (!canAddAnnotation(current.current, 'prism')) {
+        setError('最多保存 80 个模型');
         return false;
       }
       const item = {
@@ -283,8 +292,8 @@ export function useAnnotations() {
     },
     duplicate: (id: string) => {
       const item = current.current.find((a) => a.id === id);
-      if (!item || current.current.length >= MAX_ANNOTATIONS) {
-        setError(`最多保存 ${MAX_ANNOTATIONS} 个标记。`);
+      if (!item || !canAddAnnotation(current.current, item.kind)) {
+        setError('最多保存 2000 个地点标记、80 个模型。');
         return;
       }
       const copy = {

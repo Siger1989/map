@@ -147,9 +147,9 @@
   touch-action: none;
   --marker-color: #f2b45f;
   pointer-events: auto;
-  background: #122932df;
-  color: var(--marker-color);
-  border: 1px solid var(--marker-color);
+  background: #15343e;
+  color: #ffffff;
+  border: 2px solid var(--marker-color);
   border-radius: 7px 7px 7px 0;
   padding: 4px 7px;
   max-width: 150px;
@@ -157,7 +157,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
-  box-shadow: 0 2px 8px #0005;
+  box-shadow: 0 0 0 1px #fff9, 0 2px 6px #000b;
 }
 .annotation-marker svg {
   flex-shrink: 0;
@@ -166,6 +166,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.annotation-location { font-size: 12px; color: #26413f; border: 1px solid #91a59d; border-radius: 6px; padding: 5px; background: #f5f8f0; }
+.annotation-location header { display: flex; align-items: center; justify-content: space-between; }
+.annotation-location header button { min-height: 44px; padding: 0 6px; font-size: 12px; }
+.annotation-coordinates { display: grid; gap: 3px; overflow-wrap: anywhere; }
+.annotation-location dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0; }
+.annotation-location dl > div { min-width: 0; }
+.annotation-location dt { font-size: 10px; color: #506964; }
+.annotation-location dd { margin: 0; overflow-wrap: anywhere; }
+.annotation-location small { font-size: 10px; }
 .annotation-logo-current {
   display: flex;
   align-items: center;

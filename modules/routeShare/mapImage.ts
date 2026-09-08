@@ -152,6 +152,47 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
         'text-halo-width': 2,
       },
     });
+    if (data.markers?.length) {
+      map.addSource('share-markers', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: data.markers.map((m) => ({
+            type: 'Feature',
+            properties: { name: m.name, color: m.color },
+            geometry: { type: 'Point', coordinates: unwrap(m.coordinates) },
+          })),
+        },
+      });
+      map.addLayer({
+        id: 'share-markers',
+        type: 'circle',
+        source: 'share-markers',
+        paint: {
+          'circle-color': ['get', 'color'],
+          'circle-radius': 8,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+        },
+      });
+      map.addLayer({
+        id: 'share-marker-labels',
+        type: 'symbol',
+        source: 'share-markers',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Regular'],
+          'text-size': 18,
+          'text-offset': [0, -1.2],
+          'text-anchor': 'bottom',
+        },
+        paint: {
+          'text-color': '#ffffff',
+          'text-halo-color': '#173b3d',
+          'text-halo-width': 2,
+        },
+      });
+    }
     const idle = ready(map, 'idle', signal);
     map.fitBounds(bounds, {
       padding: { top: 165, bottom: 85, left: 85, right: 85 },

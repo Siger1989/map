@@ -7,6 +7,7 @@ import type {
 } from '../navigation/types';
 import { trackDistance } from '../tracks/drawing.ts';
 import { exportGPX, exportKML } from '../outdoor/exchange.ts';
+import type { Annotation } from '../annotations/data';
 export type ShareRoute = {
   name: string;
   segments: Coordinate[][];
@@ -15,6 +16,7 @@ export type ShareRoute = {
   mode: TravelMode;
   stops: RoutePlace[];
   track?: ManualTrack;
+  markers?: Annotation[];
   estimated: boolean;
   approach?: boolean;
 };
@@ -37,7 +39,10 @@ export function sharePlanned(
     approach,
   };
 }
-export function shareTrack(track: ManualTrack): ShareRoute {
+export function shareTrack(
+  track: ManualTrack,
+  annotations: Annotation[] = [],
+): ShareRoute {
   const points = track.segments.flat();
   if (points.length < 2) throw new Error('至少两个轨迹点才能分享路线');
   return {
@@ -51,6 +56,7 @@ export function shareTrack(track: ManualTrack): ShareRoute {
       { name: '终点', coordinates: points.at(-1)! },
     ],
     track,
+    markers: annotations.filter((a) => a.trackAnchor?.trackId === track.id),
     estimated: true,
   };
 }
@@ -65,7 +71,7 @@ export function routeFileText(data: ShareRoute, format: 'gpx' | 'kml') {
     format: 'guanyun-backup' as const,
     version: 1 as const,
     tracks: [track],
-    annotations: [],
+    annotations: data.markers ?? [],
     favorites: [],
   };
   return (format === 'gpx' ? exportGPX : exportKML)(transfer);

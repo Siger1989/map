@@ -10,6 +10,8 @@ import {
 } from './data';
 import type { AnnotationsState } from './useAnnotations';
 import { AnnotationIdentity } from './AnnotationIdentity';
+import { AnnotationLocation } from './AnnotationLocation';
+import { readRegions, REGION_STORAGE } from '../collections/regions';
 import { annotationSpreadsheet } from './spreadsheet';
 import { XLSX_MIME } from '../files/spreadsheet';
 import { deliverFile } from '../files/delivery';
@@ -99,11 +101,25 @@ function Editor({
       </nav>
       <div className="annotation-fields" key={tab}>
         {tab === 'identity' && (
-          <AnnotationIdentity
-            item={item}
-            change={change}
-            remember={() => state.rememberAttributes(item.id)}
-          />
+          <>
+            <AnnotationIdentity
+              location={
+                <AnnotationLocation
+                  item={item}
+                  onEdit={() => setTab('position')}
+                />
+              }
+              item={item}
+              change={change}
+              remember={() => state.rememberAttributes(item.id)}
+            />
+            {item.trackAnchor && (
+              <p className="route-note">
+                已关联行程 · 添加位置距起点{' '}
+                {(item.trackAnchor.distance / 1000).toFixed(2)} 公里
+              </p>
+            )}
+          </>
         )}
         {tab === 'appearance' && (
           <>
@@ -408,7 +424,10 @@ export function AnnotationPanel({
   const [exportStatus, setExportStatus] = useState('');
   const exportExcel = async () => {
     try {
-      const bytes = annotationSpreadsheet(state.items);
+      const bytes = annotationSpreadsheet(
+        state.items,
+        readRegions(localStorage.getItem(REGION_STORAGE)),
+      );
       setExportStatus(
         await deliverFile(
           new File(

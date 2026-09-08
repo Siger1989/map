@@ -7,6 +7,7 @@ import type { TripPhoto } from '../photos/storage';
 import type { CatalogEntry } from './catalog';
 import type { CollectionRegions } from './regions';
 import { collectionSpreadsheet, collectionTransfer } from './export';
+import { ANNOTATION_STORAGE, parseAnnotations } from '../annotations/data';
 
 export async function collectionArchive(
   entries: CatalogEntry[],
@@ -37,7 +38,10 @@ export async function collectionArchive(
     progress?.(`正在生成路线图 ${i + 1}/${entries.length} · ${e.name}`);
     const data =
       e.kind === 'track'
-        ? shareTrack(e.track)
+        ? shareTrack(
+            e.track,
+            parseAnnotations(storage.getItem(ANNOTATION_STORAGE)),
+          )
         : sharePlanned(e.route.route, e.name);
     const image = await renderRouteImage(
       data,

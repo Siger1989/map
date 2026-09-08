@@ -1,8 +1,16 @@
 import { spreadsheetBytes } from '../files/spreadsheet.ts';
 import { KINDS, type Annotation } from './data.ts';
 import { markerIcon } from './icons.ts';
+import {
+  coordinateKey,
+  type CollectionRegions,
+} from '../collections/regions.ts';
 
-export function annotationSheet(items: Annotation[]) {
+export function annotationSheet(
+  items: Annotation[],
+  regions: CollectionRegions = {},
+) {
+  const linked = items.some((a) => a.trackAnchor);
   // Occurrence-indexed headers retain duplicate and temporarily unnamed fields without overwriting cells.
   const fieldsFor = (a: Annotation) => {
     const seen = new Map<string, number>();
@@ -22,32 +30,61 @@ export function annotationSheet(items: Annotation[]) {
   fields.flat().forEach((f) => headers.set(f.key, f.name));
   const rows: (string | number | null)[][] = [
     [
-      'ID',
-      '名称',
-      '类型',
-      '图标',
+      '地名',
       '经度（WGS84）',
       '纬度（WGS84）',
       '地面海拔（m）',
-      '备注',
       ...[...headers.values()].map((s) => `属性：${s}`),
+      '备注',
+      '类型',
+      '图标',
+      'ID',
+      '国家',
+      '省/州',
+      '城市',
+      '区县',
+      '乡镇/街道',
+      '社区/村',
+      '附近道路',
+      ...(linked ? ['关联行程ID', '添加时距起点（m）'] : []),
     ],
   ];
   items.forEach((a, i) =>
     rows.push([
-      a.id,
       a.name,
-      KINDS[a.kind],
-      markerIcon(a.icon).name,
       ...a.coordinates,
       a.groundElevation,
-      a.note,
       ...[...headers.keys()].map(
         (k) => fields[i].find((f) => f.key === k)?.value ?? '',
       ),
+      a.note,
+      KINDS[a.kind],
+      markerIcon(a.icon).name,
+      a.id,
+      ...(() => {
+        const r = regions[`annotation:${a.id}`];
+        return [
+          'country',
+          'province',
+          'city',
+          'district',
+          'township',
+          'locality',
+          'street',
+        ].map((key) =>
+          r?.coordinateKey === coordinateKey(a.coordinates)
+            ? (r[key as keyof typeof r] ?? '')
+            : '',
+        );
+      })(),
+      ...(linked
+        ? [a.trackAnchor?.trackId ?? '', a.trackAnchor?.distance ?? null]
+        : []),
     ]),
   );
   return { name: '标记与属性', rows };
 }
-export const annotationSpreadsheet = (items: Annotation[]) =>
-  spreadsheetBytes([annotationSheet(items)]);
+export const annotationSpreadsheet = (
+  items: Annotation[],
+  regions: CollectionRegions = {},
+) => spreadsheetBytes([annotationSheet(items, regions)]);

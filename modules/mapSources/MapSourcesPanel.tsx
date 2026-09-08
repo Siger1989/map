@@ -13,6 +13,7 @@ import { QrCamera } from './QrCamera';
 import { ROUTE_QR_PREFIX } from '../routeShare/qrCodec';
 import { basemapConfiguration } from '../cartography/basemaps';
 import './mapSources.css';
+import { FreeMapLibrary } from './FreeMapLibrary';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -206,6 +207,11 @@ export function MapSourcesPanel({
               </button>
             ))}
           </div>
+          <FreeMapLibrary
+            selected={sources.selected}
+            onSelect={sources.select}
+            onFocus={onFocus}
+          />
           <button
             className="map-source-add"
             disabled={!sources.ready}

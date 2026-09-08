@@ -1,0 +1,186 @@
+import type { Bounds, MapSource } from './types';
+
+export type FreeMap = MapSource & {
+  category: '全球' | '美国' | '日本';
+  terms: string;
+  creditUrl: string;
+};
+const preset = (
+  id: string,
+  name: string,
+  url: string,
+  maxzoom: number,
+  attribution: string,
+  detail: string,
+  category: FreeMap['category'],
+  terms: string,
+  creditUrl = terms,
+  bounds?: Bounds,
+): FreeMap => ({
+  id: `builtin-${id}`,
+  name,
+  kind: 'online',
+  format: 'XYZ',
+  tiles: [url],
+  scheme: 'xyz',
+  minzoom: category === '日本' ? 2 : 0,
+  maxzoom,
+  tileSize: 256,
+  bytes: 0,
+  attribution,
+  detail,
+  category,
+  terms,
+  creditUrl,
+  ...(bounds ? { bounds } : {}),
+});
+const nasa = (layer: string) =>
+  `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`;
+const usgs = (layer: string) =>
+  `https://basemap.nationalmap.gov/arcgis/rest/services/${layer}/MapServer/tile/{z}/{y}/{x}`;
+const japan: Bounds = [122, 20, 154, 46],
+  usa: Bounds = [-179.99, 17, -65, 72];
+const gsiTerms = 'https://maps.gsi.go.jp/development/ichiran.html';
+const nasaTerms = 'https://nasa-gibs.github.io/gibs-api-docs/';
+const usgsTerms =
+  'https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map';
+/** Curated public services checked 2026-09-08. Never downloaded eagerly or included in offline packs. */
+export const FREE_MAPS: FreeMap[] = [
+  preset(
+    'osm',
+    'OSM 标准地图',
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    19,
+    '© OpenStreetMap contributors',
+    '街道与地名 · 仅在线浏览，禁止区域预下载',
+    '全球',
+    'https://operations.osmfoundation.org/policies/tiles/',
+    'https://www.openstreetmap.org/copyright',
+  ),
+  preset(
+    'opentopo',
+    'OpenTopoMap 等高线',
+    'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+    17,
+    '© OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)',
+    '地形与登山参考 · CC-BY-SA署名相同方式共享 · 在线',
+    '全球',
+    'https://opentopomap.org/about',
+  ),
+  preset(
+    'blue-marble',
+    'NASA 蓝色地球',
+    nasa('BlueMarble_NextGeneration'),
+    8,
+    'NASA GIBS / Blue Marble',
+    '全球历史合成影像 · 最高8级，不是实时高清卫星',
+    '全球',
+    nasaTerms,
+  ),
+  preset(
+    'blue-relief',
+    'NASA 地形与海底',
+    nasa('BlueMarble_ShadedRelief_Bathymetry'),
+    8,
+    'NASA GIBS / Blue Marble',
+    '全球地形晕渲和海底地形 · 最高8级',
+    '全球',
+    nasaTerms,
+  ),
+  preset(
+    'night-2012',
+    'NASA 夜间灯光 2012',
+    nasa('VIIRS_CityLights_2012'),
+    8,
+    'NASA GIBS / VIIRS 2012',
+    '2012年历史合成 · 最高8级，不是实时灯光',
+    '全球',
+    nasaTerms,
+  ),
+  preset(
+    'usgs-topo',
+    'USGS 地形地图',
+    usgs('USGSTopo'),
+    16,
+    'USGS The National Map',
+    '美国区域 · 等高线、水系、地名',
+    '美国',
+    usgsTerms,
+    usgsTerms,
+    usa,
+  ),
+  preset(
+    'usgs-imagery',
+    'USGS 正射影像',
+    usgs('USGSImageryOnly'),
+    16,
+    'USGS The National Map',
+    '美国区域 · 航空正射影像，年代因地区而异',
+    '美国',
+    usgsTerms,
+    usgsTerms,
+    usa,
+  ),
+  preset(
+    'usgs-hybrid',
+    'USGS 影像与地名',
+    usgs('USGSImageryTopo'),
+    16,
+    'USGS The National Map',
+    '美国区域 · 正射影像叠加地形地名',
+    '美国',
+    usgsTerms,
+    usgsTerms,
+    usa,
+  ),
+  preset(
+    'gsi-standard',
+    '地理院 标准地图',
+    'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+    18,
+    '国土地理院 / 地理院タイル',
+    '日本区域 · 标准地形地名',
+    '日本',
+    gsiTerms,
+    gsiTerms,
+    japan,
+  ),
+  preset(
+    'gsi-pale',
+    '地理院 浅色地图',
+    'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+    18,
+    '国土地理院 / 地理院タイル',
+    '日本区域 · 浅色底图，方便叠加线路',
+    '日本',
+    gsiTerms,
+    gsiTerms,
+    japan,
+  ),
+  preset(
+    'gsi-photo',
+    '地理院 航空影像',
+    'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
+    18,
+    '国土地理院 / 地理院タイル',
+    '日本区域 · 各年代航空与卫星拼接影像',
+    '日本',
+    gsiTerms,
+    gsiTerms,
+    japan,
+  ),
+  preset(
+    'gsi-relief',
+    '地理院 分层设色',
+    'https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png',
+    15,
+    '国土地理院 / 地理院タイル',
+    '日本区域 · 高程颜色与地形起伏',
+    '日本',
+    gsiTerms,
+    gsiTerms,
+    japan,
+  ),
+];
+export const freeMap = (id: string | null) =>
+  FREE_MAPS.find((m) => m.id === id);

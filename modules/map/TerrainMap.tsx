@@ -140,6 +140,7 @@ type Props = {
   riverSnapping: boolean;
   pickingActive: boolean;
   onTrackSelect: (id: string) => void;
+  onTrackLineSelect: (point: import('../tracks/linePoint').TrackLinePoint) => void;
   onTrackNodeSelect: (node: import('../tracks/editing').TrackNode) => void;
   onDragBegin: (target: DragTarget) => void;
   onDragPreview: (move: FeatureMove | null) => void;
@@ -850,7 +851,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 return;
               }
               if (track) {
-                latest.current.onTrackSelect(track);
+                const point = trackRef.current?.pickLine(event.point);
+                if (point) latest.current.onTrackLineSelect(point);
+                else latest.current.onTrackSelect(track);
                 return;
               }
               const area = areaRef.current?.pick(event.point);

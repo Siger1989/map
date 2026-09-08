@@ -163,7 +163,22 @@ export function mergeData(
   const next = validateTransfer({
     ...before,
     tracks: merge(before.tracks, incoming.tracks, 'track'),
-    annotations: merge(before.annotations, incoming.annotations, 'annotation'),
+    annotations: merge(
+      before.annotations,
+      incoming.annotations.map((a) => {
+        if (!a.trackAnchor) return a;
+        const mapped = importedKeys.get(`track:${a.trackAnchor.trackId}`);
+        if (mapped)
+          return {
+            ...a,
+            trackAnchor: { ...a.trackAnchor, trackId: mapped.slice(6) },
+          };
+        // A standalone imported pin must not attach to an unrelated local track with a colliding ID.
+        const { trackAnchor: _anchor, ...pin } = a;
+        return pin;
+      }),
+      'annotation',
+    ),
     ...(before.areas || incoming.areas
       ? { areas: merge(before.areas ?? [], incoming.areas ?? [], 'area') }
       : {}),

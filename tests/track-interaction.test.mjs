@@ -304,6 +304,7 @@ test('stored nodes survive, bad nodes are rejected, legacy line style is readabl
   assert.deepEqual(normalizeTrackStyle({ color: 'red;bad', width: 999 }), {
     color: DEFAULT_TRACK_STYLE.color,
     width: 5,
+    opacity: 1,
   });
 });
 test('map style is valid and solitary precision points never become invalid lines', async () => {
@@ -326,7 +327,7 @@ test('map style is valid and solitary precision points never become invalid line
       sources[n] = {
         ...s,
         setData: (d) => {
-          data = d;
+          if (n === 'manual-tracks') data = d;
         },
       };
     },

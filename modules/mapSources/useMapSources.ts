@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addMaps, listMaps, removeMap } from './storage';
 import type { MapDraft, MapSource, StoredMap } from './types';
+import { freeMap } from './presets';
 
 const SELECTED = 'shantu-selected-map';
 export function useMapSources() {
@@ -11,13 +12,17 @@ export function useMapSources() {
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let alive = true;
+    try {
+      const id = localStorage.getItem(SELECTED);
+      if (freeMap(id)) setSelected(id!);
+    } catch {}
     listMaps()
       .then((items) => {
         if (!alive) return;
         setMaps(items);
         try {
           const id = localStorage.getItem(SELECTED);
-          if (items.some((m) => m.id === id)) setSelected(id!);
+          if (freeMap(id) || items.some((m) => m.id === id)) setSelected(id!);
         } catch {}
       })
       .catch(() => {
@@ -61,7 +66,7 @@ export function useMapSources() {
     if (selected === id) select('');
   };
   const source = useMemo(() => {
-    const item = maps.find((m) => m.id === selected);
+    const item = freeMap(selected) ?? maps.find((m) => m.id === selected);
     return item ? { ...item } : null;
   }, [maps, selected, revision]);
   return {

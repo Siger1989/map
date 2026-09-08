@@ -1,4 +1,4 @@
-> 0.2.11：[路线照片与ZIP、收藏打包、中心准星、键盘编辑和默认关闭的河流吸附](docs/route-photo-archives-and-river-snapping.md)。包含0.2.10：[扫码先看轨迹、标记属性与Excel、全部收藏、区域/轮廓模型和剖面平面地图](docs/markers-areas-and-collections.md)。修复标记名称偏移、地质图例及地质云入口。
+> 0.2.11：[密集收藏/省市全选/滑选/地图框选、标记位置第一页、Excel修复、沿线标记与12图源](docs/collections-selection-and-map-library.md)，[路线照片与ZIP、中心准星、键盘编辑和河流吸附](docs/route-photo-archives-and-river-snapping.md)。[今天逐版本更新PDF](output/pdf/山兔-2026-09-08-版本更新.pdf)。包含0.2.10：[扫码先看轨迹、标记属性、区域/轮廓模型和剖面平面地图](docs/markers-areas-and-collections.md)。
 
 # 山兔 · 三维地图与沿途天气
 
