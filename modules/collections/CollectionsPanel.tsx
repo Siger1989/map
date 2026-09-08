@@ -38,6 +38,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   initialOutputKey?: string | null;
   initialSelectedKeys?: string[];
   photos: TripPhoto[];
+  onClose: () => void;
 };
 export function CollectionsPanel(props: Props) {
   const entries = useMemo(
@@ -58,7 +59,9 @@ export function CollectionsPanel(props: Props) {
     ],
   );
   const regions = useRegions(entries);
-  const [legacy, setLegacy] = useState(false),
+  const [legacy, setLegacy] = useState(
+      !props.initialOutputKey && !props.initialSelectedKeys?.length,
+    ),
     [type, setType] = useState<keyof typeof CATALOG_TYPES>('all'),
     [search, setSearch] = useState('');
   const [batch, setBatch] = useState(!!props.initialSelectedKeys?.length),
@@ -186,6 +189,12 @@ export function CollectionsPanel(props: Props) {
   if (legacy)
     return (
       <section className="catalog-legacy">
+        <header className="collection-fixed-header">
+          <strong>收藏 · 文件夹</strong>
+          <button aria-label="关闭收藏" onClick={props.onClose}>
+            关闭 ×
+          </button>
+        </header>
         <button className="collection-back" onClick={() => setLegacy(false)}>
           ‹ 全部收藏 · 省市分类
         </button>
@@ -194,6 +203,12 @@ export function CollectionsPanel(props: Props) {
     );
   return (
     <section className="collections-panel catalog-panel" aria-label="全部收藏">
+      <header className="collection-fixed-header">
+        <button onClick={() => setLegacy(true)}>文件夹分类</button>
+        <button aria-label="关闭收藏" onClick={props.onClose}>
+          关闭 ×
+        </button>
+      </header>
       {deleting ? (
         <div className="collection-editor collection-scroll">
           <strong>删除选中的 {chosen.length} 项？</strong>

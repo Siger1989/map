@@ -383,3 +383,45 @@
   display: block;
   padding: 2px;
 }
+
+.selection-tools .track-node-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.track-node-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.selection-tools .track-node-actions button {
+  min-width: 44px;
+  min-height: 44px;
+  flex: 1 0 44px;
+  padding: 0 5px;
+}
+.track-node-join {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+  width: 100%;
+}
+.track-node-join label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+.track-node-join select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  color: #142b40;
+  background: #f0f5fa;
+}
+.selection-tools:has(.track-node-controls) {
+  max-height: min(38dvh, 320px);
+  overflow-y: auto;
+}

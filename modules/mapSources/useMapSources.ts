@@ -4,7 +4,7 @@ import type { MapDraft, MapSource, StoredMap } from './types';
 import { freeMap } from './presets';
 
 const SELECTED = 'shantu-selected-map';
-export function useMapSources() {
+export function useMapSources(restoreSelection = true) {
   const [maps, setMaps] = useState<MapSource[]>([]);
   const [selected, setSelected] = useState('');
   const [status, setStatus] = useState('');
@@ -14,7 +14,7 @@ export function useMapSources() {
     let alive = true;
     try {
       const id = localStorage.getItem(SELECTED);
-      if (freeMap(id)) setSelected(id!);
+      if (restoreSelection && freeMap(id)) setSelected(id!);
     } catch {}
     listMaps()
       .then((items) => {
@@ -22,7 +22,11 @@ export function useMapSources() {
         setMaps(items);
         try {
           const id = localStorage.getItem(SELECTED);
-          if (freeMap(id) || items.some((m) => m.id === id)) setSelected(id!);
+          if (
+            restoreSelection &&
+            (freeMap(id) || items.some((m) => m.id === id))
+          )
+            setSelected(id!);
         } catch {}
       })
       .catch(() => {

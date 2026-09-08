@@ -7,6 +7,9 @@ import {
 } from '../navigation/types';
 import { planRoute } from '../navigation/provider';
 import './navigationStart.css';
+import { orientTrack } from './direction';
+import { networkEndpoints, vertexKey } from './network';
+import type { RoutePlace } from '../navigation/types';
 export function NavigationStart({
   target,
   onStart,
@@ -20,7 +23,38 @@ export function NavigationStart({
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const request = useRef<AbortController | null>(null);
+  const [reversed, setReversed] = useState(false);
+  const [startPlace, setStartPlace] = useState(target.start),
+    [endPlace, setEndPlace] = useState(target.end);
+  const choices: RoutePlace[] = [
+    ...new Map(
+      [
+        ...(target.route.trackNetwork
+          ? networkEndpoints(target.route.trackNetwork).map(
+              (coordinates, i) => ({ name: `分叉端点 ${i + 1}`, coordinates }),
+            )
+          : []),
+        target.start,
+        target.end,
+      ].map((p) => [vertexKey(p.coordinates), p]),
+    ).values(),
+  ];
   useEffect(() => () => request.current?.abort(), []);
+  let selectedDistance = target.route.distance,
+    selectionError = '';
+  if (target.route.geometryKind === 'track') {
+    try {
+      selectedDistance = orientTrack(
+        target,
+        startPlace,
+        endPlace,
+        mode,
+        reversed,
+      ).route.distance;
+    } catch (e) {
+      selectionError = e instanceof Error ? e.message : '请选择有效起终点';
+    }
+  }
   const start = async () => {
     const abort = new AbortController();
     request.current = abort;
@@ -28,27 +62,23 @@ export function NavigationStart({
     setError('');
     try {
       let route = target.route;
-      if (route.mode !== mode) {
-        if (route.geometryKind === 'track')
-          route = {
-            ...route,
-            mode,
-            duration:
-              route.distance /
-              ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[mode] / 3600),
-          };
-        else {
-          const stops = route.stops ?? [target.start, target.end];
-          route = await planRoute(
-            stops[0],
-            stops.at(-1)!,
-            mode,
-            abort.signal,
-            stops.slice(1, -1),
-          );
-        }
+      if (route.geometryKind === 'track') {
+        route = orientTrack(target, startPlace, endPlace, mode, reversed).route;
+      } else if (route.mode !== mode || reversed) {
+        const originalStops = route.stops ?? [target.start, target.end];
+        const stops = reversed
+          ? originalStops.slice().reverse()
+          : originalStops;
+        route = await planRoute(
+          stops[0],
+          stops.at(-1)!,
+          mode,
+          abort.signal,
+          stops.slice(1, -1),
+        );
       }
-      if (!abort.signal.aborted) onStart({ ...target, route });
+      if (!abort.signal.aborted)
+        onStart({ ...target, start: startPlace, end: endPlace, route });
     } catch (e) {
       if (!abort.signal.aborted)
         setError(e instanceof Error ? e.message : '路线计算失败');
@@ -71,7 +101,7 @@ export function NavigationStart({
           </button>
         </header>
         <p>
-          {target.name} · {formatDistance(target.route.distance)}
+          {target.name} · {formatDistance(selectedDistance)}
         </p>
         <div className="route-modes">
           {TRAVEL_MODES.map((m) => (
@@ -85,20 +115,70 @@ export function NavigationStart({
             </button>
           ))}
         </div>
-        <p>不在起点时，先按相同方式规划到起点的路线，再继续主体线路。</p>
+        <div className="navigation-direction">
+          {(['起点', '终点'] as const).map((label, i) => {
+            const place = i ? endPlace : startPlace;
+            return (
+              <label key={label}>
+                {label}
+                {target.route.trackNetwork ? (
+                  <select
+                    aria-label={`导航${label}`}
+                    disabled={busy}
+                    value={vertexKey(place.coordinates)}
+                    onChange={(e) => {
+                      const next = choices.find(
+                        (p) => vertexKey(p.coordinates) === e.target.value,
+                      )!;
+                      if (i) setEndPlace(next);
+                      else setStartPlace(next);
+                    }}
+                  >
+                    {choices.map((p) => (
+                      <option
+                        key={vertexKey(p.coordinates)}
+                        value={vertexKey(p.coordinates)}
+                      >
+                        {p.name} · {p.coordinates[1].toFixed(4)},{' '}
+                        {p.coordinates[0].toFixed(4)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span>{place.name}</span>
+                )}
+              </label>
+            );
+          })}
+          <button
+            disabled={busy}
+            onClick={() => {
+              setStartPlace(endPlace);
+              setEndPlace(startPlace);
+              setReversed(!reversed);
+            }}
+          >
+            ⇅ 交换起点和终点
+          </button>
+        </div>
+        <p>
+          {target.route.trackNetwork
+            ? '从当前位置最近的相连路段接入，走另一分叉时自动切换，终点保持不变。'
+            : '不在起点时，先按相同方式规划到起点，再继续主体线路。'}
+        </p>
         {target.route.geometryKind === 'track' && (
           <p className="route-note">
             保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。
           </p>
         )}
-        {error && (
+        {(error || selectionError) && (
           <p role="alert" className="route-error">
-            {error}
+            {error || selectionError}
           </p>
         )}
         <button
           className="route-primary"
-          disabled={busy}
+          disabled={busy || !!selectionError}
           onClick={() => void start()}
         >
           {busy ? '正在按出行方式规划…' : '定位并开始导航'}

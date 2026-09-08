@@ -28,6 +28,15 @@ export function validFavorite(value: unknown): value is RouteFavorite {
     place(f.start) &&
     place(f.end) &&
     !!r &&
+    (r.trackNetwork === undefined ||
+      (Array.isArray(r.trackNetwork) &&
+        r.trackNetwork.length <= 2000 &&
+        r.trackNetwork.every(
+          (line) =>
+            Array.isArray(line) && line.length >= 2 && line.every(coordinate),
+        ) &&
+        r.trackNetwork.reduce((sum, line) => sum + line.length, 0) <=
+          120000)) &&
     ['auto', 'bicycle', 'pedestrian'].includes(r.mode) &&
     finitePositive(r.distance) &&
     finitePositive(r.duration) &&

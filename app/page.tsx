@@ -49,6 +49,7 @@ import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
 import { CenterCursor } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
 import { TrackPointTools } from '@/modules/tracks/TrackPointTools';
+import { TrackNodeTools } from '@/modules/tracks/TrackNodeTools';
 import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
@@ -129,7 +130,10 @@ export default function Home() {
   const areas = useAreas();
   const [areaEditing, setAreaEditing] = useState(false);
   const [modelTerrainStatus, setModelTerrainStatus] = useState('');
-  const [layers, setLayers] = useState<LayerSettings>(DEFAULT_LAYERS);
+  const [layers, setLayers] = useState<LayerSettings>({
+    ...DEFAULT_LAYERS,
+    satellite: true,
+  });
   const [geology, setGeology] = useState(INITIAL_GEOLOGY);
   const [point, setPoint] = useState<Point>({
     lng: INITIAL_VIEW.center[0],
@@ -163,7 +167,7 @@ export default function Home() {
   const recorder = useRecording();
   const offline = useOffline();
   const photos = useTripPhotos();
-  const mapSources = useMapSources();
+  const mapSources = useMapSources(false);
   const guidance = useGuidance(
     navigation.route,
     position.fix,
@@ -405,7 +409,14 @@ export default function Home() {
     try {
       const track = tracks.saved.find((item) => item.id === id);
       if (!track) throw new Error('轨迹已不存在，请重新选择。');
-      navigateFavorite(trackNavigation(track));
+      navigateFavorite(
+        trackNavigation(
+          track,
+          Date.now(),
+          track.navigationMode ?? 'pedestrian',
+          tracks.saved,
+        ),
+      );
     } catch (error) {
       setSavedNavigationError(
         error instanceof Error ? error.message : '无法开始轨迹导航。',
@@ -918,6 +929,25 @@ export default function Home() {
         <TrackPointTools
           point={linePoint}
           draft={linePoint.trackId === DRAFT_ID}
+          onInsert={
+            selectedTrack && !keepsOriginalPoints(selectedTrack)
+              ? () => {
+                  if (
+                    tracks.insertNode(
+                      linePoint.trackId,
+                      linePoint.coordinate,
+                      linePoint.distance,
+                    )
+                  ) {
+                    setActiveTrackNode({
+                      trackId: linePoint.trackId,
+                      coordinate: linePoint.coordinate,
+                    });
+                    setTrackLinePoint(null);
+                  }
+                }
+              : undefined
+          }
           error={annotations.error || tracks.error}
           onClose={() => setTrackLinePoint(null)}
           onDetails={() => {
@@ -1126,6 +1156,14 @@ export default function Home() {
               <p role="alert">
                 {selectedAnnotation ? annotations.error : tracks.error}
               </p>
+            )}
+            {!selectedAnnotation && (
+              <TrackNodeTools
+                tracks={tracks}
+                node={activeTrackNode}
+                onNode={setActiveTrackNode}
+                onBranch={() => setPanel(null)}
+              />
             )}
             <div>
               <button
@@ -1671,6 +1709,7 @@ export default function Home() {
         )}
         {panel === 'favorites' && (
           <CollectionsPanel
+            onClose={() => setPanel(null)}
             initialOutputKey={collectionOutputKey}
             initialSelectedKeys={collectionSelectedKeys}
             photos={photos.items}

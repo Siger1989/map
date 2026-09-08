@@ -22,13 +22,17 @@ export function GuidanceCard({
   if (!s) return null;
   const status = s.departurePending
     ? g.loading
-      ? '正在计算当前位置到起点的路线…'
+      ? s.originalRoute.trackNetwork
+        ? '正在计算最近路段接入路线…'
+        : '正在计算当前位置到起点的路线…'
       : g.departureMessage
     : s.departureLength > 0 &&
         s.nextCheckpoint === 0 &&
         !s.quality &&
         !s.offRoute
-      ? '正在前往主体起点 · 与主体出行方式一致'
+      ? s.originalRoute.trackNetwork
+        ? '正在前往最近接入点'
+        : '正在前往主体起点 · 与主体出行方式一致'
       : s.arrived
         ? '已到达终点'
         : s.quality ||
@@ -40,7 +44,9 @@ export function GuidanceCard({
                 : `已偏离约${formatDistance(s.offset)}`
             : s.offSince !== null
               ? '可能偏离，正在确认…'
-              : '沿原路线导航');
+              : s.networkSwitched
+                ? '已切换相连分叉 · 终点不变'
+                : '沿原路线导航');
   return (
     <section
       className="guidance-card glass"

@@ -39,3 +39,31 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
+.navigation-direction {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.navigation-direction label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 13px;
+}
+.navigation-direction select {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  color: #142b40;
+  background: #f0f5fa;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+.navigation-direction button {
+  min-height: 44px;
+}
+.route-dialog:has(.navigation-direction) {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}

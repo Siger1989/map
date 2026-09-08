@@ -31,6 +31,11 @@ import {
   moveDraftNode,
 } from './draft';
 import { connectedTracks, endpoints, joinSegments } from './snapping';
+import {
+  insertTrackNode,
+  removeTrackNode,
+  connectTrackNodes,
+} from './nodeOperations';
 export function useManualTracks() {
   const [saved, setSaved] = useState<ManualTrack[]>([]);
   const savedRef = useRef(saved);
@@ -165,11 +170,109 @@ export function useManualTracks() {
     }
   };
   return {
+    insertNode: (id: string, point: Coordinate, distance?: number) => {
+      try {
+        const track = savedRef.current.find((t) => t.id === id);
+        if (!track) return false;
+        const next = insertTrackNode(track, point, distance);
+        if (next === track) return true;
+        if (!persist(savedRef.current.map((t) => (t.id === id ? next : t))))
+          return false;
+        setNodeHistory((h) => [...h.slice(-19), track]);
+        setError('');
+        return true;
+      } catch (e) {
+        setError((e as Error).message);
+        return false;
+      }
+    },
+    removeNode: (node: TrackNode) => {
+      try {
+        const track = savedRef.current.find((t) => t.id === node.trackId);
+        if (!track) return false;
+        const next = removeTrackNode(track, node.coordinate);
+        if (
+          next === track ||
+          !persist(savedRef.current.map((t) => (t.id === track.id ? next : t)))
+        )
+          return false;
+        setNodeHistory((h) => [...h.slice(-19), track]);
+        setError('');
+        return true;
+      } catch (e) {
+        setError((e as Error).message);
+        return false;
+      }
+    },
+    connectNodes: (from: TrackNode, to: TrackNode) => {
+      try {
+        const a = savedRef.current.find((t) => t.id === from.trackId),
+          b = savedRef.current.find((t) => t.id === to.trackId);
+        if (!a || !b) throw new Error('请选择两条已保存路线的节点。');
+        if (savedRef.current.length >= 20)
+          throw new Error('已达20条路线，请先整理存档。');
+        const next = connectTrackNodes(
+          a,
+          from.coordinate,
+          b,
+          to.coordinate,
+          crypto.randomUUID(),
+        );
+        if (!persist([...savedRef.current, next])) return false;
+        select(next.id);
+        setNodeHistory([]);
+        setError('已生成连接路线，原线路及其照片保留。');
+        return true;
+      } catch (e) {
+        setError((e as Error).message);
+        return false;
+      }
+    },
+    branchFrom: (node: TrackNode) => {
+      try {
+        if (draftRef.current.segments.length && !saveDraft()) return false;
+        const track = savedRef.current.find((t) => t.id === node.trackId);
+        if (!track || keepsOriginalPoints(track))
+          throw new Error('请选择手绘路线节点。');
+        if (
+          track.segments.length >= 100 ||
+          track.segments.flat().length >= MAX_TRACK_POINTS
+        )
+          throw new Error('路线已达100段或6000点。');
+        const next = {
+          segments: [...track.segments, [node.coordinate]],
+          kinds: [
+            ...track.segments.map(() => 'freehand' as const),
+            'points' as const,
+          ],
+          history: [],
+          pointLine: track.segments.length,
+          nodes: [...(track.nodes ?? []), node.coordinate],
+        };
+        draftRef.current = next;
+        setDraftState(next);
+        setEditingId(track.id);
+        setCopyName(null);
+        setAnchor(node.coordinate);
+        setStyle(normalizeTrackStyle(track.style));
+        select(DRAFT_ID);
+        setDrawing(true);
+        setEditing(true);
+        setVisible(true);
+        setError('');
+        return true;
+      } catch (e) {
+        setError((e as Error).message);
+        return false;
+      }
+    },
     saveForMarker: () => {
-      const priorIds = new Set(savedRef.current.map(t => t.id));
+      const priorIds = new Set(savedRef.current.map((t) => t.id));
       const prior = editingId;
       if (!saveDraft()) return null;
-      return prior ?? savedRef.current.find(t => !priorIds.has(t.id))?.id ?? null;
+      return (
+        prior ?? savedRef.current.find((t) => !priorIds.has(t.id))?.id ?? null
+      );
     },
     saved,
     overlaySaved,
@@ -226,7 +329,13 @@ export function useManualTracks() {
         persist(
           saved.map((t) =>
             t.id === prior.id
-              ? { ...t, segments: prior.segments, nodes: prior.nodes }
+              ? {
+                  ...t,
+                  segments: prior.segments,
+                  nodes: prior.nodes,
+                  sharedRoute: prior.sharedRoute,
+                  updatedAt: Date.now(),
+                }
               : t,
           ),
         )

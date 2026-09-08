@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import type { PlannedRoute } from '../navigation/types';
 import type { PositionFix } from '../position/types';
 import {
-  advance,
   createSession,
   deviationLimit,
   freshFix,
@@ -13,6 +12,8 @@ import { calculateRejoin, type Rejoin } from './rejoin';
 import { nextInstruction, project, pathOf } from './geometry';
 import { planRoute } from '../navigation/provider';
 import { atStart, connectDeparture } from './departure';
+import { routeOnNetwork } from './network';
+import { advanceNetwork } from './networkSession';
 
 export function useGuidance(
   route: PlannedRoute | null,
@@ -66,20 +67,34 @@ export function useGuidance(
       !freshFix(fix) ||
       !fix ||
       locationError ||
-      !online ||
       document.hidden ||
       departureRequest.current ||
       Date.now() < nextRequest.current
     )
       return;
     const original = session.originalRoute;
-    if (atStart(original, fix)) {
+    const nearest = original.trackNetwork
+      ? routeOnNetwork(original, fix.coordinates)
+      : null;
+    const departureTarget =
+      nearest && nearest.route.distance >= 20 ? nearest.route : original;
+    if (
+      atStart(departureTarget, fix) ||
+      (nearest && nearest.offset <= Math.max(20, Math.min(35, fix.accuracy)))
+    ) {
       setSession((s) =>
-        s?.originalRoute === original ? { ...s, departurePending: false } : s,
+        s?.originalRoute === original
+          ? {
+              ...createSession(departureTarget),
+              originalRoute: original,
+              departurePending: false,
+            }
+          : s,
       );
       setError('');
       return;
     }
+    if (!online) return;
     const abort = new AbortController();
     departureRequest.current = abort;
     nextRequest.current = Date.now() + 30000;
@@ -87,7 +102,10 @@ export function useGuidance(
     setError('');
     void planRoute(
       { name: '当前位置', coordinates: fix.coordinates },
-      { name: '主体起点', coordinates: original.coordinates[0] },
+      {
+        name: nearest ? '最近接入点' : '主体起点',
+        coordinates: departureTarget.coordinates[0],
+      },
       original.mode,
       abort.signal,
     )
@@ -105,7 +123,7 @@ export function useGuidance(
             deviationLimit(latestFix)
         )
           throw new Error('位置已变化或过期，请重新计算到起点的路线。');
-        const result = connectDeparture(original, approach, fix);
+        const result = connectDeparture(departureTarget, approach, fix);
         setSession({
           ...createSession(result.route),
           originalRoute: original,
@@ -131,7 +149,7 @@ export function useGuidance(
     const update = () =>
       setSession((s) =>
         s && !s.departurePending
-          ? advance(
+          ? advanceNetwork(
               s,
               current.current.fix,
               Date.now(),
@@ -254,7 +272,12 @@ export function useGuidance(
     );
     instruction = {
       ...next,
-      text: next.text === '接回原路线' ? '到达主体起点' : next.text,
+      text:
+        next.text === '接回原路线'
+          ? session.originalRoute.trackNetwork
+            ? '到达最近接入点'
+            : '到达主体起点'
+          : next.text,
     };
   }
   if (session?.offRoute && rejoin && session.last) {
@@ -280,8 +303,10 @@ export function useGuidance(
             ? `定位精度约±${Math.round(fix.accuracy)}米，等待准确位置`
             : '定位已过期，等待更新'
           : !online
-            ? '请联网后计算到起点的路线'
-            : '先前往主体起点'),
+            ? '请联网后计算接入路线'
+            : route?.trackNetwork
+              ? '前往最近相连路段'
+              : '先前往主体起点'),
     active,
     session: active ? session : null,
     rejoin: active ? rejoin : null,

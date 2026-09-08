@@ -7,6 +7,7 @@ import type { PositionFix } from '../position/types';
 import { pathOf, project, type Path, type Projection } from './geometry.ts';
 
 export type GuidanceSession = {
+  networkSwitched?: boolean;
   route: PlannedRoute;
   originalRoute: PlannedRoute;
   departurePending: boolean;

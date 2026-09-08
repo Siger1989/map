@@ -2,6 +2,8 @@
 
 # 山兔 · 三维地图与沿途天气
 
+**最新源码**：[默认卫星图、节点增删/连接/分叉、最近接入与相连分叉导航、起终点方向选择、彩色收藏文件夹](docs/track-network-and-folders.md)。现有0.2.11 APK尚不包含本次更新。
+
 0.2.9起新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
 **最新安装包：0.2.11-test 独立版 / versionCode 18**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.11-test-standalone/Shantu-0.2.11-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.11-standalone.md)。沿用公司0.2.5独立山兔签名，可覆盖该系列和0.2.9；与0.2.6/0.2.7原观云系列并存，数据不自动迁移。朋友的HarmonyOS6.1原生包仍未交付。

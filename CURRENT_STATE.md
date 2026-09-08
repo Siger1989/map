@@ -1,3 +1,18 @@
+# 当前任务：卫星默认、节点路线网络、导航方向与收藏文件夹（2026-09-08，验证完成）
+- 目标：默认卫星影像；选中路线增删中间节点、节点连接两线及分叉；最近接入并仅在相连路线/分叉切换；导航前调整起终点方向；恢复明显文件夹分类、固定关闭和按分类颜色铺底。
+- 进度：main干净，git pull --ff-only确认19b4e5a最新；已读项目说明和轨迹/导航/收藏模块。用户明确自动切换仅限相连路线和分叉。
+- 文件：计划tracks节点/网络工具、guidance路径匹配与NavigationStart、collections入口/CSS、map默认值及app接线；保留录制GPS原始样本，沿用存档格式。
+- 命令：git status、git diff --stat、git pull --ff-only；源码定向检查。
+- 验证：节点/连接/分叉匹配/方向及旧导航15项PASS；首轮回归发现最短路让已走分叉折返，加入可靠行进方向及禁止立即折返的路径搜索后通过。首轮类型检查仅缺拉取新增依赖qrcode。
+- 环境：npm ci/install被旧3000预览进程锁住原生模块；已确认仅本项目6056与其esbuild/workerd，停止后补装，完成恢复同端口。logs/dependencies*保存输出，原浏览器数据不清理。
+- 下一步：依赖补齐后类型/全量逻辑/构建和390/360真实界面检查，再同步GitHub。不自动生成APK或部署Sites。
+- 验证更新：依赖恢复，锁文件恢复原字节避免平台元数据变动；types PASS、302/302逻辑PASS、网页build PASS。3000预览恢复；独立移动QA使用9177代理3000（vinext限制同目录单实例），合成测试与用户来源隔离。下一步界面回归与清理临时mobile/qa-network.html。
+- 最终完成：新增tracks/nodeOperations、TrackNodeTools及guidance/network、networkSession、direction；修改useManualTracks、TrackPointTools、NavigationStart/useGuidance/GuidanceCard/session、收藏入口/CSS、地图首页和图源启动选择、导航类型/格式校验。无业务文件删除；无新依赖/存储键/版本号，GPS样本、照片、签名不变。详见docs/track-network-and-folders.md。
+- 最终验证PASS：oxfmt、tsc --noEmit、305/305全量逻辑、npm run build、npm run build:android:web、git diff --check。日志logs/*network*20260908*已本地排除，不提交。增加旧端点容差、闭环双向、错误network拒绝的回归；默认卫星仅首页，导出底图保持原样。
+- UI PASS：独立9177真实加/减节点、连接生成第三条并保留原两条；节点拉出分叉、完成后重读主线4点和分叉2点。合成定位中段导航剩余191m，实际走向分叉后603m、终点保持；分叉端点可选，预览里程383→424m。收藏粉/绿底色与分类持久，文件夹/省市两处关闭均有效。
+- 截图：artifacts/screenshots/folders-network-390.png（分类底色PASS）、node-tools-360.png（44px按钮/222×154浮栏避摇杆PASS）、navigation-direction-360.png（328×483对话框PASS）、navigation-branch-switch-360.png（分叉导航PASS）、branch-endpoint-selection.png（分叉可选PASS）、satellite-branched-route-final.png（卫星与分叉可见PASS）。390/360无横溢；IAB窄屏截图缩放，结合DOM及交互验证，最终自然视口截图正常。
+- 清理/交付：两个临时QA HTML已删除，9177与测试tab关闭、视口恢复；用户原3000服务恢复并HTTP200，用户来源数据未清理。源码/说明按项目约定随本轮main提交同步，SHA见Git历史。当前阻碍：无；下一步手机体验或用户另行要求出包。现有0.2.11 APK不含此轮改动，无真机实走/触控验收，无HarmonyOS原生包和Sites部署。
+
 # 当前交付：0.2.11最终追加已上传GitHub并公开测试Release（2026-09-08）
 - 最新要求已完成：标记“信息”第一页在名称下新增WGS84坐标、地面海拔、国家/省/市/区县/乡镇/社区/道路，内部滚动，调整坐标跳转位置页。Photon附近地址缺项显示—，人工省市保留，自动名称使用当地文字。AnnotationLocation为独立模块。
 - 新增密集收藏/省市与当前全选/滑选边缘滚动/确认批量删除、地图框选完整对象、2000地点+80模型、标记深底白字、Excel共享字符串/A1/地名坐标在前/空属性列、沿线绿点和行程标记、12免Key图源、透明度、浅色区域输入、小圆角、唯一定位与框内标签、准星先选择标记种类。完整文件/接口/回滚范围见docs/collections-selection-and-map-library.md。

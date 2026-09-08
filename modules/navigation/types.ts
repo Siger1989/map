@@ -13,6 +13,8 @@ export type RouteStep = {
   coordinates: Coordinate[];
 };
 export type PlannedRoute = {
+  /** Connected saved-track geometry for nearest entry and branch navigation. */
+  trackNetwork?: Coordinate[][];
   geometryKind?: 'track';
   mode: TravelMode;
   coordinates: Coordinate[];
