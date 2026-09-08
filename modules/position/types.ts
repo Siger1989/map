@@ -3,7 +3,9 @@ export type PositionFix = {
   coordinates: Coordinate;
   accuracy: number;
   timestamp: number;
+  source?: 'gps' | 'network';
 };
+export type LocationMode = 'auto' | 'network';
 export type DirectionMode = 'free' | 'north' | 'device';
 export function positionFix(position: GeolocationPosition): PositionFix | null {
   const c: Coordinate = [position.coords.longitude, position.coords.latitude];

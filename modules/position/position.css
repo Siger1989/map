@@ -27,12 +27,15 @@
   right: calc(124px + var(--edge-right));
   padding: 6px 8px;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 5px;
 }
 .position-status button {
+  min-width: 44px;
+  min-height: 44px;
+  flex-shrink: 0;
   color: var(--muted);
   padding: 3px;
   margin-left: auto;

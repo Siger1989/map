@@ -1,8 +1,8 @@
 # 山兔 · 三维地图与沿途天气
 
-最新源码支持[实走记录开始前选择颜色与线宽](docs/recording-style.md)：六色/自定义色、线条预览、记住上次选择，并随实时记录和保存轨迹保留。现有0.2.7 APK尚不包含此项。
+最新0.2.8包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
-**最新安装包：0.2.7-test / versionCode 14**（2026-09-08）。包含下述画线、吸附与紧凑UI更新。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [详细发行与平台说明](docs/release-0.2.7.md)。本版使用旧观云原包名/签名，可覆盖0.2.4系列；与0.2.5独立山兔版并存，数据不自动迁移。鸿蒙原生包未生成。
+**最新安装包：0.2.8-test 独立版 / versionCode 15**（2026-09-08）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.8-test-standalone/Shantu-0.2.8-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.8-standalone.md)。沿用公司0.2.5独立山兔签名，可覆盖该系列；与0.2.6/0.2.7原观云系列并存，数据不自动迁移。朋友的HarmonyOS6.1原生包仍未交付。
 
 **手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 

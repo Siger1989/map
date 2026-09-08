@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { decodeQr } from './qr';
+import {
+  cameraError,
+  openCamera,
+  stopCamera,
+  type CameraChoice,
+} from './camera';
 
 export function QrCamera({
   onRead,
@@ -10,21 +16,31 @@ export function QrCamera({
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState('');
+  const [deviceId, setDeviceId] = useState('');
+  const [activeDevice, setActiveDevice] = useState('');
+  const [cameras, setCameras] = useState<CameraChoice[]>([]);
+  const [attempt, setAttempt] = useState(0);
+  const [ready, setReady] = useState(false);
   const callback = useRef(onRead);
   callback.current = onRead;
   useEffect(() => {
+    setError('');
+    setReady(false);
     let disposed = false,
       stream: MediaStream | undefined,
       timer: ReturnType<typeof setTimeout>;
     const stop = () => {
       disposed = true;
       clearTimeout(timer);
-      stream?.getTracks().forEach((track) => track.stop());
+      stopCamera(stream);
+      if (video.current) video.current.srcObject = null;
     };
     const hidden = () => {
-      if (document.hidden) {
+      // Permission dialogs may hide the page before a stream has been granted.
+      if (document.hidden && stream) {
         stop();
-        setError('扫码已暂停，请关闭后重新打开');
+        setReady(false);
+        setError('扫码已暂停，返回后点“重新打开”。');
       }
     };
     document.addEventListener('visibilitychange', hidden);
@@ -32,43 +48,63 @@ export function QrCamera({
       try {
         if (!navigator.mediaDevices?.getUserMedia)
           throw new Error('相机不可用');
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1280 },
-          },
-          audio: false,
-        });
+        const opened = await openCamera(
+          navigator.mediaDevices,
+          deviceId,
+          () => !disposed,
+        );
+        stream = opened.stream;
         if (disposed) {
           stream.getTracks().forEach((track) => track.stop());
           return;
         }
-        if (!video.current) return;
+        if (!video.current) {
+          stop();
+          return;
+        }
+        setCameras(opened.cameras);
+        setActiveDevice(opened.deviceId);
+        if (document.hidden) {
+          hidden();
+          return;
+        }
         video.current.srcObject = stream;
         await video.current.play();
+        if (disposed) return;
+        setReady(true);
         const scan = () => {
           if (disposed) return;
-          if (video.current?.videoWidth) {
-            const text = decodeQr(
-              video.current,
-              video.current.videoWidth,
-              video.current.videoHeight,
-            );
-            if (text) {
-              stop();
-              callback.current(text);
-              return;
+          try {
+            if (
+              video.current &&
+              video.current.readyState >= 2 &&
+              video.current.videoWidth &&
+              video.current.videoHeight
+            ) {
+              const text = decodeQr(
+                video.current,
+                video.current.videoWidth,
+                video.current.videoHeight,
+              );
+              if (text) {
+                stop();
+                callback.current(text);
+                return;
+              }
             }
+            timer = setTimeout(scan, 300);
+          } catch {
+            stop();
+            setReady(false);
+            setError('画面读取失败，请重新打开扫码或选择二维码图片。');
           }
-          timer = setTimeout(scan, 300);
         };
         scan();
-      } catch {
+      } catch (failure) {
         if (!disposed) {
           stop();
-          setError(
-            '相机未开启。可改用“二维码图片”，或在系统设置中允许相机权限。',
-          );
+          setReady(false);
+          setError(cameraError(failure));
         }
       }
     })();
@@ -76,13 +112,36 @@ export function QrCamera({
       stop();
       document.removeEventListener('visibilitychange', hidden);
     };
-  }, []);
+  }, [deviceId, attempt]);
   return (
     <div className="map-camera">
       <p>对准地图图源二维码</p>
-      <video ref={video} muted playsInline aria-label="扫码相机预览" />
+      <video ref={video} muted autoPlay playsInline aria-label="扫码相机预览" />
+      {!ready && !error && <p role="status">正在打开后置镜头…</p>}
+      {cameras.length > 1 && (
+        <label>
+          镜头
+          <select
+            aria-label="扫码镜头"
+            value={deviceId || activeDevice}
+            onChange={(event) => setDeviceId(event.target.value)}
+          >
+            {cameras.map((camera) => (
+              <option key={camera.deviceId} value={camera.deviceId}>
+                {camera.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <p className="map-source-hint">
+        完整画面不裁切；如果视野太近，请切换镜头并让二维码完整入镜。
+      </p>
       {error && <p role="alert">{error}</p>}
-      <button onClick={onClose}>关闭扫码</button>
+      <div className="map-source-actions">
+        <button onClick={() => setAttempt((v) => v + 1)}>重新打开</button>
+        <button onClick={onClose}>关闭扫码</button>
+      </div>
     </div>
   );
 }

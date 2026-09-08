@@ -21,6 +21,9 @@ declare global {
       photoOutput?(name: string, base64: string, share: boolean): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;
+      locate?(mode: string): void;
+      locationState?(): string;
+      stopLocation?(): void;
     };
   }
 }

@@ -133,10 +133,18 @@
 }
 .map-camera video {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
+  height: clamp(180px, 36dvh, 320px);
+  object-fit: contain;
   background: #000;
   border-radius: 10px;
+}
+.observatory .control-popover:has(.map-camera) {
+  max-height: min(80dvh, 650px);
+}
+.map-camera select {
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
 }
 .map-source-link {
   width: 100%;

@@ -1,4 +1,10 @@
-# 当前安装包：山兔0.2.7-test（2026-09-08）
+# 当前安装包：山兔0.2.8-test独立版（2026-09-08）
+
+[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.8-test-standalone/Shantu-0.2.8-test-standalone.apk) · [完整发行与校验](../docs/release-0.2.8-standalone.md)。新增室内网络定位、完整扫码画面与镜头切换、地图重复刷新/小幅跟随抖动修复，包含记录样式选择。见[模块接口与验证](../docs/indoor-position-and-camera.md)。
+
+versionCode15；本机实际私钥为0.2.5独立系列4a94，沿用`com.guanyun.weather.shantu.preview`，安装名「山兔测试版」，构建传`-StandaloneTest`。可覆盖同签名独立版；与原观云系列0.2.6/0.2.7并存、不自动迁移数据。下文原系列密钥可用的描述是另一台机器的历史情况。本版类型/247项回归/9项Java策略/网页与APK构建/签名/资源检查通过，手机X8 Ultra未连接，真实室内定位/镜头/道路闪烁待验。HarmonyOS6.1原生包尚未生成，已有草稿不等于可安装交付。
+
+# 历史安装包：山兔0.2.7-test（2026-09-08）
 
 [下载APK](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [完整发行、校验与鸿蒙状态](../docs/release-0.2.7.md)。versionCode14，包名`com.guanyun.weather.preview`，安装名「山兔」，使用原签名，可覆盖0.2.4原系列。与0.2.5独立山兔版并存，数据不自动迁移。本机保有原系列密钥，缺少公司0.2.5独立版密钥，下文0.2.5的机器说明是历史情况。
 

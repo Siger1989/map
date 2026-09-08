@@ -518,6 +518,7 @@ test('rendered route features carry selection IDs and exact draggable coordinate
         },
       }),
     getLayer: (id) => layers.get(id),
+    getStyle: () => ({ layers: [...layers.values()] }),
     addLayer: (layer) => layers.set(layer.id, layer),
     moveLayer() {},
     project: (p) => ({ x: (p[0] - 104) * 100000, y: (p[1] - 30) * 100000 }),

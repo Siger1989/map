@@ -1,16 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  watchNativePosition,
+  type NativePositionBridge,
+} from './nativePosition';
+import {
   compassHeading,
   headingDelta,
   positionFix,
   wrapHeading,
   type DirectionMode,
   type PositionFix,
+  type LocationMode,
 } from './types';
 type OrientationPermission = typeof DeviceOrientationEvent & {
   requestPermission?: (absolute?: boolean) => Promise<string>;
 };
 export function usePosition() {
+  const [mode, setMode] = useState<LocationMode>('auto');
+  const modeRef = useRef<LocationMode>('auto');
+  const [networkAvailable, setNetworkAvailable] = useState(false);
+  const [showStatus, setShowStatus] = useState(true);
+  const nativeStop = useRef<(() => void) | null>(null);
   const [fix, setFix] = useState<PositionFix | null>(null),
     [locating, setLocating] = useState(false),
     [watching, setWatching] = useState(false);
@@ -24,21 +34,41 @@ export function usePosition() {
   const sensorCleanup = useRef<() => void>(() => {}),
     generation = useRef(0);
   const stopWatch = () => {
+    nativeStop.current?.();
+    nativeStop.current = null;
     if (watch.current !== null)
       navigator.geolocation?.clearWatch(watch.current);
     watch.current = null;
   };
   const beginWatch = () => {
     stopWatch();
+    const accept = (value: PositionFix) => {
+      if (!active.current) return;
+      setFix(value);
+      setLocating(false);
+      setLocationError('');
+      locationCallback.current?.(value);
+      locationCallback.current = null;
+    };
+    const bridge = window.GuanyunNative;
+    if (bridge?.locate && bridge.locationState && bridge.stopLocation) {
+      nativeStop.current = watchNativePosition(
+        bridge as NativePositionBridge,
+        modeRef.current,
+        accept,
+        (error) => {
+          if (!active.current) return;
+          if (error) setLocating(false);
+          setLocationError(error);
+        },
+      );
+      return;
+    }
     watch.current = navigator.geolocation.watchPosition(
       (position) => {
         const value = positionFix(position);
         if (!active.current || !value) return;
-        setFix(value);
-        setLocating(false);
-        setLocationError('');
-        locationCallback.current?.(value);
-        locationCallback.current = null;
+        accept(value);
       },
       (error) => {
         if (!active.current) return;
@@ -61,7 +91,11 @@ export function usePosition() {
     );
   };
   const locate = (onFix?: (fix: PositionFix) => void) => {
-    if (!window.isSecureContext || !navigator.geolocation) {
+    setShowStatus(true);
+    if (
+      !window.GuanyunNative?.locate &&
+      (!window.isSecureContext || !navigator.geolocation)
+    ) {
       setLocationError('此页面无法定位，请使用APK或HTTPS页面。');
       return;
     }
@@ -71,6 +105,15 @@ export function usePosition() {
     setLocating(true);
     setLocationError('');
     beginWatch();
+  };
+  const changeMode = (
+    next: LocationMode,
+    onFix?: (fix: PositionFix) => void,
+  ) => {
+    modeRef.current = next;
+    setMode(next);
+    setFix(null);
+    locate(onFix);
   };
   const stopDirection = () => {
     generation.current++;
@@ -149,7 +192,15 @@ export function usePosition() {
     }
   };
   useEffect(() => {
+    const bridge = window.GuanyunNative;
+    setNetworkAvailable(
+      Boolean(bridge?.locate && bridge.locationState && bridge.stopLocation),
+    );
     const visibility = () => {
+      // Android pauses providers in onPause and resolves its own permission dialog.
+      // Restarting the bridge here could re-request a just-denied permission.
+      const bridge = window.GuanyunNative;
+      if (bridge?.locate && bridge.locationState && bridge.stopLocation) return;
       if (document.hidden) stopWatch();
       else if (active.current) beginWatch();
     };
@@ -163,6 +214,10 @@ export function usePosition() {
     };
   }, []);
   return {
+    mode,
+    changeMode,
+    networkAvailable,
+    showStatus,
     fix,
     locating,
     watching,
@@ -183,6 +238,7 @@ export function usePosition() {
       locationCallback.current = null;
     },
     clearError: () => {
+      setShowStatus(false);
       setLocationError('');
       setDirectionError('');
     },

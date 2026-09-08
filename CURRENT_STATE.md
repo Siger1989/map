@@ -1,3 +1,16 @@
+# 当前任务：手机道路闪烁、室内网络定位与扫码视野，0.2.8 APK（2026-09-08，验证完成、待同步发行）
+- 用户确认道路闪烁发生于手机 APK，手机 OPPO X8 Ultra；扫码画面特别窄、像长焦、只能看到局部。先前道路排查未确认解决。
+- 启动 HEAD/origin main=2b961c7；保留已有未跟踪 mobile/harmony 六个草稿文件，不纳入本次 Android 修改。未执行旧关机请求。
+- 已修改地图路线/手绘/导航/定位覆盖层，通过 modules/map/overlayData 去重相同 GeoJSON 并稳定相对层序，避免每次更新导致道路地形贴图缓存失效；首轮2项回归PASS。尚不能宣称 OPPO 真机闪烁解决。
+- 新增 Android ForegroundLocation/LocationFixPolicy，桥接前台自动GPS+网络/室内仅网络定位，独立于实走记录；网页 position 模块接入来源、误差、过期结果和模式入口。地图快捷菜单新增室内/自动切换；粗位置按误差缩放，不改变记录精度门槛。
+- 扫码原150px/object-fit:cover确认裁切竖屏画面；改完整显示、可选镜头、重试、后置优先和设备允许时复位缩放/连续对焦。修正权限返回尚未onResume的拒绝问题和授权弹窗导致扫码退出问题。
+- 最终PASS：类型、247项全量回归、9项Java定位策略、全部原生源码编译、网页与APK构建；日志.openai/*028*.log。测试新增地图接口后补齐原mock；最终相机取消回归发现重复释放，已统一出口释放并再次全量/构建通过。
+- 390×844/360×780模拟定位/相机PASS：900米来源提示、范围缩放、镜头选择、完整画面、重试/关闭44px可见，无横向溢出。扫码原小面板裁切溢出已单独加高，截图artifacts/screenshots/{camera,indoor}-028-{390,360}.png。补充模拟相机内二维码→内容识别→图源预览PASS，未确认添加测试图源，无用户数据操作。
+- 最终电脑山区三维对照elapsed4365→113604ms（109.239秒）：render35/sourceData114/sourceLoading80/道路事件9/错误0不变；道路加载可见。源事件与截图仅本机。无ADB设备，OPPO X8 Ultra安装、实际镜头/定位效果/道路闪烁仍未验收，不能宣称彻底解决。
+- APK/Shantu-0.2.8-test-standalone.apk，55,031,359字节，SHA256 797d5eb324805f1945db73455cd1bfb17e8d396a2fe6f6836b6c401e542d19cf；525网页资源、473地形瓦片、470PNG重压缩内容一致、ZIP CRC/签名/包名版本PASS。版本15/0.2.8-test；本机只有4a94公司独立版密钥，使用-StandaloneTest，可覆盖0.2.5独立系列；与0.2.7原系列并存不自动迁移，已明确告知。无密钥改动，模拟页未入包。
+- 新增docs/indoor-position-and-camera.md、docs/release-0.2.8-standalone.md；更新README/mobile/LOG/闪烁说明。无生产模块或功能删除；天气/图源/轨迹照片存档格式/记录精度/签名配置不变。tsconfig排除本机outputs工具下载与构建目录，避免HBuilderX样例干扰检查。
+- 待完成：源码提交推送main并核对远端、GitHub测试Release上传与digest核对。gh CLI未单独登录，使用已配置GitHub仓库凭据在子进程内调用，不显示/保存Token。鸿蒙原生包未生成，已有适配草稿不等于可安装包；仍待完整工具链、账号签名与安装验证。保留开始时6个鸿蒙未提交文件。
+
 # 当前任务：HarmonyOS 6.1 原生安装包（2026-09-08，路线核查完成，构建待工具与账号）
 - 用户要求朋友的 HarmonyOS 6.1 可用安装包，并明确追问原生包；本轮按原生开发推进，卓易通仅为备选兼容试装。具体机型未知，无 USB 设备；用户回复没有或不确定是否有实名认证华为开发者账号。
 - 起点 main=9abf224，工作区原干净、pull最新。已核实仓库只有 Android Java/WebView；PATH 和常见目录未找到 DevEco/HarmonyOS SDK/ohpm/hvigor/hdc。官方工具下载跳转华为账号登录页，用户回复暂时无法登录；未下载工具链。

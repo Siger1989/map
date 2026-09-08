@@ -1,4 +1,5 @@
-import type { Map, GeoJSONSource } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
+import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection } from 'geojson';
 import type { PositionFix } from './types';
 export class PositionLayer {
@@ -57,8 +58,6 @@ export class PositionLayer {
         },
       );
     }
-    (m.getSource('current-position') as GeoJSONSource).setData(data);
-    m.moveLayer('position-accuracy');
-    m.moveLayer('position-dot');
+    syncOverlayData(m, 'current-position', data);
   }
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Recording } from '../outdoor/recording';
 import type { Coordinate } from '../navigation/types';
 import type { PositionFix } from './types';
-import { canFollow } from './follow';
+import { canFollow, cameraMoved } from './follow';
 
 export function useFollowPosition({
   fix,
@@ -13,7 +13,7 @@ export function useFollowPosition({
   fix: PositionFix | null;
   phase: Recording['phase'];
   blocked: boolean;
-  onFollow: (point: Coordinate) => boolean;
+  onFollow: (point: Coordinate, fix: PositionFix) => boolean;
 }) {
   const [following, setFollowing] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -21,10 +21,12 @@ export function useFollowPosition({
   current.current = { fix, blocked, onFollow };
   const previousPhase = useRef(phase);
   const delivered = useRef('');
+  const cameraFix = useRef<PositionFix | null>(null);
   const pause = useCallback(() => setFollowing(false), []);
   const resume = useCallback(() => {
     if (current.current.blocked) return;
     delivered.current = '';
+    cameraFix.current = null;
     setFollowing(true);
   }, []);
 
@@ -51,8 +53,13 @@ export function useFollowPosition({
         setWaiting(false);
         return;
       }
+      if (!cameraMoved(cameraFix.current, value)) {
+        setWaiting(false);
+        return;
+      }
       // Retry after map loading; a native poll may repeat the same checkpoint.
-      if (current.current.onFollow(value.coordinates)) {
+      if (current.current.onFollow(value.coordinates, value)) {
+        cameraFix.current = value;
         delivered.current = key;
         setWaiting(false);
       } else setWaiting(true);

@@ -1,4 +1,5 @@
-import type { GeoJSONSource, Map } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
+import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection, Feature } from 'geojson';
 import type { RouteOverlay } from './types';
 
@@ -86,16 +87,9 @@ export class RouteLayer {
           properties: { slot: 'via', label: String(index + 1) },
           geometry: { type: 'Point', coordinates: place.coordinates },
         });
-    (m.getSource('planned-route') as GeoJSONSource).setData({
+    syncOverlayData(m, 'planned-route', {
       type: 'FeatureCollection',
       features,
     } as FeatureCollection);
-    for (const id of [
-      'route-outline',
-      'route-path',
-      'route-points',
-      'route-point-labels',
-    ])
-      m.moveLayer(id);
   }
 }

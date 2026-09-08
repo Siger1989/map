@@ -214,6 +214,7 @@ test('location layer contains a closed accuracy polygon and removes location dat
     getSource: (n) => sources[n],
     addSource: (n, s) => (sources[n] = { ...s, setData: (d) => (data = d) }),
     addLayer: (l) => layers.push(l),
+    getStyle: () => ({ layers }),
     moveLayer() {},
   };
   const layer = new PositionLayer(map);

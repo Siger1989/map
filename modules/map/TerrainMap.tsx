@@ -78,7 +78,11 @@ export type MapHandle = {
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
-  followPosition: (coordinates: Coordinate, animate?: boolean) => boolean;
+  followPosition: (
+    coordinates: Coordinate,
+    animate?: boolean,
+    maximumZoom?: number,
+  ) => boolean;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
@@ -397,12 +401,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ? p
             : null;
         },
-        followPosition: (center, animate = true) => {
+        followPosition: (center, animate = true, maximumZoom?: number) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return false;
           // Keep the user's zoom, pitch and bearing; only follow geographic position.
           m.easeTo(
-            { center, duration: animate ? 650 : 0 },
+            {
+              center,
+              ...(maximumZoom === undefined
+                ? {}
+                : { zoom: Math.min(m.getZoom(), maximumZoom) }),
+              duration: animate ? 650 : 0,
+            },
             { positionFollow: true },
           );
           return true;

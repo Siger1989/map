@@ -24,6 +24,9 @@ export function MapActions({
   onDevice,
   onStopLocation,
   sectionActive,
+  networkAvailable,
+  networkMode,
+  onNetwork,
 }: {
   terrain: boolean;
   bearing: number;
@@ -39,6 +42,9 @@ export function MapActions({
   onDevice: () => void;
   onStopLocation: () => void;
   sectionActive: boolean;
+  networkAvailable: boolean;
+  networkMode: boolean;
+  onNetwork: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -71,6 +77,20 @@ export function MapActions({
       )}
       {expanded && (
         <>
+          {networkAvailable && (
+            <button
+              className="icon-button direction-button"
+              aria-label={
+                networkMode ? '切回自动定位' : '室内网络定位（基站与 Wi-Fi）'
+              }
+              aria-pressed={networkMode}
+              disabled={followBlocked}
+              onClick={onNetwork}
+            >
+              <LocateFixed size={20} />
+              <small>{networkMode ? '自动' : '室内'}</small>
+            </button>
+          )}
           <button
             className="icon-button"
             aria-label="放大地图"

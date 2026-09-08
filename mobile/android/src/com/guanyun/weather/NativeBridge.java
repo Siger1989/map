@@ -12,7 +12,11 @@ final class NativeBridge {
     private final MainActivity activity;
     private final AppFiles files;
     private String pending;
-    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files; }
+    final ForegroundLocation position;
+    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity); }
+    @JavascriptInterface public String locationState() { return position.snapshot(); }
+    @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
+    @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {

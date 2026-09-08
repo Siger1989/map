@@ -1,4 +1,5 @@
-import type { Map, GeoJSONSource } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
+import { syncOverlayData } from '../map/overlayData.ts';
 import type { Feature } from 'geojson';
 import type { Coordinate } from '../navigation/types';
 export type GuidanceOverlay = {
@@ -62,11 +63,9 @@ export class GuidanceLayer {
           },
         ]
       : [];
-    (m.getSource('route-guidance') as GeoJSONSource).setData({
+    syncOverlayData(m, 'route-guidance', {
       type: 'FeatureCollection',
       features,
     });
-    for (const id of ['guidance-outline', 'guidance-path', 'guidance-target'])
-      m.moveLayer(id);
   }
 }

@@ -331,6 +331,7 @@ test('map style is valid and solitary precision points never become invalid line
       };
     },
     getLayer: (n) => layers.find((l) => l.id === n),
+    getStyle: () => ({ layers }),
     addLayer: (l) => layers.push(l),
     moveLayer() {},
   };

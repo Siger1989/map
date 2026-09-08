@@ -41,7 +41,7 @@ import {
   RouteWeatherSettings,
 } from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
-import { recordingPosition } from '@/modules/position/follow';
+import { recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import {
   formatDistance,
@@ -227,10 +227,11 @@ export default function Home() {
       !!featureMove ||
       !!quickAdd ||
       sectionEditing,
-    onFollow: (coordinates) =>
+    onFollow: (coordinates, fix) =>
       map.current?.followPosition(
         coordinates,
         position.direction !== 'device',
+        fix.source === 'network' ? positionZoom(fix) : undefined,
       ) ?? false,
   });
   useEffect(() => {
@@ -916,25 +917,34 @@ export default function Home() {
       )}
       {(position.directionError ||
         (!guidance.active &&
-          (position.locationError || position.locating))) && (
-        <div className="position-status glass" role="status">
-          <span>
-            {position.locationError ||
-              position.directionError ||
-              '正在获取当前位置…'}
-          </span>
-          <button
-            aria-label="收起定位提示"
-            onClick={() =>
-              position.locating
-                ? position.stopLocation()
-                : position.clearError()
-            }
-          >
-            ×
-          </button>
-        </div>
-      )}
+          (position.locationError ||
+            position.locating ||
+            (position.showStatus &&
+              position.watching &&
+              position.fix?.source)))) &&
+        !panel && (
+          <div className="position-status glass" role="status">
+            <span>
+              {position.locationError ||
+                position.directionError ||
+                (position.locating
+                  ? '正在获取当前位置…'
+                  : position.fix
+                    ? `${position.fix.source === 'network' ? '基站 / Wi-Fi 大致位置' : 'GPS 位置'} · 估计误差 ${Math.round(position.fix.accuracy)} 米`
+                    : '')}
+            </span>
+            <button
+              aria-label="收起定位提示"
+              onClick={() =>
+                position.locating
+                  ? position.stopLocation()
+                  : position.clearError()
+              }
+            >
+              ×
+            </button>
+          </div>
+        )}
       <LayerWindow
         open={panel === 'layers'}
         onOpen={(open) => {
@@ -959,6 +969,21 @@ export default function Home() {
         mapStatus={mapStatus}
       />
       <MapActions
+        networkAvailable={
+          position.networkAvailable &&
+          recorder.record.phase !== 'recording' &&
+          !guidance.active
+        }
+        networkMode={position.mode === 'network'}
+        onNetwork={() => {
+          follow.pause();
+          position.changeMode(
+            position.mode === 'network' ? 'auto' : 'network',
+            (fix) => {
+              map.current?.focusPoint(fix.coordinates, positionZoom(fix));
+            },
+          );
+        }}
         sectionActive={sectionEditing}
         terrain={layers.terrain}
         bearing={view.bearing}

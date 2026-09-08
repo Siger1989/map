@@ -1,4 +1,5 @@
-import type { Map, GeoJSONSource } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
+import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection } from 'geojson';
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
@@ -192,9 +193,6 @@ export class TrackLayer {
         );
       }
     }
-    (m.getSource('manual-tracks') as GeoJSONSource).setData(data);
-    m.moveLayer('manual-track-outline');
-    m.moveLayer('manual-track-line');
-    m.moveLayer('manual-track-node');
+    syncOverlayData(m, 'manual-tracks', data);
   }
 }

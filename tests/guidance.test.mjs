@@ -213,6 +213,7 @@ test('return path has its own source and is removed on stop without modifying th
       });
     },
     getLayer: (id) => layers.get(id),
+    getStyle: () => ({ layers: [...layers.values()] }),
     addLayer(layer) {
       layers.set(layer.id, layer);
     },
