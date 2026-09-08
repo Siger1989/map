@@ -1,3 +1,10 @@
+# 当前交付：APK与鸿蒙安装包（2026-09-08，Android已交付、鸿蒙待条件）
+- 用户要求两种安装包发给他并上传GitHub。启动status/diff干净，远端main与本地c78197e一致；再次验证v0.2.6-test已公开，APK、SHA和发行说明三项服务端digest与本机一致，无需重复上传同一安装包。
+- 仓库未找到hvigor/oh-package/build-profile工程文件或HAP产物；PATH未发现hvigor/ohpm/hdc，检查常见Huawei/DevEco目录也未找到工具链。尚无已配置的鸿蒙原生构建与签名流程，不能交付可安装原生包。已通过异步问题请求具体机型/系统版本，用户此前为稍后确认，目前仍待答复。
+- 官方签名参考：https://developer.huawei.com/consumer/cn/doc/HarmonyOS-Guides/ide-signing-auto 。原生调试签名还涉及目标设备；不能把Android签名用于HAP。若设备支持Android安装，可先验证当前APK；不能宣称所有鸿蒙版本可装。
+- 本轮无代码改动、无新构建。下一步收到系统版本后确定Android兼容安装或独立鸿蒙适配/签名/设备验证。最新请求未完成前不再次触发关机。
+- 上轮关机后台命令返回1271，Windows拒绝非强制关机；没有确认断电完成，没有使用强制关闭选项。本机仍可用。
+
 # 交接：同步后关机（2026-09-08）
 - 用户最新明确要求弄好上传GitHub后关机，覆盖此前先别关机的要求。关机前工作区干净，main本地与远端52f6f65一致；再次验证v0.2.6-test公开测试发行的APK/SHA/说明三项digest一致，日志.openai/verify-before-shutdown.log。
 - 续画和原生重复刷新优化已完成交付。地图闪烁仍待具体环境与症状复现，不宣称已彻底解决；无新代码改动或重复打包。下一次启动先读取上述待复现记录。
