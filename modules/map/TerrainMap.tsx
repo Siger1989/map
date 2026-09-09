@@ -135,6 +135,7 @@ type Props = {
   onBrowse: () => void;
   annotations: Annotation[];
   annotationSelected: string | null;
+  annotationEditingId?: string;
   onAnnotationSelect: (id: string) => void;
   roadSnapping: boolean;
   riverSnapping: boolean;
@@ -627,15 +628,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               const item = latest.current.annotations.find(
                 (a) => a.id === id && a.visible,
               );
-              if (item)
+              if (latest.current.annotationEditingId && item?.id !== latest.current.annotationEditingId) return null;
+              if (item?.kind === 'pin')
                 return {
                   kind: 'annotation',
                   id: item.id,
                   coordinate: item.coordinates,
                 };
               if (element !== map.getCanvas()) return null;
-              const model = annotationRef.current?.pickForMove(point);
-              if (model) return { kind: 'annotation', ...model };
+              // Models move only through their axis gizmo to avoid accidental free dragging.
               const areaNode = areaRef.current?.pickNode(point);
               if (areaNode) return areaNode;
               const node = trackRef.current?.pickNode(point);
@@ -646,13 +647,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             },
             begin: (target) => latest.current.onDragBegin(target),
             direct: (target) =>
-              target.kind === 'track' &&
+              (target.kind === 'annotation' && latest.current.annotationSelected === target.id) ||
+              (target.kind === 'track' &&
               latest.current.trackOverlay.activeNode?.trackId ===
                 target.node.trackId &&
               latest.current.trackOverlay.activeNode.coordinate[0] ===
                 target.node.coordinate[0] &&
               latest.current.trackOverlay.activeNode.coordinate[1] ===
-                target.node.coordinate[1],
+                target.node.coordinate[1]),
             preview: (move) => latest.current.onDragPreview(move),
             commit: (move) => latest.current.onDragCommit(move),
           });

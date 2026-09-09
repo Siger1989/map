@@ -1,0 +1,92 @@
+.marker-workspace {
+  position: absolute; z-index: 9; top: calc(56px + var(--safe-top)); left: var(--edge-left);
+  width: min(304px, calc(100% - 74px)); max-height: min(38dvh, 320px);
+  display: flex; flex-direction: column; padding: 0 6px 6px; gap: 3px;
+  background: #fffefa; color: #193038; border: 1px solid #d8dedb; border-radius: 9px;
+  box-shadow: 0 3px 13px #102a3430; font-size: 13px; overflow: hidden;
+}
+.marker-workspace[data-view='details'] { max-height: min(58dvh, 480px); }
+.marker-workspace[data-dragging='true'] { visibility: hidden; }
+.marker-workspace button { min-width: 44px; min-height: 44px; padding: 0 5px; border: 1px solid #dbe2df; border-radius: 6px; background: #fdfefc; color: inherit; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0; }
+.marker-workspace button:disabled { opacity: .4; }
+.marker-workspace :is(button, input, textarea, select):focus-visible { outline: 2px solid #0c5663; outline-offset: -2px; }
+.marker-workspace :is(input, textarea, select) { min-width: 0; width: 100%; min-height: 44px; padding: 5px 6px; background: #fff; color: #21303b; border: 1px solid #dce3e2; border-radius: 5px; font: inherit; }
+.marker-workspace input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
+.marker-workspace input::-webkit-inner-spin-button, .marker-workspace input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.marker-workspace textarea { resize: vertical; line-height: 1.3; }
+.marker-workspace .marker-primary, .marker-workspace .marker-save { background: #0b4a56; color: white; border-color: #0b4a56; }
+.marker-workspace .marker-delete { color: #bf3d38; }
+.marker-summary-title, .marker-details-bar { display: flex; gap: 4px; align-items: center; min-width: 0; }
+.marker-summary-title > svg { fill: currentColor; flex-shrink: 0; }
+.marker-summary-title strong { flex: 1; font-size: 16px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.marker-summary-title button, .marker-details-bar button { border-color: transparent; background: transparent; }
+.marker-details-bar strong { flex: 1; }
+.marker-summary-place { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 26px; }
+.marker-summary-place span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marker-summary-place span:last-child { flex-shrink: 0; font-size: 12px; }
+.marker-summary-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 3px; }
+.marker-editor-bar { display: flex; align-items: center; gap: 0; min-height: 44px; border-bottom: 1px solid #e7eae8; }
+.marker-editor-bar nav { display: flex; flex: 1; min-width: 0; }
+.marker-editor-bar nav button { flex: 1; padding: 0 2px; border: 0; border-radius: 0; color: #707c83; background: transparent; }
+.marker-editor-bar > button:first-child { padding: 0; border: 0; background: transparent; }
+.marker-editor-bar nav button[aria-pressed='true'] { color: #094c58; box-shadow: inset 0 -2px #166574; }
+.marker-editor-bar .marker-save { margin-left: 3px; min-width: 46px; }
+.marker-scroll { min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 4px; padding-top: 2px; scrollbar-width: thin; }
+.marker-inline-field { display: grid; grid-template-columns: 30px minmax(0,1fr); align-items: center; gap: 4px; }
+.marker-style-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.marker-style-row button { min-width: 0; padding: 0 4px; gap: 3px; }
+.marker-style-row button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marker-style-row button > svg:not(:last-child) { fill: currentColor; flex-shrink: 0; }
+.marker-style-row button > svg:last-child { margin-left: auto; }
+.marker-style-row small { font-size: 11px; color: #657774; }
+.marker-style-row i, .marker-choice-grid i { display: block; width: 17px; height: 17px; border-radius: 50%; border: 1px solid #647b75; flex-shrink: 0; }
+.marker-picker { display: flex; flex-direction: column; gap: 4px; }
+.marker-choice-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.marker-choice-grid button { min-width: 0; flex-direction: column; gap: 1px; padding: 3px 0; }
+.marker-choice-grid svg { fill: currentColor; }
+.marker-choice-grid button[aria-pressed='true'] { border-color: #176674; background: #e3efeb; }
+.marker-choice-grid small { font-size: 10px; }
+.marker-custom-color { display: flex; align-items: center; gap: 5px; }
+.marker-custom-color input { width: 64px; }
+.marker-axis-group { margin: 0 0 3px; display: flex; align-items: center; gap: 3px; }
+.marker-axis-unit { width: 39px; flex-shrink: 0; font-size: 11px; }
+.marker-axis-heading { display: flex; align-items: center; height: 21px; font-size: 11px; }
+.marker-axis-heading > span { width: 42px; flex-shrink: 0; }
+.marker-axis-heading > div { display: grid; grid-template-columns: repeat(3,1fr); flex: 1; text-align: center; }
+.marker-axis-values { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; flex: 1; min-width: 0; }
+.marker-position[data-kind='pin'] .marker-axis-values, .marker-position[data-kind='pin'] .marker-axis-heading > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.marker-position [data-axis='0'] { --axis: #ef5652; color: #c53e3a; }
+.marker-position [data-axis='1'] { --axis: #5fdf79; color: #17853a; }
+.marker-position [data-axis='2'] { --axis: #598fff; color: #3263bc; }
+.marker-number { display: flex; min-width: 0; border: 1px solid var(--axis, #cdd8d5); border-radius: 5px; overflow: hidden; }
+.marker-number input { flex: 1; min-width: 0; width: 0; border: 0; border-radius: 0; padding: 2px 1px; text-align: center; font-variant-numeric: tabular-nums; font-size: 12px; }
+.marker-number button { min-width: 44px; width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: 0; color: inherit; }
+.marker-data-heading { display: flex; justify-content: space-between; align-items: center; }
+.marker-data-heading button { min-height: 44px; border: 0; color: #0b5260; }
+.marker-data { display: flex; flex-direction: column; gap: 3px; }
+.marker-attribute-row { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0,1.4fr) 44px; gap: 3px; }
+.marker-attribute-row button { border-color: transparent; color: #76837f; }
+.marker-attribute-row textarea { height: 44px; }
+.marker-note { margin-top: 2px; }
+.marker-note textarea { height: 44px; }
+.marker-model-options summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.marker-model-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.marker-model-grid label { min-width: 0; }
+.marker-model-grid label > span { font-size: 11px; }
+.marker-check { display: flex; align-items: center; gap: 5px; min-height: 44px; }
+.marker-check input { width: 20px; min-height: 20px; }
+.marker-coordinate-fields { display: grid; gap: 4px; }
+.marker-coordinate-fields > label { display: grid; grid-template-columns: 82px minmax(0,1fr); align-items: center; }
+.marker-details h3, .marker-details p { margin: 0; overflow-wrap: anywhere; }
+.marker-details .annotation-location { background: transparent; border: 0; padding: 0; }
+.marker-details > dl { margin: 0; display: grid; gap: 3px; }
+.marker-details > dl > div { display: grid; grid-template-columns: 1fr 2fr; gap: 5px; border-bottom: 1px solid #e6ebe8; padding: 5px 0; }
+.marker-details dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.marker-detail-note { white-space: pre-wrap; }
+.marker-error { color: #a73833; margin: 2px 0; font-size: 12px; }
+.marker-confirm { position: absolute; inset: 0; background: #fffefa; z-index: 2; padding: 8px; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+.marker-confirm strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marker-confirm p { font-size: 12px; margin: 0; }
+.marker-confirm > div { display: flex; gap: 4px; }
+.marker-confirm button { flex: 1; }
+.brand-icon img { width: 25px; height: 25px; object-fit: contain; border-radius: 5px; }

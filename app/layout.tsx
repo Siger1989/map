@@ -24,6 +24,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: `${PRODUCT_NAME} · 三维地图与沿途天气`,
   description: PRODUCT_DESCRIPTION,
+  icons: { icon: '/brand/shantu-logo.png', apple: '/brand/shantu-logo.png' },
 };
 export default function RootLayout({
   children,

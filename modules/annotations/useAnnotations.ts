@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { annotationEditItems, commitAnnotationEdit, editorPose, patchAnnotation, sameAnnotation, type AnnotationEdit } from './editorSession';
 import type { Coordinate } from '../navigation/types';
 import { readElevation } from '../terrain/elevation';
 import {
@@ -28,6 +29,15 @@ export function useAnnotations() {
   const [reading, setReading] = useState(false);
   const writable = useRef(false);
   const lookup = useRef<AbortController | null>(null);
+  const [edit, setEdit] = useState<AnnotationEdit | null>(null);
+  const editing = useRef<AnnotationEdit | null>(null);
+  const [selectionRequest, setSelectionRequest] = useState<{ id: string | null } | null>(null);
+  const setEditing = (value: AnnotationEdit | null) => {
+    editing.current = value;
+    setEdit(value);
+  };
+  const getItem = (id: string) => editing.current?.draft.id === id
+    ? editing.current.draft : current.current.find((a) => a.id === id);
   useEffect(() => {
     try {
       const saved = parseAnnotations(localStorage.getItem(ANNOTATION_STORAGE));
@@ -53,7 +63,14 @@ export function useAnnotations() {
       }
     };
     window.addEventListener('guanyun-data-changed', reload);
-    return () => window.removeEventListener('guanyun-data-changed', reload);
+    const storage = (event: StorageEvent) => {
+      if (event.key === ANNOTATION_STORAGE) reload();
+    };
+    window.addEventListener('storage', storage);
+    return () => {
+      window.removeEventListener('guanyun-data-changed', reload);
+      window.removeEventListener('storage', storage);
+    };
   }, []);
   const persist = (next: Annotation[]) => {
     if (!writable.current) {
@@ -72,17 +89,18 @@ export function useAnnotations() {
     }
   };
   const update = (id: string, patch: Partial<Annotation>) => {
-    const old = current.current.find((a) => a.id === id);
+    const old = getItem(id);
     if (!old) return false;
-    const next = { ...old, ...patch, id: old.id, kind: old.kind };
-    if (
-      (patch.placement !== undefined || patch.offset !== undefined) &&
-      !Object.hasOwn(patch, 'centerAltitude')
-    )
-      delete next.centerAltitude;
-    if (!validAnnotation(next)) {
-      setError('参数无效：尺寸应为 0.1–10000 米，请检查数值。');
+    let next: Annotation;
+    try { next = patchAnnotation(old, patch); }
+    catch (e) {
+      setError(e instanceof Error ? e.message : '参数无效');
       return false;
+    }
+    if (editing.current?.draft.id === id) {
+      setEditing({ ...editing.current, draft: next, origin: editing.current.origin ?? editorPose(next) });
+      setError('');
+      return true;
     }
     return persist(current.current.map((a) => (a.id === id ? next : a)));
   };
@@ -96,7 +114,7 @@ export function useAnnotations() {
         ...coordinates,
         AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]),
       );
-      const item = current.current.find((a) => a.id === id);
+      const item = getItem(id);
       if (
         !controller.signal.aborted &&
         item &&
@@ -180,7 +198,50 @@ export function useAnnotations() {
       return true;
     },
     add,
-    items,
+    items: annotationEditItems(items, edit),
+    edit,
+    selectionRequest,
+    dirty: !!edit && !sameAnnotation(edit.base, edit.draft),
+    beginEdit: (id: string) => {
+      if (editing.current?.draft.id === id) return;
+      const item = current.current.find((a) => a.id === id);
+      if (!item) return;
+      lookup.current?.abort();
+      setReading(false);
+      setEditing({ base: structuredClone(item), draft: structuredClone(item), origin: editorPose(item) });
+      setMoveHistory([]);
+      setError('');
+    },
+    saveEdit: () => {
+      const session = editing.current;
+      if (!session) return true;
+      try {
+        const saved = parseAnnotations(localStorage.getItem(ANNOTATION_STORAGE));
+        if (!persist(commitAnnotationEdit(saved, session))) return false;
+        lookup.current?.abort();
+        setReading(false);
+        setEditing(null);
+        setMoveHistory([]);
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '保存失败，草稿已保留');
+        return false;
+      }
+    },
+    cancelEdit: () => {
+      lookup.current?.abort();
+      setReading(false);
+      setEditing(null);
+      setMoveHistory([]);
+      setError('');
+    },
+    resolveSelection: (proceed: boolean) => {
+      if (proceed && selectionRequest) {
+        setSelected(selectionRequest.id);
+        setPicking(null);
+      }
+      setSelectionRequest(null);
+    },
     selected,
     picking,
     setPicking,
@@ -188,10 +249,13 @@ export function useAnnotations() {
     reading,
     moveUndoId: moveHistory.at(-1)?.id ?? null,
     transform: (item: Annotation) => {
-      const prior = current.current.find((a) => a.id === item.id);
+      const prior = getItem(item.id);
       if (!prior) return false;
       if (
-        !update(item.id, {
+        !update(item.id, item.kind === 'pin' ? {
+          coordinates: item.coordinates,
+          groundElevation: null,
+        } : {
           coordinates: item.coordinates,
           centerAltitude: item.centerAltitude,
           width: item.width,
@@ -231,8 +295,16 @@ export function useAnnotations() {
         setMoveHistory((history) => history.slice(0, -1));
     },
     select: (id: string | null) => {
+      if (editing.current && id !== editing.current.draft.id) {
+        if (!sameAnnotation(editing.current.base, editing.current.draft)) {
+          setSelectionRequest({ id });
+          return false;
+        }
+        setEditing(null);
+      }
       setSelected(id);
       setPicking(null);
+      return true;
     },
     update,
     rememberAttributes: (id: string) => {
@@ -271,7 +343,7 @@ export function useAnnotations() {
       return true;
     },
     move: (id: string, coordinates: Coordinate) => {
-      const prior = current.current.find((a) => a.id === id);
+      const prior = getItem(id);
       if (!prior || prior.coordinates.every((n, i) => n === coordinates[i]))
         return false;
       if (update(id, { coordinates, groundElevation: null })) {
@@ -282,13 +354,12 @@ export function useAnnotations() {
       return false;
     },
     remove: (id: string) => {
-      if (
-        persist(current.current.filter((a) => a.id !== id)) &&
-        selected === id
-      ) {
+      if (!persist(current.current.filter((a) => a.id !== id))) return false;
+      if (selected === id) {
         setSelected(null);
         setMoveHistory((history) => history.filter((a) => a.id !== id));
       }
+      return true;
     },
     duplicate: (id: string) => {
       const item = current.current.find((a) => a.id === id);

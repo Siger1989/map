@@ -13,7 +13,7 @@ import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
-import { CloudSun, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
@@ -104,7 +104,6 @@ import type {
 import { ObjectGizmo } from '@/modules/objectTransform/ObjectGizmo';
 import type { WatchProjection } from '@/modules/objectTransform/projection';
 import {
-  annotationPose,
   planePose,
   applyAnnotationPose,
   applyPlanePose,
@@ -116,6 +115,8 @@ import {
 } from '@/modules/section/types';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
+import { AnnotationWorkspace, type MarkerTab } from '@/modules/annotations/AnnotationWorkspace';
+import { editorPose } from '@/modules/annotations/editorSession';
 import { QuickAdd } from '@/modules/annotations/QuickAdd';
 import type { MapHold } from '@/modules/map/MapLongPress';
 import { KINDS, type Annotation } from '@/modules/annotations/data';
@@ -319,6 +320,7 @@ export default function Home() {
   const [annotationPreview, setAnnotationPreview] = useState<Annotation | null>(
     null,
   );
+  const [annotationTab, setAnnotationTab] = useState<MarkerTab>('basic');
   const [sectionHistory, setSectionHistory] = useState<SectionSettings[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<SectionProfileData | null>(
@@ -572,7 +574,7 @@ export default function Home() {
     (item) => item.id === annotations.selected,
   );
   const selectedPose = selectedAnnotation
-    ? annotationPose(selectedAnnotation)
+    ? editorPose(selectedAnnotation)
     : null;
   const changeSection = (next: SectionSettings) => {
     setSectionHistory((history) => [...history.slice(-19), sectionDraft]);
@@ -987,6 +989,7 @@ export default function Home() {
           return;
         }
         if (annotations.selected && !annotations.picking) {
+          if (panel === 'annotations' || annotations.selectionRequest) return;
           event.preventDefault();
           annotations.select(null);
           setPanel(null);
@@ -1080,6 +1083,7 @@ export default function Home() {
         roadSnapping={tracks.roadSnapping}
         riverSnapping={tracks.riverSnapping}
         annotationSelected={annotations.selected}
+        annotationEditingId={annotations.edit?.draft.id}
         pickingActive={Boolean(
           annotations.picking || navigation.picking !== null,
         )}
@@ -1122,10 +1126,12 @@ export default function Home() {
             annotations.select(null);
             tracks.select(null);
           } else {
-            annotations.select(target.id);
+            if (!annotations.select(target.id)) return;
+            annotations.beginEdit(target.id);
+            setAnnotationTab('position');
             tracks.select(null);
           }
-          setPanel(null);
+          setPanel(target.kind === 'annotation' ? 'annotations' : null);
         }}
         onDragPreview={setFeatureMove}
         onDragCommit={({ target, coordinate }) => {
@@ -1139,7 +1145,10 @@ export default function Home() {
               setActiveTrackNode({ ...target.node, coordinate });
           } else if (target.kind === 'area')
             areas.move(target.id, target.index, coordinate);
-          else annotations.move(target.id, coordinate);
+          else {
+            annotations.move(target.id, coordinate);
+            setPanel('annotations');
+          }
         }}
         onAnnotationSelect={(id) => {
           if (editor.session) return;
@@ -1147,7 +1156,7 @@ export default function Home() {
           setActiveTrackNode(null);
           areas.select(null);
           setProfileOpen(false);
-          annotations.select(id);
+          if (!annotations.select(id)) return;
           tracks.select(
             annotations.items.find((a) => a.id === id)?.trackAnchor?.trackId ??
               null,
@@ -1566,7 +1575,7 @@ export default function Home() {
       <header className="topbar glass">
         <div className="brand">
           <span className="brand-icon">
-            <CloudSun size={17} />
+            <img src="/brand/shantu-logo.png" alt="" width={25} height={25} />
           </span>
           <h1>{PRODUCT_NAME}</h1>
         </div>
@@ -1911,6 +1920,26 @@ export default function Home() {
           {recorder.record.segments.reduce((n, s) => n + s.length, 0)} 点
         </button>
       )}
+      {selectedAnnotation && (panel === 'annotations' || annotations.selectionRequest) && !annotations.picking && (
+        <AnnotationWorkspace key={`annotation-workspace:${selectedAnnotation.id}`}
+          state={annotations} shownItem={selectedAnnotation} tab={annotationTab}
+          onTab={(tab) => {
+            setAnnotationTab(tab);
+            if (tab === 'position') map.current?.focusPoint(selectedAnnotation.coordinates, annotationViewZoom(selectedAnnotation));
+          }}
+          dragging={!!featureMove || !!annotationPreview}
+          terrainStatus={modelTerrainStatus}
+          onClose={() => { if (annotations.select(null)) setPanel(null); }}
+          onShare={(id) => { setCollectionOutputKey(`annotation:${id}`); setPanel('favorites'); }}
+          onNavigate={(item) => {
+            navigation.clear();
+            navigation.place('end', { name: item.name || '标记位置', coordinates: item.coordinates });
+            if (position.fix && Date.now() - position.fix.timestamp < 120000)
+              navigation.place('start', { name: '我的位置', coordinates: position.fix.coordinates });
+            setPanel('route');
+          }}
+        />
+      )}
       <ControlDock
         onScanRoute={() => {
           setPanel(null);
@@ -1919,10 +1948,12 @@ export default function Home() {
         onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
         sectionActive={sectionEditing}
         sectionReady={sectionReady}
-        active={panel === 'layers' ? null : panel}
+        active={panel === 'layers' || (panel === 'annotations' && selectedAnnotation) ? null : panel}
         title={panel === 'sources' ? sourcesNavigation?.title : undefined}
         back={
-          routeChild
+          selectedAnnotation && panel === 'route'
+            ? { label: '返回标记', onClick: () => setPanel('annotations') }
+            : routeChild
             ? {
                 label: '返回路线',
                 onClick: () => {
@@ -1939,6 +1970,7 @@ export default function Home() {
               : undefined
         }
         onActive={(next) => {
+          if (annotations.edit && next !== 'annotations' && !annotations.select(null)) return;
           if (!next && routeChild) {
             setRouteChild(false);
             annotations.select(null);
@@ -2055,7 +2087,7 @@ export default function Home() {
             }
           />
         )}
-        {panel === 'annotations' && (
+        {panel === 'annotations' && !selectedAnnotation && (
           <AnnotationPanel
             onShare={(id) => {
               setCollectionOutputKey(`annotation:${id}`);
@@ -2299,13 +2331,14 @@ export default function Home() {
         navigation.picking === null &&
         !selectedPhoto &&
         !featureMove &&
-        panel === null &&
-        (selectedAnnotation && selectedPose ? (
+        (panel === null || (panel === 'annotations' && annotations.edit && annotationTab === 'position')) &&
+        (selectedAnnotation && selectedPose && annotations.edit && annotationTab === 'position' ? (
           <ObjectGizmo
-            key={selectedAnnotation.id}
+            key={`annotation-gizmo:${selectedAnnotation.id}`}
             name={selectedAnnotation.name || '标记'}
             kind={selectedAnnotation.kind}
             pose={selectedPose}
+            hideToolbar
             watchProjection={watchObjectProjection}
             onLocate={() =>
               map.current?.focusPoint(
@@ -2319,7 +2352,7 @@ export default function Home() {
               map.current?.stop();
               position.free();
               follow.pause();
-              setPanel(null);
+              // Keep the numeric editor; it hides only during the map gesture.
             }}
             onPreview={(pose) =>
               setAnnotationPreview(
@@ -2333,11 +2366,10 @@ export default function Home() {
             }}
             onUndo={annotations.undoMove}
             onDetails={() =>
-              setPanel(panel === 'annotations' ? null : 'annotations')
+              setPanel('annotations')
             }
             onClose={() => {
-              annotations.select(null);
-              setPanel(null);
+              if (annotations.select(null)) setPanel(null);
             }}
           />
         ) : section.enabled &&

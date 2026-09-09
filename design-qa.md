@@ -1,32 +1,44 @@
-# Route windows 0.2.14 visual QA
+# Marker windows 0.2.15 visual QA
 
 final result: passed
 
-Scope: browser implementation and the requested route-window layouts. Android physical-device touch, GPS walking and performance acceptance remain untested.
+Scope: the confirmed summary v2 and editor v3 implemented in the existing map application. This is browser acceptance; Android physical-device touch, keyboard, GPS and performance remain untested.
 
 ## Evidence and normalization
 
-- Confirmed source boards: exec-f5644e8d-0018-4fb4-bf47-d5c050b4bf20.png (navigation/editor), exec-f76af2d7-c837-4cd4-8dd0-1f322ffc7898.png (card/details), under the conversation generated_images folder. Later user screenshots and instructions explicitly supersede the larger card, rail placement, navigation mini-map and precision drawing interactions.
-- Compared source and implementation together in artifacts/screenshots/compare-navigation-edit-0214.png and compare-card-details-0214.png, then compared the reported weather obstruction with both new sizes in compare-weather-preview-0214.png.
-- Implementation runs the real app in an isolated localhost:9192 iframe at 360×780 and 390×844 CSS pixels. The outer natural viewport is 1280×720; iframe presentation scale is 0.82. Raw screenshots and DOM crop rectangles are retained alongside content crops. Comparison boards normalize image height for hierarchy review, not pixel-perfect scores. Reference boards include a phone frame and fictional route content; real fixture data, actual map imagery, absent photos and forecast/elevation loading states differ intentionally.
-- Focused screenshots inspected: route-delete-0214-360.png, route-details-delete-0214-390.png, route-branch-precision-0214-360.png, route-branch-closed-0214-360.png, weather-preview-0214-360.png, weather-preview-0214-390.png. Earlier full navigation/elevation/reverse and both-size card/editor screenshots remain in the same folder.
+Source: docs/visuals/marker-level-one-preview-v2.png and marker-{basic-compact,position-matrix,data-dense}-v3.png. Images are 853x1844; the mock's phone content is cropped at (30,119)-(822,1832) and normalized to 390x844 CSS pixels. Actual screenshots are 390x844; narrow screens are 360x780, and keyboard simulation is 360x430. All screenshots are inspected at 1x density. The generated mock includes illustrative map imagery, tools, weather and sample values; those are not live-data visual requirements.
+
+Full-view plus focused comparison boards were opened and inspected together:
+- artifacts/screenshots/marker-compare-0215-summary.png
+- artifacts/screenshots/marker-compare-0215-basic.png
+- artifacts/screenshots/marker-compare-0215-position.png
+- artifacts/screenshots/marker-compare-0215-data.png
+
+Actual captures: artifacts/screenshots/marker-{summary,basic,position,data}-0215-{390,360}.png. Position screenshots use a model for actual XYZ support; summary/basic/data use the saved QA sample pin at 390 and model at 360. Model-only size options at 360 are an intentional object-type difference. Focused regions on the boards inspect the app-owned card, labels, buttons and axis colors, in addition to the full map layout. Source drill icon and runtime sample icon are distinct selections of the existing icon system; no replacement icon system was invented.
 
 ## Findings and fixes
 
-| Priority | Finding | Fix and evidence | Result |
-| --- | --- | --- | --- |
-| P1 | Different route clicks switched menu sets and hid navigation | Stable first card has navigation/marker/edit/details; map and favorites entry plus back/share/marker return checked; green position preserved | PASS |
-| P1 | New branch used direct map clicks instead of established precision gesture | Reuses TrackDrawing and DrawingGestureBridge; screen finger at y218 produces the offset node at y182 in the 0.82-scale capture; next release snaps an old node and ends the branch; undo reopens it | PASS |
-| P1 | Selected plan could differ from navigation geometry or reverse | Original/alternative distances and direction checked in UI; preferred-path, fixed destination and connected-only tests pass | PASS |
-| P1 | Save failure could exit editing | Atomic edit commit; incomplete branch stays in editor; failure/conflict tests and UI error state checked | PASS |
-| P2 | First card and wide progress lanes obstructed map | Compact one-row information, 6px visual lanes sharing 44px touch area; rail under search, dynamic clearance above bottom card; one progress component | PASS |
-| P2 | Editor camera control overlapped bottom dock; sliders too short | ResizeObserver clearance; measured 16px gap and 44px slider targets at360; parameters remain visible | PASS |
-| P2 | Start/end could not be located on map | Real route mini-map with green start/red end; same field colors, swapped markers and alternative shape | PASS |
-| P2 | Dragging weather rail left a large centered card | Card moved beside the rail (x56,y90), width164, height124 at360 /123 at390; actual drag updates 99% to44% without moving the card; close/retry44px, no horizontal overflow | PASS |
-| P2 | No deletion entry in details | Bottom deletion entry, route-name confirmation and cancellation/back; shares fixed header with back/share; photos/markers/source records not deleted | PASS |
+- P1, fixed: identical sibling React keys on AnnotationWorkspace and ObjectGizmo caused accumulating duplicate panels during map camera updates. Reproduced in both development and production. Unique namespaced keys fixed it; production DOM confirmed one workspace and one gizmo. Later actual keyboard-controlled gizmo movement and camera zoom kept one workspace.
+- P2, fixed: draft position headers repeated for each row. The final layout shares X/Y/Z headings above metre/degree rows, with six independent resets on models.
+- P2, fixed: initial data panel exceeded the project's 38dvh/320px editor limit. It now scrolls internally, retaining the top bar. Measured 390 card height320; 360 position width286/height177; no horizontal viewport overflow.
+- P2, fixed: reducing the viewport could leave the focused note below the scroll viewport. Resize handling now scrolls the active input into view. Post-fix screenshot artifacts/screenshots/marker-keyboard-0215-360.png shows the note and Save together; card y56..219.39, note y168..212 at 360x430. Save succeeded afterward.
 
-## Verification boundary
+No actionable P0/P1/P2 findings remain within this scope.
 
-332 logic tests, TypeScript, web build, APK build and independent asset/signature checks passed. Map imagery and live forecast/elevation may be unavailable with network/API failures; the UI shows unavailable/— rather than fabricated values. Loading and missing states were checked in the last pass; successful profile/reverse states were checked earlier in this implementation.
+## Required fidelity surfaces
 
-CUA connection briefly failed, then recovered after the preview server was restored; the last three changes were subsequently captured and exercised. No user route was deleted to test the deletion UI. Neither the user's9191 archive nor their active route was cleared or forcibly refreshed. No open P0/P1/P2 visual findings remain within this browser scope.
+- Fonts/typography: retain the application's sans-serif Chinese fallback, compact 13px fields and 16px summary heading. Source mock text is readable at normalized size; runtime text remains readable with truncation for long titles. Numeric units and labels remain distinct.
+- Spacing/layout: compact one-row editor header, inline name, adjacent icon/color selectors, paired axis rows, dense properties. Root at top56/left8, clear of right tools and bottom navigation. Runtime 44px action heights intentionally exceed smaller raster mock hit areas. This preserves touch targets; five properties plus notes may require internal scrolling under the height cap.
+- Colors/tokens: warm white panel, dark teal primary action, muted borders, red/green/blue axes aligned with the existing gizmo. Focus outlines remain visible.
+- Image quality/assets: app and Android use the supplied 1254x1254 rabbit/mountain-road PNG without changing shape. Existing map/marker/gizmo assets are reused; actual imagery/weather replaces illustrative mock content. APK native-logo pixel identity separately checked.
+- Copy/content: summary/Basic/Position/Data/Save structure matches the confirmed flow. Runtime shows true coordinates or cached location and actual/missing elevation; no mock temperature or geological field values enter product defaults. Fixtures remain only in isolated local test storage.
+
+## Interaction checks
+
+Storage failure preserves draft and original stored record; restoring storage and retrying succeeds. Unsaved selection change offers save/discard/continue; discard restores prior data. X reset leaves Y20 unchanged. Actual gizmo keyboard movement changed X to2m; Z ring keyboard movement changed rotation to6.01 degrees; reset restored the respective field. Delete cancellation, complete details, navigation and Return to marker were checked. Production after the key fix has one card/gizmo. App console checked with no errors at final interaction checkpoint.
+
+341 logic tests and final types pass. Temporary QA entry files were removed before final builds. Final extra regression keeps a draft visible when an external window deletes its source; it uses the same window layout.
+
+## Follow-up polish and limits
+
+P3: raster-reference spacing is slightly denser; retain current touch dimensions and scroll cap. Native soft-keyboard timing, real pinch/touch gestures, installation, GPS and performance still need device testing. Browser viewport emulation is not native keyboard/device acceptance.

@@ -30,6 +30,7 @@ type Props = {
   watchProjection: WatchProjection;
   canUndo: boolean;
   error?: string;
+  hideToolbar?: boolean;
   onBegin: () => void;
   onPreview: (p: Pose | null) => void;
   onCommit: (p: Pose) => void;
@@ -346,7 +347,7 @@ export function ObjectGizmo(props: Props) {
           </>
         )}
       </svg>
-      <aside
+      {!props.hideToolbar && <aside
         className="object-gizmo glass"
         aria-label={`${props.name}操作栏`}
         data-active={!!active}
@@ -444,7 +445,7 @@ export function ObjectGizmo(props: Props) {
         {active && <small>{active} · 松手保存 / Esc 取消</small>}
         {!visible && <small>对象在视野外，可点“回到对象”。</small>}
         {props.error && <p role="alert">{props.error}</p>}
-      </aside>
+      </aside>}
     </>
   );
 }
