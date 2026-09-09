@@ -4,6 +4,7 @@ import { readElevation } from '../terrain/elevation';
 import {
   MEASUREMENT_KEY,
   MAX_POINTS,
+  removeMeasurePoint,
   parseMeasurement,
   validHeight,
   validPoint,
@@ -22,23 +23,35 @@ export function useMeasurement() {
     [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState(''),
     [reading, setReading] = useState<string[]>([]);
-  const [undoStack, setUndoStack] = useState<MeasurePoint[][]>([]);
+  const [undoStack, setUndoStack] = useState<
+    { points: MeasurePoint[]; recordId: string | null }[]
+  >([]);
+  const currentRecord = useRef<string | null>(null);
   const current = useRef(points),
     ready = useRef(false),
     requests = useRef(new Map<string, AbortController>());
-  const commit = (next: MeasurePoint[], history = true) => {
+  const commit = (
+    next: MeasurePoint[],
+    history = true,
+    recordId: string | null = currentRecord.current,
+  ) => {
     if (!ready.current || next.length > MAX_POINTS || !next.every(validPoint))
       return false;
     try {
       localStorage.setItem(
         PAIR_KEY,
-        JSON.stringify({ version: 1, points: next }),
+        JSON.stringify({ version: 1, points: next, savedId: recordId }),
       );
     } catch {
       setError('测量尚未保存，请检查本机存储后重试');
       return false;
     }
-    if (history) setUndoStack((s) => [...s.slice(-29), current.current]);
+    if (history)
+      setUndoStack((s) => [
+        ...s.slice(-29),
+        { points: current.current, recordId: currentRecord.current },
+      ]);
+    currentRecord.current = recordId;
     current.current = next;
     setPoints(next);
     setError('');
@@ -90,6 +103,9 @@ export function useMeasurement() {
           localStorage.getItem('shantu.measurement.pair.v1') ??
           localStorage.getItem(MEASUREMENT_KEY),
       );
+      const id = saved ? JSON.parse(saved).savedId : null;
+      currentRecord.current =
+        typeof id === 'string' && id.length <= 100 ? id : null;
       const pair = legacy;
       current.current = pair.map((p) => ({
         ...p,
@@ -129,18 +145,39 @@ export function useMeasurement() {
     if (p.altitude === null) fillHeight(p);
     return true;
   };
-  const record = saved.items.find(
-    (item) => item.points[0].id === points[0]?.id,
+  const record = saved.items.find((item) =>
+    currentRecord.current
+      ? item.id === currentRecord.current
+      : item.points.some((p) => points.some((point) => point.id === p.id)),
   );
   return {
     saved,
     record,
     isSaved:
       !!record && JSON.stringify(record.points) === JSON.stringify(points),
-    saveToMap: () =>
-      saved.save(current.current, record?.id ?? crypto.randomUUID()),
+    saveToMap: () => {
+      if (record && current.current.length < 2) {
+        if (!saved.remove(record.id)) return false;
+        return commit(current.current, false, null);
+      }
+      const id = record?.id ?? currentRecord.current ?? crypto.randomUUID();
+      if (!commit(current.current, false, id)) return false;
+      return saved.save(current.current, id);
+    },
+    removeSelected: () => {
+      const index = current.current.findIndex((p) => p.id === selected);
+      if (index < 0) return;
+      const id = current.current[index].id,
+        next = removeMeasurePoint(current.current, id);
+      if (!commit(next, true, record?.id ?? currentRecord.current)) return;
+      requests.current.get(id)?.abort();
+      requests.current.delete(id);
+      setReading((s) => s.filter((p) => p !== id));
+      setSelected(next[Math.min(index, next.length - 1)]?.id ?? null);
+      setSlot(next.length < 2 ? next.length : null);
+    },
     load: (item: SavedMeasurement) => {
-      if (!commit(copyPoints(item.points), false)) return false;
+      if (!commit(copyPoints(item.points), false, item.id)) return false;
       abortReads();
       setUndoStack([]);
       setSelected(item.points.at(-1)!.id);
@@ -187,7 +224,7 @@ export function useMeasurement() {
     retryHeights: () =>
       current.current.filter((p) => p.altitude === null).forEach(fillHeight),
     clear: () => {
-      if (commit([])) {
+      if (commit([], true, null)) {
         abortReads();
         setSelected(null);
         setSlot(0);
@@ -195,12 +232,12 @@ export function useMeasurement() {
     },
     undo: () => {
       const prior = undoStack.at(-1);
-      if (prior && commit(prior, false)) {
+      if (prior && commit(prior.points, false, prior.recordId)) {
         abortReads();
         setUndoStack((s) => s.slice(0, -1));
-        setSelected(prior.at(-1)?.id ?? null);
-        setSlot(prior.length < 2 ? prior.length : null);
-        prior.filter((p) => p.altitude === null).forEach(fillHeight);
+        setSelected(prior.points.at(-1)?.id ?? null);
+        setSlot(prior.points.length < 2 ? prior.points.length : null);
+        prior.points.filter((p) => p.altitude === null).forEach(fillHeight);
       }
     },
   };

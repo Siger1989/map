@@ -5,6 +5,7 @@ import {
   Save,
   Share2,
   RotateCcw,
+  Trash2,
   Undo2,
   X,
 } from 'lucide-react';
@@ -232,12 +233,18 @@ export function Measurement({
             <LocateFixed size={17} />
           </button>
           <button
-            disabled={points.length < 2 || !state.saved.ready || state.isSaved}
+            disabled={
+              (points.length < 2 && !state.record) ||
+              !state.saved.ready ||
+              state.isSaved
+            }
             aria-label={
               state.isSaved
                 ? '测量已保存'
                 : state.record
-                  ? '更新地图测量'
+                  ? points.length < 2
+                    ? '移除地图测量'
+                    : '更新地图测量'
                   : '保存测量到地图'
             }
             onClick={state.saveToMap}
@@ -292,7 +299,9 @@ export function Measurement({
               ? `请选择 ${pointLabel(state.slot)}：点地图空白或已有标记`
               : state.isSaved
                 ? '已保存到地图 · 拖点可修改'
-                : '拖点调整 · ＋继续添加 · 保存留在地图'}
+                : state.record && points.length < 2
+                  ? '不足两点；点保存移除地图连线，可撤销'
+                  : '选点可删除 · 拖点调整 · 保存留在地图'}
           </span>
           <button
             className="measurement-add"
@@ -316,12 +325,30 @@ export function Measurement({
           >
             <Undo2 size={15} />
           </button>
-          <button onClick={state.clear} aria-label="重新测量">
-            <RotateCcw size={15} />
+          <button
+            className="measurement-delete"
+            disabled={
+              !state.selected || !points.some((p) => p.id === state.selected)
+            }
+            onClick={state.removeSelected}
+            aria-label="删除所选测量点"
+          >
+            <Trash2 size={14} />
+            删点
           </button>
         </div>
         {showSaved && (
           <div className="measurement-saved-list" aria-label="已保存测量列表">
+            <button
+              onClick={() => {
+                state.clear();
+                setShowSaved(false);
+              }}
+              aria-label="重新测量"
+            >
+              <RotateCcw size={15} />
+              新建测量
+            </button>
             {state.saved.items.map((item) => (
               <div key={item.id}>
                 <button

@@ -53,8 +53,11 @@ export function useSavedMeasurements() {
     },
     remove: (id: string) => {
       const item = current.current.find((p) => p.id === id);
-      if (item && commit(current.current.filter((p) => p.id !== id)))
+      if (item && commit(current.current.filter((p) => p.id !== id))) {
         setRemoved(item);
+        return true;
+      }
+      return false;
     },
     restore: () => {
       if (

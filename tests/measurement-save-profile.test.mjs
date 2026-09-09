@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { saveMeasurement, parseSavedMeasurements, writeSavedMeasurements } from '../modules/measurement/saved.ts';
 import { measurementProfile } from '../modules/measurement/profile.ts';
-import { pointLabel } from '../modules/measurement/data.ts';
+import { pointLabel, removeMeasurePoint, measurementMetrics } from '../modules/measurement/data.ts';
 import { mapPhotos } from '../modules/photos/association.ts';
 import { patchAnnotation } from '../modules/annotations/editorSession.ts';
 import { newAnnotation } from '../modules/annotations/data.ts';
@@ -45,4 +45,16 @@ test('route-anchored marker rejects independent movement but remains editable fo
   assert.throws(()=>patchAnnotation(marker,{coordinates:[105,31]}),/不能单独移动/);
   assert.equal(patchAnnotation(marker,{name:'营地'}).name,'营地');
   assert.deepEqual(patchAnnotation({...marker,trackAnchor:undefined},{coordinates:[105,31]}).coordinates,[105,31]);
+});
+
+test('removing one measurement vertex reconnects neighbours, leaves source intact and allows empty drafts',()=>{
+  const removed=removeMeasurePoint(abc,'b');
+  assert.deepEqual(removed.map(p=>p.id),['a','c']);assert.equal(abc.length,3);
+  assert.equal(measurementMetrics(removed).segments.length,1);
+  assert.equal(measurementMetrics(removed).segments[0].rise,-10);
+  assert.deepEqual(removeMeasurePoint([abc[0]],'a'),[]);
+  assert.deepEqual(removeMeasurePoint(abc,'absent'),abc);
+  const saved=saveMeasurement([],abc,'original',1);
+  const updated=saveMeasurement(saved,removeMeasurePoint(abc,'a'),'original',2);
+  assert.equal(updated.length,1);assert.equal(updated[0].id,'original');assert.deepEqual(updated[0].points.map(p=>p.id),['b','c']);
 });

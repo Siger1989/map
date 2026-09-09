@@ -337,3 +337,23 @@
   color: #176bdf;
   white-space: nowrap;
 }
+
+.measurement-helper .measurement-delete {
+  min-width: 58px;
+  color: #9e4e32;
+  white-space: nowrap;
+}
+/* Keep text independent from actions, including host zoom / very narrow WebViews. */
+.measurement-helper { display:grid; grid-template-columns:repeat(4,minmax(44px,1fr)); gap:0 2px; padding:0 4px; }
+.measurement-helper > span { grid-column:1/-1; min-width:0; height:23px; line-height:23px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.measurement-helper button.measurement-add, .measurement-helper button.measurement-delete, .measurement-helper > button { min-width:44px; width:100%; padding:0; }
+.measurement-panel { max-width:420px; }
+.measurement-result { width:min(248px,calc(100% - 64px)); pointer-events:auto; }
+@media (max-width:340px) {
+  .measurement-panel header { display:grid; grid-template-columns:repeat(4,minmax(44px,1fr)); padding:0 3px; }
+  .measurement-panel .measurement-tabs { grid-column:1/-1; width:100%; }
+  .measurement-panel header > button { width:100%; }
+  .measurement-helper .measurement-add svg { display:none; }
+  .measurement-helper button { font-size:11px; }
+  .measurement-result { bottom:calc(82px + var(--safe-bottom)); }
+}

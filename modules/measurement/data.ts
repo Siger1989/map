@@ -120,3 +120,11 @@ export const lengthLabel = (value: number | null) =>
     : value < 1000
       ? `${value.toFixed(1)} m`
       : `${(value / 1000).toFixed(3)} km`;
+
+/** Measurement is an ordered polyline: removing a vertex reconnects its neighbours. */
+export function removeMeasurePoint(
+  points: MeasurePoint[],
+  id: string,
+): MeasurePoint[] {
+  return points.filter((p) => p.id !== id);
+}

@@ -1,8 +1,8 @@
 # 连线测量
 
-`useMeasurement` 管理可连续添加的 A/B/C 等点、撤销、地形海拔和编辑草稿；`data` 计算各段水平距离、斜距、真北朝向、水平夹角。最多 200 点。拖点或地图选点传入经纬度，模型尺寸不参与高度。
+`useMeasurement` 管理可连续添加的 A/B/C 等点、单点删除与撤销、地形海拔和编辑草稿；`data` 计算各段水平距离、斜距、真北朝向、水平夹角。最多 200 点。拖点或地图选点传入经纬度，模型尺寸不参与高度。
 
-新草稿键 `shantu.measurement.path.v1` 首次兼容读取 pair/v1 及旧 polyline/v1，不覆盖旧键。`saved` 与 `useSavedMeasurements` 使用独立 `shantu.measurement.saved.v1` 保存最多 200 组快照；写入成功后才更新 UI，读坏数据不覆盖。点击保存更新当前记录，重新测量后保存新记录；关闭草稿不删除地图记录，移除记录可立即撤销。
+新草稿键 `shantu.measurement.path.v1` 首次兼容读取 pair/v1 及旧 polyline/v1，不覆盖旧键；savedId保存所编辑记录身份，删首点后仍更新原记录。`saved` 与 `useSavedMeasurements` 使用独立 `shantu.measurement.saved.v1` 保存最多 200 组快照；写入成功后才更新 UI，读坏数据不覆盖。点击保存更新当前记录，重新测量后保存新记录；关闭草稿不删除地图记录，移除记录可立即撤销。
 
 `MeasureLines` 使用三维相机投影：每段 B 的水平投影点为 B 经纬度、A 海拔；水平参考线及垂直投影均为虚线。图上高度仅按地图地形夸张比例显示，数值使用未夸张地面高程。未知高度不冒充 0。固定结果卡片附非等比示意。
 
