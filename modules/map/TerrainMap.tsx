@@ -1,3 +1,4 @@
+import { readLastView, saveLastView } from './lastView';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
@@ -593,6 +594,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       let selected: [number, number] = INITIAL_VIEW.center;
       let weatherAnchor: [number, number] = INITIAL_VIEW.center;
       let cameraFrame = 0;
+      let releaseLastView: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
@@ -607,7 +609,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             style: baseStyle(),
             transformRequest: offlineTransform,
             pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-            ...INITIAL_VIEW,
+            ...(readLastView() ?? INITIAL_VIEW),
+            // MapLibre gives a valid explicit URL hash priority over the saved camera.
             hash: true,
             maxPitch: 80,
             maxZoom: 20,
@@ -620,6 +623,20 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const rememberView = () => saveLastView({
+            center: map.getCenter().wrap().toArray(), zoom: map.getZoom(),
+            pitch: map.getPitch(), bearing: map.getBearing(),
+          });
+          const onHidden = () => { if (document.hidden) rememberView(); };
+          map.on('moveend', rememberView);
+          window.addEventListener('pagehide', rememberView);
+          document.addEventListener('visibilitychange', onHidden);
+          releaseLastView = () => {
+            rememberView();
+            map.off('moveend', rememberView);
+            window.removeEventListener('pagehide', rememberView);
+            document.removeEventListener('visibilitychange', onHidden);
+          };
           const terrainGL = map.getCanvas().getContext('webgl2');
           if (terrainGL) modelMaskRef.current = new TerrainModelMask(terrainGL);
           diagnostics.current = observeMapRendering(map);
@@ -1024,6 +1041,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         }
       });
       return () => {
+        releaseLastView?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;
