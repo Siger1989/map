@@ -18,6 +18,8 @@ export default defineConfig(({ mode }) => ({
   publicDir: fileURLToPath(new URL('../public', import.meta.url)),
   // APK requests use LocalGateway. Browser-only mobile previews need the web API server.
   server: {
+    // Packaging output must not reload an in-progress map preview.
+    watch: { ignored: ['**/.build/**', '**/dist/**', '**/APK/**', '**/.openai/**', '**/artifacts/**'] },
     proxy: {
       '/api': {
         target: process.env.SHANTU_DEV_API_URL || 'http://localhost:3108',
