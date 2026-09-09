@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import '../modules/controls/compact.css';
 :root {
   color-scheme: dark;
   --bg: #0b1720;

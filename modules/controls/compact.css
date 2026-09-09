@@ -1,0 +1,102 @@
+/* Shared budget for map operation popovers, kept independent of content density. */
+:root {
+  --map-panel-max-height: min(28dvh, 200px);
+  --map-panel-max-width: 300px;
+  --map-ui-gap: 4px;
+  --map-ui-padding: 4px;
+  --map-ui-font: 11px;
+}
+.observatory
+  :is(
+    .control-popover,
+    .marker-workspace,
+    .measurement-panel,
+    .section-panel,
+    .selection-tools,
+    .object-gizmo,
+    .layer-window,
+    .map-location-settings
+  ) {
+  max-height: var(--map-panel-max-height) !important;
+  max-width: var(--map-panel-max-width) !important;
+  gap: var(--map-ui-gap);
+  font-size: var(--map-ui-font);
+}
+.observatory .control-popover {
+  padding: 0 4px 4px !important;
+}
+.observatory .control-popover .dock-heading {
+  padding: 0;
+  gap: 4px;
+}
+.observatory .dock-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.observatory
+  .control-popover
+  :is(.route-panel, .outdoor-panel, .layer-panel, .photo-panel, .tool-grid) {
+  gap: 4px;
+}
+.observatory .control-popover :is(button, input, textarea, select) {
+  font-size: 11px;
+}
+.observatory .marker-workspace {
+  padding: 0 4px 4px;
+  gap: 2px;
+}
+.observatory .marker-workspace :is(button, input, textarea, select) {
+  font-size: 11px;
+}
+.observatory .marker-summary-title strong {
+  font-size: 13px;
+}
+.observatory .marker-summary-place {
+  min-height: 18px;
+  font-size: 10px;
+  gap: 4px;
+}
+.observatory .marker-summary-place span:last-child {
+  font-size: 10px;
+}
+.observatory .marker-scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
+.observatory .section-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 4px 4px;
+  overflow: hidden;
+}
+.observatory .section-panel > header {
+  flex-shrink: 0;
+}
+.observatory .section-panel-body {
+  min-height: 0;
+  overflow-y: auto;
+}
+.observatory .selection-tools {
+  overflow: auto;
+}
+.observatory .marker-summary-photos .marker-photos {
+  padding: 0;
+  gap: 4px;
+}
+.observatory .marker-summary-photos .marker-photos button {
+  height: 44px;
+  padding: 2px;
+}
+.observatory .marker-summary-photos .marker-photos img {
+  height: 36px;
+  width: 48px;
+}
+.observatory .marker-summary-photos .marker-photos small {
+  display: none;
+}
+.observatory .marker-camera-status {
+  margin: 0;
+  padding: 0;
+  font-size: 10px;
+}

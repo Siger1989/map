@@ -1,33 +1,119 @@
 /* The reviewed upper-list / lower-map layout uses the existing live 3D map. */
-.observatory[data-panel='favorites'] { --collection-split: min(72%, calc(100% - 170px)); }
-.observatory[data-panel='favorites'] > .map-canvas { top: var(--collection-split); }
+.observatory[data-panel='favorites'] {
+  --collection-split: var(--map-panel-max-height, min(28dvh, 200px));
+}
+.observatory[data-panel='favorites'] > .map-canvas {
+  top: var(--collection-split);
+}
 .observatory[data-panel='favorites'] .control-dock .control-popover {
-  top: 0; left: 0; right: 0; bottom: auto; width: 100%;
-  height: var(--collection-split); max-height: none;
-  padding: var(--safe-top) 0 0; border: 0; border-radius: 0;
-  background: #f2f4eb; color: #183b36;
-  backdrop-filter: none; -webkit-backdrop-filter: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  width: 100%;
+  height: var(--collection-split);
+  max-height: var(--collection-split) !important;
+  max-width: none !important;
+  padding: var(--safe-top) 0 0 !important;
+  border: 0;
+  border-radius: 0;
+  background: #f2f4eb;
+  color: #183b36;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .observatory[data-panel='favorites'] .dock-heading,
 .observatory[data-panel='favorites'] .topbar,
 .observatory[data-panel='favorites'] .map-toolbar,
-.observatory[data-panel='favorites'] .camera-gizmo { display: none; }
+.observatory[data-panel='favorites'] .camera-gizmo {
+  display: none;
+}
 .observatory[data-panel='favorites'] .control-dock .dock-content {
-  flex: 1; min-height: 0; height: 100%; padding: 0; overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
 }
 .observatory .collection-workbench {
-  position: relative; inset: auto; width: 100%; height: 100%;
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
 }
-.observatory .collection-workbench .workbench-split { grid-template-rows: minmax(0, 1fr); }
-.observatory .collection-workbench .workbench-collections { height: 100%; }
+.observatory .collection-workbench .workbench-split {
+  grid-template-rows: minmax(0, 1fr);
+}
+.observatory .collection-workbench .workbench-collections {
+  height: 100%;
+}
+/* Compact edge toolbar: five controls in one row; extra controls wrap above, never scroll. */
 .observatory[data-panel='favorites'] .map-actions {
-  top: auto; bottom: calc(24px + var(--safe-bottom));
-  right: 6px; max-width: calc(100% - 12px); max-height: 52px;
-  flex-direction: row; overflow: auto;
+  top: auto;
+  bottom: calc(4px + var(--safe-bottom));
+  right: 4px;
+  left: auto;
+  width: max-content;
+  max-width: min(calc(100% - 8px), 228px);
+  max-height: none;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
 }
-.observatory[data-panel='favorites'] .map-actions > button { flex: 0 0 44px; }
-.observatory[data-panel='favorites'] .catalog-panel { height: 100%; padding: 6px; }
+.observatory[data-panel='favorites'] .map-actions > button {
+  flex: 0 0 44px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.observatory[data-panel='favorites'] .map-actions > button svg {
+  width: 17px;
+  height: 17px;
+}
+.observatory[data-panel='favorites'] .map-actions > button small {
+  display: none;
+}
+.observatory[data-panel='favorites'] .map-location-settings {
+  right: 0;
+  top: auto;
+  bottom: calc(100% + 4px);
+  max-height: var(--map-panel-max-height);
+  overflow: auto;
+  max-width: calc(100vw - 8px);
+  font-size: 11px;
+}
+.observatory[data-panel='favorites'] .workbench-tags {
+  scrollbar-width: none;
+}
+.observatory[data-panel='favorites'] .workbench-tags::-webkit-scrollbar {
+  display: none;
+}
+.observatory[data-panel='favorites'] .catalog-panel {
+  height: 100%;
+  padding: 4px;
+}
 .observatory .collection-workbench input:not([type='color']),
-.observatory .collection-workbench select { background: #f8faf3; color: #183b36; }
-.observatory .collection-workbench .collection-action-backdrop { position: fixed; z-index: 50; }
-.observatory .collection-workbench .collection-action-dialog { max-height: calc(100dvh - 24px); }
+.observatory .collection-workbench select {
+  background: #f8faf3;
+  color: #183b36;
+}
+.observatory .collection-workbench .collection-action-backdrop {
+  position: fixed;
+  z-index: 50;
+}
+.observatory .collection-workbench .collection-action-dialog {
+  max-height: calc(100dvh - 24px);
+}
+.observatory[data-panel='favorites'] > .saved-measurements {
+  top: var(--collection-split);
+  height: calc(100% - var(--collection-split));
+}

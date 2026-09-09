@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Compass,
   LocateFixed,
@@ -13,6 +13,7 @@ import type { DirectionMode } from '../position/types';
 
 export function MapActions({
   terrain,
+  compact = false,
   bearing,
   onZoom,
   onNorth,
@@ -32,6 +33,7 @@ export function MapActions({
   onBoxSelect,
 }: {
   terrain: boolean;
+  compact?: boolean;
   bearing: number;
   onZoom: (amount: number) => void;
   onNorth: () => void;
@@ -52,6 +54,12 @@ export function MapActions({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [locationSettings, setLocationSettings] = useState(false);
+  useEffect(() => {
+    if (compact) {
+      setExpanded(false);
+      setLocationSettings(false);
+    }
+  }, [compact]);
   return (
     <nav
       className={`map-actions glass${expanded ? ' is-expanded' : ''}`}
@@ -109,20 +117,20 @@ export function MapActions({
           )}
         </section>
       )}
-          <button
-            className="icon-button"
-            aria-label="放大地图"
-            onClick={() => onZoom(1)}
-          >
-            <Plus size={21} />
-          </button>
-          <button
-            className="icon-button"
-            aria-label="缩小地图"
-            onClick={() => onZoom(-1)}
-          >
-            <Minus size={21} />
-          </button>
+      <button
+        className="icon-button"
+        aria-label="放大地图"
+        onClick={() => onZoom(1)}
+      >
+        <Plus size={21} />
+      </button>
+      <button
+        className="icon-button"
+        aria-label="缩小地图"
+        onClick={() => onZoom(-1)}
+      >
+        <Minus size={21} />
+      </button>
       {expanded && (
         <>
           <button
@@ -178,14 +186,16 @@ export function MapActions({
       >
         <MoreHorizontal size={21} />
       </button>
-      <button
-        className="icon-button direction-button"
-        aria-label="框选标记与路线"
-        onClick={onBoxSelect}
-      >
-        <Scan size={21} />
-        <small>框选</small>
-      </button>
+      {(!compact || expanded) && (
+        <button
+          className="icon-button direction-button"
+          aria-label="框选标记与路线"
+          onClick={onBoxSelect}
+        >
+          <Scan size={21} />
+          <small>框选</small>
+        </button>
+      )}
     </nav>
   );
 }

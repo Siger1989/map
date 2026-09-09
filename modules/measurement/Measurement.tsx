@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   LocateFixed,
+  MoreHorizontal,
   Plus,
   Save,
   Share2,
@@ -42,7 +43,8 @@ export function Measurement({
   toCoordinate: (p: { x: number; y: number }) => Coordinate | null;
   groundElevation: (p: Coordinate) => number | null;
 }) {
-  const [showCoordinates, setShowCoordinates] = useState(true);
+  const [showCoordinates, setShowCoordinates] = useState(false);
+  const [showProjection, setShowProjection] = useState(false);
   const [showSaved, setShowSaved] = useState(false),
     [sharing, setSharing] = useState<{
       points: MeasurePoint[];
@@ -226,11 +228,260 @@ export function Measurement({
             ))}
           </div>
           <button
-            aria-label="显示测量坐标"
-            aria-expanded={showCoordinates}
-            onClick={() => setShowCoordinates(!showCoordinates)}
+            aria-label="更多测量选项"
+            aria-expanded={showSaved}
+            onClick={() => setShowSaved(!showSaved)}
           >
-            <LocateFixed size={17} />
+            <MoreHorizontal size={16} />
+          </button>
+          <button aria-label="关闭测量" onClick={state.close}>
+            <X size={16} />
+          </button>
+        </header>
+        <div className="measurement-scroll">
+          {showSaved ? (
+            <div className="measurement-options">
+              <div className="measurement-option-row">
+                <button
+                  aria-label="显示测量坐标"
+                  aria-pressed={showCoordinates}
+                  onClick={() => {
+                    setShowCoordinates(!showCoordinates);
+                    setShowSaved(false);
+                  }}
+                >
+                  <LocateFixed size={14} />
+                  坐标
+                </button>
+                <button
+                  aria-label="显示投影示意"
+                  aria-pressed={showProjection}
+                  onClick={() => {
+                    setShowProjection(!showProjection);
+                    setShowSaved(false);
+                  }}
+                >
+                  投影
+                </button>
+                <button
+                  disabled={points.length < 2}
+                  aria-label="分享测量剖面图"
+                  onClick={() =>
+                    setSharing({
+                      points: structuredClone(points),
+                      name: state.record?.name ?? '连线测量',
+                    })
+                  }
+                >
+                  <Share2 size={14} />
+                  分享
+                </button>
+              </div>
+              <div
+                className="measurement-saved-list"
+                aria-label="已保存测量列表"
+              >
+                <button
+                  aria-label="重新测量"
+                  onClick={() => {
+                    state.clear();
+                    setShowSaved(false);
+                  }}
+                >
+                  <RotateCcw size={14} />
+                  新建测量
+                </button>
+                {state.saved.items.map((item) => (
+                  <div key={item.id}>
+                    <button
+                      onClick={() => {
+                        state.load(item);
+                        setShowSaved(false);
+                      }}
+                    >
+                      {item.name} · {item.points.length}点
+                    </button>
+                    <button
+                      aria-label={`移除${item.name}`}
+                      onClick={() => state.saved.remove(item.id)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                {state.saved.canRestore && (
+                  <button onClick={state.saved.restore}>撤销移除</button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {state.slot !== null && (
+                <p className="measurement-hint">
+                  选 {pointLabel(state.slot)} · 点地图或已有标记
+                </p>
+              )}
+              {metrics && (
+                <div
+                  className="measurement-result"
+                  aria-label="当前线段测量结果"
+                >
+                  <div>
+                    <strong>
+                      {metrics.inclination === null
+                        ? '—'
+                        : `${metrics.inclination.toFixed(1)}°`}
+                    </strong>
+                    <span>水平夹角</span>
+                    <span className="measurement-segment-name">
+                      {pointLabel(segment)} → {pointLabel(segment + 1)}
+                    </span>
+                  </div>
+                  <p>
+                    水平 {lengthLabel(metrics.horizontal)} · 高差{' '}
+                    {metrics.rise === null
+                      ? '—'
+                      : `${metrics.rise >= 0 ? '+' : ''}${metrics.rise.toFixed(1)} m`}
+                  </p>
+                  <p>
+                    朝向{' '}
+                    {metrics.bearing === null
+                      ? '—'
+                      : `${metrics.bearing.toFixed(1)}°`}
+                    {points.length > 2
+                      ? ` · 总水平 ${lengthLabel(total.horizontal)}`
+                      : ''}
+                    {state.isSaved ? ' · 已保存' : ''}
+                  </p>
+                  {metrics.rise === null && (
+                    <button onClick={state.retryHeights}>
+                      {preview
+                        ? '松手后读取海拔'
+                        : state.reading.length
+                          ? '读取海拔中…'
+                          : '海拔暂无 · 重试'}
+                    </button>
+                  )}
+                </div>
+              )}
+              {showCoordinates && (
+                <div
+                  className="measurement-coordinates"
+                  aria-label="测量点坐标和地面海拔"
+                >
+                  {labels.map((i) => (
+                    <div key={i}>
+                      <b>{pointLabel(i)}</b>
+                      <span>
+                        {points[i]
+                          ? positionLabel(points[i])
+                          : '点地图或标记选择'}
+                      </span>
+                      <small>
+                        {points[i]
+                          ? state.reading.includes(points[i].id)
+                            ? '读取中'
+                            : points[i].altitude === null
+                              ? '海拔暂无'
+                              : `${points[i].altitude!.toFixed(1)} m`
+                          : '—'}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showProjection && metrics && (
+                <div className="measurement-projection-detail">
+                  <svg
+                    className="measurement-schematic"
+                    viewBox="0 0 220 64"
+                    role="img"
+                    aria-label="水平参考线与垂直投影示意，非等比"
+                  >
+                    <path
+                      d={
+                        metrics.rise !== null && metrics.rise < 0
+                          ? 'M15 10 H195 V46'
+                          : 'M15 46 H195 V10'
+                      }
+                      fill="none"
+                      stroke="#538da1"
+                      strokeDasharray="4 3"
+                    />
+                    <path
+                      d={
+                        metrics.rise !== null && metrics.rise < 0
+                          ? 'M15 10 L195 46'
+                          : 'M15 46 L195 10'
+                      }
+                      fill="none"
+                      stroke="#a16d1c"
+                      strokeWidth="2"
+                    />
+                    <text x="65" y="60">
+                      水平线
+                    </text>
+                    <text x="196" y="30">
+                      投影
+                    </text>
+                    <text
+                      x="2"
+                      y={metrics.rise !== null && metrics.rise < 0 ? 10 : 46}
+                    >
+                      {pointLabel(segment)}
+                    </text>
+                    <text
+                      x="196"
+                      y={metrics.rise !== null && metrics.rise < 0 ? 48 : 10}
+                    >
+                      {pointLabel(segment + 1)}
+                    </text>
+                    <text x="55" y="25">
+                      夹角{' '}
+                      {metrics.inclination === null
+                        ? '—'
+                        : metrics.inclination.toFixed(1) + '°'}
+                    </text>
+                  </svg>
+                  <small>示意非等比 · 地图虚线为水平参考与垂直投影</small>
+                </div>
+              )}
+              {state.record && points.length < 2 && (
+                <p className="measurement-hint">
+                  不足两点 · 保存后移除地图连线
+                </p>
+              )}
+            </>
+          )}
+          {state.saved.error && <p role="alert">{state.saved.error}</p>}
+          {state.error && <p role="alert">{state.error}</p>}
+        </div>
+        <footer className="measurement-actions">
+          <button
+            disabled={points.length >= MAX_POINTS}
+            aria-label="添加测量点"
+            onClick={() => state.pick(points.length)}
+          >
+            <Plus size={14} />
+            添加
+          </button>
+          <button
+            disabled={
+              !state.selected || !points.some((p) => p.id === state.selected)
+            }
+            aria-label="删除所选测量点"
+            onClick={state.removeSelected}
+          >
+            <Trash2 size={14} />
+            删除
+          </button>
+          <button
+            disabled={!state.canUndo}
+            aria-label="撤销测量操作"
+            onClick={state.undo}
+          >
+            <Undo2 size={14} />
+            撤销
           </button>
           <button
             disabled={
@@ -249,231 +500,11 @@ export function Measurement({
             }
             onClick={state.saveToMap}
           >
-            <Save size={16} />
+            <Save size={14} />
+            {state.isSaved ? '已存' : '保存'}
           </button>
-          <button
-            disabled={points.length < 2}
-            aria-label="分享测量剖面图"
-            onClick={() =>
-              setSharing({
-                points: structuredClone(points),
-                name: state.record?.name ?? '连线测量',
-              })
-            }
-          >
-            <Share2 size={16} />
-          </button>
-          <button onClick={state.close} aria-label="关闭测量">
-            <X size={17} />
-          </button>
-        </header>
-        {showCoordinates && (
-          <div
-            className="measurement-coordinates"
-            aria-label="测量点坐标和地面海拔"
-          >
-            {labels.map((i) => (
-              <div key={i}>
-                <b>{pointLabel(i)}</b>
-                <span>
-                  {points[i]
-                    ? positionLabel(points[i])
-                    : '点地图或已有标记选择'}
-                </span>
-                <small>
-                  {points[i]
-                    ? state.reading.includes(points[i].id)
-                      ? '读取中'
-                      : points[i].altitude === null
-                        ? '海拔暂无'
-                        : `${points[i].altitude!.toFixed(1)} m`
-                    : '—'}
-                </small>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="measurement-helper">
-          <span>
-            {state.slot !== null
-              ? `请选择 ${pointLabel(state.slot)}：点地图空白或已有标记`
-              : state.isSaved
-                ? '已保存到地图 · 拖点可修改'
-                : state.record && points.length < 2
-                  ? '不足两点；点保存移除地图连线，可撤销'
-                  : '选点可删除 · 拖点调整 · 保存留在地图'}
-          </span>
-          <button
-            className="measurement-add"
-            disabled={points.length >= MAX_POINTS}
-            aria-label="添加测量点"
-            onClick={() => state.pick(points.length)}
-          >
-            <Plus size={15} />
-            添加点
-          </button>
-          <button
-            aria-expanded={showSaved}
-            onClick={() => setShowSaved(!showSaved)}
-          >
-            已存 {state.saved.items.length}
-          </button>
-          <button
-            disabled={!state.canUndo}
-            onClick={state.undo}
-            aria-label="撤销测量操作"
-          >
-            <Undo2 size={15} />
-          </button>
-          <button
-            className="measurement-delete"
-            disabled={
-              !state.selected || !points.some((p) => p.id === state.selected)
-            }
-            onClick={state.removeSelected}
-            aria-label="删除所选测量点"
-          >
-            <Trash2 size={14} />
-            删点
-          </button>
-        </div>
-        {showSaved && (
-          <div className="measurement-saved-list" aria-label="已保存测量列表">
-            <button
-              onClick={() => {
-                state.clear();
-                setShowSaved(false);
-              }}
-              aria-label="重新测量"
-            >
-              <RotateCcw size={15} />
-              新建测量
-            </button>
-            {state.saved.items.map((item) => (
-              <div key={item.id}>
-                <button
-                  onClick={() => {
-                    state.load(item);
-                    setShowSaved(false);
-                  }}
-                >
-                  {item.name} · {item.points.length} 点
-                </button>
-                <button
-                  aria-label={`移除${item.name}`}
-                  onClick={() => state.saved.remove(item.id)}
-                >
-                  <X size={15} />
-                </button>
-              </div>
-            ))}
-            {!state.saved.items.length && <p>保存后，关闭测量仍会留在地图上</p>}
-            {state.saved.canRestore && (
-              <button onClick={state.saved.restore}>撤销移除</button>
-            )}
-          </div>
-        )}
-        {state.saved.error && <p role="alert">{state.saved.error}</p>}
-        {state.error && <p role="alert">{state.error}</p>}
+        </footer>
       </section>
-      {metrics && (
-        <aside className="measurement-result" aria-label="当前线段测量结果">
-          <div>
-            <strong>
-              {metrics.inclination === null
-                ? '—'
-                : `${metrics.inclination.toFixed(1)}°`}
-            </strong>
-            <span>与水平面夹角</span>
-          </div>
-          <p>
-            朝向{' '}
-            {metrics.bearing === null ? '—' : `${metrics.bearing.toFixed(1)}°`}{' '}
-            · {pointLabel(segment)} → {pointLabel(segment + 1)}
-          </p>
-          <p>
-            水平 {lengthLabel(metrics.horizontal)} · 高差{' '}
-            {metrics.rise === null
-              ? '—'
-              : `${metrics.rise >= 0 ? '+' : ''}${metrics.rise.toFixed(1)} m`}
-          </p>
-          <svg
-            className="measurement-schematic"
-            viewBox="0 0 220 64"
-            role="img"
-            aria-label="水平参考线与垂直投影示意，非等比"
-          >
-            <path
-              d={
-                metrics.rise !== null && metrics.rise < 0
-                  ? 'M15 10 H195 V46'
-                  : 'M15 46 H195 V10'
-              }
-              fill="none"
-              stroke="#a4d9ef"
-              strokeDasharray="4 3"
-            />
-            <path
-              d={
-                metrics.rise !== null && metrics.rise < 0
-                  ? 'M15 10 L195 46'
-                  : 'M15 46 L195 10'
-              }
-              fill="none"
-              stroke="#ffcf45"
-              strokeWidth="2"
-            />
-            <text x="65" y="60">
-              水平线
-            </text>
-            <text x="196" y="30">
-              投影
-            </text>
-            <text x="1" y={metrics.rise !== null && metrics.rise < 0 ? 10 : 46}>
-              {pointLabel(segment)}
-            </text>
-            <text
-              x="196"
-              y={metrics.rise !== null && metrics.rise < 0 ? 48 : 10}
-            >
-              {pointLabel(segment + 1)}
-            </text>
-            <text x="55" y="25">
-              夹角{' '}
-              {metrics.inclination === null
-                ? '—'
-                : metrics.inclination.toFixed(1) + '°'}
-            </text>
-          </svg>
-          <small>示意非等比 · 虚线为水平线及垂直投影</small>
-          {points.length > 2 && (
-            <div className="measurement-segments">
-              <button
-                disabled={segment === 0}
-                onClick={() => state.select(points[segment].id)}
-              >
-                上一段
-              </button>
-              <span>总水平 {lengthLabel(total.horizontal)}</span>
-              <button
-                disabled={segment >= points.length - 2}
-                onClick={() => state.select(points[segment + 2].id)}
-              >
-                下一段
-              </button>
-            </div>
-          )}
-          {metrics.rise === null && (
-            <button onClick={state.retryHeights}>
-              {preview
-                ? '松手后读取海拔'
-                : state.reading.length
-                  ? '正在读取地面海拔…'
-                  : '海拔暂无 · 重试'}
-            </button>
-          )}
-        </aside>
-      )}
       {sharing && (
         <MeasurementShare
           points={sharing.points}

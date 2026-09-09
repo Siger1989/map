@@ -1912,6 +1912,7 @@ export default function Home() {
         />
       )}
       <MapActions
+        compact={panel === "favorites"}
         onBoxSelect={() => {
           follow.pause();
           map.current?.stop();
