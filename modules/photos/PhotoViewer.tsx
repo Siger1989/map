@@ -4,6 +4,7 @@ import type { ManualTrack } from '../tracks/drawing';
 import type { PhotoDetails } from './details';
 import { matchPhoto } from './matching';
 import { PhotoLightbox } from './PhotoLightbox';
+import { photoLocationLabel } from './association';
 export function PhotoViewer({
   photo,
   group,
@@ -62,7 +63,7 @@ export function PhotoViewer({
       </button>
       <p>
         {new Date(photo.time).toLocaleString('zh-CN')} ·{' '}
-        {photo.kind === 'point' ? '对应轨迹点' : '轨迹时间估算位置'}
+        {photoLocationLabel(photo)}{photo.timeSource === 'camera' && ' · 时间取自相机启动时刻'}
       </p>
       <p>
         {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}

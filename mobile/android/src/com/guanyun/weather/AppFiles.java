@@ -16,8 +16,10 @@ final class AppFiles {
     private java.io.File outputFile;
     private boolean saving;
     private android.os.CancellationSignal folderScan;
-    AppFiles(Activity activity) { this.activity=activity; }
+    final CameraCapture camera;
+    AppFiles(Activity activity) { this.activity=activity; camera=new CameraCapture(activity); }
     boolean choose(ValueCallback<Uri[]> callback, android.webkit.WebChromeClient.FileChooserParams params) {
+        camera.cancel();
         if (folderScan != null) { folderScan.cancel(); folderScan = null; }
         if (pending != null) pending.onReceiveValue(null);
         pending=callback;
@@ -28,11 +30,12 @@ final class AppFiles {
                 return true;
             }
             boolean images = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> t.startsWith("image/"));
+            if(images && params.isCaptureEnabled()) { pending=null;camera.start(callback);return true; }
             Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(images ? "image/*" : "*/*");
             picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE);
             activity.startActivityForResult(picker, OPEN);
         }
-        catch(Exception e) { pending.onReceiveValue(null);pending=null; }
+        catch(Exception e) { if(pending!=null)pending.onReceiveValue(null);pending=null; }
         return true;
     }
     void save(String name,String mime,String text) {
@@ -58,6 +61,7 @@ final class AppFiles {
         catch(Exception e) { outputFile=null;file.delete();android.widget.Toast.makeText(activity,"无法打开压缩包保存器",0).show(); }
     }
     void result(int request,int result,Intent intent) {
+        if(camera.result(request,result))return;
         Uri uri = result==Activity.RESULT_OK && intent!=null ? intent.getData():null;
         if (request==FOLDER && pending!=null) {
             if (uri==null) { pending.onReceiveValue(null); pending=null; return; }
@@ -105,5 +109,5 @@ final class AppFiles {
             },"shantu-save-file").start();
         }
     }
-    void close() { if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
+    void close() { camera.cancel();if(folderScan!=null)folderScan.cancel();folderScan=null;if(pending!=null)pending.onReceiveValue(null);pending=null;output=null;if(outputFile!=null)outputFile.delete();outputFile=null; }
 }

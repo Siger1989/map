@@ -152,10 +152,17 @@
   touch-action: none;
 }
 .annotation-marker.is-point {
+  min-width: 44px;
+  min-height: 44px;
+}
+.annotation-marker-visual { display: block; position: relative; }
+.annotation-marker.is-point .annotation-marker-visual {
   padding-bottom: 14px;
+  transform: scale(var(--marker-scale, 1));
+  transform-origin: bottom center;
 }
 /* Bottom-centre is the MapLibre coordinate: the triangle tip ends exactly there. */
-.annotation-marker.is-point::after {
+.annotation-marker.is-point .annotation-marker-visual::after {
   content: '';
   position: absolute;
   bottom: 0;

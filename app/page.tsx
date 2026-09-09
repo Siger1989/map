@@ -62,6 +62,7 @@ import {
   moveEditNode,
   insertEditNode,
   removeEditNode,
+  removeEditNodes,
   toggleEditBranch,
   undoRouteEdit,
   styleRouteEdit,
@@ -116,6 +117,11 @@ import {
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
 import { AnnotationWorkspace, type MarkerTab } from '@/modules/annotations/AnnotationWorkspace';
+import { useMarkerCamera } from '@/modules/photos/useMarkerCamera';
+import { useMeasurement } from '@/modules/measurement/useMeasurement';
+import { Measurement } from '@/modules/measurement/Measurement';
+import { TrackNodeBoxSelect } from '@/modules/tracks/TrackNodeBoxSelect';
+import { photosForMarker } from '@/modules/photos/association';
 import { editorPose } from '@/modules/annotations/editorSession';
 import { QuickAdd } from '@/modules/annotations/QuickAdd';
 import type { MapHold } from '@/modules/map/MapLongPress';
@@ -192,6 +198,9 @@ export default function Home() {
   const recorder = useRecording();
   const offline = useOffline();
   const photos = useTripPhotos();
+  const markerCamera = useMarkerCamera(photos.save);
+  const measurement = useMeasurement();
+  const [routeNodeBox, setRouteNodeBox] = useState(false);
   const mapSources = useMapSources(false);
   const guidance = useGuidance(
     navigation.route,
@@ -659,6 +668,7 @@ export default function Home() {
     });
   };
   const closeEditor = () => {
+    setRouteNodeBox(false);
     editor.close();
     setUnsavedExit(false);
     setRouteWindow('card');
@@ -673,6 +683,7 @@ export default function Home() {
       setUnsavedExit(false);
       return;
     }
+    if (result.removed) { closeEditor(); setTrackLinePoint(null); return; }
     const previous =
       routeReturnPoint.current?.coordinate ?? result.track.segments[0][0];
     closeEditor();
@@ -928,6 +939,7 @@ export default function Home() {
   return (
     <main
       className="observatory"
+      data-measuring={measurement.active}
       data-panel={panel ?? 'map'}
       data-section={sectionEditing}
       data-route-notice={Boolean(
@@ -1092,7 +1104,7 @@ export default function Home() {
         annotationEditingId={annotations.edit?.draft.id}
         annotationPicking={navigation.picking !== null}
         pickingActive={Boolean(
-          annotations.picking || navigation.picking !== null,
+          annotations.picking || navigation.picking !== null || measurement.active,
         )}
         onTrackSelect={(id) => {
           if (!editor.session) openRoute(id);
@@ -1193,6 +1205,10 @@ export default function Home() {
           setQuickAdd(value);
         }}
         onMapPick={(coordinates) => {
+          if (measurement.active) {
+            if (measurement.adding) measurement.add(coordinates, map.current?.groundElevation(coordinates) ?? null);
+            return;
+          }
           if (editor.session) {
             if (editor.session.branch !== null)
               editor.change((value) => appendEditBranch(value, coordinates));
@@ -1208,9 +1224,11 @@ export default function Home() {
           }
           if (navigation.pick(coordinates)) setPanel('route');
           else {
+            // A map gesture is part of editing, not a request to leave the marker.
+            if (annotations.edit) return;
             setActiveTrackNode(null);
             tracks.select(null);
-            annotations.select(null);
+            if (annotations.select(null) && panel === 'annotations') setPanel(null);
           }
         }}
       />
@@ -1332,6 +1350,7 @@ export default function Home() {
           onSave={saveEditor}
           onAdd={addEditPoint}
           onRemove={() => editor.change(removeEditNode)}
+          onBoxSelect={() => { map.current?.stop(); setRouteNodeBox(true); }}
           onBranch={() => editor.change(toggleEditBranch)}
           onUndo={() => editor.change(undoRouteEdit)}
           onStyle={(style) =>
@@ -1339,6 +1358,10 @@ export default function Home() {
           }
         />
       )}
+      {editor.session && routeNodeBox && <TrackNodeBoxSelect points={editor.session.track.segments.flat()}
+        project={point => map.current?.toScreen(point) ?? null}
+        onCancel={() => setRouteNodeBox(false)}
+        onDelete={points => { if (editor.change(session => removeEditNodes(session, points))) setRouteNodeBox(false); }} />}
       {editor.session && unsavedExit && (
         <RouteUnsavedDialog
           onSave={saveEditor}
@@ -1579,12 +1602,17 @@ export default function Home() {
             </div>
           </div>
         )}
+      {markerCamera.input}
+      {measurement.active && <Measurement state={measurement} watchProjection={watchObjectProjection}
+        projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
+        onBegin={() => { map.current?.stop(); position.free(); follow.pause(); }}
+        onLocate={p => map.current?.focusPoint(p.coordinates, 16)} />}
       {selectedPhoto && panel === null && (
         <PhotoViewer
           photo={selectedPhoto}
           group={photos.items.filter((p) => photoGroup.includes(p.id))}
           onSelect={photos.setSelected}
-          onClose={() => photos.setSelected(null)}
+          onClose={() => { photos.setSelected(null); if (selectedPhoto.kind === 'annotation' && selectedAnnotation?.id === selectedPhoto.annotationId) setPanel('annotations'); }}
           onRemove={photos.remove}
           onUpdate={photos.update}
           track={photoTracks.find((t) => t.id === selectedPhoto.trackId)}
@@ -1935,6 +1963,16 @@ export default function Home() {
           }}
           dragging={!!featureMove || !!annotationPreview}
           terrainStatus={modelTerrainStatus}
+          photos={photosForMarker(photos.items, selectedAnnotation.id)}
+          onCapture={markerCamera.capture}
+          cameraBusy={markerCamera.busy}
+          cameraStatus={markerCamera.markerId === selectedAnnotation.id ? markerCamera.status : ''}
+          cameraRetry={markerCamera.markerId === selectedAnnotation.id && markerCamera.retry}
+          onCameraRetry={markerCamera.onRetry}
+          onPhoto={(id) => {
+            setPhotoGroup(photosForMarker(photos.items, selectedAnnotation.id).map(p => p.id));
+            photos.setSelected(id); setPanel(null);
+          }}
           onClose={() => { if (annotations.select(null)) setPanel(null); }}
           onShare={(id) => { setCollectionOutputKey(`annotation:${id}`); setPanel('favorites'); }}
           onNavigate={(item) => {
@@ -1947,6 +1985,13 @@ export default function Home() {
         />
       )}
       <ControlDock
+        onMeasure={() => {
+          if (editor.session) { backEditor(); return; }
+          if (!annotations.select(null)) return;
+          tracks.pause(); navigation.setPicking(null); annotations.setPicking(null);
+          photos.setSelected(null); setPanel(null); setQuickAdd(null);
+          position.free(); follow.pause(); measurement.open();
+        }}
         keepOpenOnMapInteraction={panel === 'favorites' || (panel === 'route' && navigation.picking !== null)}
         onScanRoute={() => {
           setPanel(null);
@@ -1977,6 +2022,7 @@ export default function Home() {
               : undefined
         }
         onActive={(next) => {
+          measurement.close();
           if (annotations.edit && next !== 'annotations' && !annotations.select(null)) return;
           navigation.setPicking(null);
           if (!next && routeChild) {

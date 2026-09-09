@@ -65,6 +65,7 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
       style: { setProperty() {} },
       dataset: {},
       setAttribute() {},
+      appendChild() {},
       replaceChildren() {},
     }),
   };
@@ -75,6 +76,7 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
   const selected = [],
     layer = new AnnotationLayer((id) => selected.push(id));
   layer.map = {
+    getZoom: () => 16,
     getCanvas: () => ({ clientWidth: 400, clientHeight: 400 }),
     triggerRepaint() {},
   };

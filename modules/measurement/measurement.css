@@ -1,0 +1,23 @@
+.measurement-overlay { position: absolute; inset: 0; z-index: 7; pointer-events: none; overflow: hidden; }
+.measurement-overlay line { stroke: #ffcc4f; stroke-width: 4; filter: drop-shadow(0 1px 2px #142728); }
+.measurement-overlay g { pointer-events: auto; cursor: pointer; }
+.measurement-overlay circle:not(.measurement-hit) { stroke: #173938; stroke-width: 2; }
+.measurement-overlay text { font: bold 11px sans-serif; fill: #123239; pointer-events: none; }
+.measurement-overlay .measurement-hit { fill: transparent; }
+.measurement-panel { position: absolute; z-index: 10; left: 8px; right: 64px; top: calc(56px + var(--safe-top)); max-height: min(38dvh, 320px); background: #fffefa; color: #1b3436; border: 1px solid #cbd9d1; border-radius: 9px; padding: 4px 6px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
+.measurement-panel[data-dragging='true'] { visibility: hidden; }
+.measurement-panel header, .measurement-panel footer, .measurement-select { display: flex; align-items: center; gap: 4px; }
+.measurement-panel header strong { flex: 1; font-size: 15px; }
+.measurement-panel button, .measurement-panel select, .measurement-panel input { min-height: 44px; min-width: 0; border: 1px solid #d4ddd7; border-radius: 6px; background: #fff; color: inherit; font: inherit; padding: 4px; }
+.measurement-panel button { min-width: 44px; }
+.measurement-panel button:disabled { opacity: .4; }
+.measurement-panel [aria-pressed='true'] { background: #164c48; color: white; }
+.measurement-panel footer button { flex: 1; }
+.measurement-scroll { overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.measurement-panel p { margin: 4px 0; line-height: 1.35; overflow-wrap: anywhere; }
+.measurement-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.measurement-select select { flex: 1; }
+.measurement-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.measurement-fields input { display: block; width: 100%; }
+.measurement-fields button, .measurement-fields small { grid-column: 1 / -1; }
+.observatory[data-measuring='true'] .map-toolbar { display: none; }

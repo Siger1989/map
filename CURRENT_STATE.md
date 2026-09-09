@@ -1,4 +1,12 @@
+# 0.2.19紧急交付：新增功能已接入，按用户要求停止进一步验证（2026-09-09）
+- 用户追加并授权：标记一级菜单系统相机、照片关联；工具测量及单点XYZ；编辑标记点地图不跳列表；减号仅删点和相连线、取消自动拼接、框选批量删点；地图缩小时地点图标缩小。
+- 在D:/shantu-compat的codex/huawei-webview-touch实现。新增measurement、camera capture/provider、marker photo关联、markerScale、deleteNodes/TrackNodeBoxSelect；修改app/page、annotations/photos/tracks/objectTransform/map/controls与Android清单，详见docs/release-0.2.19.md。原D:/天气系统草稿继续保留。
+- version0.2.19-test/code26。用户明确“先不验证，赶时间，打包好上传GitHub”，停止新的界面、全量回归、旧内核和真机测试，仅执行必需编译。停止前类型/Android网页编译通过；中间362通过2失败（测试自由平移手柄期望/模型DOM地图替身），已改测试但未重跑。不得声称本轮全部验证通过。
+- 本轮新功能未做390/360截图或实机相机/XYZ/触感验收。回家优先测：空白点击保留草稿、相机返回关联与权限拒绝、标记缩放/命中、测量连线和XYZ保存重开、删点不补线与框选撤销、单点存档和全删保存；然后旧Chromium99与全量回归。
+- 最终APK构建完成：57641149 字节，SHA256 daec594f08e65a5f2b589a947e3927441e3dcd21103fc9fbc716a8e7eaf52915；Android网页/Java/打包及脚本内置签名/对齐/473地形检查通过。下一步源码提交推送核SHA并公开0.2.19 Release三资产；新增功能仍待完整验证。
 # 0.2.18交付与后续拍照/测量（2026-09-09）
+- GitHub v0.2.18-test-standalone已公开，Release id385411009、draft=false/prerelease=true；三资产uploaded且服务端digest/字节数匹配。源码64e75ef321782d5a5f779447ebb5cd4881195ea9已推送codex/huawei-webview-touch并核远端相同。下载 https://github.com/Siger1989/map/releases/download/v0.2.18-test-standalone/Shantu-0.2.18-test-standalone.apk 。
+- 最新追加截图：编辑标记后点地图空白退到标记列表；0.2.19需要保持编辑对象与草稿，只有明确返回/关闭才退出。
 - 0.2.18/code25已完成最终构建：363项逻辑、类型、网页/Android网页/Java/APK、v2/v3签名/zipalign/CRC/532资源/473地形/原Logo通过。57,632,957字节，SHA256 b8418c9d700acc109deab699da3f354b1053b56f3e70112dea8540bef4ca9440，stage mobile/.build/apk-20260909-180727/web。
 - 真实Chromium99和当前Chrome均通过390/360布局、新增/移动/解散、多选滑选、450ms拖动、删除撤销、刷新重开、关闭全图；单指同步start，40/220ms第二指使真实地图zoom12→12.8249，无误画提交。0.2.18本机APK已给用户，正在发布GitHub；真机最终体验未验收。
 - 用户追加：标记一级菜单原厂相机拍照并关联当前点；工具内画线测量，显示长度/起终点/方位角，单个测量点参照模型3D控制。继续作为0.2.19实现，目前尚未修改对应模块。原工作区草稿保留。

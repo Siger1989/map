@@ -206,11 +206,11 @@ export function useManualTracks() {
         savedRef.current = result.records;
         setSaved(result.records);
         if (session.original.id === DRAFT_ID) resetDraft();
-        select(result.track.id);
+        select(result.removed ? null : result.track.id);
         setEditing(false);
         setDrawing(false);
         setError('');
-        return { track: result.track, error: '' };
+        return { track: result.track, removed: result.removed, error: '' };
       } catch (e) {
         const message =
           e instanceof Error ? e.message : '保存失败，当前编辑已保留。';
@@ -261,7 +261,7 @@ export function useManualTracks() {
         const next = removeTrackNode(track, node.coordinate);
         if (
           next === track ||
-          !persist(savedRef.current.map((t) => (t.id === track.id ? next : t)))
+          !persist(savedRef.current.flatMap((t) => t.id === track.id ? (next.segments.length ? [next] : []) : [t]))
         )
           return false;
         setNodeHistory((h) => [...h.slice(-19), track]);

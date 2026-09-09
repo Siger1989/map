@@ -73,7 +73,7 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         v.segments.length <= 100 &&
         v.segments.every(
           (line: unknown) =>
-            Array.isArray(line) && line.length >= 2 && line.every(coordinate),
+            Array.isArray(line) && line.length >= (v.source === 'manual' || v.source === undefined ? 1 : 2) && line.every(coordinate),
         ) &&
         (v.samples === undefined ||
           (Array.isArray(v.samples) &&

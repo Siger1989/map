@@ -76,22 +76,24 @@ test('branch can rejoin an old node without removing the old interval', () => {
     a.segments[0][2],
   ]);
 });
-test('cross-route save is atomic, hides originals, and retains source photo ownership', () => {
+test('snapping a branch to another route only adds an endpoint; other archive and photo ownership stay unchanged', () => {
   const disk = archive([a, b]);
   let s = toggleEditBranch(selectEditNode(startRouteEdit(a), a.segments[0][1]));
   s = appendEditBranch(s, b.segments[0][0], b);
   assert.equal(disk.writes(), 0);
   assert.equal(disk.read().length, 2);
   const result = storeRouteEdit(s, disk, 'combined', 2);
-  assert.deepEqual(result.track.sourceTrackIds, ['a', 'b']);
+  assert.deepEqual(result.track.sourceTrackIds, []);
   assert.equal(disk.writes(), 1);
   assert.ok(
     disk
       .read()
       .filter((t) => ['a', 'b'].includes(t.id))
-      .every((t) => t.hidden),
+      .every((t) => !t.hidden),
   );
-  assert.equal(disk.read().filter((t) => !t.hidden).length, 1);
+  assert.equal(disk.read().filter((t) => !t.hidden).length, 2);
+  assert.deepEqual(disk.read().find(t => t.id === 'b'), b);
+  assert.equal(result.track.segments.length, 2);
   const photos = [
     { id: 'p1', trackId: 'a', time: 1 },
     { id: 'p2', trackId: 'b', time: 2 },
@@ -99,7 +101,7 @@ test('cross-route save is atomic, hides originals, and retains source photo owne
   ];
   assert.deepEqual(
     photosForTrack(result.track, photos).map((p) => p.id),
-    ['p1', 'p2'],
+    ['p1'],
   );
   assert.equal(photos[1].trackId, 'b');
 });
@@ -180,7 +182,7 @@ test('precision section can connect another route without repeating the starting
     point,
   ]);
   assert.equal(next.track.segments[1].length, 3);
-  assert.equal(next.sources.length, 2);
+  assert.equal(next.sources.length, 1);
   assert.equal(next.branch, null);
   assert.equal(undoRouteEdit(next).sources.length, 1);
 });

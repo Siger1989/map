@@ -3,6 +3,7 @@ import { MAX_TRACK_POINTS, type ManualTrack } from './drawing.ts';
 import { equalCoordinate } from './editing.ts';
 import { keepsOriginalPoints } from './provenance.ts';
 import { pathOf, project } from '../guidance/geometry.ts';
+import { cutNodes } from './deleteNodes.ts';
 
 const editable = (track: ManualTrack) => {
   if (keepsOriginalPoints(track))
@@ -57,20 +58,20 @@ export function insertTrackNode(
   return changed(track, segments, [...(track.nodes ?? []), point]);
 }
 
-/** Removing a vertex directly connects its immediate predecessor and successor. */
+/** Remove the vertex and incident edges, preserving every other vertex. */
 export function removeTrackNode(track: ManualTrack, point: Coordinate) {
+  return removeTrackNodes(track, [point]);
+}
+export function removeTrackNodes(track: ManualTrack, points: Coordinate[]) {
   editable(track);
-  if (!track.segments.flat().some((p) => equalCoordinate(p, point)))
+  const removed = new Set(points.map(p => p.join(',')));
+  if (!track.segments.flat().some((p) => removed.has(p.join(','))))
     return track;
-  const segments = track.segments.map((line) =>
-    line.filter((p) => !equalCoordinate(p, point)),
-  );
-  if (segments.some((line) => line.length < 2))
-    throw new Error('每段至少保留两个节点；请选择中间节点。');
+  const segments = cutNodes(track.segments, points);
   return changed(
     track,
     segments,
-    (track.nodes ?? []).filter((p) => !equalCoordinate(p, point)),
+    (track.nodes ?? []).filter((p) => !removed.has(p.join(','))),
   );
 }
 

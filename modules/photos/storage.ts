@@ -7,7 +7,9 @@ export type TripPhoto = {
   trackName: string;
   time: number;
   coordinates: Coordinate;
-  kind: 'point' | 'interpolated';
+  kind: 'point' | 'interpolated' | 'annotation';
+  annotationId?: string;
+  timeSource?: 'exif' | 'camera';
   preview: Blob;
 } & PhotoDetails;
 export type VisiblePhoto = TripPhoto & { url: string };
@@ -45,7 +47,9 @@ export function validPhoto(p: TripPhoto) {
     typeof p.trackName === 'string' &&
     Number.isFinite(p.time) &&
     coordinate(p.coordinates) &&
-    ['point', 'interpolated'].includes(p.kind) &&
+    ['point', 'interpolated', 'annotation'].includes(p.kind) &&
+    (p.kind !== 'annotation' || (typeof p.annotationId === 'string' && p.annotationId.length > 0 && p.annotationId.length <= 100 && p.trackId === '')) &&
+    (p.timeSource === undefined || ['exif', 'camera'].includes(p.timeSource)) &&
     p.preview instanceof Blob &&
     p.preview.type === 'image/jpeg' &&
     p.preview.size <= 1024 * 1024 &&

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Clipboard, FileText, Navigation, Pencil, Share2, Trash2, X } from 'lucide-react';
+import { Camera, ChevronLeft, Clipboard, FileText, Navigation, Pencil, Share2, Trash2, X } from 'lucide-react';
+import type { VisiblePhoto } from '../photos/storage';
+import { MarkerPhotos } from './MarkerPhotos';
 import type { Annotation } from './data';
 import { dimensionLabel, volume } from './data';
 import type { AnnotationsState } from './useAnnotations';
@@ -9,10 +11,12 @@ import { AnnotationIcon, MarkerBasic, MarkerCoordinates, MarkerData, MarkerPosit
 import './markerWorkspace.css';
 
 export type MarkerTab = 'basic' | 'position' | 'data';
-export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onNavigate, onShare, dragging, terrainStatus }: {
+export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onNavigate, onShare, dragging, terrainStatus, photos = [], onCapture, onPhoto, cameraStatus, cameraBusy, cameraRetry, onCameraRetry }: {
   state: AnnotationsState; shownItem: Annotation; tab: MarkerTab; onTab: (tab: MarkerTab) => void;
   onClose: () => void; onNavigate: (item: Annotation) => void; onShare: (id: string) => void;
   dragging: boolean; terrainStatus?: string;
+  photos?: VisiblePhoto[]; onCapture: (item: Annotation) => void; onPhoto: (id: string) => void;
+  cameraStatus?: string; cameraBusy?: boolean; cameraRetry?: boolean; onCameraRetry?: () => void;
 }) {
   const [view, setView] = useState<'summary' | 'details'>('summary');
   const [confirm, setConfirm] = useState<'delete' | 'leave' | null>(null);
@@ -116,10 +120,13 @@ export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onN
       <div className="marker-summary-actions">
         <button className="marker-primary" onClick={() => onNavigate(item)}><Navigation size={17} />导航</button>
         <button onClick={() => startEdit()}><Pencil size={17} />编辑</button>
+        <button disabled={cameraBusy} onClick={() => onCapture(item)}><Camera size={17} />拍照</button>
         <button onClick={() => setView('details')}><FileText size={17} />详情</button>
       </div>
     </> : <header className="marker-details-bar"><button aria-label="返回标记摘要" onClick={back}><ChevronLeft size={20} /></button><strong>标记详情</strong><button aria-label="分享标记" onClick={() => onShare(item.id)}><Share2 size={18} /></button></header>}
     {state.error && <p className="marker-error" role="status">{state.error}</p>}
+    {cameraStatus && <p className="marker-camera-status" role="status">{cameraStatus}{cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}</p>}
+    {!editing && view === 'summary' && photos.length > 0 && <button className="marker-photo-count" onClick={() => setView('details')}>照片 {photos.length} 张 · 查看</button>}
     {editing && <div className="marker-scroll" key={`${tab}:${coordinates}`}>
       {tab === 'basic' && <MarkerBasic item={item} base={base} change={change} terrainStatus={terrainStatus} />}
       {tab === 'position' && (coordinates ? <MarkerCoordinates item={item} base={base} change={change} reading={state.reading} refresh={() => void state.refreshElevation(item.id, item.coordinates)} /> :
@@ -132,6 +139,7 @@ export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onN
       {item.kind !== 'pin' && <p>{dimensionLabel(item)} · 体积约 {volume(item)?.toFixed(2)} m³</p>}
       {(item.attributes ?? []).length > 0 && <dl>{item.attributes!.map((f, i) => <div key={i}><dt>{f.name || '未命名属性'}</dt><dd>{f.value || '—'}</dd></div>)}</dl>}
       {item.note && <p className="marker-detail-note">{item.note}</p>}
+      <MarkerPhotos photos={photos} onOpen={onPhoto} />
       {item.trackAnchor && <small>已关联行程 · 距起点 {(item.trackAnchor.distance / 1000).toFixed(2)} 公里</small>}
       <button onClick={() => { state.duplicate(item.id); }}><Clipboard size={16} />复制为新标记</button>
     </div>}

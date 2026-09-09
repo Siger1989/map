@@ -55,7 +55,7 @@ export function TrackNodeTools({
         </button>
         <button
           aria-label="删除选中节点"
-          title="删除节点，前后两点直接连接"
+          title="删除节点及相连线段，保留断口"
           disabled={connecting}
           onClick={() => {
             if (tracks.removeNode(node)) onNode(null);

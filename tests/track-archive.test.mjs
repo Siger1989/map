@@ -96,10 +96,10 @@ test('offline names use approximate coordinates and optional invalid metadata do
   assert.deepEqual(reloaded, [legacy]);
 });
 
-test('incomplete lines, full archive and quota errors never replace existing saved data', () => {
+test('empty drafts, full archive and quota errors never replace existing saved data', () => {
   assert.throws(
-    () => drawingRecord({ ...input, segments: [[segments[0][0]]] }),
-    /至少/,
+    () => drawingRecord({ ...input, segments: [] }),
+    /没有/,
   );
   const storage = memory();
   const records = Array.from({ length: 20 }, (_, i) =>

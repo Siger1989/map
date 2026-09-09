@@ -344,6 +344,7 @@ export function RouteEditToolbar({
   onSave,
   onAdd,
   onRemove,
+  onBoxSelect,
   onBranch,
   onUndo,
   onStyle,
@@ -358,6 +359,7 @@ export function RouteEditToolbar({
   onSave: () => void;
   onAdd: () => void;
   onRemove: () => void;
+  onBoxSelect: () => void;
   onBranch: () => void;
   onUndo: () => void;
   onStyle: (style: TrackStyle) => void;
@@ -411,6 +413,7 @@ export function RouteEditToolbar({
             <GitBranch size={16} />
             {branch ? '结束分叉' : '分叉'}
           </button>
+          <button onClick={onBoxSelect} disabled={branch || !session.track.segments.length} aria-label="框选路线点">框选</button>
           <button disabled={!session.history.length} onClick={onUndo}>
             <Undo2 size={16} />
             撤销

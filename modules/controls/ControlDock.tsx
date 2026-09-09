@@ -11,6 +11,7 @@ import {
   PencilLine,
   ScanLine,
   ChevronLeft,
+  Ruler,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -50,6 +51,7 @@ export function ControlDock({
   title,
   children,
   onScanRoute,
+  onMeasure,
   keepOpenOnMapInteraction = false,
 }: {
   active: ControlPanel;
@@ -64,6 +66,7 @@ export function ControlDock({
   title?: string;
   children: ReactNode;
   onScanRoute?: () => void;
+  onMeasure?: () => void;
   keepOpenOnMapInteraction?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
@@ -162,6 +165,7 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
+                {onMeasure && <button onClick={onMeasure}><Ruler size={18} />测量</button>}
                 {onScanRoute && (
                   <button onClick={onScanRoute}>
                     <ScanLine size={18} />

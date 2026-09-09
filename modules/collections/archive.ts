@@ -8,6 +8,7 @@ import type { CatalogEntry } from './catalog';
 import type { CollectionRegions } from './regions';
 import { collectionSpreadsheet, collectionTransfer } from './export';
 import { ANNOTATION_STORAGE, parseAnnotations } from '../annotations/data';
+import { markerPhotoArchiveEntries } from '../photos/markerArchive';
 
 export async function collectionArchive(
   entries: CatalogEntry[],
@@ -19,6 +20,7 @@ export async function collectionArchive(
 ) {
   const transfer = collectionTransfer(entries, regions, storage);
   const files: ArchiveEntry[] = [
+    ...markerPhotoArchiveEntries(entries.flatMap(e => e.kind === 'pin' || e.kind === 'model' ? [e.annotation.id] : []), photos),
     { path: '山兔收藏.json', data: JSON.stringify(transfer, null, 2) },
     {
       path: '收藏数据.xlsx',
@@ -35,6 +37,7 @@ export async function collectionArchive(
     signal?.throwIfAborted();
     const e = entries[i];
     if (e.kind !== 'route' && e.kind !== 'track') continue;
+    if (e.kind === 'track' && !e.track.segments.some(line => line.length >= 2)) continue;
     progress?.(`正在生成路线图 ${i + 1}/${entries.length} · ${e.name}`);
     const data =
       e.kind === 'track'

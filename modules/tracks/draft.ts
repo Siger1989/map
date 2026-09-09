@@ -1,5 +1,6 @@
 import type { Coordinate } from '../navigation/types';
 import { equalCoordinate, moveSegmentsNode } from './editing.ts';
+import { cutNodes } from './deleteNodes.ts';
 export type DrawingMode = 'points' | 'freehand';
 type Operation =
   | {
@@ -186,17 +187,9 @@ export function removeDraftNode(
 ): TrackDraft {
   const segments: Coordinate[][] = [],
     kinds: DrawingMode[] = [];
-  let pointLine: number | null = null;
   draft.segments.forEach((line, i) => {
-    const next = line.filter((p) => !equalCoordinate(p, point));
-    if (next.length === line.length) {
-      // Keep unrelated, unfinished strokes intact.
-    } else if (line.length > 1 && next.length < 2) {
-      throw new Error('每段至少保留两个节点；请选择中间节点。');
-    }
-    if (next.length) {
-      if (i === draft.pointLine) pointLine = segments.length;
-      segments.push(next);
+    for (const run of cutNodes([line], [point])) {
+      segments.push(run);
       kinds.push(draft.kinds[i]);
     }
   });
@@ -205,7 +198,7 @@ export function removeDraftNode(
     segments,
     draftVertices(draft).filter((p) => !equalCoordinate(p, point)),
     kinds,
-    pointLine,
+    null,
   );
 }
 

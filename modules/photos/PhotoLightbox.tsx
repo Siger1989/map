@@ -246,7 +246,7 @@ export function PhotoLightbox({
           <p>
             {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}
             {photo.coordinates[0].toFixed(5)} ·{' '}
-            {photo.kind === 'interpolated' ? '轨迹时间估算位置' : '对应轨迹点'}
+            {photoLocationLabel(photo)}{photo.timeSource === 'camera' && ' · 时间取自相机启动时刻'}
           </p>
           <p>{altitudeLabel(photo.altitude)}</p>
           <p>{weatherLabel(photo)}</p>
@@ -354,3 +354,4 @@ export function PhotoLightbox({
     </dialog>
   );
 }
+import { photoLocationLabel } from './association';

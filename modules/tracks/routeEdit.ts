@@ -1,7 +1,7 @@
 import type { Coordinate } from '../navigation/types.ts';
 import { coordinate } from '../navigation/types.ts';
 import { DRAFT_ID, equalCoordinate, moveTrackNode } from './editing.ts';
-import { insertTrackNode, removeTrackNode } from './nodeOperations.ts';
+import { insertTrackNode, removeTrackNodes } from './nodeOperations.ts';
 import {
   MAX_TRACK_POINTS,
   parseSavedTracks,
@@ -98,9 +98,13 @@ export function insertEditNode(
 }
 export function removeEditNode(session: RouteEditSession): RouteEditSession {
   if (!session.selected) throw new Error('请先选中要删除的节点。');
+  return removeEditNodes(session, [session.selected]);
+}
+export function removeEditNodes(session: RouteEditSession, points: Coordinate[]): RouteEditSession {
   return revise(session, {
-    track: removeTrackNode(session.track, session.selected),
+    track: removeTrackNodes(session.track, points),
     selected: null,
+    branch: null,
   });
 }
 export function styleRouteEdit(
@@ -133,7 +137,7 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
     branch: session.track.segments.length,
   });
 }
-/** Every branch point is explicit. A target is copied into the draft; originals are untouched. */
+/** Snapping to another line only chooses the endpoint; it never imports or hides that line. */
 export function appendEditBranch(
   session: RouteEditSession,
   point: Coordinate,
@@ -162,19 +166,9 @@ export function appendEditBranch(
         (i !== session.branch || j < l.length - 1) && equalCoordinate(p, point),
     ),
   );
-  const external =
-    target &&
-    target.id !== session.track.id &&
-    !session.sources.some((t) => t.id === target.id)
-      ? target
-      : null;
   const segments = session.track.segments.map((l, i) =>
     i === session.branch ? [...l, ...continuation] : l,
   );
-  if (external)
-    segments.push(
-      ...external.segments.map((l) => l.map((p) => [...p] as Coordinate)),
-    );
   if (segments.length > 100 || segments.flat().length > MAX_TRACK_POINTS)
     throw new Error('连接后超过100段或6000点上限。');
   return revise(session, {
@@ -184,10 +178,8 @@ export function appendEditBranch(
       nodes: [
         ...(session.track.nodes ?? []),
         point,
-        ...(external?.nodes ?? []),
       ],
     },
-    sources: external ? [...session.sources, external] : session.sources,
     branch: target || joinsSelf ? null : session.branch,
     selected: point,
   });
@@ -198,9 +190,11 @@ export function editedRouteRecord(
   now: number,
 ): ManualTrack {
   const { track, original, sources } = session;
+  if (session.branch !== null && (track.segments[session.branch]?.length ?? 0) < 2)
+    throw new Error('分叉还没有完成，请继续画到第二个点，或撤销该分叉。');
   if (
     !track.segments.length ||
-    track.segments.some((l) => l.length < 2 || !l.every(coordinate))
+    track.segments.some((l) => l.length < 1 || !l.every(coordinate))
   )
     throw new Error('分叉还没有完成，请继续画到第二个点，或撤销该分叉。');
   if (
@@ -252,6 +246,12 @@ export function storeRouteEdit(
         '原路线已在其他窗口更新，请保留本次编辑并重新核对后保存。',
       );
   }
+  if (!session.track.segments.length) {
+    // Saving an explicitly emptied edit removes only that archive, not other source routes.
+    const recordsAfter = records.filter(t => t.id !== session.original.id || keepsOriginalPoints(session.original));
+    storage.setItem(TRACK_STORAGE, JSON.stringify(recordsAfter));
+    return { track: session.track, records: recordsAfter, removed: true };
+  }
   const track = editedRouteRecord(session, id, now);
   const exists = records.some((t) => t.id === track.id);
   if (!exists && records.length >= 20)
@@ -264,5 +264,5 @@ export function storeRouteEdit(
   );
   if (!exists) next.push(track);
   storage.setItem(TRACK_STORAGE, JSON.stringify(next));
-  return { track, records: next };
+  return { track, records: next, removed: false };
 }

@@ -267,7 +267,7 @@ export function ObjectGizmo(props: Props) {
                       fill={a.color}
                     />
                   </g>
-                  {props.kind !== 'pin' &&
+                  {props.kind !== 'pin' && props.kind !== 'measurement-point' &&
                     !(props.kind === 'plane' && a.axis === 'z') && (
                       <g
                         {...handlers(
@@ -303,7 +303,7 @@ export function ObjectGizmo(props: Props) {
                 </g>
               );
             })}
-            {props.kind !== 'pin' && (
+            {props.kind !== 'pin' && props.kind !== 'measurement-point' && (
               <g {...handlers('scale-free', '中心黄色方块等比缩放')}>
                 <rect
                   className="gizmo-hit"

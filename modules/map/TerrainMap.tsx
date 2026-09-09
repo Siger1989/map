@@ -65,6 +65,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
   watchObjectProjection: WatchProjection;
   sectionCenter: () => {
@@ -370,6 +371,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        groundElevation: coordinates => mapRef.current ? loadedTerrainSampler(mapRef.current)(coordinates) : null,
         centerCoordinate: () => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;

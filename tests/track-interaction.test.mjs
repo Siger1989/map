@@ -540,13 +540,10 @@ test('draft node toolbar edits and branch creation undo without saving or losing
   const edited = replaceDraftGeometry(base, inserted.segments, inserted.nodes);
   assert.deepEqual(edited.segments[0], [a, middle, b, c, d]);
   const removed = removeDraftNode(edited, middle);
-  assert.deepEqual(removed.segments, base.segments);
+  assert.deepEqual(removed.segments, [[a], [b, c, d]]);
   assert.deepEqual(undoDraft(removed).segments, edited.segments);
   assert.deepEqual(undoDraft(edited), { ...base, nodes: undefined });
-  assert.throws(
-    () => removeDraftNode({ ...base, segments: [[a, b]] }, a),
-    /至少保留/,
-  );
+  assert.deepEqual(removeDraftNode({ ...base, segments: [[a, b]] }, a).segments, [[b]]);
 });
 
 test('an isolated draft point can be deleted while preserving the rest, and direct node connection closes a loop', () => {

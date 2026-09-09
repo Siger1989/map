@@ -6,7 +6,6 @@ import {
   type ManualTrack,
 } from './drawing.ts';
 import type { TrackStyle } from './style';
-import { hasLoosePoints, joinSegments } from './snapping.ts';
 
 export function drawingTime(time: number) {
   return new Date(time).toLocaleString('zh-CN', {
@@ -41,10 +40,9 @@ export function drawingRecord(input: {
   place?: string;
 }): ManualTrack {
   if (
-    !input.segments.some((line) => line.length >= 2) ||
-    hasLoosePoints(input.segments)
+    !input.segments.length || input.segments.some(line => !line.length)
   )
-    throw new Error('每段至少需要两个位置，请继续点选或撤销孤立点。');
+    throw new Error('还没有路线点可保存。');
   const location = input.prior?.drawingLocation ?? {
     coordinate: placeCenter(input.segments[0][0])!,
     label: input.place?.trim().slice(0, 120) || '',
@@ -62,7 +60,7 @@ export function drawingRecord(input: {
         0,
         60,
       ),
-    segments: joinSegments(input.segments),
+    segments: input.segments.map(line => line.map(p => [...p] as Coordinate)),
     nodes: input.nodes,
     createdAt,
     updatedAt: input.now,

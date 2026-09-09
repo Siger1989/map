@@ -63,22 +63,22 @@ test('invalid optional navigation networks are rejected at the favorite boundary
     );
 });
 
-test('plus inserts a middle vertex; minus makes the neighbours one direct segment; source unchanged', () => {
+test('plus inserts a middle vertex; minus cuts incident edges without a shortcut; source unchanged', () => {
   const before = JSON.stringify(primary),
     p = [103.001, 30];
   const inserted = insertTrackNode(primary, p);
   assert.deepEqual(inserted.segments, [[A, p, J, B]]);
   assert.ok(inserted.nodes.some((n) => vertexKey(n) === vertexKey(p)));
   const removed = removeTrackNode(inserted, J);
-  assert.deepEqual(removed.segments, [[A, p, B]]);
+  assert.deepEqual(removed.segments, [[A, p], [B]]);
   assert.equal(JSON.stringify(primary), before);
   assert.equal(parseSavedTracks(JSON.stringify([removed])).length, 1);
 });
-test('recorded GPS/time series is immutable and last two vertices cannot be reduced', () => {
+test('recorded GPS/time series stays immutable; manual two-point lines can be reduced', () => {
   const recorded = { ...primary, source: 'recorded', samples: [[{}, {}, {}]] };
   assert.throws(() => insertTrackNode(recorded, [103.001, 30]), /副本/);
   assert.throws(() => removeTrackNode(recorded, J), /副本/);
-  assert.throws(() => removeTrackNode(track('two', [[A, B]]), A), /两个/);
+  assert.deepEqual(removeTrackNode(track('two', [[A, B]]), A).segments, [[B]]);
 });
 test('connection explicitly bridges selected nodes in a new route, preserving both original archives', () => {
   const detached = track('other', [[C, D]]),

@@ -14,6 +14,7 @@ import type { SectionSettings } from '../section/types';
 import { modelLabelAnchor } from './modelLabel';
 import { modelGeometry, modelRotation } from './modelGeometry';
 import { markerIconElement } from './icons';
+import { markerScale } from './markerScale';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -37,8 +38,17 @@ export class AnnotationLayer implements CustomLayerInterface {
   };
   private origin = MercatorCoordinate.fromLngLat([103.28, 31.08]);
   constructor(private onSelect: (id: string) => void) {}
+  private syncMarkerScale = () => {
+    const scale = markerScale(this.map?.getZoom() ?? 16).toFixed(3);
+    this.markers.forEach(marker => {
+      const element = marker.getElement();
+      if (element.classList.contains('is-point') && element.style.getPropertyValue('--marker-scale') !== scale)
+        element.style.setProperty('--marker-scale', scale);
+    });
+  };
   onAdd(map: Map, gl: WebGL2RenderingContext) {
     this.map = map;
+    map.on('zoom', this.syncMarkerScale);
     this.renderer = new THREE.WebGLRenderer({
       canvas: map.getCanvas(),
       context: gl,
@@ -188,7 +198,11 @@ export class AnnotationLayer implements CustomLayerInterface {
       const body = document.createElement('span');
       body.className = 'annotation-marker-body';
       body.replaceChildren(markerIconElement(item.icon), label);
-      element.replaceChildren(body);
+      const visual = document.createElement('span');
+      visual.className = 'annotation-marker-visual';
+      visual.appendChild(body);
+      element.replaceChildren(visual);
+      element.style.setProperty('--marker-scale', markerScale(map.getZoom()).toFixed(3));
       element.title = `${item.name} · 点击查看，长按拖动位置`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
@@ -450,6 +464,7 @@ export class AnnotationLayer implements CustomLayerInterface {
     this.renderer.resetState();
   }
   onRemove() {
+    this.map?.off('zoom', this.syncMarkerScale);
     this.clear();
     this.renderer?.dispose();
     this.map = undefined;

@@ -50,7 +50,7 @@ export function gizmoHandles(
         points: [tip],
         label: `沿${axis.toUpperCase()}轴移动`,
       });
-      if (kind === 'pin') continue;
+      if (kind === 'pin' || kind === 'measurement-point') continue;
       const u = p.axes[(i + 1) % 3],
         w = p.axes[(i + 2) % 3];
       const points = Array.from({ length: 97 }, (_, j) =>
@@ -82,7 +82,7 @@ export function gizmoHandles(
           label: `沿${axis.toUpperCase()}轴拉伸`,
         });
     }
-    if (kind !== 'pin') {
+    if (kind !== 'pin' && kind !== 'measurement-point') {
       const points = Array.from({ length: 97 }, (_, j) => ({
         x: c.x + Math.cos((j / 96) * Math.PI * 2) * 96,
         y: c.y + Math.sin((j / 96) * Math.PI * 2) * 96,
