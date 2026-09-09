@@ -1,3 +1,12 @@
+# 2026-09-09 0.2.21最终交付 PASS
+- 当前目标完成：收藏列表/地图统一自适应边界，底部工具缩小贴安全边缘4px，扩展换行；比例尺移到地图左上4px，393及266窄屏确认与扩展88px工具栏不相交。此前360×780几何检查通过；当前预览恢复393×852。
+- 最终业务源码d1f2ca81f7bdfbb0363da5dac65e0ce2a52892fa已推送并核远端一致，未合入main。此前382逻辑/类型/网页PASS；最后仅比例尺CSS改动，重新Android网页及APK构建、检查包内该CSS和540项CRC均PASS。
+- 最终APK 57,649,341字节，SHA256 3f9614387184b68889b29f267b4700a914578cf5e734e4b85207ed767b1a1692，原系列com.guanyun.weather.preview/0.2.21-test/code28/a3aa签名。v2/v3/zipalign/473地形通过。
+- GitHub v0.2.21-test已公开，Release id385644317，draft=false/prerelease=true，APK/SHA256/安装说明三资产uploaded且服务端digest与字节数一致。发布目标为d1f2ca8。下载https://github.com/Siger1989/map/releases/download/v0.2.21-test/Shantu-0.2.21-test.apk。
+- 本轮草稿更新target时GitHub返回临时untagged名称，已按创建返回的精确Release ID取回，连同tag_name及target_commitish明确发布并核对正确URL；没有修改其他版本资产。
+- 变更/验证记录：docs/release-0.2.21.md、docs/ui-density-standard.md、modules/collections/workbenchLayout.css、controls/compact.css/MapActions及measurement；日志.openai/apk-0221-edge-final.log、upload-0221-final.log、publish-0221-final-resolved.log、release-apk-0221-verified.log。
+- 阻碍：无。下一步用户手机试用反馈；截图接口失败已记录，DOM验证不等于真机触控。真实相机耗时/系统分享待真机，HarmonyOS6.1原生包未交付。源码状态/发行文档最后同步，不再修改本轮业务。
+
 # 2026-09-09 追加边界修复：收藏比例尺避让工具栏
 - 检查发现底栏展开88px时可能压住原bottom56px比例尺；改收藏状态比例尺位于地图左上4px，避开上下两种底栏高度。将重新构建最终包；已上传0.2.21仅为草稿，未公开，不交付旧资产。下一步DOM边界复验、构建并替换本轮草稿资产。
 
