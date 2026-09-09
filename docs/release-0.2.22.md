@@ -22,3 +22,14 @@
 Android8.0/API26及以上。HarmonyOS4.2仅兼容试装，未验真机；HarmonyOS6.1原生HAP/APP仍未交付，本APK不是原生鸿蒙包。
 
 源码同步codex/huawei-webview-touch，未合入main。地图源、Logo、原有照片及路线存档格式保持兼容。
+
+## 最终构建记录
+业务源码591af8c7d1ffa9afa1019503182fa93c2e3421e5已推送并核远端一致。类型、384项原逻辑检查与2项新增检查、网页与Android网页/Java/DEX构建通过。浏览器启动恢复/链接优先、搜索键盘边界、收藏多尺寸居中、节点六操作同排、测量存档隔离通过。
+
+APK：57,653,437字节，SHA256 `9da31878c19a67d4cdb7892fd6acd4f57db1677ae1ced1a1e5a955048ba2353f`。v2/v3原系列签名、zipalign、473地形资源、540项ZIP CRC和包内相机持久化/新UI资源通过。
+
+42个实际界面/44页PDF图册已生成并渲染检查；包括测量、收藏、位置、照片、路线、图层、图源、行程、剖面、节点编辑、键盘搜索及启动恢复。截图与检查日志保留本地artifacts/screenshots/ui-0222和.openai。附带发行PDF，截图测试使用隔离示例数据。
+
+GitHub测试Release已公开，四项资产服务器digest及字节数与本机一致。
+
+[42界面UI图册](https://github.com/Siger1989/map/releases/download/v0.2.22-test/Shantu-0.2.22-UI-OPPO-Find-X8-Ultra.pdf)

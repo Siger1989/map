@@ -1,3 +1,12 @@
+# 2026-09-10 0.2.22最终交付 PASS
+- 完成用户本轮手机UI反馈及启动恢复：键盘不二次缩框、突出搜索浮层/键盘边界、36px设置行、收藏72%目录和至少180px居中示意、默认独立投影、测量存档/新草稿隔离、统一位置坐标、照片不透明带原标记角标、142px节点工具、道路/河流/节点吸附入口、恢复最后地图中心/层级/朝向/俯仰。
+- 最终业务源码591af8c7d1ffa9afa1019503182fa93c2e3421e5已推送并核对远端。类型、384原逻辑及2新增检查、网页及Android最终构建PASS。照片/多点/视角恢复及链接优先、412/393/360/266宽、键盘412×480浏览器检查PASS，不等同OPPO真机手势/键盘/相机与分享验收。
+- 最终APK57,653,437字节，SHA256 9da31878c19a67d4cdb7892fd6acd4f57db1677ae1ced1a1e5a955048ba2353f。0.2.22-test/code29/com.guanyun.weather.preview/a3aa原签名，v2/v3/zipalign/473地形/540项CRC与包内新增资源PASS。中间包已由最终相机恢复构建替换，未发布中间版本。
+- GitHub v0.2.22-test已公开，Release id385715800，draft=false/prerelease=true；APK/SHA256/安装说明/42界面44页PDF四资产服务器digest与字节一致。URL https://github.com/Siger1989/map/releases/tag/v0.2.22-test 。
+- 图册output/pdf/Shantu-0.2.22-UI-OPPO-Find-X8-Ultra.pdf，42截图和HTML图集artifacts/screenshots/ui-0222；PDF44页全部渲染检查，补拍启动底图加载完成后截图，最终PDF15,070,870字节。生成图册使用PDF skill。运行脚本/日志与二进制留本地不提交源码。
+- 关键日志.openai/tsc-0222-view.log、tests-0222-final.log、tests-0222-view.log、build-web-0222-view.log、apk-0222-view-final.log、ui-0222-view-rendered.log、ui-0222-gallery-part*-*.log、release-apk-0222-verified.log。文件范围见git提交与docs/release-0.2.22.md。
+- 阻碍无。后续用户OPPO Find X8 Ultra实际试用反馈；原签名系列可覆盖，下午独立0.2.19仅并存不迁移。HarmonyOS6.1原生仍未交付。本轮仅同步最终说明，不再变更已构建业务。
+
 # 2026-09-10 启动恢复验收 PASS，最终业务冻结
 - 追加map/lastView单测PASS，最终类型PASS；浏览器重新打开无hash精确恢复[38.0073,10.0433]/zoom8.94/bearing18.4/pitch46，显式#7/12/40/20/30优先PASS，无pageerror。日志ui-0222-view.log。
 - 共42个实际界面截图已完成（含通用入口、收藏、照片、测量、节点、键盘搜索、启动恢复），照片全屏/编辑/画线/分享补录PASS。初次点击照片超时，增加合理时限后通过，未更改业务或用户数据。
