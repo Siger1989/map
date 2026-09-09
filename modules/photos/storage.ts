@@ -48,7 +48,11 @@ export function validPhoto(p: TripPhoto) {
     Number.isFinite(p.time) &&
     coordinate(p.coordinates) &&
     ['point', 'interpolated', 'annotation'].includes(p.kind) &&
-    (p.kind !== 'annotation' || (typeof p.annotationId === 'string' && p.annotationId.length > 0 && p.annotationId.length <= 100 && p.trackId === '')) &&
+    (p.kind !== 'annotation' ||
+      (typeof p.annotationId === 'string' &&
+        p.annotationId.length > 0 &&
+        p.annotationId.length <= 100 &&
+        p.trackId === '')) &&
     (p.timeSource === undefined || ['exif', 'camera'].includes(p.timeSource)) &&
     p.preview instanceof Blob &&
     p.preview.type === 'image/jpeg' &&
@@ -70,9 +74,10 @@ export async function readPhotos(): Promise<TripPhoto[]> {
 export async function writePhotos(add: TripPhoto[], remove?: string) {
   if (add.some((p) => !validPhoto(p))) throw new Error('照片预览数据无效');
   const db = await open();
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<TripPhoto[]>((resolve, reject) => {
     const tx = db.transaction('photos', 'readwrite'),
       table = tx.objectStore('photos');
+    let committed: TripPhoto[] = [];
     let reason = '照片保存失败，请检查可用存储';
     const r = table.getAll();
     r.onsuccess = () => {
@@ -112,10 +117,11 @@ export async function writePhotos(add: TripPhoto[], remove?: string) {
         tx.abort();
         return;
       }
+      committed = [...all.values()].filter(validPhoto);
       if (remove) table.delete(remove);
       for (const p of merged) table.put(p);
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => resolve(committed);
     tx.onabort = tx.onerror = () => reject(new Error(reason));
   });
 }

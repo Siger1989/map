@@ -97,3 +97,7 @@
 .marker-confirm > div { display: flex; gap: 4px; }
 .marker-confirm button { flex: 1; }
 .brand-icon img { width: 25px; height: 25px; object-fit: contain; border-radius: 5px; }
+
+.marker-summary-photos { min-height:0; overflow-x:auto; flex-shrink:1; max-height:90px; }
+.marker-summary-photos .marker-photos { flex-wrap:nowrap; padding:4px 0; }
+.marker-summary-photos .marker-photos button { flex-shrink:0; }

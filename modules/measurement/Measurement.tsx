@@ -1,9 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { LocateFixed, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
+import {
+  LocateFixed,
+  Plus,
+  Save,
+  Share2,
+  RotateCcw,
+  Undo2,
+  X,
+} from 'lucide-react';
 import type { WatchProjection } from '../objectTransform/projection';
 import type { Coordinate } from '../navigation/types';
 import type { MeasurementState } from './useMeasurement';
-import { segmentMetrics, lengthLabel, type MeasurePoint } from './data';
+import {
+  measurementMetrics,
+  pointLabel,
+  MAX_POINTS,
+  lengthLabel,
+  type MeasurePoint,
+} from './data';
+import { MeasureLines, projectMeasure, useMeasureFrame } from './MeasureLines';
+import { MeasurementShare } from './MeasurementShare';
 import './measurement.css';
 
 const positionLabel = (p: MeasurePoint) =>
@@ -15,7 +31,9 @@ export function Measurement({
   onBegin,
   toCoordinate,
   groundElevation,
+  elevationScale,
 }: {
+  elevationScale: number;
   state: MeasurementState;
   watchProjection: WatchProjection;
   onBegin: () => void;
@@ -23,8 +41,21 @@ export function Measurement({
   toCoordinate: (p: { x: number; y: number }) => Coordinate | null;
   groundElevation: (p: Coordinate) => number | null;
 }) {
-  const [, renderFrame] = useState(0),
-    [showCoordinates, setShowCoordinates] = useState(true);
+  const [showCoordinates, setShowCoordinates] = useState(true);
+  const [showSaved, setShowSaved] = useState(false),
+    [sharing, setSharing] = useState<{
+      points: MeasurePoint[];
+      name: string;
+    } | null>(null);
+  const frame = useMeasureFrame(watchProjection);
+  const tabs = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabs.current
+      ?.querySelector(
+        `[data-point="${state.slot ?? state.points.findIndex((p) => p.id === state.selected)}"]`,
+      )
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [state.slot, state.selected]);
   const [preview, setPreview] = useState<{
     id: string;
     coordinates: Coordinate;
@@ -38,64 +69,39 @@ export function Measurement({
     moved: boolean;
     coordinate: Coordinate | null;
   } | null>(null);
-  useEffect(
-    () => watchProjection(() => renderFrame((n) => n + 1)),
-    [watchProjection],
-  );
   const points = state.points.map((p) =>
     preview?.id === p.id
       ? { ...p, coordinates: preview.coordinates, altitude: null }
       : p,
   );
-  const screen = points.map(projectGround),
-    metrics = points.length === 2 ? segmentMetrics(points[0], points[1]) : null;
-  const measureBounds = root.current?.getBoundingClientRect();
-  const w = measureBounds?.width ?? 390,
-    h = measureBounds?.height ?? 844;
-  const midpoint =
-    screen.length === 2 && screen[0] && screen[1]
-      ? {
-          x: (screen[0].x + screen[1].x) / 2,
-          y: (screen[0].y + screen[1].y) / 2,
-        }
-      : null;
-  const labelX = Math.max(8, Math.min(w - 302, (midpoint?.x ?? w / 2) - 119));
-  const resultHeight = metrics?.rise === null ? 134 : 88;
-  const minimumY = showCoordinates ? 212 : 152;
-  const visiblePoints = screen.filter(
-    (p): p is { x: number; y: number } => !!p,
+  const project = (p: MeasurePoint) =>
+    projectMeasure(p, frame, elevationScale, projectGround);
+  const screen = points.map(project),
+    total = measurementMetrics(points);
+  const segment = Math.max(
+    0,
+    points.findIndex((p) => p.id === state.selected) - 1,
   );
-  const candidates = [
-    Math.min(...visiblePoints.map((p) => p.y)) - resultHeight - 32,
-    Math.max(...visiblePoints.map((p) => p.y)) + 32,
-  ].map((y) => Math.max(minimumY, Math.min(h - 160 - resultHeight, y)));
-  const labelY =
-    candidates.find((y) =>
-      visiblePoints.every(
-        (p) =>
-          p.x < labelX - 24 ||
-          p.x > labelX + 262 ||
-          p.y < y - 24 ||
-          p.y > y + resultHeight + 24,
+  const metrics = total.segments[segment];
+  const labels = Array.from(
+    {
+      length: Math.max(
+        2,
+        points.length + (state.slot === points.length ? 1 : 0),
       ),
-    ) ?? candidates[0];
+    },
+    (_, i) => i,
+  );
   return (
     <>
       <svg
         ref={root}
         className="measurement-overlay"
-        aria-label="两点测量连线"
+        aria-label="多点测量连线与水平投影"
         width="100%"
         height="100%"
       >
-        {screen[0] && screen[1] && (
-          <line
-            x1={screen[0].x}
-            y1={screen[0].y}
-            x2={screen[1].x}
-            y2={screen[1].y}
-          />
-        )}
+        <MeasureLines points={points} project={project} />
         {screen.map(
           (p, i) =>
             p && (
@@ -104,7 +110,7 @@ export function Measurement({
                 transform={`translate(${p.x},${p.y})`}
                 role="button"
                 tabIndex={0}
-                aria-label={`拖动测量点 ${i === 0 ? 'A' : 'B'}`}
+                aria-label={`拖动测量点 ${pointLabel(i)}`}
                 onPointerDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -190,7 +196,7 @@ export function Measurement({
                 <circle r="22" className="measurement-hit" />
                 <circle r="8" fill={i === 0 ? '#ffcf45' : '#3478ed'} />
                 <text textAnchor="middle" dy="-16">
-                  {i === 0 ? 'A' : 'B'}
+                  {pointLabel(i)}
                 </text>
               </g>
             ),
@@ -198,36 +204,57 @@ export function Measurement({
       </svg>
       <section
         className="measurement-panel"
-        aria-label="两点测量"
+        aria-label="连线测量"
         data-dragging={!!preview}
       >
         <header>
-          <strong>两点测量</strong>
-          {([0, 1] as const).map((i) => (
-            <button
-              key={i}
-              aria-label={`选择测量点 ${i === 0 ? 'A' : 'B'}`}
-              aria-pressed={state.slot === i}
-              onClick={() => state.pick(i)}
-            >
-              {i === 0 ? 'A' : 'B'}
-            </button>
-          ))}
+          <div className="measurement-tabs" ref={tabs} aria-label="测量点">
+            {labels.map((i) => (
+              <button
+                key={i}
+                data-point={i}
+                aria-label={`选择测量点 ${pointLabel(i)}`}
+                aria-pressed={
+                  state.slot === i ||
+                  (state.slot === null && state.selected === points[i]?.id)
+                }
+                onClick={() => state.pick(i)}
+              >
+                {pointLabel(i)}
+              </button>
+            ))}
+          </div>
           <button
-            onClick={() =>
-              state.pick(points.length < 2 ? (points.length as 0 | 1) : 0)
-            }
-            aria-label="从地图或已有标记选两点"
-          >
-            <MapPin size={15} />
-            选点
-          </button>
-          <button
+            aria-label="显示测量坐标"
             aria-expanded={showCoordinates}
             onClick={() => setShowCoordinates(!showCoordinates)}
           >
-            <LocateFixed size={15} />
-            坐标
+            <LocateFixed size={17} />
+          </button>
+          <button
+            disabled={points.length < 2 || !state.saved.ready || state.isSaved}
+            aria-label={
+              state.isSaved
+                ? '测量已保存'
+                : state.record
+                  ? '更新地图测量'
+                  : '保存测量到地图'
+            }
+            onClick={state.saveToMap}
+          >
+            <Save size={16} />
+          </button>
+          <button
+            disabled={points.length < 2}
+            aria-label="分享测量剖面图"
+            onClick={() =>
+              setSharing({
+                points: structuredClone(points),
+                name: state.record?.name ?? '连线测量',
+              })
+            }
+          >
+            <Share2 size={16} />
           </button>
           <button onClick={state.close} aria-label="关闭测量">
             <X size={17} />
@@ -236,11 +263,11 @@ export function Measurement({
         {showCoordinates && (
           <div
             className="measurement-coordinates"
-            aria-label="A与B坐标和地面海拔"
+            aria-label="测量点坐标和地面海拔"
           >
-            {([0, 1] as const).map((i) => (
+            {labels.map((i) => (
               <div key={i}>
-                <b>{i === 0 ? 'A' : 'B'}</b>
+                <b>{pointLabel(i)}</b>
                 <span>
                   {points[i]
                     ? positionLabel(points[i])
@@ -262,9 +289,26 @@ export function Measurement({
         <div className="measurement-helper">
           <span>
             {state.slot !== null
-              ? `请选择 ${state.slot === 0 ? 'A' : 'B'}：点地图空白或已有标记`
-              : '拖动 A/B 调整；海拔随地形自动读取'}
+              ? `请选择 ${pointLabel(state.slot)}：点地图空白或已有标记`
+              : state.isSaved
+                ? '已保存到地图 · 拖点可修改'
+                : '拖点调整 · ＋继续添加 · 保存留在地图'}
           </span>
+          <button
+            className="measurement-add"
+            disabled={points.length >= MAX_POINTS}
+            aria-label="添加测量点"
+            onClick={() => state.pick(points.length)}
+          >
+            <Plus size={15} />
+            添加点
+          </button>
+          <button
+            aria-expanded={showSaved}
+            onClick={() => setShowSaved(!showSaved)}
+          >
+            已存 {state.saved.items.length}
+          </button>
           <button
             disabled={!state.canUndo}
             onClick={state.undo}
@@ -276,14 +320,37 @@ export function Measurement({
             <RotateCcw size={15} />
           </button>
         </div>
+        {showSaved && (
+          <div className="measurement-saved-list" aria-label="已保存测量列表">
+            {state.saved.items.map((item) => (
+              <div key={item.id}>
+                <button
+                  onClick={() => {
+                    state.load(item);
+                    setShowSaved(false);
+                  }}
+                >
+                  {item.name} · {item.points.length} 点
+                </button>
+                <button
+                  aria-label={`移除${item.name}`}
+                  onClick={() => state.saved.remove(item.id)}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            ))}
+            {!state.saved.items.length && <p>保存后，关闭测量仍会留在地图上</p>}
+            {state.saved.canRestore && (
+              <button onClick={state.saved.restore}>撤销移除</button>
+            )}
+          </div>
+        )}
+        {state.saved.error && <p role="alert">{state.saved.error}</p>}
         {state.error && <p role="alert">{state.error}</p>}
       </section>
       {metrics && (
-        <aside
-          className="measurement-result"
-          aria-label="两点测量结果"
-          style={{ left: labelX, top: labelY }}
-        >
+        <aside className="measurement-result" aria-label="当前线段测量结果">
           <div>
             <strong>
               {metrics.inclination === null
@@ -295,7 +362,7 @@ export function Measurement({
           <p>
             朝向{' '}
             {metrics.bearing === null ? '—' : `${metrics.bearing.toFixed(1)}°`}{' '}
-            · A → B
+            · {pointLabel(segment)} → {pointLabel(segment + 1)}
           </p>
           <p>
             水平 {lengthLabel(metrics.horizontal)} · 高差{' '}
@@ -303,6 +370,72 @@ export function Measurement({
               ? '—'
               : `${metrics.rise >= 0 ? '+' : ''}${metrics.rise.toFixed(1)} m`}
           </p>
+          <svg
+            className="measurement-schematic"
+            viewBox="0 0 220 64"
+            role="img"
+            aria-label="水平参考线与垂直投影示意，非等比"
+          >
+            <path
+              d={
+                metrics.rise !== null && metrics.rise < 0
+                  ? 'M15 10 H195 V46'
+                  : 'M15 46 H195 V10'
+              }
+              fill="none"
+              stroke="#a4d9ef"
+              strokeDasharray="4 3"
+            />
+            <path
+              d={
+                metrics.rise !== null && metrics.rise < 0
+                  ? 'M15 10 L195 46'
+                  : 'M15 46 L195 10'
+              }
+              fill="none"
+              stroke="#ffcf45"
+              strokeWidth="2"
+            />
+            <text x="65" y="60">
+              水平线
+            </text>
+            <text x="196" y="30">
+              投影
+            </text>
+            <text x="1" y={metrics.rise !== null && metrics.rise < 0 ? 10 : 46}>
+              {pointLabel(segment)}
+            </text>
+            <text
+              x="196"
+              y={metrics.rise !== null && metrics.rise < 0 ? 48 : 10}
+            >
+              {pointLabel(segment + 1)}
+            </text>
+            <text x="55" y="25">
+              夹角{' '}
+              {metrics.inclination === null
+                ? '—'
+                : metrics.inclination.toFixed(1) + '°'}
+            </text>
+          </svg>
+          <small>示意非等比 · 虚线为水平线及垂直投影</small>
+          {points.length > 2 && (
+            <div className="measurement-segments">
+              <button
+                disabled={segment === 0}
+                onClick={() => state.select(points[segment].id)}
+              >
+                上一段
+              </button>
+              <span>总水平 {lengthLabel(total.horizontal)}</span>
+              <button
+                disabled={segment >= points.length - 2}
+                onClick={() => state.select(points[segment + 2].id)}
+              >
+                下一段
+              </button>
+            </div>
+          )}
           {metrics.rise === null && (
             <button onClick={state.retryHeights}>
               {preview
@@ -313,6 +446,13 @@ export function Measurement({
             </button>
           )}
         </aside>
+      )}
+      {sharing && (
+        <MeasurementShare
+          points={sharing.points}
+          name={sharing.name}
+          onClose={() => setSharing(null)}
+        />
       )}
     </>
   );

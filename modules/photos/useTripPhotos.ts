@@ -20,34 +20,37 @@ export function useTripPhotos() {
   const failedWrites = useRef(new Set<string>());
   const visibleCache = useRef(new Map<string, VisiblePhoto>());
   const [pendingWeather, setPendingWeather] = useState(0);
+  const publish = useCallback((data: TripPhoto[]) => {
+    const next = data.map((p) => {
+      const old = visibleCache.current.get(p.id);
+      const same =
+        old &&
+        old.preview.size === p.preview.size &&
+        old.detail?.size === p.detail?.size;
+      return {
+        ...p,
+        preview: same ? old.preview : p.preview,
+        detail: same ? old.detail : p.detail,
+        url: same ? old.url : URL.createObjectURL(p.preview),
+      };
+    });
+    const keep = new Set(next.map((p) => p.url));
+    urls.current.filter((url) => !keep.has(url)).forEach(URL.revokeObjectURL);
+    visibleCache.current = new Map(next.map((p) => [p.id, p]));
+    urls.current = next.map((p) => p.url);
+    setItems(next);
+    setError('');
+  }, []);
   const refresh = useCallback(async () => {
     const serial = ++revision.current;
     try {
       const data = await readPhotos();
       if (!mounted.current || serial !== revision.current) return;
-      const next = data.map((p) => {
-        const old = visibleCache.current.get(p.id);
-        const same =
-          old &&
-          old.preview.size === p.preview.size &&
-          old.detail?.size === p.detail?.size;
-        return {
-          ...p,
-          preview: same ? old.preview : p.preview,
-          detail: same ? old.detail : p.detail,
-          url: same ? old.url : URL.createObjectURL(p.preview),
-        };
-      });
-      const keep = new Set(next.map((p) => p.url));
-      urls.current.filter((url) => !keep.has(url)).forEach(URL.revokeObjectURL);
-      visibleCache.current = new Map(next.map((p) => [p.id, p]));
-      urls.current = next.map((p) => p.url);
-      setItems(next);
-      setError('');
+      publish(data);
     } catch {
       if (mounted.current) setError('本机照片存储暂不可用，未改动已有预览');
     }
-  }, []);
+  }, [publish]);
   useEffect(() => {
     mounted.current = true;
     void refresh();
@@ -124,8 +127,9 @@ export function useTripPhotos() {
     setSelected,
     update,
     save: async (photos: TripPhoto[]) => {
-      await writePhotos(photos);
-      await refresh();
+      const committed = await writePhotos(photos);
+      revision.current++;
+      if (mounted.current) publish(committed);
     },
     remove: async (id: string) => {
       await writePhotos([], id);

@@ -3,17 +3,21 @@ import type { Coordinate } from '../navigation/types';
 import { readElevation } from '../terrain/elevation';
 import {
   MEASUREMENT_KEY,
+  MAX_POINTS,
   parseMeasurement,
   validHeight,
   validPoint,
   type MeasurePoint,
 } from './data';
+import { useSavedMeasurements } from './useSavedMeasurements';
+import { copyPoints, type SavedMeasurement } from './saved';
 
-const PAIR_KEY = 'shantu.measurement.pair.v1';
+const PAIR_KEY = 'shantu.measurement.path.v1';
 /** A separate pair store preserves older polyline measurements unchanged. Heights always follow terrain. */
 export function useMeasurement() {
+  const saved = useSavedMeasurements();
   const [active, setActive] = useState(false),
-    [slot, setSlot] = useState<0 | 1 | null>(0);
+    [slot, setSlot] = useState<number | null>(0);
   const [points, setPoints] = useState<MeasurePoint[]>([]),
     [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState(''),
@@ -23,7 +27,7 @@ export function useMeasurement() {
     ready = useRef(false),
     requests = useRef(new Map<string, AbortController>());
   const commit = (next: MeasurePoint[], history = true) => {
-    if (!ready.current || next.length > 2 || !next.every(validPoint))
+    if (!ready.current || next.length > MAX_POINTS || !next.every(validPoint))
       return false;
     try {
       localStorage.setItem(
@@ -82,9 +86,11 @@ export function useMeasurement() {
     try {
       const saved = localStorage.getItem(PAIR_KEY);
       const legacy = parseMeasurement(
-        saved ?? localStorage.getItem(MEASUREMENT_KEY),
+        saved ??
+          localStorage.getItem('shantu.measurement.pair.v1') ??
+          localStorage.getItem(MEASUREMENT_KEY),
       );
-      const pair = legacy.length > 2 ? [legacy[0], legacy.at(-1)!] : legacy;
+      const pair = legacy;
       current.current = pair.map((p) => ({
         ...p,
         altitude: p.heightSource === 'terrain' ? p.altitude : null,
@@ -101,11 +107,11 @@ export function useMeasurement() {
     };
   }, []);
   const place = (
-    index: 0 | 1,
+    index: number,
     coordinates: Coordinate,
     height: number | null,
   ) => {
-    if (!ready.current) return false;
+    if (!ready.current || index < 0 || index >= MAX_POINTS) return false;
     const actual = Math.min(index, current.current.length);
     const id = current.current[actual]?.id ?? crypto.randomUUID();
     requests.current.get(id)?.abort();
@@ -123,7 +129,26 @@ export function useMeasurement() {
     if (p.altitude === null) fillHeight(p);
     return true;
   };
+  const record = saved.items.find(
+    (item) => item.points[0].id === points[0]?.id,
+  );
   return {
+    saved,
+    record,
+    isSaved:
+      !!record && JSON.stringify(record.points) === JSON.stringify(points),
+    saveToMap: () =>
+      saved.save(current.current, record?.id ?? crypto.randomUUID()),
+    load: (item: SavedMeasurement) => {
+      if (!commit(copyPoints(item.points), false)) return false;
+      abortReads();
+      setUndoStack([]);
+      setSelected(item.points.at(-1)!.id);
+      setSlot(null);
+      setActive(true);
+      current.current.filter((p) => p.altitude === null).forEach(fillHeight);
+      return true;
+    },
     active,
     adding: slot !== null,
     slot,
@@ -134,9 +159,7 @@ export function useMeasurement() {
     canUndo: undoStack.length > 0,
     open: () => {
       setActive(true);
-      setSlot(
-        current.current.length < 2 ? (current.current.length as 0 | 1) : null,
-      );
+      setSlot(current.current.length < 2 ? current.current.length : null);
       setSelected(current.current.at(-1)?.id ?? null);
       current.current.filter((p) => p.altitude === null).forEach(fillHeight);
     },
@@ -147,7 +170,11 @@ export function useMeasurement() {
       setSelected(id);
       setSlot(null);
     },
-    pick: (index: 0 | 1) => {
+    pick: (index: number) => {
+      if (index >= MAX_POINTS) {
+        setError('最多添加200个测量点');
+        return;
+      }
       setSlot(index);
       setSelected(current.current[index]?.id ?? null);
     },
@@ -155,7 +182,7 @@ export function useMeasurement() {
       slot !== null && place(slot, coordinates, height),
     move: (id: string, coordinates: Coordinate, height: number | null) => {
       const index = current.current.findIndex((p) => p.id === id);
-      return index >= 0 && place(index as 0 | 1, coordinates, height);
+      return index >= 0 && place(index, coordinates, height);
     },
     retryHeights: () =>
       current.current.filter((p) => p.altitude === null).forEach(fillHeight),
@@ -172,7 +199,7 @@ export function useMeasurement() {
         abortReads();
         setUndoStack((s) => s.slice(0, -1));
         setSelected(prior.at(-1)?.id ?? null);
-        setSlot(prior.length < 2 ? (prior.length as 0 | 1) : null);
+        setSlot(prior.length < 2 ? prior.length : null);
         prior.filter((p) => p.altitude === null).forEach(fillHeight);
       }
     },

@@ -27,7 +27,7 @@ final class NativeBridge {
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }
     @JavascriptInterface public String routeLinkShare(String url) { return RouteOutput.link(activity, url); }
     @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {
-        if (name == null || !name.matches("(?:Shantu|Guanyun)-photo-[0-9]{1,16}\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
+        if (name == null || !name.matches("(?:Shantu|Guanyun)-(?:photo|measurement)-[0-9]{1,16}\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
         final byte[] bytes;
         try { bytes = android.util.Base64.decode(encoded, android.util.Base64.DEFAULT); }
         catch (Exception e) { return "图片编码无效"; }

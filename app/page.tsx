@@ -121,8 +121,9 @@ import { AnnotationWorkspace, type MarkerTab } from '@/modules/annotations/Annot
 import { useMarkerCamera } from '@/modules/photos/useMarkerCamera';
 import { useMeasurement } from '@/modules/measurement/useMeasurement';
 import { Measurement } from '@/modules/measurement/Measurement';
+import { SavedMeasurements } from '@/modules/measurement/SavedMeasurements';
 import { TrackNodeBoxSelect } from '@/modules/tracks/TrackNodeBoxSelect';
-import { photosForMarker } from '@/modules/photos/association';
+import { photosForMarker, mapPhotos } from '@/modules/photos/association';
 import { editorPose } from '@/modules/annotations/editorSession';
 import { QuickAdd } from '@/modules/annotations/QuickAdd';
 import type { MapHold } from '@/modules/map/MapLongPress';
@@ -228,10 +229,7 @@ export default function Home() {
     }
   };
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
-  const photoOverlay = useMemo(
-    () => (photos.visible && !measurement.active && navigation.picking === null ? photos.items : []),
-    [photos.visible, photos.items, measurement.active, navigation.picking],
-  );
+
   const photoTracks = useMemo(() => {
     const record = recorder.record;
     if (!record.id || !record.segments.some((s) => s.length))
@@ -581,6 +579,10 @@ export default function Home() {
         )
       : annotations.items;
   }, [annotations.items, featureMove, annotationPreview]);
+  const linkedPhotos = useMemo(() => mapPhotos(photos.items, annotationOverlay), [photos.items, annotationOverlay]);
+  const photoOverlay = photos.visible && navigation.picking === null ? linkedPhotos : [];
+  const photoMarkerIds = new Set(photoOverlay.filter(p => p.kind === 'annotation').map(p => p.annotationId));
+  const displayedAnnotations = annotationOverlay.map(a => a.kind === 'pin' && photoMarkerIds.has(a.id) ? {...a, visible:false} : a);
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
@@ -1094,7 +1096,17 @@ export default function Home() {
         }
         photos={photoOverlay}
         onPhotoSelect={(ids) => {
+          if (measurement.active) {
+            const photo = linkedPhotos.find(p => p.id === ids[0]);
+            if (photo && measurement.adding) measurement.add(photo.coordinates, map.current?.groundElevation(photo.coordinates) ?? null);
+            return;
+          }
           if (editor.session) return;
+          const photo = linkedPhotos.find(p => p.id === ids[0]);
+          if (photo?.kind === 'annotation' && photo.annotationId) {
+            if (!annotations.select(photo.annotationId)) return;
+            setPanel('annotations'); follow.pause(); return;
+          }
           follow.pause();
           map.current?.stop();
           setPanel(null);
@@ -1104,11 +1116,12 @@ export default function Home() {
         position={displayedFix}
         onBrowse={follow.pause}
         onManualRotate={position.free}
-        annotations={annotationOverlay}
+        annotations={displayedAnnotations}
         roadSnapping={tracks.roadSnapping}
         riverSnapping={tracks.riverSnapping}
         annotationSelected={annotations.selected}
         annotationEditingId={annotations.edit?.draft.id}
+        measurementPicking={measurement.active}
         annotationPicking={navigation.picking !== null || measurement.active}
         pickingActive={Boolean(
           annotations.picking || navigation.picking !== null || measurement.active,
@@ -1616,7 +1629,17 @@ export default function Home() {
           </div>
         )}
       {markerCamera.input}
-      {measurement.active && <Measurement state={measurement} watchProjection={watchObjectProjection}
+      {!!measurement.saved.items.length && <SavedMeasurements
+        items={measurement.saved.items.filter(item => !measurement.active || item.id !== measurement.record?.id)}
+        onPick={measurement.active ? p => { if (measurement.adding) measurement.add(p.coordinates, map.current?.groundElevation(p.coordinates) ?? null); } : undefined}
+        watchProjection={watchObjectProjection} elevationScale={layers.terrain ? layers.exaggeration : 0}
+        projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
+        onOpen={item => {
+          if (editor.session || !annotations.select(null)) return;
+          tracks.pause(); navigation.setPicking(null); annotations.setPicking(null); photos.setSelected(null);
+          setPanel(null); setQuickAdd(null); map.current?.stop(); position.free(); follow.pause(); measurement.load(item);
+        }} />}
+      {measurement.active && <Measurement elevationScale={layers.terrain ? layers.exaggeration : 0} state={measurement} watchProjection={watchObjectProjection}
         projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
         onBegin={() => { map.current?.stop(); position.free(); follow.pause(); }}
         toCoordinate={p => map.current?.toCoordinate(p) ?? null}
@@ -1989,7 +2012,7 @@ export default function Home() {
             setPhotoGroup(photosForMarker(photos.items, selectedAnnotation.id).map(p => p.id));
             photos.setSelected(id); setPanel(null);
           }}
-          onClose={() => { if (annotations.select(null)) setPanel(null); }}
+          onClose={() => { if (annotations.select(null)) { setPanel(null); tracks.select(null); setActiveTrackNode(null); setTrackLinePoint(null); } }}
           onShare={(id) => { setCollectionOutputKey(`annotation:${id}`); setPanel('favorites'); }}
           onNavigate={(item) => {
             navigation.clear();
@@ -2410,7 +2433,7 @@ export default function Home() {
         !selectedPhoto &&
         !featureMove &&
         (panel === null || (panel === 'annotations' && annotations.edit && annotationTab === 'position')) &&
-        (selectedAnnotation && selectedPose && annotations.edit && annotationTab === 'position' ? (
+        (selectedAnnotation && !selectedAnnotation.trackAnchor && selectedPose && annotations.edit && annotationTab === 'position' ? (
           <ObjectGizmo
             key={`annotation-gizmo:${selectedAnnotation.id}`}
             name={selectedAnnotation.name || '标记'}

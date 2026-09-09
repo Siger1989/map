@@ -1,9 +1,11 @@
-# 测量模块
+# 连线测量
 
-入口`Measurement.tsx`负责三维投影、点选与紧凑参数面板，`useMeasurement.ts`维护一条本机测量、单次操作撤销栈及异步地形高程，`data.ts`提供校验、存档解析、水平/空间距离和方位角。
+`useMeasurement` 管理可连续添加的 A/B/C 等点、撤销、地形海拔和编辑草稿；`data` 计算各段水平距离、斜距、真北朝向、水平夹角。最多 200 点。拖点或地图选点传入经纬度，模型尺寸不参与高度。
 
-对外接口为MeasurementState、地图点击传入坐标/已加载高程、WatchProjection、projectGround和定位回调。依赖地图公开接口与objectTransform控制器；不访问轨迹、标记内部状态，不写入旧存档键。
+新草稿键 `shantu.measurement.path.v1` 首次兼容读取 pair/v1 及旧 polyline/v1，不覆盖旧键。`saved` 与 `useSavedMeasurements` 使用独立 `shantu.measurement.saved.v1` 保存最多 200 组快照；写入成功后才更新 UI，读坏数据不覆盖。点击保存更新当前记录，重新测量后保存新记录；关闭草稿不删除地图记录，移除记录可立即撤销。
 
-`shantu.measurement.v1`最多200点，保存失败保留当前状态；未知高程不生成空间距离，取得高程后按点ID和原坐标核对再填入，防止迟到结果覆盖手动编辑。XYZ操作使用measurement-point类型，只暴露平移手柄。
+`MeasureLines` 使用三维相机投影：每段 B 的水平投影点为 B 经纬度、A 海拔；水平参考线及垂直投影均为虚线。图上高度仅按地图地形夸张比例显示，数值使用未夸张地面高程。未知高度不冒充 0。固定结果卡片附非等比示意。
 
-用户本轮要求跳过进一步验证。后续需核查两手机尺寸、原厂相机回前台、地图未知海拔、XYZ拖动及保存重开；见CURRENT_STATE.md和docs/release-0.2.19.md。
+`profile` 生成工程风格 SVG，再由 `MeasurementShare` 转为 1200px JPEG，复用照片文件输出边界。每页 10 段，跨页共用衔接点，累计距离连续；保存与分享逐页提供。图含坐标、高程、里程、分段水平长度/夹角/朝向，注明横纵比例不同及非连续采样地形剖面。
+
+验证见 tests/measurement-save-profile.test.mjs、tests/measurement-marker-delete.test.mjs；网页 390×843 与 360×780 检查、保存重开与已存在模型选 C 点已通过。浏览器验证不代替真机手势与系统分享。

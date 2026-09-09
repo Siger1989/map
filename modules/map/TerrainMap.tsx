@@ -142,6 +142,7 @@ type Props = {
   riverSnapping: boolean;
   pickingActive: boolean;
   annotationPicking?: boolean;
+  measurementPicking?: boolean;
   onTrackSelect: (id: string) => void;
   onTrackLineSelect: (
     point: import('../tracks/linePoint').TrackLinePoint,
@@ -632,7 +633,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 (a) => a.id === id && a.visible,
               );
               if (latest.current.annotationEditingId && item?.id !== latest.current.annotationEditingId) return null;
-              if (item?.kind === 'pin')
+              if (item?.kind === 'pin' && !item.trackAnchor)
                 return {
                   kind: 'annotation',
                   id: item.id,
@@ -845,6 +846,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 latest.current.onAnnotationSelect(annotation);
                 return;
               }
+            }
+            if (latest.current.measurementPicking) {
+              const node = trackRef.current?.pickNode(event.point) ?? areaRef.current?.pickNode(event.point);
+              const coordinate = node?.coordinate ?? trackRef.current?.pickLine(event.point)?.coordinate;
+              if (coordinate) { latest.current.onMapPick(coordinate); return; }
             }
             if (
               (latest.current.section.enabled ||

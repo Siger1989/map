@@ -16,6 +16,8 @@ export function annotationEditItems(items: Annotation[], edit: AnnotationEdit | 
 }
 
 export function patchAnnotation(item: Annotation, patch: Partial<Annotation>) {
+  if (item.trackAnchor && patch.coordinates && patch.coordinates.some((n,i) => n !== item.coordinates[i]))
+    throw new Error("这个标记已绑定行程，不能单独移动。");
   const next = { ...item, ...patch, id: item.id, kind: item.kind };
   if ((patch.placement !== undefined || patch.offset !== undefined) &&
       !Object.hasOwn(patch, 'centerAltitude')) delete next.centerAltitude;

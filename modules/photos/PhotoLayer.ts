@@ -29,7 +29,10 @@ export class PhotoLayer {
         p.y > h + 50
       )
         continue;
-      const key = `${Math.floor(p.x / 60)}/${Math.floor(p.y / 60)}`;
+      const key =
+        photo.kind === 'annotation'
+          ? `marker:${photo.annotationId}`
+          : `grid:${Math.floor(p.x / 60)}/${Math.floor(p.y / 60)}`;
       const group = groups.get(key) ?? [];
       group.push(photo);
       groups.set(key, group);

@@ -126,10 +126,10 @@ export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onN
     </> : <header className="marker-details-bar"><button aria-label="返回标记摘要" onClick={back}><ChevronLeft size={20} /></button><strong>标记详情</strong><button aria-label="分享标记" onClick={() => onShare(item.id)}><Share2 size={18} /></button></header>}
     {state.error && <p className="marker-error" role="status">{state.error}</p>}
     {cameraStatus && <p className="marker-camera-status" role="status">{cameraStatus}{cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}</p>}
-    {!editing && view === 'summary' && photos.length > 0 && <button className="marker-photo-count" onClick={() => setView('details')}>照片 {photos.length} 张 · 查看</button>}
+    {!editing && view === 'summary' && photos.length > 0 && <div className="marker-summary-photos"><MarkerPhotos photos={photos} onOpen={onPhoto} /></div>}
     {editing && <div className="marker-scroll" key={`${tab}:${coordinates}`}>
       {tab === 'basic' && <MarkerBasic item={item} base={base} change={change} terrainStatus={terrainStatus} />}
-      {tab === 'position' && (coordinates ? <MarkerCoordinates item={item} base={base} change={change} reading={state.reading} refresh={() => void state.refreshElevation(item.id, item.coordinates)} /> :
+      {tab === 'position' && (item.trackAnchor ? <p>已绑定行程，不能单独移动。<br/>经度 {item.coordinates[0].toFixed(6)} · 纬度 {item.coordinates[1].toFixed(6)}</p> : coordinates ? <MarkerCoordinates item={item} base={base} change={change} reading={state.reading} refresh={() => void state.refreshElevation(item.id, item.coordinates)} /> :
         <MarkerPosition item={item} base={base} change={change} transform={state.transform} origin={state.edit?.origin} />)}
       {tab === 'data' && <MarkerData item={item} change={change} />}
     </div>}
@@ -145,7 +145,7 @@ export function AnnotationWorkspace({ state, shownItem, tab, onTab, onClose, onN
     </div>}
     {(confirm === 'delete' || askLeave) && <div className="marker-confirm" role="alertdialog" aria-modal="true" aria-label={askLeave ? '保存标记修改' : '确认删除标记'}>
       <strong>{askLeave ? '保存这次修改？' : `删除“${item.name || '未命名'}”？`}</strong>
-      <p>{askLeave ? '保存后生效，放弃将恢复编辑前的内容。' : '只删除此标记，关联路线和照片保留。'}</p>
+      <p>{askLeave ? '保存后生效，放弃将恢复编辑前的内容。' : '删除此标记及地图上的照片展示；关联路线与照片原文件保留。'}</p>
       {state.error && <p className="marker-error" role="alert">{state.error}</p>}
       <div>{askLeave ? <><button className="marker-primary" onClick={() => finishLeave(true)}>保存</button><button onClick={() => finishLeave(false)}>放弃</button><button onClick={() => { setConfirm(null); state.resolveSelection(false); }}>继续编辑</button></> :
         <><button className="marker-delete" onClick={() => { if (state.remove(item.id)) onClose(); }}>删除</button><button onClick={() => setConfirm(null)}>取消</button></>}</div>
