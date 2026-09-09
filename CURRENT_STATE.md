@@ -1,4 +1,5 @@
 # 0.2.19紧急交付：新增功能已接入，按用户要求停止进一步验证（2026-09-09）
+- 最终交付：GitHub v0.2.19-test-standalone已公开，Release id385427489，draft=false；APK/sha256/install.md三资产uploaded且字节数与服务端digest相同。源码73d88a155ecd9c195468ffe55260adf4738d8d5f已推送codex/huawei-webview-touch并核远端相同，未合入main。下载 https://github.com/Siger1989/map/releases/download/v0.2.19-test-standalone/Shantu-0.2.19-test-standalone.apk 。后续只剩用户要求暂缓的功能验证，不需要重复打包本版本。
 - 用户追加并授权：标记一级菜单系统相机、照片关联；工具测量及单点XYZ；编辑标记点地图不跳列表；减号仅删点和相连线、取消自动拼接、框选批量删点；地图缩小时地点图标缩小。
 - 在D:/shantu-compat的codex/huawei-webview-touch实现。新增measurement、camera capture/provider、marker photo关联、markerScale、deleteNodes/TrackNodeBoxSelect；修改app/page、annotations/photos/tracks/objectTransform/map/controls与Android清单，详见docs/release-0.2.19.md。原D:/天气系统草稿继续保留。
 - version0.2.19-test/code26。用户明确“先不验证，赶时间，打包好上传GitHub”，停止新的界面、全量回归、旧内核和真机测试，仅执行必需编译。停止前类型/Android网页编译通过；中间362通过2失败（测试自由平移手柄期望/模型DOM地图替身），已改测试但未重跑。不得声称本轮全部验证通过。
