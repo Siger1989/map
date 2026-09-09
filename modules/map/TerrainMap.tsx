@@ -1081,6 +1081,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       drawingRef.current?.configure(props.drawingActive);
     }, [props.drawingActive, props.pickingActive, props.sectionEditing]);
     useEffect(() => {
+      if (!container.current) return;
+      const observer = new ResizeObserver(() => mapRef.current?.resize());
+      observer.observe(container.current);
+      return () => observer.disconnect();
+    }, []);
+    useEffect(() => {
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
     }, [settings.terrain]);

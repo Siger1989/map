@@ -5,93 +5,38 @@ export type DrawingInput =
   | { type: 'end'; reason: 'release' | 'navigation' | 'interrupt' }
   | { type: 'cancel' };
 type Contact = { id: number; point: ScreenPoint };
-export const DRAWING_TOUCH_GRACE_MS = 120;
-
-/** A gesture stays navigation-only until every participating finger is lifted. */
+/** A second finger preempts ink immediately, until every finger is lifted. */
 export class DrawingTouchSession {
-  private phase: 'idle' | 'pending' | 'drawing' | 'navigation' | 'waiting' =
-    'idle';
+  private phase: 'idle' | 'drawing' | 'navigation' | 'waiting' = 'idle';
   private pointer: number | null = null;
-  private timer: ReturnType<typeof setTimeout> | null = null;
-  private pending: ScreenPoint[] = [];
   private emit: (input: DrawingInput) => void;
-  constructor(emit: (input: DrawingInput) => void) {
-    this.emit = emit;
-  }
+  constructor(emit: (input: DrawingInput) => void) { this.emit = emit; }
   update(type: 'start' | 'move' | 'end' | 'cancel', contacts: Contact[]) {
-    if (type === 'cancel') {
-      this.reset(true);
-      return false;
-    }
+    if (type === 'cancel') { this.reset(true); return false; }
     if (contacts.length >= 2) {
-      this.clearPending();
       if (this.phase === 'drawing') this.emit({ type: 'cancel' });
-      this.phase = 'navigation';
-      this.pointer = null;
-      return true;
+      this.phase = 'navigation'; this.pointer = null; return true;
     }
-    if (!contacts.length) {
-      this.reset();
-      return false;
-    }
+    if (!contacts.length) { this.reset(); return false; }
     if (this.phase === 'navigation') this.phase = 'waiting';
     if (this.phase === 'waiting') return false;
     const contact = contacts[0];
     if (type === 'start' && this.phase === 'idle') {
-      this.phase = 'pending';
-      this.pointer = contact.id;
-      this.pending = [contact.point];
-      this.timer = setTimeout(
-        () => this.beginDrawing(),
-        DRAWING_TOUCH_GRACE_MS,
-      );
-    } else if (
-      type === 'move' &&
-      this.phase === 'pending' &&
-      this.pointer === contact.id
-    ) {
-      this.pending.push(contact.point);
-    } else if (
-      type === 'move' &&
-      this.phase === 'drawing' &&
-      this.pointer === contact.id
-    ) {
+      this.phase = 'drawing'; this.pointer = contact.id;
+      this.emit({ type: 'start', point: contact.point });
+    } else if (type === 'move' && this.phase === 'drawing' && this.pointer === contact.id) {
       this.emit({ type: 'move', point: contact.point });
     }
     return false;
   }
   interrupt() {
-    if (this.phase === 'pending') {
-      this.clearPending();
-      this.phase = 'waiting';
-    }
     if (this.phase === 'drawing') {
-      this.emit({ type: 'end', reason: 'interrupt' });
-      this.phase = 'waiting';
+      this.emit({ type: 'end', reason: 'interrupt' }); this.phase = 'waiting';
     }
   }
   reset(cancel = false, reason: 'release' | 'interrupt' = 'release') {
-    // A quick single-finger tap still places a point on release; a pinch never does.
-    if (this.phase === 'pending' && !cancel && reason === 'release')
-      this.beginDrawing();
-    this.clearPending();
-    if (this.phase === 'drawing')
-      this.emit(cancel ? { type: 'cancel' } : { type: 'end', reason });
-    this.phase = 'idle';
-    this.pointer = null;
-  }
-  private clearPending() {
-    if (this.timer !== null) clearTimeout(this.timer);
-    this.timer = null;
-    this.pending = [];
-  }
-  private beginDrawing() {
-    if (this.phase !== 'pending') return;
-    const [first, ...moves] = this.pending;
-    this.clearPending();
-    this.phase = 'drawing';
-    this.emit({ type: 'start', point: first });
-    for (const point of moves) this.emit({ type: 'move', point });
+    if (this.phase === 'drawing') this.emit(cancel ? { type: 'cancel' } : { type: 'end', reason });
+    this.phase = 'idle'; this.pointer = null;
   }
 }
 

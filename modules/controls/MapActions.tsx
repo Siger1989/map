@@ -109,17 +109,6 @@ export function MapActions({
           )}
         </section>
       )}
-      {expanded && (
-        <>
-          <button
-            className="icon-button direction-button"
-            aria-label="定位设置"
-            aria-expanded={locationSettings}
-            onClick={() => setLocationSettings(!locationSettings)}
-          >
-            <Settings2 size={20} />
-            <small>设置</small>
-          </button>
           <button
             className="icon-button"
             aria-label="放大地图"
@@ -133,6 +122,17 @@ export function MapActions({
             onClick={() => onZoom(-1)}
           >
             <Minus size={21} />
+          </button>
+      {expanded && (
+        <>
+          <button
+            className="icon-button direction-button"
+            aria-label="定位设置"
+            aria-expanded={locationSettings}
+            onClick={() => setLocationSettings(!locationSettings)}
+          >
+            <Settings2 size={20} />
+            <small>设置</small>
           </button>
           <button
             className="icon-button direction-button"

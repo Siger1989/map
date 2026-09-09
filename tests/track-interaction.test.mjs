@@ -5,7 +5,6 @@ import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import {
   DrawingTouchSession,
   DrawingGestureBridge,
-  DRAWING_TOUCH_GRACE_MS,
 } from '../modules/tracks/DrawingGestureBridge.ts';
 import { DrawingSession } from '../modules/tracks/DrawingSession.ts';
 import {
@@ -40,7 +39,7 @@ const a = [104, 30],
   c = [104.002, 30],
   d = [104.003, 30];
 const contact = (id) => ({ id, point: { x: id * 10, y: 100 } });
-test('staggered fingers during the grace period never start ink; remaining finger cannot draw', (t) => {
+test('second finger cancels immediate ink; remaining finger cannot draw', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const events = [],
     gesture = new DrawingTouchSession((e) => events.push(e));
@@ -51,8 +50,7 @@ test('staggered fingers during the grace period never start ink; remaining finge
   gesture.update('end', [contact(1)]);
   gesture.update('move', [contact(1)]);
   gesture.update('end', []);
-  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS + 1);
-  assert.deepEqual(events, []);
+  assert.deepEqual(events.map(e => e.type), ['start', 'move', 'cancel']);
   gesture.update('start', [contact(3)]);
   gesture.update('end', []);
   assert.equal(events.at(-1).reason, 'release');
@@ -119,8 +117,7 @@ test('public bridge preserves native two-finger events and restores map controls
   });
   const one = event(1);
   handlers.get('touchstart')(one);
-  assert.equal(emitted.length, 0);
-  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
+  assert.equal(emitted.length, 1, 'single touch emits in the same call without waiting');
   assert.deepEqual(
     emitted[0].point,
     { x: 50, y: 100 },
@@ -178,7 +175,6 @@ test('a late second finger cancels the whole uncommitted stroke and preserves pr
   const finger = (y) => ({ id: 1, point: { x: 100, y } });
   gesture.update('start', [finger(248)]);
   gesture.update('move', [finger(280)]);
-  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
   gesture.update('move', [finger(340)]);
   assert.ok(updates.at(-1).preview);
   gesture.update('start', [finger(340), contact(2)]);
@@ -189,13 +185,14 @@ test('a late second finger cancels the whole uncommitted stroke and preserves pr
   assert.deepEqual(committed, [original]);
 });
 
-test('normal single-finger strokes replay early samples in order and release exactly once', (t) => {
+test('normal single-finger strokes emit immediately in order and release exactly once', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const events = [];
   const gesture = new DrawingTouchSession((event) => events.push(event));
   gesture.update('start', [contact(1)]);
+  assert.deepEqual(events.map(e => e.type), ['start']);
   gesture.update('move', [{ ...contact(1), point: { x: 11, y: 120 } }]);
-  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
+  assert.deepEqual(events.map(e => e.type), ['start', 'move']);
   gesture.update('move', [{ ...contact(1), point: { x: 12, y: 140 } }]);
   gesture.update('end', []);
   t.mock.timers.tick(1000);
@@ -210,7 +207,7 @@ test('normal single-finger strokes replay early samples in order and release exa
   assert.equal(events.at(-1).reason, 'release');
 });
 
-test('cancellation and leaving drawing before the grace timer fires never place a point', (t) => {
+test('cancellation discards ink immediately and interruption ends exactly once', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const events = [];
   const gesture = new DrawingTouchSession((event) => events.push(event));
@@ -220,7 +217,8 @@ test('cancellation and leaving drawing before the grace timer fires never place 
   gesture.update('start', [contact(2)]);
   gesture.reset(false, 'interrupt');
   t.mock.timers.tick(1000);
-  assert.deepEqual(events, []);
+  assert.deepEqual(events.map(e => e.type), ['start', 'cancel', 'start', 'end']);
+  assert.equal(events.at(-1).reason, 'interrupt');
 });
 const options = {
   mode: 'freehand',

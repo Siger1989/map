@@ -8,7 +8,7 @@
 
 0.2.17修复移除这处门槛，使用真实能力检查，并在软件内补必要网络取消接口、旧布局能力和公共地图worker编译。[MapLibre官方支持检测](https://maplibre.org/maplibre-gl-js/docs/examples/check-if-webgl-is-supported/)、[Vite构建目标](https://vite.dev/config/build-options)、[Lightning CSS兼容转换](https://lightningcss.dev/transpilation.html)。保留真实图形初始化失败的诊断，不以隐藏错误假装地图可用。当前目标是让现有4.2系统运行APK，不要求系统升级；与下面6.1原生交付是不同问题。
 
-以下是收到本轮截图之前的包级调查记录。最新验证与安装入口见[0.2.17发行说明](release-0.2.17.md)。
+以下是收到本轮截图之前的包级调查记录。最新验证与安装入口见[0.2.18发行说明](release-0.2.18.md)，已一并整合收藏栏和无等待的单指响应。
 
 用户最初报告P70 Pro安装失败，另有Pura X Max；随后确认两台系统分别为HarmonyOS4.2和6.1。当时尚未收到失败页面、完整系统构建号或设备日志。
 

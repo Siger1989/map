@@ -5,6 +5,7 @@ import {
   useState,
   type ComponentProps,
 } from 'react';
+import { WorkbenchPanel } from './WorkbenchPanel';
 import { RouteCollectionsPanel } from './RouteCollectionsPanel';
 import {
   catalogEntries,
@@ -39,6 +40,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   initialSelectedKeys?: string[];
   photos: TripPhoto[];
   onClose: () => void;
+  onLocate: (entry: CatalogEntry) => void;
+  mapCenter: [number, number];
 };
 export function CollectionsPanel(props: Props) {
   const entries = useMemo(
@@ -186,21 +189,11 @@ export function CollectionsPanel(props: Props) {
       setBusy(false);
     }
   };
-  if (legacy)
-    return (
-      <section className="catalog-legacy">
-        <header className="collection-fixed-header">
-          <strong>收藏 · 文件夹</strong>
-          <button aria-label="关闭收藏" onClick={props.onClose}>
-            关闭 ×
-          </button>
-        </header>
-        <button className="collection-back" onClick={() => setLegacy(false)}>
-          ‹ 全部收藏 · 省市分类
-        </button>
-        <RouteCollectionsPanel {...props} />
-      </section>
-    );
+  if (legacy) return <WorkbenchPanel center={props.mapCenter} onClose={props.onClose}
+    onLocate={key => { const entry=entries.find(e=>e.key===key); if(entry) props.onLocate(entry); }}
+    onOpen={key => { const entry=entries.find(e=>e.key===key); if(entry) open(entry); }}
+    onNavigate={key => { const entry=entries.find(e=>e.key===key); if(entry?.kind==='route') props.onNavigateRoute(entry.route); else if(entry?.kind==='track') props.onNavigateTrack(entry.track.id); }}
+    onManage={keys => { setSelected(keys ?? []); setBatch(!!keys?.length); setLegacy(false); }} />;
   return (
     <section className="collections-panel catalog-panel" aria-label="全部收藏">
       <header className="collection-fixed-header">

@@ -13,12 +13,15 @@ export const COLORS = [
   { value: '#68d7df', name: '青色' },
   { value: '#f59dbd', name: '粉色' },
 ];
-export type CollectionGroup = { id: string; name: string; color: string };
+export type CollectionGroup = { id: string; name: string; color: string; parentId?: string };
+export type CollectionItem = { key: string; defaultGroup: string };
 export type CollectionLayout = {
   version: 1;
   groups: CollectionGroup[];
   assignments: Record<string, string>;
   order: string[];
+  /** Optional mixed folder/object order; older version-1 readers keep working. */
+  treeOrder?: string[];
 };
 export type CollectionEntry = {
   key: string;
@@ -58,7 +61,7 @@ export function defaultLayout(): CollectionLayout {
 const groupId = (id: unknown): id is string =>
   typeof id === 'string' && /^[\w-]{1,80}$/.test(id);
 const itemKey = (key: unknown): key is string =>
-  typeof key === 'string' && /^(route|track):.{1,200}$/.test(key);
+  typeof key === 'string' && /^(route|track|annotation|area|section):.{1,200}$/.test(key);
 export function validateLayout(value: unknown): CollectionLayout {
   const v = value as CollectionLayout;
   if (
@@ -80,16 +83,30 @@ export function validateLayout(value: unknown): CollectionLayout {
     !v.assignments ||
     typeof v.assignments !== 'object' ||
     Array.isArray(v.assignments) ||
-    Object.keys(v.assignments).length > 2000 ||
+    Object.keys(v.assignments).length > 12000 ||
     !Object.entries(v.assignments).every(
       ([k, g]) => itemKey(k) && groupId(g),
     ) ||
     !Array.isArray(v.order) ||
-    v.order.length > 2000 ||
+    v.order.length > 12000 ||
     !v.order.every(itemKey) ||
-    new Set(v.order).size !== v.order.length
+    new Set(v.order).size !== v.order.length ||
+    (v.treeOrder !== undefined && (!Array.isArray(v.treeOrder) || v.treeOrder.length > 12064 ||
+      !v.treeOrder.every(k => (typeof k === 'string' && k.startsWith('folder:') && groupId(k.slice(7))) || itemKey(k)) ||
+      new Set(v.treeOrder).size !== v.treeOrder.length))
   )
     throw new Error('收藏分组数据无效，原数据未改动。');
+  const groups = new Map(v.groups.map((g) => [g.id, g]));
+  for (const group of v.groups) {
+    const seen = new Set([group.id]);
+    let parent = group.parentId;
+    while (parent !== undefined) {
+      if (!groupId(parent) || !groups.has(parent) || seen.has(parent) || seen.size >= 8)
+        throw new Error('收藏分组层级无效，最多支持 8 层文件夹。');
+      seen.add(parent);
+      parent = groups.get(parent)!.parentId;
+    }
+  }
   return v;
 }
 export function parseLayout(raw: string | null) {
@@ -125,13 +142,13 @@ export function entriesFor(
     })),
   ];
 }
-export function groupFor(layout: CollectionLayout, entry: CollectionEntry) {
+export function groupFor(layout: CollectionLayout, entry: CollectionItem) {
   const id = layout.assignments[entry.key] ?? entry.defaultGroup;
   return layout.groups.find((g) => g.id === id) ?? UNFILED;
 }
-export function orderedEntries(
+export function orderedEntries<T extends CollectionItem>(
   layout: CollectionLayout,
-  entries: CollectionEntry[],
+  entries: T[],
 ) {
   const ranks = new Map(layout.order.map((k, i) => [k, i]));
   return [...entries].sort(
@@ -140,7 +157,7 @@ export function orderedEntries(
 }
 export function moveEntry(
   layout: CollectionLayout,
-  entries: CollectionEntry[],
+  entries: CollectionItem[],
   key: string,
   group: string,
   before?: string,
@@ -179,7 +196,7 @@ export function reorderGroup(
 }
 export function dropEntry(
   layout: CollectionLayout,
-  entries: CollectionEntry[],
+  entries: CollectionItem[],
   key: string,
   target: string,
 ) {
@@ -204,7 +221,9 @@ export function deleteGroup(
 ): CollectionLayout {
   return {
     ...layout,
-    groups: layout.groups.filter((g) => g.id !== id),
+    groups: layout.groups.filter((g) => g.id !== id).map((g) =>
+      g.parentId === id ? { ...g, parentId: layout.groups.find((p) => p.id === id)?.parentId } : g,
+    ),
     assignments: Object.fromEntries(
       Object.entries(layout.assignments).map(([key, group]) => [
         key,

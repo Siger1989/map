@@ -9,7 +9,9 @@ import {
   type SpreadsheetSheet,
 } from '../files/spreadsheet.ts';
 import { annotationSheet } from '../annotations/spreadsheet.ts';
-import { CATALOG_TYPES, regionFor, type CatalogEntry } from './catalog.ts';
+import { CATALOG_TYPES, catalogEntries, regionFor, type CatalogEntry } from './catalog.ts';
+import { COLLECTION_STORAGE, parseLayout } from './data.ts';
+import { collectionSubset, folderEntries } from './folders.ts';
 import type { CollectionRegions } from './regions';
 import { ANNOTATION_STORAGE, parseAnnotations } from '../annotations/data.ts';
 export function collectionTransfer(
@@ -55,6 +57,9 @@ export function collectionTransfer(
     sections,
     sectionNotes,
     areas: entries.flatMap((e) => (e.kind === 'area' ? [e.area] : [])),
+    collections: collectionSubset(parseLayout(storage.getItem(COLLECTION_STORAGE)), folderEntries([
+      ...entries.filter((e) => !('annotation' in e)), ...catalogEntries([], [], pins, []),
+    ])),
     regions: Object.fromEntries(
       entries.flatMap((e) => {
         const r = regionFor(e, regions);

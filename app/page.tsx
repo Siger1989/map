@@ -1947,7 +1947,7 @@ export default function Home() {
         />
       )}
       <ControlDock
-        keepOpenOnMapInteraction={panel === 'route' && navigation.picking !== null}
+        keepOpenOnMapInteraction={panel === 'favorites' || (panel === 'route' && navigation.picking !== null)}
         onScanRoute={() => {
           setPanel(null);
           setRouteQr('');
@@ -2119,6 +2119,13 @@ export default function Home() {
         )}
         {panel === 'favorites' && (
           <CollectionsPanel
+            mapCenter={map.current?.centerCoordinate() ?? anchor}
+            onLocate={(entry) => {
+              if (entry.kind === 'route') { navigation.restore(entry.route); map.current?.fitRoute(entry.route.route.coordinates); }
+              else if (entry.kind === 'track') { tracks.select(entry.track.id); map.current?.fitRoute(entry.track.segments.flat()); }
+              else if (entry.kind === 'area') map.current?.fitRoute(entry.area.boundary);
+              else map.current?.focusPoint(entry.coordinates, 16);
+            }}
             onClose={() => setPanel(null)}
             initialOutputKey={collectionOutputKey}
             initialSelectedKeys={collectionSelectedKeys}
