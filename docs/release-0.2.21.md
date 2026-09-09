@@ -26,4 +26,6 @@ Android目标8.0/API26及以上；HarmonyOS4.2可按Android兼容方式试装，
 
 代码在codex/huawei-webview-touch，未合入main。新增measurement保存/投影/分享与回归测试；沿用地图源、原Logo、旧轨迹/标记/照片存档格式，无新密钥。
 
-APK构建与Release核验结果将在完成后补充。
+最终业务源码：5372ccf4eeaab42ca76bb8b90ad7b6de9bc98306，已推送并核对远端一致。网页与Android网页/Java/DEX/APK构建通过；v2/v3原系列签名、zipalign、540项ZIP CRC、473项地形资源以及包内新紧凑/收藏样式检查通过。
+
+APK：57,649,341字节，SHA256 `bb8e5610443be14c0c9080b1f377eafec7d683bf0b23d985a422aed44a8235f2`。测试版发行资产为APK、SHA256和安装说明。

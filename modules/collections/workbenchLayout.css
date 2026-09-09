@@ -82,6 +82,13 @@
 .observatory[data-panel='favorites'] .map-actions > button small {
   display: none;
 }
+.observatory[data-panel='favorites'] .maplibregl-ctrl-bottom-left {
+  top: 4px;
+  bottom: auto !important;
+  left: 4px !important;
+  right: auto !important;
+  max-width: calc(100% - 72px);
+}
 .observatory[data-panel='favorites'] .map-location-settings {
   right: 0;
   top: auto;
