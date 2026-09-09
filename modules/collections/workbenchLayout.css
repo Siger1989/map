@@ -1,6 +1,6 @@
 /* The reviewed upper-list / lower-map layout uses the existing live 3D map. */
 .observatory[data-panel='favorites'] {
-  --collection-split: var(--map-panel-max-height, min(28dvh, 200px));
+  --collection-split: min(72%, calc(100% - 180px - var(--safe-bottom)));
 }
 .observatory[data-panel='favorites'] > .map-canvas {
   top: var(--collection-split);

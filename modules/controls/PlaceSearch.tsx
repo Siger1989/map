@@ -1,3 +1,4 @@
+import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, MapPin } from 'lucide-react';
 import { searchPlaces } from '../navigation/provider';
@@ -31,7 +32,14 @@ export function PlaceSearch({
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
-      if (event.target instanceof Node && !root.current?.contains(event.target))
+      if (
+        event.target instanceof Node &&
+        !root.current?.contains(event.target) &&
+        !(
+          event.target instanceof Element &&
+          event.target.closest('[data-search-owner="place"]')
+        )
+      )
         setOpen(false);
     };
     document.addEventListener('pointerdown', dismiss, true);
@@ -81,8 +89,8 @@ export function PlaceSearch({
         }
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
           const buttons = Array.from(
-            root.current?.querySelectorAll<HTMLButtonElement>(
-              '[data-place-result]',
+            document.querySelectorAll<HTMLButtonElement>(
+              '[data-search-owner="place"] [data-place-result]',
             ) ?? [],
           );
           if (!buttons.length) return;
@@ -155,57 +163,61 @@ export function PlaceSearch({
         </button>
       </form>
       {open && (
-        <section
-          id="place-search-results"
-          className="place-search-results glass suggestion-surface"
-          aria-label="地点搜索结果"
-        >
-          <div className="place-search-heading">
-            <span>地点搜索</span>
-            <button
-              type="button"
-              aria-label="关闭地点搜索"
-              onClick={() => setOpen(false)}
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="place-search-options">
-            {results.map((place, index) => (
+        <FloatingSearch anchor={input.current} owner="place">
+          <section
+            id="place-search-results"
+            className="place-search-results glass suggestion-surface"
+            aria-label="地点搜索结果"
+          >
+            <div className="place-search-heading">
+              <span>地点搜索</span>
               <button
                 type="button"
-                data-place-result
-                key={`${place.coordinates.join(',')}-${index}`}
-                onClick={() => {
-                  onSelect(place);
-                  setOpen(false);
-                  setQuery('');
-                  input.current?.blur();
-                }}
+                aria-label="关闭地点搜索"
+                onClick={() => setOpen(false)}
               >
-                <MapPin size={15} />
-                <span>
-                  <strong>{place.name}</strong>
-                  <small>
-                    {place.detail ||
-                      `${place.coordinates[1].toFixed(4)}, ${place.coordinates[0].toFixed(4)}`}
-                  </small>
-                </span>
+                <X size={16} />
               </button>
-            ))}
-            {!results.length && (
-              <p role="status">
-                {busy
-                  ? '正在搜索…'
-                  : message ||
-                    (query.trim().length === 1
-                      ? '请输入至少两个字。'
-                      : '输入城市、街道或山峰名称。')}
-              </p>
-            )}
-          </div>
-          <small className="place-search-credit">Photon / OpenStreetMap</small>
-        </section>
+            </div>
+            <div className="place-search-options">
+              {results.map((place, index) => (
+                <button
+                  type="button"
+                  data-place-result
+                  key={`${place.coordinates.join(',')}-${index}`}
+                  onClick={() => {
+                    onSelect(place);
+                    setOpen(false);
+                    setQuery('');
+                    input.current?.blur();
+                  }}
+                >
+                  <MapPin size={15} />
+                  <span>
+                    <strong>{place.name}</strong>
+                    <small>
+                      {place.detail ||
+                        `${place.coordinates[1].toFixed(4)}, ${place.coordinates[0].toFixed(4)}`}
+                    </small>
+                  </span>
+                </button>
+              ))}
+              {!results.length && (
+                <p role="status">
+                  {busy
+                    ? '正在搜索…'
+                    : message ||
+                      (query.trim().length === 1
+                        ? '请输入至少两个字。'
+                        : '输入城市、街道或山峰名称。')}
+                </p>
+              )}
+            </div>
+            <small className="place-search-credit">
+              Photon / OpenStreetMap
+            </small>
+          </section>
+        </FloatingSearch>
       )}
     </div>
   );

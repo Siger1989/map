@@ -7,12 +7,12 @@
 .suggestion-surface,
 .observatory .place-search-results,
 .observatory .route-search-results {
-  background: rgba(248, 252, 249, 0.86) !important;
+  background: rgba(248, 252, 249, 0.98) !important;
   color: #193d38 !important;
   backdrop-filter: blur(14px);
-  border: 1px solid #dae5dfb3 !important;
+  border: 1px solid #5b9489 !important;
   border-radius: 9px;
-  box-shadow: 0 4px 16px #163a3724;
+  box-shadow: 0 8px 24px #102b3960;
   font-size: 12px !important;
 }
 .suggestion-surface > small,
@@ -58,4 +58,79 @@
 .observatory .route-search-results small {
   color: #567069 !important;
   font-size: 11px !important;
+}
+
+.floating-search {
+  position: fixed;
+  z-index: 10010;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 4px 4px;
+}
+.floating-search .place-search-results,
+.floating-search .route-search-results {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-height: none !important;
+  margin: 0;
+  padding: 0;
+  box-shadow: none;
+  border: 0 !important;
+  background: transparent !important;
+}
+.floating-search-heading,
+.floating-search .place-search-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  height: 36px;
+  border-bottom: 1px solid #8eaea5;
+}
+.floating-search-heading strong {
+  font-size: 11px;
+}
+.floating-search-heading button,
+.floating-search .place-search-heading button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #193d38;
+}
+.floating-search ul {
+  list-style: none;
+}
+.floating-search .route-search-results button,
+.floating-search .place-search-options button {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  padding: 3px 4px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #d1ddd5;
+  color: #193d38;
+}
+.floating-search :is(.route-search-results, .place-search-options) strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+.floating-search :is(.route-search-results, .place-search-options) small {
+  display: block;
+  font-size: 10px;
+  color: #46685e;
+}
+.floating-search button:hover,
+.floating-search button:focus-visible {
+  background: #daeaff;
+  outline: 1px solid #4f82b5;
+}
+
+.floating-search { box-sizing: border-box; border-radius: 8px; }
+.floating-search-heading, .floating-search .place-search-heading {
+  position: sticky; top: 0; background: #f3f8f5; z-index: 1;
 }

@@ -429,7 +429,7 @@ export function RouteEditToolbar({
               道路{roadSnapping ? '吸附' : '自由'}
             </button>
             <button aria-pressed={snapping} onClick={onSnapping}>
-              节点{snapping ? '开' : '关'}
+              节点吸附
             </button>
           </div>
         )}

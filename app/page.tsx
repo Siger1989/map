@@ -1,4 +1,5 @@
 'use client';
+import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
@@ -117,7 +118,10 @@ import {
 } from '@/modules/section/types';
 import { useAnnotations } from '@/modules/annotations/useAnnotations';
 import { AnnotationPanel } from '@/modules/annotations/AnnotationPanel';
-import { AnnotationWorkspace, type MarkerTab } from '@/modules/annotations/AnnotationWorkspace';
+import {
+  AnnotationWorkspace,
+  type MarkerTab,
+} from '@/modules/annotations/AnnotationWorkspace';
 import { useMarkerCamera } from '@/modules/photos/useMarkerCamera';
 import { useMeasurement } from '@/modules/measurement/useMeasurement';
 import { Measurement } from '@/modules/measurement/Measurement';
@@ -579,10 +583,20 @@ export default function Home() {
         )
       : annotations.items;
   }, [annotations.items, featureMove, annotationPreview]);
-  const linkedPhotos = useMemo(() => mapPhotos(photos.items, annotationOverlay), [photos.items, annotationOverlay]);
-  const photoOverlay = photos.visible && navigation.picking === null ? linkedPhotos : [];
-  const photoMarkerIds = new Set(photoOverlay.filter(p => p.kind === 'annotation').map(p => p.annotationId));
-  const displayedAnnotations = annotationOverlay.map(a => a.kind === 'pin' && photoMarkerIds.has(a.id) ? {...a, visible:false} : a);
+  const linkedPhotos = useMemo(
+    () => mapPhotos(photos.items, annotationOverlay),
+    [photos.items, annotationOverlay],
+  );
+  const photoOverlay =
+    photos.visible && navigation.picking === null ? linkedPhotos : [];
+  const photoMarkerIds = new Set(
+    photoOverlay
+      .filter((p) => p.kind === 'annotation')
+      .map((p) => p.annotationId),
+  );
+  const displayedAnnotations = annotationOverlay.map((a) =>
+    a.kind === 'pin' && photoMarkerIds.has(a.id) ? { ...a, visible: false } : a,
+  );
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
@@ -596,6 +610,30 @@ export default function Home() {
   const selectedTrack = tracks.saved.find(
     (track) => track.id === tracks.selectedId,
   );
+  useEffect(() => {
+    if (panel !== 'favorites') return;
+    const entries = catalogEntries(
+      favorites.items,
+      tracks.saved,
+      annotations.items,
+      sections.items,
+      areas.items,
+    );
+    const selected = entries.find(
+      (e) =>
+        e.key === `annotation:${annotations.selected}` ||
+        e.key === `track:${tracks.selectedId}`,
+    );
+    const target = selected
+      ? collectionPreviewPoints(selected)
+      : entries.flatMap(collectionPreviewPoints);
+    const frame = requestAnimationFrame(() => {
+      position.free();
+      follow.pause();
+      if (target.length) map.current?.fitCollection(target);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [panel]);
   const selectedDraft =
     tracks.selectedId === DRAFT_ID && tracks.draft.length > 0;
   const railTrack =
@@ -687,7 +725,11 @@ export default function Home() {
       setUnsavedExit(false);
       return;
     }
-    if (result.removed) { closeEditor(); setTrackLinePoint(null); return; }
+    if (result.removed) {
+      closeEditor();
+      setTrackLinePoint(null);
+      return;
+    }
     const previous =
       routeReturnPoint.current?.coordinate ?? result.track.segments[0][0];
     closeEditor();
@@ -940,1632 +982,1823 @@ export default function Home() {
       ),
     );
   };
-  const suggestionValues = useMemo(() => ({
-    name: [...annotations.items.map(a => a.name), ...tracks.saved.map(t => t.name), ...photos.items.map(p => p.title || p.name)],
-    note: [...annotations.items.flatMap(a => [a.note || '', ...(a.attributes ?? []).map(f => f.value)]), ...photos.items.map(p => p.note || '')],
-    attribute: annotations.items.flatMap(a => (a.attributes ?? []).map(f => f.name)),
-  }), [annotations.items, tracks.saved, photos.items]);
+  const suggestionValues = useMemo(
+    () => ({
+      name: [
+        ...annotations.items.map((a) => a.name),
+        ...tracks.saved.map((t) => t.name),
+        ...photos.items.map((p) => p.title || p.name),
+      ],
+      note: [
+        ...annotations.items.flatMap((a) => [
+          a.note || '',
+          ...(a.attributes ?? []).map((f) => f.value),
+        ]),
+        ...photos.items.map((p) => p.note || ''),
+      ],
+      attribute: annotations.items.flatMap((a) =>
+        (a.attributes ?? []).map((f) => f.name),
+      ),
+    }),
+    [annotations.items, tracks.saved, photos.items],
+  );
   return (
-    <TextSuggestions.Provider value={suggestionValues}><main
-      className="observatory"
-      data-measuring={measurement.active}
-      data-panel={panel ?? 'map'}
-      data-section={sectionEditing}
-      data-route-notice={Boolean(
-        navigation.picking !== null || navigation.route,
-      )}
-      data-drawing={tracks.drawing && panel === null}
-      data-route-window={routeVisible || !!editor.session || !!navigationTarget}
-      data-route-edit={!!editor.session}
-      data-editing-track={tracks.editing || !!editor.session}
-      data-picking-route={navigation.picking !== null}
-      data-route-rail={Boolean(navigation.route)}
-      data-placing-annotation={Boolean(annotations.picking)}
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape' || event.defaultPrevented) return;
-        if (navigation.picking !== null) {
-          event.preventDefault();
-          navigation.setPicking(null);
-          setPanel('route');
-          return;
-        }
-        if (editor.session) {
-          event.preventDefault();
-          backEditor();
-          return;
-        }
-        if (routeVisible && panel === null) {
-          event.preventDefault();
-          if (routeWindow !== 'card') setRouteWindow('card');
-          else tracks.select(null);
-          return;
-        }
-        if (
-          routeQr !== null ||
-          shareTarget ||
-          navigationTarget ||
-          sectionListOpen
-        ) {
-          event.preventDefault();
-          if (routeQr !== null) setRouteQr(null);
-          else if (shareTarget) setShareTarget(null);
-          else if (navigationTarget) setNavigationTarget(null);
-          else setSectionListOpen(false);
-          return;
-        }
-        if (profileOpen) {
-          event.preventDefault();
-          setProfileOpen(false);
-          return;
-        }
-        if (trackLinePoint) {
-          event.preventDefault();
-          setTrackLinePoint(null);
-          return;
-        }
-        if (activeTrackNode) {
-          event.preventDefault();
-          setActiveTrackNode(null);
-          return;
-        }
-        if (areas.drawing || areas.selected) {
-          event.preventDefault();
-          if (areas.drawing) areas.pause();
-          else if (areaEditing) setAreaEditing(false);
-          else areas.select(null);
-          return;
-        }
-        if (annotations.selected && !annotations.picking) {
-          if (panel === 'annotations' || annotations.selectionRequest) return;
-          event.preventDefault();
-          annotations.select(null);
-          setPanel(null);
-          return;
-        }
-        if (sectionEditing) {
-          event.preventDefault();
-          setSectionEditing(false);
-          return;
-        }
-        if (annotations.picking) {
-          event.preventDefault();
-          annotations.setPicking(null);
-          setPanel('annotations');
-        } else if (navigation.picking !== null) {
-          event.preventDefault();
-          navigation.setPicking(null);
-          setPanel('route');
-        } else if (tracks.editing) {
-          event.preventDefault();
-          tracks.finish();
-          setPanel('track');
-        }
-      }}
-    >
-      <TerrainMap
-        mapSource={mapSources.source}
-        onSourceStatus={mapSources.setStatus}
-        ref={map}
-        section={section}
-        sectionItems={sections.items}
-        selectedSectionId={sections.selectedId}
-        sectionEditing={sectionEditing}
-        onSectionStatus={setSectionStatus}
-        onSectionChange={setSection}
-        onSectionProfile={setProfileData}
-        sectionCursor={sectionCursor}
-        onSectionSelect={(id) => {
-          const selected = id ?? sections.selectedId;
-          if (selected) openSection(selected);
-        }}
-        settings={layers}
-        onPoint={setPoint}
-        onStatus={setMapStatus}
-        onView={(value) => {
-          setView(value);
-          setQuickAdd(null);
-        }}
-        onAnchor={setAnchor}
-        onCenter={setMapCenter}
-        onSatellite={setSatellite}
-        onGeology={setGeology}
-        weather={weather.data}
-        hourIndex={hourIndex}
-        routeOverlay={routeOverlay}
-        guidanceOverlay={guidanceOverlay}
-        trackOverlay={trackOverlay}
-        areaOverlay={areaOverlay}
-        onModelTerrainStatus={setModelTerrainStatus}
-        onAreaSelect={(id) => {
-          if (editor.session) return;
-          areas.select(id);
-          annotations.select(null);
-          tracks.select(null);
-          tracks.pause();
-          setProfileOpen(false);
-          setAreaEditing(true);
-          setPanel(null);
-        }}
-        drawingActive={
-          (branchEditing || tracks.drawing || areas.drawing) && panel === null
-        }
-        onDrawingInput={(event) =>
-          areas.drawing
-            ? areaDrawing.current?.input(event)
-            : drawing.current?.input(event)
-        }
-        photos={photoOverlay}
-        onPhotoSelect={(ids) => {
-          if (measurement.active) {
-            const photo = linkedPhotos.find(p => p.id === ids[0]);
-            if (photo && measurement.adding) measurement.add(photo.coordinates, map.current?.groundElevation(photo.coordinates) ?? null);
-            return;
-          }
-          if (editor.session) return;
-          const photo = linkedPhotos.find(p => p.id === ids[0]);
-          if (photo?.kind === 'annotation' && photo.annotationId) {
-            if (!annotations.select(photo.annotationId)) return;
-            setPanel('annotations'); follow.pause(); return;
-          }
-          follow.pause();
-          map.current?.stop();
-          setPanel(null);
-          setPhotoGroup(ids);
-          photos.setSelected(ids[0]);
-        }}
-        position={displayedFix}
-        onBrowse={follow.pause}
-        onManualRotate={position.free}
-        annotations={displayedAnnotations}
-        roadSnapping={tracks.roadSnapping}
-        riverSnapping={tracks.riverSnapping}
-        annotationSelected={annotations.selected}
-        annotationEditingId={annotations.edit?.draft.id}
-        measurementPicking={measurement.active}
-        annotationPicking={navigation.picking !== null || measurement.active}
-        pickingActive={Boolean(
-          annotations.picking || navigation.picking !== null || measurement.active,
+    <TextSuggestions.Provider value={suggestionValues}>
+      <main
+        className="observatory"
+        data-measuring={measurement.active}
+        data-panel={panel ?? 'map'}
+        data-section={sectionEditing}
+        data-route-notice={Boolean(
+          navigation.picking !== null || navigation.route,
         )}
-        onTrackSelect={(id) => {
-          if (!editor.session) openRoute(id);
-        }}
-        onTrackLineSelect={selectLinePoint}
-        onTrackNodeSelect={(node) => {
-          if (node.trackId === 'live-recording') return;
-          if (editor.session) {
-            if (editor.session.branch !== null)
-              editor.change((value) =>
-                appendEditBranch(
-                  value,
-                  node.coordinate,
-                  node.trackId === value.track.id
-                    ? undefined
-                    : tracks.saved.find((t) => t.id === node.trackId),
-                ),
-              );
-            else if (node.trackId === editor.session.track.id)
-              editor.change((value) => selectEditNode(value, node.coordinate));
-            return;
-          }
-          selectLinePoint({
-            trackId: node.trackId,
-            coordinate: node.coordinate,
-            distance: 0,
-          });
-        }}
-        onDragBegin={(target) => {
-          position.free();
-          tracks.finish();
-          if (target.kind === 'track') {
-            tracks.select(target.node.trackId);
-            annotations.select(null);
-          } else if (target.kind === 'area') {
-            areas.select(target.id);
-            setAreaEditing(false);
-            annotations.select(null);
-            tracks.select(null);
-          } else {
-            if (!annotations.select(target.id)) return;
-            annotations.beginEdit(target.id);
-            setAnnotationTab('position');
-            tracks.select(null);
-          }
-          setPanel(target.kind === 'annotation' ? 'annotations' : null);
-        }}
-        onDragPreview={setFeatureMove}
-        onDragCommit={({ target, coordinate }) => {
-          if (target.kind === 'track' && editor.session) {
-            editor.change((value) =>
-              moveEditNode(value, target.node.coordinate, coordinate),
-            );
-            setFeatureMove(null);
-          } else if (target.kind === 'track') {
-            if (tracks.moveNode(target.node, coordinate))
-              setActiveTrackNode({ ...target.node, coordinate });
-          } else if (target.kind === 'area')
-            areas.move(target.id, target.index, coordinate);
-          else {
-            annotations.move(target.id, coordinate);
-            setPanel('annotations');
-          }
-        }}
-        onAnnotationSelect={(id) => {
-          if (measurement.active) {
-            const item = annotations.items.find(a => a.id === id && a.visible);
-            if (item && measurement.adding) measurement.add(item.coordinates, map.current?.groundElevation(item.coordinates) ?? null);
-            return;
-          }
-          if (editor.session) return;
+        data-drawing={tracks.drawing && panel === null}
+        data-route-window={
+          routeVisible || !!editor.session || !!navigationTarget
+        }
+        data-route-edit={!!editor.session}
+        data-editing-track={tracks.editing || !!editor.session}
+        data-picking-route={navigation.picking !== null}
+        data-route-rail={Boolean(navigation.route)}
+        data-placing-annotation={Boolean(annotations.picking)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || event.defaultPrevented) return;
           if (navigation.picking !== null) {
-            const item = annotations.items.find((a) => a.id === id && a.visible);
-            if (item) {
-              navigation.place(navigation.picking, {
-                name: item.name || '未命名标记',
-                coordinates: [...item.coordinates],
-              });
-              setPanel('route');
-            }
-            return;
-          }
-          setTrackLinePoint(null);
-          setActiveTrackNode(null);
-          areas.select(null);
-          setProfileOpen(false);
-          if (!annotations.select(id)) return;
-          tracks.select(
-            annotations.items.find((a) => a.id === id)?.trackAnchor?.trackId ??
-              null,
-          );
-          tracks.finish();
-          navigation.setPicking(null);
-          setPanel('annotations');
-        }}
-        onMapHold={(value) => {
-          if (editor.session || measurement.active || panel !== null || navigation.picking !== null) return;
-          follow.pause();
-          position.free();
-          tracks.select(null);
-          annotations.select(null);
-          setPanel(null);
-          setQuickAdd(value);
-        }}
-        onMapPick={(coordinates) => {
-          if (measurement.active) {
-            if (measurement.adding) measurement.add(coordinates, map.current?.groundElevation(coordinates) ?? null);
+            event.preventDefault();
+            navigation.setPicking(null);
+            setPanel('route');
             return;
           }
           if (editor.session) {
-            if (editor.session.branch !== null)
-              editor.change((value) => appendEditBranch(value, coordinates));
+            event.preventDefault();
+            backEditor();
+            return;
+          }
+          if (routeVisible && panel === null) {
+            event.preventDefault();
+            if (routeWindow !== 'card') setRouteWindow('card');
+            else tracks.select(null);
+            return;
+          }
+          if (
+            routeQr !== null ||
+            shareTarget ||
+            navigationTarget ||
+            sectionListOpen
+          ) {
+            event.preventDefault();
+            if (routeQr !== null) setRouteQr(null);
+            else if (shareTarget) setShareTarget(null);
+            else if (navigationTarget) setNavigationTarget(null);
+            else setSectionListOpen(false);
+            return;
+          }
+          if (profileOpen) {
+            event.preventDefault();
+            setProfileOpen(false);
+            return;
+          }
+          if (trackLinePoint) {
+            event.preventDefault();
+            setTrackLinePoint(null);
+            return;
+          }
+          if (activeTrackNode) {
+            event.preventDefault();
+            setActiveTrackNode(null);
+            return;
+          }
+          if (areas.drawing || areas.selected) {
+            event.preventDefault();
+            if (areas.drawing) areas.pause();
+            else if (areaEditing) setAreaEditing(false);
+            else areas.select(null);
+            return;
+          }
+          if (annotations.selected && !annotations.picking) {
+            if (panel === 'annotations' || annotations.selectionRequest) return;
+            event.preventDefault();
+            annotations.select(null);
+            setPanel(null);
+            return;
+          }
+          if (sectionEditing) {
+            event.preventDefault();
+            setSectionEditing(false);
             return;
           }
           if (annotations.picking) {
-            const kind = annotations.picking;
-            if (annotations.place(coordinates))
-              map.current?.focusPoint(coordinates, kind === 'pin' ? 15 : 18);
-            else annotations.setPicking(null);
+            event.preventDefault();
+            annotations.setPicking(null);
             setPanel('annotations');
-            return;
-          }
-          if (navigation.pick(coordinates)) setPanel('route');
-          else {
-            // A map gesture is part of editing, not a request to leave the marker.
-            if (annotations.edit) return;
-            setActiveTrackNode(null);
-            tracks.select(null);
-            if (annotations.select(null) && panel === 'annotations') setPanel(null);
+          } else if (navigation.picking !== null) {
+            event.preventDefault();
+            navigation.setPicking(null);
+            setPanel('route');
+          } else if (tracks.editing) {
+            event.preventDefault();
+            tracks.finish();
+            setPanel('track');
           }
         }}
-      />
-      {routeVisible &&
-        railTrack &&
-        panel === null &&
-        !editor.session &&
-        !routeChild &&
-        !selectedPhoto &&
-        !navigationTarget &&
-        !shareTarget && (
-          <>
-            {routeWindow === 'card' && (
-              <RouteCard
-                track={railTrack}
-                point={linePoint}
-                altitude={routeAltitude}
-                alternative={activeAlternative}
-                error={savedNavigationError || tracks.error}
-                onBack={() => {
-                  tracks.select(null);
-                  setTrackLinePoint(null);
-                }}
-                onNavigate={() => {
-                  if (railTrack.id !== DRAFT_ID) {
-                    navigateTrack(railTrack.id);
-                    return;
-                  }
-                  const id = tracks.saveForMarker();
-                  if (!id) return;
-                  try {
-                    setNavigationTarget(
-                      trackNavigation(
-                        { ...railTrack, id },
-                        Date.now(),
-                        'pedestrian',
-                        tracks.saved,
-                        activeAlternative,
-                      ),
-                    );
-                  } catch (e) {
-                    setSavedNavigationError(
-                      e instanceof Error ? e.message : '无法导航',
-                    );
-                  }
-                }}
-                onMarker={() => setRouteWindow('marker')}
-                onEdit={() => beginRouteEdit(railTrack)}
-                onDetails={() => setRouteWindow('details')}
-              />
-            )}
-            {routeWindow === 'details' && (
-              <RouteDetails
-                track={railTrack}
-                alternative={activeAlternative}
-                markers={annotations.items}
-                photos={photos.items}
-                onBack={() => setRouteWindow('card')}
-                onShare={() => shareTrackById(railTrack.id)}
-                deleteError={tracks.error}
-                onDelete={() => {
-                  if (!tracks.remove(railTrack.id)) return false;
-                  setTrackLinePoint(null);
-                  setRouteWindow('card');
-                  return true;
-                }}
-                onMarker={(id) => {
-                  annotations.select(id);
-                  setRouteChild(true);
-                  setPanel('annotations');
-                }}
-                onPhoto={(id) => {
-                  photos.setSelected(id);
-                  setPhotoGroup([id]);
-                }}
-              />
-            )}
-            {routeWindow === 'marker' && (
-              <RouteMarkerTypes
-                error={annotations.error || tracks.error}
-                onBack={() => setRouteWindow('card')}
-                onAdd={(kind) => {
-                  if (!linePoint) return;
-                  const id =
-                    railTrack.id === DRAFT_ID
-                      ? tracks.saveForMarker()
-                      : railTrack.id;
-                  if (!id) return;
-                  if (
-                    annotations.add(kind, linePoint.coordinate, {
-                      trackId: id,
-                      distance: markerChainage(
-                        railTrack.segments,
-                        linePoint.coordinate,
-                      ).distance,
-                    })
-                  ) {
-                    setRouteWindow('card');
-                    setRouteChild(true);
-                    setPanel('annotations');
-                  }
-                }}
-              />
-            )}
-          </>
-        )}
-      {editor.session && (
-        <RouteEditToolbar
-          session={editor.session}
-          snapping={tracks.snapping}
-          roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
-          onSnapping={() => tracks.setSnapping(!tracks.snapping)}
-          onRoadSnapping={() => {
-            if (tracks.riverSnapping) tracks.setRiverSnapping(false);
-            else tracks.setRoadSnapping(!tracks.roadSnapping);
-          }}
-          error={editor.error}
-          onBack={backEditor}
-          onSave={saveEditor}
-          onAdd={addEditPoint}
-          onRemove={() => editor.change(removeEditNode)}
-          onBoxSelect={() => { map.current?.stop(); setRouteNodeBox(true); }}
-          onBranch={() => editor.change(toggleEditBranch)}
-          onUndo={() => editor.change(undoRouteEdit)}
-          onStyle={(style) =>
-            editor.change((value) => styleRouteEdit(value, style))
-          }
-        />
-      )}
-      {editor.session && routeNodeBox && <TrackNodeBoxSelect points={editor.session.track.segments.flat()}
-        project={point => map.current?.toScreen(point) ?? null}
-        onCancel={() => setRouteNodeBox(false)}
-        onDelete={points => { if (editor.change(session => removeEditNodes(session, points))) setRouteNodeBox(false); }} />}
-      {editor.session && unsavedExit && (
-        <RouteUnsavedDialog
-          onSave={saveEditor}
-          onDiscard={closeEditor}
-          onContinue={() => setUnsavedExit(false)}
-        />
-      )}
-      <FreeMapCredit id={mapSources.selected} />
-      {quickAdd && (
-        <QuickAdd
-          onArea={startArea}
-          at={quickAdd}
-          error={annotations.error}
-          onClose={() => setQuickAdd(null)}
-          onAdd={(kind) => {
-            if (annotations.add(kind, quickAdd.coordinate)) {
-              areas.select(null);
-              setQuickAdd(null);
-              setProfileOpen(false);
-              setPanel('annotations');
-            }
-          }}
-        />
-      )}
-      {panel === null &&
-        !tracks.drawing &&
-        !areas.drawing &&
-        !annotations.picking &&
-        !navigation.picking &&
-        !sectionEditing &&
-        !selectedAnnotation &&
-        !selectedPhoto &&
-        !featureMove &&
-        !measurement.active &&
-        !guidance.active &&
-        !boxSelecting && (
-          <CenterCursor
-            map={() => map.current}
-            onAdd={(coordinates) => {
-              map.current?.stop();
-              position.free();
-              follow.pause();
-              const screen = map.current?.toScreen(coordinates);
-              if (!screen) return;
-              tracks.select(null);
-              areas.select(null);
-              setProfileOpen(false);
-              setQuickAdd({ coordinate: coordinates, point: screen });
-            }}
-          />
-        )}
-      <TrackDrawing
-        ref={drawing}
-        enabled={
-          (branchEditing || tracks.drawing) && !areas.drawing && panel === null
-        }
-        length={tracks.rodLength}
-        style={
-          branchEditing
-            ? normalizeTrackStyle(editor.session!.track.style)
-            : tracks.style
-        }
-        mode={branchEditing ? 'points' : tracks.mode}
-        anchor={branchEditing ? branchTip : tracks.anchor}
-        candidates={branchEditing ? branchCandidates : tracks.candidates}
-        snapping={tracks.snapping}
-        roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
-        riverSnapping={tracks.riverSnapping}
-        snapRoad={(point, previous, from) =>
-          (tracks.riverSnapping
-            ? map.current?.snapRiver(point, previous, from)
-            : map.current?.snapRoad(point, previous, from)) ?? {
-            status: 'loading',
-            match: null,
-          }
-        }
-        lastVertex={
-          branchEditing ? branchTip : (tracks.draft.at(-1)?.at(-1) ?? null)
-        }
-        toScreen={(point) => map.current?.toScreen(point) ?? null}
-        magnify={(canvas, point) =>
-          map.current?.magnify(canvas, point) ?? (() => {})
-        }
-        onAnchor={branchEditing ? () => {} : tracks.setAnchor}
-        onVertex={branchEditing ? drawBranchVertex : tracks.addVertex}
-        toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
-        onStroke={tracks.addStroke}
-      />
-      <TrackDrawing
-        ref={areaDrawing}
-        enabled={areas.drawing && panel === null}
-        length={tracks.rodLength}
-        style={{ color: '#66cfa2', width: 3 }}
-        mode="points"
-        anchor={null}
-        candidates={areas.draft}
-        snapping={true}
-        roadSnapping={areas.roadSnapping}
-        snapRoad={(point, previous, from) =>
-          map.current?.snapRoad(point, previous, from) ?? {
-            status: 'loading',
-            match: null,
-          }
-        }
-        lastVertex={areas.draft.at(-1) ?? null}
-        toScreen={(p) => map.current?.toScreen(p) ?? null}
-        toCoordinate={(p) => map.current?.toCoordinate(p) ?? null}
-        magnify={(canvas, point) =>
-          map.current?.magnify(canvas, point) ?? (() => {})
-        }
-        onAnchor={() => {}}
-        onVertex={areas.add}
-        onStroke={() => {}}
-      />
-      {(areas.drawing || (areas.selected && areaEditing)) && panel === null && (
-        <AreaTools
-          key={areas.selected ?? 'draft-area'}
-          state={areas}
-          onHide={() => setAreaEditing(false)}
-          onExtrude={(height) => {
-            const area = areas.items.find((a) => a.id === areas.selected);
-            if (!area) return '请先闭合轮廓';
-            try {
-              if (!annotations.addOutline(outlineModel(area, height)))
-                return '轮廓模型保存失败，请检查标记数量和存储空间';
-              areas.update(area.id, { visible: false });
-              areas.select(null);
-              setPanel('annotations');
-              return null;
-            } catch (e) {
-              return e instanceof Error ? e.message : '拉伸失败';
-            }
-          }}
-          onFinish={() => {
-            const first = areas.draft[0],
-              last = areas.draft.at(-1),
-              pixel = first && map.current?.toScreen(first);
-            const result =
-              areas.roadSnapping && pixel
-                ? map.current?.snapRoad(pixel, null, last)
-                : null;
-            if (result?.section?.length)
-              areas.add(first, [...result.section.slice(0, -1), first]);
-            else areas.finish();
-          }}
-        />
-      )}
-      {areas.selected && !areaEditing && !areas.drawing && panel === null && (
-        <div className="area-selection glass">
-          <button onClick={() => setAreaEditing(true)}>区域编辑</button>
-          <button disabled={!areas.canUndo} onClick={areas.undoMove}>
-            撤销调点
-          </button>
-          <button onClick={() => areas.select(null)}>关闭</button>
-          {areas.error && <p role="status">{areas.error}</p>}
-        </div>
-      )}
-      {tracks.editing && tracks.drawing && !areas.drawing && panel === null && (
-        <TrackTools
-          tracks={tracks}
-          onLocate={(point) => map.current?.focusPoint(point)}
-          onFinish={() => {
-            if (tracks.complete()) setRouteWindow('card');
-          }}
-        />
-      )}
-      {selectedAnnotation &&
-        selectionName &&
-        (!activeTrackNode || selectedAnnotation) &&
-        !linePoint &&
-        !selectedPose &&
-        !tracks.drawing &&
-        !annotations.picking &&
-        navigation.picking === null &&
-        panel === null && (
-          <div
-            className={`selection-tools glass${selectedAnnotation ? ' is-annotation' : ''}`}
-            aria-label="选中对象编辑工具"
-          >
-            <div role="status">
-              <strong>{selectionName}</strong>
-              <span>
-                {featureMove
-                  ? '正在调整位置 · 松手确认，双指取消'
-                  : selectedAnnotation
-                    ? '长按模型后拖动 · 松手保存'
-                    : '点选节点出圈，再拖动调整'}
-              </span>
-              {selectedAnnotation && featureMove && (
-                <span>
-                  经度 {selectedAnnotation.coordinates[0].toFixed(6)} · 纬度{' '}
-                  {selectedAnnotation.coordinates[1].toFixed(6)}
-                  {featureMove?.target.kind === 'annotation' ? '（预览）' : ''}
-                </span>
-              )}
-            </div>
-            {(selectedAnnotation ? annotations.error : tracks.error) && (
-              <p role="alert">
-                {selectedAnnotation ? annotations.error : tracks.error}
-              </p>
-            )}
-            <div>
-              <button
-                disabled={!!featureMove}
-                onClick={() =>
-                  setPanel(selectedAnnotation ? 'annotations' : 'track')
-                }
-              >
-                详情 / 编辑
-              </button>
-              <button
-                disabled={
-                  !!featureMove ||
-                  (selectedAnnotation
-                    ? annotations.moveUndoId !== selectedAnnotation.id
-                    : selectedDraft
-                      ? !tracks.canUndo
-                      : tracks.nodeUndoId !== tracks.selectedId)
-                }
-                onClick={() =>
-                  selectedAnnotation
-                    ? annotations.undoMove()
-                    : selectedDraft
-                      ? tracks.undo()
-                      : tracks.undoNodeMove()
-                }
-              >
-                撤销
-              </button>
-              <button
-                disabled={!!featureMove}
-                onClick={() => {
-                  tracks.select(null);
-                  annotations.select(null);
-                }}
-              >
-                完成调整
-              </button>
-            </div>
-          </div>
-        )}
-      {markerCamera.input}
-      {!!measurement.saved.items.length && <SavedMeasurements
-        items={measurement.saved.items.filter(item => !measurement.active || item.id !== measurement.record?.id)}
-        onPick={measurement.active ? p => { if (measurement.adding) measurement.add(p.coordinates, map.current?.groundElevation(p.coordinates) ?? null); } : undefined}
-        watchProjection={watchObjectProjection} elevationScale={layers.terrain ? layers.exaggeration : 0}
-        projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
-        onOpen={item => {
-          if (editor.session || !annotations.select(null)) return;
-          tracks.pause(); navigation.setPicking(null); annotations.setPicking(null); photos.setSelected(null);
-          setPanel(null); setQuickAdd(null); map.current?.stop(); position.free(); follow.pause(); measurement.load(item);
-        }} />}
-      {measurement.active && <Measurement elevationScale={layers.terrain ? layers.exaggeration : 0} state={measurement} watchProjection={watchObjectProjection}
-        projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
-        onBegin={() => { map.current?.stop(); position.free(); follow.pause(); }}
-        toCoordinate={p => map.current?.toCoordinate(p) ?? null}
-        groundElevation={p => map.current?.groundElevation(p) ?? null} />}
-      {selectedPhoto && panel === null && (
-        <PhotoViewer
-          photo={selectedPhoto}
-          group={photos.items.filter((p) => photoGroup.includes(p.id))}
-          onSelect={photos.setSelected}
-          onClose={() => { photos.setSelected(null); if (selectedPhoto.kind === 'annotation' && selectedAnnotation?.id === selectedPhoto.annotationId) setPanel('annotations'); }}
-          onRemove={photos.remove}
-          onUpdate={photos.update}
-          track={photoTracks.find((t) => t.id === selectedPhoto.trackId)}
-        />
-      )}
-      <header className="topbar glass">
-        <div className="brand">
-          <span className="brand-icon">
-            <img src="/brand/shantu-logo.png" alt="" width={25} height={25} />
-          </span>
-          <h1>{PRODUCT_NAME}</h1>
-        </div>
-        <PlaceSearch
-          center={mapCenter}
-          zoom={view.zoom}
-          onOpen={() => {
-            setPanel(null);
-            photos.setSelected(null);
-            tracks.pause();
-          }}
-          onSelect={(place) => {
-            setPanel(null);
-            follow.pause();
-            position.free();
-            navigation.setPicking(null);
-            annotations.setPicking(null);
-            setQuickAdd(null);
-            map.current?.focusPoint(place.coordinates, 14);
-          }}
-        />
-        <span className="map-load-status" role="status">
-          {mapStatus}
-        </span>
-        <button
-          className="icon-button"
-          aria-label="查看世界地图"
-          title="查看世界地图"
-          onClick={resetView}
-        >
-          <RotateCcw size={15} />
-        </button>
-      </header>
-      {annotations.picking ? (
-        <div className="route-map-notice glass" role="status">
-          点击地图
-          {annotations.picking === 'move'
-            ? '移动标记'
-            : `放置${KINDS[annotations.picking]}`}
-          <button
-            onClick={() => {
-              annotations.setPicking(null);
-              setPanel('annotations');
-            }}
-          >
-            取消
-          </button>
-        </div>
-      ) : navigation.picking !== null ? null : (
-        navigation.route &&
-        !measurement.active &&
-        !guidance.active && (
-          <div className="route-map-notice route-start-notice glass">
-            <button
-              onClick={() => setPanel(panel === 'route' ? null : 'route')}
-              aria-label="查看路线详情"
-            >
-              {TRAVEL_MODES.find((m) => m.id === navigation.mode)?.label} ·{' '}
-              {formatDistance(navigation.route.distance)} · 预计{' '}
-              {formatDuration(navigation.route.duration)}
-            </button>
-            <button onClick={startGuidance}>开始导航</button>
-          </div>
-        )
-      )}
-      {guidance.active &&
-        !sectionEditing &&
-        !annotations.picking &&
-        navigation.picking === null &&
-        !selectionName &&
-        !quickAdd &&
-        !tracks.editing && (
-          <GuidanceCard
-            onShare={() => {
-              const s = guidance.session;
-              if (s)
-                setShareTarget(
-                  sharePlanned(s.route, '当前导航全程', s.departureLength > 0),
-                );
-            }}
-            guidance={guidance}
-            following={follow.following}
-            onStop={guidance.stop}
-            onFollow={() => {
-              follow.resume();
-              if (!position.watching || position.locationError)
-                position.locate();
-            }}
-            onShow={() => {
-              if (guidance.rejoin) {
-                follow.pause();
-                map.current?.fitRoute(guidance.rejoin.route.coordinates);
-              }
-            }}
-          />
-        )}
-      <div
-        className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
-        hidden={
-          panel !== 'layers' &&
-          !layers.elevationColors &&
-          !layers.temperature &&
-          !layers.geology
-        }
       >
-        {layers.temperature && (
-          <TemperatureLegend
-            data={weather.data}
-            index={hourIndex}
-            loading={weather.loading}
-            error={weather.error}
-          />
-        )}
-        {layers.elevationColors && <ElevationLegend />}
-        {layers.geology && (
-          <GeologyPanel
-            state={geology}
-            source={layers.geologySource}
-            onSource={(geologySource) => update({ geologySource })}
-            onRetry={() => map.current?.refreshGeology()}
-          />
-        )}
-      </div>
-      {railTrack &&
-        !editor.session &&
-        panel === null &&
-        routeWindow === 'card' &&
-        !routeChild &&
-        !navigationTarget &&
-        !shareTarget &&
-        tracks.visible &&
-        !tracks.drawing &&
-        !areas.drawing &&
-        !sectionEditing &&
-        !guidance.active && (
-          <TrackJourneyRail
-            key={railTrack.id}
-            track={railTrack}
-            activeAlternative={activeAlternative}
-            onAlternative={(id) => {
-              setActiveAlternative(id);
-            }}
-            markers={annotations.items}
-            selected={linePoint}
-            onPoint={selectLinePoint}
-            onMarker={(id) => {
-              const marker = annotations.items.find((a) => a.id === id);
-              if (!marker) return;
-              map.current?.focusPoint(
-                marker.coordinates,
-                Math.max(15, view.zoom),
-              );
-              annotations.select(id);
-              setTrackLinePoint(null);
-              setPanel('annotations');
-            }}
-          />
-        )}
-      {navigation.route &&
-        !railTrack &&
-        !measurement.active &&
-        !sectionEditing &&
-        !guidance.active && (
-          <RouteWeatherRail
-            route={navigation.route}
-            journey={routeJourney}
-            onPreview={(coordinates) => {
-              if (coordinates) position.free();
-              map.current?.previewRoute(coordinates);
-            }}
-            fix={displayedFix}
-            following={follow.following}
-            onSettings={() => {
-              tracks.pause();
-              setPanel('route');
-            }}
-          />
-        )}
-      {(position.directionError ||
-        (!guidance.active &&
-          (position.locationError ||
-            position.locating ||
-            (position.showStatus &&
-              position.watching &&
-              position.fix?.source)))) &&
-        !panel && (
-          <div className="position-status glass" role="status">
-            <span>
-              {position.locationError ||
-                position.directionError ||
-                (position.locating
-                  ? '正在获取当前位置…'
-                  : position.fix
-                    ? `${position.fix.source === 'network' ? '基站 / Wi-Fi 大致位置' : 'GPS 位置'} · 估计误差 ${Math.round(position.fix.accuracy)} 米`
-                    : '')}
-            </span>
-            <button
-              aria-label="收起定位提示"
-              onClick={() =>
-                position.locating
-                  ? position.stopLocation()
-                  : position.clearError()
-              }
-            >
-              ×
-            </button>
-          </div>
-        )}
-      <LayerWindow
-        open={panel === 'layers'}
-        onOpen={(open) => {
-          if (open) {
-            photos.setSelected(null);
-            tracks.pause();
-            navigation.setPicking(null);
-            annotations.setPicking(null);
-          }
-          setPanel(open ? 'layers' : null);
-        }}
-        settings={layers}
-        onChange={update}
-        customSource={mapSources.source?.name}
-        onOpenSources={() => {
-          setSourcesParent('layers');
-          setSourcesNavigation(null);
-          setPanel('sources');
-        }}
-        satelliteDate={satellite.date}
-        satelliteStatus={satellite.status}
-        mapStatus={mapStatus}
-      />
-      {boxSelecting && (
-        <MapBoxSelect
-          entries={catalogEntries(
-            favorites.items.filter(
-              (f) => f.route.createdAt === routeOverlay.route?.createdAt,
-            ),
-            tracks.visible ? tracks.overlaySaved : [],
-            annotations.items,
-            sections.items,
-            areas.items,
-          )}
-          project={(p) => map.current?.toScreen(p) ?? null}
-          onCancel={() => setBoxSelecting(false)}
-          onDone={(keys) => {
-            setBoxSelecting(false);
-            setCollectionOutputKey(null);
-            setCollectionSelectedKeys(keys);
-            setPanel('favorites');
+        <TerrainMap
+          mapSource={mapSources.source}
+          onSourceStatus={mapSources.setStatus}
+          ref={map}
+          section={section}
+          sectionItems={sections.items}
+          selectedSectionId={sections.selectedId}
+          sectionEditing={sectionEditing}
+          onSectionStatus={setSectionStatus}
+          onSectionChange={setSection}
+          onSectionProfile={setProfileData}
+          sectionCursor={sectionCursor}
+          onSectionSelect={(id) => {
+            const selected = id ?? sections.selectedId;
+            if (selected) openSection(selected);
           }}
-        />
-      )}
-      <MapActions
-        compact={panel === "favorites"}
-        onBoxSelect={() => {
-          follow.pause();
-          map.current?.stop();
-          tracks.pause();
-          annotations.select(null);
-          annotations.setPicking(null);
-          navigation.setPicking(null);
-          setSectionEditing(false);
-          setAreaEditing(false);
-          setProfileOpen(false);
-          setQuickAdd(null);
-          setTrackLinePoint(null);
-          setPanel(null);
-          setBoxSelecting(true);
-        }}
-        networkAvailable={
-          position.networkAvailable &&
-          recorder.record.phase !== 'recording' &&
-          !guidance.active
-        }
-        networkMode={position.mode === 'network'}
-        onNetwork={() => {
-          follow.pause();
-          position.changeMode(
-            position.mode === 'network' ? 'auto' : 'network',
-            (fix) => {
-              map.current?.focusPoint(fix.coordinates, positionZoom(fix));
-            },
-          );
-        }}
-        sectionActive={sectionEditing}
-        terrain={layers.terrain}
-        bearing={view.bearing}
-        onZoom={(amount) => map.current?.zoom(amount)}
-        onNorth={() => {
-          position.north();
-          map.current?.north();
-        }}
-        onLocate={() => {
-          if (follow.following) {
+          settings={layers}
+          onPoint={setPoint}
+          onStatus={setMapStatus}
+          onView={(value) => {
+            setView(value);
+            setQuickAdd(null);
+          }}
+          onAnchor={setAnchor}
+          onCenter={setMapCenter}
+          onSatellite={setSatellite}
+          onGeology={setGeology}
+          weather={weather.data}
+          hourIndex={hourIndex}
+          routeOverlay={routeOverlay}
+          guidanceOverlay={guidanceOverlay}
+          trackOverlay={trackOverlay}
+          areaOverlay={areaOverlay}
+          onModelTerrainStatus={setModelTerrainStatus}
+          onAreaSelect={(id) => {
+            if (editor.session) return;
+            areas.select(id);
+            annotations.select(null);
+            tracks.select(null);
+            tracks.pause();
+            setProfileOpen(false);
+            setAreaEditing(true);
+            setPanel(null);
+          }}
+          drawingActive={
+            (branchEditing || tracks.drawing || areas.drawing) && panel === null
+          }
+          onDrawingInput={(event) =>
+            areas.drawing
+              ? areaDrawing.current?.input(event)
+              : drawing.current?.input(event)
+          }
+          collectionPreviewActive={panel === 'favorites'}
+          photos={photoOverlay}
+          onPhotoSelect={(ids) => {
+            if (measurement.active) {
+              const photo = linkedPhotos.find((p) => p.id === ids[0]);
+              if (photo && measurement.adding)
+                measurement.add(
+                  photo.coordinates,
+                  map.current?.groundElevation(photo.coordinates) ?? null,
+                );
+              return;
+            }
+            if (editor.session) return;
+            const photo = linkedPhotos.find((p) => p.id === ids[0]);
+            if (photo?.kind === 'annotation' && photo.annotationId) {
+              if (!annotations.select(photo.annotationId)) return;
+              setPanel('annotations');
+              follow.pause();
+              return;
+            }
             follow.pause();
             map.current?.stop();
-          } else {
-            map.current?.previewRoute(null);
-            follow.resume();
-            if (recorder.record.phase !== 'recording') position.locate();
-          }
-        }}
-        following={follow.following}
-        followBlocked={follow.blocked}
-        locating={
-          follow.following &&
-          (follow.waiting ||
-            (recorder.record.phase !== 'recording' && position.locating))
-        }
-        watching={position.watching}
-        onStopLocation={() => {
-          guidance.stop();
-          follow.pause();
-          position.stopLocation();
-        }}
-        direction={position.direction}
-        onDevice={() =>
-          position.direction === 'device'
-            ? position.free()
-            : void position.device()
-        }
-        onDimension={() => {
-          update({ terrain: !layers.terrain });
-          map.current?.view(layers.terrain ? 0 : 62, view.bearing);
-        }}
-      />
-      {recorder.record.phase !== 'idle' && (
-        <button
-          className="recording-chip glass"
-          onClick={() => setPanel('outdoor')}
-        >
-          {recorder.record.phase === 'recording' ? '● 记录中' : '记录待处理'} ·{' '}
-          {recorder.record.segments.reduce((n, s) => n + s.length, 0)} 点
-        </button>
-      )}
-      {selectedAnnotation && (panel === 'annotations' || annotations.selectionRequest) && !annotations.picking && (
-        <AnnotationWorkspace key={`annotation-workspace:${selectedAnnotation.id}`}
-          state={annotations} shownItem={selectedAnnotation} tab={annotationTab}
-          onTab={(tab) => {
-            setAnnotationTab(tab);
-            if (tab === 'position') map.current?.focusPoint(selectedAnnotation.coordinates, annotationViewZoom(selectedAnnotation));
+            setPanel(null);
+            setPhotoGroup(ids);
+            photos.setSelected(ids[0]);
           }}
-          dragging={!!featureMove || !!annotationPreview}
-          terrainStatus={modelTerrainStatus}
-          photos={photosForMarker(photos.items, selectedAnnotation.id)}
-          onCapture={markerCamera.capture}
-          cameraBusy={markerCamera.busy}
-          cameraStatus={markerCamera.markerId === selectedAnnotation.id ? markerCamera.status : ''}
-          cameraRetry={markerCamera.markerId === selectedAnnotation.id && markerCamera.retry}
-          onCameraRetry={markerCamera.onRetry}
-          onPhoto={(id) => {
-            setPhotoGroup(photosForMarker(photos.items, selectedAnnotation.id).map(p => p.id));
-            photos.setSelected(id); setPanel(null);
+          position={displayedFix}
+          onBrowse={follow.pause}
+          onManualRotate={position.free}
+          annotations={displayedAnnotations}
+          roadSnapping={tracks.roadSnapping}
+          riverSnapping={tracks.riverSnapping}
+          annotationSelected={annotations.selected}
+          annotationEditingId={annotations.edit?.draft.id}
+          measurementPicking={measurement.active}
+          annotationPicking={navigation.picking !== null || measurement.active}
+          pickingActive={Boolean(
+            annotations.picking ||
+            navigation.picking !== null ||
+            measurement.active,
+          )}
+          onTrackSelect={(id) => {
+            if (!editor.session) openRoute(id);
           }}
-          onClose={() => { if (annotations.select(null)) { setPanel(null); tracks.select(null); setActiveTrackNode(null); setTrackLinePoint(null); } }}
-          onShare={(id) => { setCollectionOutputKey(`annotation:${id}`); setPanel('favorites'); }}
-          onNavigate={(item) => {
-            navigation.clear();
-            navigation.place('end', { name: item.name || '标记位置', coordinates: item.coordinates });
-            if (position.fix && Date.now() - position.fix.timestamp < 120000)
-              navigation.place('start', { name: '我的位置', coordinates: position.fix.coordinates });
-            setPanel('route');
+          onTrackLineSelect={selectLinePoint}
+          onTrackNodeSelect={(node) => {
+            if (node.trackId === 'live-recording') return;
+            if (editor.session) {
+              if (editor.session.branch !== null)
+                editor.change((value) =>
+                  appendEditBranch(
+                    value,
+                    node.coordinate,
+                    node.trackId === value.track.id
+                      ? undefined
+                      : tracks.saved.find((t) => t.id === node.trackId),
+                  ),
+                );
+              else if (node.trackId === editor.session.track.id)
+                editor.change((value) =>
+                  selectEditNode(value, node.coordinate),
+                );
+              return;
+            }
+            selectLinePoint({
+              trackId: node.trackId,
+              coordinate: node.coordinate,
+              distance: 0,
+            });
+          }}
+          onDragBegin={(target) => {
+            position.free();
+            tracks.finish();
+            if (target.kind === 'track') {
+              tracks.select(target.node.trackId);
+              annotations.select(null);
+            } else if (target.kind === 'area') {
+              areas.select(target.id);
+              setAreaEditing(false);
+              annotations.select(null);
+              tracks.select(null);
+            } else {
+              if (!annotations.select(target.id)) return;
+              annotations.beginEdit(target.id);
+              setAnnotationTab('position');
+              tracks.select(null);
+            }
+            setPanel(target.kind === 'annotation' ? 'annotations' : null);
+          }}
+          onDragPreview={setFeatureMove}
+          onDragCommit={({ target, coordinate }) => {
+            if (target.kind === 'track' && editor.session) {
+              editor.change((value) =>
+                moveEditNode(value, target.node.coordinate, coordinate),
+              );
+              setFeatureMove(null);
+            } else if (target.kind === 'track') {
+              if (tracks.moveNode(target.node, coordinate))
+                setActiveTrackNode({ ...target.node, coordinate });
+            } else if (target.kind === 'area')
+              areas.move(target.id, target.index, coordinate);
+            else {
+              annotations.move(target.id, coordinate);
+              setPanel('annotations');
+            }
+          }}
+          onAnnotationSelect={(id) => {
+            if (measurement.active) {
+              const item = annotations.items.find(
+                (a) => a.id === id && a.visible,
+              );
+              if (item && measurement.adding)
+                measurement.add(
+                  item.coordinates,
+                  map.current?.groundElevation(item.coordinates) ?? null,
+                );
+              return;
+            }
+            if (editor.session) return;
+            if (navigation.picking !== null) {
+              const item = annotations.items.find(
+                (a) => a.id === id && a.visible,
+              );
+              if (item) {
+                navigation.place(navigation.picking, {
+                  name: item.name || '未命名标记',
+                  coordinates: [...item.coordinates],
+                });
+                setPanel('route');
+              }
+              return;
+            }
+            setTrackLinePoint(null);
+            setActiveTrackNode(null);
+            areas.select(null);
+            setProfileOpen(false);
+            if (!annotations.select(id)) return;
+            tracks.select(
+              annotations.items.find((a) => a.id === id)?.trackAnchor
+                ?.trackId ?? null,
+            );
+            tracks.finish();
+            navigation.setPicking(null);
+            setPanel('annotations');
+          }}
+          onMapHold={(value) => {
+            if (
+              editor.session ||
+              measurement.active ||
+              panel !== null ||
+              navigation.picking !== null
+            )
+              return;
+            follow.pause();
+            position.free();
+            tracks.select(null);
+            annotations.select(null);
+            setPanel(null);
+            setQuickAdd(value);
+          }}
+          onMapPick={(coordinates) => {
+            if (measurement.active) {
+              if (measurement.adding)
+                measurement.add(
+                  coordinates,
+                  map.current?.groundElevation(coordinates) ?? null,
+                );
+              return;
+            }
+            if (editor.session) {
+              if (editor.session.branch !== null)
+                editor.change((value) => appendEditBranch(value, coordinates));
+              return;
+            }
+            if (annotations.picking) {
+              const kind = annotations.picking;
+              if (annotations.place(coordinates))
+                map.current?.focusPoint(coordinates, kind === 'pin' ? 15 : 18);
+              else annotations.setPicking(null);
+              setPanel('annotations');
+              return;
+            }
+            if (navigation.pick(coordinates)) setPanel('route');
+            else {
+              // A map gesture is part of editing, not a request to leave the marker.
+              if (annotations.edit) return;
+              setActiveTrackNode(null);
+              tracks.select(null);
+              if (annotations.select(null) && panel === 'annotations')
+                setPanel(null);
+            }
           }}
         />
-      )}
-      <ControlDock
-        onMeasure={() => {
-          if (editor.session) { backEditor(); return; }
-          if (!annotations.select(null)) return;
-          tracks.pause(); navigation.setPicking(null); annotations.setPicking(null);
-          photos.setSelected(null); setPanel(null); setQuickAdd(null);
-          position.free(); follow.pause(); measurement.open();
-        }}
-        keepOpenOnMapInteraction={panel !== null && !['tools', 'time'].includes(panel)}
-        mapPicking={navigation.picking !== null || !!annotations.picking}
-        onScanRoute={() => {
-          setPanel(null);
-          setRouteQr('');
-        }}
-        onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
-        sectionActive={sectionEditing}
-        sectionReady={sectionReady}
-        active={panel === 'layers' || (panel === 'annotations' && selectedAnnotation) ? null : panel}
-        title={panel === 'sources' ? sourcesNavigation?.title : undefined}
-        back={
-          selectedAnnotation && panel === 'route'
-            ? { label: '返回标记', onClick: () => { navigation.setPicking(null); setPanel('annotations'); } }
-            : routeChild
-            ? {
-                label: '返回路线',
-                onClick: () => {
-                  setRouteChild(false);
-                  annotations.select(null);
-                  setPanel(null);
-                },
+        {routeVisible &&
+          railTrack &&
+          panel === null &&
+          !editor.session &&
+          !routeChild &&
+          !selectedPhoto &&
+          !navigationTarget &&
+          !shareTarget && (
+            <>
+              {routeWindow === 'card' && (
+                <RouteCard
+                  track={railTrack}
+                  point={linePoint}
+                  altitude={routeAltitude}
+                  alternative={activeAlternative}
+                  error={savedNavigationError || tracks.error}
+                  onBack={() => {
+                    tracks.select(null);
+                    setTrackLinePoint(null);
+                  }}
+                  onNavigate={() => {
+                    if (railTrack.id !== DRAFT_ID) {
+                      navigateTrack(railTrack.id);
+                      return;
+                    }
+                    const id = tracks.saveForMarker();
+                    if (!id) return;
+                    try {
+                      setNavigationTarget(
+                        trackNavigation(
+                          { ...railTrack, id },
+                          Date.now(),
+                          'pedestrian',
+                          tracks.saved,
+                          activeAlternative,
+                        ),
+                      );
+                    } catch (e) {
+                      setSavedNavigationError(
+                        e instanceof Error ? e.message : '无法导航',
+                      );
+                    }
+                  }}
+                  onMarker={() => setRouteWindow('marker')}
+                  onEdit={() => beginRouteEdit(railTrack)}
+                  onDetails={() => setRouteWindow('details')}
+                />
+              )}
+              {routeWindow === 'details' && (
+                <RouteDetails
+                  track={railTrack}
+                  alternative={activeAlternative}
+                  markers={annotations.items}
+                  photos={photos.items}
+                  onBack={() => setRouteWindow('card')}
+                  onShare={() => shareTrackById(railTrack.id)}
+                  deleteError={tracks.error}
+                  onDelete={() => {
+                    if (!tracks.remove(railTrack.id)) return false;
+                    setTrackLinePoint(null);
+                    setRouteWindow('card');
+                    return true;
+                  }}
+                  onMarker={(id) => {
+                    annotations.select(id);
+                    setRouteChild(true);
+                    setPanel('annotations');
+                  }}
+                  onPhoto={(id) => {
+                    photos.setSelected(id);
+                    setPhotoGroup([id]);
+                  }}
+                />
+              )}
+              {routeWindow === 'marker' && (
+                <RouteMarkerTypes
+                  error={annotations.error || tracks.error}
+                  onBack={() => setRouteWindow('card')}
+                  onAdd={(kind) => {
+                    if (!linePoint) return;
+                    const id =
+                      railTrack.id === DRAFT_ID
+                        ? tracks.saveForMarker()
+                        : railTrack.id;
+                    if (!id) return;
+                    if (
+                      annotations.add(kind, linePoint.coordinate, {
+                        trackId: id,
+                        distance: markerChainage(
+                          railTrack.segments,
+                          linePoint.coordinate,
+                        ).distance,
+                      })
+                    ) {
+                      setRouteWindow('card');
+                      setRouteChild(true);
+                      setPanel('annotations');
+                    }
+                  }}
+                />
+              )}
+            </>
+          )}
+        {editor.session && (
+          <RouteEditToolbar
+            session={editor.session}
+            snapping={tracks.snapping}
+            roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+            onSnapping={() => tracks.setSnapping(!tracks.snapping)}
+            onRoadSnapping={() => {
+              if (tracks.riverSnapping) tracks.setRiverSnapping(false);
+              else tracks.setRoadSnapping(!tracks.roadSnapping);
+            }}
+            error={editor.error}
+            onBack={backEditor}
+            onSave={saveEditor}
+            onAdd={addEditPoint}
+            onRemove={() => editor.change(removeEditNode)}
+            onBoxSelect={() => {
+              map.current?.stop();
+              setRouteNodeBox(true);
+            }}
+            onBranch={() => editor.change(toggleEditBranch)}
+            onUndo={() => editor.change(undoRouteEdit)}
+            onStyle={(style) =>
+              editor.change((value) => styleRouteEdit(value, style))
+            }
+          />
+        )}
+        {editor.session && routeNodeBox && (
+          <TrackNodeBoxSelect
+            points={editor.session.track.segments.flat()}
+            project={(point) => map.current?.toScreen(point) ?? null}
+            onCancel={() => setRouteNodeBox(false)}
+            onDelete={(points) => {
+              if (editor.change((session) => removeEditNodes(session, points)))
+                setRouteNodeBox(false);
+            }}
+          />
+        )}
+        {editor.session && unsavedExit && (
+          <RouteUnsavedDialog
+            onSave={saveEditor}
+            onDiscard={closeEditor}
+            onContinue={() => setUnsavedExit(false)}
+          />
+        )}
+        <FreeMapCredit id={mapSources.selected} />
+        {quickAdd && (
+          <QuickAdd
+            onArea={startArea}
+            at={quickAdd}
+            error={annotations.error}
+            onClose={() => setQuickAdd(null)}
+            onAdd={(kind) => {
+              if (annotations.add(kind, quickAdd.coordinate)) {
+                areas.select(null);
+                setQuickAdd(null);
+                setProfileOpen(false);
+                setPanel('annotations');
               }
-            : panel === 'sources'
-              ? (sourcesNavigation ?? {
-                  label: sourcesParent === 'layers' ? '返回图层' : '返回工具',
-                  onClick: () => setPanel(sourcesParent),
-                })
-              : undefined
-        }
-        onActive={(next) => {
-          measurement.close();
-          if (annotations.edit && next !== 'annotations' && !annotations.select(null)) return;
-          navigation.setPicking(null);
-          if (!next && routeChild) {
-            setRouteChild(false);
-            annotations.select(null);
+            }}
+          />
+        )}
+        {panel === null &&
+          !tracks.drawing &&
+          !areas.drawing &&
+          !annotations.picking &&
+          !navigation.picking &&
+          !sectionEditing &&
+          !selectedAnnotation &&
+          !selectedPhoto &&
+          !featureMove &&
+          !measurement.active &&
+          !guidance.active &&
+          !boxSelecting && (
+            <CenterCursor
+              map={() => map.current}
+              onAdd={(coordinates) => {
+                map.current?.stop();
+                position.free();
+                follow.pause();
+                const screen = map.current?.toScreen(coordinates);
+                if (!screen) return;
+                tracks.select(null);
+                areas.select(null);
+                setProfileOpen(false);
+                setQuickAdd({ coordinate: coordinates, point: screen });
+              }}
+            />
+          )}
+        <TrackDrawing
+          ref={drawing}
+          enabled={
+            (branchEditing || tracks.drawing) &&
+            !areas.drawing &&
+            panel === null
           }
-          if (next === 'sources') {
-            setSourcesParent('tools');
+          length={tracks.rodLength}
+          style={
+            branchEditing
+              ? normalizeTrackStyle(editor.session!.track.style)
+              : tracks.style
+          }
+          mode={branchEditing ? 'points' : tracks.mode}
+          anchor={branchEditing ? branchTip : tracks.anchor}
+          candidates={branchEditing ? branchCandidates : tracks.candidates}
+          snapping={tracks.snapping}
+          roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+          riverSnapping={tracks.riverSnapping}
+          snapRoad={(point, previous, from) =>
+            (tracks.riverSnapping
+              ? map.current?.snapRiver(point, previous, from)
+              : map.current?.snapRoad(point, previous, from)) ?? {
+              status: 'loading',
+              match: null,
+            }
+          }
+          lastVertex={
+            branchEditing ? branchTip : (tracks.draft.at(-1)?.at(-1) ?? null)
+          }
+          toScreen={(point) => map.current?.toScreen(point) ?? null}
+          magnify={(canvas, point) =>
+            map.current?.magnify(canvas, point) ?? (() => {})
+          }
+          onAnchor={branchEditing ? () => {} : tracks.setAnchor}
+          onVertex={branchEditing ? drawBranchVertex : tracks.addVertex}
+          toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
+          onStroke={tracks.addStroke}
+        />
+        <TrackDrawing
+          ref={areaDrawing}
+          enabled={areas.drawing && panel === null}
+          length={tracks.rodLength}
+          style={{ color: '#66cfa2', width: 3 }}
+          mode="points"
+          anchor={null}
+          candidates={areas.draft}
+          snapping={true}
+          roadSnapping={areas.roadSnapping}
+          snapRoad={(point, previous, from) =>
+            map.current?.snapRoad(point, previous, from) ?? {
+              status: 'loading',
+              match: null,
+            }
+          }
+          lastVertex={areas.draft.at(-1) ?? null}
+          toScreen={(p) => map.current?.toScreen(p) ?? null}
+          toCoordinate={(p) => map.current?.toCoordinate(p) ?? null}
+          magnify={(canvas, point) =>
+            map.current?.magnify(canvas, point) ?? (() => {})
+          }
+          onAnchor={() => {}}
+          onVertex={areas.add}
+          onStroke={() => {}}
+        />
+        {(areas.drawing || (areas.selected && areaEditing)) &&
+          panel === null && (
+            <AreaTools
+              key={areas.selected ?? 'draft-area'}
+              state={areas}
+              onHide={() => setAreaEditing(false)}
+              onExtrude={(height) => {
+                const area = areas.items.find((a) => a.id === areas.selected);
+                if (!area) return '请先闭合轮廓';
+                try {
+                  if (!annotations.addOutline(outlineModel(area, height)))
+                    return '轮廓模型保存失败，请检查标记数量和存储空间';
+                  areas.update(area.id, { visible: false });
+                  areas.select(null);
+                  setPanel('annotations');
+                  return null;
+                } catch (e) {
+                  return e instanceof Error ? e.message : '拉伸失败';
+                }
+              }}
+              onFinish={() => {
+                const first = areas.draft[0],
+                  last = areas.draft.at(-1),
+                  pixel = first && map.current?.toScreen(first);
+                const result =
+                  areas.roadSnapping && pixel
+                    ? map.current?.snapRoad(pixel, null, last)
+                    : null;
+                if (result?.section?.length)
+                  areas.add(first, [...result.section.slice(0, -1), first]);
+                else areas.finish();
+              }}
+            />
+          )}
+        {areas.selected && !areaEditing && !areas.drawing && panel === null && (
+          <div className="area-selection glass">
+            <button onClick={() => setAreaEditing(true)}>区域编辑</button>
+            <button disabled={!areas.canUndo} onClick={areas.undoMove}>
+              撤销调点
+            </button>
+            <button onClick={() => areas.select(null)}>关闭</button>
+            {areas.error && <p role="status">{areas.error}</p>}
+          </div>
+        )}
+        {tracks.editing &&
+          tracks.drawing &&
+          !areas.drawing &&
+          panel === null && (
+            <TrackTools
+              tracks={tracks}
+              onLocate={(point) => map.current?.focusPoint(point)}
+              onFinish={() => {
+                if (tracks.complete()) setRouteWindow('card');
+              }}
+            />
+          )}
+        {selectedAnnotation &&
+          selectionName &&
+          (!activeTrackNode || selectedAnnotation) &&
+          !linePoint &&
+          !selectedPose &&
+          !tracks.drawing &&
+          !annotations.picking &&
+          navigation.picking === null &&
+          panel === null && (
+            <div
+              className={`selection-tools glass${selectedAnnotation ? ' is-annotation' : ''}`}
+              aria-label="选中对象编辑工具"
+            >
+              <div role="status">
+                <strong>{selectionName}</strong>
+                <span>
+                  {featureMove
+                    ? '正在调整位置 · 松手确认，双指取消'
+                    : selectedAnnotation
+                      ? '长按模型后拖动 · 松手保存'
+                      : '点选节点出圈，再拖动调整'}
+                </span>
+                {selectedAnnotation && featureMove && (
+                  <span>
+                    经度 {selectedAnnotation.coordinates[0].toFixed(6)} · 纬度{' '}
+                    {selectedAnnotation.coordinates[1].toFixed(6)}
+                    {featureMove?.target.kind === 'annotation'
+                      ? '（预览）'
+                      : ''}
+                  </span>
+                )}
+              </div>
+              {(selectedAnnotation ? annotations.error : tracks.error) && (
+                <p role="alert">
+                  {selectedAnnotation ? annotations.error : tracks.error}
+                </p>
+              )}
+              <div>
+                <button
+                  disabled={!!featureMove}
+                  onClick={() =>
+                    setPanel(selectedAnnotation ? 'annotations' : 'track')
+                  }
+                >
+                  详情 / 编辑
+                </button>
+                <button
+                  disabled={
+                    !!featureMove ||
+                    (selectedAnnotation
+                      ? annotations.moveUndoId !== selectedAnnotation.id
+                      : selectedDraft
+                        ? !tracks.canUndo
+                        : tracks.nodeUndoId !== tracks.selectedId)
+                  }
+                  onClick={() =>
+                    selectedAnnotation
+                      ? annotations.undoMove()
+                      : selectedDraft
+                        ? tracks.undo()
+                        : tracks.undoNodeMove()
+                  }
+                >
+                  撤销
+                </button>
+                <button
+                  disabled={!!featureMove}
+                  onClick={() => {
+                    tracks.select(null);
+                    annotations.select(null);
+                  }}
+                >
+                  完成调整
+                </button>
+              </div>
+            </div>
+          )}
+        {markerCamera.input}
+        {!!measurement.saved.items.length && (
+          <SavedMeasurements
+            items={measurement.saved.items.filter(
+              (item) =>
+                !measurement.active || item.id !== measurement.record?.id,
+            )}
+            onPick={
+              measurement.active
+                ? (p) => {
+                    if (measurement.adding)
+                      measurement.add(
+                        p.coordinates,
+                        map.current?.groundElevation(p.coordinates) ?? null,
+                      );
+                  }
+                : undefined
+            }
+            watchProjection={watchObjectProjection}
+            elevationScale={layers.terrain ? layers.exaggeration : 0}
+            projectGround={(p) => map.current?.toScreen(p.coordinates) ?? null}
+            onOpen={(item) => {
+              if (editor.session || !annotations.select(null)) return;
+              tracks.pause();
+              navigation.setPicking(null);
+              annotations.setPicking(null);
+              photos.setSelected(null);
+              setPanel(null);
+              setQuickAdd(null);
+              map.current?.stop();
+              position.free();
+              follow.pause();
+              measurement.load(item);
+            }}
+          />
+        )}
+        {measurement.active && (
+          <Measurement
+            elevationScale={layers.terrain ? layers.exaggeration : 0}
+            state={measurement}
+            watchProjection={watchObjectProjection}
+            projectGround={(p) => map.current?.toScreen(p.coordinates) ?? null}
+            onBegin={() => {
+              map.current?.stop();
+              position.free();
+              follow.pause();
+            }}
+            toCoordinate={(p) => map.current?.toCoordinate(p) ?? null}
+            groundElevation={(p) => map.current?.groundElevation(p) ?? null}
+          />
+        )}
+        {selectedPhoto && panel === null && (
+          <PhotoViewer
+            photo={selectedPhoto}
+            group={photos.items.filter((p) => photoGroup.includes(p.id))}
+            onSelect={photos.setSelected}
+            onClose={() => {
+              photos.setSelected(null);
+              if (
+                selectedPhoto.kind === 'annotation' &&
+                selectedAnnotation?.id === selectedPhoto.annotationId
+              )
+                setPanel('annotations');
+            }}
+            onRemove={photos.remove}
+            onUpdate={photos.update}
+            track={photoTracks.find((t) => t.id === selectedPhoto.trackId)}
+          />
+        )}
+        <header className="topbar glass">
+          <div className="brand">
+            <span className="brand-icon">
+              <img src="/brand/shantu-logo.png" alt="" width={25} height={25} />
+            </span>
+            <h1>{PRODUCT_NAME}</h1>
+          </div>
+          <PlaceSearch
+            center={mapCenter}
+            zoom={view.zoom}
+            onOpen={() => {
+              setPanel(null);
+              photos.setSelected(null);
+              tracks.pause();
+            }}
+            onSelect={(place) => {
+              setPanel(null);
+              follow.pause();
+              position.free();
+              navigation.setPicking(null);
+              annotations.setPicking(null);
+              setQuickAdd(null);
+              map.current?.focusPoint(place.coordinates, 14);
+            }}
+          />
+          <span className="map-load-status" role="status">
+            {mapStatus}
+          </span>
+          <button
+            className="icon-button"
+            aria-label="查看世界地图"
+            title="查看世界地图"
+            onClick={resetView}
+          >
+            <RotateCcw size={15} />
+          </button>
+        </header>
+        {annotations.picking ? (
+          <div className="route-map-notice glass" role="status">
+            点击地图
+            {annotations.picking === 'move'
+              ? '移动标记'
+              : `放置${KINDS[annotations.picking]}`}
+            <button
+              onClick={() => {
+                annotations.setPicking(null);
+                setPanel('annotations');
+              }}
+            >
+              取消
+            </button>
+          </div>
+        ) : navigation.picking !== null ? null : (
+          navigation.route &&
+          !measurement.active &&
+          !guidance.active && (
+            <div className="route-map-notice route-start-notice glass">
+              <button
+                onClick={() => setPanel(panel === 'route' ? null : 'route')}
+                aria-label="查看路线详情"
+              >
+                {TRAVEL_MODES.find((m) => m.id === navigation.mode)?.label} ·{' '}
+                {formatDistance(navigation.route.distance)} · 预计{' '}
+                {formatDuration(navigation.route.duration)}
+              </button>
+              <button onClick={startGuidance}>开始导航</button>
+            </div>
+          )
+        )}
+        {guidance.active &&
+          !sectionEditing &&
+          !annotations.picking &&
+          navigation.picking === null &&
+          !selectionName &&
+          !quickAdd &&
+          !tracks.editing && (
+            <GuidanceCard
+              onShare={() => {
+                const s = guidance.session;
+                if (s)
+                  setShareTarget(
+                    sharePlanned(
+                      s.route,
+                      '当前导航全程',
+                      s.departureLength > 0,
+                    ),
+                  );
+              }}
+              guidance={guidance}
+              following={follow.following}
+              onStop={guidance.stop}
+              onFollow={() => {
+                follow.resume();
+                if (!position.watching || position.locationError)
+                  position.locate();
+              }}
+              onShow={() => {
+                if (guidance.rejoin) {
+                  follow.pause();
+                  map.current?.fitRoute(guidance.rejoin.route.coordinates);
+                }
+              }}
+            />
+          )}
+        <div
+          className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
+          hidden={
+            panel !== 'layers' &&
+            !layers.elevationColors &&
+            !layers.temperature &&
+            !layers.geology
+          }
+        >
+          {layers.temperature && (
+            <TemperatureLegend
+              data={weather.data}
+              index={hourIndex}
+              loading={weather.loading}
+              error={weather.error}
+            />
+          )}
+          {layers.elevationColors && <ElevationLegend />}
+          {layers.geology && (
+            <GeologyPanel
+              state={geology}
+              source={layers.geologySource}
+              onSource={(geologySource) => update({ geologySource })}
+              onRetry={() => map.current?.refreshGeology()}
+            />
+          )}
+        </div>
+        {railTrack &&
+          !editor.session &&
+          panel === null &&
+          routeWindow === 'card' &&
+          !routeChild &&
+          !navigationTarget &&
+          !shareTarget &&
+          tracks.visible &&
+          !tracks.drawing &&
+          !areas.drawing &&
+          !sectionEditing &&
+          !guidance.active && (
+            <TrackJourneyRail
+              key={railTrack.id}
+              track={railTrack}
+              activeAlternative={activeAlternative}
+              onAlternative={(id) => {
+                setActiveAlternative(id);
+              }}
+              markers={annotations.items}
+              selected={linePoint}
+              onPoint={selectLinePoint}
+              onMarker={(id) => {
+                const marker = annotations.items.find((a) => a.id === id);
+                if (!marker) return;
+                map.current?.focusPoint(
+                  marker.coordinates,
+                  Math.max(15, view.zoom),
+                );
+                annotations.select(id);
+                setTrackLinePoint(null);
+                setPanel('annotations');
+              }}
+            />
+          )}
+        {navigation.route &&
+          !railTrack &&
+          !measurement.active &&
+          !sectionEditing &&
+          !guidance.active && (
+            <RouteWeatherRail
+              route={navigation.route}
+              journey={routeJourney}
+              onPreview={(coordinates) => {
+                if (coordinates) position.free();
+                map.current?.previewRoute(coordinates);
+              }}
+              fix={displayedFix}
+              following={follow.following}
+              onSettings={() => {
+                tracks.pause();
+                setPanel('route');
+              }}
+            />
+          )}
+        {(position.directionError ||
+          (!guidance.active &&
+            (position.locationError ||
+              position.locating ||
+              (position.showStatus &&
+                position.watching &&
+                position.fix?.source)))) &&
+          !panel && (
+            <div className="position-status glass" role="status">
+              <span>
+                {position.locationError ||
+                  position.directionError ||
+                  (position.locating
+                    ? '正在获取当前位置…'
+                    : position.fix
+                      ? `${position.fix.source === 'network' ? '基站 / Wi-Fi 大致位置' : 'GPS 位置'} · 估计误差 ${Math.round(position.fix.accuracy)} 米`
+                      : '')}
+              </span>
+              <button
+                aria-label="收起定位提示"
+                onClick={() =>
+                  position.locating
+                    ? position.stopLocation()
+                    : position.clearError()
+                }
+              >
+                ×
+              </button>
+            </div>
+          )}
+        <LayerWindow
+          open={panel === 'layers'}
+          onOpen={(open) => {
+            if (open) {
+              photos.setSelected(null);
+              tracks.pause();
+              navigation.setPicking(null);
+              annotations.setPicking(null);
+            }
+            setPanel(open ? 'layers' : null);
+          }}
+          settings={layers}
+          onChange={update}
+          customSource={mapSources.source?.name}
+          onOpenSources={() => {
+            setSourcesParent('layers');
             setSourcesNavigation(null);
+            setPanel('sources');
+          }}
+          satelliteDate={satellite.date}
+          satelliteStatus={satellite.status}
+          mapStatus={mapStatus}
+        />
+        {boxSelecting && (
+          <MapBoxSelect
+            entries={catalogEntries(
+              favorites.items.filter(
+                (f) => f.route.createdAt === routeOverlay.route?.createdAt,
+              ),
+              tracks.visible ? tracks.overlaySaved : [],
+              annotations.items,
+              sections.items,
+              areas.items,
+            )}
+            project={(p) => map.current?.toScreen(p) ?? null}
+            onCancel={() => setBoxSelecting(false)}
+            onDone={(keys) => {
+              setBoxSelecting(false);
+              setCollectionOutputKey(null);
+              setCollectionSelectedKeys(keys);
+              setPanel('favorites');
+            }}
+          />
+        )}
+        <MapActions
+          compact={panel === 'favorites'}
+          onBoxSelect={() => {
+            follow.pause();
+            map.current?.stop();
+            tracks.pause();
+            annotations.select(null);
+            annotations.setPicking(null);
+            navigation.setPicking(null);
+            setSectionEditing(false);
+            setAreaEditing(false);
+            setProfileOpen(false);
+            setQuickAdd(null);
+            setTrackLinePoint(null);
+            setPanel(null);
+            setBoxSelecting(true);
+          }}
+          networkAvailable={
+            position.networkAvailable &&
+            recorder.record.phase !== 'recording' &&
+            !guidance.active
           }
-          if (next) {
-            photos.setSelected(null);
+          networkMode={position.mode === 'network'}
+          onNetwork={() => {
+            follow.pause();
+            position.changeMode(
+              position.mode === 'network' ? 'auto' : 'network',
+              (fix) => {
+                map.current?.focusPoint(fix.coordinates, positionZoom(fix));
+              },
+            );
+          }}
+          sectionActive={sectionEditing}
+          terrain={layers.terrain}
+          bearing={view.bearing}
+          onZoom={(amount) => map.current?.zoom(amount)}
+          onNorth={() => {
+            position.north();
+            map.current?.north();
+          }}
+          onLocate={() => {
+            if (follow.following) {
+              follow.pause();
+              map.current?.stop();
+            } else {
+              map.current?.previewRoute(null);
+              follow.resume();
+              if (recorder.record.phase !== 'recording') position.locate();
+            }
+          }}
+          following={follow.following}
+          followBlocked={follow.blocked}
+          locating={
+            follow.following &&
+            (follow.waiting ||
+              (recorder.record.phase !== 'recording' && position.locating))
+          }
+          watching={position.watching}
+          onStopLocation={() => {
+            guidance.stop();
+            follow.pause();
+            position.stopLocation();
+          }}
+          direction={position.direction}
+          onDevice={() =>
+            position.direction === 'device'
+              ? position.free()
+              : void position.device()
+          }
+          onDimension={() => {
+            update({ terrain: !layers.terrain });
+            map.current?.view(layers.terrain ? 0 : 62, view.bearing);
+          }}
+        />
+        {recorder.record.phase !== 'idle' && (
+          <button
+            className="recording-chip glass"
+            onClick={() => setPanel('outdoor')}
+          >
+            {recorder.record.phase === 'recording' ? '● 记录中' : '记录待处理'}{' '}
+            · {recorder.record.segments.reduce((n, s) => n + s.length, 0)} 点
+          </button>
+        )}
+        {selectedAnnotation &&
+          (panel === 'annotations' || annotations.selectionRequest) &&
+          !annotations.picking && (
+            <AnnotationWorkspace
+              key={`annotation-workspace:${selectedAnnotation.id}`}
+              state={annotations}
+              shownItem={selectedAnnotation}
+              tab={annotationTab}
+              onTab={(tab) => {
+                setAnnotationTab(tab);
+                if (tab === 'position')
+                  map.current?.focusPoint(
+                    selectedAnnotation.coordinates,
+                    annotationViewZoom(selectedAnnotation),
+                  );
+              }}
+              dragging={!!featureMove || !!annotationPreview}
+              terrainStatus={modelTerrainStatus}
+              photos={photosForMarker(photos.items, selectedAnnotation.id)}
+              onCapture={markerCamera.capture}
+              cameraBusy={markerCamera.busy}
+              cameraStatus={
+                markerCamera.markerId === selectedAnnotation.id
+                  ? markerCamera.status
+                  : ''
+              }
+              cameraRetry={
+                markerCamera.markerId === selectedAnnotation.id &&
+                markerCamera.retry
+              }
+              onCameraRetry={markerCamera.onRetry}
+              onPhoto={(id) => {
+                setPhotoGroup(
+                  photosForMarker(photos.items, selectedAnnotation.id).map(
+                    (p) => p.id,
+                  ),
+                );
+                photos.setSelected(id);
+                setPanel(null);
+              }}
+              onClose={() => {
+                if (annotations.select(null)) {
+                  setPanel(null);
+                  tracks.select(null);
+                  setActiveTrackNode(null);
+                  setTrackLinePoint(null);
+                }
+              }}
+              onShare={(id) => {
+                setCollectionOutputKey(`annotation:${id}`);
+                setPanel('favorites');
+              }}
+              onNavigate={(item) => {
+                navigation.clear();
+                navigation.place('end', {
+                  name: item.name || '标记位置',
+                  coordinates: item.coordinates,
+                });
+                if (
+                  position.fix &&
+                  Date.now() - position.fix.timestamp < 120000
+                )
+                  navigation.place('start', {
+                    name: '我的位置',
+                    coordinates: position.fix.coordinates,
+                  });
+                setPanel('route');
+              }}
+            />
+          )}
+        <ControlDock
+          onMeasure={() => {
+            if (editor.session) {
+              backEditor();
+              return;
+            }
+            if (!annotations.select(null)) return;
             tracks.pause();
             navigation.setPicking(null);
             annotations.setPicking(null);
+            photos.setSelected(null);
+            setPanel(null);
+            setQuickAdd(null);
+            position.free();
+            follow.pause();
+            measurement.open();
+          }}
+          keepOpenOnMapInteraction={
+            panel !== null && !['tools', 'time'].includes(panel)
           }
-          setPanel(next);
-        }}
-        timeLabel={playing ? '播放中' : hourIndex ? `+${hourIndex}h` : '时间'}
-        summary={
-          <WeatherSummary
-            data={weather.data}
-            index={hourIndex}
-            point={point}
-            loading={weather.loading}
-            error={weather.error}
-            active={panel === 'weather'}
-            onOpen={() => {
-              tracks.pause();
-              navigation.setPicking(null);
-              annotations.setPicking(null);
-              setPanel(panel === 'weather' ? null : 'weather');
-            }}
-          />
-        }
-        timeline={
-          <Timeline
-            data={weather.data}
-            index={hourIndex}
-            playing={playing}
-            onIndex={setHourIndex}
-            onPlaying={setPlaying}
-            rainVisible={layers.rain}
-            expanded
-          />
-        }
-      >
-        {panel === 'sources' && (
-          <MapSourcesPanel
-            onRouteQr={(text) => {
-              setPanel(null);
-              setRouteQr(text);
-            }}
-            onNavigation={setSourcesNavigation}
-            sources={mapSources}
-            builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
-            onBuiltin={(id) => {
-              mapSources.select('');
-              update({
-                satellite: id !== 'terrain',
-                ...(id !== 'terrain' ? { imageryMode: id } : {}),
-              });
-            }}
-            onFocus={(bounds) =>
-              map.current?.fitRoute([
-                [bounds[0], bounds[1]],
-                [bounds[2], bounds[3]],
-              ])
-            }
-          />
-        )}
-        {panel === 'outdoor' && (
-          <OutdoorPanel
-            initialTab={outdoorPhotos ? 'photos' : 'record'}
-            recorder={recorder}
-            onSavedTrack={tracks.select}
-            photos={
-              <PhotoPanel
-                tracks={photoTracks}
-                preferred={tracks.selectedId}
-                photos={photos}
-                onOpen={(id) => {
-                  const p = photos.items.find((p) => p.id === id);
-                  if (!p) return;
-                  setPhotoGroup([id]);
-                  photos.setSelected(id);
-                  map.current?.focusPoint(p.coordinates, view.zoom);
-                  setPanel(null);
-                }}
-              />
-            }
-            offline={offline}
-            points={
-              selectedTrack?.segments.flat() ??
-              navigation.route?.coordinates ?? [[point.lng, point.lat]]
-            }
-            name={
-              selectedTrack?.name ??
-              (navigation.route ? '当前规划路线' : '地图选点周边')
-            }
-            onShow={(points) => {
-              map.current?.fitRoute(points);
-              setPanel(null);
-            }}
-            onOpenMap={() =>
-              update({
-                satellite: false,
-                contours: false,
-                clouds: false,
-                rain: false,
-                geology: false,
-                elevationColors: false,
-                roads: true,
-                labels: true,
-              })
-            }
-          />
-        )}
-        {panel === 'annotations' && !selectedAnnotation && (
-          <AnnotationPanel
-            onShare={(id) => {
-              setCollectionOutputKey(`annotation:${id}`);
-              setPanel('favorites');
-            }}
-            terrainStatus={modelTerrainStatus}
-            onArea={startArea}
-            state={annotations}
-            onPick={(kind) => {
-              tracks.pause();
-              navigation.setPicking(null);
-              annotations.setPicking(kind);
-              map.current?.stop();
-              setPanel(null);
-            }}
-            onLocate={(coordinates) => {
-              map.current?.focusPoint(coordinates, 18);
-              setPanel(null);
-            }}
-          />
-        )}
-        {panel === 'favorites' && (
-          <CollectionsPanel
-            mapCenter={map.current?.centerCoordinate() ?? anchor}
-            onLocate={(entry) => {
-              if (entry.kind === 'route') { navigation.restore(entry.route); map.current?.fitRoute(entry.route.route.coordinates); }
-              else if (entry.kind === 'track') { tracks.select(entry.track.id); map.current?.fitRoute(entry.track.segments.flat()); }
-              else if (entry.kind === 'area') map.current?.fitRoute(entry.area.boundary);
-              else map.current?.focusPoint(entry.coordinates, 16);
-            }}
-            onClose={() => setPanel(null)}
-            initialOutputKey={collectionOutputKey}
-            initialSelectedKeys={collectionSelectedKeys}
-            photos={photos.items}
-            areas={areas.items}
-            onArea={(id) => {
-              const a = areas.items.find((a) => a.id === id);
-              if (a) {
-                areas.select(id);
-                annotations.select(null);
-                tracks.select(null);
-                map.current?.fitRoute(a.boundary);
-                setAreaEditing(true);
-                setPanel(null);
-              }
-            }}
-            annotations={annotations.items}
-            sections={sections.items}
-            onAnnotation={(id) => {
-              const item = annotations.items.find((a) => a.id === id);
-              if (!item) return;
-              annotations.select(id);
-              tracks.select(null);
-              setProfileOpen(false);
-              map.current?.focusPoint(
-                item.coordinates,
-                annotationViewZoom(item),
-              );
-              setPanel('annotations');
-            }}
-            onSection={(id) => {
-              setPanel(null);
-              openSection(id);
-            }}
-            onShareRoute={(favorite) =>
-              setShareTarget(sharePlanned(favorite.route, favorite.name))
-            }
-            onShareTrack={shareTrackById}
-            favorites={favorites}
-            tracks={tracks}
-            onNavigateRoute={navigateFavorite}
-            onNavigateTrack={navigateTrack}
-            navigationError={savedNavigationError}
-            onRoute={(favorite) => {
-              navigation.restore(favorite);
-              map.current?.fitRoute(favorite.route.coordinates);
-              setPanel(null);
-            }}
-            onTrack={(id) => {
-              openRoute(id);
-              const track = tracks.saved.find((t) => t.id === id);
-              if (track) map.current?.fitRoute(track.segments.flat());
-            }}
-          />
-        )}
-        {panel === 'track' && (
-          <TrackPanel
-            onOpen={openRoute}
-            photos={photos.items}
-            onPhoto={(id) => {
-              const p = photos.items.find((p) => p.id === id);
-              if (!p) return;
-              setPhotoGroup([id]);
-              photos.setSelected(id);
-              map.current?.focusPoint(p.coordinates, view.zoom);
-              setPanel(null);
-            }}
-            onAddPhotos={(id) => {
-              tracks.select(id);
-              setOutdoorPhotos(true);
-              setPanel('outdoor');
-            }}
-            onShare={shareTrackById}
-            tracks={tracks}
-            onNavigate={navigateTrack}
-            navigationError={savedNavigationError}
-            onEditNodes={(id) => {
-              const track = tracks.saved.find((t) => t.id === id);
-              if (track) beginRouteEdit(track);
-            }}
-            onDraw={(endpoint) => {
-              map.current?.stop();
-              setSectionEditing(false);
-              setProfileOpen(false);
-              setPlanePreview(null);
-              navigation.setPicking(null);
+          mapPicking={navigation.picking !== null || !!annotations.picking}
+          onScanRoute={() => {
+            setPanel(null);
+            setRouteQr('');
+          }}
+          onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
+          sectionActive={sectionEditing}
+          sectionReady={sectionReady}
+          active={
+            panel === 'layers' ||
+            (panel === 'annotations' && selectedAnnotation)
+              ? null
+              : panel
+          }
+          title={panel === 'sources' ? sourcesNavigation?.title : undefined}
+          back={
+            selectedAnnotation && panel === 'route'
+              ? {
+                  label: '返回标记',
+                  onClick: () => {
+                    navigation.setPicking(null);
+                    setPanel('annotations');
+                  },
+                }
+              : routeChild
+                ? {
+                    label: '返回路线',
+                    onClick: () => {
+                      setRouteChild(false);
+                      annotations.select(null);
+                      setPanel(null);
+                    },
+                  }
+                : panel === 'sources'
+                  ? (sourcesNavigation ?? {
+                      label:
+                        sourcesParent === 'layers' ? '返回图层' : '返回工具',
+                      onClick: () => setPanel(sourcesParent),
+                    })
+                  : undefined
+          }
+          onActive={(next) => {
+            measurement.close();
+            if (
+              annotations.edit &&
+              next !== 'annotations' &&
+              !annotations.select(null)
+            )
+              return;
+            navigation.setPicking(null);
+            if (!next && routeChild) {
+              setRouteChild(false);
               annotations.select(null);
-              setPanel(null);
-              if (endpoint) map.current?.focusPoint(endpoint);
-            }}
-            onShow={(points) => {
-              map.current?.fitRoute(points);
-              setPanel(null);
-            }}
-          />
-        )}
-        {panel === 'route' && (
-          <RoutePanel
-            onShare={() => {
-              if (navigation.route)
-                setShareTarget(sharePlanned(navigation.route));
-            }}
-            navigation={navigation}
-            onStartNavigation={startGuidance}
-            navigating={guidance.active}
-            guidanceError={guidance.error}
-            near={[point.lng, point.lat]}
-            onSave={() => {
-              if (navigation.start && navigation.end && navigation.route)
-                favorites.save(
-                  navigation.start,
-                  navigation.end,
-                  navigation.route,
-                );
-            }}
-            saveMessage={
-              favorites.messageRoute === navigation.route?.createdAt
-                ? favorites.message
-                : ''
             }
-            locating={position.locating}
-            onCurrentPosition={() =>
-              position.locate((fix) => {
-                navigation.place('start', {
-                  name: '当前位置',
-                  coordinates: fix.coordinates,
-                });
-                map.current?.focusPoint(fix.coordinates);
-              })
+            if (next === 'sources') {
+              setSourcesParent('tools');
+              setSourcesNavigation(null);
             }
-            onPick={(slot) => {
+            if (next) {
+              photos.setSelected(null);
+              tracks.pause();
+              navigation.setPicking(null);
               annotations.setPicking(null);
-              navigation.setPicking(slot);
-              setPanel('route');
-            }}
-            onPlace={(place) => map.current?.focusPoint(place.coordinates)}
-            onShow={(route) => {
-              map.current?.fitRoute(route.coordinates);
-              setPanel('route');
-            }}
-          />
-        )}
-        {panel === 'route' && navigation.route && navigation.picking === null && (
-          <RouteWeatherSettings journey={routeJourney} />
-        )}
-        {panel === 'weather' && (
-          <WeatherPanel
-            data={weather.data}
-            index={hourIndex}
-            point={point}
-            loading={weather.loading}
-            error={weather.error}
-            onRefresh={() => {
-              void weather.refresh();
-              map.current?.refreshSatellite();
-            }}
-          />
-        )}
-        {panel === 'weather' && (
-          <p className="map-status" role="status">
-            {mapStatus}
+            }
+            setPanel(next);
+          }}
+          timeLabel={playing ? '播放中' : hourIndex ? `+${hourIndex}h` : '时间'}
+          summary={
+            <WeatherSummary
+              data={weather.data}
+              index={hourIndex}
+              point={point}
+              loading={weather.loading}
+              error={weather.error}
+              active={panel === 'weather'}
+              onOpen={() => {
+                tracks.pause();
+                navigation.setPicking(null);
+                annotations.setPicking(null);
+                setPanel(panel === 'weather' ? null : 'weather');
+              }}
+            />
+          }
+          timeline={
+            <Timeline
+              data={weather.data}
+              index={hourIndex}
+              playing={playing}
+              onIndex={setHourIndex}
+              onPlaying={setPlaying}
+              rainVisible={layers.rain}
+              expanded
+            />
+          }
+        >
+          {panel === 'sources' && (
+            <MapSourcesPanel
+              onRouteQr={(text) => {
+                setPanel(null);
+                setRouteQr(text);
+              }}
+              onNavigation={setSourcesNavigation}
+              sources={mapSources}
+              builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
+              onBuiltin={(id) => {
+                mapSources.select('');
+                update({
+                  satellite: id !== 'terrain',
+                  ...(id !== 'terrain' ? { imageryMode: id } : {}),
+                });
+              }}
+              onFocus={(bounds) =>
+                map.current?.fitRoute([
+                  [bounds[0], bounds[1]],
+                  [bounds[2], bounds[3]],
+                ])
+              }
+            />
+          )}
+          {panel === 'outdoor' && (
+            <OutdoorPanel
+              initialTab={outdoorPhotos ? 'photos' : 'record'}
+              recorder={recorder}
+              onSavedTrack={tracks.select}
+              photos={
+                <PhotoPanel
+                  tracks={photoTracks}
+                  preferred={tracks.selectedId}
+                  photos={photos}
+                  onOpen={(id) => {
+                    const p = photos.items.find((p) => p.id === id);
+                    if (!p) return;
+                    setPhotoGroup([id]);
+                    photos.setSelected(id);
+                    map.current?.focusPoint(p.coordinates, view.zoom);
+                    setPanel(null);
+                  }}
+                />
+              }
+              offline={offline}
+              points={
+                selectedTrack?.segments.flat() ??
+                navigation.route?.coordinates ?? [[point.lng, point.lat]]
+              }
+              name={
+                selectedTrack?.name ??
+                (navigation.route ? '当前规划路线' : '地图选点周边')
+              }
+              onShow={(points) => {
+                map.current?.fitRoute(points);
+                setPanel(null);
+              }}
+              onOpenMap={() =>
+                update({
+                  satellite: false,
+                  contours: false,
+                  clouds: false,
+                  rain: false,
+                  geology: false,
+                  elevationColors: false,
+                  roads: true,
+                  labels: true,
+                })
+              }
+            />
+          )}
+          {panel === 'annotations' && !selectedAnnotation && (
+            <AnnotationPanel
+              onShare={(id) => {
+                setCollectionOutputKey(`annotation:${id}`);
+                setPanel('favorites');
+              }}
+              terrainStatus={modelTerrainStatus}
+              onArea={startArea}
+              state={annotations}
+              onPick={(kind) => {
+                tracks.pause();
+                navigation.setPicking(null);
+                annotations.setPicking(kind);
+                map.current?.stop();
+                setPanel(null);
+              }}
+              onLocate={(coordinates) => {
+                map.current?.focusPoint(coordinates, 18);
+                setPanel(null);
+              }}
+            />
+          )}
+          {panel === 'favorites' && (
+            <CollectionsPanel
+              mapCenter={map.current?.centerCoordinate() ?? anchor}
+              onLocate={(entry) => {
+                position.free();
+                follow.pause();
+                if (entry.kind === 'route') navigation.restore(entry.route);
+                if (entry.kind === 'track') tracks.select(entry.track.id);
+                map.current?.fitCollection(collectionPreviewPoints(entry));
+              }}
+              onClose={() => setPanel(null)}
+              initialOutputKey={collectionOutputKey}
+              initialSelectedKeys={collectionSelectedKeys}
+              photos={photos.items}
+              areas={areas.items}
+              onArea={(id) => {
+                const a = areas.items.find((a) => a.id === id);
+                if (a) {
+                  areas.select(id);
+                  annotations.select(null);
+                  tracks.select(null);
+                  map.current?.fitRoute(a.boundary);
+                  setAreaEditing(true);
+                  setPanel(null);
+                }
+              }}
+              annotations={annotations.items}
+              sections={sections.items}
+              onAnnotation={(id) => {
+                const item = annotations.items.find((a) => a.id === id);
+                if (!item) return;
+                annotations.select(id);
+                tracks.select(null);
+                setProfileOpen(false);
+                map.current?.focusPoint(
+                  item.coordinates,
+                  annotationViewZoom(item),
+                );
+                setPanel('annotations');
+              }}
+              onSection={(id) => {
+                setPanel(null);
+                openSection(id);
+              }}
+              onShareRoute={(favorite) =>
+                setShareTarget(sharePlanned(favorite.route, favorite.name))
+              }
+              onShareTrack={shareTrackById}
+              favorites={favorites}
+              tracks={tracks}
+              onNavigateRoute={navigateFavorite}
+              onNavigateTrack={navigateTrack}
+              navigationError={savedNavigationError}
+              onRoute={(favorite) => {
+                navigation.restore(favorite);
+                map.current?.fitRoute(favorite.route.coordinates);
+                setPanel(null);
+              }}
+              onTrack={(id) => {
+                openRoute(id);
+                const track = tracks.saved.find((t) => t.id === id);
+                if (track) map.current?.fitRoute(track.segments.flat());
+              }}
+            />
+          )}
+          {panel === 'track' && (
+            <TrackPanel
+              onOpen={openRoute}
+              photos={photos.items}
+              onPhoto={(id) => {
+                const p = photos.items.find((p) => p.id === id);
+                if (!p) return;
+                setPhotoGroup([id]);
+                photos.setSelected(id);
+                map.current?.focusPoint(p.coordinates, view.zoom);
+                setPanel(null);
+              }}
+              onAddPhotos={(id) => {
+                tracks.select(id);
+                setOutdoorPhotos(true);
+                setPanel('outdoor');
+              }}
+              onShare={shareTrackById}
+              tracks={tracks}
+              onNavigate={navigateTrack}
+              navigationError={savedNavigationError}
+              onEditNodes={(id) => {
+                const track = tracks.saved.find((t) => t.id === id);
+                if (track) beginRouteEdit(track);
+              }}
+              onDraw={(endpoint) => {
+                map.current?.stop();
+                setSectionEditing(false);
+                setProfileOpen(false);
+                setPlanePreview(null);
+                navigation.setPicking(null);
+                annotations.select(null);
+                setPanel(null);
+                if (endpoint) map.current?.focusPoint(endpoint);
+              }}
+              onShow={(points) => {
+                map.current?.fitRoute(points);
+                setPanel(null);
+              }}
+            />
+          )}
+          {panel === 'route' && (
+            <RoutePanel
+              onShare={() => {
+                if (navigation.route)
+                  setShareTarget(sharePlanned(navigation.route));
+              }}
+              navigation={navigation}
+              onStartNavigation={startGuidance}
+              navigating={guidance.active}
+              guidanceError={guidance.error}
+              near={[point.lng, point.lat]}
+              onSave={() => {
+                if (navigation.start && navigation.end && navigation.route)
+                  favorites.save(
+                    navigation.start,
+                    navigation.end,
+                    navigation.route,
+                  );
+              }}
+              saveMessage={
+                favorites.messageRoute === navigation.route?.createdAt
+                  ? favorites.message
+                  : ''
+              }
+              locating={position.locating}
+              onCurrentPosition={() =>
+                position.locate((fix) => {
+                  navigation.place('start', {
+                    name: '当前位置',
+                    coordinates: fix.coordinates,
+                  });
+                  map.current?.focusPoint(fix.coordinates);
+                })
+              }
+              onPick={(slot) => {
+                annotations.setPicking(null);
+                navigation.setPicking(slot);
+                setPanel('route');
+              }}
+              onPlace={(place) => map.current?.focusPoint(place.coordinates)}
+              onShow={(route) => {
+                map.current?.fitRoute(route.coordinates);
+                setPanel('route');
+              }}
+            />
+          )}
+          {panel === 'route' &&
+            navigation.route &&
+            navigation.picking === null && (
+              <RouteWeatherSettings journey={routeJourney} />
+            )}
+          {panel === 'weather' && (
+            <WeatherPanel
+              data={weather.data}
+              index={hourIndex}
+              point={point}
+              loading={weather.loading}
+              error={weather.error}
+              onRefresh={() => {
+                void weather.refresh();
+                map.current?.refreshSatellite();
+              }}
+            />
+          )}
+          {panel === 'weather' && (
+            <p className="map-status" role="status">
+              {mapStatus}
+            </p>
+          )}
+        </ControlDock>
+        {sectionSaveError && (
+          <p className="section-save-error glass" role="alert">
+            {sectionSaveError}
           </p>
         )}
-      </ControlDock>
-      {sectionSaveError && (
-        <p className="section-save-error glass" role="alert">
-          {sectionSaveError}
-        </p>
-      )}
-      {sectionListOpen && (
-        <SectionList
-          state={sections}
-          onCreate={createSection}
-          onSelect={openSection}
-          onClose={() => setSectionListOpen(false)}
-        />
-      )}
-      {section.enabled &&
-        sectionEditing &&
-        profileOpen &&
-        panel === null &&
-        !selectedAnnotation && (
-          <SectionProfile
-            key={sections.selectedId}
-            name={
-              sections.items.find((s) => s.id === sections.selectedId)?.name
-            }
-            data={profileData}
-            settings={section}
-            onCursor={setSectionCursor}
-            onChange={changeSection}
-            onRestore={(value) => {
-              if (!sections.restore(value)) return;
-              setSectionHistory([]);
-              setPlanePreview(null);
-              focusSection(value);
-            }}
-            onClose={() => setProfileOpen(false)}
-            onHide={() => {
-              setSection((s) => ({ ...s, enabled: false }));
-              setPlanePreview(null);
-              setProfileOpen(false);
-              setSectionEditing(false);
-            }}
-            onDelete={() => {
-              setSection(EMPTY_SECTION);
-              setPlanePreview(null);
-              setProfileOpen(false);
-              setSectionEditing(false);
-              setSectionHistory([]);
-              setProfileData(null);
-            }}
-            onRetry={() => map.current?.refreshSection()}
+        {sectionListOpen && (
+          <SectionList
+            state={sections}
+            onCreate={createSection}
+            onSelect={openSection}
+            onClose={() => setSectionListOpen(false)}
           />
         )}
-      {!tracks.editing &&
-        !annotations.picking &&
-        navigation.picking === null &&
-        !selectedPhoto &&
-        !featureMove &&
-        (panel === null || (panel === 'annotations' && annotations.edit && annotationTab === 'position')) &&
-        (selectedAnnotation && !selectedAnnotation.trackAnchor && selectedPose && annotations.edit && annotationTab === 'position' ? (
-          <ObjectGizmo
-            key={`annotation-gizmo:${selectedAnnotation.id}`}
-            name={selectedAnnotation.name || '标记'}
-            kind={selectedAnnotation.kind}
-            pose={selectedPose}
-            hideToolbar
-            watchProjection={watchObjectProjection}
-            onLocate={() =>
-              map.current?.focusPoint(
-                selectedAnnotation.coordinates,
-                annotationViewZoom(selectedAnnotation),
-              )
-            }
-            error={annotations.error}
-            canUndo={annotations.moveUndoId === selectedAnnotation.id}
-            onBegin={() => {
-              map.current?.stop();
-              position.free();
-              follow.pause();
-              // Keep the numeric editor; it hides only during the map gesture.
-            }}
-            onPreview={(pose) =>
-              setAnnotationPreview(
-                pose ? applyAnnotationPose(selectedAnnotation, pose) : null,
-              )
-            }
-            onCommit={(pose) => {
-              annotations.transform(
-                applyAnnotationPose(selectedAnnotation, pose),
-              );
-            }}
-            onUndo={annotations.undoMove}
-            onDetails={() =>
-              setPanel('annotations')
-            }
-            onClose={() => {
-              if (annotations.select(null)) setPanel(null);
-            }}
-          />
-        ) : section.enabled &&
+        {section.enabled &&
           sectionEditing &&
-          section.plane &&
-          panel === null ? (
-          <ObjectGizmo
-            key={`section-${sections.selectedId}`}
-            name={
-              sections.items.find((s) => s.id === sections.selectedId)?.name ??
-              '矩形剖面'
-            }
-            kind="plane"
-            pose={planePose(section)}
-            watchProjection={watchObjectProjection}
-            canUndo={sectionHistory.length > 0}
-            onLocate={() => focusSection(section)}
-            onBegin={() => {
-              map.current?.stop();
-              position.free();
-              follow.pause();
-              setProfileOpen(false);
-            }}
-            onPreview={(pose) =>
-              setPlanePreview(pose ? applyPlanePose(sectionDraft, pose) : null)
-            }
-            onCommit={(pose) =>
-              changeSection(applyPlanePose(sectionDraft, pose))
-            }
-            onUndo={() => {
-              const prior = sectionHistory.at(-1);
-              if (prior) {
-                setSection(prior);
-                setSectionHistory((h) => h.slice(0, -1));
+          profileOpen &&
+          panel === null &&
+          !selectedAnnotation && (
+            <SectionProfile
+              key={sections.selectedId}
+              name={
+                sections.items.find((s) => s.id === sections.selectedId)?.name
               }
-            }}
-            onDetails={() => setProfileOpen((open) => !open)}
-            onClose={() => {
-              setSectionEditing(false);
-              setPlanePreview(null);
-              setProfileOpen(false);
+              data={profileData}
+              settings={section}
+              onCursor={setSectionCursor}
+              onChange={changeSection}
+              onRestore={(value) => {
+                if (!sections.restore(value)) return;
+                setSectionHistory([]);
+                setPlanePreview(null);
+                focusSection(value);
+              }}
+              onClose={() => setProfileOpen(false)}
+              onHide={() => {
+                setSection((s) => ({ ...s, enabled: false }));
+                setPlanePreview(null);
+                setProfileOpen(false);
+                setSectionEditing(false);
+              }}
+              onDelete={() => {
+                setSection(EMPTY_SECTION);
+                setPlanePreview(null);
+                setProfileOpen(false);
+                setSectionEditing(false);
+                setSectionHistory([]);
+                setProfileData(null);
+              }}
+              onRetry={() => map.current?.refreshSection()}
+            />
+          )}
+        {!tracks.editing &&
+          !annotations.picking &&
+          navigation.picking === null &&
+          !selectedPhoto &&
+          !featureMove &&
+          (panel === null ||
+            (panel === 'annotations' &&
+              annotations.edit &&
+              annotationTab === 'position')) &&
+          (selectedAnnotation &&
+          !selectedAnnotation.trackAnchor &&
+          selectedPose &&
+          annotations.edit &&
+          annotationTab === 'position' ? (
+            <ObjectGizmo
+              key={`annotation-gizmo:${selectedAnnotation.id}`}
+              name={selectedAnnotation.name || '标记'}
+              kind={selectedAnnotation.kind}
+              pose={selectedPose}
+              hideToolbar
+              watchProjection={watchObjectProjection}
+              onLocate={() =>
+                map.current?.focusPoint(
+                  selectedAnnotation.coordinates,
+                  annotationViewZoom(selectedAnnotation),
+                )
+              }
+              error={annotations.error}
+              canUndo={annotations.moveUndoId === selectedAnnotation.id}
+              onBegin={() => {
+                map.current?.stop();
+                position.free();
+                follow.pause();
+                // Keep the numeric editor; it hides only during the map gesture.
+              }}
+              onPreview={(pose) =>
+                setAnnotationPreview(
+                  pose ? applyAnnotationPose(selectedAnnotation, pose) : null,
+                )
+              }
+              onCommit={(pose) => {
+                annotations.transform(
+                  applyAnnotationPose(selectedAnnotation, pose),
+                );
+              }}
+              onUndo={annotations.undoMove}
+              onDetails={() => setPanel('annotations')}
+              onClose={() => {
+                if (annotations.select(null)) setPanel(null);
+              }}
+            />
+          ) : section.enabled &&
+            sectionEditing &&
+            section.plane &&
+            panel === null ? (
+            <ObjectGizmo
+              key={`section-${sections.selectedId}`}
+              name={
+                sections.items.find((s) => s.id === sections.selectedId)
+                  ?.name ?? '矩形剖面'
+              }
+              kind="plane"
+              pose={planePose(section)}
+              watchProjection={watchObjectProjection}
+              canUndo={sectionHistory.length > 0}
+              onLocate={() => focusSection(section)}
+              onBegin={() => {
+                map.current?.stop();
+                position.free();
+                follow.pause();
+                setProfileOpen(false);
+              }}
+              onPreview={(pose) =>
+                setPlanePreview(
+                  pose ? applyPlanePose(sectionDraft, pose) : null,
+                )
+              }
+              onCommit={(pose) =>
+                changeSection(applyPlanePose(sectionDraft, pose))
+              }
+              onUndo={() => {
+                const prior = sectionHistory.at(-1);
+                if (prior) {
+                  setSection(prior);
+                  setSectionHistory((h) => h.slice(0, -1));
+                }
+              }}
+              onDetails={() => setProfileOpen((open) => !open)}
+              onClose={() => {
+                setSectionEditing(false);
+                setPlanePreview(null);
+                setProfileOpen(false);
+              }}
+            />
+          ) : null)}
+        {navigationTarget && (
+          <NavigationStart
+            key={navigationTarget.id}
+            target={navigationTarget}
+            alternatives={
+              selectedTrack && selectedTrack.id === navigationTarget.id
+                ? selectedAlternatives
+                : []
+            }
+            alternativeId={activeAlternative}
+            onAlternative={setActiveAlternative}
+            startError={savedNavigationError}
+            onStart={beginFavorite}
+            onClose={() => setNavigationTarget(null)}
+          />
+        )}
+        {shareTarget && (
+          <RouteShare
+            data={shareTarget}
+            photos={photos.items}
+            onClose={() => setShareTarget(null)}
+          />
+        )}
+        {routeQr !== null && (
+          <RouteQrReader
+            initial={routeQr}
+            onClose={() => setRouteQr(null)}
+            onLoaded={(track) => {
+              setRouteQr(null);
+              tracks.pause();
+              tracks.select(track.id);
+              tracks.setVisible(true);
+              setActiveTrackNode(null);
+              annotations.select(null);
+              areas.select(null);
+              map.current?.fitRoute(track.segments.flat());
+              setPanel('track');
             }}
           />
-        ) : null)}
-      {navigationTarget && (
-        <NavigationStart
-          key={navigationTarget.id}
-          target={navigationTarget}
-          alternatives={
-            selectedTrack && selectedTrack.id === navigationTarget.id
-              ? selectedAlternatives
-              : []
-          }
-          alternativeId={activeAlternative}
-          onAlternative={setActiveAlternative}
-          startError={savedNavigationError}
-          onStart={beginFavorite}
-          onClose={() => setNavigationTarget(null)}
-        />
-      )}
-      {shareTarget && (
-        <RouteShare
-          data={shareTarget}
-          photos={photos.items}
-          onClose={() => setShareTarget(null)}
-        />
-      )}
-      {routeQr !== null && (
-        <RouteQrReader
-          initial={routeQr}
-          onClose={() => setRouteQr(null)}
-          onLoaded={(track) => {
-            setRouteQr(null);
-            tracks.pause();
-            tracks.select(track.id);
-            tracks.setVisible(true);
-            setActiveTrackNode(null);
-            annotations.select(null);
-            areas.select(null);
-            map.current?.fitRoute(track.segments.flat());
-            setPanel('track');
+        )}
+        <CameraGizmo
+          view={view}
+          onView={(pitch, bearing) => {
+            follow.pause();
+            position.free();
+            if (pitch > 0 && !layers.terrain && !section.enabled)
+              update({ terrain: true });
+            map.current?.view(pitch, bearing, false);
           }}
         />
-      )}
-      <CameraGizmo
-        view={view}
-        onView={(pitch, bearing) => {
-          follow.pause();
-          position.free();
-          if (pitch > 0 && !layers.terrain && !section.enabled)
-            update({ terrain: true });
-          map.current?.view(pitch, bearing, false);
-        }}
-      />
-    </main></TextSuggestions.Provider>
+      </main>
+    </TextSuggestions.Provider>
   );
 }

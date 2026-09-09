@@ -525,3 +525,43 @@
 [data-route-edit='true'] .track-draw-hint {
   top: calc(72px + env(safe-area-inset-top));
 }
+
+/* Compact node editor: six actions stay together, matching collection density. */
+.observatory .route-edit-dock {
+  left: 4px;
+  bottom: calc(4px + env(safe-area-inset-bottom));
+  width: min(300px, calc(100% - 8px));
+  max-height: min(200px, calc(100dvh - 64px));
+  padding: 4px;
+  border-radius: 8px;
+  background: #f0f3eefa;
+  font-size: 11px;
+}
+.observatory .route-edit-status { margin: 0 0 2px; font-size: 10px; }
+.observatory .route-edit-actions-row {
+  grid-template-columns: 30px 30px repeat(4, minmax(0, 1fr));
+  gap: 2px;
+}
+.observatory .route-edit-dock button,
+.observatory .route-edit-dock .route-custom-color {
+  min-width: 0; min-height: 36px; height: 36px;
+  padding: 0 2px; gap: 2px; font-size: 11px;
+  background: transparent; border-color: transparent;
+}
+.observatory .route-edit-actions-row svg { width: 14px; height: 14px; }
+.observatory .route-edit-actions-row .route-solid { color: #fff; background: #1d694c; }
+.observatory .route-edit-dock button[aria-pressed='true'] { background: #cee4d8; color: #1d694c; }
+.observatory .route-edit-colors { margin-top: 0; gap: 0; border-top: 1px solid #d3ddd4; }
+.observatory .route-edit-colors i { width: 16px; height: 16px; }
+.observatory .route-edit-sliders { gap: 4px; }
+.observatory .route-edit-sliders label { border: 0; padding: 0; font-size: 10px; }
+.observatory .route-edit-dock .route-edit-sliders input[type='range'] { height: 30px; min-height: 30px; }
+.observatory .route-branch-options { display: flex; gap: 2px; }
+
+.observatory .route-edit-header {
+  left: 4px; right: auto; top: calc(4px + env(safe-area-inset-top));
+  width: min(300px, calc(100% - 8px)); padding: 2px 4px; gap: 4px;
+  min-height: 40px; font-size: 11px; background: #f0f3eefa;
+}
+.observatory .route-edit-header button { min-height: 36px; padding: 0 4px; font-size: 11px; background: transparent; border: 0; }
+.observatory .route-edit-header small { font-size: 10px; }

@@ -502,23 +502,14 @@ export function TrackTools({
 }) {
   return (
     <div className="track-tools glass" aria-label="绘制工具">
-      <button
-        aria-pressed={t.riverSnapping || t.roadSnapping}
-        onClick={() =>
-          t.riverSnapping
-            ? t.setRiverSnapping(false)
-            : t.setRoadSnapping(!t.roadSnapping)
-        }
-      >
-        {t.riverSnapping
-          ? '河流吸附'
-          : `道路${t.roadSnapping ? '吸附' : '自由'}`}
+      <button aria-pressed={t.roadSnapping} onClick={() => t.setRoadSnapping(!t.roadSnapping)}>
+        道路吸附
       </button>
-      <button
-        aria-pressed={t.snapping}
-        onClick={() => t.setSnapping(!t.snapping)}
-      >
-        节点{t.snapping ? '开' : '关'}
+      <button aria-pressed={t.riverSnapping} onClick={() => t.setRiverSnapping(!t.riverSnapping)}>
+        河流吸附
+      </button>
+      <button aria-pressed={t.snapping} onClick={() => t.setSnapping(!t.snapping)}>
+        节点吸附
       </button>
       {t.anchor && (
         <button onClick={() => onLocate(t.anchor!)}>定位端点</button>

@@ -1,5 +1,6 @@
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import type { VisiblePhoto } from './storage';
+import { markerIconElement } from '../annotations/icons';
 export class PhotoLayer {
   private photos: VisiblePhoto[] = [];
   private markers: Marker[] = [];
@@ -50,6 +51,14 @@ export class PhotoLayer {
       img.src = group[0].url;
       img.alt = '';
       button.appendChild(img);
+      if (group[0].kind === 'annotation') {
+        const markerBadge = document.createElement('i');
+        markerBadge.className = 'photo-annotation-badge';
+        markerBadge.setAttribute('aria-hidden', 'true');
+        markerBadge.style.color = group[0].mapColor ?? '#176b68';
+        markerBadge.appendChild(markerIconElement(group[0].mapIcon));
+        button.appendChild(markerBadge);
+      }
       if (group.length > 1) {
         const badge = document.createElement('span');
         badge.textContent = String(group.length);
@@ -61,7 +70,12 @@ export class PhotoLayer {
         this.onOpen(group.map((p) => p.id));
       });
       this.markers.push(
-        new Marker({ element: button, anchor: 'bottom' })
+        new Marker({
+          element: button,
+          anchor: 'bottom',
+          opacity: 1,
+          opacityWhenCovered: 1,
+        })
           .setLngLat(group[0].coordinates)
           .addTo(this.map),
       );

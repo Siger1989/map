@@ -1,3 +1,4 @@
+import { floatingGeometry, searchViewport, observeSearchViewport } from './floatingGeometry';
 import {
   createContext,
   forwardRef,
@@ -83,23 +84,10 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
     const update = () => {
       const r = input.current?.getBoundingClientRect();
       if (!r) return;
-      const v = window.visualViewport,
-        bottom = (v?.offsetTop ?? 0) + (v?.height ?? innerHeight),
-        left = Math.max(6, r.left),
-        width = Math.min(Math.max(180, r.width), innerWidth - left - 6);
-      const below = bottom - r.bottom,
-        height = Math.min(190, Math.max(below, r.top - 6));
-      setStyle({
-        left,
-        width,
-        top: below >= 140 ? r.bottom + 3 : Math.max(6, r.top - height - 3),
-        maxHeight: Math.max(50, height),
-      });
+      setStyle(floatingGeometry(r, searchViewport(), 190));
     };
     update();
-    window.addEventListener('resize', update);
-    document.addEventListener('scroll', update, true);
-    window.visualViewport?.addEventListener('resize', update);
+    const unobserve = observeSearchViewport(update);
     const dismiss = (e: PointerEvent) => {
       if (
         e.target instanceof Element &&
@@ -110,9 +98,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
     };
     document.addEventListener('pointerdown', dismiss, true);
     return () => {
-      window.removeEventListener('resize', update);
-      document.removeEventListener('scroll', update, true);
-      window.visualViewport?.removeEventListener('resize', update);
+      unobserve();
       document.removeEventListener('pointerdown', dismiss, true);
     };
   }, [open, id, props.value]);

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { SmartInput } from '../input/SmartText';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
@@ -83,11 +84,17 @@ export function WorkbenchAction(p: Props) {
     title = item?.name ?? '收藏管理';
     body = (
       <div className="collection-action-buttons">
-        {item && item.kind !== 'folder' && <button onClick={() => p.onOpen(item.id)}>打开 / 编辑详情</button>}
-        {item && (item.kind === 'track' || item.kind === 'route') && <button onClick={() => p.onNavigate(item.id)}>开始导航</button>}
+        {item && item.kind !== 'folder' && (
+          <button onClick={() => p.onOpen(item.id)}>打开 / 编辑详情</button>
+        )}
+        {item && (item.kind === 'track' || item.kind === 'route') && (
+          <button onClick={() => p.onNavigate(item.id)}>开始导航</button>
+        )}
         {item && (
           <button onClick={() => p.onAction({ type: 'edit', id: item.id })}>
-            {item.kind === 'route' || item.kind === 'section' ? '重命名' : '重命名 / 颜色'}
+            {item.kind === 'route' || item.kind === 'section'
+              ? '重命名'
+              : '重命名 / 颜色'}
           </button>
         )}
         {(!item || item.kind === 'folder') && item?.id !== 'unfiled' && (
@@ -216,17 +223,19 @@ export function WorkbenchAction(p: Props) {
             </select>
           </label>
         )}
-        {item?.kind !== 'route' && item?.kind !== 'section' && <label className="collection-action-color">
-          {item?.kind === 'folder' || p.action.type === 'new'
-            ? '文件夹区域底色'
-            : '标记 / 路线颜色'}
-          <input
-            aria-label="收藏颜色"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-          />
-        </label>}
+        {item?.kind !== 'route' && item?.kind !== 'section' && (
+          <label className="collection-action-color">
+            {item?.kind === 'folder' || p.action.type === 'new'
+              ? '文件夹区域底色'
+              : '标记 / 路线颜色'}
+            <input
+              aria-label="收藏颜色"
+              type="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+            />
+          </label>
+        )}
         <button
           type="submit"
           className="collection-action-primary"
@@ -261,7 +270,9 @@ export function WorkbenchAction(p: Props) {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
           >
-            {selected.every(i => i.kind === 'folder') && <option value="">收藏根目录</option>}
+            {selected.every((i) => i.kind === 'folder') && (
+              <option value="">收藏根目录</option>
+            )}
             {folders.map((i) => (
               <option key={i.id} value={i.id}>
                 {folderPaths.get(i.id)}
@@ -273,7 +284,11 @@ export function WorkbenchAction(p: Props) {
         <button
           type="submit"
           className="collection-action-primary"
-          disabled={!(destination === '' && selected.every(i => i.kind === 'folder')) && !folders.some((i) => i.id === destination)}
+          disabled={
+            !(
+              destination === '' && selected.every((i) => i.kind === 'folder')
+            ) && !folders.some((i) => i.id === destination)
+          }
         >
           确认移动
         </button>
@@ -315,60 +330,66 @@ export function WorkbenchAction(p: Props) {
       />
     );
   }
-  return (
-    <div
-      className="collection-action-backdrop"
-      onPointerDown={(e) => {
-        if (e.target === e.currentTarget && !p.busy) p.onClose();
-      }}
-    >
-      <section
-        ref={root}
-        className="collection-action-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape' && !p.busy) {
-            e.preventDefault();
-            e.stopPropagation();
-            p.onClose();
-          }
-          if (e.key === 'Tab') {
-            const nodes = Array.from(
-              root.current?.querySelectorAll<HTMLElement>(
-                'button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]',
-              ) ?? [],
-            );
-            if (e.shiftKey && document.activeElement === nodes[0]) {
-              e.preventDefault();
-              nodes.at(-1)?.focus();
-            } else if (!e.shiftKey && document.activeElement === nodes.at(-1)) {
-              e.preventDefault();
-              nodes[0]?.focus();
-            }
-          }
+  return createPortal(
+    <div className="collection-workbench collection-modal-root">
+      <div
+        className="collection-action-backdrop"
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget && !p.busy) p.onClose();
         }}
       >
-        <header>
-          <strong>{title}</strong>
-          <button
-            aria-label="关闭收藏操作"
-            disabled={p.busy}
-            onClick={p.onClose}
-          >
-            <X size={18} />
-          </button>
-        </header>
-        <div className="collection-action-content">
-          {body}
-          {p.error && (
-            <p className="collection-action-error" role="status">
-              {p.error}
-            </p>
-          )}
-        </div>
-      </section>
-    </div>
+        <section
+          ref={root}
+          className="collection-action-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !p.busy) {
+              e.preventDefault();
+              e.stopPropagation();
+              p.onClose();
+            }
+            if (e.key === 'Tab') {
+              const nodes = Array.from(
+                root.current?.querySelectorAll<HTMLElement>(
+                  'button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]',
+                ) ?? [],
+              );
+              if (e.shiftKey && document.activeElement === nodes[0]) {
+                e.preventDefault();
+                nodes.at(-1)?.focus();
+              } else if (
+                !e.shiftKey &&
+                document.activeElement === nodes.at(-1)
+              ) {
+                e.preventDefault();
+                nodes[0]?.focus();
+              }
+            }
+          }}
+        >
+          <header>
+            <strong>{title}</strong>
+            <button
+              aria-label="关闭收藏操作"
+              disabled={p.busy}
+              onClick={p.onClose}
+            >
+              <X size={18} />
+            </button>
+          </header>
+          <div className="collection-action-content">
+            {body}
+            {p.error && (
+              <p className="collection-action-error" role="status">
+                {p.error}
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>,
+    document.body,
   );
 }

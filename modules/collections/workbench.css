@@ -612,3 +612,44 @@
 .collection-share-cancel {
   text-decoration: underline;
 }
+
+/* Dialogs live at the document root, outside the clipped collection/map split. */
+.collection-workbench.collection-modal-root {
+  z-index: 100;
+  background: transparent;
+  pointer-events: none;
+  height: 100dvh;
+}
+.collection-modal-root .collection-action-backdrop {
+  position: absolute;
+  padding: max(4px, env(safe-area-inset-top)) 4px
+    max(4px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+.collection-modal-root .collection-action-dialog {
+  width: min(300px, 100%);
+  max-height: 100%;
+  font-size: 11px;
+}
+.collection-modal-root .collection-action-content {
+  min-height: 0;
+  padding: 4px;
+}
+.collection-modal-root .collection-action-dialog > header {
+  padding-left: 4px;
+  gap: 4px;
+}
+.collection-modal-root
+  .collection-action-content
+  :is(form, label, .collection-action-pair, .collection-share) {
+  gap: 4px;
+}
+.collection-modal-root .collection-action-content :is(button, input, select) {
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 11px;
+}
+.collection-modal-root .collection-action-content p {
+  margin: 0 0 4px;
+  font-size: 11px;
+}

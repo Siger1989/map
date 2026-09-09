@@ -110,7 +110,25 @@
   background: transparent;
   cursor: pointer;
 }
+.trip-photo-marker .photo-annotation-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 1px 3px #0006;
+}
+.trip-photo-marker .photo-annotation-badge svg {
+  width: 14px;
+  height: 14px;
+}
 .trip-photo-marker img {
+  background: #fff;
   display: block;
   width: 36px;
   height: 36px;

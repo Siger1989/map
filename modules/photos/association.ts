@@ -58,6 +58,8 @@ export function mapPhotos<T extends TripPhoto>(
             ...photo,
             coordinates: [...marker.coordinates],
             trackName: marker.name,
+            mapIcon: marker.icon,
+            mapColor: marker.color,
           } as T,
         ]
       : [];

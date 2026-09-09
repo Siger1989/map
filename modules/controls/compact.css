@@ -1,6 +1,9 @@
 /* Shared budget for map operation popovers, kept independent of content density. */
 :root {
-  --map-panel-max-height: min(28dvh, 200px);
+  --map-panel-max-height: min(
+    200px,
+    calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px))
+  );
   --map-panel-max-width: 300px;
   --map-ui-gap: 4px;
   --map-ui-padding: 4px;
@@ -100,3 +103,131 @@
   padding: 0;
   font-size: 10px;
 }
+
+/* Match the collection rows: compact text/padding, retain usable hit areas. */
+.observatory .dock-content {
+  padding-top: 0;
+}
+.observatory .control-popover .dock-heading {
+  height: 44px;
+}
+.observatory
+  .control-popover
+  :is(
+    .route-modes,
+    .route-result,
+    .route-edit-actions,
+    .route-search-results,
+    .route-primary,
+    .route-note,
+    .route-error
+  ) {
+  margin: 2px 0;
+  gap: 2px;
+}
+.observatory .control-popover .route-endpoint {
+  gap: 2px;
+}
+.observatory
+  .control-popover
+  :is(
+    .route-search-results button,
+    .route-result button,
+    .route-steps summary,
+    .route-steps li
+  ) {
+  padding: 2px 4px;
+}
+.observatory
+  .control-popover
+  :is(
+    .route-modes button,
+    .route-primary,
+    .route-search input,
+    .route-endpoint button
+  ) {
+  min-height: 44px;
+}
+.observatory .control-popover .route-search-results small {
+  margin-top: 0;
+}
+.observatory .marker-coordinate-fields {
+  gap: 2px;
+}
+.observatory .marker-coordinate-fields > label {
+  gap: 2px;
+}
+.observatory .marker-number :is(input, button) {
+  padding: 0 2px;
+}
+
+/* User reference: collection rows use 36px, 11-12px text and minimal inset. */
+.observatory :is(.control-popover, .marker-workspace) {
+  --compact-row: 36px;
+}
+.observatory
+  .control-popover
+  :is(button, input, select, summary):not([type='range']):not(
+    [type='color']
+  ):not([type='checkbox']),
+.observatory
+  .marker-workspace
+  :is(button, input, select):not([type='range']):not([type='color']):not(
+    [type='checkbox']
+  ) {
+  min-height: var(--compact-row);
+  font-size: 11px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.observatory .control-popover .dock-heading {
+  height: 36px;
+}
+.observatory .control-popover .dock-content {
+  padding-top: 0;
+}
+.observatory .control-popover .route-panel .route-modes {
+  margin: 0;
+  padding: 0;
+  gap: 2px;
+}
+.observatory .control-popover .route-panel .route-stop-row {
+  min-height: 36px;
+}
+.observatory .control-popover .route-panel .route-stop-row :is(input, button) {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 2px;
+  font-size: 11px;
+}
+.observatory
+  .control-popover
+  .route-panel
+  :is(.route-modes button, .route-edit-actions button, .route-primary) {
+  min-height: 36px;
+  padding: 0 2px;
+}
+.observatory .marker-workspace .marker-editor-bar {
+  min-height: 36px;
+}
+.observatory
+  .marker-workspace
+  :is(.marker-number input, .marker-number button) {
+  height: 36px;
+  min-height: 36px;
+}
+.collection-modal-root button {
+  min-height: 36px;
+}
+.collection-modal-root .collection-action-dialog > header {
+  min-height: 36px;
+}
+.collection-modal-root .collection-action-content :is(input, select) {
+  height: 36px;
+}
+
+.observatory .control-popover .layer-row { min-height: 36px; gap: 2px; padding: 0; }
+.observatory .control-popover .layer-text label { font-size: 11px; }
+.observatory .control-popover .dock-heading .icon-button { height: 36px; min-height: 36px; }
+.observatory .track-tools { max-width: min(300px, calc(100% - 8px)); gap: 2px; padding: 2px; left: 4px; }
+.observatory .track-tools button { min-height: 36px; padding: 0 4px; font-size: 11px; }

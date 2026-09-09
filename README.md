@@ -1,5 +1,7 @@
 > 0.2.11：[密集收藏/省市全选/滑选/地图框选、标记位置第一页、Excel修复、沿线标记与12图源](docs/collections-selection-and-map-library.md)，[路线照片与ZIP、中心准星、键盘编辑和河流吸附](docs/route-photo-archives-and-river-snapping.md)。[今天逐版本更新PDF](output/pdf/山兔-2026-09-08-版本更新.pdf)。包含0.2.10：[扫码先看轨迹、标记属性、区域/轮廓模型和剖面平面地图](docs/markers-areas-and-collections.md)。
 
+**最新测试版 0.2.22**：键盘与搜索浮层适配、收藏目录/示意地图、独立测量投影、照片标记一体、紧凑节点编辑。[改动与安装说明](docs/release-0.2.22.md)。
+
 # 山兔 · 三维地图与沿途天气
 
 **最新源码**：[导航选择已有标记、选点保留面板、地点箭头与清晰搜索结果](docs/navigation-map-picking.md)，包含[标记摘要/紧凑三页编辑、事务草稿、逐轴回正与新Logo](docs/marker-workspace.md)及此前路线与收藏功能。

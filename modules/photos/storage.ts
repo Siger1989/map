@@ -12,7 +12,11 @@ export type TripPhoto = {
   timeSource?: 'exif' | 'camera';
   preview: Blob;
 } & PhotoDetails;
-export type VisiblePhoto = TripPhoto & { url: string };
+export type VisiblePhoto = TripPhoto & {
+  url: string;
+  mapIcon?: string;
+  mapColor?: string;
+};
 const MAX_PHOTOS = 200,
   MAX_BYTES = 40 * 1024 * 1024;
 let database: Promise<IDBDatabase> | null = null;

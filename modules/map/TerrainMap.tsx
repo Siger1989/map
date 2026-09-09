@@ -86,6 +86,7 @@ export type MapHandle = {
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
+  fitCollection: (coordinates: Coordinate[]) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
   followPosition: (
     coordinates: Coordinate,
@@ -98,6 +99,7 @@ export type MapHandle = {
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
 };
 type Props = {
+  collectionPreviewActive?: boolean;
   mapSource?: MapSource | null;
   onSourceStatus?: (status: string) => void;
   section: SectionSettings;
@@ -188,6 +190,33 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
+    const collectionTarget = useRef<Coordinate[]>([]);
+    const fitCollection = (coordinates: Coordinate[], duration = 350) => {
+      const m = mapRef.current;
+      if (!m || !coordinates.length) return;
+      collectionTarget.current = coordinates;
+      m.resize();
+      const first = coordinates[0][0];
+      const min: Coordinate = [Infinity, Infinity],
+        max: Coordinate = [-Infinity, -Infinity];
+      for (const [lng, lat] of coordinates) {
+        const x = first + ((lng - first + 540) % 360) - 180;
+        min[0] = Math.min(min[0], x);
+        min[1] = Math.min(min[1], lat);
+        max[0] = Math.max(max[0], x);
+        max[1] = Math.max(max[1], lat);
+      }
+      const { clientWidth: w, clientHeight: h } = m.getContainer();
+      if (w < 20 || h < 20) return;
+      latest.current.onBrowse();
+      m.fitBounds([min, max], {
+        padding: Math.min(56, h * 0.28, w * 0.2),
+        maxZoom: 18,
+        pitch: 0,
+        bearing: 0,
+        duration,
+      });
+    };
     const domestic = basemapConfiguration().domestic;
     const syncSatellite = () => {
       const map = mapRef.current;
@@ -372,7 +401,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        groundElevation: coordinates => mapRef.current ? loadedTerrainSampler(mapRef.current)(coordinates) : null,
+        groundElevation: (coordinates) =>
+          mapRef.current
+            ? loadedTerrainSampler(mapRef.current)(coordinates)
+            : null,
         centerCoordinate: () => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;
@@ -497,6 +529,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             duration: 700,
           });
         },
+        fitCollection,
         fitRoute: (coordinates) => {
           const m = mapRef.current;
           if (!m || !coordinates.length) return;
@@ -632,7 +665,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               const item = latest.current.annotations.find(
                 (a) => a.id === id && a.visible,
               );
-              if (latest.current.annotationEditingId && item?.id !== latest.current.annotationEditingId) return null;
+              if (
+                latest.current.annotationEditingId &&
+                item?.id !== latest.current.annotationEditingId
+              )
+                return null;
               if (item?.kind === 'pin' && !item.trackAnchor)
                 return {
                   kind: 'annotation',
@@ -651,14 +688,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             },
             begin: (target) => latest.current.onDragBegin(target),
             direct: (target) =>
-              (target.kind === 'annotation' && latest.current.annotationSelected === target.id) ||
+              (target.kind === 'annotation' &&
+                latest.current.annotationSelected === target.id) ||
               (target.kind === 'track' &&
-              latest.current.trackOverlay.activeNode?.trackId ===
-                target.node.trackId &&
-              latest.current.trackOverlay.activeNode.coordinate[0] ===
-                target.node.coordinate[0] &&
-              latest.current.trackOverlay.activeNode.coordinate[1] ===
-                target.node.coordinate[1]),
+                latest.current.trackOverlay.activeNode?.trackId ===
+                  target.node.trackId &&
+                latest.current.trackOverlay.activeNode.coordinate[0] ===
+                  target.node.coordinate[0] &&
+                latest.current.trackOverlay.activeNode.coordinate[1] ===
+                  target.node.coordinate[1]),
             preview: (move) => latest.current.onDragPreview(move),
             commit: (move) => latest.current.onDragCommit(move),
           });
@@ -848,9 +886,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               }
             }
             if (latest.current.measurementPicking) {
-              const node = trackRef.current?.pickNode(event.point) ?? areaRef.current?.pickNode(event.point);
-              const coordinate = node?.coordinate ?? trackRef.current?.pickLine(event.point)?.coordinate;
-              if (coordinate) { latest.current.onMapPick(coordinate); return; }
+              const node =
+                trackRef.current?.pickNode(event.point) ??
+                areaRef.current?.pickNode(event.point);
+              const coordinate =
+                node?.coordinate ??
+                trackRef.current?.pickLine(event.point)?.coordinate;
+              if (coordinate) {
+                latest.current.onMapPick(coordinate);
+                return;
+              }
             }
             if (
               (latest.current.section.enabled ||
@@ -1090,7 +1135,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     }, [props.drawingActive, props.pickingActive, props.sectionEditing]);
     useEffect(() => {
       if (!container.current) return;
-      const observer = new ResizeObserver(() => mapRef.current?.resize());
+      const observer = new ResizeObserver(() => {
+        mapRef.current?.resize();
+        if (
+          latest.current.collectionPreviewActive &&
+          collectionTarget.current.length
+        )
+          fitCollection(collectionTarget.current, 0);
+      });
       observer.observe(container.current);
       return () => observer.disconnect();
     }, []);

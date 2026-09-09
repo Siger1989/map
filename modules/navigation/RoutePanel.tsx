@@ -1,3 +1,4 @@
+import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
@@ -385,27 +386,47 @@ export function RoutePanel({
                 </p>
               )}
               {focused && !!results.length && (
-                <ul
-                  className="route-search-results suggestion-surface"
-                  aria-label={`${label}搜索结果`}
+                <FloatingSearch
+                  owner="route"
+                  anchor={
+                    rows.current?.querySelector<HTMLElement>(
+                      `[data-stop-id="${s.id}"] input`,
+                    ) ?? null
+                  }
                 >
-                  {results.map((p, i) => (
-                    <li key={i}>
-                      <button
-                        onClick={() => {
-                          request.current?.abort();
-                          n.place(index, p);
-                          onPlace(p);
-                          setResults([]);
-                          setActive(null);
-                        }}
-                      >
-                        <strong>{p.name}</strong>
-                        <small>{p.detail}</small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                  <div className="floating-search-heading">
+                    <strong>
+                      {label}搜索结果 · {results.length}
+                    </strong>
+                    <button
+                      aria-label="关闭路线搜索结果"
+                      onClick={() => setActive(null)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <ul
+                    className="route-search-results suggestion-surface"
+                    aria-label={`${label}搜索结果`}
+                  >
+                    {results.map((p, i) => (
+                      <li key={i}>
+                        <button
+                          onClick={() => {
+                            request.current?.abort();
+                            n.place(index, p);
+                            onPlace(p);
+                            setResults([]);
+                            setActive(null);
+                          }}
+                        >
+                          <strong>{p.name}</strong>
+                          <small>{p.detail}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </FloatingSearch>
               )}
             </div>
           );
@@ -500,7 +521,9 @@ export function RoutePanel({
           )}
           {!!n.route.accessDistance && (
             <p className="route-note">
-              虚线为选点与附近道路的直连接入，共 {Math.round(n.route.accessDistance)} 米，已计入总长；时间按步行估算，实际通行需现场确认。
+              虚线为选点与附近道路的直连接入，共{' '}
+              {Math.round(n.route.accessDistance)}{' '}
+              米，已计入总长；时间按步行估算，实际通行需现场确认。
             </p>
           )}
           <details className="route-steps">

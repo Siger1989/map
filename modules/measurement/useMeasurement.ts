@@ -195,6 +195,12 @@ export function useMeasurement() {
     reading,
     canUndo: undoStack.length > 0,
     open: () => {
+      // The tool starts a new measurement after saving; reopening a map record uses load().
+      if (record || currentRecord.current) {
+        if (!commit([], false, null)) return;
+        abortReads();
+        setUndoStack([]);
+      }
       setActive(true);
       setSlot(current.current.length < 2 ? current.current.length : null);
       setSelected(current.current.at(-1)?.id ?? null);
