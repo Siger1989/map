@@ -1,0 +1,28 @@
+/* Preserve readable folder tints when an OEM WebView lacks color-mix(). */
+@supports not (background: color-mix(in srgb, red, white)) {
+  .collection-tabs button[aria-pressed='true'] {
+    background:
+      linear-gradient(#ffffff8c, #ffffff8c), var(--collection-color, #72b7ff);
+  }
+  .collection-row {
+    background:
+      linear-gradient(#ffffffc2, #ffffffc2), var(--collection-color, #afbec9);
+  }
+  .observatory
+    .control-popover
+    .collections-panel
+    .collection-tabs
+    button[style],
+  .observatory .collections-panel .collection-row[style] {
+    background:
+      linear-gradient(#ffffffb8, #ffffffb8), var(--collection-color, #afbec9);
+  }
+  .observatory
+    .control-popover
+    .collections-panel
+    .collection-tabs
+    button[aria-pressed='true'][style] {
+    background:
+      linear-gradient(#ffffff73, #ffffff73), var(--collection-color, #72b7ff);
+  }
+}

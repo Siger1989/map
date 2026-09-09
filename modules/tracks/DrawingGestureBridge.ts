@@ -5,11 +5,15 @@ export type DrawingInput =
   | { type: 'end'; reason: 'release' | 'navigation' | 'interrupt' }
   | { type: 'cancel' };
 type Contact = { id: number; point: ScreenPoint };
+export const DRAWING_TOUCH_GRACE_MS = 120;
 
 /** A gesture stays navigation-only until every participating finger is lifted. */
 export class DrawingTouchSession {
-  private phase: 'idle' | 'drawing' | 'navigation' | 'waiting' = 'idle';
+  private phase: 'idle' | 'pending' | 'drawing' | 'navigation' | 'waiting' =
+    'idle';
   private pointer: number | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private pending: ScreenPoint[] = [];
   private emit: (input: DrawingInput) => void;
   constructor(emit: (input: DrawingInput) => void) {
     this.emit = emit;
@@ -20,8 +24,8 @@ export class DrawingTouchSession {
       return false;
     }
     if (contacts.length >= 2) {
-      if (this.phase === 'drawing')
-        this.emit({ type: 'end', reason: 'navigation' });
+      this.clearPending();
+      if (this.phase === 'drawing') this.emit({ type: 'cancel' });
       this.phase = 'navigation';
       this.pointer = null;
       return true;
@@ -34,9 +38,19 @@ export class DrawingTouchSession {
     if (this.phase === 'waiting') return false;
     const contact = contacts[0];
     if (type === 'start' && this.phase === 'idle') {
-      this.phase = 'drawing';
+      this.phase = 'pending';
       this.pointer = contact.id;
-      this.emit({ type: 'start', point: contact.point });
+      this.pending = [contact.point];
+      this.timer = setTimeout(
+        () => this.beginDrawing(),
+        DRAWING_TOUCH_GRACE_MS,
+      );
+    } else if (
+      type === 'move' &&
+      this.phase === 'pending' &&
+      this.pointer === contact.id
+    ) {
+      this.pending.push(contact.point);
     } else if (
       type === 'move' &&
       this.phase === 'drawing' &&
@@ -47,16 +61,37 @@ export class DrawingTouchSession {
     return false;
   }
   interrupt() {
+    if (this.phase === 'pending') {
+      this.clearPending();
+      this.phase = 'waiting';
+    }
     if (this.phase === 'drawing') {
       this.emit({ type: 'end', reason: 'interrupt' });
       this.phase = 'waiting';
     }
   }
   reset(cancel = false, reason: 'release' | 'interrupt' = 'release') {
+    // A quick single-finger tap still places a point on release; a pinch never does.
+    if (this.phase === 'pending' && !cancel && reason === 'release')
+      this.beginDrawing();
+    this.clearPending();
     if (this.phase === 'drawing')
       this.emit(cancel ? { type: 'cancel' } : { type: 'end', reason });
     this.phase = 'idle';
     this.pointer = null;
+  }
+  private clearPending() {
+    if (this.timer !== null) clearTimeout(this.timer);
+    this.timer = null;
+    this.pending = [];
+  }
+  private beginDrawing() {
+    if (this.phase !== 'pending') return;
+    const [first, ...moves] = this.pending;
+    this.clearPending();
+    this.phase = 'drawing';
+    this.emit({ type: 'start', point: first });
+    for (const point of moves) this.emit({ type: 'move', point });
   }
 }
 
@@ -139,9 +174,9 @@ export class DrawingGestureBridge {
     this.touchCount = contacts.length;
     if (type === 'start' && contacts.length === 1) this.map.stop();
     const navigation = this.touch.update(type, contacts);
-    // Prevent only a one-finger start. Two-finger events keep their original
-    // targets and reach MapLibre's terrain-aware pan/pinch/rotate/pitch handlers.
-    if (type === 'start' && !navigation) e.preventDefault();
+    // Disable only single-finger panning. Never prevent the map touchstart:
+    // MapLibre resets ALL touch recognizers when that event is prevented.
+    // Pinch/rotate/pitch must observe both fingers even when they land apart.
     this.pan(this.panWasEnabled && (navigation || contacts.length === 0));
   }
   private touchStart = (e: MapTouchEvent) => this.onTouch('start', e);

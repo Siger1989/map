@@ -5,6 +5,7 @@ import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import {
   DrawingTouchSession,
   DrawingGestureBridge,
+  DRAWING_TOUCH_GRACE_MS,
 } from '../modules/tracks/DrawingGestureBridge.ts';
 import { DrawingSession } from '../modules/tracks/DrawingSession.ts';
 import {
@@ -39,7 +40,8 @@ const a = [104, 30],
   c = [104.002, 30],
   d = [104.003, 30];
 const contact = (id) => ({ id, point: { x: id * 10, y: 100 } });
-test('single → two fingers → one finger cannot leave phantom ink or points', () => {
+test('staggered fingers during the grace period never start ink; remaining finger cannot draw', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const events = [],
     gesture = new DrawingTouchSession((e) => events.push(e));
   gesture.update('start', [contact(1)]);
@@ -49,19 +51,14 @@ test('single → two fingers → one finger cannot leave phantom ink or points',
   gesture.update('end', [contact(1)]);
   gesture.update('move', [contact(1)]);
   gesture.update('end', []);
-  assert.deepEqual(
-    events.map((e) => [e.type, e.reason]),
-    [
-      ['start', undefined],
-      ['move', undefined],
-      ['end', 'navigation'],
-    ],
-  );
+  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS + 1);
+  assert.deepEqual(events, []);
   gesture.update('start', [contact(3)]);
   gesture.update('end', []);
   assert.equal(events.at(-1).reason, 'release');
 });
-test('public bridge preserves native two-finger events and restores map controls', () => {
+test('public bridge preserves native two-finger events and restores map controls', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
   const handlers = new Map(),
     windowHandlers = new Map(),
     emitted = [],
@@ -122,15 +119,26 @@ test('public bridge preserves native two-finger events and restores map controls
   });
   const one = event(1);
   handlers.get('touchstart')(one);
+  assert.equal(emitted.length, 0);
+  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
   assert.deepEqual(
     emitted[0].point,
     { x: 50, y: 100 },
     'zero-height wrapper cannot corrupt canvas coordinates',
   );
-  assert.equal(one.prevented, true);
+  assert.equal(
+    one.prevented,
+    false,
+    'the first touch must reach MapLibre pinch recognizers too',
+  );
   assert.equal(map.dragPan.active, false);
   const two = event(2);
   handlers.get('touchstart')(two);
+  assert.equal(
+    emitted.at(-1).type,
+    'cancel',
+    'late second finger cancels tentative ink',
+  );
   assert.equal(two.prevented, false);
   assert.equal(map.dragPan.active, true);
   handlers.get('movestart')();
@@ -149,6 +157,70 @@ test('public bridge preserves native two-finger events and restores map controls
   assert.equal(map.doubleClickZoom.active, true);
   assert.equal(handlers.size, 0);
   assert.equal(windowHandlers.size, 0);
+});
+test('a late second finger cancels the whole uncommitted stroke and preserves prior saved geometry', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const drawing = new DrawingSession();
+  const original = [
+    [100.05, 20],
+    [100.1, 20],
+  ];
+  const committed = [original];
+  const updates = [];
+  const gesture = new DrawingTouchSession((event) => {
+    const update = drawing.input(event, {
+      ...options,
+      anchor: original.at(-1),
+    });
+    updates.push(update);
+    if (update.stroke) committed.push(update.stroke);
+  });
+  const finger = (y) => ({ id: 1, point: { x: 100, y } });
+  gesture.update('start', [finger(248)]);
+  gesture.update('move', [finger(280)]);
+  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
+  gesture.update('move', [finger(340)]);
+  assert.ok(updates.at(-1).preview);
+  gesture.update('start', [finger(340), contact(2)]);
+  assert.equal(updates.at(-1).preview, null);
+  gesture.update('end', [finger(340)]);
+  gesture.update('move', [finger(400)]);
+  gesture.update('end', []);
+  assert.deepEqual(committed, [original]);
+});
+
+test('normal single-finger strokes replay early samples in order and release exactly once', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const events = [];
+  const gesture = new DrawingTouchSession((event) => events.push(event));
+  gesture.update('start', [contact(1)]);
+  gesture.update('move', [{ ...contact(1), point: { x: 11, y: 120 } }]);
+  t.mock.timers.tick(DRAWING_TOUCH_GRACE_MS);
+  gesture.update('move', [{ ...contact(1), point: { x: 12, y: 140 } }]);
+  gesture.update('end', []);
+  t.mock.timers.tick(1000);
+  assert.deepEqual(
+    events.map((event) => event.type),
+    ['start', 'move', 'move', 'end'],
+  );
+  assert.deepEqual(
+    events.slice(0, 3).map((event) => event.point.y),
+    [100, 120, 140],
+  );
+  assert.equal(events.at(-1).reason, 'release');
+});
+
+test('cancellation and leaving drawing before the grace timer fires never place a point', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const events = [];
+  const gesture = new DrawingTouchSession((event) => events.push(event));
+  gesture.update('start', [contact(1)]);
+  gesture.update('cancel', []);
+  t.mock.timers.tick(1000);
+  gesture.update('start', [contact(2)]);
+  gesture.reset(false, 'interrupt');
+  t.mock.timers.tick(1000);
+  assert.deepEqual(events, []);
 });
 const options = {
   mode: 'freehand',

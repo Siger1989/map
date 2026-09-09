@@ -82,13 +82,8 @@ public final class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
         root.requestApplyInsets();
-        android.content.pm.PackageInfo webPackage = WebView.getCurrentWebViewPackage();
-        try {
-            if (webPackage != null && Integer.parseInt(webPackage.versionName.split("\\.")[0]) < 120) {
-                webView.loadDataWithBaseURL(START, "<meta name='viewport' content='width=device-width,initial-scale=1'><body style='background:#10212b;color:#eff6f7;padding:24px;font:18px sans-serif'><h2>需要更新系统网页组件</h2><p>请更新 Android System WebView 或 Chrome 后重新打开山兔。三维地图需要 WebGL 2 和较新的网页组件。</p></body>", "text/html", "UTF-8", null);
-                return;
-            }
-        } catch (RuntimeException ignored) { }
+        // OEM package versions are not Chromium versions. The bundled bootstrap
+        // supplies missing web APIs and checks actual rendering capabilities.
         webView.loadUrl(START);
     }
 

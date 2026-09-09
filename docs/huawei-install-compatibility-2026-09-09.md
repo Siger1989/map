@@ -1,6 +1,16 @@
 # 华为手机安装兼容性核查（2026-09-09）
 
-用户报告 P70 Pro 安装失败，另有 Pura X Max；随后确认两台系统分别为 HarmonyOS 4.2（支持安卓应用）和 HarmonyOS 6.1。以下按系统区分，不仅凭机型推断系统；尚未收到失败页面、安装包文件名、完整系统构建号或设备日志。
+## 最新截图已定位：HarmonyOS 4.2.0.189启动被应用拦截
+
+用户补充系统4.2.0.189与“需要更新系统网页组件”页面。后者是山兔`MainActivity.java`生成的本地页面：APK实际上已经安装并启动，程序尚未尝试加载地图，就因`WebView.getCurrentWebViewPackage().versionName`首段小于120返回。此前“缺少失败原文”的状态已过时。
+
+`getCurrentWebViewPackage()`返回的是组件包信息，不能把所有厂商的包版本规则当作Chromium内核主版本。[Android API](https://developer.android.com/reference/android/webkit/WebView#getCurrentWebViewPackage())。当前截图没有暴露实际UA/内核版本或WebGL能力，因此不猜测华为组件具体内核号。
+
+0.2.17修复移除这处门槛，使用真实能力检查，并在软件内补必要网络取消接口、旧布局能力和公共地图worker编译。[MapLibre官方支持检测](https://maplibre.org/maplibre-gl-js/docs/examples/check-if-webgl-is-supported/)、[Vite构建目标](https://vite.dev/config/build-options)、[Lightning CSS兼容转换](https://lightningcss.dev/transpilation.html)。保留真实图形初始化失败的诊断，不以隐藏错误假装地图可用。当前目标是让现有4.2系统运行APK，不要求系统升级；与下面6.1原生交付是不同问题。
+
+以下是收到本轮截图之前的包级调查记录。最新验证与安装入口见[0.2.17发行说明](release-0.2.17.md)。
+
+用户最初报告P70 Pro安装失败，另有Pura X Max；随后确认两台系统分别为HarmonyOS4.2和6.1。当时尚未收到失败页面、完整系统构建号或设备日志。
 
 ## 当前结论
 

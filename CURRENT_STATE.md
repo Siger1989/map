@@ -1,3 +1,11 @@
+# 鸿蒙4.2网页兼容性与双指手势（2026-09-09，0.2.17构建验收通过，待上传）
+- 用户提供HarmonyOS 4.2.0.189和“需要更新系统网页组件”截图，确认APK已启动、被MainActivity的WebView包版本首段<120拦截；不再按安装失败或鸿蒙6.1处理。用户明确要求软件自行兼容、双指手势一起修复并交付新APK。
+- 独立工作树D:/shantu-compat，分支codex/huawei-webview-touch，基线76b57ba。原D:/天气系统全部收藏/导航/标记/鸿蒙草稿和预览数据保留；本轮仅提取已授权的DrawingGestureBridge草稿继续修复，不包含待确认收藏改版。
+- 已移除Android厂商包版本拦截；新增modules/compatibility真实能力探测/AbortSignal兼容、mobile/bootstrap/compatibility启动与布局适配；APK网页目标Chrome99，补充:has/dvh/颜色回退，独立编译地图公共worker。版本0.2.17-test/code24，沿用既有签名约束，无新签名、存储格式或定位接口变更。
+- 手势120ms缓冲，完整回放单指早期采样；第二指无论早晚均取消本次未提交笔画，全部抬起才恢复画线，保留已提交线段。第一指不preventDefault，让MapLibre原生双指识别器全程接收触摸。
+- 最终类型、351项逻辑、网页/Android网页/Java/APK均通过。真实Chromium99.0.4812.0和当前Chrome用最终APK stage网页验证390/360地图、收藏/路线窗口与无溢出；独立真实MapLibre触摸夹具40/220ms双指均缩放12→约12.82，无误画提交，单指恢复。旧内核选择器兼容采用独立构建规则，未引入会全局修改querySelector的css-has-pseudo库。
+- 最终APK/Shantu-0.2.17-test-standalone.apk：57,620,669字节；SHA256 46f956d89cd558d10f76af5cdea0531d2adbfab8dd74b502edf86bde411ca3f2。4a94独立签名/v2/v3/zipalign/CRC/532网页资源（470PNG像素相同）/473地形/原Logo均通过；无QA或私密文件，stage mobile/.build/apk-20260909-173835/web。下一步推送codex/huawei-webview-touch并公开v0.2.17测试Release核资产digest；不合入main以免覆盖原工作区未确认草稿。ADB无设备，朋友真机仍待验；6.1原生未交付。
+
 # 路线规划流程核查与排布建议（2026-09-09，方案已整理，业务待实施）
 - 用户反馈选点后拖图关闭、缺少保存可编辑轨迹入口、规划结果缺少旧导航详细数据，要求思考排布；明确“主要是保存可编辑的轨迹”。本轮先核查并整理方案，不宣称业务已改。
 - 0.2.16最终资源9220/390×844已复现：picking结束后ControlDock恢复外部pointerdown关闭；规划成功onShow又主动关窗。真实步行1.6公里/21分钟结果只有小提示；进入NavigationStart后可见海拔曲线及6统计，能力已有但入口藏得深。收藏道路计划与可编辑轨迹库仍分离。

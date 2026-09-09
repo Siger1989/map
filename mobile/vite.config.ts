@@ -1,6 +1,9 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/postcss';
+import mobileHasCompatibility from '../scripts/mobile-has-compat.mjs';
+import mobileViewportCompatibility from '../scripts/mobile-css-compat.mjs';
+import mobileWorkerCompatibility from '../scripts/mobile-worker-compat.mjs';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ mode }) => ({
@@ -23,12 +26,22 @@ export default defineConfig(({ mode }) => ({
     },
   },
   resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
-  plugins: [react()],
-  css: { postcss: { plugins: [tailwindcss()] } },
+  plugins: [react(), mobileWorkerCompatibility()],
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcss(),
+        mobileViewportCompatibility(),
+        mobileHasCompatibility(),
+      ],
+    },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    target: 'chrome120',
+    target: 'chrome99',
+    cssTarget: 'chrome99',
+    cssMinify: 'lightningcss',
     sourcemap: false,
   },
 }));
