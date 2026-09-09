@@ -14,7 +14,7 @@ import type { SectionSettings } from '../section/types';
 import { modelLabelAnchor } from './modelLabel';
 import { modelGeometry, modelRotation } from './modelGeometry';
 import { markerIconElement } from './icons';
-import { markerScale } from './markerScale';
+import { markerScale, markerPresentation } from './markerScale';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -39,10 +39,12 @@ export class AnnotationLayer implements CustomLayerInterface {
   private origin = MercatorCoordinate.fromLngLat([103.28, 31.08]);
   constructor(private onSelect: (id: string) => void) {}
   private syncMarkerScale = () => {
-    const scale = markerScale(this.map?.getZoom() ?? 16).toFixed(3);
+    const zoom = this.map?.getZoom() ?? 16;
+    const scale = markerScale(zoom).toFixed(3);
     this.markers.forEach(marker => {
       const element = marker.getElement();
-      if (element.classList.contains('is-point') && element.style.getPropertyValue('--marker-scale') !== scale)
+      element.dataset.presentation = markerPresentation(zoom, element.classList.contains('is-selected'));
+      if (element.style.getPropertyValue('--marker-scale') !== scale)
         element.style.setProperty('--marker-scale', scale);
     });
   };
@@ -185,6 +187,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       element.classList.add('annotation-marker');
       element.classList.toggle('is-point', item.kind === 'pin');
       element.classList.toggle('is-selected', item.id === this.selected);
+      element.dataset.presentation = markerPresentation(map.getZoom(), item.id === this.selected);
       element.classList.toggle(
         'is-underground',
         item.placement === 'underground',

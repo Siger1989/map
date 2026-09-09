@@ -157,7 +157,7 @@ export function PlaceSearch({
       {open && (
         <section
           id="place-search-results"
-          className="place-search-results glass"
+          className="place-search-results glass suggestion-surface"
           aria-label="地点搜索结果"
         >
           <div className="place-search-heading">

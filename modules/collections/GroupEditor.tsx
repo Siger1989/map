@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import { useState } from 'react';
 import { COLORS, type CollectionGroup } from './data';
 
@@ -35,7 +36,7 @@ export function GroupEditor({
       </button>
       <label>
         分组名称
-        <input
+        <SmartInput
           aria-label="分组名称"
           autoFocus
           maxLength={30}

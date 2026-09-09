@@ -1,3 +1,4 @@
+import { SmartTextarea } from '../input/SmartText';
 import { useEffect, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import {
@@ -361,7 +362,7 @@ function Editor({
           <>
             <label className="annotation-field">
               <span>备注 / 参数说明</span>
-              <textarea
+              <SmartTextarea
                 value={item.note}
                 rows={2}
                 maxLength={500}

@@ -41,7 +41,12 @@ try {
     $manifest.manifest.SetAttribute('package', $signing.package)
     $manifest.manifest.application.SetAttribute('label', 'http://schemas.android.com/apk/res/android', $signing.applicationLabel) | Out-Null
     foreach ($provider in $manifest.manifest.application.provider) {
-      $suffix = if ($provider.GetAttribute('name', 'http://schemas.android.com/apk/res/android') -eq 'com.guanyun.weather.RouteShareProvider') { '.routes' } else { '.photos' }
+      $suffix = switch ($provider.GetAttribute('name', 'http://schemas.android.com/apk/res/android')) {
+        'com.guanyun.weather.RouteShareProvider' { '.routes' }
+        'com.guanyun.weather.PhotoShareProvider' { '.photos' }
+        'com.guanyun.weather.CameraCaptureProvider' { '.capture' }
+        default { throw 'Unknown Android provider: add an explicit authority mapping before building.' }
+      }
       $provider.SetAttribute('authorities', 'http://schemas.android.com/apk/res/android', ($signing.package + $suffix)) | Out-Null
     }
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
@@ -49,6 +54,9 @@ try {
     $manifest.Save($manifestPath)
     Write-Output "Independent test package: $($signing.package); data is separate from the original preview app"
   }
+  $providerAuthorities = @($manifest.manifest.application.provider | ForEach-Object { $_.GetAttribute('authorities', 'http://schemas.android.com/apk/res/android') })
+  if (@($providerAuthorities | Select-Object -Unique).Count -ne $providerAuthorities.Count) { throw 'Android provider authorities must be unique' }
+  if ($providerAuthorities -notcontains ($signing.package + '.capture')) { throw 'Camera capture provider authority does not match the application package' }
   if ($UnsignedOnly) { $outputRoot = $buildRoot }
   New-Item -ItemType Directory -Path $buildRoot -Force | Out-Null
   $keyStore = if ($SigningKey) { [IO.Path]::GetFullPath($SigningKey) } else { Join-Path $buildRoot 'guanyun-test.jks' }

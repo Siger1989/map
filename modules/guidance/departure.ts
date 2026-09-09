@@ -25,6 +25,9 @@ export function connectDeparture(
   const length = pathOf(approach.coordinates).length;
   const combined: PlannedRoute = {
     ...original,
+    segments: [...(approach.segments ?? [{ kind: 'road' as const, coordinates: approach.coordinates }]), ...(original.segments ?? [{ kind: 'road' as const, coordinates: original.coordinates }])],
+    accessDistance: (approach.accessDistance ?? 0) + (original.accessDistance ?? 0),
+    accessDuration: (approach.accessDuration ?? 0) + (original.accessDuration ?? 0),
     coordinates: [...approach.coordinates, ...original.coordinates],
     distance:
       approach.distance +

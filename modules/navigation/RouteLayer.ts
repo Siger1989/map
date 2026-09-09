@@ -20,7 +20,7 @@ export class RouteLayer {
         id: 'route-outline',
         type: 'line',
         source: 'planned-route',
-        filter: ['==', '$type', 'LineString'],
+        filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#102a38', 'line-width': 8 },
       });
@@ -28,9 +28,14 @@ export class RouteLayer {
         id: 'route-path',
         type: 'line',
         source: 'planned-route',
-        filter: ['==', '$type', 'LineString'],
+        filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#59dcff', 'line-width': 4 },
+      });
+      m.addLayer({
+        id: 'route-access', type: 'line', source: 'planned-route',
+        filter: ['==', 'kind', 'access'],
+        paint: { 'line-color': '#ffcb65', 'line-width': 4, 'line-dasharray': [2, 2] },
       });
       m.addLayer({
         id: 'route-points',
@@ -67,11 +72,11 @@ export class RouteLayer {
       });
     }
     const features: Feature[] = [];
-    if (state.route)
+    if (state.route) for (const segment of state.route.segments ?? [{kind:'road',coordinates:state.route.coordinates}])
       features.push({
         type: 'Feature',
-        properties: {},
-        geometry: { type: 'LineString', coordinates: state.route.coordinates },
+        properties: {kind:segment.kind},
+        geometry: { type: 'LineString', coordinates: segment.coordinates },
       });
     for (const slot of ['start', 'end'] as const)
       if (state[slot])

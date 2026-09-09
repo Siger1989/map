@@ -1,23 +1,164 @@
-.measurement-overlay { position: absolute; inset: 0; z-index: 7; pointer-events: none; overflow: hidden; }
-.measurement-overlay line { stroke: #ffcc4f; stroke-width: 4; filter: drop-shadow(0 1px 2px #142728); }
-.measurement-overlay g { pointer-events: auto; cursor: pointer; }
-.measurement-overlay circle:not(.measurement-hit) { stroke: #173938; stroke-width: 2; }
-.measurement-overlay text { font: bold 11px sans-serif; fill: #123239; pointer-events: none; }
-.measurement-overlay .measurement-hit { fill: transparent; }
-.measurement-panel { position: absolute; z-index: 10; left: 8px; right: 64px; top: calc(56px + var(--safe-top)); max-height: min(38dvh, 320px); background: #fffefa; color: #1b3436; border: 1px solid #cbd9d1; border-radius: 9px; padding: 4px 6px; font-size: 12px; display: flex; flex-direction: column; gap: 2px; }
-.measurement-panel[data-dragging='true'] { visibility: hidden; }
-.measurement-panel header, .measurement-panel footer, .measurement-select { display: flex; align-items: center; gap: 4px; }
-.measurement-panel header strong { flex: 1; font-size: 15px; }
-.measurement-panel button, .measurement-panel select, .measurement-panel input { min-height: 44px; min-width: 0; border: 1px solid #d4ddd7; border-radius: 6px; background: #fff; color: inherit; font: inherit; padding: 4px; }
-.measurement-panel button { min-width: 44px; }
-.measurement-panel button:disabled { opacity: .4; }
-.measurement-panel [aria-pressed='true'] { background: #164c48; color: white; }
-.measurement-panel footer button { flex: 1; }
-.measurement-scroll { overflow: auto; min-height: 0; overscroll-behavior: contain; }
-.measurement-panel p { margin: 4px 0; line-height: 1.35; overflow-wrap: anywhere; }
-.measurement-stats { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-.measurement-select select { flex: 1; }
-.measurement-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-.measurement-fields input { display: block; width: 100%; }
-.measurement-fields button, .measurement-fields small { grid-column: 1 / -1; }
-.observatory[data-measuring='true'] .map-toolbar { display: none; }
+.measurement-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  overflow: hidden;
+}
+.measurement-overlay line {
+  stroke: #ffcf45;
+  stroke-width: 3;
+  filter: drop-shadow(0 1px 2px #142728);
+}
+.measurement-overlay g {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+.measurement-overlay circle:not(.measurement-hit) {
+  stroke: white;
+  stroke-width: 2;
+}
+.measurement-overlay text {
+  font: bold 14px sans-serif;
+  fill: #173633;
+  stroke: #fff;
+  stroke-width: 4;
+  paint-order: stroke;
+  pointer-events: none;
+}
+.measurement-overlay .measurement-hit {
+  fill: transparent;
+}
+.measurement-panel {
+  position: absolute;
+  z-index: 10;
+  left: 8px;
+  right: 56px;
+  top: calc(54px + var(--safe-top));
+  color: #1b3436;
+  border: 1px solid #ffffff88;
+  border-radius: 10px;
+  background: rgba(249, 252, 248, 0.83);
+  backdrop-filter: blur(14px);
+  font-size: 12px;
+  overflow: hidden;
+}
+.measurement-panel header {
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+}
+.measurement-panel header strong {
+  font-size: 12px;
+  flex: 1;
+  white-space: nowrap;
+}
+.measurement-panel button {
+  min-height: 44px;
+  min-width: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.measurement-panel [aria-pressed='true'] {
+  color: #176bdf;
+  background: #d8e8ffad;
+  border-radius: 50%;
+}
+.measurement-panel button:disabled {
+  opacity: 0.4;
+}
+.measurement-coordinates > div {
+  display: grid;
+  grid-template-columns: 15px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  border-top: 1px solid #bacbc855;
+  padding: 6px;
+  font-size: 11px;
+  min-height: 30px;
+}
+.measurement-coordinates span {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.measurement-coordinates small {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.measurement-helper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 6px;
+  border-top: 1px solid #bacbc855;
+}
+.measurement-helper span {
+  flex: 1;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.measurement-helper button {
+  min-width: 44px;
+}
+.measurement-panel > p {
+  margin: 3px 6px;
+}
+.measurement-panel[data-dragging='true'] {
+  opacity: 0.7;
+  pointer-events: none;
+}
+.measurement-result {
+  position: absolute;
+  z-index: 8;
+  width: 238px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  color: #f9fffd;
+  background: rgba(27, 62, 58, 0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid #ffffff55;
+  font-size: 12px;
+  pointer-events: none;
+}
+.measurement-result > div {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.measurement-result strong {
+  font-size: 22px;
+  line-height: 1.2;
+}
+.measurement-result span {
+  font-size: 11px;
+}
+.measurement-result p {
+  margin: 3px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.measurement-result button {
+  pointer-events: auto;
+  padding: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.observatory[data-measuring='true'] .map-toolbar {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .measurement-panel {
+    max-width: 420px;
+  }
+}

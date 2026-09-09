@@ -1,3 +1,4 @@
+import { SmartInput, SmartTextarea } from '../input/SmartText';
 import { useEffect, useRef, useState } from 'react';
 import { noteColor, type ProfileNote } from './profileNotes';
 export function ProfileNoteEditor({
@@ -41,7 +42,7 @@ export function ProfileNoteEditor({
       </label>
       <label className="section-field">
         测点名称
-        <input
+        <SmartInput
           value={draft.name}
           maxLength={80}
           onChange={(e) => setDraft({ ...draft, name: e.target.value })}
@@ -55,7 +56,7 @@ export function ProfileNoteEditor({
       </p>
       <label className="section-field">
         测点备注
-        <textarea
+        <SmartTextarea
           value={draft.note}
           maxLength={1000}
           onChange={(e) => setDraft({ ...draft, note: e.target.value })}
@@ -65,7 +66,7 @@ export function ProfileNoteEditor({
         <div className="section-note-field" key={i}>
           <label className="section-field">
             数据名称
-            <input
+            <SmartInput
               aria-label={`数据 ${i + 1} 名称`}
               value={f.name}
               maxLength={80}
@@ -74,7 +75,7 @@ export function ProfileNoteEditor({
           </label>
           <label className="section-field">
             数值或内容
-            <input
+            <SmartInput
               aria-label={`数据 ${i + 1} 内容`}
               value={f.value}
               maxLength={500}
@@ -83,7 +84,7 @@ export function ProfileNoteEditor({
           </label>
           <label className="section-field">
             单位
-            <input
+            <SmartInput
               aria-label={`数据 ${i + 1} 单位`}
               value={f.unit}
               maxLength={40}

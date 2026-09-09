@@ -6,6 +6,8 @@ export type RoutePlace = {
   detail?: string;
 };
 export type RouteStep = {
+  kind?: 'road' | 'access';
+  legIndex?: number;
   instruction: string;
   distance: number;
   duration: number;
@@ -13,6 +15,10 @@ export type RouteStep = {
   coordinates: Coordinate[];
 };
 export type PlannedRoute = {
+  segments?: { kind: 'road' | 'access'; coordinates: Coordinate[] }[];
+  roadLegs?: Coordinate[][];
+  accessDistance?: number;
+  accessDuration?: number;
   /** Connected saved-track geometry for nearest entry and branch navigation. */
   trackNetwork?: Coordinate[][];
   /** User-selected original/alternative itinerary, preserved at equal-distance junctions. */

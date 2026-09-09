@@ -53,6 +53,7 @@ export function ControlDock({
   onScanRoute,
   onMeasure,
   keepOpenOnMapInteraction = false,
+  mapPicking = false,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -68,6 +69,7 @@ export function ControlDock({
   onScanRoute?: () => void;
   onMeasure?: () => void;
   keepOpenOnMapInteraction?: boolean;
+  mapPicking?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -105,7 +107,7 @@ export function ControlDock({
       onKeyDown={(event) => {
         if (event.key === 'Escape' && active) {
           // The parent owns cancelling a map-pick operation without closing its panel.
-          if (keepOpenOnMapInteraction) return;
+          if (mapPicking) return;
           event.preventDefault();
           close();
         }

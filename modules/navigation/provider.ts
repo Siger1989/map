@@ -9,11 +9,13 @@ import {
 import { MAX_ROUTE_STOPS } from './stops.ts';
 import { normalizePlaceName } from './placeName.ts';
 import { normalizeRegion } from '../collections/regions.ts';
+import { connectRoadAccess, nearestRoadPlaces } from './roadAccess.ts';
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
 export const NAVIGATION_SERVICES = {
   route: 'https://valhalla1.openstreetmap.de/route',
+  locate: 'https://valhalla1.openstreetmap.de/locate',
   search: 'https://photon.komoot.io/api/',
   reverse: 'https://photon.komoot.io/reverse',
 };
@@ -48,7 +50,7 @@ async function requestJSON(url: string, signal: AbortSignal) {
   if (!response.ok)
     throw new Error(
       response.status === 400
-        ? '无法规划这两个地点之间的路线，请把起终点选在附近道路上。'
+        ? '附近道路无法连通，请更换出行方式或地点后重试。'
         : '路线或搜索服务暂不可用，请检查网络后重试。',
     );
   if (Number(response.headers.get('content-length')) > 4_000_000)
@@ -128,6 +130,7 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
     .flatMap((leg, index) =>
       (leg.steps ?? []).map((step) => ({
         ...step,
+        legIndex: index,
         viaIndex: index < (route.legs?.length ?? 0) - 1 ? index + 1 : 0,
       })),
     )
@@ -135,6 +138,7 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
       if (!metric(step.distance) || !metric(step.duration))
         throw new Error('路线分段数据无效。');
       const result = {
+        legIndex: step.legIndex,
         instruction:
           step.maneuver?.type === 'arrive' && step.viaIndex
             ? `到达途经点 ${step.viaIndex}`
@@ -153,6 +157,7 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
     distance: route.distance,
     duration: route.duration,
     steps,
+    roadLegs: (raw.routes?.[0]?.legs ?? []).map(leg => (leg.steps ?? []).flatMap(step => line(step.geometry?.coordinates, 1))),
     snapped: (raw.waypoints ?? []).map((p) => p.location).filter(coordinate),
     createdAt: Date.now(),
   };
@@ -180,7 +185,9 @@ export function routeURL(
       lon: p.coordinates[0],
       lat: p.coordinates[1],
       type: 'break',
-      radius: 500,
+      radius: 0,
+      node_snap_tolerance: 0,
+      search_cutoff: 35000,
     })),
     costing: mode,
     units: 'kilometers',
@@ -200,13 +207,26 @@ export async function planRoute(
   signal: AbortSignal,
   via: RoutePlace[] = [],
 ) {
+  // Validate the requested places before making a network call.
+  routeURL(start, end, mode, via);
+  const stops = [start, ...via, end];
+  const nearest = nearestRoadPlaces(await requestJSON(NAVIGATION_SERVICES.locate + '?json=' + encodeURIComponent(JSON.stringify({
+    locations: stops.map(p => ({ lon: p.coordinates[0], lat: p.coordinates[1], radius: 0, node_snap_tolerance: 0, search_cutoff: 35000 })),
+    costing: mode, verbose: false,
+  })), signal), stops);
+  // Allow coincident road projections: two off-road places may meet the same access point.
+  const query = JSON.parse(new URL(routeURL(start, end, mode, via)).searchParams.get('json')!);
+  query.locations = nearest.map(p => ({ lon: p.coordinates[0], lat: p.coordinates[1], type: 'break', radius: 0, node_snap_tolerance: 0 }));
+  if (nearest.every(p => metresBetween(p.coordinates, nearest[0].coordinates) < 0.1)) {
+    return connectRoadAccess({ mode, coordinates: nearest.map(p => p.coordinates), distance: 0, duration: 0, steps: [], snapped: nearest.map(p => p.coordinates), roadLegs: nearest.slice(1).map((p,i) => [nearest[i].coordinates, p.coordinates]), createdAt: Date.now() }, stops);
+  }
   const route = normalizeRoute(
-    await requestJSON(routeURL(start, end, mode, via), signal),
+    await requestJSON(NAVIGATION_SERVICES.route + '?json=' + encodeURIComponent(JSON.stringify(query)), signal),
     mode,
   );
   if (route.snapped.length !== via.length + 2)
     throw new Error('路线服务返回的途经点数量不一致，请重试。');
-  return { ...route, stops: [start, ...via, end] };
+  return connectRoadAccess(route, stops);
 }
 export function normalizePlaces(input: unknown): RoutePlace[] {
   const raw = input as {

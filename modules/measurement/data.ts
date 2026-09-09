@@ -29,7 +29,9 @@ export function segmentMetrics(a: MeasurePoint, b: MeasurePoint) {
   const horizontal = 2 * 6371008.8 * Math.asin(Math.sqrt(Math.max(0, Math.min(1, h))));
   const bearing = horizontal < 0.001 || Math.abs(Math.PI - horizontal / 6371008.8) < 1e-8 ? null :
     (Math.atan2(Math.sin(dl) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dl)) / rad + 360) % 360;
-  return { horizontal, bearing, spatial: a.altitude === null || b.altitude === null ? null : Math.hypot(horizontal, b.altitude - a.altitude) };
+  const rise = a.altitude === null || b.altitude === null ? null : b.altitude - a.altitude;
+  const inclination = rise === null || (horizontal < 0.001 && Math.abs(rise) < 0.001) ? null : Math.atan2(Math.abs(rise), horizontal) / rad;
+  return { horizontal, bearing, rise, inclination, spatial: rise === null ? null : Math.hypot(horizontal, rise) };
 }
 export function measurementMetrics(points: MeasurePoint[]) {
   const segments = points.slice(1).map((point, i) => segmentMetrics(points[i], point));

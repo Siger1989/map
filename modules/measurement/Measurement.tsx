@@ -1,63 +1,319 @@
-import { useEffect, useState } from 'react';
-import { ObjectGizmo } from '../objectTransform/ObjectGizmo';
-import { objectProjector, type ProjectionFrame, type WatchProjection } from '../objectTransform/projection';
+import { useEffect, useRef, useState } from 'react';
+import { LocateFixed, MapPin, RotateCcw, Undo2, X } from 'lucide-react';
+import type { WatchProjection } from '../objectTransform/projection';
+import type { Coordinate } from '../navigation/types';
 import type { MeasurementState } from './useMeasurement';
-import { lengthLabel, measurementMetrics, pointPose, type MeasurePoint } from './data';
+import { segmentMetrics, lengthLabel, type MeasurePoint } from './data';
 import './measurement.css';
 
-const coordinateLabel = (p: MeasurePoint) => `${p.coordinates[1].toFixed(6)}°, ${p.coordinates[0].toFixed(6)}°`;
-export function Measurement({ state, watchProjection, projectGround, onBegin, onLocate }: {
-  state: MeasurementState; watchProjection: WatchProjection; onBegin: () => void; onLocate: (point: MeasurePoint) => void;
+const positionLabel = (p: MeasurePoint) =>
+  `${Math.abs(p.coordinates[1]).toFixed(6)}°${p.coordinates[1] < 0 ? 'S' : 'N'} ${Math.abs(p.coordinates[0]).toFixed(6)}°${p.coordinates[0] < 0 ? 'W' : 'E'}`;
+export function Measurement({
+  state,
+  watchProjection,
+  projectGround,
+  onBegin,
+  toCoordinate,
+  groundElevation,
+}: {
+  state: MeasurementState;
+  watchProjection: WatchProjection;
+  onBegin: () => void;
   projectGround: (point: MeasurePoint) => { x: number; y: number } | null;
+  toCoordinate: (p: { x: number; y: number }) => Coordinate | null;
+  groundElevation: (p: Coordinate) => number | null;
 }) {
-  const [frame, setFrame] = useState<ProjectionFrame | null>(null);
-  useEffect(() => watchProjection(setFrame), [watchProjection]);
-  const selected = state.points.find(p => p.id === state.selected);
-  const points = state.points.map(p => p.id === state.selected && state.preview ? { ...p, ...state.preview } : p);
-  const metrics = measurementMetrics(points), pose = selected && pointPose(selected);
-  const screen = points.map(p => {
-    const pose = pointPose(p);
-    const ground = projectGround(p);
-    return frame && pose ? objectProjector(frame, pose).center : ground ? { ...ground, visible: true } : null;
-  });
-  return <>
-    <svg className="measurement-overlay" aria-label="测量折线" width="100%" height="100%">
-      {screen.slice(1).map((p, i) => p?.visible && screen[i]?.visible ? <line key={`line-${points[i + 1].id}`} x1={screen[i]!.x} y1={screen[i]!.y} x2={p.x} y2={p.y} /> : null)}
-      {screen.map((p, i) => p?.visible ? <g key={points[i].id} transform={`translate(${p.x},${p.y})`} role="button" tabIndex={0} aria-label={`选择测量点 ${i + 1}`}
-        onPointerDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); state.select(points[i].id); }}
-        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); state.select(points[i].id); } }}>
-        <circle r="22" className="measurement-hit" /><circle r="10" fill={points[i].id === state.selected ? '#f5b544' : '#fff'} /><text textAnchor="middle" dy="4">{i + 1}</text>
-      </g> : null)}
-    </svg>
-    {pose && !state.adding && <ObjectGizmo name="测量点" kind="measurement-point" pose={pose} watchProjection={watchProjection} hideToolbar canUndo={state.canUndo}
-      onBegin={onBegin} onPreview={state.setPreview} onCommit={p => state.update(selected!.id, { coordinates: p.coordinates, altitude: p.altitude })}
-      onUndo={state.undo} onClose={state.close} onDetails={() => {}} onLocate={() => onLocate(selected!)} />}
-    <section className="measurement-panel" aria-label="路线测量" data-dragging={!!state.preview}>
-      <header><strong>测量 · {points.length} 点</strong><button onClick={state.close} aria-label="关闭测量">关闭</button></header>
-      <div className="measurement-scroll">
-        <p className="measurement-hint">{state.adding ? '依次点地图连线；双指缩放、单指移图。' : '选择一个点，拖动 X/Y/Z 箭头调整位置和高度。'}</p>
-        <div className="measurement-stats"><span>水平总长 <b>{lengthLabel(metrics.horizontal)}</b></span><span>空间总长 <b>{lengthLabel(metrics.spatial)}</b></span></div>
-        <p>起终点方位角：<b>{metrics.bearing === null ? '—' : `${metrics.bearing.toFixed(1)}°`}</b> · 真北顺时针</p>
-        {points.length > 0 && <details><summary>起点 / 终点与分段</summary><p>起点：{coordinateLabel(points[0])}</p><p>终点：{coordinateLabel(points.at(-1)!)}</p>
-          {metrics.segments.map((s, i) => <p key={i}>{i + 1} → {i + 2}：{lengthLabel(s.horizontal)} · {s.bearing === null ? '—' : `${s.bearing.toFixed(1)}°`}</p>)}
-          <small>空间长度按水平距离和两点高差估算，不是沿地表行走距离；地形海拔来自高程数据。</small></details>}
-        {!!points.length && <label className="measurement-select">当前点<select aria-label="当前测量点" value={selected?.id ?? ''} onChange={e => state.select(e.target.value)}><option value="" disabled>选择一个点</option>{points.map((p, i) => <option key={p.id} value={p.id}>{i + 1}{i === 0 ? ' · 起点' : i === points.length - 1 ? ' · 终点' : ''}</option>)}</select><button disabled={!selected} onClick={() => selected && onLocate(selected)}>定位</button></label>}
-        {selected && !state.adding && <PointFields key={`${selected.id}:${selected.coordinates}:${selected.altitude}`} point={selected} onChange={patch => state.update(selected.id, patch)} />}
-        {points.some(p => p.altitude === null) && <small>部分海拔尚未取得；可选择该点填写海拔后启用三维控制。</small>}
+  const [, renderFrame] = useState(0),
+    [showCoordinates, setShowCoordinates] = useState(true);
+  const [preview, setPreview] = useState<{
+    id: string;
+    coordinates: Coordinate;
+  } | null>(null);
+  const root = useRef<SVGSVGElement>(null);
+  const drag = useRef<{
+    id: string;
+    pointer: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+    coordinate: Coordinate | null;
+  } | null>(null);
+  useEffect(
+    () => watchProjection(() => renderFrame((n) => n + 1)),
+    [watchProjection],
+  );
+  const points = state.points.map((p) =>
+    preview?.id === p.id
+      ? { ...p, coordinates: preview.coordinates, altitude: null }
+      : p,
+  );
+  const screen = points.map(projectGround),
+    metrics = points.length === 2 ? segmentMetrics(points[0], points[1]) : null;
+  const measureBounds = root.current?.getBoundingClientRect();
+  const w = measureBounds?.width ?? 390,
+    h = measureBounds?.height ?? 844;
+  const midpoint =
+    screen.length === 2 && screen[0] && screen[1]
+      ? {
+          x: (screen[0].x + screen[1].x) / 2,
+          y: (screen[0].y + screen[1].y) / 2,
+        }
+      : null;
+  const labelX = Math.max(8, Math.min(w - 302, (midpoint?.x ?? w / 2) - 119));
+  const resultHeight = metrics?.rise === null ? 134 : 88;
+  const minimumY = showCoordinates ? 212 : 152;
+  const visiblePoints = screen.filter(
+    (p): p is { x: number; y: number } => !!p,
+  );
+  const candidates = [
+    Math.min(...visiblePoints.map((p) => p.y)) - resultHeight - 32,
+    Math.max(...visiblePoints.map((p) => p.y)) + 32,
+  ].map((y) => Math.max(minimumY, Math.min(h - 160 - resultHeight, y)));
+  const labelY =
+    candidates.find((y) =>
+      visiblePoints.every(
+        (p) =>
+          p.x < labelX - 24 ||
+          p.x > labelX + 262 ||
+          p.y < y - 24 ||
+          p.y > y + resultHeight + 24,
+      ),
+    ) ?? candidates[0];
+  return (
+    <>
+      <svg
+        ref={root}
+        className="measurement-overlay"
+        aria-label="两点测量连线"
+        width="100%"
+        height="100%"
+      >
+        {screen[0] && screen[1] && (
+          <line
+            x1={screen[0].x}
+            y1={screen[0].y}
+            x2={screen[1].x}
+            y2={screen[1].y}
+          />
+        )}
+        {screen.map(
+          (p, i) =>
+            p && (
+              <g
+                key={points[i].id}
+                transform={`translate(${p.x},${p.y})`}
+                role="button"
+                tabIndex={0}
+                aria-label={`拖动测量点 ${i === 0 ? 'A' : 'B'}`}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (drag.current) {
+                    drag.current = null;
+                    setPreview(null);
+                    return;
+                  }
+                  if (e.button !== 0) return;
+                  onBegin();
+                  state.select(points[i].id);
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  drag.current = {
+                    id: points[i].id,
+                    pointer: e.pointerId,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    moved: false,
+                    coordinate: null,
+                  };
+                }}
+                onPointerMove={(e) => {
+                  const d = drag.current,
+                    bounds = root.current?.getBoundingClientRect();
+                  if (!d || d.pointer !== e.pointerId || !bounds) return;
+                  e.stopPropagation();
+                  if (
+                    !d.moved &&
+                    Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 4
+                  )
+                    return;
+                  d.moved = true;
+                  const c = toCoordinate({
+                    x: e.clientX - bounds.left,
+                    y: e.clientY - bounds.top,
+                  });
+                  if (c) {
+                    d.coordinate = c;
+                    setPreview({ id: d.id, coordinates: c });
+                  }
+                }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  const d = drag.current;
+                  if (d?.pointer !== e.pointerId) return;
+                  drag.current = null;
+                  setPreview(null);
+                  if (d.moved && d.coordinate)
+                    state.move(
+                      d.id,
+                      d.coordinate,
+                      groundElevation(d.coordinate),
+                    );
+                }}
+                onPointerCancel={() => {
+                  drag.current = null;
+                  setPreview(null);
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    state.select(points[i].id);
+                  }
+                  const delta: Record<string, [number, number]> = {
+                    ArrowLeft: [-8, 0],
+                    ArrowRight: [8, 0],
+                    ArrowUp: [0, -8],
+                    ArrowDown: [0, 8],
+                  };
+                  if (delta[e.key]) {
+                    e.preventDefault();
+                    onBegin();
+                    const [dx, dy] = delta[e.key];
+                    const c = toCoordinate({ x: p.x + dx, y: p.y + dy });
+                    if (c) state.move(points[i].id, c, groundElevation(c));
+                  }
+                }}
+              >
+                <circle r="22" className="measurement-hit" />
+                <circle r="8" fill={i === 0 ? '#ffcf45' : '#3478ed'} />
+                <text textAnchor="middle" dy="-16">
+                  {i === 0 ? 'A' : 'B'}
+                </text>
+              </g>
+            ),
+        )}
+      </svg>
+      <section
+        className="measurement-panel"
+        aria-label="两点测量"
+        data-dragging={!!preview}
+      >
+        <header>
+          <strong>两点测量</strong>
+          {([0, 1] as const).map((i) => (
+            <button
+              key={i}
+              aria-label={`选择测量点 ${i === 0 ? 'A' : 'B'}`}
+              aria-pressed={state.slot === i}
+              onClick={() => state.pick(i)}
+            >
+              {i === 0 ? 'A' : 'B'}
+            </button>
+          ))}
+          <button
+            onClick={() =>
+              state.pick(points.length < 2 ? (points.length as 0 | 1) : 0)
+            }
+            aria-label="从地图或已有标记选两点"
+          >
+            <MapPin size={15} />
+            选点
+          </button>
+          <button
+            aria-expanded={showCoordinates}
+            onClick={() => setShowCoordinates(!showCoordinates)}
+          >
+            <LocateFixed size={15} />
+            坐标
+          </button>
+          <button onClick={state.close} aria-label="关闭测量">
+            <X size={17} />
+          </button>
+        </header>
+        {showCoordinates && (
+          <div
+            className="measurement-coordinates"
+            aria-label="A与B坐标和地面海拔"
+          >
+            {([0, 1] as const).map((i) => (
+              <div key={i}>
+                <b>{i === 0 ? 'A' : 'B'}</b>
+                <span>
+                  {points[i]
+                    ? positionLabel(points[i])
+                    : '点地图或已有标记选择'}
+                </span>
+                <small>
+                  {points[i]
+                    ? state.reading.includes(points[i].id)
+                      ? '读取中'
+                      : points[i].altitude === null
+                        ? '海拔暂无'
+                        : `${points[i].altitude!.toFixed(1)} m`
+                    : '—'}
+                </small>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="measurement-helper">
+          <span>
+            {state.slot !== null
+              ? `请选择 ${state.slot === 0 ? 'A' : 'B'}：点地图空白或已有标记`
+              : '拖动 A/B 调整；海拔随地形自动读取'}
+          </span>
+          <button
+            disabled={!state.canUndo}
+            onClick={state.undo}
+            aria-label="撤销测量操作"
+          >
+            <Undo2 size={15} />
+          </button>
+          <button onClick={state.clear} aria-label="重新测量">
+            <RotateCcw size={15} />
+          </button>
+        </div>
         {state.error && <p role="alert">{state.error}</p>}
-      </div>
-      <footer><button aria-pressed={state.adding} onClick={() => state.setAdding(!state.adding)}>{state.adding ? '完成连线' : '继续添点'}</button><button disabled={!selected} onClick={state.remove}>删点</button><button disabled={!state.canUndo} onClick={state.undo}>撤销</button><button disabled={!points.length} onClick={state.clear}>新测量</button></footer>
-    </section>
-  </>;
-}
-function PointFields({ point, onChange }: { point: MeasurePoint; onChange: (patch: Partial<Pick<MeasurePoint, 'coordinates' | 'altitude'>>) => boolean }) {
-  const [values, setValues] = useState([point.coordinates[0].toFixed(6), point.coordinates[1].toFixed(6), point.altitude?.toFixed(2) ?? '']);
-  const [error, setError] = useState('');
-  return <form className="measurement-fields" onSubmit={e => { e.preventDefault();
-    if (values.some(v => !v.trim()) || !values.every(v => Number.isFinite(Number(v)))) { setError('请填写经度、纬度和海拔'); return; }
-    if (onChange({ coordinates: [Number(values[0]), Number(values[1])], altitude: Number(values[2]) })) setError('');
-  }}>
-    {['经度', '纬度', '海拔 m'].map((name, i) => <label key={name}>{name}<input aria-label={`测量点${name}`} inputMode="decimal" type="number" step="any" value={values[i]} onChange={e => setValues(v => v.map((x, j) => i === j ? e.target.value : x))} /></label>)}
-    <button type="submit">应用坐标</button>{error && <small role="alert">{error}</small>}
-  </form>;
+      </section>
+      {metrics && (
+        <aside
+          className="measurement-result"
+          aria-label="两点测量结果"
+          style={{ left: labelX, top: labelY }}
+        >
+          <div>
+            <strong>
+              {metrics.inclination === null
+                ? '—'
+                : `${metrics.inclination.toFixed(1)}°`}
+            </strong>
+            <span>与水平面夹角</span>
+          </div>
+          <p>
+            朝向{' '}
+            {metrics.bearing === null ? '—' : `${metrics.bearing.toFixed(1)}°`}{' '}
+            · A → B
+          </p>
+          <p>
+            水平 {lengthLabel(metrics.horizontal)} · 高差{' '}
+            {metrics.rise === null
+              ? '—'
+              : `${metrics.rise >= 0 ? '+' : ''}${metrics.rise.toFixed(1)} m`}
+          </p>
+          {metrics.rise === null && (
+            <button onClick={state.retryHeights}>
+              {preview
+                ? '松手后读取海拔'
+                : state.reading.length
+                  ? '正在读取地面海拔…'
+                  : '海拔暂无 · 重试'}
+            </button>
+          )}
+        </aside>
+      )}
+    </>
+  );
 }

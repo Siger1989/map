@@ -1,3 +1,12 @@
+# 2026-09-09 晚间反馈：源码与网页交付，APK按用户要求暂缓
+- 当前目标：完成照片保存、两点测量、远景标记、道路外虚线接入、输入联想及拖图保留面板的反馈修复。
+- 当前进度：业务实现和浏览器检查完成。测量采用用户选择的第三版，A/B支持拖动及已有标记，坐标/朝向/夹角/高差齐全，海拔自动获取。带照片的标记选点、任务长按误切换、道路出口提前到达提示也已修正。
+- 文件变更：app/page、measurement、navigation、guidance、annotations、input及文字编辑组件、controls、scripts/build-android.ps1、测试、AndroidManifest（预留0.2.20-test/code27）、docs/feedback-2026-09-09.md。未删除业务模块，旧测量存档与照片/标记格式保留。
+- 验证 PASS：376/376逻辑、类型、网页和Android网页构建；地图拖动保留路线窗口；A/B拖动和已有标记选点；390×844/360×780布局与44px按钮；地点/模型远景9px圆点；文字候选回填；照片保存/查看解码；在线路线508m含47m接入。
+- 命令：npx tsc --noEmit；node --experimental-strip-types --test tests/*.test.mjs；npm run build；npm run build:android:web。详细日志.openai/*20260909-feedback.log，截图artifacts/screenshots/*feedback*及measurement-existing-markers-390.png。截图接口存在缩小加边框问题，不能当作像素精确或真机验收。
+- 安装包：拍照独立版构建映射错误已修复，中间unsigned构建及473地形检查通过，但不是最终可安装包。本机缺下午4a94独立版签名；用户明确暂时取不到，先交付源码和网页。未替换密钥/签名、未发布APK；HarmonyOS6.1原生仍未交付。
+- 当前阻碍：源码/网页无阻碍；手机相机真机验收与APK覆盖更新等待原签名。预览http://127.0.0.1:9230/，保留两点测量界面和公开地点验证样例。
+- 下一步：提交推送codex/huawei-webview-touch并核远端SHA，然后等待用户预览反馈。
 # 0.2.19紧急交付：新增功能已接入，按用户要求停止进一步验证（2026-09-09）
 - 最终交付：GitHub v0.2.19-test-standalone已公开，Release id385427489，draft=false；APK/sha256/install.md三资产uploaded且字节数与服务端digest相同。源码73d88a155ecd9c195468ffe55260adf4738d8d5f已推送codex/huawei-webview-touch并核远端相同，未合入main。下载 https://github.com/Siger1989/map/releases/download/v0.2.19-test-standalone/Shantu-0.2.19-test-standalone.apk 。后续只剩用户要求暂缓的功能验证，不需要重复打包本版本。
 - 用户追加并授权：标记一级菜单系统相机、照片关联；工具测量及单点XYZ；编辑标记点地图不跳列表；减号仅删点和相连线、取消自动拼接、框选批量删点；地图缩小时地点图标缩小。
@@ -1169,3 +1178,14 @@
 - design-qa.md已按同图对比要求检查三张comparison board及重点截图，浏览器范围PASS；部分实时天气/DEM缺测状态按真实缺失显示—。无真机GPS/触控/性能验收。
 - 生成docs/release-0.2.14.md、APK安装说明与发行说明，更新mobile/README。最终APK与332逻辑/types/web/资源/签名验证沿用本节之前的最终结果，无后续业务源码改动。下一步git提交推送和测试Release。
 - 发布前diff检查发现Manifest文件尾多一个空行，已移除并完整重出APK，未改业务语义。最终以apk-20260909-073707/web为准：55,219,775字节，SHA256 a5a13e86c26671a819082950669748cc40da53ed8d03217f029e0358eda917ff。独立525资源/496PNG/473FABDEM/CRC校验再次PASS；前f4a8包为中间构建，未公开交付。
+# 晚间反馈进度补充
+- 已改：独立APK CameraCaptureProvider authority错误映射（此前与.photos重复，现明确.capture并检查唯一性）；地点/模型统一dot/icon/label呈现；两点测量使用第三图修订版、地形自动海拔，移除Z编辑；道路locate最近投影与虚线接入/途经点往返；24处通用输入联想；工作型面板拖图保持、路线看全程不关闭。
+- 新增modules/input/*、modules/navigation/roadAccess.ts、tests/feedback-20260909.test.mjs；其他文件见git diff。未修改照片/轨迹旧存储内容，新两点测量使用独立key保留旧折线。
+- 验证：类型检查PASS；首轮376测试375PASS/1FAIL，为原模型测试替身缺map.off，已补；新增六项业务回归PASS。下一步重跑、浏览器双尺寸真实流程、APK工具链定位/打包和签名核验。当前SDK默认路径不存在，正查本机实际位置；未交付新APK。
+- UI参考：生成图exec-7f35d97f-fad1-4091-b5bc-f459ce7519f4.png（用户选择第三图）、修订exec-f3f55f31-8c8f-4c74-9b0f-9cb4c4d98737.png；按追加要求高度只读不调整。现状截图measurement-reference-20260909.png；390截图旧捕获缩放现象，不能当精确像素验收。
+
+## 最终验证轮
+- 用户已明确暂时取不到下午签名，先完成源码/网页；APK发布暂停，不再等待签名才提交。已通过网页和Android网页构建、376/376逻辑与类型。
+- UI追加验证发现照片缩略图会抢标记点击：选点时隐藏缩略图，带照片的A与模型B都正确选入测量；任务长按不再转新建，Escape保留取消选点/关闭面板区别。
+- 390/360无横溢且按钮44px；远景地点/模型均9px小点/隐藏名称。在线两标记路线508m含47m接入；道路出口指令已与最终到达区分。照片样例保存并打开，960x960解码通过。测量时隐藏路线摘要和沿途天气，避免遮挡。
+- 下一步最终类型/构建，文档与源码提交推送核SHA，交付9230预览。

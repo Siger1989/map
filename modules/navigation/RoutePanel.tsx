@@ -12,7 +12,6 @@ import { MAX_ROUTE_STOPS, stopLabel } from './stops';
 import {
   formatDistance,
   formatDuration,
-  metresBetween,
   TRAVEL_MODES,
   type Coordinate,
   type Endpoint,
@@ -221,16 +220,6 @@ export function RoutePanel({
       setAnnouncement(`已移到${stopLabel(d.to, n.stops.length)}`);
     }
   };
-  const snapped = n.route
-    ? Math.max(
-        0,
-        ...(n.route.stops ?? [n.start, n.end]).map((p, i) =>
-          p && n.route!.snapped[i]
-            ? metresBetween(p.coordinates, n.route!.snapped[i])
-            : 0,
-        ),
-      )
-    : 0;
   return (
     <div className="route-panel" data-picking={n.picking !== null}>
       {n.picking !== null && (
@@ -397,7 +386,7 @@ export function RoutePanel({
               )}
               {focused && !!results.length && (
                 <ul
-                  className="route-search-results"
+                  className="route-search-results suggestion-surface"
                   aria-label={`${label}搜索结果`}
                 >
                   {results.map((p, i) => (
@@ -509,10 +498,9 @@ export function RoutePanel({
               {saveMessage}
             </p>
           )}
-          {snapped > 100 && (
-            <p className="route-error">
-              地点匹配附近道路，最大偏移 {Math.round(snapped)}{' '}
-              米；选点到道路间未计入路线。
+          {!!n.route.accessDistance && (
+            <p className="route-note">
+              虚线为选点与附近道路的直连接入，共 {Math.round(n.route.accessDistance)} 米，已计入总长；时间按步行估算，实际通行需现场确认。
             </p>
           )}
           <details className="route-steps">

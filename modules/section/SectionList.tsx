@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import { Eye, EyeOff, Trash2, X, Plus } from 'lucide-react';
 import type { SectionObjectsState } from './useSavedSection';
 import './sectionList.css';
@@ -31,7 +32,7 @@ export function SectionList({
         {state.items.map((item) => (
           <div className="section-list-row" key={item.id}>
             <div>
-              <input
+              <SmartInput
                 aria-label={`名称 ${item.name}`}
                 key={item.name}
                 defaultValue={item.name}

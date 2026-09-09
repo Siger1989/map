@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import {
   useEffect,
   useMemo,
@@ -311,7 +312,7 @@ export function CollectionsPanel(props: Props) {
           <div className="catalog-region-inputs">
             <label>
               省 / 州
-              <input
+              <SmartInput
                 aria-label="收藏省份"
                 value={province}
                 maxLength={80}
@@ -320,7 +321,7 @@ export function CollectionsPanel(props: Props) {
             </label>
             <label>
               城市
-              <input
+              <SmartInput
                 aria-label="收藏城市"
                 value={city}
                 maxLength={80}
@@ -330,7 +331,7 @@ export function CollectionsPanel(props: Props) {
           </div>
           <label>
             国家 / 地区
-            <input
+            <SmartInput
               aria-label="收藏国家"
               value={country}
               maxLength={80}
@@ -366,7 +367,7 @@ export function CollectionsPanel(props: Props) {
       ) : (
         <>
           <div className="catalog-search">
-            <input
+            <SmartInput
               aria-label="搜索收藏"
               placeholder="名称 / 省 / 市"
               value={search}

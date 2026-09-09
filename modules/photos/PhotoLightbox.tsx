@@ -1,3 +1,4 @@
+import { SmartInput, SmartTextarea } from '../input/SmartText';
 import { useEffect, useRef, useState } from 'react';
 import type { VisiblePhoto } from './storage';
 import {
@@ -173,7 +174,7 @@ export function PhotoLightbox({
         <form className="photo-editor" onSubmit={(e) => e.preventDefault()}>
           <label>
             照片标题
-            <input
+            <SmartInput
               maxLength={100}
               value={draft.title}
               disabled={busy}
@@ -184,7 +185,7 @@ export function PhotoLightbox({
           </label>
           <label>
             照片备注
-            <textarea
+            <SmartTextarea
               maxLength={1000}
               rows={2}
               value={draft.note}

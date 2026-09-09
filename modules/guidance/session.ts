@@ -47,7 +47,10 @@ export function createSession(
   const path = pathOf(route.coordinates);
   if (path.length < 20) throw new Error('路线太短，请重新规划。');
   let floor = 0;
-  const checkpoints = route.snapped.slice(1, -1).map((point) => {
+  const checkpointPoints = route.accessDistance && route.stops
+    ? route.stops.map(stop => stop.coordinates)
+    : route.snapped;
+  const checkpoints = checkpointPoints.slice(1, -1).map((point) => {
     const hit = project(path, point, floor);
     floor = hit.distance;
     return hit;

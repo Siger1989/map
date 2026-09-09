@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { WorkbenchShare } from './WorkbenchShare';
@@ -188,7 +189,7 @@ export function WorkbenchAction(p: Props) {
       >
         <label>
           名称
-          <input
+          <SmartInput
             aria-label="收藏名称"
             required
             maxLength={30}

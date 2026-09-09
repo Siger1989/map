@@ -151,7 +151,7 @@
   -webkit-touch-callout: none;
   touch-action: none;
 }
-.annotation-marker.is-point {
+.annotation-marker {
   min-width: 44px;
   min-height: 44px;
 }
@@ -197,6 +197,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Both models and pins collapse at regional scales; preserve their geographic anchor. */
+.annotation-marker[data-presentation='dot'],
+.annotation-marker[data-presentation='icon'] { width: 44px; height: 44px; }
+.annotation-marker[data-presentation='dot'] .annotation-marker-visual,
+.annotation-marker[data-presentation='icon'] .annotation-marker-visual {
+  position: absolute; left: 50%; bottom: 0; padding: 0; transform: translate(-50%, 50%);
+}
+.annotation-marker[data-presentation='dot'] .annotation-marker-visual::after,
+.annotation-marker[data-presentation='icon'] .annotation-marker-visual::after { display: none; }
+.annotation-marker[data-presentation='dot'] .annotation-marker-body {
+  width: 9px; height: 9px; min-height: 0; padding: 0; border-radius: 50%;
+  border: 1.5px solid white; background: var(--marker-color); box-shadow: 0 1px 3px #10212999;
+}
+.annotation-marker[data-presentation='dot'] .annotation-marker-body > *,
+.annotation-marker[data-presentation='icon'] .annotation-marker-name { display: none; }
+.annotation-marker[data-presentation='icon'] .annotation-marker-body {
+  width: 22px; height: 22px; min-height: 0; padding: 3px; border-width: 1px; border-radius: 50%;
+}
+.annotation-marker[data-presentation='icon'] svg { width: 14px; height: 14px; }
 .annotation-location { font-size: 12px; color: #26413f; border: 1px solid #91a59d; border-radius: 6px; padding: 5px; background: #f5f8f0; }
 .annotation-location header { display: flex; align-items: center; justify-content: space-between; }
 .annotation-location header button { min-height: 44px; padding: 0 6px; font-size: 12px; }

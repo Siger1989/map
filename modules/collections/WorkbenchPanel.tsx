@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   Check,
@@ -422,7 +423,7 @@ export function WorkbenchPanel(props: Props) {
             </button>
           </header>
           <div className="workbench-search">
-            <input
+            <SmartInput
               aria-label="搜索收藏"
               placeholder="搜索收藏"
               value={query}

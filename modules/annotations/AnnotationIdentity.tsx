@@ -1,3 +1,4 @@
+import { SmartInput, SmartTextarea } from '../input/SmartText';
 import { useState, type ReactNode } from 'react';
 import type { Annotation } from './data';
 import { MARKER_ICONS, markerIcon } from './icons';
@@ -70,7 +71,7 @@ export function AnnotationIdentity({
       )}
       <label className="annotation-field">
         <span>名称</span>
-        <input
+        <SmartInput
           aria-label="标记名称"
           value={item.name}
           maxLength={60}
@@ -84,10 +85,10 @@ export function AnnotationIdentity({
         </span>
         {fields.map((f, i) => (
           <div className="annotation-attribute-row" key={i}>
-            <input
+            <SmartInput
               aria-label={`属性 ${i + 1} 名称`}
               placeholder="条目名"
-              list="annotation-recent-fields"
+              suggestions={recent}
               maxLength={60}
               value={f.name}
               onBlur={remember}
@@ -99,7 +100,7 @@ export function AnnotationIdentity({
                 })
               }
             />
-            <textarea
+            <SmartTextarea
               rows={1}
               aria-label={`属性 ${i + 1} 数据`}
               placeholder="具体数据"

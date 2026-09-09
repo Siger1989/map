@@ -1,0 +1,61 @@
+.text-suggestions {
+  position: fixed;
+  z-index: 10000;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.suggestion-surface,
+.observatory .place-search-results,
+.observatory .route-search-results {
+  background: rgba(248, 252, 249, 0.86) !important;
+  color: #193d38 !important;
+  backdrop-filter: blur(14px);
+  border: 1px solid #dae5dfb3 !important;
+  border-radius: 9px;
+  box-shadow: 0 4px 16px #163a3724;
+  font-size: 12px !important;
+}
+.suggestion-surface > small,
+.suggestion-surface > p {
+  display: block;
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #5a6e69;
+}
+.text-suggestions button,
+.observatory .place-search-options button,
+.observatory .route-search-results button {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 5px 8px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d3dfd75c !important;
+  border-radius: 0 !important;
+  color: #193d38 !important;
+  font: inherit;
+  font-size: 12px !important;
+  overflow-wrap: anywhere;
+}
+.text-suggestions button[aria-selected='true'],
+.text-suggestions button:hover,
+.observatory .place-search-options button:focus,
+.observatory .route-search-results button:focus {
+  background: #dceaffc9 !important;
+}
+.observatory .place-search-options strong,
+.observatory .route-search-results strong {
+  color: #193d38 !important;
+  font-size: 12px !important;
+  font-weight: 500;
+}
+.observatory .place-search-options small,
+.observatory .route-search-results small {
+  color: #567069 !important;
+  font-size: 11px !important;
+}

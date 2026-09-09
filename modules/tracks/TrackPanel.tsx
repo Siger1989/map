@@ -1,3 +1,4 @@
+import { SmartInput } from '../input/SmartText';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
@@ -261,7 +262,7 @@ export function TrackPanel({
               {t.editingId ? '放弃本次续画' : '清空草稿'}
             </button>
           </div>
-          <input
+          <SmartInput
             className="track-name"
             aria-label="轨迹名称"
             placeholder={
@@ -415,7 +416,7 @@ export function TrackPanel({
               )}
               <label className="track-rename">
                 线路名称
-                <input
+                <SmartInput
                   className="track-name"
                   defaultValue={track.name}
                   maxLength={60}

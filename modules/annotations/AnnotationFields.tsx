@@ -1,3 +1,4 @@
+import { SmartInput, SmartTextarea } from '../input/SmartText';
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronLeft, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { MARKER_ICONS, markerIcon } from './icons';
@@ -55,7 +56,7 @@ export function MarkerBasic({ item, base, change, terrainStatus }: {
     {picker === 'color' && <label className="marker-custom-color">自定义颜色<input type="color" aria-label="自定义标记颜色" value={item.color} onChange={(e) => change({ color: e.target.value })} /></label>}
   </div>;
   return <>
-    <label className="marker-inline-field"><span>名称</span><input aria-label="标记名称" value={item.name} maxLength={60} onChange={(e) => change({ name: e.target.value })} /></label>
+    <label className="marker-inline-field"><span>名称</span><SmartInput aria-label="标记名称" value={item.name} maxLength={60} onChange={(e) => change({ name: e.target.value })} /></label>
     <div className="marker-style-row">
       <button onClick={() => setPicker('icon')}><small>图标</small><AnnotationIcon item={item} size={18} /><span>{markerIcon(item.icon).name}</span><ChevronDown size={14} /></button>
       <button onClick={() => setPicker('color')}><small>颜色</small><i style={{ background: item.color }} /><span>{colors.find(([c]) => c === item.color)?.[1] ?? '自定'}</span><ChevronDown size={14} /></button>
@@ -117,13 +118,13 @@ export function MarkerData({ item, change }: { item: Annotation; change: Change 
     <div className="marker-data-heading"><span>自定义属性 · {fields.length}</span><button disabled={fields.length >= MAX_ATTRIBUTES}
       onClick={() => change({ attributes: [...fields, { name: '', value: '' }] })}><Plus size={16} />添加</button></div>
     {fields.map((field, i) => <div className="marker-attribute-row" key={i}>
-      <input aria-label={`属性 ${i + 1} 名称`} placeholder="属性名" value={field.name} maxLength={60}
+      <SmartInput aria-label={`属性 ${i + 1} 名称`} placeholder="属性名" value={field.name} maxLength={60}
         onChange={(e) => change({ attributes: fields.map((v, n) => n === i ? { ...v, name: e.target.value } : v) })} />
-      <textarea aria-label={`属性 ${i + 1} 数据`} placeholder="内容" value={field.value} rows={1} maxLength={2000}
+      <SmartTextarea aria-label={`属性 ${i + 1} 数据`} placeholder="内容" value={field.value} rows={1} maxLength={2000}
         onChange={(e) => change({ attributes: fields.map((v, n) => n === i ? { ...v, value: e.target.value } : v) })} />
       <button aria-label={`删除属性 ${i + 1}`} onClick={() => change({ attributes: fields.filter((_, n) => n !== i) })}><Trash2 size={16} /></button>
     </div>)}
-    <label className="marker-inline-field marker-note"><span>备注</span><textarea aria-label="标记备注" rows={1} maxLength={500} placeholder="补充说明…" value={item.note} onChange={(e) => change({ note: e.target.value })} /></label>
+    <label className="marker-inline-field marker-note"><span>备注</span><SmartTextarea aria-label="标记备注" rows={1} maxLength={500} placeholder="补充说明…" value={item.note} onChange={(e) => change({ note: e.target.value })} /></label>
   </div>;
 }
 

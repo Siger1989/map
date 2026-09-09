@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PRODUCT_NAME } from '@/config/product';
+import { TextSuggestions } from '@/modules/input/SmartText';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
 import {
   MapSourcesPanel,
@@ -228,8 +229,8 @@ export default function Home() {
   };
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
   const photoOverlay = useMemo(
-    () => (photos.visible ? photos.items : []),
-    [photos.visible, photos.items],
+    () => (photos.visible && !measurement.active && navigation.picking === null ? photos.items : []),
+    [photos.visible, photos.items, measurement.active, navigation.picking],
   );
   const photoTracks = useMemo(() => {
     const record = recorder.record;
@@ -479,6 +480,7 @@ export default function Home() {
       guidance.rejoin
         ? {
             coordinates: guidance.rejoin.route.coordinates,
+            segments: guidance.rejoin.route.segments,
             target: guidance.rejoin.target.point,
           }
         : null,
@@ -936,8 +938,13 @@ export default function Home() {
       ),
     );
   };
+  const suggestionValues = useMemo(() => ({
+    name: [...annotations.items.map(a => a.name), ...tracks.saved.map(t => t.name), ...photos.items.map(p => p.title || p.name)],
+    note: [...annotations.items.flatMap(a => [a.note || '', ...(a.attributes ?? []).map(f => f.value)]), ...photos.items.map(p => p.note || '')],
+    attribute: annotations.items.flatMap(a => (a.attributes ?? []).map(f => f.name)),
+  }), [annotations.items, tracks.saved, photos.items]);
   return (
-    <main
+    <TextSuggestions.Provider value={suggestionValues}><main
       className="observatory"
       data-measuring={measurement.active}
       data-panel={panel ?? 'map'}
@@ -1102,7 +1109,7 @@ export default function Home() {
         riverSnapping={tracks.riverSnapping}
         annotationSelected={annotations.selected}
         annotationEditingId={annotations.edit?.draft.id}
-        annotationPicking={navigation.picking !== null}
+        annotationPicking={navigation.picking !== null || measurement.active}
         pickingActive={Boolean(
           annotations.picking || navigation.picking !== null || measurement.active,
         )}
@@ -1170,6 +1177,11 @@ export default function Home() {
           }
         }}
         onAnnotationSelect={(id) => {
+          if (measurement.active) {
+            const item = annotations.items.find(a => a.id === id && a.visible);
+            if (item && measurement.adding) measurement.add(item.coordinates, map.current?.groundElevation(item.coordinates) ?? null);
+            return;
+          }
           if (editor.session) return;
           if (navigation.picking !== null) {
             const item = annotations.items.find((a) => a.id === id && a.visible);
@@ -1196,7 +1208,7 @@ export default function Home() {
           setPanel('annotations');
         }}
         onMapHold={(value) => {
-          if (editor.session) return;
+          if (editor.session || measurement.active || panel !== null || navigation.picking !== null) return;
           follow.pause();
           position.free();
           tracks.select(null);
@@ -1395,6 +1407,7 @@ export default function Home() {
         !selectedAnnotation &&
         !selectedPhoto &&
         !featureMove &&
+        !measurement.active &&
         !guidance.active &&
         !boxSelecting && (
           <CenterCursor
@@ -1606,7 +1619,8 @@ export default function Home() {
       {measurement.active && <Measurement state={measurement} watchProjection={watchObjectProjection}
         projectGround={p => map.current?.toScreen(p.coordinates) ?? null}
         onBegin={() => { map.current?.stop(); position.free(); follow.pause(); }}
-        onLocate={p => map.current?.focusPoint(p.coordinates, 16)} />}
+        toCoordinate={p => map.current?.toCoordinate(p) ?? null}
+        groundElevation={p => map.current?.groundElevation(p) ?? null} />}
       {selectedPhoto && panel === null && (
         <PhotoViewer
           photo={selectedPhoto}
@@ -1672,6 +1686,7 @@ export default function Home() {
         </div>
       ) : navigation.picking !== null ? null : (
         navigation.route &&
+        !measurement.active &&
         !guidance.active && (
           <div className="route-map-notice route-start-notice glass">
             <button
@@ -1781,6 +1796,7 @@ export default function Home() {
         )}
       {navigation.route &&
         !railTrack &&
+        !measurement.active &&
         !sectionEditing &&
         !guidance.active && (
           <RouteWeatherRail
@@ -1992,7 +2008,8 @@ export default function Home() {
           photos.setSelected(null); setPanel(null); setQuickAdd(null);
           position.free(); follow.pause(); measurement.open();
         }}
-        keepOpenOnMapInteraction={panel === 'favorites' || (panel === 'route' && navigation.picking !== null)}
+        keepOpenOnMapInteraction={panel !== null && !['tools', 'time'].includes(panel)}
+        mapPicking={navigation.picking !== null || !!annotations.picking}
         onScanRoute={() => {
           setPanel(null);
           setRouteQr('');
@@ -2310,7 +2327,7 @@ export default function Home() {
             onPlace={(place) => map.current?.focusPoint(place.coordinates)}
             onShow={(route) => {
               map.current?.fitRoute(route.coordinates);
-              setPanel(null);
+              setPanel('route');
             }}
           />
         )}
@@ -2525,6 +2542,6 @@ export default function Home() {
           map.current?.view(pitch, bearing, false);
         }}
       />
-    </main>
+    </main></TextSuggestions.Provider>
   );
 }
