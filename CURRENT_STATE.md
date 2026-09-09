@@ -1,4 +1,10 @@
-# 标记UI与新Logo实施及最新APK（2026-09-09，构建验证完成，待发布）
+# 当前交付：0.2.15独立测试版已公开（2026-09-09，PASS）
+- 标记紧凑摘要、基本/位置/资料三页、事务编辑、逐轴回正和原Logo已完成。实现提交b6c5d3a5c047b78a1703f8780919eb0b2e1ab2c0推送main并核远端一致；本节随后以文档提交同步。
+- GitHub Release v0.2.15-test-standalone，id385225040，draft=false/prerelease=true。APK、SHA256、安装说明三资产均uploaded，服务端digest/字节数与本机一致。下载 https://github.com/Siger1989/map/releases/download/v0.2.15-test-standalone/Shantu-0.2.15-test-standalone.apk 。最终APK 57,607,900字节，SHA256 8dab030817f461fecc836002cd5ad0cf220b431790d5e15238ebacfce5725751。
+- 本机已有4a94独立签名，com.guanyun.weather.shantu.preview/code22；可覆盖同系列独立版，与原系列0.2.14并存、数据独立，不能覆盖它。不把本次交付称原系列升级；Android真机未验、HarmonyOS6.1原生仍未交付。
+- 341项逻辑、types、网页/Android/资源签名验证通过；手机尺寸/失败重试/单轴/控制器/键盘焦点等见下方检查点与design-qa.md。交付预览http://127.0.0.1:9218/，IAB 390×844，用最终APK构建stage原始web资源；已检查canvas/Logo/无横溢。9215/9217既有用户页面与数据保留；9216验证页面也保留，不清存档。下一步手机安装反馈；无其他待发布内容。
+
+# 标记UI与新Logo实施及最新APK（2026-09-09，发布前检查点）
 - 最终代码已完成。341/341逻辑、types、网页/Android网页/Java/APK构建通过；浏览器390×844/360×780、保存失败重试/放弃切换/逐轴回正/控制器读数/删除取消/导航返回通过。360×430压缩视口修复后，备注y168..212与保存共同可见；并非原生键盘/真机验收。
 - 原系列a3aa密钥在本机不可用：默认mobile/.build/guanyun-test.jks实际为4a94独立系列，原系列构建被证书保护拦下。最终以已有独立签名构建0.2.15-test/code22，com.guanyun.weather.shantu.preview、安装名山兔测试版；与原系列0.2.14并行安装/数据独立，不覆盖、不自动迁移。源码原系列包名和签名约束保留。
 - 最终APK/Shantu-0.2.15-test-standalone.apk：57,607,900字节；SHA256 8dab030817f461fecc836002cd5ad0cf220b431790d5e15238ebacfce5725751。v2/v3、zipalign、ZIP CRC、526资源逐项、470重压缩PNG像素/473地形、原Logo像素通过，无QA页/私密构建文件；final stage apk-20260909-122159/web。之前同版本中间包不发布。
