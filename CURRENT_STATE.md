@@ -6,7 +6,7 @@
 - 命令：npx tsc --noEmit；node --experimental-strip-types --test tests/*.test.mjs；npm run build；npm run build:android:web。详细日志.openai/*20260909-feedback.log，截图artifacts/screenshots/*feedback*及measurement-existing-markers-390.png。截图接口存在缩小加边框问题，不能当作像素精确或真机验收。
 - 安装包：拍照独立版构建映射错误已修复，中间unsigned构建及473地形检查通过，但不是最终可安装包。本机缺下午4a94独立版签名；用户明确暂时取不到，先交付源码和网页。未替换密钥/签名、未发布APK；HarmonyOS6.1原生仍未交付。
 - 当前阻碍：源码/网页无阻碍；手机相机真机验收与APK覆盖更新等待原签名。预览http://127.0.0.1:9230/，保留两点测量界面和公开地点验证样例。
-- 源码提交：1ea992a1b51251dcfd32ce0474cfe2605be781f4；首轮GitHub直连被重置，正在用已有127.0.0.1:7897代理仅限本次git命令同步，随后核远端SHA。预览和本地提交不受影响。
+- 同步 PASS：实现1ea992a及验证文档5cbdea8已推送codex/huawei-webview-touch，已核GitHub远端与本地5cbdea85aa515b75d2b9cef0d5f3bb626e8ee684一致；未合入main。直连重置后仅本次git命令使用已有代理恢复，无系统网络设置变更。此交付记录随后同步。下一步用户预览反馈；APK按用户要求暂缓。
 # 0.2.19紧急交付：新增功能已接入，按用户要求停止进一步验证（2026-09-09）
 - 最终交付：GitHub v0.2.19-test-standalone已公开，Release id385427489，draft=false；APK/sha256/install.md三资产uploaded且字节数与服务端digest相同。源码73d88a155ecd9c195468ffe55260adf4738d8d5f已推送codex/huawei-webview-touch并核远端相同，未合入main。下载 https://github.com/Siger1989/map/releases/download/v0.2.19-test-standalone/Shantu-0.2.19-test-standalone.apk 。后续只剩用户要求暂缓的功能验证，不需要重复打包本版本。
 - 用户追加并授权：标记一级菜单系统相机、照片关联；工具测量及单点XYZ；编辑标记点地图不跳列表；减号仅删点和相连线、取消自动拼接、框选批量删点；地图缩小时地点图标缩小。
