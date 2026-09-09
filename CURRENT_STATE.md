@@ -1,4 +1,10 @@
-# 导航地图选点、地点箭头与搜索可读性（2026-09-09，发布前核验通过）
+# 当前交付：0.2.16独立测试版已公开（2026-09-09，PASS）
+- 导航可直接选择已有标记，选点面板保持可见；普通地点箭头对准实际坐标，顶部/路线搜索结果改为不透明。实现提交61e0449a14b183330b10728fa7e9a69d49619cc0已推送main并核远端一致；本节随后以文档提交同步。
+- GitHub Release v0.2.16-test-standalone，id385233071，draft=false/prerelease=true。APK、SHA256、安装说明均uploaded，服务端digest/字节数与本地一致。下载 https://github.com/Siger1989/map/releases/download/v0.2.16-test-standalone/Shantu-0.2.16-test-standalone.apk 。APK 57,607,900字节；SHA256 2df7a5ca599d11650b585eaeda1a5a377491d5e9af96c8e6069776d53d637862。
+- 341项逻辑、types、网页/Android/资源签名及390×844/360×780验证通过；10行导航地址滚动、取消/Escape、地图拖动、普通标记编辑、真实搜索结果均检查。最终APK资源预览9220，index-DcVhx8LQ.js；未更改既有浏览器存档。
+- 可覆盖同签名0.2.15及此前4a94独立系列；与原系列0.2.14并存、数据独立。Android真机未验，HarmonyOS6.1原生仍未交付。原始六个鸿蒙草稿保留；无其他待发布代码。下一步用户手机安装与体验反馈。
+
+# 导航地图选点、地点箭头与搜索可读性（2026-09-09，发布前核验通过，历史检查点）
 - 用户要求起终点/途经点可选已有地图标记，选点时保留界面，地点图标箭头对准实际落点；追加地址搜索下拉框不透明。已核main与origin一致8791e64，保留六个原始鸿蒙草稿。
 - 修改navigation/RoutePanel/useNavigation/navigation.css、map/TerrainMap、annotations/AnnotationLayer/annotations.css、controls/ControlDock/modern.css、app/page；版本0.2.16-test/code23。保持导航面板并接收标记名称和坐标；普通pin底部箭头尖端锚定坐标；搜索结果不透明。路线服务、模型高度投影、照片、存档、签名、原Logo未改，无业务删除。
 - 类型、341项逻辑、网页/Android网页/Java/APK通过；390×844/360×780、10地址滚动、标记/空白选点、拖图/取消/Escape与搜索实色通过，记录docs/navigation-map-picking.md与design-qa.md。
