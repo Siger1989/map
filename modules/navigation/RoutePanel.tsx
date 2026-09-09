@@ -81,6 +81,20 @@ export function RoutePanel({
     previousCount.current = n.stops.length;
   }, [n.stops]);
   const selected = n.stops.find((s) => s.id === active);
+  const pickingIndex =
+    n.picking === 'start'
+      ? 0
+      : n.picking === 'end'
+        ? n.stops.length - 1
+        : n.picking;
+  useEffect(() => {
+    if (pickingIndex === null) return;
+    rows.current
+      ?.querySelector<HTMLElement>(
+        `[data-stop-id="${n.stops[pickingIndex]?.id}"]`,
+      )
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [pickingIndex]);
   const nearRef = useRef(near);
   nearRef.current = near;
   useEffect(() => {
@@ -218,7 +232,16 @@ export function RoutePanel({
       )
     : 0;
   return (
-    <div className="route-panel">
+    <div className="route-panel" data-picking={n.picking !== null}>
+      {n.picking !== null && (
+        <div className="route-picking-help" role="status">
+          <span>
+            <strong>选择{n.pickingLabel}</strong>
+            <small>点已有标记，或在地图空白处选点</small>
+          </span>
+          <button onClick={() => n.setPicking(null)}>取消选点</button>
+        </div>
+      )}
       {n.error && (
         <p role="alert" className="route-error">
           {n.error}
@@ -243,7 +266,7 @@ export function RoutePanel({
             <div
               key={s.id}
               data-stop-id={s.id}
-              className={`route-stop-block ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
+              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
             >
               <form
                 className="route-stop-row"
@@ -268,7 +291,10 @@ export function RoutePanel({
                   placeholder={`输入${label}`}
                   value={s.query}
                   maxLength={120}
-                  onFocus={() => setActive(s.id)}
+                  onFocus={() => {
+                    n.setPicking(null);
+                    setActive(s.id);
+                  }}
                   onCompositionStart={() => setComposing(true)}
                   onCompositionEnd={() => setComposing(false)}
                   onChange={(e) => {
@@ -278,11 +304,21 @@ export function RoutePanel({
                 />
                 <button
                   type="button"
-                  className="stop-icon"
+                  className="stop-icon stop-pick"
                   aria-label={`在地图选择${label}`}
-                  onClick={() => onPick(index)}
+                  aria-pressed={pickingIndex === index}
+                  title="点击地图上的已有标记或空白位置"
+                  onClick={() => {
+                    request.current?.abort();
+                    setActive(null);
+                    setResults([]);
+                    (document.activeElement as HTMLElement)?.blur();
+                    if (pickingIndex === index) n.setPicking(null);
+                    else onPick(index);
+                  }}
                 >
-                  <MapPin size={17} />
+                  <MapPin size={15} />
+                  <span>选点</span>
                 </button>
                 <button
                   type="button"
@@ -444,7 +480,7 @@ export function RoutePanel({
       </button>
       {n.stops.some((s) => !s.place) && (
         <p className="route-note">
-          输入地名后请选择搜索结果，或点地点栏右侧图钉在地图选点。
+          输入地名后选搜索结果，或点“选点”后点击已有标记或地图空白处。
         </p>
       )}
       {n.route && (

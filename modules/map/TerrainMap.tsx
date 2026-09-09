@@ -140,6 +140,7 @@ type Props = {
   roadSnapping: boolean;
   riverSnapping: boolean;
   pickingActive: boolean;
+  annotationPicking?: boolean;
   onTrackSelect: (id: string) => void;
   onTrackLineSelect: (
     point: import('../tracks/linePoint').TrackLinePoint,
@@ -742,7 +743,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               annotationRef.current = new AnnotationLayer((id) => {
                 if (
                   !latest.current.drawingActive &&
-                  !latest.current.pickingActive
+                  (!latest.current.pickingActive ||
+                    latest.current.annotationPicking)
                 )
                   latest.current.onAnnotationSelect(id);
               });
@@ -835,6 +837,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               longPressRef.current?.blocksClick()
             )
               return;
+            if (latest.current.annotationPicking) {
+              const annotation = annotationRef.current?.pick(event.point);
+              if (annotation) {
+                latest.current.onAnnotationSelect(annotation);
+                return;
+              }
+            }
             if (
               (latest.current.section.enabled ||
                 latest.current.sectionItems.some((s) => s.settings.enabled)) &&
@@ -1079,6 +1088,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       <div
         ref={container}
         className="map-canvas"
+        data-annotation-picking={props.annotationPicking === true}
         data-picking={
           props.pickingActive || props.drawingActive || props.sectionEditing
         }

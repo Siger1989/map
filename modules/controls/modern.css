@@ -103,6 +103,26 @@
   color: var(--text);
   box-shadow: 0 6px 18px #101d2222;
 }
+.observatory .place-search-results.glass {
+  --panel: #f7f8f3;
+  --text: #202725;
+  --muted: #46534b;
+  --border: #cdd5ce;
+  background: #f7f8f3;
+  border-color: #bdc9bf;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.observatory .route-search-results {
+  background: #f7f8f3;
+  color: #202725;
+  border: 1px solid #bdc9bf;
+  border-radius: 8px;
+  padding: 0 6px;
+}
+.observatory[data-picking-route='true'] .control-dock .control-popover {
+  background: #f1f3ec;
+}
 .place-search-heading {
   display: flex;
   align-items: center;

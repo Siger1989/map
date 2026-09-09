@@ -1,3 +1,10 @@
+# 导航地图选点、地点箭头与搜索可读性（2026-09-09，发布前核验通过）
+- 用户要求起终点/途经点可选已有地图标记，选点时保留界面，地点图标箭头对准实际落点；追加地址搜索下拉框不透明。已核main与origin一致8791e64，保留六个原始鸿蒙草稿。
+- 修改navigation/RoutePanel/useNavigation/navigation.css、map/TerrainMap、annotations/AnnotationLayer/annotations.css、controls/ControlDock/modern.css、app/page；版本0.2.16-test/code23。保持导航面板并接收标记名称和坐标；普通pin底部箭头尖端锚定坐标；搜索结果不透明。路线服务、模型高度投影、照片、存档、签名、原Logo未改，无业务删除。
+- 类型、341项逻辑、网页/Android网页/Java/APK通过；390×844/360×780、10地址滚动、标记/空白选点、拖图/取消/Escape与搜索实色通过，记录docs/navigation-map-picking.md与design-qa.md。
+- 最终APK/Shantu-0.2.16-test-standalone.apk：57,607,900字节，SHA256 2df7a5ca599d11650b585eaeda1a5a377491d5e9af96c8e6069776d53d637862；原4a94独立签名、包名com.guanyun.weather.shantu.preview/code23，v2/v3/zipalign/ZIP CRC/526资源/470PNG像素/473地形/原Logo均通过。stage mobile/.build/apk-20260909-124539/web。
+- 新增模块及发行文档，未删除业务；六个原始鸿蒙草稿和用户浏览器数据保留。最终stage预览9220（390×844，index-DcVhx8LQ.js）再次验证已有标记填入终点、面板唯一和无横溢。下一步源码推送与v0.2.16-test-standalone Release上传验收；Android真机未验，HarmonyOS6.1原生仍未交付。
+
 # 当前交付：0.2.15独立测试版已公开（2026-09-09，PASS）
 - 标记紧凑摘要、基本/位置/资料三页、事务编辑、逐轴回正和原Logo已完成。实现提交b6c5d3a5c047b78a1703f8780919eb0b2e1ab2c0推送main并核远端一致；本节随后以文档提交同步。
 - GitHub Release v0.2.15-test-standalone，id385225040，draft=false/prerelease=true。APK、SHA256、安装说明三资产均uploaded，服务端digest/字节数与本机一致。下载 https://github.com/Siger1989/map/releases/download/v0.2.15-test-standalone/Shantu-0.2.15-test-standalone.apk 。最终APK 57,607,900字节，SHA256 8dab030817f461fecc836002cd5ad0cf220b431790d5e15238ebacfce5725751。

@@ -42,3 +42,9 @@ Storage failure preserves draft and original stored record; restoring storage an
 ## Follow-up polish and limits
 
 P3: raster-reference spacing is slightly denser; retain current touch dimensions and scroll cap. Native soft-keyboard timing, real pinch/touch gestures, installation, GPS and performance still need device testing. Browser viewport emulation is not native keyboard/device acceptance.
+# 导航选点、地点箭头与搜索框 · 0.2.16（2026-09-09）
+
+- 390×844、360×780：导航选点状态面板持续可见；选点提示、取消、当前起终点或途经点可达；地图拖动不关闭。标记点击填入名称，空白地图保留自由选点，取消/Escape保留地址；关闭后标记摘要/编辑正常。
+- 长路线10行地址切换首尾：360视口面板y56..352.4，提示y106..157；起点y157..202、终点滚动后y298..343，可达且无横向溢出。普通地点箭头尖端对应地图锚点，名称容器与箭头分离，未改模型顶部投影。
+- 两尺寸顶部真实成都搜索结果实色rgb(247,248,243)、backdrop-filter=none；明确分隔线、两行名称/地址，不透底图。路线搜索结果同步用不透明底。
+- 关键截图：artifacts/screenshots/navigation-pick-390-0216.png、navigation-pick-360-0216.png、navigation-search-390-0216.png、navigation-search-360-0216.png。已目视核对；未进行Android真机触控验收。

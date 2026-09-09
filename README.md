@@ -2,11 +2,11 @@
 
 # 山兔 · 三维地图与沿途天气
 
-**最新源码**：[标记摘要/紧凑三页编辑、事务草稿、逐轴回正与新Logo](docs/marker-workspace.md)，包含[0.2.14路线窗口、组合与导航](docs/release-0.2.14.md)及此前节点网络/收藏功能。
+**最新源码**：[导航选择已有标记、选点保留面板、地点箭头与清晰搜索结果](docs/navigation-map-picking.md)，包含[标记摘要/紧凑三页编辑、事务草稿、逐轴回正与新Logo](docs/marker-workspace.md)及此前路线与收藏功能。
 
 0.2.9起新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
-**最新安装包：0.2.15-test 独立测试版 / versionCode 22**（2026-09-09）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.15-test-standalone/Shantu-0.2.15-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.15.md)。本机为4a94独立系列签名，可覆盖同签名0.2.11独立版；与原系列0.2.14并行安装，不能覆盖它，数据不自动迁移。源码原包名/签名约束保持，HarmonyOS6.1原生包仍未交付。
+**最新安装包：0.2.16-test 独立测试版 / versionCode 23**（2026-09-09）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.16-test-standalone/Shantu-0.2.16-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.16.md)。沿用4a94独立系列签名，可覆盖同签名0.2.15独立版；与原系列0.2.14并行安装，不能覆盖它，数据不自动迁移。源码原包名/签名约束保持，HarmonyOS6.1原生包仍未交付。
 
 **手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 

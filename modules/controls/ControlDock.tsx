@@ -50,6 +50,7 @@ export function ControlDock({
   title,
   children,
   onScanRoute,
+  keepOpenOnMapInteraction = false,
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
@@ -63,11 +64,14 @@ export function ControlDock({
   title?: string;
   children: ReactNode;
   onScanRoute?: () => void;
+  keepOpenOnMapInteraction?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const changePanel = useRef(onActive);
   changePanel.current = onActive;
+  const keepOpen = useRef(keepOpenOnMapInteraction);
+  keepOpen.current = keepOpenOnMapInteraction;
   const close = () => {
     onActive(null);
     root.current
@@ -80,7 +84,11 @@ export function ControlDock({
     if (!active) return;
     closeButton.current?.focus({ preventScroll: true });
     const dismiss = (event: PointerEvent) => {
-      if (event.target instanceof Node && !root.current?.contains(event.target))
+      if (
+        !keepOpen.current &&
+        event.target instanceof Node &&
+        !root.current?.contains(event.target)
+      )
         changePanel.current(null);
     };
     document.addEventListener('pointerdown', dismiss, true);
@@ -93,6 +101,8 @@ export function ControlDock({
       aria-label="地图工具"
       onKeyDown={(event) => {
         if (event.key === 'Escape' && active) {
+          // The parent owns cancelling a map-pick operation without closing its panel.
+          if (keepOpenOnMapInteraction) return;
           event.preventDefault();
           close();
         }

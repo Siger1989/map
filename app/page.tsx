@@ -942,6 +942,12 @@ export default function Home() {
       data-placing-annotation={Boolean(annotations.picking)}
       onKeyDown={(event) => {
         if (event.key !== 'Escape' || event.defaultPrevented) return;
+        if (navigation.picking !== null) {
+          event.preventDefault();
+          navigation.setPicking(null);
+          setPanel('route');
+          return;
+        }
         if (editor.session) {
           event.preventDefault();
           backEditor();
@@ -1084,6 +1090,7 @@ export default function Home() {
         riverSnapping={tracks.riverSnapping}
         annotationSelected={annotations.selected}
         annotationEditingId={annotations.edit?.draft.id}
+        annotationPicking={navigation.picking !== null}
         pickingActive={Boolean(
           annotations.picking || navigation.picking !== null,
         )}
@@ -1152,6 +1159,17 @@ export default function Home() {
         }}
         onAnnotationSelect={(id) => {
           if (editor.session) return;
+          if (navigation.picking !== null) {
+            const item = annotations.items.find((a) => a.id === id && a.visible);
+            if (item) {
+              navigation.place(navigation.picking, {
+                name: item.name || '未命名标记',
+                coordinates: [...item.coordinates],
+              });
+              setPanel('route');
+            }
+            return;
+          }
           setTrackLinePoint(null);
           setActiveTrackNode(null);
           areas.select(null);
@@ -1624,19 +1642,7 @@ export default function Home() {
             取消
           </button>
         </div>
-      ) : navigation.picking !== null ? (
-        <div className="route-map-notice glass" role="status">
-          点击地图设置{navigation.pickingLabel}
-          <button
-            onClick={() => {
-              navigation.setPicking(null);
-              setPanel('route');
-            }}
-          >
-            取消
-          </button>
-        </div>
-      ) : (
+      ) : navigation.picking !== null ? null : (
         navigation.route &&
         !guidance.active && (
           <div className="route-map-notice route-start-notice glass">
@@ -1941,6 +1947,7 @@ export default function Home() {
         />
       )}
       <ControlDock
+        keepOpenOnMapInteraction={panel === 'route' && navigation.picking !== null}
         onScanRoute={() => {
           setPanel(null);
           setRouteQr('');
@@ -1952,7 +1959,7 @@ export default function Home() {
         title={panel === 'sources' ? sourcesNavigation?.title : undefined}
         back={
           selectedAnnotation && panel === 'route'
-            ? { label: '返回标记', onClick: () => setPanel('annotations') }
+            ? { label: '返回标记', onClick: () => { navigation.setPicking(null); setPanel('annotations'); } }
             : routeChild
             ? {
                 label: '返回路线',
@@ -1971,6 +1978,7 @@ export default function Home() {
         }
         onActive={(next) => {
           if (annotations.edit && next !== 'annotations' && !annotations.select(null)) return;
+          navigation.setPicking(null);
           if (!next && routeChild) {
             setRouteChild(false);
             annotations.select(null);
@@ -2244,7 +2252,7 @@ export default function Home() {
             onPick={(slot) => {
               annotations.setPicking(null);
               navigation.setPicking(slot);
-              setPanel(null);
+              setPanel('route');
             }}
             onPlace={(place) => map.current?.focusPoint(place.coordinates)}
             onShow={(route) => {
@@ -2253,7 +2261,7 @@ export default function Home() {
             }}
           />
         )}
-        {panel === 'route' && navigation.route && (
+        {panel === 'route' && navigation.route && navigation.picking === null && (
           <RouteWeatherSettings journey={routeJourney} />
         )}
         {panel === 'weather' && (

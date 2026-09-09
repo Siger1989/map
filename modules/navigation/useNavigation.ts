@@ -61,6 +61,7 @@ export function useNavigation() {
       picking === null ? '' : stopLabel(indexOf(picking), stops.length),
     edit: (index: number, query: string) => {
       invalidate();
+      setPicking(null);
       setStops((items) =>
         items.map((s, i) => (i === index ? { ...s, query, place: null } : s)),
       );

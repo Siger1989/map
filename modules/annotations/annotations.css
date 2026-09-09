@@ -138,21 +138,45 @@
   border-bottom: 1px solid var(--border);
 }
 .annotation-marker {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  --marker-color: #f2b45f;
+  --marker-background: #15343e;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  max-width: 150px;
+  pointer-events: auto;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   touch-action: none;
-  --marker-color: #f2b45f;
-  pointer-events: auto;
-  background: #15343e;
-  color: #ffffff;
+}
+.annotation-marker.is-point {
+  padding-bottom: 14px;
+}
+/* Bottom-centre is the MapLibre coordinate: the triangle tip ends exactly there. */
+.annotation-marker.is-point::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 14px solid var(--marker-color);
+  filter: drop-shadow(0 1px 1px #102129);
+  pointer-events: none;
+}
+.annotation-marker-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  background: var(--marker-background);
   border: 2px solid var(--marker-color);
-  border-radius: 7px 7px 7px 0;
+  border-radius: 7px;
   padding: 4px 7px;
-  max-width: 150px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -162,7 +186,7 @@
 .annotation-marker svg {
   flex-shrink: 0;
 }
-.annotation-marker span {
+.annotation-marker-name {
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -242,14 +266,17 @@
   resize: vertical;
   font: inherit;
 }
-.map-canvas[data-picking='true'] .annotation-marker {
+.map-canvas[data-picking='true']:not([data-annotation-picking='true'])
+  .annotation-marker {
   pointer-events: none;
 }
 .annotation-marker.is-underground {
-  border-style: dashed;
-  background: #122932ad;
+  --marker-background: #122932;
 }
-.annotation-marker.is-selected {
+.annotation-marker.is-underground .annotation-marker-body {
+  border-style: dashed;
+}
+.annotation-marker.is-selected .annotation-marker-body {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }

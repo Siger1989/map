@@ -173,6 +173,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       // Marker owns its positioning classes. Replacing className detaches labels
       // from their geographic anchor after a selection or parameter edit.
       element.classList.add('annotation-marker');
+      element.classList.toggle('is-point', item.kind === 'pin');
       element.classList.toggle('is-selected', item.id === this.selected);
       element.classList.toggle(
         'is-underground',
@@ -182,8 +183,12 @@ export class AnnotationLayer implements CustomLayerInterface {
       element.setAttribute('type', 'button');
       element.dataset.annotationId = item.id;
       const label = document.createElement('span');
+      label.className = 'annotation-marker-name';
       label.textContent = `${item.placement === 'underground' ? '▽ ' : ''}${item.name || '未命名'}`;
-      element.replaceChildren(markerIconElement(item.icon), label);
+      const body = document.createElement('span');
+      body.className = 'annotation-marker-body';
+      body.replaceChildren(markerIconElement(item.icon), label);
+      element.replaceChildren(body);
       element.title = `${item.name} · 点击查看，长按拖动位置`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
@@ -202,12 +207,7 @@ export class AnnotationLayer implements CustomLayerInterface {
             .addTo(map),
         );
       // A model label is projected from its mesh, not the terrain anchor tested by Marker.
-      this.markers
-        .get(item.id)!
-        .setOpacity(
-          1,
-          1,
-        );
+      this.markers.get(item.id)!.setOpacity(1, 1);
       if (item.kind === 'pin' || altitudeRange(item) === null) continue;
       const ground = this.settings.terrain
         ? (item.groundElevation ?? 0) * this.settings.exaggeration
