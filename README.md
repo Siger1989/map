@@ -6,7 +6,7 @@
 
 0.2.9起新增[气温图层、同模式起点接入导航、全程图片与离线二维码分享](docs/temperature-navigation-sharing.md)，修复起终点未选坐标时规划灰按钮。包含[实走记录开始前选择颜色与线宽](docs/recording-style.md)，新增[室内网络定位、扫码完整画面与镜头切换](docs/indoor-position-and-camera.md)，并修复覆盖层重复刷新和定位相机小幅抖动；手机道路闪烁仍待真机确认。
 
-**最新安装包：0.2.16-test 独立测试版 / versionCode 23**（2026-09-09）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.16-test-standalone/Shantu-0.2.16-test-standalone.apk) · [详细发行与平台说明](docs/release-0.2.16.md)。沿用4a94独立系列签名，可覆盖同签名0.2.15独立版；与原系列0.2.14并行安装，不能覆盖它，数据不自动迁移。源码原包名/签名约束保持，HarmonyOS6.1原生包仍未交付。
+**最新安装包：0.2.20-test 原系列测试版 / versionCode 27**（2026-09-09）。[APK下载](https://github.com/Siger1989/map/releases/download/v0.2.20-test/Shantu-0.2.20-test.apk) · [发行与安装系列说明](docs/release-0.2.20.md)。使用a3aa原系列签名，可覆盖同签名原系列0.2.14；与下午4a94独立系列0.2.19并存，不能覆盖独立版，数据不会自动迁移。包括两点测量、远景小标记、离路虚线接入、联想和拍照打包修复；HarmonyOS6.1原生包仍未交付。
 
 **手绘与收藏直接导航**：画线列表和收藏列表增加导航按钮，选中轨迹可直接导航所选线；保留原线形，切换路线不会取用上一条。见[使用与验证说明](docs/saved-route-navigation.md)。
 

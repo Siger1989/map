@@ -1,3 +1,11 @@
+# 2026-09-09 0.2.20 APK立即交付（构建完成，发布中）
+- 当前目标：用户明确要求直接出包，已继续执行；采用本机已有原系列签名构建，不再暂停等待下午独立版密钥。
+- 构建 PASS：最终源码4bcbc7ce1d6b5259ef3d6bb706a252d77d793943重新构建APK/Shantu-0.2.20-test.apk，57,645,245字节，SHA256 c868936b76ff34563ba789cd572a9bf0ac7a4668cf6044481722742d82c74bc9。
+- 包身份：com.guanyun.weather.preview，0.2.20-test/code27，a3aa原系列签名，安装名山兔。可覆盖原系列0.2.14；与下午4a94独立系列0.2.19并存，不能覆盖它，数据不自动迁移。
+- 验证 PASS：重新Android网页/Java/DEX/APK、v2/v3签名、zipalign、473地形资源；实际APK清单.photos/.capture/.routes各自独立。此前376项逻辑/类型/网页验证继承，未重复无关测试。手机系统相机与触控仍待真机验证，HarmonyOS6.1原生仍未交付。
+- 文件变化：docs/release-0.2.20.md、README.md、feedback记录及CURRENT_STATE；无业务源码再改，无密钥更换或新建，无业务删除。
+- 命令/日志：powershell scripts/build-android.ps1 -SdkRoot D:/GodotAndroid/android-sdk -JdkRoot D:/GodotAndroid/jdk-17；.openai/apk-0220-original.log、manifest-0220.log、upload-0220.log。APK与SHA256/安装说明正在上传GitHub草稿，目标v0.2.20-test。
+- 阻碍：无。下一步核对三资产digest与字节数，公开测试Release，推送发行文档并核远端SHA。
 # 2026-09-09 晚间反馈：源码与网页交付，APK按用户要求暂缓
 - 当前目标：完成照片保存、两点测量、远景标记、道路外虚线接入、输入联想及拖图保留面板的反馈修复。
 - 当前进度：业务实现和浏览器检查完成。测量采用用户选择的第三版，A/B支持拖动及已有标记，坐标/朝向/夹角/高差齐全，海拔自动获取。带照片的标记选点、任务长按误切换、道路出口提前到达提示也已修正。
