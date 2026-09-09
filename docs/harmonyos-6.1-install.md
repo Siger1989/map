@@ -1,10 +1,10 @@
 # 山兔 HarmonyOS 6.1 适配与安装
 
-用户已确认目标是朋友的 HarmonyOS 6.1 手机，希望直接分享安装，并明确要求原生鸿蒙包；具体机型未知，不以连接开发电脑调试为前提。以下状态核实于 2026-09-08。
+用户希望朋友直接分享安装，并明确要求原生鸿蒙包，不以连接开发电脑调试为前提。2026-09-09 补充设备为 P70 Pro 和 Pura X Max，系统分别为 HarmonyOS 4.2 与 6.1；本轮按系统区分核查，具体失败原文待补。最新结论见 [两台华为设备兼容性核查](huawei-install-compatibility-2026-09-09.md)。下文工具链和账号调查为 2026-09-08 的记录，不代表本轮再次登录验证。
 
 ## 当前状态
 
-当前仓库只有 Android Java/WebView 外壳，没有 HarmonyOS 或 uni-app 工程，没有生成 HAP/APP 原生包。本机 PATH 和常见安装、用户配置目录未发现 DevEco Studio、HarmonyOS SDK、ohpm/hvigor/hdc。华为官方下载中心已跳转登录页；用户表示暂时无法登录，也没有或不确定是否已有实名认证的华为开发者账号。
+当前可构建交付的是 Android Java/WebView 外壳；`mobile/harmony` 有六个既有未跟踪 uvue/UTS 草稿，尚无已验证的完整鸿蒙构建工程或 HAP/APP 原生包。上一轮本机 PATH 和常见安装、用户配置目录未发现 DevEco Studio、HarmonyOS SDK、ohpm/hvigor/hdc。华为官方下载中心已跳转登录页；用户当时表示暂时无法登录，也没有或不确定是否已有实名认证的华为开发者账号。
 
 本轮完成平台路线核查和说明，未完成原生代码适配、编译、签名或真机验证。不能把现有 Android 包视作本次原生交付。
 
@@ -37,7 +37,7 @@ HBuilderX 的发行流程可生成签名 `.app` 包；调试流程可生成 `.ha
 
 ## 备选：现有 APK 的兼容试装
 
-[下载现有 0.2.7 APK](https://github.com/Siger1989/map/releases/download/v0.2.7-test/Shantu-0.2.7-test.apk) · [Release 与 SHA-256](https://github.com/Siger1989/map/releases/tag/v0.2.7-test)
+[下载现有 0.2.14 APK](https://github.com/Siger1989/map/releases/download/v0.2.14-test/Shantu-0.2.14-test.apk) · [Release 与 SHA-256](https://github.com/Siger1989/map/releases/tag/v0.2.14-test)
 
 1. 在朋友的手机浏览器下载 APK，保存后用系统文件管理打开。
 2. 按手机实际提示通过卓易通支持的方式安装；能否安装以卓易通对该 APK 的实际支持为准。
@@ -46,6 +46,6 @@ HBuilderX 的发行流程可生成签名 `.app` 包；调试流程可生成 `.ha
 
 依据：[华为官方 HarmonyOS 5及以上应用下载安装介绍](https://consumer.huawei.com/cn/support/content/zh-cn16061787/)。官方明确支持分享 APK 的路径，也明确通过互联网/分享获得的 APK 是否能安装取决于卓易通实际支持。
 
-本次提供的是已发布 Android APK 的**兼容试装路径**，未新增或重新构建安装包；不是原生鸿蒙 HAP，也没有完成 HarmonyOS 6.1 真机验证。0.2.7 不包含之后新增的记录颜色/线宽选择与道路诊断，地图闪烁仍待复现。
+本次提供的是已发布 Android APK 的**兼容试装路径**，未新增或重新构建安装包；不是原生鸿蒙 HAP，也没有完成 HarmonyOS 6.1 真机验证。2026-09-09 对 0.2.14 下载完整性、APK 配置、签名与对齐复核通过，详见最新兼容性核查；不能据此声称卓易通已安装通过。
 
 下一步需要取得官方工具链并完成独立容器验证，再办理签名/分发；当前原生包未交付。
