@@ -1,3 +1,11 @@
+# 2026-09-10 0.2.25 已发布与远端核验PASS
+- 最终业务源码e7332b7546c72b69519725c7df59c4b204cd379e已推送origin/codex/huawei-webview-touch并核对远端SHA一致；未合main。本轮后续仅追加交付文档。
+- GitHub v0.2.25-test-standalone已公开，Release id386034893，draft=false/prerelease=true；APK、SHA256和安装说明3资产均uploaded，字节数与服务端digest逐项一致，标签目标为上述最终源码。
+- 下载：https://github.com/Siger1989/map/releases/download/v0.2.25-test-standalone/Shantu-0.2.25-test-standalone.apk 。发布：https://github.com/Siger1989/map/releases/tag/v0.2.25-test-standalone 。
+- 版本0.2.25-test/code32/独立4a94签名；APK57686205字节；SHA256 786be8ac49127d7ca990d1fe3ed1c9ef93dab1c38451b0b6bf63c366a813df0d。420/420逻辑、types、网页/APK、v2/v3、zipalign、540CRC、473地形/新功能资源全部PASS。
+- 本轮全部新增范围见docs/release-0.2.25.md：100轨迹/完成反馈、保色合并/路况/分享、高度色区、剖面原位常规标记和模型/钻井深度、比例尺坐标方向角/整条删除、头像教程、地区去掉未分组。岩层编辑仍暂停。
+- 浏览器390/360验证通过，证明范围见design-qa.md和artifacts/screenshots/ui-0225。未接ADB手机，不声称实际手指拖动、系统保存/分享或安装验收；HarmonyOS6.1原生HAP/APP仍未交付。
+- 无构建/发布阻碍。下一步用户安装此新包试用，尤其手机触控和系统保存；旧stash0c704442、其他工作树和用户原IAB未改。
 # 2026-09-10 0.2.25 最终安装包完整性PASS，待发布
 - 420/420逻辑、types、网页及最终Android构建PASS。APK/Shantu-0.2.25-test-standalone.apk，0.2.25-test/code32/com.guanyun.weather.shantu.preview。
 - APK57686205字节；SHA256 786be8ac49127d7ca990d1fe3ed1c9ef93dab1c38451b0b6bf63c366a813df0d。v2/v3签名4a941b9d…；zipalign/540项CRC/473地形/新功能JS和CSS及DEX检查PASS。
