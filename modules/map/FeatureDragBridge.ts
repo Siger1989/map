@@ -7,7 +7,11 @@ export type DragTarget =
   | { kind: 'track'; node: TrackNode }
   | { kind: 'area'; id: string; index: number; coordinate: Coordinate }
   | { kind: 'annotation'; id: string; coordinate: Coordinate };
-export type FeatureMove = { target: DragTarget; coordinate: Coordinate };
+export type FeatureMove = {
+  target: DragTarget;
+  coordinate: Coordinate;
+  snappedNode?: TrackNode;
+};
 type Options = {
   enabled: () => boolean;
   hit: (point: ScreenPoint, element: EventTarget | null) => DragTarget | null;
@@ -15,6 +19,7 @@ type Options = {
   preview: (move: FeatureMove | null) => void;
   commit: (move: FeatureMove) => void;
   direct?: (target: DragTarget) => boolean;
+  snap?: (target: DragTarget, point: ScreenPoint) => TrackNode | null;
 };
 type Control = {
   isEnabled: () => boolean;
@@ -163,7 +168,13 @@ export class FeatureDragBridge {
       return;
     const check = this.map.project(coordinate);
     if (Math.hypot(check.x - aim.x, check.y - aim.y) > 8) return;
-    this.last = { target: this.pending.target, coordinate };
+    const snappedNode =
+      this.options.snap?.(this.pending.target, aim) ?? undefined;
+    this.last = {
+      target: this.pending.target,
+      coordinate: snappedNode?.coordinate ?? coordinate,
+      ...(snappedNode ? { snappedNode } : {}),
+    };
     this.options.preview(this.last);
   };
   private up = (event: PointerEvent) => {

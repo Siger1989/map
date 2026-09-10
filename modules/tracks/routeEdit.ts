@@ -12,6 +12,7 @@ import {
 import { normalizeTrackStyle, type TrackStyle } from './style.ts';
 import { keepsOriginalPoints } from './provenance.ts';
 import { inheritEdgeColors } from './edgeColors.ts';
+import { joinMovedRoute } from './nodeJoin.ts';
 
 export type RouteEditSnapshot = {
   track: ManualTrack;
@@ -79,12 +80,21 @@ export function moveEditNode(
   session: RouteEditSession,
   from: Coordinate,
   to: Coordinate,
+  snappedTarget?: ManualTrack,
 ): RouteEditSession {
   if (session.branch !== null)
     throw new Error('分叉起点已固定，请先结束分叉再移动节点。');
   if (!coordinate(to)) throw new Error('节点坐标无效。');
+  const moved = moveTrackNode(session.track, from, to);
+  const target =
+    snappedTarget &&
+    snappedTarget.id !== session.track.id &&
+    !session.sources.some((s) => s.id === snappedTarget.id)
+      ? snappedTarget
+      : undefined;
   return revise(session, {
-    track: moveTrackNode(session.track, from, to),
+    track: target ? joinMovedRoute(moved, target, to) : moved,
+    sources: target ? [...session.sources, target] : session.sources,
     selected: to,
   });
 }
@@ -225,10 +235,7 @@ export function editedRouteRecord(
     track.segments.flat().length > MAX_TRACK_POINTS
   )
     throw new Error('路线超过100段或6000点上限。');
-  const copied =
-    original.id === DRAFT_ID ||
-    keepsOriginalPoints(original) ||
-    sources.length > 1;
+  const copied = original.id === DRAFT_ID || keepsOriginalPoints(original);
   const sourceTrackIds = [
     ...new Set(sources.flatMap((t) => [t.id, ...(t.sourceTrackIds ?? [])])),
   ].filter((source) => source !== (copied ? id : original.id));
@@ -245,14 +252,13 @@ export function editedRouteRecord(
     updatedAt: now,
   };
 }
-/** One archive write commits geometry/style and source visibility together; failures mutate nothing. */
-export function storeRouteEdit(
+/** Validate source revisions and prepare the complete archive change without writing. */
+export function prepareRouteEdit(
   session: RouteEditSession,
-  storage: Pick<Storage, 'getItem' | 'setItem'>,
+  records: ManualTrack[],
   id: string,
   now: number,
 ) {
-  const records = parseSavedTracks(storage.getItem(TRACK_STORAGE));
   const revision = (t: ManualTrack) =>
     JSON.stringify([
       t.name,
@@ -261,6 +267,7 @@ export function storeRouteEdit(
       t.style,
       t.edgeColors,
       t.colorConditions,
+      t.hidden,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],
     ]);
@@ -277,22 +284,45 @@ export function storeRouteEdit(
       (t) =>
         t.id !== session.original.id || keepsOriginalPoints(session.original),
     );
-    storage.setItem(TRACK_STORAGE, JSON.stringify(recordsAfter));
     return { track: session.track, records: recordsAfter, removed: true };
   }
   const track = editedRouteRecord(session, id, now);
   const exists = records.some((t) => t.id === track.id);
-  if (!exists && records.length >= MAX_SAVED_TRACKS)
+  const joined = session.sources.some((s) => s.id !== session.original.id);
+  const removedIds = new Set(
+    joined
+      ? session.sources.filter((s) => !keepsOriginalPoints(s)).map((s) => s.id)
+      : [],
+  );
+  const remaining = records.filter(
+    (t) => t.id === track.id || !removedIds.has(t.id),
+  );
+  if (!exists && remaining.length >= MAX_SAVED_TRACKS)
     throw new Error(
       `已保存${MAX_SAVED_TRACKS}条路线，当前编辑已保留，请先整理收藏。`,
     );
   const hidden = new Set(
     track.id !== session.original.id ? session.sources.map((t) => t.id) : [],
   );
-  const next = records.map((t) =>
+  const next = remaining.map((t) =>
     t.id === track.id ? track : hidden.has(t.id) ? { ...t, hidden: true } : t,
   );
   if (!exists) next.push(track);
-  storage.setItem(TRACK_STORAGE, JSON.stringify(next));
   return { track, records: next, removed: false };
+}
+
+export function storeRouteEdit(
+  session: RouteEditSession,
+  storage: Pick<Storage, 'getItem' | 'setItem'>,
+  id: string,
+  now: number,
+) {
+  const result = prepareRouteEdit(
+    session,
+    parseSavedTracks(storage.getItem(TRACK_STORAGE)),
+    id,
+    now,
+  );
+  storage.setItem(TRACK_STORAGE, JSON.stringify(result.records));
+  return result;
 }

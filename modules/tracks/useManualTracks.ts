@@ -8,6 +8,7 @@ import { inheritEdgeColors } from './edgeColors';
 import { collectData } from '../outdoor/exchange';
 import { saveWorkbench } from '../collections/workbenchStore';
 import { mergeTrackArchives } from './mergeArchives';
+import { storeJoinedRouteEdit } from './joinedEditStore';
 import {
   DRAFT_ID,
   equalCoordinate,
@@ -197,7 +198,10 @@ export function useManualTracks() {
   return {
     commitEdit: (session: RouteEditSession) => {
       try {
-        const result = storeRouteEdit(
+        const save = session.sources.some((s) => s.id !== session.original.id)
+          ? storeJoinedRouteEdit
+          : storeRouteEdit;
+        const result = save(
           session,
           localStorage,
           crypto.randomUUID(),

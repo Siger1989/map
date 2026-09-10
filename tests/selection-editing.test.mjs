@@ -300,7 +300,7 @@ function emitter() {
   };
 }
 
-function fixture(t, kind = 'track', direct = false) {
+function fixture(t, kind = 'track', direct = false, snap) {
   t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
   const win = emitter(),
     container = emitter(),
@@ -357,6 +357,7 @@ function fixture(t, kind = 'track', direct = false) {
       : { kind, id: 'a1', coordinate: [10, 20] };
   const bridge = new FeatureDragBridge(map, {
     direct: () => direct,
+    snap,
     enabled: () => enabled,
     hit: () => target,
     begin: (value) => begins.push(value),
@@ -393,6 +394,26 @@ function fixture(t, kind = 'track', direct = false) {
     },
   };
 }
+
+test('drag snapping previews exact target identity and rechecks on release; second touch cancels', t => {
+  const target = {trackId:'other',coordinate:[13,24]};
+  const f = fixture(t,'track',true,(_,p)=>Math.abs(p.x-130)<14 ? target : null);
+  f.win.fire('pointerdown',f.event());
+  f.win.fire('pointermove',f.event(1,135,240));
+  assert.deepEqual(f.previews.at(-1).coordinate,target.coordinate);
+  assert.deepEqual(f.previews.at(-1).snappedNode,target);
+  f.win.fire('pointerup',f.event(1,135,240));
+  assert.deepEqual(f.commits.at(-1).snappedNode,target);
+  f.win.fire('pointerdown',f.event());
+  f.win.fire('pointermove',f.event(1,130,240));
+  f.win.fire('pointerup',f.event(1,160,240));
+  assert.equal(f.commits.at(-1).snappedNode,undefined);
+  f.win.fire('pointerdown',f.event());
+  f.win.fire('pointermove',f.event(1,130,240));
+  f.win.fire('pointerdown',f.event(2));
+  f.win.fire('pointerup',f.event());
+  assert.equal(f.commits.length,2);
+});
 
 test('short taps and quick pans stay native; hold without movement never writes', (t) => {
   const f = fixture(t);

@@ -26,6 +26,38 @@ export type ColorSection = {
   end: number;
   condition: string;
 };
+/** One legend row per colour, retaining separate physical ranges for the elevation chart. */
+export function groupColorSections(sections: ColorSection[]) {
+  const groups = new Map<
+    string,
+    {
+      color: string;
+      length: number;
+      condition: string;
+      sections: ColorSection[];
+    }
+  >();
+  for (const section of sections) {
+    const color = section.color.toLowerCase();
+    const group = groups.get(color) ?? {
+      color,
+      length: 0,
+      condition: '',
+      sections: [],
+    };
+    group.length += section.end - section.start;
+    group.sections.push(section);
+    group.condition = [
+      ...new Set(
+        [group.condition, section.condition]
+          .flatMap((s) => s.split('；'))
+          .filter(Boolean),
+      ),
+    ].join('；');
+    groups.set(color, group);
+  }
+  return [...groups.values()];
+}
 /** Cumulative chainage follows the displayed traversal, not source archive order. */
 export function routeColorSections(
   track: Pick<

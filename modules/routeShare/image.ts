@@ -12,7 +12,11 @@ import { readProfile } from '../journey/elevationProvider';
 import type { ShareRoute } from './data';
 import { renderRouteMap } from './mapImage';
 import { routeQrImage } from './qrImage';
-import { routeColorSections, sectionElevation } from '../tracks/colorSections';
+import {
+  routeColorSections,
+  sectionElevation,
+  groupColorSections,
+} from '../tracks/colorSections';
 const altitude = (v: number | null) =>
   v === null ? '暂无' : `${Math.round(v)} m`;
 export function composeRouteImage(
@@ -28,9 +32,10 @@ export function composeRouteImage(
       style: { color: '#4dffb5', width: 2 },
     },
   );
-  const shownSections = sections.slice(0, 16);
+  const groups = groupColorSections(sections);
+  const shownSections = groups.slice(0, 16);
   const legendHeight =
-    shownSections.length * 78 + (sections.length > 16 ? 60 : 25);
+    shownSections.length * 78 + (groups.length > 16 ? 60 : 25);
   canvas.width = 1200;
   canvas.height = (qr ? 2670 : 1980) + legendHeight;
   const c = canvas.getContext('2d');
@@ -130,22 +135,24 @@ export function composeRouteImage(
   line('完整线路与主要地名；较长路线的小地名需放大地图查看。', 1959, 19);
   shownSections.forEach((s, i) => {
     const yy = 1998 + i * 78,
-      h = elevationStats(sectionElevation(samples, s));
+      h = elevationStats(
+        s.sections.flatMap((section) => sectionElevation(samples, section)),
+      );
     c.fillStyle = s.color;
     c.fillRect(45, yy - 20, 26, 12);
     c.fillStyle = '#edf7f4';
     c.font = '22px sans-serif';
     c.fillText(
-      `第 ${i + 1} 段 · ${formatDistance(s.end - s.start)} · 海拔 ${altitude(h.min)}～${altitude(h.max)}`,
+      `第 ${i + 1} 段 · 同色累计 ${formatDistance(s.length)} · 海拔 ${altitude(h.min)}～${altitude(h.max)}`,
       88,
       yy,
       1060,
     );
     c.fillText(`路况/备注：${s.condition || '未录入'}`, 88, yy + 32, 1060);
   });
-  if (sections.length > 16)
+  if (groups.length > 16)
     line(
-      `共 ${sections.length} 段，图上列前16段；完整颜色与备注请附路线包。`,
+      `共 ${groups.length} 种颜色，图上列前16种；完整颜色与备注请附路线包。`,
       1998 + 16 * 78,
       22,
     );

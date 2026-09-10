@@ -37,6 +37,8 @@ next-env.d.ts
 /outputs/
 /work/
 /.openai/*.log
+/.openai/web-*/
+/.openai/ui-*-fixture.json
 /.openai/*.xml
 /.openai/openfreemap-style.json
 /.openai/live-route-*.json

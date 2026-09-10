@@ -145,6 +145,7 @@ type Props = {
   annotationEditingId?: string;
   onAnnotationSelect: (id: string) => void;
   roadSnapping: boolean;
+  nodeSnapping?: boolean;
   riverSnapping: boolean;
   pickingActive: boolean;
   annotationPicking?: boolean;
@@ -688,7 +689,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 latest.current.trackOverlay.editing &&
                 !latest.current.drawingActive
               ) {
-                const node = trackRef.current?.pickNode(point);
+                const node = trackRef.current?.pickNode(
+                  point,
+                  (node) =>
+                    node.trackId === latest.current.trackOverlay.movableTrackId,
+                );
                 return node &&
                   latest.current.trackOverlay.movableTrackId === node.trackId
                   ? { kind: 'track', node }
@@ -724,6 +729,30 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 : null;
             },
             begin: (target) => latest.current.onDragBegin(target),
+            snap: (target, point) => {
+              const state = latest.current;
+              if (
+                target.kind !== 'track' ||
+                !state.nodeSnapping ||
+                !state.trackOverlay.editing
+              )
+                return null;
+              return (
+                trackRef.current?.pickNode(
+                  point,
+                  (node) =>
+                    node.trackId !== target.node.trackId &&
+                    state.trackOverlay.saved.some(
+                      (t) =>
+                        t.id === node.trackId &&
+                        !t.hidden &&
+                        t.source !== 'recorded' &&
+                        t.samples === undefined,
+                    ),
+                  14,
+                ) ?? null
+              );
+            },
             direct: (target) =>
               (target.kind === 'annotation' &&
                 latest.current.annotationSelected === target.id) ||

@@ -925,6 +925,8 @@ export default function Home() {
           ? editor.session.track.id
           : null,
       connecting: editor.session?.branch != null,
+      snapTargets:
+        !!editor.session && editor.session.branch === null && tracks.snapping,
       alternativeId: activeAlternative,
       linePoint: panel === null ? linePoint : null,
       preview:
@@ -954,6 +956,7 @@ export default function Home() {
       tracks.vertices,
       tracks.drawing,
       tracks.selectedId,
+      tracks.snapping,
       featureMove,
     ],
   );
@@ -1240,6 +1243,7 @@ export default function Home() {
           onManualRotate={position.free}
           annotations={displayedAnnotations}
           roadSnapping={tracks.roadSnapping}
+          nodeSnapping={tracks.snapping}
           riverSnapping={tracks.riverSnapping}
           annotationSelected={annotations.selected}
           annotationEditingId={annotations.edit?.draft.id}
@@ -1304,10 +1308,17 @@ export default function Home() {
             setPanel(target.kind === 'annotation' ? 'annotations' : null);
           }}
           onDragPreview={setFeatureMove}
-          onDragCommit={({ target, coordinate }) => {
+          onDragCommit={({ target, coordinate, snappedNode }) => {
             if (target.kind === 'track' && editor.session) {
               editor.change((value) =>
-                moveEditNode(value, target.node.coordinate, coordinate),
+                moveEditNode(
+                  value,
+                  target.node.coordinate,
+                  coordinate,
+                  snappedNode
+                    ? tracks.saved.find((t) => t.id === snappedNode.trackId)
+                    : undefined,
+                ),
               );
               setFeatureMove(null);
             } else if (target.kind === 'track') {
@@ -1524,6 +1535,13 @@ export default function Home() {
         {editor.session && (
           <RouteEditToolbar
             session={editor.session}
+            snapName={
+              featureMove?.snappedNode
+                ? tracks.saved.find(
+                    (t) => t.id === featureMove.snappedNode!.trackId,
+                  )?.name
+                : undefined
+            }
             snapping={tracks.snapping}
             roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
             onSnapping={() => tracks.setSnapping(!tracks.snapping)}

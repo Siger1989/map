@@ -1,3 +1,12 @@
+# 0.2.26 节点拖动拼合与按色汇总 QA
+
+2026-09-10；浏览器localhost:9311独立合成数据，用户原IAB未动。
+- 390×844：红线端点点击后拖到绿线节点，松手显示已拼合；撤销恢复，再拖并保存。详情4节点已连通，100条存档变99条，qa26-green并入qa26-red。
+- 红—绿—红汇总两项：红803m/海拔1002–1258m/铺装路与水泥路；绿442m/海拔1134–1258m/非铺装。选择红时实际3个高度区opacity为1、0.25、1。
+- 360×780：无页面横溢，编辑工具300×178px；分享图片实际生成1200×2851，底部两色汇总且二维码可见。控制台error为空。
+- 截图artifacts/screenshots/ui-0226：drag-joined-390.png、same-color-360.png、share-color-summary-360.png、edit-360.png。
+- 浏览器拖动不替代手机手指验收，当前未接ADB手机。
+
 # 0.2.25 浏览器功能与窄屏检查
 
 2026-09-10；基于原山兔界面，390×844 / 360×780。截图 artifacts/screenshots/ui-0225。
@@ -94,3 +103,6 @@ P3: raster-reference spacing is slightly denser; retain current touch dimensions
 - 长路线10行地址切换首尾：360视口面板y56..352.4，提示y106..157；起点y157..202、终点滚动后y298..343，可达且无横向溢出。普通地点箭头尖端对应地图锚点，名称容器与箭头分离，未改模型顶部投影。
 - 两尺寸顶部真实成都搜索结果实色rgb(247,248,243)、backdrop-filter=none；明确分隔线、两行名称/地址，不透底图。路线搜索结果同步用不透明底。
 - 关键截图：artifacts/screenshots/navigation-pick-390-0216.png、navigation-pick-360-0216.png、navigation-search-390-0216.png、navigation-search-360-0216.png。已目视核对；未进行Android真机触控验收。
+
+0.2.26电脑包补充：实际运行最终打包server.mjs，1280x720世界地图/天气正常，头像0.2.26/code33和直接拼合教程可见，无横溢和console error；截图ui-0226/desktop-package-1280.png。Mac/Safari无真机验收。
+

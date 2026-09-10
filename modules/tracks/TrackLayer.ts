@@ -29,6 +29,7 @@ export type TrackOverlay = {
   drawing?: boolean;
   connecting?: boolean;
   editing?: boolean;
+  snapTargets?: boolean;
   movableTrackId?: string | null;
   alternativeId?: string;
   activeNode?: TrackNode | null;
@@ -50,7 +51,11 @@ export class TrackLayer {
       ? pickLinePoint(id, segments, point, (p) => this.map.project(p))
       : null;
   }
-  pickNode(point: ScreenPoint): TrackNode | null {
+  pickNode(
+    point: ScreenPoint,
+    accept?: (node: TrackNode) => boolean,
+    radius = 22,
+  ): TrackNode | null {
     if (!this.map.getLayer('manual-track-node')) return null;
     const hits = this.map
       .queryRenderedFeatures(
@@ -70,7 +75,7 @@ export class TrackLayer {
           distance: Math.hypot(screen.x - point.x, screen.y - point.y),
         };
       })
-      .filter((hit) => hit.distance <= 22)
+      .filter((hit) => hit.distance <= radius && (!accept || accept(hit)))
       .sort((a, b) => a.distance - b.distance);
     return hits[0] ?? null;
   }
@@ -253,9 +258,18 @@ export class TrackLayer {
           nodes: state.nodes,
         },
       ]) {
+        const snapTarget =
+          state.snapTargets &&
+          track.id !== DRAFT_ID &&
+          !('hidden' in track && track.hidden) &&
+          !('source' in track && track.source === 'recorded') &&
+          !('samples' in track && track.samples !== undefined);
         if (
           state.editing === false ||
-          (state.editing && track.id !== state.selectedId && !state.connecting)
+          (state.editing &&
+            track.id !== state.selectedId &&
+            !state.connecting &&
+            !snapTarget)
         )
           continue;
         const color = normalizeTrackStyle(track.style).color;
@@ -271,7 +285,7 @@ export class TrackLayer {
         const positions = nodeHandles(
           track.segments,
           track.nodes ?? [],
-          selected || !!state.connecting,
+          selected || !!state.connecting || !!snapTarget,
           (point) => m.project(point),
         );
         if (

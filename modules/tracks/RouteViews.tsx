@@ -348,6 +348,7 @@ export function RouteDetails({
 }
 export function RouteEditToolbar({
   session,
+  snapName,
   error,
   onBack,
   onSave,
@@ -363,6 +364,7 @@ export function RouteEditToolbar({
   onRoadSnapping,
 }: {
   session: RouteEditSession;
+  snapName?: string;
   error: string;
   onBack: () => void;
   onSave: () => void;
@@ -393,11 +395,15 @@ export function RouteEditToolbar({
         aria-label="路线编辑工具"
       >
         <p className="route-edit-status" role="status">
-          {branch
-            ? '分叉中 · 准星定点，松手连线，双指控图'
-            : session.selected
-              ? '已选节点 · 直接拖动调整位置'
-              : '点选节点调整，或点线段后添加节点'}
+          {snapName
+            ? `松手拼合：${snapName}`
+            : session.sources.some((s) => s.id !== session.original.id)
+              ? '已拼合 · 保存后成为一条路线，可撤销'
+              : branch
+                ? '分叉中 · 准星定点，松手连线，双指控图'
+                : session.selected
+                  ? '已选节点 · 直接拖动调整位置'
+                  : '点选节点调整，或点线段后添加节点'}
         </p>
         <div
           className="route-edit-actions-row"
@@ -438,16 +444,18 @@ export function RouteEditToolbar({
             保存
           </button>
         </div>
-        {branch && (
+        {
           <div className="route-branch-options">
-            <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>
-              道路{roadSnapping ? '吸附' : '自由'}
-            </button>
+            {branch && (
+              <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>
+                道路{roadSnapping ? '吸附' : '自由'}
+              </button>
+            )}
             <button aria-pressed={snapping} onClick={onSnapping}>
               节点吸附
             </button>
           </div>
-        )}
+        }
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
           {TRACK_COLORS.map((color, i) => (
             <button

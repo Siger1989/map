@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 import type { ManualTrack } from './drawing';
-import { routeColorSections, sectionElevation } from './colorSections';
+import {
+  routeColorSections,
+  sectionElevation,
+  groupColorSections,
+} from './colorSections';
 import { elevationStats, type ElevationSample } from '../journey/metrics';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import './colorElevation.css';
@@ -25,7 +29,7 @@ export function ColorElevation({
     () => routeColorSections(track, lines),
     [track, lines],
   );
-  const [selected, setSelected] = useState<number | null>(null),
+  const [selected, setSelected] = useState<string | null>(null),
     [error, setError] = useState('');
   const stats = elevationStats(samples),
     total = sections.at(-1)?.end || 1;
@@ -37,11 +41,12 @@ export function ColorElevation({
     ...s,
     samples: sectionElevation(samples, s),
   }));
+  const groups = groupColorSections(sections);
   return (
     <section className="color-elevation" aria-label="分色路段与海拔">
       <header>
         <strong>分色路段 · 海拔</strong>
-        <small>点色块对应路段</small>
+        <small>同色合为一项 · 点色块查看</small>
       </header>
       <svg viewBox="0 0 350 149" role="img" aria-label="按路线颜色区分的高度图">
         {[0, 0.5, 1].map((n) => (
@@ -67,7 +72,14 @@ export function ColorElevation({
           }
           if (current.length) runs.push(current);
           return (
-            <g key={i} opacity={selected === null || selected === i ? 1 : 0.25}>
+            <g
+              key={i}
+              opacity={
+                selected === null || selected === row.color.toLowerCase()
+                  ? 1
+                  : 0.25
+              }
+            >
               <rect
                 x={x(row.start)}
                 y={121}
@@ -110,28 +122,27 @@ export function ColorElevation({
       </svg>
       {!stats.available && <p>海拔尚不可用；颜色条显示沿线范围。</p>}
       <div className="color-section-list">
-        {rows.map((row, i) => {
-          const h = elevationStats(row.samples);
+        {groups.map((row, i) => {
+          const points = row.sections.flatMap((s) =>
+            sectionElevation(samples, s),
+          );
+          const h = elevationStats(points);
           return (
-            <article key={`${row.part}-${row.start}-${row.color}`}>
+            <article key={row.color}>
               <button
                 aria-label={`查看第 ${i + 1} 段海拔`}
-                aria-pressed={selected === i}
-                onClick={() => setSelected(selected === i ? null : i)}
+                aria-pressed={selected === row.color}
+                onClick={() =>
+                  setSelected(selected === row.color ? null : row.color)
+                }
               >
                 <i style={{ background: row.color }} />
                 <strong>第 {i + 1} 段</strong>
-                <span>{formatDistance(row.end - row.start)}</span>
+                <span>{formatDistance(row.length)}</span>
               </button>
               <small>
-                {formatDistance(row.start)} → {formatDistance(row.end)} · 海拔{' '}
-                {metres(h.min)}～{metres(h.max)}
-                {row.samples.some((s) => s.elevation === null)
-                  ? '（部分缺测）'
-                  : ''}
-              </small>
-              <small>
-                起点 {metres(h.start)} · 终点 {metres(h.end)}
+                同色累计 · 海拔 {metres(h.min)}～{metres(h.max)}
+                {points.some((s) => s.elevation === null) ? '（部分缺测）' : ''}
               </small>
               <label>
                 路况

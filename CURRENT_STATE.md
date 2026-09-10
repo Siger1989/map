@@ -1,3 +1,18 @@
+# 2026-09-10 0.2.26 双平台交付包已核验，待GitHub上传
+- 用户确认电脑要下载网页包本地运行。新增desktop-web本地服务和跨平台打包脚本，复用4个现有API；Windows/Mac启动器、README、535文件与473地形同包，无Node依赖安装，首次需Node.js22.13+。
+- 最终429/429逻辑、types、网页、Android和电脑ZIP构建PASS。APK57686205字节/SHA256 6cde2cc151ebae077236bd99ebd91ca7b2de0e0b11fc99e265ee11567853c301；v2/v3签名4a94、zipalign、540CRC及新功能PASS。
+- 电脑ZIP57034033字节/SHA256 03039743a9d2dc8683c19ec75be0c350770c74c2593c08a44b0451a5bb99b0c1；所有文件与构建目录一致、Mac脚本执行位PASS。真实运行包内服务127.0.0.1:8787，Windows1280x720地图天气/版本/新教程可用，无横溢/错误。
+- 修改文件、范围和回退见docs/release-0.2.26.md；手机触控/安装和Mac/Safari未真机验收，HarmonyOS6.1原生仍无HAP/APP。
+- 下一步推送origin/codex/huawei-webview-touch，发布0.2.26 APK及电脑网页ZIP共5资产；main、旧stash与其他工作树未动。
+# 2026-09-10 0.2.26 逻辑与浏览器操作PASS，最终出包中
+- 428/428全量逻辑和types通过；新节点拖动吸附→预览→撤销→保存链路浏览器实操通过，100存档合并后99，4节点已连通。
+- 红绿红路线按颜色汇总两项803m/442m，备注和实际高度位置保留；1200×2851分享图生成，两项图例。390/360无横溢，编辑工具300×178，截图与说明见design-qa.md。
+- 新增nodeJoin/joinedEditStore两个模块，修改范围与回退见docs/release-0.2.26.md。已补头像教程，第一次APK缺最后追加教程，正在从最终源码重建，不用于发布。
+- 下一步最终APK签名/CRC/功能检查、提交推送当前交付分支并发布v0.2.26-test-standalone；未接手机，HarmonyOS6.1原生未交付。
+# 2026-09-10 0.2.26 修复中
+- 用户反馈拖节点吸附未合并：FeatureDragBridge只提交坐标，未记录目标路线；编辑时其他路线节点也未渲染。补目标节点显示/筛选、松手拼合预览、撤销和存档事务，保留颜色备注及标记绑定。
+- 追加用户要求：分享路况按颜色汇总，同色只列一项，累计长度/海拔范围，高度图仍保留实际里程色区。涉及tracks、map、routeShare和app编排；剖面/测量不改。
+- 当前修改未完成验证；将发布0.2.26-test/code33，未声称真机验证。
 # 2026-09-10 0.2.25 已发布与远端核验PASS
 - 最终业务源码e7332b7546c72b69519725c7df59c4b204cd379e已推送origin/codex/huawei-webview-touch并核对远端SHA一致；未合main。本轮后续仅追加交付文档。
 - GitHub v0.2.25-test-standalone已公开，Release id386034893，draft=false/prerelease=true；APK、SHA256和安装说明3资产均uploaded，字节数与服务端digest逐项一致，标签目标为上述最终源码。
