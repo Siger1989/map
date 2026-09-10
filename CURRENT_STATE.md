@@ -1,14 +1,17 @@
-# 2026-09-10 0.2.23 功能完成，最终构建与发行中
+# 2026-09-10 0.2.23 已交付 PASS
+- 业务提交 942a3d0a938ff07aed8b837c2146cd3d688a9bed 已推送 origin/codex/huawei-webview-touch，并与远端 SHA 核对一致；未合入 main。
+- GitHub v0.2.23-test-standalone 已公开，Release id 385974527，draft=false/prerelease=true。APK、SHA256、安装说明三项资产上传完成，服务器 digest/字节数与本地逐一相符。地址 https://github.com/Siger1989/map/releases/tag/v0.2.23-test-standalone 。
+- 新包下载 https://github.com/Siger1989/map/releases/download/v0.2.23-test-standalone/Shantu-0.2.23-test-standalone.apk 。独立包与原版并存、不自动迁移；真机验收与原生 HarmonyOS6.1 仍未完成。下一步用户手机试用反馈；本轮仅再同步本交付记录，不改已构建业务。
 - 已完成：A/B 勘探线替代新建剖面、两种 A/B 编辑方式与共线测点、沿线绑定标记、图纸/点位信息、真实 DEM 平剖图/等高线和分页资料/JPEG；测量收藏、分类拖动持久化；路线连接/合并保留分段颜色。
 - 用户暂停竖井全部功能：试验源保存在本地 .openai/drilling-paused-20260910，不进入源码和 APK。测量计算/手势、原始标记、导航天气、相机和 Logo 不改；原矩形剖面可继续打开。
-- 自动检查 PASS：types 和 400/400 全量逻辑；最后图例右对齐/长中文换行、收藏打开剖面后等待布局再定位的修复后，再次 types 与 11 项剖面定向检查 PASS。最终网页构建 PASS，Android 新暂存构建中；之前中间 APK 不发布。
+- 自动检查 PASS：types 和 400/400 全量逻辑；最后图例右对齐/长中文换行、收藏打开剖面后等待布局再定位的修复后，再次 types 与 11 项剖面定向检查 PASS。最终网页和 Android 新暂存构建 PASS；仅最终包已发布。
 - 手机浏览器 PASS：390×844/360×780 无横溢、剖面浮窗≤300×200；A/B 手点、C吸附、B转向后 C 1423.5m 里程不变、D后期标记自动吸附且位置受约束、图纸信息保存/附表/实际 JPEG 下载、测量从收藏恢复、分类实际拖动并刷新保留、合并红蓝路线后保色。当前浏览器无 error 日志，不等于用户手机触控/安装/拍照/分享验收。
 - 新增文件：section/Survey*、survey*；collections/CollectionTabs/tabOrder；tracks/edgeColors；2测试文件；docs/exploration-lines.md/release-0.2.23.md。原入口与数据适配修改见本次 diff；无原存档字段删除。app/page.tsx 只负责组合，各存储通过事务/事件联动。
 - 工作分支 codex/sync-20260910，基线 945ede4541ea974dcf2a1e1523e1450f646e70a4；远端目前仍一致，待提交并推送 codex/huawei-webview-touch。main 不动。原43个本地草稿继续保留在 stash 0c704442 与 .openai/sync-20260910-091832-backup。
 - 安装版本 0.2.23-test/code30，使用本机独立4a94签名及 com.guanyun.weather.shantu.preview；原系列a3aa私钥不可用。本包与原版并存，JSON可导入，不自动迁移；HarmonyOS6.1原生仍未交付。
 - 实际截图 artifacts/screenshots/ui-0223；导出图 engineering-section.jpg；日志 .openai/tsc-0223-release、tests-0223-complete、tests-0223-sheet-final、build-web-0223-release、apk-0223-release.log。
 - 最终网页及 APK 已 PASS。APK 57,669,821 字节，SHA256 3e1ec1c2dd15402443efe2eb26e0ee6487723eed134ea5970802c0fda0a95ae7；540项ZIP CRC、473地形、最终平剖/颜色代码资源、v2/v3、zipalign均PASS。日志 apk-0223-integrity.log。
-- 下一步：源码提交推送并核远端SHA，GitHub v0.2.23-test-standalone 发布并核资产digest，更新交付状态。认证使用已有仓库凭据的进程环境，不写入仓库。
+- 同步与发行已完成。认证使用已有仓库凭据的进程环境，不写入仓库。浏览器刷新后分段颜色、绑定标记和资料均保留，临时手机视口已恢复。没有待解决构建或发布阻碍。
 
 # 2026-09-10 勘探线剖面、测量收藏与分类排序（此前过程）
 - 用户最新指示：暂停竖井功能，后续再讨论。井深/岩层模块和接线副本已保存至 .openai/drilling-paused-20260910（本地草稿），从本轮实际代码与界面移除，不纳入新包。本轮继续勘探线/等高线/信息录入及收藏，不继续竖井实现。

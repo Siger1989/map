@@ -24,4 +24,4 @@
 - 保留原版，在原版“行程 → 数据 → 存档备份”导出 JSON，再到本版对应入口导入。照片媒体按原备份范围处理，不宣称 JSON 包含所有本机照片文件。
 - HarmonyOS 6.1 原生 HAP/APP 仍未交付；Android APK 不能作为原生鸿蒙安装包。现有资料见 [鸿蒙安装边界](harmonyos-6.1-install.md)。
 
-本版为测试发行，现有地形许可与地图服务授权边界保持不变。目标发行标签 `v0.2.23-test-standalone`，同步功能分支 `codex/huawei-webview-touch`，未合入 main。
+本版为测试发行，现有地形许可与地图服务授权边界保持不变。[GitHub 测试发行](https://github.com/Siger1989/map/releases/tag/v0.2.23-test-standalone)已公开，三项资产的服务器摘要与本地一致。业务提交 `942a3d0a938ff07aed8b837c2146cd3d688a9bed` 已同步功能分支 `codex/huawei-webview-touch`，未合入 main。
