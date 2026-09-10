@@ -3,6 +3,7 @@ import { X, Plus, MapPin, Image, RefreshCw, Bookmark } from 'lucide-react';
 import type { Annotation } from '../annotations/data';
 import { deliverPhoto } from '../photos/export';
 import { surveyDrawing } from './surveyDrawing';
+import { sectionImageName } from './exportName';
 import {
   emptySurveyInfo,
   removeSurveyStation,
@@ -111,15 +112,14 @@ export function SurveySectionPanel({
         canvas.toBlob(resolve, 'image/jpeg', 0.95),
       );
       if (!blob) throw new Error('图片生成失败');
+      const result = await deliverPhoto(
+        new File([blob], sectionImageName(page), { type: 'image/jpeg' }),
+        share,
+      );
       setMessage(
-        await deliverPhoto(
-          new File(
-            [blob],
-            `${object?.name ?? '勘探线'}-平剖图-${page + 1}.jpg`,
-            { type: 'image/jpeg' },
-          ),
-          share,
-        ),
+        !share && window.GuanyunNative
+          ? '请在系统文件窗口选择位置并点击“保存”；图片不会自动进入相册。'
+          : result,
       );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : '图片输出失败');

@@ -1,3 +1,10 @@
+# 2026-09-10 0.2.24 修复 APK 平剖图保存（进行中）
+- 用户反馈：手机 APK 点击保存平剖图后没有文件。已定位确定性错误：SurveySectionPanel 输出中文图名文件名，而 NativeBridge.photoOutput 仅允许 Shantu/Guanyun-photo/measurement-数字.jpg，保存和分享均在打开系统窗口前被拦截。
+- 最小修复范围：section/exportName.ts 规范剖面输出名、SurveySectionPanel 使用该名称并解释系统保存步骤；NativeBridge.java 增加严格的 section-时间-页码.jpg 格式；Android 0.2.24/code31。图纸内项目/图名/点位资料保留，测量/照片原命名仍兼容。未修改地形、路线、收藏和讨论中的 UI 布局。
+- UI 当前仅为预览讨论：用户聚焦地图选点、拖点、调方向；偏向点旁快捷菜单，已在预览中增加“输入坐标”入口。未把预览或坐标输入写入实际代码。竖井继续暂停。
+- 验证 PASS：2项前端/原生文件名契约回归、402/402 全量逻辑、types、网页与APK最终构建。浏览器390主图和360附表实际下载JPEG，分别294975/172396字节，新名称与页码正确，无横溢。ADB 未连接设备，不能声称已在用户手机保存验收。
+- APK 57,669,821字节，SHA256 7c03c30b689e77559f6afe6b2e2e39b2b28d4a48a85da247fb0c4482c8b40eb7，540项CRC/473地形/v2/v3/zipalign以及包内前端新命名和DEX新校验均PASS；code31/独立4a94签名。日志 .openai/*0224*.log，截图 artifacts/screenshots/ui-0224。下一步提交推送、GitHub发布、远端与资产核对。
+
 # 2026-09-10 0.2.23 已交付 PASS
 - 业务提交 942a3d0a938ff07aed8b837c2146cd3d688a9bed 已推送 origin/codex/huawei-webview-touch，并与远端 SHA 核对一致；未合入 main。
 - GitHub v0.2.23-test-standalone 已公开，Release id 385974527，draft=false/prerelease=true。APK、SHA256、安装说明三项资产上传完成，服务器 digest/字节数与本地逐一相符。地址 https://github.com/Siger1989/map/releases/tag/v0.2.23-test-standalone 。
