@@ -7,7 +7,7 @@
 - 自动检查 PASS：types 和 400/400 全量逻辑；最后图例右对齐/长中文换行、收藏打开剖面后等待布局再定位的修复后，再次 types 与 11 项剖面定向检查 PASS。最终网页和 Android 新暂存构建 PASS；仅最终包已发布。
 - 手机浏览器 PASS：390×844/360×780 无横溢、剖面浮窗≤300×200；A/B 手点、C吸附、B转向后 C 1423.5m 里程不变、D后期标记自动吸附且位置受约束、图纸信息保存/附表/实际 JPEG 下载、测量从收藏恢复、分类实际拖动并刷新保留、合并红蓝路线后保色。当前浏览器无 error 日志，不等于用户手机触控/安装/拍照/分享验收。
 - 新增文件：section/Survey*、survey*；collections/CollectionTabs/tabOrder；tracks/edgeColors；2测试文件；docs/exploration-lines.md/release-0.2.23.md。原入口与数据适配修改见本次 diff；无原存档字段删除。app/page.tsx 只负责组合，各存储通过事务/事件联动。
-- 工作分支 codex/sync-20260910，基线 945ede4541ea974dcf2a1e1523e1450f646e70a4；远端目前仍一致，待提交并推送 codex/huawei-webview-touch。main 不动。原43个本地草稿继续保留在 stash 0c704442 与 .openai/sync-20260910-091832-backup。
+- 本地工作分支 codex/sync-20260910，从基线 945ede4541ea974dcf2a1e1523e1450f646e70a4 推进；本轮成果已推送 codex/huawei-webview-touch。main 不动。原43个本地草稿继续保留在 stash 0c704442 与 .openai/sync-20260910-091832-backup。
 - 安装版本 0.2.23-test/code30，使用本机独立4a94签名及 com.guanyun.weather.shantu.preview；原系列a3aa私钥不可用。本包与原版并存，JSON可导入，不自动迁移；HarmonyOS6.1原生仍未交付。
 - 实际截图 artifacts/screenshots/ui-0223；导出图 engineering-section.jpg；日志 .openai/tsc-0223-release、tests-0223-complete、tests-0223-sheet-final、build-web-0223-release、apk-0223-release.log。
 - 最终网页及 APK 已 PASS。APK 57,669,821 字节，SHA256 3e1ec1c2dd15402443efe2eb26e0ee6487723eed134ea5970802c0fda0a95ae7；540项ZIP CRC、473地形、最终平剖/颜色代码资源、v2/v3、zipalign均PASS。日志 apk-0223-integrity.log。
