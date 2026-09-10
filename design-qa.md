@@ -20,6 +20,7 @@ final result: passed (browser; physical-device acceptance pending)
 - 用户再次反馈手机不能拖动。浏览器结果不视为手机验收；补SVG根元素touch-action和取消事件提示，复查根元素none/空白穿透none，浏览器B再次drag坐标更新且console error为空。手指拖动、真实pointercancel仍待设备检查。
 
 - `dock-b-390.png`：地图高622、编辑带y622–786，点位部分112px，页面宽390无横溢；准星中心y311匹配地图中心。
+- `dock-reopen-360.png`：完成编辑后重新打开整线取景，B触控范围y109–157避开顶部94px工具条，A范围y410–458位于编辑带y558之前。
 - `dock-move-360.png`：沿线移动有即时提示和取消入口；`dock-keyboard-360.png`：360×480时坐标/应用和错误可见，额外内容内部滚动。
 - 实际B沿线drag：坐标从103.497965/30.856889更新到103.496496/30.854038。实际B方向drag后C里程1021.6m保持。C点击线外位置投影回线；D新增后确认删除，D句柄计数归零。
 - `sheet-landscape-360.png` / `sheet-appendix-360.png`：横版主图、资料附表、信息和设置、缩放复位可用。方向角35.48°、20m等高距、项目信息写入实际JPEG。主图348303字节、附表145398字节，页码名称正确。

@@ -1,10 +1,13 @@
-# 2026-09-10 0.2.24 最终构建通过，GitHub同步/发布中
+# 2026-09-10 0.2.24 测试包已发布，手机触控待验
+- 最终业务源码f2325c18efe724cebc59a3429c3f2da1af96a5e1已推送origin/codex/huawei-webview-touch，远端SHA核对一致；未合入main。
+- GitHub v0.2.24-test-standalone已发布，Release id386009137，draft=false/prerelease=true；APK、SHA256、安装说明三资产均uploaded，字节数和服务端digest逐项与本地一致。地址https://github.com/Siger1989/map/releases/tag/v0.2.24-test-standalone 。
+- 新包https://github.com/Siger1989/map/releases/download/v0.2.24-test-standalone/Shantu-0.2.24-test-standalone.apk 。下一步用户安装0.2.24后在手机复验黄色点沿线拖动；本轮不能把浏览器鼠标测试视为手机已修好。
 - 用户最新要求已纳入：编辑区放地图下方、缩小；移动按钮立即进入可拖点/点击地图落位步骤；图纸查看UI统一；工程图仍用原横版；图内新增方向角A→B（真北起顺时针）。竖井暂停。
 - 当前实现：SurveyPointEditor/SurveySectionPanel/survey.css独立编辑带164px、点位部分112px；SurveyMapOverlay/useSurveySection可实际drag和tap；SurveySheet独立横版查看与导出；surveyDrawing打印实时方向角。map可选取景边距与app组合适配，无测量/路线/收藏业务改动。
 - PASS：405/405全量逻辑、types；独立浏览器390/360/360×480检查，无横向溢出。B沿线drag坐标更新；B转向后C1021.6m里程不变；C线外tap投影回线、取消移动、资料保存、D删除确认通过；console error为空。
 - 横版主图1800×1480保留，方向角35.48°/等高距20m写入真实JPEG；主图348303字节、附表145398字节下载通过。对照和最终截图artifacts/screenshots/ui-0224，design-qa.md已按最新目标重写。旧浮窗QA作废。
 - Android保存修复598afe4已推送：统一受限Shantu-section-时间-页码.jpg命名，保留内容/大小/前台安全校验；提示系统文件窗口必须再点保存，不自动进相册。
-- 最终0.2.24/code31网页/APK构建PASS；57673917字节，SHA256 76d0624dbdecb3b1b27c3334923bb5999ef45d82b04c060a9f22b7a8be808b1e。v2/v3/zipalign/540项CRC/473地形与包内最新功能校验PASS。日志.openai/*0224-touch*.log；任何之前中间包均不交付。下一步提交推送并发布测试Release。
+- 最终0.2.24/code31网页/APK构建PASS；57673917字节，SHA256 76d0624dbdecb3b1b27c3334923bb5999ef45d82b04c060a9f22b7a8be808b1e。v2/v3/zipalign/540项CRC/473地形与包内最新功能（含SVG根触屏声明和中断提示）校验PASS。日志.openai/*0224-touch*.log；仅最终包已发布。
 - 用户再报最近安装包手机无法滑动；追加SVG根元素touch-action、pointercancel回滚提示，浏览器最终drag再次通过。触屏根因仍不能在无设备情况下确认。另修复点位草稿与图纸信息串窗，切换后草稿保留。
 - ADB无设备：Android系统保存、手指拖动/键盘/分享未真机验收。HarmonyOS6.1原生HAP/APP仍未交付。
 - 本地codex/sync-20260910，上游origin/codex/huawei-webview-touch，main不动。原草稿stash0c704442和.openai/sync-20260910-091832-backup保留。
