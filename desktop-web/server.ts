@@ -9,6 +9,7 @@ import { GET as terrain } from '../app/api/terrain/[z]/[x]/[y]/route';
 import { GET as geology } from '../app/api/geology/tiles/[z]/[x]/[y]/route';
 import { GET as satellite } from '../app/api/satellite/route';
 import { GET as geocloud } from '../app/api/geology/geocloud/route';
+import { APP_VERSION } from '../config/product';
 
 const mime: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -45,6 +46,21 @@ export function createDesktopServer(root: string) {
       const url = new URL(req.url ?? '/', `http://127.0.0.1:${port}`);
       const pathname = decodeURIComponent(url.pathname);
       let result: Response | undefined;
+      if (pathname === '/__shantu__/status') {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+        });
+        res.end(
+          req.method === 'HEAD'
+            ? undefined
+            : JSON.stringify({
+                app: 'shantu-desktop-web',
+                version: APP_VERSION,
+              }),
+        );
+        return;
+      }
       const tile = pathname.match(
         /^\/api\/(terrain|geology\/tiles)\/([^/]+)\/([^/]+)\/([^/]+)$/,
       );
@@ -117,6 +133,53 @@ export function createDesktopServer(root: string) {
   });
 }
 
+/** Keep the same browser origin and data when the user starts the app twice. */
+export async function startDesktopServer(root: string, port: number) {
+  const server = createDesktopServer(root);
+  return new Promise<{
+    server: ReturnType<typeof createDesktopServer> | null;
+    url: string;
+    reused: boolean;
+  }>((accept, reject) => {
+    server.once('error', async (error: NodeJS.ErrnoException) => {
+      if (error.code !== 'EADDRINUSE') {
+        reject(error);
+        return;
+      }
+      const url = `http://127.0.0.1:${port}/`;
+      let existing: { app?: string; version?: string } | undefined;
+      try {
+        const reply = await fetch(url + '__shantu__/status', {
+          signal: AbortSignal.timeout(2000),
+          redirect: 'error',
+        });
+        if (reply.ok) existing = await reply.json();
+      } catch {}
+      if (
+        existing?.app === 'shantu-desktop-web' &&
+        existing.version === APP_VERSION
+      ) {
+        accept({ server: null, url, reused: true });
+        return;
+      }
+      reject(
+        new Error(
+          existing?.app === 'shantu-desktop-web'
+            ? `山兔 ${existing.version} 已在运行，请先关闭旧版启动窗口，再启动此版本。`
+            : `端口 ${port} 被其他程序或旧版山兔占用。请关闭旧启动窗口后重试；也可设置 SHANTU_WEB_PORT。没有关闭或修改其他程序。`,
+        ),
+      );
+    });
+    server.listen(port, '127.0.0.1', () =>
+      accept({
+        server,
+        url: `http://127.0.0.1:${(server.address() as { port: number }).port}/`,
+        reused: false,
+      }),
+    );
+  });
+}
+
 if (
   import.meta.url.startsWith('file:') &&
   process.argv[1] &&
@@ -125,27 +188,31 @@ if (
   const port = Number(process.env.SHANTU_WEB_PORT || 8787);
   if (!Number.isInteger(port) || port < 1024 || port > 65535)
     throw Error('SHANTU_WEB_PORT must be 1024–65535');
-  const server = createDesktopServer(
+  void startDesktopServer(
     resolve(dirname(fileURLToPath(import.meta.url)), 'web'),
-  );
-  server.on('error', (error) => {
-    console.error('山兔网页未启动：', error.message);
-    process.exitCode = 1;
-  });
-  server.listen(port, '127.0.0.1', () => {
-    const url = `http://127.0.0.1:${port}/`;
-    console.log(`山兔网页版：${url}\n请保留此窗口，关闭后本地网页服务停止。`);
-    if (process.env.SHANTU_NO_OPEN === '1') return;
-    const command =
-      process.platform === 'win32'
-        ? 'cmd.exe'
-        : process.platform === 'darwin'
-          ? 'open'
-          : 'xdg-open';
-    execFile(
-      command,
-      process.platform === 'win32' ? ['/c', 'start', '', url] : [url],
-      () => {},
-    );
-  });
+    port,
+  )
+    .then(({ url, reused }) => {
+      console.log(
+        reused
+          ? `山兔已在运行，正在打开已有页面：${url}\n请保留最先启动的服务窗口，本窗口可以关闭。`
+          : `山兔网页版：${url}\n请保留此窗口，关闭后本地网页服务停止。`,
+      );
+      if (process.env.SHANTU_NO_OPEN === '1') return;
+      const command =
+        process.platform === 'win32'
+          ? 'cmd.exe'
+          : process.platform === 'darwin'
+            ? 'open'
+            : 'xdg-open';
+      execFile(
+        command,
+        process.platform === 'win32' ? ['/c', 'start', '', url] : [url],
+        () => {},
+      );
+    })
+    .catch((error) => {
+      console.error('山兔网页未启动：', error.message);
+      process.exitCode = 1;
+    });
 }

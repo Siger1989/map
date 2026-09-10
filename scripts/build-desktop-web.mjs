@@ -56,8 +56,9 @@ async function walk(dir) {
 }
 await walk(staging);
 const archive = zipSync(entries, { level: 6 });
-const target = resolve(root, 'APK', name + '.zip');
-await mkdir(resolve(root, 'APK'), { recursive: true });
+const artifactDir = resolve(root, process.argv[2] || 'APK');
+const target = resolve(artifactDir, name + '.zip');
+await mkdir(artifactDir, { recursive: true });
 await writeFile(target, archive);
 const sha = createHash('sha256').update(archive).digest('hex');
 await writeFile(target + '.sha256', `${sha}  ${name}.zip\n`);
