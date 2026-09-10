@@ -1,3 +1,11 @@
+# 2026-09-10 0.2.26 已公开发布APK与Windows/Mac本地网页包
+- GitHub Release https://github.com/Siger1989/map/releases/tag/v0.2.26-test-standalone 已公开，id386053622/draft=false/prerelease=true；最终业务源码a0dd678d7f571103a0ff963a479444a4bf239e9a已推送origin/codex/huawei-webview-touch并核对SHA，未合main。
+- 5资产全部uploaded，大小与服务端SHA256逐项匹配。APK57686205字节/SHA256 6cde2cc151ebae077236bd99ebd91ca7b2de0e0b11fc99e265ee11567853c301；最终电脑ZIP57034622字节/SHA256 38f9e3ebe0ce926b82d5489a39bd1a88d87f4cdecba76d6448ab9fd62e02ea9d，已含重复启动修复。旧ZIP未作为公开交付。
+- 430/430逻辑、types、网页/Android/电脑构建PASS；签名4a94/v2/v3/zipalign/540CRC/473地形与新功能PASS。电脑535文件逐项匹配，Mac脚本执行位PASS。390/360操作、1280桌面包和实际两次启动复用均验证，截图见design-qa.md。
+- 下载：APK https://github.com/Siger1989/map/releases/download/v0.2.26-test-standalone/Shantu-0.2.26-test-standalone.apk ；电脑 https://github.com/Siger1989/map/releases/download/v0.2.26-test-standalone/Shantu-0.2.26-test-Windows-Mac-Web.zip 。
+- 用户选择本地网页版：首次Node.js22.13+ LTS，解压后Windows用Start-Windows.cmd、Mac用Start-Mac.command，固定127.0.0.1:8787；重复启动同版打开已有页面，收藏仍在固定浏览器源。用户EADDRINUSE由我的QA遗留PID46120引起，已确认关闭，只清理自有测试进程；18787回归进程也已关闭。
+- 无ADB手机，Android安装/手指触控/系统保存分享与Mac/Safari真机仍待验；HarmonyOS6.1原生HAP/APP未交付。源码/产物修改明细与回退见docs/release-0.2.26.md。
+- 首次代理大文件上传停滞已终止，改用本次进程直连上传成功；没有修改系统代理。无待发布阻碍，接下来仅提交本交付记录。
 # 2026-09-10 0.2.26 电脑重复启动问题已修正
 - 用户截图EADDRINUSE是我验收时遗留PID46120占用8787；核对命令行仅关闭自己的QA服务，端口已释放。
 - desktop-web/server新增本地状态识别，同版重复启动打开已运行网页；其他程序或旧版占用明确提示，不自动结束进程或换地址。补2次启动/异程序/旧版测试。
