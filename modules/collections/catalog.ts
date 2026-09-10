@@ -5,6 +5,9 @@ import { KINDS, type Annotation } from '../annotations/data.ts';
 import type { SectionObject } from '../section/sectionObjects';
 import { coordinateKey, type CollectionRegions } from './regions.ts';
 import { areaMetrics, type MapArea } from '../areas/data.ts';
+import type { SavedMeasurement } from '../measurement/saved.ts';
+import { measurementMetrics } from '../measurement/data.ts';
+import { surveyRange } from '../section/surveyLine.ts';
 export type CatalogEntry = {
   key: string;
   name: string;
@@ -16,6 +19,7 @@ export type CatalogEntry = {
   | { kind: 'pin' | 'model'; annotation: Annotation }
   | { kind: 'section'; section: SectionObject }
   | { kind: 'area'; area: MapArea }
+  | { kind: 'measurement'; measurement: SavedMeasurement }
 );
 export const CATALOG_TYPES = {
   all: '全部',
@@ -25,6 +29,7 @@ export const CATALOG_TYPES = {
   section: '剖面',
   route: '路线',
   track: '轨迹',
+  measurement: '测量',
 } as const;
 export function catalogEntries(
   routes: RouteFavorite[],
@@ -32,8 +37,21 @@ export function catalogEntries(
   annotations: Annotation[],
   sections: SectionObject[],
   areas: MapArea[] = [],
+  measurements: SavedMeasurement[] = [],
 ): CatalogEntry[] {
   return [
+    ...measurements.map((measurement) => ({
+      key: `measurement:${measurement.id}`,
+      kind: 'measurement' as const,
+      measurement,
+      name: measurement.name,
+      coordinates: measurement.points[0].coordinates,
+      detail: `${measurement.points.length} 点 · 水平距离 ${measurementMetrics(
+        measurement.points,
+      )
+        .segments.reduce((sum, s) => sum + s.horizontal, 0)
+        .toFixed(1)} m`,
+    })),
     ...areas.map((area) => ({
       key: `area:${area.id}`,
       kind: 'area' as const,
@@ -57,7 +75,9 @@ export function catalogEntries(
         kind: 'section' as const,
         section: s,
         name: s.name,
-        detail: `${s.settings.plane!.width.toFixed(0)} × ${s.settings.plane!.height.toFixed(0)} m`,
+        detail: s.settings.survey
+          ? `勘探线 ${(surveyRange(s.settings.survey).end - surveyRange(s.settings.survey).start).toFixed(0)} m · ${s.settings.survey.stations.length + 2} 点`
+          : `${s.settings.plane!.width.toFixed(0)} × ${s.settings.plane!.height.toFixed(0)} m`,
         coordinates: s.settings.plane!.center,
       })),
     ...entriesFor(routes, tracks).flatMap((e) => {

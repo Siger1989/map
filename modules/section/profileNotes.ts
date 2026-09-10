@@ -1,5 +1,6 @@
 import type { Contour, ProfilePoint } from './contours';
 import type { SectionSettings } from './types';
+import { validSurveyLine, validSurveyTerrain } from './surveyLine.ts';
 export const PROFILE_NOTES_KEY = 'shantu.section-points.v1';
 export const PROFILE_NOTES_CHANGED = 'shantu:section-points-changed';
 export const NOTE_COLORS = [
@@ -75,6 +76,9 @@ export function validSection(s: SectionSettings) {
   const p = s?.plane;
   return (
     !!p &&
+    (s.survey === undefined || validSurveyLine(s.survey)) &&
+    (s.surveyTerrain === undefined ||
+      (!!s.survey && validSurveyTerrain(s.surveyTerrain, s.survey))) &&
     (s.objectId === undefined ||
       (typeof s.objectId === 'string' &&
         /^[a-zA-Z0-9-]{1,80}$/.test(s.objectId))) &&

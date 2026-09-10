@@ -9,11 +9,22 @@ import {
   type SpreadsheetSheet,
 } from '../files/spreadsheet.ts';
 import { annotationSheet } from '../annotations/spreadsheet.ts';
-import { CATALOG_TYPES, catalogEntries, regionFor, type CatalogEntry } from './catalog.ts';
+import {
+  CATALOG_TYPES,
+  catalogEntries,
+  regionFor,
+  type CatalogEntry,
+} from './catalog.ts';
 import { COLLECTION_STORAGE, parseLayout } from './data.ts';
 import { collectionSubset, folderEntries } from './folders.ts';
 import type { CollectionRegions } from './regions';
 import { ANNOTATION_STORAGE, parseAnnotations } from '../annotations/data.ts';
+import {
+  surveyCoordinate,
+  surveyHeight,
+  surveyStations,
+} from '../section/surveyLine.ts';
+import { surveyPointData } from '../section/surveyRecords.ts';
 export function collectionTransfer(
   entries: CatalogEntry[],
   regions: CollectionRegions,
@@ -29,11 +40,12 @@ export function collectionTransfer(
   const pins = entries.flatMap((e) =>
     'annotation' in e ? [e.annotation] : [],
   );
-  if (selectedTracks.size)
+  if (selectedTracks.size || sections.length)
     for (const pin of parseAnnotations(storage.getItem(ANNOTATION_STORAGE))) {
       if (
-        pin.trackAnchor &&
-        selectedTracks.has(pin.trackAnchor.trackId) &&
+        ((pin.trackAnchor && selectedTracks.has(pin.trackAnchor.trackId)) ||
+          (pin.sectionAnchor &&
+            sections.some((s) => s.id === pin.sectionAnchor!.sectionId))) &&
         !pins.some((p) => p.id === pin.id)
       )
         pins.push(pin);
@@ -56,10 +68,17 @@ export function collectionTransfer(
     annotations: pins,
     sections,
     sectionNotes,
+    measurements: entries.flatMap((e) =>
+      e.kind === 'measurement' ? [e.measurement] : [],
+    ),
     areas: entries.flatMap((e) => (e.kind === 'area' ? [e.area] : [])),
-    collections: collectionSubset(parseLayout(storage.getItem(COLLECTION_STORAGE)), folderEntries([
-      ...entries.filter((e) => !('annotation' in e)), ...catalogEntries([], [], pins, []),
-    ])),
+    collections: collectionSubset(
+      parseLayout(storage.getItem(COLLECTION_STORAGE)),
+      folderEntries([
+        ...entries.filter((e) => !('annotation' in e)),
+        ...catalogEntries([], [], pins, []),
+      ]),
+    ),
     regions: Object.fromEntries(
       entries.flatMap((e) => {
         const r = regionFor(e, regions);
@@ -107,6 +126,66 @@ export function collectionSpreadsheet(
     ]);
   });
   const sheets: SpreadsheetSheet[] = [{ name: '收藏目录', rows }];
+  const surveyRows: SpreadsheetSheet['rows'] = [
+    [
+      '所属剖面ID',
+      '点号',
+      '名称',
+      '经度 WGS84',
+      '纬度 WGS84',
+      '里程 m',
+      '高程 m',
+      '备注',
+    ],
+  ];
+  const infoRows: SpreadsheetSheet['rows'] = [
+    [
+      '剖面ID',
+      '项目',
+      '图名',
+      '图号',
+      '编制',
+      '审核',
+      '日期',
+      '资料补充',
+      '备注',
+    ],
+  ];
+  for (const section of transfer.sections ?? []) {
+    const line = section.settings.survey;
+    if (!line) continue;
+    const info = line.info;
+    infoRows.push([
+      section.id,
+      info?.project ?? '',
+      info?.title ?? section.name,
+      info?.number ?? '',
+      info?.author ?? '',
+      info?.reviewer ?? '',
+      info?.date ?? '',
+      info?.source ?? '',
+      info?.note ?? '',
+    ]);
+    for (const s of surveyStations(line)) {
+      const point = surveyPointData(line, s.id, s.label, transfer.annotations);
+      surveyRows.push([
+        section.id,
+        s.label,
+        point.name,
+        ...surveyCoordinate(line, s.distance),
+        s.distance,
+        section.settings.surveyTerrain
+          ? surveyHeight(section.settings.surveyTerrain, s.distance)
+          : null,
+        point.note,
+      ]);
+    }
+  }
+  if (surveyRows.length > 1)
+    sheets.push(
+      { name: '勘探线测点', rows: surveyRows },
+      { name: '勘探线图纸信息', rows: infoRows },
+    );
   if (transfer.annotations.length)
     sheets.unshift(annotationSheet(transfer.annotations, regions));
   if (transfer.sections?.length)
@@ -184,6 +263,10 @@ export function collectionSpreadsheet(
     ],
   ];
   for (const e of entries) {
+    if (e.kind === 'measurement')
+      e.measurement.points.forEach((p, i) =>
+        vertices.push([e.key, 1, i + 1, ...p.coordinates, p.altitude, '']),
+      );
     if (e.kind === 'route')
       e.route.route.coordinates.forEach((p, i) =>
         vertices.push([e.key, 1, i + 1, ...p, null, '']),

@@ -316,9 +316,11 @@ export function AnnotationWorkspace({
             />
           )}
           {tab === 'position' &&
-            (item.trackAnchor ? (
+            (item.trackAnchor || item.sectionAnchor ? (
               <p>
-                已绑定行程，不能单独移动。
+                {item.sectionAnchor
+                  ? '已绑定剖面，请在剖面编辑中沿线移动。'
+                  : '已绑定行程，不能单独移动。'}
                 <br />
                 经度 {item.coordinates[0].toFixed(6)} · 纬度{' '}
                 {item.coordinates[1].toFixed(6)}
@@ -362,6 +364,11 @@ export function AnnotationWorkspace({
             <small>
               已关联行程 · 距起点{' '}
               {(item.trackAnchor.distance / 1000).toFixed(2)} 公里
+            </small>
+          )}
+          {item.sectionAnchor && (
+            <small>
+              已关联剖面 · 距 A {item.sectionAnchor.distance.toFixed(1)} m
             </small>
           )}
           <button

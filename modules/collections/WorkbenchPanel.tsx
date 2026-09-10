@@ -25,10 +25,7 @@ import {
   type WorkbenchSortOrder,
 } from './WorkbenchSort';
 import { workbenchShareIds } from './workbenchShareData';
-import {
-  WorkbenchAction,
-  type WorkbenchActionType,
-} from './WorkbenchAction';
+import { WorkbenchAction, type WorkbenchActionType } from './WorkbenchAction';
 import {
   dropWorkbenchItems,
   dissolveWorkbenchFolder,
@@ -47,16 +44,8 @@ import { useWorkbenchData } from './useWorkbenchData';
 import { catalogEntries } from './catalog';
 import { collectionTransfer } from './export';
 import { selectedWorkbenchKeys } from './workbenchShareData';
+import { CollectionTabs } from './CollectionTabs';
 
-const TYPES = [
-  ['all', '全部'],
-  ['route', '路线'],
-  ['track', '轨迹'],
-  ['pin', '标记'],
-  ['model', '模型'],
-  ['area', '区域'],
-  ['section', '剖面'],
-];
 type Props = {
   center: [number, number];
   onClose: () => void;
@@ -138,7 +127,10 @@ export function WorkbenchPanel(props: Props) {
   };
   const commit = (next: WorkbenchItem[], text: string) => {
     const ok = store.commit(next);
-    if (ok) { setMessage(text); setActionMessage(''); }
+    if (ok) {
+      setMessage(text);
+      setActionMessage('');
+    }
     return ok;
   };
   const toggle = (ids: string[]) =>
@@ -185,7 +177,18 @@ export function WorkbenchPanel(props: Props) {
   const selectedTransfer = (ids: string[]) => {
     const keys = new Set(selectedWorkbenchKeys(items, ids));
     if (!store.data || !keys.size) throw new Error('请先选择要分享的收藏');
-    return collectionTransfer(catalogEntries(store.data.favorites, store.data.tracks, store.data.annotations, store.data.sections ?? [], store.data.areas ?? []).filter(e => keys.has(e.key)), store.data.regions ?? {}, localStorage);
+    return collectionTransfer(
+      catalogEntries(
+        store.data.favorites,
+        store.data.tracks,
+        store.data.annotations,
+        store.data.sections ?? [],
+        store.data.areas ?? [],
+        store.data.measurements ?? [],
+      ).filter((e) => keys.has(e.key)),
+      store.data.regions ?? {},
+      localStorage,
+    );
   };
   const share = async (ids: string[], send: boolean) => {
     setBusy(true);
@@ -224,7 +227,11 @@ export function WorkbenchPanel(props: Props) {
       setActionMessage('复制失败，请使用系统分享或保存文件。');
     }
   };
-  const row = (item: WorkbenchItem, depth = 0, parent = ''): React.ReactNode => {
+  const row = (
+    item: WorkbenchItem,
+    depth = 0,
+    parent = '',
+  ): React.ReactNode => {
     const key = parent ? `${parent}/${item.id}` : item.id,
       folder = item.kind === 'folder',
       synthetic = item.id.startsWith('region:');
@@ -303,7 +310,7 @@ export function WorkbenchPanel(props: Props) {
               {folder
                 ? `${ids.length} 项`
                 : sort === 'newest' || sort === 'oldest'
-                  ? `${(item.createdAt == null ? '时间未记录' : new Date(item.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }))} · ${workbenchDetails(item)}`
+                  ? `${item.createdAt == null ? '时间未记录' : new Date(item.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })} · ${workbenchDetails(item)}`
                   : sort === 'nearest' || sort === 'farthest'
                     ? `${Math.round(workbenchDistance(item, sortCenter)!)} m · ${workbenchDetails(item)}`
                     : workbenchDetails(item)}
@@ -378,10 +385,7 @@ export function WorkbenchPanel(props: Props) {
   return (
     <div className="collection-workbench">
       <div className="workbench-split">
-        <section
-          className="workbench-collections"
-          aria-label="上方收藏列表"
-        >
+        <section className="workbench-collections" aria-label="上方收藏列表">
           <header className="workbench-heading">
             <img src="/brand/shantu-logo.png" alt="山兔" />
             <div>
@@ -455,26 +459,23 @@ export function WorkbenchPanel(props: Props) {
               <MoreHorizontal size={19} />
             </button>
           </div>
-          <nav className="workbench-tags" aria-label="收藏分类">
-            <button
-              aria-pressed={regionMode}
-              onClick={() => {
+          <CollectionTabs
+            order={store.data?.collections?.tabOrder}
+            selected={type}
+            regions={regionMode}
+            disabled={!store.ready}
+            onSelect={(key) => {
+              if (key === 'regions') {
                 setRegionMode(!regionMode);
                 setActive('');
-              }}
-            >
-              地区
-            </button>
-            {TYPES.map(([id, label]) => (
-              <button
-                key={id}
-                aria-pressed={type === id}
-                onClick={() => setType(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+              } else setType(key);
+            }}
+            onReorder={(order) => {
+              const ok = store.reorderTabs(order);
+              if (ok) setMessage('已保存分类顺序');
+              return ok;
+            }}
+          />
           {sort !== 'manual' && (
             <div className="workbench-sort-label">
               {WORKBENCH_SORTS.find((s) => s.id === sort)!.detail}

@@ -653,3 +653,14 @@
   margin: 0 0 4px;
   font-size: 11px;
 }
+.collection-sortable-tabs button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.collection-sortable-tabs .collection-tab-dragging {
+  outline: 2px solid #237eee;
+  outline-offset: -2px;
+  background: #daeaff;
+  cursor: grabbing;
+}

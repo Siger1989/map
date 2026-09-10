@@ -10,6 +10,9 @@ import {
   type SectionObject,
 } from './sectionObjects';
 import type { SectionSettings } from './types';
+import { collectData } from '../outdoor/exchange';
+import { saveWorkbench } from '../collections/workbenchStore';
+import type { Annotation } from '../annotations/data';
 /** Collection persistence owns stable identity. Selection, previews and gizmos stay transient. */
 export function useSavedSection() {
   const [items, setItems] = useState<SectionObject[]>([]),
@@ -19,6 +22,7 @@ export function useSavedSection() {
     [deleted, setDeleted] = useState<{
       item: SectionObject;
       index: number;
+      markers: Annotation[];
     } | null>(null);
   const current = useRef(items),
     selected = useRef(selectedId),
@@ -39,7 +43,9 @@ export function useSavedSection() {
         select(
           saved.some((s) => s.id === selected.current)
             ? selected.current
-            : (saved[0]?.id ?? null),
+            : loaded.current
+              ? null
+              : (saved[0]?.id ?? null),
         );
         loaded.current = true;
         setReady(true);
@@ -61,11 +67,16 @@ export function useSavedSection() {
       window.removeEventListener('storage', changed);
     };
   }, []);
-  const persist = (next: SectionObject[]) => {
+  const persist = (next: SectionObject[], markers?: Annotation[]) => {
     if (!loaded.current) return false;
     try {
       validateSectionObjects(next);
-      localStorage.setItem(SECTION_OBJECTS_KEY, JSON.stringify(next));
+      const before = collectData();
+      saveWorkbench(before, {
+        ...before,
+        sections: next,
+        ...(markers ? { annotations: markers } : {}),
+      });
       current.current = next;
       setItems(next);
       setError('');
@@ -91,8 +102,20 @@ export function useSavedSection() {
     const index = current.current.findIndex((s) => s.id === id),
       item = current.current[index];
     if (!item) return false;
-    if (!persist(current.current.filter((s) => s.id !== id))) return false;
-    setDeleted({ item, index });
+    const all = collectData().annotations,
+      markers = all.filter((a) => a.sectionAnchor?.sectionId === id);
+    if (
+      !persist(
+        current.current.filter((s) => s.id !== id),
+        all.map((a) => {
+          if (a.sectionAnchor?.sectionId !== id) return a;
+          const { sectionAnchor: _anchor, ...detached } = a;
+          return detached;
+        }),
+      )
+    )
+      return false;
+    setDeleted({ item, index, markers });
     return true;
   };
   const set = (action: SetStateAction<SectionSettings>) => {
@@ -169,7 +192,16 @@ export function useSavedSection() {
       if (!deleted) return;
       const next = [...current.current];
       next.splice(deleted.index, 0, deleted.item);
-      if (persist(next)) setDeleted(null);
+      const markers = collectData().annotations.map((a) => {
+        const previous = deleted.markers.find((p) => p.id === a.id);
+        return previous &&
+          !a.sectionAnchor &&
+          !a.trackAnchor &&
+          JSON.stringify(a.coordinates) === JSON.stringify(previous.coordinates)
+          ? { ...a, sectionAnchor: previous.sectionAnchor }
+          : a;
+      });
+      if (persist(next, markers)) setDeleted(null);
     },
   };
 }

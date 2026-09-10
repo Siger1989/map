@@ -31,6 +31,7 @@ export function useRegions(entries: CatalogEntry[]) {
         [key]: value,
       });
       localStorage.setItem(REGION_STORAGE, JSON.stringify(next));
+      window.dispatchEvent(new Event('guanyun-data-changed'));
       current.current = next;
       setRegions(next);
       return true;

@@ -6,6 +6,7 @@ import {
   type ManualTrack,
 } from './drawing.ts';
 import type { TrackStyle } from './style';
+import { inheritEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
 
 export function drawingTime(time: number) {
   return new Date(time).toLocaleString('zh-CN', {
@@ -29,6 +30,7 @@ export function drawingArea(
 
 /** A committed drawing has its own identity; continuation preserves the original creation time. */
 export function drawingRecord(input: {
+  edgeColors?: TrackEdgeColors;
   segments: Coordinate[][];
   nodes: Coordinate[];
   style: TrackStyle;
@@ -39,9 +41,7 @@ export function drawingRecord(input: {
   now: number;
   place?: string;
 }): ManualTrack {
-  if (
-    !input.segments.length || input.segments.some(line => !line.length)
-  )
+  if (!input.segments.length || input.segments.some((line) => !line.length))
     throw new Error('还没有路线点可保存。');
   const location = input.prior?.drawingLocation ?? {
     coordinate: placeCenter(input.segments[0][0])!,
@@ -50,6 +50,8 @@ export function drawingRecord(input: {
   const createdAt = input.prior?.createdAt ?? input.createdAt;
   const prior = { ...input.prior };
   delete prior.sharedRoute;
+  const colors=input.edgeColors??(input.prior?.edgeColors && input.style.color===input.prior.style?.color?inheritEdgeColors(input.segments,[input.prior],input.style.color):undefined);
+  delete prior.edgeColors;
   return {
     ...prior,
     id: input.prior?.id ?? input.id,
@@ -60,12 +62,15 @@ export function drawingRecord(input: {
         0,
         60,
       ),
-    segments: input.segments.map(line => line.map(p => [...p] as Coordinate)),
+    segments: input.segments.map((line) =>
+      line.map((p) => [...p] as Coordinate),
+    ),
     nodes: input.nodes,
     createdAt,
     updatedAt: input.now,
     drawingLocation: location,
     source: 'manual',
+    ...(colors?{edgeColors:colors}:{}),
     style: input.style,
   };
 }

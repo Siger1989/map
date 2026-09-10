@@ -116,7 +116,7 @@ export function ProjectionChart({
       )}
       <p className="measurement-chart-note">
         {hint ??
-          `${total !== null ? `总水平 ${lengthLabel(total)} · ` : ''}${saved ? '已保存到地图' : '拖动测点调整，按点标签切换线段'}`}
+          `${total !== null ? `总水平 ${lengthLabel(total)} · ` : ''}${saved ? '已保存到地图和收藏夹' : '拖动测点调整，按点标签切换线段'}`}
       </p>
     </figure>
   );

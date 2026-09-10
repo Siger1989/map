@@ -1,5 +1,10 @@
 import { unzipSync, strFromU8 } from 'fflate';
 import {
+  SAVED_MEASUREMENTS_KEY,
+  parseSavedMeasurements,
+  type SavedMeasurement,
+} from '../measurement/saved.ts';
+import {
   SECTION_OBJECTS_KEY,
   readSectionObjects,
   validateSectionObjects,
@@ -55,6 +60,7 @@ export type Transfer = {
   sectionNotes?: SavedSection[];
   regions?: CollectionRegions;
   areas?: MapArea[];
+  measurements?: SavedMeasurement[];
 };
 export const DATA_CHANGED = 'guanyun-data-changed';
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -94,6 +100,10 @@ export function validateTransfer(v: unknown): Transfer {
     readSavedSections(JSON.stringify(data.sectionNotes));
   if (data.regions !== undefined) validateRegions(data.regions);
   if (data.areas !== undefined) parseAreas(JSON.stringify(data.areas));
+  if (data.measurements !== undefined)
+    parseSavedMeasurements(
+      JSON.stringify({ version: 1, items: data.measurements }),
+    );
   for (const items of [data.tracks, data.annotations, data.favorites])
     if (new Set(items.map((i) => i.id)).size !== items.length)
       throw new Error('文件含重复编号');
@@ -108,6 +118,13 @@ export function collectData(
     tracks: JSON.parse(storage.getItem(TRACK_STORAGE) ?? '[]'),
     annotations: JSON.parse(storage.getItem(ANNOTATION_STORAGE) ?? '[]'),
     favorites: JSON.parse(storage.getItem(FAVORITES_STORAGE) ?? '[]'),
+    ...(storage.getItem(SAVED_MEASUREMENTS_KEY) === null
+      ? {}
+      : {
+          measurements: parseSavedMeasurements(
+            storage.getItem(SAVED_MEASUREMENTS_KEY),
+          ),
+        }),
     ...(storage.getItem(AREA_STORAGE) === null
       ? {}
       : { areas: parseAreas(storage.getItem(AREA_STORAGE)) }),
@@ -141,13 +158,33 @@ export function mergeData(
   validateTransfer(incoming);
   const before = collectData(storage);
   const importedKeys = new Map<string, string>();
+  const changedSectionIds = new Set(
+    (incoming.sections ?? [])
+      .filter((s) =>
+        before.sections?.some(
+          (old) => old.id === s.id && JSON.stringify(old) !== JSON.stringify(s),
+        ),
+      )
+      .map((s) => s.id),
+  );
+  const linkedCopies = new Set(
+    incoming.annotations
+      .filter(
+        (a) =>
+          a.sectionAnchor && changedSectionIds.has(a.sectionAnchor.sectionId),
+      )
+      .map((a) => a.id),
+  );
   const merge = <T extends { id: string }>(a: T[], b: T[], kind?: string) => [
     ...a,
     ...b
       .filter((v) => {
-        const same = a.some(
-          (old) => old.id === v.id && JSON.stringify(old) === JSON.stringify(v),
-        );
+        const same =
+          !(kind === 'annotation' && linkedCopies.has(v.id)) &&
+          a.some(
+            (old) =>
+              old.id === v.id && JSON.stringify(old) === JSON.stringify(v),
+          );
         if (same && kind)
           importedKeys.set(`${kind}:${v.id}`, `${kind}:${v.id}`);
         return !same;
@@ -199,11 +236,50 @@ export function mergeData(
       ? { areas: merge(before.areas ?? [], incoming.areas ?? [], 'area') }
       : {}),
     favorites: merge(before.favorites, incoming.favorites, 'route'),
+    ...(before.measurements || incoming.measurements
+      ? {
+          measurements: merge(
+            before.measurements ?? [],
+            incoming.measurements ?? [],
+            'measurement',
+          ),
+        }
+      : {}),
     ...(before.sections || incoming.sections
       ? {
           sections: merge(
             before.sections ?? [],
-            incoming.sections ?? [],
+            (incoming.sections ?? []).map((s) => {
+              const line = s.settings.survey;
+              if (!line) return s;
+              const remap = (id: string) =>
+                id === 'A' || id === 'B'
+                  ? id
+                  : (importedKeys.get(`annotation:${id}`)?.slice(11) ?? id);
+              return {
+                ...s,
+                settings: {
+                  ...s.settings,
+                  survey: {
+                    ...line,
+                    stations: line.stations.map((p) => ({
+                      ...p,
+                      id: remap(p.id),
+                    })),
+                    ...(line.pointData
+                      ? {
+                          pointData: Object.fromEntries(
+                            Object.entries(line.pointData).map(([id, p]) => [
+                              remap(id),
+                              p,
+                            ]),
+                          ),
+                        }
+                      : {}),
+                  },
+                },
+              };
+            }),
             'section',
           ).map((s) =>
             s.settings.objectId && s.settings.objectId !== s.id
@@ -230,6 +306,21 @@ export function mergeData(
       const mapped = importedKeys.get(key);
       if (mapped && !next.regions[mapped]) next.regions[mapped] = region;
     }
+  }
+  // Both ID maps are now complete. Standalone markers must not bind to unrelated local sections.
+  for (const source of incoming.annotations) {
+    if (!source.sectionAnchor) continue;
+    const id = importedKeys.get(`annotation:${source.id}`)?.slice(11),
+      sectionId = importedKeys
+        .get(`section:${source.sectionAnchor.sectionId}`)
+        ?.slice(8);
+    next.annotations = next.annotations.map((a) => {
+      if (a.id !== id || before.annotations.includes(a)) return a;
+      if (sectionId)
+        return { ...a, sectionAnchor: { ...source.sectionAnchor!, sectionId } };
+      const { sectionAnchor: _anchor, ...detached } = a;
+      return detached;
+    });
   }
   if (incoming.sectionNotes) {
     next.sectionNotes = [...(before.sectionNotes ?? [])];
@@ -282,6 +373,11 @@ export function mergeData(
   if (next.sectionNotes) values.push([PROFILE_NOTES_KEY, next.sectionNotes]);
   if (next.regions) values.push([REGION_STORAGE, next.regions]);
   if (next.areas) values.push([AREA_STORAGE, next.areas]);
+  if (next.measurements)
+    values.push([
+      SAVED_MEASUREMENTS_KEY,
+      { version: 1, items: next.measurements },
+    ]);
   const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
   try {
     for (const [key, data] of values)

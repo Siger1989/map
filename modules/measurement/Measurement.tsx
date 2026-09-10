@@ -396,7 +396,7 @@ export function Measurement({
                     ? points.length < 2
                       ? '移除地图测量'
                       : '更新地图测量'
-                    : '保存测量到地图'
+                    : '保存测量到地图和收藏夹'
               }
               onClick={state.saveToMap}
             >

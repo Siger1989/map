@@ -4,6 +4,7 @@ import { equalCoordinate } from './editing.ts';
 import { keepsOriginalPoints } from './provenance.ts';
 import { pathOf, project } from '../guidance/geometry.ts';
 import { cutNodes } from './deleteNodes.ts';
+import { preserveTrackColors } from './edgeColors.ts';
 
 const editable = (track: ManualTrack) => {
   if (keepsOriginalPoints(track))
@@ -16,13 +17,16 @@ const changed = (
 ): ManualTrack => {
   if (segments.length > 100 || segments.flat().length > MAX_TRACK_POINTS)
     throw new Error('路线超过100段或6000点，请减少节点后重试。');
-  return {
-    ...track,
-    segments,
-    nodes: [...new Map(nodes.map((p) => [p.join(','), p])).values()],
-    sharedRoute: undefined,
-    updatedAt: Date.now(),
-  };
+  return preserveTrackColors(
+    {
+      ...track,
+      segments,
+      nodes: [...new Map(nodes.map((p) => [p.join(','), p])).values()],
+      sharedRoute: undefined,
+      updatedAt: Date.now(),
+    },
+    [track],
+  );
 };
 
 /** Insert on precisely the selected leg; do not append to the end of the route. */
@@ -55,7 +59,14 @@ export function insertTrackNode(
     throw new Error('请先点选路线上的位置，再按加号。');
   const segments = track.segments.map((line) => line.slice());
   segments[best.segment].splice(best.index, 0, point);
-  return changed(track, segments, [...(track.nodes ?? []), point]);
+  const next = changed(track, segments, [...(track.nodes ?? []), point]);
+  if (track.edgeColors) {
+    const colors = track.edgeColors.map((row) => row.slice());
+    const inherited = colors[best.segment][best.index - 1];
+    colors[best.segment].splice(best.index - 1, 1, inherited, inherited);
+    next.edgeColors = colors;
+  }
+  return next;
 }
 
 /** Remove the vertex and incident edges, preserving every other vertex. */
@@ -64,7 +75,7 @@ export function removeTrackNode(track: ManualTrack, point: Coordinate) {
 }
 export function removeTrackNodes(track: ManualTrack, points: Coordinate[]) {
   editable(track);
-  const removed = new Set(points.map(p => p.join(',')));
+  const removed = new Set(points.map((p) => p.join(',')));
   if (!track.segments.flat().some((p) => removed.has(p.join(','))))
     return track;
   const segments = cutNodes(track.segments, points);
@@ -98,15 +109,18 @@ export function connectTrackNodes(
     ...(a.id === b.id ? [] : b.segments),
     ...(equalCoordinate(from, to) ? [] : [[from, to]]),
   ];
-  return changed(
-    {
-      ...a,
-      id,
-      name: `${a.name} · 连接路线`.slice(0, 60),
-      source: 'manual',
-      createdAt: Date.now(),
-    },
-    segments,
-    [...(a.nodes ?? []), ...(b.nodes ?? []), from, to],
+  return preserveTrackColors(
+    changed(
+      {
+        ...a,
+        id,
+        name: `${a.name} · 连接路线`.slice(0, 60),
+        source: 'manual',
+        createdAt: Date.now(),
+      },
+      segments,
+      [...(a.nodes ?? []), ...(b.nodes ?? []), from, to],
+    ),
+    [a, b],
   );
 }

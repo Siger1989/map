@@ -167,7 +167,12 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
-                {onMeasure && <button onClick={onMeasure}><Ruler size={18} />测量</button>}
+                {onMeasure && (
+                  <button onClick={onMeasure}>
+                    <Ruler size={18} />
+                    测量
+                  </button>
+                )}
                 {onScanRoute && (
                   <button onClick={onScanRoute}>
                     <ScanLine size={18} />
@@ -181,7 +186,7 @@ export function ControlDock({
                 {onSection && (
                   <button
                     onClick={onSection}
-                    aria-label="矩形剖面"
+                    aria-label="勘探线剖面"
                     aria-pressed={sectionActive}
                     disabled={!sectionReady}
                   >

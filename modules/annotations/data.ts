@@ -3,6 +3,10 @@ import { MARKER_ICONS, type MarkerIconId } from './icons.ts';
 import { validAttributes, type AnnotationAttribute } from './attributes.ts';
 import { validFootprint, footprintArea, type Footprint } from './footprint.ts';
 import { validTrackAnchor, type TrackAnchor } from '../tracks/linePoint.ts';
+import {
+  validSectionAnchor,
+  type SectionAnchor,
+} from '../section/surveyLine.ts';
 
 export const ANNOTATION_STORAGE = 'guanyun.annotations.v1';
 export const MAX_ANNOTATIONS = 2080;
@@ -28,6 +32,7 @@ export type Annotation = {
   name: string;
   note: string;
   trackAnchor?: TrackAnchor;
+  sectionAnchor?: SectionAnchor;
   icon?: MarkerIconId;
   attributes?: AnnotationAttribute[];
   footprint?: Footprint;
@@ -64,6 +69,7 @@ export function validAnnotation(value: unknown): value is Annotation {
     typeof a.note === 'string' &&
     a.note.length <= 500 &&
     (a.trackAnchor === undefined || validTrackAnchor(a.trackAnchor)) &&
+    (a.sectionAnchor === undefined || validSectionAnchor(a.sectionAnchor)) &&
     (a.icon === undefined || Object.hasOwn(MARKER_ICONS, a.icon)) &&
     (a.attributes === undefined || validAttributes(a.attributes)) &&
     (a.kind !== 'prism' || validFootprint(a.footprint)) &&

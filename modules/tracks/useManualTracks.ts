@@ -4,6 +4,7 @@ import { keepsOriginalPoints } from './provenance';
 import { storeRouteEdit, type RouteEditSession } from './routeEdit';
 import { usePlaceName } from '../navigation/usePlaceName';
 import { drawingRecord, storeDrawingRecord } from './archive';
+import { preserveTrackColors, inheritEdgeColors } from './edgeColors';
 import {
   DRAFT_ID,
   equalCoordinate,
@@ -152,6 +153,7 @@ export function useManualTracks() {
       const prior = records.find((t) => t.id === editingId);
       const track = drawingRecord({
         segments: draftRef.current.segments,
+        edgeColors: draftRef.current.edgeColors,
         nodes: draftVertices(draftRef.current).slice(0, MAX_TRACK_POINTS),
         prior,
         id: crypto.randomUUID(),
@@ -186,6 +188,7 @@ export function useManualTracks() {
     source: 'manual',
     style,
     segments: draftRef.current.segments,
+    edgeColors: draftRef.current.edgeColors,
     nodes: draftVertices(draftRef.current),
   });
   const applyDraft = (next: typeof EMPTY_DRAFT) => {
@@ -232,6 +235,9 @@ export function useManualTracks() {
               draftRef.current,
               next.segments,
               next.nodes ?? [],
+              draftRef.current.kinds,
+              draftRef.current.pointLine,
+              next.edgeColors,
             ),
           );
           return true;
@@ -261,7 +267,11 @@ export function useManualTracks() {
         const next = removeTrackNode(track, node.coordinate);
         if (
           next === track ||
-          !persist(savedRef.current.flatMap((t) => t.id === track.id ? (next.segments.length ? [next] : []) : [t]))
+          !persist(
+            savedRef.current.flatMap((t) =>
+              t.id === track.id ? (next.segments.length ? [next] : []) : [t],
+            ),
+          )
         )
           return false;
         setNodeHistory((h) => [...h.slice(-19), track]);
@@ -310,6 +320,7 @@ export function useManualTracks() {
                 (_, i) => draftRef.current.kinds[i] ?? 'freehand',
               ),
               null,
+              next.edgeColors,
             ),
           );
           select(DRAFT_ID);
@@ -360,6 +371,10 @@ export function useManualTracks() {
           throw new Error('路线已达100段或6000点。');
         const next = {
           segments: [...track.segments, [node.coordinate]],
+          edgeColors: inheritEdgeColors(
+            [...track.segments, [node.coordinate]],
+            [track],
+          ),
           kinds: [
             ...track.segments.map(() => 'freehand' as const),
             'points' as const,
@@ -396,6 +411,7 @@ export function useManualTracks() {
     saved,
     overlaySaved,
     draft: draftState.segments,
+    edgeColors: draftState.edgeColors,
     vertices,
     candidates,
     mode: 'points' as const,
@@ -490,6 +506,11 @@ export function useManualTracks() {
     setVisible,
     setStyle: (next: TrackStyle) => {
       const value = normalizeTrackStyle(next);
+      if (value.color !== style.color) {
+        const draft = { ...draftRef.current, edgeColors: undefined };
+        draftRef.current = draft;
+        setDraftState(draft);
+      }
       setStyle(value);
       try {
         localStorage.setItem(TRACK_STYLE_STORAGE, JSON.stringify(value));
@@ -567,6 +588,7 @@ export function useManualTracks() {
         keepsOriginalPoints(track) ? `${track.name} · 手绘副本` : null,
       );
       const nextDraft = {
+        edgeColors: track.edgeColors,
         segments: track.segments,
         kinds: track.segments.map(() => 'freehand' as const),
         history: [],
@@ -613,6 +635,12 @@ export function useManualTracks() {
                         },
                       }
                     : {}),
+                  edgeColors: inheritEdgeColors(
+                    joinSegments(track.segments)
+                      .reverse()
+                      .map((line) => line.slice().reverse()),
+                    [track],
+                  ),
                   segments: joinSegments(track.segments)
                     .reverse()
                     .map((line) => line.slice().reverse()),
@@ -644,14 +672,17 @@ export function useManualTracks() {
         return;
       }
       const ids = new Set(connected.map((t) => t.id));
-      const merged = {
-        ...seed,
-        sharedRoute: undefined,
-        segments,
-        nodes: connected
-          .flatMap((t) => t.nodes ?? [])
-          .slice(0, MAX_TRACK_POINTS),
-      };
+      const merged = preserveTrackColors(
+        {
+          ...seed,
+          sharedRoute: undefined,
+          segments,
+          nodes: connected
+            .flatMap((t) => t.nodes ?? [])
+            .slice(0, MAX_TRACK_POINTS),
+        },
+        connected,
+      );
       if (
         persist(
           saved
@@ -667,7 +698,15 @@ export function useManualTracks() {
       persist(
         saved.map((track) =>
           track.id === id
-            ? { ...track, style: normalizeTrackStyle(next) }
+            ? {
+                ...track,
+                style: normalizeTrackStyle(next),
+                edgeColors:
+                  normalizeTrackStyle(next).color !==
+                  normalizeTrackStyle(track.style).color
+                    ? undefined
+                    : track.edgeColors,
+              }
             : track,
         ),
       ),

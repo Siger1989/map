@@ -2,6 +2,7 @@ import { SmartInput } from '../input/SmartText';
 import { Eye, EyeOff, Trash2, X, Plus } from 'lucide-react';
 import type { SectionObjectsState } from './useSavedSection';
 import './sectionList.css';
+import { surveyBasis } from './surveyLine';
 export function SectionList({
   state,
   onCreate,
@@ -27,7 +28,10 @@ export function SectionList({
       </header>
       <div className="section-list-body">
         {!state.items.length && (
-          <p>新建后拖动放置。可同时显示多条剖面，点选其中一条调整。</p>
+          <p>
+            新建后在地图或已有标记中选
+            A、B，确定勘探线。保存的剖面也在收藏夹中。
+          </p>
         )}
         {state.items.map((item) => (
           <div className="section-list-row" key={item.id}>
@@ -44,7 +48,12 @@ export function SectionList({
               />
               <small>
                 {Math.round(item.settings.plane!.width)}米 ·{' '}
-                {Math.round(item.settings.plane!.heading)}°
+                {Math.round(
+                  item.settings.survey
+                    ? surveyBasis(item.settings.survey).bearing
+                    : item.settings.plane!.heading,
+                )}
+                °
               </small>
             </div>
             <button

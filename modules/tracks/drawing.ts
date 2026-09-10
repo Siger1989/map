@@ -4,6 +4,7 @@ import {
   type Coordinate,
 } from '../navigation/types.ts';
 import type { TrackStyle } from './style';
+import { validEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
 export type ScreenPoint = { x: number; y: number };
 export type ManualTrack = {
   id: string;
@@ -15,6 +16,7 @@ export type ManualTrack = {
   sourceTrackIds?: string[];
   drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
+  edgeColors?: TrackEdgeColors;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   sharedRoute?: {
@@ -73,7 +75,10 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         v.segments.length <= 100 &&
         v.segments.every(
           (line: unknown) =>
-            Array.isArray(line) && line.length >= (v.source === 'manual' || v.source === undefined ? 1 : 2) && line.every(coordinate),
+            Array.isArray(line) &&
+            line.length >=
+              (v.source === 'manual' || v.source === undefined ? 1 : 2) &&
+            line.every(coordinate),
         ) &&
         (v.samples === undefined ||
           (Array.isArray(v.samples) &&
@@ -104,10 +109,12 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         sharedRoute,
         hidden,
         sourceTrackIds,
+        edgeColors,
         ...rest
       } = track;
       return {
         ...rest,
+        ...(validEdgeColors(edgeColors, track.segments) ? { edgeColors } : {}),
         ...(hidden === true ? { hidden: true } : {}),
         ...(Array.isArray(sourceTrackIds)
           ? {

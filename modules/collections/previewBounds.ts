@@ -1,12 +1,20 @@
 import type { CatalogEntry } from './catalog';
 import { dimensions } from '../annotations/data.ts';
 import type { Coordinate } from '../navigation/types';
+import { surveyCoordinate, surveyRange } from '../section/surveyLine.ts';
 
 /** Conservative footprint also contains rotated/elevated models, not only their anchor. */
 export function collectionPreviewPoints(entry: CatalogEntry): Coordinate[] {
   if (entry.kind === 'route') return entry.route.route.coordinates;
   if (entry.kind === 'track') return entry.track.segments.flat();
   if (entry.kind === 'area') return entry.area.boundary;
+  if (entry.kind === 'measurement')
+    return entry.measurement.points.map((p) => p.coordinates);
+  if (entry.kind === 'section' && entry.section.settings.survey) {
+    const line = entry.section.settings.survey,
+      r = surveyRange(line);
+    return [surveyCoordinate(line, r.start), surveyCoordinate(line, r.end)];
+  }
   let radius = 30;
   if (entry.kind === 'model') {
     const a = entry.annotation;

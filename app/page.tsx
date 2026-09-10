@@ -98,6 +98,10 @@ import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionProfile } from '@/modules/section/SectionProfile';
 import { useSavedSection } from '@/modules/section/useSavedSection';
+import { useSurveySection } from '@/modules/section/useSurveySection';
+import { SurveySectionPanel } from '@/modules/section/SurveySectionPanel';
+import { SurveyMapOverlay } from '@/modules/section/SurveyMapOverlay';
+import { surveyCoordinate, surveyRange } from '@/modules/section/surveyLine';
 import { SectionList } from '@/modules/section/SectionList';
 import { EMPTY_SECTION } from '@/modules/section/savedSection';
 import type {
@@ -289,6 +293,11 @@ export default function Home() {
     if (panel !== 'outdoor') setOutdoorPhotos(false);
   }, [panel]);
   const sections = useSavedSection();
+  const survey = useSurveySection(sections, (id) => {
+    annotations.select(id);
+    setAnnotationTab('basic');
+    setPanel('annotations');
+  });
   const startArea = () => {
     tracks.pause();
     setActiveTrackNode(null);
@@ -490,6 +499,18 @@ export default function Home() {
   );
   const focusSection = (value: SectionSettings) => {
     if (!value.plane) return;
+    if (value.survey) {
+      const range = surveyRange(value.survey);
+      const points = [
+        surveyCoordinate(value.survey, range.start),
+        surveyCoordinate(value.survey, range.end),
+      ];
+      // Wait for the favorites split to close before fitting the full map.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        map.current?.fitCollection(points);
+      }));
+      return;
+    }
     map.current?.stop();
     map.current?.focusPoint(
       value.plane.center,
@@ -520,6 +541,23 @@ export default function Home() {
   const openSection = (id: string) => {
     const item = sections.items.find((s) => s.id === id);
     if (!item) return;
+    if (item.settings.survey) {
+      measurement.close();
+      tracks.finish();
+      tracks.select(null);
+      annotations.select(null);
+      annotations.setPicking(null);
+      navigation.setPicking(null);
+      position.free();
+      setPanel(null);
+      setProfileOpen(false);
+      setSectionEditing(false);
+      setSectionListOpen(false);
+      survey.open(item);
+      focusSection(item.settings);
+      return;
+    }
+    survey.close();
     sections.select(id);
     if (
       !item.settings.enabled &&
@@ -532,6 +570,8 @@ export default function Home() {
   };
   const toggleSection = () => {
     if (!sectionReady) return;
+    survey.close();
+    measurement.close();
     tracks.finish();
     tracks.select(null);
     annotations.select(null);
@@ -544,30 +584,18 @@ export default function Home() {
     setSectionListOpen((open) => !open);
   };
   const createSection = () => {
-    const placement = map.current?.sectionCenter();
-    if (
-      !sections.create({
-        enabled: true,
-        altitude: placement?.altitude ?? Math.round(point.elevation ?? 1500),
-        color: ['#9de8c4', '#ffbc70', '#87c7ff', '#ef9bda'][
-          sections.items.length % 4
-        ],
-        plane: {
-          center: placement?.center ?? [point.lng, point.lat],
-          width: placement?.width ?? 5000,
-          height: Math.min(
-            30000,
-            Math.max(2000, (placement?.width ?? 5000) * 0.65),
-          ),
-          heading: placement?.heading ?? view.bearing,
-          tilt: 0,
-        },
-      })
-    )
-      return;
-    prepareSectionEditing();
+    measurement.close();
+    tracks.finish();
+    tracks.select(null);
+    annotations.select(null);
+    annotations.setPicking(null);
+    navigation.setPicking(null);
+    position.free();
+    setPanel(null);
+    setSectionListOpen(false);
+    setSectionEditing(false);
     setProfileOpen(false);
-    setSectionStatus(INITIAL_SECTION_STATUS);
+    survey.start();
   };
   const annotationOverlay = useMemo(() => {
     const target = featureMove?.target;
@@ -618,6 +646,7 @@ export default function Home() {
       annotations.items,
       sections.items,
       areas.items,
+      measurement.saved.items,
     );
     const selected = entries.find(
       (e) =>
@@ -644,6 +673,7 @@ export default function Home() {
           name: tracks.draftName || '路线草稿',
           createdAt: 0,
           segments: tracks.draft,
+          edgeColors: tracks.edgeColors,
           style: tracks.style,
           nodes: tracks.vertices,
         }
@@ -867,6 +897,7 @@ export default function Home() {
           : []
         : tracks.draft,
       visible: tracks.visible || recorder.record.phase !== 'idle',
+      draftEdgeColors: editor.session?.track.edgeColors ?? tracks.edgeColors,
       style: editor.session?.track.style ?? tracks.style,
       nodes: editor.session?.track.nodes ?? tracks.vertices,
       drawing: tracks.drawing,
@@ -906,6 +937,7 @@ export default function Home() {
       recorder.record.phase,
       tracks.overlaySaved,
       tracks.draft,
+      tracks.edgeColors,
       tracks.visible,
       tracks.style,
       tracks.vertices,
@@ -1106,8 +1138,8 @@ export default function Home() {
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
           ref={map}
-          section={section}
-          sectionItems={sections.items}
+          section={section.survey ? { ...section, enabled: false } : section}
+          sectionItems={sections.items.filter((s) => !s.settings.survey)}
           selectedSectionId={sections.selectedId}
           sectionEditing={sectionEditing}
           onSectionStatus={setSectionStatus}
@@ -1157,6 +1189,11 @@ export default function Home() {
           collectionPreviewActive={panel === 'favorites'}
           photos={photoOverlay}
           onPhotoSelect={(ids) => {
+            if (survey.active && survey.picking) {
+              const photo = linkedPhotos.find((p) => p.id === ids[0]);
+              if (photo) survey.pick(photo.coordinates);
+              return;
+            }
             if (measurement.active) {
               const photo = linkedPhotos.find((p) => p.id === ids[0]);
               if (photo && measurement.adding)
@@ -1188,12 +1225,17 @@ export default function Home() {
           riverSnapping={tracks.riverSnapping}
           annotationSelected={annotations.selected}
           annotationEditingId={annotations.edit?.draft.id}
-          measurementPicking={measurement.active}
-          annotationPicking={navigation.picking !== null || measurement.active}
+          measurementPicking={measurement.active || !!survey.picking}
+          annotationPicking={
+            navigation.picking !== null ||
+            measurement.active ||
+            !!survey.picking
+          }
           pickingActive={Boolean(
             annotations.picking ||
             navigation.picking !== null ||
-            measurement.active,
+            measurement.active ||
+            survey.picking,
           )}
           onTrackSelect={(id) => {
             if (!editor.session) openRoute(id);
@@ -1261,6 +1303,13 @@ export default function Home() {
             }
           }}
           onAnnotationSelect={(id) => {
+            if (survey.active && survey.picking) {
+              const item = annotations.items.find(
+                (a) => a.id === id && a.visible,
+              );
+              if (item) survey.pick(item.coordinates);
+              return;
+            }
             if (measurement.active) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -1315,6 +1364,7 @@ export default function Home() {
             setQuickAdd(value);
           }}
           onMapPick={(coordinates) => {
+            if (survey.pick(coordinates)) return;
             if (measurement.active) {
               if (measurement.adding)
                 measurement.add(
@@ -1737,6 +1787,34 @@ export default function Home() {
             </div>
           )}
         {markerCamera.input}
+        <SurveyMapOverlay
+          items={sections.items}
+          state={survey}
+          watch={watchObjectProjection}
+          scale={layers.terrain ? layers.exaggeration : 0}
+          projectGround={(p) => map.current?.toScreen(p) ?? null}
+          toCoordinate={(p) => map.current?.toCoordinate(p) ?? null}
+          onOpen={(object) => openSection(object.id)}
+        />
+        {survey.active && panel === null && (
+          <SurveySectionPanel
+            key={survey.object?.id ?? 'new-survey'}
+            state={survey}
+            markers={annotations.items.filter(
+              (a) => a.sectionAnchor?.sectionId === survey.object?.id,
+            )}
+            onMarker={(id) => {
+              annotations.select(id);
+              setAnnotationTab('basic');
+              setPanel('annotations');
+            }}
+            onLocate={(p) => map.current?.focusPoint(p)}
+            onFavorites={() => {
+              survey.close();
+              setPanel('favorites');
+            }}
+          />
+        )}
         {!!measurement.saved.items.length && (
           <SavedMeasurements
             items={measurement.saved.items.filter(
@@ -2054,6 +2132,7 @@ export default function Home() {
               annotations.items,
               sections.items,
               areas.items,
+              measurement.saved.items,
             )}
             project={(p) => map.current?.toScreen(p) ?? null}
             onCancel={() => setBoxSelecting(false)}
@@ -2097,7 +2176,7 @@ export default function Home() {
               },
             );
           }}
-          sectionActive={sectionEditing}
+          sectionActive={sectionEditing || survey.active}
           terrain={layers.terrain}
           bearing={view.bearing}
           onZoom={(amount) => map.current?.zoom(amount)}
@@ -2233,6 +2312,7 @@ export default function Home() {
             setQuickAdd(null);
             position.free();
             follow.pause();
+            survey.close();
             measurement.open();
           }}
           keepOpenOnMapInteraction={
@@ -2244,7 +2324,7 @@ export default function Home() {
             setRouteQr('');
           }}
           onSection={TERRAIN_SECTION_ENABLED ? toggleSection : undefined}
-          sectionActive={sectionEditing}
+          sectionActive={sectionEditing || survey.active}
           sectionReady={sectionReady}
           active={
             panel === 'layers' ||
@@ -2441,6 +2521,21 @@ export default function Home() {
               initialSelectedKeys={collectionSelectedKeys}
               photos={photos.items}
               areas={areas.items}
+              measurements={measurement.saved.items}
+              onMeasurement={(id) => {
+                const item = measurement.saved.items.find((m) => m.id === id);
+                if (!item) return;
+                tracks.finish();
+                tracks.select(null);
+                annotations.select(null);
+                navigation.setPicking(null);
+                setPanel(null);
+                setProfileOpen(false);
+                setSectionEditing(false);
+                position.free();
+                measurement.load(item);
+                map.current?.fitRoute(item.points.map((p) => p.coordinates));
+              }}
               onArea={(id) => {
                 const a = areas.items.find((a) => a.id === id);
                 if (a) {
@@ -2664,6 +2759,7 @@ export default function Home() {
               annotationTab === 'position')) &&
           (selectedAnnotation &&
           !selectedAnnotation.trackAnchor &&
+          !selectedAnnotation.sectionAnchor &&
           selectedPose &&
           annotations.edit &&
           annotationTab === 'position' ? (
@@ -2705,6 +2801,7 @@ export default function Home() {
               }}
             />
           ) : section.enabled &&
+            !section.survey &&
             sectionEditing &&
             section.plane &&
             panel === null ? (

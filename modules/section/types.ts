@@ -1,3 +1,4 @@
+import type { SurveyLine, SurveyTerrain } from './surveyLine';
 export type SectionSettings = {
   objectId?: string;
   enabled: boolean;
@@ -5,6 +6,8 @@ export type SectionSettings = {
   color: string;
   scale?: { unit: 'm' | 'km'; interval: number | 'auto' };
   plane?: SectionPlane;
+  survey?: SurveyLine;
+  surveyTerrain?: SurveyTerrain;
 };
 export type SectionPlane = {
   center: [number, number];

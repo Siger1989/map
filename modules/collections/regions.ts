@@ -23,7 +23,9 @@ export function validateRegions(v: unknown): CollectionRegions {
     Object.keys(v).length > 3000 ||
     !Object.entries(v).every(
       ([key, r]) =>
-        /^(route|track|annotation|section|area):.{1,200}$/.test(key) &&
+        /^(route|track|annotation|section|area|measurement):.{1,200}$/.test(
+          key,
+        ) &&
         r &&
         typeof r.coordinateKey === 'string' &&
         /^-?\d{1,3}\.\d{6},-?\d{1,2}\.\d{6}$/.test(r.coordinateKey) &&

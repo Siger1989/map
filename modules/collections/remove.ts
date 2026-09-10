@@ -12,6 +12,7 @@ import { REGION_STORAGE } from './regions.ts';
 import { SECTION_OBJECTS_KEY } from '../section/sectionObjects.ts';
 import { PROFILE_NOTES_KEY, sectionKey } from '../section/profileNotes.ts';
 import { AREA_STORAGE } from '../areas/data.ts';
+import { SAVED_MEASUREMENTS_KEY } from '../measurement/saved.ts';
 
 /** Remove only reviewed catalog keys; surviving markers and photo originals stay available. */
 export function withoutEntries(before: Transfer, keys: string[]): Transfer {
@@ -27,8 +28,18 @@ export function withoutEntries(before: Transfer, keys: string[]): Transfer {
     annotations: before.annotations
       .filter((a) => keep('annotation', a.id))
       .map((a) => {
-        if (!a.trackAnchor || keep('track', a.trackAnchor.trackId)) return a;
-        const { trackAnchor: _removed, ...pin } = a;
+        let pin = a;
+        if (pin.trackAnchor && !keep('track', pin.trackAnchor.trackId)) {
+          const { trackAnchor: _removed, ...rest } = pin;
+          pin = rest;
+        }
+        if (
+          pin.sectionAnchor &&
+          !keep('section', pin.sectionAnchor.sectionId)
+        ) {
+          const { sectionAnchor: _removed, ...rest } = pin;
+          pin = rest;
+        }
         return pin;
       }),
     ...(before.areas && {
@@ -36,6 +47,11 @@ export function withoutEntries(before: Transfer, keys: string[]): Transfer {
     }),
     ...(before.sections && {
       sections: before.sections.filter((s) => keep('section', s.id)),
+    }),
+    ...(before.measurements && {
+      measurements: before.measurements.filter((m) =>
+        keep('measurement', m.id),
+      ),
     }),
     ...(before.sectionNotes && {
       sectionNotes: before.sectionNotes.filter(
@@ -84,6 +100,11 @@ export function removeEntries(
     [COLLECTION_STORAGE, next.collections],
   ] as [string, unknown][])
     if (value !== undefined) writes.push([key, value]);
+  if (next.measurements !== undefined)
+    writes.push([
+      SAVED_MEASUREMENTS_KEY,
+      { version: 1, items: next.measurements },
+    ]);
   const originals = writes.map(([key]) => [key, storage.getItem(key)] as const);
   try {
     for (const [key, value] of writes)

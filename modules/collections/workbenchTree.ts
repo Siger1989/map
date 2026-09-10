@@ -3,7 +3,15 @@ import type { ShareRoute } from '../routeShare/data.ts';
 export type WorkbenchItem = {
   id: string;
   name: string;
-  kind: 'folder' | 'route' | 'track' | 'pin' | 'model' | 'area' | 'section';
+  kind:
+    | 'folder'
+    | 'route'
+    | 'track'
+    | 'pin'
+    | 'model'
+    | 'area'
+    | 'section'
+    | 'measurement';
   color: string;
   detail?: string;
   shareData?: ShareRoute;
@@ -41,7 +49,11 @@ export function workbenchRegionTree(items: WorkbenchItem[]): WorkbenchItem[] {
     children: project(items, region),
   }));
 }
-export function workbenchDetails(item: WorkbenchItem) { return item.kind === 'folder' ? `${workbenchLeaves(item.children ?? []).length} 项` : item.detail ?? ''; }
+export function workbenchDetails(item: WorkbenchItem) {
+  return item.kind === 'folder'
+    ? `${workbenchLeaves(item.children ?? []).length} 项`
+    : (item.detail ?? '');
+}
 export function updateWorkbenchItem(
   items: WorkbenchItem[],
   id: string,
@@ -73,10 +85,21 @@ export function moveWorkbenchItems(
   destination: string,
 ): WorkbenchItem[] {
   if (destination === '') {
-    const selected = flattenWorkbench(items).filter(i => ids.has(i.id));
-    if (selected.some(i => i.kind !== 'folder' || i.id === 'unfiled')) throw new Error('条目请放入文件夹，根目录只放文件夹。');
-    const roots = selected.filter(i => !selected.some(p => p.id !== i.id && flattenWorkbench(p.children ?? []).some(c => c.id === i.id)));
-    return [...removeWorkbenchItems(items, new Set(roots.map(i => i.id))), ...roots];
+    const selected = flattenWorkbench(items).filter((i) => ids.has(i.id));
+    if (selected.some((i) => i.kind !== 'folder' || i.id === 'unfiled'))
+      throw new Error('条目请放入文件夹，根目录只放文件夹。');
+    const roots = selected.filter(
+      (i) =>
+        !selected.some(
+          (p) =>
+            p.id !== i.id &&
+            flattenWorkbench(p.children ?? []).some((c) => c.id === i.id),
+        ),
+    );
+    return [
+      ...removeWorkbenchItems(items, new Set(roots.map((i) => i.id))),
+      ...roots,
+    ];
   }
   const target = flattenWorkbench(items).find(
     (i) => i.id === destination && i.kind === 'folder',
@@ -149,7 +172,8 @@ export function dropWorkbenchItems(
   return parent
     ? updateWorkbenchItem(rest, parent.id, {
         children: insert(
-          flattenWorkbench(rest).find((i) => i.id === parent.id)!.children ?? [],
+          flattenWorkbench(rest).find((i) => i.id === parent.id)!.children ??
+            [],
         ),
       })
     : insert(rest);

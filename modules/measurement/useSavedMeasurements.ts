@@ -15,15 +15,28 @@ export function useSavedMeasurements() {
     ready = useRef(false);
   const [removed, setRemoved] = useState<SavedMeasurement | null>(null);
   useEffect(() => {
-    try {
-      current.current = parseSavedMeasurements(
-        localStorage.getItem(SAVED_MEASUREMENTS_KEY),
-      );
-      setItems(current.current);
-      ready.current = true;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '无法读取已保存测量');
-    }
+    const read = () => {
+      try {
+        current.current = parseSavedMeasurements(
+          localStorage.getItem(SAVED_MEASUREMENTS_KEY),
+        );
+        setItems(current.current);
+        ready.current = true;
+      } catch (e) {
+        ready.current = false;
+        setError(e instanceof Error ? e.message : '无法读取已保存测量');
+      }
+    };
+    const changed = (e: StorageEvent) => {
+      if (e.key === SAVED_MEASUREMENTS_KEY || e.key === null) read();
+    };
+    read();
+    window.addEventListener('guanyun-data-changed', read);
+    window.addEventListener('storage', changed);
+    return () => {
+      window.removeEventListener('guanyun-data-changed', read);
+      window.removeEventListener('storage', changed);
+    };
   }, []);
   const commit = (next: SavedMeasurement[]) => {
     if (!ready.current) return false;
@@ -32,6 +45,7 @@ export function useSavedMeasurements() {
       current.current = next;
       setItems(next);
       setError('');
+      window.dispatchEvent(new Event('guanyun-data-changed'));
       return true;
     } catch {
       setError('保存到地图失败，请检查本机存储后重试；原记录已保留');

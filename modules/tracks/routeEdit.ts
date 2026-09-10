@@ -10,6 +10,7 @@ import {
 } from './drawing.ts';
 import { normalizeTrackStyle, type TrackStyle } from './style.ts';
 import { keepsOriginalPoints } from './provenance.ts';
+import { inheritEdgeColors } from './edgeColors.ts';
 
 export type RouteEditSnapshot = {
   track: ManualTrack;
@@ -100,7 +101,10 @@ export function removeEditNode(session: RouteEditSession): RouteEditSession {
   if (!session.selected) throw new Error('请先选中要删除的节点。');
   return removeEditNodes(session, [session.selected]);
 }
-export function removeEditNodes(session: RouteEditSession, points: Coordinate[]): RouteEditSession {
+export function removeEditNodes(
+  session: RouteEditSession,
+  points: Coordinate[],
+): RouteEditSession {
   return revise(session, {
     track: removeTrackNodes(session.track, points),
     selected: null,
@@ -114,7 +118,16 @@ export function styleRouteEdit(
   const next = normalizeTrackStyle(style);
   return JSON.stringify(next) === JSON.stringify(session.track.style)
     ? session
-    : revise(session, { track: { ...session.track, style: next } });
+    : revise(session, {
+        track: {
+          ...session.track,
+          style: next,
+          edgeColors:
+            next.color !== normalizeTrackStyle(session.track.style).color
+              ? undefined
+              : session.track.edgeColors,
+        },
+      });
 }
 export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
   if (session.branch !== null) {
@@ -122,7 +135,11 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
       (line, i) => i !== session.branch || line.length >= 2,
     );
     return revise(session, {
-      track: { ...session.track, segments },
+      track: {
+        ...session.track,
+        segments,
+        edgeColors: inheritEdgeColors(segments, [session.track]),
+      },
       branch: null,
     });
   }
@@ -133,6 +150,10 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
     track: {
       ...session.track,
       segments: [...session.track.segments, [session.selected]],
+      edgeColors: inheritEdgeColors(
+        [...session.track.segments, [session.selected]],
+        [session.track],
+      ),
     },
     branch: session.track.segments.length,
   });
@@ -175,10 +196,8 @@ export function appendEditBranch(
     track: {
       ...session.track,
       segments,
-      nodes: [
-        ...(session.track.nodes ?? []),
-        point,
-      ],
+      edgeColors: inheritEdgeColors(segments, [session.track]),
+      nodes: [...(session.track.nodes ?? []), point],
     },
     branch: target || joinsSelf ? null : session.branch,
     selected: point,
@@ -190,7 +209,10 @@ export function editedRouteRecord(
   now: number,
 ): ManualTrack {
   const { track, original, sources } = session;
-  if (session.branch !== null && (track.segments[session.branch]?.length ?? 0) < 2)
+  if (
+    session.branch !== null &&
+    (track.segments[session.branch]?.length ?? 0) < 2
+  )
     throw new Error('分叉还没有完成，请继续画到第二个点，或撤销该分叉。');
   if (
     !track.segments.length ||
@@ -236,6 +258,7 @@ export function storeRouteEdit(
       t.segments,
       t.nodes ?? [],
       t.style,
+      t.edgeColors,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],
     ]);
@@ -248,7 +271,10 @@ export function storeRouteEdit(
   }
   if (!session.track.segments.length) {
     // Saving an explicitly emptied edit removes only that archive, not other source routes.
-    const recordsAfter = records.filter(t => t.id !== session.original.id || keepsOriginalPoints(session.original));
+    const recordsAfter = records.filter(
+      (t) =>
+        t.id !== session.original.id || keepsOriginalPoints(session.original),
+    );
     storage.setItem(TRACK_STORAGE, JSON.stringify(recordsAfter));
     return { track: session.track, records: recordsAfter, removed: true };
   }

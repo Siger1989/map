@@ -7,6 +7,11 @@ import type { ManualTrack, ScreenPoint } from './drawing';
 import { normalizeTrackStyle, type TrackStyle } from './style';
 import { pickLinePoint, type TrackLinePoint } from './linePoint';
 import {
+  coloredLineParts,
+  edgeColorIndex,
+  type TrackEdgeColors,
+} from './edgeColors';
+import {
   DRAFT_ID,
   moveSegmentsNode,
   nodeHandles,
@@ -16,6 +21,7 @@ import {
 export type TrackOverlay = {
   saved: ManualTrack[];
   draft: Coordinate[][];
+  draftEdgeColors?: TrackEdgeColors;
   visible: boolean;
   style: TrackStyle;
   nodes: Coordinate[];
@@ -174,46 +180,62 @@ export class TrackLayer {
         ? [
             ...state.saved.map((track) => ({
               segments: track.segments,
+              edgeColors: track.edgeColors,
               trackId: track.id,
               draft: false,
               style: normalizeTrackStyle(track.style),
             })),
             {
               segments: state.draft,
+              edgeColors: state.draftEdgeColors,
               trackId: DRAFT_ID,
               draft: true,
               style: normalizeTrackStyle(state.style),
             },
           ]
             .filter((t) => t.segments.length)
-            .flatMap((t) =>
-              alternativeLineParts(
+            .flatMap((t) => {
+              const colors = t.edgeColors
+                ? edgeColorIndex({
+                    segments: t.segments,
+                    edgeColors: t.edgeColors,
+                  })
+                : new Map();
+              return alternativeLineParts(
                 t.segments,
                 t.trackId === state.selectedId ? state.alternativeId : 'main',
                 t.style.color,
-              ).map((part) => ({
-                type: 'Feature',
-                properties: {
-                  trackId: t.trackId,
-                  selected: t.trackId === state.selectedId,
-                  draft: t.draft,
-                  ...t.style,
-                  color: part.color ?? t.style.color,
-                  opacity: (t.style.opacity ?? 1) * (part.muted ? 0.3 : 1),
-                },
-                geometry: {
-                  type: 'MultiLineString',
-                  coordinates: (state.preview?.node.trackId === t.trackId
-                    ? moveSegmentsNode(
-                        [part.coordinates],
-                        state.preview.node.coordinate,
-                        state.preview.coordinate,
-                      )
-                    : [part.coordinates]
-                  ).filter((line) => line.length >= 2),
-                },
-              })),
-            )
+              )
+                .flatMap((part) =>
+                  coloredLineParts(
+                    part.coordinates,
+                    colors,
+                    part.color ?? t.style.color,
+                  ).map((piece) => ({ ...part, ...piece })),
+                )
+                .map((part) => ({
+                  type: 'Feature',
+                  properties: {
+                    trackId: t.trackId,
+                    selected: t.trackId === state.selectedId,
+                    draft: t.draft,
+                    ...t.style,
+                    color: part.color ?? t.style.color,
+                    opacity: (t.style.opacity ?? 1) * (part.muted ? 0.3 : 1),
+                  },
+                  geometry: {
+                    type: 'MultiLineString',
+                    coordinates: (state.preview?.node.trackId === t.trackId
+                      ? moveSegmentsNode(
+                          [part.coordinates],
+                          state.preview.node.coordinate,
+                          state.preview.coordinate,
+                        )
+                      : [part.coordinates]
+                    ).filter((line) => line.length >= 2),
+                  },
+                }));
+            })
         : [],
     };
     data.features = data.features.filter(

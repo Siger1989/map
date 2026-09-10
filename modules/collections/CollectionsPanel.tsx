@@ -26,6 +26,7 @@ import { markerIcon } from '../annotations/icons';
 import type { Annotation } from '../annotations/data';
 import type { SectionObject } from '../section/sectionObjects';
 import type { MapArea } from '../areas/data';
+import type { SavedMeasurement } from '../measurement/saved';
 import './collections.css';
 import { collectionArchive } from './archive';
 import { ZIP_MIME } from '../files/archive';
@@ -34,6 +35,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   annotations: Annotation[];
   sections: SectionObject[];
   areas: MapArea[];
+  measurements: SavedMeasurement[];
+  onMeasurement: (id: string) => void;
   onArea: (id: string) => void;
   onAnnotation: (id: string) => void;
   onSection: (id: string) => void;
@@ -53,6 +56,7 @@ export function CollectionsPanel(props: Props) {
         props.annotations,
         props.sections,
         props.areas,
+        props.measurements,
       ),
     [
       props.favorites.items,
@@ -60,6 +64,7 @@ export function CollectionsPanel(props: Props) {
       props.annotations,
       props.sections,
       props.areas,
+      props.measurements,
     ],
   );
   const regions = useRegions(entries);
@@ -128,6 +133,7 @@ export function CollectionsPanel(props: Props) {
     else if (e.kind === 'track') props.onTrack(e.track.id);
     else if (e.kind === 'section') props.onSection(e.section.id);
     else if (e.kind === 'area') props.onArea(e.area.id);
+    else if (e.kind === 'measurement') props.onMeasurement(e.measurement.id);
     else props.onAnnotation(e.annotation.id);
   };
   const edit = (e: CatalogEntry) => {
@@ -190,11 +196,32 @@ export function CollectionsPanel(props: Props) {
       setBusy(false);
     }
   };
-  if (legacy) return <WorkbenchPanel center={props.mapCenter} onClose={props.onClose}
-    onLocate={key => { const entry=entries.find(e=>e.key===key); if(entry) props.onLocate(entry); }}
-    onOpen={key => { const entry=entries.find(e=>e.key===key); if(entry) open(entry); }}
-    onNavigate={key => { const entry=entries.find(e=>e.key===key); if(entry?.kind==='route') props.onNavigateRoute(entry.route); else if(entry?.kind==='track') props.onNavigateTrack(entry.track.id); }}
-    onManage={keys => { setSelected(keys ?? []); setBatch(!!keys?.length); setLegacy(false); }} />;
+  if (legacy)
+    return (
+      <WorkbenchPanel
+        center={props.mapCenter}
+        onClose={props.onClose}
+        onLocate={(key) => {
+          const entry = entries.find((e) => e.key === key);
+          if (entry) props.onLocate(entry);
+        }}
+        onOpen={(key) => {
+          const entry = entries.find((e) => e.key === key);
+          if (entry) open(entry);
+        }}
+        onNavigate={(key) => {
+          const entry = entries.find((e) => e.key === key);
+          if (entry?.kind === 'route') props.onNavigateRoute(entry.route);
+          else if (entry?.kind === 'track')
+            props.onNavigateTrack(entry.track.id);
+        }}
+        onManage={(keys) => {
+          setSelected(keys ?? []);
+          setBatch(!!keys?.length);
+          setLegacy(false);
+        }}
+      />
+    );
   return (
     <section className="collections-panel catalog-panel" aria-label="全部收藏">
       <header className="collection-fixed-header">

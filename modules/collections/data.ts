@@ -2,6 +2,7 @@ import type { RouteFavorite } from '../navigation/favorites.ts';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types.ts';
 import { trackDistance, type ManualTrack } from '../tracks/drawing.ts';
 import { hasTrackTime, trackSourceLabel } from '../tracks/provenance.ts';
+import { validTabOrder, type CollectionTab } from './tabOrder.ts';
 
 /** Organization only: route geometry, GPS samples and photos stay in their original stores. */
 export const COLLECTION_STORAGE = 'shantu.route-collections.v1';
@@ -13,7 +14,12 @@ export const COLORS = [
   { value: '#68d7df', name: '青色' },
   { value: '#f59dbd', name: '粉色' },
 ];
-export type CollectionGroup = { id: string; name: string; color: string; parentId?: string };
+export type CollectionGroup = {
+  id: string;
+  name: string;
+  color: string;
+  parentId?: string;
+};
 export type CollectionItem = { key: string; defaultGroup: string };
 export type CollectionLayout = {
   version: 1;
@@ -22,6 +28,7 @@ export type CollectionLayout = {
   order: string[];
   /** Optional mixed folder/object order; older version-1 readers keep working. */
   treeOrder?: string[];
+  tabOrder?: CollectionTab[];
 };
 export type CollectionEntry = {
   key: string;
@@ -61,7 +68,8 @@ export function defaultLayout(): CollectionLayout {
 const groupId = (id: unknown): id is string =>
   typeof id === 'string' && /^[\w-]{1,80}$/.test(id);
 const itemKey = (key: unknown): key is string =>
-  typeof key === 'string' && /^(route|track|annotation|area|section):.{1,200}$/.test(key);
+  typeof key === 'string' &&
+  /^(route|track|annotation|area|section|measurement):.{1,200}$/.test(key);
 export function validateLayout(value: unknown): CollectionLayout {
   const v = value as CollectionLayout;
   if (
@@ -91,9 +99,18 @@ export function validateLayout(value: unknown): CollectionLayout {
     v.order.length > 12000 ||
     !v.order.every(itemKey) ||
     new Set(v.order).size !== v.order.length ||
-    (v.treeOrder !== undefined && (!Array.isArray(v.treeOrder) || v.treeOrder.length > 12064 ||
-      !v.treeOrder.every(k => (typeof k === 'string' && k.startsWith('folder:') && groupId(k.slice(7))) || itemKey(k)) ||
-      new Set(v.treeOrder).size !== v.treeOrder.length))
+    (v.tabOrder !== undefined && !validTabOrder(v.tabOrder)) ||
+    (v.treeOrder !== undefined &&
+      (!Array.isArray(v.treeOrder) ||
+        v.treeOrder.length > 12064 ||
+        !v.treeOrder.every(
+          (k) =>
+            (typeof k === 'string' &&
+              k.startsWith('folder:') &&
+              groupId(k.slice(7))) ||
+            itemKey(k),
+        ) ||
+        new Set(v.treeOrder).size !== v.treeOrder.length))
   )
     throw new Error('收藏分组数据无效，原数据未改动。');
   const groups = new Map(v.groups.map((g) => [g.id, g]));
@@ -101,7 +118,12 @@ export function validateLayout(value: unknown): CollectionLayout {
     const seen = new Set([group.id]);
     let parent = group.parentId;
     while (parent !== undefined) {
-      if (!groupId(parent) || !groups.has(parent) || seen.has(parent) || seen.size >= 8)
+      if (
+        !groupId(parent) ||
+        !groups.has(parent) ||
+        seen.has(parent) ||
+        seen.size >= 8
+      )
         throw new Error('收藏分组层级无效，最多支持 8 层文件夹。');
       seen.add(parent);
       parent = groups.get(parent)!.parentId;
@@ -221,9 +243,13 @@ export function deleteGroup(
 ): CollectionLayout {
   return {
     ...layout,
-    groups: layout.groups.filter((g) => g.id !== id).map((g) =>
-      g.parentId === id ? { ...g, parentId: layout.groups.find((p) => p.id === id)?.parentId } : g,
-    ),
+    groups: layout.groups
+      .filter((g) => g.id !== id)
+      .map((g) =>
+        g.parentId === id
+          ? { ...g, parentId: layout.groups.find((p) => p.id === id)?.parentId }
+          : g,
+      ),
     assignments: Object.fromEntries(
       Object.entries(layout.assignments).map(([key, group]) => [
         key,

@@ -44,6 +44,7 @@ export function useCollections() {
         change(parseLayout(localStorage.getItem(COLLECTION_STORAGE))),
       );
       localStorage.setItem(COLLECTION_STORAGE, JSON.stringify(next));
+      window.dispatchEvent(new Event('guanyun-data-changed'));
       setLayout(next);
       setMessage(success);
       return true;
