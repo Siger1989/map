@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { formatDistance, type Coordinate } from '../navigation/types';
-import { trackDistance } from '../tracks/drawing';
+import { trackDistance, MAX_SAVED_TRACKS } from '../tracks/drawing';
 import { nearestOnRoute } from '../journey/routeProgress';
 import {
   collectData,
@@ -288,8 +288,8 @@ export function OutdoorPanel({
           <p className="route-note">
             JSON 保留标记属性、模型、区域、剖面测点、测量及路线分段颜色。GPX /
             KML 交换点线；不含模型外观、KML 原文件时间与海拔。每个文件 ≤8
-            MB、每条轨迹 ≤6000 点，本机最多 20 条轨迹 / 20 条收藏 / 2000 个地点
-            / 80 个模型。
+            MB、每条轨迹 ≤6000 点，本机最多 {MAX_SAVED_TRACKS} 条轨迹 / 20
+            条收藏 / 2000 个地点 / 80 个模型。
           </p>
         </>
       )}

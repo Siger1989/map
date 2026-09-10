@@ -1,12 +1,22 @@
 import { collectData, type Transfer } from '../outdoor/exchange.ts';
 import { saveWorkbench } from '../collections/workbenchStore.ts';
-import { newAnnotation, type Annotation } from '../annotations/data.ts';
+import {
+  newAnnotation,
+  type Annotation,
+  type AnnotationChoice,
+} from '../annotations/data.ts';
+import {
+  ATTRIBUTE_TEMPLATE_KEY,
+  blankAttributes,
+  readAttributeTemplate,
+} from '../annotations/attributes.ts';
 import type { SectionSettings } from './types.ts';
 import {
   addSurveyStation,
   surveyCoordinate,
   surveyHeight,
   surveySettings,
+  surveyStations,
 } from './surveyLine.ts';
 import type { Coordinate } from '../navigation/types.ts';
 
@@ -19,7 +29,7 @@ export function withSurveySettings(
   const line = settings.survey;
   if (!line || !before.sections?.some((s) => s.id === id))
     throw new Error('剖面已变化，请重新打开');
-  const stationById = new Map(line.stations.map((s) => [s.id, s]));
+  const stationById = new Map(surveyStations(line).map((s) => [s.id, s]));
   const previous = before.sections.find((s) => s.id === id)!.settings.survey;
   return {
     ...before,
@@ -28,7 +38,7 @@ export function withSurveySettings(
     ),
     annotations: before.annotations.map((a) => {
       if (a.sectionAnchor?.sectionId !== id) return a;
-      const station = stationById.get(a.id);
+      const station = stationById.get(a.sectionAnchor.stationId ?? a.id);
       if (!station) {
         const { sectionAnchor: _anchor, ...detached } = a;
         return detached;
@@ -44,7 +54,11 @@ export function withSurveySettings(
       return {
         ...a,
         coordinates,
-        sectionAnchor: { sectionId: id, distance: station.distance },
+        sectionAnchor: {
+          ...a.sectionAnchor,
+          sectionId: id,
+          distance: station.distance,
+        },
         ...(updated ? { name: point.name, note: point.note } : {}),
         groundElevation: settings.surveyTerrain
           ? surveyHeight(settings.surveyTerrain, station.distance)
@@ -66,27 +80,66 @@ export function commitSurveySettings(
     throw new Error('剖面已被其他操作更新，本次未覆盖，请重试');
   saveWorkbench(before, withSurveySettings(before, id, next));
 }
-export function addSurveyMarker(id: string, point: Coordinate): Annotation {
-  const before = collectData(),
-    object = before.sections?.find((s) => s.id === id);
+export function withSurveyMarker(
+  before: Transfer,
+  id: string,
+  point: Coordinate,
+  choice: AnnotationChoice,
+  markerId: string,
+  stationId?: string,
+) {
+  const object = before.sections?.find((s) => s.id === id);
   if (!object?.settings.survey) throw new Error('请先选择一条勘探线');
-  const markerId = crypto.randomUUID(),
-    line = addSurveyStation(object.settings.survey, point, markerId),
-    station = line.stations.at(-1)!;
+  const existing = stationId
+    ? surveyStations(object.settings.survey).find((s) => s.id === stationId)
+    : undefined;
+  if (stationId && !existing) throw new Error('选中的剖面点已变化，请重新选择');
+  const line = existing
+      ? object.settings.survey
+      : addSurveyStation(object.settings.survey, point, markerId),
+    station = existing ?? line.stations.at(-1)!;
   const settings = surveySettings(line, object.settings),
     annotation = newAnnotation(
-      'pin',
+      choice,
       surveyCoordinate(line, station.distance),
       settings.surveyTerrain
         ? surveyHeight(settings.surveyTerrain, station.distance)
         : null,
       markerId,
     );
-  annotation.sectionAnchor = { sectionId: id, distance: station.distance };
-  annotation.name = `${object.name} · ${station.label}`;
+  annotation.sectionAnchor = {
+    sectionId: id,
+    distance: station.distance,
+    ...(existing ? { stationId: existing.id } : {}),
+  };
+  annotation.name =
+    `${object.name} · ${station.label}${choice === 'borehole' ? ' · 钻井' : ''}`.slice(
+      0,
+      60,
+    );
   annotation.color = '#bc5430';
   const next = withSurveySettings(before, id, settings);
   next.annotations.push(annotation);
+  return { next, annotation };
+}
+export function addSurveyMarker(
+  id: string,
+  point: Coordinate,
+  choice: AnnotationChoice = 'pin',
+  stationId?: string,
+): Annotation {
+  const before = collectData();
+  const { next, annotation } = withSurveyMarker(
+    before,
+    id,
+    point,
+    choice,
+    crypto.randomUUID(),
+    stationId,
+  );
+  annotation.attributes = blankAttributes(
+    readAttributeTemplate(localStorage.getItem(ATTRIBUTE_TEMPLATE_KEY)),
+  );
   saveWorkbench(before, next);
   return annotation;
 }

@@ -148,6 +148,19 @@ test('stale edit fails instead of overwriting a newer route', () => {
   );
   assert.equal(disk.writes(), 0);
 });
+
+test('route editor copies beyond 20, refuses the 101st and preserves concurrent colour notes', () => {
+  const recorded = {...b,source:'recorded'};
+  const records = [recorded, ...Array.from({length:19}, (_,i)=>({...a,id:`other-${i}`}))];
+  const disk = archive(records);
+  assert.equal(storeRouteEdit(startRouteEdit(recorded),disk,'copy',2).records.length,21);
+  const full = archive([recorded,...Array.from({length:99},(_,i)=>({...a,id:`full-${i}`}))]);
+  assert.throws(()=>storeRouteEdit(startRouteEdit(recorded),full,'overflow',2),/100条/);
+  assert.equal(full.writes(),0);
+  const changed = archive([{...a,colorConditions:{'#ffb477':'新备注'}}]);
+  assert.throws(()=>storeRouteEdit(startRouteEdit(a),changed,'unused',2),/其他窗口更新/);
+  assert.equal(changed.writes(),0);
+});
 test('hidden and source metadata survive reload, legacy records remain visible', () => {
   const disk = archive([
     a,

@@ -5,9 +5,10 @@ import {
   altitudeRange,
   dimensionLabel,
   KINDS,
+  ANNOTATION_CHOICES,
   volume,
   type Annotation,
-  type AnnotationKind,
+  type AnnotationChoice,
 } from './data';
 import type { AnnotationsState } from './useAnnotations';
 import { AnnotationIdentity } from './AnnotationIdentity';
@@ -77,7 +78,7 @@ function Editor({
   item: Annotation;
   state: AnnotationsState;
   onLocate: (coordinate: Coordinate) => void;
-  onPick: (kind: AnnotationKind | 'move') => void;
+  onPick: (kind: AnnotationChoice | 'move') => void;
   terrainStatus?: string;
 }) {
   const change = (patch: Partial<Annotation>) => state.update(item.id, patch);
@@ -409,7 +410,7 @@ export function AnnotationPanel({
   terrainStatus,
 }: {
   state: AnnotationsState;
-  onPick: (kind: AnnotationKind | 'move') => void;
+  onPick: (kind: AnnotationChoice | 'move') => void;
   onLocate: (coordinate: Coordinate) => void;
   onArea: () => void;
   onShare: (id: string) => void;
@@ -527,11 +528,11 @@ export function AnnotationPanel({
         <div className="annotation-browse">
           <div className="annotation-add">
             <button onClick={onArea}>＋划区域</button>
-            {Object.entries(KINDS).map(([kind, label]) => (
+            {Object.entries(ANNOTATION_CHOICES).map(([kind, label]) => (
               <button
                 key={kind}
                 onClick={() =>
-                  kind === 'prism' ? onArea() : onPick(kind as AnnotationKind)
+                  kind === 'prism' ? onArea() : onPick(kind as AnnotationChoice)
                 }
               >
                 ＋{kind === 'pin' ? '地点' : label}

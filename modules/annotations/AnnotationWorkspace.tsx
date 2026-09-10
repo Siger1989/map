@@ -224,6 +224,13 @@ export function AnnotationWorkspace({
             ))}
           </nav>
           <button
+            className="marker-delete"
+            aria-label="删除标记"
+            onClick={() => setConfirm('delete')}
+          >
+            <Trash2 size={16} />
+          </button>
+          <button
             className="marker-save"
             onClick={() => {
               if (state.saveEdit()) {
@@ -246,6 +253,7 @@ export function AnnotationWorkspace({
               onClick={() => setConfirm('delete')}
             >
               <Trash2 size={16} />
+              删除
             </button>
             <button aria-label="关闭标记" onClick={onClose}>
               <X size={20} />
@@ -284,6 +292,13 @@ export function AnnotationWorkspace({
             <ChevronLeft size={20} />
           </button>
           <strong>标记详情</strong>
+          <button
+            className="marker-delete"
+            aria-label="删除标记"
+            onClick={() => setConfirm('delete')}
+          >
+            <Trash2 size={16} />
+          </button>
           <button aria-label="分享标记" onClick={() => onShare(item.id)}>
             <Share2 size={18} />
           </button>

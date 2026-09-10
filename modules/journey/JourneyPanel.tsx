@@ -1,3 +1,5 @@
+import { ColorElevation } from '../tracks/ColorElevation';
+import type { ManualTrack } from '../tracks/drawing';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   formatDistance,
@@ -76,10 +78,14 @@ export function JourneyPanel({
   segments,
   onLocate,
   mode = 'pedestrian',
+  track,
+  onCondition,
 }: {
   segments: Coordinate[][];
   onLocate: (point: Coordinate) => void;
   mode?: TravelMode;
+  track?: ManualTrack;
+  onCondition?: (color: string, value: string) => boolean;
 }) {
   const chains = useMemo(() => joinSegments(segments), [segments]);
   const distance = useMemo(
@@ -207,7 +213,16 @@ export function JourneyPanel({
         </p>
       ) : (
         <>
-          <Profile samples={profile} />
+          {track ? (
+            <ColorElevation
+              track={track}
+              lines={chains}
+              samples={profile}
+              onCondition={onCondition}
+            />
+          ) : (
+            <Profile samples={profile} />
+          )}
           <p className="route-note">
             地形估算 · 采样间隔不超过 {Math.ceil(maxInterval)} m · 爬升抑制小于
             3 m 的反向波动。里程不含垂直距离。

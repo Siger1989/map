@@ -39,6 +39,7 @@ export function workbenchRegionTree(items: WorkbenchItem[]): WorkbenchItem[] {
       if (i.kind !== 'folder')
         return (i.region || '待归类') === region ? [i] : [];
       const children = project(i.children ?? [], region);
+      if (i.id === 'unfiled') return children;
       return children.length ? [{ ...i, children }] : [];
     });
   return regions.map((region) => ({

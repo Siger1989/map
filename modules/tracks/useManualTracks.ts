@@ -4,7 +4,10 @@ import { keepsOriginalPoints } from './provenance';
 import { storeRouteEdit, type RouteEditSession } from './routeEdit';
 import { usePlaceName } from '../navigation/usePlaceName';
 import { drawingRecord, storeDrawingRecord } from './archive';
-import { preserveTrackColors, inheritEdgeColors } from './edgeColors';
+import { inheritEdgeColors } from './edgeColors';
+import { collectData } from '../outdoor/exchange';
+import { saveWorkbench } from '../collections/workbenchStore';
+import { mergeTrackArchives } from './mergeArchives';
 import {
   DRAFT_ID,
   equalCoordinate,
@@ -19,6 +22,7 @@ import {
 } from './style';
 import {
   MAX_TRACK_POINTS,
+  MAX_SAVED_TRACKS,
   parseSavedTracks,
   TRACK_STORAGE,
   type ManualTrack,
@@ -35,12 +39,7 @@ import {
   branchDraft,
   removeDraftNode,
 } from './draft';
-import {
-  connectedTracks,
-  endpoints,
-  joinSegments,
-  draftSnapNodes,
-} from './snapping';
+import { endpoints, joinSegments, draftSnapNodes } from './snapping';
 import {
   insertTrackNode,
   removeTrackNode,
@@ -143,17 +142,14 @@ export function useManualTracks() {
     setNodeHistory([]);
     startedAt.current = Date.now();
   };
-  const saveDraft = (name = '') => {
+  const saveDraft = (name = '', selectSaved = false) => {
     try {
       const records = savedRef.current;
-      if (!editingId && records.length >= 20)
-        throw new Error(
-          '已保存 20 条轨迹，请先删除不需要的轨迹。当前草稿已保留。',
-        );
       const prior = records.find((t) => t.id === editingId);
       const track = drawingRecord({
         segments: draftRef.current.segments,
         edgeColors: draftRef.current.edgeColors,
+        colorConditions: draftRef.current.colorConditions,
         nodes: draftVertices(draftRef.current).slice(0, MAX_TRACK_POINTS),
         prior,
         id: crypto.randomUUID(),
@@ -167,7 +163,7 @@ export function useManualTracks() {
       savedRef.current = next;
       setSaved(next);
       resetDraft();
-      select(null);
+      select(selectSaved ? track.id : null);
       setError('');
       setEditing(false);
       setDrawing(false);
@@ -189,6 +185,7 @@ export function useManualTracks() {
     style,
     segments: draftRef.current.segments,
     edgeColors: draftRef.current.edgeColors,
+    colorConditions: draftRef.current.colorConditions,
     nodes: draftVertices(draftRef.current),
   });
   const applyDraft = (next: typeof EMPTY_DRAFT) => {
@@ -323,14 +320,20 @@ export function useManualTracks() {
               next.edgeColors,
             ),
           );
+          const metadata = {
+            ...draftRef.current,
+            colorConditions: next.colorConditions,
+          };
+          draftRef.current = metadata;
+          setDraftState(metadata);
           select(DRAFT_ID);
           return true;
         }
         const a = savedRef.current.find((t) => t.id === from.trackId),
           b = savedRef.current.find((t) => t.id === to.trackId);
         if (!a || !b) throw new Error('请选择两条已保存路线的节点。');
-        if (savedRef.current.length >= 20)
-          throw new Error('已达20条路线，请先整理存档。');
+        if (savedRef.current.length >= MAX_SAVED_TRACKS)
+          throw new Error(`已达 ${MAX_SAVED_TRACKS} 条路线，请先整理存档。`);
         const next = connectTrackNodes(
           a,
           from.coordinate,
@@ -370,6 +373,7 @@ export function useManualTracks() {
         )
           throw new Error('路线已达100段或6000点。');
         const next = {
+          colorConditions: track.colorConditions,
           segments: [...track.segments, [node.coordinate]],
           edgeColors: inheritEdgeColors(
             [...track.segments, [node.coordinate]],
@@ -412,6 +416,18 @@ export function useManualTracks() {
     overlaySaved,
     draft: draftState.segments,
     edgeColors: draftState.edgeColors,
+    colorConditions: draftState.colorConditions,
+    setDraftCondition: (value: string) => {
+      const next = {
+        ...draftRef.current,
+        colorConditions: {
+          ...draftRef.current.colorConditions,
+          [style.color]: value.slice(0, 1600),
+        },
+      };
+      draftRef.current = next;
+      setDraftState(next);
+    },
     vertices,
     candidates,
     mode: 'points' as const,
@@ -504,10 +520,19 @@ export function useManualTracks() {
     visible,
     error,
     setVisible,
-    setStyle: (next: TrackStyle) => {
+    setStyle: (next: TrackStyle, preserveExisting = false) => {
       const value = normalizeTrackStyle(next);
       if (value.color !== style.color) {
-        const draft = { ...draftRef.current, edgeColors: undefined };
+        const draft = {
+          ...draftRef.current,
+          edgeColors: preserveExisting
+            ? inheritEdgeColors(
+                draftRef.current.segments,
+                [{ ...draftRef.current, style }],
+                style.color,
+              )
+            : undefined,
+        };
         draftRef.current = draft;
         setDraftState(draft);
       }
@@ -542,9 +567,11 @@ export function useManualTracks() {
       setEditing(false);
     },
     complete: () => {
-      if (draftRef.current.segments.length && !saveDraft()) return false;
+      if (draftRef.current.segments.length && !saveDraft('', true))
+        return false;
       setDrawing(false);
       setEditing(false);
+      setError('');
       return true;
     },
     addStroke: (points: Coordinate[]) => {
@@ -589,6 +616,7 @@ export function useManualTracks() {
       );
       const nextDraft = {
         edgeColors: track.edgeColors,
+        colorConditions: track.colorConditions,
         segments: track.segments,
         kinds: track.segments.map(() => 'freehand' as const),
         history: [],
@@ -652,46 +680,38 @@ export function useManualTracks() {
         setNodeHistory([]);
     },
     mergeTrack: (id: string) => {
-      const seed = saved.find((t) => t.id === id);
-      if (!seed || keepsOriginalPoints(seed)) return;
-      const connected = connectedTracks(
-          seed,
-          saved.filter((t) => !keepsOriginalPoints(t)),
-        ),
-        segments = joinSegments(connected.flatMap((t) => t.segments));
-      if (connected.length < 2) {
-        setError('没有端点相接的已保存线路；先开启吸附将端点接上。');
-        return;
-      }
-      if (segments.length !== 1) {
-        setError('存在分岔或未连接部分，请先编辑成连续线路再合并。');
-        return;
-      }
-      if (segments[0].length > MAX_TRACK_POINTS) {
-        setError('合并后点数超过 6000，暂不能合并。');
-        return;
-      }
-      const ids = new Set(connected.map((t) => t.id));
-      const merged = preserveTrackColors(
-        {
-          ...seed,
-          sharedRoute: undefined,
-          segments,
-          nodes: connected
-            .flatMap((t) => t.nodes ?? [])
-            .slice(0, MAX_TRACK_POINTS),
-        },
-        connected,
-      );
-      if (
-        persist(
-          saved
-            .filter((t) => !ids.has(t.id) || t.id === seed.id)
-            .map((t) => (t.id === seed.id ? merged : t)),
-        )
-      ) {
+      try {
+        const before = collectData();
+        const next = saveWorkbench(before, mergeTrackArchives(before, id));
+        savedRef.current = next.tracks;
+        setSaved(next.tracks);
+        select(id);
         setError('');
         setNodeHistory([]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '合并未保存');
+      }
+    },
+    setColorCondition: (id: string, color: string, value: string) => {
+      if (!/^#[0-9a-f]{6}$/i.test(color) || value.length > 1600) return false;
+      try {
+        const latest = parseSavedTracks(localStorage.getItem(TRACK_STORAGE));
+        const track = latest.find((t) => t.id === id);
+        if (!track) throw new Error('路线已变化，请重新打开');
+        const colorConditions = {
+          ...track.colorConditions,
+          [color]: value.trim(),
+        };
+        if (Object.keys(colorConditions).length > 128)
+          throw new Error('路况颜色记录已达128项');
+        const success = persist(
+          latest.map((t) => (t.id === id ? { ...t, colorConditions } : t)),
+        );
+        if (success) setError('');
+        return success;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '路况未保存');
+        return false;
       }
     },
     updateStyle: (id: string, next: TrackStyle) =>

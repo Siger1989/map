@@ -6,6 +6,12 @@ import {
 } from '../navigation/types.ts';
 import type { ShareRoute } from './data';
 import { lineLength } from '../journey/metrics.ts';
+import { normalizeTrackStyle, type TrackStyle } from '../tracks/style.ts';
+import { validEdgeColors, type TrackEdgeColors } from '../tracks/edgeColors.ts';
+import {
+  validColorConditions,
+  type ColorConditions,
+} from '../tracks/colorSections.ts';
 export const ROUTE_QR_PREFIX = 'shantu-route:1:';
 export const QR_BUDGET = 2100;
 const PRECISION = 1e6,
@@ -14,6 +20,9 @@ const TOLERANCES = [
   0, 2, 5, 10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 50000, 500000,
 ] as const;
 export type RouteQr = {
+  style?: TrackStyle;
+  edgeColors?: TrackEdgeColors;
+  colorConditions?: ColorConditions;
   name: string;
   mode: TravelMode;
   segments: Coordinate[][];
@@ -81,6 +90,9 @@ function encode(value: RouteQr) {
       p: value.stops.map((p) => [p.name, ...p.coordinates]),
       t: value.tolerance,
       d: value.duration,
+      ...(value.style ? { st: value.style } : {}),
+      ...(value.edgeColors ? { ec: value.edgeColors } : {}),
+      ...(value.colorConditions ? { cc: value.colorConditions } : {}),
     }),
   );
   if (raw.length > MAX_RAW) return '';
@@ -95,9 +107,21 @@ function encode(value: RouteQr) {
   );
 }
 export function makeRouteQr(data: ShareRoute) {
+  const style = data.track ? normalizeTrackStyle(data.track.style) : undefined;
+  const sourceColors = data.track
+    ? data.segments.map((line, i) =>
+        line
+          .slice(1)
+          .map((_, j) => data.track!.edgeColors?.[i]?.[j] ?? style!.color),
+      )
+    : undefined;
   // Pin each saved waypoint's nearest original vertex before simplifying the spans.
-  const protectedSegments = data.segments.flatMap((line) => {
+  const protectedSegments = data.segments.flatMap((line, part) => {
     const pins = new Set([0, line.length - 1]);
+    const colors = sourceColors?.[part];
+    if (colors)
+      for (let i = 1; i < colors.length; i++)
+        if (colors[i] !== colors[i - 1]) pins.add(i);
     // Preserve the route's major extent, especially closed loops whose endpoints coincide.
     for (const axis of [0, 1]) {
       let low = 0,
@@ -144,13 +168,28 @@ export function makeRouteQr(data: ShareRoute) {
       })),
       tolerance,
       duration: data.duration,
+      ...(style ? { style } : {}),
+      ...(sourceColors
+        ? {
+            edgeColors: segments.map((line, part) => {
+              let cursor = 0;
+              return line.slice(1).map((p) => {
+                cursor = data.segments[part].indexOf(p, cursor + 1);
+                return sourceColors[part][cursor - 1];
+              });
+            }),
+          }
+        : {}),
+      ...(data.track?.colorConditions
+        ? { colorConditions: data.track.colorConditions }
+        : {}),
     };
     if (segments.reduce((n, s) => n + s.length, 0) > 6000) continue;
     const text = encode(value);
     if (text && text.length <= QR_BUDGET) return { text, value };
   }
   throw new Error(
-    '路线分段或途经点信息超出单码容量，概括后仍无法容纳；图片可分享，请另附GPX/KML或分段分享。',
+    '路线分段、颜色或备注超出单码容量；请分享完整路线包，颜色与备注不会被丢弃。',
   );
 }
 export function readRouteQr(text: string): RouteQr {
@@ -223,6 +262,18 @@ export function readRouteQr(text: string): RouteQr {
         throw 0;
       return { name: p[0], coordinates: p.slice(1) as Coordinate };
     });
+    if (v.ec !== undefined && !validEdgeColors(v.ec, segments)) throw 0;
+    if (v.cc !== undefined && !validColorConditions(v.cc)) throw 0;
+    if (
+      v.st !== undefined &&
+      (!v.st ||
+        !/^#[0-9a-f]{6}$/i.test(v.st.color) ||
+        typeof v.st.width !== 'number' ||
+        !Number.isFinite(v.st.width) ||
+        v.st.width < 0.5 ||
+        v.st.width > 5)
+    )
+      throw 0;
     return {
       name: v.n,
       mode: v.m,
@@ -230,6 +281,9 @@ export function readRouteQr(text: string): RouteQr {
       stops,
       tolerance: v.t,
       duration: v.d,
+      ...(v.st ? { style: normalizeTrackStyle(v.st) } : {}),
+      ...(v.ec ? { edgeColors: v.ec } : {}),
+      ...(v.cc ? { colorConditions: v.cc } : {}),
     };
   } catch {
     throw new Error('路线二维码已损坏、超限或格式不受支持');

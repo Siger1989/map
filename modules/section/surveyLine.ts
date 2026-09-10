@@ -4,6 +4,7 @@ import {
 } from '../navigation/types.ts';
 import { coordinate, mercator } from './planeMath.ts';
 import type { SectionSettings } from './types.ts';
+import { SURVEY_SCALES } from './surveyScale.ts';
 
 export type SurveyStation = { id: string; label: string; distance: number };
 export type SurveySheetInfo = {
@@ -24,6 +25,7 @@ export type SurveyLine = {
   stations: SurveyStation[];
   interval: number;
   halfWidth: number;
+  printScale?: number;
   info?: SurveySheetInfo;
   pointData?: Record<string, SurveyPointData>;
 };
@@ -68,7 +70,11 @@ export function validSurveyInfo(v: unknown): v is SurveySheetInfo {
     (info.date === '' || /^\d{4}-\d{2}-\d{2}$/.test(info.date))
   );
 }
-export type SectionAnchor = { sectionId: string; distance: number };
+export type SectionAnchor = {
+  sectionId: string;
+  distance: number;
+  stationId?: string;
+};
 export type SurveyTerrain = {
   key: string;
   columns: number;
@@ -148,6 +154,9 @@ export function validSectionAnchor(value: unknown): value is SectionAnchor {
     !!v &&
     typeof v.sectionId === 'string' &&
     /^[a-zA-Z0-9-]{1,80}$/.test(v.sectionId) &&
+    (v.stationId === undefined ||
+      (typeof v.stationId === 'string' &&
+        /^[a-zA-Z0-9-]{1,100}$/.test(v.stationId))) &&
     Number.isFinite(v.distance) &&
     Math.abs(v.distance) <= MAX_SURVEY_SPAN
   );
@@ -157,6 +166,7 @@ export function validSurveyLine(value: unknown): value is SurveyLine {
   if (
     !v ||
     v.version !== 1 ||
+    (v.printScale !== undefined && !SURVEY_SCALES.includes(v.printScale)) ||
     (v.info !== undefined && !validSurveyInfo(v.info)) ||
     !validCoordinate(v.a) ||
     !validCoordinate(v.b) ||

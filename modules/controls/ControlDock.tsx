@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export type ControlPanel =
+  | 'about'
   | 'weather'
   | 'time'
   | 'layers'
@@ -135,17 +136,19 @@ export function ControlDock({
             )}
             <h2 id="dock-title">
               {title ??
-                (active === 'annotations'
-                  ? '标记与模型'
-                  : active === 'weather'
-                    ? '地点天气'
-                    : active === 'track'
-                      ? '画线与轨迹'
-                      : active === 'favorites'
-                        ? '全部收藏'
-                        : active === 'route'
-                          ? '路线规划'
-                          : PANELS.find((p) => p.id === active)?.label)}
+                (active === 'about'
+                  ? '关于山兔'
+                  : active === 'annotations'
+                    ? '标记与模型'
+                    : active === 'weather'
+                      ? '地点天气'
+                      : active === 'track'
+                        ? '画线与轨迹'
+                        : active === 'favorites'
+                          ? '全部收藏'
+                          : active === 'route'
+                            ? '路线规划'
+                            : PANELS.find((p) => p.id === active)?.label)}
             </h2>
             {(active === 'route' || active === 'track') && (
               <button

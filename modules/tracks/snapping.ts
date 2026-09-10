@@ -93,3 +93,37 @@ export function connectedTracks<
   }
   return connected;
 }
+
+/** Connection copies can contain source edges again. Count each physical edge once
+ * before checking junction degree; real branches and gaps remain separate. */
+export function joinUniqueSegments(input: Coordinate[][]): Coordinate[][] {
+  const seen = new Set<string>();
+  const runs: Coordinate[][] = [];
+  for (const line of input) {
+    let run: Coordinate[] = [];
+    for (let i = 1; i < line.length; i++) {
+      const a = line[i - 1],
+        b = line[i];
+      if (sameNode(a, b)) continue;
+      const key = [a.join(','), b.join(',')].sort().join('|');
+      if (seen.has(key)) {
+        if (run.length > 1) runs.push(run);
+        run = [];
+        continue;
+      }
+      seen.add(key);
+      if (!run.length) run.push(a);
+      run.push(b);
+    }
+    if (run.length > 1) runs.push(run);
+  }
+  const joined = joinSegments(runs);
+  const vertices = joined.flat();
+  return [
+    ...joined,
+    ...input.filter(
+      (line) =>
+        line.length === 1 && !vertices.some((p) => sameNode(p, line[0])),
+    ),
+  ];
+}

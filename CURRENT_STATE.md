@@ -1,3 +1,34 @@
+# 2026-09-10 0.2.25 最终安装包完整性PASS，待发布
+- 420/420逻辑、types、网页及最终Android构建PASS。APK/Shantu-0.2.25-test-standalone.apk，0.2.25-test/code32/com.guanyun.weather.shantu.preview。
+- APK57686205字节；SHA256 786be8ac49127d7ca990d1fe3ed1c9ef93dab1c38451b0b6bf63c366a813df0d。v2/v3签名4a941b9d…；zipalign/540项CRC/473地形/新功能JS和CSS及DEX检查PASS。
+- 安装说明与.sha256已准备；docs/release-0.2.25.md列全部范围及限制。业务源码冻结，下一步提交推送origin/codex/huawei-webview-touch并发测试Release，核对远端SHA及资产digest。main未合。
+- ADB再次检查为空；手机安装、手指拖动/键盘/系统保存分享未验，HarmonyOS6.1原生仍未交付。
+# 2026-09-10 0.2.25 业务检查完成，APK构建中
+- 最终types与420/420逻辑PASS，含遗漏的节点编辑另存20→100门槛、并发颜色备注冲突保护；网页构建PASS。logs .openai/tsc-0225-release.log、tests-0225-complete.log、build-web-0225.log。
+- 浏览器补充PASS：100存档超额明确报错/保留草稿，删1条后原草稿正常完成并重开仍100；GPX/KML真实导入保留颜色/备注；合并后备注刷新保留；地区无“未分组”；整剖面删除解绑并保留钻井和模型；模型编辑确认删除窗口清除；390/360无横溢。
+- 分享图实际生成，新打开页面无console error。CUA不允许导航blob原图，完整图单独打开未作浏览器验收；页内地图红绿预览可见。手机系统分享未验。
+- Android最终源码构建运行中 .openai/apk-0225.log；尚未提交/上传此版本。下一步校验产物，补安装说明/哈希、提交推送当前分支并发测试Release。
+# 2026-09-10 0.2.25 联调进展（尚未构建发布）
+- 新增纳入：分色路段长度/路况/海拔、绘制时颜色备注、合并后继续编辑、分享图片/二维码/完整JSON与GPX/KML山兔扩展保留颜色和备注；收藏按地区去掉多余“未分组”一层，数据与自定义组保留。
+- 实现模块：tracks/colorSections、ColorElevation、TrackColorProfile、styleExchange；routeShare/qrCodec、qrImport、mapImage、image；outdoor/exchange；collections/workbenchTree。颜色改变只影响随后绘制边，整线样式另保留主动统一改色。
+- 浏览器已验证：第21条完成成功；红绿两源+连接记录合并为一条连续4节点线，24存档变22，795m红色/527m绿色海拔对应，合并后路况修改成功；C点添加100m钻井与长方体原位，无额外测点；1:10000图内全部坐标、35.48°及100m向下箭头，浏览器图片下载成功。头像8教程入口和390截图通过。
+- 最近416/416逻辑及types PASS；新增XML/同色备注/绘制换色/地区扁平化后需最终重验。实际截图artifacts/screenshots/ui-0225；无真机，手机触控/系统保存未验。
+- 待办：XML导入、100上限、360布局、直接删除/解绑、地区UI；最终检查/格式、文档、网页与0.2.25/code32 APK构建验证、源码推送和测试Release。保持实际分支origin/codex/huawei-webview-touch，未合main。
+# 2026-09-10 0.2.25 功能扩展与完成按钮修复（开发中）
+- 最新用户要求：路线100条上限（撤销此前临时200方案）；拼接保色且可合一段；画线外观小工具；剖面比例尺/所有点坐标/方向角；选中剖面点在原位添加常规标记和模型；恢复钻井深度与向下箭头，岩层暂停；整条剖面及标记直接删除；头像进入版本与大功能教程。
+- 定位完成失败：独立localhost页面20条时第21条完成被拒，错误不在绘制工具显示，草稿保留；0条时普通完成正常。已改100统一常量、读取/备份不截断、失败提示和成功路线卡片。手机同一触发条件仍未确认。
+- 已改 tracks: drawing/archive/useManualTracks/TrackPanel/tracks.css；新增TrackDrawingStyle、mergeArchives；连接生成连续线、重复来源边去重、原颜色和绑定标记事务保留。新增section标记类型选择、stationId绑定A/B/C、钻井字段与公共菜单、比例尺和坐标/钻井绘图、整体删除；help头像版本/教程模块。测量计算、定位天气、照片流程未修改。
+- 跨模块通过withSurveyMarker、SectionAnchor及saveWorkbench事务；新增可选字段兼容旧存档。删除整剖面保留标记并解绑，钻井岩层编辑不做。删除标记清理编辑草稿。
+- 先前容量/完成修复types和407测试PASS；本次扩展需重跑。版本0.2.25-test/code32，尚未最终构建、提交或发布。
+- 下一步：定向测试扩展、浏览器390/360截图与完整功能操作；最终types/全量检查/网页与新APK构建、签名ZIP资源核验、GitHub分支及测试Release。
+- 本地codex/sync-20260910，上游origin/codex/huawei-webview-touch；原草稿stash0c704442和其他工作树保留。无ADB真机；HarmonyOS6.1原生未交付。
+
+# 2026-09-10 画线点完成无法结束（排查中）
+- 用户反馈画线后点“完成”完成不了。已复核当前远端fd3fb93、工作区干净并ff同步，0.2.24为已发布基线。
+- 定位：useManualTracks.complete在保存失败时返回false保留草稿，但TrackPanel.TrackTools未渲染tracks.error，形成静默失败。archive/useManualTracks在20条存档时拒绝新增，drawing读取和备份交换也有限制20条。
+- 独立localhost验证页0条存档时，普通两点绘制→完成正常退出；继续复现20条存档场景。已询问用户数量和表现，尚待补充。暂无源码修改；本轮限定画线保存/反馈，剖面和测量不变。
+- 下一步：复现容量/失败分支，最小修复和回归、类型/手机尺寸检查，再0.2.25/code32新包与GitHub同步；不把浏览器验证当作手机验收。
+
 # 2026-09-10 0.2.24 测试包已发布，手机触控待验
 - 最终业务源码f2325c18efe724cebc59a3429c3f2da1af96a5e1已推送origin/codex/huawei-webview-touch，远端SHA核对一致；未合入main。
 - GitHub v0.2.24-test-standalone已发布，Release id386009137，draft=false/prerelease=true；APK、SHA256、安装说明三资产均uploaded，字节数和服务端digest逐项与本地一致。地址https://github.com/Siger1989/map/releases/tag/v0.2.24-test-standalone 。

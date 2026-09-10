@@ -7,6 +7,7 @@ import {
   Check,
   X,
   RefreshCw,
+  Trash2,
 } from 'lucide-react';
 import type { Annotation } from '../annotations/data';
 import {
@@ -21,6 +22,7 @@ import {
 } from './surveyLine';
 import { surveyPointData } from './surveyRecords';
 import { SurveyPointEditor } from './SurveyPointEditor';
+import { AnnotationTypeOptions } from '../annotations/AnnotationTypeOptions';
 import { SurveySheet } from './SurveySheet';
 import type { SurveySectionState } from './useSurveySection';
 import './survey.css';
@@ -40,6 +42,7 @@ export function SurveySectionPanel({
 }) {
   const [sheet, setSheet] = useState(false),
     [info, setInfo] = useState<SurveySheetInfo | null>(null);
+  const [deleteWhole, setDeleteWhole] = useState(false);
   const [pointDraft, setPointInfo] = useState<
     (SurveyPointData & { id: string }) | null
   >(null);
@@ -258,6 +261,19 @@ export function SurveySectionPanel({
           />
         )}
         {line && (
+          <button
+            className="survey-delete"
+            aria-label="删除整条剖面"
+            onClick={() => {
+              state.select(state.selected);
+              setDeleteWhole(true);
+            }}
+          >
+            <Trash2 size={16} />
+            删除
+          </button>
+        )}
+        {line && (
           <button onClick={() => setSheet(true)}>
             <FileText size={18} />
             图纸
@@ -265,12 +281,63 @@ export function SurveySectionPanel({
         )}
       </section>
       <section className="survey-dock" aria-label="剖面点编辑区">
-        {details && !sheet ? (
+        {deleteWhole ? (
+          <section
+            className="survey-panel survey-details"
+            aria-label="删除整条剖面确认"
+          >
+            <header>
+              <strong>删除整条剖面？</strong>
+              <button
+                aria-label="取消删除剖面"
+                onClick={() => setDeleteWhole(false)}
+              >
+                <X size={16} />
+              </button>
+            </header>
+            <div className="survey-panel-body">
+              <p>
+                删除 {object?.name}{' '}
+                的勘探线和图纸；地图标记、钻井和模型保留并解除绑定。
+              </p>
+              {state.error && <p role="alert">{state.error}</p>}
+            </div>
+            <footer>
+              <button className="survey-delete" onClick={state.remove}>
+                确认删除剖面
+              </button>
+              <button onClick={() => setDeleteWhole(false)}>取消</button>
+            </footer>
+          </section>
+        ) : details && !sheet ? (
           details
         ) : (
           <>
             <div className="survey-dock-content">
-              {state.pointMenu && selected && line && !genericPick ? (
+              {state.markerTarget ? (
+                <div
+                  className="survey-marker-types"
+                  aria-label="剖面点添加标记"
+                >
+                  <header>
+                    <strong>
+                      {state.markerTarget.stationId
+                        ? `${selected?.label ?? ''} 点 · 添加标记`
+                        : '沿线添加标记'}
+                    </strong>
+                    <button
+                      aria-label="取消剖面添加标记"
+                      onClick={state.cancelMarker}
+                    >
+                      <X size={16} />
+                    </button>
+                  </header>
+                  <div>
+                    <AnnotationTypeOptions onAdd={state.createMarker} />
+                  </div>
+                  {state.error && <p role="alert">{state.error}</p>}
+                </div>
+              ) : state.pointMenu && selected && line && !genericPick ? (
                 <SurveyPointEditor
                   key={selected.id}
                   state={state}
@@ -305,7 +372,7 @@ export function SurveySectionPanel({
                   </button>
                   <button
                     aria-pressed={state.picking === 'marker'}
-                    onClick={() => state.setPicking('marker')}
+                    onClick={state.requestMarker}
                   >
                     <MapPin size={18} />
                     添加标记

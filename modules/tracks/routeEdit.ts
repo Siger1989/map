@@ -4,6 +4,7 @@ import { DRAFT_ID, equalCoordinate, moveTrackNode } from './editing.ts';
 import { insertTrackNode, removeTrackNodes } from './nodeOperations.ts';
 import {
   MAX_TRACK_POINTS,
+  MAX_SAVED_TRACKS,
   parseSavedTracks,
   TRACK_STORAGE,
   type ManualTrack,
@@ -259,6 +260,7 @@ export function storeRouteEdit(
       t.nodes ?? [],
       t.style,
       t.edgeColors,
+      t.colorConditions,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],
     ]);
@@ -280,8 +282,10 @@ export function storeRouteEdit(
   }
   const track = editedRouteRecord(session, id, now);
   const exists = records.some((t) => t.id === track.id);
-  if (!exists && records.length >= 20)
-    throw new Error('已保存20条路线，当前编辑已保留，请先整理收藏。');
+  if (!exists && records.length >= MAX_SAVED_TRACKS)
+    throw new Error(
+      `已保存${MAX_SAVED_TRACKS}条路线，当前编辑已保留，请先整理收藏。`,
+    );
   const hidden = new Set(
     track.id !== session.original.id ? session.sources.map((t) => t.id) : [],
   );

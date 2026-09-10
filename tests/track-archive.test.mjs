@@ -5,7 +5,8 @@ import {
   drawingArea,
   storeDrawingRecord,
 } from '../modules/tracks/archive.ts';
-import { parseSavedTracks, TRACK_STORAGE } from '../modules/tracks/drawing.ts';
+import { parseSavedTracks, TRACK_STORAGE, MAX_SAVED_TRACKS } from '../modules/tracks/drawing.ts';
+import { collectData, mergeData, validateTransfer } from '../modules/outdoor/exchange.ts';
 import { hasTrackTime } from '../modules/tracks/provenance.ts';
 
 const time = Date.UTC(2026, 8, 8, 10);
@@ -30,6 +31,7 @@ const memory = () => {
   return {
     getItem: (k) => data.get(k) ?? null,
     setItem: (k, v) => data.set(k, v),
+    removeItem: (k) => data.delete(k),
   };
 };
 
@@ -102,15 +104,15 @@ test('empty drafts, full archive and quota errors never replace existing saved d
     /没有/,
   );
   const storage = memory();
-  const records = Array.from({ length: 20 }, (_, i) =>
+  const records = Array.from({ length: MAX_SAVED_TRACKS }, (_, i) =>
     drawingRecord({ ...input, id: `track-${i}` }),
   );
   storage.setItem(TRACK_STORAGE, JSON.stringify(records));
   const before = storage.getItem(TRACK_STORAGE);
-  assert.throws(() => storeDrawingRecord(drawingRecord(input), storage), /20/);
+  assert.throws(() => storeDrawingRecord(drawingRecord(input), storage), /100/);
   assert.equal(storage.getItem(TRACK_STORAGE), before);
   const replacement = drawingRecord({ ...input, prior: records[0] });
-  assert.equal(storeDrawingRecord(replacement, storage).length, 20);
+  assert.equal(storeDrawingRecord(replacement, storage).length, MAX_SAVED_TRACKS);
   const priorValue = storage.getItem(TRACK_STORAGE);
   assert.throws(
     () =>
@@ -123,4 +125,26 @@ test('empty drafts, full archive and quota errors never replace existing saved d
     /full/,
   );
   assert.equal(storage.getItem(TRACK_STORAGE), priorValue);
+});
+
+test('the 21st drawing survives reload and a complete backup round trip without truncation', () => {
+  const storage = memory();
+  const originals = Array.from({length:20},(_,i)=>drawingRecord({...input,id:`saved-${i}`}));
+  storage.setItem(TRACK_STORAGE,JSON.stringify(originals));
+  const record=drawingRecord({...input,id:'twenty-first',name:'第21条新路线'});
+  storeDrawingRecord(record,storage);
+  const reloaded=parseSavedTracks(storage.getItem(TRACK_STORAGE));
+  assert.equal(reloaded.length,21);
+  assert.deepEqual(reloaded.slice(0,20),originals);
+  assert.deepEqual(reloaded[20],record);
+  const exported=validateTransfer(JSON.parse(JSON.stringify(collectData(storage))));
+  const imported=memory();
+  mergeData(exported,imported);
+  assert.deepEqual(collectData(imported).tracks,reloaded);
+});
+
+test('oversized archives fail closed instead of silently discarding saved routes', () => {
+  const tracks=Array.from({length:MAX_SAVED_TRACKS+1},(_,i)=>drawingRecord({...input,id:`saved-${i}`}));
+  assert.throws(()=>parseSavedTracks(JSON.stringify(tracks)),/超过 100/);
+  assert.throws(()=>validateTransfer({format:'guanyun-backup',version:1,tracks,annotations:[],favorites:[]}));
 });

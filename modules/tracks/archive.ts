@@ -2,6 +2,7 @@ import type { Coordinate } from '../navigation/types.ts';
 import { placeCenter } from '../navigation/placeName.ts';
 import {
   parseSavedTracks,
+  MAX_SAVED_TRACKS,
   TRACK_STORAGE,
   type ManualTrack,
 } from './drawing.ts';
@@ -30,6 +31,7 @@ export function drawingArea(
 
 /** A committed drawing has its own identity; continuation preserves the original creation time. */
 export function drawingRecord(input: {
+  colorConditions?: Record<string, string>;
   edgeColors?: TrackEdgeColors;
   segments: Coordinate[][];
   nodes: Coordinate[];
@@ -50,7 +52,11 @@ export function drawingRecord(input: {
   const createdAt = input.prior?.createdAt ?? input.createdAt;
   const prior = { ...input.prior };
   delete prior.sharedRoute;
-  const colors=input.edgeColors??(input.prior?.edgeColors && input.style.color===input.prior.style?.color?inheritEdgeColors(input.segments,[input.prior],input.style.color):undefined);
+  const colors =
+    input.edgeColors ??
+    (input.prior?.edgeColors && input.style.color === input.prior.style?.color
+      ? inheritEdgeColors(input.segments, [input.prior], input.style.color)
+      : undefined);
   delete prior.edgeColors;
   return {
     ...prior,
@@ -70,7 +76,10 @@ export function drawingRecord(input: {
     updatedAt: input.now,
     drawingLocation: location,
     source: 'manual',
-    ...(colors?{edgeColors:colors}:{}),
+    ...(colors ? { edgeColors: colors } : {}),
+    ...(input.colorConditions
+      ? { colorConditions: input.colorConditions }
+      : {}),
     style: input.style,
   };
 }
@@ -82,8 +91,8 @@ export function storeDrawingRecord(
 ) {
   const records = parseSavedTracks(storage.getItem(TRACK_STORAGE));
   const exists = records.some((record) => record.id === track.id);
-  if (!exists && records.length >= 20)
-    throw new Error('已保存 20 条轨迹，请先删除不需要的轨迹。当前草稿已保留。');
+  if (!exists && records.length >= MAX_SAVED_TRACKS)
+    throw new Error(`已保存 ${MAX_SAVED_TRACKS} 条轨迹，请先整理路线存档。`);
   const next = exists
     ? records.map((record) => (record.id === track.id ? track : record))
     : [...records, track];

@@ -2,6 +2,8 @@ import type { Map } from 'maplibre-gl';
 import { addCartography, syncCartography } from '../cartography/cartography';
 import { DEFAULT_LAYERS } from '../map/types';
 import { routeBounds, type ShareRoute } from './data';
+import { coloredLineParts, edgeColorIndex } from '../tracks/edgeColors';
+import { normalizeTrackStyle } from '../tracks/style';
 
 function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -81,12 +83,23 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
     map.addSource('share-line', {
       type: 'geojson',
       data: {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'MultiLineString',
-          coordinates: data.segments.map((s) => s.map(unwrap)),
-        },
+        type: 'FeatureCollection',
+        features: data.segments.flatMap((s) =>
+          coloredLineParts(
+            s,
+            edgeColorIndex(data.track ?? { segments: data.segments }),
+            data.track
+              ? normalizeTrackStyle(data.track.style).color
+              : '#4dffb5',
+          ).map((p) => ({
+            type: 'Feature' as const,
+            properties: { color: p.color },
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: p.coordinates.map(unwrap),
+            },
+          })),
+        ),
       },
     });
     map.addLayer({
@@ -100,7 +113,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       id: 'share-line',
       type: 'line',
       source: 'share-line',
-      paint: { 'line-color': '#4dffb5', 'line-width': 9 },
+      paint: { 'line-color': ['get', 'color'], 'line-width': 9 },
       layout: { 'line-cap': 'round', 'line-join': 'round' },
     });
     const stops = data.stops.map((s, i) => ({

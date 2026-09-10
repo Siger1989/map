@@ -20,6 +20,7 @@ type Operation =
       kinds?: DrawingMode[];
     };
 export type TrackDraft = {
+  colorConditions?: Record<string, string>;
   edgeColors?: TrackEdgeColors;
   segments: Coordinate[][];
   kinds: DrawingMode[];
@@ -42,12 +43,12 @@ export function appendVertex(draft: TrackDraft, point: Coordinate): TrackDraft {
     segments.push(seed ? [seed, point] : [point]);
     kinds.push('points');
   } else segments[index].push(point);
-  const colors=inheritEdgeColors(segments,[draft]);
+  const colors = inheritEdgeColors(segments, [draft]);
   return {
     ...draft,
     segments,
     kinds,
-    ...(colors?{edgeColors:colors}:{}),
+    ...(colors ? { edgeColors: colors } : {}),
     pointLine: index,
     history: [
       ...draft.history,
@@ -60,11 +61,11 @@ export function appendStroke(
   points: Coordinate[],
 ): TrackDraft {
   if (points.length < 2) return draft;
-  const colors=inheritEdgeColors([...draft.segments,points],[draft]);
+  const colors = inheritEdgeColors([...draft.segments, points], [draft]);
   return {
     ...draft,
     segments: [...draft.segments, points],
-    ...(colors?{edgeColors:colors}:{}),
+    ...(colors ? { edgeColors: colors } : {}),
     kinds: [...draft.kinds, 'freehand'],
     pointLine: null,
     history: [
@@ -102,12 +103,12 @@ export function appendRoadVertex(
 export function undoDraft(draft: TrackDraft): TrackDraft {
   const operation = draft.history.at(-1);
   if (!operation) return draft;
-  const {edgeColors:_currentColors,...withoutColors}=draft;
+  const { edgeColors: _currentColors, ...withoutColors } = draft;
   if (operation.kind === 'move')
     return {
       ...withoutColors,
       segments: operation.segments,
-      ...(operation.edgeColors?{edgeColors:operation.edgeColors}:{}),
+      ...(operation.edgeColors ? { edgeColors: operation.edgeColors } : {}),
       nodes: operation.nodes,
       pointLine: operation.pointLine,
       kinds: operation.kinds ?? draft.kinds,
@@ -126,11 +127,11 @@ export function undoDraft(draft: TrackDraft): TrackDraft {
     kinds.splice(operation.segment, 1);
   }
   const prior = history.at(-1);
-  const colors=inheritEdgeColors(segments,[draft]);
+  const colors = inheritEdgeColors(segments, [draft]);
   return {
     ...withoutColors,
     ...(operation.restoreNodes ? { nodes: operation.nodes } : {}),
-    ...(colors?{edgeColors:colors}:{}),
+    ...(colors ? { edgeColors: colors } : {}),
     segments,
     kinds,
     history,
@@ -160,13 +161,13 @@ export function replaceDraftGeometry(
   pointLine = draft.pointLine,
   edgeColors = inheritEdgeColors(segments, [draft]),
 ): TrackDraft {
-  const {edgeColors:_colors,...withoutColors}=draft;
+  const { edgeColors: _colors, ...withoutColors } = draft;
   return {
     ...withoutColors,
     segments,
     nodes,
     kinds,
-    ...(edgeColors?{edgeColors}:{}),
+    ...(edgeColors ? { edgeColors } : {}),
     pointLine,
     history: [
       ...draft.history,

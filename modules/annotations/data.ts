@@ -26,6 +26,8 @@ export const KINDS = {
   prism: '轮廓模型',
 } as const;
 export type AnnotationKind = keyof typeof KINDS;
+export const ANNOTATION_CHOICES = { ...KINDS, borehole: '钻井' } as const;
+export type AnnotationChoice = keyof typeof ANNOTATION_CHOICES;
 export type Annotation = {
   id: string;
   kind: AnnotationKind;
@@ -33,6 +35,8 @@ export type Annotation = {
   note: string;
   trackAnchor?: TrackAnchor;
   sectionAnchor?: SectionAnchor;
+  /** Unknown depth is distinct from zero; strata are outside this field's scope. */
+  borehole?: { depth: number | null };
   icon?: MarkerIconId;
   attributes?: AnnotationAttribute[];
   footprint?: Footprint;
@@ -70,6 +74,10 @@ export function validAnnotation(value: unknown): value is Annotation {
     a.note.length <= 500 &&
     (a.trackAnchor === undefined || validTrackAnchor(a.trackAnchor)) &&
     (a.sectionAnchor === undefined || validSectionAnchor(a.sectionAnchor)) &&
+    (a.borehole === undefined ||
+      (!!a.borehole &&
+        (a.borehole.depth === null ||
+          bounded(a.borehole.depth, 0.1, 12000)))) &&
     (a.icon === undefined || Object.hasOwn(MARKER_ICONS, a.icon)) &&
     (a.attributes === undefined || validAttributes(a.attributes)) &&
     (a.kind !== 'prism' || validFootprint(a.footprint)) &&
@@ -107,11 +115,12 @@ export function parseAnnotations(raw: string | null): Annotation[] {
   return value;
 }
 export function newAnnotation(
-  kind: AnnotationKind,
+  choice: AnnotationChoice,
   coordinates: Coordinate,
   groundElevation: number | null,
   id: string,
 ): Annotation {
+  const kind = choice === 'borehole' ? 'pin' : choice;
   return {
     id,
     kind,
@@ -130,6 +139,9 @@ export function newAnnotation(
     roll: 0,
     opacity: 0.55,
     visible: true,
+    ...(choice === 'borehole'
+      ? { name: '钻井', icon: 'drill' as const, borehole: { depth: null } }
+      : {}),
     ...(kind === 'prism'
       ? {
           footprint: [

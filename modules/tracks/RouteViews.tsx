@@ -1,3 +1,4 @@
+import { TrackColorProfile } from './TrackColorProfile';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -20,8 +21,9 @@ import {
 import {
   KINDS,
   type Annotation,
-  type AnnotationKind,
+  type AnnotationChoice,
 } from '../annotations/data';
+import { AnnotationTypeOptions } from '../annotations/AnnotationTypeOptions';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import type { VisiblePhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos';
@@ -167,6 +169,7 @@ export function RouteDetails({
   onPhoto,
   onDelete,
   deleteError,
+  onCondition,
 }: {
   track: ManualTrack;
   alternative: string;
@@ -178,6 +181,7 @@ export function RouteDetails({
   onPhoto: (id: string) => void;
   onDelete: () => boolean;
   deleteError: string;
+  onCondition: (color: string, value: string) => boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const root = useRouteDialogFocus(() =>
@@ -257,6 +261,11 @@ export function RouteDetails({
               </div>
             ))}
           </dl>
+          <TrackColorProfile
+            track={track}
+            lines={lines}
+            onCondition={onCondition}
+          />
           <h3>路线组成</h3>
           <div className="route-composition">
             {variants.map((v) => (
@@ -413,7 +422,13 @@ export function RouteEditToolbar({
             <GitBranch size={16} />
             {branch ? '结束分叉' : '分叉'}
           </button>
-          <button onClick={onBoxSelect} disabled={branch || !session.track.segments.length} aria-label="框选路线点">框选</button>
+          <button
+            onClick={onBoxSelect}
+            disabled={branch || !session.track.segments.length}
+            aria-label="框选路线点"
+          >
+            框选
+          </button>
           <button disabled={!session.history.length} onClick={onUndo}>
             <Undo2 size={16} />
             撤销
@@ -499,17 +514,10 @@ export function RouteMarkerTypes({
   error,
 }: {
   onBack: () => void;
-  onAdd: (kind: AnnotationKind) => void;
+  onAdd: (kind: AnnotationChoice) => void;
   error: string;
 }) {
   const root = useRouteDialogFocus(onBack);
-  const icons = {
-    pin: MapPinPlus,
-    box: Box,
-    cylinder: Cylinder,
-    sphere: Circle,
-    prism: Shapes,
-  };
   return (
     <div className="route-window-backdrop">
       <section
@@ -525,15 +533,7 @@ export function RouteMarkerTypes({
         </header>
         <p>标在路线绿色点的位置</p>
         <div>
-          {(Object.keys(KINDS) as AnnotationKind[]).map((kind) => {
-            const Icon = icons[kind];
-            return (
-              <button key={kind} onClick={() => onAdd(kind)}>
-                <Icon size={20} />
-                {KINDS[kind]}
-              </button>
-            );
-          })}
+          <AnnotationTypeOptions onAdd={onAdd} />
         </div>
         {error && <p role="alert">{error}</p>}
       </section>

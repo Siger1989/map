@@ -5,6 +5,7 @@ import { keepsOriginalPoints } from './provenance.ts';
 import { pathOf, project } from '../guidance/geometry.ts';
 import { cutNodes } from './deleteNodes.ts';
 import { preserveTrackColors } from './edgeColors.ts';
+import { joinUniqueSegments } from './snapping.ts';
 
 const editable = (track: ManualTrack) => {
   if (keepsOriginalPoints(track))
@@ -116,9 +117,19 @@ export function connectTrackNodes(
         id,
         name: `${a.name} · 连接路线`.slice(0, 60),
         source: 'manual',
+        sourceTrackIds: [
+          ...new Set([
+            a.id,
+            b.id,
+            ...(a.sourceTrackIds ?? []),
+            ...(b.sourceTrackIds ?? []),
+          ]),
+        ]
+          .filter((v) => v !== id)
+          .slice(0, 100),
         createdAt: Date.now(),
       },
-      segments,
+      joinUniqueSegments(segments),
       [...(a.nodes ?? []), ...(b.nodes ?? []), from, to],
     ),
     [a, b],

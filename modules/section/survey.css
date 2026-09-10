@@ -500,6 +500,34 @@
 .survey-loading {
   animation: survey-spin 1.5s linear infinite;
 }
+.survey-marker-types {
+  height: 100%;
+  overflow: auto;
+  padding: 0 4px;
+}
+.survey-marker-types header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+.survey-marker-types header button {
+  min-height: 30px;
+}
+.survey-marker-types > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+.survey-marker-types > div button {
+  min-height: 36px;
+  padding: 2px;
+  gap: 3px;
+  font-size: 11px;
+}
+.survey-marker-types p {
+  margin: 2px 0;
+}
 @keyframes survey-spin {
   to {
     transform: rotate(360deg);

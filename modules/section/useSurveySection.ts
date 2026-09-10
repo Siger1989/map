@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
+import type { AnnotationChoice } from '../annotations/data';
 import type { SectionObject } from './sectionObjects';
 import type { SectionObjectsState } from './useSavedSection';
 import type { SectionSettings } from './types';
@@ -9,6 +10,8 @@ import {
   newSurveyLine,
   surveyKey,
   surveySettings,
+  surveyStations,
+  surveyCoordinate,
   type SurveyFollow,
 } from './surveyLine';
 import { sampleSurveyTerrain } from './surveyTerrain';
@@ -31,6 +34,10 @@ export function useSurveySection(
   const [pointMenu, setPointMenu] = useState(true),
     [dragging, setDragging] = useState(false);
   const refreshRequested = useRef(false);
+  const [markerTarget, setMarkerTarget] = useState<{
+    point: Coordinate;
+    stationId?: string;
+  } | null>(null);
   const current = sections.items.find(
       (s) => s.id === sections.selectedId && s.settings.survey,
     ),
@@ -126,10 +133,8 @@ export function useSurveySection(
         setPicking(null);
         setSelected('B');
       } else if (picking === 'marker' && current) {
-        const marker = addSurveyMarker(current.id, point);
+        setMarkerTarget({ point });
         setPicking(null);
-        setSelected(marker.id);
-        onMarker(marker.id);
       } else if (picking === 'point' && current?.settings.survey) {
         const line = addSurveyStation(
           current.settings.survey,
@@ -147,6 +152,7 @@ export function useSurveySection(
     return true;
   };
   const start = () => {
+    setMarkerTarget(null);
     sections.select(null);
     setActive(true);
     setFirst(null);
@@ -158,6 +164,7 @@ export function useSurveySection(
     setDragging(false);
   };
   const open = (object: SectionObject) => {
+    setMarkerTarget(null);
     setSelected('A');
     setPointMenu(true);
     setDragging(false);
@@ -174,6 +181,44 @@ export function useSurveySection(
     picking,
     setPicking,
     selected,
+    markerTarget,
+    cancelMarker: () => setMarkerTarget(null),
+    requestMarker: () => {
+      const station =
+        current?.settings.survey &&
+        pointMenu &&
+        surveyStations(current.settings.survey).find((s) => s.id === selected);
+      setPicking(station ? null : 'marker');
+      setError('');
+      setMarkerTarget(
+        station
+          ? {
+              point: surveyCoordinate(
+                current!.settings.survey!,
+                station.distance,
+              ),
+              stationId: station.id,
+            }
+          : null,
+      );
+    },
+    createMarker: (choice: AnnotationChoice) => {
+      if (!current || !markerTarget) return;
+      try {
+        const marker = addSurveyMarker(
+          current.id,
+          markerTarget.point,
+          choice,
+          markerTarget.stationId,
+        );
+        setSelected(markerTarget.stationId ?? marker.id);
+        setMarkerTarget(null);
+        setError('');
+        onMarker(marker.id);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '标记未保存');
+      }
+    },
     select: (id: string, showMenu = true) => {
       setSelected(id);
       if (showMenu) setPointMenu(true);
@@ -207,7 +252,24 @@ export function useSurveySection(
       setError('拖动已中断，位置未保存。请重新拖点，或点击地图落位。');
     },
     commit,
+    remove: () => {
+      if (!current) return false;
+      try {
+        if (!sections.remove(current.id))
+          throw new Error('剖面删除未保存，请检查本机存储后重试');
+        setActive(false);
+        setPicking(null);
+        setPreview(null);
+        setMarkerTarget(null);
+        setError('');
+        return true;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '剖面未删除');
+        return false;
+      }
+    },
     close: () => {
+      setMarkerTarget(null);
       setActive(false);
       setPicking(null);
       setFirst(null);

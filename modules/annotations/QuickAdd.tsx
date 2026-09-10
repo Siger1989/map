@@ -1,15 +1,9 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { MapPinPlus, Box, Cylinder, Circle, X } from 'lucide-react';
 import type { MapHold } from '../map/MapLongPress';
-import { KINDS, type AnnotationKind } from './data';
+import type { AnnotationChoice } from './data';
+import { AnnotationTypeOptions } from './AnnotationTypeOptions';
 import './quickAdd.css';
-const OPTIONS = [
-  { kind: 'pin', Icon: MapPinPlus },
-  { kind: 'box', Icon: Box },
-  { kind: 'cylinder', Icon: Cylinder },
-  { kind: 'sphere', Icon: Circle },
-] as const;
-
 /** A local map action, with no navigation into the full annotation editor. */
 export function QuickAdd({
   at,
@@ -20,7 +14,7 @@ export function QuickAdd({
 }: {
   at: MapHold;
   error: string;
-  onAdd: (kind: AnnotationKind) => void;
+  onAdd: (kind: AnnotationChoice) => void;
   onArea: () => void;
   onClose: () => void;
 }) {
@@ -81,16 +75,7 @@ export function QuickAdd({
             <button type="button" onClick={onArea}>
               ▱ 划区域
             </button>
-            <button type="button" onClick={onArea}>
-              <Box size={18} />
-              轮廓模型
-            </button>
-            {OPTIONS.map(({ kind, Icon }) => (
-              <button key={kind} type="button" onClick={() => onAdd(kind)}>
-                <Icon size={18} />
-                {KINDS[kind]}
-              </button>
-            ))}
+            <AnnotationTypeOptions onAdd={onAdd} onOutline={onArea} />
           </div>
           {error && <p role="alert">{error}</p>}
         </div>

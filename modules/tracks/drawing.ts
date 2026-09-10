@@ -5,6 +5,7 @@ import {
 } from '../navigation/types.ts';
 import type { TrackStyle } from './style';
 import { validEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
+import { validColorConditions, type ColorConditions } from './colorSections.ts';
 export type ScreenPoint = { x: number; y: number };
 export type ManualTrack = {
   id: string;
@@ -17,6 +18,7 @@ export type ManualTrack = {
   drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
   edgeColors?: TrackEdgeColors;
+  colorConditions?: ColorConditions;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   sharedRoute?: {
@@ -28,6 +30,7 @@ export type ManualTrack = {
   nodes?: Coordinate[];
 };
 export const MAX_TRACK_POINTS = 6000;
+export const MAX_SAVED_TRACKS = 100;
 export const TRACK_STORAGE = 'guanyun.manual-tracks.v1';
 /** A pulled string: motion inside the slack radius changes direction, not the tip. */
 export function pullTip(
@@ -57,8 +60,9 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
   if (!value) return [];
   const records: unknown = JSON.parse(value);
   if (!Array.isArray(records)) throw new Error('轨迹存档格式无效');
+  if (records.length > MAX_SAVED_TRACKS)
+    throw new Error(`轨迹存档超过 ${MAX_SAVED_TRACKS} 条，原存档未修改。`);
   return records
-    .slice(0, 20)
     .filter(
       (v): v is ManualTrack =>
         v &&
@@ -110,11 +114,13 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         hidden,
         sourceTrackIds,
         edgeColors,
+        colorConditions,
         ...rest
       } = track;
       return {
         ...rest,
         ...(validEdgeColors(edgeColors, track.segments) ? { edgeColors } : {}),
+        ...(validColorConditions(colorConditions) ? { colorConditions } : {}),
         ...(hidden === true ? { hidden: true } : {}),
         ...(Array.isArray(sourceTrackIds)
           ? {

@@ -2,6 +2,7 @@ import type { Annotation } from '../annotations/data.ts';
 import {
   surveyCoordinate,
   surveyHeight,
+  surveyBasis,
   surveyStations,
   type SurveyLine,
   type SurveyTerrain,
@@ -59,6 +60,13 @@ export function surveyRecordPages(
   ])
     add(label ?? '', value ?? '');
   add('地形来源', data.source);
+  add('方向角 A→B', surveyBasis(line).bearing.toFixed(2) + '°（真北起顺时针）');
+  add(
+    '水平比例尺',
+    line.printScale
+      ? `1:${line.printScale}，按完整主图宽 420 mm 打印`
+      : '自动铺满，数值见主图',
+  );
   for (const station of surveyStations(line)) {
     const point = surveyPointData(line, station.id, station.label, markers),
       p = surveyCoordinate(line, station.distance),
@@ -73,6 +81,18 @@ export function surveyRecordPages(
         (h === null ? '未测' : h.toFixed(2) + ' m'),
     );
     if (point.note) add('点位备注', point.note);
+    for (const marker of markers.filter(
+      (m) => (m.sectionAnchor?.stationId ?? m.id) === station.id,
+    )) {
+      add('关联标记', marker.name);
+      if (marker.borehole)
+        add(
+          '钻井深度',
+          marker.borehole.depth === null
+            ? '未填写'
+            : marker.borehole.depth.toFixed(2) + ' m',
+        );
+    }
   }
   const pages: SurveyDrawingPage[] = [];
   for (let start = 0; start < rows.length; start += 30) {

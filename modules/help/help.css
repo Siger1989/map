@@ -1,0 +1,77 @@
+.topbar button.brand {
+  color: inherit;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  min-height: 40px;
+  flex-shrink: 0;
+}
+.observatory[data-panel='about'] .control-popover {
+  --map-panel-max-height: min(
+    680px,
+    calc(100dvh - 122px - var(--safe-top) - var(--safe-bottom))
+  );
+}
+.about-panel {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 2px 0 8px;
+}
+.about-panel > header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.about-panel > header img {
+  object-fit: contain;
+  border-radius: 8px;
+}
+.about-panel > header strong {
+  font-size: 17px;
+}
+.about-panel p {
+  margin: 4px 0 8px;
+}
+.about-panel dl {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  margin: 0;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.about-panel dd {
+  margin: 0;
+}
+.about-panel dt,
+.help-topics small {
+  color: var(--muted);
+}
+.about-panel h3 {
+  font-size: 14px;
+  margin: 14px 0 4px;
+}
+.help-topics details,
+.about-platforms {
+  border-bottom: 1px solid var(--border);
+  padding: 6px 2px;
+}
+.about-panel summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 2px;
+}
+.help-topics small {
+  display: block;
+  margin-left: 15px;
+  font-size: 11px;
+}
+.help-topics ol {
+  padding-left: 23px;
+  margin: 6px 0;
+}
+.help-topics li {
+  margin: 6px 0;
+}

@@ -14,6 +14,7 @@ export function SharedTrackDetails({
   onShare,
   error,
   photos,
+  onCondition,
 }: {
   track: ManualTrack;
   onBack: () => void;
@@ -23,6 +24,7 @@ export function SharedTrackDetails({
   onShare: () => void;
   error: string;
   photos: ReactNode;
+  onCondition: (color: string, value: string) => boolean;
 }) {
   const shared = track.sharedRoute!;
   return (
@@ -75,6 +77,8 @@ export function SharedTrackDetails({
       )}
       {photos}
       <JourneyPanel
+        track={track}
+        onCondition={onCondition}
         segments={track.segments}
         mode={track.navigationMode}
         onLocate={(p) => onShow([p])}

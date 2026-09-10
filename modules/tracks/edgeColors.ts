@@ -7,6 +7,7 @@ type ColoredGeometry = {
   segments: Coordinate[][];
   edgeColors?: TrackEdgeColors;
   style?: TrackStyle;
+  colorConditions?: Record<string, string>;
 };
 const key = (a: Coordinate, b: Coordinate) =>
   [a.join(','), b.join(',')].sort().join('|');
@@ -94,8 +95,25 @@ export function preserveTrackColors<T extends ColoredGeometry>(
   next: T,
   sources: ColoredGeometry[],
 ): T {
+  const conditions: Record<string, string> = {};
+  for (const source of [...sources, next])
+    for (const [color, note] of Object.entries(source.colorConditions ?? {})) {
+      conditions[color] = [
+        ...new Set([
+          ...(conditions[color]?.split('；') ?? []),
+          ...note.split('；'),
+        ]),
+      ]
+        .filter(Boolean)
+        .join('；');
+      if (conditions[color].length > 1600)
+        throw new Error('同色路段备注合并后过长，请先整理备注；原路线保留');
+    }
+  if (Object.keys(conditions).length > 128)
+    throw new Error('合并后的颜色备注超过128种，请先整理；原路线保留');
   return {
     ...next,
+    ...(Object.keys(conditions).length ? { colorConditions: conditions } : {}),
     edgeColors: inheritEdgeColors(
       next.segments,
       sources.map((s) => ({ ...s, style: s.style })),

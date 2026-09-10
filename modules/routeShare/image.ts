@@ -12,6 +12,7 @@ import { readProfile } from '../journey/elevationProvider';
 import type { ShareRoute } from './data';
 import { renderRouteMap } from './mapImage';
 import { routeQrImage } from './qrImage';
+import { routeColorSections, sectionElevation } from '../tracks/colorSections';
 const altitude = (v: number | null) =>
   v === null ? '暂无' : `${Math.round(v)} m`;
 export function composeRouteImage(
@@ -21,8 +22,17 @@ export function composeRouteImage(
   qr?: { canvas: HTMLCanvasElement | null; note: string },
 ) {
   const canvas = document.createElement('canvas');
+  const sections = routeColorSections(
+    data.track ?? {
+      segments: data.segments,
+      style: { color: '#4dffb5', width: 2 },
+    },
+  );
+  const shownSections = sections.slice(0, 16);
+  const legendHeight =
+    shownSections.length * 78 + (sections.length > 16 ? 60 : 25);
   canvas.width = 1200;
-  canvas.height = qr ? 2670 : 1980;
+  canvas.height = (qr ? 2670 : 1980) + legendHeight;
   const c = canvas.getContext('2d');
   if (!c) throw new Error('无法生成分享图片');
   c.fillStyle = '#112b31';
@@ -61,24 +71,39 @@ export function composeRouteImage(
       c.stroke();
       line(String(Math.round(stats.min + (range * i) / 2)), y, 20);
     }
-    c.strokeStyle = '#9de8c4';
-    c.lineWidth = 4;
-    c.beginPath();
-    let connected = false,
-      part = -1;
-    for (const s of samples) {
-      if (s.elevation === null) {
-        connected = false;
-        continue;
+    for (const section of sections) {
+      const points = sectionElevation(samples, section),
+        runs: ElevationSample[][] = [];
+      let run: ElevationSample[] = [];
+      for (const p of points) {
+        if (p.elevation === null) {
+          if (run.length) runs.push(run);
+          run = [];
+        } else run.push(p);
       }
-      const x = left + (s.distance / (total || 1)) * (right - left),
-        y = bottom - ((s.elevation - stats.min) / range) * (bottom - top);
-      if (connected && part === s.part) c.lineTo(x, y);
-      else c.moveTo(x, y);
-      connected = true;
-      part = s.part;
+      if (run.length) runs.push(run);
+      const xx = (d: number) => left + (d / (total || 1)) * (right - left),
+        yy = (h: number) =>
+          bottom - ((h - stats.min!) / range) * (bottom - top);
+      for (const points of runs) {
+        c.beginPath();
+        points.forEach((p, i) =>
+          i
+            ? c.lineTo(xx(p.distance), yy(p.elevation!))
+            : c.moveTo(xx(p.distance), yy(p.elevation!)),
+        );
+        c.strokeStyle = section.color;
+        c.lineWidth = 4;
+        c.stroke();
+        c.lineTo(xx(points.at(-1)!.distance), bottom);
+        c.lineTo(xx(points[0].distance), bottom);
+        c.closePath();
+        c.fillStyle = section.color;
+        c.globalAlpha = 0.22;
+        c.fill();
+        c.globalAlpha = 1;
+      }
     }
-    c.stroke();
     line('0 km', 1760, 21);
     c.fillText((total / 1000).toFixed(1) + ' km', 1020, 1760);
   } else line('高程数据暂不可用，请联网后重试；未填充或虚构海拔。', 1600);
@@ -103,7 +128,30 @@ export function composeRouteImage(
     20,
   );
   line('完整线路与主要地名；较长路线的小地名需放大地图查看。', 1959, 19);
+  shownSections.forEach((s, i) => {
+    const yy = 1998 + i * 78,
+      h = elevationStats(sectionElevation(samples, s));
+    c.fillStyle = s.color;
+    c.fillRect(45, yy - 20, 26, 12);
+    c.fillStyle = '#edf7f4';
+    c.font = '22px sans-serif';
+    c.fillText(
+      `第 ${i + 1} 段 · ${formatDistance(s.end - s.start)} · 海拔 ${altitude(h.min)}～${altitude(h.max)}`,
+      88,
+      yy,
+      1060,
+    );
+    c.fillText(`路况/备注：${s.condition || '未录入'}`, 88, yy + 32, 1060);
+  });
+  if (sections.length > 16)
+    line(
+      `共 ${sections.length} 段，图上列前16段；完整颜色与备注请附路线包。`,
+      1998 + 16 * 78,
+      22,
+    );
   if (qr) {
+    c.save();
+    c.translate(0, legendHeight);
     c.fillStyle = '#fff';
     c.fillRect(20, 1990, 640, 640);
     if (qr.canvas) c.drawImage(qr.canvas, 40, 2010, 600, 600);
@@ -128,6 +176,7 @@ export function composeRouteImage(
     if (current) c.fillText(current, 685, 2125 + row * 39);
     c.font = '22px sans-serif';
     c.fillText('图片与GPX/KML保留原始线形。', 685, 2605);
+    c.restore();
   }
   return canvas;
 }

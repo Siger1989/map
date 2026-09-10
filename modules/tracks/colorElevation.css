@@ -1,0 +1,71 @@
+.color-elevation {
+  font-size: 12px;
+  margin: 10px 0;
+}
+.color-elevation header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.color-elevation svg {
+  width: 100%;
+  display: block;
+  background: #f6f8f3;
+  border-radius: 6px;
+}
+.color-elevation svg text {
+  font-size: 10px;
+  fill: #496052;
+}
+.color-elevation small {
+  font-size: 11px;
+  display: block;
+}
+.color-elevation p {
+  font-size: 11px;
+  margin: 4px 0;
+}
+.color-section-list {
+  max-height: 250px;
+  overflow-y: auto;
+}
+.color-section-list article {
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--border, #cad1c6);
+}
+.color-section-list button {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: inherit;
+  padding: 2px;
+}
+.color-section-list button[aria-pressed='true'] {
+  background: #699a7726;
+}
+.color-section-list button i {
+  width: 18px;
+  height: 8px;
+  border: 1px solid #8886;
+  border-radius: 3px;
+}
+.color-section-list button span {
+  margin-left: auto;
+}
+.color-section-list label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+.color-section-list input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 2px 6px;
+}

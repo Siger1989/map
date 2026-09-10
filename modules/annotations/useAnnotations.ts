@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { annotationEditItems, commitAnnotationEdit, editorPose, patchAnnotation, sameAnnotation, type AnnotationEdit } from './editorSession';
+import {
+  annotationEditItems,
+  commitAnnotationEdit,
+  editorPose,
+  patchAnnotation,
+  sameAnnotation,
+  type AnnotationEdit,
+} from './editorSession';
 import type { Coordinate } from '../navigation/types';
 import { readElevation } from '../terrain/elevation';
 import {
@@ -15,7 +22,7 @@ import {
   parseAnnotations,
   validAnnotation,
   type Annotation,
-  type AnnotationKind,
+  type AnnotationChoice,
 } from './data';
 
 export function useAnnotations() {
@@ -24,20 +31,26 @@ export function useAnnotations() {
   const current = useRef(items);
   current.current = items;
   const [selected, setSelected] = useState<string | null>(null);
-  const [picking, setPicking] = useState<AnnotationKind | 'move' | null>(null);
+  const [picking, setPicking] = useState<AnnotationChoice | 'move' | null>(
+    null,
+  );
   const [error, setError] = useState('');
   const [reading, setReading] = useState(false);
   const writable = useRef(false);
   const lookup = useRef<AbortController | null>(null);
   const [edit, setEdit] = useState<AnnotationEdit | null>(null);
   const editing = useRef<AnnotationEdit | null>(null);
-  const [selectionRequest, setSelectionRequest] = useState<{ id: string | null } | null>(null);
+  const [selectionRequest, setSelectionRequest] = useState<{
+    id: string | null;
+  } | null>(null);
   const setEditing = (value: AnnotationEdit | null) => {
     editing.current = value;
     setEdit(value);
   };
-  const getItem = (id: string) => editing.current?.draft.id === id
-    ? editing.current.draft : current.current.find((a) => a.id === id);
+  const getItem = (id: string) =>
+    editing.current?.draft.id === id
+      ? editing.current.draft
+      : current.current.find((a) => a.id === id);
   useEffect(() => {
     try {
       const saved = parseAnnotations(localStorage.getItem(ANNOTATION_STORAGE));
@@ -92,13 +105,18 @@ export function useAnnotations() {
     const old = getItem(id);
     if (!old) return false;
     let next: Annotation;
-    try { next = patchAnnotation(old, patch); }
-    catch (e) {
+    try {
+      next = patchAnnotation(old, patch);
+    } catch (e) {
       setError(e instanceof Error ? e.message : '参数无效');
       return false;
     }
     if (editing.current?.draft.id === id) {
-      setEditing({ ...editing.current, draft: next, origin: editing.current.origin ?? editorPose(next) });
+      setEditing({
+        ...editing.current,
+        draft: next,
+        origin: editing.current.origin ?? editorPose(next),
+      });
       setError('');
       return true;
     }
@@ -133,11 +151,13 @@ export function useAnnotations() {
     }
   };
   const add = (
-    kind: AnnotationKind,
+    kind: AnnotationChoice,
     coordinates: Coordinate,
     trackAnchor?: Annotation['trackAnchor'],
   ) => {
-    if (!canAddAnnotation(current.current, kind)) {
+    if (
+      !canAddAnnotation(current.current, kind === 'borehole' ? 'pin' : kind)
+    ) {
       setError('最多保存 2000 个地点标记、80 个模型。');
       return false;
     }
@@ -208,7 +228,11 @@ export function useAnnotations() {
       if (!item) return;
       lookup.current?.abort();
       setReading(false);
-      setEditing({ base: structuredClone(item), draft: structuredClone(item), origin: editorPose(item) });
+      setEditing({
+        base: structuredClone(item),
+        draft: structuredClone(item),
+        origin: editorPose(item),
+      });
       setMoveHistory([]);
       setError('');
     },
@@ -216,7 +240,9 @@ export function useAnnotations() {
       const session = editing.current;
       if (!session) return true;
       try {
-        const saved = parseAnnotations(localStorage.getItem(ANNOTATION_STORAGE));
+        const saved = parseAnnotations(
+          localStorage.getItem(ANNOTATION_STORAGE),
+        );
         if (!persist(commitAnnotationEdit(saved, session))) return false;
         lookup.current?.abort();
         setReading(false);
@@ -252,19 +278,24 @@ export function useAnnotations() {
       const prior = getItem(item.id);
       if (!prior) return false;
       if (
-        !update(item.id, item.kind === 'pin' ? {
-          coordinates: item.coordinates,
-          groundElevation: null,
-        } : {
-          coordinates: item.coordinates,
-          centerAltitude: item.centerAltitude,
-          width: item.width,
-          length: item.length,
-          height: item.height,
-          heading: item.heading,
-          pitch: item.pitch,
-          roll: item.roll,
-        })
+        !update(
+          item.id,
+          item.kind === 'pin'
+            ? {
+                coordinates: item.coordinates,
+                groundElevation: null,
+              }
+            : {
+                coordinates: item.coordinates,
+                centerAltitude: item.centerAltitude,
+                width: item.width,
+                length: item.length,
+                height: item.height,
+                heading: item.heading,
+                pitch: item.pitch,
+                roll: item.roll,
+              },
+        )
       )
         return false;
       setMoveHistory((history) => [...history.slice(-19), prior]);
@@ -355,6 +386,8 @@ export function useAnnotations() {
     },
     remove: (id: string) => {
       if (!persist(current.current.filter((a) => a.id !== id))) return false;
+      if (editing.current?.draft.id === id) setEditing(null);
+      setSelectionRequest(null);
       if (selected === id) {
         setSelected(null);
         setMoveHistory((history) => history.filter((a) => a.id !== id));

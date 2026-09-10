@@ -18,6 +18,7 @@ import { deliverPhoto } from '../photos/export';
 import { surveyDrawing } from './surveyDrawing';
 import { sectionImageName } from './exportName';
 import { surveyBasis, surveySettings } from './surveyLine';
+import { SURVEY_SCALES, surveyScaleWidth } from './surveyScale';
 import type { SurveySectionState } from './useSurveySection';
 
 /** Full-screen viewer; keeps the engineering sheet's original landscape geometry. */
@@ -135,6 +136,41 @@ export function SurveySheet({
             </button>
           </header>
           <p>方向角 A→B：{surveyBasis(line).bearing.toFixed(2)}°</p>
+          <label>
+            水平比例尺
+            <select
+              aria-label="图纸比例尺"
+              value={line.printScale ?? 0}
+              onChange={(e) =>
+                state.commit(
+                  surveySettings(
+                    {
+                      ...line,
+                      printScale: Number(e.target.value) || undefined,
+                    },
+                    object.settings,
+                  ),
+                )
+              }
+            >
+              <option value={0}>自动铺满</option>
+              {SURVEY_SCALES.map((n) => {
+                let fits = true;
+                try {
+                  if (terrain) surveyScaleWidth(terrain.end - terrain.start, n);
+                } catch {
+                  fits = false;
+                }
+                return (
+                  <option key={n} value={n} disabled={!fits}>
+                    1:{n}
+                    {fits ? '' : '（容不下全线）'}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+          <p>比例尺按完整图纸宽 420 mm 打印。平面图等比，剖面纵向比例另注。</p>
           <label>
             等高距
             <select

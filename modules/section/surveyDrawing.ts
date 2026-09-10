@@ -3,11 +3,17 @@ import {
   surveyBasis,
   surveyHeight,
   surveyStations,
+  surveyCoordinate,
   type SurveyLine,
   type SurveyTerrain,
 } from './surveyLine.ts';
 import type { Annotation } from '../annotations/data.ts';
 import { surveyPointData, surveyRecordPages } from './surveyRecords.ts';
+import {
+  SURVEY_PX_PER_MM,
+  surveyScaleWidth,
+  surveyHorizontalScale,
+} from './surveyScale.ts';
 
 const xml = (s: string) =>
   s.replace(
@@ -31,8 +37,8 @@ export function surveyDrawing(
 ) {
   const W = 1800,
     left = 100,
-    right = 1280,
-    width = right - left,
+    width = surveyScaleWidth(data.end - data.start, line.printScale),
+    right = left + width,
     top = 200,
     bottom = 670;
   const span = data.end - data.start,
@@ -48,7 +54,25 @@ export function surveyDrawing(
     (Math.floor(data.rows / 2) + 1) * data.columns,
   );
   const finite = values.filter((v): v is number => v !== null);
-  const lo = Math.min(...finite),
+  const wells = markers
+    .filter(
+      (m) =>
+        m.borehole &&
+        m.sectionAnchor &&
+        stations.some((s) => s.id === (m.sectionAnchor!.stationId ?? m.id)),
+    )
+    .map((m) => ({
+      marker: m,
+      station: stations.find(
+        (s) => s.id === (m.sectionAnchor!.stationId ?? m.id),
+      )!,
+    }));
+  const wellBottoms = wells.flatMap(({ marker, station }) => {
+    const h = surveyHeight(data, station.distance),
+      depth = marker.borehole!.depth;
+    return h === null || depth === null ? [] : [h - depth];
+  });
+  const lo = Math.min(...finite, ...wellBottoms),
     hi = Math.max(...finite);
   if (!finite.length) throw new Error('勘探线上没有可用高程，请重新读取地形');
   const step = Math.max(
@@ -57,7 +81,11 @@ export function surveyDrawing(
     ),
     low = Math.floor((lo - step) / step) * step,
     high = Math.ceil((hi + step) / step) * step;
-  const H = Math.max(1480, planBottom + 170),
+  const coordinatesTop = planBottom + 155;
+  const H = Math.max(
+      1480,
+      coordinatesTop + Math.ceil(stations.length / 3) * 68 + 130,
+    ),
     x = (s: number) => left + ((s - data.start) / span) * width,
     y = (h: number) => bottom - ((h - low) / (high - low)) * (bottom - top);
   const text = (xx: number, yy: number, label: string, size = 23, extra = '') =>
@@ -136,6 +164,32 @@ export function surveyDrawing(
     pen = true;
   });
   svg += `<path d="${curve}" stroke-width="2.6"/>`;
+  for (const { marker, station } of wells) {
+    const h = surveyHeight(data, station.distance),
+      depth = marker.borehole!.depth,
+      xx = x(station.distance);
+    if (h === null || depth === null) {
+      svg += text(
+        xx,
+        h === null ? bottom - 20 : y(h) + 30,
+        `${station.label} 钻井 · ${depth === null ? '深度未填' : '地面高程缺测'}`,
+        17,
+        'text-anchor="middle"',
+      );
+      continue;
+    }
+    const end = y(h - depth);
+    svg +=
+      segment(xx, y(h), xx, end, 'class="borehole" stroke-width="2.5"') +
+      `<path d="M${num(xx - 7)},${num(end - 11)} L${num(xx)},${num(end)} L${num(xx + 7)},${num(end - 11)}" stroke-width="2.5"/>` +
+      text(
+        xx + (xx > right - 160 ? -12 : 12),
+        (y(h) + end) / 2 + 6,
+        `钻井 ${num(depth)} m`,
+        19,
+        xx > right - 160 ? 'text-anchor="end"' : '',
+      );
+  }
   svg +=
     text(left, planTop - 27, '等高线平面图', 26) +
     `<rect x="${left}" y="${planTop}" width="${width}" height="${num(planHeight)}"/>`;
@@ -215,13 +269,29 @@ export function surveyDrawing(
       20,
       'text-anchor="middle"',
     );
-  svg += text(left, planBottom + 36, '平剖共用水平尺度 · 平面图纵横等比', 21);
+  const horizontal = surveyHorizontalScale(span, width),
+    vertical = ((high - low) * 1000 * SURVEY_PX_PER_MM) / (bottom - top);
+  svg += text(
+    left,
+    planBottom + 36,
+    `水平 1:${num(horizontal)} · 纵向 1:${num(vertical)} · 全图打印宽 420 mm`,
+    21,
+  );
   svg += text(
     left,
     planBottom + 66,
     `剖面纵向放大 ${num((bottom - top) / (high - low) / (width / span))} 倍 · 局部平面距离`,
     19,
   );
+  svg += text(left, coordinatesTop - 8, '测点坐标（WGS84，经度 / 纬度）', 22);
+  stations.forEach((s, i) => {
+    const p = surveyCoordinate(line, s.distance),
+      xx = left + (i % 3) * 400,
+      yy = coordinatesTop + 24 + Math.floor(i / 3) * 68;
+    svg +=
+      text(xx, yy, `${s.label}  经 ${p[0].toFixed(6)}°`, 19) +
+      text(xx, yy + 24, `纬 ${p[1].toFixed(6)}°`, 19);
+  });
   const missing = data.heights.filter((h) => h === null).length;
   svg += text(
     left,
@@ -235,6 +305,7 @@ export function surveyDrawing(
     ['等高线', '#946344', ''],
     ['AB 基线', '#ac372d', ''],
     ['延长线', '#ac372d', '10 5'],
+    ['↓ 钻井 / 深度', '#222', ''],
   ].forEach(([label, color, dash], i) => {
     const yy = 210 + i * 50;
     svg +=
@@ -267,7 +338,7 @@ export function surveyDrawing(
         'text-anchor="end"',
       );
   });
-  svg += text(1380, 865, '完整点位、坐标与备注见资料附表', 19);
+  svg += text(1380, 900, '完整名称与备注见资料附表', 19);
   const info = line.info;
   const fields = [
     ['项目', info?.project],

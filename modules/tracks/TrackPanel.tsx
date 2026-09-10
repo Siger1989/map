@@ -4,13 +4,14 @@ import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
 import { SharedTrackDetails } from './SharedTrackDetails';
-import { trackDistance } from './drawing';
+import { trackDistance, MAX_SAVED_TRACKS } from './drawing';
 import {
   keepsOriginalPoints,
   trackSourceLabel,
   hasTrackTime,
 } from './provenance';
 import { TrackStyleControls } from './TrackStyleControls';
+import { TrackDrawingStyle } from './TrackDrawingStyle';
 import { normalizeTrackStyle } from './style';
 import type { ManualTracksState } from './useManualTracks';
 import { drawingArea, drawingTime } from './archive';
@@ -70,6 +71,9 @@ export function TrackPanel({
     return (
       <SharedTrackDetails
         track={selectedTrack}
+        onCondition={(color, value) =>
+          t.setColorCondition(selectedTrack.id, color, value)
+        }
         onBack={() => t.select(null)}
         onEdit={() => setEditShared(true)}
         onShow={onShow}
@@ -285,7 +289,9 @@ export function TrackPanel({
         </>
       )}
       <div className="track-saved-heading">
-        <strong>已保存 {t.saved.length}/20</strong>
+        <strong>
+          已保存 {t.saved.length}/{MAX_SAVED_TRACKS}
+        </strong>
         <button
           aria-pressed={t.visible}
           onClick={() => t.setVisible(!t.visible)}
@@ -410,6 +416,10 @@ export function TrackPanel({
                   </p>
                   <JourneyPanel
                     segments={track.segments}
+                    track={track}
+                    onCondition={(color, value) =>
+                      t.setColorCondition(track.id, color, value)
+                    }
                     onLocate={(p) => onShow([p])}
                   />
                 </div>
@@ -462,6 +472,10 @@ export function TrackPanel({
               {!track.sharedRoute && (
                 <JourneyPanel
                   segments={track.segments}
+                  track={track}
+                  onCondition={(color, value) =>
+                    t.setColorCondition(track.id, color, value)
+                  }
                   onLocate={(p) => onShow([p])}
                 />
               )}
@@ -502,13 +516,28 @@ export function TrackTools({
 }) {
   return (
     <div className="track-tools glass" aria-label="绘制工具">
-      <button aria-pressed={t.roadSnapping} onClick={() => t.setRoadSnapping(!t.roadSnapping)}>
+      <TrackDrawingStyle
+        style={t.style}
+        onChange={(style) => t.setStyle(style, true)}
+        condition={t.colorConditions?.[t.style.color] ?? ''}
+        onCondition={t.setDraftCondition}
+      />
+      <button
+        aria-pressed={t.roadSnapping}
+        onClick={() => t.setRoadSnapping(!t.roadSnapping)}
+      >
         道路吸附
       </button>
-      <button aria-pressed={t.riverSnapping} onClick={() => t.setRiverSnapping(!t.riverSnapping)}>
+      <button
+        aria-pressed={t.riverSnapping}
+        onClick={() => t.setRiverSnapping(!t.riverSnapping)}
+      >
         河流吸附
       </button>
-      <button aria-pressed={t.snapping} onClick={() => t.setSnapping(!t.snapping)}>
+      <button
+        aria-pressed={t.snapping}
+        onClick={() => t.setSnapping(!t.snapping)}
+      >
         节点吸附
       </button>
       {t.anchor && (
@@ -518,6 +547,11 @@ export function TrackTools({
         撤销
       </button>
       <button onClick={onFinish}>完成</button>
+      {t.error && (
+        <p className="track-save-error" role="alert">
+          {t.error}
+        </p>
+      )}
     </div>
   );
 }

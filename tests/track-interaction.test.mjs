@@ -568,7 +568,7 @@ test('an isolated draft point can be deleted while preserving the rest, and dire
     ],
   };
   const joined = connectTrackNodes(track, loose, track, c, 'draft');
-  assert.deepEqual(joined.segments, [...track.segments, [loose, c]]);
+  assert.deepEqual(joined.segments, [[a, b, c, d], [b, loose, c]]);
   assert.deepEqual(track.segments, [
     [a, b, c, d],
     [b, loose],

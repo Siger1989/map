@@ -1,6 +1,7 @@
 'use client';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
@@ -135,7 +136,10 @@ import { photosForMarker, mapPhotos } from '@/modules/photos/association';
 import { editorPose } from '@/modules/annotations/editorSession';
 import { QuickAdd } from '@/modules/annotations/QuickAdd';
 import type { MapHold } from '@/modules/map/MapLongPress';
-import { KINDS, type Annotation } from '@/modules/annotations/data';
+import {
+  ANNOTATION_CHOICES,
+  type Annotation,
+} from '@/modules/annotations/data';
 import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
 import {
   TrackDrawing,
@@ -1050,9 +1054,10 @@ export default function Home() {
         data-section={sectionEditing}
         data-survey={survey.active && panel === null}
         data-survey-expanded={
-          survey.pointMenu &&
-          !!survey.object &&
-          !['point', 'marker'].includes(survey.picking ?? '')
+          !!survey.markerTarget ||
+          (survey.pointMenu &&
+            !!survey.object &&
+            !['point', 'marker'].includes(survey.picking ?? ''))
         }
         data-route-notice={Boolean(
           navigation.picking !== null || navigation.route,
@@ -1462,6 +1467,9 @@ export default function Home() {
                 <RouteDetails
                   track={railTrack}
                   alternative={activeAlternative}
+                  onCondition={(color, value) =>
+                    tracks.setColorCondition(railTrack.id, color, value)
+                  }
                   markers={annotations.items}
                   photos={photos.items}
                   onBack={() => setRouteWindow('card')}
@@ -1576,6 +1584,7 @@ export default function Home() {
         )}
         {panel === null &&
           !tracks.drawing &&
+          !survey.active &&
           !areas.drawing &&
           !annotations.picking &&
           !navigation.picking &&
@@ -1897,12 +1906,20 @@ export default function Home() {
           />
         )}
         <header className="topbar glass">
-          <div className="brand">
+          <button
+            className="brand"
+            aria-label="关于山兔与使用教程"
+            onClick={() => {
+              if (annotations.edit && !annotations.select(null)) return;
+              tracks.pause();
+              setPanel('about');
+            }}
+          >
             <span className="brand-icon">
               <img src="/brand/shantu-logo.png" alt="" width={25} height={25} />
             </span>
             <h1>{PRODUCT_NAME}</h1>
-          </div>
+          </button>
           <PlaceSearch
             center={mapCenter}
             zoom={view.zoom}
@@ -1938,7 +1955,7 @@ export default function Home() {
             点击地图
             {annotations.picking === 'move'
               ? '移动标记'
-              : `放置${KINDS[annotations.picking]}`}
+              : `放置${ANNOTATION_CHOICES[annotations.picking]}`}
             <button
               onClick={() => {
                 annotations.setPicking(null);
@@ -2709,6 +2726,7 @@ export default function Home() {
               {mapStatus}
             </p>
           )}
+          {panel === 'about' && <AboutPanel />}
         </ControlDock>
         {sectionSaveError && (
           <p className="section-save-error glass" role="alert">

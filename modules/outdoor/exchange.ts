@@ -1,4 +1,5 @@
 import { unzipSync, strFromU8 } from 'fflate';
+import { trackStyleText, readTrackStyle } from '../tracks/styleExchange.ts';
 import {
   SAVED_MEASUREMENTS_KEY,
   parseSavedMeasurements,
@@ -35,6 +36,7 @@ import { mergeCollections } from '../collections/transfer.ts';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import {
   parseSavedTracks,
+  MAX_SAVED_TRACKS,
   TRACK_STORAGE,
   type ManualTrack,
 } from '../tracks/drawing.ts';
@@ -83,7 +85,7 @@ export function validateTransfer(v: unknown): Transfer {
     data.format !== 'guanyun-backup' ||
     data.version !== 1 ||
     !Array.isArray(data.tracks) ||
-    data.tracks.length > 20 ||
+    data.tracks.length > MAX_SAVED_TRACKS ||
     !Array.isArray(data.favorites) ||
     data.favorites.length > 20 ||
     !data.favorites.every(validFavorite)
@@ -317,7 +319,21 @@ export function mergeData(
     next.annotations = next.annotations.map((a) => {
       if (a.id !== id || before.annotations.includes(a)) return a;
       if (sectionId)
-        return { ...a, sectionAnchor: { ...source.sectionAnchor!, sectionId } };
+        return {
+          ...a,
+          sectionAnchor: {
+            ...source.sectionAnchor!,
+            sectionId,
+            ...(source.sectionAnchor!.stationId
+              ? {
+                  stationId:
+                    importedKeys
+                      .get(`annotation:${source.sectionAnchor!.stationId}`)
+                      ?.slice(11) ?? source.sectionAnchor!.stationId,
+                }
+              : {}),
+          },
+        };
       const { sectionAnchor: _anchor, ...detached } = a;
       return detached;
     });
@@ -458,6 +474,17 @@ export async function parseFile(file: File): Promise<Transfer> {
       ...newAnnotation('pin', coordinates, null, crypto.randomUUID()),
       name,
     });
+  const applyStyle = (element: Element) => {
+    const text =
+      elements(element, 'route-style')[0]?.textContent ??
+      elements(element, 'Data').find(
+        (e) => e.getAttribute('name') === 'shantu-route-style',
+      )?.textContent;
+    if (text?.trim()) {
+      const track = data.tracks.at(-1)!;
+      Object.assign(track, readTrackStyle(text, track.segments));
+    }
+  };
   if (doc.documentElement.localName === 'gpx') {
     for (const trk of elements(doc, 'trk')) {
       const lines = elements(trk, 'trkseg').map((seg) =>
@@ -483,6 +510,7 @@ export async function parseFile(file: File): Promise<Transfer> {
           return { time, altitude };
         }),
       );
+      applyStyle(trk);
     }
     for (const rte of elements(doc, 'rte'))
       addTrack(label(rte), [
@@ -511,7 +539,10 @@ export async function parseFile(file: File): Promise<Transfer> {
         });
     for (const pm of elements(doc, 'Placemark')) {
       const lines = elements(pm, 'LineString').map(coords);
-      if (lines.length) addTrack(label(pm), lines);
+      if (lines.length) {
+        addTrack(label(pm), lines);
+        applyStyle(pm);
+      }
       for (const p of elements(pm, 'Point')) {
         const list = coords(p);
         if (list.length !== 1) throw new Error('KML 点坐标无效');
@@ -525,7 +556,10 @@ export async function parseFile(file: File): Promise<Transfer> {
   return validateTransfer(data);
 }
 export function exportGPX(data: Transfer) {
-  const tracks: Pick<ManualTrack, 'name' | 'segments' | 'samples'>[] = [
+  const tracks: Pick<
+    ManualTrack,
+    'name' | 'segments' | 'samples' | 'style' | 'edgeColors' | 'colorConditions'
+  >[] = [
     ...data.tracks,
     ...data.favorites.map((f) => ({
       name: f.name,
@@ -535,7 +569,7 @@ export function exportGPX(data: Transfer) {
   return `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Guanyun" xmlns="http://www.topografix.com/GPX/1/1">${data.annotations.map((p) => `<wpt lat="${p.coordinates[1]}" lon="${p.coordinates[0]}"><name>${escapeXML(p.name)}</name><desc>${escapeXML(p.note)}</desc></wpt>`).join('')}${tracks
     .map(
       (t) =>
-        `<trk><name>${escapeXML(t.name)}</name>${t.segments
+        `<trk><name>${escapeXML(t.name)}</name><extensions><shantu:route-style xmlns:shantu="urn:shantu:route-style:1">${escapeXML(trackStyleText(t))}</shantu:route-style></extensions>${t.segments
           .map(
             (s, i) =>
               `<trkseg>${s
@@ -550,14 +584,17 @@ export function exportGPX(data: Transfer) {
     .join('')}</gpx>`;
 }
 export function exportKML(data: Transfer) {
-  const tracks: Pick<ManualTrack, 'name' | 'segments' | 'samples'>[] = [
+  const tracks: Pick<
+    ManualTrack,
+    'name' | 'segments' | 'samples' | 'style' | 'edgeColors' | 'colorConditions'
+  >[] = [
     ...data.tracks,
     ...data.favorites.map((f) => ({
       name: f.name,
       segments: [f.route.coordinates],
     })),
   ];
-  return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${data.annotations.map((p) => `<Placemark><name>${escapeXML(p.name)}</name><Point><coordinates>${p.coordinates.join(',')}</coordinates></Point></Placemark>`).join('')}${tracks.map((t) => `<Placemark><name>${escapeXML(t.name)}</name><MultiGeometry>${t.segments.map((s) => `<LineString><tessellate>1</tessellate><coordinates>${s.map((p) => p.join(',')).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`).join('')}</Document></kml>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${data.annotations.map((p) => `<Placemark><name>${escapeXML(p.name)}</name><Point><coordinates>${p.coordinates.join(',')}</coordinates></Point></Placemark>`).join('')}${tracks.map((t) => `<Placemark><name>${escapeXML(t.name)}</name><ExtendedData><Data name="shantu-route-style"><value>${escapeXML(trackStyleText(t))}</value></Data></ExtendedData><MultiGeometry>${t.segments.map((s) => `<LineString><tessellate>1</tessellate><coordinates>${s.map((p) => p.join(',')).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`).join('')}</Document></kml>`;
 }
 export function saveFile(name: string, mime: string, text: string) {
   if (window.GuanyunNative) {

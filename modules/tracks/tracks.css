@@ -27,6 +27,51 @@
   color: var(--muted);
   padding: 0 4px;
 }
+.track-drawing-style {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-basis: 100%;
+  min-width: 0;
+}
+.track-drawing-style label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+.track-drawing-style input[type='color'] {
+  width: 40px;
+  height: 36px;
+  min-height: 36px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+}
+.track-drawing-style select {
+  width: 68px;
+  min-height: 36px;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+.track-drawing-style .track-condition-input {
+  flex: 1;
+  min-width: 0;
+  width: 80px;
+  min-height: 36px;
+  font-size: 11px;
+  padding: 2px 4px;
+}
+.track-tools .track-save-error {
+  flex-basis: 100%;
+  margin: 0;
+  max-height: 72px;
+  overflow-y: auto;
+  color: #a23b31;
+  font-size: 12px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
 .track-tools button {
   background: #ffffff0b;
   color: var(--accent);

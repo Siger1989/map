@@ -84,7 +84,7 @@ test('connection explicitly bridges selected nodes in a new route, preserving bo
   const detached = track('other', [[C, D]]),
     before = JSON.stringify([primary, detached]);
   const merged = connectTrackNodes(primary, J, detached, C, 'merged');
-  assert.deepEqual(merged.segments.at(-1), [J, C]);
+  assert.ok(merged.segments.some(line => line.some((p, i) => i > 0 && ((vertexKey(p) === vertexKey(J) && vertexKey(line[i-1]) === vertexKey(C)) || (vertexKey(p) === vertexKey(C) && vertexKey(line[i-1]) === vertexKey(J))))));
   assert.equal(merged.id, 'merged');
   assert.equal(JSON.stringify([primary, detached]), before);
   const nav = trackNavigation(merged, now);

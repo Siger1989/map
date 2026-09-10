@@ -17,6 +17,9 @@ export function qrTransfer(
     createdAt: now,
     segments: data.segments.map((line) => line.map((p) => [...p])),
     source: 'shared',
+    ...(data.style ? { style: data.style } : {}),
+    ...(data.edgeColors ? { edgeColors: data.edgeColors } : {}),
+    ...(data.colorConditions ? { colorConditions: data.colorConditions } : {}),
     navigationMode: data.mode,
     sharedRoute: {
       stops: data.stops.map((s) => ({
