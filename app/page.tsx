@@ -506,9 +506,16 @@ export default function Home() {
         surveyCoordinate(value.survey, range.end),
       ];
       // Wait for the favorites split to close before fitting the full map.
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        map.current?.fitCollection(points);
-      }));
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          map.current?.fitCollection(points, {
+            top: 140,
+            right: 84,
+            bottom: 120,
+            left: 48,
+          });
+        }),
+      );
       return;
     }
     map.current?.stop();
@@ -1041,6 +1048,12 @@ export default function Home() {
         data-measuring={measurement.active}
         data-panel={panel ?? 'map'}
         data-section={sectionEditing}
+        data-survey={survey.active && panel === null}
+        data-survey-expanded={
+          survey.pointMenu &&
+          !!survey.object &&
+          !['point', 'marker'].includes(survey.picking ?? '')
+        }
         data-route-notice={Boolean(
           navigation.picking !== null || navigation.route,
         )}

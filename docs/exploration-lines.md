@@ -16,6 +16,16 @@
 
 连接或合并不同颜色的手绘路线保留各原始边的颜色，连接空隙采用起始路线的颜色。反向、节点插入/移动/删除、续画、草稿撤销和 JSON 备份保留颜色。调整线宽与透明度不统一改色；主动选整条路线的新颜色会统一颜色。GPX/KML 外部点线交换不保证分段颜色，完整恢复请用 JSON。
 
+## 地图下方编辑与横版图纸（0.2.24）
+
+点选 A/B/C/D 后，在地图下方独立编辑区直接填写经纬度（WGS84十进制度），点击“应用”。A/B按当前模式处理；附加点始终投影在线上，并回填实际坐标。点“调方向/沿线移动”立即显示移动提示，可拖动此点或点击地图落位，“取消移动”退出步骤。已有标记也可作为重新选点来源。
+
+右上“资料”编辑点名/备注；“删点”确认后移除附加点，关联地图标记只解绑、不删除。A/B为基准点，可重选或修改坐标。编辑区实际从地图高度中预留，点位部分112px、完整编辑带164px，拖动时不改变地图尺寸；底部加点/添加标记/完成编辑保持可见。
+
+“图纸”保留原横版工程图尺寸。图内新增方向角 A→B，按真北起顺时针计算，随A/B实时更新并导出。查看界面顶部返回/信息/设置，底部分页/缩放/保存图片/分享。Android保存须在系统文件窗口选位置后再点系统“保存”，不自动进相册。
+
+触屏手势限制提前设在SVG根元素，空白地图仍命中独立的MapLibre画布；不能仅依赖不建立CSS布局盒的SVG分组。触屏中断回滚预览并提示重新拖点/点击地图落位。[Pointer Events规范](https://www.w3.org/TR/pointerevents3/#the-touch-action-css-property)规定touch-action适用元素及开始触摸前的声明要求。用户手机是否仍会中断需要实际设备验证，本机无ADB连接。
+
 ## 模块接口
 
 | 入口 / 文件 | 职责与依赖 |
@@ -24,7 +34,9 @@
 | `surveyTerrain.ts` / `surveyContours.ts` | 通过 SectionTerrainStore 读取 DEM；同一网格生成中轴剖面与等高线，缺测不跨接 |
 | `surveyDrawing.ts` / `surveyRecords.ts` | 确定性 SVG 主图与完整附表，标记数据经显式参数传入 |
 | `surveyStore.ts` / `useSurveySection.ts` | 剖面和绑定标记事务保存、拾点状态、采样取消及刷新；数据变更事件与收藏同步 |
-| `SurveyMapOverlay.tsx` / `SurveySectionPanel.tsx` | 地图线/竖直面/手柄、紧凑编辑和图纸导出；通过 props 接入地图和标记 |
+| `SurveyMapOverlay.tsx` / `SurveySectionPanel.tsx` | 地图线/竖直面/手柄、独立下方编辑与资料组合；通过 props 接入地图和标记 |
+| `SurveyPointEditor.tsx` / `surveyPointInput.ts` / `exportName.ts` | 点位表单、十进制校验和Android兼容命名；通过props连接剖面状态 |
+| `SurveySheet.tsx` | 横版图纸查看、分页、缩放、信息入口与JPEG输出；消费确定性图纸和平台输出适配器 |
 | `modules/collections/CollectionTabs.tsx` / `tabOrder.ts` | 分类拖动与排序；workbenchAdapter/store/catalog 接测量与剖面 |
 | `modules/tracks/edgeColors.ts` | 可选逐边颜色矩阵、几何编辑颜色继承和同色绘制分段；TrackLayer/nodeOperations/draft/archive 适配 |
 | `modules/outdoor/exchange.ts` | 兼容 version1 JSON 备份，导入同时重映射剖面和关联标记 ID，避免错误绑定 |

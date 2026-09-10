@@ -118,6 +118,28 @@ export function SurveyMapOverlay({
             : [];
         return (
           <g key={object.id}>
+            {active &&
+              [range.start, range.end].map((distance, side) => {
+                const p = projectGround(surveyCoordinate(line, distance));
+                const extension = projectGround(
+                  surveyCoordinate(
+                    line,
+                    distance +
+                      (side ? 1 : -1) * (range.end - range.start) * 0.2,
+                  ),
+                );
+                return p && extension ? (
+                  <path
+                    key={side}
+                    d={`M${p.x},${p.y} L${extension.x},${extension.y}`}
+                    fill="none"
+                    stroke="#ffd34e"
+                    strokeWidth="2"
+                    strokeDasharray="7 6"
+                    opacity=".8"
+                  />
+                ) : null;
+              })}
             {corners.length === 4 && corners.every((p) => p !== null) && (
               <polygon
                 points={corners.map((p) => `${p!.x},${p!.y}`).join(' ')}
@@ -131,7 +153,7 @@ export function SurveyMapOverlay({
             <path
               d={d}
               fill="none"
-              stroke={object.settings.color}
+              stroke={active ? '#ffd34e' : object.settings.color}
               strokeWidth={active ? 3 : 2}
               className="survey-visible-line"
             />
@@ -163,14 +185,18 @@ export function SurveyMapOverlay({
               return (
                 <g
                   key={s.id}
-                  style={state.picking ? { pointerEvents: 'none' } : undefined}
+                  style={
+                    state.picking && state.picking !== s.id
+                      ? { pointerEvents: 'none' }
+                      : undefined
+                  }
                   className={
-                    active && !state.picking
+                    active && (!state.picking || state.picking === s.id)
                       ? 'survey-map-handle'
                       : 'survey-map-label'
                   }
                   role="button"
-                  tabIndex={state.picking ? -1 : 0}
+                  tabIndex={state.picking && state.picking !== s.id ? -1 : 0}
                   aria-label={`${object.name} ${s.label} 沿线点`}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -184,9 +210,14 @@ export function SurveyMapOverlay({
                     }
                   }}
                   onPointerDown={(e) => {
-                    if (!active || state.picking || e.button !== 0) return;
+                    if (
+                      !active ||
+                      (state.picking && state.picking !== s.id) ||
+                      e.button !== 0
+                    )
+                      return;
                     e.stopPropagation();
-                    state.select(s.id);
+                    state.select(s.id, false);
                     drag.current = {
                       pointer: e.pointerId,
                       id: s.id,
@@ -208,6 +239,7 @@ export function SurveyMapOverlay({
                     )
                       return;
                     g.moved = true;
+                    state.setDragging(true);
                     const rect =
                       e.currentTarget.ownerSVGElement!.getBoundingClientRect();
                     const point = toCoordinate({
@@ -224,29 +256,48 @@ export function SurveyMapOverlay({
                     if (!g || g.pointer !== e.pointerId) return;
                     e.stopPropagation();
                     drag.current = null;
+                    state.setDragging(false);
                     if (g.point && g.moved)
                       state.editPoint(g.id, g.point, true);
                     else state.cancelPreview();
+                    if (state.picking === g.id) state.setPicking(null);
                     if (e.currentTarget.hasPointerCapture(e.pointerId))
                       e.currentTarget.releasePointerCapture(e.pointerId);
                   }}
                   onPointerCancel={() => {
+                    if (!drag.current) return;
                     drag.current = null;
-                    state.cancelPreview();
+                    state.interruptDrag();
                   }}
                   onLostPointerCapture={() => {
                     if (drag.current) {
                       drag.current = null;
-                      state.cancelPreview();
+                      state.interruptDrag();
                     }
                   }}
                 >
                   <circle cx={p.x} cy={p.y} r="22" fill="transparent" />
+                  {active && state.selected === s.id && (
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r="13"
+                      fill="#ffd34e33"
+                      stroke="#ffd34e88"
+                      strokeWidth="2"
+                    />
+                  )}
                   <circle
                     cx={p.x}
                     cy={p.y}
                     r={active && state.selected === s.id ? 7 : 5}
-                    fill={s.id === 'A' || s.id === 'B' ? '#f6b74a' : '#d65b3f'}
+                    fill={
+                      active
+                        ? '#ffd34e'
+                        : s.id === 'A' || s.id === 'B'
+                          ? '#f6b74a'
+                          : '#d65b3f'
+                    }
                     stroke="white"
                     strokeWidth="2"
                   />

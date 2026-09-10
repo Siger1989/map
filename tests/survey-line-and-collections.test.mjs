@@ -58,6 +58,16 @@ test('saved engineering sheet escapes entered information and prints real terrai
   const l={...line(),info:{...emptySurveyInfo(),title:'AB <图>',project:'勘查区 & 测试'}},grid=terrain(l);
   const output=surveyDrawing(l,grid,'一号剖面');assert.match(output.svg,/AB &lt;图&gt;/);assert.match(output.svg,/勘查区 &amp; 测试/);assert.match(output.svg,/合成测试地形/);assert.match(output.svg,/等高线平面图/);
 });
+test('landscape drawing prints a true-north clockwise A-to-B bearing and updates after rotation',()=>{
+  const east=line();
+  const first=surveyDrawing(east,terrain(east),'方向验证');
+  assert.ok(first.pages[0].width>first.pages[0].height);
+  assert.match(first.svg,/方向角 A→B 90°（真北起顺时针）/);
+  const north=moveSurveyStation(east,'B',[104,30.01],'direction');
+  const next=surveyDrawing(north,terrain(north),'方向验证');
+  assert.match(next.svg,/方向角 A→B 0°（真北起顺时针）/);
+  assert.doesNotMatch(next.svg,/方向角 A→B 90°/);
+});
 test('saved measurements appear in favorites and retain all points through rename and export',()=>{
   const points=[{id:'a',coordinates:[104,30],altitude:100,heightSource:'terrain'},{id:'b',coordinates:[104.01,30],altitude:null,heightSource:'unknown'}];
   const item={id:'measure1',name:'测量 1',points,updatedAt:1000},storage=store([[SAVED_MEASUREMENTS_KEY,JSON.stringify({version:1,items:[item]})]]),before=collectData(storage);

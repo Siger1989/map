@@ -87,7 +87,10 @@ export type MapHandle = {
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
-  fitCollection: (coordinates: Coordinate[]) => void;
+  fitCollection: (
+    coordinates: Coordinate[],
+    padding?: { top: number; right: number; bottom: number; left: number },
+  ) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
   followPosition: (
     coordinates: Coordinate,
@@ -192,7 +195,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
     const collectionTarget = useRef<Coordinate[]>([]);
-    const fitCollection = (coordinates: Coordinate[], duration = 350) => {
+    const fitCollection = (
+      coordinates: Coordinate[],
+      duration = 350,
+      padding?: { top: number; right: number; bottom: number; left: number },
+    ) => {
       const m = mapRef.current;
       if (!m || !coordinates.length) return;
       collectionTarget.current = coordinates;
@@ -211,7 +218,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (w < 20 || h < 20) return;
       latest.current.onBrowse();
       m.fitBounds([min, max], {
-        padding: Math.min(56, h * 0.28, w * 0.2),
+        padding: padding
+          ? {
+              top: Math.min(padding.top, h * 0.3),
+              bottom: Math.min(padding.bottom, h * 0.35),
+              left: Math.min(padding.left, w * 0.2),
+              right: Math.min(padding.right, w * 0.25),
+            }
+          : Math.min(56, h * 0.28, w * 0.2),
         maxZoom: 18,
         pitch: 0,
         bearing: 0,
@@ -530,7 +544,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             duration: 700,
           });
         },
-        fitCollection,
+        fitCollection: (coordinates, padding) =>
+          fitCollection(coordinates, 350, padding),
         fitRoute: (coordinates) => {
           const m = mapRef.current;
           if (!m || !coordinates.length) return;
@@ -623,11 +638,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
-          const rememberView = () => saveLastView({
-            center: map.getCenter().wrap().toArray(), zoom: map.getZoom(),
-            pitch: map.getPitch(), bearing: map.getBearing(),
-          });
-          const onHidden = () => { if (document.hidden) rememberView(); };
+          const rememberView = () =>
+            saveLastView({
+              center: map.getCenter().wrap().toArray(),
+              zoom: map.getZoom(),
+              pitch: map.getPitch(),
+              bearing: map.getBearing(),
+            });
+          const onHidden = () => {
+            if (document.hidden) rememberView();
+          };
           map.on('moveend', rememberView);
           window.addEventListener('pagehide', rememberView);
           document.addEventListener('visibilitychange', onHidden);

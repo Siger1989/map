@@ -28,6 +28,8 @@ export function useSurveySection(
     [busy, setBusy] = useState(false),
     [retry, setRetry] = useState(0);
   const [preview, setPreview] = useState<SectionSettings | null>(null);
+  const [pointMenu, setPointMenu] = useState(true),
+    [dragging, setDragging] = useState(false);
   const refreshRequested = useRef(false);
   const current = sections.items.find(
       (s) => s.id === sections.selectedId && s.settings.survey,
@@ -107,6 +109,7 @@ export function useSurveySection(
   };
   const pick = (point: Coordinate) => {
     if (!active || !picking) return false;
+    setPointMenu(true);
     setError('');
     try {
       if (picking === 'first') {
@@ -151,8 +154,13 @@ export function useSurveySection(
     setPreview(null);
     setError('');
     setMode('direction');
+    setPointMenu(true);
+    setDragging(false);
   };
   const open = (object: SectionObject) => {
+    setSelected('A');
+    setPointMenu(true);
+    setDragging(false);
     sections.select(object.id);
     setActive(true);
     setFirst(null);
@@ -166,7 +174,21 @@ export function useSurveySection(
     picking,
     setPicking,
     selected,
-    select: setSelected,
+    select: (id: string, showMenu = true) => {
+      setSelected(id);
+      if (showMenu) setPointMenu(true);
+    },
+    beginMove: (id: string, nextMode: 'direction' | 'slide') => {
+      setSelected(id);
+      setMode(nextMode);
+      setPicking(id);
+      setPointMenu(true);
+      setError('');
+    },
+    pointMenu,
+    hidePointMenu: () => setPointMenu(false),
+    dragging,
+    setDragging,
     mode,
     setMode,
     follow,
@@ -179,12 +201,18 @@ export function useSurveySection(
     pick,
     editPoint,
     cancelPreview: () => setPreview(null),
+    interruptDrag: () => {
+      setDragging(false);
+      setPreview(null);
+      setError('拖动已中断，位置未保存。请重新拖点，或点击地图落位。');
+    },
     commit,
     close: () => {
       setActive(false);
       setPicking(null);
       setFirst(null);
       setPreview(null);
+      setDragging(false);
     },
     retry: () => {
       refreshRequested.current = true;

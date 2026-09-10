@@ -88,10 +88,11 @@ export function surveyDrawing(
       'text-anchor="middle"',
     );
   });
+  const bearing = surveyBasis(line).bearing;
   svg += text(
     900,
     96,
-    `等高距 ${line.interval} m · A 为里程零点`,
+    `方向角 A→B ${num(bearing)}°（真北起顺时针） · 等高距 ${line.interval} m · A 为里程零点`,
     20,
     'text-anchor="middle"',
   );
@@ -99,7 +100,6 @@ export function surveyDrawing(
     segment(1335, 116, 1335, H - 36) +
     text(680, 156, '地 形 剖 面', 28, 'text-anchor="middle"') +
     text(left, 187, '高程（m）', 21);
-  const bearing = surveyBasis(line).bearing;
   svg +=
     text(left, 155, `${num((bearing + 180) % 360)}° ←`, 20) +
     text(right, 187, `→ ${num(bearing)}°`, 20, 'text-anchor="end"');
