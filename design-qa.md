@@ -105,4 +105,3 @@ P3: raster-reference spacing is slightly denser; retain current touch dimensions
 - 关键截图：artifacts/screenshots/navigation-pick-390-0216.png、navigation-pick-360-0216.png、navigation-search-390-0216.png、navigation-search-360-0216.png。已目视核对；未进行Android真机触控验收。
 
 0.2.26电脑包补充：实际运行最终打包server.mjs，1280x720世界地图/天气正常，头像0.2.26/code33和直接拼合教程可见，无横溢和console error；截图ui-0226/desktop-package-1280.png。Mac/Safari无真机验收。
-
