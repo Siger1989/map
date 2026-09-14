@@ -1,4 +1,12 @@
-# 当前状态 — 2026-09-14 / 0.2.33 贴边适配与组内独立选择
+# 当前状态 — 2026-09-14 / 用户继续调布局，新增修正在隔离分支
+
+- **先读待整合分支**：`codex/layout-selection-clipping`，独立工作树`D:/shantu-layout-selection-fix`，最新功能提交`0fda5fa2b71f08497201f1dd203644bb8d9a4dfe`，前半轮提交`8a47c49e94a5cd051a1c3bc5871d8f032ac5a585`。完整实现、文件和验证记录在该工作树CURRENT_STATE.md。现用`D:/天气系统`业务源码、9241页面和已发布APK仍为下文0.2.33基线；本次这里只补交接文档，不合入代码、不触发用户页面更新。
+- 用户明确**先不打包，继续使用当前窗口；禁止控制、刷新或切换工作窗口**。未提升版本、未生成新APK/Release，禁止以0.2.33包冒充此次修正。不要重置/覆盖`config/ui-layout-draft.json`和真实浏览器localStorage，整合时以用户最终布局为基准。
+- 隔离分支已完成：SVG点选完整剖面外框，独立控件移出装饰父组后仍可见可选；大小模式辅助线，拖动固定对侧边，保留数值缩放贴边；层级区分页面父组/组内控件并显示实际对象；头像页显示调整/导出/导入，移除左侧常驻布局按钮；行程所选点显示海拔/坡度/角度/里程/点序号/坐标/原始时间和区间速度。新点数据只派生显示，不改轨迹存档。
+- 保留`shantu.ui-layout.v1`和JSON version1；覆盖升级沿用同包名/签名/固定页面源，启动只读保存布局。旧版手机导出在布局→参数→更多→导出布局，新头像页入口更直观；导出`shantu-layout-draft.json`用于后续视觉优化。手机有效导入保存，非法导入不覆盖；桌面导入需手动保存到项目。
+- 497/497逻辑、TypeScript、架构、diff、网页构建通过；独立后台浏览器390/360与桌面验证保存兼容、导出实际下载、导入重开、层级遮挡、点数据和整框/缩放等通过，无页面异常。13张实测图索引`D:/shantu-layout-selection-fix/artifacts/screenshots/layout-fix-guide.html`，均为隔离实际组件场景；Android覆盖安装、原生文件窗口、真机触控未验。用户调好后再按新指示整合本分支；Git同步目标仍为origin，未合入main。
+
+# 历史状态 — 2026-09-14 / 0.2.33 贴边适配与组内独立选择
 
 - **0.2.33已发布测试Release**：[v0.2.33-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.33-test-standalone)，id388261380，draft=false/prerelease=true。四个资产的GitHub大小/SHA256全部匹配本地。功能源码`1b9e7b8cc15b83a85eb52cc05e971bf3892c989e`已推送并与origin/codex/huawei-webview-touch逐字核对；本地分支codex/sync-20260910，未合入main。此次后续交接提交只更新状态文档，不改变APK对应源码。
 - 最终源码重新构建的0.2.33-test/code40包含贴边适配和组内拾取；不是此前同版本的中间包。APK/Shantu-0.2.33-test-standalone.apk为57727494字节，SHA256 `29f02ae65cd52af338b545e35413507d60283e558bdab4ce3d8d92e173dce6c3`。图示ZIP为2979031字节，SHA256 `bcba8398ec5b2f63482adfd8ddc0c6f795970df0dd28d25b40aeb2317f2945e0`。
