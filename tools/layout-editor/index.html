@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>山兔 · 布局调节窗口</title>
+    <link rel="stylesheet" href="/__layout/editor.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <strong>山兔 · 布局调节</strong
+        ><small>功能基准 0.2.29 · 修改的是布局草稿</small>
+      </div>
+      <nav>
+        <button id="undo" disabled>撤销</button
+        ><button id="redo" disabled>重做</button
+        ><button id="export">导出JSON</button
+        ><label class="button"
+          >导入<input id="import" type="file" accept=".json" hidden /></label
+        ><button id="save" class="primary">保存到项目</button
+        ><a href="/__layout/gallery.html" target="_blank">功能图示</a>
+      </nav>
+    </header>
+    <main>
+      <aside>
+        <h2>画布与操作</h2>
+        <div class="row">
+          <button id="mode" class="primary">正在选择布局</button
+          ><select id="granularity" aria-label="选择范围">
+            <option value="group">整个组件</option>
+            <option value="control">单个控件</option>
+          </select>
+        </div>
+        <p>
+          先切到“操作页面”打开需要的面板，再切回选择。拖动蓝框移动，拖右下角改大小。
+        </p>
+        <label
+          >手机尺寸<select id="viewport">
+            <option value="390,844">390 × 844</option>
+            <option value="360,780">360 × 780</option>
+            <option value="266,575">266 × 575</option>
+            <option value="768,1024">768 × 1024</option>
+          </select></label
+        ><label
+          >预览缩放<input
+            id="zoom"
+            type="range"
+            min="40"
+            max="100"
+            value="80"
+          /><output id="zoom-value">80%</output></label
+        ><label
+          ><input id="snap" type="checkbox" checked />拖动吸附到4px网格</label
+        ><label
+          ><input id="ratio" type="checkbox" checked />拖角时保持宽高比</label
+        >
+        <h2>可选择的组件</h2>
+        <select id="widgets" size="10" aria-label="组件列表"></select
+        ><button id="refresh">刷新组件列表</button>
+      </aside>
+      <section class="workspace" aria-label="布局预览画布">
+        <div id="phone">
+          <div id="stage">
+            <iframe id="preview" title="山兔真实界面预览" src="/"></iframe>
+            <div id="cover" tabindex="0" aria-label="选择或拖动布局控件">
+              <div id="outline" hidden>
+                <span id="outline-label"></span
+                ><button id="resize" aria-label="拖动调整选中组件大小"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside>
+        <h2 id="selected-name">选择一个组件</h2>
+        <p id="selected-description">点击手机预览中的UI，或从左侧列表选择。</p>
+        <fieldset id="properties" disabled>
+          <label
+            >水平偏移 px<input
+              id="dx"
+              type="number"
+              min="-3000"
+              max="3000"
+              step="1" /></label
+          ><label
+            >垂直偏移 px<input
+              id="dy"
+              type="number"
+              min="-3000"
+              max="3000"
+              step="1"
+          /></label>
+          <div class="row">
+            <label
+              >宽 px<input
+                id="width"
+                type="number"
+                min="16"
+                max="2000"
+                placeholder="自动" /></label
+            ><label
+              >高 px<input
+                id="height"
+                type="number"
+                min="16"
+                max="2000"
+                placeholder="自动"
+            /></label>
+          </div>
+          <label
+            >整体比例<input
+              id="scale"
+              type="number"
+              min="0.4"
+              max="2.5"
+              step="0.05" /></label
+          ><label
+            >字号 px<input
+              id="fontSize"
+              type="number"
+              min="8"
+              max="40"
+              placeholder="沿用原字号" /></label
+          ><label><input id="hidden" type="checkbox" />隐藏此组件</label
+          ><button id="reset">恢复此组件默认布局</button>
+        </fieldset>
+        <h2>已修改</h2>
+        <select id="changes" size="8" aria-label="已修改组件"></select>
+        <p>
+          偏移相对原布局。空宽高保留自适应；保存记录当前画布尺寸。后续统一对齐时以这份草稿为准。
+        </p>
+        <p id="status" role="status">正在载入…</p>
+      </aside>
+    </main>
+    <script type="module" src="/__layout/editor.mjs"></script>
+  </body>
+</html>

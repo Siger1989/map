@@ -117,3 +117,8 @@ P3: raster-reference spacing is slightly denser; retain current touch dimensions
 - 关键截图：artifacts/screenshots/navigation-pick-390-0216.png、navigation-pick-360-0216.png、navigation-search-390-0216.png、navigation-search-360-0216.png。已目视核对；未进行Android真机触控验收。
 
 0.2.26电脑包补充：实际运行最终打包server.mjs，1280x720世界地图/天气正常，头像0.2.26/code33和直接拼合教程可见，无横溢和console error；截图ui-0226/desktop-package-1280.png。Mac/Safari无真机验收。
+
+## 2026-09-14 / 0.2.29反馈修正
+- 主地图、路线卡/里程条、编辑/海拔设置在390、360、266 CSS像素复核；照片18～23见artifacts/screenshots/ui-0228。定位状态移顶，右高程区域与118px方向盘分开，编辑底栏按实高避让。浏览器GPS超时，非真机验收。
+- 不含ele的GPX实读缓存DEM约496米；详情坡度0.3%，原文件保留。
+- 布局工具实际iframe、列表选择、属性框与自适应缩放已见；拖动发现选择器>被误拒，已修复并回归；最终GUI因浏览器连接连续超时未完成，保存API独立HTTP测试通过。

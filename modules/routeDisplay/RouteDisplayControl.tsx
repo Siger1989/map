@@ -20,9 +20,6 @@ export function RouteDisplayControl({
   const root = useRef<HTMLDivElement>(null),
     toggle = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (blocked) setOpen(false);
-  }, [blocked]);
-  useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
       if (event.target instanceof Node && !root.current?.contains(event.target))
@@ -58,10 +55,9 @@ export function RouteDisplayControl({
         aria-label="路线显示设置"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        disabled={blocked}
       >
         <ChartNoAxesCombined size={17} />
-        <small>显示</small>
+        <small>海拔显示</small>
       </button>
       {open && (
         <section
@@ -140,6 +136,7 @@ export function RouteDisplayControl({
               刷新路线高程
             </button>
             {display.error && <p role="alert">{display.error}</p>}
+            {display.elevationError && <p role="alert">{display.elevationError}</p>}
           </div>
         </section>
       )}
@@ -150,6 +147,7 @@ export function RouteDisplayControl({
               读取路线高程…
             </small>
           )}
+          {display.elevationError && <small className="glass" role="status">{display.elevationError}</small>}
           {preferences.legend && mode !== 'solid' && (
             <section
               className="route-color-legend glass"

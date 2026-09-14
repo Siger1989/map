@@ -142,6 +142,16 @@
 .observatory .position-status {
   font-size: 10px;
 }
+.observatory[data-route-edit='true'] .position-dock {
+  bottom: calc(var(--route-edit-clearance, 225px) + var(--safe-bottom));
+}
+.observatory[data-route-edit='true'] .position-dock-coordinates { display: none; }
+.observatory[data-route-window='true']:not([data-route-edit='true']) .track-journey-rail {
+  top: calc(56px + var(--route-card-clearance, 224px) + var(--safe-top));
+  height: min(350px, calc(100dvh - var(--route-card-clearance, 224px) - 236px - var(--safe-top) - var(--safe-bottom)));
+  max-height: none;
+  overflow-y: auto;
+}
 .observatory .route-dialog {
   font-size: 11px;
 }
@@ -168,16 +178,47 @@
   .observatory[data-panel='favorites'] .map-actions {
     max-width: 132px;
   }
-  .observatory .route-display-info {
-    width: 150px;
-    left: 4px;
-    right: auto;
-    bottom: calc(174px + var(--safe-bottom));
-    max-height: 180px;
-  }
   .route-display-control:has(.route-display-settings) .route-display-info,
   .observatory[data-panel='outdoor'] .route-display-info,
   .observatory[data-panel='route'] .route-display-info {
     visibility: hidden;
   }
+}
+
+/* Reserve separate zones for status, bottom actions, compass and route data. */
+.observatory .position-dock .position-dock-button {
+  color: #155036;
+  background: #f3faf3;
+  border: 1px solid #98bda6;
+}
+.observatory .position-dock .position-dock-button:is([aria-pressed='true'], [aria-expanded='true']) {
+  color: #fff;
+  background: #246748;
+}
+.observatory .position-status {
+  top: calc(56px + var(--safe-top));
+  bottom: auto;
+  left: 4px;
+  right: 60px;
+  max-width: 276px;
+  padding: 2px 4px;
+}
+.observatory[data-route-window='true']:not([data-route-edit='true']) .camera-gizmo {
+  bottom: calc(78px + var(--safe-bottom));
+}
+.observatory:has(.map-actions.is-expanded) .route-display-info,
+.observatory[data-panel='favorites'] .route-display-info,
+.observatory:has(.route-display-settings) .route-display-info,
+.observatory:has(.route-details) .route-display-info {
+  visibility: hidden;
+}
+.observatory:has(.route-display-settings) .control-popover {
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-height: 660px) {
+  .observatory[data-route-window='true'] .route-display-info { visibility: hidden; }
+}
+@media (max-height: 540px) {
+  .observatory .route-display-info { visibility: hidden; }
 }

@@ -10,6 +10,7 @@
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "postinstall": "node scripts/sync-map-worker.mjs",
     "dev": "vinext dev",
+    "dev:layout": "vite --config mobile/vite.config.ts --host 127.0.0.1 --port 9241 --strictPort",
     "build": "vinext build",
     "build:android:web": "vite build --config mobile/vite.config.ts",
     "build:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1",

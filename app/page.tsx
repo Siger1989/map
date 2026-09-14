@@ -371,6 +371,9 @@ export default function Home() {
     phase: recorder.record.phase,
     blocked:
       areas.drawing ||
+      !!editor.session ||
+      measurement.active ||
+      survey.active ||
       tracks.editing ||
       !!annotations.picking ||
       navigation.picking !== null ||
@@ -2133,6 +2136,7 @@ export default function Home() {
             map.current?.north();
           }}
           onLocate={() => {
+            if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
             if (follow.following) {
               follow.pause();
               map.current?.stop();
@@ -2145,9 +2149,8 @@ export default function Home() {
           following={follow.following}
           followBlocked={follow.blocked}
           locating={
-            follow.following &&
-            (follow.waiting ||
-              (recorder.record.phase !== 'recording' && position.locating))
+            (follow.following && follow.waiting) ||
+            (recorder.record.phase !== 'recording' && position.locating)
           }
           watching={position.watching}
           onStopLocation={() => {

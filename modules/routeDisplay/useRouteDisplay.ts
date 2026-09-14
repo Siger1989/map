@@ -2,15 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
 import type { TrackOverlay } from '../tracks/TrackLayer';
 import type { RouteOverlay } from '../navigation/types';
-import { sampleTerrain, elevationStats } from '../journey/metrics';
-import { readProfile } from '../journey/elevationProvider';
+import { elevationStats } from '../journey/metrics';
+import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
 import { analyzeRoute, metricLineParts } from '../routeAnalysis/metrics';
 import {
-  finiteHeight,
   routeElevationScale,
 } from '../routeAnalysis/elevationColors';
 import { DEFAULT_TRACK_STYLE } from '../tracks/style';
-import { trackHeights, withTerrainHeights } from './elevation';
+import { trackHeights } from './elevation';
 import {
   DEFAULT_ROUTE_DISPLAY,
   normalizeRouteDisplay,
@@ -28,8 +27,7 @@ export function useRouteDisplay(
   const [preferences, setPreferences] = useState(DEFAULT_ROUTE_DISPLAY);
   const [ready, setReady] = useState(false),
     [error, setError] = useState('');
-  const [chosenId, choose] = useState<string | null>(null),
-    [retry, setRetry] = useState(0);
+  const [chosenId, choose] = useState<string | null>(null);
   useEffect(() => {
     try {
       setPreferences(
@@ -85,74 +83,14 @@ export function useRouteDisplay(
       ? (target?.style?.colorMode ?? 'solid')
       : preferences.mode;
   const needHeight =
-    !blocked &&
     ready &&
     (mode === 'elevation' ||
       mode === 'slope' ||
       preferences.profile ||
       preferences.statistics ||
       preferences.steep);
-  const key = useMemo(
-    () =>
-      target
-        ? JSON.stringify([target.id, target.segments, target.samples])
-        : '',
-    [target],
-  );
-  const [result, setResult] = useState<{
-    key: string;
-    track: ManualTrack;
-    estimated: boolean;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    if (!needHeight || !target) {
-      setLoading(false);
-      return;
-    }
-    if (
-      target.segments.every((line, part) =>
-        line.every((_, i) =>
-          finiteHeight(target.samples?.[part]?.[i]?.altitude),
-        ),
-      )
-    ) {
-      setLoading(false);
-      return;
-    }
-    const request = new AbortController();
-    setLoading(true);
-    const timer = setTimeout(() => {
-      const parts = target.segments
-        .map((line, part) => ({ line, part }))
-        .filter(({ line }) => line.length >= 2);
-      const points = sampleTerrain(parts.map(({ line }) => line)).map((p) => ({
-        ...p,
-        part: parts[p.part].part,
-      }));
-      void readProfile(points, request.signal)
-        .then((heights) => {
-          if (!request.signal.aborted)
-            setResult({
-              key,
-              track: withTerrainHeights(target, heights),
-              estimated: true,
-            });
-        })
-        .catch(() => {
-          if (!request.signal.aborted)
-            setResult({ key, track: target, estimated: false });
-        })
-        .finally(() => {
-          if (!request.signal.aborted) setLoading(false);
-        });
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-      request.abort();
-    };
-  }, [key, needHeight, retry]);
-  const data = result?.key === key && needHeight ? result.track : target;
+  const elevation = useTrackElevation(target, needHeight);
+  const data = elevation.data;
   const samples = useMemo(() => (data ? trackHeights(data) : []), [data]);
   const stats = useMemo(() => elevationStats(samples), [samples]);
   const metrics = useMemo(
@@ -242,9 +180,10 @@ export function useRouteDisplay(
     stats,
     metrics,
     scale: useMemo(() => (data ? routeElevationScale(data) : null), [data]),
-    loading,
-    estimated: result?.key === key && result.estimated && needHeight,
-    refresh: () => setRetry((v) => v + 1),
+    loading: elevation.loading,
+    estimated: elevation.estimated,
+    elevationError: elevation.elevationError,
+    refresh: elevation.refresh,
     tracks: displayTracks,
     route: displayRoute,
   };

@@ -81,12 +81,12 @@
 .route-display-info {
   position: fixed;
   right: 4px;
-  bottom: calc(168px + var(--safe-bottom));
+  bottom: calc(206px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   gap: 2px;
   width: min(168px, calc(100vw - 100px));
-  max-height: min(250px, 38dvh);
+  max-height: min(200px, calc(100dvh - 510px - var(--safe-top) - var(--safe-bottom)));
   overflow-y: auto;
   pointer-events: auto;
   color: #203d31;

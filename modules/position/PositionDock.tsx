@@ -24,19 +24,18 @@ export function PositionDock({
       <button
         className="position-dock-button glass"
         aria-label={
-          following
+          blocked ? '获取当前位置（编辑中暂停地图跟随）' : following
             ? locating
               ? '等待定位，点击暂停跟随'
               : '暂停位置跟随'
             : '跟随当前位置'
         }
         aria-pressed={following}
-        disabled={blocked}
-        title={blocked ? '结束地图编辑后可跟随' : undefined}
+        title={blocked ? '编辑中可获取定位，结束编辑后可跟随' : undefined}
         onClick={onLocate}
       >
         <LocateFixed size={17} />
-        <small>{following ? (locating ? '等待' : '跟随') : '定位'}</small>
+        <small>{locating ? '定位中' : following ? '跟随' : '定位'}</small>
       </button>
       {children}
       {showCoordinates && (

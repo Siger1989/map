@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>山兔功能图示</title
+  ><style>
+    body {
+      font-family: system-ui, 'Microsoft YaHei', sans-serif;
+      margin: 0;
+      background: #edf1eb;
+      color: #233d2e;
+    }
+    header {
+      padding: 28px;
+      max-width: 1100px;
+      margin: auto;
+    }
+    h1 {
+      font-size: 26px;
+      margin: 0 0 12px;
+    }
+    p {
+      line-height: 1.7;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 18px;
+      max-width: 1400px;
+      margin: auto;
+      padding: 0 24px 36px;
+    }
+    article {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #d6dfd6;
+    }
+    h2 {
+      font-size: 17px;
+      margin: 0 0 8px;
+    }
+    article p {
+      font-size: 13px;
+      min-height: 65px;
+      color: #617268;
+    }
+    img {
+      display: block;
+      width: 100%;
+      height: 520px;
+      object-fit: contain;
+      background: #e8eee7;
+      border-radius: 8px;
+    }
+    a {
+      color: inherit;
+    }
+  </style>
+  <header>
+    <h1>山兔 · 本地功能图示</h1>
+    <p>
+      以下都是运行界面截图，标明测试数据和验证范围。0.2.29修正优先展示；0.2.28图示保留对应功能流程，布局细节以新版为准。队伍实时位置、SOS送达和PTT因没有通信服务尚未接通；Android真机GPS、锁屏与鸿蒙原生仍未验收。
+    </p>
+  </header>
+  <main>
+    <article>
+      <h2>海拔着色与图例</h2>
+      <p>0.2.29：无海拔GPX从地形缓存读取约496米，灰色只用于缺测。</p>
+      <a
+        href="/__layout/screenshots/18-terrain-height-fix-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="海拔着色与图例"
+          src="/__layout/screenshots/18-terrain-height-fix-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>坡度与50米分析</h2>
+      <p>0.2.29：详情同样补读DEM，明确标注地形估算。</p>
+      <a href="/__layout/screenshots/20-slope-dem-fix-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="坡度与50米分析"
+          src="/__layout/screenshots/20-slope-dem-fix-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>底部定位与海拔入口</h2>
+      <p>0.2.29：编辑中两入口可用，定位不会带动编辑镜头。</p>
+      <a
+        href="/__layout/screenshots/21-edit-buttons-fix-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="底部定位与海拔入口"
+          src="/__layout/screenshots/21-edit-buttons-fix-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>路线卡片与左侧进度</h2>
+      <p>0.2.29：卡片与进度条分区，右侧高程与方向盘避让。</p>
+      <a
+        href="/__layout/screenshots/19-route-spacing-fix-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="路线卡片与左侧进度"
+          src="/__layout/screenshots/19-route-spacing-fix-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>显示信息自由选择</h2>
+      <p>海拔、速度、坡度；图例、剖面、统计、陡坡、坐标独立开关。</p>
+      <a href="/__layout/screenshots/03-display-options-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="显示信息自由选择"
+          src="/__layout/screenshots/03-display-options-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>离线步行导航</h2>
+      <p>公开OSM区域路网验证，1026节点、2238边，实际计算1.1公里步行路线。</p>
+      <a href="/__layout/screenshots/02-offline-routing-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="离线步行导航"
+          src="/__layout/screenshots/02-offline-routing-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>离线地图下载</h2>
+      <p>区域地图包311/311、41.4MB，支持暂停、续传、校验与删除。</p>
+      <a href="/__layout/screenshots/07-offline-cache-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="离线地图下载"
+          src="/__layout/screenshots/07-offline-cache-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>仅缓存地图冷启动</h2>
+      <p>重开恢复缓存底图；包外视野仍需要补齐，不假装完整覆盖。</p>
+      <a
+        href="/__layout/screenshots/08-cache-cold-start-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="仅缓存地图冷启动"
+          src="/__layout/screenshots/08-cache-cold-start-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>车位、营地、撤退点</h2>
+      <p>本地保存返回点；测试使用明确选择的地图中心。</p>
+      <a href="/__layout/screenshots/05-return-points-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="车位、营地、撤退点"
+          src="/__layout/screenshots/05-return-points-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>沿轨迹原路返航</h2>
+      <p>连续段倒序预览，保留回环和暂停分段；真机GPS引导未验。</p>
+      <a
+        href="/__layout/screenshots/06-breadcrumb-preview-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="沿轨迹原路返航"
+          src="/__layout/screenshots/06-breadcrumb-preview-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>文件批量导入</h2>
+      <p>GPX/KML/KMZ/OVKML/OVKMZ；奥维坐标系需按实际导出设置选择。</p>
+      <a href="/__layout/screenshots/09-ovi-batch-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="文件批量导入"
+          src="/__layout/screenshots/09-ovi-batch-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>照片关联与长图设置</h2>
+      <p>测试照片依据拍摄时间匹配；最多8张，可选择重点图。</p>
+      <a href="/__layout/screenshots/10-photo-options-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="照片关联与长图设置"
+          src="/__layout/screenshots/10-photo-options-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>重点照片放大</h2>
+      <p>实际生成的长图预览；棕色和绿色图片是验证用图片，不是风景照片。</p>
+      <a
+        href="/__layout/screenshots/11-photo-hero-preview-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="重点照片放大"
+          src="/__layout/screenshots/11-photo-hero-preview-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>横竖照片混排</h2>
+      <p>不同方向图片完整放入混排，不裁切成同一种比例。</p>
+      <a
+        href="/__layout/screenshots/12-photo-mixed-preview-390.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="横竖照片混排"
+          src="/__layout/screenshots/12-photo-mixed-preview-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>天地图申请入口</h2>
+      <p>应用内打开官方申请说明，真实Key不写入源码。</p>
+      <a href="/__layout/screenshots/17-tianditu-help-390.png" target="_blank"
+        ><img
+          loading="lazy"
+          alt="天地图申请入口"
+          src="/__layout/screenshots/17-tianditu-help-390.png"
+      /></a>
+    </article>
+    <article>
+      <h2>记录与省电策略</h2>
+      <p>
+        0.2.27既有界面：省电/标准/高频/自定义、距离采样、静止降频和自动记录。
+      </p>
+      <a
+        href="/__layout/screenshots/24-recording-policy-360.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="记录与省电策略"
+          src="/__layout/screenshots/24-recording-policy-360.png"
+      /></a>
+    </article>
+    <article>
+      <h2>360像素布局复核</h2>
+      <p>0.2.29：保留直接操作触控尺寸，缩小可见字号和间距。</p>
+      <a
+        href="/__layout/screenshots/22-edit-buttons-fix-360.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="360像素布局复核"
+          src="/__layout/screenshots/22-edit-buttons-fix-360.png"
+      /></a>
+    </article>
+    <article>
+      <h2>266像素布局复核</h2>
+      <p>0.2.29：较小区域内部滚动，编辑工具与左右入口避让。</p>
+      <a
+        href="/__layout/screenshots/23-edit-buttons-fix-266.png"
+        target="_blank"
+        ><img
+          loading="lazy"
+          alt="266像素布局复核"
+          src="/__layout/screenshots/23-edit-buttons-fix-266.png"
+      /></a>
+    </article>
+  </main>
+</html>

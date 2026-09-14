@@ -22,14 +22,16 @@
   justify-content: center;
   gap: 1px;
   border-radius: 6px;
-  color: var(--text);
+  color: #155036;
+  background: #f3faf3;
+  border: 1px solid #98bda6;
 }
 .position-dock-button small {
   font-size: 9px;
   line-height: 11px;
 }
-.position-dock-button[aria-pressed='true'],
-.position-dock-button[aria-expanded='true'] {
+.position-dock .position-dock-button[aria-pressed='true'],
+.position-dock .position-dock-button[aria-expanded='true'] {
   color: #fff;
   background: #246748;
 }
@@ -38,7 +40,7 @@
   bottom: 46px;
   left: 0;
   width: max-content;
-  max-width: calc(100vw - 64px);
+  max-width: calc(100vw - 128px);
   padding: 2px 4px;
   font-size: 9px;
   line-height: 14px;

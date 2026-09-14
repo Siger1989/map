@@ -110,3 +110,14 @@ test('display options normalize independently and retain an explicit off selecti
   );
   assert.equal(normalizeRouteDisplay({ mode: 'invalid' }).mode, 'original');
 });
+
+test('missing GPX heights gain display slope without changing source points', () => {
+  const original = { ...track, segments: [[[104.059, 30.657], [104.061, 30.657]]], samples: [[{time: 1, altitude: null}, {time: 60001, altitude: null}]] };
+  const before = JSON.stringify(original);
+  const points = trackHeights(original);
+  const derived = withTerrainHeights(original, points.map((p, i) => ({...p, elevation: 496 + i})));
+  assert.equal(JSON.stringify(original), before);
+  assert.deepEqual(derived.segments, original.segments);
+  assert.ok(metricLineParts(derived, 'slope').every(p => p.color !== ANALYSIS_POLICY.missingColor));
+  assert.deepEqual(derived.samples[0].map(p => p.time), [1, 60001]);
+});
