@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, useState } from 'react';
 import { ChartNoAxesCombined, X } from 'lucide-react';
 import type { useRouteDisplay } from './useRouteDisplay';
@@ -22,6 +23,7 @@ export function RouteDisplayControl({
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
         setOpen(false);
     };

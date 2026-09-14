@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Clock3,
@@ -90,6 +91,7 @@ export function ControlDock({
     if (!active) return;
     closeButton.current?.focus({ preventScroll: true });
     const dismiss = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (
         !keepOpen.current &&
         event.target instanceof Node &&

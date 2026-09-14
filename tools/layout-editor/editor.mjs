@@ -12,8 +12,12 @@ import {
   capture,
   bounds,
   batchPatches,
+  dimensionScalePatch,
+  fontMetrics,
+  fontSizePatches,
 } from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
+import { layerPatches } from './layers.mjs';
 const $ = (id) => document.getElementById(id);
 const frame = $('preview');
 let selection = [],
@@ -73,9 +77,17 @@ function outline() {
     width: `${r.width}px`,
     height: `${r.height}px`,
   });
+  for (const dimension of ['width', 'height'])
+    if ($('ratio').checked && document.activeElement !== $(dimension))
+      $(dimension).value = Math.round(r[dimension]);
+  if (document.activeElement !== $('fontSize'))
+    $('fontSize').value = fontMetrics(items)?.pixels ?? '';
   $('outline-label').textContent =
     selection.length > 1 ? `${selection.length} 项 · 整体调整` : selected.label;
-  $('move-selection').hidden = !$('show-label').checked;
+  $('move-selection').hidden =
+    !$('show-label').checked || $('interaction').value !== 'move';
+  for (const handle of document.querySelectorAll('[data-resize]'))
+    handle.hidden = $('interaction').value !== 'resize';
   $('member-outlines').replaceChildren(
     ...items.map(({ rect }) => {
       const box = document.createElement('div');
@@ -177,8 +189,12 @@ function properties() {
     'fontSize',
     'zIndex',
   ])
-    $(key).value = e[key] ?? '';
+    $(key).value =
+      $('ratio').checked && ['width', 'height'].includes(key) && box
+        ? Math.round(box[key])
+        : (e[key] ?? '');
   $('hidden').checked = e.hidden;
+  $('fontSize').value = fontMetrics(targets())?.pixels ?? e.fontSize ?? '';
   $('dx-label').textContent = multiple ? '一起水平移动 px' : '水平偏移 px';
   $('dy-label').textContent = multiple ? '一起垂直移动 px' : '垂直偏移 px';
   $('scale-label').textContent = multiple ? '本次整体缩放倍数' : '整体比例';
@@ -311,6 +327,42 @@ for (const key of [
 ]) {
   $(key).addEventListener('change', () => {
     try {
+      if (key === 'fontSize') {
+        const changes = fontSizePatches(
+          targets(),
+          $(key).value === '' ? null : Number($(key).value),
+        );
+        if (!changes.length) return;
+        checkpoint();
+        replaceEntries(changes);
+        apply();
+        properties();
+        status('字号已更新，修改尚未保存。');
+        return;
+      }
+      if (key === 'scale' && selection.length === 1) {
+        const items = targets(),
+          box = bounds(items);
+        if (box)
+          updateBatch(items, box, {
+            scale: Number($(key).value) / items[0].entry.scale,
+          });
+        return;
+      }
+      if (
+        $('ratio').checked &&
+        ['width', 'height'].includes(key) &&
+        $(key).value !== ''
+      ) {
+        const items = targets(),
+          box = bounds(items);
+        updateBatch(
+          items,
+          box,
+          dimensionScalePatch(items, key, Number($(key).value)),
+        );
+        return;
+      }
       update({
         [key]:
           key === 'hidden'
@@ -394,15 +446,17 @@ document.querySelectorAll('[data-align]').forEach(
       );
     }),
 );
-$('raise').onclick = () => {
+function stepLayer(direction) {
   if (!selected) return;
-  update({
-    zIndex: Math.min(
-      99999,
-      Math.max(100, ...layout.entries.map((e) => e.zIndex ?? 0)) + 1,
-    ),
-  });
-};
+  const changes = layerPatches(targets(), direction);
+  checkpoint();
+  replaceEntries(changes);
+  apply();
+  properties();
+}
+$('raise').onclick = () => stepLayer(1);
+$('lower').onclick = () => stepLayer(-1);
+$('interaction').onchange = outline;
 $('mode').onclick = () => {
   operating = !operating;
   $('cover').classList.toggle('operating', operating);
@@ -447,6 +501,7 @@ $('zoom-number').onchange = () => setZoom(Number($('zoom-number').value));
 document.querySelectorAll('[data-zoom]').forEach((button) => {
   button.onclick = () => setZoom(Number(button.dataset.zoom));
 });
+$('ratio').onchange = properties;
 $('show-outline').onchange = $('show-label').onchange = outline;
 window.addEventListener('keydown', (event) => {
   if (operating || event.target.closest('input,select,textarea,button,a'))
@@ -516,6 +571,8 @@ const isDragging = bindGestures({
   status,
   snap: () => $('snap').checked,
   ratio: () => $('ratio').checked,
+  interaction: () => $('interaction').value,
+  guides: () => $('guides').checked,
 });
 $('save').onclick = async () => {
   if (busy) return;

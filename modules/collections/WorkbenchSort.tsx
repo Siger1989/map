@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowDownWideNarrow, Check, X } from 'lucide-react';
 
@@ -87,6 +88,7 @@ export function WorkbenchSort({
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
         setOpen(false);
     };

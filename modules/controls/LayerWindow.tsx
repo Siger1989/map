@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef } from 'react';
 import { CloudSun, Layers, Mountain, X } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
@@ -39,6 +40,7 @@ export function LayerWindow({
     if (!open) return;
     closeButton.current?.focus({ preventScroll: true });
     const dismiss = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
         change.current(false);
     };

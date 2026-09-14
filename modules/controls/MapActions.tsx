@@ -140,10 +140,8 @@ export function MapActions({
             <button
               className="icon-button direction-button"
               aria-label="边用边调界面布局"
-              onClick={() => {
-                setExpanded(false);
-                openLayoutEditor();
-              }}
+              data-layout-entry=""
+              onClick={openLayoutEditor}
             >
               <Scan size={20} />
               <small>布局</small>
@@ -193,6 +191,7 @@ export function MapActions({
         <button
           className="icon-button"
           aria-label="更多地图操作"
+          data-layout-entry=""
           aria-expanded={expanded}
           onClick={() => {
             setExpanded((v) => !v);

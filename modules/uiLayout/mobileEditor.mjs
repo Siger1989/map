@@ -1,5 +1,10 @@
 import { hierarchy } from './selection.mjs';
-import { bounds, alignPatch } from './geometry.mjs';
+import {
+  bounds,
+  alignPatch,
+  dimensionScalePatch,
+  fontMetrics,
+} from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
 
 /** Compact touch view. All state, persistence and geometry are supplied by the session. */
@@ -21,7 +26,7 @@ export function mountEditor(session, onClose) {
     <section class="layout-mobile-toolbar" aria-label="布局调节工具">
       <div class="layout-mobile-row">
         <button class="layout-mobile-grip" aria-label="拖动布局工具条">⠿</button>
-        <button data-action="mode" aria-pressed="true">选择</button>
+        <select data-mode aria-label="布局操作模式"><option value="move">移动</option><option value="resize">大小</option><option value="use">使用</option></select>
         <button data-action="multi" aria-pressed="false">多选</button>
         <button data-action="undo">撤销</button>
         <button data-action="save">保存</button>
@@ -32,7 +37,7 @@ export function mountEditor(session, onClose) {
         <div class="layout-mobile-row">
           <select data-range aria-label="选择范围"><option value="group">整块</option><option value="control">控件</option><option value="element">元素</option></select>
           <button data-action="parent">外层</button><button data-action="redo">重做</button>
-          <select data-extra aria-label="布局备份与恢复"><option value="">备份/恢复</option><option value="export">导出布局</option><option value="import">导入布局</option><option value="reset">还原所选</option><option value="default">全部默认</option><option value="cancel">放弃未保存并退出</option></select>
+          <select data-extra aria-label="布局备份与恢复"><option value="">更多</option><option value="recover">所选移回居中</option><option value="export">导出布局</option><option value="import">导入布局</option><option value="reset">还原所选</option><option value="default">全部默认</option><option value="cancel">放弃未保存并退出</option></select>
         </div>
         <div class="layout-mobile-row" data-level-row>
           <span data-name>点选界面</span><select data-hierarchy aria-label="外框和内部内容"></select>
@@ -41,10 +46,11 @@ export function mountEditor(session, onClose) {
               <label>宽<input data-field="width" type="number" min="16" max="2000" placeholder="自动"></label>
               <label>高<input data-field="height" type="number" min="16" max="2000" placeholder="自动"></label>
               <label>比<input data-field="scale" type="number" min="0.4" max="2.5" step="0.05"></label>
-              <label>字<input data-field="fontSize" type="number" min="8" max="40" placeholder="默认"></label>
+              <label title="首处文字的显示字号px；修改统一所选文字，清空恢复默认">字号<input data-field="fontSize" aria-label="字号（显示像素）" type="number" min="0.1" max="200" step="0.1"></label>
         </div>
-        <div class="layout-mobile-row"><label><input data-ratio type="checkbox" checked>锁比例</label><button data-action="recover">居中</button><span data-message role="status"></span></div>
-        <div hidden><button data-action="export"></button><button data-action="import"></button><button data-action="reset"></button><button data-action="default"></button><button data-action="cancel"></button><input data-file type="file" accept=".json,application/json"></div>
+        <div class="layout-mobile-row"><label><input data-ratio type="checkbox" checked>整体缩放</label><label><input data-guides type="checkbox" checked>对齐线</label><button data-action="raise">上一层</button><button data-action="lower">下一层</button></div>
+        <div data-message role="status"></div>
+        <div hidden><button data-action="recover"></button><button data-action="export"></button><button data-action="import"></button><button data-action="reset"></button><button data-action="default"></button><button data-action="cancel"></button><input data-file type="file" accept=".json,application/json"></div>
       </div>
     </section>`;
   doc.body.append(root);
@@ -85,8 +91,18 @@ export function mountEditor(session, onClose) {
       box = bounds(items);
     outline.hidden = !box || operating;
     members.hidden = outline.hidden || items.length < 2;
+    for (const handle of outline.querySelectorAll('[data-resize]'))
+      handle.hidden = $('[data-mode]').value !== 'resize';
     if (outline.hidden) return;
     place(outline, box);
+    for (const dimension of ['width', 'height']) {
+      const input = $(`[data-field="${dimension}"]`);
+      if ($('[data-ratio]').checked && doc.activeElement !== input)
+        input.value = Math.round(box[dimension]);
+    }
+    const font = $('[data-field="fontSize"]');
+    if (doc.activeElement !== font)
+      font.value = fontMetrics(items)?.pixels ?? '';
     members.replaceChildren(
       ...items.map(({ rect }) => {
         const el = doc.createElement('div');
@@ -96,12 +112,12 @@ export function mountEditor(session, onClose) {
     );
   };
   const sync = () => {
-    button('mode').textContent = operating ? '使用' : '选择';
-    button('mode').setAttribute('aria-pressed', String(!operating));
+    operating = $('[data-mode]').value === 'use';
     button('multi').setAttribute('aria-pressed', String(additive));
     button('save').textContent = session.dirty ? '保存*' : '保存';
     button('undo').disabled = !session.canUndo;
     button('redo').disabled = !session.canRedo;
+    button('raise').disabled = button('lower').disabled = !selected();
     cover.classList.toggle('operating', operating);
     $('[data-message]').textContent = session.message;
     const multi = session.selected.length > 1,
@@ -128,8 +144,17 @@ export function mountEditor(session, onClose) {
         : selected() && session.entry(selected());
     for (const input of root.querySelectorAll('[data-field]')) {
       input.disabled = !selected();
-      input.value = value?.[input.dataset.field] ?? '';
+      input.value =
+        $('[data-ratio]').checked &&
+        ['width', 'height'].includes(input.dataset.field) &&
+        box
+          ? Math.round(box[input.dataset.field])
+          : (value?.[input.dataset.field] ?? '');
     }
+    $('[data-field="fontSize"]').value =
+      fontMetrics(session.targets())?.pixels ?? '';
+    if (value?.scale != null)
+      $('[data-field="scale"]').value = Math.round(value.scale * 1000) / 1000;
     draw();
   };
   session.subscribe(sync);
@@ -160,6 +185,8 @@ export function mountEditor(session, onClose) {
     status: session.status,
     snap: () => false,
     ratio: () => $('[data-ratio]').checked,
+    interaction: () => $('[data-mode]').value,
+    guides: () => $('[data-guides]').checked,
   });
   const close = () => {
     if (closed) return;
@@ -171,13 +198,10 @@ export function mountEditor(session, onClose) {
     root.remove();
     onClose();
   };
-  button('mode').onclick = () => {
-    operating = !operating;
-    sync();
-  };
+  $('[data-mode]').onchange = sync;
   button('multi').onclick = () => {
     additive = !additive;
-    operating = false;
+    if ($('[data-mode]').value === 'use') $('[data-mode]').value = 'move';
     sync();
   };
   button('save').onclick = () => session.save();
@@ -193,6 +217,8 @@ export function mountEditor(session, onClose) {
   };
   button('undo').onclick = () => session.history();
   button('redo').onclick = () => session.history(true);
+  button('raise').onclick = () => session.stepLayer(1);
+  button('lower').onclick = () => session.stepLayer(-1);
   button('reset').onclick = () => session.restore();
   button('default').onclick = () => session.restore(true);
   button('parameters').onclick = () => {
@@ -219,8 +245,44 @@ export function mountEditor(session, onClose) {
     if (level) session.select(level.selector, level.label);
   };
   $('[data-range]').onchange = () => session.clearSelection();
+  $('[data-ratio]').onchange = sync;
   for (const input of root.querySelectorAll('[data-field]'))
     input.onchange = () => {
+      if (input.dataset.field === 'fontSize') {
+        session.setFontSize(input.value === '' ? null : Number(input.value));
+        return;
+      }
+      if (input.dataset.field === 'scale' && session.selected.length === 1) {
+        const items = session.targets(),
+          box = bounds(items);
+        if (box)
+          session.updateBatch(items, box, {
+            scale: Number(input.value) / items[0].entry.scale,
+          });
+        return;
+      }
+      if (
+        $('[data-ratio]').checked &&
+        ['width', 'height'].includes(input.dataset.field) &&
+        input.value !== ''
+      ) {
+        const items = session.targets(),
+          box = bounds(items);
+        try {
+          session.updateBatch(
+            items,
+            box,
+            dimensionScalePatch(
+              items,
+              input.dataset.field,
+              Number(input.value),
+            ),
+          );
+        } catch (error) {
+          session.status(error.message);
+        }
+        return;
+      }
       session.update({
         [input.dataset.field]:
           input.value === '' && input.dataset.field !== 'scale'

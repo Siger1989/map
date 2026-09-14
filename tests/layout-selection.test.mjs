@@ -217,7 +217,9 @@ test('phone editor has no component list and closes through its compact controls
       8,
     );
     assert.equal(doc.querySelector('.layout-mobile [multiple]'), null);
-    doc.querySelector('[data-action="mode"]').onclick();
+    const mode = doc.querySelector('[data-mode]');
+    mode.value = 'use';
+    mode.onchange();
     assert.ok(
       doc.querySelector('.layout-mobile-cover').classList.contains('operating'),
     );

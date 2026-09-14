@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { floatingGeometry, searchViewport, observeSearchViewport } from './floatingGeometry';
 import {
   createContext,
@@ -89,6 +90,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
     update();
     const unobserve = observeSearchViewport(update);
     const dismiss = (e: PointerEvent) => {
+      if (isLayoutInteraction(e)) return;
       if (
         e.target instanceof Element &&
         e.target !== input.current &&

@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, MapPin } from 'lucide-react';
@@ -32,6 +33,7 @@ export function PlaceSearch({
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (
         event.target instanceof Node &&
         !root.current?.contains(event.target) &&

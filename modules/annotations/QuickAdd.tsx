@@ -1,3 +1,4 @@
+import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { MapPinPlus, Box, Cylinder, Circle, X } from 'lucide-react';
 import type { MapHold } from '../map/MapLongPress';
@@ -25,6 +26,7 @@ export function QuickAdd({
   useEffect(() => {
     closeButton.current?.focus({ preventScroll: true });
     const outside = (event: PointerEvent) => {
+      if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
         close.current();
     };

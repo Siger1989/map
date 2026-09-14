@@ -13,12 +13,21 @@ const files = new Map(
     'model.mjs',
     'geometry.mjs',
     'gestures.mjs',
+    'alignment.mjs',
+    'layers.mjs',
     'gallery.html',
   ].map((n) => [
     n,
     resolve(
       root,
-      ['model.mjs', 'selection.mjs', 'geometry.mjs', 'gestures.mjs'].includes(n)
+      [
+        'model.mjs',
+        'selection.mjs',
+        'geometry.mjs',
+        'gestures.mjs',
+        'alignment.mjs',
+        'layers.mjs',
+      ].includes(n)
         ? 'modules/uiLayout'
         : 'tools/layout-editor',
       n,

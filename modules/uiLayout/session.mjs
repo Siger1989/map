@@ -1,6 +1,7 @@
 import { emptyLayout, validateLayout, layoutCss } from './model.mjs';
 import { defaults, visible, selectionRoots } from './selection.mjs';
-import { capture, bounds, batchPatches } from './geometry.mjs';
+import { capture, bounds, batchPatches, fontSizePatches } from './geometry.mjs';
+import { layerPatches } from './layers.mjs';
 
 export const STORAGE_KEY = 'shantu.ui-layout.v1';
 
@@ -164,6 +165,12 @@ export function createSession(doc, storage) {
           remember,
           light,
         );
+    },
+    setFontSize(pixels) {
+      change(() => replace(fontSizePatches(targets(), pixels)));
+    },
+    stepLayer(direction) {
+      change(() => replace(layerPatches(targets(), direction)));
     },
     history(redo = false) {
       const from = redo ? future : past,

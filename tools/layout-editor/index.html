@@ -10,7 +10,7 @@
     <header>
       <div>
         <strong>山兔 · 布局调节</strong
-        ><small>功能基准 0.2.31 · 修改的是布局草稿</small>
+        ><small>功能基准 0.2.32 · 修改的是布局草稿</small>
       </div>
       <nav>
         <button id="undo" disabled>撤销</button
@@ -34,9 +34,15 @@
           </select>
         </div>
         <p>
-          先切到“操作页面”打开面板，再切回选择。Shift点击多选/取消，拖组件移动，拖边角改大小。列表支持Ctrl
+          先切到“操作页面”打开面板，再切回选择。移动模式拖组件，大小模式拖边角；Shift点击多选/取消。列表支持Ctrl
           / Shift多选；被挡住的组件也能从清单选择。
         </p>
+        <label
+          >拖拽操作<select id="interaction">
+            <option value="move">移动 · 锁定大小</option>
+            <option value="resize">大小 · 锁定移动</option>
+          </select></label
+        >
         <label
           >手机尺寸<select id="viewport">
             <option value="390,844">390 × 844</option>
@@ -75,9 +81,16 @@
         >
         <label><input id="show-label" type="checkbox" />显示选框名称</label>
         <label
+          ><input id="guides" type="checkbox" checked />对齐辅助线与吸附</label
+        >
+        <label
           ><input id="snap" type="checkbox" checked />拖动吸附到4px网格</label
         ><label
-          ><input id="ratio" type="checkbox" checked />拖角时保持宽高比</label
+          ><input
+            id="ratio"
+            type="checkbox"
+            checked
+          />整体缩放（文字、图标一起变化）</label
         >
         <h2>组件与控件清单</h2>
         <label
@@ -195,12 +208,13 @@
               max="2.5"
               step="0.05" /></label
           ><label
-            >字号 px<input
+            >显示字号 px<input
               id="fontSize"
               type="number"
-              min="8"
-              max="40"
-              placeholder="沿用原字号" /></label
+              min="0.1"
+              max="200"
+              step="0.1"
+              title="首处文字的显示字号px；修改统一所选文字，清空恢复默认" /></label
           ><label
             >显示层级<input
               id="zIndex"
@@ -210,7 +224,7 @@
               placeholder="沿用原层级"
           /></label>
           <div class="row">
-            <button id="raise">提高层级</button
+            <button id="raise">上一层</button><button id="lower">下一层</button
             ><button data-align="recover">移回画面</button>
           </div>
           <div class="row align-actions">

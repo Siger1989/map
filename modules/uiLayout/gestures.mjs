@@ -1,5 +1,6 @@
-import { dragPatch, bounds } from './geometry.mjs';
+import { dragPatch, bounds, scaleLimits } from './geometry.mjs';
 import { pick } from './selection.mjs';
+import { alignmentTargets, alignFrame, createGuideView } from './alignment.mjs';
 
 /** Editor gestures never forward inputs to the map while selection mode is active. */
 export function bindGestures({
@@ -22,7 +23,10 @@ export function bindGestures({
   snap,
   ratio,
   additive = () => false,
+  interaction = () => 'move',
+  guides = () => true,
 }) {
+  const showGuides = createGuideView(cover, zoom);
   let gesture = null,
     pending = null,
     raf = 0;
@@ -38,7 +42,28 @@ export function bindGestures({
       checkpoint();
       g.started = true;
     }
-    const patch = dragPatch(g, delta, { snap: snap(), ratio: ratio() });
+    const patch = dragPatch(g, delta, { snap: snap(), contentScale: ratio() });
+    if (g.handle === 'move' && guides()) {
+      const parent = g.parentScale ?? { x: 1, y: 1 };
+      const x = (patch.dx - g.entry.dx) * parent.x,
+        y = (patch.dy - g.entry.dy) * parent.y;
+      const moved = {
+        left: g.rect.left + x,
+        right: g.rect.right + x,
+        top: g.rect.top + y,
+        bottom: g.rect.bottom + y,
+      };
+      const aligned = alignFrame(moved, g.peers, g.viewport, 6 / zoom());
+      patch.dx = Math.max(
+        -3000,
+        Math.min(3000, patch.dx + aligned.delta.x / parent.x),
+      );
+      patch.dy = Math.max(
+        -3000,
+        Math.min(3000, patch.dy + aligned.delta.y / parent.y),
+      );
+      showGuides(aligned.lines);
+    }
     if (g.batch) {
       updateBatch(g.items, g.rect, patch, false, true);
       return;
@@ -84,6 +109,7 @@ export function bindGestures({
     let toggleOnTap = null;
     const handle =
       event.target.closest('[data-resize]')?.dataset.resize ?? 'move';
+    if (handle !== 'move' && interaction() !== 'resize') return;
     if (!event.target.closest('[data-resize],#move-selection')) {
       const stage = cover.getBoundingClientRect();
       const target = pick(
@@ -110,6 +136,11 @@ export function bindGestures({
       if (additive()) toggleOnTap = target;
       if (!contains(target.selector)) select(target.selector, target.label);
     }
+    if (handle === 'move' && interaction() === 'resize') {
+      if (toggleOnTap) select(toggleOnTap.selector, toggleOnTap.label, true);
+      event.preventDefault();
+      return;
+    }
     const items = targets(),
       batch = multiple();
     if (!items.length) return;
@@ -125,6 +156,12 @@ export function bindGestures({
       x: event.clientX,
       y: event.clientY,
       items,
+      scaleLimits: batch ? scaleLimits(items) : undefined,
+      peers: guides() ? alignmentTargets(document(), items) : [],
+      viewport: {
+        width: document().defaultView.innerWidth,
+        height: document().defaultView.innerHeight,
+      },
       batch,
       toggleOnTap,
       handle,
@@ -152,6 +189,7 @@ export function bindGestures({
       event.type === 'pointerup' && !gesture.started && gesture.toggleOnTap;
     gesture = null;
     pending = null;
+    showGuides();
     syncPanels();
     if (tap) select(tap.selector, tap.label, true);
   };
@@ -161,6 +199,7 @@ export function bindGestures({
   cover.onkeydown = (event) => {
     if (
       operating() ||
+      interaction() !== 'move' ||
       !selectedNode() ||
       !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
     )

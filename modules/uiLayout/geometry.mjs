@@ -3,7 +3,11 @@ const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const round = (n, snap) => (snap ? Math.round(n / 4) * 4 : Math.round(n));
 
 /** Pointer deltas are in unzoomed preview pixels; ancestor scaling changes local CSS pixels. */
-export function dragPatch(start, delta, { snap = false, ratio = false } = {}) {
+export function dragPatch(
+  start,
+  delta,
+  { snap = false, ratio = false, contentScale = false } = {},
+) {
   const {
     entry,
     box,
@@ -24,7 +28,7 @@ export function dragPatch(start, delta, { snap = false, ratio = false } = {}) {
   if (handle.includes('w')) width -= dx / ownScale.x;
   if (handle.includes('s')) height += dy / ownScale.y;
   if (handle.includes('n')) height -= dy / ownScale.y;
-  if (ratio && handle.length === 2) {
+  if ((ratio || contentScale) && handle.length === 2) {
     const horizontal = width / box.width,
       vertical = height / box.height;
     const factor =
@@ -33,6 +37,35 @@ export function dragPatch(start, delta, { snap = false, ratio = false } = {}) {
         : vertical;
     width = box.width * factor;
     height = box.height * factor;
+  }
+  if (contentScale) {
+    const horizontal = /[ew]/.test(handle);
+    const size = horizontal ? box.width : box.height;
+    const nextSize = horizontal ? width : height;
+    const limits = start.scaleLimits ?? {
+      min: 0.4 / entry.scale,
+      max: 2.5 / entry.scale,
+    };
+    const factor = clamp(
+      (snap ? round(nextSize, true) : nextSize) / size,
+      limits.min,
+      limits.max,
+    );
+    return {
+      scale: entry.scale * factor,
+      dx: clamp(
+        entry.dx +
+          (handle.includes('w') ? box.width * ownScale.x * (1 - factor) : 0),
+        -3000,
+        3000,
+      ),
+      dy: clamp(
+        entry.dy +
+          (handle.includes('n') ? box.height * ownScale.y * (1 - factor) : 0),
+        -3000,
+        3000,
+      ),
+    };
   }
   width = clamp(round(width, snap), 16, 2000);
   height = clamp(round(height, snap), 16, 2000);
@@ -155,12 +188,80 @@ export function capture(element, entry) {
   };
 }
 
+/** Keep a multi-selection at one common ratio when any member reaches its limit. */
+export function scaleLimits(items) {
+  return {
+    min: Math.max(...items.map(({ entry }) => 0.4 / entry.scale)),
+    max: Math.min(...items.map(({ entry }) => 2.5 / entry.scale)),
+  };
+}
+
+export function dimensionScalePatch(items, dimension, value) {
+  const frame = bounds(items);
+  if (
+    !frame ||
+    !['width', 'height'].includes(dimension) ||
+    !Number.isFinite(value) ||
+    value <= 0
+  )
+    throw Error('请先选择组件并输入有效尺寸');
+  const limits = scaleLimits(items);
+  return { scale: clamp(value / frame[dimension], limits.min, limits.max) };
+}
+
+function fontReference(item) {
+  const element = item.element;
+  const nodes = [
+    element,
+    ...(element?.querySelectorAll?.(
+      'small,span,label,strong,p,input,button,select,text',
+    ) ?? []),
+  ];
+  const node =
+    nodes.find(
+      (candidate) =>
+        candidate?.getBoundingClientRect?.().width > 0 &&
+        (candidate.matches?.('input,select,textarea') ||
+          [...(candidate.childNodes ?? [])].some(
+            (child) => child.nodeType === 3 && child.textContent.trim(),
+          )),
+    ) ?? element;
+  const scales = node === element ? item : elementScale(node);
+  return { node, factor: scales.parentScale.y * scales.ownScale.y };
+}
+
+export function fontMetrics(items) {
+  const item = items.at(-1);
+  if (!item) return null;
+  const { node, factor } = fontReference(item);
+  const base =
+    parseFloat(
+      node.ownerDocument.defaultView.getComputedStyle(node).fontSize,
+    ) || 16;
+  return { pixels: Math.round(base * factor * 10) / 10 };
+}
+
+/** The field shows displayed pixels; persisted fontSize stays in the element's local CSS units. */
+export function fontSizePatches(items, pixels) {
+  return items.map((item) => {
+    const fontSize =
+      pixels === null ? null : pixels / fontReference(item).factor;
+    if (
+      fontSize !== null &&
+      (!Number.isFinite(fontSize) || fontSize < 8 || fontSize > 40)
+    )
+      throw Error('字号超出当前比例可调范围，请先调整整体比例');
+    return { ...item.entry, fontSize };
+  });
+}
+
 /** Resize a temporary multi-selection; persist independent entries, never reparent the app DOM. */
 export function batchPatches(items, frame, patch) {
-  const sx =
-    patch.width == null ? (patch.scale ?? 1) : patch.width / frame.width;
-  const sy =
-    patch.height == null ? (patch.scale ?? 1) : patch.height / frame.height;
+  const limits = scaleLimits(items);
+  const factor =
+    patch.scale == null ? 1 : clamp(patch.scale, limits.min, limits.max);
+  const sx = patch.width == null ? factor : patch.width / frame.width;
+  const sy = patch.height == null ? factor : patch.height / frame.height;
   return items.map((item) => {
     const { entry, rect, box, parentScale } = item;
     const x = (patch.dx ?? 0) + (rect.left - frame.left) * (sx - 1);
@@ -174,8 +275,7 @@ export function batchPatches(items, frame, patch) {
       next.width = clamp(box.width * sx, 16, 2000);
       next.height = clamp(box.height * sy, 16, 2000);
     }
-    if (patch.scale != null)
-      next.scale = clamp(entry.scale * patch.scale, 0.4, 2.5);
+    if (patch.scale != null) next.scale = clamp(entry.scale * factor, 0.4, 2.5);
     for (const key of ['fontSize', 'zIndex', 'hidden'])
       if (key in patch) next[key] = patch[key];
     return {
