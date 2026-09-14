@@ -1,5 +1,8 @@
 # 当前状态 — 2026-09-14 / 优先完成布局控制器
 
+- **0.2.31已正式发布测试Release**：https://github.com/Siger1989/map/releases/tag/v0.2.31-test-standalone ，id388214327，draft=false/prerelease=true。四资产大小与GitHub SHA256全部匹配本地；APK哈希cb2c2e…8d583。功能源码c3672d9c05e621d7560193800602514b21d146d4已推送并与origin/codex/huawei-webview-touch逐字核对，Release指向该提交；后续文档交接提交不改变APK源码。
+- 上传曾经超时，仅任务子进程直连并改用HTTP/1.1后完成，未修改系统网络或公开凭证。5张本次真实浏览器图示与index.html已随Release打包，不含用户草稿。当前用户可下载新APK，在手机保存→参数→备份/恢复→导出JSON。后台模拟与包完整性均通过，真机手指/安装/原生文件窗口仍未验；HarmonyOS原生HAP/APP未交付。
+
 - 最终0.2.31验证：手机默认工具条40px，展开多选148px，单项/边角/批量/保存重开PASS；桌面200%预览实测线宽0.5CSSpx经放大为1px、点5px、无填充，批量移动/缩放/一次撤销PASS，无页面异常。最终TypeScript、架构、网页构建PASS。
 - 最终APK已用紧凑版重建：APK/Shantu-0.2.31-test-standalone.apk，versionCode38，57723399字节，SHA256 cb2c2e721959decbe66e6e68869f69d9fda50aa57e4c473e0f8d0c040f28d583。原4a94签名v2/v3、zipalign、544项ZIP CRC、473地形、手机编辑器代码/CSS及桌面服务器排除核对PASS。初版未发布，最终包不能与先前同大小中间产物混淆，以上哈希为准。
 - 用户询问交接优化：手机保存→参数→备份/恢复→导出布局，文件shantu-layout-draft.json记录位置/尺寸/比例/字号/视口，可提交给后续优化；与桌面导入格式兼容。工具条最左⠿可拖动且限制在屏幕内。当前手机系统文件窗口/真机安装尚未验证。准备同步源码并发布0.2.31；后台服务API15244/3108、Vite29832/9241，未控制或刷新用户工作窗口。
