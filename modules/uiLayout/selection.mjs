@@ -50,7 +50,8 @@ const controls =
   'button,input:not([type="hidden"]),select,textarea,a,[role="slider"],label,summary';
 const structural =
   'html,body,main,#root,#__next,.observatory,.maplibregl-map,.maplibregl-canvas-container';
-const componentWrappers = '.control-dock,.position-dock,.route-display-control';
+export const componentWrappers =
+  '.control-dock,.position-dock,.route-display-control';
 const nonUI =
   'script,style,link,meta,template,option,.maplibregl-canvas,[data-layout-ignore]';
 const semanticGroups =
@@ -159,6 +160,13 @@ export function pick(doc, x, y, granularity) {
     node && node !== doc.body;
     node = node.parentElement
   ) {
+    if (
+      granularity === 'component' &&
+      eligible(node) &&
+      visible(node) &&
+      (component(node) || node.matches(controls))
+    )
+      return candidate(node, doc);
     if (component(node) && visible(node)) outer = node;
   }
   return outer ? candidate(outer, doc) : null;
@@ -220,6 +228,9 @@ export function selectable(doc, granularity, query = '') {
       (element) =>
         eligible(element) &&
         (granularity !== 'group' || component(element)) &&
+        (granularity !== 'component' ||
+          component(element) ||
+          element.matches(controls)) &&
         visible(element),
     )
     .map((element) => candidate(element, doc));

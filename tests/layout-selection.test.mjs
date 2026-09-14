@@ -99,6 +99,27 @@ test('drawing toolbar, unknown semantic panels and covered controls are discover
   assert.equal(pick(doc, 0, 0, 'element'), null);
 });
 
+test('one point can select the whole group or its nearest independent child component', () => {
+  const doc = fixture();
+  doc.elementFromPoint = () => doc.querySelector('.route-color-legend strong');
+  assert.equal(pick(doc, 0, 0, 'group').selector, '.route-display-info');
+  assert.equal(pick(doc, 0, 0, 'component').selector, '.route-color-legend');
+  doc.elementFromPoint = () => doc.querySelector('.track-tools button');
+  assert.equal(pick(doc, 0, 0, 'group').selector, '.track-tools');
+  assert.equal(
+    pick(doc, 0, 0, 'component').element,
+    doc.querySelector('.track-tools button'),
+  );
+  const childList = selectable(doc, 'component');
+  assert.ok(childList.some((item) => item.selector === '.route-color-legend'));
+  assert.ok(
+    childList.some(
+      (item) => item.element === doc.querySelector('.track-tools button'),
+    ),
+  );
+  assert.ok(!childList.some((item) => item.element.localName === 'strong'));
+});
+
 test('touch selection sees through its editing cover and stable controls retain selectors after state changes', () => {
   const doc = fixture(),
     target = doc.querySelector('.position-dock > button');

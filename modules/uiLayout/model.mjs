@@ -37,6 +37,15 @@ export function validateLayout(value) {
       (e.height !== null && !number(e.height, 16, 2000)) ||
       (e.fontSize !== null && !number(e.fontSize, 8, 40)) ||
       (e.zIndex != null && !number(e.zIndex, -1000, 99999)) ||
+      (e.anchor != null &&
+        (!['left', 'right', 'center'].includes(e.anchor.x) ||
+          !['top', 'bottom', 'center'].includes(e.anchor.y) ||
+          !number(e.anchor.gapX, -3000, 3000) ||
+          !number(e.anchor.gapY, -3000, 3000) ||
+          typeof e.anchor.reference !== 'string' ||
+          !e.anchor.reference ||
+          e.anchor.reference.length > 600 ||
+          /[{};<@]/.test(e.anchor.reference))) ||
       typeof e.hidden !== 'boolean'
     )
       throw Error('布局控件参数无效');
@@ -57,6 +66,17 @@ export function validateLayout(value) {
       fontSize: e.fontSize,
       hidden: e.hidden,
       ...(e.zIndex == null ? {} : { zIndex: Math.round(e.zIndex) }),
+      ...(e.anchor == null
+        ? {}
+        : {
+            anchor: {
+              reference: e.anchor.reference,
+              x: e.anchor.x,
+              y: e.anchor.y,
+              gapX: e.anchor.gapX,
+              gapY: e.anchor.gapY,
+            },
+          }),
     })),
   };
 }

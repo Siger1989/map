@@ -15,6 +15,8 @@ const files = new Map(
     'gestures.mjs',
     'alignment.mjs',
     'layers.mjs',
+    'anchors.mjs',
+    'anchorRenderer.mjs',
     'gallery.html',
   ].map((n) => [
     n,
@@ -27,6 +29,8 @@ const files = new Map(
         'gestures.mjs',
         'alignment.mjs',
         'layers.mjs',
+        'anchors.mjs',
+        'anchorRenderer.mjs',
       ].includes(n)
         ? 'modules/uiLayout'
         : 'tools/layout-editor',

@@ -6,6 +6,7 @@ import {
   fontMetrics,
 } from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
+import { anchorLabel } from './anchors.mjs';
 
 /** Compact touch view. All state, persistence and geometry are supplied by the session. */
 export function mountEditor(session, onClose) {
@@ -35,7 +36,7 @@ export function mountEditor(session, onClose) {
       </div>
       <div data-expanded hidden>
         <div class="layout-mobile-row">
-          <select data-range aria-label="选择范围"><option value="group">整块</option><option value="control">控件</option><option value="element">元素</option></select>
+          <select data-range aria-label="选择范围"><option value="group">整组</option><option value="component">组内组件</option><option value="control">单控件</option><option value="element">任意元素</option></select>
           <button data-action="parent">外层</button><button data-action="redo">重做</button>
           <select data-extra aria-label="布局备份与恢复"><option value="">更多</option><option value="recover">所选移回居中</option><option value="export">导出布局</option><option value="import">导入布局</option><option value="reset">还原所选</option><option value="default">全部默认</option><option value="cancel">放弃未保存并退出</option></select>
         </div>
@@ -49,7 +50,7 @@ export function mountEditor(session, onClose) {
               <label title="首处文字的显示字号px；修改统一所选文字，清空恢复默认">字号<input data-field="fontSize" aria-label="字号（显示像素）" type="number" min="0.1" max="200" step="0.1"></label>
         </div>
         <div class="layout-mobile-row"><label><input data-ratio type="checkbox" checked>整体缩放</label><label><input data-guides type="checkbox" checked>对齐线</label><button data-action="raise">上一层</button><button data-action="lower">下一层</button></div>
-        <div data-message role="status"></div>
+        <div data-anchor hidden></div><div data-message role="status"></div>
         <div hidden><button data-action="recover"></button><button data-action="export"></button><button data-action="import"></button><button data-action="reset"></button><button data-action="default"></button><button data-action="cancel"></button><input data-file type="file" accept=".json,application/json"></div>
       </div>
     </section>`;
@@ -95,6 +96,7 @@ export function mountEditor(session, onClose) {
       handle.hidden = $('[data-mode]').value !== 'resize';
     if (outline.hidden) return;
     place(outline, box);
+    $('[data-anchor]').textContent = anchorLabel(items.at(-1));
     for (const dimension of ['width', 'height']) {
       const input = $(`[data-field="${dimension}"]`);
       if ($('[data-ratio]').checked && doc.activeElement !== input)
@@ -138,12 +140,14 @@ export function mountEditor(session, onClose) {
     list.value = selected()?.selector || '';
     list.hidden = multi || !levels.length;
     $('[data-level-row]').hidden = !selected();
+    $('[data-anchor]').hidden = !selected();
     const box = bounds(session.targets()),
       value = multi
         ? { width: box?.width, height: box?.height, scale: 1 }
         : selected() && session.entry(selected());
     for (const input of root.querySelectorAll('[data-field]')) {
       input.disabled = !selected();
+      if (doc.activeElement === input) continue;
       input.value =
         $('[data-ratio]').checked &&
         ['width', 'height'].includes(input.dataset.field) &&
@@ -151,9 +155,10 @@ export function mountEditor(session, onClose) {
           ? Math.round(box[input.dataset.field])
           : (value?.[input.dataset.field] ?? '');
     }
-    $('[data-field="fontSize"]').value =
-      fontMetrics(session.targets())?.pixels ?? '';
-    if (value?.scale != null)
+    if (doc.activeElement !== $('[data-field="fontSize"]'))
+      $('[data-field="fontSize"]').value =
+        fontMetrics(session.targets())?.pixels ?? '';
+    if (value?.scale != null && doc.activeElement !== $('[data-field="scale"]'))
       $('[data-field="scale"]').value = Math.round(value.scale * 1000) / 1000;
     draw();
   };
@@ -244,7 +249,12 @@ export function mountEditor(session, onClose) {
     );
     if (level) session.select(level.selector, level.label);
   };
-  $('[data-range]').onchange = () => session.clearSelection();
+  $('[data-range]').onchange = () =>
+    session.status(
+      $('[data-range]').value === 'component'
+        ? '点选组内组件；外层可返回父组'
+        : '按当前范围点选界面',
+    );
   $('[data-ratio]').onchange = sync;
   for (const input of root.querySelectorAll('[data-field]'))
     input.onchange = () => {

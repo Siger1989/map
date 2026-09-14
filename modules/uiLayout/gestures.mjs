@@ -68,41 +68,15 @@ export function bindGestures({
       updateBatch(g.items, g.rect, patch, false, true);
       return;
     }
-    update(patch, false, true);
     if (g.handle !== 'move') {
-      // Preserve the opposite edge even for right/bottom-anchored or flex-positioned widgets.
-      const actual = selectedNode()?.getBoundingClientRect();
-      if (actual)
-        update(
-          {
-            ...patch,
-            dx: Math.max(
-              -3000,
-              Math.min(
-                3000,
-                patch.dx +
-                  (g.handle.includes('w')
-                    ? g.rect.right - actual.right
-                    : g.rect.left - actual.left) /
-                    g.parentScale.x,
-              ),
-            ),
-            dy: Math.max(
-              -3000,
-              Math.min(
-                3000,
-                patch.dy +
-                  (g.handle.includes('n')
-                    ? g.rect.bottom - actual.bottom
-                    : g.rect.top - actual.top) /
-                    g.parentScale.y,
-              ),
-            ),
-          },
-          false,
-          true,
-        );
+      const resized = { ...patch };
+      delete resized.dx;
+      delete resized.dy;
+      if (resized.scale != null) resized.scale /= g.entry.scale;
+      updateBatch(g.items, g.rect, resized, false, true);
+      return;
     }
+    update(patch, false, true);
   };
   cover.onpointerdown = (event) => {
     if (event.button !== 0 || operating()) return;

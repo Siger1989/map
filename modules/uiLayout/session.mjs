@@ -1,7 +1,17 @@
-import { emptyLayout, validateLayout, layoutCss } from './model.mjs';
+import { emptyLayout, validateLayout } from './model.mjs';
 import { defaults, visible, selectionRoots } from './selection.mjs';
 import { capture, bounds, batchPatches, fontSizePatches } from './geometry.mjs';
 import { layerPatches } from './layers.mjs';
+import {
+  captureAnchor,
+  anchoredEntries,
+  rebaseChildAnchors,
+  anchorBatchTargets,
+} from './anchors.mjs';
+import {
+  renderAnchoredLayout,
+  observeAnchoredLayout,
+} from './anchorRenderer.mjs';
 
 export const STORAGE_KEY = 'shantu.ui-layout.v1';
 
@@ -14,6 +24,8 @@ export function createSession(doc, storage) {
     listener = () => {};
   const past = [],
     future = [];
+  let effective = new Map(),
+    observer;
   try {
     const raw = storage.getItem(STORAGE_KEY);
     if (raw) layout = validateLayout(JSON.parse(raw));
@@ -32,12 +44,16 @@ export function createSession(doc, storage) {
     }
   };
   const entry = (s) =>
+    effective.get(s.selector) ??
     layout.entries.find((e) => e.selector === s.selector) ??
     defaults(s.selector, s.label);
   const notify = () => listener();
   const apply = () => {
     // Scope all imported selectors to map UI; the recovery button and editor cannot be hidden.
-    style.textContent = layoutCss(layout, '.observatory');
+    effective = renderAnchoredLayout(doc, style, layout, '.observatory');
+    observer?.watch(
+      layout.entries.filter((e) => e.anchor).map((e) => find(e.selector)),
+    );
   };
   const checkpoint = () => {
     past.push(JSON.stringify(layout));
@@ -79,8 +95,24 @@ export function createSession(doc, storage) {
     change(
       () => {
         const changes = batchPatches(items, box, patch);
-        replace(changes.map((c) => c.next));
-        if (['width', 'height', 'scale'].some((key) => patch[key] != null)) {
+        const resizing = ['width', 'height', 'scale'].some(
+          (key) => patch[key] != null,
+        );
+        const fixedEdge = resizing && items.length === 1;
+        const geometric = resizing || 'dx' in patch || 'dy' in patch;
+        anchorBatchTargets(items, box, patch, changes);
+        for (const change of changes)
+          change.next.anchor = fixedEdge
+            ? (items[0].entry.anchor ??
+              captureAnchor(items[0].element, items[0].rect))
+            : geometric
+              ? undefined
+              : change.entry.anchor;
+        replace([
+          ...(geometric ? rebaseChildAnchors(doc, layout.entries, items) : []),
+          ...changes.map((c) => c.next),
+        ]);
+        if (resizing && !fixedEdge) {
           replace(
             changes.map(({ element, next, target, parentScale }) => {
               const actual = element.getBoundingClientRect();
@@ -104,10 +136,21 @@ export function createSession(doc, storage) {
             }),
           );
         }
+        replace(
+          anchoredEntries(
+            doc,
+            changes.map((c) => effective.get(c.next.selector) ?? c.next),
+            effective,
+          ),
+        );
       },
       remember,
       light,
     );
+  observer = observeAnchoredLayout(doc, () => {
+    apply();
+    notify();
+  });
   apply();
   return {
     doc,
@@ -155,6 +198,21 @@ export function createSession(doc, storage) {
     },
     update(patch, remember = true, light = false) {
       if (!selected.length) return;
+      if (
+        selected.length === 1 &&
+        ['dx', 'dy', 'width', 'height', 'scale'].some((key) => key in patch)
+      ) {
+        const items = targets(),
+          box = bounds(items);
+        if (!box) return;
+        const relative = { ...patch };
+        for (const key of ['dx', 'dy'])
+          if (key in patch) relative[key] -= items[0].entry[key];
+        if (patch.scale != null)
+          relative.scale = patch.scale / items[0].entry.scale;
+        updateBatch(items, box, relative, remember, light);
+        return;
+      }
       if (selected.length > 1) {
         const items = targets(),
           box = bounds(items);
@@ -187,7 +245,11 @@ export function createSession(doc, storage) {
           width: Math.max(266, Math.min(1600, doc.defaultView.innerWidth)),
           height: Math.max(400, Math.min(1600, doc.defaultView.innerHeight)),
         };
-        const next = validateLayout({ ...layout, viewport });
+        const next = validateLayout({
+          ...layout,
+          viewport,
+          entries: anchoredEntries(doc, layout.entries, effective),
+        });
         storage.setItem(STORAGE_KEY, JSON.stringify(next));
         layout = next;
         saved = JSON.stringify(layout);
@@ -229,6 +291,7 @@ export function createSession(doc, storage) {
       notify();
     },
     dispose() {
+      observer.dispose();
       style.remove();
       listener = () => {};
     },

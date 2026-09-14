@@ -129,7 +129,8 @@
 .layout-mobile-toolbar [data-hierarchy] {
   max-width: 126px;
 }
-.layout-mobile-toolbar [data-message] {
+.layout-mobile-toolbar [data-message],
+.layout-mobile-toolbar [data-anchor] {
   margin: 0 2px;
   font-size: 10px;
   min-width: 0;

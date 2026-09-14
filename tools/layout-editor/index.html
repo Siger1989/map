@@ -10,7 +10,7 @@
     <header>
       <div>
         <strong>山兔 · 布局调节</strong
-        ><small>功能基准 0.2.32 · 修改的是布局草稿</small>
+        ><small>功能基准 0.2.33 · 修改的是布局草稿</small>
       </div>
       <nav>
         <button id="undo" disabled>撤销</button
@@ -28,7 +28,8 @@
         <div class="row">
           <button id="mode" class="primary">正在选择布局</button
           ><select id="granularity" aria-label="选择范围">
-            <option value="group">整个组件</option>
+            <option value="group">整体 / 整组</option>
+            <option value="component">组内独立组件</option>
             <option value="control">单个控件</option>
             <option value="element">任意元素</option>
           </select>
@@ -170,6 +171,7 @@
             >外框 / 内容<select id="hierarchy" aria-label="组件层级"></select
           ></label>
           <button id="select-parent" disabled>选外层</button>
+          <p id="anchor-status"></p>
           <label
             ><span id="dx-label">水平偏移 px</span
             ><input

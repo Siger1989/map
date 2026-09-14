@@ -1,4 +1,4 @@
-import { emptyLayout, validateLayout, layoutCss } from './model.mjs';
+import { emptyLayout, validateLayout } from './model.mjs';
 import {
   defaults,
   visible,
@@ -18,6 +18,17 @@ import {
 } from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
 import { layerPatches } from './layers.mjs';
+import {
+  captureAnchor,
+  anchoredEntries,
+  anchorLabel,
+  rebaseChildAnchors,
+  anchorBatchTargets,
+} from './anchors.mjs';
+import {
+  renderAnchoredLayout,
+  observeAnchoredLayout,
+} from './anchorRenderer.mjs';
 const $ = (id) => document.getElementById(id);
 const frame = $('preview');
 let selection = [],
@@ -30,6 +41,8 @@ let layout = emptyLayout(),
   busy = false;
 const past = [],
   future = [];
+let effective = new Map(),
+  anchorObserver;
 const serial = () => JSON.stringify(layout);
 const status = (message) => {
   $('status').textContent = message;
@@ -49,6 +62,7 @@ function find(selector) {
 }
 function entry(target = selected) {
   return (
+    effective.get(target?.selector) ||
     layout.entries.find((e) => e.selector === target?.selector) ||
     (target && defaults(target.selector, target.label))
   );
@@ -109,7 +123,10 @@ function apply(light = false) {
       style.id = 'shantu-layout-preview-style';
       doc().head.append(style);
     }
-    style.textContent = layoutCss(layout);
+    effective = renderAnchoredLayout(doc(), style, layout);
+    anchorObserver?.watch(
+      layout.entries.filter((e) => e.anchor).map((e) => find(e.selector)),
+    );
   }
   if (light) {
     outline();
@@ -195,6 +212,7 @@ function properties() {
         : (e[key] ?? '');
   $('hidden').checked = e.hidden;
   $('fontSize').value = fontMetrics(targets())?.pixels ?? e.fontSize ?? '';
+  $('anchor-status').textContent = anchorLabel(targets().at(-1));
   $('dx-label').textContent = multiple ? '一起水平移动 px' : '水平偏移 px';
   $('dy-label').textContent = multiple ? '一起垂直移动 px' : '垂直偏移 px';
   $('scale-label').textContent = multiple ? '本次整体缩放倍数' : '整体比例';
@@ -239,6 +257,21 @@ function refresh() {
 }
 function update(patch, remember = true, light = false) {
   if (!selected) return;
+  if (
+    selection.length === 1 &&
+    ['dx', 'dy', 'width', 'height', 'scale'].some((key) => key in patch)
+  ) {
+    const items = targets(),
+      box = bounds(items);
+    if (!box) return;
+    const relative = { ...patch };
+    for (const key of ['dx', 'dy'])
+      if (key in patch) relative[key] -= items[0].entry[key];
+    if (patch.scale != null)
+      relative.scale = patch.scale / items[0].entry.scale;
+    updateBatch(items, box, relative, remember, light);
+    return;
+  }
   if (selection.length > 1) {
     const items = targets(),
       box = bounds(items);
@@ -273,12 +306,28 @@ function replaceEntries(entries) {
 function updateBatch(items, box, patch, remember = true, light = false) {
   if (!items.length) return;
   const changes = batchPatches(items, box, patch);
+  const resizing = ['width', 'height', 'scale'].some(
+      (key) => patch[key] != null,
+    ),
+    fixedEdge = resizing && items.length === 1;
+  const geometric = resizing || 'dx' in patch || 'dy' in patch;
+  anchorBatchTargets(items, box, patch, changes);
+  for (const change of changes)
+    change.next.anchor = fixedEdge
+      ? (items[0].entry.anchor ??
+        captureAnchor(items[0].element, items[0].rect))
+      : geometric
+        ? undefined
+        : change.entry.anchor;
   const before = serial();
   try {
     if (remember) checkpoint();
-    replaceEntries(changes.map((c) => c.next));
+    replaceEntries([
+      ...(geometric ? rebaseChildAnchors(doc(), layout.entries, items) : []),
+      ...changes.map((c) => c.next),
+    ]);
     apply(true);
-    if (['width', 'height', 'scale'].some((key) => patch[key] != null)) {
+    if (resizing && !fixedEdge) {
       // Apply every size first, then compensate flex/right/bottom anchoring together.
       replaceEntries(
         changes.map(({ element, next, target, parentScale }) => {
@@ -303,6 +352,14 @@ function updateBatch(items, box, patch, remember = true, light = false) {
         }),
       );
     }
+    apply(true);
+    replaceEntries(
+      anchoredEntries(
+        doc(),
+        changes.map((c) => effective.get(c.next.selector) ?? c.next),
+        effective,
+      ),
+    );
     apply(light);
     if (!light) {
       properties();
@@ -578,6 +635,7 @@ $('save').onclick = async () => {
   if (busy) return;
   busy = true;
   $('save').disabled = true;
+  layout.entries = anchoredEntries(doc(), layout.entries, effective);
   const snapshot = serial();
   try {
     const response = await fetch('/__layout/draft', {
@@ -629,6 +687,8 @@ $('import').onchange = async () => {
 let frameObserver, refreshTimer;
 frame.addEventListener('load', () => {
   frameObserver?.disconnect();
+  anchorObserver?.dispose();
+  anchorObserver = observeAnchoredLayout(doc(), () => apply(true));
   apply();
   refresh();
   frameObserver = new MutationObserver(() => {
