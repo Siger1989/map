@@ -1,4 +1,11 @@
-# 当前状态 — 2026-09-14 / 0.2.34已发布，源码仍在独立工作树
+# 当前状态 — 2026-09-14 / 0.2.35陡坡漏标修正已发布
+
+- 用户反馈后段角度较陡却没有提示。源码确认0.2.34只保留前12处，连续陡坡只留最高峰且合并上下坡。已在独立工作树`D:/shantu-layout-selection-fix`的`codex/layout-selection-clipping`修正：各独立坡段全线保留，上下坡分开，长坡约200米补标，极长段均匀分布；文字避让但圆点保留。复用原坡度计算/20%阈值（≈11.3°），不改用户布局或轨迹存档。未取得用户原轨迹，尚未验证其具体路线。
+- [0.2.35公开Release](https://github.com/Siger1989/map/releases/tag/v0.2.35-test-standalone)，id388321633，draft=false/prerelease=true。APK、校验文件、8张图示ZIP和说明四项远端大小/SHA256全部匹配。功能源码`02027e60069bb3ba4ec293cb7ea1b9b2f5a692f3`已推送并核对origin/codex/layout-selection-clipping；未合入main，当前主工作树业务代码仍为0.2.33，只同步交接文档，避免热更新用户工作窗口。
+- APK：`D:/shantu-layout-selection-fix/APK/Shantu-0.2.35-test-standalone.apk`，0.2.35-test/code42，57,731,510字节，SHA256`3a42579c6c3977a99183e2b29bbb683a010480ed63e42f002946cc937c434744`。503/503逻辑、类型、架构、网页/APK构建、原4a94证书v2/v3、zipalign、543项CRC、473地形与新增代码入包通过；用户草稿/桌面控制器/私密文件排除通过。
+- 实际useRouteDisplay+MapLibre在独立后台浏览器390/360复现旧12/新20、长坡尾段、上下坡分别提示；实际圆点查询与地图/页面无异常。8张图示及索引在`D:/shantu-layout-selection-fix/artifacts/screenshots/steep-markers-fix`，构造测试数据，不是真机/用户轨迹截图。手机覆盖安装/实际路线与触控仍待验，HarmonyOS6.1原生包未交付。继续开发先读独立工作树CURRENT_STATE.md和docs/release-0.2.35.md；保留包名/签名/页面源、布局存储键及JSON格式，不控制/刷新工作窗口。
+
+# 历史状态 — 2026-09-14 / 0.2.34已发布，源码仍在独立工作树
 
 - 用户最新明确「打包新的APK并上传」，0.2.34-test/code41已构建并公开发布：[v0.2.34-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)，Release id388306522，draft=false/prerelease=true，四项远端资产大小/SHA256与本地完全匹配。此前「先不打包」仅为下文历史指示。
 - **APK存放**：`D:/shantu-layout-selection-fix/APK/Shantu-0.2.34-test-standalone.apk`，57,731,510字节，SHA256`40911d0d949e8f79f11696861f567c8a8ed753fe0574461d7fe08b8d69781980`。公开Release另含apk.sha256、13张实测图示ZIP和安装说明。
