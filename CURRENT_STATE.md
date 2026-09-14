@@ -1,6 +1,7 @@
 # 当前状态 — 2026-09-14 / 0.2.33 贴边适配与组内独立选择
 
-- **最终实现和安装包已完成，正在同步发布**。最终源码重新构建的0.2.33-test/code40包含贴边适配和组内拾取；不是此前同版本的中间包。APK/Shantu-0.2.33-test-standalone.apk为57727494字节，SHA256 `29f02ae65cd52af338b545e35413507d60283e558bdab4ce3d8d92e173dce6c3`。
+- **0.2.33已发布测试Release**：[v0.2.33-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.33-test-standalone)，id388261380，draft=false/prerelease=true。四个资产的GitHub大小/SHA256全部匹配本地。功能源码`1b9e7b8cc15b83a85eb52cc05e971bf3892c989e`已推送并与origin/codex/huawei-webview-touch逐字核对；本地分支codex/sync-20260910，未合入main。此次后续交接提交只更新状态文档，不改变APK对应源码。
+- 最终源码重新构建的0.2.33-test/code40包含贴边适配和组内拾取；不是此前同版本的中间包。APK/Shantu-0.2.33-test-standalone.apk为57727494字节，SHA256 `29f02ae65cd52af338b545e35413507d60283e558bdab4ce3d8d92e173dce6c3`。图示ZIP为2979031字节，SHA256 `bcba8398ec5b2f63482adfd8ddc0c6f795970df0dd28d25b40aeb2317f2945e0`。
 - 最终483/483逻辑测试、TypeScript、架构、diff、网页与APK构建PASS。原4a94证书v2/v3、zipalign、544项ZIP CRC、473地形、布局新增代码进入APK与桌面控制器排除PASS；详细日志.openai/*0233-final.log。
 - 实际后台浏览器通过手机整组/子组件、整体内容缩放、字号、辅助线、层级、模式隔离、保存重开及390/360/430/266贴边；独立新浏览器导入JSON通过。桌面最终复测200%细线/小点、多选/撤销、子组件和360贴边通过，页面异常为空。首次桌面复跑等待组件清单超时，服务模块HTTP均200，重新完整运行通过。11张本轮实际截图在artifacts/screenshots/ui-0233，随Release图示ZIP交付；未控制或刷新用户工作窗口。
 - 用户布局是后续视觉优化的基准：电脑“保存到项目”，手机“参数→更多→导出布局”生成shantu-layout-draft.json。没有改写config/ui-layout-draft.json或用户浏览器存储，也未把测试布局写入安装包。真机安装/手指/系统文件窗口尚未验；HarmonyOS6.1原生HAP/APP仍未交付。
