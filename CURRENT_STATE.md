@@ -1,4 +1,11 @@
-# 当前状态 — 2026-09-14 / 用户继续调布局，新增修正在隔离分支
+# 当前状态 — 2026-09-14 / 0.2.34已发布，源码仍在独立工作树
+
+- 用户最新明确「打包新的APK并上传」，0.2.34-test/code41已构建并公开发布：[v0.2.34-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)，Release id388306522，draft=false/prerelease=true，四项远端资产大小/SHA256与本地完全匹配。此前「先不打包」仅为下文历史指示。
+- **APK存放**：`D:/shantu-layout-selection-fix/APK/Shantu-0.2.34-test-standalone.apk`，57,731,510字节，SHA256`40911d0d949e8f79f11696861f567c8a8ed753fe0574461d7fe08b8d69781980`。公开Release另含apk.sha256、13张实测图示ZIP和安装说明。
+- **继续开发入口**：独立工作树`D:/shantu-layout-selection-fix`，分支`codex/layout-selection-clipping`，APK对应源码`96f97a15eea4e2a5090870695021c38b085b6f64`已推送并与origin逐字核对。包含下文布局选择/裁切/缩放/层级/头像导入导出/行程点数据修正；详见该工作树CURRENT_STATE.md与docs/release-0.2.34.md。未合入main，也未自动将本主工作树的业务代码切到新版；这里仍是0.2.33业务基线，仅同步交接文档，避免热更新用户现用9241页面。
+- 最终497/497逻辑、TypeScript、架构、网页/APK构建、原4a94证书v2/v3、zipalign、543项ZIP CRC和473地形校验通过；新功能已进包，桌面控制器/私密文件/用户草稿未混入。保留同包名、同签名、固定页面源及`shantu.ui-layout.v1`/JSON version1；覆盖安装继续读取保存布局。没有控制或刷新工作窗口，也未写用户项目草稿或真实localStorage。真机覆盖安装/手指/系统文件窗口尚未验，HarmonyOS6.1原生HAP/APP仍未交付。
+
+# 历史状态 — 2026-09-14 / 用户继续调布局，新增修正在隔离分支
 
 - **先读待整合分支**：`codex/layout-selection-clipping`，独立工作树`D:/shantu-layout-selection-fix`，最新功能提交`0fda5fa2b71f08497201f1dd203644bb8d9a4dfe`，前半轮提交`8a47c49e94a5cd051a1c3bc5871d8f032ac5a585`。完整实现、文件和验证记录在该工作树CURRENT_STATE.md。现用`D:/天气系统`业务源码、9241页面和已发布APK仍为下文0.2.33基线；本次这里只补交接文档，不合入代码、不触发用户页面更新。
 - 用户明确**先不打包，继续使用当前窗口；禁止控制、刷新或切换工作窗口**。未提升版本、未生成新APK/Release，禁止以0.2.33包冒充此次修正。不要重置/覆盖`config/ui-layout-draft.json`和真实浏览器localStorage，整合时以用户最终布局为基准。
