@@ -14,6 +14,9 @@ final class RecordingStore {
     private static JSONObject data;
     private static boolean broken;
     private static String qualityMessage = "";
+    private static String cachedSnapshot;
+    private static String cachedQuality;
+    static synchronized boolean isRecording(Context c) throws Exception { return "recording".equals(load(c).optString("phase")); }
     static synchronized void clearQuality() { qualityMessage = ""; }
     static synchronized JSONObject load(Context context) throws Exception {
         if (data != null) return data;
@@ -29,10 +32,12 @@ final class RecordingStore {
     static synchronized String snapshot(Context c) {
         try {
             JSONObject current = load(c);
-            if (qualityMessage.isEmpty() || !current.optString("error").isEmpty()) return current.toString();
+            if (cachedSnapshot != null && java.util.Objects.equals(cachedQuality, qualityMessage)) return cachedSnapshot;
+            cachedQuality = qualityMessage;
+            if (qualityMessage.isEmpty() || !current.optString("error").isEmpty()) return cachedSnapshot = current.toString();
             JSONObject snapshot = new JSONObject(current.toString());
             if (!qualityMessage.isEmpty() && snapshot.optString("error").isEmpty()) snapshot.put("error", qualityMessage);
-            return snapshot.toString();
+            return cachedSnapshot = snapshot.toString();
         }
         catch (Exception e) { try { return empty().put("error", "原生存档损坏，未覆盖原文件").toString(); } catch (Exception ignored) { return "{}"; } }
     }
@@ -57,7 +62,7 @@ final class RecordingStore {
         write(c);
     }
     static synchronized void error(Context c, String message) {
-        try { load(c).put("error", message); write(c); } catch (Exception ignored) { }
+        try { JSONObject current = load(c); if (java.util.Objects.equals(current.optString("error"), message)) return; current.put("error", message); write(c); } catch (Exception ignored) { }
     }
     static synchronized void add(Context c, Location p) throws Exception {
         JSONObject value = load(c);
@@ -77,13 +82,17 @@ final class RecordingStore {
             JSONArray coord = last.getJSONArray("coordinates");
             float[] distance = new float[1]; Location.distanceBetween(coord.getDouble(1),coord.getDouble(0),p.getLatitude(),p.getLongitude(),distance);
             double seconds = (p.getTime()-last.getLong("time"))/1000.0;
-            if (seconds <= 0 || distance[0]/seconds > 80 || (distance[0] < 5 && seconds < 30)) return;
+            JSONObject policy = SamplingPreferences.read(c);
+            if (seconds <= 0 || distance[0]/seconds > 80 || !SamplingPolicy.accepts(distance[0], seconds,
+                policy.getInt("intervalSeconds"), policy.getInt("distanceMetres"),
+                policy.getInt("stationarySeconds"), policy.getBoolean("distanceOnly"))) return;
             if (seconds > 120) { if (segments.length() >= 100) { command(c,"pause"); error(c,"分段已达上限，请结束保存"); return; } line = new JSONArray(); segments.put(line); }
         }
         line.put(new JSONObject().put("coordinates",new JSONArray().put(p.getLongitude()).put(p.getLatitude())).put("time",p.getTime()).put("accuracy",p.getAccuracy()).put("altitude",p.hasAltitude()?p.getAltitude():JSONObject.NULL));
         value.put("error", ""); write(c);
     }
     private static void write(Context c) throws Exception {
+        cachedSnapshot = null;
         AtomicFile file = file(c); FileOutputStream out = null;
         try { out = file.startWrite(); out.write(data.toString().getBytes(StandardCharsets.UTF_8)); file.finishWrite(out); }
         catch (Exception e) { file.failWrite(out); data.put("phase","paused").put("error","存储失败，记录已暂停，请导出当前轨迹"); throw e; }

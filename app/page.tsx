@@ -11,11 +11,13 @@ import {
 } from '@/modules/mapSources/MapSourcesPanel';
 import { useTripPhotos } from '@/modules/photos/useTripPhotos';
 import { PhotoPanel } from '@/modules/photos/PhotoPanel';
-import { recordingTrack } from '@/modules/outdoor/savedRecording';
+import { useRecordingTracks } from '@/modules/outdoor/useRecordingTracks';
+import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
+import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
@@ -30,7 +32,7 @@ import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
 import { trackNavigation } from '@/modules/guidance/savedRoute';
-import { createSession } from '@/modules/guidance/session';
+import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
 import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
@@ -40,10 +42,6 @@ import {
   shareTrack,
   type ShareRoute,
 } from '@/modules/routeShare/data';
-import {
-  validFavorite,
-  type RouteFavorite,
-} from '@/modules/navigation/favorites';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
@@ -221,11 +219,6 @@ export default function Home() {
     position.fix,
     position.locationError,
   );
-  const guidanceOwnsLocation = useRef(false),
-    guidanceFocused = useRef(false);
-  const [savedNavigationError, setSavedNavigationError] = useState('');
-  const [navigationTarget, setNavigationTarget] =
-    useState<RouteFavorite | null>(null);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
   const shareTrackById = (id: string) => {
@@ -242,23 +235,11 @@ export default function Home() {
   };
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
 
-  const photoTracks = useMemo(() => {
-    const record = recorder.record;
-    if (!record.id || !record.segments.some((s) => s.length))
-      return tracks.saved;
-    return [
-      { ...recordingTrack(record, true), name: '当前实走记录' },
-      ...tracks.saved.filter((t) => t.id !== record.id),
-    ];
-  }, [tracks.saved, recorder.record]);
-  const selectedPhoto = photos.items.find((p) => p.id === photos.selected);
-  const recordedSegments = useMemo(
-    () =>
-      recorder.record.segments
-        .filter((s) => s.length >= 2)
-        .map((s) => s.map((p) => p.coordinates)),
-    [recorder.record],
+  const { live: liveRecording, photos: photoTracks } = useRecordingTracks(
+    recorder.record,
+    tracks.saved,
   );
+  const selectedPhoto = photos.items.find((p) => p.id === photos.selected);
   const editor = useRouteEditor();
   const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker'>(
     'card',
@@ -398,98 +379,6 @@ export default function Home() {
         fix.source === 'network' ? positionZoom(fix) : undefined,
       ) ?? false,
   });
-  useEffect(() => {
-    if (!guidance.active && guidanceOwnsLocation.current) {
-      guidanceOwnsLocation.current = false;
-      position.stopLocation();
-      if (recorder.record.phase !== 'recording') follow.pause();
-    }
-    const s = guidance.session;
-    if (s?.last && !s.quality && !guidanceFocused.current) {
-      guidanceFocused.current = true;
-      map.current?.focusPoint(
-        s.last.coordinates,
-        s.route.mode === 'auto' ? 16 : 17,
-      );
-      follow.resume();
-    }
-  }, [
-    guidance.active,
-    guidance.session?.last?.timestamp,
-    guidance.session?.quality,
-  ]);
-  const activateGuidance = (route = navigation.route) => {
-    if (!guidance.start(route)) {
-      setPanel('route');
-      return;
-    }
-    guidanceOwnsLocation.current =
-      guidanceOwnsLocation.current || !position.watching;
-    setSectionEditing(false);
-    setProfileOpen(false);
-    guidanceFocused.current = false;
-    tracks.finish();
-    tracks.select(null);
-    annotations.select(null);
-    navigation.setPicking(null);
-    setQuickAdd(null);
-    setPanel(null);
-    position.free();
-    map.current?.previewRoute(null);
-    if (position.mode === 'network') position.changeMode('auto');
-    else position.locate();
-  };
-  const startGuidance = () => {
-    const route = navigation.route;
-    if (route && navigation.start && navigation.end)
-      setNavigationTarget({
-        id: 'current-route',
-        name: `${navigation.start.name} → ${navigation.end.name}`,
-        savedAt: Date.now(),
-        start: navigation.start,
-        end: navigation.end,
-        route,
-      });
-  };
-  const navigateFavorite = (favorite: RouteFavorite) =>
-    setNavigationTarget(favorite);
-  const beginFavorite = (favorite: RouteFavorite) => {
-    setSavedNavigationError('');
-    try {
-      if (!validFavorite(favorite))
-        throw new Error('收藏路线数据无效，无法导航。');
-      createSession(favorite.route);
-      if (!navigation.restore(favorite)) return;
-      map.current?.fitRoute(favorite.route.coordinates);
-      activateGuidance(favorite.route);
-      setNavigationTarget(null);
-    } catch (error) {
-      setSavedNavigationError(
-        error instanceof Error ? error.message : '无法开始导航。',
-      );
-    }
-  };
-  const navigateTrack = (id: string) => {
-    setSavedNavigationError('');
-    try {
-      const track = tracks.saved.find((item) => item.id === id);
-      if (!track) throw new Error('轨迹已不存在，请重新选择。');
-      if (tracks.selectedId !== id) openRoute(id);
-      navigateFavorite(
-        trackNavigation(
-          track,
-          Date.now(),
-          track.navigationMode ?? 'pedestrian',
-          tracks.saved,
-          activeAlternative,
-        ),
-      );
-    } catch (error) {
-      setSavedNavigationError(
-        error instanceof Error ? error.message : '无法开始轨迹导航。',
-      );
-    }
-  };
   const guidanceOverlay = useMemo(
     () =>
       guidance.rejoin
@@ -857,6 +746,37 @@ export default function Home() {
     )
       map.current?.view(view.pitch, position.heading, false);
   }, [position.direction, position.heading, tracks.drawing]);
+  const {
+    savedNavigationError,
+    setSavedNavigationError,
+    navigationTarget,
+    setNavigationTarget,
+    startGuidance,
+    beginFavorite,
+    navigateFavorite,
+    navigateTrack,
+  } = useGuidanceWorkflow({
+    guidance,
+    position,
+    follow,
+    recorder,
+    navigation,
+    tracks,
+    map,
+    activeAlternative,
+    onOpenRoute: openRoute,
+    onInvalidRoute: () => setPanel('route'),
+    onActivateUi: () => {
+      setSectionEditing(false);
+      setProfileOpen(false);
+      tracks.finish();
+      tracks.select(null);
+      annotations.select(null);
+      navigation.setPicking(null);
+      setQuickAdd(null);
+      setPanel(null);
+    },
+  });
   const routeOverlay = useMemo(
     () => ({
       start: navigation.start,
@@ -873,80 +793,35 @@ export default function Home() {
     ],
   );
   const trackOverlay = useMemo(
-    () => ({
-      saved: recordedSegments.length
-        ? [
-            ...tracks.overlaySaved.filter(
-              (t) =>
-                !editor.session?.sources.some((source) => source.id === t.id),
-            ),
-            ...(editor.session && editor.session.track.id !== DRAFT_ID
-              ? [editor.session.track]
-              : []),
-            {
-              id: 'live-recording',
-              name: '实走记录',
-              createdAt: recorder.record.startedAt,
-              style: recorder.record.style,
-              segments: recordedSegments,
-            },
-          ]
-        : editor.session
-          ? [
-              ...tracks.overlaySaved.filter(
-                (t) =>
-                  !editor.session!.sources.some((source) => source.id === t.id),
-              ),
-              ...(editor.session.track.id !== DRAFT_ID
-                ? [editor.session.track]
-                : []),
-            ]
-          : tracks.overlaySaved,
-      draft: editor.session
-        ? editor.session.original.id === DRAFT_ID
-          ? editor.session.track.segments
-          : []
-        : tracks.draft,
-      visible: tracks.visible || recorder.record.phase !== 'idle',
-      draftEdgeColors: editor.session?.track.edgeColors ?? tracks.edgeColors,
-      style: editor.session?.track.style ?? tracks.style,
-      nodes: editor.session?.track.nodes ?? tracks.vertices,
-      drawing: tracks.drawing,
-      selectedId: tracks.selectedId,
-      activeNode: editor.session?.selected
-        ? {
-            trackId: editor.session.track.id,
-            coordinate: editor.session.selected,
-          }
-        : null,
-      editing: !!editor.session || tracks.drawing,
-      movableTrackId:
-        editor.session && editor.session.branch === null
-          ? editor.session.track.id
-          : null,
-      connecting: editor.session?.branch != null,
-      snapTargets:
-        !!editor.session && editor.session.branch === null && tracks.snapping,
-      alternativeId: activeAlternative,
-      linePoint: panel === null ? linePoint : null,
-      preview:
-        featureMove?.target.kind === 'track'
-          ? {
-              node: featureMove.target.node,
-              coordinate: featureMove.coordinate,
-            }
-          : null,
-    }),
+    () =>
+      composeTrackOverlay({
+        saved: tracks.overlaySaved,
+        draft: tracks.draft,
+        session: editor.session,
+        recording: liveRecording,
+        visible: tracks.visible || recorder.record.phase !== 'idle',
+        draftEdgeColors: tracks.edgeColors,
+        style: tracks.style,
+        nodes: tracks.vertices,
+        drawing: tracks.drawing,
+        selectedId: tracks.selectedId,
+        snapTargets: tracks.snapping,
+        alternativeId: activeAlternative,
+        linePoint: panel === null ? linePoint : null,
+        preview:
+          featureMove?.target.kind === 'track'
+            ? {
+                node: featureMove.target.node,
+                coordinate: featureMove.coordinate,
+              }
+            : null,
+      }),
     [
-      recordedSegments,
+      liveRecording,
       editor.session,
-      activeTrackNode,
-      connectingNode,
       activeAlternative,
       linePoint,
       panel,
-      recorder.record.startedAt,
-      recorder.record.style,
       recorder.record.phase,
       tracks.overlaySaved,
       tracks.draft,
@@ -2266,15 +2141,24 @@ export default function Home() {
             map.current?.view(layers.terrain ? 0 : 62, view.bearing);
           }}
         />
-        {recorder.record.phase !== 'idle' && (
-          <button
-            className="recording-chip glass"
-            onClick={() => setPanel('outdoor')}
-          >
-            {recorder.record.phase === 'recording' ? '● 记录中' : '记录待处理'}{' '}
-            · {recorder.record.segments.reduce((n, s) => n + s.length, 0)} 点
-          </button>
-        )}
+        {panel === null &&
+          !measurement.active &&
+          !survey.active &&
+          !sectionEditing &&
+          !tracks.drawing &&
+          !routeVisible &&
+          !editor.session &&
+          !quickAdd &&
+          !annotations.picking &&
+          !selectedAnnotation &&
+          !areas.drawing &&
+          !areas.selected &&
+          navigation.picking === null && (
+            <RecordingQuickAction
+              recorder={recorder}
+              onDetails={() => setPanel('outdoor')}
+            />
+          )}
         {selectedAnnotation &&
           (panel === 'annotations' || annotations.selectionRequest) &&
           !annotations.picking && (

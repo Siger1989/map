@@ -24,6 +24,12 @@ foreach ($tool in @($javaExe, $javacExe, $jarExe, $keytoolExe, $platformJar, (Jo
   if (!(Test-Path -LiteralPath $tool)) { throw "Missing build tool: $tool" }
 }
 function Check-Tool([string]$label) { if ($LASTEXITCODE -ne 0) { throw "$label failed (exit $LASTEXITCODE)" } }
+function Get-Sha256([string]$path) {
+  $algorithm = [Security.Cryptography.SHA256]::Create()
+  $stream = [IO.File]::OpenRead($path)
+  try { return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '') }
+  finally { $stream.Dispose(); $algorithm.Dispose() }
+}
 # Android's Windows native tools do not consistently accept non-ASCII absolute paths.
 # Relative paths keep the Chinese workspace name out of their command arguments.
 function Native-Path([string]$path) {
@@ -64,7 +70,7 @@ try {
     if (!(Test-Path -LiteralPath $keyStore)) { throw 'Matching signing key is missing. Set GUANYUN_SIGNING_KEY or use -SigningKey. Do not generate a replacement key for this package.' }
     $publicCertificate = Join-Path $buildRoot 'signing-certificate.der'
     & $keytoolExe -exportcert -keystore $keyStore -storepass android -alias guanyun-test -file $publicCertificate; Check-Tool 'Signing certificate export'
-    $certificateHash = (Get-FileHash -LiteralPath $publicCertificate -Algorithm SHA256).Hash.ToLowerInvariant()
+    $certificateHash = (Get-Sha256 $publicCertificate).ToLowerInvariant()
     if ($certificateHash -ne $signing.certificateSha256) { throw 'Signing certificate does not match the published preview APK. Build stopped to protect in-place updates. Supply the original signing key, or use -UnsignedOnly for a non-installable build check.' }
   }
   if (!$SkipWebBuild) {
@@ -149,10 +155,7 @@ try {
     if (@($names | Where-Object { $_ -match '(^|/)\.env|\.jks$|\.keystore$|node_modules/|\.openai/' }).Count) { throw 'Private build files found in APK' }
     Write-Output "Bundled terrain tiles verified: $tileCount"
   } finally { $archive.Dispose() }
-  $hashAlgorithm = [Security.Cryptography.SHA256]::Create()
-  $apkStream = [IO.File]::OpenRead($apk)
-  try { $digest = [BitConverter]::ToString($hashAlgorithm.ComputeHash($apkStream)).Replace('-', '') }
-  finally { $apkStream.Dispose(); $hashAlgorithm.Dispose() }
+  $digest = Get-Sha256 $apk
   [IO.File]::WriteAllText((Join-Path $outputRoot ($apkName -replace '\.apk$', '.sha256')), "$digest  $apkName`n", (New-Object System.Text.UTF8Encoding($false)))
   if ($UnsignedOnly) { Write-Output "Unsigned build only (not installable): $apk" }
   else { Write-Output "APK: $apk" }

@@ -1,4 +1,5 @@
 import { TrackColorProfile } from './TrackColorProfile';
+import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
@@ -223,6 +224,7 @@ export function RouteDetails({
         </header>
         <div className="route-details-body">
           <h2>{track.name}</h2>
+          <RouteAnalysisSummary track={track} />
           <h3>基本资料</h3>
           <dl className="route-data-rows">
             {[

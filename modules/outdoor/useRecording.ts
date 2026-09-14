@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRecordingStyle } from './useRecordingStyle';
+import { useSamplingPolicy } from './useSamplingPolicy';
 import { useRecordingPreferences } from './useRecordingPreferences';
 import { recordingAccuracyMessage } from './recordingPreferences';
 import { nativeRecordingSnapshot } from './nativeRecordingSnapshot';
@@ -27,6 +28,8 @@ declare global {
       routeLinkShare?(url: string): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;
+      recordingSampling?(): string;
+      setRecordingSampling?(json: string): boolean;
       locate?(mode: string): void;
       locationState?(): string;
       stopLocation?(): void;
@@ -38,6 +41,9 @@ export function useRecording() {
   const [native, setNative] = useState(false);
   const preferences = useRecordingPreferences();
   const appearance = useRecordingStyle();
+  const sampling = useSamplingPolicy();
+  const policy = useRef(sampling.policy);
+  policy.current = sampling.policy;
   const maximum = useRef(preferences.maximum);
   maximum.current = preferences.maximum;
   const [qualityNote, setQualityNote] = useState('');
@@ -45,6 +51,7 @@ export function useRecording() {
   const current = useRef(record);
   current.current = record;
   const writable = useRef(true);
+  const nativeCommand = useRef<string | null>(null);
   const persist = (next: Recording) => {
     if (!writable.current) return;
     try {
@@ -67,7 +74,9 @@ export function useRecording() {
       const read = () => {
         try {
           setRecord(snapshot(bridge.recordState()));
+          nativeCommand.current = null;
         } catch {
+          nativeCommand.current = null;
           setRecord((r) =>
             r.error === '原生记录暂时无法读取'
               ? r
@@ -76,7 +85,9 @@ export function useRecording() {
         }
       };
       read();
-      const timer = window.setInterval(read, 1500);
+      const timer = window.setInterval(() => {
+        if (!document.hidden) read();
+      }, 1500);
       const wake = () => {
         if (!document.hidden) read();
       };
@@ -130,6 +141,7 @@ export function useRecording() {
           },
           Date.now(),
           maximum.current,
+          policy.current,
         );
         if (next !== current.current) persist(next);
       },
@@ -161,7 +173,14 @@ export function useRecording() {
   ) => {
     setQualityNote('');
     if (window.GuanyunNative) {
-      window.GuanyunNative.record(action);
+      if (nativeCommand.current === action) return;
+      nativeCommand.current = action;
+      try {
+        window.GuanyunNative.record(action);
+      } catch {
+        nativeCommand.current = null;
+        setRecord((r) => ({ ...r, error: '记录命令未能发送，请重试' }));
+      }
       return;
     }
     try {
@@ -197,5 +216,6 @@ export function useRecording() {
     preferences,
     qualityNote,
     appearance,
+    sampling,
   };
 }

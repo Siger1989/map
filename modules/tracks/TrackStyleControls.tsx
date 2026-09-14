@@ -3,13 +3,42 @@ import { TRACK_COLORS, type TrackStyle } from './style';
 export function TrackStyleControls({
   style,
   onChange,
+  analysis = false,
 }: {
   style: TrackStyle;
   onChange: (style: TrackStyle) => void;
+  analysis?: boolean;
 }) {
   const id = useId();
   return (
     <div className="track-style-controls">
+      {analysis && (
+        <label className="slider-label">
+          轨迹着色
+          <select
+            aria-label="轨迹着色"
+            value={style.colorMode ?? 'solid'}
+            onChange={(e) =>
+              onChange({
+                ...style,
+                colorMode: e.target.value as TrackStyle['colorMode'],
+              })
+            }
+          >
+            <option value="solid">单色</option>
+            <option value="speed">速度</option>
+            <option value="slope">坡度</option>
+          </select>
+        </label>
+      )}
+      {analysis && style.colorMode && style.colorMode !== 'solid' && (
+        <p className="route-note">
+          {style.colorMode === 'speed'
+            ? '绿＜3 · 黄3–6 · 红≥6 km/h'
+            : '绿＜10% · 黄10–20% · 红≥20%（绝对坡度）'}
+          {' · 灰色为数据不足'}
+        </p>
+      )}
       <label htmlFor={id} className="slider-label">
         线宽 <span>{style.width}px</span>
       </label>

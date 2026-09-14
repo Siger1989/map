@@ -1,0 +1,23 @@
+import { type SavedMeasurement } from '../measurement/saved.ts';
+import { type SectionObject } from '../section/sectionObjects.ts';
+import { type SavedSection } from '../section/profileNotes.ts';
+import { type CollectionRegions } from '../collections/regions.ts';
+import { type MapArea } from '../areas/data.ts';
+import { type CollectionLayout } from '../collections/data.ts';
+import { type ManualTrack } from '../tracks/drawing.ts';
+import { type Annotation } from '../annotations/data.ts';
+import { type RouteFavorite } from '../navigation/favorites.ts';
+export type Transfer = {
+  format: 'guanyun-backup';
+  version: 1;
+  tracks: ManualTrack[];
+  annotations: Annotation[];
+  favorites: RouteFavorite[];
+  collections?: CollectionLayout;
+  sections?: SectionObject[];
+  sectionNotes?: SavedSection[];
+  regions?: CollectionRegions;
+  areas?: MapArea[];
+  measurements?: SavedMeasurement[];
+};
+export const DATA_CHANGED = 'guanyun-data-changed';

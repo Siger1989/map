@@ -32,7 +32,7 @@ export function startRouteEdit(original: ManualTrack): RouteEditSession {
       source: 'manual',
       samples: undefined,
       sharedRoute: undefined,
-      style: normalizeTrackStyle(original.style),
+      style: normalizeTrackStyle({ ...original.style, colorMode: 'solid' }),
       segments: original.segments.map((line) =>
         line.map((p) => [...p] as Coordinate),
       ),

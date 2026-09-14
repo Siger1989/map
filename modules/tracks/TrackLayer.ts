@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { alternativeLineParts, trackAlternatives } from './alternatives';
 import { syncOverlayData } from '../map/overlayData';
+import { metricLineParts } from '../routeAnalysis/metrics';
 import type { FeatureCollection } from 'geojson';
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
@@ -186,6 +187,7 @@ export class TrackLayer {
             ...state.saved.map((track) => ({
               segments: track.segments,
               edgeColors: track.edgeColors,
+              samples: track.samples,
               trackId: track.id,
               draft: false,
               style: normalizeTrackStyle(track.style),
@@ -193,6 +195,7 @@ export class TrackLayer {
             {
               segments: state.draft,
               edgeColors: state.draftEdgeColors,
+              samples: undefined,
               trackId: DRAFT_ID,
               draft: true,
               style: normalizeTrackStyle(state.style),
@@ -206,40 +209,44 @@ export class TrackLayer {
                     edgeColors: t.edgeColors,
                   })
                 : new Map();
-              return alternativeLineParts(
-                t.segments,
-                t.trackId === state.selectedId ? state.alternativeId : 'main',
-                t.style.color,
-              )
-                .flatMap((part) =>
-                  coloredLineParts(
-                    part.coordinates,
-                    colors,
-                    part.color ?? t.style.color,
-                  ).map((piece) => ({ ...part, ...piece })),
-                )
-                .map((part) => ({
-                  type: 'Feature',
-                  properties: {
-                    trackId: t.trackId,
-                    selected: t.trackId === state.selectedId,
-                    draft: t.draft,
-                    ...t.style,
-                    color: part.color ?? t.style.color,
-                    opacity: (t.style.opacity ?? 1) * (part.muted ? 0.3 : 1),
-                  },
-                  geometry: {
-                    type: 'MultiLineString',
-                    coordinates: (state.preview?.node.trackId === t.trackId
-                      ? moveSegmentsNode(
-                          [part.coordinates],
-                          state.preview.node.coordinate,
-                          state.preview.coordinate,
-                        )
-                      : [part.coordinates]
-                    ).filter((line) => line.length >= 2),
-                  },
-                }));
+              const parts =
+                t.style.colorMode && t.style.colorMode !== 'solid'
+                  ? metricLineParts(t, t.style.colorMode)
+                  : alternativeLineParts(
+                      t.segments,
+                      t.trackId === state.selectedId
+                        ? state.alternativeId
+                        : 'main',
+                      t.style.color,
+                    ).flatMap((part) =>
+                      coloredLineParts(
+                        part.coordinates,
+                        colors,
+                        part.color ?? t.style.color,
+                      ).map((piece) => ({ ...part, ...piece })),
+                    );
+              return parts.map((part) => ({
+                type: 'Feature',
+                properties: {
+                  trackId: t.trackId,
+                  selected: t.trackId === state.selectedId,
+                  draft: t.draft,
+                  ...t.style,
+                  color: part.color ?? t.style.color,
+                  opacity: (t.style.opacity ?? 1) * (part.muted ? 0.3 : 1),
+                },
+                geometry: {
+                  type: 'MultiLineString',
+                  coordinates: (state.preview?.node.trackId === t.trackId
+                    ? moveSegmentsNode(
+                        [part.coordinates],
+                        state.preview.node.coordinate,
+                        state.preview.coordinate,
+                      )
+                    : [part.coordinates]
+                  ).filter((line) => line.length >= 2),
+                },
+              }));
             })
         : [],
     };

@@ -4,6 +4,7 @@ import { DEFAULT_LAYERS } from '../map/types';
 import { routeBounds, type ShareRoute } from './data';
 import { coloredLineParts, edgeColorIndex } from '../tracks/edgeColors';
 import { normalizeTrackStyle } from '../tracks/style';
+import { metricLineParts } from '../routeAnalysis/metrics';
 
 function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -80,26 +81,31 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       center + ((((lng - center + 180) % 360) + 360) % 360) - 180,
       lat,
     ];
+    const mode = data.track?.style?.colorMode;
+    const lineParts =
+      data.track && (mode === 'speed' || mode === 'slope')
+        ? metricLineParts(data.track, mode)
+        : data.segments.flatMap((s) =>
+            coloredLineParts(
+              s,
+              edgeColorIndex(data.track ?? { segments: data.segments }),
+              data.track
+                ? normalizeTrackStyle(data.track.style).color
+                : '#4dffb5',
+            ),
+          );
     map.addSource('share-line', {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
-        features: data.segments.flatMap((s) =>
-          coloredLineParts(
-            s,
-            edgeColorIndex(data.track ?? { segments: data.segments }),
-            data.track
-              ? normalizeTrackStyle(data.track.style).color
-              : '#4dffb5',
-          ).map((p) => ({
-            type: 'Feature' as const,
-            properties: { color: p.color },
-            geometry: {
-              type: 'LineString' as const,
-              coordinates: p.coordinates.map(unwrap),
-            },
-          })),
-        ),
+        features: lineParts.map((p) => ({
+          type: 'Feature' as const,
+          properties: { color: p.color },
+          geometry: {
+            type: 'LineString' as const,
+            coordinates: p.coordinates.map(unwrap),
+          },
+        })),
       },
     });
     map.addLayer({

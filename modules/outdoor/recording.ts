@@ -8,6 +8,7 @@ import {
   readRecordingAccuracy,
 } from './recordingPreferences.ts';
 import type { TrackStyle } from '../tracks/style';
+import { acceptsSample, type SamplingPolicy } from './samplingPolicy.ts';
 export type Fix = {
   coordinates: Coordinate;
   time: number;
@@ -63,6 +64,7 @@ export function appendFix(
   fix: Fix,
   now = Date.now(),
   maximumAccuracy = DEFAULT_RECORDING_ACCURACY,
+  sampling?: SamplingPolicy,
 ): Recording {
   if (
     record.phase !== 'recording' ||
@@ -72,37 +74,40 @@ export function appendFix(
     fix.time > now + 5000
   )
     return record;
-  if (record.segments.flat().length >= 6000)
+  if (record.segments.reduce((count, line) => count + line.length, 0) >= 6000)
     return {
       ...record,
       phase: 'paused',
       error: '已达 6000 点，请结束保存后开始新记录',
     };
-  const segments = record.segments.map((s) => [...s]);
-  if (!segments.length) segments.push([]);
-  let line = segments[segments.length - 1];
-  const last = line.at(-1);
+  const previous = record.segments.at(-1);
+  const last = previous?.at(-1);
+  let newSegment = !previous;
   if (last) {
     const seconds = (fix.time - last.time) / 1000,
       distance = metresBetween(last.coordinates, fix.coordinates);
     if (
       seconds <= 0 ||
       distance / seconds > 80 ||
-      (distance < 5 && seconds < 30)
+      (sampling
+        ? !acceptsSample(distance, seconds, sampling)
+        : distance < 5 && seconds < 30)
     )
       return record;
     if (seconds > 120) {
-      if (segments.length >= 100)
+      if (record.segments.length >= 100)
         return {
           ...record,
           phase: 'paused',
           error: '记录分段已达上限，请结束保存',
         };
-      line = [];
-      segments.push(line);
+      newSegment = true;
     }
   }
-  line.push(fix);
+  // Rejected fixes allocate no geometry; accepted fixes copy only the active segment.
+  const segments = newSegment
+    ? [...record.segments, [fix]]
+    : [...record.segments.slice(0, -1), [...previous!, fix]];
   return { ...record, segments, error: '' };
 }
 export function resumeRecording(record: Recording): Recording {

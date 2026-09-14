@@ -6,6 +6,8 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "postinstall": "node scripts/sync-map-worker.mjs",
     "dev": "vinext dev",
     "build": "vinext build",

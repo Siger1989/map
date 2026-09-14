@@ -37,6 +37,8 @@ next-env.d.ts
 /outputs/
 /work/
 /.openai/*.log
+/.openai/sampling-java-*/
+/.openai/apk-*-integrity.json
 /.openai/web-*/
 /.openai/ui-*-fixture.json
 /.openai/*.xml

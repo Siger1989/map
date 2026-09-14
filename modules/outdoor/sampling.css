@@ -1,0 +1,44 @@
+.observatory .sampling-settings label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  margin: 0;
+}
+.observatory .sampling-settings input[type='checkbox'] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+}
+.observatory .sampling-settings .recording-precision-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+}
+.observatory .sampling-settings .recording-precision-row label {
+  display: grid;
+}
+.observatory .sampling-settings input[type='number'],
+.observatory .sampling-settings select {
+  min-width: 0;
+  min-height: 36px;
+  max-width: 100%;
+}
+.recording-quick {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+  max-width: calc(100% - 110px);
+  overflow: hidden;
+}
+.recording-quick button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0 8px;
+  white-space: nowrap;
+  font: inherit;
+}

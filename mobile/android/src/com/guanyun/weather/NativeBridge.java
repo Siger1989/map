@@ -52,6 +52,8 @@ final class NativeBridge {
         return "ok";
     }
     @JavascriptInterface public int recordingAccuracy() { return RecordingPreferences.accuracy(activity); }
+    @JavascriptInterface public String recordingSampling() { return SamplingPreferences.read(activity).toString(); }
+    @JavascriptInterface public boolean setRecordingSampling(String raw) { return SamplingPreferences.save(activity, raw); }
     @JavascriptInterface public boolean setRecordingAccuracy(double metres) {
         boolean saved = RecordingPreferences.saveAccuracy(activity, metres);
         if (saved) RecordingStore.clearQuality();

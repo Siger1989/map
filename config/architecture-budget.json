@@ -1,0 +1,15 @@
+{
+  "files": {
+    "modules/annotations/AnnotationPanel.tsx": 651,
+    "app/page.tsx": 2871,
+    "modules/tracks/useManualTracks.ts": 739,
+    "modules/navigation/RoutePanel.tsx": 565,
+    "modules/collections/WorkbenchPanel.tsx": 654,
+    "modules/tracks/RouteViews.tsx": 585,
+    "modules/annotations/AnnotationFields.tsx": 527,
+    "modules/tracks/TrackPanel.tsx": 557,
+    "modules/map/TerrainMap.tsx": 1231,
+    "modules/collections/CollectionsPanel.tsx": 574
+  },
+  "defaultNonemptyLines": 500
+}

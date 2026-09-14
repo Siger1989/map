@@ -1,4 +1,9 @@
-export type TrackStyle = { color: string; width: number; opacity?: number };
+export type TrackStyle = {
+  color: string;
+  width: number;
+  opacity?: number;
+  colorMode?: 'solid' | 'speed' | 'slope';
+};
 export const DEFAULT_TRACK_STYLE: TrackStyle = {
   color: '#ffb477',
   width: 1.5,
@@ -16,6 +21,9 @@ export const TRACK_COLORS = [
 export function normalizeTrackStyle(input: unknown): TrackStyle {
   const value = input as Partial<TrackStyle> | null;
   return {
+    ...(value?.colorMode === 'speed' || value?.colorMode === 'slope'
+      ? { colorMode: value.colorMode }
+      : {}),
     opacity:
       typeof value?.opacity === 'number' && Number.isFinite(value.opacity)
         ? Math.round(Math.max(0.1, Math.min(1, value.opacity)) * 100) / 100
