@@ -17,6 +17,9 @@
 - v2/v3、原独立4a94签名、zipalign、540项ZIP CRC、473地形和新增JS/DEX标识PASS。SHA256及安装说明已准备；日志均在.openai且不进Git。
 
 ## 发布与下一步
-- 当前准备提交推送及发布 v0.2.27-test-standalone；尚未宣称远端同步成功，完成后补充远端SHA/资产digest。
+- 源码提交5c21a4134a8d47dbc0035a0630f8252e30e6e4cd已推送origin/codex/huawei-webview-touch；远端分支与本地一致，Release标签指向同一提交。本次后续交接提交仅更新本状态文档。
+- v0.2.27-test-standalone已发布为公开测试Release（id388117228，draft=false/prerelease=true）；无认证API复核成功：https://github.com/Siger1989/map/releases/tag/v0.2.27-test-standalone 。APK、SHA256文件、安装说明3项资产均uploaded，大小与GitHub SHA256 digest逐项匹配本地。
+- APK digest为上文ae82db…；校验文件digest 0ca11e43faba55c562aa3fee01f008570bff4863a536d556b8175e2b4250189a；安装说明digest e23dbeb15f2b2fa1aeb314e859662728d0975cbab72f01488852fc8fddb3a3be。首次网络TLS握手超时，发布子进程直连后成功，未修改系统网络设置或保存凭证。
+- 本轮临时验证页面已关闭，视口覆盖已恢复，自建9241/3108验证服务已停止；截图和日志留本地供追溯。
 - Android真机安装、GPS、锁屏耗电、手指触控未验。HarmonyOS6.1原生HAP/APP未交付；本轮未更新Windows/Mac ZIP。
 - 原生离线路由/专门返航、奥维坐标适配、队伍/SOS/PTT、照片混排等仍待后续；需要道路图、奥维样本及队伍服务部署/分享范围。主页面和TerrainMap仍有历史结构债务。
