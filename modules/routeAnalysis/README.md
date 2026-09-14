@@ -10,6 +10,9 @@
 
 ## 显示派生接口
 
+- `pointMetrics.ts`的`routePointMetrics(track, point, profile?, profileAnalysis?, originalAnalysis?)`是所选点只读接口：按原始分段/沿线距离定位，返回点序号、海拔及来源、带方向坡度/角度、原始区间速度、时间及是否插值。断段不拼接；跨暂停不插值时间。可传入缓存分析结果，避免每次点选重算整条分析。
+- `RoutePointSummary.tsx`由行程卡片按props挂载，复用`useTrackElevation`和现有地形缓存。默认只显示海拔/坡度，展开显示坐标/时间/区间速度和来源说明；不把DEM采样当作GPS实测，不伪造时间和速度。入口`tracks/RouteViews`，选点距离由页面用`markerChainage`接线，原轨迹/记录存档不变。
+
 - `useTrackElevation(track, enabled)`统一读取原轨迹或DEM，返回`data`（原顶点数量、时间保留）与`profile`（含缺高程边内的DEM采样），附带加载/来源/缺测原因和重试入口。速度仅从`data`计算。
 - `terrainProfileTrack`只构造分析/渲染副本。原实测高程优先，新增点没有时间戳，缺测点与暂停段不拼接；分段索引避免对每个分段重复扫描整条轨迹。
 - `elevationLineParts`按同一海拔色阶拆分显示边，两点路线也有渐变。每边最多32份，总细分预算12000边；原始边超过预算时保留原边，不删路线。平坦路线同色，未知高程灰色。坡度保持10%/20%固定分档，不为了多色夸大平缓路段。

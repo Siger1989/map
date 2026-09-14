@@ -1,6 +1,7 @@
 import { layoutCss } from './model.mjs';
 import { elementScale } from './geometry.mjs';
 import { layoutOverflowCss } from './clipping.mjs';
+import { layerPositionCss } from './layers.mjs';
 import {
   referenceFrame,
   anchorPosition,
@@ -10,12 +11,16 @@ import {
 /** Resolve anchors against native responsive layout; never change positioning, parents or business state. */
 export function renderAnchoredLayout(doc, style, layout, scope = '') {
   const entries = layout.entries.map((e) => ({ ...e }));
-  let overflowCss = '';
+  let overflowCss = '',
+    positionCss = '';
   const write = () => {
-    const css = layoutCss({ ...layout, entries }, scope) + overflowCss;
+    const css =
+      layoutCss({ ...layout, entries }, scope) + positionCss + overflowCss;
     if (style.textContent !== css) style.textContent = css;
   };
   write();
+  positionCss = layerPositionCss(doc, entries, scope);
+  if (positionCss) write();
   // Inspect original overflow, not our previous derived overrides. No DOM
   // reparenting or persistent changes to the container's inline styles.
   overflowCss = layoutOverflowCss(doc, entries, scope);

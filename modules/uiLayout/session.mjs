@@ -1,7 +1,7 @@
 import { emptyLayout, validateLayout } from './model.mjs';
 import { defaults, visible, selectionRoots } from './selection.mjs';
 import { capture, bounds, batchPatches, fontSizePatches } from './geometry.mjs';
-import { layerPatches } from './layers.mjs';
+import { layerPatches, layerTargets } from './layers.mjs';
 import {
   captureAnchor,
   anchoredEntries,
@@ -236,8 +236,41 @@ export function createSession(doc, storage) {
     setFontSize(pixels) {
       change(() => replace(fontSizePatches(targets(), pixels)));
     },
-    stepLayer(direction) {
-      change(() => replace(layerPatches(targets(), direction)));
+    layerInfo(scope = 'page') {
+      return layerTargets(targets(), scope, layout.entries).map(
+        ({ element, entry }) => ({
+          label: entry.label,
+          value:
+            entry.zIndex ??
+            (Number.parseInt(
+              doc.defaultView.getComputedStyle(element).zIndex,
+              10,
+            ) ||
+              0),
+        }),
+      );
+    },
+    setLayer(value, scope = 'page') {
+      change(() =>
+        replace(
+          layerTargets(targets(), scope, layout.entries).map(({ entry }) => ({
+            ...entry,
+            zIndex: value,
+          })),
+        ),
+      );
+    },
+    stepLayer(direction, scope = 'page') {
+      change(() => {
+        const changes = layerPatches(
+          targets(),
+          direction,
+          scope,
+          layout.entries,
+        );
+        replace(changes);
+        message = `${scope === 'page' ? '页面层' : '组内层'}：${changes.map((e) => `${e.label} ${e.zIndex}`).join('、')}`;
+      });
     },
     history(redo = false) {
       const from = redo ? future : past,

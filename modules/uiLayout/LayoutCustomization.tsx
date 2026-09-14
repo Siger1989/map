@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { OPEN_LAYOUT_EDITOR } from './events';
 import { createSession } from './session.mjs';
+import { bindLayoutActions, downloadLayout } from './transfer.mjs';
 import './uiLayout.css';
 
 /** A sibling of the map: no access to map state, storage or geometry. */
@@ -20,15 +21,6 @@ export function LayoutCustomization() {
     let disposed = false,
       closing: (() => void) | undefined,
       loading = false;
-    const recovery = document.createElement('button');
-    recovery.className = 'layout-recovery';
-    recovery.dataset.layoutIgnore = '';
-    recovery.textContent = '布局';
-    recovery.setAttribute('aria-label', '调整或恢复已保存布局');
-    document.body.appendChild(recovery);
-    const visibility = () => {
-      recovery.hidden = !session.layout.entries.length || !!closing;
-    };
     const start = async () => {
       if (closing || loading) return;
       loading = true;
@@ -37,22 +29,33 @@ export function LayoutCustomization() {
         if (!disposed) {
           closing = mountEditor(session, () => {
             closing = undefined;
-            visibility();
           });
-          visibility();
         }
       } finally {
         loading = false;
       }
     };
-    recovery.onclick = start;
-    visibility();
+    const unbind = bindLayoutActions(window, {
+      edit: async () => {
+        await start();
+        return '布局调节已打开';
+      },
+      export: () => downloadLayout(session.layout),
+      import: (raw: string) => {
+        session.import(raw);
+        if (!session.save()) {
+          session.cancel();
+          throw Error('保存失败，已保留原布局');
+        }
+        return '布局已导入并保存，可继续调整';
+      },
+    });
     window.addEventListener(OPEN_LAYOUT_EDITOR, start);
     return () => {
       disposed = true;
       window.removeEventListener(OPEN_LAYOUT_EDITOR, start);
       closing?.();
-      recovery.remove();
+      unbind();
       session.dispose();
     };
   }, []);

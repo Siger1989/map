@@ -1,5 +1,6 @@
 import { TrackColorProfile } from './TrackColorProfile';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
+import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
 import { useMemo, useState } from 'react';
 import { useDockClearance } from './useDockClearance';
 import {
@@ -53,7 +54,6 @@ export function RouteBack({ onBack }: { onBack: () => void }) {
 export function RouteCard({
   track,
   point,
-  altitude,
   alternative,
   error,
   onBack,
@@ -64,7 +64,6 @@ export function RouteCard({
 }: {
   track: ManualTrack;
   point: TrackLinePoint | null;
-  altitude: number | null;
   alternative: string;
   error: string;
   onBack: () => void;
@@ -101,13 +100,8 @@ export function RouteCard({
             ? `选中 ${formatDistance(selected.distance)}`
             : '点线选位置'}
         </span>
-        <span>
-          海拔{' '}
-          {altitude === null
-            ? '—'
-            : `${Math.round(altitude).toLocaleString()} m`}
-        </span>
       </div>
+      {point && <RoutePointSummary track={track} point={point} />}
       <nav className="route-primary-actions" aria-label="路线主要操作">
         <button className="route-solid" onClick={onNavigate}>
           <ArrowUpRight size={16} />

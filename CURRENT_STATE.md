@@ -1,4 +1,13 @@
-# 当前状态 — 2026-09-14 / 布局选择、组外显示与边框缩放修正（独立副本，不打包）
+# 当前状态 — 2026-09-14 / 布局兼容与管理、层级、行程点数据（隔离分支，不打包）
+
+- **本轮新增全部实现并验证**：头像页明确提供调整/导出/导入布局，取消退出后的左侧常驻按钮；右侧原入口保留。层级增加页面/组内范围、实际对象与数值，页面层调整所属堆叠父组；静态块补定位让z-index生效。所选行程节点或沿线点显示海拔、带方向坡度/角度，展开显示沿线里程、点序号、经纬度、真实区间速度/记录时间与来源。app/page节点入口不再把沿线距离写0，删除旧的独立单点高程请求；原始轨迹和地形缓存模块不变。
+- **用户布局保护**：保留`shantu.ui-layout.v1`和JSON version1，启动只读不写回默认布局。Android固定页面源和同包名/签名覆盖升级继续读取原存储；未实测覆盖安装，不把后台模拟当真机验收。旧版入口为布局→参数→更多→导出布局，新头像页入口更直接。导出文件`shantu-layout-draft.json`可作为后续视觉优化基准；非法导入不覆盖当前布局。有效手机导入立即保存，桌面导入只预览，手动保存到项目才落盘。
+- **新增模块/接线**：uiLayout/LayoutSettings与transfer分离视图和共享会话事件；layers负责堆叠目标，session/mobileEditor和桌面控制器调用同一接口。help/AboutPanel仅挂载入口；routeAnalysis/pointMetrics是纯计算接口、RoutePointSummary/routePoint.css为紧凑显示，tracks/RouteViews和app/page最小接线。README记录职责、依赖和回滚；移除新入口/点摘要或回退本分支即可停用，无存储迁移。地图手势、轨迹编辑/存档、离线引擎/缓存、记录定位、照片分享和通信模块未修改。
+- **最新最终检查**：497/497逻辑、TypeScript、架构、diff和完整网页构建通过。独立后台浏览器390/360验证旧布局启动零写回、几何保留、导出JSON一致、浏览器真实下载、有效导入保存重开/非法导入保护、头像入口/无左侧残留、页面层跨组遮挡与组内层保持局部、实际层级字段可见、点高程/正负坡度/序号/时间速度、卡片不超过300×200。原整框/裁切/八边角/多选/辅助线/桌面回归再次通过，页面异常为空。
+- 日志`.openai/layout-management-*-final.log`和`.openai/layout-containers-gui-final.log`；图示`artifacts/screenshots/layout-management-fix`6张及`layout-container-fix`7张，总索引`artifacts/screenshots/layout-fix-guide.html`。均为实际组件的隔离测试场景，未读取用户布局、未控制或刷新用户窗口。Android系统文件保存/安装/手指触控仍待真机验证。
+## 前半轮修正与过程记录（上文497项最终结果为最新状态）
+
+- 已完成的前半轮源码在8a47c49e94a5cd051a1c3bc5871d8f032ac5a585，已推送origin/codex/layout-selection-clipping；该提交尚未合入现用主工作树。用户仍明确先不打包，后续同样隔离验证并保护D:/天气系统/config/ui-layout-draft.json、所有真实浏览器localStorage，禁止控制/刷新用户窗口。
 
 - 用户继续调布局，明确暂不打包。本轮在D:/shantu-layout-selection-fix独立工作树、codex/layout-selection-clipping分支研究和验证；主工作树D:/天气系统及9241现用页面不热更新、不刷新、不写用户草稿。基线a32985bf590ae57d4655f39f0fb9b94d532ccd90，已确认远端最新。
 - 原因：带aria-label的SVG被语义组件规则当成独立外框；route-display-info默认overflow-y:auto裁掉移出的卡片，装饰外框overflow:hidden也会裁切独立控件。修改modules/uiLayout/selection、model、anchorRenderer；新增clipping专门处理已独立调整组件的装饰祖先，桌面插件提供共享入口。SVG仍可在任意元素/层级中选择。真正滚动列表保留滚动，不进行DOM搬移、不改路线/高程/离线业务。

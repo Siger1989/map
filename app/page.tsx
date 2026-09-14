@@ -73,7 +73,6 @@ import {
 } from '@/modules/tracks/routeEdit';
 import { trackAlternatives } from '@/modules/tracks/alternatives';
 import { equalCoordinate } from '@/modules/tracks/editing';
-import { readElevation } from '@/modules/terrain/elevation';
 import type { ManualTrack } from '@/modules/tracks/drawing';
 
 import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
@@ -251,7 +250,6 @@ export default function Home() {
   );
   const [unsavedExit, setUnsavedExit] = useState(false);
   const [routeChild, setRouteChild] = useState(false);
-  const [routeAltitude, setRouteAltitude] = useState<number | null>(null);
   const routeReturnPoint = useRef<TrackLinePoint | null>(null);
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
   const [activeTrackNode, setActiveTrackNode] = useState<
@@ -717,26 +715,6 @@ export default function Home() {
       );
     else editor.setError('请先点选需要添加节点的线段。');
   };
-  useEffect(() => {
-    setRouteAltitude(null);
-    if (!linePoint) return;
-    const request = new AbortController(),
-      timer = setTimeout(() => request.abort(), 15000);
-    void readElevation(
-      linePoint.coordinate[0],
-      linePoint.coordinate[1],
-      request.signal,
-    )
-      .then((value) => {
-        if (!request.signal.aborted) setRouteAltitude(value);
-      })
-      .catch(() => {})
-      .finally(() => clearTimeout(timer));
-    return () => {
-      clearTimeout(timer);
-      request.abort();
-    };
-  }, [linePoint?.coordinate[0], linePoint?.coordinate[1]]);
   const routeVisible =
     !!railTrack &&
     !tracks.drawing &&
@@ -1175,7 +1153,12 @@ export default function Home() {
             selectLinePoint({
               trackId: node.trackId,
               coordinate: node.coordinate,
-              distance: 0,
+              distance: markerChainage(
+                node.trackId === DRAFT_ID
+                  ? tracks.draft
+                  : tracks.saved.find((t) => t.id === node.trackId)?.segments ?? [],
+                node.coordinate,
+              ).distance,
             });
           }}
           onDragBegin={(target) => {
@@ -1329,7 +1312,6 @@ export default function Home() {
                 <RouteCard
                   track={railTrack}
                   point={linePoint}
-                  altitude={routeAltitude}
                   alternative={activeAlternative}
                   error={savedNavigationError || tracks.error}
                   onBack={() => {

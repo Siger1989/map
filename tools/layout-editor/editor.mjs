@@ -17,7 +17,8 @@ import {
   fontSizePatches,
 } from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
-import { layerPatches } from './layers.mjs';
+import { layerPatches, layerTargets } from './layers.mjs';
+import { bindLayoutActions, downloadLayout } from './transfer.mjs';
 import {
   captureAnchor,
   anchoredEntries,
@@ -213,6 +214,22 @@ function properties() {
   $('hidden').checked = e.hidden;
   $('fontSize').value = fontMetrics(targets())?.pixels ?? e.fontSize ?? '';
   $('anchor-status').textContent = anchorLabel(targets().at(-1));
+  const layers = layerTargets(
+    targets(),
+    $('layer-scope').value,
+    layout.entries,
+  );
+  const lastLayer = layers.at(-1);
+  $('zIndex').value =
+    lastLayer?.entry.zIndex ??
+    (lastLayer
+      ? Number.parseInt(
+          doc().defaultView.getComputedStyle(lastLayer.element).zIndex,
+          10,
+        ) || 0
+      : '');
+  $('layer-target').textContent =
+    `调整：${layers.map((l) => l.entry.label).join('、')}`;
   $('dx-label').textContent = multiple ? '一起水平移动 px' : '水平偏移 px';
   $('dy-label').textContent = multiple ? '一起垂直移动 px' : '垂直偏移 px';
   $('scale-label').textContent = multiple ? '本次整体缩放倍数' : '整体比例';
@@ -391,6 +408,21 @@ for (const key of [
 ]) {
   $(key).addEventListener('change', () => {
     try {
+      if (key === 'zIndex') {
+        const changes = layerTargets(
+          targets(),
+          $('layer-scope').value,
+          layout.entries,
+        ).map(({ entry }) => ({
+          ...entry,
+          zIndex: $(key).value === '' ? null : Number($(key).value),
+        }));
+        checkpoint();
+        replaceEntries(changes);
+        apply();
+        properties();
+        return;
+      }
       if (key === 'fontSize') {
         const changes = fontSizePatches(
           targets(),
@@ -512,7 +544,12 @@ document.querySelectorAll('[data-align]').forEach(
 );
 function stepLayer(direction) {
   if (!selected) return;
-  const changes = layerPatches(targets(), direction);
+  const changes = layerPatches(
+    targets(),
+    direction,
+    $('layer-scope').value,
+    layout.entries,
+  );
   checkpoint();
   replaceEntries(changes);
   apply();
@@ -520,6 +557,7 @@ function stepLayer(direction) {
 }
 $('raise').onclick = () => stepLayer(1);
 $('lower').onclick = () => stepLayer(-1);
+$('layer-scope').onchange = properties;
 $('interaction').onchange = outline;
 $('mode').onclick = () => {
   operating = !operating;
@@ -691,8 +729,29 @@ $('import').onchange = async () => {
   }
   $('import').value = '';
 };
-let frameObserver, refreshTimer;
+let frameObserver, refreshTimer, unbindFrameActions;
 frame.addEventListener('load', () => {
+  unbindFrameActions?.();
+  unbindFrameActions = bindLayoutActions(doc().defaultView, {
+    edit: () => {
+      if (operating) $('mode').click();
+      return '请在控制器中调整当前布局';
+    },
+    export: () =>
+      downloadLayout({
+        ...layout,
+        entries: anchoredEntries(doc(), layout.entries, effective),
+      }),
+    import: (raw) => {
+      const next = validateLayout(JSON.parse(raw));
+      checkpoint();
+      layout = next;
+      canvas();
+      apply();
+      refresh();
+      return '已导入预览，点击保存到项目后保留';
+    },
+  });
   frameObserver?.disconnect();
   anchorObserver?.dispose();
   anchorObserver = observeAnchoredLayout(doc(), () => apply(true));

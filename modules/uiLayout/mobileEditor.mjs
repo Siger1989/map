@@ -7,6 +7,7 @@ import {
 } from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
 import { anchorLabel } from './anchors.mjs';
+import { downloadLayout } from './transfer.mjs';
 
 /** Compact touch view. All state, persistence and geometry are supplied by the session. */
 export function mountEditor(session, onClose) {
@@ -49,7 +50,9 @@ export function mountEditor(session, onClose) {
               <label>比<input data-field="scale" type="number" min="0.4" max="2.5" step="0.05"></label>
               <label title="首处文字的显示字号px；修改统一所选文字，清空恢复默认">字号<input data-field="fontSize" aria-label="字号（显示像素）" type="number" min="0.1" max="200" step="0.1"></label>
         </div>
-        <div class="layout-mobile-row"><label><input data-ratio type="checkbox" checked>整体缩放</label><label><input data-guides type="checkbox" checked>对齐线</label><button data-action="raise">上一层</button><button data-action="lower">下一层</button></div>
+        <div class="layout-mobile-row"><label><input data-ratio type="checkbox" checked>整体缩放</label><label><input data-guides type="checkbox" checked>对齐线</label></div>
+        <div class="layout-mobile-row layout-mobile-layer"><select data-layer-scope aria-label="层级范围"><option value="page">页面层</option><option value="group">组内层</option></select><input data-layer-value aria-label="实际层级" type="number" min="-1000" max="99999"><button data-action="raise">上一层</button><button data-action="lower">下一层</button></div>
+        <div data-layer-name></div>
         <div data-anchor hidden></div><div data-message role="status"></div>
         <div hidden><button data-action="recover"></button><button data-action="export"></button><button data-action="import"></button><button data-action="reset"></button><button data-action="default"></button><button data-action="cancel"></button><input data-file type="file" accept=".json,application/json"></div>
       </div>
@@ -120,6 +123,12 @@ export function mountEditor(session, onClose) {
     button('undo').disabled = !session.canUndo;
     button('redo').disabled = !session.canRedo;
     button('raise').disabled = button('lower').disabled = !selected();
+    const layers = session.layerInfo($('[data-layer-scope]').value);
+    $('[data-layer-value]').disabled = !layers.length;
+    if (doc.activeElement !== $('[data-layer-value]'))
+      $('[data-layer-value]').value = layers.at(-1)?.value ?? '';
+    $('[data-layer-name]').textContent = layers.map((l) => l.label).join('、');
+    $('[data-layer-name]').title = $('[data-layer-name]').textContent;
     cover.classList.toggle('operating', operating);
     $('[data-message]').textContent = session.message;
     const multi = session.selected.length > 1,
@@ -222,8 +231,23 @@ export function mountEditor(session, onClose) {
   };
   button('undo').onclick = () => session.history();
   button('redo').onclick = () => session.history(true);
-  button('raise').onclick = () => session.stepLayer(1);
-  button('lower').onclick = () => session.stepLayer(-1);
+  button('raise').onclick = () =>
+    session.stepLayer(1, $('[data-layer-scope]').value);
+  button('lower').onclick = () =>
+    session.stepLayer(-1, $('[data-layer-scope]').value);
+  $('[data-layer-scope]').onchange = sync;
+  $('[data-layer-value]').onchange = () => {
+    try {
+      session.setLayer(
+        $('[data-layer-value]').value === ''
+          ? null
+          : Number($('[data-layer-value]').value),
+        $('[data-layer-scope]').value,
+      );
+    } catch (error) {
+      session.status(error.message);
+    }
+  };
   button('reset').onclick = () => session.restore();
   button('default').onclick = () => session.restore(true);
   button('parameters').onclick = () => {
@@ -315,17 +339,9 @@ export function mountEditor(session, onClose) {
         ),
       );
   };
-  button('export').onclick = async () => {
-    const content = JSON.stringify(session.layout, null, 2),
-      name = 'shantu-layout-draft.json';
-    const file = new view.File([content], name, { type: 'application/json' });
+  button('export').onclick = () => {
     try {
-      if (view.navigator.canShare?.({ files: [file] })) {
-        await view.navigator.share({ files: [file] });
-        return;
-      }
-      const { saveFile } = await import('../dataTransfer/download');
-      saveFile(name, 'application/json', content);
+      session.status(downloadLayout(session.layout, view));
     } catch (error) {
       session.status(
         error.name === 'AbortError'

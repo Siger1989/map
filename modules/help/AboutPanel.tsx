@@ -5,6 +5,7 @@ import {
   PRODUCT_DESCRIPTION,
 } from '../../config/product';
 import { TUTORIALS } from './tutorials';
+import { LayoutSettings } from '../uiLayout/LayoutSettings';
 import './help.css';
 
 /** Product hub. Add future settings as separate sections without coupling to map tools. */
@@ -23,6 +24,7 @@ export function AboutPanel() {
           <p>{PRODUCT_DESCRIPTION}</p>
         </div>
       </header>
+      <LayoutSettings />
       <dl>
         <dt>当前版本</dt>
         <dd>{APP_VERSION}</dd>

@@ -225,6 +225,13 @@
               max="99999"
               placeholder="沿用原层级"
           /></label>
+          <label
+            >层级范围<select id="layer-scope">
+              <option value="page">页面层（整个父组）</option>
+              <option value="group">组内层（当前组件）</option>
+            </select></label
+          >
+          <small id="layer-target"></small>
           <div class="row">
             <button id="raise">上一层</button><button id="lower">下一层</button
             ><button data-align="recover">移回画面</button>
