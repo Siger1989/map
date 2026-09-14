@@ -1,5 +1,7 @@
 import { emptyLayout, validateLayout, layoutCss } from './model.mjs';
-import { groups, defaults, visible, pick } from './selection.mjs';
+import { defaults, visible, selectable } from './selection.mjs';
+import { alignPatch, elementScale } from './geometry.mjs';
+import { bindGestures } from './gestures.mjs';
 const $ = (id) => document.getElementById(id);
 const frame = $('preview');
 let layout = emptyLayout(),
@@ -46,7 +48,7 @@ function outline() {
   });
   $('outline-label').textContent = selected.label;
 }
-function apply() {
+function apply(light = false) {
   if (doc()?.head) {
     let style = doc().getElementById('shantu-layout-preview-style');
     if (!style) {
@@ -55,6 +57,10 @@ function apply() {
       doc().head.append(style);
     }
     style.textContent = layoutCss(layout);
+  }
+  if (light) {
+    outline();
+    return;
   }
   $('undo').disabled = !past.length;
   $('redo').disabled = !future.length;
@@ -102,7 +108,15 @@ function properties() {
   $('selected-description').textContent = node
     ? '相对默认布局调整；空宽高保持自适应。'
     : '该组件尚未打开，请先操作页面进入对应功能。';
-  for (const key of ['dx', 'dy', 'width', 'height', 'scale', 'fontSize'])
+  for (const key of [
+    'dx',
+    'dy',
+    'width',
+    'height',
+    'scale',
+    'fontSize',
+    'zIndex',
+  ])
     $(key).value = e[key] ?? '';
   $('hidden').checked = e.hidden;
 }
@@ -110,12 +124,14 @@ function select(selector, label) {
   selected = { selector, label };
   properties();
   outline();
+  $('widgets').value = selector;
 }
 function refresh() {
-  const options = groups.flatMap(([selector, label]) => {
-    const node = find(selector);
-    return node && visible(node) ? [new Option(label, selector)] : [];
-  });
+  const options = selectable(
+    doc(),
+    $('granularity').value,
+    $('search').value,
+  ).map(({ selector, label }) => new Option(label, selector));
   if (
     options.map((o) => o.value).join('|') !==
     [...$('widgets').options].map((o) => o.value).join('|')
@@ -126,7 +142,7 @@ function refresh() {
   }
   outline();
 }
-function update(patch, remember = true) {
+function update(patch, remember = true, light = false) {
   if (!selected) return;
   const next = { ...entry(), ...patch };
   const candidate = validateLayout({
@@ -138,7 +154,8 @@ function update(patch, remember = true) {
   });
   if (remember) checkpoint();
   layout = candidate;
-  apply();
+  apply(light);
+  if (light) return;
   properties();
   status('修改尚未保存；可以撤销或继续调整。');
 }
@@ -149,6 +166,7 @@ for (const key of [
   'height',
   'scale',
   'fontSize',
+  'zIndex',
   'hidden',
 ]) {
   $(key).addEventListener('change', () => {
@@ -158,7 +176,7 @@ for (const key of [
           key === 'hidden'
             ? $(key).checked
             : $(key).value === '' &&
-                ['width', 'height', 'fontSize'].includes(key)
+                ['width', 'height', 'fontSize', 'zIndex'].includes(key)
               ? null
               : Number($(key).value),
       });
@@ -175,6 +193,40 @@ $('changes').onchange = () => {
   if (e) select(e.selector, e.label);
 };
 $('refresh').onclick = refresh;
+$('search').oninput = refresh;
+$('granularity').onchange = () => {
+  selected = null;
+  properties();
+  refresh();
+};
+document.querySelectorAll('[data-align]').forEach(
+  (button) =>
+    (button.onclick = () => {
+      const node = selected && find(selected.selector);
+      if (!node || !visible(node)) {
+        status('请先打开该组件，再进行对齐。');
+        return;
+      }
+      update(
+        alignPatch(
+          entry(),
+          node.getBoundingClientRect(),
+          layout.viewport,
+          button.dataset.align,
+          elementScale(node).parentScale,
+        ),
+      );
+    }),
+);
+$('raise').onclick = () => {
+  if (!selected) return;
+  update({
+    zIndex: Math.min(
+      99999,
+      Math.max(100, ...layout.entries.map((e) => e.zIndex ?? 0)) + 1,
+    ),
+  });
+};
 $('mode').onclick = () => {
   operating = !operating;
   $('cover').classList.toggle('operating', operating);
@@ -217,114 +269,25 @@ function history(from, to) {
 }
 $('undo').onclick = () => history(past, future);
 $('redo').onclick = () => history(future, past);
-let gesture;
-$('cover').onpointerdown = (event) => {
-  if (event.button !== 0 || operating) return;
-  const stage = $('cover').getBoundingClientRect();
-  const resizing = event.target === $('resize');
-  if (!event.target.closest('#outline')) {
-    const picked = pick(
-      doc(),
-      (event.clientX - stage.left) / zoom,
-      (event.clientY - stage.top) / zoom,
-      $('granularity').value,
-    );
-    if (!picked) {
-      status('这里是地图背景；请点击UI组件，或切换“单个控件”。');
-      return;
-    }
-    select(picked.selector, picked.label);
-  }
-  const node = selected && find(selected.selector);
-  if (!node) return;
-  const rect = node.getBoundingClientRect(),
-    e = { ...entry() };
-  gesture = {
-    x: event.clientX,
-    y: event.clientY,
-    e,
-    rect,
-    resizing,
-    started: false,
-  };
-  $('cover').setPointerCapture(event.pointerId);
-  event.preventDefault();
-};
-$('cover').onpointermove = (event) => {
-  if (!gesture) return;
-  const g = gesture,
-    dx = (event.clientX - g.x) / zoom,
-    dy = (event.clientY - g.y) / zoom;
-  if (!g.started && Math.abs(dx) + Math.abs(dy) < 3) return;
-  if (!g.started) {
-    checkpoint();
-    g.started = true;
-  }
-  const round = (n) =>
-    $('snap').checked ? Math.round(n / 4) * 4 : Math.round(n);
-  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-  if (g.resizing) {
-    const width = clamp(round((g.rect.width + dx) / g.e.scale), 16, 2000);
-    const height = clamp(
-      round(
-        $('ratio').checked
-          ? (width * g.rect.height) / g.rect.width
-          : (g.rect.height + dy) / g.e.scale,
-      ),
-      16,
-      2000,
-    );
-    update({ width, height }, false);
-  } else
-    update(
-      {
-        dx: clamp(round(g.e.dx + dx), -3000, 3000),
-        dy: clamp(round(g.e.dy + dy), -3000, 3000),
-      },
-      false,
-    );
-};
-const endGesture = () => {
-  gesture = null;
-};
-$('cover').onpointerup = endGesture;
-$('cover').onpointercancel = endGesture;
-$('cover').onkeydown = (event) => {
-  if (
-    !selected ||
-    !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
-  )
-    return;
-  event.preventDefault();
-  const e = entry(),
-    step = event.shiftKey ? 10 : 1;
-  update({
-    dx: Math.max(
-      -3000,
-      Math.min(
-        3000,
-        e.dx +
-          (event.key === 'ArrowRight'
-            ? step
-            : event.key === 'ArrowLeft'
-              ? -step
-              : 0),
-      ),
-    ),
-    dy: Math.max(
-      -3000,
-      Math.min(
-        3000,
-        e.dy +
-          (event.key === 'ArrowDown'
-            ? step
-            : event.key === 'ArrowUp'
-              ? -step
-              : 0),
-      ),
-    ),
-  });
-};
+const isDragging = bindGestures({
+  cover: $('cover'),
+  zoom: () => zoom,
+  operating: () => operating,
+  document: doc,
+  selectedNode: () => selected && find(selected.selector),
+  entry,
+  select,
+  granularity: () => $('granularity').value,
+  checkpoint,
+  update,
+  syncPanels: () => {
+    apply();
+    properties();
+  },
+  status,
+  snap: () => $('snap').checked,
+  ratio: () => $('ratio').checked,
+});
 $('save').onclick = async () => {
   if (busy) return;
   busy = true;
@@ -395,7 +358,7 @@ window.addEventListener('beforeunload', (event) => {
   }
 });
 setInterval(() => {
-  if (!gesture) outline();
+  if (!isDragging()) outline();
 }, 400);
 try {
   const response = await fetch('/__layout/draft'),

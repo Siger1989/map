@@ -40,7 +40,8 @@ export const defaults = (selector, label) => ({
 });
 export function visible(element) {
   const r = element.getBoundingClientRect();
-  return r.width > 0 && r.height > 0;
+  const style = element.ownerDocument.defaultView.getComputedStyle(element);
+  return r.width > 0 && r.height > 0 && style.visibility !== 'hidden';
 }
 export function describe(element) {
   return (
@@ -53,6 +54,17 @@ export function describe(element) {
 export function selectorFor(element, doc) {
   const escape = doc.defaultView.CSS.escape;
   if (element.id) return `#${escape(element.id)}`;
+  const known = groups.find(
+    ([selector]) =>
+      element.matches(selector) && doc.querySelectorAll(selector).length === 1,
+  );
+  if (known) return known[0];
+  const uniqueClass = [...element.classList].find(
+    (c) =>
+      !/^(active|open|selected|glass|is-|has-)/.test(c) &&
+      doc.querySelectorAll(`.${escape(c)}`).length === 1,
+  );
+  if (uniqueClass) return `.${escape(uniqueClass)}`;
   const aria = element.getAttribute('aria-label');
   if (aria && !/[{};<>@]/.test(aria)) {
     const candidate = `${element.localName}[aria-label=${JSON.stringify(aria)}]`;
@@ -108,9 +120,52 @@ export function pick(doc, x, y, granularity) {
     if (group)
       return {
         element: node,
-        selector: selectorFor(node, doc),
+        selector:
+          doc.querySelectorAll(group[0]).length === 1
+            ? group[0]
+            : selectorFor(node, doc),
         label: group[1],
       };
   }
   return null;
+}
+
+/** List covered controls too; their boxes exist even when another panel is in front. */
+export function selectable(doc, granularity, query = '') {
+  if (!doc?.body) return [];
+  const candidates =
+    granularity === 'control'
+      ? [
+          ...doc.querySelectorAll(
+            'button,input:not([type="hidden"]),select,textarea,a,[role="slider"],summary',
+          ),
+        ]
+          .filter(visible)
+          .map((element) => ({
+            element,
+            selector: selectorFor(element, doc),
+            label: describe(element),
+          }))
+      : groups.flatMap(([selector, label]) =>
+          [...doc.querySelectorAll(selector)]
+            .filter(visible)
+            .map((element) => ({
+              element,
+              selector:
+                doc.querySelectorAll(selector).length === 1
+                  ? selector
+                  : selectorFor(element, doc),
+              label,
+            })),
+        );
+  const seen = new Set();
+  return candidates.filter((candidate) => {
+    if (
+      seen.has(candidate.selector) ||
+      !candidate.label.toLowerCase().includes(query.trim().toLowerCase())
+    )
+      return false;
+    seen.add(candidate.selector);
+    return true;
+  });
 }

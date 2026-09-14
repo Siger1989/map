@@ -58,3 +58,21 @@ test('child component selectors remain valid for independent bottom controls', (
   v.entries[0].selector = '.position-dock > .position-dock-button';
   assert.match(layoutCss(v), /position-dock > /);
 });
+
+test('font and layer changes do not create a transformed parent for fixed-position children', () => {
+  const value = sample();
+  Object.assign(value.entries[0], {
+    dx: 0,
+    dy: 0,
+    scale: 1,
+    width: null,
+    zIndex: 201,
+  });
+  const css = layoutCss(value);
+  assert.match(css, /z-index:201!important/);
+  assert.match(css, /shantu-layout-priority#shantu-layout-priority/);
+  assert.doesNotMatch(css, /translate:|scale:|transform-origin:/);
+  assert.equal(validateLayout(value).entries[0].zIndex, 201);
+  value.entries[0].zIndex = Infinity;
+  assert.throws(() => validateLayout(value));
+});

@@ -44,6 +44,15 @@ test('portable web server serves public files and existing terrain APIs without 
     terrain.headers.get('location'),
     /^https:\/\/elevation-tiles-prod/,
   );
+  const localTerrain = await fetch(base + '/api/terrain/9/395/203.png', {
+    redirect: 'manual',
+  });
+  assert.equal(localTerrain.status, 302);
+  assert.equal(
+    localTerrain.headers.get('location'),
+    '/terrain/repairs-v1/9/395/203.png',
+    'local DEM redirects stay on the preview origin when this server is behind its API proxy',
+  );
   assert.equal((await fetch(base + '/api/terrain/99/0/0.png')).status, 400);
   assert.equal((await fetch(base + '/api/missing')).status, 404);
   assert.equal((await fetch(base + '/..%5cprivate.txt')).status, 400);

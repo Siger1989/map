@@ -11,6 +11,8 @@ const files = new Map(
     'editor.mjs',
     'selection.mjs',
     'model.mjs',
+    'geometry.mjs',
+    'gestures.mjs',
     'gallery.html',
   ].map((n) => [n, resolve(root, 'tools/layout-editor', n)]),
 );

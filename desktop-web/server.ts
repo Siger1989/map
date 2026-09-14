@@ -78,7 +78,13 @@ export function createDesktopServer(root: string) {
       else if (pathname.startsWith('/api/'))
         result = new Response('Not found', { status: 404 });
       if (result) {
-        res.writeHead(result.status, Object.fromEntries(result.headers));
+        const headers = Object.fromEntries(result.headers);
+        if (headers.location) {
+          const destination = new URL(headers.location, url);
+          if (destination.origin === url.origin)
+            headers.location = destination.pathname + destination.search;
+        }
+        res.writeHead(result.status, headers);
         res.end(
           req.method === 'HEAD'
             ? undefined
@@ -181,6 +187,7 @@ export async function startDesktopServer(root: string, port: number) {
 }
 
 if (
+  process.env.SHANTU_SERVER_LIBRARY !== '1' &&
   import.meta.url.startsWith('file:') &&
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)

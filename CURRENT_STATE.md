@@ -1,4 +1,13 @@
-# 当前状态 — 2026-09-14 / 0.2.30功能修正与APK完成，准备发布
+# 当前状态 — 2026-09-14 / 优先完成布局控制器
+
+- 用户最新顺序：UI仍遮挡，优先做好自定义布局，让用户自己调整；路线必须在线条本身变色。用户明确“不要控制电脑，我还要工作”：后续禁止鼠标/键盘/切窗/刷新等桌面操作，仅后台代码和检查。右侧控制器已通过open_in_codex请求，用户环境确认地址http://127.0.0.1:9241/__layout。
+- 用户反馈右侧无法加载。已证实旧3108/9241服务退出；独立后台Node启动恢复9241。原vinext API启动卡住，已核对并停止本任务10352，改用desktop-web现有四个API的轻量适配，不编译整套网站、不打开浏览器。当前API PID22300、布局Vite PID20512；恢复命令npm run start:layout；日志.openai/layout-server-state.log。HTTP页面/模块/草稿均200；地形9/395/203.png相对重定向至修补图，PNG读取200/69367字节，不跨端口。
+- 新增tools/layout-editor/geometry.mjs、gestures.mjs、api.ts和scripts/start-layout-editor.mjs；仅desktop-web/server.ts增加库模式入口保护。搜索组件/被挡住的单控件，稳定选择器，八边角缩放、父级缩放补偿、保留反向锚边、图层层级和对齐/移回画面。纯字号/层级修改不再隐式改变fixed子控件定位；预览样式优先级高于应用密度规则；拖动时按动画帧节流，不每次重建侧栏。
+- 布局9项模型/缩放/对齐/HTTP保存和共用本地服务器2项检查PASS，编辑器脚本打包与控件ID关联检查PASS；实际鼠标拖动/多尺寸GUI仍未验收。Computer Use两次因不能可靠确认浏览器URL而停止；不得用旧图充当新验收。用户现明确禁止电脑控制，应以其手动反馈继续。
+- config/ui-layout-draft.json仍为空；没有写入测试偏好。功能基准0.2.30 APK已先打包，布局控制器仅开发模式不进入APK。源代码aa9516068d1c9abd6aa6d65e13f25a9615dbbf47已推送origin/codex/huawei-webview-touch。
+- 0.2.30 Release id388182354已完成发布，PATCH返回draft=false/prerelease=true且四资产大小/SHA256再核对通过：https://github.com/Siger1989/map/releases/tag/v0.2.30-test-standalone 。功能APK对应aa9516068d1c9abd6aa6d65e13f25a9615dbbf47；后续布局控制器源码独立提交，不在APK中。0.2.29仍保留draft。布局TypeScript/diff检查通过，待本节下一条记录最终同步SHA。
+
+# 0.2.30功能修正与APK验证
 
 - 用户继续反馈：坡度已有数值，地图颜色仍不变。本轮仅修改routeAnalysis/routeDisplay/TrackLayer、RouteViews与页面回调，不改原始轨迹存储、测量/勘探几何、3D精调和地图手势。
 - 已解除编辑状态对路线色线的屏蔽，候选加入当前绘制草稿；新增terrainProfileTrack保留缺高程边内的DEM采样，新增elevationLineParts让稀疏两点线也沿高差渐变。坡度仍按10%/20%分档，同档同色；不伪造坡度变化。详情新增地图着色直达按钮。

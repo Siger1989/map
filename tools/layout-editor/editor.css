@@ -169,8 +169,9 @@ iframe {
   min-width: 10px;
   min-height: 10px;
   touch-action: none;
+  pointer-events: none;
 }
-#outline-label {
+#move-selection {
   position: absolute;
   left: -2px;
   bottom: calc(100% + 2px);
@@ -181,9 +182,11 @@ iframe {
   background: #3479ff;
   color: white;
   border-radius: 4px;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: move;
+  border: 0;
 }
-#resize {
+.resize-handle {
   position: absolute;
   right: -7px;
   bottom: -7px;
@@ -195,6 +198,59 @@ iframe {
   border-radius: 3px;
   cursor: nwse-resize;
   touch-action: none;
+  pointer-events: auto;
+}
+.resize-handle[data-resize='nw'] {
+  left: -7px;
+  top: -7px;
+  right: auto;
+  bottom: auto;
+  cursor: nwse-resize;
+}
+.resize-handle[data-resize='n'] {
+  left: calc(50% - 7px);
+  top: -7px;
+  right: auto;
+  bottom: auto;
+  cursor: ns-resize;
+}
+.resize-handle[data-resize='ne'] {
+  right: -7px;
+  top: -7px;
+  bottom: auto;
+  cursor: nesw-resize;
+}
+.resize-handle[data-resize='e'] {
+  right: -7px;
+  top: calc(50% - 7px);
+  bottom: auto;
+  cursor: ew-resize;
+}
+.resize-handle[data-resize='s'] {
+  left: calc(50% - 7px);
+  bottom: -7px;
+  right: auto;
+  cursor: ns-resize;
+}
+.resize-handle[data-resize='sw'] {
+  left: -7px;
+  bottom: -7px;
+  right: auto;
+  cursor: nesw-resize;
+}
+.resize-handle[data-resize='w'] {
+  left: -7px;
+  top: calc(50% - 7px);
+  right: auto;
+  bottom: auto;
+  cursor: ew-resize;
+}
+.align-actions {
+  margin-top: 8px;
+}
+.align-actions button {
+  flex: 1;
+  padding: 6px;
 }
 fieldset {
   border: 0;

@@ -10,7 +10,7 @@
     <header>
       <div>
         <strong>山兔 · 布局调节</strong
-        ><small>功能基准 0.2.29 · 修改的是布局草稿</small>
+        ><small>功能基准 0.2.30 · 修改的是布局草稿</small>
       </div>
       <nav>
         <button id="undo" disabled>撤销</button
@@ -33,7 +33,7 @@
           </select>
         </div>
         <p>
-          先切到“操作页面”打开需要的面板，再切回选择。拖动蓝框移动，拖右下角改大小。
+          先切到“操作页面”打开面板，再切回选择。拖选框标题移动，拖四边或四角改大小。被挡住的控件可从下方清单选择。
         </p>
         <label
           >手机尺寸<select id="viewport">
@@ -55,7 +55,13 @@
         ><label
           ><input id="ratio" type="checkbox" checked />拖角时保持宽高比</label
         >
-        <h2>可选择的组件</h2>
+        <h2>组件与控件清单</h2>
+        <label
+          >搜索名称<input
+            id="search"
+            type="search"
+            placeholder="定位、海拔、保存…"
+        /></label>
         <select id="widgets" size="10" aria-label="组件列表"></select
         ><button id="refresh">刷新组件列表</button>
       </aside>
@@ -65,8 +71,49 @@
             <iframe id="preview" title="山兔真实界面预览" src="/"></iframe>
             <div id="cover" tabindex="0" aria-label="选择或拖动布局控件">
               <div id="outline" hidden>
-                <span id="outline-label"></span
-                ><button id="resize" aria-label="拖动调整选中组件大小"></button>
+                <button id="move-selection" aria-label="拖动选中组件">
+                  <span id="outline-label"></span> · 拖动
+                </button>
+                <button
+                  class="resize-handle"
+                  data-resize="nw"
+                  aria-label="调整左上角"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="n"
+                  aria-label="调整上边"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="ne"
+                  aria-label="调整右上角"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="e"
+                  aria-label="调整右边"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="se"
+                  aria-label="调整右下角"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="s"
+                  aria-label="调整下边"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="sw"
+                  aria-label="调整左下角"
+                ></button>
+                <button
+                  class="resize-handle"
+                  data-resize="w"
+                  aria-label="调整左边"
+                ></button>
               </div>
             </div>
           </div>
@@ -122,7 +169,27 @@
               min="8"
               max="40"
               placeholder="沿用原字号" /></label
-          ><label><input id="hidden" type="checkbox" />隐藏此组件</label
+          ><label
+            >显示层级<input
+              id="zIndex"
+              type="number"
+              min="-1000"
+              max="99999"
+              placeholder="沿用原层级"
+          /></label>
+          <div class="row">
+            <button id="raise">提高层级</button
+            ><button data-align="recover">移回画面</button>
+          </div>
+          <div class="row align-actions">
+            <button data-align="left">靠左</button
+            ><button data-align="center">居中</button
+            ><button data-align="right">靠右</button>
+            <button data-align="top">靠上</button
+            ><button data-align="bottom">靠下</button>
+          </div>
+          <p>层级用于同一父组件内的遮挡；整体被挡时选择外层组件调整。</p>
+          <label><input id="hidden" type="checkbox" />隐藏此组件</label
           ><button id="reset">恢复此组件默认布局</button>
         </fieldset>
         <h2>已修改</h2>
