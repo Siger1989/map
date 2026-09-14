@@ -1,4 +1,12 @@
-# 当前状态 — 2026-09-14 / 0.2.34 APK构建与发布
+# 当前状态 — 2026-09-14 / 修复后半段陡坡漏标
+
+- 用户反馈0.2.34前面标陡坡，后面点数据角度较陡却不标。已从源码确认两项限制：`useRouteDisplay`只保留最前12个标记；连续绝对坡度≥20%只留全段最高峰，且不区分上坡/下坡。未取得用户原轨迹，不能断言其具体位置命中了哪项，但两项都能复现后段不标。
+- 范围：新增`routeDisplay/warningMarkers.ts`纯派生标记与`config.ts`显示密度，useRouteDisplay调用；每个独立陡坡/上下坡分别提示，长坡约200米重复，极长单段最多512处均匀分布而不截掉后半段。复用routeAnalysis既有坡度，不改阈值或伪造缺测高程；RouteWarnings只让文字避让，所有提示圆点保留。显示设置说明20%≈11.3°。不改布局、GPS、离线和轨迹存档。
+- 新增6项回归覆盖前12限制、坡顶方向切换、较陡开头之后长坡补标、跨日期线稀疏长边的有界全线分布、缺测/断段/阈值和计算一致性，14项相关测试与TypeScript通过。实际useRouteDisplay+MapLibre在全新后台浏览器390/360验证旧12/新20、长坡尾段、上下坡两标记、尾部圆点实际可见与文字避让，无页面/地图异常。8张实测图在`artifacts/screenshots/steep-markers-fix`，明确为构造测试轨迹，非用户数据；不控制/刷新用户工作窗口。
+- **0.2.35最终构建通过**：test/code42；503/503逻辑、TypeScript、架构、diff、网页/APK构建、原4a94证书v2/v3、zipalign、543项ZIP CRC及473地形资源通过。新陡上/陡下、长坡分布代码进入APK；桌面控制器、私密文件和用户布局排除通过。APK57,731,510字节，SHA256`3a42579c6c3977a99183e2b29bbb683a010480ed63e42f002946cc937c434744`；布局键/JSON格式、原包名签名及轨迹存档不变。
+- 本机输出`APK/Shantu-0.2.35-test-standalone.apk`；8张实测对照图与离线索引打包`Shantu-0.2.35-feature-guide.zip`，说明`docs/release-0.2.35.md`。源码提交、推送和GitHub测试Release待完成，当前公开版本仍为0.2.34。日志`.openai/*0235*final.log`、`.openai/steep-map-gui.log`；无工作窗口控制/刷新，用户草稿未写入。
+
+# 历史状态 — 2026-09-14 / 0.2.34 APK构建与发布
 
 - **0.2.34已公开发布**：[v0.2.34-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)，Release id388306522，draft=false/prerelease=true。APK、校验文件、图示ZIP和安装说明四项远端大小/SHA256全部匹配本地；图示ZIP798408字节，SHA256`fd736deced51b9320adf1fe12309778a758ae6c0cb610fb91f8f6a0bd808fbd5`。APK对应源码`96f97a15eea4e2a5090870695021c38b085b6f64`已推送并逐字核对origin/codex/layout-selection-clipping；未合入main或现用业务工作树。后续交接提交只改文档，不改变APK功能源码。
 - 本机APK绝对路径：`D:/shantu-layout-selection-fix/APK/Shantu-0.2.34-test-standalone.apk`。当前用户窗口仍使用其原有页面，未控制/刷新；用户真实布局JSON和localStorage未写入或重置。主工作树CURRENT_STATE.md同步发行与分支指引。

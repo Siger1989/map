@@ -4,7 +4,11 @@ import { ChartNoAxesCombined, X } from 'lucide-react';
 import type { useRouteDisplay } from './useRouteDisplay';
 import type { RouteDisplayPreferences } from './preferences';
 import { ELEVATION_RAMP } from '../routeAnalysis/elevationColors';
-import { SPEED_BANDS, SLOPE_BANDS } from '../routeAnalysis/config';
+import {
+  ANALYSIS_POLICY,
+  SPEED_BANDS,
+  SLOPE_BANDS,
+} from '../routeAnalysis/config';
 import { RouteElevationProfile } from './RouteElevationProfile';
 import './routeDisplay.css';
 type Display = ReturnType<typeof useRouteDisplay>;
@@ -129,7 +133,13 @@ export function RouteDisplayControl({
               ))}
             </div>
             <p>
-              选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。陡坡仅是采样提示。
+              选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。
+              陡坡≥{ANALYSIS_POLICY.steepThresholdPercent}%（约
+              {(
+                (Math.atan(ANALYSIS_POLICY.steepThresholdPercent / 100) * 180) /
+                Math.PI
+              ).toFixed(1)}
+              °），上下坡分开提示。
             </p>
             <p>海拔按本路线最低至最高渐变；坡度按10%和20%分档，同档同色。</p>
             <button

@@ -1,4 +1,10 @@
-# 最新功能包：0.2.34 独立测试版（2026-09-14）
+# 最新功能包：0.2.35 独立测试版（2026-09-14）
+
+修复后半段陡坡漏标：取消前12处限制，区分陡上/陡下，长坡约200米重复提示；地图保留所有红点，文字避让。阈值20%≈11.3°，不是20°。保留既有布局、原轨迹及同包名/签名；versionCode42。
+
+503项逻辑、类型、架构、网页/APK、签名v2/v3、zipalign、543项CRC与473地形通过；390/360实际MapLibre验证旧12/新20、长坡尾段与上下坡分开通过。真实设备/用户路线未验；HarmonyOS6.1原生未交付。完整范围、图示、校验见[0.2.35发行说明](../docs/release-0.2.35.md)，公开状态以CURRENT_STATE.md为准。
+
+# 历史功能包：0.2.34 独立测试版（2026-09-14）
 
 [下载0.2.34 APK](https://github.com/Siger1989/map/releases/download/v0.2.34-test-standalone/Shantu-0.2.34-test-standalone.apk) · [发行说明和13张图示](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)。四项公开资产大小/SHA256已与本地核对；APK功能源码为96f97a15eea4e2a5090870695021c38b085b6f64，分支codex/layout-selection-clipping。
 

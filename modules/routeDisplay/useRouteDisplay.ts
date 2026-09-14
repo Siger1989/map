@@ -9,6 +9,7 @@ import { routeElevationScale } from '../routeAnalysis/elevationColors';
 import { DEFAULT_TRACK_STYLE } from '../tracks/style';
 import { DRAFT_ID } from '../tracks/editing';
 import { trackHeights } from './elevation';
+import { steepWarningMarkers } from './warningMarkers';
 import {
   DEFAULT_ROUTE_DISPLAY,
   normalizeRouteDisplay,
@@ -110,35 +111,7 @@ export function useRouteDisplay(
   );
   const warnings = useMemo(() => {
     if (!profile || !metrics || !preferences.steep || blocked) return [];
-    return metrics.slopes
-      .flatMap((line, part) => {
-        const marks: {
-          coordinate: ManualTrack['segments'][number][number];
-          label: string;
-        }[] = [];
-        let peak: number | null = null;
-        line.forEach((grade, i) => {
-          if (grade === null || Math.abs(grade) < 20) {
-            peak = null;
-            return;
-          }
-          if (peak === null) {
-            marks.push({
-              coordinate: profile.segments[part][i],
-              label: `坡 ${Math.round(Math.abs(grade))}%`,
-            });
-            peak = Math.abs(grade);
-          } else if (Math.abs(grade) > peak) {
-            peak = Math.abs(grade);
-            marks[marks.length - 1] = {
-              coordinate: profile.segments[part][i],
-              label: `坡 ${Math.round(peak)}%`,
-            };
-          }
-        });
-        return marks;
-      })
-      .slice(0, 12);
+    return steepWarningMarkers(profile, metrics.slopes);
   }, [profile, metrics, preferences.steep, blocked]);
   const parts = useMemo(
     () =>
