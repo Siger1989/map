@@ -50,8 +50,10 @@ test('elevation ramp accepts negative and flat heights, missing values stay gray
   const colors = elevationEdgeColors(track);
   assert.equal(colors[1][0], ANALYSIS_POLICY.missingColor);
   const parts = metricLineParts(track, 'elevation');
-  assert.equal(parts.length, 3);
-  assert.deepEqual(parts[2].coordinates, track.segments[1]);
+  assert.ok(new Set(parts.map((p) => p.color)).size > 3);
+  assert.deepEqual(parts[0].coordinates[0], track.segments[0][0]);
+  assert.deepEqual(parts.at(-1).coordinates, track.segments[1]);
+  assert.equal(parts.at(-1).color, ANALYSIS_POLICY.missingColor);
   assert.deepEqual(
     normalizeTrackStyle({ colorMode: 'elevation' }).colorMode,
     'elevation',
@@ -112,12 +114,36 @@ test('display options normalize independently and retain an explicit off selecti
 });
 
 test('missing GPX heights gain display slope without changing source points', () => {
-  const original = { ...track, segments: [[[104.059, 30.657], [104.061, 30.657]]], samples: [[{time: 1, altitude: null}, {time: 60001, altitude: null}]] };
+  const original = {
+    ...track,
+    segments: [
+      [
+        [104.059, 30.657],
+        [104.061, 30.657],
+      ],
+    ],
+    samples: [
+      [
+        { time: 1, altitude: null },
+        { time: 60001, altitude: null },
+      ],
+    ],
+  };
   const before = JSON.stringify(original);
   const points = trackHeights(original);
-  const derived = withTerrainHeights(original, points.map((p, i) => ({...p, elevation: 496 + i})));
+  const derived = withTerrainHeights(
+    original,
+    points.map((p, i) => ({ ...p, elevation: 496 + i })),
+  );
   assert.equal(JSON.stringify(original), before);
   assert.deepEqual(derived.segments, original.segments);
-  assert.ok(metricLineParts(derived, 'slope').every(p => p.color !== ANALYSIS_POLICY.missingColor));
-  assert.deepEqual(derived.samples[0].map(p => p.time), [1, 60001]);
+  assert.ok(
+    metricLineParts(derived, 'slope').every(
+      (p) => p.color !== ANALYSIS_POLICY.missingColor,
+    ),
+  );
+  assert.deepEqual(
+    derived.samples[0].map((p) => p.time),
+    [1, 60001],
+  );
 });

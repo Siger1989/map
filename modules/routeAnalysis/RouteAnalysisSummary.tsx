@@ -3,22 +3,52 @@ import type { ManualTrack } from '../tracks/drawing';
 import { analyzeRoute } from './metrics';
 import { useTrackElevation } from './useTrackElevation';
 
-export function RouteAnalysisSummary({ track }: { track: ManualTrack }) {
+export function RouteAnalysisSummary({
+  track,
+  onShowMetric,
+}: {
+  track: ManualTrack;
+  onShowMetric?: (mode: 'elevation' | 'slope') => void;
+}) {
   const [open, setOpen] = useState(false);
   const elevation = useTrackElevation(track, open);
   const data = elevation.data ?? track;
   const metrics = useMemo(
-    () => analyzeRoute(data),
-    [data.segments, data.samples],
+    () => ({
+      ...analyzeRoute(elevation.profile ?? data),
+      maximumSpeedKmh: analyzeRoute(data).maximumSpeedKmh,
+    }),
+    [data, elevation.profile],
   );
   const value = (number: number | null, unit: string) =>
     number === null ? '数据不足' : `${number.toFixed(1)} ${unit}`;
   return (
-    <details className="recording-precision" onToggle={e => setOpen(e.currentTarget.open)}>
+    <details
+      className="recording-precision"
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
       <summary>速度与坡度分析</summary>
-      <p role="status">{elevation.loading ? '正在读取路线地形高程…' : elevation.estimated ? '坡度包含地形估算高程' : '优先使用轨迹自带高程'}</p>
-      {elevation.elevationError && <p role="alert">{elevation.elevationError}</p>}
-      <button onClick={elevation.refresh} disabled={elevation.loading}>重新读取地形高程</button>
+      {onShowMetric && (
+        <div className="route-share-actions">
+          <button onClick={() => onShowMetric('slope')}>地图按坡度着色</button>
+          <button onClick={() => onShowMetric('elevation')}>
+            地图按海拔着色
+          </button>
+        </div>
+      )}
+      <p role="status">
+        {elevation.loading
+          ? '正在读取路线地形高程…'
+          : elevation.estimated
+            ? '坡度包含地形估算高程'
+            : '优先使用轨迹自带高程'}
+      </p>
+      {elevation.elevationError && (
+        <p role="alert">{elevation.elevationError}</p>
+      )}
+      <button onClick={elevation.refresh} disabled={elevation.loading}>
+        重新读取地形高程
+      </button>
       <dl className="route-data-rows">
         {[
           ['最高区间速度', value(metrics.maximumSpeedKmh, 'km/h')],

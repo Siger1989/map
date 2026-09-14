@@ -129,6 +129,7 @@ export function RouteDisplayControl({
             <p>
               选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。陡坡仅是采样提示。
             </p>
+            <p>海拔按本路线最低至最高渐变；坡度按10%和20%分档，同档同色。</p>
             <button
               onClick={display.refresh}
               disabled={display.loading || !target}
@@ -136,7 +137,9 @@ export function RouteDisplayControl({
               刷新路线高程
             </button>
             {display.error && <p role="alert">{display.error}</p>}
-            {display.elevationError && <p role="alert">{display.elevationError}</p>}
+            {display.elevationError && (
+              <p role="alert">{display.elevationError}</p>
+            )}
           </div>
         </section>
       )}
@@ -147,7 +150,11 @@ export function RouteDisplayControl({
               读取路线高程…
             </small>
           )}
-          {display.elevationError && <small className="glass" role="status">{display.elevationError}</small>}
+          {display.elevationError && (
+            <small className="glass" role="status">
+              {display.elevationError}
+            </small>
+          )}
           {preferences.legend && mode !== 'solid' && (
             <section
               className="route-color-legend glass"

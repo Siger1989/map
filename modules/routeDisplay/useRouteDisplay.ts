@@ -5,10 +5,9 @@ import type { RouteOverlay } from '../navigation/types';
 import { elevationStats } from '../journey/metrics';
 import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
 import { analyzeRoute, metricLineParts } from '../routeAnalysis/metrics';
-import {
-  routeElevationScale,
-} from '../routeAnalysis/elevationColors';
+import { routeElevationScale } from '../routeAnalysis/elevationColors';
 import { DEFAULT_TRACK_STYLE } from '../tracks/style';
+import { DRAFT_ID } from '../tracks/editing';
 import { trackHeights } from './elevation';
 import {
   DEFAULT_ROUTE_DISPLAY,
@@ -57,6 +56,14 @@ export function useRouteDisplay(
     const values: ManualTrack[] = tracks.visible
       ? tracks.saved.filter((t) => !t.hidden)
       : [];
+    if (tracks.visible && tracks.draft.some((line) => line.length >= 2))
+      values.push({
+        id: DRAFT_ID,
+        name: '当前绘制路线',
+        createdAt: 0,
+        segments: tracks.draft,
+        style: tracks.style,
+      });
     if (route.route)
       values.push({
         id: 'display-planned-route',
@@ -72,7 +79,7 @@ export function useRouteDisplay(
         style: { ...DEFAULT_TRACK_STYLE, color: '#59dcff', width: 4 },
       });
     return values;
-  }, [tracks.saved, tracks.visible, route.route]);
+  }, [tracks.saved, tracks.visible, tracks.draft, tracks.style, route.route]);
   const target =
     candidates.find((t) => t.id === chosenId) ??
     candidates.find((t) => t.id === preferredId) ??
@@ -91,14 +98,18 @@ export function useRouteDisplay(
       preferences.steep);
   const elevation = useTrackElevation(target, needHeight);
   const data = elevation.data;
-  const samples = useMemo(() => (data ? trackHeights(data) : []), [data]);
+  const profile = elevation.profile;
+  const samples = useMemo(
+    () => (profile ? trackHeights(profile) : []),
+    [profile],
+  );
   const stats = useMemo(() => elevationStats(samples), [samples]);
   const metrics = useMemo(
-    () => (data && needHeight ? analyzeRoute(data) : null),
-    [data, needHeight],
+    () => (profile && needHeight ? analyzeRoute(profile) : null),
+    [profile, needHeight],
   );
   const warnings = useMemo(() => {
-    if (!data || !metrics || !preferences.steep || blocked) return [];
+    if (!profile || !metrics || !preferences.steep || blocked) return [];
     return metrics.slopes
       .flatMap((line, part) => {
         const marks: {
@@ -113,14 +124,14 @@ export function useRouteDisplay(
           }
           if (peak === null) {
             marks.push({
-              coordinate: data.segments[part][i],
+              coordinate: profile.segments[part][i],
               label: `坡 ${Math.round(Math.abs(grade))}%`,
             });
             peak = Math.abs(grade);
           } else if (Math.abs(grade) > peak) {
             peak = Math.abs(grade);
             marks[marks.length - 1] = {
-              coordinate: data.segments[part][i],
+              coordinate: profile.segments[part][i],
               label: `坡 ${Math.round(peak)}%`,
             };
           }
@@ -128,43 +139,45 @@ export function useRouteDisplay(
         return marks;
       })
       .slice(0, 12);
-  }, [data, metrics, preferences.steep, blocked]);
+  }, [profile, metrics, preferences.steep, blocked]);
   const parts = useMemo(
     () =>
-      data && mode !== 'solid' && !blocked
-        ? metricLineParts(data, mode)
+      data && profile && mode !== 'solid'
+        ? metricLineParts(mode === 'speed' ? data : profile, mode)
         : undefined,
-    [data, mode, blocked],
+    [data, profile, mode],
   );
   const displayTracks = useMemo(
     () => ({
       ...tracks,
       analysisMarkers: warnings,
-      saved:
-        !data || blocked
-          ? tracks.saved
-          : tracks.saved.map((t) =>
-              t.id === data.id
-                ? {
-                    ...t,
-                    samples: data.samples,
-                    style: {
-                      ...(t.style ?? DEFAULT_TRACK_STYLE),
-                      colorMode: mode,
-                    },
-                  }
-                : t,
-            ),
+      analysisParts: data && parts ? { trackId: data.id, parts } : undefined,
+      style:
+        data?.id === DRAFT_ID
+          ? { ...tracks.style, colorMode: mode }
+          : tracks.style,
+      saved: !data
+        ? tracks.saved
+        : tracks.saved.map((t) =>
+            t.id === data.id
+              ? {
+                  ...t,
+                  style: {
+                    ...(t.style ?? DEFAULT_TRACK_STYLE),
+                    colorMode: mode,
+                  },
+                }
+              : t,
+          ),
     }),
-    [tracks, data, mode, blocked, warnings],
+    [tracks, data, mode, parts, warnings],
   );
   const displayRoute = useMemo(
     () => ({
       ...route,
-      displayParts:
-        data?.id === 'display-planned-route' && !blocked ? parts : undefined,
+      displayParts: data?.id === 'display-planned-route' ? parts : undefined,
     }),
-    [route, data?.id, parts, blocked],
+    [route, data?.id, parts],
   );
   return {
     preferences,
@@ -179,7 +192,10 @@ export function useRouteDisplay(
     samples,
     stats,
     metrics,
-    scale: useMemo(() => (data ? routeElevationScale(data) : null), [data]),
+    scale: useMemo(
+      () => (profile ? routeElevationScale(profile) : null),
+      [profile],
+    ),
     loading: elevation.loading,
     estimated: elevation.estimated,
     elevationError: elevation.elevationError,

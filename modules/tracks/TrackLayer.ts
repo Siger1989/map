@@ -25,6 +25,10 @@ import {
 } from './editing';
 export type TrackOverlay = {
   analysisMarkers?: RouteWarning[];
+  analysisParts?: {
+    trackId: string;
+    parts: ReturnType<typeof metricLineParts>;
+  };
   saved: ManualTrack[];
   draft: Coordinate[][];
   draftEdgeColors?: TrackEdgeColors;
@@ -216,21 +220,24 @@ export class TrackLayer {
                   })
                 : new Map();
               const parts =
-                t.style.colorMode && t.style.colorMode !== 'solid'
-                  ? metricLineParts(t, t.style.colorMode)
-                  : alternativeLineParts(
-                      t.segments,
-                      t.trackId === state.selectedId
-                        ? state.alternativeId
-                        : 'main',
-                      t.style.color,
-                    ).flatMap((part) =>
-                      coloredLineParts(
-                        part.coordinates,
-                        colors,
-                        part.color ?? t.style.color,
-                      ).map((piece) => ({ ...part, ...piece })),
-                    );
+                state.analysisParts?.trackId === t.trackId &&
+                state.preview?.node.trackId !== t.trackId
+                  ? state.analysisParts.parts
+                  : t.style.colorMode && t.style.colorMode !== 'solid'
+                    ? metricLineParts(t, t.style.colorMode)
+                    : alternativeLineParts(
+                        t.segments,
+                        t.trackId === state.selectedId
+                          ? state.alternativeId
+                          : 'main',
+                        t.style.color,
+                      ).flatMap((part) =>
+                        coloredLineParts(
+                          part.coordinates,
+                          colors,
+                          part.color ?? t.style.color,
+                        ).map((piece) => ({ ...part, ...piece })),
+                      );
               return parts.map((part) => ({
                 type: 'Feature',
                 properties: {

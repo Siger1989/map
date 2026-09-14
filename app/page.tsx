@@ -1367,6 +1367,7 @@ export default function Home() {
               {routeWindow === 'details' && (
                 <RouteDetails
                   track={railTrack}
+                  onShowMetric={(mode) => { routeDisplay.choose(railTrack.id); routeDisplay.update({ mode, legend: true }); setRouteWindow('card'); }}
                   alternative={activeAlternative}
                   onCondition={(color, value) =>
                     tracks.setColorCondition(railTrack.id, color, value)
