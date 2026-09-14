@@ -303,15 +303,22 @@ function replaceEntries(entries) {
     ],
   });
 }
-function updateBatch(items, box, patch, remember = true, light = false) {
+function updateBatch(
+  items,
+  box,
+  patch,
+  remember = true,
+  light = false,
+  placement = 'anchor',
+) {
   if (!items.length) return;
   const changes = batchPatches(items, box, patch);
   const resizing = ['width', 'height', 'scale'].some(
       (key) => patch[key] != null,
     ),
-    fixedEdge = resizing && items.length === 1;
+    fixedEdge = resizing && items.length === 1 && placement !== 'pointer';
   const geometric = resizing || 'dx' in patch || 'dy' in patch;
-  anchorBatchTargets(items, box, patch, changes);
+  if (placement !== 'pointer') anchorBatchTargets(items, box, patch, changes);
   for (const change of changes)
     change.next.anchor = fixedEdge
       ? (items[0].entry.anchor ??

@@ -80,11 +80,14 @@ export function validateLayout(value) {
     })),
   };
 }
+export function layoutSelector(selector, scope = '') {
+  return `:is(#shantu-layout-priority#shantu-layout-priority,:root) ${scope ? `${scope} :is(${selector})` : selector}`;
+}
 export function layoutCss(layout, scope = '') {
   return validateLayout(layout)
     .entries.map((e) => {
       // Preview overrides must beat the app's density rules, including their !important sizes.
-      const selector = `:is(#shantu-layout-priority#shantu-layout-priority,:root) ${scope ? `${scope} :is(${e.selector})` : e.selector}`;
+      const selector = layoutSelector(e.selector, scope);
       const declarations = [];
       // Do not create a containing block merely because the user changed a font or z-index.
       if (e.dx || e.dy)

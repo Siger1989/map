@@ -67,6 +67,9 @@ function eligible(element) {
 }
 function component(element) {
   if (!eligible(element) || element.matches(componentWrappers)) return false;
+  // An accessible chart/icon label describes its content, not another UI frame.
+  // Keep SVG selection available in element mode and the hierarchy instead.
+  if (element.namespaceURI === 'http://www.w3.org/2000/svg') return false;
   if (groups.some(([selector]) => element.matches(selector))) return true;
   if (element.matches(controls)) return false;
   return (

@@ -91,16 +91,25 @@ export function createSession(doc, storage) {
     }
     if (!light) notify();
   };
-  const updateBatch = (items, box, patch, remember = true, light = false) =>
+  const updateBatch = (
+    items,
+    box,
+    patch,
+    remember = true,
+    light = false,
+    placement = 'anchor',
+  ) =>
     change(
       () => {
         const changes = batchPatches(items, box, patch);
         const resizing = ['width', 'height', 'scale'].some(
           (key) => patch[key] != null,
         );
-        const fixedEdge = resizing && items.length === 1;
+        const fixedEdge =
+          resizing && items.length === 1 && placement !== 'pointer';
         const geometric = resizing || 'dx' in patch || 'dy' in patch;
-        anchorBatchTargets(items, box, patch, changes);
+        if (placement !== 'pointer')
+          anchorBatchTargets(items, box, patch, changes);
         for (const change of changes)
           change.next.anchor = fixedEdge
             ? (items[0].entry.anchor ??

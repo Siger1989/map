@@ -1,6 +1,7 @@
 import { dragPatch, bounds, scaleLimits } from './geometry.mjs';
 import { pick } from './selection.mjs';
 import { alignmentTargets, alignFrame, createGuideView } from './alignment.mjs';
+import { resizeDrag } from './resize.mjs';
 
 /** Editor gestures never forward inputs to the map while selection mode is active. */
 export function bindGestures({
@@ -42,6 +43,19 @@ export function bindGestures({
       checkpoint();
       g.started = true;
     }
+    if (g.handle !== 'move') {
+      const resized = resizeDrag(g, delta, {
+        snap: snap(),
+        contentScale: ratio(),
+        guides: guides(),
+        peers: g.peers,
+        viewport: g.viewport,
+        threshold: 6 / zoom(),
+      });
+      showGuides(resized.lines);
+      updateBatch(g.items, g.rect, resized.patch, false, true, 'pointer');
+      return;
+    }
     const patch = dragPatch(g, delta, { snap: snap(), contentScale: ratio() });
     if (g.handle === 'move' && guides()) {
       const parent = g.parentScale ?? { x: 1, y: 1 };
@@ -66,14 +80,6 @@ export function bindGestures({
     }
     if (g.batch) {
       updateBatch(g.items, g.rect, patch, false, true);
-      return;
-    }
-    if (g.handle !== 'move') {
-      const resized = { ...patch };
-      delete resized.dx;
-      delete resized.dy;
-      if (resized.scale != null) resized.scale /= g.entry.scale;
-      updateBatch(g.items, g.rect, resized, false, true);
       return;
     }
     update(patch, false, true);

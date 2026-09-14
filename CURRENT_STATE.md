@@ -1,4 +1,14 @@
-# 当前状态 — 2026-09-14 / 0.2.33 贴边适配与组内独立选择
+# 当前状态 — 2026-09-14 / 布局选择、组外显示与边框缩放修正（独立副本，不打包）
+
+- 用户继续调布局，明确暂不打包。本轮在D:/shantu-layout-selection-fix独立工作树、codex/layout-selection-clipping分支研究和验证；主工作树D:/天气系统及9241现用页面不热更新、不刷新、不写用户草稿。基线a32985bf590ae57d4655f39f0fb9b94d532ccd90，已确认远端最新。
+- 原因：带aria-label的SVG被语义组件规则当成独立外框；route-display-info默认overflow-y:auto裁掉移出的卡片，装饰外框overflow:hidden也会裁切独立控件。修改modules/uiLayout/selection、model、anchorRenderer；新增clipping专门处理已独立调整组件的装饰祖先，桌面插件提供共享入口。SVG仍可在任意元素/层级中选择。真正滚动列表保留滚动，不进行DOM搬移、不改路线/高程/离线业务。
+- 正在补回归和独立后台浏览器验证，未构建新APK、未修改版本号、未将修正合入用户当前服务。验证完成后只同步隔离分支，后续用户调完再整合。
+- 用户追加大小辅助线与拖左边却移动右边：根因是手势丢弃左/上位移，所有缩放都被会话层按保存锚边重新放置。新增resize共享模块，把指针拖框与数值缩放分开：指针八边角固定对边，数值保留锚边；手势到会话传递显示坐标，父级缩放只补偿一次。大小模式支持移动边缘对齐辅助线/吸附，比例与尺寸上限优先，未到达的参考线不显示。alignment参照加入同组单控件。手机与桌面共用接口。
+- 第一轮剖面/裁切485测试、TypeScript、架构通过；随后加入缩放修正，最新实际浏览器390/360、左右原生贴边下共32次八边角检查及大小辅助线、桌面左边框拖动通过，页面异常为空，静止渲染无循环。最终全量和额外多选/只调外框复测进行中。
+- **最终验证完成**：490/490逻辑、TypeScript、架构、diff与网页构建通过。实际RouteElevationProfile组件+原CSS在独立后台浏览器验证整框选择、移出组后的可见/点选、保存重开、原生列表滚动、390/360下左右贴边32次八边角、只调外框、多选共同对边、大小辅助线，以及桌面左侧边框跟手，全部通过；无页面异常，静止500ms样式变更0次。截图artifacts/screenshots/layout-container-fix含7张实测图，均为隔离组件场景，不是用户草稿或真机截图。日志.openai/*layout*final.log。
+- 按用户指示**没有生成新APK或Release，没有提升安装版本**。修正只提交推送codex/layout-selection-clipping，现用9241页面及主工作树业务代码保持0.2.33基线；用户调好后再整合并按届时要求出包。地图、路线/海拔计算、离线与存档数据未修改。撤销本分支即可回滚，用户JSON格式不变。
+
+# 历史状态 — 2026-09-14 / 0.2.33 贴边适配与组内独立选择
 
 - **0.2.33已发布测试Release**：[v0.2.33-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.33-test-standalone)，id388261380，draft=false/prerelease=true。四个资产的GitHub大小/SHA256全部匹配本地。功能源码`1b9e7b8cc15b83a85eb52cc05e971bf3892c989e`已推送并与origin/codex/huawei-webview-touch逐字核对；本地分支codex/sync-20260910，未合入main。此次后续交接提交只更新状态文档，不改变APK对应源码。
 - 最终源码重新构建的0.2.33-test/code40包含贴边适配和组内拾取；不是此前同版本的中间包。APK/Shantu-0.2.33-test-standalone.apk为57727494字节，SHA256 `29f02ae65cd52af338b545e35413507d60283e558bdab4ce3d8d92e173dce6c3`。图示ZIP为2979031字节，SHA256 `bcba8398ec5b2f63482adfd8ddc0c6f795970df0dd28d25b40aeb2317f2945e0`。

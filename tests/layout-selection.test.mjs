@@ -17,7 +17,7 @@ function fixture() {
     <nav class="position-dock"><button class="position-dock-button" aria-label="定位">定位</button>
       <div class="route-display-control"><button class="position-dock-button">海拔</button>
         <aside class="route-display-info"><section class="route-color-legend glass"><strong>路线海拔</strong><div class="route-color-ramp"></div></section>
-        <section class="route-elevation-stats glass"><span>493–497m</span></section><section class="route-elevation-profile glass"><svg><path/></svg></section></aside>
+        <section class="route-elevation-stats glass"><span>493–497m</span></section><section class="route-elevation-profile glass"><svg role="img" aria-label="路线海拔剖面"><path/></svg></section></aside>
       </div></nav>
     <div class="track-tools glass" aria-label="绘制工具"><div class="track-drawing-style"><input type="color"><select><option>1.5px</option></select></div><button>道路吸附</button><button>完成</button></div>
     <section class="unknown-future-panel" aria-label="新增功能"><button>保存</button></section>
@@ -143,6 +143,22 @@ test('touch selection sees through its editing cover and stable controls retain 
   assert.deepEqual(
     roots.map((i) => i.element),
     [target.parentElement],
+  );
+});
+
+test('labelled chart content picks its full card in component mode and remains available in element mode', () => {
+  const doc = fixture(),
+    svg = doc.querySelector('.route-elevation-profile svg');
+  doc.elementFromPoint = () => svg.querySelector('path');
+  assert.equal(
+    pick(doc, 0, 0, 'component').selector,
+    '.route-elevation-profile',
+  );
+  assert.equal(pick(doc, 0, 0, 'group').selector, '.route-display-info');
+  assert.equal(pick(doc, 0, 0, 'element').element, svg);
+  assert.ok(!selectable(doc, 'component').some((item) => item.element === svg));
+  assert.ok(
+    hierarchy(svg).some((item) => item.selector === '.route-elevation-profile'),
   );
 });
 

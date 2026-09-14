@@ -2,7 +2,7 @@ import { selectable, selectionRoots } from './selection.mjs';
 
 /** Snapshot visible peer frames once per drag, never the map or the editor itself. */
 export function alignmentTargets(doc, selected) {
-  const peers = selectable(doc, 'group').filter(
+  const peers = selectable(doc, 'component').filter(
     ({ element }) =>
       !selected.some(
         (item) =>
@@ -21,7 +21,13 @@ export function alignmentTargets(doc, selected) {
 }
 
 /** Edges and centres use display pixels; the caller handles ancestor/preview scale. */
-export function alignFrame(rect, peers, viewport, threshold = 6) {
+export function alignFrame(
+  rect,
+  peers,
+  viewport,
+  threshold = 6,
+  handle = 'move',
+) {
   const screen = {
     left: 4,
     top: 4,
@@ -35,13 +41,21 @@ export function alignFrame(rect, peers, viewport, threshold = 6) {
     ['y', 'top', 'bottom', 'left', 'right', viewport.width],
   ]) {
     let best = null;
+    const movingEdges =
+      handle === 'move'
+        ? [rect[lo], (rect[lo] + rect[hi]) / 2, rect[hi]]
+        : handle.includes(axis === 'x' ? 'w' : 'n')
+          ? [rect[lo]]
+          : handle.includes(axis === 'x' ? 'e' : 's')
+            ? [rect[hi]]
+            : [];
     for (const target of [...peers, screen])
       for (const anchor of [
         target[lo],
         (target[lo] + target[hi]) / 2,
         target[hi],
       ])
-        for (const moving of [rect[lo], (rect[lo] + rect[hi]) / 2, rect[hi]]) {
+        for (const moving of movingEdges) {
           const distance = anchor - moving;
           if (
             Math.abs(distance) <= threshold &&

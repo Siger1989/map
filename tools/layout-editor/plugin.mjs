@@ -17,6 +17,8 @@ const files = new Map(
     'layers.mjs',
     'anchors.mjs',
     'anchorRenderer.mjs',
+    'clipping.mjs',
+    'resize.mjs',
     'gallery.html',
   ].map((n) => [
     n,
@@ -31,6 +33,8 @@ const files = new Map(
         'layers.mjs',
         'anchors.mjs',
         'anchorRenderer.mjs',
+        'clipping.mjs',
+        'resize.mjs',
       ].includes(n)
         ? 'modules/uiLayout'
         : 'tools/layout-editor',
