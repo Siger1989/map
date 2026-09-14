@@ -1,5 +1,7 @@
 # 最新功能包：0.2.34 独立测试版（2026-09-14）
 
+[下载0.2.34 APK](https://github.com/Siger1989/map/releases/download/v0.2.34-test-standalone/Shantu-0.2.34-test-standalone.apk) · [发行说明和13张图示](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)。四项公开资产大小/SHA256已与本地核对；APK功能源码为96f97a15eea4e2a5090870695021c38b085b6f64，分支codex/layout-selection-clipping。
+
 头像页显示调整/导出/导入布局，保留升级前已保存的位置、尺寸、字号和层级；修复剖面外框选择、组外裁切、拖边缩放/辅助线和跨父组层级，行程点增加海拔、坡度、坐标与记录数据。沿用独立系列包名/4a94签名，versionCode41，可覆盖同签名旧版并保留应用数据。
 
 497项逻辑、类型、架构、网页/APK构建、签名v2/v3、zipalign、543项CRC和473地形校验通过。390/360及桌面功能模拟通过；真机覆盖安装、手指触控、系统文件窗口未验，HarmonyOS6.1原生包未交付。详见[本版发行说明](../docs/release-0.2.34.md)和CURRENT_STATE.md中的发布状态。

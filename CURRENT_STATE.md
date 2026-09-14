@@ -1,9 +1,12 @@
 # 当前状态 — 2026-09-14 / 0.2.34 APK构建与发布
 
+- **0.2.34已公开发布**：[v0.2.34-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.34-test-standalone)，Release id388306522，draft=false/prerelease=true。APK、校验文件、图示ZIP和安装说明四项远端大小/SHA256全部匹配本地；图示ZIP798408字节，SHA256`fd736deced51b9320adf1fe12309778a758ae6c0cb610fb91f8f6a0bd808fbd5`。APK对应源码`96f97a15eea4e2a5090870695021c38b085b6f64`已推送并逐字核对origin/codex/layout-selection-clipping；未合入main或现用业务工作树。后续交接提交只改文档，不改变APK功能源码。
+- 本机APK绝对路径：`D:/shantu-layout-selection-fix/APK/Shantu-0.2.34-test-standalone.apk`。当前用户窗口仍使用其原有页面，未控制/刷新；用户真实布局JSON和localStorage未写入或重置。主工作树CURRENT_STATE.md同步发行与分支指引。
+
 - 用户最新明确要求「打包新的APK并上传」，覆盖此前暂不打包指示；保留不控制/刷新工作窗口和保护用户布局的约束。以`0fda5fa2b71f08497201f1dd203644bb8d9a4dfe`已验证功能为基础，在本隔离工作树构建0.2.34-test/code41；`git pull --ff-only`确认最新，主工作树现用业务代码暂不热更新。
 - 本轮仅修改`config/product.ts`、AndroidManifest版本及发行/模块说明；上一轮uiLayout、AboutPanel、RouteViews、routeAnalysis、桌面共享控制器修正全部进入新版。包名、4a94签名、布局存储键/格式和原始轨迹数据不变。使用原私密签名文件参数，不复制或上传密钥。
 - **最终构建与检查通过**：0.2.34-test/code41，APK大小57,731,510字节，SHA256`40911d0d949e8f79f11696861f567c8a8ed753fe0574461d7fe08b8d69781980`。497/497逻辑、TypeScript、架构、网页/APK构建、原4a94证书v2/v3、zipalign、543项ZIP CRC和473地形资源通过。新增手机布局/点数据代码进入包，桌面控制器、私密文件和用户草稿排除通过；此前独立390/360/桌面功能验证仍适用，版本提升不改变其逻辑。
-- 13张实测图示及离线索引打包`APK/Shantu-0.2.34-feature-guide.zip`；说明见`docs/release-0.2.34.md`。正准备源码推送和GitHub测试Release，完成后记录远端SHA及四项资产大小/哈希。真机覆盖安装/系统文件窗口/手指触控待验，HarmonyOS6.1原生HAP/APP仍未交付；各平台边界见发行说明。日志`.openai/*0234*final.log`。
+- 13张实测图示及离线索引打包`APK/Shantu-0.2.34-feature-guide.zip`；说明见`docs/release-0.2.34.md`。源码和GitHub测试Release均完成，远端资产验证见`.openai/release-0234-public-verify.log`。草稿阶段按tag查询404，改用已核对Release id读取后完成核验和发布；没有重复上传或替换旧版。真机覆盖安装/系统文件窗口/手指触控待验，HarmonyOS6.1原生HAP/APP仍未交付；各平台边界见发行说明。日志`.openai/*0234*final.log`。
 
 # 历史状态 — 2026-09-14 / 布局兼容与管理、层级、行程点数据（隔离分支，不打包）
 
