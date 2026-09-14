@@ -154,6 +154,7 @@ export function useAnnotations() {
     kind: AnnotationChoice,
     coordinates: Coordinate,
     trackAnchor?: Annotation['trackAnchor'],
+    defaults?: Pick<Annotation, 'name' | 'icon'>,
   ) => {
     if (
       !canAddAnnotation(current.current, kind === 'borehole' ? 'pin' : kind)
@@ -162,6 +163,10 @@ export function useAnnotations() {
       return false;
     }
     const item = newAnnotation(kind, coordinates, null, crypto.randomUUID());
+    if (defaults) {
+      item.name = defaults.name;
+      item.icon = defaults.icon;
+    }
     if (trackAnchor) {
       item.trackAnchor = trackAnchor;
       item.color = '#23bd7e';

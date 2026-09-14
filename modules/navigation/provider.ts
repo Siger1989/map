@@ -10,6 +10,8 @@ import { MAX_ROUTE_STOPS } from './stops.ts';
 import { normalizePlaceName } from './placeName.ts';
 import { normalizeRegion } from '../collections/regions.ts';
 import { connectRoadAccess, nearestRoadPlaces } from './roadAccess.ts';
+import { tryOfflineRoute, offlinePlaces } from '../offlineRouting/provider.ts';
+import { routingMode } from '../offlineRouting/preferences.ts';
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
@@ -157,7 +159,9 @@ export function normalizeRoute(input: unknown, mode: TravelMode): PlannedRoute {
     distance: route.distance,
     duration: route.duration,
     steps,
-    roadLegs: (raw.routes?.[0]?.legs ?? []).map(leg => (leg.steps ?? []).flatMap(step => line(step.geometry?.coordinates, 1))),
+    roadLegs: (raw.routes?.[0]?.legs ?? []).map((leg) =>
+      (leg.steps ?? []).flatMap((step) => line(step.geometry?.coordinates, 1)),
+    ),
     snapped: (raw.waypoints ?? []).map((p) => p.location).filter(coordinate),
     createdAt: Date.now(),
   };
@@ -210,18 +214,68 @@ export async function planRoute(
   // Validate the requested places before making a network call.
   routeURL(start, end, mode, via);
   const stops = [start, ...via, end];
-  const nearest = nearestRoadPlaces(await requestJSON(NAVIGATION_SERVICES.locate + '?json=' + encodeURIComponent(JSON.stringify({
-    locations: stops.map(p => ({ lon: p.coordinates[0], lat: p.coordinates[1], radius: 0, node_snap_tolerance: 0, search_cutoff: 35000 })),
-    costing: mode, verbose: false,
-  })), signal), stops);
+  const offline = await tryOfflineRoute(stops, mode, signal);
+  if (offline) return offline;
+  const nearest = nearestRoadPlaces(
+    await requestJSON(
+      NAVIGATION_SERVICES.locate +
+        '?json=' +
+        encodeURIComponent(
+          JSON.stringify({
+            locations: stops.map((p) => ({
+              lon: p.coordinates[0],
+              lat: p.coordinates[1],
+              radius: 0,
+              node_snap_tolerance: 0,
+              search_cutoff: 35000,
+            })),
+            costing: mode,
+            verbose: false,
+          }),
+        ),
+      signal,
+    ),
+    stops,
+  );
   // Allow coincident road projections: two off-road places may meet the same access point.
-  const query = JSON.parse(new URL(routeURL(start, end, mode, via)).searchParams.get('json')!);
-  query.locations = nearest.map(p => ({ lon: p.coordinates[0], lat: p.coordinates[1], type: 'break', radius: 0, node_snap_tolerance: 0 }));
-  if (nearest.every(p => metresBetween(p.coordinates, nearest[0].coordinates) < 0.1)) {
-    return connectRoadAccess({ mode, coordinates: nearest.map(p => p.coordinates), distance: 0, duration: 0, steps: [], snapped: nearest.map(p => p.coordinates), roadLegs: nearest.slice(1).map((p,i) => [nearest[i].coordinates, p.coordinates]), createdAt: Date.now() }, stops);
+  const query = JSON.parse(
+    new URL(routeURL(start, end, mode, via)).searchParams.get('json')!,
+  );
+  query.locations = nearest.map((p) => ({
+    lon: p.coordinates[0],
+    lat: p.coordinates[1],
+    type: 'break',
+    radius: 0,
+    node_snap_tolerance: 0,
+  }));
+  if (
+    nearest.every(
+      (p) => metresBetween(p.coordinates, nearest[0].coordinates) < 0.1,
+    )
+  ) {
+    return connectRoadAccess(
+      {
+        mode,
+        coordinates: nearest.map((p) => p.coordinates),
+        distance: 0,
+        duration: 0,
+        steps: [],
+        snapped: nearest.map((p) => p.coordinates),
+        roadLegs: nearest
+          .slice(1)
+          .map((p, i) => [nearest[i].coordinates, p.coordinates]),
+        createdAt: Date.now(),
+      },
+      stops,
+    );
   }
   const route = normalizeRoute(
-    await requestJSON(NAVIGATION_SERVICES.route + '?json=' + encodeURIComponent(JSON.stringify(query)), signal),
+    await requestJSON(
+      NAVIGATION_SERVICES.route +
+        '?json=' +
+        encodeURIComponent(JSON.stringify(query)),
+      signal,
+    ),
     mode,
   );
   if (route.snapped.length !== via.length + 2)
@@ -266,6 +320,7 @@ export async function searchPlaces(
 ) {
   if (query.trim().length < 2)
     throw new Error('请输入至少两个字，或使用地图选点。');
+  if (routingMode() === 'offline') return offlinePlaces(query.trim());
   const params = new URLSearchParams({
     q: query.trim().slice(0, 120),
     lang: 'default',

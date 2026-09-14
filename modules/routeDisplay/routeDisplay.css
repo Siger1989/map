@@ -1,0 +1,146 @@
+.route-display-control {
+  color: var(--text);
+}
+.route-display-settings {
+  position: fixed;
+  z-index: 70;
+  top: calc(56px + var(--safe-top));
+  left: 4px;
+  width: min(276px, calc(100vw - 62px));
+  max-height: var(--map-panel-max-height);
+  padding: 0 4px 4px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  overflow: hidden;
+}
+.route-display-settings header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+  gap: 2px;
+}
+.route-display-settings header strong {
+  font-size: 12px;
+}
+.route-display-settings button,
+.route-display-settings select {
+  min-height: 36px;
+  min-width: 36px;
+  font: inherit;
+  color: inherit;
+  background: #dce8e2;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.route-display-settings header button {
+  display: grid;
+  place-items: center;
+}
+.route-display-scroll {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+.route-display-scroll > label {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.route-display-scroll select {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+.route-display-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 4px;
+}
+.route-display-options label {
+  min-height: 36px;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  font-size: 10px;
+}
+.route-display-options input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #246748;
+}
+.route-display-settings p {
+  margin: 2px 0;
+  font-size: 9px;
+  line-height: 1.35;
+}
+.route-display-info {
+  position: fixed;
+  right: 4px;
+  bottom: calc(168px + var(--safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(168px, calc(100vw - 100px));
+  max-height: min(250px, 38dvh);
+  overflow-y: auto;
+  pointer-events: auto;
+  color: #203d31;
+}
+.route-display-info > * {
+  padding: 3px 4px;
+  border-radius: 4px;
+}
+.route-display-info strong {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+}
+.route-display-info small {
+  display: block;
+  font-size: 9px;
+  line-height: 12px;
+}
+.route-color-ramp {
+  height: 5px;
+  border-radius: 2px;
+  margin: 3px 0 1px;
+}
+.route-color-ticks {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  font-size: 9px;
+  line-height: 13px;
+}
+.route-band-legend {
+  display: flex;
+  justify-content: space-between;
+  margin: 3px 0;
+  font-size: 9px;
+}
+.route-band-legend i {
+  display: inline-block;
+  height: 5px;
+  width: 12px;
+  margin-right: 2px;
+}
+.route-elevation-stats span {
+  display: block;
+  font-size: 10px;
+}
+.route-elevation-profile svg {
+  display: block;
+  width: 100%;
+}
+.route-elevation-profile text {
+  fill: #203d31;
+  font-size: 9px;
+}
+.observatory[data-panel='favorites'] .route-display-info {
+  bottom: calc(52px + var(--safe-bottom));
+}

@@ -4,8 +4,11 @@ import { collectData, mergeData } from './storage';
 import { exportGPX, exportKML } from './xmlExport';
 import { saveFile } from './download';
 import { parseFiles, type ImportBatch } from './batchImport';
+import { parseFile } from './fileImport';
+import type { ImportCoordinates } from './coordinateSystem';
 export function TransferPanel() {
   const importing = useRef(false);
+  const [coordinates, setCoordinates] = useState<ImportCoordinates>('auto');
   const [batch, setBatch] = useState<ImportBatch | null>(null);
   const pending = batch?.data;
   const [loading, setLoading] = useState(false),
@@ -25,7 +28,7 @@ export function TransferPanel() {
     setBatch(null);
     setMessage('');
     try {
-      setBatch(await parseFiles(files));
+      setBatch(await parseFiles(files, (file) => parseFile(file, coordinates)));
       setMessage('整批已校验，请确认导入内容');
     } catch (error) {
       setMessage((error as Error).message);
@@ -44,12 +47,31 @@ export function TransferPanel() {
       }}
     >
       <>
+        <label>
+          奥维文件坐标系
+          <select
+            aria-label="奥维文件坐标系"
+            value={coordinates}
+            disabled={loading}
+            onChange={(e) => {
+              setCoordinates(e.target.value as ImportCoordinates);
+              setBatch(null);
+            }}
+          >
+            <option value="auto">未指定 · 普通GPX/KML按标准识别</option>
+            <option value="cgcs2000">CGCS2000地理坐标（按奥维导出设置）</option>
+            <option value="gcj02">GCJ02（转换为GPS坐标，近似）</option>
+          </select>
+        </label>
+        <small>
+          同批奥维文件须使用相同坐标系；未知时先核对导出设置。投影坐标需先转地理坐标。
+        </small>
         <label className="import-file">
-          批量导入 GPX / KML / KMZ / JSON
+          批量导入 GPX / KML / KMZ / OVKML / OVKMZ / JSON
           <input
             type="file"
             multiple
-            accept=".gpx,.kml,.kmz,.json"
+            accept=".gpx,.kml,.kmz,.ovkml,.ovkmz,.json"
             disabled={loading}
             onChange={(e) => {
               const files = Array.from(e.target.files ?? []);
@@ -74,7 +96,7 @@ export function TransferPanel() {
               {` · ${pending.areas?.length ?? 0} 个区域 · ${pending.sections?.length ?? 0} 个剖面 · ${pending.measurements?.length ?? 0} 条测量`}
             </p>
             <p className="route-note">
-              合并到本机；保留已有数据。相同内容不会重复导入。
+              合并到本机，保留已有数据；重复导入同一存档标识时合并。
             </p>
             <div className="outdoor-actions">
               <button

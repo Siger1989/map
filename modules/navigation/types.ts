@@ -15,6 +15,7 @@ export type RouteStep = {
   coordinates: Coordinate[];
 };
 export type PlannedRoute = {
+  routingSource?: { kind: 'offline'; name: string; createdAt: number };
   segments?: { kind: 'road' | 'access'; coordinates: Coordinate[] }[];
   roadLegs?: Coordinate[][];
   accessDistance?: number;
@@ -34,6 +35,8 @@ export type PlannedRoute = {
   createdAt: number;
 };
 export type RouteOverlay = {
+  /** Display-only colored geometry. Original routing/access semantics stay intact. */
+  displayParts?: { coordinates: Coordinate[]; color: string }[];
   start: RoutePlace | null;
   end: RoutePlace | null;
   route: PlannedRoute | null;

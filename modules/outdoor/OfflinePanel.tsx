@@ -1,5 +1,7 @@
 import type { Coordinate } from '../navigation/types';
 import type { useOffline } from './useOffline';
+import { OfflineRoutingPanel } from '../offlineRouting/OfflineRoutingPanel';
+import { OfflineMapSettings } from './OfflineMapSettings';
 export function OfflinePanel({
   offline,
   points,
@@ -15,6 +17,8 @@ export function OfflinePanel({
 }) {
   return (
     <>
+      <strong>离线地图缓存</strong>
+      <OfflineMapSettings onOpenMap={onOpenMap} />
       <p className="route-note">
         下载「{name}」周边约 2 km 的开源道路、地名与地形。道路精细至 14
         级，地形至 12
@@ -79,6 +83,7 @@ export function OfflinePanel({
           {offline.message}
         </p>
       )}
+      <OfflineRoutingPanel points={points} name={name} onShow={onShow} />
     </>
   );
 }

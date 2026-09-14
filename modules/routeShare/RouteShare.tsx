@@ -10,6 +10,7 @@ import { archiveBlob } from '../files/archive';
 import { deliverFile } from '../files/delivery';
 import type { TripPhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos';
+import { PhotoLayoutControl } from './PhotoLayoutControl';
 import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
 export function RouteShare({
   data,
@@ -21,6 +22,13 @@ export function RouteShare({
   photos: TripPhoto[];
 }) {
   const dialog = useRouteDialogFocus(onClose);
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]),
+    [heroPhoto, setHeroPhoto] = useState('');
+  const routePhotos = photosForTrack(data.track, photos);
+  const photoOptions = {
+    photos: routePhotos.filter((p) => selectedPhotos.includes(p.id)),
+    hero: heroPhoto,
+  };
   const [image, setImage] = useState<File | null>(null),
     [preview, setPreview] = useState(''),
     [busy, setBusy] = useState(false),
@@ -58,7 +66,11 @@ export function RouteShare({
       const controller = new AbortController();
       abort.current = controller;
       setMessage('正在加载整条路线的底图、地名和高程…');
-      const file = await renderRouteImage(data, controller.signal);
+      const file = await renderRouteImage(
+        data,
+        controller.signal,
+        photoOptions,
+      );
       if (url.current) URL.revokeObjectURL(url.current);
       url.current = URL.createObjectURL(file);
       setImage(file);
@@ -89,7 +101,8 @@ export function RouteShare({
       abort.current = controller;
       setMessage('正在生成二维码全程图并打包照片…');
       const picture =
-        image ?? (await renderRouteImage(data, controller.signal));
+        image ??
+        (await renderRouteImage(data, controller.signal, photoOptions));
       if (!image) {
         if (url.current) URL.revokeObjectURL(url.current);
         url.current = URL.createObjectURL(picture);
@@ -130,6 +143,22 @@ export function RouteShare({
           {data.name}
           {data.approach ? ' · 含到起点路线' : ''}
         </p>
+        <PhotoLayoutControl
+          photos={routePhotos}
+          selected={selectedPhotos}
+          hero={heroPhoto}
+          disabled={busy}
+          onChange={(ids) => {
+            setSelectedPhotos(ids);
+            setImage(null);
+            setPreview('');
+          }}
+          onHero={(id) => {
+            setHeroPhoto(id);
+            setImage(null);
+            setPreview('');
+          }}
+        />
         <div className="route-share-bundle">
           <strong>
             整条路线打包 · {photoCount} 张照片 · {data.markers?.length ?? 0}{' '}

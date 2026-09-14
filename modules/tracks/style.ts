@@ -2,7 +2,7 @@ export type TrackStyle = {
   color: string;
   width: number;
   opacity?: number;
-  colorMode?: 'solid' | 'speed' | 'slope';
+  colorMode?: 'solid' | 'speed' | 'slope' | 'elevation';
 };
 export const DEFAULT_TRACK_STYLE: TrackStyle = {
   color: '#ffb477',
@@ -21,7 +21,9 @@ export const TRACK_COLORS = [
 export function normalizeTrackStyle(input: unknown): TrackStyle {
   const value = input as Partial<TrackStyle> | null;
   return {
-    ...(value?.colorMode === 'speed' || value?.colorMode === 'slope'
+    ...(value?.colorMode === 'speed' ||
+    value?.colorMode === 'slope' ||
+    value?.colorMode === 'elevation'
       ? { colorMode: value.colorMode }
       : {}),
     opacity:

@@ -15,6 +15,7 @@ import '@/modules/annotations/annotations.css';
 import '@/modules/section/section.css';
 import '@/modules/objectTransform/objectTransform.css';
 import '@/modules/controls/modern.css';
+import '@/modules/controls/compactDensity.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

@@ -3,7 +3,11 @@ import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { newAnnotation } from '../annotations/data.ts';
 import type { Transfer } from './types.ts';
 import { validateTransfer } from './validation.ts';
-export function parseXml(text: string, filename: string): Transfer {
+export function parseXml(
+  text: string,
+  filename: string,
+  convert?: (p: Coordinate) => Coordinate,
+): Transfer {
   if (/<!DOCTYPE|<!ENTITY/i.test(text))
     throw new Error('不支持带外部实体的 XML');
   const doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -27,7 +31,7 @@ export function parseXml(text: string, filename: string): Transfer {
       throw new Error('坐标缺失');
     const p: Coordinate = [Number(lng), Number(lat)];
     if (!coordinate(p)) throw new Error('坐标超出地图范围');
-    return p;
+    return convert ? convert(p) : p;
   };
   const addTrack = (name: string, segments: Coordinate[][]) => {
     if (!segments.length || segments.some((s) => s.length < 2))

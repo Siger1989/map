@@ -1,4 +1,6 @@
+import { RouteProviderNote } from './RouteProviderNote';
 import { FloatingSearch } from '../input/FloatingSearch';
+import { RoutingModeControl } from '../offlineRouting/RoutingModeControl';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
@@ -223,6 +225,7 @@ export function RoutePanel({
   };
   return (
     <div className="route-panel" data-picking={n.picking !== null}>
+      <RoutingModeControl onOffline={() => n.setMode('pedestrian')} />
       {n.picking !== null && (
         <div className="route-picking-help" role="status">
           <span>
@@ -496,6 +499,9 @@ export function RoutePanel({
       {n.route && (
         <>
           <div className="route-result">
+            {n.route.routingSource && (
+              <small>离线步行 · {n.route.routingSource.name}</small>
+            )}
             <strong>{formatDistance(n.route.distance)}</strong>
             <span>{formatDuration(n.route.duration)}</span>
             <button onClick={() => onShow(n.route!)}>看全程</button>
@@ -539,27 +545,7 @@ export function RoutePanel({
           </details>
         </>
       )}
-      <details className="route-provider-note">
-        <summary>使用说明与数据来源</summary>
-        <p className="route-note">
-          在地点栏输入后选择搜索结果，或点定位图标在地图选点。最多 8
-          个途经点；拖右侧柄调整所有地点顺序，修改后重新规划。公共道路服务不含实时路况，天气为模型预报。
-        </p>
-        <p className="route-note">
-          <a
-            href="https://valhalla.openstreetmap.de/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            FOSSGIS / Valhalla
-          </a>{' '}
-          ·{' '}
-          <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">
-            Photon 地名搜索
-          </a>{' '}
-          · © OpenStreetMap
-        </p>
-      </details>
+      <RouteProviderNote />
     </div>
   );
 }

@@ -17,6 +17,9 @@ import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
+import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
+import { offlineMapStatus } from '@/modules/outdoor/tileCache';
+import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
@@ -84,6 +87,8 @@ import {
 import { usePosition } from '@/modules/position/usePosition';
 import { recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
+import { useRouteDisplay } from '@/modules/routeDisplay/useRouteDisplay';
+import { RouteDisplayControl } from '@/modules/routeDisplay/RouteDisplayControl';
 import {
   formatDistance,
   formatDuration,
@@ -835,8 +840,15 @@ export default function Home() {
       featureMove,
     ],
   );
+  const routeDisplay = useRouteDisplay(
+    trackOverlay,
+    routeOverlay,
+    railTrack?.id ?? null,
+    follow.blocked || !!editor.session || measurement.active || survey.active,
+  );
   const update = (patch: Partial<LayerSettings>) =>
     setLayers((current) => applyLayerPatch(current, patch));
+  const openOfflineMap = useOfflineMapMode(update, mapSources.select);
   useMapTools({
     read: () => ({
       layers,
@@ -1048,7 +1060,7 @@ export default function Home() {
           }}
           settings={layers}
           onPoint={setPoint}
-          onStatus={setMapStatus}
+          onStatus={(message) => setMapStatus(offlineMapStatus(message))}
           onView={(value) => {
             setView(value);
             setQuickAdd(null);
@@ -1059,9 +1071,9 @@ export default function Home() {
           onGeology={setGeology}
           weather={weather.data}
           hourIndex={hourIndex}
-          routeOverlay={routeOverlay}
+          routeOverlay={routeDisplay.route}
           guidanceOverlay={guidanceOverlay}
-          trackOverlay={trackOverlay}
+          trackOverlay={routeDisplay.tracks}
           areaOverlay={areaOverlay}
           onModelTerrainStatus={setModelTerrainStatus}
           onAreaSelect={(id) => {
@@ -2068,6 +2080,19 @@ export default function Home() {
           />
         )}
         <MapActions
+          fix={displayedFix}
+          showCoordinates={routeDisplay.preferences.coordinates}
+          displayControl={
+            <RouteDisplayControl
+              display={routeDisplay}
+              blocked={
+                follow.blocked ||
+                !!editor.session ||
+                measurement.active ||
+                survey.active
+              }
+            />
+          }
           compact={panel === 'favorites'}
           onBoxSelect={() => {
             follow.pause();
@@ -2374,6 +2399,23 @@ export default function Home() {
               initialTab={outdoorPhotos ? 'photos' : 'record'}
               recorder={recorder}
               onSavedTrack={tracks.select}
+              returnPanel={
+                <ReturnPanel
+                  tracks={tracks.saved}
+                  record={recorder.record}
+                  fix={position.fix}
+                  center={mapCenter ?? [point.lng, point.lat]}
+                  markers={annotations.items}
+                  onRemember={(p, defaults) =>
+                    annotations.add('pin', p, undefined, defaults)
+                  }
+                  onNavigate={navigateFavorite}
+                  onShow={(points) => {
+                    map.current?.fitRoute(points);
+                    setPanel(null);
+                  }}
+                />
+              }
               photos={
                 <PhotoPanel
                   tracks={photoTracks}
@@ -2402,18 +2444,7 @@ export default function Home() {
                 map.current?.fitRoute(points);
                 setPanel(null);
               }}
-              onOpenMap={() =>
-                update({
-                  satellite: false,
-                  contours: false,
-                  clouds: false,
-                  rain: false,
-                  geology: false,
-                  elevationColors: false,
-                  roads: true,
-                  labels: true,
-                })
-              }
+              onOpenMap={openOfflineMap}
             />
           )}
           {panel === 'annotations' && !selectedAnnotation && (

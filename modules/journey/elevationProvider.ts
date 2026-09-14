@@ -1,4 +1,5 @@
 import { TERRAIN_URL } from '../terrain/terrain';
+import { cachedMapFetch } from '../outdoor/tileCache';
 import type { JourneySample, ElevationSample } from './metrics';
 const cache = new Map<string, Uint8ClampedArray>();
 export function terrainPixel(coordinate: [number, number]) {
@@ -52,9 +53,10 @@ export async function readProfile(
         try {
           let rgba = cache.get(key);
           if (!rgba) {
-            const response = await fetch(group.url, {
-              signal: AbortSignal.any([signal, AbortSignal.timeout(20000)]),
-            });
+            const response = await cachedMapFetch(
+              group.url,
+              AbortSignal.any([signal, AbortSignal.timeout(20000)]),
+            );
             if (!response.ok) continue;
             const bitmap = await createImageBitmap(await response.blob());
             try {

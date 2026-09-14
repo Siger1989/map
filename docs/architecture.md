@@ -51,3 +51,13 @@ Android RecordingService → SamplingPolicy → RecordingStore
 ## 回滚
 
 本轮是可独立回退的提交；回退该提交可恢复旧入口和界面。新采样偏好使用独立键，旧版忽略；`colorMode`是可选样式字段，旧版归一化时忽略。历史进度在归档文件和Git中均保留。没有删用户存档，没有换包名/签名/Logo。
+
+## 0.2.28扩展接口
+
+- routeDisplay负责选定路线的海拔/速度/坡度派生显示、图例/统计/剖面开关，阈值在routeAnalysis，原始轨迹不改写。
+- offlineRouting提供区域道路图、A*和包管理。navigation/provider先调用公开适配接口，strict模式无在线算路回退。地图瓦片缓存和可计算路网分开管理。
+- returnHome只输入轨迹/定位/标记和回调；返回点复用annotations的name/icon创建参数，兼容原3参数调用。
+- routeShare/photoLayout为纯版式，photoCollage复用photos/export，最多8张、重点照片独行。
+- useOfflineMapMode统一开启缓存底图和重启恢复；tileCache供地图协议、路线DEM、点高程和分享地图共用。并发下载预留容量、250ms进度节流，避免每张瓦片重复落盘完整索引。
+- app/page最终约2862非空行，仍是历史组合层；新增功能未增加TerrainMap规模，RoutePanel说明提取到独立组件。测量/剖面几何、模型精调、地图手势、原生记录机制未改。
+- 回滚可按新增模块撤销接口接入，新增偏好和路网数据库独立，不删除用户旧存档。

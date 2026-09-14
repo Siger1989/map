@@ -12,6 +12,7 @@ import { readProfile } from '../journey/elevationProvider';
 import type { ShareRoute } from './data';
 import { renderRouteMap } from './mapImage';
 import { routeQrImage } from './qrImage';
+import { appendPhotoCollage, type SharePhotoOptions } from './photoCollage';
 import {
   routeColorSections,
   sectionElevation,
@@ -122,7 +123,9 @@ export function composeRouteImage(
   line(
     data.estimated
       ? '原轨迹几何；出行用时为估算，车辆通行条件未核实。'
-      : '道路规划 · Valhalla / FOSSGIS · 不含实时交通',
+      : data.routingSource
+        ? `离线步行规划 · ${data.routingSource.name}`
+        : '道路规划 · Valhalla / FOSSGIS · 不含实时交通',
     1845,
     22,
   );
@@ -190,6 +193,7 @@ export function composeRouteImage(
 export async function renderRouteImage(
   data: ShareRoute,
   signal: AbortSignal,
+  photos?: SharePhotoOptions,
 ): Promise<File> {
   const cancel = new AbortController();
   const workSignal = AbortSignal.any([
@@ -209,7 +213,8 @@ export async function renderRouteImage(
   signal.throwIfAborted();
   const qr = await routeQrImage(data);
   signal.throwIfAborted();
-  const canvas = composeRouteImage(data, map, profile, qr);
+  const base = composeRouteImage(data, map, profile, qr);
+  const canvas = photos ? await appendPhotoCollage(base, photos, signal) : base;
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('图片编码失败'))),

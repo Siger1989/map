@@ -26,6 +26,7 @@ export function TrackStyleControls({
             }
           >
             <option value="solid">单色</option>
+            <option value="elevation">海拔</option>
             <option value="speed">速度</option>
             <option value="slope">坡度</option>
           </select>
@@ -33,9 +34,11 @@ export function TrackStyleControls({
       )}
       {analysis && style.colorMode && style.colorMode !== 'solid' && (
         <p className="route-note">
-          {style.colorMode === 'speed'
-            ? '绿＜3 · 黄3–6 · 红≥6 km/h'
-            : '绿＜10% · 黄10–20% · 红≥20%（绝对坡度）'}
+          {style.colorMode === 'elevation'
+            ? '蓝→绿→黄→红：低→高 · 图例见地图“路线显示”'
+            : style.colorMode === 'speed'
+              ? '绿＜3 · 黄3–6 · 红≥6 km/h'
+              : '绿＜10% · 黄10–20% · 红≥20%（绝对坡度）'}
           {' · 灰色为数据不足'}
         </p>
       )}

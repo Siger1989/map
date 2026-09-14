@@ -14,6 +14,7 @@ import { ROUTE_QR_PREFIX } from '../routeShare/qrCodec';
 import { basemapConfiguration } from '../cartography/basemaps';
 import './mapSources.css';
 import { FreeMapLibrary } from './FreeMapLibrary';
+import { TiandituHelp } from './TiandituHelp';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -222,6 +223,7 @@ export function MapSourcesPanel({
           >
             ＋ 添加地图 · 图源 / 文件 / 二维码
           </button>
+          <TiandituHelp />
           <p className="map-source-hint">
             已保存 {sources.maps.length} / 20 项 ·{' '}
             {(

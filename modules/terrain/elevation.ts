@@ -1,4 +1,5 @@
 import { TERRAIN_URL } from './terrain';
+import { cachedMapFetch } from '../outdoor/tileCache';
 export async function readElevation(
   lng: number,
   lat: number,
@@ -9,11 +10,11 @@ export async function readElevation(
   const tx = ((lng + 180) / 360) * n;
   const ty =
     ((1 - Math.asinh(Math.tan((lat * Math.PI) / 180)) / Math.PI) / 2) * n;
-  const response = await fetch(
+  const response = await cachedMapFetch(
     TERRAIN_URL.replace('{z}', '12')
       .replace('{x}', String(Math.floor(tx)))
       .replace('{y}', String(Math.floor(ty))),
-    { signal },
+    signal,
   );
   if (!response.ok) return null;
   const bitmap = await createImageBitmap(await response.blob());

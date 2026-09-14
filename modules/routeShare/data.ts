@@ -9,6 +9,7 @@ import { trackDistance } from '../tracks/drawing.ts';
 import { exportGPX, exportKML } from '../outdoor/exchange.ts';
 import type { Annotation } from '../annotations/data';
 export type ShareRoute = {
+  routingSource?: PlannedRoute['routingSource'];
   name: string;
   segments: Coordinate[][];
   distance: number;
@@ -27,6 +28,7 @@ export function sharePlanned(
   approach = false,
 ): ShareRoute {
   return {
+    routingSource: route.routingSource,
     name,
     segments: [route.coordinates],
     distance: route.distance,

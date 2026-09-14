@@ -1,0 +1,55 @@
+.position-dock {
+  position: absolute;
+  left: 4px;
+  bottom: calc(58px + var(--safe-bottom));
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  z-index: 12;
+  pointer-events: none;
+}
+.position-dock > * {
+  pointer-events: auto;
+}
+.position-dock .position-dock-button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 6px;
+  color: var(--text);
+}
+.position-dock-button small {
+  font-size: 9px;
+  line-height: 11px;
+}
+.position-dock-button[aria-pressed='true'],
+.position-dock-button[aria-expanded='true'] {
+  color: #fff;
+  background: #246748;
+}
+.position-dock-coordinates {
+  position: absolute;
+  bottom: 46px;
+  left: 0;
+  width: max-content;
+  max-width: calc(100vw - 64px);
+  padding: 2px 4px;
+  font-size: 9px;
+  line-height: 14px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.observatory[data-panel='favorites'] .position-dock {
+  bottom: calc(4px + var(--safe-bottom));
+}
+.observatory[data-panel='favorites'] .position-dock-coordinates {
+  display: none;
+}

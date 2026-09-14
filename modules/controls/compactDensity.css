@@ -1,0 +1,183 @@
+/* Small visible controls, independent from the 44px map hit target. Shared by web/APK. */
+.observatory {
+  --map-ui-font: 10px;
+  --map-panel-max-width: 276px;
+  font-size: 12px;
+}
+.observatory
+  :is(
+    .control-popover,
+    .marker-workspace,
+    .layer-window,
+    .section-panel,
+    .selection-tools,
+    .map-location-settings
+  ) {
+  font-size: 10px;
+  gap: 2px;
+  border-radius: 6px;
+}
+.observatory
+  :is(
+    .control-popover,
+    .marker-workspace,
+    .layer-window,
+    .section-panel,
+    .map-location-settings
+  )
+  :is(button, input, select, textarea) {
+  font-size: 10px;
+}
+.observatory
+  :is(
+    .control-popover,
+    .marker-workspace,
+    .layer-window,
+    .section-panel,
+    .map-location-settings
+  )
+  :is(p, small) {
+  font-size: 9px;
+  line-height: 1.35;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.observatory
+  :is(
+    .dock-heading strong,
+    .dock-heading h2,
+    .marker-summary-title strong,
+    .route-surface header strong
+  ) {
+  font-size: 12px;
+}
+.observatory .map-actions {
+  gap: 2px;
+}
+.observatory .map-actions :is(.icon-button, .dimension-button) {
+  border-radius: 6px;
+}
+.observatory .map-actions svg,
+.observatory .dock-navigation svg {
+  width: 17px;
+  height: 17px;
+}
+.observatory .map-actions small,
+.observatory .dock-navigation button {
+  font-size: 9px;
+}
+.observatory .dock-navigation button {
+  padding-left: 4px;
+  padding-right: 4px;
+  gap: 2px;
+}
+.observatory .map-toolbar {
+  gap: 2px;
+}
+.observatory .topbar :is(h1, .current-place) {
+  font-size: 12px;
+}
+.observatory .recording-quick {
+  bottom: calc(128px + var(--safe-bottom));
+  padding: 0 2px;
+  gap: 2px;
+  font-size: 10px;
+}
+.observatory .recording-quick button {
+  padding: 0 4px;
+}
+.observatory .map-location-settings {
+  padding: 4px;
+}
+.observatory .map-location-settings button {
+  min-height: 36px;
+}
+.observatory .route-surface {
+  font-size: 11px;
+  border-radius: 6px;
+}
+.observatory .route-surface :is(button, select) {
+  min-height: 36px;
+  padding: 2px 4px;
+  gap: 2px;
+}
+.observatory .route-surface header {
+  padding: 2px 4px;
+  gap: 4px;
+}
+.observatory .route-card {
+  top: calc(56px + var(--safe-top));
+  bottom: auto;
+  left: 4px;
+  width: min(276px, calc(100% - 62px));
+  max-height: var(--map-panel-max-height);
+  padding: 0 4px 4px;
+  overflow-y: auto;
+}
+.observatory .route-card-info {
+  font-size: 10px;
+  gap: 4px;
+  padding: 2px 0;
+}
+.observatory .route-card-position {
+  font-size: 9px;
+  padding: 0 0 2px;
+}
+.observatory .route-primary-actions {
+  gap: 2px;
+}
+.observatory .route-primary-actions svg {
+  width: 15px;
+  height: 15px;
+}
+.observatory .route-details :is(p, small, label) {
+  font-size: 10px;
+}
+.observatory .route-details h3 {
+  font-size: 12px;
+}
+.observatory .route-display-settings {
+  font-size: 10px;
+}
+.observatory .position-status {
+  font-size: 10px;
+}
+.observatory .route-dialog {
+  font-size: 11px;
+}
+.observatory .route-dialog :is(button, select, input) {
+  font-size: 11px;
+  min-height: 36px;
+  padding: 4px 6px;
+}
+.observatory .route-share-bundle {
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.observatory .route-share-actions {
+  gap: 4px;
+}
+.observatory .route-share summary {
+  min-height: 36px;
+}
+.observatory[data-panel='favorites'] .map-actions {
+  max-width: 180px;
+}
+@media (max-width: 300px) {
+  .observatory[data-panel='favorites'] .map-actions {
+    max-width: 132px;
+  }
+  .observatory .route-display-info {
+    width: 150px;
+    left: 4px;
+    right: auto;
+    bottom: calc(174px + var(--safe-bottom));
+    max-height: 180px;
+  }
+  .route-display-control:has(.route-display-settings) .route-display-info,
+  .observatory[data-panel='outdoor'] .route-display-info,
+  .observatory[data-panel='route'] .route-display-info {
+    visibility: hidden;
+  }
+}

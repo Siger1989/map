@@ -2,8 +2,9 @@ import type { ManualTrack } from '../tracks/drawing';
 import type { TrackEdgeColors } from '../tracks/edgeColors';
 import { metresBetween } from '../navigation/types.ts';
 import { ANALYSIS_POLICY, SPEED_BANDS, SLOPE_BANDS } from './config.ts';
+import { elevationEdgeColors } from './elevationColors.ts';
 
-export type AnalysisMode = 'solid' | 'speed' | 'slope';
+export type AnalysisMode = 'solid' | 'speed' | 'slope' | 'elevation';
 export type RouteMetrics = {
   distance: number;
   maximumSpeedKmh: number | null;
@@ -117,7 +118,7 @@ export function analyzeRoute(track: TrackSamples): RouteMetrics {
 
 export function analysisColors(
   metrics: RouteMetrics,
-  mode: Exclude<AnalysisMode, 'solid'>,
+  mode: 'speed' | 'slope',
 ): TrackEdgeColors {
   const bands = mode === 'speed' ? SPEED_BANDS : SLOPE_BANDS;
   return (mode === 'speed' ? metrics.speeds : metrics.slopes).map((line) =>
@@ -134,7 +135,10 @@ export function metricLineParts(
   track: TrackSamples,
   mode: Exclude<AnalysisMode, 'solid'>,
 ) {
-  const colors = analysisColors(analyzeRoute(track), mode);
+  const colors =
+    mode === 'elevation'
+      ? elevationEdgeColors(track)
+      : analysisColors(analyzeRoute(track), mode);
   return track.segments.flatMap((line, part) => {
     const pieces: {
       coordinates: ManualTrack['segments'][number];

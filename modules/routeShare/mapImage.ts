@@ -5,6 +5,7 @@ import { routeBounds, type ShareRoute } from './data';
 import { coloredLineParts, edgeColorIndex } from '../tracks/edgeColors';
 import { normalizeTrackStyle } from '../tracks/style';
 import { metricLineParts } from '../routeAnalysis/metrics';
+import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 
 function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -35,6 +36,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
   const ml = await import('maplibre-gl');
   signal.throwIfAborted();
   ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
+  ml.addProtocol('tripcache', offlineProtocol);
   const container = document.createElement('div');
   container.style.cssText =
     'position:fixed;left:-10000px;top:0;width:1200px;height:1250px;pointer-events:none;';
@@ -43,6 +45,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
   try {
     map = new ml.Map({
       container,
+      transformRequest: offlineTransform,
       pixelRatio: 1,
       interactive: false,
       attributionControl: false,

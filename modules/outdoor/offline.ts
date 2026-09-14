@@ -1,6 +1,7 @@
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
-import { TERRAIN_URL, legacyTerrainCacheUrl } from '../terrain/tiles.ts';
+import { TERRAIN_URL } from '../terrain/tiles.ts';
+import { cachedMapFetch, offlineMapOnly } from './tileCache.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1',
   INDEX = 'guanyun.trips.v1';
@@ -37,7 +38,8 @@ export const offlineTransform: RequestTransformFunction = (url, kind) => {
       u.pathname.startsWith('/api/terrain/'));
   return {
     url:
-      supported && ['Source', 'Tile', 'Glyphs'].includes(kind ?? '')
+      (supported || (offlineMapOnly() && /^https?:$/.test(u.protocol))) &&
+      ['Source', 'Tile', 'Glyphs'].includes(kind ?? '')
         ? `tripcache://${encodeURIComponent(u.href)}`
         : url,
   };
@@ -47,16 +49,7 @@ export const offlineProtocol: AddProtocolAction = async (
   controller,
 ) => {
   const url = decodeURIComponent(request.url.slice('tripcache://'.length));
-  let cached: Response | undefined;
-  try {
-    const cache = await caches.open(CACHE);
-    cached = await cache.match(url);
-    const legacy = legacyTerrainCacheUrl(url);
-    if (!cached && legacy) cached = await cache.match(legacy);
-  } catch {
-    /* WebView storage unavailable: online still works. */
-  }
-  const response = cached ?? (await fetch(url, { signal: controller.signal }));
+  const response = await cachedMapFetch(url, controller.signal);
   if (!response.ok) throw new Error(`地图数据暂缺 (${response.status})`);
   return {
     data:
@@ -151,11 +144,7 @@ export async function prepareTrip(
   const urls = [
     TILEJSON,
     ...regionTiles(bounds, 14, template),
-    ...regionTiles(
-      bounds,
-      12,
-      window.location.origin + TERRAIN_URL,
-    ),
+    ...regionTiles(bounds, 12, window.location.origin + TERRAIN_URL),
   ];
   // Chinese labels may use any BMP glyph; retain the complete font ranges.
   for (let start = 0; start < 65536; start += 256)
@@ -186,7 +175,10 @@ export async function downloadTrip(
     done = 0,
     bytes = 0,
     failed = 0;
-  const update = () => {
+  let lastUpdate = 0;
+  const update = (force = false) => {
+    if (!force && Date.now() - lastUpdate < 250) return;
+    lastUpdate = Date.now();
     const next = { ...trip, done, bytes, complete: done === trip.urls.length };
     putTrip(next);
     progress(next);
@@ -206,9 +198,14 @@ export async function downloadTrip(
           const length = (await response.clone().arrayBuffer()).byteLength;
           if (length > 8 * 1024 * 1024 || bytes + length > 180 * 1024 * 1024)
             throw new Error('离线包超出 180 MB');
-          if (!cached) await cache.put(url, response);
-          done++;
           bytes += length;
+          try {
+            if (!cached) await cache.put(url, response);
+            done++;
+          } catch (error) {
+            bytes -= length;
+            throw error;
+          }
         } catch {
           failed++;
         }
@@ -216,7 +213,7 @@ export async function downloadTrip(
       }
     }),
   );
-  update();
+  update(true);
   if (signal.aborted) throw new Error('下载已暂停，可稍后继续');
   if (failed)
     throw new Error(`${trip.urls.length - done} 项未下载，点击继续补齐`);

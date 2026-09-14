@@ -2,6 +2,10 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { alternativeLineParts, trackAlternatives } from './alternatives';
 import { syncOverlayData } from '../map/overlayData';
 import { metricLineParts } from '../routeAnalysis/metrics';
+import {
+  syncRouteWarnings,
+  type RouteWarning,
+} from '../routeDisplay/RouteWarnings';
 import type { FeatureCollection } from 'geojson';
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
@@ -20,6 +24,7 @@ import {
   type TrackNode,
 } from './editing';
 export type TrackOverlay = {
+  analysisMarkers?: RouteWarning[];
   saved: ManualTrack[];
   draft: Coordinate[][];
   draftEdgeColors?: TrackEdgeColors;
@@ -94,6 +99,7 @@ export class TrackLayer {
     return hits[0]?.properties.trackId ?? null;
   }
   sync(state: TrackOverlay) {
+    syncRouteWarnings(this.map, state.analysisMarkers ?? []);
     this.state = state;
     const m = this.map;
     if (!m.getSource('manual-tracks'))

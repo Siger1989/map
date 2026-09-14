@@ -20,7 +20,11 @@ export class RouteLayer {
         id: 'route-outline',
         type: 'line',
         source: 'planned-route',
-        filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
+        filter: [
+          'all',
+          ['==', '$type', 'LineString'],
+          ['!=', 'kind', 'access'],
+        ],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: { 'line-color': '#102a38', 'line-width': 8 },
       });
@@ -28,14 +32,27 @@ export class RouteLayer {
         id: 'route-path',
         type: 'line',
         source: 'planned-route',
-        filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
+        filter: [
+          'all',
+          ['==', '$type', 'LineString'],
+          ['!=', 'kind', 'access'],
+        ],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#59dcff', 'line-width': 4 },
+        paint: {
+          'line-color': ['coalesce', ['get', 'color'], '#59dcff'],
+          'line-width': 4,
+        },
       });
       m.addLayer({
-        id: 'route-access', type: 'line', source: 'planned-route',
+        id: 'route-access',
+        type: 'line',
+        source: 'planned-route',
         filter: ['==', 'kind', 'access'],
-        paint: { 'line-color': '#ffcb65', 'line-width': 4, 'line-dasharray': [2, 2] },
+        paint: {
+          'line-color': '#ffcb65',
+          'line-width': 4,
+          'line-dasharray': [2, 2],
+        },
       });
       m.addLayer({
         id: 'route-points',
@@ -72,12 +89,24 @@ export class RouteLayer {
       });
     }
     const features: Feature[] = [];
-    if (state.route) for (const segment of state.route.segments ?? [{kind:'road',coordinates:state.route.coordinates}])
-      features.push({
-        type: 'Feature',
-        properties: {kind:segment.kind},
-        geometry: { type: 'LineString', coordinates: segment.coordinates },
-      });
+    if (state.route && state.displayParts)
+      for (const part of state.displayParts)
+        features.push({
+          type: 'Feature',
+          properties: { kind: 'road', color: part.color },
+          geometry: { type: 'LineString', coordinates: part.coordinates },
+        });
+    if (state.route)
+      for (const segment of state.route.segments ?? [
+        { kind: 'road', coordinates: state.route.coordinates },
+      ]) {
+        if (state.displayParts && segment.kind !== 'access') continue;
+        features.push({
+          type: 'Feature',
+          properties: { kind: segment.kind },
+          geometry: { type: 'LineString', coordinates: segment.coordinates },
+        });
+      }
     for (const slot of ['start', 'end'] as const)
       if (state[slot])
         features.push({

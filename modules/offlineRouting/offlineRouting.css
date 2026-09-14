@@ -1,0 +1,36 @@
+.offline-routing-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid #78938b55;
+  padding-top: 4px;
+}
+.offline-routing-panel p,
+.offline-routing-panel small {
+  margin: 2px 0;
+  font-size: 9px;
+}
+.routing-mode-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.routing-mode-control select {
+  min-height: 36px;
+  min-width: 0;
+  flex: 1;
+  font: inherit;
+}
+.offline-map-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.offline-map-options label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+}
