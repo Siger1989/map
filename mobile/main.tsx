@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import { installLayoutCompatibility } from './compatibility';
 import Home from '../app/page';
+import { LayoutCustomization } from '../modules/uiLayout/LayoutCustomization';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import '../modules/photos/photos.css';
 import '../app/globals.css';
@@ -21,4 +22,9 @@ import '../modules/controls/compactDensity.css';
 
 // The APK owns its local HTTPS asset origin. No RSC server or development URL.
 installLayoutCompatibility();
-createRoot(document.getElementById('root')!).render(<Home />);
+createRoot(document.getElementById('root')!).render(
+  <>
+    <Home />
+    <LayoutCustomization />
+  </>,
+);

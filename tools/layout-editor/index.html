@@ -10,7 +10,7 @@
     <header>
       <div>
         <strong>山兔 · 布局调节</strong
-        ><small>功能基准 0.2.30 · 修改的是布局草稿</small>
+        ><small>功能基准 0.2.31 · 修改的是布局草稿</small>
       </div>
       <nav>
         <button id="undo" disabled>撤销</button
@@ -30,10 +30,12 @@
           ><select id="granularity" aria-label="选择范围">
             <option value="group">整个组件</option>
             <option value="control">单个控件</option>
+            <option value="element">任意元素</option>
           </select>
         </div>
         <p>
-          先切到“操作页面”打开面板，再切回选择。拖选框标题移动，拖四边或四角改大小。被挡住的控件可从下方清单选择。
+          先切到“操作页面”打开面板，再切回选择。Shift点击多选/取消，拖组件移动，拖边角改大小。列表支持Ctrl
+          / Shift多选；被挡住的组件也能从清单选择。
         </p>
         <label
           >手机尺寸<select id="viewport">
@@ -47,10 +49,32 @@
             id="zoom"
             type="range"
             min="40"
-            max="100"
+            max="250"
             value="80"
           /><output id="zoom-value">80%</output></label
-        ><label
+        >
+        <div class="row zoom-actions">
+          <input
+            id="zoom-number"
+            type="number"
+            min="40"
+            max="250"
+            step="10"
+            value="80"
+            aria-label="预览缩放百分比"
+          />
+          <button data-zoom="100">100%</button
+          ><button data-zoom="200">200%</button>
+        </div>
+        <label
+          ><input
+            id="show-outline"
+            type="checkbox"
+            checked
+          />显示细选框（按住空格临时隐藏）</label
+        >
+        <label><input id="show-label" type="checkbox" />显示选框名称</label>
+        <label
           ><input id="snap" type="checkbox" checked />拖动吸附到4px网格</label
         ><label
           ><input id="ratio" type="checkbox" checked />拖角时保持宽高比</label
@@ -62,7 +86,12 @@
             type="search"
             placeholder="定位、海拔、保存…"
         /></label>
-        <select id="widgets" size="10" aria-label="组件列表"></select
+        <select
+          id="widgets"
+          size="10"
+          multiple
+          aria-label="组件列表，可多选"
+        ></select
         ><button id="refresh">刷新组件列表</button>
       </aside>
       <section class="workspace" aria-label="布局预览画布">
@@ -70,6 +99,7 @@
           <div id="stage">
             <iframe id="preview" title="山兔真实界面预览" src="/"></iframe>
             <div id="cover" tabindex="0" aria-label="选择或拖动布局控件">
+              <div id="member-outlines" aria-hidden="true" hidden></div>
               <div id="outline" hidden>
                 <button id="move-selection" aria-label="拖动选中组件">
                   <span id="outline-label"></span> · 拖动
@@ -124,19 +154,20 @@
         <p id="selected-description">点击手机预览中的UI，或从左侧列表选择。</p>
         <fieldset id="properties" disabled>
           <label
-            >水平偏移 px<input
+            >外框 / 内容<select id="hierarchy" aria-label="组件层级"></select
+          ></label>
+          <button id="select-parent" disabled>选外层</button>
+          <label
+            ><span id="dx-label">水平偏移 px</span
+            ><input
               id="dx"
               type="number"
               min="-3000"
               max="3000"
               step="1" /></label
           ><label
-            >垂直偏移 px<input
-              id="dy"
-              type="number"
-              min="-3000"
-              max="3000"
-              step="1"
+            ><span id="dy-label">垂直偏移 px</span
+            ><input id="dy" type="number" min="-3000" max="3000" step="1"
           /></label>
           <div class="row">
             <label
@@ -156,7 +187,8 @@
             /></label>
           </div>
           <label
-            >整体比例<input
+            ><span id="scale-label">整体比例</span
+            ><input
               id="scale"
               type="number"
               min="0.4"

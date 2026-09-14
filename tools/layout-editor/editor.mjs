@@ -1,9 +1,23 @@
 import { emptyLayout, validateLayout, layoutCss } from './model.mjs';
-import { defaults, visible, selectable } from './selection.mjs';
-import { alignPatch, elementScale } from './geometry.mjs';
+import {
+  defaults,
+  visible,
+  selectable,
+  hierarchy,
+  selectionRoots,
+} from './selection.mjs';
+import {
+  alignPatch,
+  elementScale,
+  capture,
+  bounds,
+  batchPatches,
+} from './geometry.mjs';
 import { bindGestures } from './gestures.mjs';
 const $ = (id) => document.getElementById(id);
 const frame = $('preview');
+let selection = [],
+  spacePreview = false;
 let layout = emptyLayout(),
   saved = '',
   selected = null,
@@ -29,24 +43,51 @@ function find(selector) {
     return null;
   }
 }
-function entry() {
+function entry(target = selected) {
   return (
-    layout.entries.find((e) => e.selector === selected?.selector) ||
-    (selected && defaults(selected.selector, selected.label))
+    layout.entries.find((e) => e.selector === target?.selector) ||
+    (target && defaults(target.selector, target.label))
   );
 }
+function targets() {
+  return selectionRoots(
+    selection
+      .map((s) => ({ ...s, element: find(s.selector) }))
+      .filter((s) => s.element && visible(s.element)),
+  ).map((s) => capture(s.element, entry(s)));
+}
+function syncSelectionList() {
+  for (const option of $('widgets').options)
+    option.selected = selection.some((s) => s.selector === option.value);
+}
 function outline() {
-  const node = selected && find(selected.selector);
-  $('outline').hidden = !node || !visible(node) || operating;
+  const items = targets(),
+    r = bounds(items);
+  $('outline').hidden =
+    !r || operating || spacePreview || !$('show-outline').checked;
+  $('member-outlines').hidden = $('outline').hidden || items.length < 2;
   if ($('outline').hidden) return;
-  const r = node.getBoundingClientRect();
   Object.assign($('outline').style, {
     left: `${r.left}px`,
     top: `${r.top}px`,
     width: `${r.width}px`,
     height: `${r.height}px`,
   });
-  $('outline-label').textContent = selected.label;
+  $('outline-label').textContent =
+    selection.length > 1 ? `${selection.length} 项 · 整体调整` : selected.label;
+  $('move-selection').hidden = !$('show-label').checked;
+  $('member-outlines').replaceChildren(
+    ...items.map(({ rect }) => {
+      const box = document.createElement('div');
+      Object.assign(box.style, {
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+      });
+      return box;
+    }),
+  );
 }
 function apply(light = false) {
   if (doc()?.head) {
@@ -85,6 +126,7 @@ function canvas() {
     height: `${height}px`,
     transform: `scale(${zoom})`,
   });
+  $('stage').style.setProperty('--inverse-zoom', String(1 / zoom));
   Object.assign($('phone').style, {
     width: `${width * zoom}px`,
     height: `${height * zoom}px`,
@@ -94,20 +136,38 @@ function canvas() {
     $('viewport').add(new Option(`${width} × ${height}`, value));
   $('viewport').value = value;
   $('zoom-value').textContent = `${Math.round(zoom * 100)}%`;
+  $('zoom').value = $('zoom-number').value = String(Math.round(zoom * 100));
   requestAnimationFrame(outline);
 }
 function properties() {
   $('properties').disabled = !selected;
   if (!selected) {
     $('selected-name').textContent = '选择一个组件';
+    $('hierarchy').replaceChildren();
+    $('select-parent').disabled = true;
     return;
   }
-  const e = entry(),
-    node = find(e.selector);
-  $('selected-name').textContent = e.label;
-  $('selected-description').textContent = node
-    ? '相对默认布局调整；空宽高保持自适应。'
-    : '该组件尚未打开，请先操作页面进入对应功能。';
+  const multiple = selection.length > 1,
+    box = bounds(targets());
+  const e = multiple
+      ? {
+          dx: 0,
+          dy: 0,
+          width: box?.width,
+          height: box?.height,
+          scale: 1,
+          hidden: false,
+        }
+      : entry(),
+    node = find(selected.selector);
+  $('selected-name').textContent = multiple
+    ? `已选 ${selection.length} 项`
+    : e.label;
+  $('selected-description').textContent = multiple
+    ? '统一移动或缩放；批量偏移以本次选择为起点。父子同时选中时只调整外层。'
+    : node
+      ? '相对默认布局调整；空宽高保持自适应。'
+      : '该组件尚未打开，请先操作页面进入对应功能。';
   for (const key of [
     'dx',
     'dy',
@@ -119,12 +179,32 @@ function properties() {
   ])
     $(key).value = e[key] ?? '';
   $('hidden').checked = e.hidden;
+  $('dx-label').textContent = multiple ? '一起水平移动 px' : '水平偏移 px';
+  $('dy-label').textContent = multiple ? '一起垂直移动 px' : '垂直偏移 px';
+  $('scale-label').textContent = multiple ? '本次整体缩放倍数' : '整体比例';
+  const levels = multiple ? [] : hierarchy(node);
+  $('hierarchy').replaceChildren(
+    ...levels.map(
+      (level) =>
+        new Option(
+          `${level.relation === 'parent' ? '外框' : level.relation === 'content' ? '内容' : '当前'} · ${level.label}`,
+          level.selector,
+        ),
+    ),
+  );
+  $('hierarchy').value = selected.selector;
+  $('select-parent').disabled = !levels.some((l) => l.relation === 'parent');
 }
-function select(selector, label) {
-  selected = { selector, label };
+function select(selector, label, toggle = false) {
+  if (toggle) {
+    selection = selection.some((s) => s.selector === selector)
+      ? selection.filter((s) => s.selector !== selector)
+      : [...selection, { selector, label }];
+  } else selection = [{ selector, label }];
+  selected = selection.at(-1) ?? null;
   properties();
   outline();
-  $('widgets').value = selector;
+  syncSelectionList();
 }
 function refresh() {
   const options = selectable(
@@ -136,14 +216,19 @@ function refresh() {
     options.map((o) => o.value).join('|') !==
     [...$('widgets').options].map((o) => o.value).join('|')
   ) {
-    const value = $('widgets').value;
     $('widgets').replaceChildren(...options);
-    $('widgets').value = value;
+    syncSelectionList();
   }
   outline();
 }
 function update(patch, remember = true, light = false) {
   if (!selected) return;
+  if (selection.length > 1) {
+    const items = targets(),
+      box = bounds(items);
+    if (box) updateBatch(items, box, patch, remember, light);
+    return;
+  }
   const next = { ...entry(), ...patch };
   const candidate = validateLayout({
     ...layout,
@@ -158,6 +243,61 @@ function update(patch, remember = true, light = false) {
   if (light) return;
   properties();
   status('修改尚未保存；可以撤销或继续调整。');
+}
+function replaceEntries(entries) {
+  const updates = new Map(entries.map((e) => [e.selector, e]));
+  layout = validateLayout({
+    ...layout,
+    entries: [
+      ...layout.entries.filter((e) => !updates.has(e.selector)),
+      ...updates.values(),
+    ],
+  });
+}
+function updateBatch(items, box, patch, remember = true, light = false) {
+  if (!items.length) return;
+  const changes = batchPatches(items, box, patch);
+  const before = serial();
+  try {
+    if (remember) checkpoint();
+    replaceEntries(changes.map((c) => c.next));
+    apply(true);
+    if (['width', 'height', 'scale'].some((key) => patch[key] != null)) {
+      // Apply every size first, then compensate flex/right/bottom anchoring together.
+      replaceEntries(
+        changes.map(({ element, next, target, parentScale }) => {
+          const actual = element.getBoundingClientRect();
+          return {
+            ...next,
+            dx: Math.max(
+              -3000,
+              Math.min(
+                3000,
+                next.dx + (target.left - actual.left) / parentScale.x,
+              ),
+            ),
+            dy: Math.max(
+              -3000,
+              Math.min(
+                3000,
+                next.dy + (target.top - actual.top) / parentScale.y,
+              ),
+            ),
+          };
+        }),
+      );
+    }
+    apply(light);
+    if (!light) {
+      properties();
+      status(`已一起调整 ${items.length} 个外层组件；修改尚未保存。`);
+    }
+  } catch (error) {
+    layout = JSON.parse(before);
+    if (remember) past.pop();
+    apply();
+    status(error.message);
+  }
 }
 for (const key of [
   'dx',
@@ -186,8 +326,27 @@ for (const key of [
     }
   });
 }
-$('widgets').onchange = () =>
-  select($('widgets').value, $('widgets').selectedOptions[0].textContent);
+$('widgets').onchange = () => {
+  selection = [...$('widgets').selectedOptions].map((o) => ({
+    selector: o.value,
+    label: o.textContent,
+  }));
+  selected = selection.at(-1) ?? null;
+  properties();
+  outline();
+};
+$('hierarchy').onchange = () => {
+  const level = hierarchy(selected && find(selected.selector)).find(
+    (l) => l.selector === $('hierarchy').value,
+  );
+  if (level) select(level.selector, level.label);
+};
+$('select-parent').onclick = () => {
+  const parent = hierarchy(selected && find(selected.selector))
+    .filter((l) => l.relation === 'parent')
+    .at(-1);
+  if (parent) select(parent.selector, parent.label);
+};
 $('changes').onchange = () => {
   const e = layout.entries.find((e) => e.selector === $('changes').value);
   if (e) select(e.selector, e.label);
@@ -196,12 +355,29 @@ $('refresh').onclick = refresh;
 $('search').oninput = refresh;
 $('granularity').onchange = () => {
   selected = null;
+  selection = [];
   properties();
   refresh();
 };
 document.querySelectorAll('[data-align]').forEach(
   (button) =>
     (button.onclick = () => {
+      if (selection.length > 1) {
+        const items = targets(),
+          box = bounds(items);
+        if (box)
+          updateBatch(
+            items,
+            box,
+            alignPatch(
+              { dx: 0, dy: 0 },
+              box,
+              layout.viewport,
+              button.dataset.align,
+            ),
+          );
+        return;
+      }
       const node = selected && find(selected.selector);
       if (!node || !visible(node)) {
         status('请先打开该组件，再进行对齐。');
@@ -245,15 +421,64 @@ $('viewport').onchange = () => {
   canvas();
   apply();
 };
-$('zoom').oninput = () => {
-  zoom = Number($('zoom').value) / 100;
+function setZoom(percent) {
+  if (!Number.isFinite(percent)) return;
+  const workspace = document.querySelector('.workspace'),
+    previous = zoom;
+  const focus = bounds(targets());
+  zoom = Math.max(0.4, Math.min(2.5, percent / 100));
   canvas();
-};
+  if (focus) {
+    workspace.scrollLeft = Math.max(
+      0,
+      (focus.left + focus.width / 2) * zoom - workspace.clientWidth / 2 + 26,
+    );
+    workspace.scrollTop = Math.max(
+      0,
+      (focus.top + focus.height / 2) * zoom - workspace.clientHeight / 2 + 26,
+    );
+  } else {
+    workspace.scrollLeft *= zoom / previous;
+    workspace.scrollTop *= zoom / previous;
+  }
+}
+$('zoom').oninput = () => setZoom(Number($('zoom').value));
+$('zoom-number').onchange = () => setZoom(Number($('zoom-number').value));
+document.querySelectorAll('[data-zoom]').forEach((button) => {
+  button.onclick = () => setZoom(Number(button.dataset.zoom));
+});
+$('show-outline').onchange = $('show-label').onchange = outline;
+window.addEventListener('keydown', (event) => {
+  if (operating || event.target.closest('input,select,textarea,button,a'))
+    return;
+  if (event.code === 'Space') {
+    event.preventDefault();
+    spacePreview = true;
+    outline();
+  }
+  if (event.key === 'Escape') {
+    selection = [];
+    selected = null;
+    properties();
+    outline();
+    syncSelectionList();
+  }
+});
+window.addEventListener('keyup', (event) => {
+  if (event.code === 'Space') {
+    spacePreview = false;
+    outline();
+  }
+});
+window.addEventListener('blur', () => {
+  spacePreview = false;
+  outline();
+});
 $('reset').onclick = () => {
   if (!selected) return;
   checkpoint();
   layout.entries = layout.entries.filter(
-    (e) => e.selector !== selected.selector,
+    (e) => !selection.some((s) => s.selector === e.selector),
   );
   apply();
   properties();
@@ -275,6 +500,10 @@ const isDragging = bindGestures({
   operating: () => operating,
   document: doc,
   selectedNode: () => selected && find(selected.selector),
+  targets,
+  multiple: () => selection.length > 1,
+  contains: (selector) => selection.some((s) => s.selector === selector),
+  updateBatch,
   entry,
   select,
   granularity: () => $('granularity').value,
@@ -330,6 +559,7 @@ $('import').onchange = async () => {
     checkpoint();
     layout = next;
     selected = null;
+    selection = [];
     canvas();
     apply();
     properties();

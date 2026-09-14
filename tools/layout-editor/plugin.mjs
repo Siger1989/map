@@ -14,7 +14,16 @@ const files = new Map(
     'geometry.mjs',
     'gestures.mjs',
     'gallery.html',
-  ].map((n) => [n, resolve(root, 'tools/layout-editor', n)]),
+  ].map((n) => [
+    n,
+    resolve(
+      root,
+      ['model.mjs', 'selection.mjs', 'geometry.mjs', 'gestures.mjs'].includes(n)
+        ? 'modules/uiLayout'
+        : 'tools/layout-editor',
+      n,
+    ),
+  ]),
 );
 export default function layoutEditor({
   draftPath = resolve(root, 'config/ui-layout-draft.json'),

@@ -11,6 +11,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import type { DirectionMode } from '../position/types';
+import { openLayoutEditor } from '../uiLayout/events';
 
 export function MapActions({
   terrain,
@@ -136,6 +137,17 @@ export function MapActions({
         </button>
         {expanded && (
           <>
+            <button
+              className="icon-button direction-button"
+              aria-label="边用边调界面布局"
+              onClick={() => {
+                setExpanded(false);
+                openLayoutEditor();
+              }}
+            >
+              <Scan size={20} />
+              <small>布局</small>
+            </button>
             <button
               className="icon-button direction-button"
               aria-label="定位设置"
