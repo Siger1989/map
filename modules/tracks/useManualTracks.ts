@@ -1,3 +1,5 @@
+import { createTrackNodeCommands } from './nodeCommands';
+import { legacyColorNote, reverseDrawing } from './legacyArchiveActions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { coordinate, type Coordinate } from '../navigation/types';
 import { keepsOriginalPoints } from './provenance';
@@ -5,6 +7,13 @@ import { storeRouteEdit, type RouteEditSession } from './routeEdit';
 import { usePlaceName } from '../navigation/usePlaceName';
 import { drawingRecord, storeDrawingRecord } from './archive';
 import { inheritEdgeColors } from './edgeColors';
+import { editSection } from './sections';
+import {
+  assignNewEdges,
+  draftFromTrack,
+  readDrawingCheckpoint,
+  writeDrawingCheckpoint,
+} from './drawingCheckpoint';
 import { collectData } from '../outdoor/exchange';
 import { saveWorkbench } from '../collections/workbenchStore';
 import { mergeTrackArchives } from './mergeArchives';
@@ -23,7 +32,6 @@ import {
 } from './style';
 import {
   MAX_TRACK_POINTS,
-  MAX_SAVED_TRACKS,
   parseSavedTracks,
   TRACK_STORAGE,
   type ManualTrack,
@@ -36,21 +44,19 @@ import {
   EMPTY_DRAFT,
   undoDraft,
   moveDraftNode,
-  replaceDraftGeometry,
   branchDraft,
-  removeDraftNode,
 } from './draft';
-import { endpoints, joinSegments, draftSnapNodes } from './snapping';
-import {
-  insertTrackNode,
-  removeTrackNode,
-  connectTrackNodes,
-} from './nodeOperations';
+import { endpoints, draftSnapNodes } from './snapping';
 export function useManualTracks() {
   const [saved, setSaved] = useState<ManualTrack[]>([]);
   const savedRef = useRef(saved);
   savedRef.current = saved;
   const startedAt = useRef(Date.now());
+  const sectionId = useRef('');
+  const baseRevision = useRef<string | undefined>(undefined),
+    outputId = useRef('');
+  const [draftNote, setDraftNote] = useState('');
+  const [draftReady, setDraftReady] = useState(false);
   const [draftState, setDraftState] = useState(EMPTY_DRAFT);
   const draftRef = useRef(draftState);
   draftRef.current = draftState;
@@ -95,7 +101,50 @@ export function useManualTracks() {
         ),
       );
     } catch {}
+    try {
+      const checkpoint = readDrawingCheckpoint(
+        localStorage.getItem('shantu.drawing-draft.v1'),
+      );
+      if (checkpoint) {
+        draftRef.current = checkpoint.draft;
+        setDraftState(checkpoint.draft);
+        setStyle(checkpoint.style);
+        setCopyName(checkpoint.name);
+        setEditingId(checkpoint.editingId);
+        startedAt.current = checkpoint.startedAt;
+        sectionId.current = checkpoint.sectionId;
+        setDraftNote(checkpoint.note);
+        baseRevision.current = checkpoint.baseRevision;
+        outputId.current = checkpoint.outputId ?? crypto.randomUUID();
+      }
+      setDraftReady(true);
+    } catch {
+      setError(
+        '上次绘制草稿无法读取，原备份保留；为避免覆盖，暂不开始新绘制。',
+      );
+    }
   }, []);
+  useEffect(() => {
+    if (!draftReady) return;
+    try {
+      writeDrawingCheckpoint(
+        {
+          draft: draftState,
+          style,
+          name: copyName,
+          editingId,
+          startedAt: startedAt.current,
+          sectionId: sectionId.current,
+          note: draftNote,
+          baseRevision: baseRevision.current,
+          outputId: outputId.current,
+        },
+        localStorage,
+      );
+    } catch {
+      setError('草稿仍在当前窗口，自动备份失败；请先保存路线。');
+    }
+  }, [draftReady, draftState, style, copyName, editingId, draftNote]);
   useEffect(() => {
     const reload = () => {
       try {
@@ -109,7 +158,10 @@ export function useManualTracks() {
   }, []);
   const persist = (tracks: ManualTrack[]) => {
     try {
-      localStorage.setItem(TRACK_STORAGE, JSON.stringify(tracks));
+      const raw = JSON.stringify(tracks);
+      localStorage.setItem(TRACK_STORAGE, raw);
+      if (localStorage.getItem(TRACK_STORAGE) !== raw)
+        throw new Error('存档写入未确认');
       savedRef.current = tracks;
       setSaved(tracks);
       return true;
@@ -135,6 +187,10 @@ export function useManualTracks() {
     return false;
   };
   const resetDraft = () => {
+    sectionId.current = crypto.randomUUID();
+    outputId.current = crypto.randomUUID();
+    baseRevision.current = undefined;
+    setDraftNote('');
     draftRef.current = EMPTY_DRAFT;
     setDraftState(EMPTY_DRAFT);
     setCopyName(null);
@@ -143,17 +199,30 @@ export function useManualTracks() {
     setNodeHistory([]);
     startedAt.current = Date.now();
   };
+  const draftAvailable = () => {
+    if (!draftReady) setError('上次绘制草稿尚未恢复，原备份保留。');
+    return draftReady;
+  };
   const saveDraft = (name = '', selectSaved = false) => {
+    if (!draftAvailable()) return false;
     try {
-      const records = savedRef.current;
+      const records = parseSavedTracks(localStorage.getItem(TRACK_STORAGE));
       const prior = records.find((t) => t.id === editingId);
+      if (
+        editingId &&
+        (!prior ||
+          !baseRevision.current ||
+          JSON.stringify(prior) !== baseRevision.current)
+      )
+        throw new Error('原路线已改变，请先导出当前草稿再重新打开');
       const track = drawingRecord({
         segments: draftRef.current.segments,
         edgeColors: draftRef.current.edgeColors,
         colorConditions: draftRef.current.colorConditions,
+        sections: draftRef.current.sections,
         nodes: draftVertices(draftRef.current).slice(0, MAX_TRACK_POINTS),
         prior,
-        id: crypto.randomUUID(),
+        id: (outputId.current ||= crypto.randomUUID()),
         name: name || copyName || '',
         style,
         createdAt: startedAt.current,
@@ -163,6 +232,21 @@ export function useManualTracks() {
       const next = storeDrawingRecord(track, localStorage);
       savedRef.current = next;
       setSaved(next);
+      baseRevision.current = JSON.stringify(track);
+      writeDrawingCheckpoint(
+        {
+          draft: draftRef.current,
+          style,
+          name: copyName,
+          editingId,
+          startedAt: startedAt.current,
+          sectionId: sectionId.current,
+          note: draftNote,
+          outputId: track.id,
+          completed: track.id,
+        },
+        localStorage,
+      );
       resetDraft();
       select(selectSaved ? track.id : null);
       setError('');
@@ -187,6 +271,7 @@ export function useManualTracks() {
     segments: draftRef.current.segments,
     edgeColors: draftRef.current.edgeColors,
     colorConditions: draftRef.current.colorConditions,
+    sections: draftRef.current.sections,
     nodes: draftVertices(draftRef.current),
   });
   const applyDraft = (next: typeof EMPTY_DRAFT) => {
@@ -198,6 +283,26 @@ export function useManualTracks() {
   return {
     commitEdit: (session: RouteEditSession) => {
       try {
+        if (session.original.id === DRAFT_ID) {
+          applyDraft({
+            ...draftFromTrack(session.track),
+            history: [
+              ...draftRef.current.history,
+              {
+                kind: 'move',
+                segments: draftRef.current.segments,
+                nodes: draftRef.current.nodes,
+                kinds: draftRef.current.kinds,
+                pointLine: draftRef.current.pointLine,
+                edgeColors: draftRef.current.edgeColors,
+                sections: draftRef.current.sections,
+              },
+            ],
+          });
+          setEditing(true);
+          setDrawing(true);
+          return { track: session.track, removed: false, error: '' };
+        }
         const save = session.sources.some((s) => s.id !== session.original.id)
           ? storeJoinedRouteEdit
           : storeRouteEdit;
@@ -227,135 +332,19 @@ export function useManualTracks() {
           t.id === id ? { ...t, hidden: !show } : t,
         ),
       ),
-    insertNode: (id: string, point: Coordinate, distance?: number) => {
-      try {
-        if (id === DRAFT_ID) {
-          const next = insertTrackNode(draftTrack(), point, distance);
-          applyDraft(
-            replaceDraftGeometry(
-              draftRef.current,
-              next.segments,
-              next.nodes ?? [],
-              draftRef.current.kinds,
-              draftRef.current.pointLine,
-              next.edgeColors,
-            ),
-          );
-          return true;
-        }
-        const track = savedRef.current.find((t) => t.id === id);
-        if (!track) return false;
-        const next = insertTrackNode(track, point, distance);
-        if (next === track) return true;
-        if (!persist(savedRef.current.map((t) => (t.id === id ? next : t))))
-          return false;
-        setNodeHistory((h) => [...h.slice(-19), track]);
-        setError('');
-        return true;
-      } catch (e) {
-        setError((e as Error).message);
-        return false;
-      }
-    },
-    removeNode: (node: TrackNode) => {
-      try {
-        if (node.trackId === DRAFT_ID) {
-          applyDraft(removeDraftNode(draftRef.current, node.coordinate));
-          return true;
-        }
-        const track = savedRef.current.find((t) => t.id === node.trackId);
-        if (!track) return false;
-        const next = removeTrackNode(track, node.coordinate);
-        if (
-          next === track ||
-          !persist(
-            savedRef.current.flatMap((t) =>
-              t.id === track.id ? (next.segments.length ? [next] : []) : [t],
-            ),
-          )
-        )
-          return false;
-        setNodeHistory((h) => [...h.slice(-19), track]);
-        setError('');
-        return true;
-      } catch (e) {
-        setError((e as Error).message);
-        return false;
-      }
-    },
-    connectNodes: (from: TrackNode, to: TrackNode) => {
-      try {
-        if (from.trackId === DRAFT_ID || to.trackId === DRAFT_ID) {
-          const a =
-            from.trackId === DRAFT_ID
-              ? draftTrack()
-              : savedRef.current.find((t) => t.id === from.trackId);
-          const b =
-            to.trackId === DRAFT_ID
-              ? draftTrack()
-              : savedRef.current.find((t) => t.id === to.trackId);
-          if (!a || !b) throw new Error('连接节点已变化，请重新选择。');
-          // Keep draft geometry first so active stroke kinds/indices remain aligned.
-          const next =
-            from.trackId === DRAFT_ID
-              ? connectTrackNodes(
-                  a,
-                  from.coordinate,
-                  b,
-                  to.coordinate,
-                  DRAFT_ID,
-                )
-              : connectTrackNodes(
-                  b,
-                  to.coordinate,
-                  a,
-                  from.coordinate,
-                  DRAFT_ID,
-                );
-          applyDraft(
-            replaceDraftGeometry(
-              draftRef.current,
-              next.segments,
-              next.nodes ?? [],
-              next.segments.map(
-                (_, i) => draftRef.current.kinds[i] ?? 'freehand',
-              ),
-              null,
-              next.edgeColors,
-            ),
-          );
-          const metadata = {
-            ...draftRef.current,
-            colorConditions: next.colorConditions,
-          };
-          draftRef.current = metadata;
-          setDraftState(metadata);
-          select(DRAFT_ID);
-          return true;
-        }
-        const a = savedRef.current.find((t) => t.id === from.trackId),
-          b = savedRef.current.find((t) => t.id === to.trackId);
-        if (!a || !b) throw new Error('请选择两条已保存路线的节点。');
-        if (savedRef.current.length >= MAX_SAVED_TRACKS)
-          throw new Error(`已达 ${MAX_SAVED_TRACKS} 条路线，请先整理存档。`);
-        const next = connectTrackNodes(
-          a,
-          from.coordinate,
-          b,
-          to.coordinate,
-          crypto.randomUUID(),
-        );
-        if (!persist([...savedRef.current, next])) return false;
-        select(next.id);
-        setNodeHistory([]);
-        setError('已生成连接路线，原线路及其照片保留。');
-        return true;
-      } catch (e) {
-        setError((e as Error).message);
-        return false;
-      }
-    },
+    ...createTrackNodeCommands({
+      draftRef,
+      savedRef,
+      draftTrack,
+      applyDraft,
+      persist,
+      setNodeHistory,
+      setError,
+      setDraftState,
+      select,
+    }),
     branchFrom: (node: TrackNode) => {
+      if (!draftAvailable()) return false;
       try {
         if (node.trackId === DRAFT_ID) {
           if (!withinLimit(1, true)) return false;
@@ -367,7 +356,8 @@ export function useManualTracks() {
           setVisible(true);
           return true;
         }
-        if (draftRef.current.segments.length && !saveDraft()) return false;
+        if (draftRef.current.segments.length)
+          throw new Error('请先处理已有绘制草稿。');
         const track = savedRef.current.find((t) => t.id === node.trackId);
         if (!track || keepsOriginalPoints(track))
           throw new Error('请选择手绘路线节点。');
@@ -376,24 +366,12 @@ export function useManualTracks() {
           track.segments.flat().length >= MAX_TRACK_POINTS
         )
           throw new Error('路线已达100段或6000点。');
-        const next = {
-          colorConditions: track.colorConditions,
-          segments: [...track.segments, [node.coordinate]],
-          edgeColors: inheritEdgeColors(
-            [...track.segments, [node.coordinate]],
-            [track],
-          ),
-          kinds: [
-            ...track.segments.map(() => 'freehand' as const),
-            'points' as const,
-          ],
-          history: [],
-          pointLine: track.segments.length,
-          nodes: [...(track.nodes ?? []), node.coordinate],
-        };
+        const next = branchDraft(draftFromTrack(track), node.coordinate);
         draftRef.current = next;
         setDraftState(next);
         setEditingId(track.id);
+        baseRevision.current = JSON.stringify(track);
+        outputId.current = crypto.randomUUID();
         setCopyName(null);
         setAnchor(node.coordinate);
         setStyle(normalizeTrackStyle(track.style));
@@ -421,17 +399,32 @@ export function useManualTracks() {
     draft: draftState.segments,
     edgeColors: draftState.edgeColors,
     colorConditions: draftState.colorConditions,
+    sections: draftState.sections,
+    draftTrack,
+    draftNote,
     setDraftCondition: (value: string) => {
-      const next = {
-        ...draftRef.current,
-        colorConditions: {
-          ...draftRef.current.colorConditions,
-          [style.color]: value.slice(0, 1600),
-        },
-      };
-      draftRef.current = next;
-      setDraftState(next);
+      const note = value.slice(0, 1600);
+      setDraftNote(note);
+      const sections = draftRef.current.sections;
+      if (sections?.edges.some((row) => row.includes(sectionId.current)))
+        applyDraft({
+          ...draftRef.current,
+          sections: {
+            ...sections,
+            notes: { ...sections.notes, [sectionId.current]: note },
+          },
+        });
     },
+    setDraftName: (value: string) => setCopyName(value.slice(0, 60)),
+    beginSection: () => {
+      sectionId.current = crypto.randomUUID();
+      setDraftNote('');
+    },
+    editDraftSection: (id: string, color: string, note: string) =>
+      applyDraft({
+        ...draftRef.current,
+        ...editSection(draftTrack(), id, color, note),
+      }),
     vertices,
     candidates,
     mode: 'points' as const,
@@ -524,9 +517,11 @@ export function useManualTracks() {
     visible,
     error,
     setVisible,
-    setStyle: (next: TrackStyle, preserveExisting = false) => {
+    setStyle: (next: TrackStyle, preserveExisting = true) => {
       const value = normalizeTrackStyle(next);
       if (value.color !== style.color) {
+        sectionId.current = crypto.randomUUID();
+        setDraftNote('');
         const draft = {
           ...draftRef.current,
           edgeColors: preserveExisting
@@ -548,6 +543,7 @@ export function useManualTracks() {
       }
     },
     start: () => {
+      if (!draftAvailable()) return false;
       select(DRAFT_ID);
       setEditing(true);
       setDrawing(true);
@@ -555,8 +551,15 @@ export function useManualTracks() {
       setError('');
     },
     startNew: (name = '') => {
-      if (draftRef.current.segments.length && !saveDraft(name)) return false;
+      if (!draftAvailable()) return false;
+      if (draftRef.current.segments.length) {
+        setError('请先继续、保留或放弃已有草稿。');
+        return false;
+      }
+      const note = draftNote;
       resetDraft();
+      setCopyName(name);
+      setDraftNote(note);
       select(DRAFT_ID);
       setEditing(true);
       setDrawing(true);
@@ -580,14 +583,30 @@ export function useManualTracks() {
     },
     addStroke: (points: Coordinate[]) => {
       if (points.length >= 2 && withinLimit(points.length, true)) {
-        setDraftState((d) => appendStroke(d, points));
+        sectionId.current ||= crypto.randomUUID();
+        applyDraft(
+          assignNewEdges(
+            appendStroke(draftRef.current, points),
+            style.color,
+            sectionId.current,
+            draftNote,
+          ),
+        );
         setAnchor(points.at(-1)!);
       }
     },
     addVertex: (point: Coordinate, section?: Coordinate[]) => {
+      sectionId.current ||= crypto.randomUUID();
       if (section?.length) {
         if (withinLimit(section.length + 1, true))
-          setDraftState((d) => appendRoadVertex(d, section));
+          applyDraft(
+            assignNewEdges(
+              appendRoadVertex(draftRef.current, section),
+              style.color,
+              sectionId.current,
+              draftNote,
+            ),
+          );
         return;
       }
       if (
@@ -599,34 +618,48 @@ export function useManualTracks() {
           draftRef.current.pointLine === null,
         )
       )
-        setDraftState((d) => appendVertex(d, point));
+        applyDraft(
+          assignNewEdges(
+            appendVertex(draftRef.current, point),
+            style.color,
+            sectionId.current,
+            draftNote,
+          ),
+        );
     },
     undo: () => {
       const next = undoDraft(draftRef.current);
-      setDraftState(next);
-      setAnchor(next.segments.at(-1)?.at(-1) ?? null);
+      applyDraft(next);
     },
     clearDraft: () => {
-      select(editingId);
-      resetDraft();
-      setError('');
+      if (!draftAvailable()) return false;
+      try {
+        localStorage.removeItem('shantu.drawing-draft.v1');
+        if (localStorage.getItem('shantu.drawing-draft.v1') !== null)
+          throw new Error();
+        select(editingId);
+        resetDraft();
+        setError('');
+        return true;
+      } catch {
+        setError('草稿备份未能清除，当前绘制已保留');
+        return false;
+      }
     },
     continueTrack: (id: string) => {
-      if (draftRef.current.segments.length && !saveDraft()) return false;
+      if (!draftAvailable()) return false;
+      if (draftRef.current.segments.length) {
+        setError('请先处理已有绘制草稿。');
+        return false;
+      }
       const track = savedRef.current.find((t) => t.id === id);
       if (!track) return false;
       setCopyName(
         keepsOriginalPoints(track) ? `${track.name} · 手绘副本` : null,
       );
-      const nextDraft = {
-        edgeColors: track.edgeColors,
-        colorConditions: track.colorConditions,
-        segments: track.segments,
-        kinds: track.segments.map(() => 'freehand' as const),
-        history: [],
-        pointLine: null,
-        nodes: track.nodes,
-      };
+      const nextDraft = draftFromTrack(track);
+      sectionId.current = crypto.randomUUID();
+      setDraftNote('');
       draftRef.current = nextDraft;
       setDraftState(nextDraft);
       startedAt.current = Date.now();
@@ -634,6 +667,8 @@ export function useManualTracks() {
       setNodeHistory([]);
       // Editing a recorded/imported time series starts a copy; its original stays immutable.
       setEditingId(keepsOriginalPoints(track) ? null : id);
+      baseRevision.current = JSON.stringify(track);
+      outputId.current = crypto.randomUUID();
       setAnchor(track.segments.at(-1)?.at(-1) ?? null);
       setStyle(normalizeTrackStyle(track.style));
       setEditing(true);
@@ -653,34 +688,7 @@ export function useManualTracks() {
     },
     reverseTrack: (id: string) => {
       if (saved.some((t) => t.id === id && keepsOriginalPoints(t))) return;
-      if (
-        persist(
-          saved.map((track) =>
-            track.id === id
-              ? {
-                  ...track,
-                  ...(track.sharedRoute
-                    ? {
-                        sharedRoute: {
-                          ...track.sharedRoute,
-                          stops: track.sharedRoute.stops.slice().reverse(),
-                        },
-                      }
-                    : {}),
-                  edgeColors: inheritEdgeColors(
-                    joinSegments(track.segments)
-                      .reverse()
-                      .map((line) => line.slice().reverse()),
-                    [track],
-                  ),
-                  segments: joinSegments(track.segments)
-                    .reverse()
-                    .map((line) => line.slice().reverse()),
-                }
-              : track,
-          ),
-        )
-      )
+      if (persist(saved.map((t) => (t.id === id ? reverseDrawing(t) : t))))
         setNodeHistory([]);
     },
     mergeTrack: (id: string) => {
@@ -697,24 +705,10 @@ export function useManualTracks() {
       }
     },
     setColorCondition: (id: string, color: string, value: string) => {
-      if (!/^#[0-9a-f]{6}$/i.test(color) || value.length > 1600) return false;
       try {
-        const latest = parseSavedTracks(localStorage.getItem(TRACK_STORAGE));
-        const track = latest.find((t) => t.id === id);
-        if (!track) throw new Error('路线已变化，请重新打开');
-        const colorConditions = {
-          ...track.colorConditions,
-          [color]: value.trim(),
-        };
-        if (Object.keys(colorConditions).length > 128)
-          throw new Error('路况颜色记录已达128项');
-        const success = persist(
-          latest.map((t) => (t.id === id ? { ...t, colorConditions } : t)),
-        );
-        if (success) setError('');
-        return success;
+        return persist(legacyColorNote(id, color, value, localStorage));
       } catch (e) {
-        setError(e instanceof Error ? e.message : '路况未保存');
+        setError(e instanceof Error ? e.message : '备注未保存');
         return false;
       }
     },

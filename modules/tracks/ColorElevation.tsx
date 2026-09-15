@@ -10,7 +10,7 @@ import { formatDistance, type Coordinate } from '../navigation/types';
 import './colorElevation.css';
 type Geometry = Pick<
   ManualTrack,
-  'segments' | 'style' | 'edgeColors' | 'colorConditions'
+  'segments' | 'style' | 'edgeColors' | 'colorConditions' | 'sections'
 >;
 const metres = (v: number | null) => (v === null ? '—' : `${Math.round(v)} m`);
 
@@ -46,7 +46,7 @@ export function ColorElevation({
     <section className="color-elevation" aria-label="分色路段与海拔">
       <header>
         <strong>分色路段 · 海拔</strong>
-        <small>同色合为一项 · 点色块查看</small>
+        <small>点选路段查看</small>
       </header>
       <svg viewBox="0 0 350 149" role="img" aria-label="按路线颜色区分的高度图">
         {[0, 0.5, 1].map((n) => (
@@ -75,7 +75,8 @@ export function ColorElevation({
             <g
               key={i}
               opacity={
-                selected === null || selected === row.color.toLowerCase()
+                selected === null ||
+                selected === (row.id ?? row.color.toLowerCase())
                   ? 1
                   : 0.25
               }
@@ -128,12 +129,16 @@ export function ColorElevation({
           );
           const h = elevationStats(points);
           return (
-            <article key={row.color}>
+            <article key={row.sections[0].id ?? row.color}>
               <button
                 aria-label={`查看第 ${i + 1} 段海拔`}
-                aria-pressed={selected === row.color}
+                aria-pressed={selected === (row.sections[0].id ?? row.color)}
                 onClick={() =>
-                  setSelected(selected === row.color ? null : row.color)
+                  setSelected(
+                    selected === (row.sections[0].id ?? row.color)
+                      ? null
+                      : (row.sections[0].id ?? row.color),
+                  )
                 }
               >
                 <i style={{ background: row.color }} />
@@ -141,35 +146,18 @@ export function ColorElevation({
                 <span>{formatDistance(row.length)}</span>
               </button>
               <small>
-                同色累计 · 海拔 {metres(h.min)}～{metres(h.max)}
+                海拔 {metres(h.min)}～{metres(h.max)}
                 {points.some((s) => s.elevation === null) ? '（部分缺测）' : ''}
               </small>
               <label>
-                路况
-                {onCondition ? (
-                  <input
-                    aria-label={`第 ${i + 1} 段路况`}
-                    key={row.condition}
-                    defaultValue={row.condition}
-                    placeholder="未录入，如土路、碎石路"
-                    maxLength={1600}
-                    onBlur={(e) => {
-                      if (e.target.value === row.condition) return;
-                      if (onCondition(row.color, e.target.value)) setError('');
-                      else setError('路况未保存，请检查存储后重试');
-                    }}
-                  />
-                ) : (
-                  <span>{row.condition || '未录入'}</span>
-                )}
+                备注<span>{row.condition || '未填写'}</span>
               </label>
             </article>
           );
         })}
       </div>
       <p>
-        海拔为地形采样估算；缺测处断开。
-        {onCondition ? '同色路段共用路况记录。' : ''}
+        海拔为地形采样估算；缺测处断开。 在路线编辑中选择路段修改颜色和备注。
       </p>
       {error && <p role="alert">{error}</p>}
     </section>

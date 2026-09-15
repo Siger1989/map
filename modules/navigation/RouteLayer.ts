@@ -26,7 +26,11 @@ export class RouteLayer {
           ['!=', 'kind', 'access'],
         ],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#102a38', 'line-width': 8 },
+        paint: {
+          'line-color': '#102a38',
+          'line-width': ['+', ['coalesce', ['get', 'width'], 4], 4],
+          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+        },
       });
       m.addLayer({
         id: 'route-path',
@@ -40,7 +44,8 @@ export class RouteLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': ['coalesce', ['get', 'color'], '#59dcff'],
-          'line-width': 4,
+          'line-width': ['coalesce', ['get', 'width'], 4],
+          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
       m.addLayer({
@@ -93,7 +98,11 @@ export class RouteLayer {
       for (const part of state.displayParts)
         features.push({
           type: 'Feature',
-          properties: { kind: 'road', color: part.color },
+          properties: {
+            ...state.displayStyle,
+            kind: 'road',
+            color: part.color,
+          },
           geometry: { type: 'LineString', coordinates: part.coordinates },
         });
     if (state.route)
@@ -103,7 +112,10 @@ export class RouteLayer {
         if (state.displayParts && segment.kind !== 'access') continue;
         features.push({
           type: 'Feature',
-          properties: { kind: segment.kind },
+          properties: {
+            ...(segment.kind !== 'access' ? state.displayStyle : {}),
+            kind: segment.kind,
+          },
           geometry: { type: 'LineString', coordinates: segment.coordinates },
         });
       }

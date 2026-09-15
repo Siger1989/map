@@ -6,7 +6,12 @@ import { elevationStats } from '../journey/metrics';
 import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
 import { analyzeRoute, metricLineParts } from '../routeAnalysis/metrics';
 import { routeElevationScale } from '../routeAnalysis/elevationColors';
-import { DEFAULT_TRACK_STYLE } from '../tracks/style';
+import {
+  DEFAULT_TRACK_STYLE,
+  normalizeTrackStyle,
+  type TrackStyle,
+} from '../tracks/style';
+import { hasTrackTime } from '../tracks/provenance';
 import { DRAFT_ID } from '../tracks/editing';
 import { trackHeights } from './elevation';
 import { steepWarningMarkers } from './warningMarkers';
@@ -28,6 +33,7 @@ export function useRouteDisplay(
   const [ready, setReady] = useState(false),
     [error, setError] = useState('');
   const [chosenId, choose] = useState<string | null>(null);
+  const [lineStyles, setLineStyles] = useState<Record<string, TrackStyle>>({});
   useEffect(() => {
     try {
       setPreferences(
@@ -39,6 +45,20 @@ export function useRouteDisplay(
       setError('显示设置读取失败，本次使用默认值');
     }
     setReady(true);
+    try {
+      const raw = JSON.parse(
+        localStorage.getItem('shantu.route-display-lines.v1') ?? '{}',
+      );
+      if (raw && typeof raw === 'object' && !Array.isArray(raw))
+        setLineStyles(
+          Object.fromEntries(
+            Object.entries(raw).map(([id, value]) => [
+              id,
+              normalizeTrackStyle(value),
+            ]),
+          ),
+        );
+    } catch {}
   }, []);
   const update = (patch: Partial<RouteDisplayPreferences>) => {
     const next = normalizeRouteDisplay({ ...preferences, ...patch });
@@ -86,10 +106,37 @@ export function useRouteDisplay(
     candidates.find((t) => t.id === preferredId) ??
     candidates.at(-1) ??
     null;
-  const mode =
+  const allowSpeed =
+    !!target &&
+    (target.source === 'recorded' ||
+      (target.source !== 'manual' && hasTrackTime(target)));
+  const requestedMode =
     preferences.mode === 'original'
       ? (target?.style?.colorMode ?? 'solid')
       : preferences.mode;
+  const mode =
+    requestedMode === 'speed' && !allowSpeed ? 'solid' : requestedMode;
+  const lineStyle = useMemo(
+    () =>
+      normalizeTrackStyle(
+        target ? (lineStyles[target.id] ?? target.style) : DEFAULT_TRACK_STYLE,
+      ),
+    [target?.id, target?.style, lineStyles],
+  );
+  const updateLineStyle = (value: TrackStyle) => {
+    if (!target) return;
+    const next = { ...lineStyles, [target.id]: normalizeTrackStyle(value) };
+    try {
+      localStorage.setItem(
+        'shantu.route-display-lines.v1',
+        JSON.stringify(next),
+      );
+      setLineStyles(next);
+      setError('');
+    } catch {
+      setError('线条设置未保存，请检查存储空间');
+    }
+  };
   const needHeight =
     ready &&
     (mode === 'elevation' ||
@@ -127,7 +174,7 @@ export function useRouteDisplay(
       analysisParts: data && parts ? { trackId: data.id, parts } : undefined,
       style:
         data?.id === DRAFT_ID
-          ? { ...tracks.style, colorMode: mode }
+          ? { ...lineStyle, colorMode: mode }
           : tracks.style,
       saved: !data
         ? tracks.saved
@@ -135,25 +182,32 @@ export function useRouteDisplay(
             t.id === data.id
               ? {
                   ...t,
+                  edgeColors:
+                    preferences.mode === 'solid' ? undefined : t.edgeColors,
                   style: {
-                    ...(t.style ?? DEFAULT_TRACK_STYLE),
+                    ...lineStyle,
                     colorMode: mode,
                   },
                 }
               : t,
           ),
     }),
-    [tracks, data, mode, parts, warnings],
+    [tracks, data, mode, parts, warnings, lineStyle, preferences.mode],
   );
   const displayRoute = useMemo(
     () => ({
       ...route,
       displayParts: data?.id === 'display-planned-route' ? parts : undefined,
+      displayStyle:
+        data?.id === 'display-planned-route' ? lineStyle : undefined,
     }),
-    [route, data?.id, parts],
+    [route, data?.id, parts, lineStyle],
   );
   return {
     preferences,
+    allowSpeed,
+    lineStyle,
+    updateLineStyle,
     update,
     ready,
     error,

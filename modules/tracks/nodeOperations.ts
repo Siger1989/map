@@ -6,6 +6,7 @@ import { pathOf, project } from '../guidance/geometry.ts';
 import { cutNodes } from './deleteNodes.ts';
 import { preserveTrackColors } from './edgeColors.ts';
 import { joinUniqueSegments } from './snapping.ts';
+import { materializeSections } from './sections.ts';
 
 const editable = (track: ManualTrack) => {
   if (keepsOriginalPoints(track))
@@ -61,6 +62,11 @@ export function insertTrackNode(
   const segments = track.segments.map((line) => line.slice());
   segments[best.segment].splice(best.index, 0, point);
   const next = changed(track, segments, [...(track.nodes ?? []), point]);
+  const sectionData = materializeSections(track);
+  const rows = sectionData.edges.map((row) => row.slice());
+  const sectionId = rows[best.segment][best.index - 1];
+  rows[best.segment].splice(best.index - 1, 1, sectionId, sectionId);
+  next.sections = { edges: rows, notes: sectionData.notes };
   if (track.edgeColors) {
     const colors = track.edgeColors.map((row) => row.slice());
     const inherited = colors[best.segment][best.index - 1];

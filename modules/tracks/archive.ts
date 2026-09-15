@@ -8,6 +8,7 @@ import {
 } from './drawing.ts';
 import type { TrackStyle } from './style';
 import { inheritEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
+import { inheritSections, type TrackSections } from './sections.ts';
 
 export function drawingTime(time: number) {
   return new Date(time).toLocaleString('zh-CN', {
@@ -31,6 +32,7 @@ export function drawingArea(
 
 /** A committed drawing has its own identity; continuation preserves the original creation time. */
 export function drawingRecord(input: {
+  sections?: TrackSections;
   colorConditions?: Record<string, string>;
   edgeColors?: TrackEdgeColors;
   segments: Coordinate[][];
@@ -81,6 +83,11 @@ export function drawingRecord(input: {
       ? { colorConditions: input.colorConditions }
       : {}),
     style: input.style,
+    ...(input.sections
+      ? { sections: input.sections }
+      : input.prior?.sections
+        ? { sections: inheritSections(input.segments, [input.prior]) }
+        : {}),
   };
 }
 
@@ -97,5 +104,7 @@ export function storeDrawingRecord(
     ? records.map((record) => (record.id === track.id ? track : record))
     : [...records, track];
   storage.setItem(TRACK_STORAGE, JSON.stringify(next));
+  if (storage.getItem(TRACK_STORAGE) !== JSON.stringify(next))
+    throw new Error('路线保存校验失败，草稿已保留。');
   return next;
 }

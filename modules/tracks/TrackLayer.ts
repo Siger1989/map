@@ -30,6 +30,7 @@ export type TrackOverlay = {
     parts: ReturnType<typeof metricLineParts>;
   };
   saved: ManualTrack[];
+  selectedPath?: Coordinate[];
   draft: Coordinate[][];
   draftEdgeColors?: TrackEdgeColors;
   visible: boolean;
@@ -362,6 +363,38 @@ export class TrackLayer {
       }
     }
     syncOverlayData(m, 'manual-tracks', data);
+    if (!m.getSource('route-edit-path'))
+      m.addSource('route-edit-path', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+    if (!m.getLayer('route-edit-path'))
+      m.addLayer({
+        id: 'route-edit-path',
+        type: 'line',
+        source: 'route-edit-path',
+        paint: {
+          'line-color': '#ff3e3e',
+          'line-width': 7,
+          'line-opacity': 0.65,
+        },
+      });
+    syncOverlayData(m, 'route-edit-path', {
+      type: 'FeatureCollection',
+      features:
+        (state.selectedPath?.length ?? 0) > 1
+          ? [
+              {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: state.selectedPath!,
+                },
+              },
+            ]
+          : [],
+    });
     if (!m.getSource('track-line-selection'))
       m.addSource('track-line-selection', {
         type: 'geojson',

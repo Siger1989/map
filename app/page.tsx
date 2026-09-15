@@ -1,5 +1,12 @@
 'use client';
-import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
+import { pathAtDistance } from '@/modules/tracks/pathSelection';
+import {
+  branchEditPoints,
+  branchSnapTrack,
+  removeEditPath,
+  sectionRouteEdit,
+  mergeEditRoute,
+} from '@/modules/tracks/routeEdit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
@@ -16,12 +23,17 @@ import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
+import { useBackDispatcher } from '@/modules/controls/backNavigation';
+import { EmptyRouteDialog } from '@/modules/tracks/EmptyRouteDialog';
+import { usePhotoImportSession } from '@/modules/photos/usePhotoImportSession';
+import type { PhotoPlacementJob } from '@/modules/photos/PhotoPlacement';
+import { WorkbenchPhotoPlacement } from '@/modules/workbench/WorkbenchPhotoPlacement';
+import { isTrip } from '@/modules/outdoor/tripData';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
 import { offlineMapStatus } from '@/modules/outdoor/tileCache';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
-import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
-import { RotateCcw } from 'lucide-react';
+import { WorkbenchRecording } from '@/modules/workbench/WorkbenchRecording';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
@@ -30,11 +42,9 @@ import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
-import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
-import { trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
@@ -49,14 +59,15 @@ import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
 import { catalogEntries } from '@/modules/collections/catalog';
-import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
+import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
+import { HiddenSection } from '@/modules/collections/HiddenSection';
+import type { CollectionView } from '@/modules/collections/useCollectionView';
+import { WorkbenchCollections } from '@/modules/workbench/WorkbenchCollections';
+import { WorkbenchRouteWindows } from '@/modules/workbench/WorkbenchRouteWindows';
 import { CenterCursor } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
 import {
-  RouteCard,
-  RouteDetails,
   RouteEditToolbar,
-  RouteMarkerTypes,
   RouteUnsavedDialog,
 } from '@/modules/tracks/RouteViews';
 import { useRouteEditor } from '@/modules/tracks/useRouteEditor';
@@ -96,7 +107,6 @@ import {
 } from '@/modules/navigation/types';
 import { normalizeTrackStyle } from '@/modules/tracks/style';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
-import { keepsOriginalPoints } from '@/modules/tracks/provenance';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
 import { SectionProfile } from '@/modules/section/SectionProfile';
@@ -142,7 +152,7 @@ import {
   ANNOTATION_CHOICES,
   type Annotation,
 } from '@/modules/annotations/data';
-import { TrackPanel, TrackTools } from '@/modules/tracks/TrackPanel';
+import { DrawingStart, DrawingTools } from '@/modules/tracks/DrawingTools';
 import {
   TrackDrawing,
   type TrackDrawingHandle,
@@ -212,8 +222,23 @@ export default function Home() {
   const tracks = useManualTracks();
   const annotations = useAnnotations();
   const recorder = useRecording();
+  const [recordWindowOpen, setRecordWindowOpen] = useState(false);
+  const [navigationEnding, setNavigationEnding] = useState(false);
   const offline = useOffline();
+  useBackDispatcher();
   const photos = useTripPhotos();
+  const photoImport = usePhotoImportSession();
+  const [hiddenSectionId, setHiddenSectionId] = useState<string | null>(null);
+  const collectionView = useRef<CollectionView | null>(null);
+  const collectionReturn = useRef(false);
+  const returnCollections = () => {
+    collectionReturn.current = false;
+    tracks.select(null);
+    setTrackLinePoint(null);
+    setPanel('favorites');
+  };
+  const [photoPlacement, setPhotoPlacement] =
+    useState<PhotoPlacementJob | null>(null);
   const markerCamera = useMarkerCamera(photos.save);
   const measurement = useMeasurement();
   const [routeNodeBox, setRouteNodeBox] = useState(false);
@@ -249,6 +274,7 @@ export default function Home() {
     'card',
   );
   const [unsavedExit, setUnsavedExit] = useState(false);
+  const [emptyRouteConfirm, setEmptyRouteConfirm] = useState(false);
   const [routeChild, setRouteChild] = useState(false);
   const routeReturnPoint = useRef<TrackLinePoint | null>(null);
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
@@ -377,6 +403,7 @@ export default function Home() {
       navigation.picking !== null ||
       !!featureMove ||
       !!quickAdd ||
+      !!photoPlacement ||
       sectionEditing,
     onFollow: (coordinates, fix) =>
       map.current?.followPosition(
@@ -610,12 +637,23 @@ export default function Home() {
     );
   }, [tracks.selectedId]);
   const selectLinePoint = (point: TrackLinePoint) => {
+    if (photoPlacement) {
+      setPhotoPlacement({ ...photoPlacement, coordinate: point.coordinate });
+      return;
+    }
     if (editor.session) {
       if (editor.session.branch !== null)
         editor.change((value) => appendEditBranch(value, point.coordinate));
       else if (point.trackId === editor.session.track.id) {
         setTrackLinePoint(point);
-        editor.change((value) => ({ ...value, selected: null }));
+        editor.change((value) => ({
+          ...value,
+          selected: null,
+          path: pathAtDistance(
+            value.track,
+            point.sourceDistance ?? point.distance,
+          ),
+        }));
       }
       return;
     }
@@ -636,7 +674,6 @@ export default function Home() {
     setSavedNavigationError('');
     const track = tracks.saved.find((t) => t.id === id);
     if (!track) return;
-    if (track.hidden) tracks.showTrack(id);
     tracks.finish();
     tracks.setVisible(true);
     selectLinePoint({
@@ -644,8 +681,11 @@ export default function Home() {
       coordinate: track.segments[0][0],
       distance: 0,
     });
+    if (isTrip(track)) setRouteWindow('details');
   };
   const closeEditor = () => {
+    const wasDraft = editor.session?.original.id === DRAFT_ID;
+    if (wasDraft) tracks.start();
     setRouteNodeBox(false);
     editor.close();
     setUnsavedExit(false);
@@ -653,7 +693,8 @@ export default function Home() {
     setActiveTrackNode(null);
     setTrackLinePoint(routeReturnPoint.current);
   };
-  const saveEditor = () => {
+  const commitEditor = () => {
+    setEmptyRouteConfirm(false);
     if (!editor.session) return;
     const result = tracks.commitEdit(editor.session);
     if (!result.track) {
@@ -666,14 +707,39 @@ export default function Home() {
       setTrackLinePoint(null);
       return;
     }
+    if (result.track.id === DRAFT_ID) {
+      closeEditor();
+      setTrackLinePoint(null);
+      return;
+    }
     const previous =
-      routeReturnPoint.current?.coordinate ?? result.track.segments[0][0];
+      result.track.segments
+        .flat()
+        .find((p) =>
+          equalCoordinate(
+            p,
+            routeReturnPoint.current?.coordinate ?? result.track.segments[0][0],
+          ),
+        ) ?? result.track.segments[0][0];
+    if (result.track.id === DRAFT_ID) {
+      closeEditor();
+      setTrackLinePoint(null);
+      return;
+    }
     closeEditor();
     setTrackLinePoint({
       trackId: result.track.id,
       coordinate: previous,
       distance: 0,
     });
+  };
+  const saveEditor = () => {
+    if (
+      editor.session?.track.segments.length === 0 &&
+      editor.session.original.id !== DRAFT_ID
+    )
+      setEmptyRouteConfirm(true);
+    else commitEditor();
   };
   const backEditor = () =>
     editor.session?.history.length ? setUnsavedExit(true) : closeEditor();
@@ -859,39 +925,17 @@ export default function Home() {
     );
     return () => clearInterval(interval);
   }, [playing, weather.data]);
-  const resetView = () => {
-    update({ terrain: true });
-    map.current?.reset();
-  };
   const branchEditing = !!editor.session && editor.session.branch !== null;
   const branchTip = branchEditing
     ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
     : null;
-  const branchCandidates = branchEditing
-    ? [
-        ...editor.session!.track.segments.flat(),
-        ...tracks.saved
-          .filter(
-            (t) =>
-              !t.hidden && !editor.session!.sources.some((s) => s.id === t.id),
-          )
-          .flatMap((t) => t.segments.flat()),
-      ]
-    : [];
+  const branchCandidates = branchEditPoints(editor.session, tracks.saved);
   const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
     editor.change((value) =>
       appendEditBranch(
         value,
         point,
-        tracks.saved.find(
-          (t) =>
-            !t.hidden &&
-            t.id !== value.track.id &&
-            !value.sources.some((s) => s.id === t.id) &&
-            t.segments.some((line) =>
-              line.some((p) => equalCoordinate(p, point)),
-            ),
-        ),
+        branchSnapTrack(value, tracks.saved, point),
         section,
       ),
     );
@@ -957,6 +1001,10 @@ export default function Home() {
           }
           if (routeVisible && panel === null) {
             event.preventDefault();
+            if (collectionReturn.current) {
+              returnCollections();
+              return;
+            }
             if (routeWindow !== 'card') setRouteWindow('card');
             else tracks.select(null);
             return;
@@ -1040,7 +1088,14 @@ export default function Home() {
             if (selected) openSection(selected);
           }}
           settings={layers}
-          onPoint={setPoint}
+          onPoint={(p) => {
+            setPoint(p);
+            if (photoPlacement && !photoPlacement.coordinate)
+              setPhotoPlacement({
+                ...photoPlacement,
+                coordinate: [p.lng, p.lat],
+              });
+          }}
           onStatus={(message) => setMapStatus(offlineMapStatus(message))}
           onView={(value) => {
             setView(value);
@@ -1156,7 +1211,8 @@ export default function Home() {
               distance: markerChainage(
                 node.trackId === DRAFT_ID
                   ? tracks.draft
-                  : tracks.saved.find((t) => t.id === node.trackId)?.segments ?? [],
+                  : (tracks.saved.find((t) => t.id === node.trackId)
+                      ?.segments ?? []),
                 node.coordinate,
               ).distance,
             });
@@ -1251,6 +1307,13 @@ export default function Home() {
             setPanel('annotations');
           }}
           onMapHold={(value) => {
+            if (photoPlacement) {
+              setPhotoPlacement({
+                ...photoPlacement,
+                coordinate: value.coordinate,
+              });
+              return;
+            }
             if (
               editor.session ||
               measurement.active ||
@@ -1307,103 +1370,36 @@ export default function Home() {
           !selectedPhoto &&
           !navigationTarget &&
           !shareTarget && (
-            <>
-              {routeWindow === 'card' && (
-                <RouteCard
-                  track={railTrack}
-                  point={linePoint}
-                  alternative={activeAlternative}
-                  error={savedNavigationError || tracks.error}
-                  onBack={() => {
-                    tracks.select(null);
-                    setTrackLinePoint(null);
-                  }}
-                  onNavigate={() => {
-                    if (railTrack.id !== DRAFT_ID) {
-                      navigateTrack(railTrack.id);
-                      return;
-                    }
-                    const id = tracks.saveForMarker();
-                    if (!id) return;
-                    try {
-                      setNavigationTarget(
-                        trackNavigation(
-                          { ...railTrack, id },
-                          Date.now(),
-                          'pedestrian',
-                          tracks.saved,
-                          activeAlternative,
-                        ),
-                      );
-                    } catch (e) {
-                      setSavedNavigationError(
-                        e instanceof Error ? e.message : '无法导航',
-                      );
-                    }
-                  }}
-                  onMarker={() => setRouteWindow('marker')}
-                  onEdit={() => beginRouteEdit(railTrack)}
-                  onDetails={() => setRouteWindow('details')}
-                />
-              )}
-              {routeWindow === 'details' && (
-                <RouteDetails
-                  track={railTrack}
-                  onShowMetric={(mode) => { routeDisplay.choose(railTrack.id); routeDisplay.update({ mode, legend: true }); setRouteWindow('card'); }}
-                  alternative={activeAlternative}
-                  onCondition={(color, value) =>
-                    tracks.setColorCondition(railTrack.id, color, value)
-                  }
-                  markers={annotations.items}
-                  photos={photos.items}
-                  onBack={() => setRouteWindow('card')}
-                  onShare={() => shareTrackById(railTrack.id)}
-                  deleteError={tracks.error}
-                  onDelete={() => {
-                    if (!tracks.remove(railTrack.id)) return false;
-                    setTrackLinePoint(null);
-                    setRouteWindow('card');
-                    return true;
-                  }}
-                  onMarker={(id) => {
-                    annotations.select(id);
-                    setRouteChild(true);
-                    setPanel('annotations');
-                  }}
-                  onPhoto={(id) => {
-                    photos.setSelected(id);
-                    setPhotoGroup([id]);
-                  }}
-                />
-              )}
-              {routeWindow === 'marker' && (
-                <RouteMarkerTypes
-                  error={annotations.error || tracks.error}
-                  onBack={() => setRouteWindow('card')}
-                  onAdd={(kind) => {
-                    if (!linePoint) return;
-                    const id =
-                      railTrack.id === DRAFT_ID
-                        ? tracks.saveForMarker()
-                        : railTrack.id;
-                    if (!id) return;
-                    if (
-                      annotations.add(kind, linePoint.coordinate, {
-                        trackId: id,
-                        distance: markerChainage(
-                          railTrack.segments,
-                          linePoint.coordinate,
-                        ).distance,
-                      })
-                    ) {
-                      setRouteWindow('card');
-                      setRouteChild(true);
-                      setPanel('annotations');
-                    }
-                  }}
-                />
-              )}
-            </>
+            <WorkbenchRouteWindows
+              {...{
+                routeWindow,
+                photoPlacement,
+                railTrack,
+                linePoint,
+                activeAlternative,
+                savedNavigationError,
+                tracks,
+                collectionReturn,
+                returnCollections,
+                setTrackLinePoint,
+                navigateTrack,
+                setNavigationTarget,
+                setSavedNavigationError,
+                setPhotoPlacement,
+                setRouteWindow,
+                beginRouteEdit,
+                annotations,
+                photos,
+                map,
+                setPhotoGroup,
+                setRouteChild,
+                setPanel,
+                setOutdoorPhotos,
+                shareTrackById,
+                openRoute,
+                routeDisplay,
+              }}
+            />
           )}
         {editor.session && (
           <RouteEditToolbar
@@ -1426,7 +1422,16 @@ export default function Home() {
             onBack={backEditor}
             onSave={saveEditor}
             onAdd={addEditPoint}
-            onRemove={() => editor.change(removeEditNode)}
+            onRemove={() =>
+              editor.change((s) =>
+                s.path ? removeEditPath(s) : removeEditNode(s),
+              )
+            }
+            onPath={(path) => editor.change((s) => ({ ...s, path }))}
+            onSection={(id, color, note) =>
+              editor.change((s) => sectionRouteEdit(s, id, color, note))
+            }
+            onMerge={() => editor.change(mergeEditRoute)}
             onBoxSelect={() => {
               map.current?.stop();
               setRouteNodeBox(true);
@@ -1457,12 +1462,57 @@ export default function Home() {
           />
         )}
         <FreeMapCredit id={mapSources.selected} />
+        {hiddenSectionId &&
+          sections.items.find((s) => s.id === hiddenSectionId) && (
+            <HiddenSection
+              item={sections.items.find((s) => s.id === hiddenSectionId)!}
+              onBack={() => {
+                setHiddenSectionId(null);
+                returnCollections();
+              }}
+              onRestore={() => {
+                setHiddenSectionId(null);
+                returnCollections();
+              }}
+            />
+          )}
+        {emptyRouteConfirm && editor.session && (
+          <EmptyRouteDialog
+            onCancel={() => setEmptyRouteConfirm(false)}
+            onConfirm={commitEditor}
+          />
+        )}
+        {photoPlacement && (
+          <WorkbenchPhotoPlacement
+            {...{
+              photoPlacement,
+              tracks,
+              photos,
+              setPhotoPlacement,
+              setOutdoorPhotos,
+              setPanel,
+              photoImport,
+              setPhotoGroup,
+            }}
+          />
+        )}
         {quickAdd && (
           <QuickAdd
             onArea={startArea}
             at={quickAdd}
             error={annotations.error}
             onClose={() => setQuickAdd(null)}
+            onPhoto={() => {
+              setPhotoPlacement({
+                coordinate: quickAdd.coordinate,
+                trackId:
+                  selectedTrack && isTrip(selectedTrack)
+                    ? selectedTrack.id
+                    : undefined,
+              });
+              setQuickAdd(null);
+              setPanel(null);
+            }}
             onAdd={(kind) => {
               if (annotations.add(kind, quickAdd.coordinate)) {
                 areas.select(null);
@@ -1614,8 +1664,9 @@ export default function Home() {
           tracks.drawing &&
           !areas.drawing &&
           panel === null && (
-            <TrackTools
+            <DrawingTools
               tracks={tracks}
+              onEdit={() => beginRouteEdit(tracks.draftTrack())}
               onLocate={(point) => map.current?.focusPoint(point)}
               onFinish={() => {
                 if (tracks.complete()) setRouteWindow('card');
@@ -1832,14 +1883,6 @@ export default function Home() {
           <span className="map-load-status" role="status">
             {mapStatus}
           </span>
-          <button
-            className="icon-button"
-            aria-label="查看世界地图"
-            title="查看世界地图"
-            onClick={resetView}
-          >
-            <RotateCcw size={15} />
-          </button>
         </header>
         {annotations.picking ? (
           <div className="route-map-notice glass" role="status">
@@ -1894,7 +1937,7 @@ export default function Home() {
               }}
               guidance={guidance}
               following={follow.following}
-              onStop={guidance.stop}
+              onStop={() => setNavigationEnding(true)}
               onFollow={() => {
                 follow.resume();
                 if (!position.watching || position.locationError)
@@ -2066,6 +2109,25 @@ export default function Home() {
           />
         )}
         <MapActions
+          pitch={view.pitch}
+          directionError={position.directionError}
+          onFree={position.free}
+          onAngle={(pitch, bearing) => {
+            follow.pause();
+            position.free();
+            map.current?.view(pitch, bearing, false);
+          }}
+          canOverview={!!routeDisplay.target || !!selectedAnnotation}
+          onOverview={() => {
+            follow.pause();
+            position.free();
+            map.current?.stop();
+            const points = routeDisplay.target?.segments.flat();
+            if (points?.length) map.current?.fitRoute(points);
+            else if (selectedAnnotation)
+              map.current?.focusPoint(selectedAnnotation.coordinates);
+          }}
+          onCoordinates={(value) => routeDisplay.update({ coordinates: value })}
           fix={displayedFix}
           showCoordinates={routeDisplay.preferences.coordinates}
           displayControl={
@@ -2073,6 +2135,7 @@ export default function Home() {
               display={routeDisplay}
               blocked={
                 follow.blocked ||
+                recordWindowOpen ||
                 !!editor.session ||
                 measurement.active ||
                 survey.active
@@ -2119,7 +2182,10 @@ export default function Home() {
             map.current?.north();
           }}
           onLocate={() => {
-            if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
+            if (follow.blocked) {
+              if (recorder.record.phase !== 'recording') position.locate();
+              return;
+            }
             if (follow.following) {
               follow.pause();
               map.current?.stop();
@@ -2137,7 +2203,10 @@ export default function Home() {
           }
           watching={position.watching}
           onStopLocation={() => {
-            guidance.stop();
+            if (guidance.active) {
+              setNavigationEnding(true);
+              return;
+            }
             follow.pause();
             position.stopLocation();
           }}
@@ -2152,24 +2221,27 @@ export default function Home() {
             map.current?.view(layers.terrain ? 0 : 62, view.bearing);
           }}
         />
-        {panel === null &&
-          !measurement.active &&
-          !survey.active &&
-          !sectionEditing &&
-          !tracks.drawing &&
-          !routeVisible &&
-          !editor.session &&
-          !quickAdd &&
-          !annotations.picking &&
-          !selectedAnnotation &&
-          !areas.drawing &&
-          !areas.selected &&
-          navigation.picking === null && (
-            <RecordingQuickAction
-              recorder={recorder}
-              onDetails={() => setPanel('outdoor')}
-            />
-          )}
+        <WorkbenchRecording
+          {...{
+            selectedPhoto,
+            shareTarget,
+            recorder,
+            recordWindowOpen,
+            panel,
+            editor,
+            navigationEnding,
+            setRecordWindowOpen,
+            setPanel,
+            openRoute,
+            follow,
+            position,
+            map,
+            setOutdoorPhotos,
+            navigation,
+            guidance,
+            setNavigationEnding,
+          }}
+        />
         {selectedAnnotation &&
           (panel === 'annotations' || annotations.selectionRequest) &&
           !annotations.picking && (
@@ -2201,6 +2273,12 @@ export default function Home() {
                 markerCamera.retry
               }
               onCameraRetry={markerCamera.onRetry}
+              onLocate={() =>
+                map.current?.focusPoint(
+                  selectedAnnotation.coordinates,
+                  annotationViewZoom(selectedAnnotation),
+                )
+              }
               onPhoto={(id) => {
                 setPhotoGroup(
                   photosForMarker(photos.items, selectedAnnotation.id).map(
@@ -2212,6 +2290,10 @@ export default function Home() {
               }}
               onClose={() => {
                 if (annotations.select(null)) {
+                  if (collectionReturn.current) {
+                    returnCollections();
+                    return;
+                  }
                   setPanel(null);
                   tracks.select(null);
                   setActiveTrackNode(null);
@@ -2382,7 +2464,13 @@ export default function Home() {
           )}
           {panel === 'outdoor' && (
             <OutdoorPanel
+              onRecord={() => {
+                setPanel(null);
+                setRecordWindowOpen(true);
+              }}
               initialTab={outdoorPhotos ? 'photos' : 'record'}
+              trips={tracks.saved.filter((t) => isTrip(t) && !t.hidden)}
+              onTrip={openRoute}
               recorder={recorder}
               onSavedTrack={tracks.select}
               returnPanel={
@@ -2392,9 +2480,11 @@ export default function Home() {
                   fix={position.fix}
                   center={mapCenter ?? [point.lng, point.lat]}
                   markers={annotations.items}
-                  onRemember={(p, defaults) =>
-                    annotations.add('pin', p, undefined, defaults)
-                  }
+                  onRemember={(p, defaults) => {
+                    const okay = annotations.add('pin', p, undefined, defaults);
+                    if (okay) setPanel('annotations');
+                    return okay;
+                  }}
                   onNavigate={navigateFavorite}
                   onShow={(points) => {
                     map.current?.fitRoute(points);
@@ -2404,8 +2494,19 @@ export default function Home() {
               }
               photos={
                 <PhotoPanel
+                  session={photoImport}
                   tracks={photoTracks}
                   preferred={tracks.selectedId}
+                  onPlace={(file, trackId, time) => {
+                    setPhotoPlacement({
+                      file,
+                      trackId,
+                      time,
+                      coordinate: null,
+                      returnPhotos: true,
+                    });
+                    setPanel(null);
+                  }}
                   photos={photos}
                   onOpen={(id) => {
                     const p = photos.items.find((p) => p.id === id);
@@ -2456,110 +2557,43 @@ export default function Home() {
             />
           )}
           {panel === 'favorites' && (
-            <CollectionsPanel
-              mapCenter={map.current?.centerCoordinate() ?? anchor}
-              onLocate={(entry) => {
-                position.free();
-                follow.pause();
-                if (entry.kind === 'route') navigation.restore(entry.route);
-                if (entry.kind === 'track') tracks.select(entry.track.id);
-                map.current?.fitCollection(collectionPreviewPoints(entry));
-              }}
-              onClose={() => setPanel(null)}
-              initialOutputKey={collectionOutputKey}
-              initialSelectedKeys={collectionSelectedKeys}
-              photos={photos.items}
-              areas={areas.items}
-              measurements={measurement.saved.items}
-              onMeasurement={(id) => {
-                const item = measurement.saved.items.find((m) => m.id === id);
-                if (!item) return;
-                tracks.finish();
-                tracks.select(null);
-                annotations.select(null);
-                navigation.setPicking(null);
-                setPanel(null);
-                setProfileOpen(false);
-                setSectionEditing(false);
-                position.free();
-                measurement.load(item);
-                map.current?.fitRoute(item.points.map((p) => p.coordinates));
-              }}
-              onArea={(id) => {
-                const a = areas.items.find((a) => a.id === id);
-                if (a) {
-                  areas.select(id);
-                  annotations.select(null);
-                  tracks.select(null);
-                  map.current?.fitRoute(a.boundary);
-                  setAreaEditing(true);
-                  setPanel(null);
-                }
-              }}
-              annotations={annotations.items}
-              sections={sections.items}
-              onAnnotation={(id) => {
-                const item = annotations.items.find((a) => a.id === id);
-                if (!item) return;
-                annotations.select(id);
-                tracks.select(null);
-                setProfileOpen(false);
-                map.current?.focusPoint(
-                  item.coordinates,
-                  annotationViewZoom(item),
-                );
-                setPanel('annotations');
-              }}
-              onSection={(id) => {
-                setPanel(null);
-                openSection(id);
-              }}
-              onShareRoute={(favorite) =>
-                setShareTarget(sharePlanned(favorite.route, favorite.name))
-              }
-              onShareTrack={shareTrackById}
-              favorites={favorites}
-              tracks={tracks}
-              onNavigateRoute={navigateFavorite}
-              onNavigateTrack={navigateTrack}
-              navigationError={savedNavigationError}
-              onRoute={(favorite) => {
-                navigation.restore(favorite);
-                map.current?.fitRoute(favorite.route.coordinates);
-                setPanel(null);
-              }}
-              onTrack={(id) => {
-                openRoute(id);
-                const track = tracks.saved.find((t) => t.id === id);
-                if (track) map.current?.fitRoute(track.segments.flat());
+            <WorkbenchCollections
+              {...{
+                collectionView,
+                collectionReturn,
+                map,
+                anchor,
+                position,
+                follow,
+                navigation,
+                tracks,
+                annotations,
+                setPanel,
+                collectionOutputKey,
+                collectionSelectedKeys,
+                photos,
+                areas,
+                measurement,
+                setProfileOpen,
+                setSectionEditing,
+                setAreaEditing,
+                sections,
+                setHiddenSectionId,
+                openSection,
+                setShareTarget,
+                shareTrackById,
+                favorites,
+                navigateFavorite,
+                navigateTrack,
+                savedNavigationError,
+                openRoute,
               }}
             />
           )}
           {panel === 'track' && (
-            <TrackPanel
-              onOpen={openRoute}
-              photos={photos.items}
-              onPhoto={(id) => {
-                const p = photos.items.find((p) => p.id === id);
-                if (!p) return;
-                setPhotoGroup([id]);
-                photos.setSelected(id);
-                map.current?.focusPoint(p.coordinates, view.zoom);
-                setPanel(null);
-              }}
-              onAddPhotos={(id) => {
-                tracks.select(id);
-                setOutdoorPhotos(true);
-                setPanel('outdoor');
-              }}
-              onShare={shareTrackById}
+            <DrawingStart
               tracks={tracks}
-              onNavigate={navigateTrack}
-              navigationError={savedNavigationError}
-              onEditNodes={(id) => {
-                const track = tracks.saved.find((t) => t.id === id);
-                if (track) beginRouteEdit(track);
-              }}
+              onOpen={openRoute}
               onDraw={(endpoint) => {
                 map.current?.stop();
                 setSectionEditing(false);
@@ -2569,10 +2603,6 @@ export default function Home() {
                 annotations.select(null);
                 setPanel(null);
                 if (endpoint) map.current?.focusPoint(endpoint);
-              }}
-              onShow={(points) => {
-                map.current?.fitRoute(points);
-                setPanel(null);
               }}
             />
           )}
@@ -2708,6 +2738,8 @@ export default function Home() {
               annotations.edit &&
               annotationTab === 'position')) &&
           (selectedAnnotation &&
+          !selectedAnnotation.borehole &&
+          selectedAnnotation.kind !== 'pin' &&
           !selectedAnnotation.trackAnchor &&
           !selectedAnnotation.sectionAnchor &&
           selectedPose &&
@@ -2835,16 +2867,6 @@ export default function Home() {
             }}
           />
         )}
-        <CameraGizmo
-          view={view}
-          onView={(pitch, bearing) => {
-            follow.pause();
-            position.free();
-            if (pitch > 0 && !layers.terrain && !section.enabled)
-              update({ terrain: true });
-            map.current?.view(pitch, bearing, false);
-          }}
-        />
       </main>
     </TextSuggestions.Provider>
   );

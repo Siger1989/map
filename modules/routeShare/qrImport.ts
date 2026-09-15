@@ -20,6 +20,7 @@ export function qrTransfer(
     ...(data.style ? { style: data.style } : {}),
     ...(data.edgeColors ? { edgeColors: data.edgeColors } : {}),
     ...(data.colorConditions ? { colorConditions: data.colorConditions } : {}),
+    ...(data.sections ? { sections: data.sections } : {}),
     navigationMode: data.mode,
     sharedRoute: {
       stops: data.stops.map((s) => ({

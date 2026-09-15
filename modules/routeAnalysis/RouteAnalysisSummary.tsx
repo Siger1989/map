@@ -1,3 +1,4 @@
+import { isTrip } from '../outdoor/tripData';
 import { useMemo, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
 import { analyzeRoute } from './metrics';
@@ -27,12 +28,12 @@ export function RouteAnalysisSummary({
       className="recording-precision"
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
-      <summary>速度与坡度分析</summary>
+      <summary>{isTrip(track) ? '速度与坡度分析' : '坡度分析'}</summary>
       {onShowMetric && (
         <div className="route-share-actions">
-          <button onClick={() => onShowMetric('slope')}>地图按坡度着色</button>
+          <button onClick={() => onShowMetric('slope')}>地图按坡度显示</button>
           <button onClick={() => onShowMetric('elevation')}>
-            地图按海拔着色
+            地图按海拔显示
           </button>
         </div>
       )}
@@ -51,7 +52,9 @@ export function RouteAnalysisSummary({
       </button>
       <dl className="route-data-rows">
         {[
-          ['最高区间速度', value(metrics.maximumSpeedKmh, 'km/h')],
+          ...(isTrip(track)
+            ? [['最高区间速度', value(metrics.maximumSpeedKmh, 'km/h')]]
+            : []),
           ['最大采样坡度', value(metrics.maximumSlopePercent, '%')],
           ['最陡连续50米', value(metrics.steepest50mPercent, '%')],
           [

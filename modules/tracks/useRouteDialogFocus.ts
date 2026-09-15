@@ -1,8 +1,10 @@
+import { useBackHandler } from '../controls/backNavigation';
 import { useEffect, useRef } from 'react';
 export function useRouteDialogFocus(onBack: () => void) {
   const root = useRef<HTMLElement>(null),
     back = useRef(onBack);
   back.current = onBack;
+  useBackHandler(true, root, onBack);
   useEffect(() => {
     const previous =
       document.activeElement instanceof HTMLElement

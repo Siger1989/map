@@ -36,7 +36,7 @@ export type Annotation = {
   trackAnchor?: TrackAnchor;
   sectionAnchor?: SectionAnchor;
   /** Unknown depth is distinct from zero; strata are outside this field's scope. */
-  borehole?: { depth: number | null };
+  borehole?: { depth: number | null; diameterMm?: number | null };
   icon?: MarkerIconId;
   attributes?: AnnotationAttribute[];
   footprint?: Footprint;
@@ -76,6 +76,9 @@ export function validAnnotation(value: unknown): value is Annotation {
     (a.sectionAnchor === undefined || validSectionAnchor(a.sectionAnchor)) &&
     (a.borehole === undefined ||
       (!!a.borehole &&
+        (a.borehole.diameterMm === undefined ||
+          a.borehole.diameterMm === null ||
+          bounded(a.borehole.diameterMm, 1, 10000)) &&
         (a.borehole.depth === null ||
           bounded(a.borehole.depth, 0.1, 12000)))) &&
     (a.icon === undefined || Object.hasOwn(MARKER_ICONS, a.icon)) &&

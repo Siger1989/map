@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useBackHandler } from './backNavigation';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PositionDock } from '../position/PositionDock';
 import type { PositionFix } from '../position/types';
 import {
@@ -11,10 +12,18 @@ import {
   Settings2,
 } from 'lucide-react';
 import type { DirectionMode } from '../position/types';
-import { openLayoutEditor } from '../uiLayout/events';
+import { ViewSettings } from './ViewSettings';
+import './mapActions.css';
 
 export function MapActions({
   terrain,
+  pitch,
+  onAngle,
+  onFree,
+  onOverview,
+  canOverview,
+  onCoordinates,
+  directionError,
   compact = false,
   bearing,
   onZoom,
@@ -37,6 +46,13 @@ export function MapActions({
   showCoordinates,
   displayControl,
 }: {
+  pitch: number;
+  onAngle: (pitch: number, bearing: number) => void;
+  onFree: () => void;
+  onOverview: () => void;
+  canOverview: boolean;
+  onCoordinates: (value: boolean) => void;
+  directionError?: string;
   terrain: boolean;
   compact?: boolean;
   bearing: number;
@@ -60,8 +76,17 @@ export function MapActions({
   showCoordinates?: boolean;
   displayControl?: ReactNode;
 }) {
+  const [viewOpen, setViewOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [locationSettings, setLocationSettings] = useState(false);
+  const root = useRef<HTMLElement>(null);
+  useBackHandler(viewOpen || expanded, root, () => {
+    if (locationSettings) setLocationSettings(false);
+    else {
+      setViewOpen(false);
+      setExpanded(false);
+    }
+  });
   useEffect(() => {
     if (compact) {
       setExpanded(false);
@@ -78,109 +103,37 @@ export function MapActions({
         fix={fix}
         showCoordinates={showCoordinates}
       >
+        <div className="map-zoom-controls glass">
+          <button aria-label="放大地图" onClick={() => onZoom(1)}>
+            <Plus size={20} />
+          </button>
+          <button aria-label="缩小地图" onClick={() => onZoom(-1)}>
+            <Minus size={20} />
+          </button>
+        </div>
         {displayControl}
       </PositionDock>
       <nav
-        className={`map-actions glass${expanded ? ' is-expanded' : ''}`}
+        ref={root}
+        className="map-actions"
+        style={{ zIndex: viewOpen || expanded ? 65 : 35 }}
         aria-label="地图快捷操作"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && (expanded || viewOpen)) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (locationSettings) setLocationSettings(false);
+            else {
+              setExpanded(false);
+              setViewOpen(false);
+            }
+          }
+        }}
       >
-        {locationSettings && (
-          <section className="map-location-settings" aria-label="定位设置">
-            <header>
-              <strong>定位设置</strong>
-              <button
-                onClick={() => setLocationSettings(false)}
-                aria-label="关闭定位设置"
-              >
-                ×
-              </button>
-            </header>
-            <p>
-              {networkMode ? '基站 / Wi-Fi 大致位置' : '自动定位 · 优先 GPS'}
-            </p>
-            {networkAvailable && (
-              <button
-                disabled={followBlocked}
-                onClick={() => {
-                  onNetwork();
-                  setLocationSettings(false);
-                }}
-              >
-                {networkMode ? '切回自动定位' : '使用室内网络定位'}
-              </button>
-            )}
-            {watching && (
-              <button
-                onClick={() => {
-                  onStopLocation();
-                  setLocationSettings(false);
-                }}
-              >
-                停止持续定位
-              </button>
-            )}
-          </section>
-        )}
         <button
-          className="icon-button"
-          aria-label="放大地图"
-          onClick={() => onZoom(1)}
-        >
-          <Plus size={21} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label="缩小地图"
-          onClick={() => onZoom(-1)}
-        >
-          <Minus size={21} />
-        </button>
-        {expanded && (
-          <>
-            <button
-              className="icon-button direction-button"
-              aria-label="边用边调界面布局"
-              data-layout-entry=""
-              onClick={openLayoutEditor}
-            >
-              <Scan size={20} />
-              <small>布局</small>
-            </button>
-            <button
-              className="icon-button direction-button"
-              aria-label="定位设置"
-              aria-expanded={locationSettings}
-              onClick={() => setLocationSettings(!locationSettings)}
-            >
-              <Settings2 size={20} />
-              <small>设置</small>
-            </button>
-            <button
-              className="icon-button direction-button"
-              aria-label="正北朝上"
-              aria-pressed={direction === 'north'}
-              onClick={onNorth}
-            >
-              <Compass
-                size={22}
-                style={{ transform: `rotate(${-bearing}deg)` }}
-              />
-              <small>北</small>
-            </button>
-            <button
-              className="icon-button direction-button"
-              aria-label="跟随手机方向"
-              disabled={sectionActive}
-              aria-pressed={direction === 'device'}
-              onClick={onDevice}
-            >
-              <Smartphone size={19} />
-              <small>随</small>
-            </button>
-          </>
-        )}
-        <button
-          className="dimension-button"
+          className="dimension-button glass"
           disabled={sectionActive}
           aria-label={terrain ? '切换二维地图' : '切换三维地形'}
           aria-pressed={terrain}
@@ -189,26 +142,111 @@ export function MapActions({
           {terrain ? '3D' : '2D'}
         </button>
         <button
-          className="icon-button"
+          className="direction-button glass"
+          aria-label="视角设置"
+          aria-expanded={viewOpen}
+          onClick={() => {
+            setViewOpen(!viewOpen);
+            setExpanded(false);
+          }}
+        >
+          <Compass size={19} />
+          <small>视角</small>
+        </button>
+        <button
+          className="glass"
           aria-label="更多地图操作"
-          data-layout-entry=""
           aria-expanded={expanded}
           onClick={() => {
-            setExpanded((v) => !v);
+            setExpanded(!expanded);
+            setViewOpen(false);
             setLocationSettings(false);
           }}
         >
           <MoreHorizontal size={21} />
         </button>
-        {(!compact || expanded) && (
-          <button
-            className="icon-button direction-button"
-            aria-label="框选标记与路线"
-            onClick={onBoxSelect}
+        {viewOpen && (
+          <ViewSettings
+            pitch={pitch}
+            bearing={bearing}
+            direction={direction}
+            terrain={terrain}
+            disabled={sectionActive}
+            error={directionError}
+            onClose={() => setViewOpen(false)}
+            onFree={onFree}
+            onNorth={onNorth}
+            onDevice={onDevice}
+            onAngle={onAngle}
+          />
+        )}
+        {expanded && (
+          <section
+            className="map-small-window glass"
+            aria-label={locationSettings ? '定位设置' : '更多地图操作'}
           >
-            <Scan size={21} />
-            <small>框选</small>
-          </button>
+            <header>
+              <strong>{locationSettings ? '定位设置' : '更多'}</strong>
+              <button
+                aria-label={locationSettings ? '返回更多' : '关闭更多'}
+                onClick={() =>
+                  locationSettings
+                    ? setLocationSettings(false)
+                    : setExpanded(false)
+                }
+              >
+                返回
+              </button>
+            </header>
+            {locationSettings ? (
+              <>
+                <label>
+                  显示坐标
+                  <input
+                    type="checkbox"
+                    checked={!!showCoordinates}
+                    onChange={(e) => onCoordinates(e.target.checked)}
+                  />
+                </label>
+                <small>
+                  {networkMode
+                    ? '基站 / Wi-Fi 大致位置'
+                    : '自动定位 · 优先 GPS'}
+                </small>
+                {networkAvailable && (
+                  <button disabled={followBlocked} onClick={onNetwork}>
+                    {networkMode ? '切回自动定位' : '使用室内网络定位'}
+                  </button>
+                )}
+                {watching && (
+                  <button onClick={onStopLocation}>停止持续定位</button>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    onBoxSelect();
+                    setExpanded(false);
+                  }}
+                >
+                  框选对象
+                </button>
+                <button
+                  disabled={!canOverview}
+                  onClick={() => {
+                    onOverview();
+                    setExpanded(false);
+                  }}
+                >
+                  区域总览
+                </button>
+                <button onClick={() => setLocationSettings(true)}>
+                  定位设置
+                </button>
+              </>
+            )}
+          </section>
         )}
       </nav>
     </>

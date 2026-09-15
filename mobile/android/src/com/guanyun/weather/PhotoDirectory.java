@@ -13,7 +13,7 @@ import java.util.Locale;
 
 /** Reads only the tree granted by the system picker; no filesystem or media-library scan. */
 final class PhotoDirectory {
-    private static final int MAX_PHOTOS = 200, MAX_ENTRIES = 4000;
+    private static final int MAX_PHOTOS = 50000, MAX_ENTRIES = 100000;
     static Uri[] collect(ContentResolver resolver, Uri tree, CancellationSignal cancel) throws Exception {
         ArrayDeque<String> queue = new ArrayDeque<>();
         HashSet<String> seen = new HashSet<>();
@@ -36,7 +36,7 @@ final class PhotoDirectory {
                     if (DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) queue.add(id);
                     else if (isPhoto(mime, name)) {
                         photos.add(DocumentsContract.buildDocumentUriUsingTree(tree, id));
-                        if (photos.size() > MAX_PHOTOS) throw new IOException("文件夹超过200张照片，请选择更小的行程目录或分批选照片");
+                        if (photos.size() > MAX_PHOTOS) throw new IOException("目录超过50000张照片，请选子目录继续筛选");
                     }
                 }
             }

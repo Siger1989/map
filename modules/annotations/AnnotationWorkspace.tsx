@@ -1,3 +1,4 @@
+import { useBackHandler } from '../controls/backNavigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   Camera,
@@ -25,6 +26,7 @@ import {
   AnnotationIcon,
   MarkerBasic,
   MarkerCoordinates,
+  MarkerPosition,
   MarkerData,
 } from './AnnotationFields';
 import './markerWorkspace.css';
@@ -47,6 +49,7 @@ export function AnnotationWorkspace({
   cameraBusy,
   cameraRetry,
   onCameraRetry,
+  onLocate,
 }: {
   state: AnnotationsState;
   shownItem: Annotation;
@@ -64,8 +67,9 @@ export function AnnotationWorkspace({
   cameraBusy?: boolean;
   cameraRetry?: boolean;
   onCameraRetry?: () => void;
+  onLocate?: () => void;
 }) {
-  const [view, setView] = useState<'summary' | 'details'>('summary');
+  const [view, setView] = useState<'summary' | 'details' | 'more'>('summary');
   const [confirm, setConfirm] = useState<'delete' | 'leave' | null>(null);
   const root = useRef<HTMLElement>(null);
   const editing = !!state.edit;
@@ -92,11 +96,12 @@ export function AnnotationWorkspace({
         state.cancelEdit();
         setView('summary');
       }
-    } else if (view === 'details') setView('summary');
+    } else if (view !== 'summary') setView('summary');
     else onClose();
   };
   const latestBack = useRef(back);
   latestBack.current = back;
+  useBackHandler(!dragging, root, back);
   useEffect(() => {
     const dialog = root.current?.querySelector<HTMLElement>('.marker-confirm');
     if (dialog) dialog.querySelector<HTMLButtonElement>('button')?.focus();
@@ -247,13 +252,8 @@ export function AnnotationWorkspace({
           <header className="marker-summary-title">
             <AnnotationIcon item={item} />
             <strong title={item.name}>{item.name || '未命名'}</strong>
-            <button
-              className="marker-delete"
-              aria-label="删除标记"
-              onClick={() => setConfirm('delete')}
-            >
-              <Trash2 size={16} />
-              删除
+            <button aria-label="标记更多" onClick={() => setView('more')}>
+              ⋯
             </button>
             <button aria-label="关闭标记" onClick={onClose}>
               <X size={20} />
@@ -291,16 +291,9 @@ export function AnnotationWorkspace({
           <button aria-label="返回标记摘要" onClick={back}>
             <ChevronLeft size={20} />
           </button>
-          <strong>标记详情</strong>
-          <button
-            className="marker-delete"
-            aria-label="删除标记"
-            onClick={() => setConfirm('delete')}
-          >
-            <Trash2 size={16} />
-          </button>
-          <button aria-label="分享标记" onClick={() => onShare(item.id)}>
-            <Share2 size={18} />
+          <strong>{view === 'more' ? '更多' : '标记详情'}</strong>
+          <button aria-label="标记更多" onClick={() => setView('more')}>
+            ⋯
           </button>
         </header>
       )}
@@ -314,6 +307,21 @@ export function AnnotationWorkspace({
           {cameraStatus}
           {cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}
         </p>
+      )}
+      {!editing && view === 'more' && (
+        <div className="marker-scroll marker-more">
+          <button onClick={() => onShare(item.id)}>分享 / 导出</button>
+          <button onClick={() => state.duplicate(item.id)}>复制为新标记</button>
+          <button
+            onClick={() => {
+              if (state.update(item.id, { visible: !item.visible }))
+                setView('summary');
+            }}
+          >
+            {item.visible ? '隐藏' : '恢复显示'}
+          </button>
+          <button onClick={() => setConfirm('delete')}>删除…</button>
+        </div>
       )}
       {!editing && view === 'summary' && photos.length > 0 && (
         <div className="marker-summary-photos">
@@ -341,15 +349,37 @@ export function AnnotationWorkspace({
                 {item.coordinates[1].toFixed(6)}
               </p>
             ) : (
-              <MarkerCoordinates
-                item={item}
-                base={base}
-                change={change}
-                reading={state.reading}
-                refresh={() =>
-                  void state.refreshElevation(item.id, item.coordinates)
-                }
-              />
+              <>
+                <MarkerCoordinates
+                  item={item}
+                  base={base}
+                  change={change}
+                  reading={state.reading}
+                  refresh={() =>
+                    void state.refreshElevation(item.id, item.coordinates)
+                  }
+                />
+                {item.kind !== 'pin' && !item.borehole && (
+                  <>
+                    <MarkerPosition
+                      item={item}
+                      base={base}
+                      change={change}
+                      transform={state.transform}
+                      origin={state.edit?.origin}
+                    />
+                    <div className="trip-more">
+                      <button
+                        disabled={state.moveUndoId !== item.id}
+                        onClick={state.undoMove}
+                      >
+                        撤销变换
+                      </button>
+                      <button onClick={onLocate}>回到对象</button>
+                    </div>
+                  </>
+                )}
+              </>
             ))}
           {tab === 'data' && <MarkerData item={item} change={change} />}
         </div>
@@ -358,6 +388,12 @@ export function AnnotationWorkspace({
         <div className="marker-scroll marker-details">
           <h3>{item.name || '未命名'}</h3>
           <AnnotationLocation item={item} onEdit={() => startEdit(true)} />
+          {item.borehole && (
+            <p>
+              钻井 · 口径 {item.borehole.diameterMm ?? '未填写'} mm · 深度{' '}
+              {item.borehole.depth ?? '未填写'} m
+            </p>
+          )}
           {item.kind !== 'pin' && (
             <p>
               {dimensionLabel(item)} · 体积约 {volume(item)?.toFixed(2)} m³
@@ -386,14 +422,6 @@ export function AnnotationWorkspace({
               已关联剖面 · 距 A {item.sectionAnchor.distance.toFixed(1)} m
             </small>
           )}
-          <button
-            onClick={() => {
-              state.duplicate(item.id);
-            }}
-          >
-            <Clipboard size={16} />
-            复制为新标记
-          </button>
         </div>
       )}
       {(confirm === 'delete' || askLeave) && (

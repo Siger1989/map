@@ -21,13 +21,13 @@ export function SamplingSettings({
   return (
     <details className="recording-precision sampling-settings">
       <summary>
-        记录模式 · {labels[settings.policy.mode]}
+        记录频率 · {labels[settings.policy.mode]}
         {settings.policy.distanceOnly ? ' · 按距离' : ''}
       </summary>
       <label className="slider-label">
-        模式
+        频率
         <select
-          aria-label="记录模式"
+          aria-label="记录频率"
           disabled={!settings.supported}
           value={draft.mode}
           onChange={(event) => {
@@ -117,7 +117,7 @@ export function SamplingSettings({
           disabled={!settings.supported}
           onClick={() => settings.update(draft)}
         >
-          应用记录模式
+          应用记录频率
         </button>
       </div>
       <p className="route-note">
@@ -127,7 +127,7 @@ export function SamplingSettings({
         自动开始仅在没有待处理记录时生效。
       </p>
       {!settings.supported && (
-        <p className="route-note">当前安装包不支持记录模式设置。</p>
+        <p className="route-note">当前安装包不支持记录频率设置。</p>
       )}
       {settings.error && (
         <p role="status" className="route-error">

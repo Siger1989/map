@@ -5,6 +5,10 @@ import { useRecordingPreferences } from './useRecordingPreferences';
 import { recordingAccuracyMessage } from './recordingPreferences';
 import { nativeRecordingSnapshot } from './nativeRecordingSnapshot';
 import {
+  awaitRecordingCommand,
+  type RecordingAction,
+} from './recordingCommand';
+import {
   appendFix,
   emptyRecording,
   readRecording,
@@ -17,8 +21,10 @@ declare global {
     GuanyunNative?: {
       record(command: string): void;
       recordState(): string;
+      recordFor?(command: string, expectedId: string): string;
       saveFile(name: string, mime: string, text: string): void;
       photoFolders?(): boolean;
+      photoTimeRange?(start: number, end: number): void;
       photoOutput?(name: string, base64: string, share: boolean): string;
       routeOutput?(name: string, base64: string, share: boolean): string;
       archiveBegin?(name: string, size: number): string;
@@ -73,7 +79,9 @@ export function useRecording() {
       const snapshot = nativeRecordingSnapshot();
       const read = () => {
         try {
-          setRecord(snapshot(bridge.recordState()));
+          const next = snapshot(bridge.recordState());
+          current.current = next;
+          setRecord(next);
           nativeCommand.current = null;
         } catch {
           nativeCommand.current = null;
@@ -200,9 +208,53 @@ export function useRecording() {
         persist({
           ...current.current,
           phase: action === 'pause' ? 'paused' : 'finished',
+          ...(action === 'finish' ? { finishedAt: Date.now() } : {}),
         });
     } catch (e) {
       setRecord((r) => ({ ...r, error: (e as Error).message }));
+    }
+  };
+  const pending = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const commandAsync = async (
+    action: RecordingAction,
+    expectedId = current.current.id,
+  ) => {
+    if (pending.current) throw new Error('正在处理记录，请稍候');
+    if (current.current.id !== expectedId)
+      throw new Error('记录已切换，请重新打开');
+    pending.current = true;
+    setBusy(true);
+    try {
+      let next: Recording;
+      if (window.GuanyunNative)
+        next = await awaitRecordingCommand(
+          action,
+          expectedId,
+          window.GuanyunNative,
+        );
+      else {
+        command(action);
+        next = current.current;
+        const wanted = {
+          start: 'recording',
+          resume: 'recording',
+          pause: 'paused',
+          finish: 'finished',
+          clear: 'idle',
+        }[action];
+        if (
+          next.phase !== wanted ||
+          (action !== 'start' && action !== 'clear' && next.id !== expectedId)
+        )
+          throw new Error(next.error || '记录操作未完成');
+      }
+      current.current = next;
+      setRecord(next);
+      return { ...next, style: appearance.style };
+    } finally {
+      pending.current = false;
+      setBusy(false);
     }
   };
   const styledRecord = useMemo(
@@ -212,7 +264,11 @@ export function useRecording() {
   return {
     record: styledRecord,
     native,
-    command,
+    command: (action: RecordingAction) => {
+      if (!pending.current) command(action);
+    },
+    commandAsync,
+    busy,
     preferences,
     qualityNote,
     appearance,

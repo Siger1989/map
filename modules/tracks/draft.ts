@@ -2,6 +2,7 @@ import type { Coordinate } from '../navigation/types';
 import { equalCoordinate, moveSegmentsNode } from './editing.ts';
 import { cutNodes } from './deleteNodes.ts';
 import { inheritEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
+import { inheritSections, type TrackSections } from './sections.ts';
 export type DrawingMode = 'points' | 'freehand';
 type Operation =
   | {
@@ -14,12 +15,14 @@ type Operation =
   | {
       kind: 'move';
       edgeColors?: TrackEdgeColors;
+      sections?: TrackSections;
       segments: Coordinate[][];
       nodes?: Coordinate[];
       pointLine: number | null;
       kinds?: DrawingMode[];
     };
 export type TrackDraft = {
+  sections?: TrackSections;
   colorConditions?: Record<string, string>;
   edgeColors?: TrackEdgeColors;
   segments: Coordinate[][];
@@ -48,6 +51,7 @@ export function appendVertex(draft: TrackDraft, point: Coordinate): TrackDraft {
     ...draft,
     segments,
     kinds,
+    ...(draft.sections ? { sections: inheritSections(segments, [draft]) } : {}),
     ...(colors ? { edgeColors: colors } : {}),
     pointLine: index,
     history: [
@@ -65,6 +69,9 @@ export function appendStroke(
   return {
     ...draft,
     segments: [...draft.segments, points],
+    ...(draft.sections
+      ? { sections: inheritSections([...draft.segments, points], [draft]) }
+      : {}),
     ...(colors ? { edgeColors: colors } : {}),
     kinds: [...draft.kinds, 'freehand'],
     pointLine: null,
@@ -103,11 +110,16 @@ export function appendRoadVertex(
 export function undoDraft(draft: TrackDraft): TrackDraft {
   const operation = draft.history.at(-1);
   if (!operation) return draft;
-  const { edgeColors: _currentColors, ...withoutColors } = draft;
+  const {
+    edgeColors: _currentColors,
+    sections: _currentSections,
+    ...withoutColors
+  } = draft;
   if (operation.kind === 'move')
     return {
       ...withoutColors,
       segments: operation.segments,
+      ...(operation.sections ? { sections: operation.sections } : {}),
       ...(operation.edgeColors ? { edgeColors: operation.edgeColors } : {}),
       nodes: operation.nodes,
       pointLine: operation.pointLine,
@@ -135,6 +147,7 @@ export function undoDraft(draft: TrackDraft): TrackDraft {
     segments,
     kinds,
     history,
+    ...(draft.sections ? { sections: inheritSections(segments, [draft]) } : {}),
     pointLine:
       prior?.kind === 'point'
         ? prior.segment
@@ -167,6 +180,7 @@ export function replaceDraftGeometry(
     segments,
     nodes,
     kinds,
+    ...(draft.sections ? { sections: inheritSections(segments, [draft]) } : {}),
     ...(edgeColors ? { edgeColors } : {}),
     pointLine,
     history: [
@@ -174,6 +188,7 @@ export function replaceDraftGeometry(
       {
         kind: 'move',
         edgeColors: draft.edgeColors,
+        sections: draft.sections,
         segments: draft.segments,
         nodes: draft.nodes,
         pointLine: draft.pointLine,
@@ -239,6 +254,7 @@ export function moveDraftNode(
       {
         kind: 'move',
         edgeColors: draft.edgeColors,
+        sections: draft.sections,
         segments: draft.segments,
         nodes: draft.nodes,
         pointLine: draft.pointLine,

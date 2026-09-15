@@ -140,8 +140,8 @@ test('folder selection filters documents, accepts generic MIME photos and enforc
     ),
     [jpg, png],
   );
-  assert.throws(() => selectPhotoFiles(Array(201).fill(jpg), true), /200/);
-  assert.equal(selectPhotoFiles(Array(200).fill(jpg), true).length, 200);
+  assert.throws(() => selectPhotoFiles(Array(50001).fill(jpg), true), /50000/);
+  assert.equal(selectPhotoFiles(Array(201).fill(jpg), true).length, 201);
   assert.throws(() => selectPhotoFiles(Array(31).fill(jpg), false), /30/);
   assert.throws(
     () =>

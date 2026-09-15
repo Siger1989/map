@@ -349,7 +349,6 @@
   display: grid;
   gap: 6px;
 }
-[data-route-window='true'] .control-dock > .map-toolbar,
 [data-route-window='true'] .center-cursor {
   display: none;
 }
@@ -381,7 +380,6 @@
 [data-route-window='true'] .map-center-cursor {
   display: none;
 }
-[data-route-edit='true'] .map-actions,
 [data-route-edit='true'] .layer-window-entry {
   display: none;
 }
@@ -529,7 +527,7 @@
 /* Compact node editor: six actions stay together, matching collection density. */
 .observatory .route-edit-dock {
   left: 4px;
-  bottom: calc(4px + env(safe-area-inset-bottom));
+  bottom: calc(54px + env(safe-area-inset-bottom));
   width: min(300px, calc(100% - 8px));
   max-height: min(200px, calc(100dvh - 64px));
   padding: 4px;
@@ -537,31 +535,131 @@
   background: #f0f3eefa;
   font-size: 11px;
 }
-.observatory .route-edit-status { margin: 0 0 2px; font-size: 10px; }
+.observatory .route-edit-status {
+  margin: 0 0 2px;
+  font-size: 10px;
+}
 .observatory .route-edit-actions-row {
   grid-template-columns: 30px 30px repeat(4, minmax(0, 1fr));
   gap: 2px;
 }
 .observatory .route-edit-dock button,
 .observatory .route-edit-dock .route-custom-color {
-  min-width: 0; min-height: 36px; height: 36px;
-  padding: 0 2px; gap: 2px; font-size: 11px;
-  background: transparent; border-color: transparent;
+  min-width: 0;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 2px;
+  gap: 2px;
+  font-size: 11px;
+  background: transparent;
+  border-color: transparent;
 }
-.observatory .route-edit-actions-row svg { width: 14px; height: 14px; }
-.observatory .route-edit-actions-row .route-solid { color: #fff; background: #1d694c; }
-.observatory .route-edit-dock button[aria-pressed='true'] { background: #cee4d8; color: #1d694c; }
-.observatory .route-edit-colors { margin-top: 0; gap: 0; border-top: 1px solid #d3ddd4; }
-.observatory .route-edit-colors i { width: 16px; height: 16px; }
-.observatory .route-edit-sliders { gap: 4px; }
-.observatory .route-edit-sliders label { border: 0; padding: 0; font-size: 10px; }
-.observatory .route-edit-dock .route-edit-sliders input[type='range'] { height: 30px; min-height: 30px; }
-.observatory .route-branch-options { display: flex; gap: 2px; }
+.observatory .route-edit-actions-row svg {
+  width: 14px;
+  height: 14px;
+}
+.observatory .route-edit-actions-row .route-solid {
+  color: #fff;
+  background: #1d694c;
+}
+.observatory .route-edit-dock button[aria-pressed='true'] {
+  background: #cee4d8;
+  color: #1d694c;
+}
+.observatory .route-edit-colors {
+  margin-top: 0;
+  gap: 0;
+  border-top: 1px solid #d3ddd4;
+}
+.observatory .route-edit-colors i {
+  width: 16px;
+  height: 16px;
+}
+.observatory .route-edit-sliders {
+  gap: 4px;
+}
+.observatory .route-edit-sliders label {
+  border: 0;
+  padding: 0;
+  font-size: 10px;
+}
+.observatory .route-edit-dock .route-edit-sliders input[type='range'] {
+  height: 30px;
+  min-height: 30px;
+}
+.observatory .route-branch-options {
+  display: flex;
+  gap: 2px;
+}
 
 .observatory .route-edit-header {
-  left: 4px; right: auto; top: calc(4px + env(safe-area-inset-top));
-  width: min(300px, calc(100% - 8px)); padding: 2px 4px; gap: 4px;
-  min-height: 40px; font-size: 11px; background: #f0f3eefa;
+  left: 4px;
+  right: auto;
+  top: calc(4px + env(safe-area-inset-top));
+  width: min(300px, calc(100% - 8px));
+  padding: 2px 4px;
+  gap: 4px;
+  min-height: 40px;
+  font-size: 11px;
+  background: #f0f3eefa;
 }
-.observatory .route-edit-header button { min-height: 36px; padding: 0 4px; font-size: 11px; background: transparent; border: 0; }
-.observatory .route-edit-header small { font-size: 10px; }
+.observatory .route-edit-header button {
+  min-height: 36px;
+  padding: 0 4px;
+  font-size: 11px;
+  background: transparent;
+  border: 0;
+}
+.observatory .route-edit-header small {
+  font-size: 10px;
+}
+.observatory .route-edit-actions-row {
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
+  gap: 4px;
+  overflow-x: auto;
+}
+.observatory .route-edit-actions-row button {
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+}
+.route-edit-options details {
+  border-top: 1px solid #d3ddd4;
+}
+.route-edit-options summary {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.route-edit-options label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.route-edit-options label input:not([type='color']),
+.route-edit-options select {
+  min-width: 0;
+  flex: 1;
+}
+.route-path-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+.route-path-range label {
+  flex: 1;
+}
+
+.observatory .route-primary-actions {
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 2px;
+  overflow-x: auto;
+}
+.observatory .route-primary-actions button {
+  min-height: 44px;
+  padding: 0 2px;
+  gap: 2px;
+}

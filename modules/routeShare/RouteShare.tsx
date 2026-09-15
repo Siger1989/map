@@ -1,3 +1,5 @@
+import { resolvePhotoAssets } from '../photos/storage';
+import { photosForTrack as relatedPhotos } from '../photos/trackPhotos';
 import { useEffect, useRef, useState } from 'react';
 import { TRAVEL_MODES } from '../navigation/types';
 import { externalLegs, routeFileText, type ShareRoute } from './data';
@@ -110,7 +112,11 @@ export function RouteShare({
         setPreview(url.current);
       }
       const blob = await archiveBlob(
-        routeArchiveEntries(data, photos, picture),
+        routeArchiveEntries(
+          data,
+          await resolvePhotoAssets(relatedPhotos(data.track, photos)),
+          picture,
+        ),
         controller.signal,
       );
       return deliverFile(

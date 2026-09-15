@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  readPhotos,
+  readPhotoIndex,
+  readPhotoAsset,
   writePhotos,
   patchPhoto,
   type TripPhoto,
@@ -23,15 +24,17 @@ export function useTripPhotos() {
   const publish = useCallback((data: TripPhoto[]) => {
     const next = data.map((p) => {
       const old = visibleCache.current.get(p.id);
-      const same =
-        old &&
-        old.preview.size === p.preview.size &&
-        old.detail?.size === p.detail?.size;
+      const same = old && !old.assetPending && !p.preview.size;
       return {
         ...p,
         preview: same ? old.preview : p.preview,
         detail: same ? old.detail : p.detail,
-        url: same ? old.url : URL.createObjectURL(p.preview),
+        url: same
+          ? old.url
+          : p.preview.size
+            ? URL.createObjectURL(p.preview)
+            : '',
+        assetPending: same ? false : !p.preview.size,
       };
     });
     const keep = new Set(next.map((p) => p.url));
@@ -44,7 +47,11 @@ export function useTripPhotos() {
   const refresh = useCallback(async () => {
     const serial = ++revision.current;
     try {
-      const data = await readPhotos();
+      const index = await readPhotoIndex();
+      const data = index.map((p) => ({
+        ...p,
+        preview: new Blob([], { type: 'image/jpeg' }),
+      }));
       if (!mounted.current || serial !== revision.current) return;
       publish(data);
     } catch {
@@ -63,6 +70,32 @@ export function useTripPhotos() {
       visibleCache.current.clear();
     };
   }, [refresh]);
+  useEffect(() => {
+    if (!selected || !items.find((p) => p.id === selected)?.assetPending)
+      return;
+    let active = true;
+    void readPhotoAsset(selected)
+      .then((photo) => {
+        if (!active || !mounted.current) return;
+        const current = visibleCache.current.get(photo.id);
+        if (!current) return;
+        const next = {
+          ...current,
+          ...photo,
+          url: URL.createObjectURL(photo.preview),
+          assetPending: false,
+        };
+        urls.current.push(next.url);
+        visibleCache.current.set(photo.id, next);
+        setItems((list) => list.map((p) => (p.id === photo.id ? next : p)));
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selected, items]);
   const update = useCallback(
     async (id: string, patch: Omit<PhotoDetails, 'detail'>) => {
       failedWrites.current.delete(id);
@@ -127,9 +160,8 @@ export function useTripPhotos() {
     setSelected,
     update,
     save: async (photos: TripPhoto[]) => {
-      const committed = await writePhotos(photos);
-      revision.current++;
-      if (mounted.current) publish(committed);
+      await writePhotos(photos);
+      await refresh();
     },
     remove: async (id: string) => {
       await writePhotos([], id);

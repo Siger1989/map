@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useBackHandler } from '../controls/backNavigation';
+import { useRef, useEffect, useState } from 'react';
 import type { VisiblePhoto } from './storage';
 import type { ManualTrack } from '../tracks/drawing';
 import type { PhotoDetails } from './details';
@@ -25,6 +26,8 @@ export function PhotoViewer({
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const root = useRef<HTMLElement>(null);
+  useBackHandler(!expanded, root, onClose);
   useEffect(() => {
     if (photo.altitude || !track) return;
     const altitude = matchPhoto(track, photo.time)?.altitude;
@@ -33,9 +36,22 @@ export function PhotoViewer({
         setError('海拔信息保存失败，请重试'),
       );
   }, [photo.id, photo.altitude, photo.time, track, onUpdate]);
+  if (photo.assetPending)
+    return (
+      <section
+        ref={root}
+        className="trip-photo-viewer glass"
+        role="dialog"
+        aria-label="读取照片"
+      >
+        <button onClick={onClose}>返回</button>
+        <p role="status">正在按需读取照片…</p>
+      </section>
+    );
   const index = group.findIndex((p) => p.id === photo.id);
   return (
     <section
+      ref={root}
       className="trip-photo-viewer glass"
       role="dialog"
       aria-label="行程照片预览"
@@ -63,7 +79,8 @@ export function PhotoViewer({
       </button>
       <p>
         {new Date(photo.time).toLocaleString('zh-CN')} ·{' '}
-        {photoLocationLabel(photo)}{photo.timeSource === 'camera' && ' · 时间取自相机启动时刻'}
+        {photoLocationLabel(photo)}
+        {photo.timeSource === 'camera' && ' · 时间取自相机启动时刻'}
       </p>
       <p>
         {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}

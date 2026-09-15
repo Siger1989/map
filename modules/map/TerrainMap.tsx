@@ -1,8 +1,9 @@
+'use client';
+import { canDragPin } from '../annotations/dragPolicy';
 import { readLastView, saveLastView } from './lastView';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
-('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
 import { addContours, baseStyle } from '../terrain/terrain';
@@ -65,43 +66,8 @@ import {
   type Point,
   type ViewState,
 } from './types';
-export type MapHandle = {
-  groundElevation: (coordinates: Coordinate) => number | null;
-  centerCoordinate: () => Coordinate | null;
-  watchObjectProjection: WatchProjection;
-  sectionCenter: () => {
-    center: [number, number];
-    altitude: number;
-    width: number;
-    heading: number;
-  } | null;
-  refreshSection: () => void;
-  snapRoad: RoadSnapper;
-  snapRiver: RoadSnapper;
-  zoom: (amount: number) => void;
-  north: () => void;
-  reset: () => void;
-  view: (pitch: number, bearing: number, animate?: boolean) => void;
-  refreshSatellite: () => void;
-  refreshGeology: () => void;
-  inspect: () => unknown;
-  focusPoint: (coordinates: Coordinate, zoom?: number) => void;
-  fitRoute: (coordinates: Coordinate[]) => void;
-  fitCollection: (
-    coordinates: Coordinate[],
-    padding?: { top: number; right: number; bottom: number; left: number },
-  ) => void;
-  previewRoute: (coordinates: Coordinate | null) => void;
-  followPosition: (
-    coordinates: Coordinate,
-    animate?: boolean,
-    maximumZoom?: number,
-  ) => boolean;
-  toCoordinate: (point: ScreenPoint) => Coordinate | null;
-  stop: () => void;
-  toScreen: (coordinate: Coordinate) => ScreenPoint | null;
-  magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
-};
+import type { MapHandle } from './MapHandle';
+export type { MapHandle } from './MapHandle';
 type Props = {
   collectionPreviewActive?: boolean;
   mapSource?: MapSource | null;
@@ -712,7 +678,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 item?.id !== latest.current.annotationEditingId
               )
                 return null;
-              if (item?.kind === 'pin' && !item.trackAnchor)
+              if (canDragPin(item))
                 return {
                   kind: 'annotation',
                   id: item.id,

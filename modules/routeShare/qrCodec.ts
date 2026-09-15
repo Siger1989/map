@@ -8,6 +8,7 @@ import type { ShareRoute } from './data';
 import { lineLength } from '../journey/metrics.ts';
 import { normalizeTrackStyle, type TrackStyle } from '../tracks/style.ts';
 import { validEdgeColors, type TrackEdgeColors } from '../tracks/edgeColors.ts';
+import { validSections, type TrackSections } from '../tracks/sections.ts';
 import {
   validColorConditions,
   type ColorConditions,
@@ -20,6 +21,7 @@ const TOLERANCES = [
   0, 2, 5, 10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 50000, 500000,
 ] as const;
 export type RouteQr = {
+  sections?: TrackSections;
   style?: TrackStyle;
   edgeColors?: TrackEdgeColors;
   colorConditions?: ColorConditions;
@@ -93,6 +95,7 @@ function encode(value: RouteQr) {
       ...(value.style ? { st: value.style } : {}),
       ...(value.edgeColors ? { ec: value.edgeColors } : {}),
       ...(value.colorConditions ? { cc: value.colorConditions } : {}),
+      ...(value.sections ? { sc: value.sections } : {}),
     }),
   );
   if (raw.length > MAX_RAW) return '';
@@ -119,6 +122,10 @@ export function makeRouteQr(data: ShareRoute) {
   const protectedSegments = data.segments.flatMap((line, part) => {
     const pins = new Set([0, line.length - 1]);
     const colors = sourceColors?.[part];
+    const sections = data.track?.sections?.edges[part];
+    if (sections)
+      for (let i = 1; i < sections.length; i++)
+        if (sections[i] !== sections[i - 1]) pins.add(i);
     if (colors)
       for (let i = 1; i < colors.length; i++)
         if (colors[i] !== colors[i - 1]) pins.add(i);
@@ -169,6 +176,20 @@ export function makeRouteQr(data: ShareRoute) {
       tolerance,
       duration: data.duration,
       ...(style ? { style } : {}),
+      ...(data.track?.sections
+        ? {
+            sections: {
+              notes: data.track.sections.notes,
+              edges: segments.map((line, part) => {
+                let cursor = 0;
+                return line.slice(1).map((p) => {
+                  cursor = data.segments[part].indexOf(p, cursor + 1);
+                  return data.track!.sections!.edges[part][cursor - 1];
+                });
+              }),
+            },
+          }
+        : {}),
       ...(sourceColors
         ? {
             edgeColors: segments.map((line, part) => {
@@ -264,6 +285,7 @@ export function readRouteQr(text: string): RouteQr {
     });
     if (v.ec !== undefined && !validEdgeColors(v.ec, segments)) throw 0;
     if (v.cc !== undefined && !validColorConditions(v.cc)) throw 0;
+    if (v.sc !== undefined && !validSections(v.sc, segments)) throw 0;
     if (
       v.st !== undefined &&
       (!v.st ||
@@ -284,6 +306,7 @@ export function readRouteQr(text: string): RouteQr {
       ...(v.st ? { style: normalizeTrackStyle(v.st) } : {}),
       ...(v.ec ? { edgeColors: v.ec } : {}),
       ...(v.cc ? { colorConditions: v.cc } : {}),
+      ...(v.sc ? { sections: v.sc } : {}),
     };
   } catch {
     throw new Error('路线二维码已损坏、超限或格式不受支持');

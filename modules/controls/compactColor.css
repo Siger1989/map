@@ -1,0 +1,37 @@
+.compact-color {
+  max-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+.compact-color label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  min-height: 28px !important;
+}
+.compact-color input {
+  min-width: 0;
+  width: 0;
+  flex: 1;
+  min-height: 28px !important;
+  height: 28px !important;
+}
+.compact-color i {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #8ba995;
+  border-radius: 50%;
+}
+.compact-color button {
+  min-height: 36px;
+}
+.track-custom-color summary {
+  min-height: 36px;
+  cursor: pointer;
+}
+.track-custom-color[open] {
+  flex-basis: 100%;
+}

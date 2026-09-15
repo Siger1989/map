@@ -4,10 +4,10 @@
 .route-display-settings {
   position: fixed;
   z-index: 70;
-  top: calc(56px + var(--safe-top));
+  top: calc(56px + var(--safe-top, 0px));
   left: 4px;
   width: min(276px, calc(100vw - 62px));
-  max-height: var(--map-panel-max-height);
+  max-height: min(200px, calc(100dvh - 116px));
   padding: 0 4px 4px;
   border-radius: 6px;
   display: flex;
@@ -86,7 +86,10 @@
   flex-direction: column;
   gap: 2px;
   width: min(168px, calc(100vw - 100px));
-  max-height: min(200px, calc(100dvh - 510px - var(--safe-top) - var(--safe-bottom)));
+  max-height: min(
+    200px,
+    calc(100dvh - 510px - var(--safe-top, 0px) - var(--safe-bottom))
+  );
   overflow-y: auto;
   pointer-events: auto;
   color: #203d31;
@@ -143,4 +146,43 @@
 }
 .observatory[data-panel='favorites'] .route-display-info {
   bottom: calc(52px + var(--safe-bottom));
+}
+.route-display-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0;
+}
+.route-display-tabs button {
+  flex: 1;
+}
+.route-display-tabs [aria-selected='true'] {
+  background: #cbead6;
+  color: #075239;
+}
+.route-display-info {
+  left: 4px;
+  right: auto;
+  width: min(280px, calc(100vw - 62px));
+  bottom: calc(110px + var(--safe-bottom));
+  max-height: 200px;
+}
+.route-elevation-combined {
+  height: 90px;
+  box-sizing: border-box;
+}
+.route-elevation-combined header {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.route-elevation-combined .route-elevation-profile svg {
+  height: 62px;
+  width: 100%;
+}
+.route-elevation-combined small {
+  text-align: right;
+  font-size: 9px;
+  line-height: 10px;
 }

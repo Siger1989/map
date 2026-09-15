@@ -13,12 +13,16 @@ import { normalizeTrackStyle, type TrackStyle } from './style.ts';
 import { keepsOriginalPoints } from './provenance.ts';
 import { inheritEdgeColors } from './edgeColors.ts';
 import { joinMovedRoute } from './nodeJoin.ts';
+import { inheritSections, editSection, editSectionRange } from './sections.ts';
+import { removeSelectedPath, type SelectedPath } from './pathSelection.ts';
 
 export type RouteEditSnapshot = {
   track: ManualTrack;
   selected: Coordinate | null;
   branch: number | null;
   sources: ManualTrack[];
+  path?: SelectedPath | null;
+  mergeCandidate?: ManualTrack;
 };
 export type RouteEditSession = RouteEditSnapshot & {
   original: ManualTrack;
@@ -48,13 +52,13 @@ function revise(
   session: RouteEditSession,
   change: Partial<RouteEditSnapshot>,
 ): RouteEditSession {
-  const { track, selected, branch, sources } = session;
+  const { track, selected, branch, sources, path, mergeCandidate } = session;
   return {
     ...session,
     ...change,
     history: [
       ...session.history.slice(-49),
-      { track, selected, branch, sources },
+      { track, selected, branch, sources, path, mergeCandidate },
     ],
   };
 }
@@ -74,7 +78,7 @@ export function selectEditNode(
     )
   )
     throw new Error('请选择当前路线上的节点。');
-  return { ...session, selected: point };
+  return { ...session, selected: point, path: null };
 }
 export function moveEditNode(
   session: RouteEditSession,
@@ -93,9 +97,44 @@ export function moveEditNode(
       ? snappedTarget
       : undefined;
   return revise(session, {
-    track: target ? joinMovedRoute(moved, target, to) : moved,
-    sources: target ? [...session.sources, target] : session.sources,
+    track: moved,
+    mergeCandidate: target,
+    path: null,
     selected: to,
+  });
+}
+/** Explicitly requested after previewing which archive will be incorporated. */
+export function mergeEditRoute(
+  session: RouteEditSession,
+  target = session.mergeCandidate,
+): RouteEditSession {
+  if (!target || !session.selected || target.hidden)
+    throw new Error('请先将节点对齐要合并的路线');
+  return revise(session, {
+    track: joinMovedRoute(session.track, target, session.selected),
+    sources: [...session.sources, target],
+    mergeCandidate: undefined,
+    path: null,
+  });
+}
+export function removeEditPath(session: RouteEditSession): RouteEditSession {
+  if (!session.path) throw new Error('请先点选实际路段');
+  return revise(session, {
+    track: removeSelectedPath(session.track, session.path),
+    path: null,
+    selected: null,
+  });
+}
+export function sectionRouteEdit(
+  session: RouteEditSession,
+  id: string,
+  color: string,
+  note: string,
+): RouteEditSession {
+  return revise(session, {
+    track: session.path
+      ? editSectionRange(session.track, session.path, color, note)
+      : editSection(session.track, id, color, note),
   });
 }
 export function insertEditNode(
@@ -120,6 +159,7 @@ export function removeEditNodes(
     track: removeTrackNodes(session.track, points),
     selected: null,
     branch: null,
+    path: null,
   });
 }
 export function styleRouteEdit(
@@ -149,6 +189,7 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
       track: {
         ...session.track,
         segments,
+        sections: inheritSections(segments, [session.track]),
         edgeColors: inheritEdgeColors(segments, [session.track]),
       },
       branch: null,
@@ -161,6 +202,10 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
     track: {
       ...session.track,
       segments: [...session.track.segments, [session.selected]],
+      sections: inheritSections(
+        [...session.track.segments, [session.selected]],
+        [session.track],
+      ),
       edgeColors: inheritEdgeColors(
         [...session.track.segments, [session.selected]],
         [session.track],
@@ -207,6 +252,7 @@ export function appendEditBranch(
     track: {
       ...session.track,
       segments,
+      sections: inheritSections(segments, [session.track]),
       edgeColors: inheritEdgeColors(segments, [session.track]),
       nodes: [...(session.track.nodes ?? []), point],
     },
@@ -267,6 +313,7 @@ export function prepareRouteEdit(
       t.style,
       t.edgeColors,
       t.colorConditions,
+      t.sections,
       t.hidden,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],
@@ -301,12 +348,7 @@ export function prepareRouteEdit(
     throw new Error(
       `已保存${MAX_SAVED_TRACKS}条路线，当前编辑已保留，请先整理收藏。`,
     );
-  const hidden = new Set(
-    track.id !== session.original.id ? session.sources.map((t) => t.id) : [],
-  );
-  const next = remaining.map((t) =>
-    t.id === track.id ? track : hidden.has(t.id) ? { ...t, hidden: true } : t,
-  );
+  const next = remaining.map((t) => (t.id === track.id ? track : t));
   if (!exists) next.push(track);
   return { track, records: next, removed: false };
 }
@@ -324,5 +366,37 @@ export function storeRouteEdit(
     now,
   );
   storage.setItem(TRACK_STORAGE, JSON.stringify(result.records));
+  if (storage.getItem(TRACK_STORAGE) !== JSON.stringify(result.records))
+    throw new Error('保存校验失败，当前编辑保留');
   return result;
+}
+
+/** Candidates refer to visible archives outside this edit; selecting one never merges it implicitly. */
+export function branchEditPoints(
+  session: RouteEditSession | null,
+  tracks: ManualTrack[],
+) {
+  return session && session.branch !== null
+    ? [
+        ...session.track.segments.flat(),
+        ...tracks
+          .filter(
+            (t) => !t.hidden && !session.sources.some((s) => s.id === t.id),
+          )
+          .flatMap((t) => t.segments.flat()),
+      ]
+    : [];
+}
+export function branchSnapTrack(
+  session: RouteEditSession,
+  tracks: ManualTrack[],
+  point: Coordinate,
+) {
+  return tracks.find(
+    (t) =>
+      !t.hidden &&
+      t.id !== session.track.id &&
+      !session.sources.some((s) => s.id === t.id) &&
+      t.segments.some((line) => line.some((p) => equalCoordinate(p, point))),
+  );
 }

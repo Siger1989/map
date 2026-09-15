@@ -1,0 +1,75 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { materializeSections, editSection, inheritSections } from '../modules/tracks/sections.ts';
+import { appendVertex, EMPTY_DRAFT, undoDraft } from '../modules/tracks/draft.ts';
+import { assignNewEdges, readDrawingCheckpoint, writeDrawingCheckpoint, DRAWING_CHECKPOINT } from '../modules/tracks/drawingCheckpoint.ts';
+import { routeColorSections } from '../modules/tracks/colorSections.ts';
+import { parseSavedTracks } from '../modules/tracks/drawing.ts';
+import { readTrackStyle, trackStyleText } from '../modules/tracks/styleExchange.ts';
+import { makeRouteQr, readRouteQr } from '../modules/routeShare/qrCodec.ts';
+import { insertTrackNode } from '../modules/tracks/nodeOperations.ts';
+import { moveEditNode, startRouteEdit, mergeEditRoute, removeEditPath, undoRouteEdit } from '../modules/tracks/routeEdit.ts';
+import { removeSelectedPath } from '../modules/tracks/pathSelection.ts';
+const a=[104,30],b=[104.001,30],c=[104.002,30],d=[104.003,30];
+const style={color:'#008c38',width:2,opacity:1};
+const line={id:'one',name:'测试',createdAt:1,source:'manual',segments:[[a,b,c,d]],style};
+test('same colour sections keep independent notes across editing, undo, storage and XML extensions',()=>{
+  let draft=EMPTY_DRAFT;
+  for (const p of [a,b]) draft=assignNewEdges(appendVertex(draft,p),style.color,'first','碎石');
+  draft=assignNewEdges(appendVertex(draft,c),style.color,'second','林道');
+  assert.deepEqual(draft.sections.edges,[['first','second']]);
+  const changed=editSection({...line,...draft},'first','#0066ff','新的备注');
+  assert.equal(changed.sections.notes.second,'林道');
+  assert.equal(changed.edgeColors[0][1],style.color);
+  assert.equal(routeColorSections(changed).length,2);
+  assert.deepEqual(parseSavedTracks(JSON.stringify([changed]))[0].sections,changed.sections);
+  assert.deepEqual(readTrackStyle(trackStyleText(changed),changed.segments).sections,changed.sections);
+  assert.deepEqual(undoDraft(draft).sections.edges,[['first']]);
+  assert.equal(draft.sections.notes.first,'碎石');
+});
+test('section identity survives reversal, inserted vertices and QR simplification',()=>{
+  const track={...line,sections:{edges:[['x','y','y']],notes:{x:'甲',y:'乙'}}};
+  assert.deepEqual(inheritSections([[d,c,b,a]],[track]).edges,[['y','y','x']]);
+  const inserted=insertTrackNode(track,[104.0015,30]);
+  assert.deepEqual(inserted.sections.edges,[['x','y','y','y']]);
+  const qr=makeRouteQr({name:track.name,mode:'pedestrian',segments:track.segments,stops:[{name:'起',coordinates:a},{name:'终',coordinates:d}],duration:null,track});
+  assert.deepEqual(readRouteQr(qr.text).sections,track.sections);
+});
+test('legacy notes copied to independent runs without destroying the source mapping',()=>{
+  const track={...line,edgeColors:[['#008c38','#0066ff','#008c38']],colorConditions:{'#008c38':'旧备注'}};
+  const migrated=materializeSections(track);
+  assert.notEqual(migrated.edges[0][0],migrated.edges[0][2]);
+  assert.equal(migrated.notes[migrated.edges[0][2]],'旧备注');
+  assert.equal(track.sections,undefined);
+});
+test('delete one B-D branch leaves both boundaries and the other branch; no automatic reconnect',()=>{
+  const turn=[104.002,30.001];
+  const track={...line,segments:[[a,b,c,d],[b,turn,d]]};
+  const removed=removeSelectedPath(track,{part:1,from:0,to:2});
+  assert.deepEqual(removed.segments[0],[a,b,c,d]);
+  assert.deepEqual(removed.segments.slice(1),[[b],[d]]);
+  assert.equal(removed.segments.flat().some(p=>p===turn),false);
+  const session={...startRouteEdit(track),path:{part:1,from:0,to:2}};
+  assert.deepEqual(undoRouteEdit(removeEditPath(session)).track.segments,track.segments);
+});
+test('snapping moves a node only; merging requires its own explicit action',()=>{
+  const target={...line,id:'two',segments:[[c,d]]};
+  const moved=moveEditNode(startRouteEdit({...line,segments:[[a,b]]}),b,c,target);
+  assert.deepEqual(moved.track.segments,[[a,c]]);
+  assert.equal(moved.sources.length,1);
+  const merged=mergeEditRoute(moved);
+  assert.deepEqual(merged.track.segments,[[a,c,d]]);
+  assert.equal(merged.sources.length,2);
+});
+test('drawing checkpoint restores paused geometry and checks failed writes',()=>{
+  const disk=new Map(); const storage={setItem:(k,v)=>disk.set(k,v),getItem:k=>disk.get(k)??null,removeItem:k=>disk.delete(k)};
+  const draft=assignNewEdges(appendVertex(appendVertex(EMPTY_DRAFT,a),b),style.color,'x','笔记');
+  const value={draft,style,name:'恢复',editingId:'one',startedAt:1,sectionId:'x',note:'笔记'};
+  writeDrawingCheckpoint(value,storage);
+  const read=readDrawingCheckpoint(storage.getItem(DRAWING_CHECKPOINT));
+  assert.deepEqual(read.draft.sections,draft.sections);
+  assert.deepEqual(read.draft.history,[]);
+  assert.throws(()=>writeDrawingCheckpoint(value,{...storage,setItem:()=>{},getItem:()=>null}),/备份/);
+  writeDrawingCheckpoint({...value,draft:EMPTY_DRAFT},storage);
+  assert.equal(storage.getItem(DRAWING_CHECKPOINT),null);
+});

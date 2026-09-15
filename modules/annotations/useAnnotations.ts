@@ -91,7 +91,10 @@ export function useAnnotations() {
       return false;
     }
     try {
-      localStorage.setItem(ANNOTATION_STORAGE, JSON.stringify(next));
+      const raw = JSON.stringify(next);
+      localStorage.setItem(ANNOTATION_STORAGE, raw);
+      if (localStorage.getItem(ANNOTATION_STORAGE) !== raw)
+        throw new Error('未确认存档');
       current.current = next;
       setItems(next);
       setError('');
@@ -162,6 +165,10 @@ export function useAnnotations() {
       setError('最多保存 2000 个地点标记、80 个模型。');
       return false;
     }
+    if (editing.current) {
+      setError('请先保存或放弃当前标记草稿');
+      return false;
+    }
     const item = newAnnotation(kind, coordinates, null, crypto.randomUUID());
     if (defaults) {
       item.name = defaults.name;
@@ -184,7 +191,12 @@ export function useAnnotations() {
       setError('标记位置或类型无效。');
       return false;
     }
-    if (!persist([...current.current, item])) return false;
+    setEditing({
+      creating: true,
+      base: structuredClone(item),
+      draft: item,
+      origin: editorPose(item),
+    });
     setSelected(item.id);
     setPicking(null);
     void refreshElevation(item.id, coordinates);
@@ -226,7 +238,8 @@ export function useAnnotations() {
     items: annotationEditItems(items, edit),
     edit,
     selectionRequest,
-    dirty: !!edit && !sameAnnotation(edit.base, edit.draft),
+    dirty:
+      !!edit && (!!edit.creating || !sameAnnotation(edit.base, edit.draft)),
     beginEdit: (id: string) => {
       if (editing.current?.draft.id === id) return;
       const item = current.current.find((a) => a.id === id);
@@ -260,6 +273,7 @@ export function useAnnotations() {
       }
     },
     cancelEdit: () => {
+      if (editing.current?.creating) setSelected(null);
       lookup.current?.abort();
       setReading(false);
       setEditing(null);
@@ -281,7 +295,7 @@ export function useAnnotations() {
     moveUndoId: moveHistory.at(-1)?.id ?? null,
     transform: (item: Annotation) => {
       const prior = getItem(item.id);
-      if (!prior) return false;
+      if (!prior || prior.borehole) return false;
       if (
         !update(
           item.id,
@@ -310,7 +324,7 @@ export function useAnnotations() {
     },
     undoMove: () => {
       const prior = moveHistory.at(-1);
-      if (!prior || !current.current.some((a) => a.id === prior.id)) return;
+      if (!prior || !getItem(prior.id)) return;
       lookup.current?.abort();
       setReading(false);
       if (
@@ -332,7 +346,10 @@ export function useAnnotations() {
     },
     select: (id: string | null) => {
       if (editing.current && id !== editing.current.draft.id) {
-        if (!sameAnnotation(editing.current.base, editing.current.draft)) {
+        if (
+          editing.current.creating ||
+          !sameAnnotation(editing.current.base, editing.current.draft)
+        ) {
           setSelectionRequest({ id });
           return false;
         }
@@ -380,7 +397,11 @@ export function useAnnotations() {
     },
     move: (id: string, coordinates: Coordinate) => {
       const prior = getItem(id);
-      if (!prior || prior.coordinates.every((n, i) => n === coordinates[i]))
+      if (
+        !prior ||
+        prior.borehole ||
+        prior.coordinates.every((n, i) => n === coordinates[i])
+      )
         return false;
       if (update(id, { coordinates, groundElevation: null })) {
         setMoveHistory((history) => [...history.slice(-19), prior]);

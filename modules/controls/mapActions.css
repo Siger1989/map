@@ -1,0 +1,155 @@
+.observatory .map-actions {
+  position: absolute;
+  top: calc(56px + var(--safe-top));
+  right: 4px;
+  left: auto;
+  bottom: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  width: 44px;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  z-index: 35;
+}
+.observatory .map-actions > button {
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 14px;
+  padding: 0;
+  border-radius: 5px;
+  background: #f7fcf8;
+  color: #174b35;
+  border: 1px solid #adc7b7;
+}
+.observatory .map-actions small {
+  font-size: 10px;
+}
+.observatory .position-dock {
+  left: auto;
+  right: 4px;
+  bottom: calc(54px + var(--safe-bottom));
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.position-dock .map-zoom-controls {
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+}
+.position-dock .map-zoom-controls button {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+}
+.observatory .map-small-window {
+  position: absolute;
+  right: 48px;
+  top: 0;
+  width: min(276px, calc(100vw - 60px));
+  max-height: var(--map-panel-max-height, 200px);
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  border-radius: 5px;
+}
+.map-small-window header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.observatory .map-small-window button {
+  min-height: 36px;
+  font-size: 11px;
+  padding: 0 4px;
+}
+.map-small-window label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.map-small-window input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+}
+.view-mode-buttons {
+  display: flex;
+  gap: 4px;
+}
+.view-mode-buttons button {
+  flex: 1;
+}
+.view-mode-buttons button[aria-pressed='true'] {
+  background: #c6e7d2;
+  color: #075239;
+}
+.observatory .position-dock-coordinates {
+  left: auto;
+  right: 48px;
+  bottom: 0;
+}
+main.observatory .topbar {
+  width: auto;
+  left: 4px;
+  right: 104px;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.observatory .map-layer-toggle {
+  right: 54px;
+}
+main.observatory .weather-summary {
+  position: fixed;
+  right: 4px;
+  top: calc(8px + var(--safe-top));
+  height: 44px;
+  width: 46px;
+  min-width: 46px;
+  display: flex;
+  padding: 0 2px;
+  gap: 1px;
+  justify-content: center;
+}
+main.observatory .weather-summary .summary-altitude {
+  display: none;
+}
+main.observatory .weather-summary strong {
+  font-size: 13px;
+}
+main.observatory .weather-summary .summary-icon {
+  width: 16px;
+  height: 16px;
+}
+main.observatory .map-toolbar {
+  left: 4px;
+  right: 4px;
+  width: auto;
+}
+main.observatory .dock-navigation {
+  width: 100%;
+  justify-content: space-around;
+}
+.observatory .dock-navigation button {
+  flex: 1;
+  min-height: 44px;
+  min-width: 44px;
+}

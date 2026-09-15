@@ -6,19 +6,23 @@ import {
 import type { TrackStyle } from './style';
 import { validEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
 import { validColorConditions, type ColorConditions } from './colorSections.ts';
+import { validSections, type TrackSections } from './sections.ts';
 export type ScreenPoint = { x: number; y: number };
 export type ManualTrack = {
   id: string;
   name: string;
   segments: Coordinate[][];
   createdAt: number;
+  finishedAt?: number;
   updatedAt?: number;
   hidden?: boolean;
   sourceTrackIds?: string[];
+  sourceTripId?: string;
   drawingLocation?: { coordinate: Coordinate; label: string };
   style?: TrackStyle;
   edgeColors?: TrackEdgeColors;
   colorConditions?: ColorConditions;
+  sections?: TrackSections;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   sharedRoute?: {
@@ -113,14 +117,28 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         sharedRoute,
         hidden,
         sourceTrackIds,
+        sourceTripId,
+        finishedAt,
         edgeColors,
         colorConditions,
+        sections,
         ...rest
       } = track;
       return {
         ...rest,
+        ...(typeof sourceTripId === 'string' &&
+        sourceTripId.length <= 200 &&
+        sourceTripId !== track.id
+          ? { sourceTripId }
+          : {}),
+        ...(typeof finishedAt === 'number' &&
+        Number.isFinite(finishedAt) &&
+        Math.abs(finishedAt) <= 8640000000000000
+          ? { finishedAt }
+          : {}),
         ...(validEdgeColors(edgeColors, track.segments) ? { edgeColors } : {}),
         ...(validColorConditions(colorConditions) ? { colorConditions } : {}),
+        ...(validSections(sections, track.segments) ? { sections } : {}),
         ...(hidden === true ? { hidden: true } : {}),
         ...(Array.isArray(sourceTrackIds)
           ? {

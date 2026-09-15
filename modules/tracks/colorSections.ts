@@ -3,6 +3,7 @@ import { edgeColorIndex } from './edgeColors.ts';
 import { normalizeTrackStyle } from './style.ts';
 import type { ManualTrack } from './drawing.ts';
 import type { ElevationSample } from '../journey/metrics.ts';
+import { materializeSections } from './sections.ts';
 export type ColorConditions = Record<string, string>;
 export const MAX_COLOR_NOTE = 1600;
 export function validColorConditions(value: unknown): value is ColorConditions {
@@ -20,6 +21,7 @@ export function validColorConditions(value: unknown): value is ColorConditions {
   );
 }
 export type ColorSection = {
+  id?: string;
   color: string;
   part: number;
   start: number;
@@ -39,7 +41,8 @@ export function groupColorSections(sections: ColorSection[]) {
   >();
   for (const section of sections) {
     const color = section.color.toLowerCase();
-    const group = groups.get(color) ?? {
+    const key = section.id ?? color;
+    const group = groups.get(key) ?? {
       color,
       length: 0,
       condition: '',
@@ -54,7 +57,7 @@ export function groupColorSections(sections: ColorSection[]) {
           .filter(Boolean),
       ),
     ].join('；');
-    groups.set(color, group);
+    groups.set(key, group);
   }
   return [...groups.values()];
 }
@@ -62,13 +65,25 @@ export function groupColorSections(sections: ColorSection[]) {
 export function routeColorSections(
   track: Pick<
     ManualTrack,
-    'segments' | 'edgeColors' | 'style' | 'colorConditions'
-  >,
+    'segments' | 'edgeColors' | 'style' | 'colorConditions' | 'sections'
+  > & { id?: string },
   lines = track.segments,
 ): ColorSection[] {
   const index = edgeColorIndex(track),
     fallback = normalizeTrackStyle(track.style).color;
   const result: ColorSection[] = [];
+  const sections = track.sections ? materializeSections(track) : null;
+  const sectionIndex = new Map<string, string | null>();
+  track.segments.forEach((line, part) =>
+    line
+      .slice(1)
+      .forEach((b, edge) =>
+        sectionIndex.set(
+          [line[edge].join(','), b.join(',')].sort().join('|'),
+          sections?.edges[part][edge] ?? null,
+        ),
+      ),
+  );
   let distance = 0;
   lines
     .filter((l) => l.length >= 2)
@@ -80,15 +95,25 @@ export function routeColorSections(
             index.get([a.join(','), b.join(',')].sort().join('|')) ?? fallback;
         const length = metresBetween(a, b),
           previous = result.at(-1);
-        if (previous?.color === color && previous.part === part)
+        const id =
+          sectionIndex.get([a.join(','), b.join(',')].sort().join('|')) ??
+          undefined;
+        if (
+          previous?.color === color &&
+          previous.part === part &&
+          previous.id === id
+        )
           previous.end += length;
         else
           result.push({
             color,
+            ...(id ? { id } : {}),
             part,
             start: distance,
             end: distance + length,
-            condition: track.colorConditions?.[color] ?? '',
+            condition: id
+              ? (sections?.notes[id] ?? '')
+              : (track.colorConditions?.[color] ?? ''),
           });
         distance += length;
       }

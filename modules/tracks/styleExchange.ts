@@ -2,9 +2,10 @@ import type { ManualTrack } from './drawing.ts';
 import { validEdgeColors } from './edgeColors.ts';
 import { validColorConditions } from './colorSections.ts';
 import { normalizeTrackStyle } from './style.ts';
+import { validSections } from './sections.ts';
 type Geometry = Pick<
   ManualTrack,
-  'segments' | 'style' | 'edgeColors' | 'colorConditions'
+  'segments' | 'style' | 'edgeColors' | 'colorConditions' | 'sections'
 >;
 /** Optional GPX/KML extension; legacy files without one retain their defaults. */
 export function trackStyleText(track: Geometry) {
@@ -12,6 +13,7 @@ export function trackStyleText(track: Geometry) {
     style: normalizeTrackStyle(track.style),
     edgeColors: track.edgeColors,
     colorConditions: track.colorConditions,
+    sections: track.sections,
   });
 }
 export function readTrackStyle(
@@ -28,11 +30,13 @@ export function readTrackStyle(
     (value.edgeColors !== undefined &&
       !validEdgeColors(value.edgeColors, segments)) ||
     (value.colorConditions !== undefined &&
-      !validColorConditions(value.colorConditions))
+      !validColorConditions(value.colorConditions)) ||
+    (value.sections !== undefined && !validSections(value.sections, segments))
   )
     throw new Error('路线颜色或路况备注数据无效');
   return {
     style: normalizeTrackStyle(value.style),
+    ...(value.sections ? { sections: value.sections } : {}),
     ...(value.edgeColors ? { edgeColors: value.edgeColors } : {}),
     ...(value.colorConditions
       ? { colorConditions: value.colorConditions }

@@ -1,4 +1,7 @@
+import { PhotoThumbnail } from '../photos/PhotoThumbnail';
 import { TrackColorProfile } from './TrackColorProfile';
+import { RouteEditOptions } from './RouteEditOptions';
+import type { SelectedPath } from './pathSelection';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
 import { useMemo, useState } from 'react';
@@ -61,6 +64,7 @@ export function RouteCard({
   onMarker,
   onEdit,
   onDetails,
+  onPhoto,
 }: {
   track: ManualTrack;
   point: TrackLinePoint | null;
@@ -71,6 +75,7 @@ export function RouteCard({
   onMarker: () => void;
   onEdit: () => void;
   onDetails: () => void;
+  onPhoto?: () => void;
 }) {
   const dock = useDockClearance('--route-card-clearance');
   const choices = trackAlternatives(track.segments),
@@ -107,10 +112,15 @@ export function RouteCard({
           <ArrowUpRight size={16} />
           导航
         </button>
-        <button disabled={!point} onClick={onMarker}>
+        <button aria-label="添加标记" disabled={!point} onClick={onMarker}>
           <MapPinPlus size={16} />
-          添加标记
+          标记
         </button>
+        {onPhoto && (
+          <button aria-label="添加照片" disabled={!point} onClick={onPhoto}>
+            照片
+          </button>
+        )}
         <button onClick={onEdit}>
           <Pencil size={16} />
           编辑
@@ -277,7 +287,11 @@ export function RouteDetails({
             {pictures.length ? (
               pictures.map((p) => (
                 <button key={p.id} onClick={() => onPhoto(p.id)}>
-                  <img src={p.url} alt={p.title || p.name} />
+                  <PhotoThumbnail
+                    id={p.id}
+                    src={p.url}
+                    alt={p.title || p.name}
+                  />
                   <small>
                     {new Date(p.time).toLocaleTimeString('zh-CN', {
                       hour: '2-digit',
@@ -339,8 +353,14 @@ export function RouteEditToolbar({
   roadSnapping,
   onSnapping,
   onRoadSnapping,
+  onPath,
+  onSection,
+  onMerge,
 }: {
   session: RouteEditSession;
+  onPath: (path: SelectedPath) => void;
+  onSection: (id: string, color: string, note: string) => void;
+  onMerge: () => void;
   snapName?: string;
   error: string;
   onBack: () => void;
@@ -373,14 +393,16 @@ export function RouteEditToolbar({
       >
         <p className="route-edit-status" role="status">
           {snapName
-            ? `松手拼合：${snapName}`
+            ? `对齐：${snapName}`
             : session.sources.some((s) => s.id !== session.original.id)
               ? '已拼合 · 保存后成为一条路线，可撤销'
               : branch
                 ? '分叉中 · 准星定点，松手连线，双指控图'
-                : session.selected
-                  ? '已选节点 · 直接拖动调整位置'
-                  : '点选节点调整，或点线段后添加节点'}
+                : session.path
+                  ? '已选路段 · 调整范围后删除或修改属性'
+                  : session.selected
+                    ? '已选节点 · 直接拖动调整位置'
+                    : '点选节点调整，或点线段后添加节点'}
         </p>
         <div
           className="route-edit-actions-row"
@@ -391,11 +413,12 @@ export function RouteEditToolbar({
             <Plus size={20} />
           </button>
           <button
-            aria-label="删除选中节点"
-            disabled={!session.selected || branch}
+            aria-label={session.path ? '删除选中路段' : '删除选中节点'}
+            disabled={(!session.selected && !session.path) || branch}
             onClick={onRemove}
           >
             <Minus size={20} />
+            {session.path ? '删路段' : '删点'}
           </button>
           <button
             aria-pressed={branch}
@@ -418,7 +441,7 @@ export function RouteEditToolbar({
           </button>
           <button className="route-solid" onClick={onSave}>
             <Save size={16} />
-            保存
+            {session.original.id === 'draft' ? '应用' : '保存'}
           </button>
         </div>
         {
@@ -433,57 +456,13 @@ export function RouteEditToolbar({
             </button>
           </div>
         }
-        <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
-          {TRACK_COLORS.map((color, i) => (
-            <button
-              key={color}
-              aria-label={['橙色', '红色', '蓝色', '绿色', '黄色', '白色'][i]}
-              aria-pressed={style.color === color}
-              onClick={() => onStyle({ ...style, color })}
-            >
-              <i style={{ background: color }} />
-            </button>
-          ))}
-          <label className="route-custom-color">
-            自定
-            <input
-              aria-label="自定义轨迹颜色"
-              type="color"
-              value={style.color}
-              onChange={(e) => onStyle({ ...style, color: e.target.value })}
-            />
-          </label>
-        </div>
-        <div className="route-edit-sliders">
-          <label>
-            线宽 <b>{style.width} px</b>
-            <input
-              aria-label="轨迹线宽"
-              type="range"
-              min="0.5"
-              max="5"
-              step="0.5"
-              value={style.width}
-              onChange={(e) =>
-                onStyle({ ...style, width: Number(e.target.value) })
-              }
-            />
-          </label>
-          <label>
-            透明度 <b>{Math.round((1 - (style.opacity ?? 1)) * 100)}%</b>
-            <input
-              aria-label="轨迹透明度"
-              type="range"
-              min="0"
-              max="90"
-              step="5"
-              value={Math.round((1 - (style.opacity ?? 1)) * 100)}
-              onChange={(e) =>
-                onStyle({ ...style, opacity: 1 - Number(e.target.value) / 100 })
-              }
-            />
-          </label>
-        </div>
+        <RouteEditOptions
+          session={session}
+          onPath={onPath}
+          onSection={onSection}
+          onMerge={onMerge}
+          onStyle={onStyle}
+        />
         {error && (
           <p role="alert" className="route-window-error">
             {error}

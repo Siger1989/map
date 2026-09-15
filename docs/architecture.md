@@ -61,3 +61,7 @@ Android RecordingService → SamplingPolicy → RecordingStore
 - useOfflineMapMode统一开启缓存底图和重启恢复；tileCache供地图协议、路线DEM、点高程和分享地图共用。并发下载预留容量、250ms进度节流，避免每张瓦片重复落盘完整索引。
 - app/page最终约2862非空行，仍是历史组合层；新增功能未增加TerrainMap规模，RoutePanel说明提取到独立组件。测量/剖面几何、模型精调、地图手势、原生记录机制未改。
 - 回滚可按新增模块撤销接口接入，新增偏好和路网数据库独立，不删除用户旧存档。
+
+## 已确认UI实施（0.2.36）
+
+本轮保留MapLibre和双指手势桥、ObjectGizmo、纯轨迹分析与格式转换架构；重排操作窗口，并把新增跨模块组合放入workbench。app/page没有继续扩展文件预算，功能通过类型props/回调连接。共享返回登记、颜色控件、路段身份、照片索引分别位于controls/tracks/photos，不由页面手工复制。入口、接口与数据边界见各模块README及docs/ui-confirmed-implementation.md。

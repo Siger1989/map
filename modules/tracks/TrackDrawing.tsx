@@ -161,7 +161,7 @@ export const TrackDrawing = forwardRef<
               d={preview.path}
               fill="none"
               stroke="#10212b"
-              strokeOpacity={.65 * (p.style.opacity ?? 1)}
+              strokeOpacity={0.65 * (p.style.opacity ?? 1)}
               strokeDasharray={preview.crossing ? '5 4' : undefined}
               strokeWidth={p.style.width + 1}
               strokeLinecap="round"
@@ -231,9 +231,6 @@ export const TrackDrawing = forwardRef<
       {preview?.kind === 'aim' && (
         <PointMagnifier point={preview.tip} {...size} observe={p.magnify} />
       )}
-      <div className="track-draw-hint glass" role="status">
-        {instruction}
-      </div>
     </>
   );
 });

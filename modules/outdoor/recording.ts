@@ -20,6 +20,7 @@ export type Recording = {
   id: string;
   phase: 'idle' | 'recording' | 'paused' | 'finished';
   startedAt: number;
+  finishedAt?: number;
   segments: Fix[][];
   error: string;
 };

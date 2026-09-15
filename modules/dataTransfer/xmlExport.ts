@@ -16,7 +16,13 @@ const escapeXML = (s: string) =>
 export function exportGPX(data: Transfer) {
   const tracks: Pick<
     ManualTrack,
-    'name' | 'segments' | 'samples' | 'style' | 'edgeColors' | 'colorConditions'
+    | 'name'
+    | 'segments'
+    | 'samples'
+    | 'style'
+    | 'edgeColors'
+    | 'colorConditions'
+    | 'sections'
   >[] = [
     ...data.tracks,
     ...data.favorites.map((f) => ({
@@ -44,7 +50,13 @@ export function exportGPX(data: Transfer) {
 export function exportKML(data: Transfer) {
   const tracks: Pick<
     ManualTrack,
-    'name' | 'segments' | 'samples' | 'style' | 'edgeColors' | 'colorConditions'
+    | 'name'
+    | 'segments'
+    | 'samples'
+    | 'style'
+    | 'edgeColors'
+    | 'colorConditions'
+    | 'sections'
   >[] = [
     ...data.tracks,
     ...data.favorites.map((f) => ({

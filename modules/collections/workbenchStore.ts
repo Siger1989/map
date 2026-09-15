@@ -51,13 +51,17 @@ export function saveWorkbench(
       p.raw === null
         ? storage.removeItem(p.key)
         : storage.setItem(p.key, p.raw);
+    if (writes.some((p) => storage.getItem(p.key) !== p.raw))
+      throw new Error('写入未确认');
   } catch {
     let restored = true;
     for (const p of writes)
       try {
+        if (storage.getItem(p.key) === p.old) continue;
         p.old === null
           ? storage.removeItem(p.key)
           : storage.setItem(p.key, p.old);
+        if (storage.getItem(p.key) !== p.old) restored = false;
       } catch {
         restored = false;
       }

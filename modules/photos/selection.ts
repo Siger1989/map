@@ -25,13 +25,13 @@ export function selectPhotoFiles<T extends { name: string; type: string }>(
   folder: boolean,
 ) {
   const images = folder ? files.filter((file) => imageMime(file)) : files;
-  const limit = folder ? 200 : 30;
+  const limit = folder ? 50000 : 30;
   if (!images.length)
     throw new Error('文件夹中没有支持的照片，请选择存放原片的具体目录');
   if (images.length > limit)
     throw new Error(
       folder
-        ? '文件夹超过 200 张照片，请选择更小的行程目录或分批选照片'
+        ? '文件夹超过 50000 张照片，请选择子目录后继续按时间筛选'
         : '每次最多选择 30 张，请分批添加',
     );
   return images;

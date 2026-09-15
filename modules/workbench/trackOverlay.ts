@@ -2,6 +2,7 @@ import type { TrackOverlay } from '../tracks/TrackLayer';
 import type { ManualTrack } from '../tracks/drawing';
 import type { RouteEditSession } from '../tracks/routeEdit';
 import { DRAFT_ID } from '../tracks/editing.ts';
+import { selectedPathPoints } from '../tracks/pathSelection.ts';
 
 export type TrackOverlayInput = Omit<TrackOverlay, 'saved' | 'draft'> & {
   saved: ManualTrack[];
@@ -27,6 +28,9 @@ export function composeTrackOverlay({
   if (recording) visibleTracks = [...visibleTracks, recording];
   return {
     ...display,
+    selectedPath: session
+      ? selectedPathPoints(session.track, session.path)
+      : [],
     saved: visibleTracks,
     draft: session
       ? session.original.id === DRAFT_ID

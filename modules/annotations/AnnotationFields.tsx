@@ -1,12 +1,8 @@
+import { NumericValue } from './NumericValue';
+export { NumericValue } from './NumericValue';
 import { SmartInput, SmartTextarea } from '../input/SmartText';
-import { useEffect, useState } from 'react';
-import {
-  ChevronDown,
-  ChevronLeft,
-  Plus,
-  RotateCcw,
-  Trash2,
-} from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { MARKER_ICONS, markerIcon } from './icons';
 import { MAX_ATTRIBUTES } from './attributes';
 import type { Annotation } from './data';
@@ -27,84 +23,13 @@ export function AnnotationIcon({
   item,
   size = 22,
 }: {
-  item: Pick<Annotation, 'icon'>;
+  item: Pick<Annotation, 'icon' | 'borehole'>;
   size?: number;
 }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <path d={markerIcon(item.icon).path} />
+      <path d={markerIcon(item.borehole ? 'drill' : item.icon).path} />
     </svg>
-  );
-}
-
-export function NumericValue({
-  label,
-  value,
-  min,
-  max,
-  step = 0.1,
-  reset,
-  change,
-}: {
-  label: string;
-  value: number | null;
-  min: number;
-  max: number;
-  step?: number;
-  reset: () => void;
-  change: (n: number) => void;
-}) {
-  const formatted =
-    value === null ? '' : String(Number(value.toFixed(step < 0.001 ? 6 : 2)));
-  const [text, setText] = useState(formatted);
-  useEffect(() => setText(formatted), [formatted]);
-  return (
-    <div className="marker-number">
-      <input
-        aria-label={label}
-        type="number"
-        inputMode="decimal"
-        step={step}
-        min={min}
-        max={max}
-        value={text}
-        placeholder="—"
-        onChange={(e) => {
-          setText(e.target.value);
-          e.target.setCustomValidity('');
-        }}
-        onBlur={(e) => {
-          const next = e.currentTarget.valueAsNumber;
-          if (Number.isFinite(next) && next >= min && next <= max) {
-            if (next !== value) change(next);
-          } else {
-            setText(formatted);
-            e.currentTarget.setCustomValidity('');
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            e.stopPropagation();
-            setText(formatted);
-          }
-        }}
-      />
-      <button
-        type="button"
-        aria-label={`${label}回正`}
-        title={`仅重置${label}`}
-        onClick={() => {
-          reset();
-        }}
-      >
-        <RotateCcw size={15} />
-      </button>
-    </div>
   );
 }
 
@@ -190,10 +115,10 @@ export function MarkerBasic({
         />
       </label>
       <div className="marker-style-row">
-        <button onClick={() => setPicker('icon')}>
+        <button disabled={!!item.borehole} onClick={() => setPicker('icon')}>
           <small>图标</small>
           <AnnotationIcon item={item} size={18} />
-          <span>{markerIcon(item.icon).name}</span>
+          <span>{markerIcon(item.borehole ? 'drill' : item.icon).name}</span>
           <ChevronDown size={14} />
         </button>
         <button onClick={() => setPicker('color')}>
@@ -203,20 +128,29 @@ export function MarkerBasic({
           <ChevronDown size={14} />
         </button>
       </div>
-      <label className="marker-check">
-        <input
-          type="checkbox"
-          aria-label="设为钻井"
-          checked={!!item.borehole}
-          onChange={(e) =>
-            change({
-              borehole: e.target.checked ? { depth: null } : undefined,
-              ...(e.target.checked ? { icon: 'drill' } : {}),
-            })
-          }
-        />
-        钻井
-      </label>
+      {item.borehole && (
+        <label className="marker-inline-field">
+          <span>口径 mm</span>
+          <NumericValue
+            label="钻井口径"
+            value={item.borehole.diameterMm ?? null}
+            min={1}
+            max={10000}
+            step={1}
+            change={(diameterMm) =>
+              change({ borehole: { ...item.borehole!, diameterMm } })
+            }
+            reset={() =>
+              change({
+                borehole: {
+                  ...item.borehole!,
+                  diameterMm: base.borehole?.diameterMm ?? null,
+                },
+              })
+            }
+          />
+        </label>
+      )}
       {item.borehole && (
         <label className="marker-inline-field">
           <span>深度 m</span>
@@ -225,9 +159,16 @@ export function MarkerBasic({
             value={item.borehole.depth}
             min={0.1}
             max={12000}
-            change={(depth) => change({ borehole: { depth } })}
+            change={(depth) =>
+              change({ borehole: { ...item.borehole!, depth } })
+            }
             reset={() =>
-              change({ borehole: { depth: base.borehole?.depth ?? null } })
+              change({
+                borehole: {
+                  ...item.borehole!,
+                  depth: base.borehole?.depth ?? null,
+                },
+              })
             }
           />
         </label>

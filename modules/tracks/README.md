@@ -1,0 +1,11 @@
+# 手绘路线和编辑
+
+useManualTracks持有绘制状态和公开命令；DrawingTools负责新建/续画同一工具条、内联颜色、小设置和唯一保存。RouteEditOptions只编辑当前会话，应用段属性不等于归档。
+
+sections为真实边分配稳定路段ID，颜色只是样式，备注属于路段。materializeSections兼容旧edgeColors/colorConditions；editSection只修改指定路段；几何操作/QR/XML通过共享转换维护范围。旧备注保留，不按同色自动合并独立备注。
+
+drawingCheckpoint保存未提交草稿、编辑原始revision、输出ID和完成标记。恢复以暂停状态打开，不恢复旧撤销对象；写入/清除均读回验证，无效草稿禁止覆盖。archive在保存前核对原路线并保证失败保留草稿。
+
+pathSelection枚举真实连通路径；删除只移除所选实际边和内部点，保留边界和其他分支，不自动补线。nodeCommands是useManualTracks的类型化节点操作适配器。吸附仅对齐位置，跨档案合并必须显式选择。
+
+记录/导入时间序列使用provenance保护原始点，转成无时间的独立路线后方可改线。地图渲染仍使用TrackLayer和DrawingGestureBridge，双指事件不由浮窗接管。

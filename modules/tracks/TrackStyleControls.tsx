@@ -1,22 +1,25 @@
+import { CompactColor } from '../controls/CompactColor';
 import { useId } from 'react';
 import { TRACK_COLORS, type TrackStyle } from './style';
 export function TrackStyleControls({
   style,
   onChange,
   analysis = false,
+  allowSpeed = false,
 }: {
   style: TrackStyle;
   onChange: (style: TrackStyle) => void;
   analysis?: boolean;
+  allowSpeed?: boolean;
 }) {
   const id = useId();
   return (
     <div className="track-style-controls">
       {analysis && (
         <label className="slider-label">
-          轨迹着色
+          显示方式
           <select
-            aria-label="轨迹着色"
+            aria-label="显示方式"
             value={style.colorMode ?? 'solid'}
             onChange={(e) =>
               onChange({
@@ -27,7 +30,7 @@ export function TrackStyleControls({
           >
             <option value="solid">单色</option>
             <option value="elevation">海拔</option>
-            <option value="speed">速度</option>
+            {allowSpeed && <option value="speed">速度</option>}
             <option value="slope">坡度</option>
           </select>
         </label>
@@ -81,15 +84,15 @@ export function TrackStyleControls({
             <i style={{ background: color }} />
           </button>
         ))}
-        <label className="track-custom-color" title="自定义颜色">
-          <input
-            type="color"
-            aria-label="自定义轨迹颜色"
+        <details className="track-custom-color">
+          <summary>自定</summary>
+          <CompactColor
+            key={style.color}
             value={style.color}
-            onChange={(e) => onChange({ ...style, color: e.target.value })}
+            onChange={(color) => onChange({ ...style, color })}
+            label="自定义轨迹颜色"
           />
-          <span>自定</span>
-        </label>
+        </details>
       </div>
       <svg
         className="track-style-sample"

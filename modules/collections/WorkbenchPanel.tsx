@@ -1,8 +1,14 @@
+import { WorkbenchBatch } from './WorkbenchBatch';
+import {
+  useCollectionView,
+  useCollectionScroll,
+  type CollectionViewRef,
+} from './useCollectionView';
+import { HIDDEN_FOLDER, hiddenKeys, visibleWorkbench } from './hidden';
 import { SmartInput } from '../input/SmartText';
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   Check,
-  Bookmark,
   ChevronDown,
   ChevronRight,
   Folder,
@@ -22,7 +28,6 @@ import {
   WORKBENCH_SORTS,
   workbenchDistance,
   sortWorkbenchItems,
-  type WorkbenchSortOrder,
 } from './WorkbenchSort';
 import { workbenchShareIds } from './workbenchShareData';
 import { WorkbenchAction, type WorkbenchActionType } from './WorkbenchAction';
@@ -33,7 +38,6 @@ import {
   moveWorkbenchItems,
   workbenchDetails,
   workbenchLeaves,
-  workbenchRegionTree,
   removeWorkbenchItems,
   updateWorkbenchItem,
   type WorkbenchItem,
@@ -47,6 +51,7 @@ import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 
 type Props = {
+  view: CollectionViewRef;
   center: [number, number];
   onClose: () => void;
   onLocate: (key: string) => void;
@@ -57,16 +62,25 @@ type Props = {
 export function WorkbenchPanel(props: Props) {
   const store = useWorkbenchData();
   const items = useMemo(() => store.items, [store.data]);
-  const [expanded, setExpanded] = useState(new Set<string>(['unfiled']));
-  const [query, setQuery] = useState(''),
-    [type, setType] = useState('all'),
-    [regionMode, setRegionMode] = useState(false);
-  const [sort, setSort] = useState<WorkbenchSortOrder>('manual'),
-    [sortCenter, setSortCenter] = useState<[number, number]>(props.center);
+  const {
+    expanded,
+    setExpanded,
+    query,
+    setQuery,
+    type,
+    setType,
+    regionMode,
+    setRegionMode,
+    sort,
+    setSort,
+    sortCenter,
+    setSortCenter,
+    active,
+    setActive,
+  } = useCollectionView(props.view, props.center);
   const center = useRef<[number, number]>(props.center);
   const [batch, setBatch] = useState(false),
-    [checked, setChecked] = useState(new Set<string>()),
-    [active, setActive] = useState('');
+    [checked, setChecked] = useState(new Set<string>());
   const [action, setAction] = useState<WorkbenchActionType | null>(null),
     [message, setMessage] = useState(''),
     [actionMessage, setActionMessage] = useState(''),
@@ -79,22 +93,14 @@ export function WorkbenchPanel(props: Props) {
     [action, batch, checked],
   );
   center.current = props.center;
-  const filtered = type !== 'all' || !!query.trim();
-  const view = useMemo(() => {
-    const source = regionMode ? workbenchRegionTree(items) : items;
-    const match = (i: WorkbenchItem) =>
-      `${i.name} ${workbenchDetails(i)}`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()) &&
-      (type === 'all' || i.kind === type);
-    const filter = (list: WorkbenchItem[]): WorkbenchItem[] =>
-      list.flatMap((i) => {
-        if (i.kind !== 'folder') return match(i) ? [i] : [];
-        const children = filter(i.children ?? []);
-        return children.length || !filtered ? [{ ...i, children }] : [];
-      });
-    return filter(source);
-  }, [items, regionMode, type, query, filtered]);
+  const hidden = useMemo(
+    () => (store.data ? hiddenKeys(store.data) : new Set<string>()),
+    [store.data],
+  );
+  const view = useMemo(
+    () => visibleWorkbench(items, hidden, regionMode, type, query),
+    [items, hidden, regionMode, type, query],
+  );
   const nodes = useMemo(() => {
     const result = new Map<string, WorkbenchItem>();
     const visit = (list: WorkbenchItem[], parent = '') =>
@@ -110,7 +116,8 @@ export function WorkbenchPanel(props: Props) {
   const currentKeys = batch
     ? [...checked]
     : preview
-      ? preview.kind === 'folder' && (regionMode || preview.id === 'unfiled')
+      ? preview.kind === 'folder' &&
+        (regionMode || preview.id === 'unfiled' || preview.id === HIDDEN_FOLDER)
         ? workbenchLeaves(preview.children ?? []).map((i) => i.id)
         : [preview.id]
       : [];
@@ -154,6 +161,7 @@ export function WorkbenchPanel(props: Props) {
       return next;
     }),
   );
+  const saveScroll = useCollectionScroll(props.view, swipe.list, !!store.data);
   const hold = useWorkbenchLongPress(swipe.list, (ids, target) => {
     try {
       if (
@@ -234,7 +242,7 @@ export function WorkbenchPanel(props: Props) {
   ): React.ReactNode => {
     const key = parent ? `${parent}/${item.id}` : item.id,
       folder = item.kind === 'folder',
-      synthetic = item.id.startsWith('region:');
+      synthetic = item.id.startsWith('region:') || item.id === HIDDEN_FOLDER;
     const ids = folder
       ? workbenchLeaves(item.children ?? []).map((i) => i.id)
       : [item.id];
@@ -287,6 +295,7 @@ export function WorkbenchPanel(props: Props) {
                 else next.add(item.id);
                 return next;
               });
+            else if (hidden.has(item.id)) props.onOpen(item.id);
             else props.onLocate(item.id);
           }}
         >
@@ -482,45 +491,30 @@ export function WorkbenchPanel(props: Props) {
               {sort === 'nearest' || sort === 'farthest' ? ' · 地图中心' : ''}
             </div>
           )}
-          <div ref={swipe.list} className="workbench-tree-list">
+          <div
+            ref={swipe.list}
+            onScroll={(e) => saveScroll(e.currentTarget.scrollTop)}
+            className="workbench-tree-list"
+          >
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
             {!view.length && <p className="workbench-empty">没有匹配的收藏</p>}
           </div>
+          {preview?.id === HIDDEN_FOLDER && (
+            <button
+              disabled={!currentKeys.length}
+              onClick={() => store.setVisibility(currentKeys, true)}
+            >
+              恢复文件夹内全部显示
+            </button>
+          )}
           {batch && (
-            <div className="workbench-batch">
-              <button
-                disabled={!checked.size}
-                onClick={() => showAction({ type: 'share', ids: [...checked] })}
-              >
-                分享
-              </button>
-              <button
-                disabled={!checked.size}
-                onClick={() => showAction({ type: 'move', ids: [...checked] })}
-              >
-                移动
-              </button>
-              <button
-                disabled={!visibleKeys.length}
-                onClick={() => setChecked(new Set(visibleKeys))}
-              >
-                全选
-              </button>
-              <button
-                disabled={!visibleKeys.length}
-                onClick={() =>
-                  setChecked((old) => {
-                    const next = new Set(old);
-                    visibleKeys.forEach((id) =>
-                      next.has(id) ? next.delete(id) : next.add(id),
-                    );
-                    return next;
-                  })
-                }
-              >
-                反选
-              </button>
-            </div>
+            <WorkbenchBatch
+              checked={checked}
+              visibleKeys={visibleKeys}
+              setChecked={setChecked}
+              onRestore={() => store.setVisibility([...checked], true)}
+              onAction={(type) => showAction({ type, ids: [...checked] })}
+            />
           )}
           {(message || store.error) && (
             <div className="workbench-status" role="status">
@@ -586,6 +580,8 @@ export function WorkbenchPanel(props: Props) {
           busy={busy}
           onClose={() => setAction(null)}
           onAction={showAction}
+          hiddenKeys={hidden}
+          onVisibility={(keys, show) => store.setVisibility(keys, show)}
           onBatch={startBatch}
           onOpen={props.onOpen}
           onNavigate={props.onNavigate}

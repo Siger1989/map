@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import {
   startRouteEdit,
-  moveEditNode,
+  moveEditNode as moveOnly,
+  mergeEditRoute,
   undoRouteEdit,
 } from '../modules/tracks/routeEdit.ts';
 import { storeJoinedRouteEdit } from '../modules/tracks/joinedEditStore.ts';
@@ -17,6 +18,11 @@ import {
   groupColorSections,
   routeColorSections,
 } from '../modules/tracks/colorSections.ts';
+// Joining is explicit in the revised UI; the old archive/rollback scenarios still apply.
+const moveEditNode = (session, from, to, target) => {
+  const moved = moveOnly(session, from, to, target);
+  return target ? mergeEditRoute(moved, target) : moved;
+};
 const a = [104, 30],
   b = [104.001, 30],
   c = [104.002, 30],
@@ -44,14 +50,14 @@ function archive(tracks, annotations = []) {
     removeItem: (k) => data.delete(k),
   };
 }
-test('snapped endpoint becomes a continuous editable route; undo and unsnapped movement do not remove archives', () => {
+test('explicit merge after snapping becomes a continuous editable route; undo and unsnapped movement do not remove archives', () => {
   const disk = archive([first, second]);
   const session = moveEditNode(startRouteEdit(first), b, c, second);
   assert.deepEqual(session.track.segments, [[a, c, d]]);
   assert.deepEqual(session.track.edgeColors, [['#ff0000', '#00ff00']]);
   assert.equal(session.sources.length, 2);
   assert.equal(collectData(disk).tracks.length, 2);
-  const undo = undoRouteEdit(session);
+  const undo = undoRouteEdit(undoRouteEdit(session));
   assert.deepEqual(undo.track.segments, first.segments);
   assert.equal(undo.sources.length, 1);
   assert.equal(moveEditNode(startRouteEdit(first), b, c).sources.length, 1);
@@ -85,7 +91,7 @@ test('interior junction keeps three real branches and a third snapped archive pa
     third,
   );
   assert.equal(joined.sources.length, 3);
-  assert.deepEqual(undoRouteEdit(joined).track, session.track);
+  assert.deepEqual(undoRouteEdit(undoRouteEdit(joined)).track, session.track);
   assert.equal(undoRouteEdit(joined).sources.length, 2);
 });
 test('100 saved routes can merge without creating an extra archive; same-colour notes survive', () => {
@@ -108,7 +114,7 @@ test('100 saved routes can merge without creating an extra archive; same-colour 
     2,
   );
   assert.equal(result.records.length, 99);
-  assert.equal(groupColorSections(routeColorSections(result.track)).length, 1);
+  assert.equal(groupColorSections(routeColorSections(result.track)).length, 2);
   assert.equal(result.track.colorConditions['#ff0000'], 'first路况；碎石');
 });
 test('stale target and storage failure leave geometry, source archives and marker bindings intact', () => {
@@ -150,7 +156,7 @@ test('protected/hidden/stale snap targets fail without changing the edit', () =>
   for (const target of [
     { ...second, hidden: true },
     { ...second, source: 'recorded' },
-    { ...second, samples: [] },
+    { ...second, source: undefined, samples: [] },
     { ...second, segments: [[a, b]] },
   ]) {
     const session = startRouteEdit(first);

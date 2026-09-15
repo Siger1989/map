@@ -29,7 +29,10 @@ export const MARKER_ICONS = {
     path: 'M3 6h4l2-3h6l2 3h4v15H3ZM8 13a4 4 0 1 0 8 0a4 4 0 1 0-8 0',
   },
   sample: { name: '采样', path: 'M8 2h8M9 2v9L3 21h18l-6-10V2M7 16h10' },
-  drill: { name: '钻孔', path: 'M3 3h18M12 3v17M8 7l8 4-8 4 8 4M9 20l3 3 3-3' },
+  drill: {
+    name: '钻孔',
+    path: 'M7 6a5 5 0 1 0 10 0a5 5 0 1 0-10 0M12 11v11m-4-4 4 4 4-4',
+  },
   hospital: { name: '救援', path: 'M8 2h8v6h6v8h-6v6H8v-6H2V8h6Z' },
   food: {
     name: '餐饮',

@@ -35,6 +35,7 @@ export type PlannedRoute = {
   createdAt: number;
 };
 export type RouteOverlay = {
+  displayStyle?: { color: string; width: number; opacity?: number };
   /** Display-only colored geometry. Original routing/access semantics stay intact. */
   displayParts?: { coordinates: Coordinate[]; color: string }[];
   start: RoutePlace | null;

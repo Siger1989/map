@@ -23,6 +23,7 @@ final class NativeBridge {
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
+    @JavascriptInterface public void photoTimeRange(long start, long end) { if(activity.trustedForeground() && start>0 && end>=start) files.photoTimeRange(start,end); }
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }
     @JavascriptInterface public String routeLinkShare(String url) { return RouteOutput.link(activity, url); }
@@ -78,6 +79,16 @@ final class NativeBridge {
                 catch(Exception e) { RecordingStore.error(activity,e.getMessage()); }
             }
         });
+    }
+    @JavascriptInterface public String recordFor(String action, String expectedId) {
+        try {
+            if (!activity.trustedForeground() || !("finish".equals(action) || "clear".equals(action))) throw new Exception("当前无法操作记录");
+            String snapshot = RecordingStore.commandFor(activity, action, expectedId);
+            activity.runOnUiThread(() -> { try { if (!RecordingStore.isRecording(activity)) activity.stopService(new Intent(activity, RecordingService.class)); } catch (Exception ignored) { } });
+            return new org.json.JSONObject().put("ok", true).put("record", snapshot).toString();
+        } catch (Exception e) {
+            try { return new org.json.JSONObject().put("ok", false).put("error", e.getMessage()).toString(); } catch (Exception ignored) { return "{\"ok\":false}"; }
+        }
     }
     void resolve() {
         String action=pending;pending=null;

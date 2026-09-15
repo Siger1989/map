@@ -1,6 +1,7 @@
 import type { Coordinate } from '../navigation/types.ts';
 import { metresBetween } from '../navigation/types.ts';
 import { normalizeTrackStyle, type TrackStyle } from './style.ts';
+import { inheritSections, type TrackSections } from './sections.ts';
 
 export type TrackEdgeColors = (string | null)[][];
 type ColoredGeometry = {
@@ -8,6 +9,8 @@ type ColoredGeometry = {
   edgeColors?: TrackEdgeColors;
   style?: TrackStyle;
   colorConditions?: Record<string, string>;
+  sections?: TrackSections;
+  id?: string;
 };
 const key = (a: Coordinate, b: Coordinate) =>
   [a.join(','), b.join(',')].sort().join('|');
@@ -113,6 +116,7 @@ export function preserveTrackColors<T extends ColoredGeometry>(
     throw new Error('合并后的颜色备注超过128种，请先整理；原路线保留');
   return {
     ...next,
+    sections: inheritSections(next.segments, sources),
     ...(Object.keys(conditions).length ? { colorConditions: conditions } : {}),
     edgeColors: inheritEdgeColors(
       next.segments,

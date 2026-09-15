@@ -1,117 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { runInNewContext } from 'node:vm';
-const java = readFileSync(
-  new URL(
-    '../mobile/android/src/com/guanyun/weather/MainActivity.java',
-    import.meta.url,
-  ),
-  'utf8',
-);
-const source = JSON.parse(
-  java.match(/evaluateJavascript\(("(?:\\.|[^"\\])*"), result/)[1],
-);
-function pressBack({
-  panel = false,
-  editing = false,
-  section = false,
-  photo = false,
-  quickAdd = false,
-  modal = false,
-  sectionList = false,
-} = {}) {
-  const calls = [];
-  const context = {
-    KeyboardEvent: class {
-      constructor(type, details) {
-        this.type = type;
-        Object.assign(this, details);
-      }
-    },
-    document: {
-      querySelector(selector) {
-        const target =
-          selector === '.route-dialog'
-            ? modal
-              ? 'modal'
-              : null
-            : selector === '.section-list'
-              ? sectionList
-                ? 'sectionList'
-                : null
-              : selector.includes('trip-photo-viewer')
-                ? photo
-                  ? 'photo'
-                  : null
-                : selector.includes('quick-add')
-                  ? quickAdd
-                    ? 'quickAdd'
-                    : null
-                  : selector.includes('control-dock')
-                    ? panel
-                      ? 'panel'
-                      : null
-                    : section && selector.includes('data-section')
-                      ? 'section'
-                      : editing && selector.includes('observatory')
-                        ? 'editing'
-                        : null;
-        return target
-          ? {
-              dispatchEvent(event) {
-                calls.push({ target, key: event.key, bubbles: event.bubbles });
-              },
-            }
-          : null;
-      },
-    },
-  };
-  return { handled: runInNewContext(source, context), calls };
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {dispatchBack,registerBackHandler} from '../modules/controls/backNavigation.ts';
+const java=readFileSync(new URL('../mobile/android/src/com/guanyun/weather/MainActivity.java',import.meta.url),'utf8');
+const source=JSON.parse(java.match(/evaluateJavascript\(("(?:\\.|[^"\\])*"), result/)[1]);
+class Key {constructor(type,data){this.type=type;Object.assign(this,data);this.defaultPrevented=false;}preventDefault(){this.defaultPrevented=true;}}
+function fixture(){
+ const calls=[],all=[],clean=[];
+ globalThis.Node={DOCUMENT_POSITION_FOLLOWING:4};globalThis.KeyboardEvent=Key;
+ globalThis.getComputedStyle=n=>({visibility:n.hidden?'hidden':'visible',zIndex:String(n.z)});
+ globalThis.document={querySelectorAll:()=>all.filter(n=>n.legacy),querySelector:()=>all.find(n=>n.root)??null};
+ function node(name,z=0,parentElement=null,options={}){const n={name,z,parentElement,...options,isConnected:true,getClientRects(){return this.hidden?[]:[{}]},contains(b){for(let p=b;p;p=p.parentElement)if(p===this)return true;return false;},closest(){return this.modal?this:null},compareDocumentPosition(b){return all.indexOf(this)<all.indexOf(b)?4:2;},dispatchEvent(e){calls.push(name);if(this.consume)e.preventDefault();}};all.push(n);return n;}
+ return {calls,node,register(n){clean.push(registerBackHandler(()=>n,()=>calls.push(n.name)))},close(){clean.forEach(f=>f());delete globalThis.document;delete globalThis.getComputedStyle;delete globalThis.Node;delete globalThis.KeyboardEvent;}};
 }
-test('安卓返回先关闭浮窗，不因轨迹编辑状态跳过关闭', () => {
-  const result = pressBack({ panel: true, editing: true });
-  assert.equal(result.handled, true);
-  assert.equal(result.calls[0].target, 'panel');
-  assert.equal(result.calls[0].key, 'Escape');
+test('native delegates one return to the app; absent/unhandled dispatcher returns control to Android',()=>{
+ let count=0;assert.equal(runInNewContext(source,{window:{shantuBack(){count++;return true;}}}),true);assert.equal(count,1);
+ assert.equal(runInNewContext(source,{window:{}}),false);assert.equal(runInNewContext(source,{window:{shantuBack:()=>false}}),false);
 });
-test('安卓返回在选点或绘制状态通知应用退出该操作', () => {
-  const result = pressBack({ editing: true });
-  assert.equal(result.handled, true);
-  assert.equal(result.calls[0].target, 'editing');
-  assert.equal(result.calls[0].bubbles, true);
-});
-test('普通地图页未消费返回键，交回系统', () => {
-  const result = pressBack();
-  assert.equal(result.handled, false);
-  assert.equal(result.calls.length, 0);
-});
-test('安卓返回先关闭地图添加卡片，不退出应用或底层编辑', () => {
-  const result = pressBack({ quickAdd: true, panel: true, editing: true });
-  assert.equal(result.handled, true);
-  assert.equal(result.calls[0].target, 'quickAdd');
-  assert.equal(result.calls[0].key, 'Escape');
-});
-test('安卓返回优先退出全屏海拔剖面', () => {
-  const result = pressBack({ section: true });
-  assert.equal(result.handled, true);
-  assert.equal(result.calls[0].target, 'section');
-  assert.equal(result.calls[0].key, 'Escape');
-});
-
-test('安卓返回关闭照片预览，保留底下的编辑状态', () => {
-  const result = pressBack({ photo: true, editing: true });
-  assert.equal(result.handled, true);
-  assert.equal(result.calls[0].target, 'photo');
-});
-
-test('安卓返回优先关闭路线对话框或多剖面列表', () => {
-  assert.equal(
-    pressBack({ modal: true, sectionList: true, panel: true }).calls[0].target,
-    'modal',
-  );
-  assert.equal(
-    pressBack({ sectionList: true, panel: true }).calls[0].target,
-    'sectionList',
-  );
-});
+test('top painted window wins regardless of registration order',()=>{const f=fixture();try{const a=f.node('drawing',5),b=f.node('photo',90);f.register(b);f.register(a);assert.ok(dispatchBack());assert.deepEqual(f.calls,['photo']);}finally{f.close()}});
+test('nested settings close before their recording window',()=>{const f=fixture();try{const a=f.node('record',20),b=f.node('settings',0,a);f.register(b);f.register(a);dispatchBack();assert.deepEqual(f.calls,['settings']);}finally{f.close()}});
+test('hidden or disconnected windows never consume back',()=>{const f=fixture();try{f.register(f.node('hidden',999,null,{hidden:true}));const gone=f.node('removed',900);gone.isConnected=false;f.register(gone);assert.equal(dispatchBack(),false);}finally{f.close()}});
+test('stacking context ancestor beats high z-index inside lower context',()=>{const f=fixture();try{const base=f.node('base',5),top=f.node('modal',30);f.register(f.node('child',999,base));f.register(top);dispatchBack();assert.deepEqual(f.calls,['modal']);}finally{f.close()}});
+test('legacy dialog consumes one Escape above registered controls',()=>{const f=fixture();try{f.register(f.node('drawing',20));f.node('legacy',0,null,{legacy:true,modal:true});dispatchBack();assert.deepEqual(f.calls,['legacy']);}finally{f.close()}});
+test('map selection receives cancellable Escape while idle map returns false',()=>{const f=fixture();try{const root=f.node('map',0,null,{root:true,consume:true});assert.equal(dispatchBack(),true);root.consume=false;assert.equal(dispatchBack(),false);}finally{f.close()}});

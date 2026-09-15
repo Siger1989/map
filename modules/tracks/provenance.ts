@@ -11,7 +11,11 @@ export function hasTrackTime(track: ManualTrack) {
 }
 
 export function keepsOriginalPoints(track: ManualTrack) {
-  return track.source === 'recorded' || track.samples !== undefined;
+  return (
+    track.source === 'recorded' ||
+    hasTrackTime(track) ||
+    (track.source !== 'manual' && track.samples !== undefined)
+  );
 }
 
 export function trackSourceLabel(track: ManualTrack) {

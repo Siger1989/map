@@ -1,9 +1,10 @@
 import { Quaternion, Vector3 } from 'three';
 import { coordinate, mercator } from '../section/planeMath.ts';
 import { annotationPose, type Pose } from '../objectTransform/math.ts';
-import { validAnnotation, type Annotation } from './data.ts';
+import { canAddAnnotation, validAnnotation, type Annotation } from './data.ts';
 
 export type AnnotationEdit = {
+  creating?: boolean;
   base: Annotation;
   draft: Annotation;
   origin?: Pose | null;
@@ -51,6 +52,14 @@ export function commitAnnotationEdit(
   items: Annotation[],
   edit: AnnotationEdit,
 ) {
+  if (edit.creating) {
+    if (!canAddAnnotation(items, edit.draft.kind))
+      throw new Error('标记存档已满，草稿保留，请先整理收藏');
+    if (items.some((a) => a.id === edit.draft.id))
+      throw new Error('此标记已保存，请重新打开，避免重复覆盖');
+    if (!validAnnotation(edit.draft)) throw new Error('标记参数无效，尚未保存');
+    return [...items, edit.draft];
+  }
   const current = items.find((a) => a.id === edit.base.id);
   if (!current || !sameAnnotation(current, edit.base))
     throw new Error(

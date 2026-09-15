@@ -1,275 +1,302 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { usePhotoImportSession } from './usePhotoImportSession';
+import { readPhotoIndex } from './storage';
+import { PhotoThumbnail } from './PhotoThumbnail';
+import { useEffect, useRef, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
-import { localPhotoInput, matchPhoto } from './matching';
-import { readPhoto, type PhotoDraft } from './import';
+import { hasTrackTime, photoTrackChoice } from '../tracks/provenance';
 import type { useTripPhotos } from './useTripPhotos';
 import { PhotoPicker } from './PhotoPicker';
 import { selectPhotoFiles } from './selection';
 import {
-  hasTrackTime,
-  photoTrackChoice,
-  trackSourceLabel,
-} from '../tracks/provenance';
-
-function DraftImage({ blob, name }: { blob: Blob; name: string }) {
-  const [url, setUrl] = useState('');
-  useEffect(() => {
-    const next = URL.createObjectURL(blob);
-    setUrl(next);
-    return () => URL.revokeObjectURL(next);
-  }, [blob]);
-  return <img src={url || undefined} alt={name} />;
-}
+  classifyPhoto,
+  photoHash,
+  photoTimeRange,
+  readPhotoMetadata,
+  type PhotoMetadata,
+} from './metadata';
+import { readPhoto } from './import';
+import { matchPhoto, localPhotoInput } from './matching';
+import { PhotoPending } from './PhotoPending';
+type Pending = { file: File; meta: PhotoMetadata; reason: string };
 export function PhotoPanel({
   tracks,
   preferred,
   photos,
   onOpen,
+  onPlace,
+  session,
 }: {
   tracks: ManualTrack[];
   preferred: string | null;
+  session: ReturnType<typeof usePhotoImportSession>;
   photos: ReturnType<typeof useTripPhotos>;
   onOpen: (id: string) => void;
+  onPlace?: (file: File, trackId: string, time: number | null) => void;
 }) {
-  const timed = tracks.filter(hasTrackTime);
-  const [target, setTarget] = useState(preferred ?? timed[0]?.id ?? '');
-  const [drafts, setDrafts] = useState<PhotoDraft[]>([]),
-    [shift, setShift] = useState(0);
+  const {
+    target,
+    setTarget,
+    pending,
+    setPending,
+    tolerance,
+    setTolerance,
+    shift,
+    setShift,
+    message,
+    setMessage,
+    files: filesRef,
+  } = session;
   const [busy, setBusy] = useState(false),
-    [message, setMessage] = useState('');
+    [showPending, setShowPending] = useState(false);
+  const stop = useRef(false),
+    alive = useRef(true);
   const track = photoTrackChoice(
     tracks,
     target,
     preferred,
-    drafts.length > 0 || busy,
+    busy || pending.length > 0,
   );
-  const active = useRef(true);
   useEffect(() => {
-    active.current = true;
+    alive.current = true;
     return () => {
-      active.current = false;
+      alive.current = false;
+      stop.current = true;
     };
   }, []);
-  const matches = useMemo(
-    () =>
-      drafts.map((p) => ({
-        draft: p,
-        time: p.time === null ? null : p.time + shift * 60000,
-        match: track
-          ? matchPhoto(track, p.time === null ? null : p.time + shift * 60000)
-          : null,
-      })),
-    [drafts, shift, track],
-  );
-  const count = matches.filter((p) => p.match).length;
+  const saved = photos.items.filter((p) => p.trackId === track?.id);
+  const add = async (
+    file: File,
+    meta: PhotoMetadata,
+    allowEstimate = false,
+  ) => {
+    if (!track) throw new Error('行程已不存在');
+    const result = classifyPhoto(track, meta, tolerance),
+      match = allowEstimate
+        ? matchPhoto(track, meta.time)
+        : result.status === 'matched'
+          ? result.match
+          : null;
+    if (!match || meta.time === null) throw new Error(result.reason);
+    const hash = await photoHash(file),
+      id = `${hash}:${track.id}`;
+    if ((await readPhotoIndex(track.id)).some((p) => p.id === id)) return false;
+    if (stop.current) throw new Error('已停止');
+    const draft = await readPhoto(file, () => {}, meta, hash);
+    if (stop.current) throw new Error('已停止');
+    await photos.save([
+      {
+        id,
+        name: draft.name,
+        trackId: track.id,
+        trackName: track.name,
+        time: meta.time,
+        coordinates: match.coordinates,
+        kind: match.kind,
+        positionSource: allowEstimate ? 'time' : 'gps',
+        ...(meta.gps && { photoCoordinates: meta.gps }),
+        preview: draft.preview,
+        detail: draft.detail,
+        altitude: meta.altitude ?? match.altitude,
+      },
+    ]);
+    return true;
+  };
   const loadFiles = async (selected: File[], folder: boolean) => {
+    if (!track || busy) return;
     let files: File[];
     try {
       files = selectPhotoFiles(selected, folder);
-    } catch (error) {
-      setMessage((error as Error).message);
+    } catch (e) {
+      setMessage((e as Error).message);
       return;
     }
-    if (track) setTarget(track.id);
+    setTarget(track.id);
+    filesRef.current = files;
+    stop.current = false;
     setBusy(true);
-    setDrafts([]);
-    setShift(0);
-    setMessage('正在读取拍摄时间和生成预览…');
-    const next: PhotoDraft[] = [],
-      failed: string[] = [];
-    for (const file of files) {
-      if (!active.current) return;
+    setPending([]);
+    let added = 0,
+      skipped = 0,
+      duplicates = 0,
+      failed = 0;
+    const waiting: Pending[] = [];
+    for (let i = 0; i < files.length; i++) {
+      if (stop.current || !alive.current) break;
+      setMessage(`检查元数据 ${i + 1}/${files.length} · 已关联 ${added}`);
       try {
-        next.push(await readPhoto(file));
-      } catch (error) {
-        failed.push(
-          `${file.name}：${error instanceof Error ? error.message : '无法解码，请选择 JPEG 原片'}`,
-        );
+        const raw = await readPhotoMetadata(files[i]),
+          meta = {
+            ...raw,
+            time: raw.time === null ? null : raw.time + shift * 60000,
+          };
+        const result = classifyPhoto(track, meta, tolerance);
+        if (result.status === 'skip') skipped++;
+        else if (result.status === 'pending')
+          waiting.push({ file: files[i], meta, reason: result.reason });
+        else if (await add(files[i], meta)) added++;
+        else duplicates++;
+      } catch (e) {
+        if (!stop.current) {
+          failed++;
+          waiting.push({
+            file: files[i],
+            meta: { time: null, zone: '' },
+            reason: e instanceof Error ? e.message : '读取失败',
+          });
+        }
       }
     }
-    if (!active.current) return;
-    setDrafts(next);
-    setBusy(false);
-    setMessage(
-      failed.length
-        ? failed.join('；')
-        : `已读取 ${next.length} 张照片，请检查匹配结果`,
-    );
+    if (alive.current) {
+      setPending(waiting);
+      setBusy(false);
+      setMessage(
+        `${stop.current ? '已停止；' : '完成；'}新增 ${added} · 已关联跳过 ${duplicates} · 时间外 ${skipped} · 待确认 ${waiting.length}${failed ? `（含失败 ${failed}）` : ''}`,
+      );
+    }
   };
+  const confirm = async (index: number, time: number | null) => {
+    const item = pending[index];
+    if (!item) return;
+    stop.current = false;
+    setBusy(true);
+    try {
+      await add(item.file, { ...item.meta, time }, true);
+      setPending((list) => list.filter((_, i) => i !== index));
+      setMessage('已确认并关联；位置取自行程时间估算。');
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      if (alive.current) setBusy(false);
+    }
+  };
+  const range = track ? photoTimeRange(track) : null;
   return (
     <div className="photo-panel">
-      <div className="photo-choose" hidden={drafts.length > 0}>
-        <label>
-          匹配轨迹
-          <select
-            value={track?.id ?? ''}
-            disabled={busy}
-            onChange={(e) => setTarget(e.target.value)}
-            aria-label="照片匹配轨迹"
-          >
-            {!track && <option value="">请选择带时间的轨迹</option>}
-            {tracks.map((t) => (
-              <option key={t.id} value={t.id} disabled={!hasTrackTime(t)}>
-                {t.name} · {trackSourceLabel(t)}
-                {!hasTrackTime(t) ? '（无时间，不能匹配）' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
-        <PhotoPicker disabled={busy || !track} onFiles={loadFiles} />
-      </div>
-      {!timed.length && (
-        <p className="route-note">
-          先保存一次实走记录，或导入含时间的
-          GPX。无时间的旧轨迹无法自动定位照片；若有原始 GPX
-          可重新导入，普通手绘线不能补出真实拍摄时间轴。
-        </p>
+      <label>
+        当前行程
+        <select
+          aria-label="照片匹配行程"
+          value={track?.id ?? ''}
+          disabled={busy}
+          onChange={(e) => {
+            setTarget(e.target.value);
+            setPending([]);
+          }}
+        >
+          <option value="">请选择行程</option>
+          {tracks.filter(hasTrackTime).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {range && (
+        <small>
+          {new Date(range.start).toLocaleString()} —{' '}
+          {new Date(range.end).toLocaleString()}
+        </small>
       )}
-      {!!drafts.length && (
+      <PhotoPicker
+        disabled={busy || !track}
+        range={
+          range
+            ? {
+                start: range.start - shift * 60000,
+                end: range.end - shift * 60000,
+              }
+            : null
+        }
+        onFiles={loadFiles}
+      />
+      <details>
+        <summary>筛选设置与来源</summary>
+        <label>
+          坐标允许偏差（米）
+          <input
+            type="number"
+            min={10}
+            max={1000}
+            step={10}
+            value={tolerance}
+            disabled={busy}
+            onChange={(e) =>
+              setTolerance(
+                Math.max(10, Math.min(1000, Number(e.target.value) || 100)),
+              )
+            }
+          />
+        </label>
+        <label>
+          相机时间校正（分钟）
+          <input
+            type="number"
+            min={-1440}
+            max={1440}
+            value={shift}
+            disabled={busy}
+            onChange={(e) =>
+              setShift(
+                Math.max(-1440, Math.min(1440, Number(e.target.value) || 0)),
+              )
+            }
+          />
+        </label>
+        <small>
+          先筛行程时间，再核对照片坐标。无坐标、缺时间或冲突进入待确认。文件夹需逐项读元数据；匹配后才生成副本。
+        </small>
+        <button
+          disabled={busy || !filesRef.current.length}
+          onClick={() => void loadFiles(filesRef.current, true)}
+        >
+          重新匹配已选来源
+        </button>
+      </details>
+      {busy && (
+        <button
+          onClick={() => {
+            stop.current = true;
+          }}
+        >
+          停止扫描
+        </button>
+      )}
+      <p role="status">{message || photos.error}</p>
+      {!!pending.length && (
         <>
-          <strong className="photo-target">
-            {track?.name ?? '轨迹已不存在，请取消后重新选择'}
-          </strong>
-          <details>
-            <summary>
-              校正拍摄时间
-              {shift ? `（${shift > 0 ? '+' : ''}${shift} 分钟）` : ''}
-            </summary>
-            <label>
-              照片时间校正（分钟）
-              <input
-                type="number"
-                min={-1440}
-                max={1440}
-                step={1}
-                value={shift}
+          <button onClick={() => setShowPending(!showPending)}>
+            待确认 {pending.length} 张 {showPending ? '收起' : '展开'}
+          </button>
+          {showPending &&
+            pending.map((p, i) => (
+              <PhotoPending
+                key={`${p.file.name}-${i}`}
+                file={p.file}
+                meta={p.meta}
+                reason={p.reason}
                 disabled={busy}
-                onChange={(e) =>
-                  setShift(
-                    Math.max(
-                      -1440,
-                      Math.min(1440, Number(e.target.value) || 0),
-                    ),
-                  )
+                onConfirm={(time) => void confirm(i, time)}
+                onPlace={
+                  onPlace && track
+                    ? (time) => onPlace(p.file, track.id, time)
+                    : undefined
                 }
               />
-            </label>
-            <p className="route-note">
-              正数把照片时间向后移。无拍摄时区时按本机时区解释；下列时间可逐张修正，不使用文件修改时间猜测。
-            </p>
-          </details>
-          <strong role="status">
-            可匹配 {count} / {drafts.length} 张
-          </strong>
-          <div className="photo-drafts">
-            {matches.map(({ draft, match }, i) => (
-              <article key={`${draft.hash}-${i}`}>
-                <DraftImage blob={draft.preview} name={draft.name} />
-                <div>
-                  <span title={draft.name}>{draft.name}</span>
-                  <small>
-                    {match
-                      ? match.kind === 'point'
-                        ? '匹配到记录点'
-                        : '按前后记录点估算'
-                      : '未匹配：补时间或检查轨迹断点'}
-                  </small>
-                  <input
-                    aria-label={`拍摄时间 ${i + 1}`}
-                    type="datetime-local"
-                    step={1}
-                    value={localPhotoInput(draft.time)}
-                    disabled={busy}
-                    onChange={(e) => {
-                      const value = e.target.value
-                        ? new Date(e.target.value).getTime()
-                        : null;
-                      setDrafts((list) =>
-                        list.map((p, n) =>
-                          n === i
-                            ? {
-                                ...p,
-                                time:
-                                  value !== null && Number.isFinite(value)
-                                    ? value
-                                    : null,
-                              }
-                            : p,
-                        ),
-                      );
-                    }}
-                  />
-                  <small>{draft.zone}</small>
-                </div>
-              </article>
             ))}
-          </div>
-          <div className="outdoor-actions photo-confirm">
-            <button
-              disabled={busy || !count || !track}
-              onClick={async () => {
-                if (!track) return;
-                setBusy(true);
-                try {
-                  await photos.save(
-                    matches.flatMap(({ draft, time, match }) =>
-                      match && time !== null
-                        ? [
-                            {
-                              id: `${draft.hash}:${track.id}`,
-                              name: draft.name,
-                              preview: draft.preview,
-                              detail: draft.detail,
-                              altitude: draft.altitude ?? match.altitude,
-                              time,
-                              coordinates: match.coordinates,
-                              kind: match.kind,
-                              trackId: track.id,
-                              trackName: track.name,
-                            },
-                          ]
-                        : [],
-                    ),
-                  );
-                  if (active.current) {
-                    setMessage(
-                      `已加入 ${count} 张照片预览；同轨迹重复照片自动更新`,
-                    );
-                    setDrafts((list) =>
-                      list.filter((_, i) => !matches[i].match),
-                    );
-                  }
-                } catch (error) {
-                  if (active.current) setMessage((error as Error).message);
-                } finally {
-                  if (active.current) setBusy(false);
-                }
-              }}
-            >
-              加入地图（{count}）
-            </button>
-            <button disabled={busy} onClick={() => setDrafts([])}>
-              取消本次
-            </button>
-          </div>
         </>
       )}
-      <div className="outdoor-actions">
-        <button
-          aria-pressed={photos.visible}
-          onClick={() => photos.setVisible(!photos.visible)}
-        >
-          {photos.visible ? '隐藏地图照片' : '显示地图照片'}
-        </button>
-        <span>已存 {photos.items.length} 张</span>
-      </div>
+      <strong>此行程照片 · {saved.length} 张</strong>
       <div className="photo-saved">
-        {photos.items
+        {saved
           .slice()
           .sort((a, b) => a.time - b.time)
           .map((p) => (
-            <button key={p.id} onClick={() => onOpen(p.id)} title={p.name}>
-              <img src={p.url} alt={p.name} />
+            <button key={p.id} onClick={() => onOpen(p.id)}>
+              <PhotoThumbnail
+                id={p.id}
+                src={p.url || undefined}
+                alt={p.title || p.name}
+              />
               <small>
                 {new Date(p.time).toLocaleTimeString('zh-CN', {
                   hour: '2-digit',
@@ -279,17 +306,19 @@ export function PhotoPanel({
             </button>
           ))}
       </div>
-      <p className="route-note">
-        原图保留不变，本机保存预览和最长边2560px的查看副本。每张 ≤20
-        MB，本机最多200张 /
-        200MB（预览≤40MB）。导入后按拍摄时间、位置向Open-Meteo查询天气，不上传图片。照片独立存储，暂不包含在普通
-        JSON/GPX 备份中。
-      </p>
-      {(message || photos.error) && (
-        <p className="route-note" role="status">
-          {photos.error || message}
-        </p>
-      )}
+      <button
+        aria-pressed={photos.visible}
+        onClick={() => photos.setVisible(!photos.visible)}
+      >
+        {photos.visible ? '隐藏地图照片' : '显示地图照片'}
+      </button>
+      <details>
+        <summary>照片存储与天气</summary>
+        <small>
+          原图保留。本机最多200张，预览40MB /
+          含清晰副本200MB。仅按需生成最长边2560px副本。天气按拍摄时间和坐标查询，不上传图片；照片不包含在普通GPX/JSON中。
+        </small>
+      </details>
     </div>
   );
 }

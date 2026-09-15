@@ -1,3 +1,4 @@
+import { visibilityTransfer } from './hidden';
 import { useEffect, useState } from 'react';
 import { collectData, DATA_CHANGED, type Transfer } from '../outdoor/exchange';
 import { workbenchTransfer, workbenchTree } from './workbenchAdapter';
@@ -78,6 +79,20 @@ export function useWorkbenchData() {
     ready: !!data,
     commit,
     reorderTabs,
+    setVisibility: (keys: string[], show: boolean) => {
+      if (!data) return false;
+      try {
+        const after = saveWorkbench(data, visibilityTransfer(data, keys, show));
+        setUndo({ before: data, after });
+        setData(after);
+        setError('');
+        return true;
+      } catch (e) {
+        reload();
+        setError(e instanceof Error ? e.message : '显示状态未保存');
+        return false;
+      }
+    },
     canUndo: !!undo,
     restore: () => {
       if (!undo) return false;

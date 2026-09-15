@@ -16,14 +16,33 @@ final class AppFiles {
     private java.io.File outputFile;
     private boolean saving;
     private android.os.CancellationSignal folderScan;
+    private volatile long photoStart,photoEnd;
+    private boolean libraryPermissionPending;
+    void photoTimeRange(long start,long end) { photoStart=start;photoEnd=end; }
+    void mediaPermission() { if(libraryPermissionPending) {libraryPermissionPending=false; if(PhotoLibrary.allowed(activity))scanLibrary();else {if(pending!=null)pending.onReceiveValue(null);pending=null;android.widget.Toast.makeText(activity,"未授权照片，可使用选择照片或文件夹",1).show();}} }
+    private void scanLibrary() {
+        final ValueCallback<Uri[]> callback=pending; if(callback==null)return;
+        final long start=photoStart,end=photoEnd;
+        final android.os.CancellationSignal cancel=new android.os.CancellationSignal();folderScan=cancel;
+        android.widget.Toast.makeText(activity,"按行程时间查询已授权照片；未知时间稍后确认",0).show();
+        new Thread(()->{ Uri[] uris=null;String message=null;
+            try{uris=PhotoLibrary.collect(activity,start,end,cancel);}catch(Exception e){message=e.getMessage();}
+            final Uri[] selected=uris;final String error=message;
+            activity.runOnUiThread(()->{if(pending!=callback||cancel.isCanceled())return;pending=null;folderScan=null;
+                if(error!=null)android.widget.Toast.makeText(activity,error,1).show();callback.onReceiveValue(selected);});
+        },"shantu-photo-index").start();
+    }
     final CameraCapture camera;
     AppFiles(Activity activity) { this.activity=activity; camera=new CameraCapture(activity); }
     boolean choose(ValueCallback<Uri[]> callback, android.webkit.WebChromeClient.FileChooserParams params) {
+        libraryPermissionPending=false;
         camera.cancel();
         if (folderScan != null) { folderScan.cancel(); folderScan = null; }
         if (pending != null) pending.onReceiveValue(null);
         pending=callback;
         try {
+            boolean library = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> "application/x-shantu-photo-library".equals(t));
+            if(library) { if(PhotoLibrary.allowed(activity))scanLibrary();else {libraryPermissionPending=true;PhotoLibrary.request(activity);}return true; }
             boolean folder = java.util.Arrays.stream(params.getAcceptTypes()).anyMatch(t -> "application/x-guanyun-photo-folder".equals(t));
             if (folder) {
                 activity.startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION), FOLDER);

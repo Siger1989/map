@@ -41,9 +41,12 @@ export class AnnotationLayer implements CustomLayerInterface {
   private syncMarkerScale = () => {
     const zoom = this.map?.getZoom() ?? 16;
     const scale = markerScale(zoom).toFixed(3);
-    this.markers.forEach(marker => {
+    this.markers.forEach((marker) => {
       const element = marker.getElement();
-      element.dataset.presentation = markerPresentation(zoom, element.classList.contains('is-selected'));
+      element.dataset.presentation = markerPresentation(
+        zoom,
+        element.classList.contains('is-selected'),
+      );
       if (element.style.getPropertyValue('--marker-scale') !== scale)
         element.style.setProperty('--marker-scale', scale);
     });
@@ -187,7 +190,10 @@ export class AnnotationLayer implements CustomLayerInterface {
       element.classList.add('annotation-marker');
       element.classList.toggle('is-point', item.kind === 'pin');
       element.classList.toggle('is-selected', item.id === this.selected);
-      element.dataset.presentation = markerPresentation(map.getZoom(), item.id === this.selected);
+      element.dataset.presentation = markerPresentation(
+        map.getZoom(),
+        item.id === this.selected,
+      );
       element.classList.toggle(
         'is-underground',
         item.placement === 'underground',
@@ -200,13 +206,19 @@ export class AnnotationLayer implements CustomLayerInterface {
       label.textContent = `${item.placement === 'underground' ? '▽ ' : ''}${item.name || '未命名'}`;
       const body = document.createElement('span');
       body.className = 'annotation-marker-body';
-      body.replaceChildren(markerIconElement(item.icon), label);
+      body.replaceChildren(
+        markerIconElement(item.borehole ? 'drill' : item.icon),
+        label,
+      );
       const visual = document.createElement('span');
       visual.className = 'annotation-marker-visual';
       visual.appendChild(body);
       element.replaceChildren(visual);
-      element.style.setProperty('--marker-scale', markerScale(map.getZoom()).toFixed(3));
-      element.title = `${item.name} · 点击查看，长按拖动位置`;
+      element.style.setProperty(
+        '--marker-scale',
+        markerScale(map.getZoom()).toFixed(3),
+      );
+      element.title = `${item.name} · ${item.borehole ? `口径 ${item.borehole.diameterMm ?? '未填写'} mm · 深度 ${item.borehole.depth ?? '未填写'} m；参数调整` : item.kind === 'pin' ? '点击查看，拖动位置' : '点击查看，控制器精调'}`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
         event.stopPropagation();

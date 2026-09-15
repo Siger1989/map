@@ -9,3 +9,7 @@
 - `data` / `folders` / `transfer` / `export` 保持原存储键和version1备份，新增可选parentId与treeOrder；导出包含选中对象及目录祖先，导入碰撞时重映射目录和顺序。
 
 原 `RouteCollectionsPanel`、批量地区编辑和高级导出继续可用。没有把预览示例或预览专用存档导入用户正式数据。新模块测试见 `collection-workbench.test.mjs`、`collection-folders.test.mjs`，手势仲裁测试仍在 `track-interaction.test.mjs`。
+
+## 0.2.36隐藏目录
+
+hidden按对象的持久化hidden字段生成system:hidden投影，不移动原folderId，也不把全局图层开关当成逐对象隐藏。setVisibility通过现有工作台事务执行单项/批量恢复和失败回滚。HiddenSection允许在保留隐藏状态时查看参数。useCollectionView只保存界面查询/展开/排序/滚动/选择的会话快照，不写业务存档；collectionNavigation通过公开回调连接地图/详情。

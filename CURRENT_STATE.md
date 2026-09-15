@@ -1,3 +1,13 @@
+# 当前状态 — 2026-09-15 / 0.2.36 已构建，待GitHub发布
+
+- 用户授权将逐页确认的UI全部落地、构建APK、上传GitHub并提供直接下载。工作树D:/shantu-ui-confirmed，分支codex/ui-confirmed-20260915；基线d01d9dc（0.2.35）。原D:/天气系统业务代码及用户9241窗口未操作。
+- 已完成本轮实现：紧凑固定主地图/独立定位/侧栏视角/区域总览；画线六项44px工具、小色板、开始前样式、独立路段颜色与备注、实际路径删除、不自动接线、唯一保存和草稿恢复；独立记录窗及导航直接结束/保存；完整行程与转路线后可选隐藏；收藏隐藏目录/恢复；照片先时间后GPS和索引/预览/原图分层读取；临时标记创建、钻井模型参数和统一最上层返回。完整清单docs/ui-confirmed-implementation.md。
+- 模块按职责拆出controls共享返回/颜色、tracks路段/checkpoint/nodeCommands、photos元数据/索引、outdoor记录和行程详情、collections隐藏目录，workbench只通过类型props组合窗口。app及useManualTracks保持原架构预算，未调高上限。保留MapLibre双指桥、ObjectGizmo、原始行程/照片/布局键及备份格式；固定布局不套用旧自定义坐标。
+- 最终525/525逻辑、TypeScript、架构、网页和APK构建通过。实际App390/360/266宽验收关键状态；画线292×44和164×80色板，极窄屏两行；原库v2照片升级/单张惰性读取与真实JPEG EXIF样本通过；记录保存和清理、草稿恢复、最上层返回及隐藏目录返回通过。修复路线显示面板低层父容器截获点击（Portal）、重复保存/入口、侧栏和底栏被旧CSS隐藏等。12张图与验收结果见docs/design-qa.md及artifacts/screenshots/ui-confirmed。
+- 新APK：D:/shantu-ui-confirmed/APK/Shantu-0.2.36-test-standalone.apk；版本0.2.36-test/code43，57,727,251字节，SHA256 33f5f31613a636637377ced5863627597f4c9f2d7474569fc1bd55aa38449429。原4a94证书v2/v3、zipalign、541项ZIP CRC、473地形资源、当前UI/原生桥代码及私密文件/用户草稿排除通过。APK使用最终源码新构建，签名密钥留在原私密路径。
+- 图示ZIP：APK/Shantu-0.2.36-feature-guide.zip（12张实际浏览器图和离线索引）；安装/平台说明docs/release-0.2.36.md。当前尚未完成Git提交、推送及Release上传，不能称远程已交付。下一步核对差异、提交推送本分支并核对SHA，公开测试Release，核对各资产大小/hash和直接下载链接。
+- 真机覆盖安装/手指双指/GPS后台记录/相机/相册部分权限/系统文件分享待验；预览部分地形路网服务502不可用，不将浏览器验证冒充网络与设备验收。HarmonyOS6.1原生HAP/APP仍未交付，缺工具链/合法签名分发。日志.openai/ui-*-final.log及apk-0236-integrity.json，不提交本机日志或构造fixture。
+
 # 当前状态 — 2026-09-14 / 修复后半段陡坡漏标
 
 - **0.2.35已公开发布**：[v0.2.35-test-standalone](https://github.com/Siger1989/map/releases/tag/v0.2.35-test-standalone)，Release id388321633，draft=false/prerelease=true。APK、校验文件、8张图示ZIP和安装说明四项GitHub大小/SHA256与本地匹配。功能源码`02027e60069bb3ba4ec293cb7ea1b9b2f5a692f3`已推送并核对origin/codex/layout-selection-clipping，未合入main/现用主工作树业务代码；后续交接只改文档。

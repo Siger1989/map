@@ -1,0 +1,149 @@
+.drawing-workspace {
+  position: absolute;
+  z-index: 31;
+  left: 4px;
+  top: calc(52px + var(--safe-top));
+  width: min(292px, calc(100% - 58px));
+  pointer-events: none;
+  color: var(--text);
+  font-size: 11px;
+}
+.drawing-workspace > * {
+  pointer-events: auto;
+}
+.observatory .drawing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.observatory .drawing-toolbar button {
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font: inherit;
+}
+.drawing-toolbar button i,
+.drawing-palette button i {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #819a90;
+}
+.drawing-toolbar button[aria-pressed='true'] i {
+  outline: 2px solid #174d3b;
+  outline-offset: 3px;
+}
+.drawing-toolbar button.drawing-save {
+  color: #075b39;
+  font-weight: 700;
+}
+.observatory .drawing-palette {
+  margin: 4px 0 0 auto;
+  width: 164px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drawing-palette > div {
+  display: flex;
+  gap: 4px;
+}
+.drawing-palette button {
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 1;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font: inherit;
+}
+.drawing-popover {
+  margin-top: 4px;
+  margin-left: auto;
+  max-width: 260px;
+  padding: 4px;
+  border-radius: 5px;
+  max-height: var(--map-panel-max-height, 200px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drawing-popover header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 36px;
+}
+.drawing-popover button,
+.drawing-popover input,
+.drawing-popover select,
+.drawing-start button,
+.drawing-start input,
+.drawing-start select {
+  min-height: 36px;
+  font: inherit;
+  min-width: 0;
+}
+.drawing-popover label,
+.drawing-start label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.drawing-popover label > input:not([type='checkbox']),
+.drawing-popover label > select,
+.drawing-start label > input,
+.drawing-start label > select {
+  flex: 1;
+  width: 0;
+}
+.drawing-popover header button {
+  width: 36px;
+  display: grid;
+  place-items: center;
+}
+.drawing-scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.drawing-settings-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.drawing-start {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.drawing-start > strong {
+  font-size: 12px;
+}
+.drawing-error {
+  color: #b32929;
+}
+@media (max-width: 353px) {
+  .drawing-toolbar {
+    max-width: 244px;
+  }
+  .drawing-workspace {
+    width: calc(100% - 54px);
+  }
+}

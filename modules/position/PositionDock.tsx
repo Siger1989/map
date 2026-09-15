@@ -21,14 +21,17 @@ export function PositionDock({
 }) {
   return (
     <nav className="position-dock" aria-label="底部定位与路线显示">
+      {children}
       <button
         className="position-dock-button glass"
         aria-label={
-          blocked ? '获取当前位置（编辑中暂停地图跟随）' : following
-            ? locating
-              ? '等待定位，点击暂停跟随'
-              : '暂停位置跟随'
-            : '跟随当前位置'
+          blocked
+            ? '获取当前位置（编辑中暂停地图跟随）'
+            : following
+              ? locating
+                ? '等待定位，点击暂停跟随'
+                : '暂停位置跟随'
+              : '跟随当前位置'
         }
         aria-pressed={following}
         title={blocked ? '编辑中可获取定位，结束编辑后可跟随' : undefined}
@@ -37,7 +40,6 @@ export function PositionDock({
         <LocateFixed size={17} />
         <small>{locating ? '定位中' : following ? '跟随' : '定位'}</small>
       </button>
-      {children}
       {showCoordinates && (
         <output
           className="position-dock-coordinates glass"

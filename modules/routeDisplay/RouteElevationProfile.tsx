@@ -18,11 +18,7 @@ export function RouteElevationProfile({
       Math.max(1, (scale?.max ?? 0) - (scale?.min ?? 0))) *
       44;
   return (
-    <section
-      className="route-elevation-profile glass"
-      aria-label="地图路线海拔剖面"
-    >
-      <strong>海拔剖面</strong>
+    <section className="route-elevation-profile" aria-label="地图路线海拔剖面">
       <svg
         viewBox="0 0 180 74"
         role="img"
@@ -48,11 +44,6 @@ export function RouteElevationProfile({
         </text>
         <text x="176" y="72" textAnchor="end">
           {(distance / 1000).toFixed(1)} km
-        </text>
-        <text x="4" y="10">
-          {scale
-            ? `${Math.round(scale.min)}–${Math.round(scale.max)} m`
-            : '暂无高程'}
         </text>
       </svg>
     </section>

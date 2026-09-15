@@ -4,7 +4,9 @@ import { PHOTO_ACCEPT, PHOTO_FOLDER_ACCEPT } from './selection';
 export function PhotoPicker({
   disabled,
   onFiles,
+  range,
 }: {
+  range?: { start: number; end: number } | null;
   disabled: boolean;
   onFiles: (files: File[], folder: boolean) => void;
 }) {
@@ -17,6 +19,25 @@ export function PhotoPicker({
   }, []);
   return (
     <div className="photo-picker">
+      {native && range && window.GuanyunNative?.photoTimeRange && (
+        <label className="import-file">
+          自动匹配行程照片
+          <input
+            type="file"
+            accept="application/x-shantu-photo-library"
+            multiple
+            disabled={disabled}
+            onClick={() =>
+              window.GuanyunNative?.photoTimeRange?.(range.start, range.end)
+            }
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              e.target.value = '';
+              if (files.length) onFiles(files, true);
+            }}
+          />
+        </label>
+      )}
       <label className="import-file">
         选择行程照片
         <input
@@ -49,7 +70,7 @@ export function PhotoPicker({
       </label>
       <small>
         {folders
-          ? '文件夹含子目录，最多 200 张。请选择具体行程目录。'
+          ? '文件夹含子目录；先读取元数据筛时间，不预先解码全部照片。'
           : '当前安装包不支持选文件夹，请升级后使用；也可先多选照片。'}
       </small>
     </div>

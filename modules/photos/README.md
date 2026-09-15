@@ -1,0 +1,9 @@
+# 沿途照片
+
+PhotoPanel/PhotoPending处理本次行程的导入流程，usePhotoImportSession保留跨地图选点的候选会话。PhotoPlacement负责选点后的文件/相机和人工时间确认，通过回调关联所属行程，不改原路线。PhotoViewer负责单张详情。
+
+metadata提供readPhotoMetadata、photoTimeRange、classifyPhoto、photoHash。先时间后GPS；File分块读取EXIF，筛中的候选才完整哈希与解码；时间/GPS缺失或冲突不伪造自动匹配。Android PhotoLibrary使用授权范围内MediaStore时间索引，未知时间只作待确认候选。
+
+storage保留IndexedDB photos原图表，v3新增photo-index和photo-previews。readPhotoIndex不返回Blob；readPhotoPreview/readPhotoAsset仅单张；resolvePhotoAssets供选定资源导出使用。写入三个表同一事务，patch不复活已删照片；重导入保留手工坐标、时间、备注和编辑。
+
+PhotoThumbnail在可见时读取预览，地图层只加载视域照片；初始页面不加载全部原图。一次旧DB升级需要遍历旧记录建立索引，此一次迁移与日常按需加载分开。文件夹源需遍历文件元数据，不能等同系统相册的数据库索引查询。

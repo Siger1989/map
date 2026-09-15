@@ -1,0 +1,126 @@
+.observatory .recording-window {
+  position: absolute;
+  left: 4px;
+  bottom: calc(54px + var(--safe-bottom));
+  z-index: 32;
+  padding: 0 4px;
+  max-width: min(300px, calc(100% - 58px));
+  border-radius: 5px;
+  font-size: 11px;
+}
+.recording-window.is-open {
+  width: 300px;
+  max-height: var(--map-panel-max-height, 200px);
+  display: flex;
+  flex-direction: column;
+}
+.recording-window-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  font-size: 11px;
+  width: 100%;
+}
+.recording-window-toggle strong {
+  font-size: 12px;
+}
+.recording-window-toggle svg {
+  margin-left: auto;
+}
+.recording-window-toggle i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #315447;
+  border-radius: 50%;
+}
+.recording-window-toggle i[data-phase='recording'] {
+  background: #078f4d;
+}
+.recording-window-toggle i[data-phase='paused'] {
+  background: #eba20b;
+}
+.recording-window-scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.recording-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+.recording-metrics {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 24px;
+  align-items: center;
+}
+.recording-actions {
+  display: flex;
+  gap: 4px;
+}
+.recording-actions > button {
+  flex: 1;
+  min-height: 36px;
+  font-size: 11px;
+}
+.recording-body button {
+  min-height: 36px;
+  font-size: 11px;
+}
+.recording-body .primary {
+  background: #d1eadb;
+  color: #075a38;
+  font-weight: 600;
+}
+.recording-body .danger {
+  background: #fff0f0;
+  color: #b52929;
+}
+.recording-body p {
+  font-size: 10px;
+  margin: 0;
+}
+.recording-body small {
+  font-size: 10px;
+}
+.recording-more {
+  align-self: flex-end;
+}
+.navigation-finish {
+  position: absolute;
+  left: 4px;
+  top: calc(56px + var(--safe-top));
+  z-index: 75;
+  width: min(300px, calc(100% - 58px));
+  max-height: var(--map-panel-max-height, 200px);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.navigation-finish header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 36px;
+}
+.navigation-finish-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.navigation-finish button {
+  min-height: 36px;
+  font-size: 11px;
+}
+.navigation-finish small {
+  font-size: 10px;
+}

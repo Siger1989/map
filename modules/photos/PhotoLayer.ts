@@ -1,7 +1,10 @@
+import { readPhotoPreview } from './storage';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import type { VisiblePhoto } from './storage';
 import { markerIconElement } from '../annotations/icons';
 export class PhotoLayer {
+  private revision = 0;
+  private urls: string[] = [];
   private photos: VisiblePhoto[] = [];
   private markers: Marker[] = [];
   constructor(
@@ -15,6 +18,9 @@ export class PhotoLayer {
     this.draw();
   }
   private draw = () => {
+    const revision = ++this.revision;
+    this.urls.forEach(URL.revokeObjectURL);
+    this.urls = [];
     this.markers.forEach((m) => m.remove());
     this.markers = [];
     const groups = new Map<string, VisiblePhoto[]>();
@@ -48,7 +54,16 @@ export class PhotoLayer {
           : `查看照片 ${group[0].name}`,
       );
       const img = document.createElement('img');
-      img.src = group[0].url;
+      if (group[0].url) img.src = group[0].url;
+      else
+        void readPhotoPreview(group[0].id)
+          .then((blob) => {
+            if (revision !== this.revision) return;
+            const url = URL.createObjectURL(blob);
+            this.urls.push(url);
+            img.src = url;
+          })
+          .catch(() => {});
       img.alt = '';
       button.appendChild(img);
       if (group[0].kind === 'annotation') {
@@ -82,6 +97,9 @@ export class PhotoLayer {
     }
   };
   dispose() {
+    this.revision++;
+    this.urls.forEach(URL.revokeObjectURL);
+    this.urls = [];
     this.map.off('moveend', this.draw);
     this.markers.forEach((m) => m.remove());
     this.markers = [];

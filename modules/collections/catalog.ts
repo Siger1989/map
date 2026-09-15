@@ -62,10 +62,11 @@ export function catalogEntries(
     })),
     ...annotations.map((a) => ({
       key: `annotation:${a.id}`,
-      kind: a.kind === 'pin' ? ('pin' as const) : ('model' as const),
+      kind:
+        a.kind === 'pin' && !a.borehole ? ('pin' as const) : ('model' as const),
       annotation: a,
       name: a.name || '未命名',
-      detail: `${KINDS[a.kind]} · ${a.attributes?.length ?? 0} 项属性`,
+      detail: `${a.borehole ? '钻井' : KINDS[a.kind]} · ${a.attributes?.length ?? 0} 项属性`,
       coordinates: a.coordinates,
     })),
     ...sections

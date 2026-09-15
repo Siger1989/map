@@ -1,3 +1,4 @@
+import { useBackHandler } from '../controls/backNavigation';
 import { createPortal } from 'react-dom';
 import { SmartInput } from '../input/SmartText';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -30,6 +31,8 @@ type Props = {
   onOpen: (key: string) => void;
   onNavigate: (key: string) => void;
   onManage: (keys?: string[]) => void;
+  hiddenKeys?: Set<string>;
+  onVisibility?: (keys: string[], show: boolean) => boolean;
   error: string;
   busy: boolean;
 };
@@ -56,6 +59,9 @@ export function WorkbenchAction(p: Props) {
   );
   const root = useRef<HTMLElement>(null),
     oldFocus = useRef<HTMLElement | null>(null);
+  useBackHandler(true, root, () => {
+    if (!p.busy) p.onClose();
+  });
   useEffect(() => {
     oldFocus.current = document.activeElement as HTMLElement;
     root.current?.querySelector<HTMLInputElement>('input')?.focus();
@@ -134,6 +140,18 @@ export function WorkbenchAction(p: Props) {
             移动到文件夹
           </button>
         )}
+        {item &&
+          ['track', 'pin', 'model', 'area', 'section'].includes(item.kind) &&
+          p.onVisibility && (
+            <button
+              onClick={() => {
+                if (p.onVisibility!(keys, !!p.hiddenKeys?.has(item.id)))
+                  p.onClose();
+              }}
+            >
+              {p.hiddenKeys?.has(item.id) ? '恢复显示' : '隐藏'}
+            </button>
+          )}
         <button onClick={() => p.onManage(keys)}>地区编辑 / ZIP / Excel</button>
         {item?.kind === 'folder' && item.id !== 'unfiled' && (
           <button onClick={() => p.onAction({ type: 'dissolve', id: item.id })}>

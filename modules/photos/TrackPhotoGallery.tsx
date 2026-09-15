@@ -1,3 +1,4 @@
+import { PhotoThumbnail } from './PhotoThumbnail';
 import type { ManualTrack } from '../tracks/drawing';
 import type { VisiblePhoto } from './storage';
 import { photosForTrack } from './trackPhotos';
@@ -28,7 +29,12 @@ export function TrackPhotoGallery({
               onClick={() => onOpen(p.id)}
               title={p.title || p.name}
             >
-              <img src={p.url} alt={p.title || p.name} loading="lazy" />
+              <PhotoThumbnail
+                id={p.id}
+                src={p.url}
+                alt={p.title || p.name}
+                loading="lazy"
+              />
               <small>
                 {new Date(p.time).toLocaleTimeString('zh-CN', {
                   hour: '2-digit',

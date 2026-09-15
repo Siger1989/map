@@ -1,0 +1,7 @@
+# 地图操作与窗口返回
+
+MapActions/ViewSettings：右侧3D、视角、更多；通过MapHandle和回调调整地图。定位由position独立管理，区域总览复用当前路线几何适配。ControlDock只提供主功能目录，不再重复工具入口。
+
+backNavigation：useBackHandler/registerBackHandler登记真实窗口元素和关闭动作；统一Escape及Android shantuBack一次只处理当前可见最上层。旧窗口通过限定选择器适配，不拦截文本控件自己的Escape。不能通过在任意功能里重复注册Android全局回调处理返回。
+
+CompactColor：小型RGB/hex颜色输入，供画笔与路线样式复用；不打开遮盖地图的系统大色板。模块不持有地图/轨迹存档。

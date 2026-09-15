@@ -1,3 +1,5 @@
+import { openCatalogEntry } from './collectionNavigation';
+import type { CollectionViewRef } from './useCollectionView';
 import { SmartInput } from '../input/SmartText';
 import {
   useEffect,
@@ -32,6 +34,8 @@ import { collectionArchive } from './archive';
 import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
+  view: CollectionViewRef;
+  onLeave: () => void;
   annotations: Annotation[];
   sections: SectionObject[];
   areas: MapArea[];
@@ -128,14 +132,7 @@ export function CollectionsPanel(props: Props) {
       setMessage(e instanceof Error ? e.message : '删除失败');
     }
   };
-  const open = (e: CatalogEntry) => {
-    if (e.kind === 'route') props.onRoute(e.route);
-    else if (e.kind === 'track') props.onTrack(e.track.id);
-    else if (e.kind === 'section') props.onSection(e.section.id);
-    else if (e.kind === 'area') props.onArea(e.area.id);
-    else if (e.kind === 'measurement') props.onMeasurement(e.measurement.id);
-    else props.onAnnotation(e.annotation.id);
-  };
+  const open = (e: CatalogEntry) => openCatalogEntry(e, props);
   const edit = (e: CatalogEntry) => {
     const r = regionFor(e, regions.regions);
     setProvince(r?.province ?? '');
@@ -199,6 +196,7 @@ export function CollectionsPanel(props: Props) {
   if (legacy)
     return (
       <WorkbenchPanel
+        view={props.view}
         center={props.mapCenter}
         onClose={props.onClose}
         onLocate={(key) => {

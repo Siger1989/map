@@ -11,11 +11,11 @@ export const DEFAULT_TRACK_STYLE: TrackStyle = {
 };
 export const TRACK_STYLE_STORAGE = 'guanyun.track-style.v1';
 export const TRACK_COLORS = [
-  '#ffb477',
-  '#ff637c',
-  '#55d6ff',
-  '#a5efc8',
-  '#e7bf55',
+  '#ff8a00',
+  '#ff3232',
+  '#0066ff',
+  '#008c38',
+  '#ffd500',
   '#ffffff',
 ];
 export function normalizeTrackStyle(input: unknown): TrackStyle {

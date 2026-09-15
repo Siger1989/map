@@ -1,3 +1,5 @@
+import { resolvePhotoAssets } from '../photos/storage';
+import { photosForTrack } from '../photos/trackPhotos';
 import { archiveBlob, archiveName, type ArchiveEntry } from '../files/archive';
 import { exportGPX, exportKML } from '../outdoor/exchange';
 import { routeArchiveEntries } from '../routeShare/archive';
@@ -18,9 +20,31 @@ export async function collectionArchive(
   signal?: AbortSignal,
   progress?: (message: string) => void,
 ) {
+  const markerIds = new Set(
+    entries.flatMap((e) =>
+      e.kind === 'pin' || e.kind === 'model' ? [e.annotation.id] : [],
+    ),
+  );
+  const ids = new Set(
+    entries.flatMap((e) =>
+      e.kind === 'track'
+        ? photosForTrack(e.track, photos).map((p) => p.id)
+        : [],
+    ),
+  );
+  photos = await resolvePhotoAssets(
+    photos.filter(
+      (p) => ids.has(p.id) || (p.annotationId && markerIds.has(p.annotationId)),
+    ),
+  );
   const transfer = collectionTransfer(entries, regions, storage);
   const files: ArchiveEntry[] = [
-    ...markerPhotoArchiveEntries(entries.flatMap(e => e.kind === 'pin' || e.kind === 'model' ? [e.annotation.id] : []), photos),
+    ...markerPhotoArchiveEntries(
+      entries.flatMap((e) =>
+        e.kind === 'pin' || e.kind === 'model' ? [e.annotation.id] : [],
+      ),
+      photos,
+    ),
     { path: '山兔收藏.json', data: JSON.stringify(transfer, null, 2) },
     {
       path: '收藏数据.xlsx',
@@ -37,7 +61,11 @@ export async function collectionArchive(
     signal?.throwIfAborted();
     const e = entries[i];
     if (e.kind !== 'route' && e.kind !== 'track') continue;
-    if (e.kind === 'track' && !e.track.segments.some(line => line.length >= 2)) continue;
+    if (
+      e.kind === 'track' &&
+      !e.track.segments.some((line) => line.length >= 2)
+    )
+      continue;
     progress?.(`正在生成路线图 ${i + 1}/${entries.length} · ${e.name}`);
     const data =
       e.kind === 'track'

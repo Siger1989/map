@@ -152,14 +152,6 @@ export function ControlDock({
                             ? '路线规划'
                             : PANELS.find((p) => p.id === active)?.label)}
             </h2>
-            {(active === 'route' || active === 'track') && (
-              <button
-                className="dock-section-link"
-                onClick={() => onActive(active === 'route' ? 'track' : 'route')}
-              >
-                {active === 'route' ? '画线 / 轨迹' : '道路规划'}
-              </button>
-            )}
             <button
               ref={closeButton}
               className="icon-button"
@@ -184,10 +176,6 @@ export function ControlDock({
                     扫码载入路线
                   </button>
                 )}
-                <button onClick={() => onActive('track')}>
-                  <PencilLine size={18} />
-                  画线
-                </button>
                 {onSection && (
                   <button
                     onClick={onSection}
@@ -201,17 +189,19 @@ export function ControlDock({
                 )}
                 {PANELS.filter(
                   (p) =>
-                    !['tools', 'outdoor', 'favorites', 'track'].includes(p.id),
+                    ![
+                      'tools',
+                      'outdoor',
+                      'favorites',
+                      'track',
+                      'route',
+                    ].includes(p.id),
                 ).map(({ id, label, icon: Icon }) => (
                   <button key={id} onClick={() => onActive(id)}>
                     <Icon size={18} />
                     {id === 'time' ? timeLabel : label}
                   </button>
                 ))}
-                <button onClick={() => onActive('outdoor')}>
-                  <Footprints size={18} />
-                  行程与数据
-                </button>
               </div>
             ) : active === 'time' ? (
               timeline

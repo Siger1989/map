@@ -12,12 +12,14 @@ export function QuickAdd({
   onAdd,
   onArea,
   onClose,
+  onPhoto,
 }: {
   at: MapHold;
   error: string;
   onAdd: (kind: AnnotationChoice) => void;
   onArea: () => void;
   onClose: () => void;
+  onPhoto?: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null),
     closeButton = useRef<HTMLButtonElement>(null);
@@ -77,6 +79,7 @@ export function QuickAdd({
             <button type="button" onClick={onArea}>
               ▱ 划区域
             </button>
+            {onPhoto && <button onClick={onPhoto}>添加照片</button>}
             <AnnotationTypeOptions onAdd={onAdd} onOutline={onArea} />
           </div>
           {error && <p role="alert">{error}</p>}

@@ -17,6 +17,7 @@ export function recordingTrack(
     name: `实走 ${new Date(record.startedAt).toLocaleString('zh-CN')}`,
     source: 'recorded',
     createdAt: record.startedAt,
+    ...(record.finishedAt ? { finishedAt: record.finishedAt } : {}),
     segments: segments.map((line) => line.map((p) => [...p.coordinates])),
     samples: segments.map((line) =>
       line.map((p) => ({ time: p.time, altitude: p.altitude })),

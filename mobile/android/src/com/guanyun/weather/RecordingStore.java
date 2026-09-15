@@ -43,6 +43,7 @@ final class RecordingStore {
     }
     static synchronized void command(Context c, String action) throws Exception {
         JSONObject value = load(c);
+        JSONObject original = new JSONObject(value.toString());
         if (broken) throw new Exception("记录存档无法读取");
         String phase = value.optString("phase");
         qualityMessage = "";
@@ -57,9 +58,16 @@ final class RecordingStore {
             if (segments.length() == 0 || segments.getJSONArray(segments.length()-1).length() > 0) segments.put(new JSONArray());
             data.put("phase", "recording").put("error", "");
         } else if ("pause".equals(action)) data.put("phase", "paused");
-        else if ("finish".equals(action)) data.put("phase", "finished");
+        else if ("finish".equals(action)) data.put("phase", "finished").put("finishedAt", System.currentTimeMillis());
         else if ("clear".equals(action)) { if ("recording".equals(phase)) throw new Exception("请先结束记录"); data = empty(); }
-        write(c);
+        try { write(c); }
+        catch (Exception e) { data = original; cachedSnapshot = null; throw e; }
+    }
+    static synchronized String commandFor(Context c, String action, String expectedId) throws Exception {
+        JSONObject value = load(c);
+        if (!value.optString("id").equals(expectedId)) throw new Exception("记录已切换，请重新打开本次行程");
+        command(c, action);
+        return snapshot(c);
     }
     static synchronized void error(Context c, String message) {
         try { JSONObject current = load(c); if (java.util.Objects.equals(current.optString("error"), message)) return; current.put("error", message); write(c); } catch (Exception ignored) { }
