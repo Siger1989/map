@@ -1,4 +1,7 @@
-# 最新功能包：0.2.35 独立测试版（2026-09-14）
+# 当前回退版：0.2.39（恢复0.2.35业务基线）
+
+2026-09-21用户要求撤回整套UI改版。新包保留0.2.35界面，增加读取后续照片库的最小兼容；安装版本code46用于覆盖更新。构建/公开下载状态见[CURRENT_STATE](../CURRENT_STATE.md)，安装及平台说明见[0.2.39说明](../docs/release-0.2.39.md)。下方旧版记录仅供历史查询。
+# 历史功能包：0.2.35 独立测试版（2026-09-14）
 
 [下载0.2.35 APK](https://github.com/Siger1989/map/releases/download/v0.2.35-test-standalone/Shantu-0.2.35-test-standalone.apk) · [发行说明与8张对照图](https://github.com/Siger1989/map/releases/tag/v0.2.35-test-standalone)。四项公开资产大小/SHA256已核对，APK源码02027e60069bb3ba4ec293cb7ea1b9b2f5a692f3，分支codex/layout-selection-clipping。
 

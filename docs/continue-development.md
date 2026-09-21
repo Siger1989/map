@@ -1,5 +1,7 @@
 # 换电脑继续开发
 
+> 2026-09-21：用户选择回退0.2.35。先读 [Agent交接](agent-handoff.md)，当前分支 `codex/rollback-ui-0235-20260921`，不要从main或旧UI试改分支继续。安装包最新状态以根CURRENT_STATE.md为准，下文早期版本链接仅供历史兼容查询。
+
 项目仓库：[Siger1989/map](https://github.com/Siger1989/map)。最新状态看根目录 `CURRENT_STATE.md`；项目协作与后续同步规则写在 `AGENTS.md`，在家打开仓库时也能读到。
 
 ## 第一次在家运行
@@ -7,7 +9,7 @@
 安装 Git 和 Node.js 24，然后在你希望保存项目的目录打开终端：
 
 ```sh
-git clone https://github.com/Siger1989/map.git
+git clone --branch codex/rollback-ui-0235-20260921 https://github.com/Siger1989/map.git
 cd map
 npm ci
 npm run dev

@@ -23,9 +23,13 @@ let database: Promise<IDBDatabase> | null = null;
 function open() {
   if (!database)
     database = new Promise<IDBDatabase>((resolve, reject) => {
-      const r = indexedDB.open('guanyun-trip-photos', 1);
-      r.onupgradeneeded = () =>
-        r.result.createObjectStore('photos', { keyPath: 'id' });
+      // 0.2.36 upgraded this database to v3 but retained full photos here.
+      // Open the existing version when rolling back; never downgrade or erase it.
+      const r = indexedDB.open('guanyun-trip-photos');
+      r.onupgradeneeded = () => {
+        if (!r.result.objectStoreNames.contains('photos'))
+          r.result.createObjectStore('photos', { keyPath: 'id' });
+      };
       r.onsuccess = () => {
         r.result.onversionchange = () => {
           r.result.close();
