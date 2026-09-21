@@ -80,7 +80,7 @@
 }
 .route-display-info {
   position: fixed;
-  right: 4px;
+  right: 60px;
   bottom: calc(206px + var(--safe-bottom));
   display: flex;
   flex-direction: column;

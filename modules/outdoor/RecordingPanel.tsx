@@ -1,170 +1,41 @@
 import { useState } from 'react';
+import { MapPinPlus, Images, Play, Pause, Square, Save } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { trackDistance } from '../tracks/drawing';
-import { nearestOnRoute } from '../journey/routeProgress';
 import { exportGPX } from '../dataTransfer/xmlExport';
 import { saveFile } from '../dataTransfer/download';
 import type { useRecording } from './useRecording';
 import { recordingTransfer, saveRecording } from './savedRecording';
-import { RecordingPrecision } from './RecordingPrecision';
-import { SamplingSettings } from './SamplingSettings';
-import { TrackStyleControls } from '../tracks/TrackStyleControls';
+import { RecordingCompactSettings } from './RecordingCompactSettings';
+import './recordingConsole.css';
 
-export function RecordingPanel({
-  recorder,
-  points,
-  onShow,
-  onSavedTrack,
-  onPhotos,
-}: {
-  recorder: ReturnType<typeof useRecording>;
-  points: Coordinate[];
-  onShow: (points: Coordinate[]) => void;
-  onSavedTrack: (id: string) => void;
-  onPhotos: () => void;
+export function RecordingPanel({ recorder, onShow, onSavedTrack, onPhotos, onMarkCurrent, locationStatus }: {
+  recorder: ReturnType<typeof useRecording>; points: Coordinate[];
+  onShow: (points: Coordinate[]) => void; onSavedTrack: (id: string) => void;
+  onPhotos: () => void; onMarkCurrent: () => string; locationStatus: string;
 }) {
   const [message, setMessage] = useState('');
-  const { record, native, command } = recorder;
-  const segments = record.segments
-    .filter((s) => s.length >= 2)
-    .map((s) => s.map((p) => p.coordinates));
+  const { record, command } = recorder;
+  const segments = record.segments.filter(s => s.length >= 2).map(s => s.map(p => p.coordinates));
   const count = record.segments.reduce((n, line) => n + line.length, 0);
-  const last = record.segments.at(-1)?.at(-1) ?? record.segments.at(-2)?.at(-1);
-  const deviation =
-    last && points.length > 1
-      ? nearestOnRoute(points, last.coordinates).offset
-      : null;
-  const act = (work: () => void) => {
-    try {
-      work();
-      setMessage('操作完成');
-    } catch (error) {
-      setMessage((error as Error).message);
-    }
-  };
-  const recordingData = () => recordingTransfer(record);
-  return (
-    <>
-      <>
-        <div className="trip-metrics">
-          <strong>{formatDistance(trackDistance(segments))}</strong>
-          <span>
-            {count} 点 ·{' '}
-            {
-              {
-                idle: '未开始',
-                recording: '记录中',
-                paused: '已暂停',
-                finished: '待保存',
-              }[record.phase]
-            }
-          </span>
-          {record.phase === 'idle' && (
-            <button
-              className="recording-start"
-              onClick={() => command('start')}
-            >
-              开始记录
-            </button>
-          )}
-        </div>
-        <section className="recording-appearance" aria-label="实走轨迹样式">
-          <TrackStyleControls
-            analysis
-            style={recorder.appearance.style}
-            onChange={recorder.appearance.update}
-          />
-          {recorder.appearance.error && (
-            <p role="status" className="route-error">
-              {recorder.appearance.error}
-            </p>
-          )}
-        </section>
-        <RecordingPrecision preferences={recorder.preferences} />
-        <SamplingSettings settings={recorder.sampling} native={native} />
-        <p className="route-note">
-          {native
-            ? '开始后显示系统记录通知，锁屏后继续定位。'
-            : '网页版仅在前台记录；锁屏记录请使用安卓安装包。'}
-        </p>
-        {last && (
-          <p className="route-note">
-            最近记录点估计误差 {Math.round(last.accuracy)} m ·{' '}
-            {new Date(last.time).toLocaleTimeString('zh-CN')}
-          </p>
-        )}
-        {deviation !== null && (
-          <p className={deviation > 100 ? 'route-error' : 'route-note'}>
-            距所选路线 {formatDistance(deviation)}
-            {deviation > 100 ? ' · 可能已偏离路线' : ''}
-          </p>
-        )}
-        <div className="outdoor-actions">
-          {record.phase !== 'idle' && (
-            <>
-              {record.phase === 'recording' && (
-                <button onClick={() => command('pause')}>暂停</button>
-              )}
-              {record.phase === 'paused' && (
-                <button onClick={() => command('resume')}>继续记录</button>
-              )}
-              {record.phase !== 'finished' && (
-                <button onClick={() => command('finish')}>结束记录</button>
-              )}
-              {record.phase === 'finished' && (
-                <button
-                  disabled={!segments.length}
-                  onClick={() =>
-                    act(() => {
-                      const saved = saveRecording(record);
-                      onSavedTrack(saved.id);
-                      command('clear');
-                      onPhotos();
-                    })
-                  }
-                >
-                  保存到轨迹
-                </button>
-              )}
-              <button
-                disabled={!segments.length}
-                onClick={() =>
-                  act(() =>
-                    saveFile(
-                      'Shantu-recording.gpx',
-                      'application/gpx+xml',
-                      exportGPX(recordingData()),
-                    ),
-                  )
-                }
-              >
-                导出 GPX
-              </button>
-              <button
-                disabled={!segments.length}
-                onClick={() => onShow(segments.flat())}
-              >
-                查看全程
-              </button>
-              {record.phase !== 'recording' && !segments.length && (
-                <button onClick={() => command('clear')}>
-                  清除无有效线段记录
-                </button>
-              )}
-            </>
-          )}
-        </div>
-        {(record.error || recorder.qualityNote) && (
-          <p role="status" className="route-error">
-            {record.error || recorder.qualityNote}
-          </p>
-        )}
-      </>
-      {message && (
-        <p role="status" className="route-note">
-          {message}
-        </p>
-      )}
-    </>
-  );
+  const status = { idle: '未开始', recording: '记录中', paused: '已暂停', finished: '待保存' }[record.phase];
+  const error = record.error || recorder.appearance.error || recorder.preferences.error || recorder.sampling.error;
+  const act = (work: () => void) => { try { work(); setMessage('操作完成'); } catch (error) { setMessage((error as Error).message); } };
+  const save = () => act(() => { const saved = saveRecording(record); onSavedTrack(saved.id); command('clear'); setMessage('记录已保存，可在收藏中查看'); });
+  return <section className="record-console" aria-label="记录控制台">
+    <div className="record-console-stats"><strong>{formatDistance(trackDistance(segments))}</strong><span>{count}点 · {status}</span></div>
+    <p className="record-console-status" data-error={!!error} role="status" title={error || message || locationStatus}>{error || message || recorder.qualityNote || locationStatus}</p>
+    <div className="record-console-actions">
+      <button className="is-primary" onClick={() => setMessage(onMarkCurrent())}><MapPinPlus size={16} />当前位置标记</button>
+      <button onClick={onPhotos}><Images size={16} />照片</button>
+    </div>
+    <div className="record-console-actions">
+      {record.phase === 'finished' ? <button className="is-primary" disabled={!segments.length} onClick={save}><Save size={15} />保存</button> : <button className="is-primary" onClick={() => command(record.phase === 'idle' ? 'start' : record.phase === 'recording' ? 'pause' : 'resume')}>{record.phase === 'recording' ? <Pause size={15} /> : <Play size={15} />}{record.phase === 'idle' ? '开始' : record.phase === 'recording' ? '暂停' : '继续'}</button>}
+      <button disabled={record.phase === 'idle' || record.phase === 'finished'} onClick={() => command('finish')}><Square size={13} />结束</button>
+      <button disabled={!segments.length} onClick={() => onShow(segments.flat())}>全程</button>
+      {count === 0 && record.phase !== 'idle' && record.phase !== 'recording' && <button onClick={() => command('clear')}>重置空记录</button>}
+    </div>
+    <RecordingCompactSettings recorder={recorder} />
+    <div className="record-console-footer"><span title="精度是接受新定位点的误差门槛，不是设备定位能力保证。">{recorder.native ? '设置对新记录点生效' : '网页仅前台记录'}</span><button disabled={!segments.length} onClick={() => act(() => saveFile('Shantu-recording.gpx', 'application/gpx+xml', exportGPX(recordingTransfer(record))))}>导出GPX</button></div>
+  </section>;
 }

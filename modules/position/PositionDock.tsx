@@ -20,7 +20,7 @@ export function PositionDock({
   children?: ReactNode;
 }) {
   return (
-    <nav className="position-dock" aria-label="底部定位与路线显示">
+    <nav className="home-position-dock" aria-label="底部定位与路线显示">
       {children}
       <button
         className="position-dock-button glass"

@@ -1,7 +1,9 @@
 import { RouteProviderNote } from './RouteProviderNote';
+import { RouteResultSummary } from './RouteResultSummary';
+import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { RoutingModeControl } from '../offlineRouting/RoutingModeControl';
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import {
   ArrowDownUp,
   MapPin,
@@ -13,8 +15,6 @@ import {
 import { searchPlaces } from './provider';
 import { MAX_ROUTE_STOPS, stopLabel } from './stops';
 import {
-  formatDistance,
-  formatDuration,
   TRAVEL_MODES,
   type Coordinate,
   type Endpoint,
@@ -36,6 +36,10 @@ export function RoutePanel({
   navigating,
   guidanceError,
   onShare,
+  weather,
+  onRally,
+  onEditPoints,
+  onCancel,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -50,7 +54,16 @@ export function RoutePanel({
   navigating: boolean;
   guidanceError: string;
   onShare: () => void;
+  weather?: ReactNode;
+  onRally?: () => void;
+  onEditPoints?: () => void; onCancel?: () => void;
 }) {
+  const [editing, setEditing] = useState(true);
+  const previousRoute = useRef(n.route?.createdAt);
+  useEffect(() => {
+    if (n.route && previousRoute.current !== n.route.createdAt) setEditing(false);
+    previousRoute.current = n.route?.createdAt;
+  }, [n.route?.createdAt]);
   const [active, setActive] = useState<string | null>(null),
     [results, setResults] = useState<RoutePlace[]>([]),
     [searching, setSearching] = useState(false),
@@ -223,6 +236,11 @@ export function RoutePanel({
       setAnnouncement(`已移到${stopLabel(d.to, n.stops.length)}`);
     }
   };
+  if (n.route && !editing && n.picking === null) return <RouteResultSummary
+    route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
+    onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
+    navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} weather={weather} onRally={onRally} onEditPoints={onEditPoints} onCancel={onCancel}
+  />;
   return (
     <div className="route-panel" data-picking={n.picking !== null}>
       <RoutingModeControl onOffline={() => n.setMode('pedestrian')} />
@@ -491,60 +509,7 @@ export function RoutePanel({
           ? '规划中…'
           : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
       </button>
-      {n.stops.some((s) => !s.place) && (
-        <p className="route-note">
-          输入地名后选搜索结果，或点“选点”后点击已有标记或地图空白处。
-        </p>
-      )}
-      {n.route && (
-        <>
-          <div className="route-result">
-            {n.route.routingSource && (
-              <small>离线步行 · {n.route.routingSource.name}</small>
-            )}
-            <strong>{formatDistance(n.route.distance)}</strong>
-            <span>{formatDuration(n.route.duration)}</span>
-            <button onClick={() => onShow(n.route!)}>看全程</button>
-            <button onClick={onSave}>收藏路线</button>
-            <button onClick={onShare}>分享路线</button>
-          </div>
-          <button
-            className="route-start-navigation"
-            onClick={onStartNavigation}
-            disabled={navigating}
-          >
-            {navigating ? '正在导航' : '开始导航'}
-          </button>
-          {guidanceError && !navigating && (
-            <p className="route-error" role="alert">
-              {guidanceError}
-            </p>
-          )}
-          {saveMessage && (
-            <p className="route-note" role="status">
-              {saveMessage}
-            </p>
-          )}
-          {!!n.route.accessDistance && (
-            <p className="route-note">
-              虚线为选点与附近道路的直连接入，共{' '}
-              {Math.round(n.route.accessDistance)}{' '}
-              米，已计入总长；时间按步行估算，实际通行需现场确认。
-            </p>
-          )}
-          <details className="route-steps">
-            <summary>转向与路段 · {n.route.steps.length} 步</summary>
-            <ol>
-              {n.route.steps.map((s, i) => (
-                <li key={i}>
-                  {s.instruction}
-                  <small>{formatDistance(s.distance)}</small>
-                </li>
-              ))}
-            </ol>
-          </details>
-        </>
-      )}
+      {n.route && <button className="route-primary" onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button>}
       <RouteProviderNote />
     </div>
   );

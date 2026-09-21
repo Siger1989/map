@@ -227,11 +227,12 @@ export function RouteWeatherRail({
       <button
         className="rail-legend-toggle glass"
         aria-label="行程色带说明"
+        aria-expanded={legend}
         onClick={() => setLegend((v) => !v)}
       >
         图例
       </button>
-      {(selected !== null || legend) && (
+      {legend && (
         <div
           className="rail-detail rail-detail-compact glass"
           data-legend={legend}
@@ -246,9 +247,7 @@ export function RouteWeatherRail({
               className="rail-close"
               aria-label="关闭行程预览"
               onClick={() => {
-                setSelected(null);
                 setLegend(false);
-                callback.current(null);
               }}
             >
               ×
@@ -292,7 +291,7 @@ export function RouteWeatherRail({
               <small>
                 左：气温 ·
                 右：时雨雪量。下方起点，上方终点；公里数表示沿路线距起点的位置。
-                持续定位时自动更新，白色滑块为预览，绿色点为定位。关闭预览可回到定位进度。
+                持续定位时自动更新，白色滑块为预览，绿色点为定位。点击定位可回到当前位置。
               </small>
               <div className="rail-scale">
                 {[-5, 5, 15, 25, 32, 38].map((t) => (

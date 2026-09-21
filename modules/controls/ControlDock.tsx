@@ -15,6 +15,7 @@ import {
   Ruler,
   Star,
   BriefcaseBusiness,
+  NotebookPen,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -31,7 +32,7 @@ export type ControlPanel =
   | 'sources'
   | null;
 const PANELS = [
-  { id: 'outdoor', label: '行程', icon: Footprints },
+  { id: 'outdoor', label: '记录', icon: NotebookPen },
   { id: 'tools', label: '工具', icon: Menu },
   { id: 'time', label: '时间', icon: Clock3 },
   { id: 'sources', label: '地图图源', icon: MapIcon },
@@ -181,9 +182,9 @@ export function ControlDock({
                   </button>
                 )}
                 {onScanRoute && (
-                  <button onClick={onScanRoute}>
+                  <button onClick={onScanRoute} aria-label="扫码载入路线">
                     <ScanLine size={18} />
-                    扫码载入路线
+                    扫码路线
                   </button>
                 )}
                 <button onClick={() => onActive('track')}>
@@ -207,12 +208,12 @@ export function ControlDock({
                 ).map(({ id, label, icon: Icon }) => (
                   <button key={id} onClick={() => onActive(id)}>
                     <Icon size={18} />
-                    {id === 'time' ? timeLabel : label}
+                    {label}
                   </button>
                 ))}
                 <button onClick={() => onActive('outdoor')}>
                   <Footprints size={18} />
-                  行程与数据
+                  记录与数据
                 </button>
               </div>
             ) : active === 'time' ? (
@@ -225,7 +226,7 @@ export function ControlDock({
       )}
       <div className="map-toolbar">
         {summary}
-        <nav className="dock-navigation glass" aria-label="地图功能">
+        <nav className="home-bottom-nav" aria-label="地图功能">
           {[
             PANELS[0],
             PANELS.find((p) => p.id === 'route')!,
@@ -238,8 +239,9 @@ export function ControlDock({
               data-panel-toggle={id}
               aria-label={label}
               aria-expanded={active === id}
+              data-home-selected={active === id}
               aria-controls={active === id ? 'map-control-panel' : undefined}
-              onClick={() => onActive(active === id ? null : id)}
+              onClick={() => onActive(id)}
             >
               {id === 'route' ? <MapIcon size={20} /> : id === 'favorites' ? <Star size={20} /> : id === 'tools' ? <BriefcaseBusiness size={20} /> : <Icon size={20} />}
               <span>{label}</span>

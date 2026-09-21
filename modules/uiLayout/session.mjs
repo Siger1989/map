@@ -1,4 +1,5 @@
 import { emptyLayout, validateLayout } from './model.mjs';
+import { migrateHomeLayout } from './homeSelectors.mjs';
 import { defaults, visible, selectionRoots } from './selection.mjs';
 import { capture, bounds, batchPatches, fontSizePatches } from './geometry.mjs';
 import { layerPatches, layerTargets } from './layers.mjs';
@@ -28,7 +29,7 @@ export function createSession(doc, storage) {
     observer;
   try {
     const raw = storage.getItem(STORAGE_KEY);
-    if (raw) layout = validateLayout(JSON.parse(raw));
+    if (raw) layout = migrateHomeLayout(validateLayout(JSON.parse(raw)), doc);
   } catch {
     message = '旧布局无法读取，已使用默认界面；原文件未覆盖。';
   }
@@ -318,7 +319,7 @@ export function createSession(doc, storage) {
       });
     },
     import(raw) {
-      const next = validateLayout(JSON.parse(raw));
+      const next = migrateHomeLayout(validateLayout(JSON.parse(raw)), doc);
       change(() => {
         layout = next;
         selected = [];

@@ -1,0 +1,41 @@
+.observatory.home-map[data-panel='outdoor'] .control-popover {
+  top: auto !important; bottom: calc(var(--home-footer) + 8px) !important; left: var(--home-left); right: auto;
+  width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 52px));
+  max-width: 300px; max-height: min(200px,calc(100dvh - 130px));
+  padding: 4px 6px; border: 1px solid var(--home-green); border-radius: 5px;
+  background: white; color: var(--home-ink); box-shadow: none; backdrop-filter: none;
+}
+.observatory.home-map[data-panel='outdoor'] .dock-heading { min-height: 28px; padding: 0 0 3px; border-bottom: 1px solid #d2dfe4; }
+.observatory.home-map[data-panel='outdoor'] .dock-heading h2 { font-size: 13px; }
+.observatory.home-map[data-panel='outdoor'] .dock-content { padding: 0; min-height: 0; overflow: auto; }
+.journey-overview { color: #10243c; font-size: 12px; }
+.recording-field-actions { display: flex; gap: 4px; padding-top: 4px; }
+.observatory .recording-field-actions button { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 36px; padding: 0 6px; background: #dcf0dd !important; color: #15572b !important; border: 1px solid #9bb7bc; }
+.recording-field-actions button:first-child { flex: 1; }
+.recording-location-status { margin: 4px 0; font-size: 11px; color: #526b78; }
+.recording-config { margin-top: 4px; border-top: 1px solid #d2dfe4; }
+.recording-config > summary { min-height: 32px; padding: 6px 0; cursor: pointer; font-size: 12px; }
+.observatory .journey-overview .journey-record-entry { display: flex; align-items: center; justify-content: flex-start; gap: 4px; width: 100%; min-height: 36px; margin-bottom: 4px; padding: 0 6px !important; color: #15572b !important; background: #dcf0dd !important; }
+.observatory .journey-overview button,.observatory .journey-back { color: inherit; background: white; border: 0; border-radius: 3px; box-shadow: none; min-height: 32px; padding: 0 5px; font: inherit; }
+.journey-title-row { display: flex; align-items: center; gap: 4px; min-height: 32px; }
+.journey-title-row > svg { color: #15572b; flex-shrink: 0; }
+.journey-title-row select,.journey-title-row strong { flex: 1; min-width: 0; }
+.observatory .journey-title-row select { height: 30px; padding: 0 2px; border: 0; color: #10243c; background: white; font-size: 13px; font-weight: 600; }
+.journey-title-row button { display: grid; place-items: center; width: 32px; flex-shrink: 0; }
+.journey-summary { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-bottom: 4px; font-size: 11px; }
+.journey-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); border-block: 1px solid #d2dfe4; }
+.observatory .journey-tabs button { border-radius: 0; border-bottom: 3px solid transparent; min-height: 32px; }
+.observatory .journey-tabs button[aria-pressed='true'] { color: #15572b; background: #dcf0dd; border-bottom-color: #16815d; font-weight: 600; }
+.journey-track-actions { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 11px; }
+.journey-track-actions button,.journey-along button,.journey-more button { display: flex; align-items: center; gap: 4px; }
+.journey-profile-preview .color-elevation { margin: 0; padding: 0; border: 0; box-shadow: none; }
+.journey-profile-preview .color-elevation > header { display: none; }
+.journey-profile-preview .color-elevation > svg { display: block; width: 100%; height: 90px; }
+.journey-hint,.journey-along p,.journey-empty p { margin: 4px 0; font-size: 11px; color: #526b78; }
+.journey-data dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin: 4px 0; }
+.journey-data dl > div { display: flex; align-items: center; justify-content: space-between; gap: 4px; border-bottom: 1px solid #e4ebec; min-height: 28px; }
+.journey-data dt { color: #526b78; font-size: 11px; }
+.journey-data dd { margin: 0; font-size: 11px; }
+.journey-more { display: grid; gap: 4px; }
+.journey-empty { padding: 8px 0 4px; }
+.observatory .journey-empty button { background: #dcf0dd; color: #15572b; margin-right: 4px; }

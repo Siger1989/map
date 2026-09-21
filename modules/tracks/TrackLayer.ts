@@ -162,11 +162,12 @@ export class TrackLayer {
           ['==', ['get', 'active'], true],
         ],
         paint: {
-          'circle-radius': 12,
-          'circle-color': '#9de8c4',
-          'circle-opacity': 0.14,
-          'circle-stroke-color': '#aaffd8',
-          'circle-stroke-width': 3,
+          'circle-radius': 6,
+          'circle-color': ['get', 'color'],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 2,
+          'circle-pitch-alignment': 'viewport',
+          'circle-pitch-scale': 'viewport',
         },
       });
       m.addLayer({
@@ -367,6 +368,14 @@ export class TrackLayer {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
+    if (!m.getLayer('track-line-selection-halo'))
+      m.addLayer({
+        id: 'track-line-selection-halo', type: 'circle', source: 'track-line-selection',
+        paint: {
+          'circle-radius': 10, 'circle-color': '#20b978', 'circle-opacity': 0.25,
+          'circle-blur': 0.35, 'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport',
+        },
+      });
     if (!m.getLayer('track-line-selection'))
       m.addLayer({
         id: 'track-line-selection',
@@ -374,9 +383,11 @@ export class TrackLayer {
         source: 'track-line-selection',
         paint: {
           'circle-color': '#20dc84',
-          'circle-radius': 7,
+          'circle-radius': 5,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 2,
+          'circle-pitch-alignment': 'viewport',
+          'circle-pitch-scale': 'viewport',
         },
       });
     syncOverlayData(m, 'track-line-selection', {

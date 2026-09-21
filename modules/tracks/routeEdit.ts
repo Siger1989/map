@@ -24,7 +24,7 @@ export type RouteEditSession = RouteEditSnapshot & {
   original: ManualTrack;
   history: RouteEditSnapshot[];
 };
-export function startRouteEdit(original: ManualTrack): RouteEditSession {
+export function startRouteEdit(original: ManualTrack, unsaved = false): RouteEditSession {
   return {
     original,
     track: {
@@ -40,7 +40,7 @@ export function startRouteEdit(original: ManualTrack): RouteEditSession {
     },
     selected: null,
     branch: null,
-    sources: original.id === DRAFT_ID ? [] : [original],
+    sources: unsaved || original.id === DRAFT_ID ? [] : [original],
     history: [],
   };
 }
@@ -267,7 +267,7 @@ export function prepareRouteEdit(
       t.style,
       t.edgeColors,
       t.colorConditions,
-      t.hidden,
+      t.hidden === true,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],
     ]);

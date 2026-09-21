@@ -59,7 +59,7 @@ export function FreeMapLibrary({
         </div>
       )}
       <small>
-        公共服务可能限流。切换保留当前视角；区域图源请在覆盖地区查看。天地图等需自有Key的图源可通过“添加”配置。
+        公共服务可能限流；区域图源仅在覆盖地区显示。
       </small>
     </section>
   );

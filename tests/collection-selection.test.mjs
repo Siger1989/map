@@ -13,6 +13,8 @@ import {
   ANNOTATION_STORAGE,
 } from '../modules/annotations/data.ts';
 import { TRACK_STORAGE } from '../modules/tracks/drawing.ts';
+import { collectData } from '../modules/outdoor/exchange.ts';
+import { saveWorkbench } from '../modules/collections/workbenchStore.ts';
 import {
   annotationSheet,
   annotationSpreadsheet,
@@ -57,6 +59,20 @@ const transfer = () => ({
   ],
   tracks: [track],
   favorites: [],
+});
+
+test('box deletion and undo preserve unselected objects and refuse overwriting later edits', () => {
+  const raw = new Map([[TRACK_STORAGE, JSON.stringify([track])], [ANNOTATION_STORAGE, JSON.stringify([pin('a'), pin('b')])]]);
+  const storage = { getItem: k => raw.get(k) ?? null, setItem: (k,v) => raw.set(k,v), removeItem: k => raw.delete(k) };
+  const before = collectData(storage);
+  const after = saveWorkbench(before, withoutEntries(before, ['annotation:a']), storage);
+  assert.deepEqual(after.annotations.map(a => a.id), ['b']);
+  assert.deepEqual(after.tracks, before.tracks);
+  assert.deepEqual(saveWorkbench(after, before, storage).annotations, before.annotations);
+  const deletedAgain = saveWorkbench(before, withoutEntries(before, ['annotation:a']), storage);
+  storage.setItem(ANNOTATION_STORAGE, JSON.stringify([pin('b'), pin('later')]));
+  assert.throws(() => saveWorkbench(deletedAgain, before, storage), /其他操作/);
+  assert.deepEqual(collectData(storage).annotations.map(a => a.id), ['b', 'later']);
 });
 test('rectangle selects entire crossing track and visible markers, never bridges GPS gaps', () => {
   const data = transfer(),

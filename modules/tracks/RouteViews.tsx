@@ -5,10 +5,6 @@ import { useMemo, useState } from 'react';
 import { useDockClearance } from './useDockClearance';
 import {
   ArrowLeft,
-  ArrowUpRight,
-  MapPinPlus,
-  Pencil,
-  Info,
   Plus,
   Minus,
   GitBranch,
@@ -51,83 +47,7 @@ export function RouteBack({ onBack }: { onBack: () => void }) {
     </button>
   );
 }
-export function RouteCard({
-  track,
-  point,
-  alternative,
-  error,
-  onBack,
-  onNavigate,
-  onMarker,
-  onEdit,
-  onDetails,
-}: {
-  track: ManualTrack;
-  point: TrackLinePoint | null;
-  alternative: string;
-  error: string;
-  onBack: () => void;
-  onNavigate: () => void;
-  onMarker: () => void;
-  onEdit: () => void;
-  onDetails: () => void;
-}) {
-  const dock = useDockClearance('--route-card-clearance');
-  const choices = trackAlternatives(track.segments),
-    choice = choices.find((v) => v.id === alternative) ?? choices[0];
-  const selected =
-    point && choice
-      ? markerChainage([choice.coordinates], point.coordinate)
-      : null;
-  return (
-    <section
-      ref={dock}
-      className="route-surface route-card"
-      aria-label="所选路线"
-    >
-      <header>
-        <RouteBack onBack={onBack} />
-        <strong title={track.name}>{track.name}</strong>
-        <small>{track.id === DRAFT_ID ? '草稿' : '已保存'}</small>
-      </header>
-      <div className="route-card-info">
-        <span>
-          {choice?.label ?? '路线'}{' '}
-          {choice ? formatDistance(choice.distance) : '—'}
-        </span>
-        <span>
-          {selected
-            ? `选中 ${formatDistance(selected.distance)}`
-            : '点线选位置'}
-        </span>
-      </div>
-      {point && <RoutePointSummary track={track} point={point} />}
-      <nav className="route-primary-actions" aria-label="路线主要操作">
-        <button className="route-solid" onClick={onNavigate}>
-          <ArrowUpRight size={16} />
-          导航
-        </button>
-        <button disabled={!point} onClick={onMarker}>
-          <MapPinPlus size={16} />
-          添加标记
-        </button>
-        <button onClick={onEdit}>
-          <Pencil size={16} />
-          编辑
-        </button>
-        <button onClick={onDetails}>
-          <Info size={16} />
-          详情
-        </button>
-      </nav>
-      {error && (
-        <p role="alert" className="route-window-error">
-          {error}
-        </p>
-      )}
-    </section>
-  );
-}
+export { HomeRouteCard as RouteCard } from './HomeRouteCard';
 const formatCoordinate = (p: Coordinate | undefined) =>
   p
     ? `${Math.abs(p[1]).toFixed(5)}°${p[1] < 0 ? 'S' : 'N'}，${Math.abs(p[0]).toFixed(5)}°${p[0] < 0 ? 'W' : 'E'}`
@@ -329,6 +249,7 @@ export function RouteEditToolbar({
   error,
   onBack,
   onSave,
+  onSaveCopy,
   onAdd,
   onRemove,
   onBoxSelect,
@@ -345,6 +266,7 @@ export function RouteEditToolbar({
   error: string;
   onBack: () => void;
   onSave: () => void;
+  onSaveCopy?: () => void;
   onAdd: () => void;
   onRemove: () => void;
   onBoxSelect: () => void;
@@ -357,20 +279,22 @@ export function RouteEditToolbar({
   onRoadSnapping: () => void;
 }) {
   const dock = useDockClearance('--route-edit-clearance');
+  const [showStyle, setShowStyle] = useState(false);
   const style = normalizeTrackStyle(session.track.style),
     branch = session.branch !== null;
   return (
     <>
-      <header className="route-surface route-edit-header">
-        <RouteBack onBack={onBack} />
-        <strong>编辑路线</strong>
-        <small>{session.history.length ? '未保存' : '可编辑'}</small>
-      </header>
       <section
         ref={dock}
         className="route-surface route-edit-dock"
+        data-style-open={showStyle}
         aria-label="路线编辑工具"
       >
+        <header className="route-edit-dock-heading">
+          <strong>编辑路线</strong><small>{session.history.length ? '未保存' : ''}</small>
+          <button onClick={onBack}>退出编辑</button>
+          <button className="route-solid" onClick={onSave}>保存并退出</button>
+        </header>
         <p className="route-edit-status" role="status">
           {snapName
             ? `松手拼合：${snapName}`
@@ -398,6 +322,7 @@ export function RouteEditToolbar({
             <Minus size={20} />
           </button>
           <button
+            className="route-branch-toggle"
             aria-pressed={branch}
             disabled={!session.selected}
             onClick={onBranch}
@@ -416,10 +341,6 @@ export function RouteEditToolbar({
             <Undo2 size={16} />
             撤销
           </button>
-          <button className="route-solid" onClick={onSave}>
-            <Save size={16} />
-            保存
-          </button>
         </div>
         {
           <div className="route-branch-options">
@@ -431,8 +352,12 @@ export function RouteEditToolbar({
             <button aria-pressed={snapping} onClick={onSnapping}>
               节点吸附
             </button>
+            <button aria-expanded={showStyle} onClick={() => setShowStyle(!showStyle)}>
+              <i className="route-style-chip" style={{ background: style.color }} />样式 {showStyle ? '收起' : '展开'}
+            </button>
           </div>
         }
+        {showStyle && <div className="route-edit-style">
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
           {TRACK_COLORS.map((color, i) => (
             <button
@@ -484,9 +409,11 @@ export function RouteEditToolbar({
             />
           </label>
         </div>
+        </div>}
         {error && (
           <p role="alert" className="route-window-error">
             {error}
+            {error.includes('其他窗口更新') && onSaveCopy && <button onClick={onSaveCopy}>另存副本并退出</button>}
           </p>
         )}
       </section>
@@ -548,12 +475,12 @@ export function RouteUnsavedDialog({
           <RouteBack onBack={onContinue} />
           <strong>本次修改尚未保存</strong>
         </header>
-        <p>保存后返回路线，或放弃本次修改。</p>
+        <p>保存并退出会保留修改；继续编辑不保存、不退出。</p>
         <div>
           <button className="route-solid" onClick={onSave}>
-            保存并返回
+            保存并退出
           </button>
-          <button onClick={onDiscard}>放弃本次修改</button>
+          <button onClick={onDiscard}>不保存并退出</button>
           <button onClick={onContinue}>继续编辑</button>
         </div>
       </section>

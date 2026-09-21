@@ -219,3 +219,33 @@
   padding: 8px;
   margin-bottom: 10px;
 }
+
+/* The source chooser is a content exception: show its current category in full. */
+.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='list']) {
+  --map-panel-max-height: calc(100dvh - 130px - var(--safe-top, 0px) - var(--safe-bottom, 0px));
+  width: min(300px, calc(100% - 72px));
+  max-height: var(--map-panel-max-height);
+}
+.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources[data-step='list']) {
+  max-height: none;
+}
+.observatory.home-map .map-sources[data-step='list'],
+.observatory.home-map .free-map-library {
+  gap: 4px;
+}
+.observatory.home-map .map-sources[data-step='list'] :is(button, summary) {
+  min-height: 36px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  line-height: 1.25;
+}
+.observatory.home-map .free-map-grid button {
+  min-height: 44px;
+}
+.observatory.home-map .free-map-info {
+  padding: 4px;
+}
+.observatory.home-map .free-map-info a {
+  min-height: 28px;
+}
+.observatory.home-map .map-source-builtins { gap: 4px; }

@@ -1,0 +1,43 @@
+import { useMemo } from 'react';
+import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText } from 'lucide-react';
+import type { ManualTrack } from './drawing';
+import type { TrackLinePoint } from './linePoint';
+import { trackAlternatives } from './alternatives';
+import { useDockClearance } from './useDockClearance';
+import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
+import { trackHeights } from '../routeAnalysis/trackElevation';
+import { elevationStats } from '../journey/metrics';
+import { formatDistance, formatDuration } from '../navigation/types';
+
+/** Home summary only. Detailed point metrics remain in the existing route details. */
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails }: {
+  track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
+  onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
+}) {
+  const dock = useDockClearance('--route-card-clearance');
+  const choices = useMemo(() => trackAlternatives(track.segments), [track.segments]);
+  const choice = choices.find(v => v.id === alternative) ?? choices[0];
+  const elevation = useTrackElevation(track, true);
+  const stats = useMemo(() => elevationStats(trackHeights(elevation.profile ?? track)), [elevation.profile, track]);
+  // Reuse an available planned duration; don't invent a speed for imported tracks.
+  const duration = track.sharedRoute?.duration;
+  return <section ref={dock} className="home-route-card" aria-label="所选路线">
+    <header>
+      <Mountain className="home-route-symbol" size={23} aria-hidden="true" />
+      <strong title={track.name}>{track.name}</strong>
+      <button className="home-route-back" onClick={onBack} aria-label="返回"><span>返回</span><ChevronRight size={17} /></button>
+    </header>
+    <div className="home-route-metrics">
+      <span>{choice ? formatDistance(choice.distance) : '—'}</span>
+      <span title={elevation.estimated ? '含地形估算' : '轨迹自带高程'}>爬升 {stats.ascent === null || choices.length > 1 ? '—' : `${Math.round(stats.ascent)} m`}</span>
+      <span>{duration != null ? `预计 ${formatDuration(duration)}` : '用时 —'}</span>
+    </div>
+    <nav className="home-route-actions" aria-label="路线主要操作">
+      <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />导航</button>
+      <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
+      <button onClick={onEdit}><Pencil size={18} />编辑</button>
+      <button onClick={onDetails}><FileText size={18} />详情</button>
+    </nav>
+    {error && <p role="alert">{error}</p>}
+  </section>;
+}

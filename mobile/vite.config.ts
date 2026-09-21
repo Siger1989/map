@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => ({
     ),
   },
   root: fileURLToPath(new URL('.', import.meta.url)),
+  envDir: fileURLToPath(new URL('..', import.meta.url)),
   publicDir: fileURLToPath(new URL('../public', import.meta.url)),
   // APK requests use LocalGateway. Browser-only mobile previews need the web API server.
   server: {

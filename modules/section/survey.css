@@ -538,3 +538,23 @@
     animation: none;
   }
 }
+/* Match the compact map controls; editing commands and coordinate form stay visible. */
+.observatory.home-map[data-survey='true'] { --survey-dock-height: 64px; }
+.observatory.home-map[data-survey='true'][data-survey-expanded='true'] { --survey-dock-height: 136px; }
+.observatory.home-map .survey-workbar { top: calc(var(--home-top) + var(--home-header-height) + 8px); left: 8px; height: 34px; border-radius: 4px; }
+.observatory.home-map .survey-workbar strong { font-size: 12px; }
+.observatory.home-map .survey-workbar button { min-height: 32px; height: 32px; min-width: 32px; font-size: 11px; }
+.observatory.home-map .survey-dock { box-sizing: border-box; left: 8px; right: 8px; padding: 0 3px 3px; border: 1px solid #bccdc4; border-radius: 4px; font-size: 11px; }
+.observatory.home-map .survey-point-editor header { height: 28px; }
+.observatory.home-map .survey-point-editor header strong { font-size: 11px; }
+.observatory.home-map .survey-point-editor header button { height: 28px; min-height: 28px; }
+.observatory.home-map .survey-dock button { min-height: 32px; padding: 0 3px; border-radius: 4px; font-size: 11px; gap: 3px; }
+.observatory.home-map .survey-dock button svg { width: 14px; height: 14px; }
+.observatory.home-map .survey-coordinate-fields { gap: 3px; }
+.observatory.home-map .survey-coordinate-fields input { box-sizing: border-box; height: 32px; border-radius: 4px; padding-left: 19px; font-size: 11px; }
+.observatory.home-map .survey-coordinate-fields label span { left: 4px; top: 8px; font-size: 10px; }
+.observatory.home-map .survey-point-scroll form { grid-template-columns: minmax(0,1fr) 42px; gap: 3px; }
+.observatory.home-map .survey-point-modes, .observatory.home-map .survey-action-row { gap: 3px; }
+.observatory.home-map .survey-pick-hint p { margin: 2px 0; font-size: 11px; }
+.observatory.home-map[data-survey='true'] .home-position-dock { bottom: calc(var(--survey-reserved) + 8px); }
+.observatory.home-map[data-survey='true'] .navigation-elevation { display: none; }

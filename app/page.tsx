@@ -1,4 +1,6 @@
 'use client';
+import { RallyNavigation } from '@/modules/rally/RallyNavigation';
+import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutPanel } from '@/modules/help/AboutPanel';
@@ -188,6 +190,8 @@ export default function Home() {
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanel] = useState<ControlPanel>(null);
+  const [rallyMode, setRallyMode] = useState(false);
+  useEffect(() => { if (panel !== null) setRallyMode(false); }, [panel]);
   const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools'>(
     'tools',
   );
@@ -272,12 +276,13 @@ export default function Home() {
     string[]
   >([]);
   const [outdoorPhotos, setOutdoorPhotos] = useState(false);
+  const [outdoorRecording, setOutdoorRecording] = useState(false);
   useEffect(() => {
     if (panel !== 'favorites') {
       setCollectionOutputKey(null);
       setCollectionSelectedKeys([]);
     }
-    if (panel !== 'outdoor') setOutdoorPhotos(false);
+    if (panel !== 'outdoor') { setOutdoorPhotos(false); setOutdoorRecording(false); }
   }, [panel]);
   const sections = useSavedSection();
   const survey = useSurveySection(sections, (id) => {
@@ -644,7 +649,12 @@ export default function Home() {
       distance: 0,
     });
   };
+  const plannedEdit = useRef<{ createdAt: number; selectedId: string | null } | null>(null);
   const closeEditor = () => {
+    if (plannedEdit.current) {
+      tracks.select(plannedEdit.current.selectedId);
+      plannedEdit.current = null;
+    }
     setRouteNodeBox(false);
     editor.close();
     setUnsavedExit(false);
@@ -652,9 +662,15 @@ export default function Home() {
     setActiveTrackNode(null);
     setTrackLinePoint(routeReturnPoint.current);
   };
-  const saveEditor = () => {
+  const saveEditor = (asCopy = false) => {
     if (!editor.session) return;
-    const result = tracks.commitEdit(editor.session);
+    const copyId = asCopy ? crypto.randomUUID() : '';
+    const result = tracks.commitEdit(asCopy ? {
+      ...editor.session,
+      original: { ...editor.session.original, id: copyId, name: `${editor.session.original.name} · 副本`, createdAt: Date.now() },
+      track: { ...editor.session.track, id: copyId },
+      sources: [],
+    } : editor.session);
     if (!result.track) {
       editor.setError(result.error);
       setUnsavedExit(false);
@@ -664,6 +680,10 @@ export default function Home() {
       closeEditor();
       setTrackLinePoint(null);
       return;
+    }
+    if (plannedEdit.current) {
+      if (navigation.route?.createdAt === plannedEdit.current.createdAt) navigation.clear();
+      plannedEdit.current = null;
     }
     const previous =
       routeReturnPoint.current?.coordinate ?? result.track.segments[0][0];
@@ -686,6 +706,20 @@ export default function Home() {
     setRouteChild(false);
     annotations.select(null);
     editor.start(track);
+  };
+  const editPlannedPoints = () => {
+    const route = navigation.route;
+    if (!route) return;
+    plannedEdit.current = { createdAt: route.createdAt, selectedId: tracks.selectedId };
+    guidance.stop();
+    setRallyMode(false);
+    routeReturnPoint.current = trackLinePoint;
+    tracks.finish();
+    setPanel(null);
+    setRouteWindow('card');
+    annotations.select(null);
+    editor.start({ id: crypto.randomUUID(), name: '规划路线 · 编辑副本', createdAt: Date.now(), source: 'manual', navigationMode: route.mode,
+      segments: [route.coordinates.map(p => [...p] as Coordinate)] }, true);
   };
   const addEditPoint = () => {
     const current = editor.session;
@@ -915,6 +949,8 @@ export default function Home() {
     <TextSuggestions.Provider value={suggestionValues}>
       <main
         className="observatory home-map"
+        data-rally={rallyMode && !!navigation.route}
+        data-guiding={guidance.active && !rallyMode}
         data-measuring={measurement.active}
         data-panel={panel ?? 'map'}
         data-section={sectionEditing}
@@ -925,9 +961,7 @@ export default function Home() {
             !!survey.object &&
             !['point', 'marker'].includes(survey.picking ?? ''))
         }
-        data-route-notice={Boolean(
-          navigation.picking !== null || navigation.route,
-        )}
+        data-route-notice={navigation.picking !== null}
         data-drawing={tracks.drawing && panel === null}
         data-route-window={
           routeVisible || !!editor.session || !!navigationTarget
@@ -1047,7 +1081,7 @@ export default function Home() {
           onGeology={setGeology}
           weather={weather.data}
           hourIndex={hourIndex}
-          routeOverlay={routeDisplay.route}
+          routeOverlay={plannedEdit.current && editor.session ? { ...routeDisplay.route, route: null } : routeDisplay.route}
           guidanceOverlay={guidanceOverlay}
           trackOverlay={routeDisplay.tracks}
           areaOverlay={areaOverlay}
@@ -1419,7 +1453,8 @@ export default function Home() {
             }}
             error={editor.error}
             onBack={backEditor}
-            onSave={saveEditor}
+            onSave={() => saveEditor()}
+            onSaveCopy={() => saveEditor(true)}
             onAdd={addEditPoint}
             onRemove={() => editor.change(removeEditNode)}
             onBoxSelect={() => {
@@ -1446,7 +1481,7 @@ export default function Home() {
         )}
         {editor.session && unsavedExit && (
           <RouteUnsavedDialog
-            onSave={saveEditor}
+            onSave={() => saveEditor()}
             onDiscard={closeEditor}
             onContinue={() => setUnsavedExit(false)}
           />
@@ -1791,7 +1826,7 @@ export default function Home() {
             track={photoTracks.find((t) => t.id === selectedPhoto.trackId)}
           />
         )}
-        <header className="topbar glass">
+        <header className="home-topbar">
           <button
             className="brand"
             aria-label="关于山兔与使用教程"
@@ -1843,31 +1878,18 @@ export default function Home() {
               取消
             </button>
           </div>
-        ) : navigation.picking !== null ? null : (
-          navigation.route &&
-          !measurement.active &&
-          !guidance.active && (
-            <div className="route-map-notice route-start-notice glass">
-              <button
-                onClick={() => setPanel(panel === 'route' ? null : 'route')}
-                aria-label="查看路线详情"
-              >
-                {TRAVEL_MODES.find((m) => m.id === navigation.mode)?.label} ·{' '}
-                {formatDistance(navigation.route.distance)} · 预计{' '}
-                {formatDuration(navigation.route.duration)}
-              </button>
-              <button onClick={startGuidance}>开始导航</button>
-            </div>
-          )
-        )}
+        ) : null}
         {guidance.active &&
+          !editor.session &&
           !sectionEditing &&
           !annotations.picking &&
           navigation.picking === null &&
           !selectionName &&
           !quickAdd &&
           !tracks.editing && (
-            <GuidanceCard
+          <GuidanceCard
+              telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={displayedFix} />}
+              onRally={() => { setPanel(null); setRallyMode(true); }}
               onShare={() => {
                 const s = guidance.session;
                 if (s)
@@ -1895,6 +1917,14 @@ export default function Home() {
               }}
             />
           )}
+        {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
+        {rallyMode && navigation.route && <RallyNavigation
+          display={routeDisplay}
+          route={guidance.session?.route ?? navigation.route} guidance={guidance} fix={displayedFix}
+          onNormal={() => setRallyMode(false)} onStart={startGuidance} onStop={guidance.stop}
+          onLocate={() => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(); }}
+          onOverview={() => map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 })}
+        />}
         <div
           className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
           hidden={
@@ -1958,11 +1988,11 @@ export default function Home() {
               }}
             />
           )}
-        {navigation.route &&
-          !railTrack &&
+        {guidance.active && navigation.route &&
+          (!railTrack || guidance.active) &&
+          !editor.session &&
           !measurement.active &&
-          !sectionEditing &&
-          !guidance.active && (
+          !sectionEditing && (
             <RouteWeatherRail
               route={navigation.route}
               journey={routeJourney}
@@ -2058,6 +2088,7 @@ export default function Home() {
           showCoordinates={routeDisplay.preferences.coordinates}
           displayControl={
             <RouteDisplayControl
+              navigating={guidance.active}
               display={routeDisplay}
               blocked={
                 follow.blocked ||
@@ -2170,7 +2201,7 @@ export default function Home() {
           navigation.picking === null && (
             <RecordingQuickAction
               recorder={recorder}
-              onDetails={() => setPanel('outdoor')}
+              onDetails={() => { setOutdoorRecording(true); setPanel('outdoor'); }}
             />
           )}
         {selectedAnnotation &&
@@ -2306,6 +2337,7 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            if (next !== panel) setCollectionSelectedKeys([]);
             measurement.close();
             if (
               annotations.edit &&
@@ -2386,6 +2418,22 @@ export default function Home() {
           {panel === 'outdoor' && (
             <OutdoorPanel
               initialTab={outdoorPhotos ? 'photos' : 'record'}
+              locationStatus={position.locationError || (position.locating ? '正在定位…' : displayedFix && Date.now() - displayedFix.timestamp < 30000 ? `定位估计误差 ±${Math.round(displayedFix.accuracy)} 米` : '当前位置尚未定位，点标记可获取位置')}
+              onMarkCurrent={() => {
+                if (!displayedFix || Date.now() - displayedFix.timestamp >= 30000) {
+                  position.locate();
+                  return '正在获取当前位置，定位后再点标记。';
+                }
+                if (!annotations.add('pin', displayedFix.coordinates)) return '无法新增标记，请检查标记数量或存储空间。';
+                tracks.pause();
+                areas.select(null);
+                setQuickAdd(null);
+                setProfileOpen(false);
+                setPanel('annotations');
+                return '';
+              }}
+              tracks={tracks.saved}
+              selectedId={tracks.selectedId}
               recorder={recorder}
               onSavedTrack={tracks.select}
               returnPanel={
@@ -2468,7 +2516,8 @@ export default function Home() {
                 if (entry.kind === 'track') tracks.select(entry.track.id);
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
-              onClose={() => setPanel(null)}
+              onClose={() => { setCollectionSelectedKeys([]); setPanel(null); }}
+              onReselect={() => { setPanel(null); setCollectionSelectedKeys([]); setBoxSelecting(true); }}
               initialOutputKey={collectionOutputKey}
               initialSelectedKeys={collectionSelectedKeys}
               photos={photos.items}
@@ -2581,6 +2630,10 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
+              onEditPoints={editPlannedPoints}
+              onCancel={() => { guidance.stop(); navigation.clear(); setRallyMode(false); setPanel(null); }}
+              onRally={() => { setPanel(null); setRallyMode(true); }}
+              weather={<RouteWeatherSettings journey={routeJourney} />}
               onShare={() => {
                 if (navigation.route)
                   setShareTarget(sharePlanned(navigation.route));
@@ -2620,16 +2673,11 @@ export default function Home() {
               }}
               onPlace={(place) => map.current?.focusPoint(place.coordinates)}
               onShow={(route) => {
-                map.current?.fitRoute(route.coordinates);
+                map.current?.fitCollection(route.coordinates, { top: 100, right: 64, bottom: 230, left: 24 });
                 setPanel('route');
               }}
             />
           )}
-          {panel === 'route' &&
-            navigation.route &&
-            navigation.picking === null && (
-              <RouteWeatherSettings journey={routeJourney} />
-            )}
           {panel === 'weather' && (
             <WeatherPanel
               data={weather.data}

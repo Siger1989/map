@@ -30,16 +30,17 @@
 }
 .map-box-tools {
   position: absolute;
-  top: calc(58px + env(safe-area-inset-top, 0px));
-  left: var(--edge-left);
-  width: min(290px, calc(100% - 70px));
-  padding: 7px;
+  bottom: calc(var(--home-footer, 56px) + 8px);
+  left: 8px;
+  width: min(300px, calc(100% - 76px));
+  box-sizing: border-box;
+  padding: 4px;
   background: #f0f5ed;
   border: 1px solid #50776d;
-  border-radius: 8px;
+  border-radius: 4px;
   color: #203b40;
   box-shadow: 0 2px 10px #0005;
-  font-size: 13px;
+  font-size: 12px;
 }
 .map-box-tools strong,
 .map-box-tools small {
@@ -64,3 +65,42 @@
 .map-box-tools button:disabled {
   opacity: 0.45;
 }
+
+/* Box results and advanced export are compact overlays, not the folder split view. */
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) > .map-canvas {
+  top: 0; bottom: 0; height: 100%;
+}
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) > .saved-measurements {
+  top: 0; height: 100%;
+}
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) #map-control-panel {
+  top: auto; bottom: calc(var(--home-footer) + 8px); left: 8px; right: auto;
+  width: min(300px, calc(100% - 76px)); height: auto;
+  max-height: min(200px, calc(100dvh - var(--home-footer) - 76px)) !important;
+  box-sizing: border-box; padding: 4px !important;
+  border: 1px solid #b9cac1; border-radius: 4px;
+}
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) .dock-content {
+  height: auto; flex: 0 1 auto;
+}
+.observatory.home-map[data-panel='favorites'] .catalog-panel { height: auto; min-height: 0; padding: 0; }
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) .home-camera-control .camera-gizmo { display: block; }
+.observatory.home-map[data-panel='favorites']:has(.catalog-panel) .maplibregl-ctrl-bottom-left {
+  top: auto; bottom: 0 !important;
+}
+.observatory .box-results { display: flex; flex-direction: column; gap: 3px; color: #173c30; font-size: 11px; min-height: 0; }
+.observatory .box-results-heading { display: flex; align-items: center; gap: 4px; flex-shrink: 0; min-height: 32px; }
+.observatory .box-results-heading strong { flex: 1; font-size: 12px; }
+.observatory .box-results button { min-height: 36px; padding: 0 4px; border: 1px solid #b5c8bd; background: #fff; color: #245440; border-radius: 3px; font-size: 11px; white-space: nowrap; }
+.observatory .box-results-heading button { width: 36px; display: grid; place-items: center; }
+.box-results-list { overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.box-results-list label { display: flex; align-items: center; gap: 4px; min-height: 36px; border-bottom: 1px solid #dce4de; }
+.box-results-list label span { flex: 1; min-width: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+.box-results-list small { font-size: 10px; color: #586c60; }
+.box-results-list input { accent-color: #236b50; width: 16px; height: 16px; min-height: 16px; flex: 0 0 16px; }
+.box-results-list p, .box-results-note, .box-results-status { margin: 0; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
+.box-results-note, .box-results-status { flex-shrink: 0; }
+.box-results-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.box-results-actions button { flex: 1; }
+.observatory .box-results .is-danger { color: #a1342c; border-color: #d7a7a2; background: #fff4f2; }
+.box-results-status { color: #245440; }

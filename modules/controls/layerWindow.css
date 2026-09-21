@@ -31,8 +31,10 @@
   border-color: #9de8c470;
 }
 .map-layer-control .layer-window {
+  /* Layer browsing needs more visible rows than the generic 200px action popover. */
+  --map-panel-max-height: min(480px, 62dvh, calc(100dvh - 140px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   top: calc(56px + var(--safe-top));
-  max-height: min(38dvh, 320px);
+  max-height: var(--map-panel-max-height);
 }
 .layer-window .dock-heading {
   height: 44px;

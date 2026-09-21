@@ -33,6 +33,23 @@ test('identical overlay polls neither resend geometry nor reshuffle terrain laye
   );
 });
 
+test('line selection stays above route strokes across later overlay updates', () => {
+  const ids = ['track-line-selection-halo', 'track-line-selection', 'manual-track-selected-node', 'route-path', 'manual-track-line', 'guidance-path'];
+  const source = { setData() {} };
+  let moves = 0;
+  const map = {
+    getSource: () => source,
+    getStyle: () => ({ layers: ids.map(id => ({ id })) }),
+    moveLayer(id) { moves++; ids.splice(ids.indexOf(id), 1); ids.push(id); },
+  };
+  const data = { type: 'FeatureCollection', features: [] };
+  syncOverlayData(map, 'manual-tracks', data);
+  assert.deepEqual(ids.slice(-3), ['manual-track-selected-node', 'track-line-selection-halo', 'track-line-selection']);
+  const count = moves;
+  syncOverlayData(map, 'manual-tracks', data);
+  assert.equal(moves, count);
+});
+
 test('late route creation restores consistent overlay ordering once', () => {
   const ids = ['main-roads', 'position-dot', 'manual-track-line', 'route-path'];
   let moves = 0;

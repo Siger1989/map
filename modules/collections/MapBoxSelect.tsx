@@ -89,11 +89,12 @@ export function MapBoxSelect({
           })}
       </div>
       <div className="map-box-tools">
-        <strong>框选已保存对象 · {keys.length} 项</strong>
-        <small>拖动矩形，可连续加选；相交路线整条选中</small>
+        <strong>框选对象 · 已选 {keys.length} 项</strong>
+        <small>{entries.length ? '拖框可连续加选；路线按整条选中' : '地图上没有可框选的已保存对象'}</small>
         <div>
-          <button onClick={onCancel}>取消</button>
+          <button onClick={onCancel}>退出框选</button>
           <button
+            disabled={!keys.length}
             onClick={() => {
               setKeys([]);
               setBox(null);
@@ -102,7 +103,7 @@ export function MapBoxSelect({
             清空
           </button>
           <button disabled={!keys.length} onClick={() => onDone(keys)}>
-            整理 / 导出
+            查看已选
           </button>
         </div>
       </div>

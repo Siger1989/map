@@ -1,0 +1,82 @@
+.observatory.home-map[data-rally='true'] { background: #e5f0e9; --rally-map-top: calc(58dvh + 4px); --rally-map-bottom: calc(var(--home-footer) + 80px); }
+.observatory.home-map[data-rally='true'] .map-canvas { top: var(--rally-map-top) !important; bottom: var(--rally-map-bottom) !important; left: 8px !important; right: 8px !important; width: auto !important; height: auto !important; border: 1px solid #9bb7bc; border-radius: 4px; }
+.observatory.home-map[data-rally='true'] > :is(.home-topbar,.guidance-card,.route-map-notice,.route-weather-rail,.home-recording,.map-legends,.map-load-status,.position-status,.home-route-card,.home-map-actions,.home-position-dock,.map-actions,.map-toolbar) { display: none !important; }
+.observatory.home-map[data-rally='true'] :is(.map-layer-control,.weather-summary,.route-display-info) { display: none !important; }
+.rally-workspace { position: absolute; inset: 0; pointer-events: none; z-index: 35; color: #102b39; font-family: inherit; }
+.rally-workspace > * { pointer-events: auto; box-sizing: border-box; }
+.rally-workspace :is(button, strong, span, h2, h3, small) { box-sizing: border-box; }
+.observatory .rally-workspace button { display: inline-flex; align-items: center; justify-content: center; gap: 3px; border: 1px solid #9bb7bc; border-radius: 4px; background: #fff; color: #18384b; min-height: 28px; padding: 2px 6px; font-size: 12px; }
+.rally-header { position: absolute; top: 4px; left: 8px; right: 8px; height: 40px; display: flex; align-items: center; gap: 6px; background: white; border-radius: 4px; padding: 0 6px; }
+.rally-header > strong { font-size: 21px; }
+.rally-header h2 { flex: 1; text-align: center; font-size: 18px; margin: 0; }
+.rally-mode { position: absolute; top: 48px; left: 8px; right: 8px; height: 30px; display: flex; gap: 3px; }
+.rally-mode button { flex: 1; }
+.observatory .rally-mode button[aria-pressed='true'] { background: #d9f1df; color: #15572b; font-weight: 700; }
+.rally-roadbook { position: absolute; top: 84px; left: 8px; right: 8px; height: calc(58dvh - 172px); min-height: 190px; display: grid; grid-template-rows: minmax(78px, 1fr) 56px 56px 32px; border: 1px solid #9bb7bc; border-radius: 4px; background: white; overflow: hidden; }
+.rally-cue { display: grid; grid-template-columns: 39% minmax(0,1fr); gap: 6px; align-items: center; padding: 4px; min-height: 0; overflow: hidden; }
+.rally-cue > div:first-child { position: relative; height: 100%; display: flex; align-items: center; justify-content: center; border-right: 1px solid #c9d9d5; }
+.rally-cue small { position: absolute; left: 0; top: 0; background: #168541; color: white; padding: 2px 4px; font-size: 10px; border-radius: 3px; }
+.rally-cue svg { width: 132px; height: min(132px, calc(100% - 20px)); max-width: 96%; color: #09552b; stroke-width: 4; margin-top: 12px; }
+.rally-distance-label { display: block; font-size: 16px; font-weight: 750; color: #496358; }
+.rally-cue strong { display: block; font-size: clamp(42px,13.3vw,56px); font-weight: 900; line-height: 1.06; color: #09552b; white-space: nowrap; letter-spacing: -1.5px; }
+.rally-cue h3 { margin: 4px 0 0; font-size: clamp(34px,11.3vw,46px); line-height: 1.08; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rally-next { display: flex; align-items: center; gap: 4px; padding: 3px 4px; border-top: 1px solid #c9d9d5; font-size: 18px; line-height: 1.2; font-weight: 800; }
+.rally-cue-text { container-type: size; height: 100%; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.rally-cue-text .rally-distance-label { font-size: 14px; flex-shrink: 0; }
+.rally-cue-text strong { font-size: clamp(26px, min(26cqw, 31cqh), 52px); letter-spacing: -1px; flex-shrink: 0; }
+.rally-cue-text h3 { font-size: clamp(20px, min(24cqw, 30cqh), 44px); flex-shrink: 0; text-wrap: balance; overflow-wrap: anywhere; }
+.rally-cue-text h3[data-long='true'] { font-size: clamp(16px, min(16cqw, 22cqh), 30px); -webkit-line-clamp: 2; }
+.rally-next small { background: #edf2f5; padding: 2px 4px; flex-shrink: 0; font-size: 11px; }
+.rally-next svg { flex: 0 0 46px; height: 44px; stroke-width: 4; color: #123b4b; }
+.rally-next span { min-width: 0; flex: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.rally-next b { flex: 0 0 82px; font-size: 17px; font-weight: 850; text-align: right; white-space: nowrap; }
+.rally-next b small { display: block; background: none; padding: 0; font-size: 11px; font-weight: 400; }
+.rally-progress { padding: 2px 6px; border-top: 1px solid #c9d9d5; display: flex; flex-wrap: wrap; justify-content: space-between; font-size: 11px; }
+.rally-progress progress { width: 100%; height: 5px; accent-color: #169848; }
+.rally-metrics { position: absolute; top: calc(58dvh - 82px); left: 8px; right: 8px; height: 80px; border: 1px solid #9bb7bc; border-radius: 4px; background: white; }
+.rally-speeds { display: flex; height: 54px; }
+.rally-speeds > div { width: 50%; padding: 3px 10px; }
+.rally-speeds > div + div { border-left: 1px solid #c9d9d5; }
+.rally-speeds span { display: block; font-size: 11px; }
+.rally-speeds strong { font-size: 28px; line-height: 30px; }
+.rally-speeds small { font-size: 10px; font-weight: 400; }
+.rally-times { border-top: 1px solid #c9d9d5; display: flex; justify-content: space-around; align-items: center; height: 24px; font-size: 10px; }
+.rally-map-caption { position: absolute; top: calc(var(--rally-map-top) + 5px); left: 13px; right: 13px; display: flex; align-items: center; gap: 4px; pointer-events: none; }
+.rally-map-caption > * { pointer-events: auto; }
+.rally-map-caption > span { display: flex; align-items: center; gap: 3px; margin-right: auto; background: #12362ae8; color: white; border-radius: 3px; font-size: 11px; padding: 5px; }
+.rally-map-actions { position: absolute; bottom: calc(var(--rally-map-bottom) + 5px); right: 13px; display: flex; gap: 3px; }
+.rally-warning { position: absolute; left: 13px; right: 13px; top: calc(var(--rally-map-top) + 40px); border-radius: 3px; background: #fffc; color: #71411b; font-size: 11px; padding: 3px 5px; }
+.rally-help { position: absolute; z-index: 2; top: 80px; left: 8px; right: 8px; padding: 10px; border: 1px solid #9bb7bc; background: #fff; font-size: 13px; line-height: 1.5; }
+.rally-elevation { position: absolute; bottom: calc(var(--home-footer) + 8px); left: 8px; right: 8px; height: 64px; display: grid; grid-template-columns: minmax(0,1fr) 102px; grid-template-rows: 50px 12px; border: 1px solid #9bb7bc; border-radius: 4px; background: white; padding: 0 4px; overflow: hidden; }
+.rally-elevation .route-elevation-profile { background: none; box-shadow: none; border: 0; padding: 0; min-width: 0; }
+.rally-elevation .route-elevation-profile > strong { display: none; }
+.rally-elevation svg { width: 100%; height: 50px; }
+.rally-elevation dl { border-left: 1px solid #c9d9d5; padding-left: 5px; margin: 1px 0; font-size: 10px; }
+.rally-elevation dl > div { display: flex; justify-content: space-between; gap: 2px; min-height: 16px; align-items: center; }
+.rally-elevation dd { margin: 0; font-weight: 700; }
+.rally-elevation > small { grid-column: 1 / -1; font-size: 9px; color: #5c6b65; }
+@media (max-height: 680px) { .observatory.home-map[data-rally='true'] { --rally-map-top: 332px; } .rally-roadbook { height: 160px; min-height: 0; grid-template-rows: 1fr 32px 32px 28px; } .rally-cue svg { width: 36px; height: 36px; } .rally-cue strong,.rally-cue h3 { font-size: 14px; } .rally-metrics { top: 248px; } }
+
+/* Semantic colour supplements the direction shape and text, never replaces them. */
+.rally-workspace [data-kind] { --cue-color: #009744; }
+.rally-workspace [data-kind='left'], .rally-workspace [data-kind='right'] { --cue-color: #e46200; }
+.rally-workspace [data-kind='uturn-left'], .rally-workspace [data-kind='uturn-right'] { --cue-color: #8536db; }
+.rally-workspace [data-kind='access'] { --cue-color: #007ed4; }
+.rally-workspace [data-kind='unknown'] { --cue-color: #64748b; }
+.rally-workspace [data-kind='finish'] { --cue-color: #008f86; }
+.rally-workspace [data-kind] > svg, .rally-workspace [data-kind] > div > svg { color: var(--cue-color); stroke-width: 4.5; stroke-linecap: butt; stroke-linejoin: miter; }
+.rally-cue h3 { color: var(--cue-color); font-weight: 800; }
+.rally-next { border-left: 4px solid var(--cue-color); }
+.rally-header > strong, .rally-header h2 { font-weight: 800; }
+/* Navigation settings control the new footer, with stats centred in its full height. */
+.rally-elevation dl { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; justify-content: center; margin: 0; padding: 0 4px 0 8px; }
+.rally-elevation > small { grid-column: 1; display: flex; align-items: center; gap: 4px; white-space: nowrap; font-size: 8px; }
+.navigation-color-key, .navigation-color-key > span { display: inline-flex; align-items: center; gap: 2px; }
+.navigation-color-key { gap: 3px; }
+.navigation-color-key i { display: inline-block; width: 8px; height: 3px; }
+.rally-elevation[data-statistics='false'], .rally-elevation[data-profile='false'] { grid-template-columns: minmax(0,1fr); }
+.rally-elevation[data-profile='false'] dl { grid-column: 1; grid-row: 1; flex-direction: row; align-items: center; justify-content: space-around; border: 0; padding: 0 4px; }
+.rally-elevation[data-profile='false'] dl > div { display: block; text-align: center; }
+.rally-elevation[data-body='false'] { height: 20px; grid-template-rows: 18px; }
+.observatory.home-map[data-rally='true']:not(:has(.rally-elevation)) { --rally-map-bottom: calc(var(--home-footer) + 8px); }
+.observatory.home-map[data-rally='true']:has(.rally-elevation[data-body='false']) { --rally-map-bottom: calc(var(--home-footer) + 36px); }

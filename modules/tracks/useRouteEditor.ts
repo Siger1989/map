@@ -25,8 +25,8 @@ export function useRouteEditor() {
     error,
     setError,
     change,
-    start: (track: ManualTrack) => {
-      const next = startRouteEdit(track);
+    start: (track: ManualTrack, unsaved = false) => {
+      const next = startRouteEdit(track, unsaved);
       ref.current = next;
       setSession(next);
       setError('');

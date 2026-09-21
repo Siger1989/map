@@ -528,35 +528,46 @@
 
 /* Compact node editor: six actions stay together, matching collection density. */
 .observatory .route-edit-dock {
-  left: 4px;
-  bottom: calc(4px + env(safe-area-inset-bottom));
+  left: 8px;
+  bottom: calc(var(--home-footer, 56px) + 8px + env(safe-area-inset-bottom));
   width: min(300px, calc(100% - 8px));
   max-height: min(200px, calc(100dvh - 64px));
   padding: 4px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #f0f3eefa;
   font-size: 11px;
 }
 .observatory .route-edit-status { margin: 0 0 2px; font-size: 10px; }
 .observatory .route-edit-actions-row {
-  grid-template-columns: 30px 30px repeat(4, minmax(0, 1fr));
+  grid-template-columns: 36px 36px minmax(78px, 1.5fr) repeat(2, minmax(0, 1fr));
   gap: 2px;
 }
 .observatory .route-edit-dock button,
 .observatory .route-edit-dock .route-custom-color {
   min-width: 0; min-height: 36px; height: 36px;
   padding: 0 2px; gap: 2px; font-size: 11px;
-  background: transparent; border-color: transparent;
+  background: #fff; border: 1px solid #c9d5d0; border-radius: 3px;
+  white-space: nowrap; font-weight: 500;
 }
+.observatory .route-edit-actions-row button svg { flex-shrink: 0; }
+.observatory .route-edit-actions-row button:nth-last-child(-n+2) svg { display: none; }
 .observatory .route-edit-actions-row svg { width: 14px; height: 14px; }
 .observatory .route-edit-actions-row .route-solid { color: #fff; background: #1d694c; }
 .observatory .route-edit-dock button[aria-pressed='true'] { background: #cee4d8; color: #1d694c; }
+.observatory .route-edit-dock .route-branch-toggle { color: #996013; border-color: #d9b26d; background: #fff8e9; }
+.observatory .route-edit-dock .route-branch-toggle[aria-pressed='true'] { color: #fff; background: #b96a16; border-color: #b96a16; }
+.observatory .route-edit-dock button:disabled { opacity: .4; }
+.observatory .route-style-chip { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #71867b; }
 .observatory .route-edit-colors { margin-top: 0; gap: 0; border-top: 1px solid #d3ddd4; }
 .observatory .route-edit-colors i { width: 16px; height: 16px; }
 .observatory .route-edit-sliders { gap: 4px; }
 .observatory .route-edit-sliders label { border: 0; padding: 0; font-size: 10px; }
 .observatory .route-edit-dock .route-edit-sliders input[type='range'] { height: 30px; min-height: 30px; }
-.observatory .route-branch-options { display: flex; gap: 2px; }
+.observatory .route-branch-options { display: flex; gap: 2px; margin-top: 3px; }
+.observatory .route-edit-style { margin-top: 3px; }
+.observatory .route-edit-dock[data-style-open='true'] .route-edit-actions-row { display: none; }
+.observatory.home-map[data-route-edit='true'] .home-topbar { display: none; }
+.observatory .route-edit-colors button { border-color: transparent; background: transparent; }
 
 .observatory .route-edit-header {
   left: 4px; right: auto; top: calc(4px + env(safe-area-inset-top));
@@ -565,3 +576,15 @@
 }
 .observatory .route-edit-header button { min-height: 36px; padding: 0 4px; font-size: 11px; background: transparent; border: 0; }
 .observatory .route-edit-header small { font-size: 10px; }
+.observatory .route-edit-dock-heading { display: flex; align-items: center; gap: 3px; margin-bottom: 3px; }
+.observatory .route-edit-dock-heading strong { font-size: 11px; white-space: nowrap; }
+.observatory .route-edit-dock-heading small { flex: 1; font-size: 9px; color: #986014; }
+.observatory .route-edit-dock-heading button { min-height: 32px; height: 32px; padding: 0 4px; }
+.observatory .route-edit-dock-heading .route-solid { background: #236b50; border-color: #236b50; color: #fff; }
+.observatory .route-edit-header .route-edit-exit { color: #395d50; border: 1px solid #bbcec5; background: #fff; padding: 0 4px; }
+.observatory.home-map[data-route-edit='true'] .home-position-dock {
+  bottom: calc(var(--home-footer, 56px) + var(--route-edit-clearance, 125px) + 80px + env(safe-area-inset-bottom));
+}
+.observatory.home-map[data-route-edit='true'] .track-draw-hint,
+.observatory.home-map[data-route-edit='true'] .route-map-notice,
+.observatory.home-map[data-route-edit='true'] .route-weather-rail { display: none; }

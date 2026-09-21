@@ -1,0 +1,124 @@
+/* Keep the planning form together; long itineraries still scroll within safe bounds. */
+.observatory.home-map #map-control-panel:has(.route-panel) {
+  height: auto !important;
+  max-height: calc(100dvh - var(--home-footer) - var(--home-top) - 66px) !important;
+  padding: 3px 5px !important;
+  overflow: auto !important;
+}
+.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
+  height: 28px !important;
+  min-height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button {
+  height: 28px !important;
+  min-height: 28px !important;
+}
+.observatory.home-map #map-control-panel:has(.route-panel) .dock-content {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+.observatory #map-control-panel .route-panel .routing-mode-control {
+  margin: 0 !important;
+  gap: 3px;
+}
+.observatory #map-control-panel .route-panel .routing-mode-control select {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 2px !important;
+}
+.observatory #map-control-panel .route-panel .route-modes {
+  margin: 0 0 2px !important;
+  gap: 3px;
+}
+.observatory #map-control-panel .route-panel .route-modes button {
+  height: 30px !important;
+  min-height: 30px !important;
+  border-radius: 3px;
+}
+.observatory #map-control-panel .route-panel .route-edit-actions {
+  margin: 2px 0 !important;
+  gap: 2px;
+}
+.observatory #map-control-panel .route-panel .route-edit-actions button {
+  height: 30px !important;
+  min-height: 30px !important;
+}
+.observatory #map-control-panel .route-panel .route-primary {
+  height: 32px !important;
+  min-height: 32px !important;
+  margin-top: 0 !important;
+  border-radius: 3px;
+}
+.observatory #map-control-panel .route-panel .route-provider-note {
+  margin-top: 2px !important;
+}
+.observatory #map-control-panel .route-panel .route-provider-note summary {
+  min-height: 24px;
+  display: list-item;
+  align-content: center;
+}
+/* A completed route gives the map back; details occupy a bounded secondary area. */
+.observatory.home-map #map-control-panel:has(.route-summary) {
+  top: auto !important;
+  bottom: calc(var(--home-footer) + 8px) !important;
+  left: var(--home-left) !important;
+  right: auto !important;
+  transform: none !important;
+  max-height: min(200px, calc(100dvh - var(--home-footer) - var(--home-top) - 66px)) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+}
+.observatory.home-map #map-control-panel:has(.route-summary) .dock-heading { flex-shrink: 0; }
+.observatory.home-map #map-control-panel:has(.route-summary) .dock-content {
+  min-height: 0;
+  overflow: auto !important;
+}
+.route-summary-metrics { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 26px; font-size: 12px; }
+.route-summary-metrics button:first-of-type { margin-left: auto; }
+.observatory #map-control-panel .route-summary-metrics button { min-height: 28px; padding: 0 3px; }
+.route-summary-actions { display: flex; gap: 3px; padding-top: 2px; }
+.observatory #map-control-panel .route-summary-actions button { flex: 1; min-height: 30px; padding: 0 2px; white-space: nowrap; }
+.observatory #map-control-panel .route-summary-actions .is-primary { flex: 1.6; background: #dcf0dd; color: #15572b; }
+.observatory #map-control-panel .route-summary-actions button[aria-expanded='true'] { background: #dcf0dd; }
+.route-summary-detail { margin-top: 3px; border-top: 1px solid #bcc7bd; }
+.route-summary-detail ol { margin: 3px 0; padding-left: 20px; font-size: 11px; }
+.route-summary-detail li { padding: 3px 0; }
+.observatory #map-control-panel .route-summary :is(.route-summary-metrics, .route-summary-actions) button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #9bb7bc !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  color: #163c4a !important;
+  min-height: 30px !important;
+  padding: 0 5px !important;
+  font-size: 11px !important;
+  white-space: nowrap;
+}
+.observatory #map-control-panel .route-summary .route-summary-actions .is-primary {
+  background: #dcf0dd !important;
+  border-color: #76a580 !important;
+  color: #15572b !important;
+}
+.observatory #map-control-panel .route-summary button:disabled {
+  background: #edf0ef !important;
+  border-color: #c7d1ce !important;
+  color: #7b8782 !important;
+}
+.observatory #map-control-panel .route-summary .route-summary-actions button[aria-expanded='true'] {
+  background: #dcf0dd !important;
+  border-color: #76a580 !important;
+}
+.observatory #map-control-panel:has(.route-summary) .dock-heading button {
+  border: 1px solid #9bb7bc !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  padding: 0 4px !important;
+  min-height: 26px !important;
+  margin-left: 3px;
+}

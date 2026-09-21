@@ -3,23 +3,19 @@ import { useEffect, useRef, useState } from 'react';
 import { ChartNoAxesCombined, X } from 'lucide-react';
 import type { useRouteDisplay } from './useRouteDisplay';
 import type { RouteDisplayPreferences } from './preferences';
-import { ELEVATION_RAMP } from '../routeAnalysis/elevationColors';
 import {
   ANALYSIS_POLICY,
-  SPEED_BANDS,
-  SLOPE_BANDS,
 } from '../routeAnalysis/config';
-import { RouteElevationProfile } from './RouteElevationProfile';
 import './routeDisplay.css';
 type Display = ReturnType<typeof useRouteDisplay>;
-const metres = (v: number | null) => (v === null ? '—' : `${Math.round(v)}m`);
 
 export function RouteDisplayControl({
   display,
-  blocked,
+  navigating = false,
 }: {
   display: Display;
   blocked: boolean;
+  navigating?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null),
@@ -34,12 +30,7 @@ export function RouteDisplayControl({
     document.addEventListener('pointerdown', dismiss, true);
     return () => document.removeEventListener('pointerdown', dismiss, true);
   }, [open]);
-  const { preferences, target, mode, scale, stats, samples } = display;
-  const source = !stats.available
-    ? '暂无高程'
-    : display.estimated
-      ? '含地形估算'
-      : '轨迹自带高程';
+  const { preferences, target } = display;
   const close = () => {
     setOpen(false);
     toggle.current?.focus({ preventScroll: true });
@@ -113,9 +104,9 @@ export function RouteDisplayControl({
             <div className="route-display-options">
               {(
                 [
-                  ['legend', '颜色图例'],
-                  ['statistics', '海拔与爬升'],
-                  ['profile', '海拔剖面'],
+                  ['legend', '底部路线色标'],
+                  ['statistics', '底部海拔数据'],
+                  ['profile', '底部海拔曲线'],
                   ['steep', '陡坡标记'],
                   ['coordinates', '底部定位坐标'],
                 ] as const
@@ -132,6 +123,7 @@ export function RouteDisplayControl({
                 </label>
               ))}
             </div>
+            <p>前三项在导航时显示于底部；全部关闭可隐藏底栏。</p>
             <p>
               选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。
               陡坡≥{ANALYSIS_POLICY.steepThresholdPercent}%（约
@@ -155,92 +147,7 @@ export function RouteDisplayControl({
           </div>
         </section>
       )}
-      {target && !blocked && (
-        <aside className="route-display-info" aria-label="地图路线信息">
-          {display.loading && (
-            <small role="status" className="glass">
-              读取路线高程…
-            </small>
-          )}
-          {display.elevationError && (
-            <small className="glass" role="status">
-              {display.elevationError}
-            </small>
-          )}
-          {preferences.legend && mode !== 'solid' && (
-            <section
-              className="route-color-legend glass"
-              aria-label="路线颜色图例"
-            >
-              <strong>
-                {mode === 'elevation'
-                  ? '路线海拔 · m'
-                  : mode === 'speed'
-                    ? '路线速度 · km/h'
-                    : '路线坡度 · %'}
-              </strong>
-              {mode === 'elevation' ? (
-                <>
-                  <div
-                    className="route-color-ramp"
-                    style={{
-                      background:
-                        scale && scale.min === scale.max
-                          ? ELEVATION_RAMP[2]
-                          : `linear-gradient(90deg, ${ELEVATION_RAMP.join(',')})`,
-                    }}
-                  />
-                  <div className="route-color-ticks">
-                    <span>{metres(scale?.min ?? null)}</span>
-                    <span>
-                      {scale ? metres((scale.min + scale.max) / 2) : '缺测'}
-                    </span>
-                    <span>{metres(scale?.max ?? null)}</span>
-                  </div>
-                </>
-              ) : (
-                <div className="route-band-legend">
-                  {(mode === 'speed' ? SPEED_BANDS : SLOPE_BANDS).map(
-                    (b, i) => (
-                      <span key={b.color}>
-                        <i style={{ background: b.color }} />
-                        {
-                          (mode === 'speed'
-                            ? ['<3', '3–6', '≥6']
-                            : ['<10', '10–20', '≥20'])[i]
-                        }
-                      </span>
-                    ),
-                  )}
-                </div>
-              )}
-              <small>
-                {mode === 'speed' ? '需逐点时间' : source} · 灰色缺测
-              </small>
-            </section>
-          )}
-          {preferences.statistics && (
-            <section
-              className="route-elevation-stats glass"
-              aria-label="路线海拔统计"
-            >
-              <span>
-                海拔 {metres(stats.min)}–{metres(stats.max)}
-              </span>
-              <span>
-                爬升 {metres(stats.ascent)} · 下降 {metres(stats.descent)}
-              </span>
-              <small>
-                {source}
-                {!stats.complete ? ' · 部分缺测' : ''}
-              </small>
-            </section>
-          )}
-          {preferences.profile && (
-            <RouteElevationProfile samples={samples} scale={scale} />
-          )}
-        </aside>
-      )}
+
     </div>
   );
 }

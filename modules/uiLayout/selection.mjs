@@ -1,4 +1,10 @@
 export const groups = [
+  ['.home-topbar', '顶部栏'],
+  ['.home-map-actions', '右侧地图工具'],
+  ['.home-position-dock > .position-dock-button', '定位入口'],
+  ['.home-bottom-nav', '底部导航'],
+  ['.home-route-card', '路线规划卡片'],
+  ['.home-recording', '快捷记录'],
   ['.topbar', '顶部栏'],
   ['.map-actions', '右侧地图工具'],
   ['.camera-gizmo', '视角方向盘'],
@@ -51,7 +57,7 @@ const controls =
 const structural =
   'html,body,main,#root,#__next,.observatory,.maplibregl-map,.maplibregl-canvas-container';
 export const componentWrappers =
-  '.control-dock,.position-dock,.route-display-control';
+  '.control-dock,.position-dock,.home-position-dock,.route-display-control';
 const nonUI =
   'script,style,link,meta,template,option,.maplibregl-canvas,[data-layout-ignore]';
 const semanticGroups =

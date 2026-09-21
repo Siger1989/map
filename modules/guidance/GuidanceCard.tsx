@@ -1,4 +1,5 @@
 import { Navigation, X, RefreshCw, LocateFixed } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
 import './guidance.css';
@@ -10,6 +11,9 @@ export function GuidanceCard({
   onShow,
   following,
   onShare,
+  compact = true,
+  onRally,
+  telemetry,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
@@ -17,7 +21,11 @@ export function GuidanceCard({
   onShow: () => void;
   following: boolean;
   onShare: () => void;
+  compact?: boolean;
+  onRally?: () => void;
+  telemetry?: ReactNode;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const s = g.session;
   if (!s) return null;
   const status = s.departurePending
@@ -47,9 +55,14 @@ export function GuidanceCard({
               : s.networkSwitched
                 ? '已切换相连分叉 · 终点不变'
                 : '沿原路线导航');
+  const compactStatus = g.error || status;
+  const statusLabel = compactStatus.includes('权限') ? '定位未授权'
+    : !s.quality && g.instruction && !s.departurePending
+      ? `${formatDistance(g.instruction.distance)} · ${g.instruction.text}` : compactStatus;
   return (
     <section
       className="guidance-card glass"
+      data-compact={compact && !expanded}
       aria-label="路线导航"
       data-status={
         s.arrived
@@ -68,10 +81,14 @@ export function GuidanceCard({
             ? '导航完成'
             : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
         </strong>
+        {compact && !expanded && <span className="guidance-inline-status" role="status" title={compactStatus}>{statusLabel}</span>}
+        {onRally && <button aria-label="打开拉力路书" onClick={onRally}>路书</button>}
+        {compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? '⌃' : '⌄'}</button>}
         <button onClick={onStop} aria-label="结束导航">
           <X size={18} />
         </button>
       </header>
+      {(!compact || expanded) && telemetry}
       <div className="guidance-content">
         <p className="guidance-status" role="status">
           {status}
@@ -105,13 +122,6 @@ export function GuidanceCard({
             </dd>
           </div>
         </dl>
-        <button
-          className="guidance-share"
-          onClick={onShare}
-          disabled={s.departurePending}
-        >
-          分享全程路线
-        </button>
         {s.nextCheckpoint < s.checkpoints.length && (
           <p className="guidance-note">
             下一途经点 {s.nextCheckpoint + 1} / {s.checkpoints.length}
@@ -127,13 +137,13 @@ export function GuidanceCard({
             {g.error}
           </p>
         )}
-        {!s.arrived && (
           <div className="guidance-actions">
-            <button onClick={onFollow}>
+            <button onClick={onShare} disabled={s.departurePending}>分享</button>
+            {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '恢复跟随'}
-            </button>
-            {(s.offRoute || s.departurePending) && (
+            </button>}
+            {!s.arrived && (s.offRoute || s.departurePending) && (
               <button
                 onClick={g.rejoin ? onShow : g.retry}
                 disabled={
@@ -151,7 +161,6 @@ export function GuidanceCard({
               </button>
             )}
           </div>
-        )}
         {s.gap && (
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>
         )}

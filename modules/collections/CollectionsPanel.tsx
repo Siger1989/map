@@ -7,6 +7,7 @@ import {
   type ComponentProps,
 } from 'react';
 import { WorkbenchPanel } from './WorkbenchPanel';
+import { BoxSelectionResults } from './BoxSelectionResults';
 import { RouteCollectionsPanel } from './RouteCollectionsPanel';
 import {
   catalogEntries,
@@ -44,6 +45,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   initialSelectedKeys?: string[];
   photos: TripPhoto[];
   onClose: () => void;
+  onReselect?: () => void;
   onLocate: (entry: CatalogEntry) => void;
   mapCenter: [number, number];
 };
@@ -68,6 +70,7 @@ export function CollectionsPanel(props: Props) {
     ],
   );
   const regions = useRegions(entries);
+  const [boxResults, setBoxResults] = useState(!!props.initialSelectedKeys?.length);
   const [legacy, setLegacy] = useState(
       !props.initialOutputKey && !props.initialSelectedKeys?.length,
     ),
@@ -196,6 +199,13 @@ export function CollectionsPanel(props: Props) {
       setBusy(false);
     }
   };
+  if (boxResults && !output) return <BoxSelectionResults
+    entries={entries.filter(e => props.initialSelectedKeys?.includes(e.key))}
+    initialMessage={message}
+    onClose={props.onClose}
+    onReselect={props.onReselect ?? props.onClose}
+    onExport={keys => { setSelected(keys); setOutput(true); }}
+  />;
   if (legacy)
     return (
       <WorkbenchPanel
@@ -216,6 +226,7 @@ export function CollectionsPanel(props: Props) {
             props.onNavigateTrack(entry.track.id);
         }}
         onManage={(keys) => {
+          setBoxResults(false);
           setSelected(keys ?? []);
           setBatch(!!keys?.length);
           setLegacy(false);
@@ -225,7 +236,7 @@ export function CollectionsPanel(props: Props) {
   return (
     <section className="collections-panel catalog-panel" aria-label="全部收藏">
       <header className="collection-fixed-header">
-        <button onClick={() => setLegacy(true)}>文件夹分类</button>
+        <button onClick={() => boxResults ? setOutput(false) : setLegacy(true)}>{boxResults ? '返回框选结果' : '文件夹分类'}</button>
         <button aria-label="关闭收藏" onClick={props.onClose}>
           关闭 ×
         </button>

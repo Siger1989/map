@@ -7,7 +7,6 @@ import {
   MoreHorizontal,
   Scan,
   Settings2,
-  Rotate3D,
   Expand,
   X,
 } from 'lucide-react';
@@ -41,7 +40,7 @@ export function MapActions(props: {
   displayControl?: ReactNode;
   viewControl?: ReactNode;
 }) {
-  const [panel, setPanel] = useState<'view' | 'more' | 'location' | null>(null);
+  const [panel, setPanel] = useState<'more' | 'location' | null>(null);
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
     if (props.compact) setPanel(null);
@@ -91,9 +90,10 @@ export function MapActions(props: {
         </button>
         {props.displayControl}
       </PositionDock>
+      <div className="home-camera-control">{props.viewControl}</div>
       <nav
         ref={root}
-        className="map-actions home-map-actions"
+        className="home-map-actions"
         aria-label="地图快捷操作"
       >
         <button
@@ -106,15 +106,6 @@ export function MapActions(props: {
           {props.terrain ? '3D' : '2D'}
         </button>
         <button
-          className="icon-button direction-button"
-          aria-label="地图视角"
-          aria-expanded={panel === 'view'}
-          onClick={() => setPanel(panel === 'view' ? null : 'view')}
-        >
-          <Rotate3D size={21} />
-          <small>视角</small>
-        </button>
-        <button
           className="icon-button"
           aria-label="更多地图操作"
           aria-expanded={panel === 'more'}
@@ -125,21 +116,11 @@ export function MapActions(props: {
         {panel && (
           <section
             className={`home-map-popup home-${panel}-panel`}
-            aria-label={
-              panel === 'view'
-                ? '视角设置'
-                : panel === 'more'
-                  ? '更多地图操作菜单'
-                  : '定位设置'
-            }
+            aria-label={panel === 'more' ? '更多地图操作菜单' : '定位设置'}
           >
             <header>
               <strong>
-                {panel === 'view'
-                  ? '视角'
-                  : panel === 'more'
-                    ? '更多'
-                    : '定位设置'}
+                {panel === 'more' ? '更多' : '定位设置'}
               </strong>
               <button
                 onClick={() => setPanel(null)}
@@ -148,33 +129,10 @@ export function MapActions(props: {
                 <X size={16} />
               </button>
             </header>
-            {panel === 'view' && (
-              <>
-                {props.viewControl}
-                <div className="home-view-directions">
-                  <button
-                    aria-pressed={props.direction === 'north'}
-                    onClick={props.onNorth}
-                  >
-                    <Compass
-                      size={17}
-                      style={{ transform: `rotate(${-props.bearing}deg)` }}
-                    />
-                    正北朝上
-                  </button>
-                  <button
-                    disabled={props.sectionActive}
-                    aria-pressed={props.direction === 'device'}
-                    onClick={props.onDevice}
-                  >
-                    <Smartphone size={17} />
-                    跟随手机方向
-                  </button>
-                </div>
-              </>
-            )}
             {panel === 'more' && (
               <div className="home-menu-items">
+                <button aria-pressed={props.direction === 'north'} onClick={() => act(props.onNorth)}><Compass size={17} />正北朝上</button>
+                <button disabled={props.sectionActive} aria-pressed={props.direction === 'device'} onClick={() => act(props.onDevice)}><Smartphone size={17} />跟随手机方向</button>
                 <button onClick={() => act(props.onBoxSelect)}>
                   <Scan size={18} />
                   框选对象

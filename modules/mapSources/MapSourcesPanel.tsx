@@ -182,14 +182,14 @@ export function MapSourcesPanel({
     setError('已识别二维码，请检查内容，再点“识别并预览”');
   };
   return (
-    <section ref={root} className="map-sources" aria-label="地图图源管理">
+    <section ref={root} className="map-sources" data-step={step} aria-label="地图图源管理">
       {step === 'list' && (
         <>
           <div className="map-source-builtins" aria-label="内置图源">
             {(
               [
-                ['terrain', '地形地图'],
-                ['detail', '地表影像'],
+                ['terrain', domestic ? '天地图矢量' : '地形地图'],
+                ['detail', domestic ? '天地图影像' : '地表影像'],
                 ['latest', '最新云况'],
               ] as const
             ).map(([id, label]) => (
@@ -223,7 +223,7 @@ export function MapSourcesPanel({
           >
             ＋ 添加地图 · 图源 / 文件 / 二维码
           </button>
-          <TiandituHelp />
+          {domestic ? <small className="map-source-hint">天地图已配置 · 含中文注记 · <a href="https://lbs.tianditu.gov.cn/server/MapService.html" target="_blank" rel="noreferrer">图层说明</a></small> : <TiandituHelp />}
           <p className="map-source-hint">
             已保存 {sources.maps.length} / 20 项 ·{' '}
             {(

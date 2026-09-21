@@ -64,6 +64,28 @@ test('node and style edits stay in memory until a single explicit save', () => {
   assert.equal(disk.writes(), 1);
   assert.deepEqual(a.segments[0][1], [103.001, 30]);
 });
+test('visible false flag omitted by archive parsing is not a concurrent edit', () => {
+  const visible = { ...a, hidden: false };
+  const disk = archive([visible]);
+  const session = styleRouteEdit(startRouteEdit(visible), { ...a.style, width: 2 });
+  const result = storeRouteEdit(session, disk, 'unused', 2);
+  assert.equal(result.track.id, 'a');
+  assert.equal(result.track.style.width, 2);
+});
+
+test('unsaved planned route saves as a new archive without replacing existing tracks', () => {
+  const disk = archive([a, b]);
+  const planned = { ...a, id: 'planned-edit-copy', name: '规划路线 · 编辑副本' };
+  let session = startRouteEdit(planned, true);
+  session = moveEditNode(session, a.segments[0][1], [103.001, 30.001]);
+  assert.equal(disk.writes(), 0);
+  const result = storeRouteEdit(session, disk, 'unused', 2);
+  assert.equal(result.track.id, 'planned-edit-copy');
+  assert.equal(result.records.length, 3);
+  assert.deepEqual(result.records.find(t => t.id === 'a').segments, a.segments);
+  assert.deepEqual(result.records.find(t => t.id === 'b').segments, b.segments);
+});
+
 test('branch can rejoin an old node without removing the old interval', () => {
   let s = toggleEditBranch(selectEditNode(startRouteEdit(a), a.segments[0][0]));
   s = appendEditBranch(s, [103.001, 29.999]);
