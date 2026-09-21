@@ -21,7 +21,6 @@ import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
 import { offlineMapStatus } from '@/modules/outdoor/tileCache';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
-import { RotateCcw } from 'lucide-react';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
@@ -859,10 +858,6 @@ export default function Home() {
     );
     return () => clearInterval(interval);
   }, [playing, weather.data]);
-  const resetView = () => {
-    update({ terrain: true });
-    map.current?.reset();
-  };
   const branchEditing = !!editor.session && editor.session.branch !== null;
   const branchTip = branchEditing
     ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
@@ -919,7 +914,7 @@ export default function Home() {
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <main
-        className="observatory"
+        className="observatory home-map"
         data-measuring={measurement.active}
         data-panel={panel ?? 'map'}
         data-section={sectionEditing}
@@ -1832,14 +1827,6 @@ export default function Home() {
           <span className="map-load-status" role="status">
             {mapStatus}
           </span>
-          <button
-            className="icon-button"
-            aria-label="查看世界地图"
-            title="查看世界地图"
-            onClick={resetView}
-          >
-            <RotateCcw size={15} />
-          </button>
         </header>
         {annotations.picking ? (
           <div className="route-map-notice glass" role="status">
@@ -1948,6 +1935,7 @@ export default function Home() {
           !sectionEditing &&
           !guidance.active && (
             <TrackJourneyRail
+              homeOverview={routeVisible && routeWindow === 'card'}
               key={railTrack.id}
               track={railTrack}
               activeAlternative={activeAlternative}
@@ -2079,6 +2067,22 @@ export default function Home() {
               }
             />
           }
+          viewControl={
+            <CameraGizmo
+              view={view}
+              onView={(pitch, bearing) => {
+                follow.pause();
+                position.free();
+                if (pitch > 0 && !layers.terrain && !section.enabled)
+                  update({ terrain: true });
+                map.current?.view(pitch, bearing, false);
+              }}
+            />
+          }
+          onOverview={railTrack ? () => {
+            follow.pause();
+            map.current?.fitRoute(railTrack.segments.flat());
+          } : undefined}
           compact={panel === 'favorites'}
           onBoxSelect={() => {
             follow.pause();
@@ -2157,7 +2161,6 @@ export default function Home() {
           !survey.active &&
           !sectionEditing &&
           !tracks.drawing &&
-          !routeVisible &&
           !editor.session &&
           !quickAdd &&
           !annotations.picking &&
@@ -2835,16 +2838,6 @@ export default function Home() {
             }}
           />
         )}
-        <CameraGizmo
-          view={view}
-          onView={(pitch, bearing) => {
-            follow.pause();
-            position.free();
-            if (pitch > 0 && !layers.terrain && !section.enabled)
-              update({ terrain: true });
-            map.current?.view(pitch, bearing, false);
-          }}
-        />
       </main>
     </TextSuggestions.Provider>
   );

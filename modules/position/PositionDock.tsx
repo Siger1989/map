@@ -21,6 +21,7 @@ export function PositionDock({
 }) {
   return (
     <nav className="position-dock" aria-label="底部定位与路线显示">
+      {children}
       <button
         className="position-dock-button glass"
         aria-label={
@@ -37,7 +38,6 @@ export function PositionDock({
         <LocateFixed size={17} />
         <small>{locating ? '定位中' : following ? '跟随' : '定位'}</small>
       </button>
-      {children}
       {showCoordinates && (
         <output
           className="position-dock-coordinates glass"

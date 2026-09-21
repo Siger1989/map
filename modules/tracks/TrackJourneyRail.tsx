@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { Annotation } from '../annotations/data';
 import { formatDistance } from '../navigation/types';
 import { trackDistance, type ManualTrack } from './drawing';
@@ -16,6 +17,7 @@ export function TrackJourneyRail({
   onMarker,
   activeAlternative,
   onAlternative,
+  homeOverview = false,
 }: {
   track: Pick<
     ManualTrack,
@@ -27,8 +29,10 @@ export function TrackJourneyRail({
   onMarker: (id: string) => void;
   activeAlternative: string;
   onAlternative: (id: string) => void;
+  homeOverview?: boolean;
 }) {
   const [list, setList] = useState(false);
+  const [overviewOpen, setOverviewOpen] = useState(true);
   const [positions, setPositions] = useState<Record<string, number>>({});
   const variants = trackAlternatives(
     track.segments,
@@ -93,6 +97,51 @@ export function TrackJourneyRail({
       sourceDistance: markerChainage(track.segments, coordinate).distance,
     });
   };
+  if (homeOverview)
+    return (
+      <aside className="home-journey-points" aria-label="路线行程点">
+        <button
+          className="home-journey-heading"
+          onClick={() => setOverviewOpen(!overviewOpen)}
+          aria-expanded={overviewOpen}
+        >
+          <strong>行程点</strong>
+          {overviewOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        </button>
+        {overviewOpen && (
+          <div className="home-journey-list">
+            {multiple && (
+              <button
+                onClick={() =>
+                  onAlternative(
+                    choices[(choices.indexOf(active) + 1) % choices.length].id,
+                  )
+                }
+              >
+                {active.label} ⇄
+              </button>
+            )}
+            <button onClick={() => select(active.id, 0)}>
+              <i />
+              <span>起点</span>
+              <small>0.0 km</small>
+            </button>
+            {entries.map(({ marker, distance }) => (
+              <button key={marker.id} onClick={() => onMarker(marker.id)}>
+                <i style={{ background: marker.color }} />
+                <span>{marker.name || '标记'}</span>
+                <small>{formatDistance(distance)}</small>
+              </button>
+            ))}
+            <button onClick={() => select(active.id, 1)}>
+              <i />
+              <span>终点</span>
+              <small>{(active.distance / 1000).toFixed(1)} km</small>
+            </button>
+          </div>
+        )}
+      </aside>
+    );
   return (
     <aside
       className="route-weather-rail track-journey-rail"

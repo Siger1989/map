@@ -17,6 +17,7 @@ import '@/modules/section/section.css';
 import '@/modules/objectTransform/objectTransform.css';
 import '@/modules/controls/modern.css';
 import '@/modules/controls/compactDensity.css';
+import '@/modules/controls/homeMap.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

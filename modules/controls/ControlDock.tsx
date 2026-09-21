@@ -13,6 +13,8 @@ import {
   ScanLine,
   ChevronLeft,
   Ruler,
+  Star,
+  BriefcaseBusiness,
 } from 'lucide-react';
 
 export type ControlPanel =
@@ -239,7 +241,7 @@ export function ControlDock({
               aria-controls={active === id ? 'map-control-panel' : undefined}
               onClick={() => onActive(active === id ? null : id)}
             >
-              <Icon size={16} />
+              {id === 'route' ? <MapIcon size={20} /> : id === 'favorites' ? <Star size={20} /> : id === 'tools' ? <BriefcaseBusiness size={20} /> : <Icon size={20} />}
               <span>{label}</span>
             </button>
           ))}

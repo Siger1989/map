@@ -95,7 +95,19 @@ try {
   # Android AssetManager resolves POSIX paths; normalize before alignment/signing.
   Add-Type -AssemblyName System.IO.Compression
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  $assetArchive = [IO.Compression.ZipFile]::Open($baseApk, [IO.Compression.ZipArchiveMode]::Update)
+  # Windows scanners can briefly hold the freshly linked APK. Retry only sharing
+  # violations; malformed archives and other build errors must still fail fast.
+  for ($openAttempt = 0; ; $openAttempt++) {
+    try {
+      $assetArchive = [IO.Compression.ZipFile]::Open($baseApk, [IO.Compression.ZipArchiveMode]::Update)
+      break
+    } catch {
+      $cause = $_.Exception
+      while ($cause.InnerException) { $cause = $cause.InnerException }
+      if ($openAttempt -ge 19 -or ($cause.HResult -band 0xFFFF) -notin @(32, 33)) { throw }
+      Start-Sleep -Milliseconds 250
+    }
+  }
   try {
     $windowsEntries = @($assetArchive.Entries | Where-Object { $_.FullName.Contains('\') })
     foreach ($entry in $windowsEntries) {

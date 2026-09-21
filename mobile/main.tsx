@@ -19,6 +19,7 @@ import '../modules/objectTransform/objectTransform.css';
 import '../modules/controls/modern.css';
 import './compatibility.css';
 import '../modules/controls/compactDensity.css';
+import '../modules/controls/homeMap.css';
 
 // The APK owns its local HTTPS asset origin. No RSC server or development URL.
 installLayoutCompatibility();

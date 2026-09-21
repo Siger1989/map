@@ -63,7 +63,7 @@ export function RouteDisplayControl({
         onClick={() => setOpen(!open)}
       >
         <ChartNoAxesCombined size={17} />
-        <small>海拔显示</small>
+        <small>路线显示</small>
       </button>
       {open && (
         <section

@@ -28,7 +28,7 @@ export function PlaceSearch({
   const input = useRef<HTMLInputElement>(null);
   const near = useRef(center);
   near.current = center;
-  const { label, title } = useMapPlaceLabel(center, zoom);
+  const { title } = useMapPlaceLabel(center, zoom);
 
   useEffect(() => {
     if (!open) return;
@@ -126,7 +126,7 @@ export function PlaceSearch({
           type="search"
           aria-label="搜索地点"
           maxLength={120}
-          placeholder={`搜索地点 · ${label}`}
+          placeholder="搜索地点"
           title={title}
           value={query}
           autoComplete="off"
