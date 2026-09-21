@@ -1,5 +1,12 @@
 # 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
 
+## 最新：0.2.44导航前台常亮（2026-09-21）
+
+- `useGuidance.ts`按active状态驱动原生常亮，普通/拉力共用；退出/换路线失活/卸载cleanup解除，visibilitychange在返回导航时恢复。`useRecording.ts`只增加既有桥接接口类型声明。
+- `NativeBridge.java`新增setKeepScreenOn，UI线程设置/清除Activity窗口FLAG_KEEP_SCREEN_ON，启用需trustedForeground；`MainActivity.java`页面重载先清除，避免新页面无导航却残留常亮。不改变系统息屏设置，不增加权限，后台或手动锁屏不强行唤醒。
+- 版本0.2.44-test/code51，当前源码生成独立APK；未改GPS采样、记录、路线计算、存储格式与UI布局。尚未真机超时等待测试，浏览器版未增加常亮API；完整交付说明 `docs/release-0.2.44.md`。
+- 导航定向测试12/12、类型检查通过；APK网页/Java/DEX编译、签名、zipalign、版本、473地形瓦片检查通过，包内JS与DEX均确认setKeepScreenOn接口。分支 `codex/rollback-ui-0235-20260921`，测试Release `v0.2.44-test-standalone`。
+
 ## 最新：0.2.43记录保存修复（2026-09-21）
 
 - 用户真机截图为finished/3点/0米，保存、结束均灰。根因是RecordingPanel与recordingTrack排除单点分段，而待保存状态又禁用结束，形成死角。现在保存全部非空分段，drawing解析允许recorded单点分段，原时间/海拔/分段/来源均保留，不自动缝合断点；保存仍需持久化回读确认后才clear。

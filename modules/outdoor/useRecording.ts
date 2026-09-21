@@ -33,6 +33,7 @@ declare global {
       locate?(mode: string): void;
       locationState?(): string;
       stopLocation?(): void;
+      setKeepScreenOn?(enabled: boolean): void;
     };
   }
 }

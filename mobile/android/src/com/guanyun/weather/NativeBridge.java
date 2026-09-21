@@ -22,6 +22,13 @@ final class NativeBridge {
     @JavascriptInterface public String locationState() { return position.snapshot(); }
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
+    @JavascriptInterface public void setKeepScreenOn(boolean enabled) {
+        activity.runOnUiThread(() -> {
+            if (enabled && !activity.trustedForeground()) return;
+            if (enabled) activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            else activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        });
+    }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }

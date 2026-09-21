@@ -64,6 +64,10 @@ public final class MainActivity extends Activity {
         webView.setWebChromeClient(locationPermissions);
         final LocalGateway gateway = new LocalGateway(getApplicationContext());
         webView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                // A reloaded page has no active navigation session yet.
+                getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return gateway.intercept(request.getUrl(), request.getMethod());
             }
