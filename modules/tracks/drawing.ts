@@ -81,7 +81,7 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
           (line: unknown) =>
             Array.isArray(line) &&
             line.length >=
-              (v.source === 'manual' || v.source === undefined ? 1 : 2) &&
+              (v.source === 'manual' || v.source === 'recorded' || v.source === undefined ? 1 : 2) &&
             line.every(coordinate),
         ) &&
         (v.samples === undefined ||

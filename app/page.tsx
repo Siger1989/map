@@ -2010,21 +2010,13 @@ export default function Home() {
           )}
         {(position.directionError ||
           (!guidance.active &&
-            (position.locationError ||
-              position.locating ||
-              (position.showStatus &&
-                position.watching &&
-                position.fix?.source)))) &&
+            (position.locationError || position.locating))) &&
           !panel && (
             <div className="position-status glass" role="status">
               <span>
                 {position.locationError ||
                   position.directionError ||
-                  (position.locating
-                    ? '正在获取当前位置…'
-                    : position.fix
-                      ? `${position.fix.source === 'network' ? '基站 / Wi-Fi 大致位置' : 'GPS 位置'} · 估计误差 ${Math.round(position.fix.accuracy)} 米`
-                      : '')}
+                  (position.locating ? '正在获取当前位置…' : '')}
               </span>
               <button
                 aria-label="收起定位提示"

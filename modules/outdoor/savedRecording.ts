@@ -6,7 +6,7 @@ import { normalizeTrackStyle } from '../tracks/style.ts';
 /** Coordinates and samples are derived from the same segments, including pause boundaries. */
 export function recordingTrack(
   record: Recording,
-  includeSinglePoints = false,
+  includeSinglePoints = true,
 ): ManualTrack {
   const segments = record.segments.filter(
     (line) => line.length >= (includeSinglePoints ? 1 : 2),
@@ -42,7 +42,7 @@ export function saveRecording(
   if (record.phase !== 'finished') throw new Error('请先结束记录再保存');
   const incoming = recordingTransfer(record);
   if (!record.id || !incoming.tracks[0].segments.length)
-    throw new Error('尚无可保存的轨迹线段');
+    throw new Error('尚无可保存的记录点');
   const next = mergeData(incoming, storage);
   const snapshot = (track: ManualTrack) => JSON.stringify({ ...track, id: '' });
   const expected = snapshot(incoming.tracks[0]);

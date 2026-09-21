@@ -53,6 +53,7 @@ test('finished recording saves real time and pause alignment; reloaded track sti
     reloaded.samples.map((s) => s.map((p) => p.time)),
     [
       [time, time + 60000],
+      [time + 180000],
       [time + 240000, time + 300000],
     ],
   );
@@ -62,6 +63,20 @@ test('finished recording saves real time and pause alignment; reloaded track sti
   saveRecording(record, storage);
   assert.equal(parseSavedTracks(storage.getItem(TRACK_STORAGE)).length, 1);
   assert.equal(record.segments.length, 4);
+});
+
+test('finished singleton segments remain savable without stitching or losing times', () => {
+  const isolated = { ...record, segments: [[fix(time, 104.066)], [], [fix(time + 180000, 104.067)], [fix(time + 360000, 104.068)]] };
+  const before = JSON.stringify(isolated);
+  const storage = memory();
+  const saved = saveRecording(isolated, storage);
+  const reloaded = parseSavedTracks(storage.getItem(TRACK_STORAGE))[0];
+  assert.deepEqual(reloaded.segments, isolated.segments.filter(s => s.length).map(s => s.map(p => p.coordinates)));
+  assert.deepEqual(reloaded.samples.map(s => s.map(p => p.time)), [[time], [time + 180000], [time + 360000]]);
+  assert.equal(reloaded.id, saved.id);
+  assert.equal(reloaded.source, 'recorded');
+  assert.equal(JSON.stringify(isolated), before);
+  assert.throws(() => saveRecording({ ...isolated, segments: [[]] }, memory()), /尚无可保存/);
 });
 
 test('recording appearance survives saving and reload without changing GPS samples', () => {
