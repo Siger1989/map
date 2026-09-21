@@ -18,6 +18,7 @@ export function OutdoorPanel({
   onShow,
   onOpenMap,
   offlineRegion, onChooseOfflineRegion,
+  onDownloadCurrent, onDownloadRoute,
   photos,
   returnPanel,
   onSavedTrack,
@@ -30,7 +31,9 @@ export function OutdoorPanel({
   points: Coordinate[];
   name: string;
   onShow: (points: Coordinate[]) => void;
-  onOpenMap: () => void;
+  onOpenMap: (trip?: import('./offline').TripPackage) => void;
+  onDownloadCurrent?: () => void;
+  onDownloadRoute?: () => void;
   offlineRegion: [number, number, number, number] | null;
   onChooseOfflineRegion: () => void;
   photos: ReactNode;
@@ -73,6 +76,7 @@ export function OutdoorPanel({
       {tab === 'files' && <TransferPanel />}
       {tab === 'offline' && (
         <OfflinePanel
+          onDownloadCurrent={onDownloadCurrent} onDownloadRoute={onDownloadRoute}
           region={offlineRegion} onChooseRegion={onChooseOfflineRegion}
           offline={offline}
           points={points}

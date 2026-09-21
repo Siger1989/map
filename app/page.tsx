@@ -32,6 +32,9 @@ import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
+import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
+import { OfflineDownload, type OfflineDownloadTarget } from '@/modules/outdoor/OfflineDownload';
+import type { DownloadArea } from '@/modules/outdoor/downloadPlan';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -226,8 +229,8 @@ export default function Home() {
   const mapSources = useMapSources(false);
   const domesticBasemap = basemapConfiguration().domestic && !layers.offlineBasemap;
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
-    : domesticBasemap ? 18 : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
-  const rasterName = mapSources.source?.name ?? (domesticBasemap ? layers.satellite ? '天地图影像' : '天地图矢量' : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
+    : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
+  const rasterName = mapSources.source?.name ?? (domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
   useEffect(() => { setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null }); }, [mapSources.selected, layers.satellite, layers.imageryMode, layers.offlineBasemap]);
   const guidance = useGuidance(
     navigation.route,
@@ -289,6 +292,17 @@ export default function Home() {
   const [offlinePicking, setOfflinePicking] = useState(false);
   const [offlineRegion, setOfflineRegion] = useState<[number, number, number, number] | null>(null);
   const [outdoorOffline, setOutdoorOffline] = useState(false);
+  const [offlineDownload, setOfflineDownload] = useState<OfflineDownloadTarget | null>(null);
+  const [offlineDownloadError, setOfflineDownloadError] = useState('');
+  const beginMapDownload = (name: string, area?: DownloadArea) => {
+    try {
+      if (mapSources.source || (!domesticBasemap && layers.satellite)) throw new Error('此图源尚未接入区域下载，请选择天地图或开源底图');
+      const bounds = area ? null : map.current?.offlineRegionBounds(true);
+      if (!area && !bounds) throw new Error('地图尚未就绪');
+      setOfflineDownload({name, area: area ?? {kind:'region',bounds:bounds!},provider:domesticBasemap?'tianditu':'openfreemap',settings:{...layers}});
+      setOfflineDownloadError('');setPanel(null);setRallyMode(false);setRouteWindow('card');
+    } catch(e) { setOfflineDownloadError((e as Error).message); }
+  };
   const [outdoorRecording, setOutdoorRecording] = useState(false);
   useEffect(() => {
     if (panel !== 'favorites') {
@@ -987,6 +1001,7 @@ export default function Home() {
         data-offline-picking={offlinePicking}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
+          if (offlineDownload) { event.preventDefault();setOfflineDownload(null);return; }
           if (offlinePicking) {
             event.preventDefault();
             setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor');
@@ -1352,6 +1367,7 @@ export default function Home() {
           }}
         />
         {routeVisible &&
+          !offlineDownload &&
           railTrack &&
           panel === null &&
           !editor.session &&
@@ -1402,7 +1418,10 @@ export default function Home() {
               )}
               {routeWindow === 'details' && (
                 <RouteDetails
+                  key={railTrack.id}
                   track={railTrack}
+                  onRename={(name) => tracks.rename(railTrack.id, name)}
+                  onOffline={()=>beginMapDownload(railTrack.name,{kind:'route',segments:railTrack.segments,bufferKm:10})}
                   onShowMetric={(mode) => { routeDisplay.choose(railTrack.id); routeDisplay.update({ mode, legend: true }); setRouteWindow('card'); }}
                   alternative={activeAlternative}
                   onCondition={(color, value) =>
@@ -2081,6 +2100,8 @@ export default function Home() {
           mapStatus={mapStatus}
         />
         {offlinePicking && <OfflineRegionPicker readBounds={() => map.current?.offlineRegionBounds() ?? null} onCancel={() => { setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} onDone={bounds => { setOfflineRegion(bounds); setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} />}
+        {offlineDownload && <OfflineDownload key={`${offlineDownload.name}-${offlineDownload.area.kind}`} target={offlineDownload} offline={offline} onClose={()=>setOfflineDownload(null)} onManage={()=>{setOfflineDownload(null);setOutdoorOffline(true);setPanel('outdoor');}}/>}
+        {offlineDownloadError && <div className="offline-download-dock" role="alert"><span>{offlineDownloadError}</span><button onClick={()=>setOfflineDownloadError('')}>关闭</button></div>}
         {boxSelecting && (
           <MapBoxSelect
             entries={catalogEntries(
@@ -2420,6 +2441,9 @@ export default function Home() {
         >
           {panel === 'sources' && (
             <MapSourcesPanel
+              settings={layers}
+              onSettings={patch=>{mapSources.select('');update(patch);}}
+              onOffline={()=>beginMapDownload('当前地图区域')}
               onRouteQr={(text) => {
                 setPanel(null);
                 setRouteQr(text);
@@ -2431,6 +2455,7 @@ export default function Home() {
                 mapSources.select('');
                 update({
                   offlineBasemap: false,
+                  offlineMaxZoom: null,
                   satellite: id !== 'terrain',
                   ...(id !== 'terrain' ? { imageryMode: id } : {}),
                 });
@@ -2445,6 +2470,9 @@ export default function Home() {
           )}
           {panel === 'outdoor' && (
             <OutdoorPanel
+              key={outdoorOffline?'offline':outdoorPhotos?'photos':'record'}
+              onDownloadCurrent={()=>beginMapDownload('当前地图区域')}
+              onDownloadRoute={()=>beginMapDownload(selectedTrack?.name??'当前路线',{kind:'route',segments:selectedTrack?.segments??(navigation.route?[navigation.route.coordinates]:[[[point.lng,point.lat]]]),bufferKm:10})}
               initialTab={outdoorOffline ? 'offline' : outdoorPhotos ? 'photos' : 'record'}
               offlineRegion={offlineRegion}
               onChooseOfflineRegion={() => { setPanel(null); setRallyMode(false); follow.pause(); position.free(); map.current?.view(0, 0, false); setOfflinePicking(true); }}

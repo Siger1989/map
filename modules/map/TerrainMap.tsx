@@ -1,5 +1,7 @@
 import { readLastView, saveLastView } from './lastView';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
+import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
+import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
 ('use client');
@@ -69,7 +71,7 @@ import {
 export type MapHandle = {
   groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
-  offlineRegionBounds: () => [number, number, number, number] | null;
+  offlineRegionBounds: (visible?: boolean) => [number, number, number, number] | null;
   watchObjectProjection: WatchProjection;
   sectionCenter: () => {
     center: [number, number];
@@ -283,12 +285,19 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         });
     };
     const syncRasterLock = () => {
+      const map = mapRef.current;
+      if (!map) return;
       const { settings: s, mapSource } = latest.current;
       const domesticMap = domestic && !s.offlineBasemap;
       const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
-        : domesticMap ? [s.satellite ? 'detail' : 'relief']
+        : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
+      if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
+        const id = TDT_SOURCE_IDS[layer], source = map.getSource(id);
+        const maxzoom = Math.min(TIANDITU_LAYERS[layer].maxzoom, s.offlineMaxZoom ?? Infinity);
+        if (source && source.maxzoom !== maxzoom) { source.maxzoom = maxzoom; map.refreshTiles(id); }
+      }
     };
     const sync = () => {
       const map = mapRef.current;
@@ -389,21 +398,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         for (const id of ['open-landcover', 'open-water', 'open-buildings'])
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       if (domestic) {
-        for (const id of ['domestic-labels-image', 'domestic-labels-map'])
-          if (map.getLayer(id)) map.setPaintProperty(id, 'raster-opacity', Math.max(0, Math.min(1, s.roadsOpacity ?? 1)));
+        const selected = tiandituLayers(s);
+        for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
+          const id = TDT_SOURCE_IDS[layer];
+          if (map.getLayer(id)) {
+            map.setLayoutProperty(id, 'visibility', useDomestic && !custom && selected.includes(layer) ? 'visible' : 'none');
+            if (layer === 'cia' || layer === 'cva' || layer === 'cta') map.setPaintProperty(id, 'raster-opacity', Math.max(0, Math.min(1, s.roadsOpacity ?? 1)));
+          }
+        }
         for (const id of ['road-names', 'road-numbers'])
           if (useDomestic && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
-        for (const id of ['domestic-labels-image', 'domestic-labels-map'])
-          if (map.getLayer(id))
-            map.setLayoutProperty(
-              id,
-              'visibility',
-              useDomestic && !custom &&
-                s.labels &&
-                (id.endsWith('image') ? s.satellite : !s.satellite)
-                ? 'visible'
-                : 'none',
-            );
       }
       geologyRef.current?.sync(s);
       routeRef.current?.sync(latest.current.routeOverlay);
@@ -434,9 +438,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        offlineRegionBounds: () => {
+        offlineRegionBounds: (visible = false) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;
+          if (visible) { const b = m.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]; }
           if (Math.abs(m.getPitch()) > 0.1 || Math.abs(m.getBearing()) > 0.1) throw new Error('请切回正北 2D 视图后选择范围');
           const w = m.getCanvas().clientWidth, h = m.getCanvas().clientHeight;
           const a = m.unproject([16, 96]), b = m.unproject([w - 76, h - 180]);

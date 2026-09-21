@@ -2,6 +2,7 @@ import { TrackColorProfile } from './TrackColorProfile';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
 import { useMemo, useState } from 'react';
+import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
 import {
   ArrowLeft,
@@ -65,6 +66,8 @@ export function RouteDetails({
   deleteError,
   onCondition,
   onShowMetric,
+  onRename,
+  onOffline,
 }: {
   track: ManualTrack;
   alternative: string;
@@ -78,7 +81,12 @@ export function RouteDetails({
   deleteError: string;
   onCondition: (color: string, value: string) => boolean;
   onShowMetric?: (mode: 'elevation' | 'slope') => void;
+  onRename: (name: string) => boolean;
+  onOffline?: () => void;
 }) {
+  const [name, setName] = useState<string | null>(null);
+  const [nameError, setNameError] = useState('');
+  const [nameSaved, setNameSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const root = useRouteDialogFocus(() =>
     confirmDelete ? setConfirmDelete(false) : onBack(),
@@ -118,7 +126,27 @@ export function RouteDetails({
           </button>
         </header>
         <div className="route-details-body">
-          <h2>{track.name}</h2>
+          <form className="route-details-name" aria-label="修改路线名称" onSubmit={(event) => {
+            event.preventDefault();
+            const value = (name ?? track.name).trim();
+            setNameSaved(false);
+            if (!value) { setNameError('请输入路线名称'); return; }
+            if (!onRename(value)) { setNameError('名称未保存，请重试；输入已保留。'); return; }
+            setName(null);
+            setNameError('');
+            setNameSaved(true);
+          }}>
+            <label htmlFor="route-details-name">路线名称</label>
+            <SmartInput id="route-details-name" value={name ?? track.name} maxLength={60}
+              onChange={(event) => { setName(event.target.value); setNameError(''); setNameSaved(false); }} />
+            <div>
+              <button type="button" onClick={() => { setName(null); setNameError(''); setNameSaved(false); }}>取消修改</button>
+              <button type="submit" className="route-solid">保存名称</button>
+            </div>
+            {nameError && <p role="alert">{nameError}</p>}
+            {nameSaved && <p role="status">名称已保存</p>}
+          </form>
+          {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
           <h3>基本资料</h3>
           <dl className="route-data-rows">

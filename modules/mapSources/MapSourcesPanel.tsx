@@ -15,6 +15,8 @@ import { basemapConfiguration } from '../cartography/basemaps';
 import './mapSources.css';
 import { FreeMapLibrary } from './FreeMapLibrary';
 import { TiandituHelp } from './TiandituHelp';
+import { TiandituSources } from '../cartography/TiandituSources';
+import type { LayerSettings } from '../map/types';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -30,6 +32,7 @@ export function MapSourcesPanel({
   onFocus,
   onNavigation,
   onRouteQr,
+  settings, onSettings, onOffline,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
@@ -37,8 +40,11 @@ export function MapSourcesPanel({
   onFocus: (bounds: Bounds) => void;
   onNavigation?: (navigation: MapSourcesNavigation | null) => void;
   onRouteQr?: (text: string) => void;
+  settings?: LayerSettings;
+  onSettings?: (patch: Partial<LayerSettings>) => void;
+  onOffline?: () => void;
 }) {
-  const [step, setStep] = useState<'list' | 'add' | 'camera' | 'preview'>(
+  const [step, setStep] = useState<'list' | 'library' | 'add' | 'camera' | 'preview'>(
     'list',
   );
   const [input, setInput] = useState(''),
@@ -58,12 +64,12 @@ export function MapSourcesPanel({
         ? null
         : {
             title:
-              step === 'add'
+              step === 'library' ? '其他图源与本机地图' : step === 'add'
                 ? '添加地图'
                 : step === 'preview'
                   ? '图源预览'
                   : '扫描二维码',
-            label: step === 'add' ? '返回图源列表' : '返回添加地图',
+            label: step === 'add' || step === 'library' ? '返回图源列表' : '返回添加地图',
             disabled: step === 'preview' && busy,
             onClick: () => {
               work.current?.abort();
@@ -71,7 +77,7 @@ export function MapSourcesPanel({
               setBusy(false);
               setError('');
               setPending([]);
-              setStep(step === 'add' ? 'list' : 'add');
+              setStep(step === 'add' || step === 'library' ? 'list' : 'add');
             },
           },
     );
@@ -183,9 +189,9 @@ export function MapSourcesPanel({
   };
   return (
     <section ref={root} className="map-sources" data-step={step} aria-label="地图图源管理">
-      {step === 'list' && (
+      {(step === 'list' || step === 'library') && (
         <>
-          <div className="map-source-builtins" aria-label="内置图源">
+          {step === 'list' && (domestic && settings && onSettings ? <TiandituSources active={!sources.selected} settings={settings} onChange={onSettings}/> : <div className="map-source-builtins" aria-label="内置图源">
             {(
               [
                 ['terrain', domestic ? '天地图矢量' : '地形地图'],
@@ -207,7 +213,10 @@ export function MapSourcesPanel({
                 {label}
               </button>
             ))}
-          </div>
+          </div>)}
+          {step === 'list' && <div className="map-source-actions">{onOffline && <button onClick={onOffline}>下载当前地图范围</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机地图</button></div>}
+          {step === 'library' && <>
+          {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary
             selected={sources.selected}
             onSelect={sources.select}
@@ -286,6 +295,7 @@ export function MapSourcesPanel({
             </p>
           )}
           {sources.status && <p role="status">{sources.status}</p>}
+          </>}
         </>
       )}
       {step === 'add' && (

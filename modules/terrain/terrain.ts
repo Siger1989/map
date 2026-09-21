@@ -6,6 +6,7 @@ import {
   TIANDITU_CREDIT,
 } from '../cartography/basemaps';
 import { TERRAIN_URL } from './tiles';
+import { TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 export { TERRAIN_URL } from './tiles';
 export const TERRAIN_MAXZOOM = 12;
 export const TERRAIN_CREDIT =
@@ -37,6 +38,7 @@ export function baseStyle(): StyleSpecification {
       },
       relief: {
         type: 'raster',
+        minzoom: domestic ? 1 : 0,
         tiles: domestic
           ? tiandituTiles('vec', token)
           : [
@@ -50,6 +52,7 @@ export function baseStyle(): StyleSpecification {
       },
       detail: {
         type: 'raster',
+        minzoom: domestic ? 1 : 0,
         tiles: domestic
           ? tiandituTiles('img', token)
           : [
@@ -63,8 +66,13 @@ export function baseStyle(): StyleSpecification {
       },
       ...(domestic
         ? {
+            ...Object.fromEntries((['ter', 'cta', 'ibo'] as const).map(layer => [TDT_SOURCE_IDS[layer], {
+              type: 'raster' as const, tiles: tiandituTiles(layer, token), tileSize: 256,
+              minzoom: 1, maxzoom: TIANDITU_LAYERS[layer].maxzoom, attribution: TIANDITU_CREDIT,
+            }])),
             'domestic-labels-image': {
               type: 'raster' as const,
+              minzoom: 1,
               tiles: tiandituTiles('cia', token),
               tileSize: 256,
               maxzoom: 18,
@@ -72,9 +80,10 @@ export function baseStyle(): StyleSpecification {
             },
             'domestic-labels-map': {
               type: 'raster' as const,
+              minzoom: 1,
               tiles: tiandituTiles('cva', token),
               tileSize: 256,
-              maxzoom: 18,
+              maxzoom: 19,
               attribution: TIANDITU_CREDIT,
             },
           }
@@ -98,6 +107,7 @@ export function baseStyle(): StyleSpecification {
         source: 'detail',
         paint: { 'raster-saturation': -0.1, 'raster-brightness-max': 0.93 },
       },
+      ...(domestic ? [{ id: 'domestic-terrain', type: 'raster' as const, source: 'domestic-terrain', layout: { visibility: 'none' as const } }] : []),
       {
         id: 'elevation-colors',
         type: 'color-relief',
@@ -121,6 +131,7 @@ export function baseStyle(): StyleSpecification {
       },
       ...(domestic
         ? [
+            ...(['cta', 'ibo'] as const).map(layer => ({ id: TDT_SOURCE_IDS[layer], type: 'raster' as const, source: TDT_SOURCE_IDS[layer], layout: { visibility: 'none' as const } })),
             {
               id: 'domestic-labels-image',
               type: 'raster' as const,

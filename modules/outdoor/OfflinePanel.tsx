@@ -12,14 +12,17 @@ export function OfflinePanel({
   onShow,
   onOpenMap,
   region, onChooseRegion,
+  onDownloadCurrent, onDownloadRoute,
 }: {
   offline: ReturnType<typeof useOffline>;
   points: Coordinate[];
   name: string;
   onShow: (points: Coordinate[]) => void;
-  onOpenMap: () => void;
+  onOpenMap: (trip?: TripPackage) => void;
   region: TripPackage['bounds'] | null;
   onChooseRegion: () => void;
+  onDownloadCurrent?: () => void;
+  onDownloadRoute?: () => void;
 }) {
   const [regionName, setRegionName] = useState('我的离线区域');
   let estimate = 0, regionError = '';
@@ -27,12 +30,13 @@ export function OfflinePanel({
   return (
     <>
       <strong>离线地图缓存</strong>
+      {onDownloadCurrent && <div className="outdoor-actions"><button onClick={onDownloadCurrent}>下载当前地图范围</button><button disabled={!points.length} onClick={onDownloadRoute}>下载「{name}」沿线地图</button></div>}
+      {!onDownloadCurrent && <>
       <section className="offline-download-region" aria-label="区域下载">
         <button disabled={offline.busy} onClick={onChooseRegion}>{region ? '重新选择地图区域' : '地图选区下载'}</button>
         {region && <><input aria-label="离线区域名称" maxLength={60} value={regionName} onChange={e => setRegionName(e.target.value)} /><small>{region.map(n => n.toFixed(3)).join(' / ')}</small><small>{regionError || `约 ${estimate} 项资源（含字库）；大小以实际下载为准`}</small><button disabled={offline.busy || !estimate || !regionName.trim()} onClick={() => void offline.createRegion(regionName.trim(), region, 14)}>下载所选区域</button></>}
         <small>道路14级 · 地形12级 · 含地名，不含天地图影像。离线算路需另下载下方路网。</small>
       </section>
-      <OfflineMapSettings onOpenMap={onOpenMap} />
       <p className="route-note">
         下载「{name}」周边约 2 km 的开源道路、地名与地形。道路精细至 14
         级，地形至 12
@@ -45,12 +49,16 @@ export function OfflinePanel({
         >
           下载此行程
         </button>
-        <button onClick={onOpenMap}>使用开源底图</button>
+        <button onClick={() => onOpenMap()}>使用开源底图</button>
         {offline.busy && <button onClick={offline.pause}>暂停下载</button>}
       </div>
+      </>}
+      <OfflineMapSettings onOpenMap={()=>onOpenMap()} />
+      {offline.busy && <button onClick={offline.pause}>暂停下载</button>}
       {offline.packages.map((p) => (
         <article className="trip-package" key={p.id}>
           <strong>{p.name}</strong>
+          <small>{p.provider==='tianditu'?'天地图':'开源地图'} · {p.zoom??14}级{p.bufferKm?` · 沿线两侧各${p.bufferKm}公里`:''}</small>
           <progress value={p.done} max={p.urls.length} />
           <span>
             {p.complete ? '已下载' : '待补齐'} · {p.done}/{p.urls.length} ·{' '}
@@ -59,7 +67,7 @@ export function OfflinePanel({
           <div className="outdoor-actions">
             <button
               onClick={() => {
-                onOpenMap();
+                onOpenMap(p);
                 onShow([
                   [p.bounds[0], p.bounds[1]],
                   [p.bounds[2], p.bounds[3]],

@@ -1,29 +1,36 @@
 import { useEffect, useRef } from 'react';
 import type { LayerSettings } from '../map/types';
 import { offlineMapOnly } from './tileCache';
+import { tripPackages, type TripPackage } from './offline';
 export function useOfflineMapMode(
   change: (patch: Partial<LayerSettings>) => void,
   clearSource: (id: string) => void,
 ) {
   const callbacks = useRef({ change, clearSource });
   callbacks.current = { change, clearSource };
-  const open = () => {
-    callbacks.current.clearSource('');
+  const open = (trip?: TripPackage) => {
+    if (trip) {
+      callbacks.current.clearSource('');
+      try { localStorage.setItem('shantu.offline-package.v1',trip.id); } catch {}
+    }
     callbacks.current.change({
-      satellite: false,
-      offlineBasemap: true,
       temperature: false,
       contours: false,
       clouds: false,
       rain: false,
       geology: false,
       elevationColors: false,
-      roads: true,
-      labels: true,
+      ...(trip ? trip.display ?? { satellite:false,tiandituBase:'vec' as const,offlineBasemap:true,roads:true,labels:true,rasterLevel:null,offlineMaxZoom:14 } : {}),
     });
   };
   useEffect(() => {
-    if (offlineMapOnly()) open();
+    const online = () => { if (!offlineMapOnly()) callbacks.current.change({ offlineMaxZoom:null }); };
+    window.addEventListener('shantu:offline-map-mode',online);
+    if (offlineMapOnly()) {
+      let id='';try { id=localStorage.getItem('shantu.offline-package.v1')??''; } catch {}
+      open(tripPackages().find(p=>p.id===id));
+    }
+    return () => window.removeEventListener('shantu:offline-map-mode',online);
   }, []);
   return open;
 }

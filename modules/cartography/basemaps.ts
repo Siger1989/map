@@ -6,7 +6,7 @@ export function basemapConfiguration(
   return { domestic: /^[a-zA-Z0-9]{16,128}$/.test(token), token };
 }
 export function tiandituTiles(
-  layer: 'img' | 'vec' | 'cia' | 'cva',
+  layer: import('./tianditu').TiandituLayer,
   token: string,
 ) {
   return [0, 1, 2, 3].map(

@@ -221,12 +221,12 @@
 }
 
 /* The source chooser is a content exception: show its current category in full. */
-.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='list']) {
+.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='library']) {
   --map-panel-max-height: calc(100dvh - 130px - var(--safe-top, 0px) - var(--safe-bottom, 0px));
   width: min(300px, calc(100% - 72px));
   max-height: var(--map-panel-max-height);
 }
-.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources[data-step='list']) {
+.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources[data-step='library']) {
   max-height: none;
 }
 .observatory.home-map .map-sources[data-step='list'],
@@ -249,3 +249,18 @@
   min-height: 28px;
 }
 .observatory.home-map .map-source-builtins { gap: 4px; }
+.tianditu-sources { display: grid; gap: 4px; }
+.tianditu-sources > label { display: flex; align-items: center; gap: 4px; }
+.tianditu-sources select { flex: 1; min-width: 0; min-height: 36px; }
+
+/* Primary TianDiTu choices stay within the ordinary shared map-panel budget. */
+.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='list']) {
+  width: min(var(--map-panel-max-width,300px),calc(100% - 80px));
+}
+.observatory.home-map .map-sources .tianditu-sources > label { min-height:36px; gap:4px; }
+.observatory.home-map .map-sources .tianditu-sources input[type='checkbox'] { width:14px; height:14px; min-height:14px; flex:0 0 14px; padding:0; margin:0; }
+.observatory.home-map .map-sources[data-step='list'] .map-source-actions { gap:4px; }
+.tianditu-options { display:flex; align-items:center; gap:4px; min-height:36px; }
+.tianditu-options > label { display:flex; align-items:center; gap:4px; min-width:0; min-height:36px; }
+.tianditu-options > label:first-child { flex:1; }
+.tianditu-options > label:last-child { flex:none; white-space:nowrap; }

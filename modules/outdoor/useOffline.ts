@@ -8,7 +8,10 @@ import {
   tripPackages,
   verifyTrip,
   type TripPackage,
+  prepareMapPackage, type DownloadProvider,
 } from './offline';
+import type { DownloadArea } from './downloadPlan';
+import type { LayerSettings } from '../map/types';
 export function useOffline() {
   const [packages, setPackages] = useState<TripPackage[]>([]),
     [busy, setBusy] = useState(false),
@@ -36,11 +39,18 @@ export function useOffline() {
     }
   };
   const download = (trip: TripPackage, signal: AbortSignal) =>
-    downloadTrip(trip, signal, () => setPackages(tripPackages()));
+    downloadTrip(trip, signal, (progress) => {
+      setPackages(tripPackages());
+      setMessage(`${progress.done}/${progress.urls.length} 项 · ${(progress.bytes / 1048576).toFixed(1)} MB`);
+    });
   return {
     packages,
     busy,
     message,
+    createMap: (name: string, area: DownloadArea, settings: LayerSettings, provider: DownloadProvider, zoom: number) => run(async signal => {
+      const trip=await prepareMapPackage(name,area,settings,provider,zoom,signal);
+      await download(trip,signal);
+    }),
     createRegion: (name: string, bounds: TripPackage['bounds'], zoom: number) => run(async signal => {
       const trip = await prepareRegion(name, bounds, signal, zoom);
       await download(trip, signal);

@@ -2,6 +2,10 @@ export type LayerSettings = {
   terrain: boolean;
   satellite: boolean;
   offlineBasemap?: boolean;
+  tiandituBase?: 'vec' | 'img' | 'ter';
+  tiandituLabels?: 'auto' | 'cva' | 'cia' | 'cta' | 'none';
+  tiandituBoundaries?: boolean;
+  offlineMaxZoom?: number | null;
   contours: boolean;
   elevationColors: boolean;
   elevationColorsOpacity: number;
@@ -45,7 +49,12 @@ export function applyLayerPatch(
   patch: Partial<LayerSettings>,
 ): LayerSettings {
   const next = { ...current, ...patch };
-  if (patch.satellite === true) next.offlineBasemap = false;
+  if (patch.tiandituBase) {
+    next.satellite = patch.tiandituBase === 'img';
+    next.imageryMode = 'detail';
+    next.offlineBasemap = patch.offlineBasemap ?? false;
+  } else if (patch.satellite !== undefined) next.tiandituBase = patch.satellite ? 'img' : 'vec';
+  if (patch.satellite === true && patch.offlineBasemap !== true) next.offlineBasemap = false;
   if (patch.temperature === true) {
     next.elevationColors = false;
     next.geology = false;

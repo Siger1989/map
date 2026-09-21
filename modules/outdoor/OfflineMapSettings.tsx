@@ -25,6 +25,7 @@ export function OfflineMapSettings({ onOpenMap }: { onOpenMap: () => void }) {
               localStorage.setItem(OFFLINE_MAP_KEY, String(e.target.checked));
               setOnly(e.target.checked);
               if (e.target.checked) onOpenMap();
+              window.dispatchEvent(new Event('shantu:offline-map-mode'));
               setMessage('已切换；移动或缩放地图检查缓存范围');
             } catch {
               setMessage('离线设置未保存');

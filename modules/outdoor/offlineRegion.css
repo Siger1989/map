@@ -9,3 +9,15 @@
 .offline-download-region input { min-width: 0; width: 100%; }
 .offline-download-region small { overflow-wrap: anywhere; }
 .observatory.home-map[data-offline-picking='true'] :is(.route-weather-rail, .guidance-card, .home-recording, .navigation-elevation) { visibility: hidden; }
+.offline-download-dock { position:absolute; z-index:62; left:8px; bottom:calc(var(--home-footer,56px) + 8px); box-sizing:border-box; width:min(var(--map-panel-max-width,300px),calc(100% - 80px)); max-height:min(var(--map-panel-max-height,200px),calc(100dvh - var(--home-footer,56px) - 64px)); overflow:auto; display:grid; gap:2px; padding:4px; background:var(--home-surface,#fff); color:var(--home-ink,#10243c); border:1px solid #9bb7bc; border-radius:4px; font-size:var(--map-ui-font,11px); }
+.offline-download-dock header,.offline-download-dock > label,.offline-download-dock > div { display:flex; align-items:center; gap:4px; }
+.offline-download-dock header strong { flex:1; }
+.offline-download-dock button,.offline-download-dock select { min-height:36px; min-width:0; padding:2px 4px; border:1px solid #9bb7bc; border-radius:3px; font:inherit; background:#fff; color:inherit; }
+.offline-download-dock header button { min-width:36px; }
+.offline-download-dock select { flex:1; }
+.offline-download-source { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.offline-download-dock .offline-download-primary { color:#fff; background:#1d694c; }
+.offline-download-dock p { margin:0; }
+
+.offline-download-dock header { position:sticky; top:-4px; z-index:1; background:var(--home-surface,#fff); }
+.offline-download-dock .offline-download-primary { position:sticky; bottom:-4px; z-index:1; background:var(--home-green,#15572b); }

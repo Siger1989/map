@@ -1,4 +1,5 @@
 import { legacyTerrainCacheUrl } from '../terrain/tiles.ts';
+import { resourceCacheKey } from './tiandituCache.ts';
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
 export const OFFLINE_MAP_KEY = 'shantu.offline-map-only.v1';
 export function offlineMapStatus(message: string) {
@@ -28,7 +29,7 @@ export async function cachedMapFetch(
   try {
     const cache = await caches.open(TRIP_TILE_CACHE);
     const hit =
-      (await cache.match(absolute)) ??
+      (await cache.match(resourceCacheKey(absolute))) ??
       (legacyTerrainCacheUrl(absolute)
         ? await cache.match(legacyTerrainCacheUrl(absolute)!)
         : undefined);

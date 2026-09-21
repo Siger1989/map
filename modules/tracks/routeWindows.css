@@ -549,6 +549,12 @@
   background: #fff; border: 1px solid #c9d5d0; border-radius: 3px;
   white-space: nowrap; font-weight: 500;
 }
+.route-details-name { display: grid; gap: 4px; margin-bottom: 4px; }
+.route-details-name input { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; padding: 4px 6px; border: 1px solid var(--route-border); border-radius: 4px; background: #fff; color: var(--route-ink); font: inherit; font-size: 16px; }
+.route-details-name > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.route-details-name button { min-height: 36px; }
+.route-details-name p[role='alert'] { color: #9c3420; }
+.route-details-name p[role='status'] { color: var(--route-green); }
 .observatory .route-edit-actions-row button svg { flex-shrink: 0; }
 .observatory .route-edit-actions-row button:nth-last-child(-n+2) svg { display: none; }
 .observatory .route-edit-actions-row svg { width: 14px; height: 14px; }
