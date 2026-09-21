@@ -14,23 +14,25 @@
 - 回退安装包：`0.2.39-test / versionCode46`。跳过本地试改占用的0.2.37/0.2.38，安装计数高于旧包；功能以0.2.35为准，额外保留读取现有照片库的兼容修正。
 - 未合入main；远程目标仍是`https://github.com/Siger1989/map`，本轮推送上述明确分支。
 
-## 已完成与进行中
+## 本轮结果
 
 - 已复制并逐文件SHA256核对110个交接/未提交文件；快照目录`D:/山兔-本地归档/20260921-before-rollback-110139`。包含各工作树HEAD、改动补丁、未跟踪文件和用户布局草稿；仅在本机。
 - 已从0.2.35基线创建新的当前分支；旧工作树保留用于追溯，不再作为开发入口。
 - 已整理README、Agent交接、目录索引，原过程记录迁入`docs/history/before-rollback-20260921/`。
 - 32页PDF已复制到`docs/reference/ui-discussion-20260916.pdf`，SHA256 `1922e7b38aed57073bdeb864f372966309ecc66094c6c781574405595f3898c4`。
-- 已将1400项旧包/日志/构建中间资料（16588文件，12,400,837,613字节）移出项目至`D:/山兔-本地归档/20260921-cleanup`；逐文件归档校验进行中。只移动归档，不声称释放磁盘空间。签名密钥、共享node_modules、地形源/工具链、用户草稿保留。
+- 已将1400项旧包/日志/构建中间资料（16588文件，12,400,837,613字节）移出项目至`D:/山兔-本地归档/20260921-cleanup`；16588项大小/SHA256全部复核通过，恢复清单manifest.json与结果verified.json留在归档。只移动归档，不声称释放磁盘空间。签名密钥、共享node_modules、地形源/工具链、用户草稿保留。
 - 新APK已构建：`APK/Shantu-0.2.39-test-standalone.apk`，57,731,510字节，SHA256 `e0fc1e80030e802772e59f06681cda6157ec76cdab825897ecde1a8e86ddf76a`。原4a94签名v2/v3、zipalign、543项ZIP CRC、473地形像素/源码一致及私密内容排除通过。
 - 506/506逻辑、类型、架构、最终网页/Android构建通过。新建/v1/v3照片库三项定向回归通过；全部草稿与回退前快照哈希一致。首次APK构建曾遇临时文件占用，最终全新目录重建成功。
-- GitHub源码与Release同步：待完成；本地构建不是公开交付。
+- 功能源码`5246b1a100f6cf6d7483817c40dcb3aef44ba557`已推送并核对远端`codex/rollback-ui-0235-20260921`；后续交接提交仅更新文档，不改变APK源码。
+- [0.2.39公开测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.39-test-standalone)已发布（id392675257，draft=false/prerelease=true）。APK、校验文件、完整性报告和安装说明4项远端大小/SHA256全部匹配。
+- [APK直接下载](https://github.com/Siger1989/map/releases/download/v0.2.39-test-standalone/Shantu-0.2.39-test-standalone.apk)。本机绝对路径`D:/天气系统/APK/Shantu-0.2.39-test-standalone.apk`；已无认证完整下载公开APK，57,731,510字节及SHA256再次一致。
 
 ## 边界与下一步
 
 - 本轮除版本/文档与照片库兼容外，业务代码与0.2.35一致。0.2.36把照片库升至v3，原0.2.35强制v1会触发VersionError；现按已有版本打开原photos表，不删除数据。未来若重引索引版，必须从photos重建辅助索引，不复用可能过时的缓存。
 - 地图手势、ObjectGizmo、原轨迹/照片、签名与包名、布局键`shantu.ui-layout.v1`/JSON version1沿用0.2.35。
 - 不卸载手机应用，不清空用户数据，不复制测试数据到产品；覆盖安装后新版本产生的数据兼容性仍须真机检查。
-- 尚需完成归档校验与远端提交/Release核对；之后才标记本轮交付完成。
+- 本轮整理、回退和新包公开交付已完成。之后按用户的新指示继续，不自行重做整套UI；换设备先核对当前分支与远端HEAD。
 - 本轮未要求新视觉设计；先完成回退交付，等待用户提出下一项修改。
 - Android真机覆盖安装、触控/GPS/相机/后台待验；HarmonyOS6.1原生HAP/APP未交付。
 

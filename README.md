@@ -13,6 +13,8 @@
 
 当前开发分支：`codex/rollback-ui-0235-20260921`，不是 `main`。业务基线是 `d01d9dc14bad4ecf19728514a3582087d47605bd`（0.2.35）；更高安装版本号只用于覆盖安装。
 
+已发布 [0.2.39回退APK](https://github.com/Siger1989/map/releases/download/v0.2.39-test-standalone/Shantu-0.2.39-test-standalone.apk)：恢复0.2.35界面，附照片数据库兼容修正。验证与真机边界见[发行说明](docs/release-0.2.39.md)。
+
 ## 运行与检查
 
 需要 Node.js 22.13+，建议24；首次或锁文件改变后执行 `npm ci`。
