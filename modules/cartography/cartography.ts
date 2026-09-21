@@ -238,6 +238,11 @@ export function addCartography(map: Map) {
   ]);
 }
 export function syncCartography(map: Map, settings: LayerSettings) {
+  const opacity = Math.max(0, Math.min(1, settings.roadsOpacity ?? 1));
+  for (const [id, base] of [['rivers', 0.75], ['road-outline', 0.85], ['main-roads', 0.85], ['local-roads', 0.65], ['railways', 1]] as const)
+    if (map.getLayer(id)) map.setPaintProperty(id, 'line-opacity', base * opacity);
+  for (const id of ['road-names', 'road-numbers'])
+    if (map.getLayer(id)) map.setPaintProperty(id, 'text-opacity', opacity);
   for (const [ids, visible] of [
     [
       ['open-landcover', 'open-water', 'open-buildings'],

@@ -30,6 +30,8 @@ import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
+import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
+import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -222,6 +224,11 @@ export default function Home() {
   const measurement = useMeasurement();
   const [routeNodeBox, setRouteNodeBox] = useState(false);
   const mapSources = useMapSources(false);
+  const domesticBasemap = basemapConfiguration().domestic && !layers.offlineBasemap;
+  const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
+    : domesticBasemap ? 18 : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
+  const rasterName = mapSources.source?.name ?? (domesticBasemap ? layers.satellite ? '天地图影像' : '天地图矢量' : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
+  useEffect(() => { setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null }); }, [mapSources.selected, layers.satellite, layers.imageryMode, layers.offlineBasemap]);
   const guidance = useGuidance(
     navigation.route,
     position.fix,
@@ -2095,6 +2102,7 @@ export default function Home() {
           />
         )}
         <MapActions
+          layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           fix={displayedFix}
           showCoordinates={routeDisplay.preferences.coordinates}
           displayControl={

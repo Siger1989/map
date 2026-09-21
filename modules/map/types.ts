@@ -12,6 +12,8 @@ export type LayerSettings = {
   rain: boolean;
   temperature: boolean;
   roads: boolean;
+  roadsOpacity?: number;
+  rasterLevel?: number | null;
   labels: boolean;
   opacity: number;
   exaggeration: number;
@@ -30,6 +32,8 @@ export const DEFAULT_LAYERS: LayerSettings = {
   rain: false,
   temperature: false,
   roads: true,
+  roadsOpacity: 1,
+  rasterLevel: null,
   labels: true,
   opacity: 0.6,
   exaggeration: 1,

@@ -184,6 +184,11 @@ export function LayerPanel({
                   <p>0% 完全透明，100% 完全显示。</p>
                 </div>
               )}
+              {key === 'roads' && <div className="elevation-opacity">
+                <label className="slider-label" htmlFor="roads-opacity">道路/注记不透明度 <span>{Math.round((settings.roadsOpacity ?? 1) * 100)}%</span></label>
+                <input id="roads-opacity" type="range" min="0" max="1" step="0.05" value={settings.roadsOpacity ?? 1} onChange={e => onChange({ roadsOpacity: Number(e.target.value) })}/>
+                <p>0% 隐藏，100% 正常显示。天地图道路/地名注记一起变化；矢量底图内的道路不能单独分离。</p>
+              </div>}
               {key === 'geology' && settings.geology && (
                 <div
                   className="elevation-opacity geology-source-choice"

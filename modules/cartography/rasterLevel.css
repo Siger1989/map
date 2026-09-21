@@ -1,0 +1,8 @@
+.raster-level-control { position: relative; }
+.raster-level-panel { position: absolute; right: 52px; bottom: 0; box-sizing: border-box; width: min(252px, calc(100vw - 76px)); max-height: 200px; overflow: auto; display: grid; gap: 4px; padding: 4px; border: 1px solid #a8bfb2; border-radius: 4px; background: #f6faf1f2; color: #153c34; font-size: 11px; }
+.raster-level-panel header { display: flex; align-items: center; gap: 4px; }
+.raster-level-panel strong { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.raster-level-panel button,.raster-level-panel select { min-height: 32px; border: 1px solid #b4c8be; border-radius: 4px; background: white; color: inherit; }
+.raster-level-panel label { display: flex; align-items: center; gap: 4px; }
+.raster-level-panel select,.raster-level-panel input { flex: 1; min-width: 0; width: 80px; }
+.raster-level-panel small { font-size: 10px; line-height: 1.3; }

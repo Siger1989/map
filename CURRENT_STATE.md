@@ -1,5 +1,13 @@
 # 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
 
+## 最新交付：0.2.47 影像层级锁定与道路透明度（2026-09-22）
+
+- 用户反馈同点旋转影像不同，代码未发现旋转自动换图源；按“固定清晰度瓦片层级”实现，保留原图源选择。新增 `cartography/RasterLevelControl.tsx`/`RasterLevelLock.ts`/`rasterLevel.css`，在加减号上方显示约N级/锁N级，弹窗含当前图源、自动/固定层级、道路透明度与图源入口。`TerrainMap`通过公开Source的maxzoom/calculateTileZoom与Map.refreshTiles同步，解锁/换源恢复原值，未替换全地图样式。
+- 固定层级必须限制缩小至该级范围，UI明确说明切自动可继续缩小；更高级需先放大，不自动移动镜头。图源自身同级色差不在修复保证范围。切换图源重置为自动，单张影像/开源矢量不锁层级。
+- `LayerSettings.roadsOpacity`接通右侧小窗与道路图层项；开源道路各原始opacity按比例调整，天地图注记用raster-opacity整层调整，矢量底图内置道路不独立分离。保持路线、记录、标记及存储格式。安卓返回键新增小窗处理。
+- 类型检查、4项定向测试通过（含MapLibre真实算法27组组合，最大37瓦片），网页/最终APK构建、签名/zipalign/版本/473地形资源检查通过。包 `APK/Shantu-0.2.47-test-standalone.apk`，0.2.47-test/code54、57,751,990字节；说明 `docs/release-0.2.47.md`，发行 `v0.2.47-test-standalone`，分支 `codex/rollback-ui-0235-20260921`。日志 `.openai/raster-level-*`、`.openai/apk-0.2.47-build.log`。
+- 浏览器控制nodeRepl.fetch失败，未取得实际390×844/360×780截图，用户原地点/同影像批次仍待真机复核，不能声称截图色差已完全消除。附件、凭据、运行日志不入Git。鸿蒙原生仍未交付。
+
 ## 最新交付：0.2.46 地点分享（2026-09-22）
 
 - 新增 `modules/placeShare/` 的数据/系统分享/紧凑预览；搜索结果、地图长按、已存pin标记摘要及详情接同一分享。仅发送选定地点名称、WGS84坐标和高德单点标注链接，不附实时定位/备注/照片。标记文件导出仍可从分享窗进入，模型沿用原导出。

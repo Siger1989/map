@@ -35,6 +35,7 @@ export function MapActions(props: {
   fix?: PositionFix | null;
   showCoordinates?: boolean;
   displayControl?: ReactNode;
+  layerControl?: ReactNode;
   viewControl?: ReactNode;
 }) {
   const [panel, setPanel] = useState<'more' | 'location' | null>(null);
@@ -72,6 +73,7 @@ export function MapActions(props: {
         fix={props.fix}
         showCoordinates={props.showCoordinates}
       >
+        {props.layerControl}
         <button
           className="position-dock-button glass"
           aria-label="放大地图"

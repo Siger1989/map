@@ -55,6 +55,7 @@ import {
 import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
+import { RasterLevelLock } from '../cartography/RasterLevelLock';
 import { PhotoLayer } from '../photos/PhotoLayer';
 import type { VisiblePhoto } from '../photos/storage';
 import { PositionLayer } from '../position/PositionLayer';
@@ -177,6 +178,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
+    const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const areaRef = useRef<AreaLayer | null>(null);
     const modelMaskRef = useRef<TerrainModelMask | null>(null);
@@ -280,6 +282,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             });
         });
     };
+    const syncRasterLock = () => {
+      const { settings: s, mapSource } = latest.current;
+      const domesticMap = domestic && !s.offlineBasemap;
+      const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
+        : domesticMap ? [s.satellite ? 'detail' : 'relief']
+        : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
+      rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
+    };
     const sync = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
@@ -294,7 +304,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           }
         : latest.current.settings;
       const custom = Boolean(latest.current.mapSource);
-      void sourceRef.current?.select(latest.current.mapSource ?? null);
+      void sourceRef.current?.select(latest.current.mapSource ?? null).then(syncRasterLock);
+      syncRasterLock();
       if (
         !useDomestic ||
         latest.current.roadSnapping ||
@@ -378,6 +389,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         for (const id of ['open-landcover', 'open-water', 'open-buildings'])
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       if (domestic) {
+        for (const id of ['domestic-labels-image', 'domestic-labels-map'])
+          if (map.getLayer(id)) map.setPaintProperty(id, 'raster-opacity', Math.max(0, Math.min(1, s.roadsOpacity ?? 1)));
         for (const id of ['road-names', 'road-numbers'])
           if (useDomestic && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
         for (const id of ['domestic-labels-image', 'domestic-labels-map'])
@@ -651,6 +664,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          rasterLockRef.current = new RasterLevelLock(map);
+          map.on('sourcedata', syncRasterLock);
           const rememberView = () =>
             saveLastView({
               center: map.getCenter().wrap().toArray(),
@@ -1133,6 +1148,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         sourceRef.current = null;
         releaseSourceProtocol?.();
         mapRef.current?.remove();
+        rasterLockRef.current = null;
         modelTerrainRef.current = null;
         modelMaskRef.current?.dispose();
         modelMaskRef.current = null;
