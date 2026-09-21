@@ -14,6 +14,7 @@ import { planRoute } from '../navigation/provider';
 import { atStart, connectDeparture } from './departure';
 import { routeOnNetwork } from './network';
 import { advanceNetwork } from './networkSession';
+import { remainingRoutePlaces } from './reroute';
 
 export function useGuidance(
   route: PlannedRoute | null,
@@ -33,7 +34,12 @@ export function useGuidance(
     nextRequest = useRef(0),
     detourSince = useRef<number | null>(null);
   const departureRequest = useRef<AbortController | null>(null);
+  const rerouteRequest = useRef<AbortController | null>(null);
+  const [replanning, setReplanning] = useState(false);
   const stop = () => {
+    rerouteRequest.current?.abort();
+    rerouteRequest.current = null;
+    setReplanning(false);
     generation.current++;
     request.current?.abort();
     departureRequest.current?.abort();
@@ -54,6 +60,7 @@ export function useGuidance(
       generation.current++;
       request.current?.abort();
       departureRequest.current?.abort();
+      rerouteRequest.current?.abort();
       window.removeEventListener('online', network);
       window.removeEventListener('offline', network);
     };
@@ -64,6 +71,7 @@ export function useGuidance(
   useEffect(() => {
     if (
       !session?.departurePending ||
+      rerouteRequest.current ||
       !freshFix(fix) ||
       !fix ||
       locationError ||
@@ -195,6 +203,7 @@ export function useGuidance(
     if (
       request.current ||
       !session.last ||
+      rerouteRequest.current ||
       !freshFix(session.last) ||
       Date.now() < nextRequest.current
     )
@@ -305,6 +314,32 @@ export function useGuidance(
     );
   }
   return {
+    replanning,
+    replan: async () => {
+      const s = current.current.session, origin = current.current.fix;
+      if (!s || s.arrived || rerouteRequest.current) return;
+      if (!origin || !freshFix(origin) || current.current.locationError) { setError('请等待有效定位后重新规划'); return; }
+      generation.current++;
+      request.current?.abort(); request.current = null;
+      departureRequest.current?.abort(); departureRequest.current = null;
+      const abort = new AbortController();
+      rerouteRequest.current = abort;
+      setReplanning(true); setLoading(true); setError('');
+      try {
+        const { end, via } = remainingRoutePlaces(s);
+        const result = await planRoute({ name: '当前位置', coordinates: origin.coordinates }, end, s.route.mode, abort.signal, via);
+        abort.signal.throwIfAborted();
+        const live = current.current;
+        if (!live.session || live.session.originalRoute !== s.originalRoute) return;
+        if (!live.fix || !freshFix(live.fix) || project(pathOf(result.coordinates), live.fix.coordinates).offset > deviationLimit(live.fix)) throw new Error('位置已变化，请重新规划');
+        setSession({ ...createSession(result), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled, last: live.fix, anchor: live.fix });
+        setRejoin(null);
+      } catch (e) {
+        if (!abort.signal.aborted) setError(e instanceof Error ? e.message : '重新规划失败，原导航已保留');
+      } finally {
+        if (rerouteRequest.current === abort) { rerouteRequest.current = null; setReplanning(false); setLoading(false); }
+      }
+    },
     departureMessage:
       locationError ||
       (!fix

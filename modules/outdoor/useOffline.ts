@@ -3,6 +3,7 @@ import type { Coordinate } from '../navigation/types';
 import {
   downloadTrip,
   prepareTrip,
+  prepareRegion,
   removeTrip,
   tripPackages,
   verifyTrip,
@@ -40,6 +41,10 @@ export function useOffline() {
     packages,
     busy,
     message,
+    createRegion: (name: string, bounds: TripPackage['bounds'], zoom: number) => run(async signal => {
+      const trip = await prepareRegion(name, bounds, signal, zoom);
+      await download(trip, signal);
+    }),
     create: (name: string, points: Coordinate[]) =>
       run(async (signal) => {
         const trip = await prepareTrip(name, points, signal);

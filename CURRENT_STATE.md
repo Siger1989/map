@@ -1,5 +1,18 @@
 # 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
 
+## 最新交付：0.2.45 选区离线、重规划与定位轮换（2026-09-21）
+
+- 新增 `outdoor/OfflineRegionPicker.tsx`、`offlineRegion.css`，记录→离线直接地图选区，确认范围后下载；`offline.ts`新增区域校验/资源估算/精确边界下载，复用缓存、暂停续传、完整性检查。`TerrainMap`接通开源底图源/字库/图层与天地图互斥，`useOfflineMapMode`明确选择离线底图。开源道路14级/地形12级，不含天地图影像；离线路网单独下载。
+- `guidance/reroute.ts`/`useGuidance.ts`提供当前位置到终点及剩余途经点重规划，取消/失败保留原导航；原路线身份、已行距离保留，不改收藏。`networkSession.ts`防止重规划后回跳旧网络；app沿途天气使用当前导航路线。普通展开导航与拉力偏离提示提供入口。
+- `PositionDock`/`MapActions`/app接线：定位按钮循环正北跟随→朝向跟随→自由浏览，移除更多中的方向模式选择，切换不停止导航/记录。包含待打包的单色空白底栏修复，继承0.2.43保存记录与0.2.44原生常亮。
+- 类型检查、36项定向测试通过（`.openai/offline-reroute-{typecheck,tests}.log`）；最终APK `APK/Shantu-0.2.45-test-standalone.apk`（0.2.45-test/code52），网页/Java/DEX编译、签名/zipalign/版本/473地形资源检查通过，57,747,894字节。说明 `docs/release-0.2.45.md`，测试Release `v0.2.45-test-standalone`，当前源码分支 `codex/rollback-ui-0235-20260921`，并非main。
+- 当前浏览器控制返回nodeRepl.fetch失败，未能取得本轮390×844/360×780实际截图；定位模式触控、手机朝向、行进中重规划和真实飞行模式仍待真机验收。未改存储键、签名、记录采样或收藏格式；附件/环境凭据/日志不入库。HarmonyOS原生仍未交付。
+
+## 最新：移除导航底部无信息单色白条（2026-09-21）
+
+- 用户截图底部“路线单色”来自RouteColorKey说明，并非按钮。`RouteColorKey.tsx`单色返回null；`RallyElevation.tsx`按实际可显示色标判断容器，当海拔/剖面均关闭且为单色时整个底栏消失，不留空壳。普通/拉力共用，海拔/坡度/速度色标与已开启的海拔数据不受影响。
+- 类型检查通过；组件静态渲染验证单色无数据时无底栏，坡度色标和单色海拔数据仍保留。属于局部UI快速修正，未改存储/导航/记录，未另出APK，手机0.2.44尚不含此修正。待下轮打包一并更新，未新增真机截图验收。
+
 ## 最新：0.2.44导航前台常亮（2026-09-21）
 
 - `useGuidance.ts`按active状态驱动原生常亮，普通/拉力共用；退出/换路线失活/卸载cleanup解除，visibilitychange在返回导航时恢复。`useRecording.ts`只增加既有桥接接口类型声明。

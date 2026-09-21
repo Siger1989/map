@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  Compass,
   Minus,
   Plus,
-  Smartphone,
   MoreHorizontal,
   Scan,
   Settings2,
@@ -27,7 +25,6 @@ export function MapActions(props: {
   following: boolean;
   followBlocked: boolean;
   direction: DirectionMode;
-  onDevice: () => void;
   onStopLocation: () => void;
   sectionActive: boolean;
   networkAvailable: boolean;
@@ -67,6 +64,7 @@ export function MapActions(props: {
   return (
     <>
       <PositionDock
+        direction={props.direction}
         following={props.following}
         locating={props.locating}
         blocked={props.followBlocked}
@@ -131,8 +129,6 @@ export function MapActions(props: {
             </header>
             {panel === 'more' && (
               <div className="home-menu-items">
-                <button aria-pressed={props.direction === 'north'} onClick={() => act(props.onNorth)}><Compass size={17} />正北朝上</button>
-                <button disabled={props.sectionActive} aria-pressed={props.direction === 'device'} onClick={() => act(props.onDevice)}><Smartphone size={17} />跟随手机方向</button>
                 <button onClick={() => act(props.onBoxSelect)}>
                   <Scan size={18} />
                   框选对象

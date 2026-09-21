@@ -138,6 +138,7 @@ export function GuidanceCard({
           </p>
         )}
           <div className="guidance-actions">
+            {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />

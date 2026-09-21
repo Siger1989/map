@@ -11,6 +11,8 @@ export function useOfflineMapMode(
     callbacks.current.clearSource('');
     callbacks.current.change({
       satellite: false,
+      offlineBasemap: true,
+      temperature: false,
       contours: false,
       clouds: false,
       rain: false,

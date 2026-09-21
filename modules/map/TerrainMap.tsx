@@ -68,6 +68,7 @@ import {
 export type MapHandle = {
   groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
+  offlineRegionBounds: () => [number, number, number, number] | null;
   watchObjectProjection: WatchProjection;
   sectionCenter: () => {
     center: [number, number];
@@ -282,6 +283,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const sync = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
+      const useDomestic = domestic && !latest.current.settings.offlineBasemap;
+      const glyphs = useDomestic ? window.location.origin + '/fonts/{fontstack}/{range}.pbf' : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+      if (map.getGlyphs() !== glyphs) map.setGlyphs(glyphs);
       const s = latest.current.section.enabled
         ? {
             ...latest.current.settings,
@@ -292,7 +296,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const custom = Boolean(latest.current.mapSource);
       void sourceRef.current?.select(latest.current.mapSource ?? null);
       if (
-        !domestic ||
+        !useDomestic ||
         latest.current.roadSnapping ||
         latest.current.riverSnapping
       )
@@ -341,7 +345,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             id,
             'visibility',
             !custom &&
-              (domestic && id !== 'satellite'
+              (useDomestic && id !== 'satellite'
                 ? id === 'relief'
                   ? !s.satellite
                   : s.satellite
@@ -360,7 +364,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       );
       syncCartography(
         map,
-        domestic
+        useDomestic
           ? {
               ...s,
               roads: s.roads && latest.current.roadSnapping,
@@ -375,13 +379,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       if (domestic) {
         for (const id of ['road-names', 'road-numbers'])
-          if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+          if (useDomestic && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
         for (const id of ['domestic-labels-image', 'domestic-labels-map'])
           if (map.getLayer(id))
             map.setLayoutProperty(
               id,
               'visibility',
-              !custom &&
+              useDomestic && !custom &&
                 s.labels &&
                 (id.endsWith('image') ? s.satellite : !s.satellite)
                 ? 'visible'
@@ -417,6 +421,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        offlineRegionBounds: () => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return null;
+          if (Math.abs(m.getPitch()) > 0.1 || Math.abs(m.getBearing()) > 0.1) throw new Error('请切回正北 2D 视图后选择范围');
+          const w = m.getCanvas().clientWidth, h = m.getCanvas().clientHeight;
+          const a = m.unproject([16, 96]), b = m.unproject([w - 76, h - 180]);
+          return [Math.min(a.lng, b.lng), Math.min(a.lat, b.lat), Math.max(a.lng, b.lng), Math.max(a.lat, b.lat)];
+        },
         groundElevation: (coordinates) =>
           mapRef.current
             ? loadedTerrainSampler(mapRef.current)(coordinates)

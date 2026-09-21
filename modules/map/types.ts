@@ -1,6 +1,7 @@
 export type LayerSettings = {
   terrain: boolean;
   satellite: boolean;
+  offlineBasemap?: boolean;
   contours: boolean;
   elevationColors: boolean;
   elevationColorsOpacity: number;
@@ -40,6 +41,7 @@ export function applyLayerPatch(
   patch: Partial<LayerSettings>,
 ): LayerSettings {
   const next = { ...current, ...patch };
+  if (patch.satellite === true) next.offlineBasemap = false;
   if (patch.temperature === true) {
     next.elevationColors = false;
     next.geology = false;

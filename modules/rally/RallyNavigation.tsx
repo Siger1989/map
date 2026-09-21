@@ -40,7 +40,7 @@ export function RallyNavigation({ route, guidance: g, fix, onNormal, onStart, on
     <section className="rally-metrics" aria-label="速度与时间"><div className="rally-speeds"><div><span>实时速度 <small>估算</small></span><strong>{speed === null ? '—' : speed.toFixed(1)} <small>km/h</small></strong></div><div><span>平均速度 <small>含停留</small></span><strong>{average === null ? '—' : average.toFixed(1)} <small>km/h</small></strong></div></div><div className="rally-times"><span>已用 {elapsed === null ? '—' : clockDuration(elapsed)}</span><span>还需 {remainingSeconds === null ? '—' : `约${Math.ceil(remainingSeconds / 60)}分`}</span><span>预计 {arrival}</span></div></section>
     <div className="rally-map-caption"><span><MapPin size={14} /> 路口核对</span><button onClick={onOverview}><Route size={15} /> 全程</button><button onClick={onNormal}><Maximize2 size={15} /> 全屏</button></div>
     <div className="rally-map-actions"><button onClick={onLocate}><LocateFixed size={18} />定位</button>{!g.active ? <button onClick={onStart}><Navigation size={18} />开始</button> : <button onClick={onStop}>结束导航</button>}</div>
-    {warning && <div className="rally-warning" role="status">{warning}</div>}
+    {(warning || g.error) && <div className="rally-warning" role="status">{g.error || warning}{g.active && <button disabled={g.replanning} onClick={() => void g.replan()}>{g.replanning ? '规划中…' : '重新规划'}</button>}</div>}
     <RallyElevation route={route} fraction={fraction} display={display} />
   </div>;
 }

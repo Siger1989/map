@@ -1,0 +1,11 @@
+.offline-region-picker { position: absolute; inset: 0; z-index: 36; pointer-events: none; }
+.offline-region-frame { position: absolute; inset: 96px 76px 180px 16px; border: 2px solid #21ba8c; box-shadow: 0 0 0 999px #001b2230; }
+.offline-region-frame span { display: block; padding: 4px; background: #f4faf2eb; color: #153e35; font-size: 12px; }
+.offline-region-actions { pointer-events: auto; position: absolute; left: 8px; bottom: calc(var(--home-footer, 56px) + 8px); width: min(300px, calc(100% - 76px)); padding: 4px; background: #f8fbf5; border: 1px solid #9bb7bc; border-radius: 4px; color: #163b35; font-size: 12px; }
+.offline-region-actions > div { display: flex; gap: 4px; margin-top: 4px; }
+.offline-region-actions button { flex: 1; min-height: 44px; border: 1px solid #9bb7bc; border-radius: 4px; }
+.offline-region-actions p { margin: 4px 0 0; }
+.offline-download-region { display: grid; gap: 4px; padding: 4px; border: 1px solid #9bb7bc; border-radius: 4px; }
+.offline-download-region input { min-width: 0; width: 100%; }
+.offline-download-region small { overflow-wrap: anywhere; }
+.observatory.home-map[data-offline-picking='true'] :is(.route-weather-rail, .guidance-card, .home-recording, .navigation-elevation) { visibility: hidden; }

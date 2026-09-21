@@ -21,6 +21,7 @@ export function advanceNetwork(
     !freshFix(fix, now) ||
     next.quality ||
     next.arrived ||
+    session.replanned ||
     !session.originalRoute.trackNetwork ||
     session.departurePending ||
     (session.departureRoute && session.nextCheckpoint === 0) ||

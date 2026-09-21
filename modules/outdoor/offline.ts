@@ -123,10 +123,26 @@ export async function prepareTrip(
   points: Coordinate[],
   signal: AbortSignal,
 ): Promise<TripPackage> {
+  return prepareRegion(name, planBounds(points), signal, 14);
+}
+
+export function validateRegion(bounds: TripPackage['bounds']) {
+  const [w, s, e, n] = bounds;
+  if (bounds.length !== 4 || !bounds.every(Number.isFinite) || w < -180 || e > 180 || s < -85 || n > 85 || w >= e || s >= n) throw new Error('请选择有效区域，暂不支持跨日期变更线');
+  if (e - w > 2 || n - s > 2) throw new Error('范围过大，请缩小地图选区');
+  return [...bounds] as TripPackage['bounds'];
+}
+export function regionEstimate(bounds: TripPackage['bounds'], zoom: number) {
+  validateRegion(bounds);
+  if (![10, 12, 14].includes(zoom)) throw new Error('请选择有效清晰度');
+  return 257 + regionTiles(bounds, zoom, 'map/{z}/{x}/{y}').length + regionTiles(bounds, Math.min(12, zoom), 'dem/{z}/{x}/{y}').length;
+}
+export async function prepareRegion(name: string, selected: TripPackage['bounds'], signal: AbortSignal, zoom = 14): Promise<TripPackage> {
+  const bounds = validateRegion(selected);
+  regionEstimate(bounds, zoom);
   if (tripPackages().length >= 8)
     throw new Error('已达 8 个离线包，请先移除不用的包');
-  const bounds = planBounds(points),
-    cache = await caches.open(CACHE);
+  const cache = await caches.open(CACHE);
   const cached = await cache.match(TILEJSON);
   const response =
     cached ??
@@ -143,8 +159,8 @@ export async function prepareTrip(
     throw new Error('地图源地址不支持离线');
   const urls = [
     TILEJSON,
-    ...regionTiles(bounds, 14, template),
-    ...regionTiles(bounds, 12, window.location.origin + TERRAIN_URL),
+    ...regionTiles(bounds, zoom, template),
+    ...regionTiles(bounds, Math.min(12, zoom), window.location.origin + TERRAIN_URL),
   ];
   // Chinese labels may use any BMP glyph; retain the complete font ranges.
   for (let start = 0; start < 65536; start += 256)

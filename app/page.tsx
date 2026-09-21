@@ -18,6 +18,7 @@ import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
+import { OfflineRegionPicker } from '@/modules/outdoor/OfflineRegionPicker';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
 import { offlineMapStatus } from '@/modules/outdoor/tileCache';
@@ -210,7 +211,6 @@ export default function Home() {
   const weather = useWeather(anchor);
   const navigation = useNavigation();
   const favorites = useRouteFavorites();
-  const routeJourney = useRouteJourney(navigation.route);
   const position = usePosition();
   const tracks = useManualTracks();
   const annotations = useAnnotations();
@@ -226,6 +226,7 @@ export default function Home() {
     position.fix,
     position.locationError,
   );
+  const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
   const shareTrackById = (id: string) => {
@@ -276,6 +277,9 @@ export default function Home() {
     string[]
   >([]);
   const [outdoorPhotos, setOutdoorPhotos] = useState(false);
+  const [offlinePicking, setOfflinePicking] = useState(false);
+  const [offlineRegion, setOfflineRegion] = useState<[number, number, number, number] | null>(null);
+  const [outdoorOffline, setOutdoorOffline] = useState(false);
   const [outdoorRecording, setOutdoorRecording] = useState(false);
   useEffect(() => {
     if (panel !== 'favorites') {
@@ -971,8 +975,14 @@ export default function Home() {
         data-picking-route={navigation.picking !== null}
         data-route-rail={Boolean(navigation.route)}
         data-placing-annotation={Boolean(annotations.picking)}
+        data-offline-picking={offlinePicking}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
+          if (offlinePicking) {
+            event.preventDefault();
+            setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor');
+            return;
+          }
           if (navigation.picking !== null) {
             event.preventDefault();
             navigation.setPicking(null);
@@ -1097,7 +1107,7 @@ export default function Home() {
             setPanel(null);
           }}
           drawingActive={
-            (branchEditing || tracks.drawing || areas.drawing) && panel === null
+            !offlinePicking && (branchEditing || tracks.drawing || areas.drawing) && panel === null
           }
           onDrawingInput={(event) =>
             areas.drawing
@@ -1151,6 +1161,7 @@ export default function Home() {
             !!survey.picking
           }
           pickingActive={Boolean(
+            offlinePicking ||
             annotations.picking ||
             navigation.picking !== null ||
             measurement.active ||
@@ -1234,6 +1245,7 @@ export default function Home() {
             }
           }}
           onAnnotationSelect={(id) => {
+            if (offlinePicking) return;
             if (survey.active && survey.picking) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -1280,6 +1292,7 @@ export default function Home() {
             setPanel('annotations');
           }}
           onMapHold={(value) => {
+            if (offlinePicking) return;
             if (
               editor.session ||
               measurement.active ||
@@ -1295,6 +1308,7 @@ export default function Home() {
             setQuickAdd(value);
           }}
           onMapPick={(coordinates) => {
+            if (offlinePicking) return;
             if (survey.pick(coordinates)) return;
             if (measurement.active) {
               if (measurement.adding)
@@ -1994,7 +2008,7 @@ export default function Home() {
           !measurement.active &&
           !sectionEditing && (
             <RouteWeatherRail
-              route={navigation.route}
+              route={guidance.session?.route ?? navigation.route}
               journey={routeJourney}
               onPreview={(coordinates) => {
                 if (coordinates) position.free();
@@ -2053,6 +2067,7 @@ export default function Home() {
           satelliteStatus={satellite.status}
           mapStatus={mapStatus}
         />
+        {offlinePicking && <OfflineRegionPicker readBounds={() => map.current?.offlineRegionBounds() ?? null} onCancel={() => { setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} onDone={bounds => { setOfflineRegion(bounds); setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} />}
         {boxSelecting && (
           <MapBoxSelect
             entries={catalogEntries(
@@ -2148,9 +2163,13 @@ export default function Home() {
           onLocate={() => {
             if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
             if (follow.following) {
-              follow.pause();
-              map.current?.stop();
+              if (position.direction === 'north' && !sectionEditing && !survey.active) {
+                void position.device();
+              } else {
+                follow.pause(); position.free(); map.current?.stop();
+              }
             } else {
+              position.north(); map.current?.north();
               map.current?.previewRoute(null);
               follow.resume();
               if (recorder.record.phase !== 'recording') position.locate();
@@ -2169,11 +2188,6 @@ export default function Home() {
             position.stopLocation();
           }}
           direction={position.direction}
-          onDevice={() =>
-            position.direction === 'device'
-              ? position.free()
-              : void position.device()
-          }
           onDimension={() => {
             update({ terrain: !layers.terrain });
             map.current?.view(layers.terrain ? 0 : 62, view.bearing);
@@ -2329,6 +2343,8 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            setOfflinePicking(false);
+            setOutdoorOffline(false);
             if (next !== panel) setCollectionSelectedKeys([]);
             measurement.close();
             if (
@@ -2395,6 +2411,7 @@ export default function Home() {
               onBuiltin={(id) => {
                 mapSources.select('');
                 update({
+                  offlineBasemap: false,
                   satellite: id !== 'terrain',
                   ...(id !== 'terrain' ? { imageryMode: id } : {}),
                 });
@@ -2409,7 +2426,9 @@ export default function Home() {
           )}
           {panel === 'outdoor' && (
             <OutdoorPanel
-              initialTab={outdoorPhotos ? 'photos' : 'record'}
+              initialTab={outdoorOffline ? 'offline' : outdoorPhotos ? 'photos' : 'record'}
+              offlineRegion={offlineRegion}
+              onChooseOfflineRegion={() => { setPanel(null); setRallyMode(false); follow.pause(); position.free(); map.current?.view(0, 0, false); setOfflinePicking(true); }}
               locationStatus={position.locationError || (position.locating ? '正在定位…' : displayedFix && Date.now() - displayedFix.timestamp < 30000 ? `定位估计误差 ±${Math.round(displayedFix.accuracy)} 米` : '当前位置尚未定位，点标记可获取位置')}
               onMarkCurrent={() => {
                 if (!displayedFix || Date.now() - displayedFix.timestamp >= 30000) {
