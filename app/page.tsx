@@ -1362,7 +1362,9 @@ export default function Home() {
             <>
               {routeWindow === 'card' && (
                 <RouteCard
+                  key={railTrack.id}
                   track={railTrack}
+                  onRename={(name) => tracks.rename(railTrack.id, name)}
                   point={linePoint}
                   alternative={activeAlternative}
                   error={savedNavigationError || tracks.error}

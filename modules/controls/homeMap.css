@@ -78,6 +78,14 @@
 .observatory.home-map .home-route-card header { display: flex; align-items: center; min-height: 28px; gap: 6px; border-bottom: 1px solid #d2dfe4; }
 .observatory.home-map .home-route-symbol { color: var(--home-green); flex-shrink: 0; }
 .observatory.home-map .home-route-card header strong { min-width: 0; flex: 1; font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.observatory.home-map .home-route-card .home-route-name { flex: 1; min-width: 0; min-height: 36px; display: flex; align-items: center; gap: 4px; text-align: left; }
+.observatory.home-map .home-route-name > span { flex-shrink: 0; color: var(--home-green); font-size: 11px; text-decoration: underline; text-underline-offset: 2px; }
+.observatory.home-map .home-route-rename { display: grid; gap: 4px; }
+.observatory.home-map .home-route-rename input { box-sizing: border-box; width: 100%; min-width: 0; height: 36px; padding: 4px 6px; border: 1px solid #a6bdc0; border-radius: 3px; font: inherit; font-size: 16px; color: var(--home-ink); background: #fff; }
+.observatory.home-map .home-route-rename > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.observatory.home-map .home-route-rename button { min-height: 36px; border: 1px solid #a6bdc0; }
+.observatory.home-map .home-route-rename .is-primary { color: #fff; background: var(--home-green); }
+.observatory.home-map .home-route-rename p { margin: 0; color: #a33; font-size: 12px; }
 .observatory.home-map .home-route-card .home-route-back { display: flex; align-items: center; gap: 4px; min-width: 44px; height: 28px; font-size: 12px; }
 .observatory.home-map .home-route-metrics { display: flex; flex-wrap: wrap; align-items: center; column-gap: 7px; row-gap: 2px; min-height: 25px; padding: 2px 0; font-size: 11px; border-bottom: 1px solid var(--home-line); }
 .home-route-metrics > span { white-space: nowrap; }

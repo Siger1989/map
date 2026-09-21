@@ -501,8 +501,18 @@ export function useManualTracks() {
     },
     rename: (id: string, name: string) => {
       const value = name.trim().slice(0, 60);
-      if (value)
-        persist(saved.map((t) => (t.id === id ? { ...t, name: value } : t)));
+      if (!value) return false;
+      if (id === DRAFT_ID) {
+        setCopyName(value);
+        setError('');
+        return true;
+      }
+      const records = savedRef.current;
+      if (!records.some((t) => t.id === id)) return false;
+      if (!persist(records.map((t) => t.id === id
+        ? { ...t, name: value, updatedAt: Date.now() } : t))) return false;
+      setError('');
+      return true;
     },
     snapping,
     setSnapping,

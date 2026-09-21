@@ -1,5 +1,12 @@
 # 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
 
+## 最新交付：0.2.48 路线卡片直接改名（2026-09-22）
+
+- `HomeRouteCard.tsx`名称改为带“改名”提示的按钮，就地输入、取消、保存，编辑时收起其他卡片内容；`homeMap.css`补紧凑表单，`app/page.tsx`接rename并按路线ID重置卡片。`useManualTracks.ts`使用最新savedRef写名称/updatedAt，返回保存结果，支持草稿copyName；空名/不存在路线拒绝，失败保留输入与原数据。
+- 只改路线名称操作，原几何、节点、样式、创建时间、存储键和签名保持。类型检查、网页构建与本地React/DOM定向检查通过（持久化、数据保留、空名/失败、草稿命名、卡片保存/取消），日志 `.openai/route-rename-*`。新版本0.2.48-test/code55，APK `APK/Shantu-0.2.48-test-standalone.apk`，发行说明 `docs/release-0.2.48.md`，分支 `codex/rollback-ui-0235-20260921`。
+- 浏览器连接仍nodeRepl.fetch失败，没有实际手机尺寸截图，键盘和触控未真机验收。下一步安装后点路线标题→改名，检查保存/取消和收藏名称。鸿蒙原生仍未交付；附件、日志、凭据不入Git。
+- 最终APK构建、原签名v2/v3、zipalign、版本及473项地形资源检查通过，已检查APK内含本轮改名代码；57,751,990字节，SHA256 `8c3b51b886b1839a9d335c339adfc5e08e1b4e84bf2debad49776c015d3e12b6`。构建日志 `.openai/apk-0.2.48-build.log`。
+
 ## 最新交付：0.2.47 影像层级锁定与道路透明度（2026-09-22）
 
 - 用户反馈同点旋转影像不同，代码未发现旋转自动换图源；按“固定清晰度瓦片层级”实现，保留原图源选择。新增 `cartography/RasterLevelControl.tsx`/`RasterLevelLock.ts`/`rasterLevel.css`，在加减号上方显示约N级/锁N级，弹窗含当前图源、自动/固定层级、道路透明度与图源入口。`TerrainMap`通过公开Source的maxzoom/calculateTileZoom与Map.refreshTiles同步，解锁/换源恢复原值，未替换全地图样式。
