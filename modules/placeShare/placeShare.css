@@ -1,0 +1,13 @@
+.place-share-backdrop { position: fixed; inset: 0; z-index: 112; display: grid; place-items: center; padding: 8px; background: #06111955; }
+.place-share-panel { box-sizing: border-box; width: min(300px, 100%); max-height: min(200px, calc(100dvh - 80px)); display: flex; flex-direction: column; padding: 4px; gap: 4px; border: 1px solid #9bb7bc; border-radius: 4px; background: #f6faf3; color: #163b35; font-size: 12px; }
+.place-share-panel header { display: flex; align-items: center; justify-content: space-between; min-height: 36px; flex-shrink: 0; }
+.place-share-panel header button { width: 44px; min-height: 36px; display: grid; place-items: center; }
+.place-share-body { min-height: 0; overflow: auto; display: grid; gap: 4px; }
+.place-share-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-share-panel p { margin: 0; font-size: 11px; overflow-wrap: anywhere; }
+.place-share-panel small { color: #577269; font-size: 10px; }
+.place-share-actions { display: flex; gap: 4px; }
+.place-share-panel button { border: 1px solid #aac2b7; border-radius: 4px; background: white; color: inherit; }
+.place-share-actions button { flex: 1; min-width: 0; min-height: 44px; display: flex; gap: 4px; align-items: center; justify-content: center; }
+.place-share-panel .place-share-export { min-height: 32px; }
+.place-share-panel textarea { width: 100%; min-height: 52px; font-size: 11px; }

@@ -33,6 +33,7 @@ final class NativeBridge {
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }
     @JavascriptInterface public String routeLinkShare(String url) { return RouteOutput.link(activity, url); }
+    @JavascriptInterface public String placeTextShare(String text) { return PlaceOutput.share(activity, text); }
     @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {
         if (name == null || !name.matches("(?:Shantu|Guanyun)-(?:(?:photo|measurement)-[0-9]{1,16}|section-[0-9]{1,16}-[1-9][0-9]{0,3})\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
         final byte[] bytes;

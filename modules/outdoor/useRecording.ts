@@ -26,6 +26,7 @@ declare global {
       archiveFinish?(token: string, share: boolean): string;
       archiveCancel?(token: string): void;
       routeLinkShare?(url: string): string;
+      placeTextShare?(text: string): string;
       recordingAccuracy?(): number;
       setRecordingAccuracy?(metres: number): boolean;
       recordingSampling?(): string;

@@ -267,7 +267,7 @@ export function AnnotationWorkspace({
                 : `海拔 ${Number(item.groundElevation.toFixed(1))} m`}
             </span>
           </div>
-          <div className="marker-summary-actions">
+          <div className="marker-summary-actions" data-place-share={item.kind === 'pin'}>
             <button className="marker-primary" onClick={() => onNavigate(item)}>
               <Navigation size={17} />
               导航
@@ -284,6 +284,7 @@ export function AnnotationWorkspace({
               <FileText size={17} />
               详情
             </button>
+            {item.kind === 'pin' && <button aria-label="分享地点" onClick={() => onShare(item.id)}><Share2 size={17}/>分享</button>}
           </div>
         </>
       ) : (

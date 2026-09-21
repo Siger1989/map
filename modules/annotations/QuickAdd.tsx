@@ -1,6 +1,6 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef, type CSSProperties } from 'react';
-import { MapPinPlus, Box, Cylinder, Circle, X } from 'lucide-react';
+import { MapPinPlus, Box, Cylinder, Circle, X, Share2 } from 'lucide-react';
 import type { MapHold } from '../map/MapLongPress';
 import type { AnnotationChoice } from './data';
 import { AnnotationTypeOptions } from './AnnotationTypeOptions';
@@ -12,12 +12,14 @@ export function QuickAdd({
   onAdd,
   onArea,
   onClose,
+  onShare,
 }: {
   at: MapHold;
   error: string;
   onAdd: (kind: AnnotationChoice) => void;
   onArea: () => void;
   onClose: () => void;
+  onShare: () => void;
 }) {
   const root = useRef<HTMLDivElement>(null),
     closeButton = useRef<HTMLButtonElement>(null);
@@ -74,6 +76,7 @@ export function QuickAdd({
             {at.coordinate[1].toFixed(5)}°, {at.coordinate[0].toFixed(5)}°
           </p>
           <div className="quick-add-options">
+            <button type="button" onClick={onShare}><Share2 size={16}/>分享位置</button>
             <button type="button" onClick={onArea}>
               ▱ 划区域
             </button>

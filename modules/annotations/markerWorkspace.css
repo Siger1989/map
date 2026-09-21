@@ -26,6 +26,7 @@
 .marker-summary-place span:last-child { flex-shrink: 0; font-size: 12px; }
 .marker-summary-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 3px; }
 .marker-summary-actions button { min-width: 0; padding: 0 2px; gap: 2px; }
+.marker-summary-actions[data-place-share='true'] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .marker-camera-status { font-size: 11px; padding: 3px 0; }
 .marker-photos { display: flex; flex-wrap: wrap; gap: 6px; }
 .marker-photos button { flex-direction: column; padding: 3px; }

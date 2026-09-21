@@ -29,6 +29,7 @@ import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
+import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -228,6 +229,7 @@ export default function Home() {
   );
   const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
+  const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate }; markerId?: string } | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
   const shareTrackById = (id: string) => {
     const track = tracks.saved.find((t) => t.id === id);
@@ -1503,6 +1505,7 @@ export default function Home() {
         <FreeMapCredit id={mapSources.selected} />
         {quickAdd && (
           <QuickAdd
+            onShare={() => { setPlaceShareTarget({ place: { name: '地图位置', coordinates: [...quickAdd.coordinate] } }); setQuickAdd(null); }}
             onArea={startArea}
             at={quickAdd}
             error={annotations.error}
@@ -1856,6 +1859,7 @@ export default function Home() {
             <h1>{PRODUCT_NAME}</h1>
           </button>
           <PlaceSearch
+            onShare={(place) => setPlaceShareTarget({ place: { name: place.name, coordinates: [...place.coordinates] } })}
             center={mapCenter}
             zoom={view.zoom}
             onOpen={() => {
@@ -2259,6 +2263,11 @@ export default function Home() {
                 }
               }}
               onShare={(id) => {
+                const item = annotations.items.find(item => item.id === id);
+                if (item?.kind === 'pin') {
+                  setPlaceShareTarget({ place: { name: item.name || '地点标记', coordinates: [...item.coordinates] }, markerId: id });
+                  return;
+                }
                 setCollectionOutputKey(`annotation:${id}`);
                 setPanel('favorites');
               }}
@@ -2873,6 +2882,7 @@ export default function Home() {
             onClose={() => setNavigationTarget(null)}
           />
         )}
+        {placeShareTarget && <PlaceShare place={placeShareTarget.place} onClose={() => setPlaceShareTarget(null)} onExport={placeShareTarget.markerId ? () => { setCollectionOutputKey(`annotation:${placeShareTarget.markerId}`); setPlaceShareTarget(null); setPanel('favorites'); } : undefined} />}
         {shareTarget && (
           <RouteShare
             data={shareTarget}

@@ -1,7 +1,7 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
-import { Search, X, MapPin } from 'lucide-react';
+import { Search, X, MapPin, Share2 } from 'lucide-react';
 import { searchPlaces } from '../navigation/provider';
 import type { Coordinate, RoutePlace } from '../navigation/types';
 import { useMapPlaceLabel } from './PlaceName';
@@ -11,11 +11,13 @@ export function PlaceSearch({
   zoom,
   onOpen,
   onSelect,
+  onShare,
 }: {
   center: Coordinate | null;
   zoom: number;
   onOpen: () => void;
   onSelect: (place: RoutePlace) => void;
+  onShare: (place: RoutePlace) => void;
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -183,10 +185,10 @@ export function PlaceSearch({
             </div>
             <div className="place-search-options">
               {results.map((place, index) => (
+                <div className="place-search-row" key={`${place.coordinates.join(',')}-${index}`}>
                 <button
                   type="button"
                   data-place-result
-                  key={`${place.coordinates.join(',')}-${index}`}
                   onClick={() => {
                     onSelect(place);
                     setOpen(false);
@@ -203,6 +205,8 @@ export function PlaceSearch({
                     </small>
                   </span>
                 </button>
+                <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => { setOpen(false); input.current?.blur(); onShare(place); }}><Share2 size={17}/></button>
+                </div>
               ))}
               {!results.length && (
                 <p role="status">
