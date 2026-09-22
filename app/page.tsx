@@ -58,6 +58,7 @@ import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
 import { catalogEntries } from '@/modules/collections/catalog';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
+import { OfflineMapFolder } from '@/modules/collections/OfflineMapFolder';
 import { CenterCursor } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
 import {
@@ -1414,6 +1415,7 @@ export default function Home() {
                   onMarker={() => setRouteWindow('marker')}
                   onEdit={() => beginRouteEdit(railTrack)}
                   onDetails={() => setRouteWindow('details')}
+                  onCache={()=>beginMapDownload(railTrack.name,{kind:'route',segments:railTrack.segments,bufferKm:10})}
                 />
               )}
               {routeWindow === 'details' && (
@@ -2100,7 +2102,7 @@ export default function Home() {
           mapStatus={mapStatus}
         />
         {offlinePicking && <OfflineRegionPicker readBounds={() => map.current?.offlineRegionBounds() ?? null} onCancel={() => { setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} onDone={bounds => { setOfflineRegion(bounds); setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} />}
-        {offlineDownload && <OfflineDownload key={`${offlineDownload.name}-${offlineDownload.area.kind}`} target={offlineDownload} offline={offline} onClose={()=>setOfflineDownload(null)} onManage={()=>{setOfflineDownload(null);setOutdoorOffline(true);setPanel('outdoor');}}/>}
+        {offlineDownload && <OfflineDownload key={`${offlineDownload.name}-${offlineDownload.area.kind}`} target={offlineDownload} offline={offline} onClose={()=>setOfflineDownload(null)} onManage={()=>{setOfflineDownload(null);setCollectionOutputKey(null);setCollectionSelectedKeys([]);setPanel('favorites');}}/>}
         {offlineDownloadError && <div className="offline-download-dock" role="alert"><span>{offlineDownloadError}</span><button onClick={()=>setOfflineDownloadError('')}>关闭</button></div>}
         {boxSelecting && (
           <MapBoxSelect
@@ -2566,6 +2568,8 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              offlineCount={offline.packages.length}
+              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
               onLocate={(entry) => {
                 position.free();
@@ -2688,6 +2692,7 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
+              onCache={()=>{if(navigation.route)beginMapDownload('规划路线',{kind:'route',segments:[navigation.route.coordinates],bufferKm:10});}}
               onEditPoints={editPlannedPoints}
               onCancel={() => { guidance.stop(); navigation.clear(); setRallyMode(false); setPanel(null); }}
               onRally={() => { setPanel(null); setRallyMode(true); }}

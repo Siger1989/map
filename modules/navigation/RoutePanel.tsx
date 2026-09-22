@@ -40,6 +40,7 @@ export function RoutePanel({
   onRally,
   onEditPoints,
   onCancel,
+  onCache,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -57,6 +58,7 @@ export function RoutePanel({
   weather?: ReactNode;
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
+  onCache?: () => void;
 }) {
   const [editing, setEditing] = useState(true);
   const previousRoute = useRef(n.route?.createdAt);
@@ -237,6 +239,7 @@ export function RoutePanel({
     }
   };
   if (n.route && !editing && n.picking === null) return <RouteResultSummary
+    onCache={onCache}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} weather={weather} onRally={onRally} onEditPoints={onEditPoints} onCancel={onCancel}
@@ -509,7 +512,7 @@ export function RoutePanel({
           ? '规划中…'
           : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
       </button>
-      {n.route && <button className="route-primary" onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button>}
+      {n.route && <div className="route-edit-actions"><button onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button>{onCache&&<button onClick={onCache}>缓存当前路线</button>}</div>}
       <RouteProviderNote />
     </div>
   );

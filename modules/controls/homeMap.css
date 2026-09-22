@@ -205,3 +205,5 @@
 .observatory.home-map[data-survey='true'] .home-camera-control { bottom: calc(var(--survey-reserved) + 8px); }
 .observatory.home-map[data-survey='true'] .home-position-dock { bottom: calc(var(--survey-reserved) + 80px); }
 .observatory.home-map[data-rally='true'] > .home-camera-control { display: none; }
+
+.observatory.home-map .home-route-card .home-route-cache { display:flex; align-items:center; justify-content:center; gap:4px; width:100%; min-height:36px; margin-top:4px; border:1px solid var(--home-line); border-radius:4px; background:#fff; font-size:11px; }

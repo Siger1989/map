@@ -2,12 +2,13 @@ import { useState, type ReactNode } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
-export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onRally, onEditPoints, onCancel }: {
+export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onRally, onEditPoints, onCancel, onCache }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string; weather?: ReactNode;
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
+  onCache?: () => void;
 }) {
   const [section, setSection] = useState<'steps' | 'weather' | null>(null);
   const toggle = (next: 'steps' | 'weather') => setSection(section === next ? null : next);
@@ -30,6 +31,7 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
       <button aria-expanded={section === 'steps'} onClick={() => toggle('steps')}>路段</button>
       <button aria-expanded={section === 'weather'} onClick={() => toggle('weather')}>天气</button>
     </nav>
+    {onCache && <nav className="route-summary-actions"><button onClick={onCache}>缓存当前路线</button></nav>}
     {guidanceError && !navigating && <p className="route-error" role="alert">{guidanceError}</p>}
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
     {section && <div className="route-summary-detail">

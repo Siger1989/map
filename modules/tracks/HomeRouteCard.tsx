@@ -10,10 +10,11 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onCache }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
+  onCache?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [renameError, setRenameError] = useState('');
@@ -59,7 +60,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>
-    </nav></>}
+    </nav>{onCache&&<button className="home-route-cache" onClick={onCache}>缓存当前路线</button>}</>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

@@ -1,5 +1,5 @@
 import { SmartInput } from '../input/SmartText';
-import { useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Check,
   Bookmark,
@@ -47,6 +47,8 @@ import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 
 type Props = {
+  offlineMaps?: (query: string) => ReactNode;
+  offlineCount?: number;
   center: [number, number];
   onClose: () => void;
   onLocate: (key: string) => void;
@@ -393,7 +395,7 @@ export function WorkbenchPanel(props: Props) {
               <small>
                 {batch
                   ? `已选 ${checked.size} 项`
-                  : `${workbenchLeaves(items).length} 项`}
+                  : `${workbenchLeaves(items).length + (props.offlineCount ?? 0)} 项`}
               </small>
             </div>
             <button
@@ -483,8 +485,9 @@ export function WorkbenchPanel(props: Props) {
             </div>
           )}
           <div ref={swipe.list} className="workbench-tree-list">
+            {type === 'all' && !batch && props.offlineMaps?.(query)}
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
-            {!view.length && <p className="workbench-empty">没有匹配的收藏</p>}
+            {!view.length && <p className="workbench-empty">没有匹配的路线或地点</p>}
           </div>
           {batch && (
             <div className="workbench-batch">

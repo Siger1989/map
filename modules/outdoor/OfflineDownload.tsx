@@ -129,7 +129,7 @@ export function OfflineDownload({
               : offline.message}
           </p>
           <div>
-            <button onClick={onManage}>查看离线包</button>
+            <button onClick={onManage}>在收藏夹查看</button>
             {offline.busy ? (
               <button onClick={offline.pause}>暂停</button>
             ) : (

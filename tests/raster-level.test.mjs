@@ -12,23 +12,23 @@ function fixture() {
   const map = { getSource: id => sources.get(id), getMinZoom: () => floor, setMinZoom: value => { floor = value; }, refreshTiles: id => refresh.push(id) };
   return { sources, refresh, map, lock: new RasterLevelLock(map) };
 }
-test('locking, lowering the lock, source changes and auto restore source and camera limits', () => {
+test('detail cap changes and source restoration never constrain camera zoom', () => {
   const { sources, refresh, map, lock } = fixture();
   const original = () => 7;
   sources.get('detail').calculateTileZoom = original;
   lock.sync(['detail'], 13);
-  assert.equal(map.getMinZoom(), 12);
+  assert.equal(map.getMinZoom(), 0);
   assert.equal(sources.get('detail').maxzoom, 13);
-  assert.equal(sources.get('detail').calculateTileZoom(20, 100, 100, 100, 1), 13);
+  assert.equal(sources.get('detail').calculateTileZoom(20, 100, 100, 100, 1), 7);
   const requests = refresh.length;
   lock.sync(['detail'], 13);
   assert.equal(refresh.length, requests);
   lock.sync(['detail'], 11);
-  assert.equal(map.getMinZoom(), 10);
+  assert.equal(map.getMinZoom(), 0);
   lock.sync(['custom'], 12);
   assert.equal(sources.get('detail').maxzoom, 18);
   assert.equal(sources.get('detail').calculateTileZoom, original);
-  assert.equal(map.getMinZoom(), 11);
+  assert.equal(map.getMinZoom(), 0);
   lock.sync(['custom'], null);
   assert.equal(map.getMinZoom(), 0);
   assert.equal(sources.get('custom').maxzoom, 14);
@@ -40,7 +40,7 @@ test('replacement sources keep their own limits and invalid levels unlock safely
   sources.set('custom', source('custom', 9));
   lock.sync(['custom'], 12);
   assert.equal(sources.get('custom').maxzoom, 9);
-  assert.equal(map.getMinZoom(), 8);
+  assert.equal(map.getMinZoom(), 0);
   lock.sync(['custom'], NaN);
   assert.equal(map.getMinZoom(), 0);
   assert.equal(sources.get('custom').maxzoom, 9);
@@ -58,7 +58,7 @@ test('road opacity remains relative to original styles and never compounds or ch
   assert.equal(paint.get('main-roads/line-opacity'), 0.85);
   assert.ok([...paint.keys()].every(key => !key.includes('route')));
 });
-test('installed MapLibre selects only the locked level across zoom, pitch and bearing', async () => {
+test('installed MapLibre keeps free zoom with bounded requests and a fixed maximum detail level', async () => {
   const compiled = await build({ stdin: { resolveDir: fileURLToPath(new URL('../', import.meta.url)), loader: 'ts', contents: `
     import {MercatorTransform} from './node_modules/maplibre-gl/src/geo/projection/mercator_transform.ts';
     import {LngLat} from './node_modules/maplibre-gl/src/geo/lng_lat.ts';
@@ -66,14 +66,16 @@ test('installed MapLibre selects only the locked level across zoom, pitch and be
     export function samples() {
       const t=new MercatorTransform();t.resize(390,844);t.setCenter(new LngLat(103.52,30.8));
       const result=[];
-      for(const zoom of [12,13,15]) for(const pitch of [0,62,80]) for(const bearing of [0,90,180]) {
+      for(const zoom of [0,4,12,15,22]) for(const pitch of [0,62,80]) for(const bearing of [0,90,180]) {
         t.setZoom(zoom);t.setPitch(pitch);t.setBearing(bearing);
-        result.push(coveringTiles(t,{tileSize:256,minzoom:0,maxzoom:13,roundZoom:true,calculateTileZoom:()=>13}).map(tile=>tile.canonical.z));
+        result.push(coveringTiles(t,{tileSize:256,minzoom:0,maxzoom:13,roundZoom:true}).map(tile=>tile.canonical.z));
       }
       return result;
     }` }, bundle: true, platform: 'node', format: 'esm', write: false });
   const engine = await import('data:text/javascript;base64,' + Buffer.from(compiled.outputFiles[0].contents).toString('base64'));
   const samples = engine.samples();
-  assert.equal(samples.length, 27);
-  for (const levels of samples) { assert.ok(levels.length > 0); assert.deepEqual([...new Set(levels)], [13]); }
+  assert.equal(samples.length, 45);
+  for (const levels of samples) { assert.ok(levels.length > 0); assert.ok(levels.every(z=>z<=13)); assert.ok(levels.length < 400); }
 });
+
+test("camera limits are untouched, including a caller-defined floor",()=>{const f=fixture();f.map.setMinZoom(3);f.map.setMinZoom=()=>{throw Error("camera changed");};f.lock.sync(["detail"],18);f.lock.sync(["detail"],2);f.lock.sync([],null);assert.equal(f.map.getMinZoom(),3);});
