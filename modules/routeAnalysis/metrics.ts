@@ -1,7 +1,8 @@
+import { speedBands, type TravelMode } from './travelMode.ts';
 import type { ManualTrack } from '../tracks/drawing';
 import type { TrackEdgeColors } from '../tracks/edgeColors';
 import { metresBetween } from '../navigation/types.ts';
-import { ANALYSIS_POLICY, SPEED_BANDS, SLOPE_BANDS } from './config.ts';
+import { ANALYSIS_POLICY, SLOPE_BANDS } from './config.ts';
 import { elevationLineParts } from './elevationLineParts.ts';
 
 export type AnalysisMode = 'solid' | 'speed' | 'slope' | 'elevation';
@@ -14,7 +15,7 @@ export type RouteMetrics = {
   speeds: (number | null)[][];
   slopes: (number | null)[][];
 };
-type TrackSamples = Pick<ManualTrack, 'segments' | 'samples'>;
+type TrackSamples = Pick<ManualTrack, 'segments' | 'samples' | 'style'>;
 const altitude = (value: number | null | undefined) =>
   value != null && Number.isFinite(value) ? value : null;
 
@@ -119,8 +120,9 @@ export function analyzeRoute(track: TrackSamples): RouteMetrics {
 export function analysisColors(
   metrics: RouteMetrics,
   mode: 'speed' | 'slope',
+  travelMode?: TravelMode,
 ): TrackEdgeColors {
-  const bands = mode === 'speed' ? SPEED_BANDS : SLOPE_BANDS;
+  const bands = mode === 'speed' ? speedBands(travelMode) : SLOPE_BANDS;
   return (mode === 'speed' ? metrics.speeds : metrics.slopes).map((line) =>
     line.map((value) =>
       value === null
@@ -136,7 +138,7 @@ export function metricLineParts(
   mode: Exclude<AnalysisMode, 'solid'>,
 ) {
   if (mode === 'elevation') return elevationLineParts(track);
-  const colors = analysisColors(analyzeRoute(track), mode);
+  const colors = analysisColors(analyzeRoute(track), mode, track.style?.travelMode);
   return track.segments.flatMap((line, part) => {
     const pieces: {
       coordinates: ManualTrack['segments'][number];

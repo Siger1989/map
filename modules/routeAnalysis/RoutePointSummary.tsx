@@ -33,7 +33,7 @@ export function RoutePointSummary({
   const grade =
     data.slopePercent === null
       ? '数据不足'
-      : `${data.slopePercent > 0 ? '+' : ''}${data.slopePercent.toFixed(1)}%（${data.slopeDegrees!.toFixed(1)}°）`;
+      : `${data.slopePercent > 0 ? '+' : ''}${data.slopeDegrees!.toFixed(1)}°`;
   const source =
     data.elevationSource === 'terrain'
       ? '地形估算'

@@ -1,3 +1,4 @@
+import { formatSlope } from './displayUnits';
 import { useMemo, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
 import { analyzeRoute } from './metrics';
@@ -52,10 +53,10 @@ export function RouteAnalysisSummary({
       <dl className="route-data-rows">
         {[
           ['最高区间速度', value(metrics.maximumSpeedKmh, 'km/h')],
-          ['最大采样坡度', value(metrics.maximumSlopePercent, '%')],
-          ['最陡连续50米', value(metrics.steepest50mPercent, '%')],
+          ['最大采样坡度', formatSlope(metrics.maximumSlopePercent)],
+          ['最陡连续50米', formatSlope(metrics.steepest50mPercent)],
           [
-            '连续50米≥20%',
+            '连续50米≥11.3°',
             metrics.steepest50mPercent === null
               ? '数据不足'
               : `${metrics.steepSections}段`,

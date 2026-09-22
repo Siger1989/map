@@ -25,7 +25,7 @@ export function PositionDock({
     <nav className="home-position-dock" aria-label="底部定位与路线显示">
       {children}
       <button
-        className="position-dock-button glass"
+        className="position-dock-button position-locate-button glass"
         aria-label={
           blocked ? '获取当前位置（编辑中暂停地图跟随）' : following
             ? locating

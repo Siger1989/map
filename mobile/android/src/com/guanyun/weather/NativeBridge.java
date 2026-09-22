@@ -30,6 +30,21 @@ final class NativeBridge {
             activity.requestScreenOn(enabled);
         });
     }
+    @JavascriptInterface public String offlineStart(String raw) {
+        if(!activity.trustedForeground())return "请在应用内开始下载";
+        String result=OfflineStore.prepare(activity,raw);if(!"ok".equals(result))return result;
+        try {
+            OfflineDownloadService.running=true;
+            activity.startForegroundService(new Intent(activity,OfflineDownloadService.class).setAction("start"));
+            activity.runOnUiThread(()->{if(Build.VERSION.SDK_INT>=33 && activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)activity.requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},4204);});
+            return "ok";
+        }catch(Exception e){OfflineDownloadService.running=false;OfflineStore.status(activity,"paused","后台下载未启动，请重试");return "后台下载未启动，请重试";}
+    }
+    @JavascriptInterface public String offlineState() { return OfflineStore.snapshot(activity); }
+    @JavascriptInterface public void offlinePause() { activity.stopService(new Intent(activity,OfflineDownloadService.class));OfflineStore.status(activity,"paused","下载已暂停，可继续"); }
+    @JavascriptInterface public boolean offlineHas(String url) { try{return OfflineStore.allowed(url) && OfflineStore.tile(activity,url).isFile();}catch(Exception e){return false;} }
+    @JavascriptInterface public String offlineVerify(String id) { return OfflineStore.verify(activity,id); }
+    @JavascriptInterface public boolean offlineRemove(String id) { return OfflineStore.remove(activity,id); }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
     @JavascriptInterface public boolean photoFolders() { return true; }
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }

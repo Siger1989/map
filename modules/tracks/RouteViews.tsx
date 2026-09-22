@@ -1,3 +1,4 @@
+import { TRAVEL_MODES, normalizeTravelMode } from '../routeAnalysis/travelMode';
 import { RecordedProfile } from './RecordedElevationChart';
 import { RecordedDetails } from './RecordedDetails';
 import { hasTrackTime } from './provenance';
@@ -159,6 +160,7 @@ export function RouteDetails({
           {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
           {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
           {onAppearance && <section aria-label="整条路线外观"><h3>整条路线颜色</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div><small role="status">{appearanceMessage || '直接保存颜色，保留原始记录。'}</small></section>}
+          {onAppearance && <label className="route-travel-mode">出行方式<select aria-label="路线出行方式" value={normalizeTravelMode(track.style?.travelMode)} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), travelMode: normalizeTravelMode(e.target.value) }) ? '出行方式已保存，速度色标已更新' : '保存失败，请重试')}>{Object.entries(TRAVEL_MODES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select><small>用于速度配色，不改变实走数据。</small></label>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
           <h3>基本资料</h3>
           <dl className="route-data-rows">

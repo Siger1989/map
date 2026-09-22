@@ -1,3 +1,4 @@
+import { TRAVEL_MODES, normalizeTravelMode, speedBands } from '../routeAnalysis/travelMode';
 import { useId } from 'react';
 import { TRACK_COLORS, type TrackStyle } from './style';
 export function TrackStyleControls({
@@ -32,13 +33,14 @@ export function TrackStyleControls({
           </select>
         </label>
       )}
+      {analysis && <label className="slider-label">出行方式<select aria-label="轨迹出行方式" value={normalizeTravelMode(style.travelMode)} onChange={e => onChange({...style, travelMode:normalizeTravelMode(e.target.value)})}>{Object.entries(TRAVEL_MODES).map(([id,label])=><option key={id} value={id}>{label}</option>)}</select></label>}
       {analysis && style.colorMode && style.colorMode !== 'solid' && (
         <p className="route-note">
           {style.colorMode === 'elevation'
             ? '蓝→绿→黄→红：低→高 · 图例见地图“路线显示”'
             : style.colorMode === 'speed'
-              ? '绿＜3 · 黄3–6 · 红≥6 km/h'
-              : '绿＜10% · 黄10–20% · 红≥20%（绝对坡度）'}
+              ? speedBands(style.travelMode).map(b=>b.label).join(' · ') + ' km/h'
+              : '绿＜5.7° · 黄5.7–11.3° · 红≥11.3°（坡角绝对值）'}
           {' · 灰色为数据不足'}
         </p>
       )}

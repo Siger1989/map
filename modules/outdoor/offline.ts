@@ -1,3 +1,4 @@
+import { nativeOffline, downloadNative, applyNativeProgress } from './nativeOffline.ts';
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { TERRAIN_URL } from '../terrain/tiles.ts';
@@ -11,6 +12,7 @@ export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1',
   INDEX = 'guanyun.trips.v1';
 export type TripPackage = {
+  native?: boolean;
   provider?: 'tianditu' | 'openfreemap';
   layers?: TiandituLayer[];
   zoom?: number;
@@ -69,7 +71,7 @@ export async function prepareMapPackage(name: string, area: DownloadArea, settin
     display:{satellite:settings.satellite,tiandituBase:settings.tiandituBase,tiandituLabels:settings.tiandituLabels,tiandituBoundaries:settings.tiandituBoundaries,terrain:settings.terrain,labels:settings.labels,roads:settings.roads,roadsOpacity:settings.roadsOpacity,imageryMode:'detail',offlineBasemap:provider==='openfreemap',offlineMaxZoom:zoom,rasterLevel:null}};
   putTrip(trip);return trip;
 }
-function putTrip(trip: TripPackage) {
+export function putTrip(trip: TripPackage) {
   const list = tripPackages();
   const index = list.findIndex((t) => t.id === trip.id);
   if (index < 0) list.push(trip);
@@ -233,11 +235,19 @@ export async function downloadTrip(
   signal: AbortSignal,
   progress: (t: TripPackage) => void,
 ) {
+  if(nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
   const cache = await caches.open(CACHE);
   let cursor = 0,
     done = 0,
     bytes = 0,
     failed = 0;
+  const pending:string[]=[];
+  for(const url of trip.urls) {
+    if(signal.aborted)throw Error('下载已暂停，可稍后继续');
+    const hit=await cache.match(resourceCacheKey(url));
+    if(hit?.ok){try{bytes+=await validateTileResponse(url,hit);done++;continue;}catch{await cache.delete(resourceCacheKey(url));}}
+    pending.push(url);
+  }
   let fatal = '';
   let lastUpdate = 0;
   const update = (force = false) => {
@@ -247,10 +257,11 @@ export async function downloadTrip(
     putTrip(next);
     progress(next);
   };
+  update(true);
   await Promise.all(
     Array.from({ length: trip.provider === 'tianditu' ? 2 : 3 }, async () => {
-      while (cursor < trip.urls.length && !signal.aborted && !fatal) {
-        const url = trip.urls[cursor++];
+      while (cursor < pending.length && !signal.aborted && !fatal) {
+        const url = pending[cursor++];
         try {
           const cached = await cache.match(resourceCacheKey(url));
           const response =
@@ -287,6 +298,7 @@ export async function downloadTrip(
     throw new Error(`${trip.urls.length - done} 项未下载，点击继续补齐`);
 }
 export async function verifyTrip(trip: TripPackage) {
+  if(trip.native && nativeOffline()){const checked=applyNativeProgress(trip,JSON.parse(nativeOffline()!.offlineVerify(trip.id)));putTrip(checked);return checked;}
   const cache = await caches.open(CACHE);
   let done = 0,
     bytes = 0;
@@ -302,6 +314,7 @@ export async function verifyTrip(trip: TripPackage) {
   return checked;
 }
 export async function removeTrip(trip: TripPackage) {
+  if(trip.native && nativeOffline() && !nativeOffline()!.offlineRemove(trip.id))throw Error('缓存移除失败，请暂停下载后重试');
   const list = tripPackages().filter((t) => t.id !== trip.id),
     keep = new Set(list.flatMap((t) => t.urls.map(resourceCacheKey))),
     cache = await caches.open(CACHE);

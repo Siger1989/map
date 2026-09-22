@@ -93,9 +93,11 @@ export function useTrackElevation(
     };
   }, [key, enabled, retry]);
   const current = result?.key === key ? result : null;
+  const data=useMemo(()=>current?.track && target ? {...current.track,style:target.style} : target,[current?.track,target]);
+  const profile=useMemo(()=>current?.profile && target ? {...current.profile,style:target.style} : target,[current?.profile,target]);
   return {
-    data: current?.track ?? target,
-    profile: current?.profile ?? target,
+    data,
+    profile,
     estimated: current?.estimated ?? false,
     elevationError: current?.error ?? '',
     loading,

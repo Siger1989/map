@@ -1,3 +1,4 @@
+import { nativeOffline } from './nativeOffline.ts';
 import { legacyTerrainCacheUrl } from '../terrain/tiles.ts';
 import { resourceCacheKey } from './tiandituCache.ts';
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
@@ -37,6 +38,7 @@ export async function cachedMapFetch(
   } catch {
     /* Online fallback is explicit below. */
   }
+  if(nativeOffline()?.offlineHas(absolute))return fetch(absolute,{signal});
   if (offlineMapOnly()) throw new Error('此处地图数据未缓存，请联网补齐离线包');
   return fetch(absolute, { signal });
 }

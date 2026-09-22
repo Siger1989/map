@@ -1,7 +1,9 @@
+import { normalizeTravelMode, type TravelMode } from '../routeAnalysis/travelMode.ts';
 export type TrackStyle = {
   color: string;
   width: number;
   opacity?: number;
+  travelMode?: TravelMode;
   colorMode?: 'solid' | 'speed' | 'slope' | 'elevation';
 };
 export const DEFAULT_TRACK_STYLE: TrackStyle = {
@@ -21,6 +23,7 @@ export const TRACK_COLORS = [
 export function normalizeTrackStyle(input: unknown): TrackStyle {
   const value = input as Partial<TrackStyle> | null;
   return {
+    travelMode: normalizeTravelMode(value?.travelMode),
     ...(value?.colorMode === 'speed' ||
     value?.colorMode === 'slope' ||
     value?.colorMode === 'elevation'

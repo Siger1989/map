@@ -1,3 +1,4 @@
+import { OfflineProgress } from './OfflineProgress';
 import { useMemo, useState } from 'react';
 import type { LayerSettings } from '../map/types';
 import type { DownloadArea } from './downloadPlan';
@@ -125,9 +126,10 @@ export function OfflineDownload({
         </>
       ) : (
         <>
+          {offline.current && <OfflineProgress trip={offline.current} />}
           <p role="status">
             {offline.busy
-              ? `正在下载 ${offline.message}；可关闭窗口，请保持应用在前台。`
+              ? `${offline.message}；${offline.background ? '后台缓存中，可切换软件。' : '浏览器下载，请保持页面打开。'}`
               : offline.message}
           </p>
           <div>
@@ -135,7 +137,7 @@ export function OfflineDownload({
             {offline.busy ? (
               <button onClick={offline.pause}>暂停</button>
             ) : (
-              <button onClick={() => setStarted(false)}>返回设置</button>
+              <><button disabled={!offline.current || offline.current.complete} onClick={()=>offline.current && void offline.resume(offline.current)}>继续下载</button><button onClick={() => setStarted(false)}>返回设置</button></>
             )}
           </div>
         </>

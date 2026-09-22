@@ -1,7 +1,8 @@
+import { speedBands } from '../routeAnalysis/travelMode';
 import { useMemo, useState } from 'react';
 import type { ManualTrack } from './drawing';
 import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
-import { recordedProfile, speedColor, RECORDED_SPEED_COLORS } from './recordedProfileData';
+import { recordedProfile, speedColor } from './recordedProfileData';
 import { formatDistance } from '../navigation/types';
 
 export function RecordedProfile({ track }: { track: ManualTrack }) {
@@ -29,13 +30,13 @@ export function RecordedProfile({ track }: { track: ManualTrack }) {
       onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) pick(event); }}>
       <path d="M28 20V112H332" fill="none" stroke="#a6b7af" />
       <text x="28" y="14">{heights.length ? `${Math.round(low)}–${Math.round(high)} m` : '海拔缺测'}</text>
-      {points.map((p,i) => { const a=points[i-1]; return a && p.connected && a.altitude !== null && p.altitude !== null ? <path key={i} d={`M${x(a)} ${y(a)}L${x(p)} ${y(p)}`} fill="none" stroke={speedColor(p.speed)} strokeWidth="2.5" strokeLinecap="round" /> : null; })}
+      {points.map((p,i) => { const a=points[i-1]; return a && p.connected && a.altitude !== null && p.altitude !== null ? <path key={i} d={`M${x(a)} ${y(a)}L${x(p)} ${y(p)}`} fill="none" stroke={speedColor(p.speed, track.style?.travelMode)} strokeWidth="2.5" strokeLinecap="round" /> : null; })}
       <path d={`M${x(point)} 20V112`} stroke="#305e55" strokeDasharray="3 3" />
-      <circle cx={x(point)} cy={y(point)} r="5" fill={speedColor(point.speed)} stroke="white" strokeWidth="2" />
+      <circle cx={x(point)} cy={y(point)} r="5" fill={speedColor(point.speed, track.style?.travelMode)} stroke="white" strokeWidth="2" />
       <text x="28" y="130">0</text><text x="332" y="130" textAnchor="end">{formatDistance(total)}</text>
     </svg>
     <input type="range" aria-label="查看轨迹采样点" min="0" max={points.length-1} step="1" value={selected} onChange={e => select(Number(e.target.value))} />
-    <div className="recorded-speed-legend" aria-label="速度颜色图例">{RECORDED_SPEED_COLORS.map(b => <span key={b.label}><i style={{background:b.color}}/>{b.label}</span>)}<span><i style={{background:'#8b9699'}}/>缺测</span><b>km/h</b></div>
+    <div className="recorded-speed-legend" aria-label="速度颜色图例">{speedBands(track.style?.travelMode).map(b => <span key={b.label}><i style={{background:b.color}}/>{b.label}</span>)}<span><i style={{background:'#8b9699'}}/>缺测</span><b>km/h</b></div>
     <output className="recorded-point-info" aria-live="polite"><span>第 {selected+1} 点 · 第 {point.part+1} 段</span><span>{formatDistance(point.distance)}</span><span>{point.time === null ? '无时间' : new Date(point.time).toLocaleTimeString('zh-CN',{hour12:false})}</span><span>海拔 {point.altitude === null ? '缺测' : `${Math.round(point.altitude)} m${point.estimated ? '（估算）' : ''}`}</span><span>区间速度 {point.speed === null ? '无有效区间' : `${point.speed.toFixed(1)} km/h`}</span><span>{point.coordinate[1].toFixed(5)}, {point.coordinate[0].toFixed(5)}</span></output>
     <small>速度取相邻采样点区间；断点不连线。{elevation.loading ? '正在补充缺测海拔…' : elevation.estimated ? '部分海拔为地形估算。' : ''}</small>
   </section>;

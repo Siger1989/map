@@ -1,3 +1,4 @@
+import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
 import { readLastView, saveLastView } from './lastView';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
@@ -182,6 +183,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
+    const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const areaRef = useRef<AreaLayer | null>(null);
@@ -295,6 +297,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
+      const source=ids[0] ? map.getSource(ids[0]) : null;
+      detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
       if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
         const id = TDT_SOURCE_IDS[layer], source = map.getSource(id);
         const maxzoom = Math.min(TIANDITU_LAYERS[layer].maxzoom, s.offlineMaxZoom ?? Infinity);
@@ -674,6 +678,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           });
           mapRef.current = map;
           rasterLockRef.current = new RasterLevelLock(map);
+          detailPatchRef.current = new RasterDetailPatch(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () =>
             saveLastView({
@@ -1156,6 +1161,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         sourceRef.current?.clear();
         sourceRef.current = null;
         releaseSourceProtocol?.();
+        detailPatchRef.current?.dispose();
+        detailPatchRef.current = null;
         mapRef.current?.remove();
         rasterLockRef.current = null;
         modelTerrainRef.current = null;

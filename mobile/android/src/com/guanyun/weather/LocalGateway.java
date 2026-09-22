@@ -41,6 +41,7 @@ final class LocalGateway {
     }
 
     WebResourceResponse intercept(Uri uri, String method) {
+        if ("GET".equals(method)) { WebResourceResponse cached=OfflineStore.hit(context,uri.toString());if(cached!=null)return cached; }
         if (!HOST.equals(uri.getHost())) return null; // Public providers use their normal HTTPS/CORS policy.
         if (!"https".equals(uri.getScheme()) || !"GET".equals(method)) return text(405, "Method not allowed");
         String path = uri.getPath();

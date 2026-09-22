@@ -1,0 +1,3 @@
+.offline-progress { display:flex; flex-direction:column; gap:2px; margin:2px 0; min-width:0; color:#245440; font-size:10px; }
+.offline-progress progress { appearance:auto; accent-color:#246748; width:100%; height:8px; }
+.offline-progress span { overflow-wrap:anywhere; }

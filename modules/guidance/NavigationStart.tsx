@@ -55,14 +55,16 @@ export function NavigationStart({
   const [reversed, setReversed] = useState(false);
   const [startPlace, setStartPlace] = useState(target.start),
     [endPlace, setEndPlace] = useState(target.end);
-  const [roadPreview, setRoadPreview] = useState<typeof target.route | null>(
+  const [routeChoice,setRouteChoice]=useState<'original'|'road'>(target.route.geometryKind==='track'?'original':'road');
+  const previewKey=JSON.stringify([mode,startPlace.coordinates,endPlace.coordinates,reversed]);
+  const [roadPreview, setRoadPreview] = useState<{route:typeof target.route;key:string} | null>(
     null,
   );
   useEffect(() => {
-    if (target.route.geometryKind === 'track') return;
+    if (routeChoice === 'original') {setBusy(false);setError('');return;}
     setRoadPreview(null);
     setError('');
-    if (mode === target.route.mode && !reversed) {
+    if (target.route.geometryKind !== 'track' && mode === target.route.mode && !reversed) {
       setBusy(false);
       return;
     }
@@ -71,7 +73,7 @@ export function NavigationStart({
     const timer = setTimeout(() => controller.abort(), 20000);
     let current = true;
     const original = target.route.stops ?? [target.start, target.end],
-      stops = reversed ? original.slice().reverse() : original;
+      stops = target.route.geometryKind==='track' ? [startPlace,endPlace] : reversed ? original.slice().reverse() : original;
     setBusy(true);
     void planRoute(
       stops[0],
@@ -81,7 +83,7 @@ export function NavigationStart({
       stops.slice(1, -1),
     )
       .then((route) => {
-        if (current) setRoadPreview(route);
+        if (current) setRoadPreview({route,key:previewKey});
       })
       .catch((e) => {
         if (current)
@@ -102,7 +104,7 @@ export function NavigationStart({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [target, mode, reversed]);
+  }, [target, mode, reversed, startPlace, endPlace, routeChoice, previewKey]);
   const choices: RoutePlace[] = [
     ...new Map(
       [
@@ -121,9 +123,9 @@ export function NavigationStart({
     try {
       return {
         route:
-          target.route.geometryKind === 'track'
+          routeChoice === 'original'
             ? orientTrack(source, startPlace, endPlace, mode, reversed).route
-            : (roadPreview ?? target.route),
+            : (roadPreview?.key===previewKey ? roadPreview.route : target.route),
         error: '',
       };
     } catch (e) {
@@ -132,18 +134,21 @@ export function NavigationStart({
         error: e instanceof Error ? e.message : '请选择有效起终点',
       };
     }
-  }, [target, source, startPlace, endPlace, mode, reversed, roadPreview]);
+  }, [target, source, startPlace, endPlace, mode, reversed, roadPreview, routeChoice, previewKey]);
   const preview = prepared.route,
     selectedDistance = preview.distance,
     selectionError = prepared.error;
+  const needsRoad = routeChoice==='road' && (target.route.geometryKind==='track' || mode!==target.route.mode || reversed);
+  const roadReady=!needsRoad || roadPreview?.key===previewKey;
   const start = async () => {
+    if(!roadReady || (routeChoice==='road' && (busy || error)))return;
     const abort = new AbortController();
     request.current = abort;
     setBusy(true);
     setError('');
     try {
       let route = preview;
-      if (route.geometryKind === 'track') {
+      if (routeChoice === 'original') {
         route = orientTrack(source, startPlace, endPlace, mode, reversed).route;
       }
       if (!abort.signal.aborted)
@@ -179,15 +184,15 @@ export function NavigationStart({
               .map((m) => (
                 <button
                   key={m.id}
-                  disabled={busy}
                   aria-pressed={mode === m.id}
-                  onClick={() => setMode(m.id)}
+                  onClick={() => {setMode(m.id);setRouteChoice('road');}}
                 >
                   {m.label}
                 </button>
               ))}
           </div>
-          {alternatives.length > 0 && (
+          {target.route.geometryKind==='track' && <div className="navigation-mode-row navigation-route-choice" aria-label="选择导航线路"><button aria-pressed={routeChoice==='original'} onClick={()=>setRouteChoice('original')}>沿原路线</button><button aria-pressed={routeChoice==='road'} onClick={()=>setRouteChoice('road')}>按道路新规划</button></div>}
+          {alternatives.length > 0 && routeChoice==='original' && (
             <div className="navigation-variant-row" aria-label="路线方案">
               {alternatives.map((v) => (
                 <button
@@ -251,11 +256,12 @@ export function NavigationStart({
               ⇅ 交换
             </button>
           </div>
-          {!selectionError && !busy && !error && (
+          {routeChoice==='road' && busy && <p role="status">正在获取{TRAVEL_MODES.find(m=>m.id===mode)?.label}道路路线预览…</p>}
+          {!selectionError && (routeChoice==='original' || (!busy && !error && roadReady)) && (
             <>
               <RouteMiniMap
                 coordinates={preview.coordinates}
-                color={choice?.color}
+                color={routeChoice==='original'?choice?.color:'#1988bd'}
               />
               <RouteElevationSummary
                 coordinates={preview.coordinates}
@@ -265,28 +271,28 @@ export function NavigationStart({
             </>
           )}
           <p className="navigation-entry-note">
-            {target.route.trackNetwork
+            {routeChoice==='original' && target.route.trackNetwork
               ? '从当前位置最近的相连路段接入，走另一分叉时自动切换，终点保持不变。'
               : '不在起点时，先按相同方式规划到起点，再继续主体线路。'}
           </p>
-          {target.route.geometryKind === 'track' && (
+          {routeChoice === 'original' && (
             <p className="route-note">
               保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。
             </p>
           )}
-          {(error || selectionError || startError) && (
+          {((routeChoice==='road' && error) || selectionError || startError) && (
             <p role="alert" className="route-error">
-              {error || selectionError || startError}
+              {(routeChoice==='road' && error) || selectionError || startError}
             </p>
           )}
         </div>
         <footer>
           <button
             className="route-solid"
-            disabled={busy || !!selectionError || !!error}
+            disabled={!!selectionError || (routeChoice==='road' && (busy || !!error || !roadReady))}
             onClick={() => void start()}
           >
-            {busy ? '正在按出行方式规划…' : '开始导航'}
+            {routeChoice==='road' && busy ? '正在按出行方式规划…' : routeChoice==='original' ? '沿原路线开始导航' : '使用新规划开始导航'}
           </button>
         </footer>
       </section>

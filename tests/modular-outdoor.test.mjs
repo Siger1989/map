@@ -165,8 +165,8 @@ test('speed analysis excludes missing, backward and paused timestamps; repeated 
   };
   const parts = metricLineParts(measured, 'speed');
   assert.equal(parts.length, 2);
-  assert.equal(parts[0].color, '#ed492c');
-  assert.equal(parts[1].color, '#e8b523');
+  assert.equal(parts[0].color, '#ed782a');
+  assert.equal(parts[1].color, '#60a7ad');
   measured.samples[0][1].time = time - 1;
   measured.samples[0][2].time = time + 121000;
   assert.deepEqual(analyzeRoute(measured).speeds, [[null, null]]);

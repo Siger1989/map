@@ -144,3 +144,5 @@
 .observatory[data-panel='favorites'] .route-display-info {
   bottom: calc(52px + var(--safe-bottom));
 }
+
+.navigation-color-key { flex-wrap:wrap; }

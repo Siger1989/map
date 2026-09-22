@@ -264,3 +264,5 @@
 .navigation-start .route-elevation-chart {
   height: 100px;
 }
+
+.navigation-route-choice { grid-template-columns:repeat(2,minmax(0,1fr)); margin:4px 0; }

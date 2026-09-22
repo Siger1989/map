@@ -1,14 +1,7 @@
 import type { ManualTrack } from './drawing';
 import { metresBetween } from '../navigation/types.ts';
 import { analyzeRoute } from '../routeAnalysis/metrics.ts';
-export const RECORDED_SPEED_COLORS = [
-  { max: 3, color: '#16853b', label: '0–3' },
-  { max: 6, color: '#60a7ad', label: '3–6' },
-  { max: 15, color: '#dba51d', label: '6–15' },
-  { max: 30, color: '#ed782a', label: '15–30' },
-  { max: Infinity, color: '#d73c51', label: '≥30' },
-];
-export const speedColor = (speed: number | null) => speed === null ? '#8b9699' : RECORDED_SPEED_COLORS.find(b => speed < b.max)!.color;
+export { speedColor } from '../routeAnalysis/travelMode.ts';
 export function recordedProfile(track: ManualTrack, heights: ManualTrack = track) {
   const speeds = analyzeRoute(track).speeds;
   let distance = 0;

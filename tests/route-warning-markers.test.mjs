@@ -1,3 +1,4 @@
+import { formatSlope } from '../modules/routeAnalysis/displayUnits.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { steepWarningMarkers } from '../modules/routeDisplay/warningMarkers.ts';
@@ -22,8 +23,8 @@ test('a crest separates steep ascent and descent even without a flat edge', () =
   const track = { segments: [line(4, 0.0004)] };
   const marks = steepWarningMarkers(track, [[25, 35, -45]]);
   assert.equal(marks.length, 2);
-  assert.equal(marks[0].label, '陡上 35%');
-  assert.equal(marks[1].label, '陡下 45%');
+  assert.equal(marks[0].label, '陡上 19.3°');
+  assert.equal(marks[1].label, '陡下 24.2°');
   assert.ok(marks[0].coordinate[0] < marks[1].coordinate[0]);
 });
 
@@ -38,8 +39,8 @@ test('long continuous slopes repeat through the tail even after a steeper beginn
     marks.length,
     Math.ceil(distance / ROUTE_WARNING_POLICY.repeatDistanceMetres),
   );
-  assert.match(marks[0].label, /45%/);
-  assert.match(marks.at(-1).label, /25%/);
+  assert.match(marks[0].label, /24\.2°/);
+  assert.match(marks.at(-1).label, /14\.0°/);
   assert.ok(
     metresBetween(marks.at(-1).coordinate, track.segments[0].at(-1)) <
       ROUTE_WARNING_POLICY.repeatDistanceMetres,
@@ -83,7 +84,7 @@ test('missing, nonfinite, subthreshold slopes and separate parts never merge run
     [[25, null, 25, NaN, 19.9, -20, undefined], [20]],
   );
   assert.equal(marks.length, 4);
-  assert.equal(marks[2].label, '陡下 20%');
+  assert.equal(marks[2].label, '陡下 11.3°');
   assert.ok(marks.at(-1).coordinate[0] > 1);
   assert.deepEqual(
     steepWarningMarkers(
@@ -110,9 +111,9 @@ test('markers use the same measured grade as route colours and selected point an
   const marks = steepWarningMarkers({ segments }, metrics.slopes);
   assert.equal(marks.length, 2);
   assert.ok(metrics.slopes[0][0] > 20 && metrics.slopes[0][3] < -20);
-  assert.equal(marks[0].label, `陡上 ${Math.round(metrics.slopes[0][0])}%`);
+  assert.equal(marks[0].label, `陡上 ${formatSlope(metrics.slopes[0][0])}`);
   assert.equal(
     marks[1].label,
-    `陡下 ${Math.round(Math.abs(metrics.slopes[0][3]))}%`,
+    `陡下 ${formatSlope(Math.abs(metrics.slopes[0][3]))}`,
   );
 });

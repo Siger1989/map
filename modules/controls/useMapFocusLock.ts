@@ -35,7 +35,10 @@ export function useMapFocusLock(options: {
     document.addEventListener('wheel', wheel, {capture:true, passive:true});
     return () => { clear(); document.removeEventListener('pointerdown', down, true); document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true); document.removeEventListener('wheel', wheel, true); };
   }, [locked]);
-  return { locked, browsing, toggle: () => {
+  return { locked, browsing, adoptMode: (following:boolean,direction:DirectionMode) => {
+    if(!locked || !snapshot.current)return;
+    clear();setBrowsing(false);snapshot.current={camera:current.current.map()?.cameraSnapshot() ?? snapshot.current.camera,following,direction};
+  }, toggle: () => {
     clear();
     if (locked) { snapshot.current = null; setLocked(false); setBrowsing(false); return; }
     const o = current.current, camera = o.map()?.cameraSnapshot();

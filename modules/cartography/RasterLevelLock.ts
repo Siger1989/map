@@ -1,6 +1,6 @@
 import type { Map as LibreMap, Source } from 'maplibre-gl';
 
-/** Cap source detail without constraining the camera or requesting high-detail tiles across the world. */
+/** Overview cap only; RasterDetailPatch provides exact-level viewport/centre imagery without constraining the camera. */
 export class RasterLevelLock {
   private original = new Map<Source, number>();
   private map: LibreMap;

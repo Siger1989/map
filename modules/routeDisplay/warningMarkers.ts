@@ -1,3 +1,4 @@
+import { formatSlope } from '../routeAnalysis/displayUnits.ts';
 import type { ManualTrack } from '../tracks/drawing';
 import type { RouteMetrics } from '../routeAnalysis/metrics';
 import type { RouteWarning } from './RouteWarnings';
@@ -36,7 +37,7 @@ export function steepWarningMarkers(
       if (peak)
         marks.push({
           coordinate: peak.coordinate,
-          label: `${peak.grade > 0 ? '陡上' : '陡下'} ${Math.round(Math.abs(peak.grade))}%`,
+          label: `${peak.grade > 0 ? '陡上' : '陡下'} ${formatSlope(Math.abs(peak.grade))}`,
         });
       filled = 0;
       peak = null;

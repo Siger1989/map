@@ -225,7 +225,7 @@
 .observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .observatory.home-map .global-focus-lock small { font-size:9px; }
 .observatory.home-map .home-recording { bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px)); }
-.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail):not(.home-position-dock) { display:none !important; }
 .observatory.home-map[data-focus-locked=true]:not([data-guiding=true]) > .route-weather-rail { display:none !important; }
 .observatory.home-map[data-focus-locked=true]::before { display:none !important; }
 .observatory.home-map[data-focus-locked=true] .maplibregl-control-container { display:none; }
@@ -238,3 +238,14 @@
 .observatory.home-map .home-journey-list .home-route-direction { min-height:36px; justify-content:center; color:var(--home-green); border-top:1px solid var(--home-line); }
 .observatory.home-map .home-journey-list .home-route-direction::after { display:none; }
 .observatory.home-map .home-journey-list .home-journey-end::after { display:none; }
+
+/* Operation panels own their area; the lock control returns when they close. */
+.observatory.home-map:not([data-focus-locked=true]):has(.raster-level-panel,.route-display-settings,.layer-window,.home-map-popup,.home-recording-panel) .global-focus-lock { display:none; }
+.observatory.home-map[data-panel='favorites'] :is(.home-position-dock,.home-map-actions,.home-camera-control) { display:none; }
+.observatory.home-map[data-panel='favorites'] .control-dock { z-index:82; }
+/* Keep only the existing location action, with its original mode-cycle handler. */
+.observatory.home-map[data-focus-locked=true] .home-position-dock { display:flex !important; right:8px; bottom:104px; }
+.observatory.home-map[data-focus-locked=true] .home-position-dock > :not(.position-locate-button) { display:none !important; }
+.route-travel-mode { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.route-travel-mode select { min-height:36px; flex:1; }
+.route-travel-mode small { flex-basis:100%; }

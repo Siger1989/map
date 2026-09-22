@@ -37,7 +37,7 @@ function SelectedRouteInfoBody({ track, preferences, mode, reversed }: {
       <div><dt>全程爬升</dt><dd>{value(stats.ascent)}</dd></div>
       <div><dt>全程下降</dt><dd>{value(stats.descent)}</dd></div>
     </dl>}
-    {preferences.legend && mode !== 'solid' && <RouteColorKey mode={mode} scale={scale} />}
+    {preferences.legend && mode !== 'solid' && <RouteColorKey mode={mode} scale={scale} travelMode={track.style?.travelMode} />}
     {(preferences.profile || preferences.statistics) && <small>{elevation.loading ? '高程读取中' : elevation.elevationError ? '部分高程缺测' : elevation.estimated ? '含地形估算' : '轨迹高程'}</small>}
   </section>;
 }

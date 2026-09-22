@@ -1104,8 +1104,8 @@ export default function Home() {
           }
         }}
       >
-        <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
-          disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>
+        {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !offlineDownload && !offlinePicking && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
+          disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
         <TerrainMap
           mapSource={mapSources.source}
@@ -1446,7 +1446,7 @@ export default function Home() {
               )}
               {routeWindow === 'details' && (
                 <RouteDetails
-                  onAppearance={(style) => { const ok = tracks.updateStyle(railTrack.id, style); if (ok) routeDisplay.update({ mode: 'original' }); return ok; }}
+                  onAppearance={(style) => { const ok = tracks.updateStyle(railTrack.id, style); if (ok && (style.color !== railTrack.style?.color || style.colorMode !== railTrack.style?.colorMode)) routeDisplay.update({ mode: 'original' }); return ok; }}
                   sourceName={tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded')?.name}
                   onSource={tracks.saved.some(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded') ? () => { const source = tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded'); if (source) openRoute(source.id); } : undefined}
                   key={railTrack.id}
@@ -2230,11 +2230,14 @@ export default function Home() {
             if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
             if (follow.following) {
               if (position.direction !== 'device' && !sectionEditing && !survey.active) {
+                focusLock.adoptMode(true,'device');
                 void position.device();
               } else {
+                focusLock.adoptMode(false,'free');
                 follow.pause(); position.free(); map.current?.stop();
               }
             } else {
+              focusLock.adoptMode(true,'north');
               position.north(); map.current?.north();
               map.current?.previewRoute(null);
               follow.resume();

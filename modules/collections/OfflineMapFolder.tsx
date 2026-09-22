@@ -1,3 +1,4 @@
+import { OfflineProgress } from '../outdoor/OfflineProgress';
 import { useState } from 'react';
 import {
   ChevronDown,
@@ -71,6 +72,7 @@ export function OfflineMapFolder({
                   <MoreHorizontal size={18} />
                 </button>
               </div>
+              <OfflineProgress trip={p} />
               {active === p.id && (
                 <div className="offline-map-entry-tools">
                   <small>

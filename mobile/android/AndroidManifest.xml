@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="58" android:versionName="0.2.51-test">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="59" android:versionName="0.2.52-test">
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -9,10 +9,12 @@
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-feature android:glEsVersion="0x00030000" android:required="true" />
   <application android:label="山兔" android:icon="@drawable/ic_launcher" android:theme="@style/AppTheme"
     android:allowBackup="false" android:usesCleartextTraffic="false" android:hardwareAccelerated="true" android:supportsRtl="true">
+    <service android:name="com.guanyun.weather.OfflineDownloadService" android:exported="false" android:foregroundServiceType="dataSync" />
     <service android:name="com.guanyun.weather.RecordingService" android:exported="false" android:foregroundServiceType="location" />
     <provider android:name="com.guanyun.weather.PhotoShareProvider" android:authorities="com.guanyun.weather.preview.photos" android:exported="false" android:grantUriPermissions="true" />
     <provider android:name="com.guanyun.weather.CameraCaptureProvider" android:authorities="com.guanyun.weather.preview.capture" android:exported="false" android:grantUriPermissions="true" />
