@@ -17,6 +17,7 @@ import { FreeMapLibrary } from './FreeMapLibrary';
 import { TiandituHelp } from './TiandituHelp';
 import { TiandituSources } from '../cartography/TiandituSources';
 import type { LayerSettings } from '../map/types';
+import { usesSentinel } from '../cartography/sentinel';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -55,6 +56,7 @@ export function MapSourcesPanel({
     [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState('');
   const domestic = basemapConfiguration().domestic;
+  const sentinelDownloadPending = !sources.selected && !!settings && usesSentinel(settings);
   const work = useRef<AbortController | null>(null);
   const root = useRef<HTMLElement>(null);
   const alert = useRef<HTMLParagraphElement>(null);
@@ -195,7 +197,7 @@ export function MapSourcesPanel({
             {(
               [
                 ['terrain', domestic ? '天地图矢量' : '地形地图'],
-                ['detail', domestic ? '天地图影像' : '地表影像'],
+                ['detail', 'Sentinel-2 2025'],
                 ['latest', '最新云况'],
               ] as const
             ).map(([id, label]) => (
@@ -214,7 +216,7 @@ export function MapSourcesPanel({
               </button>
             ))}
           </div>)}
-          {step === 'list' && <div className="map-source-actions">{onOffline && <button onClick={onOffline}>下载当前地图范围</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机地图</button></div>}
+          {step === 'list' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载 · 待接入':'下载当前地图范围'}</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机地图</button></div>}
           {step === 'library' && <>
           {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary

@@ -367,7 +367,7 @@ test('Tianditu config is opt-in and WMTS coordinates use the documented Mercator
     ),
   );
 });
-test('domestic map style has native WMTS imagery and labels with no overseas imagery/font request', async () => {
+test('default style uses capped Sentinel imagery and keeps configured Tianditu layers dormant', async () => {
   const result = await build({
     stdin: {
       contents: `export { baseStyle } from './modules/terrain/terrain.ts';`,
@@ -399,6 +399,14 @@ test('domestic map style has native WMTS imagery and labels with no overseas ima
       ),
     );
     assert.ok(style.glyphs.startsWith('http://localhost:3000/fonts/'));
+    assert.equal(style.sources.sentinel.maxzoom, 14);
+    assert.ok(style.sources.sentinel.tiles[0].includes('s2cloudless-2025_3857'));
+    assert.notEqual(style.layers.find(layer => layer.id === 'sentinel').layout?.visibility, 'none');
+    for (const layer of style.layers) {
+      if (layer.source && style.sources[layer.source]?.tiles?.some(url => url.includes('.tianditu.gov.cn/'))) {
+        assert.equal(layer.layout?.visibility, 'none', layer.id);
+      }
+    }
     assert.equal(style.sources.elevation.encoding, 'terrarium');
   } finally {
     globalThis.window = previous;

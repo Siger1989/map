@@ -35,6 +35,7 @@ import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
+import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
 import { OfflineDownload, type OfflineDownloadTarget } from '@/modules/outdoor/OfflineDownload';
 import type { DownloadArea } from '@/modules/outdoor/downloadPlan';
@@ -231,11 +232,11 @@ export default function Home() {
   const measurement = useMeasurement();
   const [routeNodeBox, setRouteNodeBox] = useState(false);
   const mapSources = useMapSources(false);
-  const domesticBasemap = basemapConfiguration().domestic && !layers.offlineBasemap;
+  const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
-    : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
-  const rasterName = mapSources.source?.name ?? (domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
-  useEffect(() => { setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null }); }, [mapSources.selected, layers.satellite, layers.imageryMode, layers.offlineBasemap]);
+    : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
+  const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
+  useEffect(() => { setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null }); }, [mapSources.selected, layers.satellite, layers.satelliteProvider, layers.imageryMode, layers.offlineBasemap]);
   const guidance = useGuidance(
     navigation.route,
     position.fix,
@@ -300,7 +301,8 @@ export default function Home() {
   const [offlineDownloadError, setOfflineDownloadError] = useState('');
   const beginMapDownload = (name: string, area?: DownloadArea) => {
     try {
-      if (mapSources.source || (!domesticBasemap && layers.satellite)) throw new Error('此图源尚未接入区域下载，请选择天地图或开源底图');
+      if (usesSentinel(layers) && !mapSources.source) throw new Error('Sentinel-2 区域下载接口已预留，当前仅在线浏览；已有离线包仍可使用');
+      if (mapSources.source || (!domesticBasemap && layers.satellite)) throw new Error('此图源尚未接入区域下载，请选择开源底图或已有离线包');
       const bounds = area ? null : map.current?.offlineRegionBounds(true);
       if (!area && !bounds) throw new Error('地图尚未就绪');
       setOfflineDownload({name, area: area ?? {kind:'region',bounds:bounds!},provider:domesticBasemap?'tianditu':'openfreemap',settings:{...layers}});
@@ -2492,6 +2494,7 @@ export default function Home() {
                   offlineBasemap: false,
                   offlineMaxZoom: null,
                   satellite: id !== 'terrain',
+                  satelliteProvider: 'sentinel',
                   ...(id !== 'terrain' ? { imageryMode: id } : {}),
                 });
               }}

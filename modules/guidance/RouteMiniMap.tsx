@@ -7,6 +7,7 @@ import { tiandituBase, TIANDITU_LAYERS } from '../cartography/tianditu';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { offlineMapOnly } from '../outdoor/tileCache';
 import { CameraGizmo } from '../controls/CameraGizmo';
+import { SENTINEL_TILES, SENTINEL_MAXZOOM, usesSentinel, usesTianditu } from '../cartography/sentinel';
 type Option={id:string;coordinates:Coordinate[];color:string};
 export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='original',settings}: {
   coordinates:Coordinate[];color?:string;routes?:Option[];selectedId?:string;settings?:LayerSettings;
@@ -18,6 +19,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
   const latest=useRef({options,selectedId,coordinates});latest.current={options,selectedId,coordinates};
   const [error,setError]=useState(''),[retry,setRetry]=useState(0);
   const domestic=basemapConfiguration(),base=settings?tiandituBase(settings):'img';
+  const sentinel=!settings || usesSentinel(settings),tdt=!!settings && usesTianditu(settings,domestic.domestic);
   useEffect(()=>{
     let disposed=false, map:import('maplibre-gl').Map|undefined;
     const markers:import('maplibre-gl').Marker[]=[];
@@ -28,7 +30,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
       ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');ml.addProtocol('tripcache',offlineProtocol);
       map=new ml.Map({container:container.current,interactive:true,keyboard:false,attributionControl:false,fadeDuration:0,transformRequest:offlineTransform,
         bounds:routeBounds(latest.current.options.map(r=>r.coordinates)),fitBoundsOptions:{padding:{top:30,bottom:30,left:30,right:86},maxZoom:16},
-        style:{version:8,sources:{base:{type:'raster',tiles:domestic.domestic?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:domestic.domestic?Math.min(TIANDITU_LAYERS[base].maxzoom,offlineMapOnly()?settings?.offlineMaxZoom??18:18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
+        style:{version:8,sources:{base:{type:'raster',tiles:sentinel?SENTINEL_TILES:tdt?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:sentinel?SENTINEL_MAXZOOM:tdt?Math.min(TIANDITU_LAYERS[base].maxzoom,offlineMapOnly()?settings?.offlineMaxZoom??18:18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
           {id:'background',type:'background',paint:{'background-color':'#dce6d5'}},{id:'base',type:'raster',source:'base'},
           {id:'other',type:'line',source:'routes',filter:['==',['get','selected'],false],paint:{'line-color':['get','color'],'line-width':3,'line-opacity':0.5}},
           {id:'outline',type:'line',source:'routes',filter:['==',['get','selected'],true],paint:{'line-color':'#fff','line-width':7}},
@@ -54,7 +56,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
       map.on('error',()=>{if(!disposed)setError('底图加载失败，请检查网络或缓存后重试');});
     }).catch(()=>{if(!disposed)setError('底图暂不可用，请重试');});
     return()=>{disposed=true;clearTimeout(timer);update.current=()=>{};camera.current=null;markers.forEach(m=>m.remove());map?.remove();};
-  },[base,domestic.domestic,domestic.token,retry,settings?.offlineMaxZoom]);
+  },[base,sentinel,tdt,domestic.token,retry,settings?.offlineMaxZoom]);
   const geometry=JSON.stringify([options,selectedId,coordinates]);
   useEffect(()=>update.current(),[geometry]);
   return <section className="route-mini-overview" aria-label="路线缩略图：选中路线高亮，其他方案淡色显示">
@@ -64,7 +66,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
       <button type="button" aria-label="缩小导航小地图" onClick={()=>camera.current?.zoomOut({duration:180})}>−</button>
       <CameraGizmo view={view} onView={(pitch,bearing)=>camera.current?.jumpTo({pitch,bearing})}/>
     </div>
-    <a href={domestic.domestic?'https://www.tianditu.gov.cn/':'https://www.openstreetmap.org/copyright'} target="_blank" rel="noreferrer">{domestic.domestic?'© 天地图':'© OpenStreetMap'}</a>
+    <a href={sentinel?'https://cloudless.eox.at':tdt?'https://www.tianditu.gov.cn/':'https://www.openstreetmap.org/copyright'} target="_blank" rel="noreferrer" title={sentinel?'EOxCloudless · modified Copernicus Sentinel data 2025 · CC BY-NC-SA 4.0':undefined}>{sentinel?'© EOX · Sentinel 2025 · CC BY-NC-SA':tdt?'© 天地图':'© OpenStreetMap'}</a>
     {error && <small role="status">{error}<button onClick={()=>setRetry(n=>n+1)}>重试</button></small>}
   </section>;
 }

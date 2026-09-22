@@ -1,4 +1,5 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
+import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { readLastView, saveLastView } from './lastView';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
@@ -258,14 +259,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (map.getSource('satellite')) map.removeSource('satellite');
       if (
         latest.current.mapSource ||
-        domestic ||
+        usesTianditu(latest.current.settings, domestic) ||
         !latest.current.settings.satellite ||
         latest.current.settings.imageryMode !== 'latest'
       ) {
         latest.current.onSatellite({
           date: '',
           ready: false,
-          status: domestic
+          status: usesSentinel(latest.current.settings)
+            ? 'Sentinel-2 · 2025年少云合成 · 约10米，非实时影像'
+            : usesTianditu(latest.current.settings, domestic)
             ? '天地图地表影像，非实时云况；拍摄日期由图源提供'
             : '选择最新云况影像时获取卫星观测',
         });
@@ -296,9 +299,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const map = mapRef.current;
       if (!map) return;
       const { settings: s, mapSource } = latest.current;
-      const domesticMap = domestic && !s.offlineBasemap;
+      const domesticMap = usesTianditu(s, domestic);
       const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
-        : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
+        : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
       const source=ids[0] ? map.getSource(ids[0]) : null;
@@ -312,7 +315,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const sync = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
-      const useDomestic = domestic && !latest.current.settings.offlineBasemap;
+      const useDomestic = usesTianditu(latest.current.settings, domestic);
       const glyphs = useDomestic ? window.location.origin + '/fonts/{fontstack}/{range}.pbf' : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
       if (map.getGlyphs() !== glyphs) map.setGlyphs(glyphs);
       const s = latest.current.section.enabled
@@ -369,12 +372,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           s.elevationColorsOpacity ?? 1,
         );
       }
+      map.setLayoutProperty('sentinel', 'visibility', !custom && usesSentinel(s) ? 'visible' : 'none');
       for (const id of ['relief', 'detail', 'satellite'])
         if (map.getLayer(id))
           map.setLayoutProperty(
             id,
             'visibility',
-            !custom &&
+            !custom && !usesSentinel(s) && (!domestic || useDomestic || id === 'satellite') &&
               (useDomestic && id !== 'satellite'
                 ? id === 'relief'
                   ? !s.satellite
@@ -1116,6 +1120,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('error', (event) => {
+            if ('sourceId' in event && event.sourceId === 'sentinel') {
+              latest.current.onStatus('Sentinel-2 连接失败，请稍后重试或手动选择图源');
+              return;
+            }
             if ('sourceId' in event && event.sourceId === SOURCE_ID) {
               latest.current.onSourceStatus?.(
                 '部分地图未能加载，请检查网络、授权、跨域设置或文件完整性',
@@ -1212,7 +1220,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     }, [props.sectionCursor]);
     useEffect(() => {
       syncSatellite();
-    }, [settings.imageryMode, settings.satellite, props.mapSource]);
+    }, [settings.imageryMode, settings.satellite, settings.satelliteProvider, settings.offlineBasemap, props.mapSource]);
     useEffect(() => {
       if (loaded.current) routeRef.current?.sync(props.routeOverlay);
     }, [props.routeOverlay]);

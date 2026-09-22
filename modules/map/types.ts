@@ -1,6 +1,7 @@
 export type LayerSettings = {
   terrain: boolean;
   satellite: boolean;
+  satelliteProvider?: 'sentinel' | 'tianditu';
   offlineBasemap?: boolean;
   tiandituBase?: 'vec' | 'img' | 'ter';
   tiandituLabels?: 'auto' | 'cva' | 'cia' | 'cta' | 'none';
@@ -26,6 +27,7 @@ export type LayerSettings = {
 export const DEFAULT_LAYERS: LayerSettings = {
   terrain: true,
   satellite: false,
+  satelliteProvider: 'sentinel',
   contours: false,
   elevationColors: false,
   elevationColorsOpacity: 1,
@@ -50,6 +52,7 @@ export function applyLayerPatch(
 ): LayerSettings {
   const next = { ...current, ...patch };
   if (patch.tiandituBase) {
+    next.satelliteProvider = patch.satelliteProvider ?? 'tianditu';
     next.satellite = patch.tiandituBase === 'img';
     next.imageryMode = 'detail';
     next.offlineBasemap = patch.offlineBasemap ?? false;

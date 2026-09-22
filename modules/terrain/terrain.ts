@@ -6,6 +6,7 @@ import {
   TIANDITU_CREDIT,
 } from '../cartography/basemaps';
 import { TERRAIN_URL } from './tiles';
+import { SENTINEL_TILES, SENTINEL_MAXZOOM, SENTINEL_CREDIT } from '../cartography/sentinel';
 import { TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 export { TERRAIN_URL } from './tiles';
 export const TERRAIN_MAXZOOM = 12;
@@ -21,6 +22,7 @@ export function baseStyle(): StyleSpecification {
       ? window.location.origin + '/fonts/{fontstack}/{range}.pbf'
       : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
+      sentinel: { type: 'raster', tiles: SENTINEL_TILES, tileSize: 256, maxzoom: SENTINEL_MAXZOOM, attribution: SENTINEL_CREDIT },
       elevation: {
         type: 'raster-dem',
         tiles,
@@ -55,14 +57,12 @@ export function baseStyle(): StyleSpecification {
         minzoom: domestic ? 1 : 0,
         tiles: domestic
           ? tiandituTiles('img', token)
-          : [
-              'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg',
-            ],
+          : SENTINEL_TILES,
         tileSize: 256,
-        maxzoom: domestic ? 18 : 14,
+        maxzoom: domestic ? 18 : SENTINEL_MAXZOOM,
         attribution: domestic
           ? TIANDITU_CREDIT
-          : '<a href="https://s2maps.eu" target="_blank">Sentinel-2 cloudless by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2024) · CC BY-NC-SA 4.0</a>',
+          : SENTINEL_CREDIT,
       },
       ...(domestic
         ? {
@@ -99,14 +99,17 @@ export function baseStyle(): StyleSpecification {
         id: 'relief',
         type: 'raster',
         source: 'relief',
+        layout: { visibility: 'none' },
         paint: { 'raster-saturation': -0.15, 'raster-brightness-max': 0.8 },
       },
       {
         id: 'detail',
         type: 'raster',
         source: 'detail',
+        layout: { visibility: 'none' },
         paint: { 'raster-saturation': -0.1, 'raster-brightness-max': 0.93 },
       },
+      { id: 'sentinel', type: 'raster', source: 'sentinel', paint: { 'raster-fade-duration': 0 } },
       ...(domestic ? [{ id: 'domestic-terrain', type: 'raster' as const, source: 'domestic-terrain', layout: { visibility: 'none' as const } }] : []),
       {
         id: 'elevation-colors',
@@ -136,6 +139,7 @@ export function baseStyle(): StyleSpecification {
               id: 'domestic-labels-image',
               type: 'raster' as const,
               source: 'domestic-labels-image',
+              layout: { visibility: 'none' as const },
             },
             {
               id: 'domestic-labels-map',

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { basemapConfiguration } from '../cartography/basemaps';
+import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 const ITEMS = [
   {
     key: 'temperature',
@@ -101,7 +102,7 @@ export function LayerPanel({
   onOpenSources?: () => void;
   customSource?: string;
 }) {
-  const domestic = basemapConfiguration().domestic;
+  const domestic = usesTianditu(settings, basemapConfiguration().domestic);
   return (
     <section className="layer-panel" aria-label="地图图层">
       {onOpenSources && (
@@ -134,9 +135,9 @@ export function LayerPanel({
                   <p>
                     {key === 'satellite'
                       ? settings.imageryMode === 'detail'
-                        ? domestic
+                        ? usesSentinel(settings) ? 'Sentinel-2 · 2025年合成 · 约10米' : domestic
                           ? '天地图地表影像 · 非实时云况'
-                          : '10 米级地表 · 2024 年合成'
+                          : '10 米级地表 · 2025 年合成'
                         : satelliteDate
                           ? `影像日期 ${satelliteDate}`
                           : '正在获取最新可用日期'
@@ -302,7 +303,7 @@ export function LayerPanel({
           {domestic
             ? '底图与中文标注：天地图。最新云况暂无国内替代；天气、道路吸附及区域外高程仍可能需要境外连接。'
             : settings.imageryMode === 'detail'
-              ? 'EOX / Sentinel-2 · 2024 年无云合成。10 米级影像适合看地表细节；当天云况请切换最新观测。'
+              ? 'EOX / Sentinel-2 · 2025 年少云合成，约10米，非实时影像。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'
               : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
         </p>
         <div className="layer-note">

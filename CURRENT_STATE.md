@@ -1,5 +1,41 @@
 # 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
 
+## 2026-09-22用户恢复打包并上传：0.2.56-test / code63
+
+用户明确“打包并上传”，覆盖上一节暂停上传要求；本次交付Sentinel-2默认主图版本，旧0.2.54/0.2.55草稿保持不动。源码分支codex/rollback-ui-0235-20260921，未合入main。
+
+- 基于下节Sentinel-2修改提升config/product.ts与mobile/android/AndroidManifest.xml版本，新增docs/release-0.2.56.md；包名com.guanyun.weather.shantu.preview与原4a94签名保持，可覆盖同系列旧版。保留轨迹/照片/布局及既有离线包，无数据迁移。
+- 最终网页/Java/DEX/APK重新构建通过。TypeScript、22项定向测试、v2/v3签名、zipalign、543项ZIP/473地形瓦片、44项网页及11项原生特征通过。本地日志.openai/apk-0.2.56-*不提交。
+- APK/Shantu-0.2.56-test-standalone.apk，57788854字节，SHA256：893a27b7a5668ede64064730d42b01a01468c710a121285550597a55b5cb7dc6。校验文件同目录.sha256。
+- 发行目标https://github.com/Siger1989/map/releases/tag/v0.2.56-test-standalone，附APK与校验文件；远端发布/上传结果以GitHub实际资产为准。已fetch核对基线与远端一致，不强推。
+- 当前Sentinel-2为2025合成/约10米/Z14上限，区域下载仅预留入口，天地图手动选择；未承诺Google、完整缓存重构或每日计数。桌面直连与预览已验证，手机网络/安装/定位/触摸仍需实测。HarmonyOS6.1原生没有可交付HAP/APP，详见本版发行说明。
+
+
+## 2026-09-22 Sentinel-2 2025 默认主图（本地预览，未出包/上传）
+
+- 用户确认先以 EOX Sentinel-2 cloudless 2025 为主图；上一轮暂停上传继续有效。当前分支 codex/rollback-ui-0235-20260921，远端基线 2a33e3f5e58a00f901b66a8247eafabca2fb24df。本轮源码仅在工作区，手机已装 0.2.55 尚不包含此改动。
+- 新增 modules/cartography/sentinel.ts、tests/sentinel-provider.test.mjs。修改 map/types、terrain/terrain、TerrainMap、LayerPanel、TiandituSources、MapSourcesPanel、RouteMiniMap 与 app/page：默认主图与导航小地图使用 2025 EOX；天地图初始图层隐藏，必须手动选择。有效瓦片最高 Z14，继续放大只放大已有影像；保留约10米、年份及 EOX/Copernicus/CC BY-NC-SA 署名。已有天地图离线包显示设置仍可显式恢复图源。
+- 当前只接入在线浏览；区域下载入口标明待接入并禁用，路线下载也有明确提示。未实施此前完整缓存重构、请求配额统计、Google 或 PMTiles；未迁移/清理轨迹、照片、布局或既有离线包。
+- 本机 curl --noproxy '*' 测试：EOX WMTS capabilities HTTP200/3.80秒，2025 Z14 实际JPEG瓦片 HTTP200/1.36秒/15430字节。只证明绕过显式代理后本机连接成功，不保证其他网络或排除系统级隧道；手机网络未实测。EOX 公共服务仍可能限流，失败提示用户重试或手动换源，不自动切天地图。
+- 验证：npx tsc --noEmit、16项定向测试（含默认图层不启用天地图、Z14、旧包选择兼容）、npm run build:android:web、git diff --check通过。构建仅现有大chunk警告，未构建APK。测试扩展 tests/roads-models.test.mjs。
+- 390×约857预览实际加载主地图及导航小地图；图源面板276×200，导航加减/摇杆及署名可见。截图 artifacts/screenshots/sentinel-20260922/{source-selector,main-map,navigation-map}.png；未进行新一轮真机验收。下一步用户确认图像效果与手机直连后再明确安排APK交付，不恢复已暂停的上传。
+
+
+### 已查到服务端限流（用户确认仅缓存未勾选、细节自动）
+
+- 使用当前构建配置Key，分别以预览与Android资源Origin/Referer请求天地图影像14/16/18级，六次均HTTP429且非图片。随后单独16级复核响应：code302010，msg“该tk已限流”，resolve“请求已限流，请稍后重试!”。不记录或上传真实Key。日志仅本地.openai/check-phone-tiles.log和check-phone-tile-error.log。
+- 解包已安装来源0.2.55 APK，确认脚本内Key与本次请求一致；开发预览也使用同一Key。当前在线新瓦片有实际服务端限流，不能继续认定仅14级设置问题。电脑仍显示可能来自已加载/浏览器缓存，此项为推测；尚无手机网络日志，不能排除并发的设备问题。
+- 恢复需要图源限流解除或用户在图源账户核查授权/配额；响应未说明是瞬时频控还是累计额度，也未给恢复时间。不轮换Key/主机绕限流，不继续批量重试。现有统一“等待网络恢复”提示没有展示限流原因，待授权修改时加明确分类及退避，当前未改业务代码或出新包。
+- 气温截图另已定位：固定5×5采样点、步长0.32度，逐格纯色fill，随中心移动而不随视野范围扩展；图例与继续按钮重叠。尚未修改或打包。
+
+
+## 2026-09-22用户已安装0.2.55，暂停上传并调查手机地图
+
+用户安装本地0.2.55后反馈：手机放大无法继续加载地图，电脑预览正常；明确“先别上传”。已停止本轮gh上传进程22332，未发布：v0.2.55-test-standalone草稿393550317仅有.sha256。源码此前已推送2a33e3f5e58a00f901b66a8247eafabca2fb24df并核对远端一致，不再继续上传或自动出包。
+
+排查已确认：本版在线打开缓存会清除offlineMaxZoom，但“地图仅使用已缓存数据”持久开关仍会主动阻止新瓦片网络请求；手机与电脑各自保存不同设置。APK缓存命中走OfflineStore，未命中走WebView外部HTTPS；主地图与预览使用相同瓦片逻辑。ADB当前无连接设备，尚未取得手机请求错误，不能认定根因。已向用户确认仅缓存开关；后续区分纯缓存/手动细节锁定/实际手机瓦片请求失败，不能以桌面正常当真机修复。
+
+
 ## 2026-09-22明确恢复打包：0.2.55-test / code62
 
 用户最新要求“打包把”，覆盖下方暂停打包及未交付的历史状态；本版整合0.2.54修复和本轮已预览UI。分支codex/rollback-ui-0235-20260921，不合入main；旧0.2.54草稿不作为本次交付。
