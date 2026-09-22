@@ -20,6 +20,8 @@ body {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
+  /* Keep panel scrolling; MapLibre handles its own multi-touch camera gestures. */
+  touch-action: pan-x pan-y;
 }
 body {
   margin: 0;

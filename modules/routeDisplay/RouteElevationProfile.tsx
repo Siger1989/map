@@ -10,6 +10,7 @@ export function RouteElevationProfile({
   compact = false,
   endpoints = false,
   selection,
+  status,
 }: {
   samples: ElevationSample[];
   scale: ElevationScale;
@@ -17,6 +18,7 @@ export function RouteElevationProfile({
   compact?: boolean;
   endpoints?: boolean;
   selection?: { distance: number; elevation: number | null } | null;
+  status?: string;
 }) {
   const distance = samples.at(-1)?.distance ?? 0;
   const width = compact ? 240 : 180, baseline = compact ? 38 : 58, height = compact ? 52 : 74;
@@ -75,6 +77,7 @@ export function RouteElevationProfile({
             ? `${Math.round(scale.min)}–${Math.round(scale.max)} m`
             : '暂无高程'}
         </text>
+        {status && <text x={width - 4} y="10" textAnchor="end" aria-label="高程状态">{status}</text>}
       </svg>
     </section>
   );

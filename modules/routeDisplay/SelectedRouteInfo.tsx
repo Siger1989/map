@@ -40,8 +40,9 @@ function SelectedRouteInfoBody({ track, preferences, mode, reversed, point }: {
   const selection = selected ? {distance:Math.max(0,Math.min(total,reversed?total-selected.profileDistance:selected.profileDistance)),elevation:selected.elevation} : null;
   const selectedSlope = selected?.slopeDegrees == null ? null : selected.slopeDegrees*(reversed?-1:1);
   const value = (n: number | null) => n === null ? '—' : `${Math.round(n)}m`;
+  const status = elevation.loading ? '高程读取中' : elevation.elevationError ? '部分高程缺测' : elevation.estimated ? '含地形估算' : '轨迹高程';
   return <section ref={dock} className="selected-route-info" aria-label="所选路线底部信息">
-    {preferences.profile && <RouteElevationProfile samples={samples} scale={scale} selection={selection} compact endpoints />}
+    {preferences.profile && <RouteElevationProfile samples={samples} scale={scale} selection={selection} status={status} compact endpoints />}
     {selected && (preferences.profile || preferences.statistics) && <div className="selected-route-point" aria-label="剖面所选点信息">
       <span>选中 · {formatDistance(reversed?Math.max(0,analysis.distance-selected.distance):selected.distance)}</span>
       <span>海拔 <b>{value(selected.elevation)}</b></span>
@@ -49,11 +50,10 @@ function SelectedRouteInfoBody({ track, preferences, mode, reversed, point }: {
       {selected.speedKmh!==null && <span>速度 <b>{selected.speedKmh.toFixed(1)} km/h</b></span>}
     </div>}
     {preferences.statistics && <dl aria-label="路线海拔汇总">
-      <div><dt>海拔范围</dt><dd>{scale ? `${Math.round(scale.min)}–${Math.round(scale.max)}m` : '—'}</dd></div>
+      <div><dt>{preferences.profile ? '海拔范围' : status}</dt><dd>{scale ? `${Math.round(scale.min)}–${Math.round(scale.max)}m` : '—'}</dd></div>
       <div><dt>全程爬升</dt><dd>{value(stats.ascent)}</dd></div>
       <div><dt>全程下降</dt><dd>{value(stats.descent)}</dd></div>
     </dl>}
     {preferences.legend && mode !== 'solid' && <RouteColorKey mode={mode} scale={scale} travelMode={track.style?.travelMode} />}
-    {(preferences.profile || preferences.statistics) && <small>{elevation.loading ? '高程读取中' : elevation.elevationError ? '部分高程缺测' : elevation.estimated ? '含地形估算' : '轨迹高程'}</small>}
   </section>;
 }

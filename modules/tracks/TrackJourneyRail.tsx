@@ -112,8 +112,8 @@ export function TrackJourneyRail({
           <strong>行程点</strong>
           {overviewOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         </button>
-        {overviewOpen && (
-          <div className="home-journey-list">
+        {overviewOpen && <>
+          <div className="home-journey-switches">
             {multiple && (
               <button
                 onClick={() =>
@@ -125,6 +125,9 @@ export function TrackJourneyRail({
                 {active.label} ⇄
               </button>
             )}
+            {onReverse && <button className="home-route-direction" aria-label="切换路线方向" aria-pressed={reversed} onClick={onReverse}>⇄ {reversed ? '反向' : '正向'}</button>}
+          </div>
+          <div className="home-journey-list">
             <button onClick={() => select(active.id, reversed ? 1 : 0)}>
               <i />
               <span>起点</span>
@@ -142,9 +145,8 @@ export function TrackJourneyRail({
               <span>终点</span>
               <small>{(active.distance / 1000).toFixed(1)} km</small>
             </button>
-            {onReverse && <button className="home-route-direction" aria-label="切换路线方向" aria-pressed={reversed} onClick={onReverse}>⇄ {reversed ? '反向' : '正向'}</button>}
           </div>
-        )}
+        </>}
       </aside>
     );
   return (

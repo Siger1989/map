@@ -1,0 +1,90 @@
+/* Shared UI palette. Map data, route colours and elevation ramps keep their own meaning. */
+html[data-ui-theme] { color-scheme: light; }
+html[data-ui-theme='dark'] { color-scheme: dark; }
+html[data-ui-theme] .observatory.home-map,
+html[data-ui-theme] .observatory.home-map .glass {
+  --home-ink: var(--ui-ink); --home-green: var(--ui-active-ink); --home-line: var(--ui-line);
+  --home-active: var(--ui-active); --home-surface: var(--ui-surface);
+  --text: var(--ui-ink); --muted: var(--ui-muted); --border: var(--ui-line);
+  --accent: var(--ui-accent); --cyan: var(--ui-accent); --panel: var(--ui-surface);
+  color-scheme: inherit;
+}
+html[data-ui-theme] .observatory.home-map :is(.glass,.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.selected-route-info,.home-map-popup,.home-recording-panel,.raster-level-panel,.route-display-settings,.map-toolbar,.collections-panel,.recording-panel,.dock-heading,.route-surface>header,.route-dialog>header,.route-dialog>footer,.appearance-preview) {
+  background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line);
+  border-radius:5px; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none;
+}
+html[data-ui-theme] .observatory.home-map::before { background:var(--ui-active); }
+html[data-ui-theme] .observatory.home-map :is(.home-topbar .brand,.home-topbar .place-search form,.map-layer-toggle,.weather-summary,.home-map-actions>button,.home-position-dock .position-dock-button,.global-focus-lock,.home-recording .home-recording-toggle,.elevation-legend-compact,.focus-live-data) {
+  background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); backdrop-filter:none;
+}
+html[data-ui-theme] .observatory.home-map :is(.home-topbar .brand,.home-topbar .place-search form,.map-layer-toggle,.weather-summary,.home-map-actions>button,.home-position-dock .position-dock-button,.global-focus-lock,.home-recording .home-recording-toggle) {
+  background:var(--ui-button); color:var(--ui-button-ink);
+}
+html[data-ui-theme] .observatory.home-map .home-topbar input { color:var(--ui-button-ink); }
+html[data-ui-theme] .observatory.home-map :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.home-map-popup,.raster-level-panel,.route-display-settings,.track-draw-tools,.marker-workspace,.measurement-panel,.section-panel) :is(button,summary),
+html[data-ui-theme] .observatory.home-map .home-bottom-nav button {
+  background:var(--ui-button); color:var(--ui-button-ink); border:1px solid var(--ui-line); border-radius:4px;
+}
+html[data-ui-theme] .observatory.home-map :is(.control-popover,.route-surface,.route-dialog) :is(input,select,textarea):not([type='color']):not([type='range']):not([type='checkbox']) {
+  background:var(--ui-button); color:var(--ui-button-ink); border:1px solid var(--ui-line); border-radius:4px;
+}
+html[data-ui-theme] .observatory.home-map :is(input,textarea)::placeholder { color:var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.home-map-popup,.home-position-dock,.track-draw-tools) :is(button[aria-pressed='true'],button[aria-selected='true'],button.is-primary,button.is-active),
+html[data-ui-theme] .observatory.home-map .home-bottom-nav button[data-home-selected='true'] {
+  background:var(--ui-active); color:var(--ui-active-ink); border-color:var(--ui-accent);
+}
+html[data-ui-theme] .observatory.home-map :is(.control-popover,.route-dialog,.route-surface) :is(button.route-primary,button.collection-primary,button.recording-start) {
+  background:var(--ui-accent); color:var(--ui-on-accent); border-color:var(--ui-accent);
+}
+html[data-ui-theme] .observatory.home-map :is(.route-note,.route-summary,.track-continue-meta,.home-route-source,.route-surface small,.route-dialog small,.about-panel p,.selected-route-info small) { color:var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map :is(.route-result,.route-stats,.recording-actions,.recording-settings,.recording-summary,.navigation-statistics>div,.track-continue-picker,.layout-account-settings,.route-endpoint,.route-stop-row) { background:var(--ui-button); color:var(--ui-button-ink); border-color:var(--ui-line); }
+html[data-ui-theme] .observatory.home-map .selected-route-info svg text { fill:var(--ui-ink); }
+html[data-ui-theme] .observatory.home-map .selected-route-info svg { background:var(--ui-surface); }
+html[data-ui-theme] .observatory.home-map button:focus-visible { outline-color:var(--ui-accent); }
+/* All menu levels share the same 36px controls and 4px spacing. */
+html[data-ui-theme] .observatory.home-map .control-popover .dock-heading { height:40px; min-height:40px; gap:4px; border-bottom:1px solid var(--ui-line); }
+html[data-ui-theme] .observatory.home-map .control-popover .dock-heading :is(button,.icon-button) { min-height:36px; height:36px; min-width:36px; margin:0; padding:0 4px; font-size:11px; }
+html[data-ui-theme] .observatory.home-map .control-popover .dock-heading h2 { font-size:13px; }
+html[data-ui-theme] .observatory.home-map .control-popover :is(button,summary,select) { min-height:36px; font-size:11px; padding:2px 4px; }
+html[data-ui-theme] .observatory.home-map .dock-content { padding-top:4px; }
+html[data-ui-theme] .observatory.home-map :is(.track-panel,.route-panel,.tool-grid) { gap:4px; }
+html[data-ui-theme] .observatory.home-map[data-panel='track'] .control-dock>.control-popover { top:auto; bottom:calc(var(--home-footer) + 4px); left:var(--home-left); right:auto; width:min(276px,calc(100% - var(--home-left) - 88px)); }
+html[data-ui-theme] .observatory.home-map .track-start-actions { gap:4px; }
+/* The same row holds the five route actions; preserve at least 36px targets at 360px. */
+html[data-ui-theme] .observatory.home-map .home-route-actions { grid-template-columns:repeat(4,minmax(0,1fr)); gap:2px; }
+html[data-ui-theme] .observatory.home-map .home-route-actions:has([aria-label='缓存当前路线']) { grid-template-columns:repeat(5,minmax(0,1fr)); }
+html[data-ui-theme] .observatory.home-map .home-route-actions button { min-height:36px; padding:1px; border-radius:4px; }
+html[data-ui-theme] .observatory.home-map .home-route-name { padding:2px 4px; }
+html[data-ui-theme] .observatory.home-map .home-route-name>span { text-decoration:none; color:var(--ui-active-ink); }
+html[data-ui-theme] .observatory.home-map .home-route-source { font-size:10px; }
+html[data-ui-theme] .observatory.home-map .home-route-metrics { gap:2px 5px; padding:3px 0; }
+html[data-ui-theme] .observatory.home-map .home-route-metrics>span+span::before { margin-right:5px; }
+html[data-ui-theme] .observatory.home-map .home-journey-switches { display:flex; gap:2px; margin:2px 0; }
+html[data-ui-theme] .observatory.home-map .home-journey-switches button { flex:1; min-width:0; min-height:36px; padding:0 1px; white-space:nowrap; font-size:10px; }
+html[data-ui-theme] .observatory.home-map .home-journey-heading { min-height:36px; padding:0 3px; }
+html[data-ui-theme] .observatory.home-map .home-journey-list button { min-height:36px; padding:0 2px; margin-top:2px; }
+html[data-ui-theme] .observatory.home-map .home-journey-list button::after { display:none; }
+/* Personalization is a step within the logo menu, with its own persistent return/reset row. */
+html[data-ui-theme] .observatory.home-map .appearance-entry { display:flex; align-items:center; justify-content:space-between; width:100%; gap:4px; }
+.appearance-entry span { font-size:10px; }
+.appearance-settings { display:grid; gap:4px; }
+html[data-ui-theme] .observatory.home-map .appearance-settings>header { position:sticky; top:-4px; z-index:2; display:flex; align-items:center; gap:4px; background:var(--ui-surface); padding:2px 0; }
+.appearance-settings>header strong { flex:1; text-align:center; }
+.appearance-mode { display:flex; align-items:center; gap:4px; }
+.appearance-mode select { flex:1; min-width:0; }
+.appearance-presets { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.appearance-presets button { display:flex; align-items:center; justify-content:center; gap:4px; }
+.appearance-presets i { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.appearance-preview { display:flex; align-items:center; justify-content:space-between; gap:4px; padding:4px; border:1px solid var(--ui-line); min-height:36px; }
+.appearance-sample { padding:4px; background:var(--ui-active); color:var(--ui-active-ink); border:1px solid var(--ui-accent); border-radius:4px; }
+.appearance-color { display:grid; grid-template-columns:48px 36px minmax(0,1fr); align-items:center; gap:4px; }
+html[data-ui-theme] .observatory.home-map .appearance-color input { min-width:0; width:100%; height:36px; padding:2px 4px; }
+.appearance-contrast { display:flex; align-items:center; gap:4px; }
+.appearance-contrast input { min-width:0; flex:1; height:36px; }
+html[data-ui-theme] .observatory.home-map :is(.route-elevation-chart,.route-metric-grid>div,.record-function-group) { background:var(--ui-button); color:var(--ui-button-ink); border-color:var(--ui-line); }
+html[data-ui-theme] .observatory.home-map .route-metric-grid dt { color:var(--ui-button-ink); }
+html[data-ui-theme] .observatory.home-map .record-console { color:var(--ui-ink); }
+/* The existing recording console uses important rules; keep this override scoped to it. */
+html[data-ui-theme] .observatory.home-map .record-console :is(button,input,select) { background:var(--ui-button) !important; color:var(--ui-button-ink) !important; border-color:var(--ui-line) !important; }
+html[data-ui-theme] .observatory.home-map .record-console button.is-primary { background:var(--ui-active) !important; color:var(--ui-active-ink) !important; }
+html[data-ui-theme] .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { background:var(--ui-surface); }

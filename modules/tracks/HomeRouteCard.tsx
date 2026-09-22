@@ -1,7 +1,7 @@
 import { recordedStats, recordedDuration } from './recordedStats';
 import { trackSourceLabel, hasTrackTime } from './provenance';
 import { useMemo, useState } from 'react';
-import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText } from 'lucide-react';
+import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Download } from 'lucide-react';
 import type { ManualTrack } from './drawing';
 import type { TrackLinePoint } from './linePoint';
 import { trackAlternatives } from './alternatives';
@@ -54,18 +54,20 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       </button>
       <button className="home-route-back" onClick={onBack} aria-label="返回"><span>返回</span><ChevronRight size={17} /></button>
     </header>
-    <div className="home-route-kind">{track.source === 'recorded' ? '实走原件' : trackSourceLabel(track)}{timed && measured.averageSpeed !== null && <span>均速 {measured.averageSpeed.toFixed(1)} km/h</span>}</div>
     <div className="home-route-metrics">
+      <span className="home-route-source">{track.source === 'recorded' ? '实走原件' : trackSourceLabel(track)}</span>
       <span>{timed ? formatDistance(measured.distance) : choice ? formatDistance(choice.distance) : '—'}</span>
       <span title={elevation.estimated ? '含地形估算' : '轨迹自带高程'}>爬升 {stats.ascent === null || choices.length > 1 ? '—' : `${Math.round(stats.ascent)} m`}</span>
-      <span>{timed ? `用时 ${recordedDuration(measured.elapsed)}` : duration != null ? `预计 ${formatDuration(duration)}` : '无实测时间'}</span>
+      {(timed || duration != null) && <span>{timed ? `用时 ${recordedDuration(measured.elapsed)}` : `预计 ${formatDuration(duration!)}`}</span>}
+      {timed && measured.averageSpeed !== null && <span>均速 {measured.averageSpeed.toFixed(1)} km/h</span>}
     </div>
     <nav className="home-route-actions" aria-label="路线主要操作">
       <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />导航</button>
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>
-    </nav>{onCache&&<button className="home-route-cache" onClick={onCache}>缓存当前路线</button>}</>}
+      {onCache && <button onClick={onCache} aria-label="缓存当前路线"><Download size={18}/>缓存</button>}
+    </nav></>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

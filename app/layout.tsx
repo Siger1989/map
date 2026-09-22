@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { AppearanceProvider } from '@/modules/appearance/AppearanceProvider';
 import { LayoutCustomization } from '@/modules/uiLayout/LayoutCustomization';
 import { PRODUCT_NAME, PRODUCT_DESCRIPTION } from '@/config/product';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -21,6 +22,8 @@ import '@/modules/controls/homeMap.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#10212b',
 };
@@ -35,8 +38,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        {children}
-        <LayoutCustomization />
+        <AppearanceProvider>{children}<LayoutCustomization /></AppearanceProvider>
       </body>
     </html>
   );

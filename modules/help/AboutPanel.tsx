@@ -7,9 +7,13 @@ import {
 import { TUTORIALS } from './tutorials';
 import { LayoutSettings } from '../uiLayout/LayoutSettings';
 import './help.css';
+import { useState } from 'react';
+import { AppearanceSettings } from '../appearance/AppearanceSettings';
 
 /** Product hub. Add future settings as separate sections without coupling to map tools. */
 export function AboutPanel() {
+  const [personalizing,setPersonalizing] = useState(false);
+  if (personalizing) return <AppearanceSettings onBack={()=>setPersonalizing(false)}/>;
   return (
     <section className="about-panel" aria-label="山兔版本与使用教程">
       <header>
@@ -24,6 +28,7 @@ export function AboutPanel() {
           <p>{PRODUCT_DESCRIPTION}</p>
         </div>
       </header>
+      <button className="appearance-entry" onClick={()=>setPersonalizing(true)}>个性化 <span>配色风格 · 恢复默认 ›</span></button>
       <LayoutSettings />
       <dl>
         <dt>当前版本</dt>

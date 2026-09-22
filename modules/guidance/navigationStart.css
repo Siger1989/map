@@ -219,7 +219,7 @@
   background: #dce6d5;
 }
 .route-mini-map {
-  height: 145px;
+  height: 196px;
   width: 100%;
 }
 .route-endpoint-badge {
@@ -245,7 +245,7 @@
 }
 .route-mini-north {
   position: absolute;
-  right: 5px;
+  left: 5px;
   top: 4px;
   background: #ffffffd9;
   font-size: 10px;
@@ -266,3 +266,9 @@
 }
 
 .navigation-route-choice { grid-template-columns:repeat(2,minmax(0,1fr)); margin:4px 0; }
+.route-mini-controls { position:absolute; right:4px; top:4px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.navigation-start .route-mini-controls > button { width:44px; height:44px; min-height:44px; padding:0; font-size:26px; background:#fffffff0; color:#173b32; border:1px solid #b2c1b2; border-radius:5px; }
+.observatory.home-map .route-mini-overview .route-mini-controls .camera-gizmo { position:relative; inset:auto; display:block; width:72px; height:68px; margin:0; }
+.observatory.home-map .route-mini-overview .route-mini-controls .camera-gizmo > svg { width:72px; height:68px; }
+.route-mini-controls .camera-gizmo > svg > text { display:none; }
+.route-mini-overview > small { max-width:calc(100% - 84px); }

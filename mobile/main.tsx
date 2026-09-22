@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { AppearanceProvider } from '../modules/appearance/AppearanceProvider';
 import { installLayoutCompatibility } from './compatibility';
 import Home from '../app/page';
 import { LayoutCustomization } from '../modules/uiLayout/LayoutCustomization';
@@ -24,8 +25,8 @@ import '../modules/controls/homeMap.css';
 // The APK owns its local HTTPS asset origin. No RSC server or development URL.
 installLayoutCompatibility();
 createRoot(document.getElementById('root')!).render(
-  <>
+  <AppearanceProvider>
     <Home />
     <LayoutCustomization />
-  </>,
+  </AppearanceProvider>,
 );

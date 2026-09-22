@@ -4,7 +4,7 @@ import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
 import { JourneyPanel } from '../journey/JourneyPanel';
 import { SharedTrackDetails } from './SharedTrackDetails';
-import { trackDistance, MAX_SAVED_TRACKS } from './drawing';
+import { trackDistance } from './drawing';
 import {
   keepsOriginalPoints,
   trackSourceLabel,
@@ -196,51 +196,13 @@ export function TrackPanel({
         </div>
       )}
       <p className="route-note">
-        完成时自动保存时间与起点附近位置。逐点松手连线，双指控图；吸附默认开启。
+        进入绘制后可调整吸附与线条样式。
       </p>
       {t.error && (
         <p className="route-error" role="alert">
           {t.error}
         </p>
       )}
-      <label className="track-snap">
-        <input
-          type="checkbox"
-          checked={t.roadSnapping}
-          onChange={(e) => t.setRoadSnapping(e.target.checked)}
-        />
-        道路吸附
-        <span>逐点沿路连接；断路时直线跨越，下个点继续吸附</span>
-      </label>
-      <label className="track-snap">
-        <input
-          type="checkbox"
-          checked={t.snapping}
-          onChange={(e) => t.setSnapping(e.target.checked)}
-        />
-        节点吸附<span>靠近时锁定，松手连接</span>
-      </label>
-      <details className="track-settings">
-        <summary>线条样式</summary>
-        <TrackStyleControls style={t.style} onChange={t.setStyle} />
-      </details>
-      <details className="track-settings">
-        <summary>更多吸附 · {t.riverSnapping ? '河流已开启' : '河流'}</summary>
-        <label className="track-snap">
-          <input
-            type="checkbox"
-            checked={t.riverSnapping}
-            onChange={(e) => t.setRiverSnapping(e.target.checked)}
-          />
-          河流吸附
-          <span>
-            默认关闭；开启后只沿河流、溪流和运河中心线，停用道路吸附。
-          </span>
-        </label>
-        <small>
-          依赖当前地图的水系线数据；请放大地图。水面没有中心线或水系断开时不自动跨越，需关闭吸附再手动连接。
-        </small>
-      </details>
       {!!t.draft.length && (
         <>
           <div className="route-result" data-track-id="draft">
@@ -288,18 +250,7 @@ export function TrackPanel({
           </button>
         </>
       )}
-      <div className="track-saved-heading">
-        <strong>
-          已保存 {t.saved.length}/{MAX_SAVED_TRACKS}
-        </strong>
-        <button
-          aria-pressed={t.visible}
-          onClick={() => t.setVisible(!t.visible)}
-        >
-          {t.visible ? '隐藏轨迹' : '显示轨迹'}
-        </button>
-      </div>
-      {records.map((track) => (
+      {records.filter(track => track.id === details).map((track) => (
         <div
           className="track-record"
           key={track.id}
@@ -499,9 +450,9 @@ export function TrackPanel({
           )}
         </div>
       ))}
-      <p className="route-note">
+      {selectedTrack && <p className="route-note">
         已显示的道路可直接吸附；虚线预览表示此段直线跨越断路，松手后继续沿路。吸附不代表道路当前可通行，轨迹只存本机。
-      </p>
+      </p>}
     </section>
   );
 }

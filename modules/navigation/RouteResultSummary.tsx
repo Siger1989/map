@@ -20,9 +20,10 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
       {onRally && <button onClick={onRally}>路书</button>}
     </div>
     {!!route.accessDistance && <p className="route-note">含虚线接入 {Math.round(route.accessDistance)} 米，接入时间按步行估算</p>}
-    <nav className="route-summary-actions" aria-label="路线编辑操作">
+    <nav className="route-summary-actions" aria-label="路线管理操作">
       {onEditPoints && <button onClick={onEditPoints}>编辑线点</button>}
       {onCancel && <button onClick={onCancel}>取消路线</button>}
+      {onCache && <button onClick={onCache} aria-label="缓存当前路线">缓存</button>}
     </nav>
     <nav className="route-summary-actions" aria-label="路线操作">
       <button className="is-primary" onClick={onStartNavigation} disabled={navigating}>{navigating ? '导航中' : '开始导航'}</button>
@@ -31,7 +32,6 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
       <button aria-expanded={section === 'steps'} onClick={() => toggle('steps')}>路段</button>
       <button aria-expanded={section === 'weather'} onClick={() => toggle('weather')}>天气</button>
     </nav>
-    {onCache && <nav className="route-summary-actions"><button onClick={onCache}>缓存当前路线</button></nav>}
     {guidanceError && !navigating && <p className="route-error" role="alert">{guidanceError}</p>}
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
     {section && <div className="route-summary-detail">

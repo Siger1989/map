@@ -2417,6 +2417,7 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            if (next === 'track' && panel !== 'track') tracks.select(null);
             setOfflinePicking(false);
             setOutdoorOffline(false);
             if (next !== panel) setCollectionSelectedKeys([]);
