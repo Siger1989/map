@@ -134,6 +134,24 @@ export function usePosition() {
     stopDirection();
     const request = generation.current;
     setDirection('device');
+    const bridge = window.GuanyunNative;
+    if (bridge?.compassEnabled && bridge.compassState) {
+      bridge.compassEnabled(true);
+      let last: number | null = null;
+      const poll = () => {
+        if (document.hidden) return;
+        try {
+          const data = JSON.parse(bridge.compassState!());
+          if (data.error) { setDirectionError(data.error); return; }
+          if (typeof data.heading !== 'number' || !Number.isFinite(data.heading) || Date.now() - data.time > 3000) { setDirectionError('等待指南针方向，请平放手机校准'); return; }
+          const value = last === null ? wrapHeading(data.heading) : wrapHeading(last + headingDelta(last, data.heading) * .3);
+          last = value; setHeading(value); setDirectionError('');
+        } catch { setDirectionError('指南针暂未就绪'); }
+      };
+      const timer = window.setInterval(poll, 120); poll();
+      sensorCleanup.current = () => { clearInterval(timer); bridge.compassEnabled?.(false); };
+      return;
+    }
     if (!window.isSecureContext || !window.DeviceOrientationEvent) {
       setDirection('free');
       setDirectionError('设备没有提供方向传感器，请使用正北模式。');

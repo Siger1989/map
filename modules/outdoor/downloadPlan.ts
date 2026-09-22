@@ -63,12 +63,14 @@ export function downloadTiles(
   area: DownloadArea,
   zoom: number,
   limit = MAX_DOWNLOAD_RESOURCES,
+  detailCorridor = false,
 ): Tile[] {
   downloadBounds(area);
   if (!Number.isInteger(zoom) || zoom < 1 || zoom > 18)
     throw new Error('无效下载清晰度');
   const tiles: Tile[] = [];
   for (let z = 0; z <= zoom; z++) {
+    const bufferKm = area.kind === 'route' ? detailCorridor && z > 14 ? Math.min(area.bufferKm, z > 16 ? 0.25 : 1) : area.bufferKm : 0;
     const n = 2 ** z,
       rows = new Map<number, [number, number][]>();
     const add = (y: number, a: number, b: number) => {
@@ -102,7 +104,7 @@ export function downloadTiles(
             by = my(b[1], n);
           const steps = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay)));
           const radius =
-            area.bufferKm /
+            bufferKm /
               ((40075 / n) *
                 Math.max(
                   0.087,
@@ -110,7 +112,7 @@ export function downloadTiles(
                     (Math.min(
                       85,
                       Math.max(Math.abs(a[1]), Math.abs(b[1])) +
-                        area.bufferKm / 110.5,
+                        bufferKm / 110.5,
                     ) *
                       Math.PI) /
                       180,

@@ -175,9 +175,9 @@ test('route editor copies beyond 20, refuses the 101st and preserves concurrent 
   const recorded = {...b,source:'recorded'};
   const records = [recorded, ...Array.from({length:19}, (_,i)=>({...a,id:`other-${i}`}))];
   const disk = archive(records);
-  assert.equal(storeRouteEdit(startRouteEdit(recorded),disk,'copy',2).records.length,21);
+  assert.equal(storeRouteEdit(moveEditNode(startRouteEdit(recorded), recorded.segments[0][0], [103.001,30.003]),disk,'copy',2).records.length,21);
   const full = archive([recorded,...Array.from({length:99},(_,i)=>({...a,id:`full-${i}`}))]);
-  assert.throws(()=>storeRouteEdit(startRouteEdit(recorded),full,'overflow',2),/100条/);
+  assert.throws(()=>storeRouteEdit(moveEditNode(startRouteEdit(recorded), recorded.segments[0][0], [103.001,30.003]),full,'overflow',2),/100条/);
   assert.equal(full.writes(),0);
   const changed = archive([{...a,colorConditions:{'#ffb477':'新备注'}}]);
   assert.throws(()=>storeRouteEdit(startRouteEdit(a),changed,'unused',2),/其他窗口更新/);

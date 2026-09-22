@@ -13,8 +13,9 @@ final class NativeBridge {
     private final AppFiles files;
     private String pending;
     final ForegroundLocation position;
+    final CompassSensor compass;
     final ArchiveOutput archive;
-    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity);this.archive=new ArchiveOutput(activity,files); }
+    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity);this.compass=new CompassSensor(activity);this.archive=new ArchiveOutput(activity,files); }
     @JavascriptInterface public String archiveBegin(String name, int size) { return archive.transfer.begin(name, size); }
     @JavascriptInterface public String archiveAppend(String token, int offset, String encoded) { return archive.transfer.append(token, offset, encoded); }
     @JavascriptInterface public String archiveFinish(String token, boolean share) { return archive.finish(token, share); }
@@ -22,11 +23,11 @@ final class NativeBridge {
     @JavascriptInterface public String locationState() { return position.snapshot(); }
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
+    @JavascriptInterface public String compassState() { return compass.snapshot(); }
+    @JavascriptInterface public void compassEnabled(boolean enabled) { activity.runOnUiThread(() -> { if(enabled && activity.trustedForeground()) compass.start(); else compass.stop(); }); }
     @JavascriptInterface public void setKeepScreenOn(boolean enabled) {
         activity.runOnUiThread(() -> {
-            if (enabled && !activity.trustedForeground()) return;
-            if (enabled) activity.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-            else activity.getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            activity.requestScreenOn(enabled);
         });
     }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }

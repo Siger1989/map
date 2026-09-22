@@ -36,6 +36,7 @@ export type TrackOverlay = {
   style: TrackStyle;
   nodes: Coordinate[];
   selectedId?: string | null;
+  reversed?: boolean;
   drawing?: boolean;
   connecting?: boolean;
   editing?: boolean;
@@ -270,6 +271,17 @@ export class TrackLayer {
         f.geometry.coordinates.length > 0,
     );
     if (state.visible) {
+      // Endpoint labels also belong to selection mode, not only editable node handles.
+      if (state.editing === false && state.selectedId) {
+        const selected = state.selectedId === DRAFT_ID ? { id:DRAFT_ID, segments:state.draft } : state.saved.find(t => t.id === state.selectedId);
+        if (selected) {
+          const variants = trackAlternatives(selected.segments);
+          const line = (variants.find(v => v.id === state.alternativeId) ?? variants[0])?.coordinates ?? selected.segments.flat();
+          const ends = [line[0], line.at(-1)];
+          if (state.reversed) ends.reverse();
+          ends.forEach((coordinates, i) => { if (coordinates) data.features.push({type:'Feature', properties:{ trackId:selected.id, selected:true, color:i ? '#db7829' : '#16824b', endpointLabel:i ? '终点' : '起点', lng:coordinates[0], lat:coordinates[1] }, geometry:{type:'Point', coordinates}}); });
+        }
+      }
       for (const track of [
         ...state.saved,
         {

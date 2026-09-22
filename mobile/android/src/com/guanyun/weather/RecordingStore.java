@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 final class RecordingStore {
     private static JSONObject data;
     private static boolean broken;
+    private static boolean interrupted;
     private static String qualityMessage = "";
     private static String cachedSnapshot;
     private static String cachedQuality;
@@ -24,8 +25,14 @@ final class RecordingStore {
         try { data = new JSONObject(new String(file.readFully(), StandardCharsets.UTF_8)); }
         catch (java.io.FileNotFoundException e) { data = empty(); }
         catch (Exception e) { broken = true; throw e; }
-        if ("recording".equals(data.optString("phase"))) { data.put("phase", "paused"); data.put("error", "上次记录中断，点击继续恢复"); }
+        if ("recording".equals(data.optString("phase"))) { interrupted = true; data.put("phase", "paused"); data.put("error", "上次记录中断，点击继续恢复"); }
         return data;
+    }
+    static synchronized boolean recover(Context c) throws Exception {
+        JSONObject value=load(c);
+        if (!interrupted && !"recording".equals(value.optString("phase"))) return false;
+        interrupted=false;
+        value.put("phase","recording").put("error","定位服务恢复中；缺测区间保留断点"); write(c); return true;
     }
     private static AtomicFile file(Context c) { return new AtomicFile(new File(c.getFilesDir(), "recording-v1.json")); }
     private static JSONObject empty() throws Exception { return new JSONObject().put("id", "").put("phase", "idle").put("startedAt", 0).put("segments", new JSONArray()).put("error", ""); }
@@ -46,6 +53,7 @@ final class RecordingStore {
         if (broken) throw new Exception("记录存档无法读取");
         String phase = value.optString("phase");
         qualityMessage = "";
+        interrupted = false;
         if ("start".equals(action)) {
             if (!"idle".equals(phase)) throw new Exception("请先保存当前记录");
             data = empty().put("id", java.util.UUID.randomUUID().toString()).put("startedAt", System.currentTimeMillis());

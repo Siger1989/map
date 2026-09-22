@@ -58,6 +58,7 @@ export function workbenchTree(data: Transfer): WorkbenchItem[] {
       detail: e.detail,
       coordinates: e.coordinates,
       color: '#237eee',
+      visible: e.kind === 'track' ? !e.track.hidden : e.kind === 'route' ? e.route.visible === true : e.kind === 'pin' || e.kind === 'model' ? e.annotation.visible : e.kind === 'area' ? e.area.visible : e.kind === 'section' ? e.section.settings.enabled : e.kind === 'measurement' ? e.measurement.visible === true : false,
       region: [region?.country, region?.province, region?.city]
         .filter(Boolean)
         .join(' · '),
@@ -152,7 +153,7 @@ export function workbenchTransfer(
   next.collections = validateLayout(layout);
   next.favorites = next.favorites.map((i) =>
     edits.has(`route:${i.id}`)
-      ? { ...i, name: edits.get(`route:${i.id}`)!.name }
+      ? { ...i, name: edits.get(`route:${i.id}`)!.name, visible: edits.get(`route:${i.id}`)!.visible === true }
       : i,
   );
   next.tracks = next.tracks.map((i) => {
@@ -162,6 +163,7 @@ export function workbenchTransfer(
     return {
       ...i,
       name: edit.name,
+      hidden: edit.visible === false,
       ...(colorChanged && {
         style: { ...normalizeTrackStyle(i.style), color: edit.color },
       }),
@@ -169,22 +171,24 @@ export function workbenchTransfer(
   });
   next.annotations = next.annotations.map((i) => {
     const edit = edits.get(`annotation:${i.id}`);
-    return edit ? { ...i, name: edit.name, color: edit.color } : i;
+    return edit ? { ...i, name: edit.name, color: edit.color, visible: edit.visible !== false } : i;
   });
   if (next.areas)
     next.areas = next.areas.map((i) => {
       const edit = edits.get(`area:${i.id}`);
-      return edit ? { ...i, name: edit.name, color: edit.color } : i;
+      return edit ? { ...i, name: edit.name, color: edit.color, visible: edit.visible !== false } : i;
     });
   if (next.sections)
     next.sections = next.sections.map((i) => {
       const edit = edits.get(`section:${i.id}`);
-      return edit ? { ...i, name: edit.name } : i;
+      return edit ? { ...i, name: edit.name, ...(itemVisibility(i as { settings?: import('../section/types').SectionSettings }, edit.visible)) } : i;
     });
   if (next.measurements)
     next.measurements = next.measurements.map((i) => {
       const edit = edits.get(`measurement:${i.id}`);
-      return edit ? { ...i, name: edit.name } : i;
+      return edit ? { ...i, name: edit.name, ...(itemVisibility(i as { settings?: import('../section/types').SectionSettings }, edit.visible)) } : i;
     });
   return validateTransfer(next);
 }
+
+function itemVisibility(item: { settings?: import('../section/types').SectionSettings }, visible?: boolean) { return item.settings ? { settings: { ...item.settings, enabled: visible !== false } } : { visible: visible === true }; }

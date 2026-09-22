@@ -123,7 +123,7 @@ export function RouteDisplayControl({
                 </label>
               ))}
             </div>
-            <p>前三项在导航时显示于底部；全部关闭可隐藏底栏。</p>
+            <p>前三项在选中路线或导航时显示于底部；全部关闭可隐藏底栏。</p>
             <p>
               选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。
               陡坡≥{ANALYSIS_POLICY.steepThresholdPercent}%（约

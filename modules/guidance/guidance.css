@@ -190,4 +190,10 @@
 .observatory.home-map .guidance-actions button { min-height: 28px; padding: 0 4px; font-size: 11px; border: 1px solid #9bb7bc; border-radius: 4px; }
 .observatory.home-map[data-guiding='true'] { --normal-nav-rail-top: calc(var(--home-top) + var(--home-header-height) + 48px); }
 .observatory.home-map[data-guiding='true']:has(.guidance-card[data-compact='false']) { --normal-nav-rail-top: calc(var(--home-top) + var(--home-header-height) + 194px); }
-.observatory.home-map[data-guiding='true'] .route-weather-rail { top: var(--normal-nav-rail-top) !important; --rail-height: max(80px,calc(100dvh - var(--normal-nav-rail-top) - 330px)); }
+.observatory.home-map[data-guiding='true'] .route-weather-rail { top: var(--normal-nav-rail-top) !important; bottom:calc(var(--home-footer) + 206px); display:flex; flex-direction:column; }
+.observatory.home-map[data-guiding='true'] .route-weather-rail > .rail-colors { flex:1; height:auto; min-height:40px; }
+.observatory.home-map[data-guiding='true'] .route-weather-rail > :not(.rail-colors) { flex-shrink:0; }
+.observatory.home-map[data-guiding='true'] .global-focus-lock { bottom:calc(var(--home-footer) + 154px); }
+.observatory.home-map[data-focus-locked='true'][data-guiding='true'] > .route-weather-rail { display:flex !important; top:12px !important; bottom:100px; }
+.observatory.home-map[data-focus-locked='true'][data-guiding='true'] .route-weather-rail > :is(.rail-heading,.rail-legend-toggle,.rail-detail) { display:none; }
+.observatory.home-map[data-focus-locked='true'][data-guiding='true'] .global-focus-lock { bottom:calc(var(--home-bottom) + 8px); }

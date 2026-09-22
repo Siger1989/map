@@ -127,14 +127,14 @@ export function styleRouteEdit(
   style: TrackStyle,
 ): RouteEditSession {
   const next = normalizeTrackStyle(style);
-  return JSON.stringify(next) === JSON.stringify(session.track.style)
+  return JSON.stringify(next) === JSON.stringify(session.track.style) && !(style.colorMode === 'solid' && session.track.edgeColors)
     ? session
     : revise(session, {
         track: {
           ...session.track,
           style: next,
           edgeColors:
-            next.color !== normalizeTrackStyle(session.track.style).color
+            style.colorMode === 'solid' || next.color !== normalizeTrackStyle(session.track.style).color
               ? undefined
               : session.track.edgeColors,
         },
@@ -235,6 +235,13 @@ export function editedRouteRecord(
     track.segments.flat().length > MAX_TRACK_POINTS
   )
     throw new Error('路线超过100段或6000点上限。');
+  // Appearance-only edits preserve the measured identity, timestamps and samples.
+  const geometryChanged = sources.length > 1 || JSON.stringify(track.segments) !== JSON.stringify(original.segments);
+  if (keepsOriginalPoints(original) && !geometryChanged && !session.history.length) return { ...original, hidden: false };
+  if (keepsOriginalPoints(original) && !geometryChanged) return {
+    ...original, style: track.style, edgeColors: track.edgeColors,
+    colorConditions: track.colorConditions, hidden: false, updatedAt: now,
+  };
   const copied = original.id === DRAFT_ID || keepsOriginalPoints(original);
   const sourceTrackIds = [
     ...new Set(sources.flatMap((t) => [t.id, ...(t.sourceTrackIds ?? [])])),
@@ -247,7 +254,7 @@ export function editedRouteRecord(
     name:
       sources.length > 1
         ? `${original.name} · 组合路线`.slice(0, 60)
-        : original.name,
+        : copied && keepsOriginalPoints(original) ? `${original.name.slice(0, 52)} · 编辑副本` : original.name,
     createdAt: copied ? now : original.createdAt,
     updatedAt: now,
   };

@@ -23,6 +23,12 @@ public final class MainActivity extends Activity {
     private AppFiles appFiles;
     private NativeBridge nativeBridge;
     private boolean foreground;
+    private boolean screenRequested;
+    void requestScreenOn(boolean enabled) { screenRequested = enabled; applyScreenOn(); }
+    private void applyScreenOn() {
+        if (screenRequested && foreground) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
     boolean trustedForeground() { return foreground && webView != null && webView.getUrl() != null && webView.getUrl().startsWith(START); }
     private static final String START = "https://appassets.androidplatform.net/index.html";
 
@@ -66,7 +72,7 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 // A reloaded page has no active navigation session yet.
-                getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                requestScreenOn(false);
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 return gateway.intercept(request.getUrl(), request.getMethod());
@@ -100,8 +106,8 @@ public final class MainActivity extends Activity {
             if (!"true".equals(result)) MainActivity.super.onBackPressed();
         });
     }
-    @Override protected void onPause() { foreground = false; if(nativeBridge!=null)nativeBridge.position.pause(); webView.onPause(); webView.pauseTimers(); super.onPause(); }
-    @Override protected void onResume() { super.onResume(); foreground = true; if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
+    @Override protected void onPause() { foreground = false; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.pause(); if(nativeBridge!=null)nativeBridge.position.pause(); webView.onPause(); webView.pauseTimers(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); foreground = true; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.resume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode == NativeBridge.REQUEST && nativeBridge != null) nativeBridge.resolve();
@@ -111,5 +117,5 @@ public final class MainActivity extends Activity {
         if (requestCode == ForegroundLocation.REQUEST && nativeBridge != null) nativeBridge.position.resolvePermission();
     }
     @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request,result,data); if(appFiles!=null)appFiles.result(request,result,data); }
-    @Override protected void onDestroy() { if(nativeBridge!=null){nativeBridge.position.stop();nativeBridge.archive.transfer.close();} if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if(nativeBridge!=null){nativeBridge.compass.stop();nativeBridge.position.stop();nativeBridge.archive.transfer.close();} if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
 }

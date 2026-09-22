@@ -1,3 +1,6 @@
+import { RecordedProfile } from './RecordedElevationChart';
+import { RecordedDetails } from './RecordedDetails';
+import { hasTrackTime } from './provenance';
 import { TrackColorProfile } from './TrackColorProfile';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
@@ -68,6 +71,9 @@ export function RouteDetails({
   onShowMetric,
   onRename,
   onOffline,
+  onAppearance,
+  onSource,
+  sourceName,
 }: {
   track: ManualTrack;
   alternative: string;
@@ -83,10 +89,14 @@ export function RouteDetails({
   onShowMetric?: (mode: 'elevation' | 'slope') => void;
   onRename: (name: string) => boolean;
   onOffline?: () => void;
+  onAppearance?: (style: TrackStyle) => boolean;
+  onSource?: () => void;
+  sourceName?: string;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [nameError, setNameError] = useState('');
   const [nameSaved, setNameSaved] = useState(false);
+  const [appearanceMessage, setAppearanceMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const root = useRouteDialogFocus(() =>
     confirmDelete ? setConfirmDelete(false) : onBack(),
@@ -147,6 +157,8 @@ export function RouteDetails({
             {nameSaved && <p role="status">名称已保存</p>}
           </form>
           {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
+          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
+          {onAppearance && <section aria-label="整条路线外观"><h3>整条路线颜色</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div><small role="status">{appearanceMessage || '直接保存颜色，保留原始记录。'}</small></section>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
           <h3>基本资料</h3>
           <dl className="route-data-rows">
@@ -186,11 +198,11 @@ export function RouteDetails({
               </div>
             ))}
           </dl>
-          <TrackColorProfile
+          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedProfile track={track} /> : <TrackColorProfile
             track={track}
             lines={lines}
             onCondition={onCondition}
-          />
+          />}
           <h3>路线组成</h3>
           <div className="route-composition">
             {variants.map((v) => (
@@ -381,7 +393,7 @@ export function RouteEditToolbar({
               节点吸附
             </button>
             <button aria-expanded={showStyle} onClick={() => setShowStyle(!showStyle)}>
-              <i className="route-style-chip" style={{ background: style.color }} />样式 {showStyle ? '收起' : '展开'}
+              <i className="route-style-chip" style={{ background: style.color }} />路线颜色 {showStyle ? '收起' : '展开'}
             </button>
           </div>
         }
@@ -392,7 +404,7 @@ export function RouteEditToolbar({
               key={color}
               aria-label={['橙色', '红色', '蓝色', '绿色', '黄色', '白色'][i]}
               aria-pressed={style.color === color}
-              onClick={() => onStyle({ ...style, color })}
+              onClick={() => onStyle({ ...style, color, colorMode: 'solid' })}
             >
               <i style={{ background: color }} />
             </button>
@@ -403,7 +415,7 @@ export function RouteEditToolbar({
               aria-label="自定义轨迹颜色"
               type="color"
               value={style.color}
-              onChange={(e) => onStyle({ ...style, color: e.target.value })}
+              onChange={(e) => onStyle({ ...style, color: e.target.value, colorMode: 'solid' })}
             />
           </label>
         </div>

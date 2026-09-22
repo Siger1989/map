@@ -241,7 +241,7 @@ export function ControlDock({
               aria-expanded={active === id}
               data-home-selected={active === id}
               aria-controls={active === id ? 'map-control-panel' : undefined}
-              onClick={() => onActive(id)}
+              onClick={() => onActive(active === id ? null : id)}
             >
               {id === 'route' ? <MapIcon size={20} /> : id === 'favorites' ? <Star size={20} /> : id === 'tools' ? <BriefcaseBusiness size={20} /> : <Icon size={20} />}
               <span>{label}</span>

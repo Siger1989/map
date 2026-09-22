@@ -2,6 +2,7 @@ import { MAX_POINTS, validPoint, type MeasurePoint } from './data.ts';
 
 export const SAVED_MEASUREMENTS_KEY = 'shantu.measurement.saved.v1';
 export type SavedMeasurement = {
+  visible?: boolean;
   id: string;
   name: string;
   points: MeasurePoint[];

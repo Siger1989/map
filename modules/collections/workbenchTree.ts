@@ -14,6 +14,7 @@ export type WorkbenchItem = {
     | 'measurement';
   color: string;
   detail?: string;
+  visible?: boolean;
   shareData?: ShareRoute;
   children?: WorkbenchItem[];
   createdAt?: number;

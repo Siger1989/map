@@ -1,6 +1,7 @@
 'use client';
 import { RallyNavigation } from '@/modules/rally/RallyNavigation';
 import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
+import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutPanel } from '@/modules/help/AboutPanel';
@@ -16,6 +17,8 @@ import { PhotoPanel } from '@/modules/photos/PhotoPanel';
 import { useRecordingTracks } from '@/modules/outdoor/useRecordingTracks';
 import { composeTrackOverlay } from '@/modules/workbench/trackOverlay';
 import { PhotoViewer } from '@/modules/photos/PhotoViewer';
+import { useMapFocusLock } from '@/modules/controls/useMapFocusLock';
+import { useScreenAwake } from '@/modules/position/useScreenAwake';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { useOffline } from '@/modules/outdoor/useOffline';
 import { OfflineRegionPicker } from '@/modules/outdoor/OfflineRegionPicker';
@@ -417,6 +420,9 @@ export default function Home() {
         fix.source === 'network' ? positionZoom(fix) : undefined,
       ) ?? false,
   });
+  const focusLock = useMapFocusLock({ map: () => map.current, following:follow.following, guiding:guidance.active, direction:position.direction,
+    fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device });
+  useScreenAwake(guidance.active || recorder.record.phase === 'recording' || focusLock.locked);
   const guidanceOverlay = useMemo(
     () =>
       guidance.rejoin
@@ -617,6 +623,8 @@ export default function Home() {
         }
       : null);
   const [activeAlternative, setActiveAlternative] = useState('main');
+  const [routeDirection, setRouteDirection] = useState<{ id:string; reversed:boolean } | null>(null);
+  const routeReversed = routeDirection?.id === railTrack?.id && !!routeDirection?.reversed;
   const selectedAlternatives = useMemo(
     () =>
       selectedTrack
@@ -642,6 +650,7 @@ export default function Home() {
     );
   }, [tracks.selectedId]);
   const selectLinePoint = (point: TrackLinePoint) => {
+    if (point.trackId.startsWith('favorite:') || point.trackId.startsWith('measurement:')) return;
     if (editor.session) {
       if (editor.session.branch !== null)
         editor.change((value) => appendEditBranch(value, point.coordinate));
@@ -842,7 +851,10 @@ export default function Home() {
   const trackOverlay = useMemo(
     () =>
       composeTrackOverlay({
-        saved: tracks.overlaySaved,
+        saved: [...tracks.overlaySaved,
+          ...favorites.items.filter(f => f.visible).map(f => ({ id:`favorite:${f.id}`, name:f.name, createdAt:f.savedAt, segments:f.route.segments?.map(s => s.coordinates) ?? [f.route.coordinates], style:{ color:'#337aaa', width:2 } })),
+          ...measurement.saved.items.filter(m => m.visible).map(m => ({ id:`measurement:${m.id}`, name:m.name, createdAt:m.updatedAt, segments:[m.points.map(p => p.coordinates)], style:{ color:'#bc5d22', width:2 } })),
+        ],
         draft: tracks.draft,
         session: editor.session,
         recording: liveRecording,
@@ -852,6 +864,7 @@ export default function Home() {
         nodes: tracks.vertices,
         drawing: tracks.drawing,
         selectedId: tracks.selectedId,
+        reversed:routeReversed,
         snapTargets: tracks.snapping,
         alternativeId: activeAlternative,
         linePoint: panel === null ? linePoint : null,
@@ -871,6 +884,8 @@ export default function Home() {
       panel,
       recorder.record.phase,
       tracks.overlaySaved,
+      favorites.items,
+      measurement.saved.items,
       tracks.draft,
       tracks.edgeColors,
       tracks.visible,
@@ -878,6 +893,7 @@ export default function Home() {
       tracks.vertices,
       tracks.drawing,
       tracks.selectedId,
+      routeReversed,
       tracks.snapping,
       featureMove,
     ],
@@ -979,6 +995,7 @@ export default function Home() {
         className="observatory home-map"
         data-rally={rallyMode && !!navigation.route}
         data-guiding={guidance.active && !rallyMode}
+        data-focus-locked={focusLock.locked}
         data-measuring={measurement.active}
         data-panel={panel ?? 'map'}
         data-section={sectionEditing}
@@ -1087,6 +1104,9 @@ export default function Home() {
           }
         }}
       >
+        <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
+          disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>
+        {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
         <TerrainMap
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
@@ -1122,6 +1142,7 @@ export default function Home() {
           areaOverlay={areaOverlay}
           onModelTerrainStatus={setModelTerrainStatus}
           onAreaSelect={(id) => {
+            if (focusLock.locked) return;
             if (editor.session) return;
             areas.select(id);
             annotations.select(null);
@@ -1193,9 +1214,10 @@ export default function Home() {
             survey.picking,
           )}
           onTrackSelect={(id) => {
+            if (focusLock.locked) return;
             if (!editor.session) openRoute(id);
           }}
-          onTrackLineSelect={selectLinePoint}
+          onTrackLineSelect={point => { if (!focusLock.locked) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
             if (node.trackId === 'live-recording') return;
             if (editor.session) {
@@ -1378,6 +1400,8 @@ export default function Home() {
           !shareTarget && (
             <>
               {routeWindow === 'card' && (
+                <>
+                {!guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} />}
                 <RouteCard
                   key={railTrack.id}
                   track={railTrack}
@@ -1391,7 +1415,7 @@ export default function Home() {
                   }}
                   onNavigate={() => {
                     if (railTrack.id !== DRAFT_ID) {
-                      navigateTrack(railTrack.id);
+                      navigateTrack(railTrack.id, routeReversed);
                       return;
                     }
                     const id = tracks.saveForMarker();
@@ -1404,6 +1428,7 @@ export default function Home() {
                           'pedestrian',
                           tracks.saved,
                           activeAlternative,
+                          routeReversed,
                         ),
                       );
                     } catch (e) {
@@ -1417,9 +1442,13 @@ export default function Home() {
                   onDetails={() => setRouteWindow('details')}
                   onCache={()=>beginMapDownload(railTrack.name,{kind:'route',segments:railTrack.segments,bufferKm:10})}
                 />
+                </>
               )}
               {routeWindow === 'details' && (
                 <RouteDetails
+                  onAppearance={(style) => { const ok = tracks.updateStyle(railTrack.id, style); if (ok) routeDisplay.update({ mode: 'original' }); return ok; }}
+                  sourceName={tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded')?.name}
+                  onSource={tracks.saved.some(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded') ? () => { const source = tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded'); if (source) openRoute(source.id); } : undefined}
                   key={railTrack.id}
                   track={railTrack}
                   onRename={(name) => tracks.rename(railTrack.id, name)}
@@ -1509,9 +1538,7 @@ export default function Home() {
             }}
             onBranch={() => editor.change(toggleEditBranch)}
             onUndo={() => editor.change(undoRouteEdit)}
-            onStyle={(style) =>
-              editor.change((value) => styleRouteEdit(value, style))
-            }
+            onStyle={(style) => { editor.change((value) => styleRouteEdit(value, style)); routeDisplay.update({ mode: 'original' }); }}
           />
         )}
         {editor.session && routeNodeBox && (
@@ -2014,6 +2041,8 @@ export default function Home() {
           !guidance.active && (
             <TrackJourneyRail
               homeOverview={routeVisible && routeWindow === 'card'}
+              reversed={routeReversed}
+              onReverse={() => { setRouteDirection({id:railTrack.id,reversed:!routeReversed}); setTrackLinePoint(null); }}
               key={railTrack.id}
               track={railTrack}
               activeAlternative={activeAlternative}
@@ -2200,7 +2229,7 @@ export default function Home() {
           onLocate={() => {
             if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
             if (follow.following) {
-              if (position.direction === 'north' && !sectionEditing && !survey.active) {
+              if (position.direction !== 'device' && !sectionEditing && !survey.active) {
                 void position.device();
               } else {
                 follow.pause(); position.free(); map.current?.stop();

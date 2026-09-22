@@ -35,6 +35,8 @@ declare global {
       locationState?(): string;
       stopLocation?(): void;
       setKeepScreenOn?(enabled: boolean): void;
+      compassEnabled?(enabled: boolean): void;
+      compassState?(): string;
     };
   }
 }

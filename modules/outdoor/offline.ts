@@ -15,6 +15,7 @@ export type TripPackage = {
   layers?: TiandituLayer[];
   zoom?: number;
   bufferKm?: number;
+  detailCorridor?: boolean;
   display?: Partial<LayerSettings>;
   id: string;
   name: string;
@@ -38,7 +39,7 @@ export function mapDownloadPlan(area: DownloadArea, settings: LayerSettings, pro
   const layers = provider === 'tianditu' ? tiandituLayers(settings) : [];
   const maximum = layers.length ? TIANDITU_LAYERS[layers[0]].maxzoom : 14;
   if (![12,14,16,18].includes(zoom) || zoom > maximum) throw new Error('请选择此图源支持的清晰度');
-  const tiles = downloadTiles(area, zoom, Math.floor(MAX_DOWNLOAD_RESOURCES / Math.max(1,layers.length)));
+  const tiles = downloadTiles(area, zoom, Math.floor(MAX_DOWNLOAD_RESOURCES / Math.max(1,layers.length)), area.kind === 'route' && zoom > 14);
   const terrain = settings.terrain ? downloadTiles(area, Math.min(12,zoom)) : [];
   const count = (layers.length ? layers.reduce((n,l)=>n+tiles.filter(t=>t.z>=1&&t.z<=TIANDITU_LAYERS[l].maxzoom).length,0) : tiles.length+257) + terrain.length;
   if(count>MAX_DOWNLOAD_RESOURCES) throw new Error('资源超过 2 万项，请降低清晰度或范围');
@@ -64,7 +65,7 @@ export async function prepareMapPackage(name: string, area: DownloadArea, settin
     urls=[TILEJSON,...plan.tiles.map(t=>template.replace('{z}',String(t.z)).replace('{x}',String(t.x)).replace('{y}',String(t.y)))];
     for(let start=0;start<65536;start+=256)urls.push(`https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/${start}-${start+255}.pbf`);
   }
-  const trip: TripPackage={id:crypto.randomUUID(),name:name.trim().slice(0,60)||'离线地图',bounds:plan.bounds,urls:[...new Set([...urls,...terrain])],done:0,bytes:0,createdAt:Date.now(),complete:false,provider,layers:plan.layers,zoom,bufferKm:area.kind==='route'?area.bufferKm:undefined,
+  const trip: TripPackage={id:crypto.randomUUID(),name:name.trim().slice(0,60)||'离线地图',bounds:plan.bounds,urls:[...new Set([...urls,...terrain])],done:0,bytes:0,createdAt:Date.now(),complete:false,provider,layers:plan.layers,zoom,detailCorridor:area.kind==='route'&&zoom>14,bufferKm:area.kind==='route'?area.bufferKm:undefined,
     display:{satellite:settings.satellite,tiandituBase:settings.tiandituBase,tiandituLabels:settings.tiandituLabels,tiandituBoundaries:settings.tiandituBoundaries,terrain:settings.terrain,labels:settings.labels,roads:settings.roads,roadsOpacity:settings.roadsOpacity,imageryMode:'detail',offlineBasemap:provider==='openfreemap',offlineMaxZoom:zoom,rasterLevel:null}};
   putTrip(trip);return trip;
 }

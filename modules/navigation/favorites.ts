@@ -1,5 +1,6 @@
 import { coordinate, type PlannedRoute, type RoutePlace } from './types.ts';
 export type RouteFavorite = {
+  visible?: boolean;
   id: string;
   name: string;
   savedAt: number;

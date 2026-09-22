@@ -8,11 +8,13 @@ export function RouteElevationProfile({
   scale,
   progress,
   compact = false,
+  endpoints = false,
 }: {
   samples: ElevationSample[];
   scale: ElevationScale;
   progress?: number | null;
   compact?: boolean;
+  endpoints?: boolean;
 }) {
   const distance = samples.at(-1)?.distance ?? 0;
   const width = compact ? 240 : 180, baseline = compact ? 38 : 58, height = compact ? 52 : 74;
@@ -53,14 +55,14 @@ export function RouteElevationProfile({
           ) : null;
         })}
         <text x="4" y={height - 2}>
-          0
+          {endpoints ? '起点 · 0' : '0'}
         </text>
         {altitude !== null && progress != null && <g aria-label="当前位置">
           <path d={`M${x(progress)} ${y(altitude)}V${baseline}`} stroke="#15572b" strokeWidth="0.6" strokeDasharray="2 2" />
           <circle cx={x(progress)} cy={y(altitude)} r="3" fill="#16833e" stroke="white" strokeWidth="1" />
         </g>}
         <text x={width - 4} y={height - 2} textAnchor="end">
-          {(distance / 1000).toFixed(1)} km
+          {endpoints ? '终点 · ' : ''}{(distance / 1000).toFixed(1)} km
         </text>
         <text x="4" y="10">
           {scale

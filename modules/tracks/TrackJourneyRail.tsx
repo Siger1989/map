@@ -18,6 +18,8 @@ export function TrackJourneyRail({
   activeAlternative,
   onAlternative,
   homeOverview = false,
+  reversed = false,
+  onReverse,
 }: {
   track: Pick<
     ManualTrack,
@@ -30,6 +32,8 @@ export function TrackJourneyRail({
   activeAlternative: string;
   onAlternative: (id: string) => void;
   homeOverview?: boolean;
+  reversed?: boolean;
+  onReverse?: () => void;
 }) {
   const [list, setList] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(true);
@@ -121,23 +125,24 @@ export function TrackJourneyRail({
                 {active.label} ⇄
               </button>
             )}
-            <button onClick={() => select(active.id, 0)}>
+            <button onClick={() => select(active.id, reversed ? 1 : 0)}>
               <i />
               <span>起点</span>
               <small>0.0 km</small>
             </button>
-            {entries.map(({ marker, distance }) => (
+            {(reversed ? [...entries].reverse() : entries).map(({ marker, distance }) => (
               <button key={marker.id} onClick={() => onMarker(marker.id)}>
                 <i style={{ background: marker.color }} />
                 <span>{marker.name || '标记'}</span>
-                <small>{formatDistance(distance)}</small>
+                <small>{formatDistance(reversed ? Math.max(0,active.distance-distance) : distance)}</small>
               </button>
             ))}
-            <button onClick={() => select(active.id, 1)}>
+            <button className="home-journey-end" onClick={() => select(active.id, reversed ? 0 : 1)}>
               <i />
               <span>终点</span>
               <small>{(active.distance / 1000).toFixed(1)} km</small>
             </button>
+            {onReverse && <button className="home-route-direction" aria-label="切换路线方向" aria-pressed={reversed} onClick={onReverse}>⇄ {reversed ? '反向' : '正向'}</button>}
           </div>
         )}
       </aside>

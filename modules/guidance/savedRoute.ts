@@ -17,6 +17,7 @@ export function trackNavigation(
   mode: TravelMode = track.navigationMode ?? 'pedestrian',
   tracks: ManualTrack[] = [],
   alternativeId = 'main',
+  reversed = false,
 ): RouteFavorite {
   if (!track.segments.every((line) => line.every(coordinate)))
     throw new Error('轨迹坐标无效，无法导航。');
@@ -37,9 +38,10 @@ export function trackNavigation(
         ? lines[0]
         : networkPath(trackNetwork, lines[0][0], lines[0].at(-1)!).coordinates
   ).map((p) => [...p] as Coordinate);
+  if (reversed) coordinates.reverse();
   const distance = pathOf(coordinates).length;
   if (distance < 20) throw new Error('轨迹不足20米，请延长后再导航。');
-  const stops = track.sharedRoute?.stops;
+  const stops = track.sharedRoute?.stops ? (reversed ? [...track.sharedRoute.stops].reverse() : track.sharedRoute.stops) : undefined;
   const start = stops?.[0] ?? {
     name: `${track.name} · 起点`,
     coordinates: coordinates[0],

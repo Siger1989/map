@@ -2,6 +2,8 @@ import { SmartInput } from '../input/SmartText';
 import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   Check,
+  Eye,
+  EyeOff,
   Bookmark,
   ChevronDown,
   ChevronRight,
@@ -319,6 +321,9 @@ export function WorkbenchPanel(props: Props) {
             </small>
           </span>
         </button>
+        {!folder && <button className="workbench-visibility" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onClick={() => commit(updateWorkbenchItem(items, item.id, { visible: !item.visible }), item.visible ? '已从地图隐藏' : '已在地图显示')}>
+          {item.visible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{item.visible ? '显示' : '隐藏'}</small>
+        </button>}
         {!synthetic && (
           <button
             className="workbench-item-more"

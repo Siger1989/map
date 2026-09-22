@@ -30,7 +30,7 @@ export function PositionDock({
           blocked ? '获取当前位置（编辑中暂停地图跟随）' : following
             ? locating
               ? '等待定位，点击切换跟随模式'
-              : direction === 'device' ? '方向跟随，点击自由浏览' : '正北跟随，点击方向跟随'
+              : direction === 'device' ? '指南针跟随，点击自由浏览' : '正北跟随，点击指南针模式'
             : '定位并正北跟随'
         }
         aria-pressed={following}
@@ -38,7 +38,7 @@ export function PositionDock({
         onClick={onLocate}
       >
         {following && direction === 'device' ? <Compass size={17} /> : <LocateFixed size={17} />}
-        <small>{locating ? '定位中' : following ? direction === 'device' ? '朝向' : '跟随' : '定位'}</small>
+        <small>{following && direction === 'device' ? '指南针' : locating ? '定位中' : following ? '正北' : '定位'}</small>
       </button>
       {showCoordinates && (
         <output

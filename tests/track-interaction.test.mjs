@@ -454,6 +454,15 @@ test('map style is valid and solitary precision points never become invalid line
   assert.ok(handles.some((f) => f.geometry.coordinates[0] === b[0]));
   assert.ok(handles.some((f) => f.geometry.coordinates[0] === c[0]));
   assert.equal(handles.length, 4, 'shared branch origin is not duplicated');
+  const selected = {...state,draft:[[a,b,c,d]],selectedId:'draft',editing:false};
+  controller.sync(selected);
+  const endpoint = label => data.features.find(f => f.properties.endpointLabel === label)?.geometry.coordinates;
+  assert.deepEqual(endpoint('起点'),a);
+  assert.deepEqual(endpoint('终点'),d);
+  assert.equal(data.features.filter(f=>f.geometry.type==='Point').length,2);
+  controller.sync({...selected,reversed:true});
+  assert.deepEqual(endpoint('起点'),d);
+  assert.deepEqual(endpoint('终点'),a);
 });
 
 test('a branch snaps exactly back to a legacy interior node and survives save, reload and undo', () => {

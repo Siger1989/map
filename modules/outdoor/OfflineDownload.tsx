@@ -99,14 +99,16 @@ export function OfflineDownload({
                 ))}
             </select>
           </label>
+          {target.area.kind === 'route' && zoom > 14 && <small>14级内保留两侧各{bufferKm}公里；15–16级各1公里，17–18级各250米。</small>}
           <small role="status">
             {result.error ||
               `${result.plan!.count}项 · 估计 ${(result.plan!.estimatedBytes / 1048576).toFixed(0)} MB，实际可能不同`}
           </small>
           <button
             className="offline-download-primary"
-            disabled={!result.plan || offline.busy}
+            disabled={offline.busy}
             onClick={() => {
+              if (!result.plan) return;
               setStarted(true);
               void offline.createMap(
                 target.name,
@@ -117,7 +119,7 @@ export function OfflineDownload({
               );
             }}
           >
-            下载地图{target.settings.labels ? '及注记' : ''}
+            {result.plan ? '下载地图' : '范围过大，请调整上方设置'}{result.plan && target.settings.labels ? '及注记' : ''}
             {target.settings.terrain ? '、地形' : ''}
           </button>
         </>

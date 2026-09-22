@@ -730,13 +730,14 @@ export function useManualTracks() {
     },
     updateStyle: (id: string, next: TrackStyle) =>
       persist(
-        saved.map((track) =>
+        savedRef.current.map((track) =>
           track.id === id
             ? {
                 ...track,
+                updatedAt: Date.now(),
                 style: normalizeTrackStyle(next),
                 edgeColors:
-                  normalizeTrackStyle(next).color !==
+                  next.colorMode === 'solid' || normalizeTrackStyle(next).color !==
                   normalizeTrackStyle(track.style).color
                     ? undefined
                     : track.edgeColors,

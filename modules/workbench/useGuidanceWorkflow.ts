@@ -119,7 +119,7 @@ export function useGuidanceWorkflow({
       );
     }
   };
-  const navigateTrack = (id: string) => {
+  const navigateTrack = (id: string, reversed = false) => {
     setSavedNavigationError('');
     try {
       const track = tracks.saved.find((item) => item.id === id);
@@ -132,6 +132,7 @@ export function useGuidanceWorkflow({
           track.navigationMode ?? 'pedestrian',
           tracks.saved,
           activeAlternative,
+          reversed,
         ),
       );
     } catch (error) {

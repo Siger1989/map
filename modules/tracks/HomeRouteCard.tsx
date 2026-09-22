@@ -1,3 +1,5 @@
+import { recordedStats, recordedDuration } from './recordedStats';
+import { trackSourceLabel, hasTrackTime } from './provenance';
 import { useMemo, useState } from 'react';
 import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText } from 'lucide-react';
 import type { ManualTrack } from './drawing';
@@ -25,6 +27,8 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
   const stats = useMemo(() => elevationStats(trackHeights(elevation.profile ?? track)), [elevation.profile, track]);
   // Reuse an available planned duration; don't invent a speed for imported tracks.
   const duration = track.sharedRoute?.duration;
+  const measured = useMemo(() => recordedStats(track), [track]);
+  const timed = hasTrackTime(track);
   return <section ref={dock} className="home-route-card" aria-label="所选路线">
     {name !== null ? <form className="home-route-rename" aria-label="修改路线名称" onSubmit={event => {
       event.preventDefault();
@@ -50,10 +54,11 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       </button>
       <button className="home-route-back" onClick={onBack} aria-label="返回"><span>返回</span><ChevronRight size={17} /></button>
     </header>
+    <div className="home-route-kind">{track.source === 'recorded' ? '实走原件' : trackSourceLabel(track)}{timed && measured.averageSpeed !== null && <span>均速 {measured.averageSpeed.toFixed(1)} km/h</span>}</div>
     <div className="home-route-metrics">
-      <span>{choice ? formatDistance(choice.distance) : '—'}</span>
+      <span>{timed ? formatDistance(measured.distance) : choice ? formatDistance(choice.distance) : '—'}</span>
       <span title={elevation.estimated ? '含地形估算' : '轨迹自带高程'}>爬升 {stats.ascent === null || choices.length > 1 ? '—' : `${Math.round(stats.ascent)} m`}</span>
-      <span>{duration != null ? `预计 ${formatDuration(duration)}` : '用时 —'}</span>
+      <span>{timed ? `用时 ${recordedDuration(measured.elapsed)}` : duration != null ? `预计 ${formatDuration(duration)}` : '无实测时间'}</span>
     </div>
     <nav className="home-route-actions" aria-label="路线主要操作">
       <button className="is-primary" onClick={onNavigate}><Navigation size={18} fill="currentColor" />导航</button>

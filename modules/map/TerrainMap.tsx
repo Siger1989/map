@@ -69,6 +69,8 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
+  restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
   groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
   offlineRegionBounds: (visible?: boolean) => [number, number, number, number] | null;
@@ -438,6 +440,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing()} : null; },
+        restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
         offlineRegionBounds: (visible = false) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;

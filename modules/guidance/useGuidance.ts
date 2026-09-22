@@ -266,17 +266,6 @@ export function useGuidance(
       });
   }, [session, route, rejoin, online, retry]);
   const active = !!session && session.originalRoute === route;
-  useEffect(() => {
-    const bridge = window.GuanyunNative;
-    if (!bridge?.setKeepScreenOn) return;
-    const sync = () => bridge.setKeepScreenOn?.(active && !document.hidden);
-    sync();
-    document.addEventListener('visibilitychange', sync);
-    return () => {
-      document.removeEventListener('visibilitychange', sync);
-      bridge.setKeepScreenOn?.(false);
-    };
-  }, [active]);
   let remaining = session
     ? Math.max(0, session.path.length - session.progress)
     : 0;

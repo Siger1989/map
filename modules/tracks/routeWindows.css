@@ -594,3 +594,20 @@
 .observatory.home-map[data-route-edit='true'] .track-draw-hint,
 .observatory.home-map[data-route-edit='true'] .route-map-notice,
 .observatory.home-map[data-route-edit='true'] .route-weather-rail { display: none; }
+
+.observatory .recorded-stats-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; margin:4px 0; }
+.observatory .recorded-stats-grid > div { padding:4px; border-bottom:1px solid #d3ddd4; min-width:0; }
+.observatory .recorded-stats-grid dt { color:#51665c; font-size:11px; }
+.observatory .recorded-stats-grid dd { margin:2px 0 0; font-size:14px; font-weight:600; overflow-wrap:anywhere; }
+.observatory .route-appearance-row { display:flex; gap:4px; align-items:center; }
+.observatory .route-appearance-row button, .observatory .route-appearance-row input { min-width:0; width:32px; min-height:36px; padding:2px; border:1px solid #9bb7bc; }
+.observatory .route-appearance-row button[aria-pressed=true] { border:2px solid #15572b; }
+.observatory .route-appearance-row i { display:block; width:20px; height:20px; border-radius:50%; border:1px solid #9bb7bc; margin:auto; }
+
+.observatory .recorded-profile svg { width:100%; height:auto; display:block; background:#f8fbf9; border:1px solid #d3ddd4; border-radius:4px; }
+.observatory .recorded-profile svg text { font:11px system-ui; fill:#38564e; }
+.observatory .recorded-profile > input { width:100%; min-height:36px; accent-color:#166e51; }
+.observatory .recorded-speed-legend { display:flex; flex-wrap:wrap; gap:4px 8px; font-size:10px; }
+.observatory .recorded-speed-legend span { display:flex; align-items:center; gap:3px; }
+.observatory .recorded-speed-legend i { width:10px; height:4px; }
+.observatory .recorded-point-info { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; padding:4px; margin-top:4px; background:#edf5ef; font-size:11px; overflow-wrap:anywhere; }

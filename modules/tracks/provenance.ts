@@ -20,7 +20,7 @@ export function trackSourceLabel(track: ManualTrack) {
   if (track.source === 'gpx') return 'GPX 轨迹';
   if (track.source === 'kml') return 'KML 轨迹';
   if (hasTrackTime(track)) return '带时间轨迹';
-  return '手绘轨迹';
+  return track.sourceTrackIds?.length ? '编辑路线副本' : '手绘轨迹';
 }
 
 export function photoTrackChoice(
