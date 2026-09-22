@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { finishRecording } from './finishRecording';
+import { saveRecording } from './savedRecording';
 import { useRecordingStyle } from './useRecordingStyle';
 import { useSamplingPolicy } from './useSamplingPolicy';
 import { useRecordingPreferences } from './useRecordingPreferences';
@@ -51,6 +53,8 @@ export function useRecording() {
   const maximum = useRef(preferences.maximum);
   maximum.current = preferences.maximum;
   const [qualityNote, setQualityNote] = useState('');
+  const [finishing,setFinishing]=useState(false);
+  const finishingRef=useRef(false);
   useEffect(() => setQualityNote(''), [preferences.maximum]);
   const current = useRef(record);
   current.current = record;
@@ -175,6 +179,7 @@ export function useRecording() {
   const command = (
     action: 'start' | 'pause' | 'resume' | 'finish' | 'clear',
   ) => {
+    if(finishingRef.current)return;
     setQualityNote('');
     if (window.GuanyunNative) {
       if (nativeCommand.current === action) return;
@@ -209,6 +214,28 @@ export function useRecording() {
       setRecord((r) => ({ ...r, error: (e as Error).message }));
     }
   };
+  const finish = async (keep:boolean) => {
+    if(finishingRef.current)return null;
+    finishingRef.current=true;setFinishing(true);setQualityNote('');
+    const bridge=window.GuanyunNative;
+    const read=()=>bridge ? readRecording(bridge.recordState()) : current.current;
+    const send=(action:'finish'|'clear')=> {
+      if(bridge)bridge.record(action);
+      else {
+        if(!writable.current)throw Error('记录存储不可写，原数据已保留');
+        const next=action==='clear' ? emptyRecording() : {...current.current,phase:'finished' as const};
+        localStorage.setItem(RECORDING_KEY,JSON.stringify(next));
+        if(localStorage.getItem(RECORDING_KEY)!==JSON.stringify(next))throw Error('记录状态保存失败，请重试');
+        current.current=next;setRecord(next);
+      }
+    };
+    try {
+      return await finishRecording({keep,read,send,save:r=>saveRecording({...r,style:appearance.style}).id});
+    } finally {
+      try {const next=read();current.current=next;setRecord(next);}catch{}
+      finishingRef.current=false;setFinishing(false);
+    }
+  };
   const styledRecord = useMemo(
     () => ({ ...record, style: appearance.style }),
     [record, appearance.style],
@@ -217,6 +244,8 @@ export function useRecording() {
     record: styledRecord,
     native,
     command,
+    finish,
+    finishing,
     preferences,
     qualityNote,
     appearance,

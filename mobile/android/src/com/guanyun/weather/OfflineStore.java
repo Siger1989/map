@@ -78,9 +78,29 @@ final class OfflineStore {
         try{JSONObject task=read(job(c,id));JSONArray urls=task.getJSONArray("urls");int done=0;long bytes=0;for(int i=0;i<urls.length();i++){File f=tile(c,urls.getString(i));if(f.isFile()&&f.length()>0){done++;bytes+=f.length();}}task.put("done",done).put("bytes",bytes).put("total",urls.length());save(c,task);task.remove("urls");return task.toString();}catch(Exception e){return "{}";}
     }
     static synchronized boolean remove(Context c,String id) {
-        if(OfflineDownloadService.running)return false;
-        try{File target=job(c,id);JSONObject old=read(target);Set<String> keep=new HashSet<>();File[] all=root(c).listFiles((d,n)->n.endsWith(".json"));if(all!=null)for(File f:all)if(!f.equals(target)){JSONArray urls=read(f).getJSONArray("urls");for(int i=0;i<urls.length();i++)keep.add(identity(urls.getString(i)));}
-            if(!target.delete())return false;new File(root(c),hash(id)+".progress").delete();JSONArray urls=old.getJSONArray("urls");for(int i=0;i<urls.length();i++){String url=urls.getString(i);if(!keep.contains(identity(url)))tile(c,url).delete();}return true;
+        try {
+            String active="";try{active=activeId(c);}catch(Exception ignored){}
+            if(OfflineDownloadService.running && id.equals(active))return false;
+            File target=job(c,id);
+            if(target.isFile()) {
+                JSONObject old=read(target);Set<String> keep=new HashSet<>();
+                File[] all=root(c).listFiles((d,n)->n.endsWith(".json"));
+                if(all!=null)for(File f:all)if(!f.equals(target)){
+                    JSONArray urls=read(f).getJSONArray("urls");
+                    for(int i=0;i<urls.length();i++)keep.add(identity(urls.getString(i)));
+                }
+                // Keep the manifest until tile cleanup succeeds so interruption is retryable.
+                JSONArray urls=old.getJSONArray("urls");
+                for(int i=0;i<urls.length();i++){
+                    String url=urls.getString(i);File f=tile(c,url);
+                    if(!keep.contains(identity(url)) && f.exists() && !f.delete())return false;
+                }
+                new AtomicFile(target).delete();
+                if(target.exists())return false;
+            }
+            new AtomicFile(new File(root(c),hash(id)+".progress")).delete();
+            if(id.equals(active))new AtomicFile(new File(root(c),"active")).delete();
+            return true;
         }catch(Exception e){return false;}
     }
 }

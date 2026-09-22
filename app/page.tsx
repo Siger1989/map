@@ -2023,7 +2023,7 @@ export default function Home() {
               error={weather.error}
             />
           )}
-          {layers.elevationColors && <ElevationLegend />}
+
           {layers.geology && (
             <GeologyPanel
               state={geology}
@@ -2162,6 +2162,7 @@ export default function Home() {
           />
         )}
         <MapActions
+          elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           fix={displayedFix}
           showCoordinates={routeDisplay.preferences.coordinates}
@@ -2234,21 +2235,14 @@ export default function Home() {
           }}
           onLocate={() => {
             if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
-            if (follow.following) {
-              if (position.direction !== 'device' && !sectionEditing && !survey.active) {
-                focusLock.adoptMode(true,'device');
-                void position.device();
-              } else {
-                focusLock.adoptMode(false,'free');
-                follow.pause(); position.free(); map.current?.stop();
-              }
-            } else {
-              focusLock.adoptMode(true,'north');
-              position.north(); map.current?.north();
-              map.current?.previewRoute(null);
-              follow.resume();
-              if (recorder.record.phase !== 'recording') position.locate();
-            }
+            focusLock.adoptMode(!follow.following, position.direction);
+            if (follow.following) { follow.pause(); map.current?.stop(); }
+            else { follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
+          }}
+          onDirection={() => {
+            const direction=position.direction === 'device' ? 'free' : 'device';
+            focusLock.adoptMode(follow.following,direction);
+            if(direction==='device') void position.device(); else position.free();
           }}
           following={follow.following}
           followBlocked={follow.blocked}
@@ -2607,7 +2601,7 @@ export default function Home() {
           {panel === 'favorites' && (
             <CollectionsPanel
               offlineCount={offline.packages.length}
-              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);setPanel(null);}}/>}
+              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
               onLocate={(entry) => {
                 position.free();
@@ -2949,6 +2943,7 @@ export default function Home() {
           ) : null)}
         {navigationTarget && (
           <NavigationStart
+            mapSettings={layers}
             key={navigationTarget.id}
             target={navigationTarget}
             alternatives={

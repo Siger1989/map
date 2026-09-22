@@ -50,14 +50,14 @@ export function OutdoorPanel({
     <div className="outdoor-panel">
       {tab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={setTab} /> : <>
       {tab !== 'record' && <nav className="route-tabs" aria-label="记录工具">
-        {(['record', 'files', 'offline', 'photos', 'return'] as const).map(
+        {(['record', 'files', 'offline', 'photos'] as const).map(
           (id, i) => (
             <button
               key={id}
               aria-pressed={tab === id}
               onClick={() => setTab(id)}
             >
-              {['记录', '数据', '离线', '照片', '返航'][i]}
+              {['记录', '导入/导出', '离线地图', '照片'][i]}
             </button>
           ),
         )}
@@ -87,8 +87,8 @@ export function OutdoorPanel({
       )}
       {tab === 'photos' && photos}
       {tab === 'return' && returnPanel}
-      {tab === 'record' && <nav className="record-console-tools" aria-label="记录工具">
-        {(['files', 'offline', 'photos', 'return'] as const).map((id, i) => <button key={id} onClick={() => setTab(id)}>{['数据', '离线', '照片', '返航'][i]}</button>)}
+      {tab === 'record' && <nav className="record-console-tools record-function-group record-group-files" aria-label="记录工具">
+        {(['files', 'offline'] as const).map((id, i) => <button key={id} onClick={() => setTab(id)}>{['导入/导出', '离线地图'][i]}</button>)}
       </nav>}
       </>}
     </div>

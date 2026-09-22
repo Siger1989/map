@@ -24,7 +24,7 @@ export function useMapFocusLock(options: {
   useEffect(() => {
     if (!locked) return;
     const pointers = new Set<number>();
-    const isMap = (event: Event) => (event.target as Element)?.closest?.('.map-canvas');
+    const isMap = (event: Event) => (event.target as Element)?.closest?.('.map-canvas,.home-camera-control');
     const begin = () => { clear(); current.current.pause(); current.current.free(); setBrowsing(true); };
     const schedule = () => { clear(); if (!pointers.size) timer.current = setTimeout(restore, 10000); };
     const down = (event: PointerEvent) => { if (!isMap(event)) return; pointers.add(event.pointerId); begin(); };
@@ -43,7 +43,7 @@ export function useMapFocusLock(options: {
     if (locked) { snapshot.current = null; setLocked(false); setBrowsing(false); return; }
     const o = current.current, camera = o.map()?.cameraSnapshot();
     if (!camera) return;
-    snapshot.current = { camera, following:o.following || o.guiding, direction:o.direction };
+    snapshot.current = { camera, following:o.following, direction:o.direction };
     setLocked(true); setBrowsing(false);
   } };
 }

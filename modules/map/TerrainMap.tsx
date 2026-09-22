@@ -1,5 +1,6 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
 import { readLastView, saveLastView } from './lastView';
+import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
@@ -70,6 +71,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  highlightOffline: (trip: import("../outdoor/offline").TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
   groundElevation: (coordinates: Coordinate) => number | null;
@@ -170,6 +172,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
   function TerrainMap(props, ref) {
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
+    const coverageCleanup=useRef<(()=>void)|null>(null);
+    useEffect(()=>()=>{coverageCleanup.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
     const diagnostics = useRef<ReturnType<typeof observeMapRendering> | null>(
       null,
@@ -561,6 +565,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             { positionFollow: true },
           );
           return true;
+        },
+        highlightOffline: (trip) => {
+          coverageCleanup.current?.();
+          if(mapRef.current && loaded.current)coverageCleanup.current=flashOfflineCoverage(mapRef.current,trip);
         },
         previewRoute: (center) => {
           const marker = previewRef.current,

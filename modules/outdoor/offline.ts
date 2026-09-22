@@ -71,7 +71,9 @@ export async function prepareMapPackage(name: string, area: DownloadArea, settin
     display:{satellite:settings.satellite,tiandituBase:settings.tiandituBase,tiandituLabels:settings.tiandituLabels,tiandituBoundaries:settings.tiandituBoundaries,terrain:settings.terrain,labels:settings.labels,roads:settings.roads,roadsOpacity:settings.roadsOpacity,imageryMode:'detail',offlineBasemap:provider==='openfreemap',offlineMaxZoom:zoom,rasterLevel:null}};
   putTrip(trip);return trip;
 }
+const removingTrips = new Set<string>();
 export function putTrip(trip: TripPackage) {
+  if(removingTrips.has(trip.id)) return;
   const list = tripPackages();
   const index = list.findIndex((t) => t.id === trip.id);
   if (index < 0) list.push(trip);
@@ -314,10 +316,14 @@ export async function verifyTrip(trip: TripPackage) {
   return checked;
 }
 export async function removeTrip(trip: TripPackage) {
-  if(trip.native && nativeOffline() && !nativeOffline()!.offlineRemove(trip.id))throw Error('缓存移除失败，请暂停下载后重试');
-  const list = tripPackages().filter((t) => t.id !== trip.id),
-    keep = new Set(list.flatMap((t) => t.urls.map(resourceCacheKey))),
-    cache = await caches.open(CACHE);
-  for (const url of trip.urls) if (!keep.has(resourceCacheKey(url))) await cache.delete(resourceCacheKey(url));
-  localStorage.setItem(INDEX, JSON.stringify(list));
+  removingTrips.add(trip.id);
+  try {
+    if(nativeOffline() && !nativeOffline()!.offlineRemove(trip.id))throw Error('缓存移除失败；下载尚未停止或存储暂不可用，请稍后重试');
+    const keep = new Set(tripPackages().filter(t=>t.id!==trip.id).flatMap(t=>t.urls.map(resourceCacheKey)));
+    const cache = await caches.open(CACHE);
+    for(const url of trip.urls) if(!keep.has(resourceCacheKey(url)))await cache.delete(resourceCacheKey(url));
+    // Re-read after awaits: another package may have received progress meanwhile.
+    localStorage.setItem(INDEX,JSON.stringify(tripPackages().filter(t=>t.id!==trip.id)));
+    if(localStorage.getItem('shantu.offline-package.v1')===trip.id)localStorage.removeItem('shantu.offline-package.v1');
+  } finally { removingTrips.delete(trip.id); }
 }

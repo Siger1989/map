@@ -43,9 +43,11 @@ export function saveRecording(
   const incoming = recordingTransfer(record);
   if (!record.id || !incoming.tracks[0].segments.length)
     throw new Error('尚无可保存的记录点');
-  const next = mergeData(incoming, storage);
   const snapshot = (track: ManualTrack) => JSON.stringify({ ...track, id: '' });
   const expected = snapshot(incoming.tracks[0]);
+  const existing=collectData(storage).tracks.find(track=>snapshot(track)===expected);
+  if(existing)return existing;
+  const next = mergeData(incoming, storage);
   const saved = next.tracks.find((track) => snapshot(track) === expected);
   if (
     !saved ||

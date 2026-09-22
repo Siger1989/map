@@ -89,7 +89,7 @@ export function OfflinePanel({
               检查完整性
             </button>
             <button
-              disabled={offline.busy}
+              disabled={offline.removing?.includes(p.id)}
               onClick={() => void offline.remove(p)}
             >
               移除缓存

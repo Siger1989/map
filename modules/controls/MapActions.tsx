@@ -14,12 +14,14 @@ import type { DirectionMode, PositionFix } from '../position/types';
 /** Home chrome; camera, positioning and route state stay with their owners. */
 export function MapActions(props: {
   terrain: boolean;
+  elevationControl?: ReactNode;
   compact?: boolean;
   bearing: number;
   onZoom: (amount: number) => void;
   onNorth: () => void;
   onDimension: () => void;
   onLocate: () => void;
+  onDirection?: () => void;
   locating: boolean;
   watching: boolean;
   following: boolean;
@@ -70,6 +72,7 @@ export function MapActions(props: {
         locating={props.locating}
         blocked={props.followBlocked}
         onLocate={props.onLocate}
+        onDirection={props.onDirection}
         fix={props.fix}
         showCoordinates={props.showCoordinates}
       >
@@ -89,6 +92,7 @@ export function MapActions(props: {
           <Minus size={23} />
         </button>
         {props.displayControl}
+        {props.elevationControl}
       </PositionDock>
       <div className="home-camera-control">{props.viewControl}</div>
       <nav

@@ -85,7 +85,7 @@ export function OfflineMapFolder({
                       <span>移除此离线包？原路线不会删除。</span>
                       <div>
                         <button
-                          disabled={offline.busy}
+                          disabled={offline.removing?.includes(p.id)}
                           onClick={() => void offline.remove(p)}
                         >
                           移除缓存
@@ -108,7 +108,7 @@ export function OfflineMapFolder({
                         检查
                       </button>
                       <button
-                        disabled={offline.busy}
+                        disabled={offline.removing?.includes(p.id)}
                         onClick={() => setRemoving(p.id)}
                       >
                         移除

@@ -39,7 +39,6 @@ export function JourneyOverview({ tracks, selectedId, recordingStarted, onSelect
       <button onClick={onRecord}><Settings2 size={16} />实走记录与设置</button>
       <button onClick={() => onTool('files')}>导入 / 导出数据</button>
       <button onClick={() => onTool('offline')}>离线地图</button>
-      <button onClick={() => onTool('return')}>返航</button>
     </nav> : <>
       {track && <div className="journey-summary"><span>{formatDistance(trackDistance(track.segments))}</span><span>{trackSourceLabel(track)}</span><span>{times.length ? time(times[0]) : '未记录时间'}</span></div>}
       {track && <nav className="journey-tabs" aria-label="行程内容">

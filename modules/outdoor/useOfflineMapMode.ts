@@ -20,11 +20,17 @@ export function useOfflineMapMode(
       rain: false,
       geology: false,
       elevationColors: false,
-      ...(trip ? trip.display ?? { satellite:false,tiandituBase:'vec' as const,offlineBasemap:true,roads:true,labels:true,rasterLevel:null,offlineMaxZoom:14 } : {}),
+      ...(trip ? trip.display ?? { satellite:false,tiandituBase:'vec' as const,offlineBasemap:true,roads:true,labels:true,rasterLevel:null } : {}),
+      offlineMaxZoom: offlineMapOnly() ? trip?.zoom ?? trip?.display?.offlineMaxZoom ?? 14 : null,
     });
   };
   useEffect(() => {
-    const online = () => { if (!offlineMapOnly()) callbacks.current.change({ offlineMaxZoom:null }); };
+    const online = () => {
+      let id=''; try { id=localStorage.getItem('shantu.offline-package.v1')??''; } catch {}
+      const trip=tripPackages().find(p=>p.id===id);
+      callbacks.current.change({ offlineMaxZoom:offlineMapOnly() ? trip?.zoom ?? trip?.display?.offlineMaxZoom ?? 14 : null });
+    };
+    online();
     window.addEventListener('shantu:offline-map-mode',online);
     if (offlineMapOnly()) {
       let id='';try { id=localStorage.getItem('shantu.offline-package.v1')??''; } catch {}

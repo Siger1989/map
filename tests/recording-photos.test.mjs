@@ -83,9 +83,9 @@ test('recording appearance survives saving and reload without changing GPS sampl
   const storage = memory();
   const styled = { ...record, style: { color: '#55d6ff', width: 3, opacity: .4 } };
   const saved = saveRecording(styled, storage);
-  assert.deepEqual(saved.style, styled.style);
+  assert.deepEqual(saved.style, { travelMode:'walk', ...styled.style });
   const restored = parseSavedTracks(storage.getItem(TRACK_STORAGE))[0];
-  assert.deepEqual(restored.style, styled.style);
+  assert.deepEqual(restored.style, { travelMode:'walk', ...styled.style });
   assert.deepEqual(restored.segments, recordingTrack(record).segments);
   assert.deepEqual(restored.samples, recordingTrack(record).samples);
   assert.equal(recordingTrack(record).style, undefined);

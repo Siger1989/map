@@ -8,6 +8,7 @@ export function PositionDock({
   locating,
   blocked,
   onLocate,
+  onDirection,
   fix,
   showCoordinates,
   children,
@@ -17,6 +18,7 @@ export function PositionDock({
   locating: boolean;
   blocked: boolean;
   onLocate: () => void;
+  onDirection?: () => void;
   fix?: PositionFix | null;
   showCoordinates?: boolean;
   children?: ReactNode;
@@ -26,20 +28,19 @@ export function PositionDock({
       {children}
       <button
         className="position-dock-button position-locate-button glass"
-        aria-label={
-          blocked ? '获取当前位置（编辑中暂停地图跟随）' : following
-            ? locating
-              ? '等待定位，点击切换跟随模式'
-              : direction === 'device' ? '指南针跟随，点击自由浏览' : '正北跟随，点击指南针模式'
-            : '定位并正北跟随'
-        }
+        aria-label={following ? '关闭位置跟随' : '开启位置跟随'}
         aria-pressed={following}
-        title={blocked ? '编辑中可获取定位，结束编辑后可跟随' : undefined}
+        title={blocked ? '编辑中暂停跟随' : undefined}
         onClick={onLocate}
       >
-        {following && direction === 'device' ? <Compass size={17} /> : <LocateFixed size={17} />}
-        <small>{following && direction === 'device' ? '指南针' : locating ? '定位中' : following ? '正北' : '定位'}</small>
+        <LocateFixed size={17} />
+        <small>{locating ? '定位中' : following ? '跟随中' : '跟随'}</small>
       </button>
+      {onDirection && <button className="position-dock-button position-direction-button glass"
+        aria-label={direction === 'device' ? '关闭方向感应' : '开启方向感应'}
+        aria-pressed={direction === 'device'} onClick={onDirection}>
+        <Compass size={17} /><small>{direction === 'device' ? '方向开' : '方向'}</small>
+      </button>}
       {showCoordinates && (
         <output
           className="position-dock-coordinates glass"
