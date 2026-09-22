@@ -7,7 +7,7 @@
 - 基于下节Sentinel-2修改提升config/product.ts与mobile/android/AndroidManifest.xml版本，新增docs/release-0.2.56.md；包名com.guanyun.weather.shantu.preview与原4a94签名保持，可覆盖同系列旧版。保留轨迹/照片/布局及既有离线包，无数据迁移。
 - 最终网页/Java/DEX/APK重新构建通过。TypeScript、22项定向测试、v2/v3签名、zipalign、543项ZIP/473地形瓦片、44项网页及11项原生特征通过。本地日志.openai/apk-0.2.56-*不提交。
 - APK/Shantu-0.2.56-test-standalone.apk，57788854字节，SHA256：893a27b7a5668ede64064730d42b01a01468c710a121285550597a55b5cb7dc6。校验文件同目录.sha256。
-- 发行目标https://github.com/Siger1989/map/releases/tag/v0.2.56-test-standalone，附APK与校验文件；远端发布/上传结果以GitHub实际资产为准。已fetch核对基线与远端一致，不强推。
+- 已公开发布https://github.com/Siger1989/map/releases/tag/v0.2.56-test-standalone（预发行393589564），APK与校验文件均uploaded，远端大小和SHA256与本地一致。发行标签及构建源码为8dd306669307b970420a30a4255c95d82ae54da0，已核对分支与标签远端一致；本条发布结果另作文档提交，不改变安装包源码。
 - 当前Sentinel-2为2025合成/约10米/Z14上限，区域下载仅预留入口，天地图手动选择；未承诺Google、完整缓存重构或每日计数。桌面直连与预览已验证，手机网络/安装/定位/触摸仍需实测。HarmonyOS6.1原生没有可交付HAP/APP，详见本版发行说明。
 
 
