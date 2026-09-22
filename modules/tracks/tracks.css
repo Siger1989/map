@@ -9,6 +9,21 @@
 .track-drawing > * {
   pointer-events: none;
 }
+.track-draw-distance {
+  position: absolute;
+  z-index: 9;
+  pointer-events: none;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid #a7efd0;
+  border-radius: 4px;
+  background: #102d26ee;
+  color: #fff;
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+}
 .track-tools {
   position: absolute;
   z-index: 11;

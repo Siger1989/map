@@ -46,11 +46,13 @@ export function useMeasurement() {
       setError('测量尚未保存，请检查本机存储后重试');
       return false;
     }
-    if (history)
+    if (history) {
+      const previous = { points: current.current, recordId: currentRecord.current };
       setUndoStack((s) => [
         ...s.slice(-29),
-        { points: current.current, recordId: currentRecord.current },
+        previous,
       ]);
+    }
     currentRecord.current = recordId;
     current.current = next;
     setPoints(next);
@@ -129,6 +131,7 @@ export function useMeasurement() {
   ) => {
     if (!ready.current || index < 0 || index >= MAX_POINTS) return false;
     const actual = Math.min(index, current.current.length);
+    const replacing = actual < current.current.length;
     const id = current.current[actual]?.id ?? crypto.randomUUID();
     requests.current.get(id)?.abort();
     const p: MeasurePoint = {
@@ -141,7 +144,8 @@ export function useMeasurement() {
     next[actual] = p;
     if (!commit(next)) return false;
     setSelected(id);
-    setSlot(next.length < 2 ? 1 : null);
+    // First placement advances to B; replacing a chosen point keeps it armed.
+    setSlot(!replacing && next.length < 2 ? 1 : actual);
     if (p.altitude === null) fillHeight(p);
     return true;
   };

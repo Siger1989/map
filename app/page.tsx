@@ -644,6 +644,11 @@ export default function Home() {
     !sectionEditing
       ? trackLinePoint
       : null;
+  const routeProfilePoint = linePoint ?? (
+    railTrack && selectedAnnotation?.trackAnchor?.trackId === railTrack.id
+      ? { trackId: railTrack.id, coordinate: selectedAnnotation.coordinates, distance: selectedAnnotation.trackAnchor.distance }
+      : null
+  );
   useEffect(() => {
     setTrackLinePoint((point) =>
       point?.trackId === tracks.selectedId ? point : null,
@@ -1401,7 +1406,7 @@ export default function Home() {
             <>
               {routeWindow === 'card' && (
                 <>
-                {!guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} />}
+                {!guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} point={routeProfilePoint} />}
                 <RouteCard
                   key={railTrack.id}
                   track={railTrack}
@@ -1607,6 +1612,7 @@ export default function Home() {
           )}
         <TrackDrawing
           ref={drawing}
+          distanceSegments={branchEditing ? [editor.session!.track.segments[editor.session!.branch!]] : tracks.draft}
           enabled={
             (branchEditing || tracks.drawing) &&
             !areas.drawing &&

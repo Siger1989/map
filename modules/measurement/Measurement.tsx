@@ -123,7 +123,7 @@ export function Measurement({
                   }
                   if (e.button !== 0) return;
                   onBegin();
-                  state.select(points[i].id);
+                  if (!state.adding) state.select(points[i].id);
                   e.currentTarget.setPointerCapture(e.pointerId);
                   drag.current = {
                     id: points[i].id,
@@ -166,6 +166,8 @@ export function Measurement({
                       d.coordinate,
                       groundElevation(d.coordinate),
                     );
+                  else if (state.adding)
+                    state.add(points[i].coordinates, groundElevation(points[i].coordinates));
                 }}
                 onPointerCancel={() => {
                   drag.current = null;
@@ -178,7 +180,8 @@ export function Measurement({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    state.select(points[i].id);
+                    if (state.adding) state.add(points[i].coordinates, groundElevation(points[i].coordinates));
+                    else state.pick(i);
                   }
                   const delta: Record<string, [number, number]> = {
                     ArrowLeft: [-8, 0],
@@ -221,9 +224,7 @@ export function Measurement({
                     state.slot === i ||
                     (state.slot === null && state.selected === points[i]?.id)
                   }
-                  onClick={() =>
-                    points[i] ? state.select(points[i].id) : state.pick(i)
-                  }
+                  onClick={() => state.pick(i)}
                 >
                   {pointLabel(i)}
                 </button>
@@ -406,6 +407,7 @@ export function Measurement({
           </footer>
         </section>
         <ProjectionChart
+          points={points}
           metrics={metrics}
           segment={segment}
           total={points.length > 2 ? total.horizontal : null}

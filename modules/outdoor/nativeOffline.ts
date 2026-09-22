@@ -16,7 +16,9 @@ export function applyNativeProgress(trip:TripPackage,state:State):TripPackage {
 }
 export async function downloadNative(trip:TripPackage, signal:AbortSignal, progress:(trip:TripPackage)=>void) {
   const bridge=nativeOffline();if(!bridge)return false;
-  const message=bridge.offlineStart(JSON.stringify({id:trip.id,name:trip.name,urls:trip.urls.map(resourceFetchUrl)}));
+  let message:string;
+  try { message=bridge.offlineStart(JSON.stringify({id:trip.id,name:trip.name,urls:trip.urls.map(resourceFetchUrl)})); }
+  catch { throw Error('后台下载启动失败，任务已保留，请点击继续下载重试'); }
   if(message!=='ok')throw Error(message);
   const pause=()=>bridge.offlinePause();signal.addEventListener('abort',pause,{once:true});
   try {

@@ -10,5 +10,7 @@
 .selected-route-info dl { display:flex; justify-content:space-between; gap:4px; margin:0; font-size:10px; }
 .selected-route-info dl > div { text-align:center; min-width:0; }
 .selected-route-info dd { margin:0; font-weight:600; }
+.selected-route-point { display:flex; flex-wrap:wrap; gap:2px 8px; padding:2px 0; border-top:1px solid #d9e3dd; font-size:10px; line-height:15px; }
+.selected-route-point > span { white-space:nowrap; }
 .selected-route-info > small { font-size:9px; color:#5c6b65; }
 .selected-route-info .navigation-color-key { display:flex; flex-wrap:wrap; gap:3px; font-size:9px; }

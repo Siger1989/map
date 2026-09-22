@@ -380,8 +380,9 @@ test('stored nodes survive, bad nodes are rejected, legacy line style is readabl
       .length,
     0,
   );
-  assert.deepEqual(normalizeTrackStyle(null), DEFAULT_TRACK_STYLE);
+  assert.deepEqual(normalizeTrackStyle(null), { ...DEFAULT_TRACK_STYLE, travelMode: 'walk' });
   assert.deepEqual(normalizeTrackStyle({ color: 'red;bad', width: 999 }), {
+    travelMode: 'walk',
     color: DEFAULT_TRACK_STYLE.color,
     width: 5,
     opacity: 1,

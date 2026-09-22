@@ -1,5 +1,5 @@
 import type { Coordinate } from '../navigation/types';
-import { MAX_TRACK_POINTS, pullTip, type ScreenPoint } from './drawing.ts';
+import { MAX_TRACK_POINTS, pullTip, trackDistance, type ScreenPoint } from './drawing.ts';
 import { aimPoint, handlePoint, nearHandle } from './precision.ts';
 import { findSnap, sameNode } from './snapping.ts';
 import type { DrawingInput } from './DrawingGestureBridge';
@@ -19,6 +19,7 @@ export type DrawingPreview = {
   snapped: boolean;
   blocked?: boolean;
   crossing?: boolean;
+  distanceMetres?: number;
 };
 export type DrawingResult = {
   preview: DrawingPreview | null;
@@ -134,6 +135,7 @@ export class DrawingSession {
           preview: {
             kind: 'ink',
             tip,
+            distanceMetres: 0,
             finger,
             path: this.stroke.path,
             snapped: false,
@@ -154,6 +156,7 @@ export class DrawingSession {
           preview: {
             kind: 'ink',
             tip: s.sample,
+            distanceMetres: trackDistance([s.points]),
             finger,
             path: s.path,
             snapped: false,
@@ -181,6 +184,7 @@ export class DrawingSession {
             kind: 'ink',
             finger,
             tip: s.sample,
+            distanceMetres: trackDistance([s.points]),
             path: s.path,
             snapped: false,
             blocked: true,
@@ -227,6 +231,7 @@ export class DrawingSession {
         preview: {
           kind: 'ink',
           finger,
+          distanceMetres: trackDistance([s.snap ? [...s.points, s.snap] : s.points]),
           tip: snap?.screen ?? output,
           path:
             s.path +
@@ -306,6 +311,8 @@ export class DrawingSession {
               : ''),
       preview: {
         kind: 'aim',
+        distanceMetres: !blocked && from && this.aim
+          ? trackDistance([[from, ...(this.aimSection ?? [this.aim])]]) : 0,
         tip: road?.match?.screen ?? snap?.screen ?? aim,
         finger,
         path,

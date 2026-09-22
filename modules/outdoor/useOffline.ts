@@ -51,12 +51,15 @@ export function useOffline() {
       setPackages(tripPackages());
     }
   };
-  const download = (trip: TripPackage, signal: AbortSignal) =>
-    downloadTrip(trip, signal, (progress) => {
+  const download = (trip: TripPackage, signal: AbortSignal) => {
+    // Keep the retry target even if native startup fails before its first update.
+    setCurrent(trip);
+    return downloadTrip(trip, signal, (progress) => {
       setPackages(tripPackages());
       setCurrent(progress);
       setMessage(`${progress.done}/${progress.urls.length} 项 · ${(progress.bytes / 1048576).toFixed(1)} MB`);
     });
+  };
   return {
     packages,
     current,

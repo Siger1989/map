@@ -3,10 +3,11 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
+  useMemo,
   useState,
 } from 'react';
-import type { Coordinate } from '../navigation/types';
-import type { ScreenPoint } from './drawing';
+import { formatDistance, type Coordinate } from '../navigation/types';
+import { trackDistance, type ScreenPoint } from './drawing';
 import type { DrawingInput } from './DrawingGestureBridge';
 import type { TrackStyle } from './style';
 import type { DrawingMode } from './draft';
@@ -22,6 +23,7 @@ export const TrackDrawing = forwardRef<
   TrackDrawingHandle,
   {
     enabled: boolean;
+    distanceSegments?: Coordinate[][];
     length: number;
     style: TrackStyle;
     mode: DrawingMode;
@@ -45,6 +47,7 @@ export const TrackDrawing = forwardRef<
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [preview, setPreview] = useState<DrawingPreview | null>(null),
     [hint, setHint] = useState('');
+  const committedDistance = useMemo(() => trackDistance(p.distanceSegments ?? []), [p.distanceSegments]);
   useEffect(() => {
     if (!p.enabled || !svg.current) {
       session.current.clear();
@@ -95,6 +98,11 @@ export const TrackDrawing = forwardRef<
   const anchor = p.anchor && p.toScreen(p.anchor),
     handle = anchor && handlePoint(anchor, p.length, size.height);
   const last = p.lastVertex && p.toScreen(p.lastVertex);
+  const distanceTip = preview?.blocked && preview.kind === 'aim'
+    ? (last ?? anchor) : (preview?.tip ?? (p.mode === 'freehand' ? anchor : last));
+  const distanceText = `累计 ${formatDistance(committedDistance + (preview?.distanceMetres ?? 0))}`;
+  const labelWidth = Math.max(88, distanceText.length * 8 + 16);
+  const labelBelow = preview?.kind === 'aim' && distanceTip && distanceTip.y > 125;
   const instruction =
     hint ||
     (p.mode === 'points'
@@ -230,6 +238,15 @@ export const TrackDrawing = forwardRef<
       </svg>
       {preview?.kind === 'aim' && (
         <PointMagnifier point={preview.tip} {...size} observe={p.magnify} />
+      )}
+      {p.distanceSegments && distanceTip && size.width > 0 && (
+        <output className="track-draw-distance" aria-label="画线累计长度" style={{
+          width: labelWidth,
+          left: Math.max(4, Math.min(size.width-labelWidth-4, labelBelow
+            ? (distanceTip.x-labelWidth-16>=4 ? distanceTip.x-labelWidth-16 : distanceTip.x+16)
+            : distanceTip.x-labelWidth/2)),
+          top: Math.max(4, Math.min(size.height-28, distanceTip.y+(labelBelow?12:-52))),
+        }}>{distanceText}</output>
       )}
       <div className="track-draw-hint glass" role="status">
         {instruction}

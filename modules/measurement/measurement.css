@@ -324,6 +324,26 @@
   fill: #21433e;
   font: 10px sans-serif;
 }
+.measurement-chart-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-x;
+  scrollbar-width: thin;
+}
+.measurement-chart-plot.measurement-chart-full {
+  max-width: none;
+  min-width: 100%;
+  height: 104px;
+}
+.measurement-chart-retry {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  min-height: 36px;
+}
 .measurement-chart-grid {
   fill: none;
   stroke: #d6e0db;

@@ -9,12 +9,14 @@ export function RouteElevationProfile({
   progress,
   compact = false,
   endpoints = false,
+  selection,
 }: {
   samples: ElevationSample[];
   scale: ElevationScale;
   progress?: number | null;
   compact?: boolean;
   endpoints?: boolean;
+  selection?: { distance: number; elevation: number | null } | null;
 }) {
   const distance = samples.at(-1)?.distance ?? 0;
   const width = compact ? 240 : 180, baseline = compact ? 38 : 58, height = compact ? 52 : 74;
@@ -60,6 +62,10 @@ export function RouteElevationProfile({
         {altitude !== null && progress != null && <g aria-label="当前位置">
           <path d={`M${x(progress)} ${y(altitude)}V${baseline}`} stroke="#15572b" strokeWidth="0.6" strokeDasharray="2 2" />
           <circle cx={x(progress)} cy={y(altitude)} r="3" fill="#16833e" stroke="white" strokeWidth="1" />
+        </g>}
+        {selection && <g aria-label={selection.elevation===null?'所选路线点，高程缺失':'所选路线点'}>
+          <path d={`M${x(selection.distance)} 12V${baseline}`} stroke="#146743" strokeWidth="0.8" strokeDasharray="2 2" />
+          <circle cx={x(selection.distance)} cy={selection.elevation===null?baseline:y(selection.elevation)} r="3.5" fill={selection.elevation===null?'white':'#16833e'} stroke="white" strokeWidth="1.2" />
         </g>}
         <text x={width - 4} y={height - 2} textAnchor="end">
           {endpoints ? '终点 · ' : ''}{(distance / 1000).toFixed(1)} km

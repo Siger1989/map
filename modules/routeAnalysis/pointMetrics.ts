@@ -112,6 +112,7 @@ export function routePointMetrics(
   return {
     coordinate: point.coordinate,
     distance: original.distance,
+    profileDistance: sampled?.distance ?? original.distance,
     part: original.part,
     pointIndex: original.pointIndex,
     elevation,
