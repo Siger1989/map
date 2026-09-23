@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { folderTheme } from './folderTheme';
 import { deliverFile } from '../files/delivery';
+import { annotationSpreadsheet } from '../annotations/spreadsheet';
+import { XLSX_MIME } from '../files/spreadsheet';
 import { useSwipeSelection } from './useSwipeSelection';
 import { useWorkbenchLongPress } from './useWorkbenchLongPress';
 import {
@@ -218,6 +220,23 @@ export function WorkbenchPanel(props: Props) {
       );
     } catch (e) {
       setActionMessage(e instanceof Error ? e.message : '分享失败，请重试');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const exportMarkerExcel = async () => {
+    const keys = new Set(selectedWorkbenchKeys(items, [...checked]));
+    const markers = store.data?.annotations.filter(item => keys.has(`annotation:${item.id}`)) ?? [];
+    if (!markers.length) { setMessage('请先勾选标记或模型'); return; }
+    setBusy(true);
+    try {
+      setMessage(await deliverFile(new File(
+        [new Uint8Array(annotationSpreadsheet(markers))],
+        `Shantu-markers-${Date.now()}.xlsx`,
+        { type: XLSX_MIME },
+      ), false));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Excel 导出失败');
     } finally {
       setBusy(false);
     }
@@ -498,6 +517,7 @@ export function WorkbenchPanel(props: Props) {
           </div>
           {batch && (
             <div className="workbench-batch">
+              <button disabled={!checked.size || busy} onClick={() => void exportMarkerExcel()}>标记 Excel</button>
               <button
                 disabled={!checked.size}
                 onClick={() => showAction({ type: 'share', ids: [...checked] })}

@@ -30,15 +30,15 @@ export function annotationSheet(
   fields.flat().forEach((f) => headers.set(f.key, f.name));
   const rows: (string | number | null)[][] = [
     [
-      '地名',
       '经度（WGS84）',
       '纬度（WGS84）',
-      '地面海拔（m）',
-      ...[...headers.values()].map((s) => `属性：${s}`),
+      '名称',
       '备注',
+      ...[...headers.values()].map((s) => `属性：${s}`),
+      '地面海拔（m）',
       '类型',
       '图标',
-      'ID',
+      'ID（自动）',
       '国家',
       '省/州',
       '城市',
@@ -51,13 +51,13 @@ export function annotationSheet(
   ];
   items.forEach((a, i) =>
     rows.push([
-      a.name,
       ...a.coordinates,
-      a.groundElevation,
+      a.name,
+      a.note,
       ...[...headers.keys()].map(
         (k) => fields[i].find((f) => f.key === k)?.value ?? '',
       ),
-      a.note,
+      a.groundElevation,
       KINDS[a.kind],
       markerIcon(a.icon).name,
       a.id,

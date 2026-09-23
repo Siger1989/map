@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { WorkbenchPanel } from './WorkbenchPanel';
 import { BoxSelectionResults } from './BoxSelectionResults';
+import { MarkerExcelImport } from './MarkerExcelImport';
 import { RouteCollectionsPanel } from './RouteCollectionsPanel';
 import {
   catalogEntries,
@@ -24,6 +25,7 @@ import { coordinateKey } from './regions';
 import { collectionTransfer, collectionSpreadsheet } from './export';
 import { deliverFile } from '../files/delivery';
 import { XLSX_MIME } from '../files/spreadsheet';
+import { annotationSpreadsheet } from '../annotations/spreadsheet';
 import { markerSolidPath } from '../annotations/icons';
 import type { Annotation } from '../annotations/data';
 import type { SectionObject } from '../section/sectionObjects';
@@ -75,6 +77,7 @@ export function CollectionsPanel(props: Props) {
   );
   const regions = useRegions(entries);
   const [boxResults, setBoxResults] = useState(!!props.initialSelectedKeys?.length);
+  const [excelImport, setExcelImport] = useState(false);
   const [legacy, setLegacy] = useState(
       !props.initialOutputKey && !props.initialSelectedKeys?.length,
     ),
@@ -176,7 +179,9 @@ export function CollectionsPanel(props: Props) {
                 2,
               )
             : new Uint8Array(
-                collectionSpreadsheet(chosen, regions.regions, localStorage),
+                chosen.length && chosen.every(e => e.kind === 'pin' || e.kind === 'model')
+                  ? annotationSpreadsheet(chosen.flatMap(e => 'annotation' in e ? [e.annotation] : []), regions.regions)
+                  : collectionSpreadsheet(chosen, regions.regions, localStorage),
               );
       setMessage(
         await deliverFile(
@@ -209,14 +214,24 @@ export function CollectionsPanel(props: Props) {
     initialMessage={message}
     onClose={props.onClose}
     onReselect={props.onReselect ?? props.onClose}
-    onExport={keys => { setSelected(keys); setOutput(true); }}
+    onExport={keys => {
+      setSelected(keys);
+      const chosen = entries.filter(entry => keys.includes(entry.key));
+      setFormat(chosen.length && chosen.every(entry => entry.kind === 'pin' || entry.kind === 'model') ? 'xlsx' : 'zip');
+      setOutput(true);
+    }}
     onShare={keys => { void share(true, keys); }}
     busy={busy}
+  />;
+  if (excelImport) return <MarkerExcelImport
+    onBack={() => setExcelImport(false)}
+    onClose={props.onClose}
+    onOtherImport={props.onImport}
   />;
   if (legacy)
     return (
       <WorkbenchPanel
-        onImport={props.onImport}
+        onImport={() => setExcelImport(true)}
         offlineMaps={props.offlineMaps}
         offlineCount={props.offlineCount}
         center={props.mapCenter}

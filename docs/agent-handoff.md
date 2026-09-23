@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-23 0.2.65 标记 Excel 往返与天气源调研
+
+收藏夹“导入”现提供 XLSX 标记预览、确认/撤销及空白模板；多选可导出标记 Excel，地图框选只有地点/模型时默认导出标记 XLSX。列顺序为 WGS84 经纬度、名称、备注、自定义条目；ID 自动导出，无 ID 时按六位小数坐标唯一匹配。改动见 `modules/annotations/spreadsheet{,Import}.ts`、`modules/collections/{CollectionsPanel,WorkbenchPanel,MarkerExcelImport}.tsx`及样式/测试。TypeScript、624项测试、网页/Android构建、打包网页启动、隔离浏览器390/360导入导出通过；真机待验。当前天气仍为 Open-Meteo 预报与生成式3D云雨；国内免费天气/真实卫星云图授权调研见 [当前状态](../CURRENT_STATE.md)和[0.2.65发行说明](release-0.2.65.md)，未替换图源。
+
 ## 2026-09-23 0.2.64 框选类型筛选
 
 地图框选增加紧凑对象类型下拉，默认“全部”，可只选地点/模型/区域/剖面/路线/轨迹/测量。切换具体类型时排除已选列表中的其他类型；几何框选与加减选算法、保存数据不变。TypeScript、618测试、网页/Android构建及打包网页启动通过；390×857、360×780隔离浏览器操作和尺寸检查通过，真机待验。Excel导出后回填条目尚未实现，待与用户确定数据表结构。源码与包见[当前状态](../CURRENT_STATE.md)及[0.2.64发行说明](release-0.2.64.md)。

@@ -1,0 +1,45 @@
+.marker-excel-import .workbench-collections { height: 100%; }
+.marker-excel-import .workbench-heading > div { justify-content: center; }
+.marker-excel-import .marker-excel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+  font-size: 12px;
+}
+.marker-excel-import .marker-excel-content p { margin: 2px 0 6px; }
+.marker-excel-import .marker-excel-actions,
+.marker-excel-import .marker-excel-footer {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  flex-shrink: 0;
+}
+.marker-excel-import .marker-excel-actions button,
+.marker-excel-import .marker-excel-footer button {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 3px;
+  border: 1px solid #9db4a8;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 11px;
+}
+.marker-excel-import .marker-excel-footer button:first-child { background: #266552; color: #fff; }
+.marker-excel-import .marker-excel-actions input { display: none; }
+.marker-excel-import .marker-excel-filename {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.marker-excel-import .marker-excel-preview {
+  margin-top: 5px;
+  padding: 4px;
+  border: 1px solid #a8c5af;
+  background: #fffdf0;
+  overflow-wrap: anywhere;
+}
+.marker-excel-import .marker-excel-preview > div { padding: 2px 0; border-top: 1px solid #e5e6d8; }
+.marker-excel-import .marker-excel-error { color: #a52317; }

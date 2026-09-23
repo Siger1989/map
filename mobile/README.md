@@ -1,3 +1,7 @@
+# 山兔0.2.65测试版（2026-09-23）
+
+收藏夹可导入/预览/撤销标记 XLSX、下载模板；收藏夹多选与地图框选可导出标记 Excel。每行一个标记，WGS84 经纬度与条目列顺序明确，ID 自动生成，无需手填。天气源与云图未改。新包 `../APK/Shantu-0.2.65-test-standalone.apk`，versionCode72，原独立包名和4a94签名，57,830,492字节，SHA256 `48714d135f6ff3d629997f46d6f55b5f831cc64b2aa48152d8036ec8533c142c`。624项测试、网页及Android构建、浏览器390/360操作通过；真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.65-test-standalone/Shantu-0.2.65-test-standalone.apk) · [发行说明](../docs/release-0.2.65.md)。
+
 # 山兔0.2.64测试版（2026-09-23）
 
 地图框选新增对象类型筛选：只框选地点、模型、区域、剖面、路线、轨迹或测量之一；换类型时移除之前选中的其他类型。包含0.2.62/0.2.63修复，标记Excel回填尚未加入。新包`../APK/Shantu-0.2.64-test-standalone.apk`，versionCode71、原独立测试包名与4a94签名，57,826,396字节，SHA256 `41fab1fb6f0c49860597b115a53e6ff5026e5560acf7a9219ed7000a048972b6`。618项测试、网页和Android构建、390×857及360×780浏览器操作检查通过；真机仍待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.64-test-standalone/Shantu-0.2.64-test-standalone.apk) · [发行说明](../docs/release-0.2.64.md)。

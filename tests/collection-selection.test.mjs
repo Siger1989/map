@@ -142,7 +142,7 @@ test('hundreds of pins roundtrip without consuming 3D model slots', () => {
   assert.equal(canAddAnnotation(models, 'box'), false);
   assert.equal(canAddAnnotation(models, 'pin'), true);
 });
-test('XLSX starts with names and coordinates; all empty declared attributes retain aligned columns', () => {
+test('XLSX starts with coordinates and names; all empty declared attributes retain aligned columns', () => {
   const a = {
       ...pin('a'),
       attributes: [
@@ -154,10 +154,10 @@ test('XLSX starts with names and coordinates; all empty declared attributes reta
     b = { ...pin('b'), attributes: [{ name: '备注字段', value: '=1+1' }] };
   const sheet = annotationSheet([a, b]);
   assert.deepEqual(sheet.rows[0].slice(0, 4), [
-    '地名',
     '经度（WGS84）',
     '纬度（WGS84）',
-    '地面海拔（m）',
+    '名称',
+    '备注',
   ]);
   for (const label of [
     '属性：岩性',
