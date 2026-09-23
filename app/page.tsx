@@ -68,7 +68,7 @@ import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
 import { catalogEntries } from '@/modules/collections/catalog';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
 import { OfflineMapFolder } from '@/modules/collections/OfflineMapFolder';
-import { CenterCursor } from '@/modules/map/CenterCursor';
+import { CenterMarkButton, CenterReticle } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
 import {
   RouteCard,
@@ -1022,6 +1022,18 @@ export default function Home() {
     }),
     [annotations.items, tracks.saved, photos.items],
   );
+  const showCenterCursor = focusLock.locked || (panel === null &&
+    !tracks.drawing &&
+    !areas.drawing &&
+    !annotations.picking &&
+    !navigation.picking &&
+    !sectionEditing &&
+    !selectedAnnotation &&
+    !selectedPhoto &&
+    !featureMove &&
+    !measurement.active &&
+    !guidance.active &&
+    !boxSelecting);
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
@@ -1625,34 +1637,7 @@ export default function Home() {
             }}
           />
         )}
-        {panel === null &&
-          !tracks.drawing &&
-          !survey.active &&
-          !areas.drawing &&
-          !annotations.picking &&
-          !navigation.picking &&
-          !sectionEditing &&
-          !selectedAnnotation &&
-          !selectedPhoto &&
-          !featureMove &&
-          !measurement.active &&
-          !guidance.active &&
-          !boxSelecting && (
-            <CenterCursor
-              map={() => map.current}
-              onAdd={(coordinates) => {
-                map.current?.stop();
-                position.free();
-                follow.pause();
-                const screen = map.current?.toScreen(coordinates);
-                if (!screen) return;
-                tracks.select(null);
-                areas.select(null);
-                setProfileOpen(false);
-                setQuickAdd({ coordinate: coordinates, point: screen });
-              }}
-            />
-          )}
+        {showCenterCursor && <CenterReticle />}
         <TrackDrawing
           ref={drawing}
           distanceSegments={branchEditing ? [editor.session!.track.segments[editor.session!.branch!]] : tracks.draft}
@@ -2205,6 +2190,18 @@ export default function Home() {
           />
         )}
         <MapActions
+          markControl={showCenterCursor ? <CenterMarkButton map={() => map.current} onAdd={(coordinates) => {
+            if (focusLock.locked) focusLock.toggle();
+            map.current?.stop();
+            position.free();
+            follow.pause();
+            const screen = map.current?.toScreen(coordinates);
+            if (!screen) return;
+            tracks.select(null);
+            areas.select(null);
+            setProfileOpen(false);
+            setQuickAdd({ coordinate: coordinates, point: screen });
+          }} /> : undefined}
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           fix={displayedFix}

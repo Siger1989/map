@@ -40,6 +40,7 @@ export function MapActions(props: {
   displayControl?: ReactNode;
   layerControl?: ReactNode;
   viewControl?: ReactNode;
+  markControl?: ReactNode;
 }) {
   const [panel, setPanel] = useState<'more' | 'location' | null>(null);
   const root = useRef<HTMLElement>(null);
@@ -77,6 +78,7 @@ export function MapActions(props: {
         directionStatus={props.directionStatus}
         fix={props.fix}
         showCoordinates={props.showCoordinates}
+        markControl={props.markControl}
       >
         {props.layerControl}
         <button

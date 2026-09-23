@@ -5,7 +5,11 @@ import type { MapHandle } from './TerrainMap';
 import './centerCursor.css';
 
 /** The public map projection, not GPS, supplies the location under the reticle. */
-export function CenterCursor({
+export function CenterReticle() {
+  return <div className="map-center-cursor" aria-hidden="true"><i /><b /></div>;
+}
+
+export function CenterMarkButton({
   map,
   onAdd,
 }: {
@@ -15,12 +19,8 @@ export function CenterCursor({
   const [error, setError] = useState('');
   return (
     <>
-      <div className="map-center-cursor" aria-hidden="true">
-        <i />
-        <b />
-      </div>
       <button
-        className="center-add glass"
+        className="position-dock-button center-add glass"
         aria-label="在地图中心准星处添加标记"
         onClick={() => {
           const coordinate = map()?.centerCoordinate();
@@ -33,7 +33,7 @@ export function CenterCursor({
         }}
       >
         <MapPinPlus size={18} />
-        <span>标记</span>
+        <small>标记</small>
       </button>
       {error && (
         <button

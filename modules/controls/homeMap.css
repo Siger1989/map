@@ -133,7 +133,6 @@
 .observatory.home-map .home-view-panel .camera-gizmo > svg { width: 110px; height: 118px; }
 .observatory.home-map .home-view-directions { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .observatory.home-map .home-view-directions button { text-align: left; }
-.observatory.home-map .center-add, .observatory.home-map .map-center-cursor { display: none; }
 .observatory.home-map[data-route-edit='true'] .home-topbar { display: none; }
 /* Small widths preserve navigation/zoom targets and allow metadata to wrap. */
 @media (max-width:359px) {
@@ -225,7 +224,7 @@
 .observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .observatory.home-map .global-focus-lock small { font-size:9px; }
 .observatory.home-map .home-recording { bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px)); }
-.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) { display:none !important; }
 .observatory.home-map[data-focus-locked=true]:not([data-guiding=true]) > .route-weather-rail { display:none !important; }
 .observatory.home-map[data-focus-locked=true]::before { display:none !important; }
 .observatory.home-map[data-focus-locked=true] .maplibregl-control-container { display:none; }
@@ -243,9 +242,9 @@
 .observatory.home-map:not([data-focus-locked=true]):has(.raster-level-panel,.route-display-settings,.layer-window,.home-map-popup,.home-recording-panel) .global-focus-lock { display:none; }
 .observatory.home-map[data-panel='favorites'] :is(.home-position-dock,.home-map-actions) { display:none; }
 .observatory.home-map[data-panel='favorites'] .control-dock { z-index:82; }
-/* Independent position-follow and heading controls remain reachable while locked. */
+/* Heading, center marker, and position follow remain reachable while locked. */
 .observatory.home-map[data-focus-locked=true] .home-position-dock { display:flex !important; right:8px; bottom:104px; }
-.observatory.home-map[data-focus-locked=true] .home-position-dock > :not(.position-locate-button):not(.position-direction-button):not(.direction-menu) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] .home-position-dock > :not(.position-locate-button):not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) { display:none !important; }
 .route-travel-mode { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
 .route-travel-mode select { min-height:36px; flex:1; }
 .route-travel-mode small { flex-basis:100%; }

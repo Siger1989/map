@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-23 0.2.58中心标记打包
+
+用户确认地图中心准星及右侧“方向→标记→跟随”控件后要求隐藏UI仍保留标记，随后要求打包。当前分支`codex/rollback-ui-0235-20260921`；本轮改`app/page.tsx`、`modules/{map/CenterCursor.tsx,map/centerCursor.css,controls/MapActions.tsx,controls/homeMap.css,position/PositionDock.tsx,tracks/routeWindows.css}`及版本号。隐藏UI保留准星与标记，点标记显示UI和添加面板；没有修改路线/图源/存储。0.2.58-test/code65全新APK`APK/Shantu-0.2.58-test-standalone.apk`，57818204字节，SHA256 `da2b7d0871afcac809a6693c52a330241cefecaa4192ffa2d3e0667317d35ca5`；4a94签名v2/v3、551 ZIP CRC、473地形瓦片及打包网页启动通过。TypeScript及614测试通过；390×857和360×780独立预览检查控件命中与隐藏UI标记流程。真机触控/覆盖安装仍待验，鸿蒙原生未交付；GitHub发布状态以CURRENT_STATE顶部为准。未触碰用户预览标签、私有数据、附件或旧PDF。
+
 ## 2026-09-23 最新续接：0.2.57新APK本地构建完成，待Release
 
 以CURRENT_STATE顶部为准。用户现明确要求先出APK，已从含手动终点、路线编辑及打包网页启动修复的源码重新构建`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`；code64、独立4a94原签名和包名不变。614项测试、TypeScript、网页静态启动、Java/DEX/签名/zipalign/551 ZIP CRC/473地形瓦片通过；架构检查5个既有行数超限。用户截图中的`TypeError: t is not a function`已在旧打包网页复现，根因为坐标转换UMD跨分块循环初始化；局部ESM修复后隔离浏览器可进入主页。源码已推送`codex/rollback-ui-0235-20260921`，测试Release `v0.2.57-test-standalone`已公开，tag指向`fec4f669b49092e0be24a0215fb15da11ff29aba`，线上APK大小和SHA256 digest与本地一致。未上传附件、旧PDF、私人路线、日志和密钥。真机与鸿蒙原生仍未验收。

@@ -1,4 +1,8 @@
-# 山兔0.2.57测试版（2026-09-23，Release已发布）
+# 山兔0.2.58测试版（2026-09-23）
+
+恢复地图中心准星与标记按钮，右侧顺序为方向→标记→跟随；隐藏UI时也可使用标记。已从本轮源码新构建`../APK/Shantu-0.2.58-test-standalone.apk`，versionCode65，独立测试包名和4a94签名保持。包大小57818204字节，SHA256 `da2b7d0871afcac809a6693c52a330241cefecaa4192ffa2d3e0667317d35ca5`。390×857/360×780浏览器控件检查、TypeScript、614项测试、打包网页启动、Android构建和签名通过；真机安装/触控待验，鸿蒙6.1原生包尚无交付。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.58-test-standalone/Shantu-0.2.58-test-standalone.apk) · [发行说明](../docs/release-0.2.58.md)。
+
+# 历史版本：山兔0.2.57测试版（2026-09-23，Release已发布）
 
 路线/收藏导入、奥维OVOBJ等格式、Android文件关联、图源坐标校正、30/50/100/200米等高距、运动方向朝上，以及手动分叉终点、路线点/边编辑、当前图层分享。修复打包网页坐标转换分块循环依赖导致的`TypeError: t is not a function`启动失败。用户现要求先出APK，已从最新源码全新构建`../APK/Shantu-0.2.57-test-standalone.apk`；versionCode64、独立测试包名与4a94签名不变。新包57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`。手机GPS/传感器、微信关联、持续缩放和覆盖安装尚未验收；HarmonyOS6.1原生未交付。
 

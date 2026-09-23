@@ -13,6 +13,7 @@ export function PositionDock({
   directionStatus,
   fix,
   showCoordinates,
+  markControl,
   children,
 }: {
   following: boolean;
@@ -24,11 +25,14 @@ export function PositionDock({
   onDirection?: (mode: DirectionMode) => void;
   fix?: PositionFix | null;
   showCoordinates?: boolean;
+  markControl?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <nav className="home-position-dock" aria-label="底部定位与路线显示">
       {children}
+      {onDirection && <DirectionControl mode={direction} status={directionStatus} onChange={onDirection}/>}
+      {markControl}
       <button
         className="position-dock-button position-locate-button glass"
         aria-label={following ? '关闭位置跟随' : '开启位置跟随'}
@@ -39,7 +43,6 @@ export function PositionDock({
         <LocateFixed size={17} />
         <small>{locating ? '定位中' : following ? '跟随中' : '跟随'}</small>
       </button>
-      {onDirection && <DirectionControl mode={direction} status={directionStatus} onChange={onDirection}/>}
       {showCoordinates && (
         <output
           className="position-dock-coordinates glass"
