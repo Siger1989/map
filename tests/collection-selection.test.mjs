@@ -94,6 +94,15 @@ test('rectangle selects entire crossing track and visible markers, never bridges
   );
   assert.equal(JSON.stringify(data), original);
 });
+test('box type filter limits hits without modifying saved objects', () => {
+  const data = transfer(), entries = catalogEntries([], data.tracks, data.annotations, []);
+  const before = JSON.stringify(entries), project = ([x, y]) => ({ x, y });
+  const box = { left: 9, right: 11, top: 9, bottom: 11 };
+  assert.deepEqual(selectInBox(entries, box, project, 'pin'), ['annotation:a', 'annotation:linked']);
+  assert.deepEqual(selectInBox(entries, box, project, 'track'), ['track:track']);
+  assert.deepEqual(selectInBox(entries, box, project, 'model'), []);
+  assert.equal(JSON.stringify(entries), before);
+});
 test('deletion removes only selected objects, cleans owner relation without removing independent pins', () => {
   const data = transfer(),
     next = withoutEntries(data, ['annotation:a', 'track:track']);

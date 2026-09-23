@@ -1,4 +1,8 @@
-# 山兔0.2.63测试版（2026-09-23）
+# 山兔0.2.64测试版（2026-09-23）
+
+地图框选新增对象类型筛选：只框选地点、模型、区域、剖面、路线、轨迹或测量之一；换类型时移除之前选中的其他类型。包含0.2.62/0.2.63修复，标记Excel回填尚未加入。新包`../APK/Shantu-0.2.64-test-standalone.apk`，versionCode71、原独立测试包名与4a94签名，57,826,396字节，SHA256 `41fab1fb6f0c49860597b115a53e6ff5026e5560acf7a9219ed7000a048972b6`。618项测试、网页和Android构建、390×857及360×780浏览器操作检查通过；真机仍待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.64-test-standalone/Shantu-0.2.64-test-standalone.apk) · [发行说明](../docs/release-0.2.64.md)。
+
+## 0.2.63 条目输入与 KMZ 航线
 
 标记“自定义条目”输入改用原生文本框，避免应用内联想与中文输入法争抢；可导入含`waylines.wpml`的KMZ航线，用户附件在预览中识别为1条路线、37航点。飞行高度与动作指令不进入地面地图路线。新包`../APK/Shantu-0.2.63-test-standalone.apk`，versionCode70、原独立测试包名与4a94签名，57,826,396字节，SHA256 `e97734eca59572eea5808ac65f54921e0c96040ef7b3bfe09c3838694ed2a517`。浏览器预览、类型/逻辑测试、Android构建/签名通过；真机输入法、微信关联待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.63-test-standalone/Shantu-0.2.63-test-standalone.apk) · [发行说明](../docs/release-0.2.63.md)。
 

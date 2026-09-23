@@ -56,6 +56,18 @@
   display: block;
   line-height: 20px;
 }
+.map-box-tools-heading { align-items: center; justify-content: space-between; }
+.map-box-tools-heading strong { white-space: nowrap; }
+.map-box-tools-heading select {
+  min-width: 104px;
+  max-width: 46%;
+  height: 32px;
+  border: 1px solid #78988d;
+  border-radius: 4px;
+  background: #fff;
+  color: #203b40;
+  font-size: 12px;
+}
 .map-box-tools small {
   font-size: 10px;
 }

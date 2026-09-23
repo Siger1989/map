@@ -1,6 +1,6 @@
 import type { Coordinate } from '../navigation/types';
 import type { ScreenPoint } from '../tracks/drawing';
-import type { CatalogEntry } from './catalog';
+import type { CATALOG_TYPES, CatalogEntry } from './catalog';
 export type SelectionBox = {
   left: number;
   right: number;
@@ -50,6 +50,7 @@ export function selectInBox(
   entries: CatalogEntry[],
   box: SelectionBox,
   project: (p: Coordinate) => ScreenPoint | null,
+  kind: keyof typeof CATALOG_TYPES = 'all',
 ): string[] {
   const hitLine = (points: Coordinate[]) => {
     const screen = points.map(project);
@@ -62,6 +63,7 @@ export function selectInBox(
   };
   return entries
     .filter((e) => {
+      if (kind !== 'all' && e.kind !== kind) return false;
       if ('annotation' in e && !e.annotation.visible) return false;
       if (e.kind === 'area' && !e.area.visible) return false;
       if (e.kind === 'section' && !e.section.settings.enabled) return false;

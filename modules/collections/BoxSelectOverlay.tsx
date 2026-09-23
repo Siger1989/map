@@ -4,11 +4,11 @@ import { selectionBox, type SelectionBox, type BoxSelectionMode } from './boxSel
 import './boxSelection.css';
 
 /** The rectangle previews the gesture; selected results live independently. */
-export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true }: {
+export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, filter }: {
   active?: boolean; label: string; count: number; children: ReactNode;
   onBox: (box: SelectionBox, mode: BoxSelectionMode) => void;
   onExit: () => void; onClear: () => void;
-  mode?: BoxSelectionMode; tools?: boolean;
+  mode?: BoxSelectionMode; tools?: boolean; filter?: ReactNode;
 }) {
   const start = useRef<{ point: ScreenPoint; id: number } | null>(null);
   const [box, setBox] = useState<SelectionBox | null>(null);
@@ -49,7 +49,7 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
     {active && box && <div className="map-box-rectangle" style={{ left: box.left, top: box.top, width: box.right - box.left, height: box.bottom - box.top }} />}
     {children}
     {active && tools && <div className="map-box-tools">
-      <strong>{label} · 已选 {count} 项</strong>
+      <div className="map-box-tools-heading"><strong>{label} · 已选 {count} 项</strong>{filter}</div>
       <small>{mode === 'add' ? '拖框连续追加；重叠不会取消已选。' : '拖框只减去框内已选项，不删除内容。'}</small>
       <div role="group" aria-label="框选方式">
         <button aria-pressed={mode === 'add'} onClick={() => setMode('add')}>加选</button>
