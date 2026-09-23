@@ -18,3 +18,5 @@
 - TypeScript 和614项逻辑测试通过；Android网页、Java、DEX和APK从当前源码重新构建。390×857隔离预览点击验证标记选中/编辑、快设起终点、框选操作、路线卡删除确认以及导航退出。导航前规划图层有3个图形，结束后为0；浏览器无页面错误。截图见`artifacts/screenshots/20260923-navigation-ended-no-route-390.png`等。
 - APK v2/v3签名和对齐检查通过，473块随包地形瓦片齐全。文件`APK/Shantu-0.2.59-test-standalone.apk`，57,826,396字节，SHA256 `e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`；同目录有`.sha256`校验文件。
 - 奥维导出的KMZ在微信打开后提示“没有可导入的点或轨迹”的个案尚无原始文件，无法确认其KML内部结构；本版不声称修复该导入问题。浏览后的天地图自动缓存、UTM、Windows EXE和HarmonyOS原生安装包也未纳入本版。手机GPS、微信文件关联、实际覆盖安装与持续缩放性能仍需真机复测。
+
+公开测试Release的标签指向源码提交`b0b99c6b101d1210b5e9c0c4a9bc17fda9c5e1e2`；线上APK资产状态uploaded、大小和SHA256 digest均与本地一致。源码位于`codex/rollback-ui-0235-20260921`，没有合入`main`。

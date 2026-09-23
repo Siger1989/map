@@ -4,6 +4,8 @@
 
 用户在连续视觉反馈后要求修好并打包。当前分支`codex/rollback-ui-0235-20260921`；0.2.59-test/code66源码包括紧凑标记、快设起终点、两次点击打开编辑、调整轴仅调整时出现、集中标记编辑、框选期间操作、画线按钮底板、所选路线删除确认及结束导航清理临时规划线和起终点。隔离9433浏览器390×857验证导航图层3→0且无页面错误；TypeScript、614项测试及最终APK构建/签名/473地形通过。APK`APK/Shantu-0.2.59-test-standalone.apk`，57,826,396字节，SHA256`e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`。源码/Release线上状态以当前实际提交与发布核对为准。奥维KMZ微信导入个案无原始样本，本版未修解析。用户9423标签、个人附件与PDF未动；真机安装/触控待验。见`docs/release-0.2.59.md`。
 
+[公开测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.59-test-standalone)已发布，tag与构建源码提交`b0b99c6b101d1210b5e9c0c4a9bc17fda9c5e1e2`一致；GitHub APK资产uploaded，57,826,396字节，服务端SHA256 digest与本地一致。校验文件也已上传。未做Android真机或HarmonyOS原生安装验收。
+
 ## 2026-09-23 历史标记编辑视觉阶段（打包前）
 
 当前分支 `codex/rollback-ui-0235-20260921`，起点HEAD `622f4dc`，有未提交的标记编辑/框选修改。新 `modules/annotations/PinEditor.tsx` 与 `pinEditor.css` 负责手机单页编辑。用户最新反馈已处理：头部与名称/备注/坐标/图案颜色/照片固定，仅自定义条目列表滚动；图案和颜色点击入口后展开选项。右侧直接框选，退出后结果支持导出/分享/删除；地图调整有坐标读数。隔离9433浏览器390×857、360×780实点无页面错误，TypeScript、21相关测试、Android网页构建通过，截图见 `artifacts/screenshots/20260923-pin-editor-*-390.png` 与360同类文件。旧9423服务可能保留Vite模块缓存，未操作用户标签。请先让用户确认这版视觉，不在确认前自动做EXE/UTM或新APK；0.2.58发行包不含当前未提交修改。无关附件、PDF和用户缓存不触碰。

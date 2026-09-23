@@ -7,6 +7,7 @@
 - 隔离9433浏览器390×857实际点击验证：导航前`planned-route`有3个图形，结束后0个，无页面错误；其他标记、框选、路线卡流程截图见`artifacts/screenshots/20260923-*-390.png`。用户9423标签未被操作；浏览器模拟不等于手机触控验收。
 - TypeScript、614项逻辑测试、Android网页/Java/DEX/APK构建通过；原4a94证书v2/v3签名、zipalign与473块地形通过。新包`APK/Shantu-0.2.59-test-standalone.apk`，57,826,396字节，SHA256`e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`，versionCode66，可覆盖同签名独立测试版。详情见[0.2.59发行说明](docs/release-0.2.59.md)。
 - 奥维KMZ经微信打开后无可导入点/轨迹的具体文件未取得，本版未改KMZ解析器，尚不能认定该个案已修复；自动浏览缓存、UTM、Windows EXE和HarmonyOS原生包也未交付。无关`.codex-remote-attachments/`及旧PDF保留原状。
+- [0.2.59测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.59-test-standalone)已公开（prerelease）；发行标签指向已推送的源码提交`b0b99c6b101d1210b5e9c0c4a9bc17fda9c5e1e2`。GitHub APK资产状态uploaded、大小57,826,396字节，线上SHA256 digest与本地一致；`.sha256`资产亦已上传。未以浏览器直链HTTP200或手机安装替代上述校验。
 
 ## 2026-09-23 历史本地视觉确认：标记编辑与框选（打包前）
 

@@ -1,4 +1,4 @@
-# 山兔0.2.59测试版（2026-09-23）
+# 山兔0.2.59测试版（2026-09-23，Release已发布）
 
 紧凑标记标签与快速导航、集中编辑窗口、框选即时操作、画线按钮底板和路线卡删除确认已纳入新包。结束导航会清除临时规划线与起终点，已保存轨迹仍保留。新包`../APK/Shantu-0.2.59-test-standalone.apk`，versionCode66、原独立测试包名和4a94签名，57,826,396字节，SHA256 `e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`。TypeScript、614项逻辑测试、390×857浏览器交互及Android构建/签名通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.59-test-standalone/Shantu-0.2.59-test-standalone.apk) · [发行说明](../docs/release-0.2.59.md)。
 
