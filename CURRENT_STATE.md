@@ -1,10 +1,10 @@
 # 当前状态 — 2026-09-23 / 0.2.57路线导入、等高距与运动朝向
 
-## 2026-09-23 最新：0.2.57新APK已构建，Release待核对
+## 2026-09-23 最新：0.2.57新APK已发布
 
-用户现要求先交付APK。当前分支codex/rollback-ui-0235-20260921，构建源码在原HEAD 83a725e913ec657b540c55568090e4323a48cc43之上的未提交工作区；后续须提交推送并核对远端。公开最新版此前是0.2.56，故沿用尚未发布的0.2.57-test/code64，完整重建并替换本机过期同名包，不复用旧资产。
+用户现要求先交付APK。构建源码已提交到分支`codex/rollback-ui-0235-20260921`，Release tag指向`fec4f669b49092e0be24a0215fb15da11ff29aba`，与当时远端分支一致，未合入main。公开最新版此前是0.2.56，故沿用尚未发布的0.2.57-test/code64，完整重建并替换本机过期同名包，不复用旧资产。
 
-- 新包：`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`，同目录`.sha256`匹配。独立测试包名`com.guanyun.weather.shantu.preview`，既有4a94签名，Android 8.0/API26起；同系列可覆盖安装，不清除用户轨迹、照片、布局或收藏。尚未上传Release，不提供未经验证的公开下载状态。
+- 新包：`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`，同目录`.sha256`匹配。独立测试包名`com.guanyun.weather.shantu.preview`，既有4a94签名，Android 8.0/API26起；同系列可覆盖安装，不清除用户轨迹、照片、布局或收藏。[GitHub测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.57-test-standalone)已公开，线上APK为57818204字节，GitHub提供的SHA256 digest与本地一致，直链HTTP 200。
 - 用户真机截图出现`TypeError: t is not a function`，同版打包网页在隔离Chromium中复现，根因为旧UMD坐标转换库跨分块循环初始化；导入器改为等价ESM公式，10,000组坐标与原库一致，新打包网页已独立验证可进入主页。错误页改为显示真实APP_VERSION及堆栈，Android UA改为实际安装版本；截图旧版本字样只是此前硬编码，不能证明用户装旧包。
 - 最终源码TypeScript及614项逻辑测试通过，网页/Java/DEX/APK全新构建通过，v2/v3签名、zipalign、551项ZIP CRC、473块地形瓦片以及新终点/导入/框选/运动方向网页特征通过。架构检查仍有5个既有大文件超行数预算，未临时放宽规则。
 - 手动分叉终点、路线编辑和预览Vite解析修复已在新包；当前无法使用CUA浏览器控制取最新截图。真机覆盖安装、微信打开文件、GPS/运动传感器、持续缩放卡顿和触控尚未验收；HarmonyOS6.1原生HAP/APP未交付。发行详情见[0.2.57说明](docs/release-0.2.57.md)。

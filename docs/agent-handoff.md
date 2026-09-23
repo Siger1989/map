@@ -2,7 +2,7 @@
 
 ## 2026-09-23 最新续接：0.2.57新APK本地构建完成，待Release
 
-以CURRENT_STATE顶部为准。用户现明确要求先出APK，已从含手动终点、路线编辑及打包网页启动修复的源码重新构建`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`；code64、独立4a94原签名和包名不变。旧同名包已被替换。614项测试、TypeScript、网页/Java/DEX/签名/zipalign/551 ZIP CRC/473地形瓦片通过；架构检查5个既有行数超限。用户截图中的`TypeError: t is not a function`已在旧打包网页复现，根因为坐标转换UMD跨分块循环初始化；局部ESM修复后隔离浏览器可进入主页。当前源码仍在codex/rollback-ui-0235-20260921的未提交工作区，需明确筛选文件提交推送、远端SHA核对，再创建并核对0.2.57-test-standalone Release。排除附件、旧PDF、私人路线、日志和密钥。真机与鸿蒙原生仍未验收。
+以CURRENT_STATE顶部为准。用户现明确要求先出APK，已从含手动终点、路线编辑及打包网页启动修复的源码重新构建`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`；code64、独立4a94原签名和包名不变。614项测试、TypeScript、网页静态启动、Java/DEX/签名/zipalign/551 ZIP CRC/473地形瓦片通过；架构检查5个既有行数超限。用户截图中的`TypeError: t is not a function`已在旧打包网页复现，根因为坐标转换UMD跨分块循环初始化；局部ESM修复后隔离浏览器可进入主页。源码已推送`codex/rollback-ui-0235-20260921`，测试Release `v0.2.57-test-standalone`已公开，tag指向`fec4f669b49092e0be24a0215fb15da11ff29aba`，线上APK大小和SHA256 digest与本地一致。未上传附件、旧PDF、私人路线、日志和密钥。真机与鸿蒙原生仍未验收。
 
 ## 2026-09-23 历史续接：路线编辑预览阶段
 

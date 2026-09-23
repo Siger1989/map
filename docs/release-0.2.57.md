@@ -1,6 +1,6 @@
 # 山兔 0.2.57 测试版：框选修复、路线导入、等高距与运动朝向
 
-> 已从包含最新路线编辑、手动终点和启动修复的源码全新构建本地安装包；GitHub Release 尚待上传及远端校验。此前同名旧APK已被新包替换，以下大小和哈希对应本次新包。
+> 已从包含最新路线编辑、手动终点和启动修复的源码全新构建安装包，并发布到GitHub测试Release。此前同名旧APK已被新包替换，以下大小和哈希对应本次新包。
 
 等高线可在“图层 → 海拔等高线 → 等高线高差间隔”选择30、50、100、200米，默认最细30米。选择会保存；详细地图使用所选等高距，缩小时自动稀疏至100/200/500米以控制计算量和画面密度。普通线也标注海拔；最新视觉反馈后字号11px、沿线标注间距210px、描边1.4px，保留碰撞避让。
 
@@ -41,7 +41,7 @@ Android读取去重力线性加速度，退后台注销、回前台恢复、退�
 - 架构检查仍有5个既有大文件超行数预算（page、TerrainMap、CollectionsPanel、WorkbenchPanel、useManualTracks，基线即超限）；未提升预算掩盖结果。新增图源坐标控件已独立为RasterDatumChoice，避免新增超限文件。此项不影响类型/逻辑测试，但不是架构检查全通过。
 - 现有数据许可与署名继续保留；手机真实网络、触控、定位、后台记录、覆盖安装和微信关联未验收。
 
-## 下载（Release上传后生效）
+## 下载
 
 [Android APK](https://github.com/Siger1989/map/releases/download/v0.2.57-test-standalone/Shantu-0.2.57-test-standalone.apk) · [SHA256校验文件](https://github.com/Siger1989/map/releases/download/v0.2.57-test-standalone/Shantu-0.2.57-test-standalone.sha256)
 
@@ -49,4 +49,4 @@ Android读取去重力线性加速度，退后台注销、回前台恢复、退�
 
 最终源码重新构建的APK为57818204字节，SHA256：`c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`。独立测试包名和既有4a94证书匹配；签名v2/v3、zipalign、551项ZIP CRC、473块打包地形像素及新终点/导入/框选/运动方向等网页资源核对通过；私有路线、日志和凭证文件未打包。
 
-源码及Release待发布；最终远端SHA和资产核对结果见CURRENT_STATE顶部。
+Release tag和当时远端分支均指向`fec4f669b49092e0be24a0215fb15da11ff29aba`；GitHub线上APK大小57818204字节、SHA256 digest与本地一致，直链HTTP 200。发布状态见CURRENT_STATE顶部。

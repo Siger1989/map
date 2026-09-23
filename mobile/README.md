@@ -1,8 +1,8 @@
-# 本地新构建：0.2.57（2026-09-23，Release待上传）
+# 山兔0.2.57测试版（2026-09-23，Release已发布）
 
 路线/收藏导入、奥维OVOBJ等格式、Android文件关联、图源坐标校正、30/50/100/200米等高距、运动方向朝上，以及手动分叉终点、路线点/边编辑、当前图层分享。修复打包网页坐标转换分块循环依赖导致的`TypeError: t is not a function`启动失败。用户现要求先出APK，已从最新源码全新构建`../APK/Shantu-0.2.57-test-standalone.apk`；versionCode64、独立测试包名与4a94签名不变。新包57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`。手机GPS/传感器、微信关联、持续缩放和覆盖安装尚未验收；HarmonyOS6.1原生未交付。
 
-[发行说明](../docs/release-0.2.57.md) · [最新状态](../CURRENT_STATE.md)。Release上传及远端资产核对前不声称公开链接可用；下方均为历史记录。
+[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.57-test-standalone/Shantu-0.2.57-test-standalone.apk) · [发行说明](../docs/release-0.2.57.md) · [最新状态](../CURRENT_STATE.md)。Release线上大小与SHA256 digest已核对；下方均为历史记录。
 
 # 历史回退版：0.2.39（恢复0.2.35业务基线）
 
