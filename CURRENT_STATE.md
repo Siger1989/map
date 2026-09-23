@@ -1,4 +1,12 @@
-# 当前状态 — 2026-09-23 / 0.2.60收藏夹视角与跟随归位
+# 当前状态 — 2026-09-23 / 0.2.61启动大致定位
+
+## 2026-09-23 0.2.61 启动网络/GPS定位
+
+从已发布0.2.60分支提交`f4443e1c4f07dc915bcc510a07d9a2c0f5fa7dbb`继续。用户要求先联网查官方资料、由多个GPT-5.5子代理分别施工、根代理审查。原生权限探测、前端启动观察、地图首次聚焦分别由三个5.5低推理子代理完成；根代理复核后修正了低精度GPS提前结束、WebView滚轮事件识别、手动操作取消聚焦及多余类型断言。Android已有权限时打开地图自动短时请求网络+GPS，首个可靠位置按误差聚焦一次，随后GPS只更新位置点；首装未授权仍由“跟随”按钮触发权限请求。20秒或可靠GPS到达后结束启动订阅，手动定位/跟随不被启动计时器停止。普通浏览器不自动申请定位。系统网络位置可能利用蜂窝和Wi-Fi，不保证单纯基站或设备一定返回。完整依据和验收范围见[启动定位施工说明](docs/startup-network-position.md)。
+
+- 改动`mobile/android/src/com/guanyun/weather/{ForegroundLocation,NativeBridge}.java`、`modules/position/{nativePosition,usePosition}.ts`、`app/page.tsx`、`modules/map/TerrainMap.tsx`、定向测试与版本号；不动记录服务、导航精度门槛、地图图源或用户轨迹/照片/收藏/布局存储。
+- TypeScript、逻辑测试及Android网页/Java/DEX/APK构建通过。隔离9433浏览器390×857实测已授权先网络粗位置聚焦、GPS后更新；未授权不启动且手动按钮可用；用户先滚轮缩放不被迟到位置拉走。截图`artifacts/screenshots/20260923-startup-network-location-390.png`，用户9423标签未操作。真机网络定位/粗略权限/覆盖安装尚未验收。
+- 新包`APK/Shantu-0.2.61-test-standalone.apk`，57,826,396字节，SHA256`5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`，versionCode68；既有4a94签名v2/v3、zipalign、473地形瓦片通过。[发行说明](docs/release-0.2.61.md)。无关`.codex-remote-attachments/`及旧PDF原状保留。GitHub发布及远端SHA以实际发布核对记录为准。
 
 ## 2026-09-23 0.2.60 测试版构建与交付
 

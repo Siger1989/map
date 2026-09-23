@@ -1,4 +1,8 @@
-# 山兔0.2.60测试版（2026-09-23）
+# 山兔0.2.61测试版（2026-09-23）
+
+Android 已授予定位权限时，启动地图短时请求系统网络定位和 GPS；网络粗位置可先聚焦地图，后续 GPS 更新点位。首次未授权时点“跟随”申请，普通浏览器不自动弹定位权限。用户先浏览地图则不被迟到的位置拉走。新包`../APK/Shantu-0.2.61-test-standalone.apk`，versionCode68、原独立测试包名和4a94签名，57,826,396字节，SHA256 `5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`。类型、逻辑测试、隔离浏览器模拟和Android构建/签名通过；真机网络定位及安装待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.61-test-standalone/Shantu-0.2.61-test-standalone.apk) · [发行说明](../docs/release-0.2.61.md)。
+
+# 历史版本：山兔0.2.60测试版（2026-09-23，Release已发布）
 
 收藏夹普通退出恢复进入前地图视角；跟随按钮双击或手机双点回当前位置、适合浏览的缩放和朝北，单击开关不变。新包`../APK/Shantu-0.2.60-test-standalone.apk`，versionCode67、原独立测试包名和4a94签名，57,826,396字节，SHA256 `40fbeca7c6ba8ef5f491f7a2ae39c3de31be9d4eed6c34686e8df806c5d21029`。TypeScript、614项逻辑测试、390×857浏览器交互及Android构建/签名通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.60-test-standalone/Shantu-0.2.60-test-standalone.apk) · [发行说明](../docs/release-0.2.60.md)。
 

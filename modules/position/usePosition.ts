@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  canStartNativeStartupLocation,
   watchNativePosition,
   type NativePositionBridge,
 } from './nativePosition';
+import { canFollow } from './follow';
 import {
   compassHeading,
   headingDelta,
@@ -21,7 +23,10 @@ export function usePosition() {
   const [networkAvailable, setNetworkAvailable] = useState(false);
   const [showStatus, setShowStatus] = useState(true);
   const nativeStop = useRef<(() => void) | null>(null);
+  const startupStop = useRef<(() => void) | null>(null);
+  const startupTimer = useRef<number | null>(null);
   const [fix, setFix] = useState<PositionFix | null>(null),
+    [startupFix, setStartupFix] = useState<PositionFix | null>(null),
     [locating, setLocating] = useState(false),
     [watching, setWatching] = useState(false);
   const [locationError, setLocationError] = useState(''),
@@ -39,6 +44,12 @@ export function usePosition() {
     if (watch.current !== null)
       navigator.geolocation?.clearWatch(watch.current);
     watch.current = null;
+  };
+  const stopStartup = () => {
+    startupStop.current?.();
+    startupStop.current = null;
+    if (startupTimer.current !== null) window.clearTimeout(startupTimer.current);
+    startupTimer.current = null;
   };
   const beginWatch = () => {
     stopWatch();
@@ -91,6 +102,7 @@ export function usePosition() {
     );
   };
   const locate = (onFix?: (fix: PositionFix) => void) => {
+    stopStartup();
     setShowStatus(true);
     if (
       !window.GuanyunNative?.locate &&
@@ -110,6 +122,7 @@ export function usePosition() {
     next: LocationMode,
     onFix?: (fix: PositionFix) => void,
   ) => {
+    stopStartup();
     modeRef.current = next;
     setMode(next);
     setFix(null);
@@ -214,6 +227,28 @@ export function usePosition() {
     setNetworkAvailable(
       Boolean(bridge?.locate && bridge.locationState && bridge.stopLocation),
     );
+    if (canStartNativeStartupLocation(bridge as NativePositionBridge)) {
+      let firstFix = false;
+      const acceptStartup = (value: PositionFix) => {
+        setFix(value);
+        setLocationError('');
+        const focusable = canFollow(value);
+        if (!firstFix && focusable) {
+          firstFix = true;
+          setStartupFix(value);
+        }
+        if (value.source === 'gps' && focusable) stopStartup();
+      };
+      startupStop.current = watchNativePosition(
+        bridge as NativePositionBridge,
+        'auto',
+        acceptStartup,
+        (error) => {
+          if (error) setLocationError(error);
+        },
+      );
+      startupTimer.current = window.setTimeout(stopStartup, 20000);
+    }
     const visibility = () => {
       // Android pauses providers in onPause and resolves its own permission dialog.
       // Restarting the bridge here could re-request a just-denied permission.
@@ -225,6 +260,7 @@ export function usePosition() {
     document.addEventListener('visibilitychange', visibility);
     return () => {
       active.current = false;
+      stopStartup();
       stopWatch();
       generation.current++;
       sensorCleanup.current();
@@ -237,6 +273,7 @@ export function usePosition() {
     networkAvailable,
     showStatus,
     fix,
+    startupFix,
     locating,
     watching,
     locationError,
@@ -249,6 +286,7 @@ export function usePosition() {
     device,
     motion: () => { stopDirection(); setDirection('motion'); },
     stopLocation: () => {
+      stopStartup();
       if (direction === 'motion') free();
       active.current = false;
       stopWatch();

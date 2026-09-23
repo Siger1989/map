@@ -4,7 +4,24 @@ export type NativePositionBridge = {
   locate(mode: string): void;
   locationState(): string;
   stopLocation(): void;
+  locationPermissionGranted?(): boolean;
 };
+
+export function canStartNativeStartupLocation(
+  bridge: Partial<NativePositionBridge> | undefined,
+) {
+  try {
+    return Boolean(
+      bridge &&
+        typeof bridge.locate === 'function' &&
+        typeof bridge.locationState === 'function' &&
+        typeof bridge.stopLocation === 'function' &&
+        bridge.locationPermissionGranted?.() === true,
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function readNativePosition(raw: string, now = Date.now()) {
   const state = JSON.parse(raw);

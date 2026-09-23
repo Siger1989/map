@@ -24,6 +24,7 @@ final class NativeBridge {
     @JavascriptInterface public String archiveAppend(String token, int offset, String encoded) { return archive.transfer.append(token, offset, encoded); }
     @JavascriptInterface public String archiveFinish(String token, boolean share) { return archive.finish(token, share); }
     @JavascriptInterface public void archiveCancel(String token) { archive.transfer.cancel(token); }
+    @JavascriptInterface public boolean locationPermissionGranted() { return position.locationPermissionGranted(); }
     @JavascriptInterface public String locationState() { return position.snapshot(); }
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }

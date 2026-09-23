@@ -28,7 +28,7 @@ final class ForegroundLocation implements LocationListener {
         manager = (LocationManager) activity.getSystemService(MainActivity.LOCATION_SERVICE);
     }
     String snapshot() { return snapshot; }
-    private boolean allowed() {
+    boolean locationPermissionGranted() {
         return activity.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
             || activity.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
@@ -39,7 +39,7 @@ final class ForegroundLocation implements LocationListener {
         wanted = true;
         best = null;
         publish("");
-        if (!allowed()) {
+        if (!locationPermissionGranted()) {
             if (!permissionPending) {
                 permissionPending = true;
                 activity.requestPermissions(new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST);
@@ -49,12 +49,12 @@ final class ForegroundLocation implements LocationListener {
     void resolvePermission() {
         permissionPending = false;
         if (!wanted) return;
-        if (!allowed()) { wanted = false; publish("定位权限未允许，请在系统设置中开启；大致位置也可用于网络定位"); }
+        if (!locationPermissionGranted()) { wanted = false; publish("定位权限未允许，请在系统设置中开启；大致位置也可用于网络定位"); }
         else resume();
     }
     void resume() {
         if (!wanted || permissionPending || registered || !activity.trustedForeground()) return;
-        if (!allowed()) { wanted = false; best = null; publish("定位权限已关闭，请重新开启"); return; }
+        if (!locationPermissionGranted()) { wanted = false; best = null; publish("定位权限已关闭，请重新开启"); return; }
         int count = 0;
         for (String provider : new String[] {LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER}) {
             if ("network".equals(mode) && !LocationManager.NETWORK_PROVIDER.equals(provider)) continue;

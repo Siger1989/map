@@ -100,7 +100,7 @@ export type MapHandle = {
   refreshGeology: () => void;
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
-  focusPosition: (coordinates: Coordinate, zoom: number, pitch: number) => void;
+  focusPosition: (coordinates: Coordinate, zoom: number, pitch: number) => boolean;
   fitRoute: (coordinates: Coordinate[]) => void;
   fitCollection: (
     coordinates: Coordinate[],
@@ -607,7 +607,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           });
         },
         focusPosition: (center, zoom, pitch) => {
-          mapRef.current?.flyTo(
+          const map = mapRef.current;
+          if (!map) return false;
+          map.flyTo(
             {
               center,
               zoom: Math.max(3, Math.min(16, zoom)),
@@ -617,6 +619,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             },
             { positionFollow: true },
           );
+          return true;
         },
         fitCollection: (coordinates, padding) =>
           fitCollection(coordinates, 350, padding),
@@ -684,6 +687,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       let weatherAnchor: [number, number] = INITIAL_VIEW.center;
       let cameraFrame = 0;
       let releaseLastView: (() => void) | undefined;
+      let releaseUserZoom: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
@@ -712,6 +716,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const mapElement = map.getContainer();
+          const onWheel = () => latest.current.onBrowse();
+          const onPinch = (event: TouchEvent) => {
+            if (event.touches.length >= 2) latest.current.onBrowse();
+          };
+          mapElement.addEventListener('wheel', onWheel, { passive: true });
+          mapElement.addEventListener('touchstart', onPinch, { passive: true });
+          releaseUserZoom = () => {
+            mapElement.removeEventListener('wheel', onWheel);
+            mapElement.removeEventListener('touchstart', onPinch);
+          };
           rasterLockRef.current = new RasterLevelLock(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () =>
@@ -1182,6 +1197,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       });
       return () => {
         releaseLastView?.();
+        releaseUserZoom?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;

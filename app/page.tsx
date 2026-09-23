@@ -283,6 +283,7 @@ export default function Home() {
     position.fix,
     position.locationError,
   );
+  const startupFix = position.startupFix;
   const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate }; markerId?: string } | null>(null);
@@ -481,7 +482,73 @@ export default function Home() {
   const focusLock = useMapFocusLock({ map: () => map.current, following:follow.following, guiding:guidance.active, direction:position.direction,
     fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device, motion:position.motion });
   const pendingPositionFocus = useRef(false);
+  const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>('pending');
+  const cancelStartupCamera = useCallback(() => {
+    if (startupCameraStatus.current === 'pending')
+      startupCameraStatus.current = 'cancelled';
+  }, []);
+  const userBrowse = useCallback(() => {
+    cancelStartupCamera();
+    follow.pause();
+  }, [cancelStartupCamera, follow.pause]);
+  const startupCameraBlocked =
+    follow.blocked ||
+    guidance.active ||
+    navigation.picking !== null ||
+    !!editor.session ||
+    tracks.editing ||
+    tracks.drawing ||
+    areas.drawing ||
+    measurement.active ||
+    survey.active ||
+    !!featureMove ||
+    !!quickAdd ||
+    sectionEditing;
+  useEffect(() => {
+    if (startupCameraStatus.current !== 'pending') return;
+    if (startupCameraBlocked) {
+      startupCameraStatus.current = 'cancelled';
+      return;
+    }
+    if (!canFollow(startupFix)) return;
+    const fix = startupFix;
+    let disposed = false;
+    let frame = 0;
+    const deadline = performance.now() + 20000;
+    const focus = () => {
+      if (disposed || startupCameraStatus.current !== 'pending') return;
+      if (
+        map.current?.focusPosition(
+          fix.coordinates,
+          positionZoom(fix),
+          layers.terrain ? 40 : 0,
+        )
+      ) {
+        startupCameraStatus.current = 'applied';
+        return;
+      }
+      if (performance.now() >= deadline) {
+        startupCameraStatus.current = 'cancelled';
+        return;
+      }
+      frame = requestAnimationFrame(focus);
+    };
+    focus();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [
+    startupFix?.timestamp,
+    startupFix?.coordinates[0],
+    startupFix?.coordinates[1],
+    startupFix?.accuracy,
+    startupFix?.source,
+    startupCameraBlocked,
+    layers.terrain,
+  ]);
   const focusOnReliablePosition = (fix: NonNullable<typeof cameraFix>) => {
+    cancelStartupCamera();
     pendingPositionFocus.current = false;
     focusLock.adoptMode(true, 'north');
     position.north();
@@ -490,6 +557,7 @@ export default function Home() {
     map.current?.focusPosition(fix.coordinates, positionZoom(fix), layers.terrain ? 40 : 0);
   };
   const locateAndFocus = () => {
+    cancelStartupCamera();
     if (follow.blocked) return;
     if (canFollow(cameraFix)) focusOnReliablePosition(cameraFix);
     else {
@@ -1310,7 +1378,7 @@ export default function Home() {
             photos.setSelected(ids[0]);
           }}
           position={displayedFix}
-          onBrowse={follow.pause}
+          onBrowse={userBrowse}
           onManualRotate={position.free}
           annotations={[...displayedAnnotations, ...(editor.session?.pendingMarkers ?? [])]}
           roadSnapping={tracks.roadSnapping}
@@ -2107,6 +2175,7 @@ export default function Home() {
               following={follow.following}
               onStop={stopNavigation}
               onFollow={() => {
+                cancelStartupCamera();
                 follow.resume();
                 if (!position.watching || position.locationError)
                   position.locate();
@@ -2124,8 +2193,8 @@ export default function Home() {
           display={routeDisplay}
           route={guidance.session?.route ?? navigation.route} guidance={guidance} fix={displayedFix}
           onNormal={() => setRallyMode(false)} onStart={startGuidance} onStop={stopNavigation}
-          onLocate={() => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(); }}
-          onOverview={() => map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 })}
+          onLocate={() => { userBrowse(); if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(); }}
+          onOverview={() => { userBrowse(); map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 }); }}
         />}
         <div
           className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
@@ -2328,7 +2397,7 @@ export default function Home() {
             />
           }
           onOverview={railTrack ? () => {
-            follow.pause();
+            userBrowse();
             map.current?.fitRoute(railTrack.segments.flat());
           } : undefined}
           compact={panel === 'favorites'}
@@ -2339,7 +2408,7 @@ export default function Home() {
               setPanel('favorites');
               return;
             }
-            follow.pause();
+            userBrowse();
             map.current?.stop();
             tracks.pause();
             annotations.select(null);
@@ -2360,7 +2429,7 @@ export default function Home() {
           }
           networkMode={position.mode === 'network'}
           onNetwork={() => {
-            follow.pause();
+            userBrowse();
             position.changeMode(
               position.mode === 'network' ? 'auto' : 'network',
               (fix) => {
@@ -2371,12 +2440,17 @@ export default function Home() {
           sectionActive={sectionEditing || survey.active}
           terrain={layers.terrain}
           bearing={view.bearing}
-          onZoom={(amount) => map.current?.zoom(amount)}
+          onZoom={(amount) => {
+            userBrowse();
+            map.current?.zoom(amount);
+          }}
           onNorth={() => {
+            cancelStartupCamera();
             position.north();
             map.current?.north();
           }}
           onLocate={() => {
+            cancelStartupCamera();
             if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
             focusLock.adoptMode(!follow.following, position.direction);
             if (follow.following) { follow.pause(); map.current?.stop(); }
@@ -2385,6 +2459,7 @@ export default function Home() {
           onLocateAndFollow={locateAndFocus}
           directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
           onDirection={direction => {
+            cancelStartupCamera();
             focusLock.adoptMode(follow.following,direction);
             if(direction==='device') void position.device();
             else if(direction==='motion') { position.motion(); if(recorder.record.phase !== 'recording')position.locate(); }
@@ -2399,6 +2474,7 @@ export default function Home() {
           }
           watching={position.watching}
           onStopLocation={() => {
+            cancelStartupCamera();
             guidance.stop();
             follow.pause();
             position.stopLocation();

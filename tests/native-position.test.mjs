@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  canStartNativeStartupLocation,
   readNativePosition,
   watchNativePosition,
 } from '../modules/position/nativePosition.ts';
@@ -82,6 +83,74 @@ test('native polling deduplicates fixes, handles mode races, expires old data an
   t.mock.timers.tick(10000);
   assert.equal(stops, 1);
   assert.equal(fixes, 1);
+});
+test('native startup location requires an existing APK permission grant', () => {
+  const base = {
+    locate() {},
+    locationState() {
+      return '{}';
+    },
+    stopLocation() {},
+  };
+  assert.equal(canStartNativeStartupLocation(undefined), false);
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      locate: undefined,
+      locationPermissionGranted() {
+        return true;
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      locationState: undefined,
+      locationPermissionGranted() {
+        return true;
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      stopLocation: undefined,
+      locationPermissionGranted() {
+        return true;
+      },
+    }),
+    false,
+  );
+  assert.equal(canStartNativeStartupLocation(base), false);
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      locationPermissionGranted() {
+        return false;
+      },
+    }),
+    false,
+  );
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      locationPermissionGranted() {
+        return true;
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    canStartNativeStartupLocation({
+      ...base,
+      locationPermissionGranted() {
+        throw new Error('bridge not ready');
+      },
+    }),
+    false,
+  );
 });
 test('stationary jitter does not animate terrain, but real movement and improved accuracy do', () => {
   const fix = {
