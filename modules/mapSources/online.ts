@@ -52,7 +52,7 @@ export function onlineDraft(
   const crs = String(input.crs ?? 'EPSG:3857').toUpperCase();
   if (!['EPSG:3857', '3857', 'WEBMERCATOR'].includes(crs))
     throw new Error(
-      '在线瓦片须使用 WGS84 / Web Mercator（EPSG:3857）；暂不支持 GCJ-02、BD-09 或其他瓦片矩阵',
+      '在线瓦片矩阵须为 Web Mercator（EPSG:3857）；图源偏移可在图源菜单选择 GCJ-02 / BD-09，百度专用瓦片矩阵暂不支持',
     );
   const raw = input.tiles ?? (input.url ? [input.url] : null);
   if (

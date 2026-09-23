@@ -1,5 +1,6 @@
 import './compatibility';
 import { probeRuntime } from '../modules/compatibility/capabilities';
+import { APP_VERSION } from '../config/product';
 
 async function start() {
   const capabilities = probeRuntime(document, window);
@@ -34,7 +35,12 @@ async function start() {
     diagnostic.style.cssText =
       'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px';
     diagnostic.textContent = JSON.stringify(
-      { app: '0.2.17-test', ...capabilities, error: String(error) },
+      {
+        app: APP_VERSION,
+        ...capabilities,
+        error: String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      },
       null,
       2,
     );

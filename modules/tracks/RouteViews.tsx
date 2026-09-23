@@ -8,6 +8,12 @@ import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
 import { useMemo, useState } from 'react';
 import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
+import { RouteSelectionFields } from './RouteSelectionFields';
+import type { PointDetail } from './selectionDetails';
+import type { BoxSelectionMode } from '../collections/boxSelection';
+import { RoutePointMarkerFields, type PointMarkerInput } from './RoutePointMarkerFields';
+import { displayedPointColor } from './displayColors';
+import { resolvedRouteTerminals } from './routeTerminals';
 import {
   ArrowLeft,
   Plus,
@@ -109,6 +115,7 @@ export function RouteDetails({
   );
   const current = variants.find((v) => v.id === alternative) ?? variants[0];
   const lines = current ? [current.coordinates] : track.segments;
+  const [routeStart,routeEnd]=resolvedRouteTerminals(track);
   const linked = linkedRouteMarkers(track, markers)
     .map((marker) => ({ marker, ...markerChainage(lines, marker.coordinates) }))
     .sort((a, b) => a.distance - b.distance);
@@ -182,11 +189,11 @@ export function RouteDetails({
           <h3>起终点</h3>
           <dl className="route-data-rows">
             {[
-              ['起点', track.sharedRoute?.stops[0]?.name, lines[0]?.[0]],
+              ['起点', track.sharedRoute?.stops[0]?.name, routeStart],
               [
                 '终点',
-                track.sharedRoute?.stops.at(-1)?.name,
-                lines.at(-1)?.at(-1),
+                routeEnd ? track.sharedRoute?.stops.at(-1)?.name : undefined,
+                routeEnd,
               ],
             ].map(([label, name, coordinate]) => (
               <div key={String(label)}>
@@ -194,7 +201,7 @@ export function RouteDetails({
                 <dd>
                   {name ? <span>{String(name)}</span> : null}
                   <small>
-                    {formatCoordinate(coordinate as Coordinate | undefined)}
+                    {coordinate ? formatCoordinate(coordinate as Coordinate) : '未设置'}
                   </small>
                 </dd>
               </div>
@@ -294,7 +301,13 @@ export function RouteEditToolbar({
   onSaveCopy,
   onAdd,
   onRemove,
-  onBoxSelect,
+  onSelectionMode,
+  boxMode,
+  selectedPoints,
+  onSelectionDetails,
+  onPointMarker,
+  onSetEnd,
+  onClearSelection,
   onBranch,
   onUndo,
   onStyle,
@@ -311,7 +324,13 @@ export function RouteEditToolbar({
   onSaveCopy?: () => void;
   onAdd: () => void;
   onRemove: () => void;
-  onBoxSelect: () => void;
+  onSelectionMode: (mode: BoxSelectionMode | null) => void;
+  boxMode: BoxSelectionMode | null;
+  selectedPoints: Coordinate[];
+  onSelectionDetails: (detail: PointDetail) => void;
+  onPointMarker: (input: PointMarkerInput) => boolean;
+  onSetEnd: () => void;
+  onClearSelection: () => void;
   onBranch: () => void;
   onUndo: () => void;
   onStyle: (style: TrackStyle) => void;
@@ -322,6 +341,8 @@ export function RouteEditToolbar({
 }) {
   const dock = useDockClearance('--route-edit-clearance');
   const [showStyle, setShowStyle] = useState(false);
+  const [showMarker, setShowMarker] = useState(false);
+  const selectedCount = selectedPoints.length;
   const style = normalizeTrackStyle(session.track.style),
     branch = session.branch !== null;
   return (
@@ -334,11 +355,13 @@ export function RouteEditToolbar({
       >
         <header className="route-edit-dock-heading">
           <strong>编辑路线</strong><small>{session.history.length ? '未保存' : ''}</small>
+          <button onClick={() => {setShowStyle(!showStyle);setShowMarker(false);onSelectionMode(null);}}>{showStyle ? '返回' : '线/点'}</button>
           <button onClick={onBack}>退出编辑</button>
           <button className="route-solid" onClick={onSave}>保存并退出</button>
         </header>
+        {showMarker && selectedCount === 1 ? <RoutePointMarkerFields initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setShowMarker(false)}/> : !showStyle && <>
         <p className="route-edit-status" role="status">
-          {snapName
+          {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 点“退出框选”恢复点选` : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}` : snapName
             ? `松手拼合：${snapName}`
             : session.sources.some((s) => s.id !== session.original.id)
               ? '已拼合 · 保存后成为一条路线，可撤销'
@@ -357,8 +380,8 @@ export function RouteEditToolbar({
             <Plus size={20} />
           </button>
           <button
-            aria-label="删除选中节点"
-            disabled={!session.selected || branch}
+            aria-label={selectedCount ? `删除选中${selectedCount}个节点` : '删除选中节点'}
+            disabled={(!session.selected && !selectedCount) || branch}
             onClick={onRemove}
           >
             <Minus size={20} />
@@ -372,20 +395,20 @@ export function RouteEditToolbar({
             <GitBranch size={16} />
             {branch ? '结束分叉' : '分叉'}
           </button>
-          <button
-            onClick={onBoxSelect}
-            disabled={branch || !session.track.segments.length}
-            aria-label="框选路线点"
-          >
-            框选
-          </button>
+          <button onClick={onClearSelection} disabled={!selectedCount}>清空选择</button>
           <button disabled={!session.history.length} onClick={onUndo}>
             <Undo2 size={16} />
             撤销
           </button>
         </div>
+        <div className="route-selection-modes" role="group" aria-label="路线选择方式">
+          <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
+          <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
+          <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
+        </div>
+        {!!selectedCount && <RouteSelectionFields key={`${selectedPoints.map(p => p.join(',')).join(';')}:${session.history.length}`} track={session.track} points={selectedPoints} onApply={onSelectionDetails} onMarker={()=>{onSelectionMode(null);setShowMarker(true);}} onSetEnd={onSetEnd} />}
         {
-          <div className="route-branch-options">
+          !selectedCount && !boxMode && <div className="route-branch-options">
             {branch && (
               <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>
                 道路{roadSnapping ? '吸附' : '自由'}
@@ -399,6 +422,7 @@ export function RouteEditToolbar({
             </button>
           </div>
         }
+        </>}
         {showStyle && <div className="route-edit-style">
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
           {TRACK_COLORS.map((color, i) => (
@@ -422,6 +446,7 @@ export function RouteEditToolbar({
           </label>
         </div>
         <div className="route-edit-sliders">
+          <label>点径 <b>{style.pointSize ?? 8} px</b><input aria-label="轨迹点大小" type="range" min="4" max="16" step="1" value={style.pointSize ?? 8} onChange={e=>onStyle({...style,pointSize:Number(e.target.value)})}/></label>
           <label>
             线宽 <b>{style.width} px</b>
             <input

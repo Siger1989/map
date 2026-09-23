@@ -2,6 +2,8 @@ import { normalizeTravelMode, type TravelMode } from '../routeAnalysis/travelMod
 export type TrackStyle = {
   color: string;
   width: number;
+  /** Node diameter in CSS pixels; omitted legacy styles use 8px. */
+  pointSize?: number;
   opacity?: number;
   travelMode?: TravelMode;
   colorMode?: 'solid' | 'speed' | 'slope' | 'elevation';
@@ -23,6 +25,7 @@ export const TRACK_COLORS = [
 export function normalizeTrackStyle(input: unknown): TrackStyle {
   const value = input as Partial<TrackStyle> | null;
   return {
+    ...(typeof value?.pointSize === 'number' && Number.isFinite(value.pointSize) ? { pointSize: Math.round(Math.max(4, Math.min(16, value.pointSize))) } : {}),
     travelMode: normalizeTravelMode(value?.travelMode),
     ...(value?.colorMode === 'speed' ||
     value?.colorMode === 'slope' ||

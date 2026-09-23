@@ -103,7 +103,7 @@ export function NavigationStart({
   },[target,source,startPlace,endPlace,reversed,routeChoice,plans,previewKey]);
   const preview=prepared.route, selectedDistance=preview.distance, selectionError=prepared.error;
   const roadReady=routeChoice==='original' || !!plans[previewKey];
-  const routeOptions=[{id:'original',coordinates:source.route.coordinates,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0'} as const)[route.mode]}))];
+  const routeOptions=[{id:'original',coordinates:routeChoice==='original'?prepared.route.coordinates:source.route.coordinates,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0'} as const)[route.mode]}))];
   const start = async () => {
     if(!roadReady || busy || selectionError)return;
     const abort = new AbortController();

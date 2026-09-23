@@ -538,6 +538,25 @@
   font-size: 11px;
 }
 .observatory .route-edit-status { margin: 0 0 2px; font-size: 10px; }
+.route-selection-modes { display: flex; gap: 3px; margin-top: 3px; }
+.route-selection-modes button { flex: 1; }
+.route-selection-fields { display: flex; align-items: center; gap: 3px; margin-top: 3px; }
+.route-selection-fields > input { flex: 1; min-width: 0; width: 0; height: 34px; padding: 3px; box-sizing: border-box; border: 1px solid #b6c9c0; border-radius: 3px; font-size: 12px; }
+.route-selection-fields input[type='color'] { width: 36px; height: 34px; min-height: 34px; padding: 2px; border: 1px solid #b6c9c0; background: white; }
+.route-selection-fields > button { flex: 0 0 40px; }
+.route-selection-fields > .route-add-point-marker { flex-basis: 48px; }
+.route-selection-fields > .route-set-endpoint { flex: 0 0 46px; }
+.route-point-marker-fields { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+.route-point-marker-fields > div { display: flex; gap: 3px; }
+.route-point-marker-fields input, .route-point-marker-fields select { min-width: 0; height: 32px; box-sizing: border-box; border: 1px solid #b6c9c0; border-radius: 3px; padding: 3px; font-size: 12px; }
+.route-point-marker-fields input { flex: 1; width: 100%; }
+.route-point-marker-fields select { width: 62px; }
+.route-point-marker-fields input[type='color'] { flex: 0 0 32px; width: 32px; }
+.route-point-marker-fields button { flex: 1; }
+.route-point-marker-fields small { font-size: 10px; }
+.route-point-marker-fields .route-point-icon-button { flex: 0 0 36px; display: grid; place-items: center; }
+.route-point-marker-fields .route-point-icon-grid { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
+.route-point-icon-grid button { display:grid; place-items:center; }
 .observatory .route-edit-actions-row {
   grid-template-columns: 36px 36px minmax(78px, 1.5fr) repeat(2, minmax(0, 1fr));
   gap: 2px;

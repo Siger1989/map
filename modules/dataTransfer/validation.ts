@@ -10,6 +10,8 @@ import { validFavorite } from '../navigation/favorites.ts';
 import type { Transfer } from './types.ts';
 export function validateTransfer(v: unknown): Transfer {
   const data = v as Transfer;
+  if (data?.importWarnings !== undefined && (!Array.isArray(data.importWarnings) || data.importWarnings.length>10 || data.importWarnings.some(s=>typeof s!=='string'||s.length>500)))
+    throw new Error('文件提示信息格式无效');
   if (
     !data ||
     data.format !== 'guanyun-backup' ||

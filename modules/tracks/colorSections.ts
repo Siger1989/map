@@ -3,6 +3,8 @@ import { edgeColorIndex } from './edgeColors.ts';
 import { normalizeTrackStyle } from './style.ts';
 import type { ManualTrack } from './drawing.ts';
 import type { ElevationSample } from '../journey/metrics.ts';
+import { edgeNoteIndex } from './selectionDetails.ts';
+import { trackEdgeKey } from './alternatives.ts';
 export type ColorConditions = Record<string, string>;
 export const MAX_COLOR_NOTE = 1600;
 export function validColorConditions(value: unknown): value is ColorConditions {
@@ -62,12 +64,13 @@ export function groupColorSections(sections: ColorSection[]) {
 export function routeColorSections(
   track: Pick<
     ManualTrack,
-    'segments' | 'edgeColors' | 'style' | 'colorConditions'
+    'segments' | 'edgeColors' | 'style' | 'colorConditions' | 'edgeNotes'
   >,
   lines = track.segments,
 ): ColorSection[] {
   const index = edgeColorIndex(track),
     fallback = normalizeTrackStyle(track.style).color;
+  const notes = edgeNoteIndex(track);
   const result: ColorSection[] = [];
   let distance = 0;
   lines
@@ -80,7 +83,8 @@ export function routeColorSections(
             index.get([a.join(','), b.join(',')].sort().join('|')) ?? fallback;
         const length = metresBetween(a, b),
           previous = result.at(-1);
-        if (previous?.color === color && previous.part === part)
+        const condition = notes.get(trackEdgeKey(a, b)) ?? track.colorConditions?.[color] ?? '';
+        if (previous?.color === color && previous.part === part && previous.condition === condition)
           previous.end += length;
         else
           result.push({
@@ -88,7 +92,7 @@ export function routeColorSections(
             part,
             start: distance,
             end: distance + length,
-            condition: track.colorConditions?.[color] ?? '',
+            condition,
           });
         distance += length;
       }

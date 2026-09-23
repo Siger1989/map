@@ -17,6 +17,7 @@ const track = {
   id: 'route',
   name: '测试',
   createdAt: 1,
+  routeTerminals: { start: A, end: G },
   segments: [
     [A, B, C, D],
     [B, E, F, C],
@@ -62,7 +63,7 @@ test('changing an endpoint extends only connected geometry and keeps selected de
 });
 test('hidden saved routes cannot introduce shortcuts or new navigable branches', () => {
   const target = trackNavigation(
-    { ...track, segments: [[A, B, C, D]] },
+    { ...track, segments: [[A, B, C, D]], routeTerminals: { start: A, end: D } },
     1,
     'pedestrian',
     [

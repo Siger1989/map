@@ -163,7 +163,7 @@ export function workbenchTransfer(
     return {
       ...i,
       name: edit.name,
-      hidden: edit.visible === false,
+      ...((edit.visible === false) !== (i.hidden === true) ? { hidden: edit.visible === false } : {}),
       ...(colorChanged && {
         style: { ...normalizeTrackStyle(i.style), color: edit.color },
       }),

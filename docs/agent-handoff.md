@@ -1,5 +1,44 @@
 # Agent快速交接
 
+## 2026-09-23 最新续接：0.2.57新APK本地构建完成，待Release
+
+以CURRENT_STATE顶部为准。用户现明确要求先出APK，已从含手动终点、路线编辑及打包网页启动修复的源码重新构建`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`；code64、独立4a94原签名和包名不变。旧同名包已被替换。614项测试、TypeScript、网页/Java/DEX/签名/zipalign/551 ZIP CRC/473地形瓦片通过；架构检查5个既有行数超限。用户截图中的`TypeError: t is not a function`已在旧打包网页复现，根因为坐标转换UMD跨分块循环初始化；局部ESM修复后隔离浏览器可进入主页。当前源码仍在codex/rollback-ui-0235-20260921的未提交工作区，需明确筛选文件提交推送、远端SHA核对，再创建并核对0.2.57-test-standalone Release。排除附件、旧PDF、私人路线、日志和密钥。真机与鸿蒙原生仍未验收。
+
+## 2026-09-23 历史续接：路线编辑预览阶段
+
+以下为出包前的预览阶段记录，旧APK过期状态已经由上节新包取代。构建前分支codex/rollback-ui-0235-20260921，HEAD 83a725e913ec657b540c55568090e4323a48cc43。
+
+- 用户预览出现Vite overlay：`routeShare/data.ts`无法解析跨目录的新`tracks/routeTerminals.ts`。文件本身存在，9423服务启动早于文件创建；将端点函数从已有`tracks/drawing.ts`导出，跨模块改读该入口，三个受影响Vite模块现均HTTP200，最终手机网页构建、TypeScript、17项相关测试通过。未重启服务或碰用户标签；CUA连接失败无法确认覆盖层是否已自动消失，必要时让用户刷新。当前源码仍未打APK。
+- 当前框选已整合回RouteEditToolbar，点选/框选加/框选减同一面板；退出保留选择，原色加细亮边，线宽/点径可调。旧独立框选菜单截图已过时。
+- 最新分叉终点修复：`routeTerminals`保存用户选择；编辑单选节点后有“设终点”，新增分叉不抢原终点，移动/删除/撤销同步。旧分叉没有手动终点时地图、行程点和分享图/QR不再伪标终点，导航会提示先设置；手选分叉终点时导航路径及反向路径通向该节点。涉及routeTerminals、routeEdit、TrackLayer、RouteViews、TrackJourneyRail、SelectedRouteInfo、savedRoute、NavigationStart和routeShare；旧轨迹数据兼容。66项相关测试和TypeScript通过，但这一轮CUA浏览器连接连续报`nodeRepl.fetch request failed`，没有新截图/浏览器点击验证；不要把先前UI截图当作终点改动的视觉验收。
+- 单点颜色/备注/真实标记与多点相连边属性已接入，元数据随编辑和撤销保存；重接节点统一拓扑，不把内部连接点标为终点。暂存标记随路线一起保存，退出不保存则丢弃。
+- 最新修复拖点同步routeNodeSelection，displayColors统一地图与检查器色值；RoutePointMarkerFields用现有SVG图案选择，名称/备注切换图案后保留。360实测面板300×186px，无裁切。
+- 用户追加选中两点出现直线：SVG屏幕连线不贴地，已改selectedEdgeLayer原生地理线亮边，TrackNodeBoxSelect不再画线。trackNotes在连续路段和点旁显示11px备注并避让，长文截18字但不改原文；蓝段“宝泉”等已在用户预览只读截图中可见。
+- 等高线数字最新为11px、间距210px、padding5px、halo1.4px；先前140px截图/记录为旧版。分享图CurrentMapContext/currentMapStyle读取当前栅格/矢量/专题图层和来源，RouteShare与WorkbenchShare共同接入；整段俯视输出，保留晕渲/等高线但不复制三维相机、云雨动画、自定义模型和无关业务叠加。现已实际生成含卫星底图的完整路线图片。旧图片需重新生成。
+- 终点改动前的390/360截图在artifacts/screenshots，用户预览未手动刷新或编辑，先前生成和编辑测试在隔离localhost页进行。测试截图20260923-route-edge-notes-390.png、20260923-share-current-layers-390.png；终点这一轮没有浏览器截图，真机仍未验收。
+- 下一步只根据用户视觉反馈微调；明确交付后再全量验证、重新构建、更新发行校验、提交推送和发布。私人路线、截图、日志、密钥、无关附件不上传。
+
+## 2026-09-23 0.2.57早前构建记录（非当前交付）
+
+下列为用户追加路线编辑修改之前的历史构建记录；未发布，现有APK不能代表最新源码。实际状态以CURRENT_STATE顶部为准。
+
+- 用户说的30米是**等高线垂直高差间隔**；最终选项30/50/100/200米，低缩放自动稀疏，普通线增加高度标注。不要沿用已放弃的水平精度解读或旧截图contour-precision。最终截图contour-interval-390/360、contour-labels-390，日期前缀20260923。
+- 最后追加框选修复：框选期间暂不显示上级编辑工具，避免盖住退出；选中状态提升到page，松手清矩形、退出保留、重新框选可继续加/减，反选是集合减法而非全部取反。对象继续框选也保留选择；测试596全通过，390/360实际验证点击退出/Escape、地图恢复拖动、计数与无残框。最终APK须为包含“反选（减选）/退出保留已选/继续框选/清空多选”四项网页特征的重建包，不能交付框选修改前那次包。
+- 新增运动方向朝上：GPS航向/位移为主，Android线性加速度仅辅助静止抑制；停车保持、失准等待、方向平滑，编辑地图暂停旋转。设备传感器和GPS真实步行仍需手机测试。方向菜单截图20260923-direction-modes-360.png。
+- 下节导入、OVOBJ、图源坐标校正和诊断一并打包；私人L013文件不上传，不能称为所有格式通用。DEM仍原源，真机缩放卡死与局部着色根因仍未确认。
+- TypeScript、594测试、最终独立APK构建通过；551项ZIP、473地形像素、16网页/8原生特征、签名v2/v3与对齐通过。APK57814108字节、SHA256 a1ddf280baf1d4547a92695530ac86c226e4646ffa8b8b49f46ab89ffeb4bfe5。架构5项既有超预算未通过，不扩范围重构。
+- 发布版本说明docs/release-0.2.57.md；保留用户数据和签名，HarmonyOS6.1原生仍未交付。不得提交.codex-remote-attachments、output/pdf旧文件、私有路线、截图、.openai日志或密钥。
+
+## 2026-09-23 本地预览续接
+
+分支codex/rollback-ui-0235-20260921，基线83a725e913ec657b540c55568090e4323a48cc43。未提交/推送/出APK，仍在快速视觉确认阶段。用户不清楚朋友分享的L013轨迹元数据，不要再次要求其提供点数/里程。
+
+- **OVOBJ已经直接读取成功**，不要继续沿用早期“不支持、请先奥维转换”的结论。L013为74点/约5.52km，已走通选择、预览、确认和地图显示。新适配器/版本范围/独立样例验证见[格式兼容性](route-format-compatibility.md)。用户原文件留在桌面，未放入Git；研究样例和日志只在.openai。
+- 图源校正、地图诊断、统一导入入口、Android文件关联、DEM现状审计见[反馈进度](pending-feedback-20260923.md)及CURRENT_STATE顶部。真机地图卡死未复现，DEM未迁移，微信关联未经过手机验收。
+- 最终30项定向测试、TypeScript、网页构建和Java编译通过。实际成功截图artifacts/screenshots/20260923-ovobj-loaded-390.png。网页保留phone-preview.html的390×约857比例，不用测试页替换用户预览。
+- 原始source/v1备份/用户布局/照片保持兼容；仅新增importFormat元数据和预览警告。fit-file-parser 6.1.2已固定，MIT许可证在public/vendor/fit-file-parser。
+- 不碰无关.codex-remote-attachments和output/pdf/shantu-status-2026-09-22.pdf；不要把本地日志、私有路线或凭证加入Git。正式交付仍需版本提升、新APK、签名校验及当前分支远端SHA核对。
+
 ## 2026-09-22用户恢复打包并上传：0.2.56-test / code63
 
 用户明确“打包并上传”，覆盖上一节暂停上传要求；本次交付Sentinel-2默认主图版本，旧0.2.54/0.2.55草稿保持不动。源码分支codex/rollback-ui-0235-20260921，未合入main。

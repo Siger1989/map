@@ -19,7 +19,8 @@ export function readNativePosition(raw: string, now = Date.now()) {
       value.timestamp <= now + 5000 &&
       now - value.timestamp <= 30000
     )
-      fix = { ...value, source: state.fix.source };
+      fix = { ...value, source: state.fix.source,
+        ...(typeof state.fix.headingAccuracy === 'number' && Number.isFinite(state.fix.headingAccuracy) && state.fix.headingAccuracy >= 0 ? { headingAccuracy: state.fix.headingAccuracy } : {}) };
   }
   return {
     fix,

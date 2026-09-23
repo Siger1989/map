@@ -264,3 +264,19 @@
 .tianditu-options > label { display:flex; align-items:center; gap:4px; min-width:0; min-height:36px; }
 .tianditu-options > label:first-child { flex:1; }
 .tianditu-options > label:last-child { flex:none; white-space:nowrap; }
+
+/* Explicit single-page source chooser; reserve the real content height, not a clipped 200px viewport. */
+.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='list']) {
+  --map-panel-max-height: min(340px, calc(100dvh - 180px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
+  height: auto;
+  max-height: var(--map-panel-max-height);
+}
+.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources[data-step='list']) {
+  max-height: none;
+  overflow: visible;
+}
+.map-source-primary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+.observatory.home-map .map-sources .map-coordinate-choice { display:flex; align-items:center; gap:4px; min-height:36px; }
+.map-coordinate-choice > span { flex:none; }
+.map-coordinate-choice > select { flex:1; min-width:0; min-height:36px; font-size:12px; }
+.map-coordinate-hint { line-height:1.3; }

@@ -22,6 +22,12 @@ public final class MainActivity extends Activity {
     private LocationPermissions locationPermissions;
     private AppFiles appFiles;
     private NativeBridge nativeBridge;
+    IncomingRoutes incomingRoutes;
+    void notifyIncomingRoute() {
+        runOnUiThread(() -> {
+            if (trustedForeground()) webView.evaluateJavascript("window.dispatchEvent(new Event('shantu-incoming-route'))", null);
+        });
+    }
     private boolean foreground;
     private boolean screenRequested;
     void requestScreenOn(boolean enabled) { screenRequested = enabled; applyScreenOn(); }
@@ -51,7 +57,10 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
-        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/0.2.5");
+        String installedVersion = "unknown";
+        try { installedVersion = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (Exception ignored) { }
+        settings.setUserAgentString(settings.getUserAgentString() + " Guanyun/" + installedVersion);
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setUseWideViewPort(true);
@@ -66,6 +75,7 @@ public final class MainActivity extends Activity {
         settings.setMediaPlaybackRequiresUserGesture(true);
         settings.setGeolocationEnabled(true);
         appFiles = new AppFiles(this);
+        incomingRoutes = new IncomingRoutes(this);
         nativeBridge = new NativeBridge(this, appFiles);
         webView.addJavascriptInterface(nativeBridge, "GuanyunNative");
         locationPermissions = new LocationPermissions(this, appFiles);
@@ -97,6 +107,13 @@ public final class MainActivity extends Activity {
         // OEM package versions are not Chromium versions. The bundled bootstrap
         // supplies missing web APIs and checks actual rendering capabilities.
         webView.loadUrl(START);
+        incomingRoutes.accept(getIntent());
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (incomingRoutes != null) incomingRoutes.accept(intent);
     }
 
     private void showStartupError() {
@@ -108,8 +125,8 @@ public final class MainActivity extends Activity {
             if (!"true".equals(result)) MainActivity.super.onBackPressed();
         });
     }
-    @Override protected void onPause() { foreground = false; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.pause(); if(nativeBridge!=null)nativeBridge.position.pause(); webView.onPause(); webView.pauseTimers(); super.onPause(); }
-    @Override protected void onResume() { super.onResume(); foreground = true; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.resume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
+    @Override protected void onPause() { foreground = false; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.pause(); if(nativeBridge!=null)nativeBridge.motion.pause(); if(nativeBridge!=null)nativeBridge.position.pause(); webView.onPause(); webView.pauseTimers(); super.onPause(); }
+    @Override protected void onResume() { super.onResume(); foreground = true; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.resume(); if(nativeBridge!=null)nativeBridge.motion.resume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode == NativeBridge.REQUEST && nativeBridge != null) nativeBridge.resolve();
@@ -119,5 +136,5 @@ public final class MainActivity extends Activity {
         if (requestCode == ForegroundLocation.REQUEST && nativeBridge != null) nativeBridge.position.resolvePermission();
     }
     @Override protected void onActivityResult(int request, int result, Intent data) { super.onActivityResult(request,result,data); if(appFiles!=null)appFiles.result(request,result,data); }
-    @Override protected void onDestroy() { if(nativeBridge!=null){nativeBridge.compass.stop();nativeBridge.position.stop();nativeBridge.archive.transfer.close();} if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
+    @Override protected void onDestroy() { if(incomingRoutes!=null)incomingRoutes.close(); if(nativeBridge!=null){nativeBridge.compass.stop();nativeBridge.motion.stop();nativeBridge.position.stop();nativeBridge.archive.transfer.close();} if(appFiles!=null)appFiles.close(); if (locationPermissions != null) {locationPermissions.cancel(); locationPermissions.camera.cancel();} if (webView != null) webView.destroy(); super.onDestroy(); }
 }

@@ -34,6 +34,7 @@ import { collectionArchive } from './archive';
 import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
+  onImport?: () => void;
   offlineMaps?: (query: string) => ReactNode;
   offlineCount?: number;
   annotations: Annotation[];
@@ -48,7 +49,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   initialSelectedKeys?: string[];
   photos: TripPhoto[];
   onClose: () => void;
-  onReselect?: () => void;
+  onReselect?: (keys: string[]) => void;
   onLocate: (entry: CatalogEntry) => void;
   mapCenter: [number, number];
 };
@@ -212,6 +213,7 @@ export function CollectionsPanel(props: Props) {
   if (legacy)
     return (
       <WorkbenchPanel
+        onImport={props.onImport}
         offlineMaps={props.offlineMaps}
         offlineCount={props.offlineCount}
         center={props.mapCenter}

@@ -96,10 +96,16 @@ final class ForegroundLocation implements LocationListener {
             JSONObject state = new JSONObject().put("mode", mode).put("error", error);
             if (best != null) {
                 long age = Math.max(0, (SystemClock.elapsedRealtimeNanos() - best.getElapsedRealtimeNanos()) / 1000000);
-                if (age <= 30000) state.put("fix", new JSONObject()
+                if (age <= 30000) {
+                    JSONObject fix = new JSONObject()
                     .put("longitude", best.getLongitude()).put("latitude", best.getLatitude())
                     .put("accuracy", best.getAccuracy()).put("timestamp", System.currentTimeMillis() - age)
-                    .put("source", LocationManager.NETWORK_PROVIDER.equals(best.getProvider()) ? "network" : "gps"));
+                    .put("source", LocationManager.NETWORK_PROVIDER.equals(best.getProvider()) ? "network" : "gps");
+                    if(best.hasSpeed())fix.put("speed",best.getSpeed());
+                    if(best.hasBearing())fix.put("heading",best.getBearing());
+                    if(best.hasBearingAccuracy())fix.put("headingAccuracy",best.getBearingAccuracyDegrees());
+                    state.put("fix",fix);
+                }
             }
             snapshot = state.toString();
         } catch (Exception ignored) { snapshot = "{\"error\":\"定位结果无效，请重试\"}"; }

@@ -87,7 +87,7 @@ test('connection explicitly bridges selected nodes in a new route, preserving bo
   assert.ok(merged.segments.some(line => line.some((p, i) => i > 0 && ((vertexKey(p) === vertexKey(J) && vertexKey(line[i-1]) === vertexKey(C)) || (vertexKey(p) === vertexKey(C) && vertexKey(line[i-1]) === vertexKey(J))))));
   assert.equal(merged.id, 'merged');
   assert.equal(JSON.stringify([primary, detached]), before);
-  const nav = trackNavigation(merged, now);
+  const nav = trackNavigation({ ...merged, routeTerminals: { start: A, end: B } }, now);
   assert.equal(validFavorite(nav), true);
   assert.ok(
     networkPath(nav.route.trackNetwork, C, B).coordinates.some(
@@ -157,10 +157,10 @@ test('nearest entry starts in the middle and reverse direction keeps new destina
 });
 test('branch endpoint can be explicitly selected as destination without altering the saved geometry', () => {
   const nav = trackNavigation(
-    track('tree', [
+    { ...track('tree', [
       [A, J, B],
       [J, C],
-    ]),
+    ]), routeTerminals: { start: A, end: B } },
     now,
   );
   const picked = orientTrack(

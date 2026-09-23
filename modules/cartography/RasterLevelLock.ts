@@ -12,7 +12,7 @@ export class RasterLevelLock {
       level = null;
     const sources = ids
       .map((id) => this.map.getSource(id))
-      .filter((s): s is Source => !!s && s.type === 'raster' && s.loaded());
+      .filter((s): s is Source => !!s && s.type === 'raster');
     const active = new Set(level === null ? [] : sources);
     for (const [source, maxzoom] of this.original) {
       if (active.has(source)) continue;
@@ -23,6 +23,9 @@ export class RasterLevelLock {
     }
     if (level === null) return;
     for (const source of sources) {
+      // Pending metadata is not a source deselection. Keep an existing cap
+      // while a source reloads instead of restoring and refreshing it again.
+      if (!source.loaded() && !this.original.has(source)) continue;
       if (!this.original.has(source)) this.original.set(source, source.maxzoom);
       const cap = Math.max(
         source.minzoom,

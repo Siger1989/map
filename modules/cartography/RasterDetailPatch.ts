@@ -7,13 +7,15 @@ const report=(message:string)=>window.dispatchEvent(new CustomEvent('shantu-rast
 export class RasterDetailPatch {
   private sourceId = '';
   private level: number | null = null;
+  private template = '';
   private key = '';
   private abort: AbortController | null = null;
   private disposed = false;
-  constructor(private map: LibreMap) { map.on('moveend', this.update); }
+  constructor(private map: LibreMap, private fetchTile = cachedMapFetch) { map.on('moveend', this.update); }
   sync(sourceId:string, level:number|null) {
-    if(sourceId===this.sourceId && level===this.level) return;
-    this.clear(); report(''); this.sourceId=sourceId; this.level=level; void this.update();
+    const template = (this.map.getSource(sourceId) as RasterTileSource | undefined)?.tiles?.[0] ?? '';
+    if(sourceId===this.sourceId && level===this.level && template===this.template) return;
+    this.clear(); report(''); this.sourceId=sourceId; this.level=level; this.template=template; void this.update();
   }
   private clear() {
     this.abort?.abort(); this.abort=null; this.key='';
@@ -37,7 +39,7 @@ export class RasterDetailPatch {
         while(cursor<patch.tiles.length && !controller.signal.aborted) {
           const tile=patch.tiles[cursor++];
           const url=template.replace('{z}',String(tile.z)).replace('{x}',String(tile.x)).replace('{y}',String(source.scheme==='tms'?2**tile.z-tile.y-1:tile.y)).replace('{ratio}','');
-          const response=await cachedMapFetch(url,controller.signal);if(!response.ok)throw Error('高清瓦片暂缺');
+          const response=await this.fetchTile(url,controller.signal);if(!response.ok)throw Error('高清瓦片暂缺');
           const bitmap=await createImageBitmap(await response.blob());
           try {context.drawImage(bitmap,tile.col*256,tile.row*256,256,256);completed++;} finally {bitmap.close();}
         }

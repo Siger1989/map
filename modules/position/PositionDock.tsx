@@ -1,6 +1,7 @@
-import { LocateFixed, Compass } from 'lucide-react';
+import { LocateFixed } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { PositionFix } from './types';
+import type { PositionFix, DirectionMode } from './types';
+import { DirectionControl } from './DirectionControl';
 import './positionDock.css';
 export function PositionDock({
   following,
@@ -9,16 +10,18 @@ export function PositionDock({
   blocked,
   onLocate,
   onDirection,
+  directionStatus,
   fix,
   showCoordinates,
   children,
 }: {
   following: boolean;
-  direction?: 'free' | 'north' | 'device';
+  direction?: DirectionMode;
+  directionStatus?: string;
   locating: boolean;
   blocked: boolean;
   onLocate: () => void;
-  onDirection?: () => void;
+  onDirection?: (mode: DirectionMode) => void;
   fix?: PositionFix | null;
   showCoordinates?: boolean;
   children?: ReactNode;
@@ -36,11 +39,7 @@ export function PositionDock({
         <LocateFixed size={17} />
         <small>{locating ? '定位中' : following ? '跟随中' : '跟随'}</small>
       </button>
-      {onDirection && <button className="position-dock-button position-direction-button glass"
-        aria-label={direction === 'device' ? '关闭方向感应' : '开启方向感应'}
-        aria-pressed={direction === 'device'} onClick={onDirection}>
-        <Compass size={17} /><small>{direction === 'device' ? '方向开' : '方向'}</small>
-      </button>}
+      {onDirection && <DirectionControl mode={direction} status={directionStatus} onChange={onDirection}/>}
       {showCoordinates && (
         <output
           className="position-dock-coordinates glass"

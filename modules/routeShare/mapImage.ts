@@ -1,11 +1,13 @@
 import type { Map } from 'maplibre-gl';
 import { addCartography, syncCartography } from '../cartography/cartography';
 import { DEFAULT_LAYERS } from '../map/types';
-import { routeBounds, type ShareRoute } from './data';
+import { routeBounds, shareImageTerminals, type ShareRoute } from './data';
 import { coloredLineParts, edgeColorIndex } from '../tracks/edgeColors';
 import { normalizeTrackStyle } from '../tracks/style';
 import { metricLineParts } from '../routeAnalysis/metrics';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
+import type { ShareMapStyle } from './currentMapStyle';
+import { syncTrackNotes } from '../tracks/trackNotes';
 
 function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -32,7 +34,7 @@ function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
   });
 }
 /** Independent flat map with complete bounds and labels. The interactive map is never moved. */
-export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
+export async function renderRouteMap(data: ShareRoute, signal: AbortSignal, current?: ShareMapStyle) {
   const ml = await import('maplibre-gl');
   signal.throwIfAborted();
   ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
@@ -50,7 +52,9 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       interactive: false,
       attributionControl: false,
       canvasContextAttributes: { preserveDrawingBuffer: true },
-      style: {
+      // A full-route print uses a top-down camera. Keep its visible map layers,
+      // but not the live terrain camera elevation which can crop short routes.
+      style: current ? { ...current.style, terrain: undefined } : {
         version: 8,
         glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources: {},
@@ -71,13 +75,15 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       zoom: 1,
       fadeDuration: 0,
     });
-    await ready(map, 'load', signal);
     let failed = false;
     map.on('error', () => {
       failed = true;
     });
-    addCartography(map);
-    syncCartography(map, { ...DEFAULT_LAYERS, terrain: false });
+    await ready(map, 'load', signal);
+    if (!current) {
+      addCartography(map);
+      syncCartography(map, { ...DEFAULT_LAYERS, terrain: false });
+    }
     const bounds = routeBounds(data.segments),
       center = (bounds[0][0] + bounds[1][0]) / 2;
     const unwrap = ([lng, lat]: [number, number]): [number, number] => [
@@ -215,6 +221,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
         },
       });
     }
+    if (data.track) syncTrackNotes(map, [data.track], 2);
     const idle = ready(map, 'idle', signal);
     map.fitBounds(bounds, {
       padding: { top: 165, bottom: 85, left: 85, right: 85 },
@@ -234,27 +241,14 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('无法生成地图图片');
     ctx.drawImage(map.getCanvas(), 0, 0, 1200, 1250);
-    const endpoints = [
-      {
-        name: data.stops[0]?.name || '起点',
-        point: data.segments[0][0],
-        label: '起点',
-        color: '#087747',
-      },
-      {
-        name: data.stops.at(-1)?.name || '终点',
-        point: data.segments.at(-1)!.at(-1)!,
-        label: '终点',
-        color: '#ce3c45',
-      },
-    ];
+    const endpoints = shareImageTerminals(data);
     ctx.font = 'bold 23px sans-serif';
     ctx.textBaseline = 'middle';
     let previousLabel: { x: number; y: number; width: number } | null = null;
     for (const endpoint of endpoints) {
       const p = map.project(unwrap(endpoint.point));
       if (p.x < 0 || p.y < 0 || p.x > 1200 || p.y > 1250)
-        throw new Error('起终点未完整纳入图片，请重试');
+        throw new Error('已确定的起终点未完整纳入图片，请重试');
       ctx.beginPath();
       ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
       ctx.fillStyle = endpoint.color;
@@ -284,7 +278,7 @@ export async function renderRouteMap(data: ShareRoute, signal: AbortSignal) {
       ctx.fillText(text, x + 15, y + 23, width - 30);
     }
     ctx.fillStyle = '#102f37e8';
-    ctx.fillRect(20, 20, 1160, 100);
+    ctx.fillRect(20, 20, 1160, endpoints.length > 1 ? 100 : 58);
     ctx.fillStyle = '#fff';
     ctx.font = '25px sans-serif';
     endpoints.forEach((p, i) =>

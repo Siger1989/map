@@ -7,6 +7,13 @@ export type SelectionBox = {
   top: number;
   bottom: number;
 };
+export type BoxSelectionMode = 'add' | 'subtract';
+/** Add is a union; subtract affects selection only, never the underlying objects. */
+export function updateBoxSelection<T>(selected: T[], hit: T[], mode: BoxSelectionMode, key: (item: T) => string): T[] {
+  if (mode === 'add') return [...new Map([...selected, ...hit].map(item => [key(item), item])).values()];
+  const removed = new Set(hit.map(key));
+  return selected.filter(item => !removed.has(key(item)));
+}
 export const selectionBox = (a: ScreenPoint, b: ScreenPoint): SelectionBox => ({
   left: Math.min(a.x, b.x),
   right: Math.max(a.x, b.x),

@@ -28,9 +28,11 @@ export async function parseFiles(
     },
   };
   const entries: ImportBatch['files'] = [];
+  const warnings = new Set<string>();
   for (const file of files) {
     try {
       const data = await parse(file);
+      for (const warning of data.importWarnings??[]) warnings.add(warning);
       // ID collisions and bound marker remapping use the same transaction as ordinary import.
       mergeData(data, storage, false);
       entries.push({
@@ -44,5 +46,5 @@ export async function parseFiles(
       );
     }
   }
-  return { data: collectData(storage), files: entries };
+  return { data: {...collectData(storage),...(warnings.size?{importWarnings:[...warnings]}:{})}, files: entries };
 }

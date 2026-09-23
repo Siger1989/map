@@ -6,7 +6,7 @@ export type CameraSnapshot = { center: Coordinate; zoom: number; pitch: number; 
 export function useMapFocusLock(options: {
   map: () => MapHandle | null; following: boolean; guiding: boolean; direction: DirectionMode;
   fix: Coordinate | null; pause: () => void; resume: () => void;
-  north: () => void; free: () => void; device: () => Promise<void>;
+  north: () => void; free: () => void; device: () => Promise<void>; motion: () => void;
 }) {
   const [locked, setLocked] = useState(false), [browsing, setBrowsing] = useState(false);
   const current = useRef(options); current.current = options;
@@ -17,7 +17,7 @@ export function useMapFocusLock(options: {
     const saved = snapshot.current, o = current.current; if (!saved) return;
     const following = saved.following;
     o.map()?.restoreCamera({ ...saved.camera, center: following && o.fix ? o.fix : saved.camera.center });
-    if (saved.direction === 'device') void o.device(); else if (saved.direction === 'north') o.north(); else o.free();
+    if (saved.direction === 'device') void o.device(); else if (saved.direction === 'motion') o.motion(); else if (saved.direction === 'north') o.north(); else o.free();
     if (following) o.resume();
     setBrowsing(false);
   };

@@ -6,6 +6,9 @@ import {
 import type { TrackStyle } from './style';
 import { validEdgeColors, type TrackEdgeColors } from './edgeColors.ts';
 import { validColorConditions, type ColorConditions } from './colorSections.ts';
+import { validPointDetails, validEdgeNotes, type PointDetail } from './selectionDetails.ts';
+import { validRouteTerminals, type RouteTerminals } from './routeTerminals.ts';
+export { resolvedRouteTerminals, routeHasFork } from './routeTerminals.ts';
 export type ScreenPoint = { x: number; y: number };
 export type ManualTrack = {
   id: string;
@@ -19,7 +22,11 @@ export type ManualTrack = {
   style?: TrackStyle;
   edgeColors?: TrackEdgeColors;
   colorConditions?: ColorConditions;
+  pointDetails?: Record<string, PointDetail>;
+  edgeNotes?: (string | null)[][];
+  routeTerminals?: RouteTerminals;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
+  importFormat?: string;
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   sharedRoute?: {
     stops: { name: string; coordinates: Coordinate }[];
@@ -115,12 +122,20 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         sourceTrackIds,
         edgeColors,
         colorConditions,
+        importFormat,
+        pointDetails,
+        edgeNotes,
+        routeTerminals,
         ...rest
       } = track;
       return {
         ...rest,
+        ...(typeof importFormat==='string' && /^[A-Za-z0-9 /-]{1,20}$/.test(importFormat) ? {importFormat} : {}),
         ...(validEdgeColors(edgeColors, track.segments) ? { edgeColors } : {}),
         ...(validColorConditions(colorConditions) ? { colorConditions } : {}),
+        ...(validPointDetails(pointDetails, track.segments) ? { pointDetails } : {}),
+        ...(validEdgeNotes(edgeNotes, track.segments) ? { edgeNotes } : {}),
+        ...(validRouteTerminals(routeTerminals, track.segments) ? { routeTerminals } : {}),
         ...(hidden === true ? { hidden: true } : {}),
         ...(Array.isArray(sourceTrackIds)
           ? {

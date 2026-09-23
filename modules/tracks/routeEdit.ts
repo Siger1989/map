@@ -11,20 +11,30 @@ import {
 } from './drawing.ts';
 import { normalizeTrackStyle, type TrackStyle } from './style.ts';
 import { keepsOriginalPoints } from './provenance.ts';
-import { inheritEdgeColors } from './edgeColors.ts';
+import { inheritEdgeColors, preserveTrackColors } from './edgeColors.ts';
 import { joinMovedRoute } from './nodeJoin.ts';
+import { joinUniqueSegments } from './snapping.ts';
+import { changeSelectionDetails, inheritTrackDetails, type PointDetail } from './selectionDetails.ts';
+import { newAnnotation, validAnnotation, type Annotation } from '../annotations/data.ts';
+import { resolvedRouteTerminals } from './routeTerminals.ts';
+import type { PointMarkerInput } from './RoutePointMarkerFields';
 
 export type RouteEditSnapshot = {
   track: ManualTrack;
   selected: Coordinate | null;
   branch: number | null;
   sources: ManualTrack[];
+  pendingMarkers?: Annotation[];
 };
 export type RouteEditSession = RouteEditSnapshot & {
   original: ManualTrack;
   history: RouteEditSnapshot[];
 };
 export function startRouteEdit(original: ManualTrack, unsaved = false): RouteEditSession {
+  const [start,end]=resolvedRouteTerminals(original);
+  const inRoute=(point:Coordinate|null)=>point && original.segments.some(line=>line.some(vertex=>equalCoordinate(vertex,point)));
+  const editStart=inRoute(start) ? start : original.segments[0]?.[0];
+  const editEnd=inRoute(end) ? end : original.segments.length===1 ? original.segments[0]?.at(-1) : undefined;
   return {
     original,
     track: {
@@ -37,6 +47,7 @@ export function startRouteEdit(original: ManualTrack, unsaved = false): RouteEdi
         line.map((p) => [...p] as Coordinate),
       ),
       nodes: original.nodes?.map((p) => [...p] as Coordinate),
+      routeTerminals: original.routeTerminals ?? {...(editStart ? {start:editStart} : {}),...(editEnd && original.segments[0]?.length > 1 ? {end:editEnd} : {})},
     },
     selected: null,
     branch: null,
@@ -48,13 +59,13 @@ function revise(
   session: RouteEditSession,
   change: Partial<RouteEditSnapshot>,
 ): RouteEditSession {
-  const { track, selected, branch, sources } = session;
+  const { track, selected, branch, sources, pendingMarkers } = session;
   return {
     ...session,
     ...change,
     history: [
       ...session.history.slice(-49),
-      { track, selected, branch, sources },
+      { track, selected, branch, sources, pendingMarkers },
     ],
   };
 }
@@ -85,7 +96,11 @@ export function moveEditNode(
   if (session.branch !== null)
     throw new Error('分叉起点已固定，请先结束分叉再移动节点。');
   if (!coordinate(to)) throw new Error('节点坐标无效。');
-  const moved = moveTrackNode(session.track, from, to);
+  let moved = moveTrackNode(session.track, from, to);
+  // A cut route can reconnect to itself; normalize that junction just like cross-route joining.
+  if (!equalCoordinate(from, to) && session.track.segments.some(line => line.some(p => equalCoordinate(p, to)))) {
+    moved = preserveTrackColors({ ...moved, segments: joinUniqueSegments(moved.segments) }, [moved]);
+  }
   const target =
     snappedTarget &&
     snappedTarget.id !== session.track.id &&
@@ -96,6 +111,7 @@ export function moveEditNode(
     track: target ? joinMovedRoute(moved, target, to) : moved,
     sources: target ? [...session.sources, target] : session.sources,
     selected: to,
+    pendingMarkers: session.pendingMarkers?.map(marker => equalCoordinate(marker.coordinates,from) ? {...marker,coordinates:[...to] as Coordinate} : marker),
   });
 }
 export function insertEditNode(
@@ -118,6 +134,7 @@ export function removeEditNodes(
 ): RouteEditSession {
   return revise(session, {
     track: removeTrackNodes(session.track, points),
+    pendingMarkers: session.pendingMarkers?.filter(marker => !points.some(point => equalCoordinate(point,marker.coordinates))),
     selected: null,
     branch: null,
   });
@@ -140,6 +157,21 @@ export function styleRouteEdit(
         },
       });
 }
+export function editSelectionDetails(session: RouteEditSession, points: Coordinate[], detail: PointDetail): RouteEditSession {
+  return revise(session, { track: changeSelectionDetails(session.track, points, detail) });
+}
+export function setEditEnd(session: RouteEditSession, point: Coordinate): RouteEditSession {
+  if(!session.track.segments.some(line=>line.some(vertex=>equalCoordinate(vertex,point))))throw new Error('请选择当前路线上的节点作为终点');
+  if(session.track.routeTerminals?.end && equalCoordinate(session.track.routeTerminals.end,point))return session;
+  return revise(session,{track:{...session.track,routeTerminals:{...session.track.routeTerminals,end:[...point] as Coordinate}},selected:point});
+}
+export function addEditMarker(session: RouteEditSession, point: Coordinate, input: PointMarkerInput, id: string, ground: number | null): RouteEditSession {
+  if (!session.track.segments.some(line => line.some(p => equalCoordinate(p, point)))) throw new Error('请先选中路线上的一个点');
+  const marker = {...newAnnotation('pin',point,ground,id), ...input};
+  if (!validAnnotation(marker)) throw new Error('标记名称、备注或颜色无效');
+  if ((session.pendingMarkers?.length ?? 0) >= 100) throw new Error('请先保存本轮标记');
+  return revise(session,{pendingMarkers:[...(session.pendingMarkers ?? []),marker]});
+}
 export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
   if (session.branch !== null) {
     const segments = session.track.segments.filter(
@@ -149,6 +181,7 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
       track: {
         ...session.track,
         segments,
+        ...inheritTrackDetails(segments, [session.track]),
         edgeColors: inheritEdgeColors(segments, [session.track]),
       },
       branch: null,
@@ -161,6 +194,7 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
     track: {
       ...session.track,
       segments: [...session.track.segments, [session.selected]],
+      ...inheritTrackDetails([...session.track.segments, [session.selected]], [session.track]),
       edgeColors: inheritEdgeColors(
         [...session.track.segments, [session.selected]],
         [session.track],
@@ -207,6 +241,7 @@ export function appendEditBranch(
     track: {
       ...session.track,
       segments,
+      ...inheritTrackDetails(segments, [session.track]),
       edgeColors: inheritEdgeColors(segments, [session.track]),
       nodes: [...(session.track.nodes ?? []), point],
     },
@@ -239,8 +274,8 @@ export function editedRouteRecord(
   const geometryChanged = sources.length > 1 || JSON.stringify(track.segments) !== JSON.stringify(original.segments);
   if (keepsOriginalPoints(original) && !geometryChanged && !session.history.length) return { ...original, hidden: false };
   if (keepsOriginalPoints(original) && !geometryChanged) return {
-    ...original, style: track.style, edgeColors: track.edgeColors,
-    colorConditions: track.colorConditions, hidden: false, updatedAt: now,
+    ...original, style: track.style, edgeColors: track.edgeColors, pointDetails: track.pointDetails, edgeNotes: track.edgeNotes,
+    colorConditions: track.colorConditions, routeTerminals:track.routeTerminals, hidden: false, updatedAt: now,
   };
   const copied = original.id === DRAFT_ID || keepsOriginalPoints(original);
   const sourceTrackIds = [
@@ -274,6 +309,9 @@ export function prepareRouteEdit(
       t.style,
       t.edgeColors,
       t.colorConditions,
+      t.pointDetails,
+      t.edgeNotes,
+      t.routeTerminals,
       t.hidden === true,
       t.updatedAt ?? t.createdAt,
       t.sourceTrackIds ?? [],

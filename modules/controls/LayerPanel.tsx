@@ -13,6 +13,7 @@ import {
   Thermometer,
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
+import { CONTOUR_INTERVALS, contourInterval } from '../terrain/contourInterval';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 const ITEMS = [
@@ -185,6 +186,14 @@ export function LayerPanel({
                   <p>0% 完全透明，100% 完全显示。</p>
                 </div>
               )}
+              {key === 'contours' && settings.contours && <div className="elevation-opacity contour-interval">
+                <label htmlFor="contour-interval">等高线高差间隔</label>
+                <select id="contour-interval" value={contourInterval(settings.contourInterval)}
+                  onChange={e => onChange({ contourInterval: contourInterval(Number(e.target.value)) })}>
+                  {CONTOUR_INTERVALS.map(value => <option key={value} value={value}>{value}米{value === 30 ? ' · 最细' : ''}</option>)}
+                </select>
+                <small>放大后使用所选间隔；缩小时自动稀疏，避免卡顿。线旁数值为海拔米数。</small>
+              </div>}
               {key === 'roads' && <div className="elevation-opacity">
                 <label className="slider-label" htmlFor="roads-opacity">道路/注记不透明度 <span>{Math.round((settings.roadsOpacity ?? 1) * 100)}%</span></label>
                 <input id="roads-opacity" type="range" min="0" max="1" step="0.05" value={settings.roadsOpacity ?? 1} onChange={e => onChange({ roadsOpacity: Number(e.target.value) })}/>

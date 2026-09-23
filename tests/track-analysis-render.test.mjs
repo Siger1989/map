@@ -75,12 +75,16 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
     style: DEFAULT_TRACK_STYLE,
     nodes: [],
     selectedId: 'a',
+    nodeSelection: { trackId: 'a', points: track.segments[0] },
     editing: true,
     analysisParts: { trackId: 'a', parts: metricLineParts(profile, 'slope') },
   };
   const layer = new TrackLayer(map);
   layer.sync(state);
   const data = sources.get('manual-tracks').data;
+  const selectedEdges = sources.get('manual-track-selection-edge').data;
+  assert.equal(layers.get('manual-track-selection-edge').type, 'line', 'selection uses terrain-draped map lines');
+  assert.deepEqual(selectedEdges.features[0].geometry.coordinates, track.segments, 'selection retains geographic geometry, not projected endpoint chords');
   assert.equal(
     new Set(
       data.features
@@ -117,4 +121,9 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
     ),
   );
   assert.deepEqual(track, before);
+  assert.deepEqual(sources.get('manual-track-selection-edge').data.features[0].geometry.coordinates, [[[0,0],destination]]);
+  layer.sync({ ...state, nodeSelection: { trackId: 'a', points: [track.segments[0][0]] } });
+  assert.equal(sources.get('manual-track-selection-edge').data.features.length, 0, 'one selected endpoint never highlights an unselected edge');
+  layer.sync({ ...state, editing: false });
+  assert.equal(sources.get('manual-track-selection-edge').data.features.length, 0, 'leaving edit mode clears highlighting');
 });

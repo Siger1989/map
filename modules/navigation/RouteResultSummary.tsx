@@ -2,13 +2,14 @@ import { useState, type ReactNode } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
-export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onRally, onEditPoints, onCancel, onCache }: {
+export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onRally, onEditPoints, onCancel, onCache, onImport }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string; weather?: ReactNode;
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onCache?: () => void;
+  onImport?: () => void;
 }) {
   const [section, setSection] = useState<'steps' | 'weather' | null>(null);
   const toggle = (next: 'steps' | 'weather') => setSection(section === next ? null : next);
@@ -21,6 +22,7 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
     </div>
     {!!route.accessDistance && <p className="route-note">含虚线接入 {Math.round(route.accessDistance)} 米，接入时间按步行估算</p>}
     <nav className="route-summary-actions" aria-label="路线管理操作">
+      {onImport && <button onClick={onImport}>加载路线</button>}
       {onEditPoints && <button onClick={onEditPoints}>编辑线点</button>}
       {onCancel && <button onClick={onCancel}>取消路线</button>}
       {onCache && <button onClick={onCache} aria-label="缓存当前路线">缓存</button>}

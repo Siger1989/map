@@ -49,6 +49,7 @@ import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 
 type Props = {
+  onImport?: () => void;
   offlineMaps?: (query: string) => ReactNode;
   offlineCount?: number;
   center: [number, number];
@@ -403,6 +404,7 @@ export function WorkbenchPanel(props: Props) {
                   : `${workbenchLeaves(items).length + (props.offlineCount ?? 0)} 项`}
               </small>
             </div>
+            {props.onImport && <button aria-label="导入收藏文件" onClick={props.onImport}>导入</button>}
             <button
               aria-label={batch ? '完成多选' : '进入多选'}
               aria-pressed={batch}

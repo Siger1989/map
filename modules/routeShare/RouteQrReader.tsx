@@ -109,7 +109,9 @@ export function RouteQrReader({
                 <p>
                   起点：{data.stops[0].name}
                   <br />
-                  终点：{data.stops.at(-1)!.name}
+                  {data.stops.length > 1
+                    ? `终点：${data.stops.at(-1)!.name}`
+                    : '终点未指定，载入后可在线路上选择'}
                 </p>
                 <p>{qrAccuracy(data)}</p>
                 <p>

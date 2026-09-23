@@ -5,7 +5,7 @@ import type {
   RoutePlace,
   TravelMode,
 } from '../navigation/types';
-import { trackDistance } from '../tracks/drawing.ts';
+import { trackDistance, resolvedRouteTerminals } from '../tracks/drawing.ts';
 import { exportGPX, exportKML } from '../outdoor/exchange.ts';
 import type { Annotation } from '../annotations/data';
 export type ShareRoute = {
@@ -49,16 +49,33 @@ export function shareTrack(
 ): ShareRoute {
   const points = track.segments.flat();
   if (points.length < 2) throw new Error('至少两个轨迹点才能分享路线');
+  const [start, end] = resolvedRouteTerminals(track);
+  const oldStops = track.sharedRoute?.stops;
+  const same = (a: Coordinate, b: Coordinate) => a[0] === b[0] && a[1] === b[1];
+  const first = start ?? points[0];
+  const stops: RoutePlace[] = [{
+    name: oldStops?.[0] && same(oldStops[0].coordinates, first) ? oldStops[0].name : '起点',
+    coordinates: first,
+  }];
+  // A branch may have several valid tips. Until its end is chosen, only the
+  // start is exported as a stop; the complete geometry remains in every file.
+  if (end) {
+    if (oldStops && oldStops.length > 2 &&
+        same(oldStops[0].coordinates, first) && same(oldStops.at(-1)!.coordinates, end))
+      stops.push(...oldStops.slice(1, -1));
+    const oldEnd = oldStops?.at(-1);
+    stops.push({
+      name: oldEnd && same(oldEnd.coordinates, end) ? oldEnd.name : '终点',
+      coordinates: end,
+    });
+  }
   return {
     name: track.name,
     segments: track.segments,
     distance: trackDistance(track.segments),
     duration: track.sharedRoute?.duration ?? null,
     mode: track.navigationMode ?? 'pedestrian',
-    stops: track.sharedRoute?.stops ?? [
-      { name: '起点', coordinates: points[0] },
-      { name: '终点', coordinates: points.at(-1)! },
-    ],
+    stops,
     track,
     sourceTracks: tracks.filter((t) => track.sourceTrackIds?.includes(t.id)),
     markers: annotations.filter(
@@ -70,6 +87,15 @@ export function shareTrack(
     ),
     estimated: true,
   };
+}
+/** Only confirmed stops receive start/end badges in a shared image. */
+export function shareImageTerminals(data: ShareRoute) {
+  const first = data.stops[0];
+  const last = data.stops.length > 1 ? data.stops.at(-1) : undefined;
+  return [
+    ...(first ? [{ name: first.name, point: first.coordinates, label: '起点', color: '#087747' }] : []),
+    ...(last ? [{ name: last.name, point: last.coordinates, label: '终点', color: '#ce3c45' }] : []),
+  ];
 }
 export function routeFileText(data: ShareRoute, format: 'gpx' | 'kml') {
   const track: ManualTrack = data.track ?? {

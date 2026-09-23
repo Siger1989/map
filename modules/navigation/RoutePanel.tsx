@@ -41,6 +41,7 @@ export function RoutePanel({
   onEditPoints,
   onCancel,
   onCache,
+  onImport,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -59,6 +60,7 @@ export function RoutePanel({
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onCache?: () => void;
+  onImport?: () => void;
 }) {
   const [editing, setEditing] = useState(true);
   const previousRoute = useRef(n.route?.createdAt);
@@ -239,6 +241,7 @@ export function RoutePanel({
     }
   };
   if (n.route && !editing && n.picking === null) return <RouteResultSummary
+    onImport={onImport}
     onCache={onCache}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
@@ -246,6 +249,7 @@ export function RoutePanel({
   />;
   return (
     <div className="route-panel" data-picking={n.picking !== null}>
+      {onImport && <button className="route-load" onClick={onImport}>加载路线文件</button>}
       <RoutingModeControl onOffline={() => n.setMode('pedestrian')} />
       {n.picking !== null && (
         <div className="route-picking-help" role="status">

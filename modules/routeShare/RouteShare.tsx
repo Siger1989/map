@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { CurrentMapContext } from './CurrentMapContext';
 import { TRAVEL_MODES } from '../navigation/types';
 import { externalLegs, routeFileText, type ShareRoute } from './data';
 import { deliverRouteFile } from './delivery';
@@ -22,6 +23,8 @@ export function RouteShare({
   photos: TripPhoto[];
 }) {
   const dialog = useRouteDialogFocus(onClose);
+  const readMapStyle = useContext(CurrentMapContext);
+  const mapStyle = () => { const style = readMapStyle?.(); if (!style) throw new Error('地图尚未就绪，请稍后生成图片'); return style; };
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]),
     [heroPhoto, setHeroPhoto] = useState('');
   const routePhotos = photosForTrack(data.track, photos);
@@ -65,11 +68,12 @@ export function RouteShare({
     run(async () => {
       const controller = new AbortController();
       abort.current = controller;
-      setMessage('正在加载整条路线的底图、地名和高程…');
+      setMessage('正在使用当前图层生成整条路线图片…');
       const file = await renderRouteImage(
         data,
         controller.signal,
         photoOptions,
+        mapStyle(),
       );
       if (url.current) URL.revokeObjectURL(url.current);
       url.current = URL.createObjectURL(file);
@@ -102,7 +106,7 @@ export function RouteShare({
       setMessage('正在生成二维码全程图并打包照片…');
       const picture =
         image ??
-        (await renderRouteImage(data, controller.signal, photoOptions));
+        (await renderRouteImage(data, controller.signal, photoOptions, mapStyle()));
       if (!image) {
         if (url.current) URL.revokeObjectURL(url.current);
         url.current = URL.createObjectURL(picture);
@@ -276,6 +280,7 @@ export function RouteShare({
               </button>
             </div>
           ))}
+          {!links.length && <p>终点未指定；在线路编辑中点选终点并保存后，即可生成导航链接。</p>}
         </details>
       </section>
     </div>

@@ -3,6 +3,7 @@ import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { newAnnotation } from '../annotations/data.ts';
 import type { Transfer } from './types.ts';
 import { validateTransfer } from './validation.ts';
+import { parseTcx } from './tcxImport.ts';
 export function parseXml(
   text: string,
   filename: string,
@@ -12,6 +13,7 @@ export function parseXml(
     throw new Error('不支持带外部实体的 XML');
   const doc = new DOMParser().parseFromString(text, 'application/xml');
   if (doc.querySelector('parsererror')) throw new Error('XML 文件无法解析');
+  if (doc.documentElement.localName === 'TrainingCenterDatabase') return parseTcx(doc, filename);
   const data: Transfer = {
     format: 'guanyun-backup',
     version: 1,

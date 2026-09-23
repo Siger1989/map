@@ -1,4 +1,4 @@
-import type { ManualTrack } from '../tracks/drawing';
+import { resolvedRouteTerminals, routeHasFork, type ManualTrack } from '../tracks/drawing.ts';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping.ts';
 import {
   coordinate,
@@ -9,6 +9,7 @@ import type { RouteFavorite } from '../navigation/favorites';
 import { pathOf, project } from './geometry.ts';
 import { connectedNetwork, networkPath } from './network.ts';
 import { trackAlternatives } from '../tracks/alternatives.ts';
+import { preferredPath } from './preferredPath.ts';
 
 /** Adapt saved geometry without requesting a replacement road route or editing the archive. */
 export function trackNavigation(
@@ -31,17 +32,25 @@ export function trackNavigation(
   const preferred = (
     variants.find((v) => v.id === alternativeId) ?? variants[0]
   )?.coordinates;
-  const coordinates = (
+  const defaultPath = (
     preferred?.length
       ? preferred
       : lines.length === 1
         ? lines[0]
         : networkPath(trackNetwork, lines[0][0], lines[0].at(-1)!).coordinates
+  );
+  const [chosenStart, chosenEnd] = resolvedRouteTerminals(track);
+  // Newly edited tracks carry explicit terminal metadata. If their end was
+  // removed, require another choice instead of promoting a branch tip.
+  if (!chosenEnd && (track.routeTerminals || routeHasFork(track.segments)))
+    throw new Error('分叉终点未指定，请在线路编辑中点选一个节点并设为终点。');
+  const coordinates = (track.routeTerminals && chosenEnd
+    ? preferredPath(trackNetwork, defaultPath, reversed ? chosenEnd : chosenStart ?? defaultPath[0], reversed ? chosenStart ?? defaultPath[0] : chosenEnd)
+    : reversed ? defaultPath.slice().reverse() : defaultPath
   ).map((p) => [...p] as Coordinate);
-  if (reversed) coordinates.reverse();
   const distance = pathOf(coordinates).length;
   if (distance < 20) throw new Error('轨迹不足20米，请延长后再导航。');
-  const stops = track.sharedRoute?.stops ? (reversed ? [...track.sharedRoute.stops].reverse() : track.sharedRoute.stops) : undefined;
+  const stops = track.routeTerminals ? undefined : track.sharedRoute?.stops ? (reversed ? [...track.sharedRoute.stops].reverse() : track.sharedRoute.stops) : undefined;
   const start = stops?.[0] ?? {
     name: `${track.name} · 起点`,
     coordinates: coordinates[0],

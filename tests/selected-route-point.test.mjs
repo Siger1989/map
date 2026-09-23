@@ -22,4 +22,10 @@ test('map selection moves the profile cursor and shows grade, elevation and reco
   await render(point(.0005),{reversed:true});assert.ok(Number(cursor().getAttribute('cx'))>first);assert.match(info(),/167 米/);assert.match(info(),/路段坡度 -10\.2°/);
   await render(point(.0005),{track:{...track,samples:undefined,source:'manual'}});assert.ok(document.querySelector('[aria-label="所选路线点，高程缺失"]'));assert.match(info(),/海拔 —/);assert.doesNotMatch(info(),/速度/);
   await render({...point(.001),trackId:'other'});assert.equal(cursor(),null);assert.equal(info(),undefined);
+  const axis=()=>document.querySelector('.route-elevation-profile svg').textContent;
+  assert.match(axis(),/终点/);
+  const a=[0,0],b=[.001,0],c=[.002,0],d=[.001,.001];
+  const branch={...track,segments:[[a,b,c],[b,d]],samples:[track.samples[0],[{altitude:120,time:230000},{altitude:125,time:290000}]]};
+  await render(null,{track:branch});assert.doesNotMatch(axis(),/终点/);
+  await render(null,{track:{...branch,routeTerminals:{start:a,end:d}}});assert.doesNotMatch(axis(),/终点/,'full branch profile is not the chosen path to d');
 });

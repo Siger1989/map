@@ -18,11 +18,14 @@ const changed = (
 ): ManualTrack => {
   if (segments.length > 100 || segments.flat().length > MAX_TRACK_POINTS)
     throw new Error('路线超过100段或6000点，请减少节点后重试。');
+  const vertices=new Set(segments.flat().map(point=>point.join(',')));
+  const routeTerminals=track.routeTerminals && Object.fromEntries(Object.entries(track.routeTerminals).filter(([,point])=>vertices.has(point.join(','))));
   return preserveTrackColors(
     {
       ...track,
       segments,
       nodes: [...new Map(nodes.map((p) => [p.join(','), p])).values()],
+      ...(track.routeTerminals ? { routeTerminals } : {}),
       sharedRoute: undefined,
       updatedAt: Date.now(),
     },
@@ -66,6 +69,12 @@ export function insertTrackNode(
     const inherited = colors[best.segment][best.index - 1];
     colors[best.segment].splice(best.index - 1, 1, inherited, inherited);
     next.edgeColors = colors;
+  }
+  if (track.edgeNotes) {
+    const notes = track.edgeNotes.map(row => row.slice());
+    const inherited = notes[best.segment][best.index - 1];
+    notes[best.segment].splice(best.index - 1, 1, inherited, inherited);
+    next.edgeNotes = notes;
   }
   return next;
 }

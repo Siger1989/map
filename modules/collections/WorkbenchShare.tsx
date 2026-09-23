@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { CurrentMapContext } from '../routeShare/CurrentMapContext';
 import { ImageIcon, FileJson, Download, Share2 } from 'lucide-react';
 import { archiveBlob, archiveName, ZIP_MIME } from '../files/archive';
 import { deliverFile } from '../files/delivery';
@@ -16,6 +17,7 @@ type Props = {
 
 /** Image and editable-data outputs share one dialog, with cancellable image work. */
 export function WorkbenchShare(p: Props) {
+  const readMapStyle = useContext(CurrentMapContext);
   const routes = useMemo(
     () => workbenchImageRoutes(p.items, p.ids),
     [p.items, p.ids],
@@ -49,12 +51,16 @@ export function WorkbenchShare(p: Props) {
     const targets = all ? routes : [route];
     const generated = { ...images };
     try {
+      const mapStyle = readMapStyle?.();
+      if (!mapStyle) throw new Error('地图尚未就绪，请稍后生成图片');
       for (const [index, target] of targets.entries()) {
         setMessage(`正在生成 ${index + 1}/${targets.length}：${target.name}`);
         if (!generated[target.id]) {
           generated[target.id] = await renderRouteImage(
             target.data,
             controller.signal,
+            undefined,
+            mapStyle,
           );
           controller.signal.throwIfAborted();
           setImages({ ...generated });

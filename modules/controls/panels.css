@@ -285,6 +285,9 @@
 .elevation-opacity input[type='range'] {
   height: 44px;
 }
+.contour-interval { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px; }
+.contour-interval select { min-width: 0; width: 100%; min-height: 36px; }
+.contour-interval small { grid-column: 1 / -1; color: var(--muted); font-size: 10px; }
 .layer-note {
   display: flex;
   gap: 9px;

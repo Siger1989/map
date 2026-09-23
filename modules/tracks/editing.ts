@@ -24,9 +24,19 @@ export function moveTrackNode(
   to: Coordinate,
 ): ManualTrack {
   if (keepsOriginalPoints(track)) return track;
+  const pointDetails = track.pointDetails ? { ...track.pointDetails } : undefined;
+  if (pointDetails?.[from.join(',')] && !equalCoordinate(from, to)) {
+    const moving = pointDetails[from.join(',')], target = pointDetails[to.join(',')];
+    const note = [...new Set([moving.note, target?.note].filter(Boolean))].join('；');
+    if (note.length > 1600) throw new Error('拼接点备注超过1600字，请先整理备注');
+    pointDetails[to.join(',')] = { ...target, ...moving, ...(note ? { note } : {}) };
+    delete pointDetails[from.join(',')];
+  }
   return {
     ...track,
+    ...(pointDetails ? { pointDetails } : {}),
     segments: moveSegmentsNode(track.segments, from, to),
+    ...(track.routeTerminals ? {routeTerminals:Object.fromEntries(Object.entries(track.routeTerminals).map(([key,point])=>[key,equalCoordinate(point,from) ? [...to] as Coordinate : point]))} : {}),
     ...(track.sharedRoute
       ? {
           sharedRoute: {

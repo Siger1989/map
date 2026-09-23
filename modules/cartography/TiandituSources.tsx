@@ -12,10 +12,8 @@ export function TiandituSources({
 }) {
   return (
     <section className="tianditu-sources" aria-label="内置图源">
-      <button className="map-source-link" aria-pressed={active && usesSentinel(settings)} onClick={() => onChange({satellite:true,satelliteProvider:'sentinel',imageryMode:'detail',offlineBasemap:false,offlineMaxZoom:null,rasterLevel:null})}>Sentinel-2 2025 · 默认</button>
-      <small>免账号 · 约10米 · 非商业使用 · 区域下载待接入</small>
-      <small>天地图 · 高清备用 / 有每日额度</small>
-      <div className="map-source-builtins">
+      <div className="map-source-builtins map-source-primary-grid">
+      <button aria-pressed={active && usesSentinel(settings)} onClick={() => onChange({satellite:true,satelliteProvider:'sentinel',imageryMode:'detail',offlineBasemap:false,offlineMaxZoom:null,rasterLevel:null})}>Sentinel-2 2025</button>
         {(['vec', 'img', 'ter'] as const).map((id) => (
           <button
             key={id}
@@ -37,6 +35,7 @@ export function TiandituSources({
           </button>
         ))}
       </div>
+      <small>{settings.satelliteProvider === 'tianditu' ? '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>
       {settings.satelliteProvider === 'tianditu' && <div className="tianditu-options">
         <label>
           <select

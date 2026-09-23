@@ -2,7 +2,11 @@
   position: absolute;
   inset: 0;
   z-index: 24;
+  pointer-events: none;
 }
+.map-box-selection[data-active='true'] { pointer-events: auto; }
+.home-map:has(.map-box-selection[data-active='true']) .global-focus-lock { display: none; }
+.map-box-selection[data-selection-mode='subtract'] .map-box-rectangle { border-color: #ef8b55; background: #ef8b5525; }
 .map-box-surface {
   position: absolute;
   inset: 0;
@@ -42,6 +46,7 @@
   box-shadow: 0 2px 10px #0005;
   font-size: 12px;
 }
+.map-box-hit.route-node-hit { box-sizing: border-box; background: transparent; border: 1.5px solid #fff3a0; box-shadow: 0 0 3px 1px #fff8baaa; }
 .map-box-tools strong,
 .map-box-tools small {
   display: block;
@@ -53,7 +58,9 @@
 .map-box-tools > div {
   display: flex;
   gap: 4px;
+  margin-top: 4px;
 }
+.map-box-tools button[aria-pressed='true'] { background: #246b53; color: white; }
 .map-box-tools button {
   min-height: 44px;
   flex: 1;

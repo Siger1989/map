@@ -11,6 +11,7 @@ import {
 import { readProfile } from '../journey/elevationProvider';
 import type { ShareRoute } from './data';
 import { renderRouteMap } from './mapImage';
+import type { ShareMapStyle } from './currentMapStyle';
 import { routeQrImage } from './qrImage';
 import { appendPhotoCollage, type SharePhotoOptions } from './photoCollage';
 import {
@@ -25,6 +26,7 @@ export function composeRouteImage(
   map: HTMLCanvasElement,
   samples: ElevationSample[],
   qr?: { canvas: HTMLCanvasElement | null; note: string },
+  attribution = '© OpenStreetMap contributors · OpenFreeMap',
 ) {
   const canvas = document.createElement('canvas');
   const sections = routeColorSections(
@@ -129,7 +131,7 @@ export function composeRouteImage(
     1845,
     22,
   );
-  line('底图 © OpenStreetMap contributors · OpenFreeMap', 1887, 22);
+  line('图层：' + attribution, 1887, 22);
   line(
     '高程：区域 FABDEM V1-2 (CC BY-NC-SA 4.0) / 区域外 Mapzen、SRTM',
     1924,
@@ -194,6 +196,7 @@ export async function renderRouteImage(
   data: ShareRoute,
   signal: AbortSignal,
   photos?: SharePhotoOptions,
+  currentMap?: ShareMapStyle,
 ): Promise<File> {
   const cancel = new AbortController();
   const workSignal = AbortSignal.any([
@@ -204,7 +207,7 @@ export async function renderRouteImage(
   let map: HTMLCanvasElement, profile: ElevationSample[];
   try {
     [map, profile] = await Promise.all([
-      renderRouteMap(data, workSignal),
+      renderRouteMap(data, workSignal, currentMap),
       readProfile(sampleTerrain(data.segments), workSignal),
     ]);
   } finally {
@@ -213,7 +216,7 @@ export async function renderRouteImage(
   signal.throwIfAborted();
   const qr = await routeQrImage(data);
   signal.throwIfAborted();
-  const base = composeRouteImage(data, map, profile, qr);
+  const base = composeRouteImage(data, map, profile, qr, currentMap?.attribution);
   const canvas = photos ? await appendPhotoCollage(base, photos, signal) : base;
   const blob = await new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(

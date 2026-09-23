@@ -1,4 +1,51 @@
-# 当前状态 — 2026-09-21 / PDF主页第二轮与手机适配
+# 当前状态 — 2026-09-23 / 0.2.57路线导入、等高距与运动朝向
+
+## 2026-09-23 最新：0.2.57新APK已构建，Release待核对
+
+用户现要求先交付APK。当前分支codex/rollback-ui-0235-20260921，构建源码在原HEAD 83a725e913ec657b540c55568090e4323a48cc43之上的未提交工作区；后续须提交推送并核对远端。公开最新版此前是0.2.56，故沿用尚未发布的0.2.57-test/code64，完整重建并替换本机过期同名包，不复用旧资产。
+
+- 新包：`APK/Shantu-0.2.57-test-standalone.apk`，57818204字节，SHA256 `c5320171b34caa20b1e4ffcecf6535a9ea2a90e5d17e07d67e585aa444edd6be`，同目录`.sha256`匹配。独立测试包名`com.guanyun.weather.shantu.preview`，既有4a94签名，Android 8.0/API26起；同系列可覆盖安装，不清除用户轨迹、照片、布局或收藏。尚未上传Release，不提供未经验证的公开下载状态。
+- 用户真机截图出现`TypeError: t is not a function`，同版打包网页在隔离Chromium中复现，根因为旧UMD坐标转换库跨分块循环初始化；导入器改为等价ESM公式，10,000组坐标与原库一致，新打包网页已独立验证可进入主页。错误页改为显示真实APP_VERSION及堆栈，Android UA改为实际安装版本；截图旧版本字样只是此前硬编码，不能证明用户装旧包。
+- 最终源码TypeScript及614项逻辑测试通过，网页/Java/DEX/APK全新构建通过，v2/v3签名、zipalign、551项ZIP CRC、473块地形瓦片以及新终点/导入/框选/运动方向网页特征通过。架构检查仍有5个既有大文件超行数预算，未临时放宽规则。
+- 手动分叉终点、路线编辑和预览Vite解析修复已在新包；当前无法使用CUA浏览器控制取最新截图。真机覆盖安装、微信打开文件、GPS/运动传感器、持续缩放卡顿和触控尚未验收；HarmonyOS6.1原生HAP/APP未交付。发行详情见[0.2.57说明](docs/release-0.2.57.md)。
+
+## 2026-09-23 开发记录：路线编辑快速预览（已被新构建覆盖）
+
+下列为打包前的本地预览记录；其中“旧APK过期”的判断已由上节新包取代。构建前分支codex/rollback-ui-0235-20260921，HEAD 83a725e913ec657b540c55568090e4323a48cc43。
+
+- 预览故障修复：用户截图显示Vite无法从routeShare/data解析新建的tracks/routeTerminals文件；文件实际存在、单独请求正常，运行中9423服务对跨目录相对导入返回500。将端点读取函数经已有tracks/drawing入口导出并供跨模块复用后，data、savedRoute和SelectedRouteInfo的Vite模块请求均为200；未重启9423、未操作用户页面。最终手机网页构建、TypeScript、17项终点/分享/导航定向测试通过；CUA浏览器连接仍失败，覆盖层是否已在用户标签自动消失未验证，必要时用户刷新当前预览。
+- 路线框选直接整合进编辑面板：点选、框选加、框选减；退出保留选择，松手清除框。选中点保留原色加细亮边，相连线段加亮边；线宽和点径在“线/点”分别调整。
+- 分叉终点改为明确选择：旧分叉不再从最后一段推断终点；编辑时单选路线节点点“设终点”，新分叉保留原路线终点，移动/删除端点和撤销同步更新。地图、路线详情、行程点、分享图/二维码统一读取该终点；未指定时不显示假终点，导航提示先选择。导航到手选分叉节点时重算实际路径，反向亦如此。已保存路线的起终点元数据兼容旧数据，原路线几何不改。
+- 单点可编辑颜色/备注及添加实际标记，多点只修改两端均被选中的相连线段。新增selectionDetails、displayColors、routeEndpoints、RouteSelectionFields、RoutePointMarkerFields；接入RouteViews、TrackLayer、TrackNodeBoxSelect、routeEdit、joinedEditStore、page和样式。点/边元数据随移动、裁切、拼接和撤销保留；同一路线裁切后拼接统一拓扑，连接点不再误标为终点。
+- 标记随路线草稿保存，支持撤销和跟随节点移动；图案选择复用现有18种SVG图标，替换文字下拉框。图案、名称、备注、颜色独立。修复拖点后选中属性栏消失、重新选点时检查器颜色与地图颜色不一致。
+- 追加修复“两点选中变直线”：原SVG高亮仅连接屏幕端点，不能跟随三维地形；改为selectedEdgeLayer地图原生贴地线层，置于原色线下方，仅画亮边。选中不修改路线坐标，拖动预览同步地理边，退出编辑清除。TrackNodeBoxSelect只保留点圈和框选操作。
+- 新增trackNotes：按连续物理路段显示非空备注，优先独立边备注再回退同色路况；点备注也在点旁显示。11px小字、少量描边、碰撞避让，不跨断线；长内容截取18字加省略号，完整备注不改。用户继续反馈等高线数字偏密偏大，已从12px/140px改为11px/210px，文字避让5px、描边1.4px，等高距不变。
+- 分享图通过CurrentMapContext读取主页当前底图/专题图层，RouteShare和WorkbenchShare统一接入，保留图源坐标校正、等高线和来源署名；输出完整路线的俯视图，不复制编辑选择、其他私有路线、定位数据、三维天气动画或自定义模型。独立输出地图不启用三维相机高程，避免DEM加载后短路线被放大裁切；地形晕渲、等高线和海拔着色仍按当前开启状态。已实际生成含卫星底图及路线备注的图片，旧预览需点“重新生成图片”。
+- 最新TypeScript及66项终点/路线编辑/导航定向测试通过；终点这一轮浏览器预览连接报`nodeRepl.fetch request failed`，未能取得新截图或做新的浏览器点击验证。此前独立localhost实测拖动→另选→重选、图案切换/添加/撤销、多点贴地亮边、地图备注、当前图层分享；360×780及390×857图案截图见artifacts/screenshots/20260923-route-marker-icons-360.png、同前缀route-marker-icons-390.png；360图案面板当时实测300×186px。另有route-edge-notes-390、share-current-layers-390及current-preview-notes-contours旧截图。用户127.0.0.1预览未手动刷新、点击或改数据。更早596项全量测试不代表最新修改完成全量验证。
+- 未改动其他业务的既有存储键、签名或用户原数据；真实触控、微信导入、持续缩放和运动传感器仍待手机验证。原地图卡死/局部着色根因未确认，DEM未统一，HarmonyOS6.1原生未交付。
+
+## 2026-09-23 历史构建记录：0.2.57-test / code64（已被后续预览修改取代）
+
+分支codex/rollback-ui-0235-20260921，构建前基线83a725e913ec657b540c55568090e4323a48cc43。以下仅记录早前构建时的状态与校验，未发布；APK不含最新路线编辑修改，当前状态以上节为准。
+
+- 等高线按用户澄清改为**30/50/100/200米垂直高差间隔**，默认最细30米；没有30/60/120米水平精度切换。缩小时自动稀疏至100/200/500米，详细地图使用所选间隔并独立记忆。普通等高线也标注海拔，重复间距280→140px、描边1.4→1.8px，保留碰撞避让；共享有界DEM worker缓存。涉及terrain/contourInterval、terrain、LayerPanel、map/types、TerrainMap及page。
+- 追加修复框选：原路线编辑工具条z42挡住框选工具z24，松手矩形留存、退出即丢选择；现在框选时只显示当前工具，加选/反选（减选）连续取并集或差集，松手清矩形，退出保留选中点并恢复上级编辑/地图拖动。新增collections/BoxSelectOverlay和box-selection-mode测试，改TrackNodeBoxSelect、MapBoxSelect、RouteViews、BoxSelectionResults与page；对象结果页继续框选保留选择，移除离开收藏时的误清空。390/360下实测点数1→2→1→退出保留→重入2，面板300/284×166px，矩形/输入面在退出后为0。
+- 方向新增四项菜单及运动方向朝上：优先GPS航向/速度，否则连续可靠定位位移计算方位；去重力加速度仅辅助静止过滤，低速/失准时保持方向。新增position/DirectionControl、motionHeading、useMotionHeading及原生MotionSensor，接入定位、跟随、临时浏览和生命周期。手机朝向与运动朝向分别选择，不以加速度积分冒充绝对航向。
+- 下节路线导入、OVOBJ等读取器、微信文件关联、图源坐标校正和诊断一并进入本版。实际L013为74点/5517.99米；不能承诺所有私有版本。没有更换/统一全部DEM，真机地图卡死和局部色块仍未复现，根因未确认。
+- TypeScript、594项逻辑测试、最终网页/Java/DEX/APK构建通过；v2/v3签名、zipalign、551项ZIP CRC、16项网页/8项原生特征、473块地形像素检查通过。架构检查5个既有大文件超预算，未提高预算。390×857和360×780实际截图/点击通过，100米选择重载后仍保留；用户预览仍为phone-preview.html。日志.openai/apk-0.2.57-*仅本地。
+- APK/Shantu-0.2.57-test-standalone.apk：57814108字节，SHA256 a1ddf280baf1d4547a92695530ac86c226e4646ffa8b8b49f46ab89ffeb4bfe5。包名com.guanyun.weather.shantu.preview及4a94签名保持，覆盖同系列旧版，无需卸载；轨迹/照片/布局/收藏不迁移、不清除。
+- Android真机覆盖安装、微信打开文件、持续缩放、运动GPS/传感器、触控和后台轨迹尚未验收；HarmonyOS6.1原生包未交付。范围、安装及下载见[0.2.57发行说明](docs/release-0.2.57.md)。无关附件/PDF、原路线、截图、凭证和构建日志不上传。
+
+## 2026-09-23 本地预览：地图诊断、图源坐标校正、路线直接导入
+
+当前分支codex/rollback-ui-0235-20260921，基线83a725e913ec657b540c55568090e4323a48cc43。本轮业务已修改，处于本地快速预览阶段，未提交/推送/提版本/出APK；此前0.2.56安装包不包含本轮代码。
+
+- 图源：新增coordinates/RasterCoordinates/rasterWarp.worker，每源WGS84/GCJ-02/BD-09栅格重采样校正；同步TerrainMap、RasterDetailPatch、TiandituSources、在线源和图源面板。主页一页可达，360窄屏无内部纵向滚动；GeoTIFF和百度专有瓦片矩阵不在此实现范围。
+- 地图：RasterLevelLock保持元数据加载期间的层级限制；renderDiagnostics补充图源、DEM、WebGL和渲染状态。真机卡死与局部高程色块未复现，根因未确认。DEM只完成现状审计，未换源/统一全部取样模块。
+- 导入：RoutePanel/RouteResultSummary、Collections/Workbench增加共享RouteImportDialog；Outdoor记录首页移除导入。TransferPanel展示读取/预览/错误，确认后app/page实际选择路线并定位。Android IncomingRoutes、MainActivity、NativeBridge、AppFiles和Manifest接收VIEW/SEND文件；尚未微信真机验证。
+- 格式：保留GPX/KML/KMZ/OVKML/OVKMZ/备份JSON，新增独立OVOBJ、OVJSN、TCX、FIT、GeoJSON、CSV/TSV适配器和routeBuilder。L013.ovobj真实文件直接解码74点/5517.99米并显示地图；OVOBJ仅已验证v105结构，基准未确认时预览提示。新增importFormat保留来源标签，原数据/存储键/照片/布局/签名不迁移。
+- 验证：30项定向测试、TypeScript、Android网页生产构建、全部Java源编译通过；FIT官方3601点样例、公开OVOBJ配对坐标及用户真实文件验证通过。截图artifacts/screenshots/20260923-ovobj-loaded-390.png和此前360窄屏截图。只有浏览器/编译验证，不等于手机验收。
+- 范围与后续：[反馈进度](docs/pending-feedback-20260923.md)、[格式兼容性](docs/route-format-compatibility.md)。后续明确交付时再同步源码和新包；不把部分私有格式支持称为市面全格式通用。
 
 ## 2026-09-22用户恢复打包并上传：0.2.56-test / code63
 

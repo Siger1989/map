@@ -1,0 +1,13 @@
+.observatory .route-dialog.route-import-dialog { width:min(300px,100%); max-height:min(70dvh,480px); background:var(--panel); padding:8px; border-radius:8px; }
+.observatory .route-import-dialog header { top:-8px; margin:-8px -8px 4px; padding:4px 8px; }
+.route-import-dialog section { display:grid; gap:4px; }
+.route-import-dialog .import-file { position:relative; display:flex; align-items:center; justify-content:center; min-height:36px; padding:4px; border:1px solid currentColor; border-radius:4px; font-size:12px; }
+.route-import-dialog .import-file input { position:absolute; inset:0; width:100%; height:100%; opacity:0; }
+.route-import-dialog .import-file:focus-within { outline:2px solid var(--text); }
+.route-import-dialog button,.route-import-dialog summary { min-height:36px; }
+.route-import-dialog summary { display:flex; align-items:center; font-size:12px; cursor:pointer; }
+.route-import-dialog p { margin:4px 0; font-size:12px; }
+.route-import-dialog small { font-size:11px; }
+.route-import-dialog select { max-width:100%; min-height:36px; }
+.route-import-dialog .outdoor-actions { display:flex; gap:4px; }
+.route-import-dialog .outdoor-actions button { flex:1; }

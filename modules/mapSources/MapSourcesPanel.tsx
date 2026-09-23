@@ -18,6 +18,7 @@ import { TiandituHelp } from './TiandituHelp';
 import { TiandituSources } from '../cartography/TiandituSources';
 import type { LayerSettings } from '../map/types';
 import { usesSentinel } from '../cartography/sentinel';
+import { RasterDatumChoice } from './RasterDatumChoice';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -175,7 +176,7 @@ export function MapSourcesPanel({
         throw new Error(
           /\.ovmap$/i.test(selected.name)
             ? '奥维 .ovmap 属于专有格式，请向提供方索取标准栅格文件或通用图源地址'
-            : '此处支持 MBTiles、GeoTIFF、JSON / XML / TXT 配置；GPX / KML / KMZ 轨迹请到“行程”导入',
+            : '此处支持 MBTiles、GeoTIFF、JSON / XML / TXT 配置；路线文件请到“路线”或“收藏”导入',
         );
     });
   };
@@ -216,7 +217,9 @@ export function MapSourcesPanel({
               </button>
             ))}
           </div>)}
-          {step === 'list' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载 · 待接入':'下载当前地图范围'}</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机地图</button></div>}
+          {step === 'list' && settings && onSettings && <RasterDatumChoice settings={settings}
+            selected={sources.selected} image={sources.source?.kind === 'image'} onChange={onSettings} onError={setError} />}
+          {step === 'list' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载待接入':'下载当前范围'}</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机</button></div>}
           {step === 'library' && <>
           {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary
@@ -437,8 +440,8 @@ export function MapSourcesPanel({
             </div>
           ))}
           <p className="map-source-hint">
-            在线地图须使用 WGS84 / Web Mercator
-            瓦片。识别配置成功不代表服务已连通。
+            在线地图须使用标准 Web Mercator 瓦片；GCJ-02 / BD-09
+            偏移可在图源菜单校正，百度专用瓦片矩阵暂不支持。识别配置成功不代表服务已连通。
           </p>
           <div className="map-source-actions">
             {!onNavigation && (

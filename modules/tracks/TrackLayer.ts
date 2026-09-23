@@ -1,5 +1,9 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { alternativeLineParts, trackAlternatives } from './alternatives';
+import { alternativeLineParts } from './alternatives';
+import { resolvedRouteTerminals } from './routeTerminals';
+import { displayedNodeColors } from './displayColors';
+import { syncSelectedEdges } from './selectedEdgeLayer';
+import { syncTrackNotes } from './trackNotes';
 import { syncOverlayData } from '../map/overlayData';
 import { metricLineParts } from '../routeAnalysis/metrics';
 import {
@@ -44,6 +48,7 @@ export type TrackOverlay = {
   movableTrackId?: string | null;
   alternativeId?: string;
   activeNode?: TrackNode | null;
+  nodeSelection?: { trackId: string; points: Coordinate[] };
   linePoint?: TrackLinePoint | null;
   preview?: { node: TrackNode; coordinate: Coordinate } | null;
 };
@@ -125,7 +130,7 @@ export class TrackLayer {
           'line-width': [
             '+',
             ['get', 'width'],
-            ['case', ['get', 'selected'], 5, 1],
+            ['case', ['get', 'selected'], 2, 1],
           ],
         },
       });
@@ -147,7 +152,7 @@ export class TrackLayer {
         source: 'manual-tracks',
         filter: ['==', ['geometry-type'], 'Point'],
         paint: {
-          'circle-radius': ['case', ['get', 'selected'], 5, 3],
+          'circle-radius': ['/', ['coalesce', ['get', 'pointSize'], 8], 2],
           'circle-color': ['get', 'color'],
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 1,
@@ -163,7 +168,7 @@ export class TrackLayer {
           ['==', ['get', 'active'], true],
         ],
         paint: {
-          'circle-radius': 6,
+          'circle-radius': ['/', ['coalesce', ['get', 'pointSize'], 8], 2],
           'circle-color': ['get', 'color'],
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 2,
@@ -275,9 +280,7 @@ export class TrackLayer {
       if (state.editing === false && state.selectedId) {
         const selected = state.selectedId === DRAFT_ID ? { id:DRAFT_ID, segments:state.draft } : state.saved.find(t => t.id === state.selectedId);
         if (selected) {
-          const variants = trackAlternatives(selected.segments);
-          const line = (variants.find(v => v.id === state.alternativeId) ?? variants[0])?.coordinates ?? selected.segments.flat();
-          const ends = [line[0], line.at(-1)];
+          const ends = resolvedRouteTerminals(selected);
           if (state.reversed) ends.reverse();
           ends.forEach((coordinates, i) => { if (coordinates) data.features.push({type:'Feature', properties:{ trackId:selected.id, selected:true, color:i ? '#db7829' : '#16824b', endpointLabel:i ? '终点' : '起点', lng:coordinates[0], lat:coordinates[1] }, geometry:{type:'Point', coordinates}}); });
         }
@@ -306,21 +309,16 @@ export class TrackLayer {
         )
           continue;
         const color = normalizeTrackStyle(track.style).color;
-        const branchColors = new Map(
-          trackAlternatives(track.segments, color)
-            .slice(1)
-            .reverse()
-            .flatMap((v) =>
-              v.detour.slice(1, -1).map((p) => [p.join(','), v.color] as const),
-            ),
-        );
         const selected = track.id === state.selectedId;
+        const nodeColors = displayedNodeColors(track);
+        const [routeStart, routeEnd] = resolvedRouteTerminals(track);
         const positions = nodeHandles(
           track.segments,
           track.nodes ?? [],
           selected || !!state.connecting || !!snapTarget,
           (point) => m.project(point),
         );
+        for(const terminal of [routeStart,routeEnd]) if(terminal && !positions.some(point=>equalCoordinate(point,terminal)))positions.push(terminal);
         if (
           state.activeNode?.trackId === track.id &&
           !positions.some((p) =>
@@ -341,20 +339,18 @@ export class TrackLayer {
             return {
               type: 'Feature' as const,
               properties: {
-                color: branchColors.get(point.join(',')) ?? color,
+                color: nodeColors.get(point.join(',')) ?? color,
+                pointSize: normalizeTrackStyle(track.style).pointSize ?? 8,
                 selected,
                 active:
                   state.activeNode?.trackId === track.id &&
                   equalCoordinate(point, state.activeNode.coordinate),
                 trackId: track.id,
                 ...(selected &&
-                (equalCoordinate(point, track.segments[0][0]) ||
-                  equalCoordinate(point, track.segments.at(-1)!.at(-1)!))
+                ((routeStart && equalCoordinate(point, routeStart)) ||
+                  (routeEnd && equalCoordinate(point, routeEnd)))
                   ? {
-                      endpointLabel: equalCoordinate(
-                        point,
-                        track.segments[0][0],
-                      )
+                      endpointLabel: routeStart && equalCoordinate(point, routeStart)
                         ? 'sharedRoute' in track &&
                           track.sharedRoute?.stops[0].name
                           ? `起点 · ${track.sharedRoute.stops[0].name}`
@@ -374,6 +370,9 @@ export class TrackLayer {
         );
       }
     }
+    syncSelectedEdges(m, state);
+    syncTrackNotes(m, state.visible ? state.saved.map(track => state.preview?.node.trackId === track.id
+      ? {...track,segments:moveSegmentsNode(track.segments,state.preview.node.coordinate,state.preview.coordinate)} : track) : []);
     syncOverlayData(m, 'manual-tracks', data);
     if (!m.getSource('track-line-selection'))
       m.addSource('track-line-selection', {

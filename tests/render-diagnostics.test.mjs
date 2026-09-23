@@ -10,6 +10,7 @@ function scene() {
     terrain: false,
     zoom: 11,
     hidden: false,
+    moving: false,
   };
   const map = {
     on(name, callback) {
@@ -23,6 +24,8 @@ function scene() {
     isSourceLoaded: () => state.loaded,
     getTerrain: () => (state.terrain ? { source: 'elevation' } : null),
     getZoom: () => state.zoom,
+    isMoving: () => state.moving,
+    areTilesLoaded: () => state.loaded,
     getLayer: (id) =>
       state.source ? { minzoom: id === 'local-roads' ? 12 : 6 } : undefined,
     getLayoutProperty: () => (state.hidden ? 'none' : undefined),
@@ -84,5 +87,21 @@ test('diagnostic history stays bounded and snapshot mutation cannot alter counte
   first.roads.requests = 0;
   assert.equal(observer.snapshot().counts.sourcedataloading, 40);
   assert.equal(observer.snapshot().roads.requests, 40);
+  observer.dispose();
+});
+
+test('render diagnostics report context recovery, DEM failure and camera motion independently', () => {
+  const s=scene(), observer=observeMapRendering(s.map);
+  Object.assign(s.state,{source:true,moving:true});
+  s.emit('webglcontextlost'); s.emit('error','elevation');
+  let snapshot=observer.snapshot();
+  assert.equal(snapshot.rendering.contextLost,true);
+  assert.equal(snapshot.rendering.moving,true);
+  assert.equal(snapshot.terrainSources.find(t=>t.id==='elevation').errors,1);
+  s.emit('webglcontextrestored'); s.emit('render'); s.state.moving=false;
+  snapshot=observer.snapshot();
+  assert.equal(snapshot.rendering.contextLost,false);
+  assert.equal(snapshot.rendering.moving,false);
+  assert.equal(snapshot.counts.render,1);
   observer.dispose();
 });

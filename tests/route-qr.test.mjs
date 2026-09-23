@@ -12,6 +12,7 @@ import { qrTransfer } from '../modules/routeShare/qrImport.ts';
 import { validFavorite } from '../modules/navigation/favorites.ts';
 import { trackNavigation } from '../modules/guidance/savedRoute.ts';
 import { parseSavedTracks } from '../modules/tracks/drawing.ts';
+import { externalLegs, shareImageTerminals, shareTrack } from '../modules/routeShare/data.ts';
 const data = {
   name: '成都东站 → 春熙路',
   mode: 'bicycle',
@@ -97,4 +98,32 @@ test('corrupt, oversized and decompression length abuse are rejected before impo
     () => readRouteQr(ROUTE_QR_PREFIX + '1:' + 'A'.repeat(3000)),
     /不是/,
   );
+});
+
+test('unconfirmed branch shares full geometry without inventing a terminal in image, QR or navigation', () => {
+  const a = [104.0000004, 30.0000004], b = [104.0010004, 30],
+    c = [104.0020004, 30], d = [104.0010004, 30.001];
+  const track = { id: 'fork', name: '有分叉的路线', createdAt: 1, segments: [[a, b, c], [b, d]] };
+  const shared = shareTrack(track);
+  assert.deepEqual(shared.segments, track.segments);
+  assert.deepEqual(shared.stops.map(s => s.coordinates), [a]);
+  assert.deepEqual(shareImageTerminals(shared).map(t => t.label), ['起点']);
+  assert.deepEqual(externalLegs(shared), []);
+  const scanned = readRouteQr(makeRouteQr(shared).text);
+  assert.equal(scanned.stops.length, 1);
+  const imported = qrTransfer(scanned, 1000).track;
+  assert.equal(imported.sharedRoute, undefined);
+  assert.deepEqual(imported.routeTerminals?.start, imported.segments[0][0]);
+  assert.deepEqual(parseSavedTracks(JSON.stringify([imported]))[0].routeTerminals, imported.routeTerminals);
+
+  const chosen = shareTrack({ ...track, routeTerminals: { start: a, end: c } });
+  assert.deepEqual(chosen.stops.map(s => s.coordinates), [a, c]);
+  assert.deepEqual(shareImageTerminals(chosen).map(t => t.point), [a, c]);
+  assert.equal(externalLegs(chosen).length, 1);
+  const legacyJoined = shareTrack({ ...track, segments: [[a, b], [b, c]] });
+  assert.deepEqual(legacyJoined.stops.map(s => s.coordinates), [a, c]);
+  const previouslyPlanned = shareTrack({
+    ...track, sharedRoute: { stops: [{name:'出发',coordinates:a},{name:'到达',coordinates:d}], duration:null, tolerance:0 },
+  });
+  assert.deepEqual(previouslyPlanned.stops.map(s => s.coordinates), [a, d]);
 });

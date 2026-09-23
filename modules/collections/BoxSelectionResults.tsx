@@ -11,7 +11,7 @@ export function BoxSelectionResults({ entries, initialMessage, onClose, onResele
   entries: CatalogEntry[];
   initialMessage?: string;
   onClose: () => void;
-  onReselect: () => void;
+  onReselect: (keys: string[]) => void;
   onExport: (keys: string[]) => void;
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 }) {
@@ -60,7 +60,7 @@ export function BoxSelectionResults({ entries, initialMessage, onClose, onResele
       </div>}
       {!entries.length && !message && <p className="box-results-note">本次框选中已没有对象，可以重新框选。</p>}
       <div className="box-results-actions">
-        <button onClick={onReselect}>重新框选</button>
+        <button onClick={() => onReselect(chosen.map(e => e.key))}>继续框选</button>
         {entries.length ? <><button disabled={!chosen.length} onClick={() => onExport(chosen.map(e => e.key))}>导出</button><button className="is-danger" disabled={!chosen.length} onClick={() => setConfirming(true)}>删除</button></> : <button onClick={onClose}>返回地图</button>}
         {undo && <button onClick={restore}>撤销删除</button>}
       </div>

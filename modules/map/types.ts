@@ -1,4 +1,5 @@
 export type LayerSettings = {
+  rasterDatums?: Record<string, import('../mapSources/coordinates').RasterDatum>;
   terrain: boolean;
   satellite: boolean;
   satelliteProvider?: 'sentinel' | 'tianditu';
@@ -8,6 +9,7 @@ export type LayerSettings = {
   tiandituBoundaries?: boolean;
   offlineMaxZoom?: number | null;
   contours: boolean;
+  contourInterval?: import('../terrain/contourInterval').ContourInterval;
   elevationColors: boolean;
   elevationColorsOpacity: number;
   geology: boolean;
@@ -29,6 +31,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   satellite: false,
   satelliteProvider: 'sentinel',
   contours: false,
+  contourInterval: 30,
   elevationColors: false,
   elevationColorsOpacity: 1,
   geology: false,

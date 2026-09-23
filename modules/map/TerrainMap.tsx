@@ -1,4 +1,5 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
+import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentMapStyle';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { readLastView, saveLastView } from './lastView';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
@@ -6,11 +7,13 @@ import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
+import { RasterCoordinates } from '../mapSources/RasterCoordinates';
+import { rasterDatumKey } from '../mapSources/coordinates';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
-import { addContours, baseStyle } from '../terrain/terrain';
+import { addContours, syncContourInterval, baseStyle } from '../terrain/terrain';
 import { readElevation } from '../terrain/elevation';
 import {
   loadLatestSatellite,
@@ -72,6 +75,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  shareMapStyle: () => ShareMapStyle | null;
   highlightOffline: (trip: import("../outdoor/offline").TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
@@ -180,6 +184,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       null,
     );
     const sourceRef = useRef<MapSourceLayer | null>(null);
+    const coordinatesRef = useRef<RasterCoordinates | null>(null);
     const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
     latest.current = props;
@@ -303,6 +308,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
         : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
+      const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? 'wgs84';
+      coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
       const source=ids[0] ? map.getSource(ids[0]) : null;
       detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
@@ -353,6 +360,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             ? { source: 'elevation', exaggeration: s.exaggeration }
             : null,
         );
+      syncContourInterval(map, s.contourInterval);
       for (const id of ['contours', 'contour-labels'])
         if (map.getLayer(id))
           map.setLayoutProperty(
@@ -452,6 +460,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        shareMapStyle: () => mapRef.current && loaded.current ? currentShareMapStyle(mapRef.current.getStyle()) : null,
         cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing()} : null; },
         restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
         offlineRegionBounds: (visible = false) => {
@@ -690,7 +699,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           });
           mapRef.current = map;
           rasterLockRef.current = new RasterLevelLock(map);
-          detailPatchRef.current = new RasterDetailPatch(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () =>
             saveLastView({
@@ -714,11 +722,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           const terrainGL = map.getCanvas().getContext('webgl2');
           if (terrainGL) modelMaskRef.current = new TerrainModelMask(terrainGL);
           diagnostics.current = observeMapRendering(map);
+          map.on('webglcontextlost', () => latest.current.onStatus('地图绘制上下文已中断，正在等待恢复；界面仍可操作'));
+          map.on('webglcontextrestored', () => latest.current.onStatus('地图绘制上下文已恢复，正在重新加载地图'));
           sourceRef.current = new MapSourceLayer(map, (text) =>
             latest.current.onSourceStatus?.(text),
           );
           maplibre.addProtocol('shantu-map', sourceRef.current.protocol);
-          releaseSourceProtocol = () => maplibre.removeProtocol('shantu-map');
+          const coordinates = new RasterCoordinates(map, sourceRef.current.protocol);
+          coordinatesRef.current = coordinates;
+          maplibre.addProtocol(coordinates.scheme, coordinates.protocol);
+          detailPatchRef.current = new RasterDetailPatch(map, coordinates.fetch);
+          releaseSourceProtocol = () => { maplibre.removeProtocol('shantu-map'); maplibre.removeProtocol(coordinates.scheme); };
           const preview = document.createElement('div');
           preview.className = 'route-preview-cursor';
           preview.setAttribute('aria-label', '行程预览位置');
@@ -964,7 +978,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             syncSatellite();
             latest.current.onStatus('真实地形 · 点击地图读取海拔');
             try {
-              await addContours(map);
+              await addContours(map, latest.current.settings.contourInterval, () => !disposed);
               if (!disposed) sync();
             } catch {
               if (!disposed)
@@ -1120,6 +1134,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('error', (event) => {
+            if ('sourceId' in event && ['elevation', 'shading'].includes(String(event.sourceId))) {
+              latest.current.onStatus('部分高程瓦片未加载，山体或海拔着色可能缺块；请检查网络或已下载范围');
+              return;
+            }
             if ('sourceId' in event && event.sourceId === 'sentinel') {
               latest.current.onStatus('Sentinel-2 连接失败，请稍后重试或手动选择图源');
               return;
@@ -1136,7 +1154,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               event.sourceId.startsWith('geology-')
             )
               return;
-            console.warn('Map data:', event.error.message);
+            // Provider errors may include signed URLs; keep diagnostics source-based.
+            console.warn('Map data failed:', 'sourceId' in event ? event.sourceId : 'unknown');
             if (!disposed)
               latest.current.onStatus('部分地图数据加载失败，正在等待网络恢复');
           });
@@ -1176,6 +1195,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         drawingRef.current = null;
         sourceRef.current?.clear();
         sourceRef.current = null;
+        coordinatesRef.current?.dispose();
+        coordinatesRef.current = null;
         releaseSourceProtocol?.();
         detailPatchRef.current?.dispose();
         detailPatchRef.current = null;

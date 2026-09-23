@@ -8,6 +8,8 @@ import { type ManualTrack } from '../tracks/drawing.ts';
 import { type Annotation } from '../annotations/data.ts';
 import { type RouteFavorite } from '../navigation/favorites.ts';
 export type Transfer = {
+  /** Preview-only decoding notices, never used to modify existing storage. */
+  importWarnings?: string[];
   format: 'guanyun-backup';
   version: 1;
   tracks: ManualTrack[];

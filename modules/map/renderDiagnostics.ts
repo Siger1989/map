@@ -7,6 +7,7 @@ export function observeMapRendering(map: Map) {
   const sources: Record<string, number> = {};
   const sourceRequests: Record<string, number> = {};
   const sourceErrors: Record<string, number> = {};
+  let lastRender = started, lastMove = started, contextLost = false;
   const recent: { event: string; at: number; source?: string }[] = [];
   const events = [
     'render',
@@ -23,6 +24,10 @@ export function observeMapRendering(map: Map) {
   const listeners = events.map((name) => {
     const listener = (event: { type: string; sourceId?: string }) => {
       counts[name] = (counts[name] ?? 0) + 1;
+      if (name === 'render') lastRender = performance.now();
+      if (name === 'movestart' || name === 'moveend') lastMove = performance.now();
+      if (name === 'webglcontextlost') contextLost = true;
+      if (name === 'webglcontextrestored') contextLost = false;
       if (name === 'sourcedata' && event.sourceId)
         sources[event.sourceId] = (sources[event.sourceId] ?? 0) + 1;
       if (name === 'sourcedataloading' && event.sourceId)
@@ -47,6 +52,21 @@ export function observeMapRendering(map: Map) {
       elapsedMs: Math.round(performance.now() - started),
       counts: { ...counts },
       sources: { ...sources },
+      sourceRequests: { ...sourceRequests },
+      sourceErrors: { ...sourceErrors },
+      rendering: {
+        contextLost,
+        sinceLastRenderMs: Math.round(performance.now() - lastRender),
+        sinceLastMoveMs: Math.round(performance.now() - lastMove),
+        moving: map.isMoving(),
+        tilesLoaded: map.areTilesLoaded(),
+        // A stationary map is allowed to stop rendering; this is evidence, not a freeze verdict.
+      },
+      terrainSources: ['elevation', 'shading'].map(id => ({
+        id, present: Boolean(map.getSource(id)),
+        loaded: Boolean(map.getSource(id)) && map.isSourceLoaded(id),
+        requests: sourceRequests[id] ?? 0, errors: sourceErrors[id] ?? 0,
+      })),
       roads: {
         sourcePresent: Boolean(map.getSource('openmaptiles')),
         sourceLoaded: map.getSource('openmaptiles')

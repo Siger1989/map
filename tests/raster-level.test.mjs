@@ -45,6 +45,22 @@ test('replacement sources keep their own limits and invalid levels unlock safely
   assert.equal(map.getMinZoom(), 0);
   assert.equal(sources.get('custom').maxzoom, 9);
 });
+test('metadata reload does not release a selected raster cap or cause refresh oscillation', () => {
+  const { sources, refresh, lock } = fixture();
+  const raster = sources.get('detail');
+  let ready = false; raster.loaded = () => ready;
+  lock.sync(['detail'], 12);
+  assert.equal(refresh.length, 0);
+  ready = true; lock.sync(['detail'], 12);
+  assert.equal(raster.maxzoom, 12);
+  ready = false;
+  for (let i=0;i<20;i++) lock.sync(['detail'], 12);
+  ready = true; lock.sync(['detail'], 12);
+  assert.equal(raster.maxzoom, 12);
+  assert.equal(refresh.length, 1);
+  lock.sync([], null);
+  assert.equal(raster.maxzoom, 18);
+});
 test('road opacity remains relative to original styles and never compounds or changes routes', () => {
   const paint = new Map();
   const map = { getLayer: () => true, setPaintProperty: (id, property, value) => paint.set(`${id}/${property}`, value), setLayoutProperty: () => {} };

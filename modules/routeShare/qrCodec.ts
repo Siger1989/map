@@ -107,6 +107,8 @@ function encode(value: RouteQr) {
   );
 }
 export function makeRouteQr(data: ShareRoute) {
+  if (data.stops.length < 1 || data.stops.length > 12)
+    throw new Error('路线地点数据无效，无法生成二维码');
   const style = data.track ? normalizeTrackStyle(data.track.style) : undefined;
   const sourceColors = data.track
     ? data.segments.map((line, i) =>
@@ -225,7 +227,7 @@ export function readRouteQr(text: string): RouteQr {
       !v.s.length ||
       v.s.length > 100 ||
       !Array.isArray(v.p) ||
-      v.p.length < 2 ||
+      v.p.length < 1 ||
       v.p.length > 12
     )
       throw 0;

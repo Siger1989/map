@@ -4,9 +4,12 @@ export type PositionFix = {
   accuracy: number;
   timestamp: number;
   source?: 'gps' | 'network';
+  speed?: number;
+  heading?: number;
+  headingAccuracy?: number;
 };
 export type LocationMode = 'auto' | 'network';
-export type DirectionMode = 'free' | 'north' | 'device';
+export type DirectionMode = 'free' | 'north' | 'device' | 'motion';
 export function positionFix(position: GeolocationPosition): PositionFix | null {
   const c: Coordinate = [position.coords.longitude, position.coords.latitude];
   return coordinate(c) &&
@@ -17,6 +20,8 @@ export function positionFix(position: GeolocationPosition): PositionFix | null {
         coordinates: c,
         accuracy: position.coords.accuracy,
         timestamp: position.timestamp,
+        ...(Number.isFinite(position.coords.speed) && position.coords.speed! >= 0 ? { speed: position.coords.speed! } : {}),
+        ...(Number.isFinite(position.coords.heading) && position.coords.heading! >= 0 && position.coords.heading! < 360 ? { heading: position.coords.heading! } : {}),
       }
     : null;
 }

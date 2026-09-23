@@ -7,6 +7,7 @@ import { markerChainage, trackPointAt, type TrackLinePoint } from './linePoint';
 import { trackAlternatives } from './alternatives';
 import { normalizeTrackStyle } from './style';
 import { railFraction } from '../journey/scrub';
+import { resolvedRouteTerminals } from './routeTerminals';
 import './trackPoints.css';
 
 export function TrackJourneyRail({
@@ -23,7 +24,7 @@ export function TrackJourneyRail({
 }: {
   track: Pick<
     ManualTrack,
-    'id' | 'segments' | 'name' | 'style' | 'sourceTrackIds'
+    'id' | 'segments' | 'name' | 'style' | 'sourceTrackIds' | 'routeTerminals' | 'sharedRoute'
   >;
   markers: Annotation[];
   selected: TrackLinePoint | null;
@@ -56,6 +57,10 @@ export function TrackJourneyRail({
         },
       ];
   const active = choices.find((v) => v.id === activeAlternative) ?? choices[0];
+  const [routeStart, routeEnd] = resolvedRouteTerminals(track);
+  const hasDirection = !!routeStart && !!routeEnd;
+  const displayStart = hasDirection && reversed ? routeEnd : routeStart;
+  const displayEnd = hasDirection ? (reversed ? routeStart : routeEnd) : null;
   const linesFor = (id: string) =>
     variants.length
       ? [choices.find((v) => v.id === id)!.coordinates]
@@ -84,9 +89,28 @@ export function TrackJourneyRail({
     : choices;
   const atDistance = (id: string) =>
     id === active.id && selected
-      ? markerChainage(linesFor(id), selected.coordinate, selected.distance)
-          .distance
+      ? (() => {
+          const hit = markerChainage(linesFor(id), selected.coordinate, selected.distance);
+          return hit.offset <= 0.25 ? hit.distance : (positions[id] ?? 0);
+        })()
       : (positions[id] ?? 0);
+  const activeStart = displayStart && markerChainage(linesFor(active.id), displayStart);
+  const activeEnd = displayEnd && markerChainage(linesFor(active.id), displayEnd);
+  const endDistance = activeStart && activeEnd && activeStart.offset <= 0.25 && activeEnd.offset <= 0.25
+    ? formatDistance(Math.abs(activeEnd.distance - activeStart.distance))
+    : '已指定';
+  const selectTerminal = (coordinate: NonNullable<typeof displayStart>) => {
+    const activeHit = markerChainage(linesFor(active.id), coordinate);
+    const sourceHit = markerChainage(track.segments, coordinate);
+    if (activeHit.offset <= 0.25)
+      setPositions((p) => ({ ...p, [active.id]: activeHit.distance }));
+    onPoint({
+      trackId: track.id,
+      coordinate,
+      distance: activeHit.offset <= 0.25 ? activeHit.distance : sourceHit.distance,
+      sourceDistance: sourceHit.distance,
+    });
+  };
   const select = (id: string, fraction: number) => {
     const choice = choices.find((v) => v.id === id)!;
     const distance = Math.max(0, Math.min(1, fraction)) * choice.distance;
@@ -125,13 +149,13 @@ export function TrackJourneyRail({
                 {active.label} ⇄
               </button>
             )}
-            {onReverse && <button className="home-route-direction" aria-label="切换路线方向" aria-pressed={reversed} onClick={onReverse}>⇄ {reversed ? '反向' : '正向'}</button>}
+            {onReverse && <button className="home-route-direction" aria-label="切换路线方向" aria-pressed={hasDirection && reversed} disabled={!hasDirection} title={hasDirection ? undefined : '请先在线路编辑中确定起终点'} onClick={onReverse}>⇄ {hasDirection && reversed ? '反向' : '正向'}</button>}
           </div>
           <div className="home-journey-list">
-            <button onClick={() => select(active.id, reversed ? 1 : 0)}>
+            <button disabled={!displayStart} onClick={() => displayStart && selectTerminal(displayStart)}>
               <i />
-              <span>起点</span>
-              <small>0.0 km</small>
+              <span>{displayStart ? '起点' : '起点未指定'}</span>
+              <small>{displayStart ? '0.0 km' : '编辑路线设置'}</small>
             </button>
             {(reversed ? [...entries].reverse() : entries).map(({ marker, distance }) => (
               <button key={marker.id} onClick={() => onMarker(marker.id)}>
@@ -140,10 +164,10 @@ export function TrackJourneyRail({
                 <small>{formatDistance(reversed ? Math.max(0,active.distance-distance) : distance)}</small>
               </button>
             ))}
-            <button className="home-journey-end" onClick={() => select(active.id, reversed ? 0 : 1)}>
+            <button className="home-journey-end" disabled={!displayEnd} aria-label={displayEnd ? '查看已选终点' : '终点未指定'} onClick={() => displayEnd && selectTerminal(displayEnd)}>
               <i />
-              <span>终点</span>
-              <small>{(active.distance / 1000).toFixed(1)} km</small>
+              <span>{displayEnd ? '终点' : '终点未指定'}</span>
+              <small>{displayEnd ? endDistance : '编辑路线设置'}</small>
             </button>
           </div>
         </>}
@@ -178,7 +202,7 @@ export function TrackJourneyRail({
         </button>
       )}
       <span className="rail-end">
-        终点<small>{(active.distance / 1000).toFixed(1)} km</small>
+        {displayEnd ? '终点' : '终点未指定'}<small>{displayEnd ? endDistance : '—'}</small>
       </span>
       <div
         className="rail-colors"
@@ -288,7 +312,7 @@ export function TrackJourneyRail({
         </div>
       </div>
       <span className="rail-end">
-        起点<small>0 km</small>
+        {displayStart ? '起点' : '起点未指定'}<small>{displayStart ? '0 km' : '—'}</small>
       </span>
       {list && (
         <div className="track-marker-list glass" aria-label="行程标记列表">

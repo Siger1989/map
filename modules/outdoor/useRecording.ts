@@ -39,6 +39,8 @@ declare global {
       setKeepScreenOn?(enabled: boolean): void;
       compassEnabled?(enabled: boolean): void;
       compassState?(): string;
+      motionState?(): string;
+      motionEnabled?(enabled: boolean): void;
     };
   }
 }

@@ -35,7 +35,7 @@ final class AppFiles {
             picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == android.webkit.WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE);
             activity.startActivityForResult(picker, OPEN);
         }
-        catch(Exception e) { if(pending!=null)pending.onReceiveValue(null);pending=null; }
+        catch(Exception e) { if(pending!=null)pending.onReceiveValue(null);pending=null;android.widget.Toast.makeText(activity,"无法打开文件选择器，请从文件管理器用山兔打开路线文件",android.widget.Toast.LENGTH_LONG).show(); }
         return true;
     }
     void save(String name,String mime,String text) {
@@ -91,6 +91,7 @@ final class AppFiles {
                 else { selected=new Uri[count]; for(int i=0;i<count;i++) selected[i]=intent.getClipData().getItemAt(i).getUri(); }
             }
             pending.onReceiveValue(selected);pending=null;
+            if (result==Activity.RESULT_OK && (selected==null || selected.length==0)) android.widget.Toast.makeText(activity,"没有收到所选文件，请保存到本机后重试",android.widget.Toast.LENGTH_LONG).show();
         }
         if (request==SAVE && (output!=null || outputFile!=null)) {
             final byte[] bytes=output;final java.io.File source=outputFile;output=null;outputFile=null;

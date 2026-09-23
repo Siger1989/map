@@ -4,11 +4,10 @@ import type { useRecording } from './useRecording';
 import type { useOffline } from './useOffline';
 import { RecordingPanel } from './RecordingPanel';
 import { OfflinePanel } from './OfflinePanel';
-import { TransferPanel } from '../dataTransfer/TransferPanel';
 import type { ManualTrack } from '../tracks/drawing';
 import { JourneyOverview } from './JourneyOverview';
 import './journeyOverview.css';
-type Tab = 'journey' | 'record' | 'files' | 'offline' | 'photos' | 'return';
+type Tab = 'journey' | 'record' | 'offline' | 'photos' | 'return';
 /** Tab composition only. Each tool owns its transient UI and calls its module's public API. */
 export function OutdoorPanel({
   recorder,
@@ -25,6 +24,7 @@ export function OutdoorPanel({
   tracks, selectedId,
   onMarkCurrent, locationStatus,
   initialTab = 'record',
+  onImport,
 }: {
   recorder: ReturnType<typeof useRecording>;
   offline: ReturnType<typeof useOffline>;
@@ -44,20 +44,21 @@ export function OutdoorPanel({
   onMarkCurrent: () => string;
   locationStatus: string;
   initialTab?: 'journey' | 'record' | 'photos' | 'offline';
+  onImport?: () => void;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
   return (
     <div className="outdoor-panel">
-      {tab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={setTab} /> : <>
+      {tab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={id=>id==='files'?onImport?.():setTab(id)} /> : <>
       {tab !== 'record' && <nav className="route-tabs" aria-label="记录工具">
-        {(['record', 'files', 'offline', 'photos'] as const).map(
+        {(['record', 'offline', 'photos'] as const).map(
           (id, i) => (
             <button
               key={id}
               aria-pressed={tab === id}
               onClick={() => setTab(id)}
             >
-              {['记录', '导入/导出', '离线地图', '照片'][i]}
+              {['记录', '离线地图', '照片'][i]}
             </button>
           ),
         )}
@@ -73,7 +74,6 @@ export function OutdoorPanel({
           locationStatus={locationStatus}
         />
       )}
-      {tab === 'files' && <TransferPanel />}
       {tab === 'offline' && (
         <OfflinePanel
           onDownloadCurrent={onDownloadCurrent} onDownloadRoute={onDownloadRoute}
@@ -88,7 +88,7 @@ export function OutdoorPanel({
       {tab === 'photos' && photos}
       {tab === 'return' && returnPanel}
       {tab === 'record' && <nav className="record-console-tools record-function-group record-group-files" aria-label="记录工具">
-        {(['files', 'offline'] as const).map((id, i) => <button key={id} onClick={() => setTab(id)}>{['导入/导出', '离线地图'][i]}</button>)}
+        <button onClick={() => setTab('offline')}>离线地图</button>
       </nav>}
       </>}
     </div>

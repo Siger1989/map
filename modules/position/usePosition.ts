@@ -247,7 +247,9 @@ export function usePosition() {
     north,
     free,
     device,
+    motion: () => { stopDirection(); setDirection('motion'); },
     stopLocation: () => {
+      if (direction === 'motion') free();
       active.current = false;
       stopWatch();
       setWatching(false);

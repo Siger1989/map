@@ -12,10 +12,14 @@ final class NativeBridge {
     private final MainActivity activity;
     private final AppFiles files;
     private String pending;
+    @JavascriptInterface public String incomingRouteInfo() { return activity.incomingRoutes == null ? "{}" : activity.incomingRoutes.info(); }
+    @JavascriptInterface public String incomingRouteChunk(String token, int offset) { return activity.incomingRoutes == null ? "" : activity.incomingRoutes.chunk(token, offset); }
+    @JavascriptInterface public void incomingRouteDismiss(String token) { if(activity.incomingRoutes != null) activity.incomingRoutes.dismiss(token); }
     final ForegroundLocation position;
     final CompassSensor compass;
+    final MotionSensor motion;
     final ArchiveOutput archive;
-    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity);this.compass=new CompassSensor(activity);this.archive=new ArchiveOutput(activity,files); }
+    NativeBridge(MainActivity activity,AppFiles files) { this.activity=activity;this.files=files;this.position=new ForegroundLocation(activity);this.compass=new CompassSensor(activity);this.motion=new MotionSensor(activity);this.archive=new ArchiveOutput(activity,files); }
     @JavascriptInterface public String archiveBegin(String name, int size) { return archive.transfer.begin(name, size); }
     @JavascriptInterface public String archiveAppend(String token, int offset, String encoded) { return archive.transfer.append(token, offset, encoded); }
     @JavascriptInterface public String archiveFinish(String token, boolean share) { return archive.finish(token, share); }
@@ -24,6 +28,8 @@ final class NativeBridge {
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }
     @JavascriptInterface public void stopLocation() { activity.runOnUiThread(() -> position.stop()); }
     @JavascriptInterface public String compassState() { return compass.snapshot(); }
+    @JavascriptInterface public String motionState() { return motion.snapshot(); }
+    @JavascriptInterface public void motionEnabled(boolean enabled) { activity.runOnUiThread(() -> { if(enabled && activity.trustedForeground()) motion.start(); else motion.stop(); }); }
     @JavascriptInterface public void compassEnabled(boolean enabled) { activity.runOnUiThread(() -> { if(enabled && activity.trustedForeground()) compass.start(); else compass.stop(); }); }
     @JavascriptInterface public void setKeepScreenOn(boolean enabled) {
         activity.runOnUiThread(() -> {

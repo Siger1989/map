@@ -7,7 +7,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
+import { CurrentMapContext } from '@/modules/routeShare/CurrentMapContext';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
+import { readRasterDatums } from '@/modules/mapSources/coordinates';
+import { readContourInterval, saveContourInterval } from '@/modules/terrain/contourInterval';
+import { RouteImportDialog } from '@/modules/dataTransfer/RouteImportDialog';
+import { useIncomingRoute } from '@/modules/dataTransfer/useIncomingRoute';
 import {
   MapSourcesPanel,
   type MapSourcesNavigation,
@@ -83,9 +88,13 @@ import {
   toggleEditBranch,
   undoRouteEdit,
   styleRouteEdit,
+  editSelectionDetails,
+  addEditMarker,
+  setEditEnd,
 } from '@/modules/tracks/routeEdit';
 import { trackAlternatives } from '@/modules/tracks/alternatives';
 import { equalCoordinate } from '@/modules/tracks/editing';
+import { moveSelectedPoints } from '@/modules/tracks/displayColors';
 import type { ManualTrack } from '@/modules/tracks/drawing';
 
 import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
@@ -97,6 +106,7 @@ import {
   RouteWeatherSettings,
 } from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
+import { useMotionHeading } from '@/modules/position/useMotionHeading';
 import { recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import { useRouteDisplay } from '@/modules/routeDisplay/useRouteDisplay';
@@ -190,10 +200,12 @@ export default function Home() {
   const areas = useAreas();
   const [areaEditing, setAreaEditing] = useState(false);
   const [modelTerrainStatus, setModelTerrainStatus] = useState('');
-  const [layers, setLayers] = useState<LayerSettings>({
+  const [layers, setLayers] = useState<LayerSettings>(() => ({
     ...DEFAULT_LAYERS,
     satellite: true,
-  });
+    rasterDatums: readRasterDatums(),
+    contourInterval: readContourInterval(),
+  }));
   const [geology, setGeology] = useState(INITIAL_GEOLOGY);
   const [point, setPoint] = useState<Point>({
     lng: INITIAL_VIEW.center[0],
@@ -231,6 +243,8 @@ export default function Home() {
   const markerCamera = useMarkerCamera(photos.save);
   const measurement = useMeasurement();
   const [routeNodeBox, setRouteNodeBox] = useState(false);
+  const [routeNodeBoxMode, setRouteNodeBoxMode] = useState<'add' | 'subtract'>('add');
+  const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
   const mapSources = useMapSources(false);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
@@ -246,6 +260,8 @@ export default function Home() {
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate }; markerId?: string } | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
+  const [routeImportOpen, setRouteImportOpen] = useState(false);
+  const incomingRoute = useIncomingRoute();
   const shareTrackById = (id: string) => {
     const track = tracks.saved.find((t) => t.id === id);
     if (track) {
@@ -266,6 +282,10 @@ export default function Home() {
   );
   const selectedPhoto = photos.items.find((p) => p.id === photos.selected);
   const editor = useRouteEditor();
+  useEffect(() => {
+    const keys = new Set(editor.session?.track.segments.flat().map(p => p.join(',')) ?? []);
+    setRouteNodeSelection(old => old.filter(p => keys.has(p.join(','))));
+  }, [editor.session?.track]);
   const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker'>(
     'card',
   );
@@ -313,7 +333,6 @@ export default function Home() {
   useEffect(() => {
     if (panel !== 'favorites') {
       setCollectionOutputKey(null);
-      setCollectionSelectedKeys([]);
     }
     if (panel !== 'outdoor') { setOutdoorPhotos(false); setOutdoorRecording(false); }
   }, [panel]);
@@ -401,6 +420,8 @@ export default function Home() {
           (!position.fix || recordingFix.timestamp >= position.fix.timestamp)
         ? recordingFix
         : position.fix;
+  const motionHeading = useMotionHeading(cameraFix, position.direction === 'motion');
+  const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
   const follow = useFollowPosition({
     fix: cameraFix,
     phase: recorder.record.phase,
@@ -418,12 +439,12 @@ export default function Home() {
     onFollow: (coordinates, fix) =>
       map.current?.followPosition(
         coordinates,
-        position.direction !== 'device',
+        position.direction !== 'device' && position.direction !== 'motion',
         fix.source === 'network' ? positionZoom(fix) : undefined,
       ) ?? false,
   });
   const focusLock = useMapFocusLock({ map: () => map.current, following:follow.following, guiding:guidance.active, direction:position.direction,
-    fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device });
+    fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device, motion:position.motion });
   useScreenAwake(guidance.active || recorder.record.phase === 'recording' || focusLock.locked);
   const guidanceOverlay = useMemo(
     () =>
@@ -700,6 +721,7 @@ export default function Home() {
       plannedEdit.current = null;
     }
     setRouteNodeBox(false);
+    setRouteNodeSelection([]);
     editor.close();
     setUnsavedExit(false);
     setRouteWindow('card');
@@ -803,12 +825,12 @@ export default function Home() {
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
   useEffect(() => {
     if (
-      position.direction === 'device' &&
-      position.heading !== null &&
-      !tracks.drawing
+      (position.direction === 'device' || position.direction === 'motion') &&
+      directionHeading !== null &&
+      !follow.blocked
     )
-      map.current?.view(view.pitch, position.heading, false);
-  }, [position.direction, position.heading, tracks.drawing]);
+      map.current?.view(view.pitch, directionHeading, false);
+  }, [position.direction, directionHeading, follow.blocked]);
   const {
     savedNavigationError,
     setSavedNavigationError,
@@ -864,6 +886,7 @@ export default function Home() {
         ],
         draft: tracks.draft,
         session: editor.session,
+        nodeSelection: editor.session ? { trackId: editor.session.track.id, points: routeNodeSelection } : undefined,
         recording: liveRecording,
         visible: tracks.visible || recorder.record.phase !== 'idle',
         draftEdgeColors: tracks.edgeColors,
@@ -886,6 +909,7 @@ export default function Home() {
     [
       liveRecording,
       editor.session,
+      routeNodeSelection,
       activeAlternative,
       linePoint,
       panel,
@@ -911,8 +935,10 @@ export default function Home() {
     railTrack?.id ?? null,
     follow.blocked || !!editor.session || measurement.active || survey.active,
   );
-  const update = (patch: Partial<LayerSettings>) =>
+  const update = (patch: Partial<LayerSettings>) => {
+    if (patch.contourInterval !== undefined) saveContourInterval(patch.contourInterval);
     setLayers((current) => applyLayerPatch(current, patch));
+  };
   const openOfflineMap = useOfflineMapMode(update, mapSources.select);
   useMapTools({
     read: () => ({
@@ -998,6 +1024,7 @@ export default function Home() {
   );
   return (
     <TextSuggestions.Provider value={suggestionValues}>
+      <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
       <main
         className="observatory home-map"
         data-rally={rallyMode && !!navigation.route}
@@ -1201,7 +1228,7 @@ export default function Home() {
           position={displayedFix}
           onBrowse={follow.pause}
           onManualRotate={position.free}
-          annotations={displayedAnnotations}
+          annotations={[...displayedAnnotations, ...(editor.session?.pendingMarkers ?? [])]}
           roadSnapping={tracks.roadSnapping}
           nodeSnapping={tracks.snapping}
           riverSnapping={tracks.riverSnapping}
@@ -1238,10 +1265,12 @@ export default function Home() {
                       : tracks.saved.find((t) => t.id === node.trackId),
                   ),
                 );
-              else if (node.trackId === editor.session.track.id)
+              else if (node.trackId === editor.session.track.id) {
+                setRouteNodeSelection([node.coordinate]);
                 editor.change((value) =>
                   selectEditNode(value, node.coordinate),
                 );
+              }
               return;
             }
             selectLinePoint({
@@ -1277,7 +1306,7 @@ export default function Home() {
           onDragPreview={setFeatureMove}
           onDragCommit={({ target, coordinate, snappedNode }) => {
             if (target.kind === 'track' && editor.session) {
-              editor.change((value) =>
+              const moved = editor.change((value) =>
                 moveEditNode(
                   value,
                   target.node.coordinate,
@@ -1287,6 +1316,7 @@ export default function Home() {
                     : undefined,
                 ),
               );
+              if (moved) setRouteNodeSelection(points => moveSelectedPoints(points,target.node.coordinate,coordinate));
               setFeatureMove(null);
             } else if (target.kind === 'track') {
               if (tracks.moveNode(target.node, coordinate))
@@ -1538,25 +1568,36 @@ export default function Home() {
             onSave={() => saveEditor()}
             onSaveCopy={() => saveEditor(true)}
             onAdd={addEditPoint}
-            onRemove={() => editor.change(removeEditNode)}
-            onBoxSelect={() => {
+            selectedPoints={routeNodeSelection}
+            boxMode={routeNodeBox ? routeNodeBoxMode : null}
+            onSelectionDetails={detail => {editor.change(session => editSelectionDetails(session, routeNodeSelection, detail)); routeDisplay.update({mode:'original'});}}
+            onPointMarker={input => routeNodeSelection.length === 1 && editor.change(session => addEditMarker(session,routeNodeSelection[0],input,crypto.randomUUID(),map.current?.groundElevation(routeNodeSelection[0]) ?? null))}
+            onSetEnd={() => {if(routeNodeSelection.length===1)editor.change(session=>setEditEnd(session,routeNodeSelection[0]));}}
+            onClearSelection={() => {setRouteNodeSelection([]);editor.change(session => ({...session, selected:null}));}}
+            onRemove={() => {
+              if (!routeNodeSelection.length) editor.change(removeEditNode);
+              else if (editor.change(session => removeEditNodes(session, routeNodeSelection))) setRouteNodeSelection([]);
+            }}
+            onSelectionMode={mode => {
               map.current?.stop();
-              setRouteNodeBox(true);
+              if (mode) setRouteNodeBoxMode(mode);
+              setRouteNodeBox(mode !== null);
             }}
             onBranch={() => editor.change(toggleEditBranch)}
             onUndo={() => editor.change(undoRouteEdit)}
             onStyle={(style) => { editor.change((value) => styleRouteEdit(value, style)); routeDisplay.update({ mode: 'original' }); }}
           />
         )}
-        {editor.session && routeNodeBox && (
+        {editor.session && (routeNodeBox || !!routeNodeSelection.length) && (
           <TrackNodeBoxSelect
+            active={routeNodeBox}
+            mode={routeNodeBoxMode}
+            pointSize={normalizeTrackStyle(editor.session.track.style).pointSize ?? 8}
             points={editor.session.track.segments.flat()}
-            project={(point) => map.current?.toScreen(point) ?? null}
-            onCancel={() => setRouteNodeBox(false)}
-            onDelete={(points) => {
-              if (editor.change((session) => removeEditNodes(session, points)))
-                setRouteNodeBox(false);
-            }}
+            selected={routeNodeSelection}
+            project={(point) => map.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point,featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
+            onChange={points => {setRouteNodeSelection(points);editor.change(session => ({...session,selected:points.length === 1 ? points[0] : null}));}}
+            onExit={() => setRouteNodeBox(false)}
           />
         )}
         {editor.session && unsavedExit && (
@@ -2154,11 +2195,11 @@ export default function Home() {
               measurement.saved.items,
             )}
             project={(p) => map.current?.toScreen(p) ?? null}
-            onCancel={() => setBoxSelecting(false)}
-            onDone={(keys) => {
+            selected={collectionSelectedKeys}
+            onChange={setCollectionSelectedKeys}
+            onExit={() => {
               setBoxSelecting(false);
               setCollectionOutputKey(null);
-              setCollectionSelectedKeys(keys);
               setPanel('favorites');
             }}
           />
@@ -2241,10 +2282,13 @@ export default function Home() {
             if (follow.following) { follow.pause(); map.current?.stop(); }
             else { follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
           }}
-          onDirection={() => {
-            const direction=position.direction === 'device' ? 'free' : 'device';
+          directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
+          onDirection={direction => {
             focusLock.adoptMode(follow.following,direction);
-            if(direction==='device') void position.device(); else position.free();
+            if(direction==='device') void position.device();
+            else if(direction==='motion') { position.motion(); if(recorder.record.phase !== 'recording')position.locate(); }
+            else if(direction==='north') { position.north(); map.current?.north(); }
+            else position.free();
           }}
           following={follow.following}
           followBlocked={follow.blocked}
@@ -2479,7 +2523,7 @@ export default function Home() {
           {panel === 'sources' && (
             <MapSourcesPanel
               settings={layers}
-              onSettings={patch=>{mapSources.select('');update(patch);}}
+              onSettings={patch=>{if (!patch.rasterDatums) mapSources.select('');update(patch);}}
               onOffline={()=>beginMapDownload('当前地图区域')}
               onRouteQr={(text) => {
                 setPanel(null);
@@ -2508,6 +2552,7 @@ export default function Home() {
           )}
           {panel === 'outdoor' && (
             <OutdoorPanel
+              onImport={() => setRouteImportOpen(true)}
               key={outdoorOffline?'offline':outdoorPhotos?'photos':'record'}
               onDownloadCurrent={()=>beginMapDownload('当前地图区域')}
               onDownloadRoute={()=>beginMapDownload(selectedTrack?.name??'当前路线',{kind:'route',segments:selectedTrack?.segments??(navigation.route?[navigation.route.coordinates]:[[[point.lng,point.lat]]]),bufferKm:10})}
@@ -2604,6 +2649,7 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              onImport={() => setRouteImportOpen(true)}
               offlineCount={offline.packages.length}
               offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
@@ -2614,8 +2660,8 @@ export default function Home() {
                 if (entry.kind === 'track') tracks.select(entry.track.id);
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
-              onClose={() => { setCollectionSelectedKeys([]); setPanel(null); }}
-              onReselect={() => { setPanel(null); setCollectionSelectedKeys([]); setBoxSelecting(true); }}
+              onClose={() => { setPanel(null); }}
+              onReselect={keys => { setPanel(null); setCollectionSelectedKeys(keys); setBoxSelecting(true); }}
               initialOutputKey={collectionOutputKey}
               initialSelectedKeys={collectionSelectedKeys}
               photos={photos.items}
@@ -2728,6 +2774,7 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
+              onImport={() => setRouteImportOpen(true)}
               onCache={()=>{if(navigation.route)beginMapDownload('规划路线',{kind:'route',segments:[navigation.route.coordinates],bufferKm:10});}}
               onEditPoints={editPlannedPoints}
               onCancel={() => { guidance.stop(); navigation.clear(); setRallyMode(false); setPanel(null); }}
@@ -2970,6 +3017,27 @@ export default function Home() {
             onClose={() => setShareTarget(null)}
           />
         )}
+        {(routeImportOpen || incomingRoute.incoming) && <RouteImportDialog
+          files={incomingRoute.incoming?.files}
+          error={incomingRoute.incoming?.error}
+          status={incomingRoute.incoming?.status}
+          onClose={() => { setRouteImportOpen(false); incomingRoute.dismiss(); }}
+          onImported={data => {
+            setRouteImportOpen(false); incomingRoute.dismiss();
+            follow.pause(); position.free();
+            const track = data.tracks[0];
+            if (track) {
+              tracks.pause(); tracks.select(track.id); tracks.setVisible(true);
+              setActiveTrackNode(null); annotations.select(null); areas.select(null);
+              map.current?.fitRoute(track.segments.flat());
+              setPanel(null);
+            } else {
+              const points = data.favorites[0]?.route.coordinates ?? [...data.annotations.map(a=>a.coordinates), ...(data.areas??[]).flatMap(a=>a.boundary)];
+              if (points.length) map.current?.fitRoute(points);
+              setPanel('favorites');
+            }
+            setMapStatus(`已导入 ${data.tracks.length} 条轨迹、${data.annotations.length} 个标记、${data.areas?.length??0} 个区域；可在收藏查看`);
+          }} />}
         {routeQr !== null && (
           <RouteQrReader
             initial={routeQr}
@@ -2988,6 +3056,7 @@ export default function Home() {
           />
         )}
       </main>
+      </CurrentMapContext.Provider>
     </TextSuggestions.Provider>
   );
 }

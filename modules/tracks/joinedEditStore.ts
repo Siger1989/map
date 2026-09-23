@@ -38,6 +38,10 @@ export function storeJoinedRouteEdit(
         : a;
     }),
   };
+  if (session.pendingMarkers?.length) {
+    if (result.removed) throw new Error('路线已清空，无法绑定新增标记；请撤销删除或撤销新增标记');
+    next.annotations.push(...session.pendingMarkers.map(marker => ({...marker,trackAnchor:{trackId:result.track.id,distance:markerChainage(result.track.segments,marker.coordinates).distance}})));
+  }
   if (next.collections)
     next.collections = {
       ...next.collections,

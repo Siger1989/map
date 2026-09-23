@@ -1,112 +1,19 @@
-import { useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import type { ScreenPoint } from '../tracks/drawing';
 import type { CatalogEntry } from './catalog';
-import { selectionBox, selectInBox, type SelectionBox } from './boxSelection';
-import './boxSelection.css';
-export function MapBoxSelect({
-  entries,
-  project,
-  onDone,
-  onCancel,
-}: {
-  entries: CatalogEntry[];
-  project: (p: Coordinate) => ScreenPoint | null;
-  onDone: (keys: string[]) => void;
-  onCancel: () => void;
+import { selectInBox, updateBoxSelection } from './boxSelection';
+import { BoxSelectOverlay } from './BoxSelectOverlay';
+
+export function MapBoxSelect({ entries, project, selected, onChange, onExit }: {
+  entries: CatalogEntry[]; project: (p: Coordinate) => ScreenPoint | null;
+  selected: string[]; onChange: (keys: string[]) => void; onExit: () => void;
 }) {
-  const start = useRef<ScreenPoint | null>(null),
-    [box, setBox] = useState<SelectionBox | null>(null),
-    [keys, setKeys] = useState<string[]>([]);
-  return (
-    <div className="map-box-selection" aria-label="地图框选">
-      <div
-        className="map-box-surface"
-        onPointerDown={(e) => {
-          if (e.button !== 0 || !e.isPrimary) return;
-          const r = e.currentTarget.getBoundingClientRect();
-          start.current = { x: e.clientX - r.left, y: e.clientY - r.top };
-          setBox(null);
-          e.currentTarget.setPointerCapture(e.pointerId);
-        }}
-        onPointerMove={(e) => {
-          if (!start.current || !e.isPrimary) return;
-          const r = e.currentTarget.getBoundingClientRect();
-          setBox(
-            selectionBox(start.current, {
-              x: e.clientX - r.left,
-              y: e.clientY - r.top,
-            }),
-          );
-        }}
-        onPointerUp={(e) => {
-          if (!start.current || !e.isPrimary) return;
-          const r = e.currentTarget.getBoundingClientRect(),
-            next = selectionBox(start.current, {
-              x: e.clientX - r.left,
-              y: e.clientY - r.top,
-            });
-          start.current = null;
-          if (e.currentTarget.hasPointerCapture(e.pointerId))
-            e.currentTarget.releasePointerCapture(e.pointerId);
-          if (next.right - next.left < 5 || next.bottom - next.top < 5) return;
-          setBox(next);
-          setKeys((old) => [
-            ...new Set([...old, ...selectInBox(entries, next, project)]),
-          ]);
-        }}
-        onPointerCancel={() => {
-          start.current = null;
-          setBox(null);
-        }}
-      >
-        {box && (
-          <div
-            className="map-box-rectangle"
-            style={{
-              left: box.left,
-              top: box.top,
-              width: box.right - box.left,
-              height: box.bottom - box.top,
-            }}
-          />
-        )}
-        {entries
-          .filter((e) => keys.includes(e.key))
-          .map((e) => {
-            const p = project(e.coordinates);
-            return (
-              p && (
-                <span
-                  className="map-box-hit"
-                  key={e.key}
-                  style={{ left: p.x, top: p.y }}
-                >
-                  ✓
-                </span>
-              )
-            );
-          })}
-      </div>
-      <div className="map-box-tools">
-        <strong>框选对象 · 已选 {keys.length} 项</strong>
-        <small>{entries.length ? '拖框可连续加选；路线按整条选中' : '地图上没有可框选的已保存对象'}</small>
-        <div>
-          <button onClick={onCancel}>退出框选</button>
-          <button
-            disabled={!keys.length}
-            onClick={() => {
-              setKeys([]);
-              setBox(null);
-            }}
-          >
-            清空
-          </button>
-          <button disabled={!keys.length} onClick={() => onDone(keys)}>
-            查看已选
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return <BoxSelectOverlay label="地图框选" count={selected.length}
+    onBox={(box, mode) => onChange(updateBoxSelection(selected, selectInBox(entries, box, project), mode, k => k))}
+    onClear={() => onChange([])} onExit={onExit}>
+    {entries.filter(e => selected.includes(e.key)).map(e => {
+      const p = project(e.coordinates);
+      return p && <span className="map-box-hit" key={e.key} style={{ left: p.x, top: p.y }}>✓</span>;
+    })}
+  </BoxSelectOverlay>;
 }

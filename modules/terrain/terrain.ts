@@ -1,4 +1,5 @@
-import type { Map, StyleSpecification } from 'maplibre-gl';
+import type { Map, StyleSpecification, VectorTileSource } from 'maplibre-gl';
+import { contourInterval, contourTileOptions } from './contourInterval';
 import { elevationExpression, contourColorExpression } from './elevationColors';
 import {
   basemapConfiguration,
@@ -152,36 +153,50 @@ export function baseStyle(): StyleSpecification {
     ],
   };
 }
-export async function addContours(map: Map) {
+const contourStates = new WeakMap<Map, { interval: number; url: (value: number) => string }>();
+let contourProtocolSequence = 0;
+// One bounded DEM/contour cache and shared worker across quality changes and map remounts.
+let sharedContourDem: InstanceType<(typeof import('maplibre-contour'))['default']['DemSource']> | undefined;
+export function syncContourInterval(map: Map, value: unknown) {
+  const state = contourStates.get(map), interval = contourInterval(value);
+  if (!state || state.interval === interval) return;
+  const source = map.getSource('contour-lines') as VectorTileSource | undefined;
+  if (!source) return;
+  source.setTiles([state.url(interval)]);
+  state.interval = interval;
+}
+export async function addContours(map: Map, interval: unknown = 30, alive = () => true) {
   const [{ default: contour }, maplibre] = await Promise.all([
     import('maplibre-contour'),
     import('maplibre-gl'),
   ]);
-  if (map.getSource('contour-lines')) return;
-  const dem = new contour.DemSource({
+  if (!alive() || map.getSource('contour-lines')) return;
+  const dem = sharedContourDem ??= new contour.DemSource({
     url: window.location.origin + TERRAIN_URL,
     encoding: 'terrarium',
     maxzoom: TERRAIN_MAXZOOM,
     worker: true,
-    cacheSize: 60,
+    cacheSize: 40,
     timeoutMs: 15000,
   });
-  dem.setupMaplibre(maplibre);
+  const protocol = `shantu-contours-${++contourProtocolSequence}`;
+  const url = (value: number) => `${protocol}://{z}/{x}/{y}?interval=${value}`;
+  maplibre.addProtocol(protocol, async (request, abort) => {
+    const match = /:\/\/(\d+)\/(\d+)\/(\d+)\?interval=(30|50|100|200)$/.exec(request.url);
+    if (!match) throw new Error('Invalid contour tile');
+    const [, zs, xs, ys, quality] = match;
+    const z = Number(zs), x = Number(xs), y = Number(ys);
+    if (z > 15 || x >= 2 ** z || y >= 2 ** z) throw new Error('Invalid contour coordinates');
+    const result = await dem.manager.fetchContourTile(z, x, y, contourTileOptions(Number(quality), z), abort);
+    return { data: result.arrayBuffer };
+  });
+  const state = { interval: contourInterval(interval), url };
+  contourStates.set(map, state);
+  map.once('remove', () => { contourStates.delete(map); maplibre.removeProtocol(protocol); });
   map.addSource('contour-lines', {
     type: 'vector',
-    tiles: [
-      dem.contourProtocolUrl({
-        thresholds: {
-          7: [500, 1000],
-          10: [200, 1000],
-          12: [100, 500],
-          14: [50, 200],
-        },
-        elevationKey: 'ele',
-        levelKey: 'level',
-        contourLayer: 'contours',
-      }),
-    ],
+    tiles: [url(state.interval)],
+    minzoom: 7,
     maxzoom: 15,
   });
   map.addLayer({
@@ -190,6 +205,7 @@ export async function addContours(map: Map) {
     source: 'contour-lines',
     'source-layer': 'contours',
     minzoom: 7,
+    layout: { visibility: 'none' },
     paint: {
       'line-color': contourColorExpression,
       'line-opacity': 0.8,
@@ -202,13 +218,15 @@ export async function addContours(map: Map) {
     source: 'contour-lines',
     'source-layer': 'contours',
     minzoom: 7,
-    filter: ['>', ['get', 'level'], 0],
     layout: {
+      visibility: 'none',
       'symbol-placement': 'line',
       'text-field': ['concat', ['to-string', ['get', 'ele']], ' m'],
       'text-font': ['Noto Sans Regular'],
-      'text-size': 12,
-      'symbol-spacing': 280,
+      'text-size': 11,
+      'symbol-spacing': 210,
+      'text-padding': 5,
+      'text-keep-upright': true,
     },
     paint: {
       'text-color': '#fff1c9',

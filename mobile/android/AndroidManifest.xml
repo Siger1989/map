@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="63" android:versionName="0.2.56-test">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="64" android:versionName="0.2.57-test">
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -19,11 +19,46 @@
     <provider android:name="com.guanyun.weather.PhotoShareProvider" android:authorities="com.guanyun.weather.preview.photos" android:exported="false" android:grantUriPermissions="true" />
     <provider android:name="com.guanyun.weather.CameraCaptureProvider" android:authorities="com.guanyun.weather.preview.capture" android:exported="false" android:grantUriPermissions="true" />
     <provider android:name="com.guanyun.weather.RouteShareProvider" android:authorities="com.guanyun.weather.preview.routes" android:exported="false" android:grantUriPermissions="true" />
-    <activity android:name="com.guanyun.weather.MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize"
+    <activity android:name="com.guanyun.weather.MainActivity" android:exported="true" android:windowSoftInputMode="adjustResize" android:launchMode="singleTask"
       android:configChanges="orientation|screenSize|keyboardHidden|screenLayout|smallestScreenSize|uiMode|density">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="application/geo+json" />
+        <data android:mimeType="application/vnd.garmin.tcx+xml" />
+        <data android:mimeType="application/vnd.ant.fit" />
+        <data android:mimeType="text/csv" />
+        <data android:mimeType="text/tab-separated-values" />
+        <data android:scheme="content" />
+        <data android:mimeType="application/gpx+xml" />
+        <data android:mimeType="application/vnd.google-earth.kml+xml" />
+        <data android:mimeType="application/vnd.google-earth.kmz" />
+        <data android:mimeType="application/json" />
+        <data android:mimeType="application/xml" />
+        <data android:mimeType="text/xml" />
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="application/octet-stream" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.SEND" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <data android:mimeType="application/geo+json" />
+        <data android:mimeType="application/vnd.garmin.tcx+xml" />
+        <data android:mimeType="application/vnd.ant.fit" />
+        <data android:mimeType="text/csv" />
+        <data android:mimeType="text/tab-separated-values" />
+        <data android:mimeType="application/gpx+xml" />
+        <data android:mimeType="application/vnd.google-earth.kml+xml" />
+        <data android:mimeType="application/vnd.google-earth.kmz" />
+        <data android:mimeType="application/json" />
+        <data android:mimeType="application/xml" />
+        <data android:mimeType="text/xml" />
+        <data android:mimeType="text/plain" />
+        <data android:mimeType="application/octet-stream" />
       </intent-filter>
     </activity>
   </application>

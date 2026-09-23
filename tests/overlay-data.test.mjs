@@ -50,6 +50,18 @@ test('line selection stays above route strokes across later overlay updates', ()
   assert.equal(moves, count);
 });
 
+test('selected edge bright border is between the route outline and original line color', () => {
+  const ids = ['manual-track-line','manual-track-outline','manual-track-selection-edge'];
+  const source = { setData() {} };
+  const map = {
+    getSource: () => source,
+    getStyle: () => ({ layers: ids.map(id => ({ id })) }),
+    moveLayer(id) { ids.splice(ids.indexOf(id), 1); ids.push(id); },
+  };
+  syncOverlayData(map, 'manual-track-selection-edge', { type: 'FeatureCollection', features: [] });
+  assert.deepEqual(ids, ['manual-track-outline','manual-track-selection-edge','manual-track-line']);
+});
+
 test('late route creation restores consistent overlay ordering once', () => {
   const ids = ['main-roads', 'position-dot', 'manual-track-line', 'route-path'];
   let moves = 0;

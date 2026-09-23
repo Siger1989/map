@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { ManualTrack } from '../tracks/drawing';
+import { resolvedRouteTerminals, routeHasFork, type ManualTrack } from '../tracks/drawing';
 import { useDockClearance } from '../tracks/useDockClearance';
 import { useTrackElevation } from '../routeAnalysis/useTrackElevation';
 import { trackHeights } from '../routeAnalysis/trackElevation';
@@ -11,7 +11,7 @@ import { RouteColorKey } from './RouteColorKey';
 import type { TrackLinePoint } from '../tracks/linePoint';
 import { routePointMetrics } from '../routeAnalysis/pointMetrics';
 import { analyzeRoute } from '../routeAnalysis/metrics';
-import { formatDistance } from '../navigation/types';
+import { formatDistance, metresBetween } from '../navigation/types';
 import './selectedRouteInfo.css';
 
 /** Selected-route totals use the same switches as navigation, without claiming live progress. */
@@ -39,10 +39,15 @@ function SelectedRouteInfoBody({ track, preferences, mode, reversed, point }: {
   const total = samples.at(-1)?.distance ?? 0;
   const selection = selected ? {distance:Math.max(0,Math.min(total,reversed?total-selected.profileDistance:selected.profileDistance)),elevation:selected.elevation} : null;
   const selectedSlope = selected?.slopeDegrees == null ? null : selected.slopeDegrees*(reversed?-1:1);
+  const [routeStart, routeEnd] = resolvedRouteTerminals(track);
+  const first = track.segments[0]?.[0], last = track.segments.at(-1)?.at(-1);
+  const profileHasTerminals = !!routeStart && !!routeEnd && !!first && !!last &&
+    !routeHasFork(track.segments) &&
+    metresBetween(routeStart, first) <= 1 && metresBetween(routeEnd, last) <= 1;
   const value = (n: number | null) => n === null ? '—' : `${Math.round(n)}m`;
   const status = elevation.loading ? '高程读取中' : elevation.elevationError ? '部分高程缺测' : elevation.estimated ? '含地形估算' : '轨迹高程';
   return <section ref={dock} className="selected-route-info" aria-label="所选路线底部信息">
-    {preferences.profile && <RouteElevationProfile samples={samples} scale={scale} selection={selection} status={status} compact endpoints />}
+    {preferences.profile && <RouteElevationProfile samples={samples} scale={scale} selection={selection} status={status} compact endpoints={profileHasTerminals} />}
     {selected && (preferences.profile || preferences.statistics) && <div className="selected-route-point" aria-label="剖面所选点信息">
       <span>选中 · {formatDistance(reversed?Math.max(0,analysis.distance-selected.distance):selected.distance)}</span>
       <span>海拔 <b>{value(selected.elevation)}</b></span>

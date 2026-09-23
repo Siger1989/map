@@ -1,0 +1,53 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>山兔坐标校正定向检查</title>
+<button id="run">运行坐标校正检查</button><pre id="result">等待检查</pre>
+<script type="module">
+import { RasterCoordinates } from '../modules/mapSources/RasterCoordinates.ts';
+import { fromWgs84, pixelLngLat, worldPixel } from '../modules/mapSources/coordinates.ts';
+document.querySelector('#run').onclick = async () => {
+  const result = document.querySelector('#result'); result.textContent = '运行中';
+  let coordinates;
+  try {
+    const z=12, [px,py]=worldPixel(103.63,31.74,256*2**z), x=Math.floor(px/256), y=Math.floor(py/256);
+    const source={type:'raster', id:'fixture', tileSize:256, scheme:'xyz', tiles:['shantu-map://fixture/{z}/{x}/{y}'], setTiles(t){this.tiles=t;}};
+    let requests=0;
+    const component=(v)=>((v%251)+251)%251;
+    const raw = async ({url}) => {
+      requests++;
+      const [,tx,ty]=url.match(/\/(\d+)\/(\d+)$/).map(Number);
+      const canvas=new OffscreenCanvas(256,256),ctx=canvas.getContext('2d'),img=ctx.createImageData(256,256);
+      for(let row=0;row<256;row++)for(let col=0;col<256;col++) {
+        const i=(row*256+col)*4;img.data.set([component(tx*256+col),component(ty*256+row),97,255],i);
+      }
+      ctx.putImageData(img,0,0); return {data:await(await canvas.convertToBlob()).arrayBuffer()};
+    };
+    coordinates=new RasterCoordinates({getSource:()=>source},raw);
+    const lines=[];
+    for(const datum of ['gcj02','bd09']) {
+      coordinates.sync(['fixture'],datum);
+      const url=source.tiles[0].replace('{z}',z).replace('{x}',x).replace('{y}',y);
+      const data=await coordinates.protocol({url,type:'arrayBuffer'},new AbortController());
+      const count=requests;
+      await coordinates.protocol({url,type:'arrayBuffer'},new AbortController());
+      if(requests!==count)throw Error('输出缓存未复用');
+      const bitmap=await createImageBitmap(new Blob([data.data]));
+      const c=new OffscreenCanvas(256,256),ctx=c.getContext('2d');ctx.drawImage(bitmap,0,0);bitmap.close();
+      let checked=0,maxError=0;
+      for(const row of [30,90,150,210])for(const col of [30,90,150,210]) {
+        const ll=pixelLngLat(x*256+col+0.5,y*256+row+0.5,256*2**z);
+        const p=worldPixel(...fromWgs84(...ll,datum),256*2**z).map(v=>v-0.5);
+        if(p.some(v=>component(Math.floor(v))===250))continue;
+        const sample=ctx.getImageData(col,row,1,1).data;
+        const error=Math.max(Math.abs(sample[0]-component(p[0])),Math.abs(sample[1]-component(p[1])));
+        if(error>2||sample[2]!==97||sample[3]!==255)throw Error(`像素校正失败 ${datum} ${error}`);
+        checked++;maxError=Math.max(maxError,error);
+      }
+      lines.push(`PASS ${datum}: ${checked} 个校正位置, 最大像素色差 ${maxError.toFixed(2)}, 缓存复用`);
+    }
+    coordinates.sync(['fixture'],'wgs84');
+    if(!source.tiles[0].startsWith('shantu-map://'))throw Error('恢复原图源失败');
+    lines.push('PASS WGS84 恢复原图源');
+    result.textContent=lines.join('\n');
+  } catch(error) {result.textContent='FAIL '+error.message;}
+  finally {coordinates?.dispose();}
+};
+</script></html>
