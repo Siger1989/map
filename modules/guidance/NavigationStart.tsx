@@ -15,6 +15,7 @@ import './navigationStart.css';
 import type { LayerSettings } from '../map/types';
 const sessions=new Map<string,Record<string,RouteFavorite['route']>>();
 import { orientTrack } from './direction';
+import { reverseRoadRoute } from './reverseRoadRoute';
 import { networkEndpoints, vertexKey } from './network';
 import type { RoutePlace } from '../navigation/types';
 export function NavigationStart({
@@ -97,8 +98,17 @@ export function NavigationStart({
   useEffect(() => () => request.current?.abort(), []);
   const prepared = useMemo(() => {
     try {
-      const original=source.route.geometryKind==='track' ? orientTrack(source,startPlace,endPlace,source.route.mode,reversed).route : source.route;
-      return {route:routeChoice==='original'?original:plans[previewKey]??original,error:routeChoice==='original' && source.route.geometryKind!=='track' && reversed?'道路原路线不能直接反向，请选择方式后规划。':''};
+      const original =
+        source.route.geometryKind === 'track'
+          ? orientTrack(source, startPlace, endPlace, source.route.mode, reversed)
+              .route
+          : reversed
+            ? reverseRoadRoute(source.route)
+            : source.route;
+      return {
+        route: routeChoice === 'original' ? original : plans[previewKey] ?? original,
+        error: '',
+      };
     } catch(e) {return {route:target.route,error:e instanceof Error?e.message:'请选择有效起终点'};}
   },[target,source,startPlace,endPlace,reversed,routeChoice,plans,previewKey]);
   const preview=prepared.route, selectedDistance=preview.distance, selectionError=prepared.error;
@@ -234,7 +244,9 @@ export function NavigationStart({
           </p>
           {routeChoice === 'original' && (
             <p className="route-note">
-              保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。
+              {reversed && source.route.geometryKind !== 'track'
+                ? '原线已反向；里程和用时沿用原线，仅提示沿线前进。驾车请点“驾车”重新规划，以核验单行和禁转。'
+                : '保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。'}
             </p>
           )}
           {((routeChoice==='road' && error) || selectionError || startError) && (
@@ -249,7 +261,7 @@ export function NavigationStart({
             disabled={!!selectionError || (routeChoice==='road' && (busy || !roadReady))}
             onClick={() => void start()}
           >
-            {routeChoice==='road' && busy ? '正在按出行方式规划…' : routeChoice==='original' ? '沿原路线开始导航' : '使用新规划开始导航'}
+            {routeChoice==='road' && busy ? '正在按出行方式规划…' : routeChoice==='original' ? reversed ? '沿反向原路线开始导航' : '沿原路线开始导航' : '使用新规划开始导航'}
           </button>
         </footer>
       </section>

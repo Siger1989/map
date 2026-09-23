@@ -640,7 +640,10 @@ export function WorkbenchPanel(props: Props) {
           onAction={showAction}
           onBatch={startBatch}
           onOpen={props.onOpen}
-          onNavigate={props.onNavigate}
+          onNavigate={(key) => {
+            setAction(null);
+            props.onNavigate(key);
+          }}
           onManage={props.onManage}
           onShare={share}
           onCopy={copy}

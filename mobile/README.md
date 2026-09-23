@@ -1,4 +1,8 @@
-# 山兔0.2.67测试版（2026-09-24）
+# 山兔0.2.68测试版（2026-09-24）
+
+“导航准备”中的原始道路路线可点“交换”直接反向：起终点、途经点和线路同步更新，原收藏不变。正向转弯提示不沿用，反向仅沿线提示；驾车要核验单行/禁转可另行规划。收藏夹操作菜单不再盖住导航弹窗。`../APK/Shantu-0.2.68-test-standalone.apk`，versionCode75、原独立测试包名/4a94签名，57,834,588字节，SHA256 `dd1b049e603c8a47c573a5a9a3587f2249f8b3393f5a1d60765a0958160951e3`。632项测试、类型、网页/Android构建与打包网页启动通过；真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.68-test-standalone/Shantu-0.2.68-test-standalone.apk) · [发行说明](../docs/release-0.2.68.md)。
+
+## 0.2.67 测试版
 
 路线规划常显起终点和下一步提示；已规划或收藏显示的路线可从地图点开路线卡，收藏夹点击导航路线直接恢复摘要。收藏夹文件夹可左滑整组隐藏、右滑整组显示，增加“隐藏”分类。新包 `../APK/Shantu-0.2.67-test-standalone.apk`，versionCode74、原独立测试包名/4a94签名，57,834,588字节，SHA256 `8409e4ad2632e3c69b7ae8b09c9a832a7dc1bf21383dc0090a3f3be79abab68d`。629项测试、类型、网页及Android构建、打包网页启动通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.67-test-standalone/Shantu-0.2.67-test-standalone.apk) · [发行说明](../docs/release-0.2.67.md)。
 
