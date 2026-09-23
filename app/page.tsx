@@ -296,7 +296,7 @@ export default function Home() {
   const [activeTrackNode, setActiveTrackNode] = useState<
     import('@/modules/tracks/editing').TrackNode | null
   >(null);
-  const [quickAdd, setQuickAdd] = useState<MapHold | null>(null);
+  const [quickAdd, setQuickAdd] = useState<(MapHold & { fromCenter?: boolean }) | null>(null);
   const [connectingNode, setConnectingNode] = useState<
     import('@/modules/tracks/editing').TrackNode | null
   >(null);
@@ -1625,6 +1625,7 @@ export default function Home() {
             onShare={() => { setPlaceShareTarget({ place: { name: '地图位置', coordinates: [...quickAdd.coordinate] } }); setQuickAdd(null); }}
             onArea={startArea}
             at={quickAdd}
+            centered={quickAdd.fromCenter === true}
             error={annotations.error}
             onClose={() => setQuickAdd(null)}
             onAdd={(kind) => {
@@ -2200,7 +2201,7 @@ export default function Home() {
             tracks.select(null);
             areas.select(null);
             setProfileOpen(false);
-            setQuickAdd({ coordinate: coordinates, point: screen });
+            setQuickAdd({ coordinate: coordinates, point: screen, fromCenter: true });
           }} /> : undefined}
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}

@@ -8,6 +8,7 @@ import './quickAdd.css';
 /** A local map action, with no navigation into the full annotation editor. */
 export function QuickAdd({
   at,
+  centered = false,
   error,
   onAdd,
   onArea,
@@ -15,6 +16,7 @@ export function QuickAdd({
   onShare,
 }: {
   at: MapHold;
+  centered?: boolean;
   error: string;
   onAdd: (kind: AnnotationChoice) => void;
   onArea: () => void;
@@ -43,7 +45,7 @@ export function QuickAdd({
   return (
     <div
       ref={root}
-      className="quick-add"
+      className={centered ? 'quick-add quick-add-centered' : 'quick-add'}
       style={
         {
           '--press-x': `${at.point.x}px`,

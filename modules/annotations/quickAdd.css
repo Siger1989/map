@@ -40,6 +40,13 @@
   pointer-events: auto;
   overflow: hidden;
 }
+.quick-add-centered .quick-add-anchor {
+  display: none;
+}
+.quick-add-centered .quick-add-card {
+  top: calc(var(--press-y) + 28px);
+  max-height: min(200px, 38dvh, calc(100% - var(--press-y) - var(--safe-bottom) - 100px));
+}
 .quick-add-card header {
   display: flex;
   justify-content: space-between;
