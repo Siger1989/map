@@ -52,6 +52,7 @@
 .object-gizmo-canvas[data-kind='pin'] .gizmo-line { stroke-width: 1.8; }
 .object-gizmo-canvas[data-kind='pin'] .gizmo-solid { stroke-width: 1; }
 .object-gizmo-canvas[data-kind='pin'] .gizmo-axis-label { font-size: 10px; stroke-width: 2px; }
+.object-gizmo-canvas .gizmo-pin-link { fill: none; stroke: #fffbd0; stroke-width: 1.5; stroke-dasharray: 3 3; pointer-events: none; }
 .object-gizmo-canvas .gizmo-position-readout rect { fill: #fffdece8; stroke: #176a50; stroke-width: 1; }
 .object-gizmo-canvas .gizmo-position-readout text { fill: #173b34; font: 11px "Microsoft YaHei", sans-serif; }
 .object-gizmo-canvas g:focus .gizmo-line,
@@ -90,6 +91,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   padding-left: 5px;
+}
+.object-pin-coordinates {
+  padding: 2px 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .object-gizmo button {
   min-height: 44px;

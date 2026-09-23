@@ -26,6 +26,7 @@ import { collectionTransfer, collectionSpreadsheet } from './export';
 import { deliverFile } from '../files/delivery';
 import { XLSX_MIME } from '../files/spreadsheet';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
+import { spreadsheetRegions } from '../annotations/spreadsheetRegions';
 import { markerSolidPath } from '../annotations/icons';
 import type { Annotation } from '../annotations/data';
 import type { SectionObject } from '../section/sectionObjects';
@@ -162,6 +163,11 @@ export function CollectionsPanel(props: Props) {
     abort.current = controller;
     try {
       const chosen = entries.filter((e) => keys.includes(e.key));
+      const markers = chosen.flatMap(e => 'annotation' in e ? [e.annotation] : []);
+      const markerOnly = chosen.length > 0 && chosen.every(e => e.kind === 'pin' || e.kind === 'model');
+      const resolved = format === 'xlsx' && markerOnly
+        ? await spreadsheetRegions(markers, regions.regions, AbortSignal.any([controller.signal, AbortSignal.timeout(15_000)]))
+        : { regions: regions.regions, unresolved: 0 };
       const content =
         format === 'zip'
           ? await collectionArchive(
@@ -179,8 +185,8 @@ export function CollectionsPanel(props: Props) {
                 2,
               )
             : new Uint8Array(
-                chosen.length && chosen.every(e => e.kind === 'pin' || e.kind === 'model')
-                  ? annotationSpreadsheet(chosen.flatMap(e => 'annotation' in e ? [e.annotation] : []), regions.regions)
+                markerOnly
+                  ? annotationSpreadsheet(markers, resolved.regions)
                   : collectionSpreadsheet(chosen, regions.regions, localStorage),
               );
       setMessage(
@@ -195,7 +201,7 @@ export function CollectionsPanel(props: Props) {
           }),
           send,
           controller.signal,
-        ),
+        ) + (resolved.unresolved ? `；${resolved.unresolved} 个地点地区未识别，Excel中保持空白` : ''),
       );
     } catch (e) {
       setMessage(

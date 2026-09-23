@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Share2, Upload, X } from 'lucide-react';
 import { SmartInput, SmartTextarea } from '../input/SmartText';
 import type { VisiblePhoto } from '../photos/storage';
@@ -28,7 +28,35 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
 }) {
   const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null);
   const [picker, setPicker] = useState<'coordinates' | 'icon' | 'color' | null>(null);
+  const editor = useRef<HTMLElement>(null);
   useEffect(() => { state.beginEdit(item.id); }, [item.id]);
+  useEffect(() => {
+    let frame = 0;
+    const keepFocusedAttributeVisible = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const list = editor.current?.querySelector<HTMLElement>('.pin-attribute-list');
+        const input = document.activeElement;
+        if (!list || !(input instanceof HTMLElement) || !list.contains(input)) return;
+        const row = input.closest<HTMLElement>('.pin-attribute');
+        if (!row) return;
+        const viewport = list.getBoundingClientRect();
+        const active = row.getBoundingClientRect();
+        if (active.bottom > viewport.bottom) list.scrollTop += active.bottom - viewport.bottom;
+        else if (active.top < viewport.top) list.scrollTop -= viewport.top - active.top;
+      });
+    };
+    const node = editor.current;
+    node?.addEventListener('focusin', keepFocusedAttributeVisible);
+    window.addEventListener('resize', keepFocusedAttributeVisible);
+    window.visualViewport?.addEventListener('resize', keepFocusedAttributeVisible);
+    return () => {
+      cancelAnimationFrame(frame);
+      node?.removeEventListener('focusin', keepFocusedAttributeVisible);
+      window.removeEventListener('resize', keepFocusedAttributeVisible);
+      window.visualViewport?.removeEventListener('resize', keepFocusedAttributeVisible);
+    };
+  }, []);
   const change = (patch: Partial<Annotation>) => {
     const ok = state.update(item.id, patch);
     if (ok && patch.coordinates) void state.refreshElevation(item.id, patch.coordinates);
@@ -57,7 +85,7 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
     state.beginEdit(item.id);
   };
   const attributes = item.attributes ?? [];
-  return <section className="pin-editor" aria-label="编辑标记" onKeyDown={event => {
+  return <section ref={editor} className="pin-editor" aria-label="编辑标记" onKeyDown={event => {
     if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); leave(); }
   }}>

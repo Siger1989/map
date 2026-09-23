@@ -13,6 +13,7 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
   const start = useRef<{ point: ScreenPoint; id: number } | null>(null);
   const [box, setBox] = useState<SelectionBox | null>(null);
   const [localMode, setMode] = useState<BoxSelectionMode>('add');
+  const [drawing, setDrawing] = useState(!tools);
   const mode = controlledMode ?? localMode;
   const exit = useRef(onExit); exit.current = onExit;
   useEffect(() => {
@@ -26,7 +27,7 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
     return () => window.removeEventListener('keydown', escape, true);
   }, [active]);
   return <div className="map-box-selection" data-active={active} data-selection-mode={mode} aria-label={label}>
-    {active && <div className="map-box-surface" onPointerDown={e => {
+    {active && drawing && <div className="map-box-surface" onPointerDown={e => {
       if (!e.isPrimary) { start.current = null; setBox(null); return; }
       if (e.button !== 0) return;
       const r = e.currentTarget.getBoundingClientRect();
@@ -42,7 +43,10 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
       const next = selectionBox(start.current.point, { x: e.clientX - r.left, y: e.clientY - r.top });
       start.current = null; setBox(null);
       if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-      if (next.right - next.left >= 5 && next.bottom - next.top >= 5) onBox(next, mode);
+      if (next.right - next.left >= 5 && next.bottom - next.top >= 5) {
+        onBox(next, mode);
+        if (tools) setDrawing(false);
+      }
     }} onPointerCancel={() => { start.current = null; setBox(null); }}
       onLostPointerCapture={() => { start.current = null; setBox(null); }}
     />}
@@ -50,13 +54,12 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
     {children}
     {active && tools && <div className="map-box-tools">
       <div className="map-box-tools-heading"><strong>{label} · 已选 {count} 项</strong>{filter}</div>
-      <small>{mode === 'add' ? '拖框连续追加；重叠不会取消已选。' : '拖框只减去框内已选项，不删除内容。'}</small>
-      <div role="group" aria-label="框选方式">
-        <button aria-pressed={mode === 'add'} onClick={() => setMode('add')}>加选</button>
-        <button aria-pressed={mode === 'subtract'} onClick={() => setMode('subtract')}>反选（减选）</button>
+      <div className="map-box-tools-actions" role="group" aria-label="框选操作">
+        <button aria-pressed={drawing} onClick={() => { setDrawing(!drawing); setBox(null); }}>{drawing ? '平移地图' : '画框'}</button>
+        <button aria-pressed={mode === 'subtract'} onClick={() => setMode(mode === 'add' ? 'subtract' : 'add')}>{mode === 'add' ? '加选' : '减选'}</button>
+        <button disabled={!count} onClick={onClear}>清空</button>
+        <button onClick={onExit}>退出</button>
       </div>
-      <div><button disabled={!count} onClick={onClear}>清空选择</button><button onClick={onExit}>退出框选</button></div>
-      <small>退出保留已选，返回上级操作。</small>
     </div>}
   </div>;
 }

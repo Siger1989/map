@@ -18,6 +18,7 @@ import {
 import { folderTheme } from './folderTheme';
 import { deliverFile } from '../files/delivery';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
+import { spreadsheetRegions } from '../annotations/spreadsheetRegions';
 import { XLSX_MIME } from '../files/spreadsheet';
 import { useSwipeSelection } from './useSwipeSelection';
 import { useWorkbenchLongPress } from './useWorkbenchLongPress';
@@ -230,11 +231,13 @@ export function WorkbenchPanel(props: Props) {
     if (!markers.length) { setMessage('请先勾选标记或模型'); return; }
     setBusy(true);
     try {
+      setMessage('正在补齐地点地区信息…');
+      const { regions, unresolved } = await spreadsheetRegions(markers, store.data?.regions ?? {});
       setMessage(await deliverFile(new File(
-        [new Uint8Array(annotationSpreadsheet(markers))],
+        [new Uint8Array(annotationSpreadsheet(markers, regions))],
         `Shantu-markers-${Date.now()}.xlsx`,
         { type: XLSX_MIME },
-      ), false));
+      ), false) + (unresolved ? `；${unresolved} 个地点地区未识别，Excel中保持空白` : ''));
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Excel 导出失败');
     } finally {

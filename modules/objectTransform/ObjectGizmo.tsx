@@ -32,6 +32,7 @@ type Props = {
   error?: string;
   hideToolbar?: boolean;
   showPositionReadout?: boolean;
+  pinGroundElevation?: (coordinates: Pose['coordinates']) => number | null;
   onBegin: () => void;
   onPreview: (p: Pose | null) => void;
   onCommit: (p: Pose) => void;
@@ -70,7 +71,10 @@ export function ObjectGizmo(props: Props) {
   useEffect(
     () =>
       props.watchProjection((f) => {
-        const key = f.matrix.join(',') + f.width + ':' + f.height;
+        const ground = latest.current.kind === 'pin'
+          ? latest.current.pinGroundElevation?.(latest.current.pose.coordinates)
+          : null;
+        const key = f.matrix.join(',') + f.width + ':' + f.height + ':' + (ground == null ? 'no-ground' : ground.toFixed(1));
         if (lastFrame.current !== key) {
           lastFrame.current = key;
           setFrame(f);
@@ -103,7 +107,11 @@ export function ObjectGizmo(props: Props) {
       }
     };
   }, []);
-  const p = frame ? objectProjector(frame, props.pose) : null,
+  const ground = props.kind === 'pin' ? props.pinGroundElevation?.(props.pose.coordinates) : null;
+  const projectionPose = props.kind === 'pin'
+    ? { ...props.pose, altitude: ground ?? 0 }
+    : props.pose;
+  const p = frame ? objectProjector(frame, projectionPose) : null,
     c = p?.center;
   const visible = !!(
     p &&
@@ -115,9 +123,10 @@ export function ObjectGizmo(props: Props) {
     c.y < frame.height - 70
   );
   const { targets, rings, axes } = gizmoHandles(p, props.kind, visible);
+  const pinAxisOffset = props.kind === 'pin' ? 48 : 0;
   const screen = (e: PointerEvent<SVGElement>) => {
     const rect = svg.current!.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top - pinAxisOffset };
   };
   const begin = (e: PointerEvent<SVGElement>, key: string) => {
     if (!p || !e.isPrimary || e.button !== 0 || gesture.current) return;
@@ -225,6 +234,8 @@ export function ObjectGizmo(props: Props) {
       >
         {visible && p && c && (
           <>
+            {props.kind === 'pin' && <path className="gizmo-pin-link" d={`M${c.x},${c.y + 4} L${c.x},${c.y + pinAxisOffset}`} />}
+            <g transform={pinAxisOffset ? `translate(0 ${pinAxisOffset})` : undefined}>
             {rings.map((r) => (
               <g key={r.key} {...handlers(r.key, r.label)}>
                 <path className="gizmo-hit-ring" d={path(r.points)} />
@@ -349,12 +360,13 @@ export function ObjectGizmo(props: Props) {
                 fill="#d0d4d5"
               />
             </g>
-            {props.showPositionReadout && frame && <g className="gizmo-position-readout" transform={`translate(${Math.max(6, Math.min(frame.width - 174, c.x + 24 + 168 <= frame.width - 54 ? c.x + 24 : c.x - 184))} ${Math.max(58, Math.min(frame.height - 78, c.y + 22))})`} pointerEvents="none">
+            {props.showPositionReadout && frame && <g className="gizmo-position-readout" transform={`translate(${Math.max(6, Math.min(frame.width - 174, c.x + 24 + 168 <= frame.width - 54 ? c.x + 24 : c.x - 184))} ${Math.max(58, Math.min(frame.height - 78 - pinAxisOffset, c.y + 22))})`} pointerEvents="none">
               <rect width="168" height={props.kind === 'pin' ? 43 : 57} rx="5"/>
               <text x="7" y="15">经度 {shownPose.coordinates[0].toFixed(6)}°</text>
               <text x="7" y="29">纬度 {shownPose.coordinates[1].toFixed(6)}°</text>
               {props.kind !== 'pin' && <text x="7" y="43">中心海拔 {shownPose.altitude.toFixed(1)} m</text>}
             </g>}
+            </g>
           </>
         )}
       </svg>
@@ -381,6 +393,9 @@ export function ObjectGizmo(props: Props) {
             完成
           </button>
         </header>
+        {props.kind === 'pin' && <div className="object-pin-coordinates" aria-label="标记当前坐标">
+          经 {shownPose.coordinates[0].toFixed(6)}° · 纬 {shownPose.coordinates[1].toFixed(6)}°
+        </div>}
         {props.kind !== 'pin' && <div className="object-rotation" aria-label="对象旋转角度">
           {(['X', 'Y', 'Z'] as const).map((axis, index) => {
             const value = Number(angles[index].toFixed(1));

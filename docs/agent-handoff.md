@@ -1,5 +1,23 @@
 # Agent快速交接
 
+## 2026-09-23 0.2.66 APK交接
+
+框选紧凑、标记Excel地区列、输入法下自定义条目可见与底栏隐藏、地点标记调整轴贴地并移出图标，已合入 `0.2.66-test`/code73 构建。APK `APK/Shantu-0.2.66-test-standalone.apk`，57,830,492字节，SHA256 `282bbe0b6a6be13bd0d497e24dd02ef4a75cc4a4c6d30d7f5f12d1a786e693bc`。626测试、类型、网页/Android构建、打包网页启动、签名/资源通过；架构长度检查有六项基线超限，真机与原生鸿蒙未验收。发布与远程SHA待本轮核对，详见[当前状态](../CURRENT_STATE.md)和[发行说明](release-0.2.66.md)。
+
+## 2026-09-23 地点标记调整轴待确认
+
+3D倾斜地形下，地点标记DOM贴地但调整轴按存档海拔投影，海拔为空/过时使轴被误判在视野外。`app/page.tsx`、`modules/objectTransform/{ObjectGizmo.tsx,objectTransform.css}`现用地图当前地形高度画地点标记的轴，地形加载变化时刷新，并固定显示经纬度。390/360px、70°倾斜浏览器验证无/错误海拔、拖动坐标变化和完成后隐藏；TypeScript/网页构建通过。截图 `artifacts/screenshots/20260923-pin-adjust-terrain-{null,1900}-{390,360}.png`。真机待验，未出新APK。
+
+后续视觉反馈：地点标记轴下移48px并以细虚线连接图标，坐标读数跟随下移；浏览器390/360px轴拖动、类型检查及网页构建再次通过。模型轴与普通浏览状态未改。
+
+## 2026-09-23 标记条目键盘遮挡待确认
+
+Android `adjustResize` 后标记编辑卡原 `50dvh` 高度使条目列表折叠为零；现仅在短视口文字输入时扩展卡片/条目滚动区、隐藏底栏，并随视口变化滚动当前条目。改动仅 `modules/annotations/{PinEditor.tsx,pinEditor.css}`；TypeScript、网页构建及390/360px宽、530/450px高的隔离浏览器检查通过。截图 `artifacts/screenshots/20260923-pin-keyboard-{390,360}.png`。真机输入法仍需用户复测；本地未出新APK，与框选紧凑改动同处视觉确认阶段。
+
+## 2026-09-23 框选紧凑视觉待确认
+
+本地未发布改动：框选栏约80px，默认地图可移动/缩放，“画框”单次拖选后返回地图模式；1px选框、18px命中标志；结果列表28px行内滚动，导出/分享/删除保持底部可见。标记 Excel 收藏夹导出传已保存地区，缺失地区可在导出时有限逆查并提示；框选导出同样补齐。626测试、类型、网页构建及390/360浏览器交互通过；截图 `artifacts/screenshots/20260923-box-compact-{390,360}.png`。按UI快速确认约定暂未提升版本或打包，0.2.65 APK无此改动。见[当前状态](../CURRENT_STATE.md)。
+
 ## 2026-09-23 0.2.65 标记 Excel 往返与天气源调研
 
 收藏夹“导入”现提供 XLSX 标记预览、确认/撤销及空白模板；多选可导出标记 Excel，地图框选只有地点/模型时默认导出标记 XLSX。列顺序为 WGS84 经纬度、名称、备注、自定义条目；ID 自动导出，无 ID 时按六位小数坐标唯一匹配。改动见 `modules/annotations/spreadsheet{,Import}.ts`、`modules/collections/{CollectionsPanel,WorkbenchPanel,MarkerExcelImport}.tsx`及样式/测试。TypeScript、624项测试、网页/Android构建、打包网页启动、隔离浏览器390/360导入导出通过；真机待验。当前天气仍为 Open-Meteo 预报与生成式3D云雨；国内免费天气/真实卫星云图授权调研见 [当前状态](../CURRENT_STATE.md)和[0.2.65发行说明](release-0.2.65.md)，未替换图源。

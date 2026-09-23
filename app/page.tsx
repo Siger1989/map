@@ -3110,6 +3110,10 @@ export default function Home() {
               name={selectedAnnotation.name || '标记'}
               kind={selectedAnnotation.kind}
               pose={selectedPose}
+              pinGroundElevation={(coordinates) => {
+                const ground = map.current?.groundElevation(coordinates);
+                return ground == null ? null : ground * layers.exaggeration;
+              }}
               hideToolbar={panel === 'annotations'}
               watchProjection={watchObjectProjection}
               onLocate={() =>
