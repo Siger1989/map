@@ -17,6 +17,7 @@ export function MapActions(props: {
   onNorth: () => void;
   onDimension: () => void;
   onLocate: () => void;
+  onLocateAndFollow?: () => void;
   onDirection?: (mode: DirectionMode) => void;
   directionStatus?: string;
   locating: boolean;
@@ -47,6 +48,7 @@ export function MapActions(props: {
         locating={props.locating}
         blocked={props.followBlocked}
         onLocate={props.onLocate}
+        onLocateAndFollow={props.onLocateAndFollow}
         onDirection={props.onDirection}
         directionStatus={props.directionStatus}
         fix={props.fix}

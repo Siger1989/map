@@ -1,5 +1,5 @@
 import { LocateFixed } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { PositionFix, DirectionMode } from './types';
 import { DirectionControl } from './DirectionControl';
 import './positionDock.css';
@@ -9,6 +9,7 @@ export function PositionDock({
   locating,
   blocked,
   onLocate,
+  onLocateAndFollow,
   onDirection,
   directionStatus,
   fix,
@@ -22,12 +23,27 @@ export function PositionDock({
   locating: boolean;
   blocked: boolean;
   onLocate: () => void;
+  onLocateAndFollow?: () => void;
   onDirection?: (mode: DirectionMode) => void;
   fix?: PositionFix | null;
   showCoordinates?: boolean;
   markControl?: ReactNode;
   children?: ReactNode;
 }) {
+  const clickTimer = useRef<number | null>(null);
+  const lastClick = useRef(0);
+  const lastDoubleClick = useRef(0);
+  useEffect(() => () => {
+    if (clickTimer.current !== null) window.clearTimeout(clickTimer.current);
+  }, []);
+  const doubleLocate = () => {
+    if (!onLocateAndFollow) return;
+    if (clickTimer.current !== null) window.clearTimeout(clickTimer.current);
+    clickTimer.current = null;
+    if (Date.now() - lastDoubleClick.current < 350) return;
+    lastDoubleClick.current = Date.now();
+    onLocateAndFollow();
+  };
   return (
     <nav className="home-position-dock" aria-label="底部定位与路线显示">
       {children}
@@ -38,7 +54,29 @@ export function PositionDock({
         aria-label={following ? '关闭位置跟随' : '开启位置跟随'}
         aria-pressed={following}
         title={blocked ? '编辑中暂停跟随' : undefined}
-        onClick={onLocate}
+        onClick={event => {
+          const now = Date.now();
+          if (
+            onLocateAndFollow &&
+            (event.detail >= 2 || now - lastClick.current < 350)
+          ) {
+            lastClick.current = 0;
+            doubleLocate();
+          }
+          else {
+            if (clickTimer.current !== null) window.clearTimeout(clickTimer.current);
+            lastClick.current = now;
+            clickTimer.current = window.setTimeout(() => {
+              clickTimer.current = null;
+              lastClick.current = 0;
+              onLocate();
+            }, onLocateAndFollow ? 280 : 0);
+          }
+        }}
+        onDoubleClick={event => {
+          event.preventDefault();
+          doubleLocate();
+        }}
       >
         <LocateFixed size={17} />
         <small>{locating ? '定位中' : following ? '跟随中' : '跟随'}</small>

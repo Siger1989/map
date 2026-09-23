@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-23 0.2.60收藏夹视角与跟随归位
+
+当前分支`codex/rollback-ui-0235-20260921`，基线`34952d48fbf1407d0bb51100a8877934bf19b5d6`。用户指定GPT-5.5子代理执行，两处局部修复已由5.5完成并经根代理隔离浏览器复核：收藏夹普通退出恢复相机，主动定位收藏项不恢复旧视角；跟随按钮双击/双点可靠归位、适合浏览的缩放和朝北，单击开关不变。改动`app/page.tsx`、`modules/{map/TerrainMap.tsx,controls/MapActions.tsx,position/PositionDock.tsx}`及0.2.60版本号。TypeScript、614项逻辑测试、390×857浏览器操作、Android构建/原签名/473地形通过。APK`APK/Shantu-0.2.60-test-standalone.apk`，57,826,396字节，SHA256`40fbeca7c6ba8ef5f491f7a2ae39c3de31be9d4eed6c34686e8df806c5d21029`。真机触控/安装待验；用户9423标签和无关附件/PDF未动。见`docs/release-0.2.60.md`。
+
 ## 2026-09-23 0.2.59标记与导航退出
 
 用户在连续视觉反馈后要求修好并打包。当前分支`codex/rollback-ui-0235-20260921`；0.2.59-test/code66源码包括紧凑标记、快设起终点、两次点击打开编辑、调整轴仅调整时出现、集中标记编辑、框选期间操作、画线按钮底板、所选路线删除确认及结束导航清理临时规划线和起终点。隔离9433浏览器390×857验证导航图层3→0且无页面错误；TypeScript、614项测试及最终APK构建/签名/473地形通过。APK`APK/Shantu-0.2.59-test-standalone.apk`，57,826,396字节，SHA256`e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`。源码/Release线上状态以当前实际提交与发布核对为准。奥维KMZ微信导入个案无原始样本，本版未修解析。用户9423标签、个人附件与PDF未动；真机安装/触控待验。见`docs/release-0.2.59.md`。

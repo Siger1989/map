@@ -1,4 +1,11 @@
-# 当前状态 — 2026-09-23 / 0.2.59标记与导航退出
+# 当前状态 — 2026-09-23 / 0.2.60收藏夹视角与跟随归位
+
+## 2026-09-23 0.2.60 测试版构建与交付
+
+当前分支`codex/rollback-ui-0235-20260921`，工作基线`34952d48fbf1407d0bb51100a8877934bf19b5d6`。用户要求用GPT-5.5子代理执行：已由5.5低推理档接手并完成局部修改，根代理复核。收藏夹普通关闭恢复进入前的中心/zoom/pitch/bearing，主动打开或定位收藏项保留目标聚焦；已关闭的收藏预览不再因地图尺寸变化重新总览。右侧跟随按钮单击仍开关，鼠标双击与手机双点按可靠定位归位、放大至适合浏览并朝北。改动仅涉及`app/page.tsx`、`modules/{map/TerrainMap.tsx,controls/MapActions.tsx,position/PositionDock.tsx}`及版本号；地图图源、收藏/轨迹/照片存储格式和其它面板没有改动。
+
+- 隔离9433浏览器390×857验证：收藏夹打开时4.21级，普通退出恢复进入前14级/42°俯仰/24°方位；双击与双点均回定位点、约15–16级/朝北，单击开关正常、无页面错误。截图`artifacts/screenshots/20260923-favorites-follow-reset-390.png`。用户9423标签未操作；手机真机触控仍待验。
+- TypeScript、614项逻辑测试、Android网页/Java/DEX/APK构建通过；原4a94证书v2/v3签名、zipalign与473地形瓦片通过。新包`APK/Shantu-0.2.60-test-standalone.apk`，57,826,396字节，SHA256`40fbeca7c6ba8ef5f491f7a2ae39c3de31be9d4eed6c34686e8df806c5d21029`，versionCode67，可覆盖同签名独立测试版。详情见[0.2.60发行说明](docs/release-0.2.60.md)。无关`.codex-remote-attachments/`及旧PDF保留原状。
 
 ## 2026-09-23 0.2.59测试版构建与交付
 

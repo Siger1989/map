@@ -100,6 +100,7 @@ export type MapHandle = {
   refreshGeology: () => void;
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
+  focusPosition: (coordinates: Coordinate, zoom: number, pitch: number) => void;
   fitRoute: (coordinates: Coordinate[]) => void;
   fitCollection: (
     coordinates: Coordinate[],
@@ -604,6 +605,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             zoom: Math.max(3, Math.min(20, zoom)),
             duration: 700,
           });
+        },
+        focusPosition: (center, zoom, pitch) => {
+          mapRef.current?.flyTo(
+            {
+              center,
+              zoom: Math.max(3, Math.min(16, zoom)),
+              pitch,
+              bearing: 0,
+              duration: 700,
+            },
+            { positionFollow: true },
+          );
         },
         fitCollection: (coordinates, padding) =>
           fitCollection(coordinates, 350, padding),
@@ -1284,17 +1297,21 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       drawingRef.current?.configure(props.drawingActive);
     }, [props.drawingActive, props.pickingActive, props.sectionEditing]);
     useEffect(() => {
+      if (!props.collectionPreviewActive) collectionTarget.current = [];
+    }, [props.collectionPreviewActive]);
+    useEffect(() => {
       if (!container.current) return;
+      let fitFrame = 0;
       const observer = new ResizeObserver(() => {
         mapRef.current?.resize();
-        if (
-          latest.current.collectionPreviewActive &&
-          collectionTarget.current.length
-        )
-          fitCollection(collectionTarget.current, 0);
+        cancelAnimationFrame(fitFrame);
+        fitFrame = requestAnimationFrame(() => {
+          if (latest.current.collectionPreviewActive && collectionTarget.current.length)
+            fitCollection(collectionTarget.current, 0);
+        });
       });
       observer.observe(container.current);
-      return () => observer.disconnect();
+      return () => { observer.disconnect(); cancelAnimationFrame(fitFrame); };
     }, []);
     useEffect(() => {
       const map = mapRef.current;

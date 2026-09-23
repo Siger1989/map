@@ -107,7 +107,7 @@ import {
 } from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
 import { useMotionHeading } from '@/modules/position/useMotionHeading';
-import { recordingPosition, positionZoom } from '@/modules/position/follow';
+import { canFollow, recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import { useRouteDisplay } from '@/modules/routeDisplay/useRouteDisplay';
 import { RouteDisplayControl } from '@/modules/routeDisplay/RouteDisplayControl';
@@ -214,6 +214,33 @@ export default function Home() {
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanel] = useState<ControlPanel>(null);
+  const previousPanel = useRef<ControlPanel>(panel);
+  const favoritesCamera = useRef<ReturnType<MapHandle['cameraSnapshot']>>(null);
+  const preserveFavoritesCamera = useRef(false);
+  const favoritesRestoreGeneration = useRef(0);
+  const preserveFavoritesFocus = () => {
+    if (panel === 'favorites') preserveFavoritesCamera.current = true;
+  };
+  useEffect(() => {
+    const previous = previousPanel.current;
+    if (panel === 'favorites' && previous !== 'favorites') {
+      favoritesRestoreGeneration.current++;
+      favoritesCamera.current = map.current?.cameraSnapshot() ?? null;
+      preserveFavoritesCamera.current = false;
+    } else if (previous === 'favorites' && panel !== 'favorites') {
+      const camera = favoritesCamera.current;
+      favoritesCamera.current = null;
+      if (!preserveFavoritesCamera.current && camera) {
+        const generation = ++favoritesRestoreGeneration.current;
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (generation === favoritesRestoreGeneration.current)
+            map.current?.restoreCamera(camera);
+        }));
+      }
+      preserveFavoritesCamera.current = false;
+    }
+    previousPanel.current = panel;
+  }, [panel]);
   const [rallyMode, setRallyMode] = useState(false);
   useEffect(() => { if (panel !== null) setRallyMode(false); }, [panel]);
   const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools'>(
@@ -423,6 +450,7 @@ export default function Home() {
         : position.fix;
   const motionHeading = useMotionHeading(cameraFix, position.direction === 'motion');
   const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
+  const skipNextFollowKey = useRef('');
   const follow = useFollowPosition({
     fix: cameraFix,
     phase: recorder.record.phase,
@@ -437,15 +465,42 @@ export default function Home() {
       !!featureMove ||
       !!quickAdd ||
       sectionEditing,
-    onFollow: (coordinates, fix) =>
-      map.current?.followPosition(
+    onFollow: (coordinates, fix) => {
+      const key = `${fix.timestamp}/${fix.coordinates.join('/')}`;
+      if (skipNextFollowKey.current === key) {
+        skipNextFollowKey.current = '';
+        return true;
+      }
+      return map.current?.followPosition(
         coordinates,
         position.direction !== 'device' && position.direction !== 'motion',
         fix.source === 'network' ? positionZoom(fix) : undefined,
-      ) ?? false,
+      ) ?? false;
+    },
   });
   const focusLock = useMapFocusLock({ map: () => map.current, following:follow.following, guiding:guidance.active, direction:position.direction,
     fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device, motion:position.motion });
+  const pendingPositionFocus = useRef(false);
+  const focusOnReliablePosition = (fix: NonNullable<typeof cameraFix>) => {
+    pendingPositionFocus.current = false;
+    focusLock.adoptMode(true, 'north');
+    position.north();
+    skipNextFollowKey.current = `${fix.timestamp}/${fix.coordinates.join('/')}`;
+    follow.resume();
+    map.current?.focusPosition(fix.coordinates, positionZoom(fix), layers.terrain ? 40 : 0);
+  };
+  const locateAndFocus = () => {
+    if (follow.blocked) return;
+    if (canFollow(cameraFix)) focusOnReliablePosition(cameraFix);
+    else {
+      pendingPositionFocus.current = true;
+      position.locate();
+    }
+  };
+  useEffect(() => {
+    if (pendingPositionFocus.current && !follow.blocked && canFollow(cameraFix))
+      focusOnReliablePosition(cameraFix);
+  }, [cameraFix?.timestamp, cameraFix?.coordinates[0], cameraFix?.coordinates[1], cameraFix?.accuracy, follow.blocked]);
   useScreenAwake(guidance.active || recorder.record.phase === 'recording' || focusLock.locked);
   const guidanceOverlay = useMemo(
     () =>
@@ -2327,6 +2382,7 @@ export default function Home() {
             if (follow.following) { follow.pause(); map.current?.stop(); }
             else { follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
           }}
+          onLocateAndFollow={locateAndFocus}
           directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
           onDirection={direction => {
             focusLock.adoptMode(follow.following,direction);
@@ -2698,9 +2754,10 @@ export default function Home() {
             <CollectionsPanel
               onImport={() => setRouteImportOpen(true)}
               offlineCount={offline.packages.length}
-              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
+              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{preserveFavoritesFocus();openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
               onLocate={(entry) => {
+                preserveFavoritesFocus();
                 position.free();
                 follow.pause();
                 if (entry.kind === 'route') navigation.restore(entry.route);
@@ -2717,6 +2774,7 @@ export default function Home() {
               onMeasurement={(id) => {
                 const item = measurement.saved.items.find((m) => m.id === id);
                 if (!item) return;
+                preserveFavoritesFocus();
                 tracks.finish();
                 tracks.select(null);
                 annotations.select(null);
@@ -2731,6 +2789,7 @@ export default function Home() {
               onArea={(id) => {
                 const a = areas.items.find((a) => a.id === id);
                 if (a) {
+                  preserveFavoritesFocus();
                   areas.select(id);
                   annotations.select(null);
                   tracks.select(null);
@@ -2744,6 +2803,7 @@ export default function Home() {
               onAnnotation={(id) => {
                 const item = annotations.items.find((a) => a.id === id);
                 if (!item) return;
+                preserveFavoritesFocus();
                 annotations.select(id);
                 tracks.select(null);
                 setProfileOpen(false);
@@ -2754,6 +2814,7 @@ export default function Home() {
                 setPanel('annotations');
               }}
               onSection={(id) => {
+                preserveFavoritesFocus();
                 setPanel(null);
                 openSection(id);
               }}
@@ -2767,11 +2828,13 @@ export default function Home() {
               onNavigateTrack={navigateTrack}
               navigationError={savedNavigationError}
               onRoute={(favorite) => {
+                preserveFavoritesFocus();
                 navigation.restore(favorite);
                 map.current?.fitRoute(favorite.route.coordinates);
                 setPanel(null);
               }}
               onTrack={(id) => {
+                preserveFavoritesFocus();
                 openRoute(id);
                 const track = tracks.saved.find((t) => t.id === id);
                 if (track) map.current?.fitRoute(track.segments.flat());
