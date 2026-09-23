@@ -18,3 +18,4 @@
 - TypeScript 与逻辑测试通过；Android 网页、Java、DEX、APK 全新构建。隔离 9433 浏览器模拟 390×857：已授权网络粗位置先聚焦、GPS 后更新；未授权无自动请求，手动跟随可调用定位；用户先滚轮缩放则不自动跳视角。无页面异常。截图`artifacts/screenshots/20260923-startup-network-location-390.png`，未操作用户 9423 预览标签。
 - APK v2/v3 签名、zipalign 及 473 块随包地形瓦片通过。文件`APK/Shantu-0.2.61-test-standalone.apk`，57,826,396 字节，SHA256 `5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`；同目录`.sha256`可核对。
 - 模拟权限和坐标不等于 Android 真机的基站/Wi-Fi 返回或 GPS 精度。真实设备上粗略权限、定位开关、室内首次定位时间和电量影响仍待验；不宣称 HarmonyOS 原生包已交付。
+- [测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.61-test-standalone)已公开；标签指向本版APK源码`d620091b0eec7d03122869ddf5fc98ed037a1b65`。GitHub APK和校验文件均为uploaded，APK线上大小和SHA256 digest与本地一致；未进行真机安装验收。

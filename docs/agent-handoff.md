@@ -4,6 +4,8 @@
 
 用户先问默认基站定位，再明确要求联网制定施工方案，并由多个 GPT-5.5 agent 分工实施、根代理审查。当前从0.2.60已发布源码继续；Android `auto` 本来同时订阅 `NETWORK_PROVIDER` 与 GPS，但此前未在地图启动时调用。现加原生“已授前台权限”只读桥，已授权 APK 启动短时观察，20秒或可靠GPS即停；未授权不会自行弹框，点跟随照旧申请。首个可靠网络/GPS点可聚焦一次，用户先拖动/滚轮或双指缩放/按钮缩放/手动定位、或进入编辑导航则不抢视角。浏览器不自动申请。具体文件、依据、验证、限制与APK见[当前状态](../CURRENT_STATE.md)和[施工说明](startup-network-position.md)。原工作分支`codex/rollback-ui-0235-20260921`，用户未要求合并 main；真机网络粗位置/GPS切换仍待验。
 
+0.2.61 APK源码提交`d620091b0eec7d03122869ddf5fc98ed037a1b65`已推送，公开测试Release `v0.2.61-test-standalone` 标签同SHA。线上APK资产uploaded、57,826,396字节、SHA256 digest与本地一致，`.sha256`亦已上传；本条发布回填若单独提交文档，工作分支可能比发行标签前进一个纯文档提交。Android真机未验。
+
 ## 2026-09-23 0.2.60收藏夹视角与跟随归位
 
 当前分支`codex/rollback-ui-0235-20260921`，基线`34952d48fbf1407d0bb51100a8877934bf19b5d6`。用户指定GPT-5.5子代理执行，两处局部修复已由5.5完成并经根代理隔离浏览器复核：收藏夹普通退出恢复相机，主动定位收藏项不恢复旧视角；跟随按钮双击/双点可靠归位、适合浏览的缩放和朝北，单击开关不变。改动`app/page.tsx`、`modules/{map/TerrainMap.tsx,controls/MapActions.tsx,position/PositionDock.tsx}`及0.2.60版本号。TypeScript、614项逻辑测试、390×857浏览器操作、Android构建/原签名/473地形通过。APK`APK/Shantu-0.2.60-test-standalone.apk`，57,826,396字节，SHA256`40fbeca7c6ba8ef5f491f7a2ae39c3de31be9d4eed6c34686e8df806c5d21029`。真机触控/安装待验；用户9423标签和无关附件/PDF未动。见`docs/release-0.2.60.md`。

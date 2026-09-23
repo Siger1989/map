@@ -6,7 +6,8 @@
 
 - 改动`mobile/android/src/com/guanyun/weather/{ForegroundLocation,NativeBridge}.java`、`modules/position/{nativePosition,usePosition}.ts`、`app/page.tsx`、`modules/map/TerrainMap.tsx`、定向测试与版本号；不动记录服务、导航精度门槛、地图图源或用户轨迹/照片/收藏/布局存储。
 - TypeScript、逻辑测试及Android网页/Java/DEX/APK构建通过。隔离9433浏览器390×857实测已授权先网络粗位置聚焦、GPS后更新；未授权不启动且手动按钮可用；用户先滚轮缩放不被迟到位置拉走。截图`artifacts/screenshots/20260923-startup-network-location-390.png`，用户9423标签未操作。真机网络定位/粗略权限/覆盖安装尚未验收。
-- 新包`APK/Shantu-0.2.61-test-standalone.apk`，57,826,396字节，SHA256`5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`，versionCode68；既有4a94签名v2/v3、zipalign、473地形瓦片通过。[发行说明](docs/release-0.2.61.md)。无关`.codex-remote-attachments/`及旧PDF原状保留。GitHub发布及远端SHA以实际发布核对记录为准。
+- 新包`APK/Shantu-0.2.61-test-standalone.apk`，57,826,396字节，SHA256`5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`，versionCode68；既有4a94签名v2/v3、zipalign、473地形瓦片通过。[发行说明](docs/release-0.2.61.md)。无关`.codex-remote-attachments/`及旧PDF原状保留。
+- [0.2.61测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.61-test-standalone)已公开（预发行）；发布标签指向APK源码提交`d620091b0eec7d03122869ddf5fc98ed037a1b65`。GitHub APK资产uploaded、57,826,396字节，线上SHA256 digest与本地一致；校验文件亦已上传。工作分支在本条记录前与标签同SHA，后续若有文档提交，以标签确认APK源码。未以浏览器直链HTTP200或手机安装替代以上校验。
 
 ## 2026-09-23 0.2.60 测试版构建与交付
 
