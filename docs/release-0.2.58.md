@@ -18,3 +18,5 @@
 - APK签名v2/v3有效，沿用既有证书；ZIP 551项CRC、473块地形瓦片和包内版本/控件资源通过核对。没有把私有文件、日志或签名密钥打入安装包。
 
 本地APK：`APK/Shantu-0.2.58-test-standalone.apk`，57,818,204字节，SHA256：`ccf9fea95c50ebd0d20909691f57e3d5a0524dba27d45c093cccad1a8966b3cf`。[SHA256校验文件](https://github.com/Siger1989/map/releases/download/v0.2.58-test-standalone/Shantu-0.2.58-test-standalone.sha256)。持续缩放的真机卡顿、部分地形异常、GPS/传感器、微信文件关联和覆盖安装仍未在手机上复测；本轮地图控件修改不声称解决这些问题。
+
+公开Release标签指向源码提交`3948fc217d5167096bff9a86b0c87e3d77813e2b`；GitHub上APK资产为57,818,204字节，其SHA256 digest与本地一致。下载直链的本机HEAD连接被重置，未以HTTP200检查作为发布证明。

@@ -2,7 +2,7 @@
 
 ## 2026-09-23 0.2.58中心标记打包
 
-用户确认地图中心准星及右侧“方向→标记→跟随”控件后要求隐藏UI仍保留标记，随后要求打包；打包发布中追加要求标记窗口不遮挡十字星。当前分支`codex/rollback-ui-0235-20260921`；本轮改`app/page.tsx`、`modules/{map/CenterCursor.tsx,map/centerCursor.css,controls/MapActions.tsx,controls/homeMap.css,position/PositionDock.tsx,tracks/routeWindows.css,annotations/QuickAdd.tsx,annotations/quickAdd.css}`及版本号。隐藏UI保留准星与标记，点标记显示UI和添加面板；中心点弹窗与十字星间隔约17px，去掉重复定位圆点。没有修改路线/图源/存储。0.2.58-test/code65最终重建APK`APK/Shantu-0.2.58-test-standalone.apk`，57818204字节，SHA256 `ccf9fea95c50ebd0d20909691f57e3d5a0524dba27d45c093cccad1a8966b3cf`；4a94签名v2/v3、473地形瓦片通过。TypeScript及614测试通过；390×857和360×780独立预览检查控件命中与隐藏UI标记流程。浏览天地图后自动缓存仅调研/讨论，不在此APK。真机触控/覆盖安装仍待验，鸿蒙原生未交付；GitHub发布状态以CURRENT_STATE顶部为准。未触碰用户预览标签、私有数据、附件或旧PDF。
+用户确认地图中心准星及右侧“方向→标记→跟随”控件后要求隐藏UI仍保留标记，随后要求打包；打包发布中追加要求标记窗口不遮挡十字星。当前分支`codex/rollback-ui-0235-20260921`；本轮改`app/page.tsx`、`modules/{map/CenterCursor.tsx,map/centerCursor.css,controls/MapActions.tsx,controls/homeMap.css,position/PositionDock.tsx,tracks/routeWindows.css,annotations/QuickAdd.tsx,annotations/quickAdd.css}`及版本号。隐藏UI保留准星与标记，点标记显示UI和添加面板；中心点弹窗与十字星间隔约17px，去掉重复定位圆点。没有修改路线/图源/存储。0.2.58-test/code65最终重建APK`APK/Shantu-0.2.58-test-standalone.apk`，57818204字节，SHA256 `ccf9fea95c50ebd0d20909691f57e3d5a0524dba27d45c093cccad1a8966b3cf`；4a94签名v2/v3、473地形瓦片通过。TypeScript及614测试通过；390×857和360×780独立预览检查控件命中与隐藏UI标记流程。[GitHub Release](https://github.com/Siger1989/map/releases/tag/v0.2.58-test-standalone)已公开，tag为`3948fc217d5167096bff9a86b0c87e3d77813e2b`，GitHub APK资产状态/大小/digest匹配；本机直链HEAD连接重置，未证实HTTP200。浏览天地图后自动缓存仅调研/讨论，不在此APK。真机触控/覆盖安装仍待验，鸿蒙原生未交付。未触碰用户预览标签、私有数据、附件或旧PDF。
 
 ## 2026-09-23 最新续接：0.2.57新APK本地构建完成，待Release
 
