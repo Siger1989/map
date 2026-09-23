@@ -1,4 +1,8 @@
-# 山兔0.2.61测试版（2026-09-23）
+# 山兔0.2.62测试版（2026-09-23）
+
+剖面 A 点编辑时点地图路线，不再同时弹路线卡和左侧行程栏；先选路线再开剖面会切换到剖面，关闭后路线仍可点选。新包`../APK/Shantu-0.2.62-test-standalone.apk`，versionCode69、原独立测试包名与4a94签名，57,826,396字节，SHA256 `8d66fdedce361a9cd6cfd3df238a8f524783ed345caa793b28ebb277701f76d7`。浏览器双尺寸操作、类型、逻辑测试、Android构建/签名通过；真机仍待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.62-test-standalone/Shantu-0.2.62-test-standalone.apk) · [发行说明](../docs/release-0.2.62.md)。
+
+## 0.2.61 启动大致定位
 
 Android 已授予定位权限时，启动地图短时请求系统网络定位和 GPS；网络粗位置可先聚焦地图，后续 GPS 更新点位。首次未授权时点“跟随”申请，普通浏览器不自动弹定位权限。用户先浏览地图则不被迟到的位置拉走。新包`../APK/Shantu-0.2.61-test-standalone.apk`，versionCode68、原独立测试包名和4a94签名，57,826,396字节，SHA256 `5bca95b201f50c2a812dfbe685de5bc9ddaff03adfde3d5e42e6d6c3a5a2668e`。类型、逻辑测试、隔离浏览器模拟和Android构建/签名通过；真机网络定位及安装待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.61-test-standalone/Shantu-0.2.61-test-standalone.apk) · [发行说明](../docs/release-0.2.61.md)。
 

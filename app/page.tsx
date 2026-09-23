@@ -829,6 +829,7 @@ export default function Home() {
     setSavedNavigationError('');
     const track = tracks.saved.find((t) => t.id === id);
     if (!track) return;
+    survey.close();
     if (track.hidden) tracks.showTrack(id);
     tracks.finish();
     tracks.setVisible(true);
@@ -943,7 +944,8 @@ export default function Home() {
     !tracks.drawing &&
     !guidance.active &&
     !areas.drawing &&
-    !sectionEditing;
+    !sectionEditing &&
+    !survey.active;
   const selectionName = selectedAnnotation
     ? selectedAnnotation.name || '未命名标记'
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
@@ -1329,7 +1331,7 @@ export default function Home() {
           onModelTerrainStatus={setModelTerrainStatus}
           onAreaSelect={(id) => {
             if (focusLock.locked) return;
-            if (editor.session) return;
+            if (editor.session || survey.active) return;
             areas.select(id);
             annotations.select(null);
             tracks.select(null);
@@ -1354,6 +1356,7 @@ export default function Home() {
               if (photo) survey.pick(photo.coordinates);
               return;
             }
+            if (survey.active) return;
             if (measurement.active) {
               const photo = linkedPhotos.find((p) => p.id === ids[0]);
               if (photo && measurement.adding)
@@ -1397,14 +1400,15 @@ export default function Home() {
             annotations.picking ||
             navigation.picking !== null ||
             measurement.active ||
-            survey.picking,
+            survey.active,
           )}
           onTrackSelect={(id) => {
-            if (focusLock.locked) return;
+            if (focusLock.locked || survey.active) return;
             if (!editor.session) openRoute(id);
           }}
-          onTrackLineSelect={point => { if (!focusLock.locked) selectLinePoint(point); }}
+          onTrackLineSelect={point => { if (!focusLock.locked && !survey.active) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
+            if (survey.active) return;
             if (node.trackId === 'live-recording') return;
             if (editor.session) {
               if (editor.session.branch !== null)
@@ -1489,6 +1493,7 @@ export default function Home() {
               if (item) survey.pick(item.coordinates);
               return;
             }
+            if (survey.active) return;
             if (measurement.active) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -1534,6 +1539,7 @@ export default function Home() {
             setPanel(null);
           }}
           onAnnotationNavigate={(id, slot) => {
+            if (survey.active) return;
             const item = annotations.items.find(annotation => annotation.id === id && annotation.visible);
             if (!item) return;
             navigation.place(slot, {
@@ -1548,6 +1554,7 @@ export default function Home() {
             if (
               editor.session ||
               measurement.active ||
+              survey.active ||
               panel !== null ||
               navigation.picking !== null
             )
@@ -2234,6 +2241,7 @@ export default function Home() {
           !tracks.drawing &&
           !areas.drawing &&
           !sectionEditing &&
+          !survey.active &&
           !guidance.active && (
             <TrackJourneyRail
               homeOverview={routeVisible && routeWindow === 'card'}
