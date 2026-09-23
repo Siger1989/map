@@ -87,7 +87,9 @@ test('baseline rotation atomically repositions only associated markers and inval
 });
 test('category order accepts old saves, rejects duplicates and survives measurement folder export',()=>{
   const order=moveCollectionTab(completeTabOrder(),'measurement',0),layout={...defaultLayout(),tabOrder:order};validateLayout(layout);
-  assert.equal(layout.tabOrder[0],'measurement');assert.equal(new Set(completeTabOrder(['section'])).size,9);assert.throws(()=>validateLayout({...layout,tabOrder:['all','all']}));
+  assert.equal(layout.tabOrder[0],'measurement');assert.equal(new Set(completeTabOrder(['section'])).size,10);
+  assert.equal(completeTabOrder(['regions','all','route','track','pin','model','area','section','measurement'])[2],'hidden');
+  assert.throws(()=>validateLayout({...layout,tabOrder:['all','all']}));
   const storage=store([[COLLECTION_STORAGE,JSON.stringify(layout)]]);const before=collectData(storage),after=mergeData({...base(),collections:{...defaultLayout(),tabOrder:['section']}},storage);
   assert.deepEqual(after.collections.tabOrder,before.collections.tabOrder);
 });

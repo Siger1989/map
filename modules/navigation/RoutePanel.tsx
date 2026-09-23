@@ -62,7 +62,7 @@ export function RoutePanel({
   onCache?: () => void;
   onImport?: () => void;
 }) {
-  const [editing, setEditing] = useState(true);
+  const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
   useEffect(() => {
     if (n.route && previousRoute.current !== n.route.createdAt) setEditing(false);
@@ -118,6 +118,10 @@ export function RoutePanel({
       : n.picking === 'end'
         ? n.stops.length - 1
         : n.picking;
+  const missingIndex = n.stops.findIndex((stop) => !stop.place);
+  const activeIndex = n.stops.findIndex((stop) => stop.id === active);
+  const nextIndex = pickingIndex ?? (activeIndex >= 0 ? activeIndex : missingIndex);
+  const nextLabel = nextIndex >= 0 ? stopLabel(nextIndex, n.stops.length) : '';
   useEffect(() => {
     if (pickingIndex === null) return;
     rows.current
@@ -288,6 +292,13 @@ export function RoutePanel({
           </button>
         ))}
       </div>
+      {n.picking === null && (
+        <div className="route-next-step" role="status">
+          {nextIndex >= 0
+            ? `${activeIndex >= 0 ? '正在输入' : '下一步选'}${nextLabel} · 可输入地点或点“选点”`
+            : '起点和终点已设置 · 可以规划路线'}
+        </div>
+      )}
       <div ref={rows} className="route-stop-list">
         {n.stops.map((s, index) => {
           const label = stopLabel(index, n.stops.length),
@@ -296,7 +307,7 @@ export function RoutePanel({
             <div
               key={s.id}
               data-stop-id={s.id}
-              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
+              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${nextIndex === index ? 'is-next' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
             >
               <form
                 className="route-stop-row"
@@ -314,6 +325,7 @@ export function RoutePanel({
                       ? '终'
                       : index}
                 </span>
+                <strong className="route-stop-label">{label}</strong>
                 <input
                   aria-label={label}
                   autoComplete="off"

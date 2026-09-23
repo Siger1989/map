@@ -2,12 +2,24 @@ import type { Map } from 'maplibre-gl';
 import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection, Feature } from 'geojson';
 import type { RouteOverlay } from './types';
+import type { ScreenPoint } from '../tracks/drawing';
 
 /** Draped GeoJSON route and endpoints, independent of roads/terrain providers. */
 export class RouteLayer {
+  private hasRoute = false;
   constructor(private map: Map) {}
+  pick(point: ScreenPoint): boolean {
+    if (!this.hasRoute) return false;
+    const layers = ['route-path', 'route-access', 'route-points'].filter((id) => this.map.getLayer(id));
+    if (!layers.length) return false;
+    return this.map.queryRenderedFeatures(
+      [[point.x - 12, point.y - 12], [point.x + 12, point.y + 12]],
+      { layers },
+    ).length > 0;
+  }
   sync(state: RouteOverlay) {
     const m = this.map;
+    this.hasRoute = Boolean(state.route);
     if (!m.getSource('planned-route'))
       m.addSource('planned-route', {
         type: 'geojson',

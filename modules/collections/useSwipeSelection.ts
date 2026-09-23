@@ -98,3 +98,67 @@ export function useSwipeSelection(
   };
   return { list, start };
 }
+
+/** Horizontal touch gesture on a folder name; vertical list scrolling stays native. */
+export function folderVisibilityGesture(dx: number, dy: number): boolean | null {
+  return Math.abs(dx) >= 64 && Math.abs(dx) >= Math.abs(dy) * 1.5
+    ? dx > 0
+    : null;
+}
+
+export function useFolderVisibilitySwipe(
+  onSwipe: (ids: string[], visible: boolean) => void,
+) {
+  const callback = useRef(onSwipe);
+  const cleanup = useRef<() => void>(() => {});
+  const suppressed = useRef<{ key: string; until: number } | null>(null);
+  callback.current = onSwipe;
+  useEffect(() => () => cleanup.current(), []);
+
+  const start = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    ids: string[],
+    key: string,
+  ) => {
+    if (event.pointerType === 'mouse' || !event.isPrimary || !ids.length) return;
+    cleanup.current();
+    const pointer = event.pointerId;
+    const x = event.clientX, y = event.clientY;
+    let lastX = x, lastY = y;
+    const finish = (apply: boolean) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', cancel);
+      if (!apply) return;
+      const dx = lastX - x, dy = lastY - y;
+      const visible = folderVisibilityGesture(dx, dy);
+      if (visible === null) return;
+      suppressed.current = { key, until: performance.now() + 500 };
+      callback.current(ids, visible);
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerId !== pointer) return;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== pointer) return;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      finish(true);
+    };
+    const cancel = () => finish(false);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', cancel);
+    cleanup.current = cancel;
+  };
+  return {
+    start,
+    suppressClick: (key: string) =>
+      suppressed.current?.key === key &&
+      performance.now() < suppressed.current.until,
+  };
+}

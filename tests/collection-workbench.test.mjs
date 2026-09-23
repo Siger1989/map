@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workbenchTree, workbenchTransfer } from '../modules/collections/workbenchAdapter.ts';
-import { dissolveWorkbenchFolder, dropWorkbenchItems, flattenWorkbench, moveWorkbenchItems, removeWorkbenchItems, updateWorkbenchItem } from '../modules/collections/workbenchTree.ts';
+import { dissolveWorkbenchFolder, dropWorkbenchItems, flattenWorkbench, moveWorkbenchItems, removeWorkbenchItems, setWorkbenchVisibility, updateWorkbenchItem } from '../modules/collections/workbenchTree.ts';
 import { saveWorkbench } from '../modules/collections/workbenchStore.ts';
 import { collectData, validateTransfer } from '../modules/outdoor/exchange.ts';
 import { newAnnotation, ANNOTATION_STORAGE } from '../modules/annotations/data.ts';
@@ -11,6 +11,7 @@ import { COLLECTION_STORAGE } from '../modules/collections/data.ts';
 import { collectionTransfer } from '../modules/collections/export.ts';
 import { catalogEntries } from '../modules/collections/catalog.ts';
 import { workbenchImageRoutes, selectedWorkbenchKeys } from '../modules/collections/workbenchShareData.ts';
+import { folderVisibilityGesture } from '../modules/collections/useSwipeSelection.ts';
 
 const data = () => validateTransfer({ format:'guanyun-backup',version:1, favorites:[],
   tracks:[{id:'walk',name:'真实实走轨迹',source:'recorded',createdAt:1000,segments:[[[104,30],[104.001,30.001]]]}],
@@ -37,6 +38,20 @@ test('rename and color do not rewrite track provenance, sample geometry, or mark
   assert.equal(next.tracks[0].source,'recorded');assert.deepEqual(next.tracks[0].segments,before.tracks[0].segments);
   assert.equal(next.tracks[0].createdAt,1000);assert.deepEqual(next.annotations,before.annotations);
   assert.equal(next.tracks[0].style.color,'#336699');
+});
+test('folder visibility updates nested map objects without changing their records',()=>{
+  const before=data(), tree=workbenchTree(before);
+  const hidden=workbenchTransfer(before,setWorkbenchVisibility(tree,new Set(['annotation:pin','track:walk']),false));
+  assert.equal(hidden.annotations[0].visible,false);assert.equal(hidden.tracks[0].hidden,true);
+  assert.deepEqual(hidden.tracks[0].segments,before.tracks[0].segments);
+  const restored=workbenchTransfer(hidden,setWorkbenchVisibility(workbenchTree(hidden),new Set(['annotation:pin','track:walk']),true));
+  assert.equal(restored.annotations[0].visible,true);assert.equal(restored.tracks[0].hidden,false);
+});
+test('folder horizontal swipe distinguishes hiding, showing and list scrolling',()=>{
+  assert.equal(folderVisibilityGesture(-70,8),false);
+  assert.equal(folderVisibilityGesture(70,8),true);
+  assert.equal(folderVisibilityGesture(-25,5),null);
+  assert.equal(folderVisibilityGesture(-70,80),null);
 });
 test('dissolve promotes only one level while delete explicitly removes contained records',()=>{
   const before=data(), tree=workbenchTree(before);

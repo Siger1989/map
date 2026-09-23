@@ -1,4 +1,8 @@
-# 山兔0.2.66测试版（2026-09-23）
+# 山兔0.2.67测试版（2026-09-24）
+
+路线规划常显起终点和下一步提示；已规划或收藏显示的路线可从地图点开路线卡，收藏夹点击导航路线直接恢复摘要。收藏夹文件夹可左滑整组隐藏、右滑整组显示，增加“隐藏”分类。新包 `../APK/Shantu-0.2.67-test-standalone.apk`，versionCode74、原独立测试包名/4a94签名，57,834,588字节，SHA256 `8409e4ad2632e3c69b7ae8b09c9a832a7dc1bf21383dc0090a3f3be79abab68d`。629项测试、类型、网页及Android构建、打包网页启动通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.67-test-standalone/Shantu-0.2.67-test-standalone.apk) · [发行说明](../docs/release-0.2.67.md)。
+
+# 历史版本：山兔0.2.66测试版（2026-09-23）
 
 框选操作与结果更紧凑，地图可在框选模式下平移缩放；标记 Excel 导出的地区列可补齐。标记条目输入时避让键盘并隐藏底栏，调整标记时移动轴贴地且位于图标下方，坐标在轴旁和操作卡中显示。新包 `../APK/Shantu-0.2.66-test-standalone.apk`，versionCode73、原独立测试包名/4a94签名，57,830,492字节，SHA256 `282bbe0b6a6be13bd0d497e24dd02ef4a75cc4a4c6d30d7f5f12d1a786e693bc`。626项测试、网页及Android构建、打包网页启动通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.66-test-standalone/Shantu-0.2.66-test-standalone.apk) · [发行说明](../docs/release-0.2.66.md)。
 

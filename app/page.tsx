@@ -801,8 +801,21 @@ export default function Home() {
       point?.trackId === tracks.selectedId ? point : null,
     );
   }, [tracks.selectedId]);
+  const openFavoriteRoute = (id: string) => {
+    const favorite = favorites.items.find((item) => item.id === id.slice('favorite:'.length));
+    if (!favorite || !navigation.restore(favorite)) return;
+    tracks.select(null);
+    annotations.select(null);
+    areas.select(null);
+    setTrackLinePoint(null);
+    setPanel('route');
+  };
   const selectLinePoint = (point: TrackLinePoint) => {
-    if (point.trackId.startsWith('favorite:') || point.trackId.startsWith('measurement:')) return;
+    if (point.trackId.startsWith('favorite:')) {
+      if (!editor.session) openFavoriteRoute(point.trackId);
+      return;
+    }
+    if (point.trackId.startsWith('measurement:')) return;
     if (editor.session) {
       if (editor.session.branch !== null)
         editor.change((value) => appendEditBranch(value, point.coordinate));
@@ -1404,7 +1417,17 @@ export default function Home() {
           )}
           onTrackSelect={(id) => {
             if (focusLock.locked || survey.active) return;
-            if (!editor.session) openRoute(id);
+            if (id.startsWith('favorite:')) {
+              if (!editor.session) openFavoriteRoute(id);
+            } else if (!editor.session) openRoute(id);
+          }}
+          onRouteSelect={() => {
+            if (!navigation.route || focusLock.locked || editor.session || survey.active) return;
+            tracks.select(null);
+            annotations.select(null);
+            areas.select(null);
+            setTrackLinePoint(null);
+            setPanel('route');
           }}
           onTrackLineSelect={point => { if (!focusLock.locked && !survey.active) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
@@ -2844,7 +2867,15 @@ export default function Home() {
                 preserveFavoritesFocus();
                 position.free();
                 follow.pause();
-                if (entry.kind === 'route') navigation.restore(entry.route);
+                if (entry.kind === 'route' && navigation.restore(entry.route)) {
+                  tracks.select(null);
+                  annotations.select(null);
+                  areas.select(null);
+                  setTrackLinePoint(null);
+                  map.current?.fitCollection(collectionPreviewPoints(entry));
+                  setPanel('route');
+                  return;
+                }
                 if (entry.kind === 'track') tracks.select(entry.track.id);
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
@@ -2913,9 +2944,9 @@ export default function Home() {
               navigationError={savedNavigationError}
               onRoute={(favorite) => {
                 preserveFavoritesFocus();
-                navigation.restore(favorite);
+                if (!navigation.restore(favorite)) return;
                 map.current?.fitRoute(favorite.route.coordinates);
-                setPanel(null);
+                setPanel('route');
               }}
               onTrack={(id) => {
                 preserveFavoritesFocus();

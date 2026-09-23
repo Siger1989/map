@@ -2,6 +2,7 @@
 export const COLLECTION_TABS = {
   regions: '地区',
   all: '全部',
+  hidden: '隐藏',
   route: '路线',
   track: '轨迹',
   pin: '标记',
@@ -25,10 +26,15 @@ export function validTabOrder(value: unknown): value is CollectionTab[] {
   );
 }
 export function completeTabOrder(order?: CollectionTab[]): CollectionTab[] {
-  return [
+  const next = [
     ...(order ?? []),
     ...DEFAULT_TAB_ORDER.filter((k) => !order?.includes(k)),
   ];
+  if (order && !order.includes('hidden')) {
+    next.splice(next.indexOf('hidden'), 1);
+    next.splice(next.indexOf('all') + 1, 0, 'hidden');
+  }
+  return next;
 }
 export function moveCollectionTab(
   order: CollectionTab[],

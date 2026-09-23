@@ -167,6 +167,7 @@ type Props = {
   annotationPicking?: boolean;
   measurementPicking?: boolean;
   onTrackSelect: (id: string) => void;
+  onRouteSelect?: () => void;
   onTrackLineSelect: (
     point: import('../tracks/linePoint').TrackLinePoint,
   ) => void;
@@ -1113,6 +1114,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 const point = trackRef.current?.pickLine(event.point);
                 if (point) latest.current.onTrackLineSelect(point);
                 else latest.current.onTrackSelect(track);
+                return;
+              }
+              if (routeRef.current?.pick(event.point)) {
+                latest.current.onRouteSelect?.();
                 return;
               }
               const area = areaRef.current?.pick(event.point);

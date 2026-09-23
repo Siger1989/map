@@ -20,7 +20,7 @@ import { deliverFile } from '../files/delivery';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
 import { spreadsheetRegions } from '../annotations/spreadsheetRegions';
 import { XLSX_MIME } from '../files/spreadsheet';
-import { useSwipeSelection } from './useSwipeSelection';
+import { useFolderVisibilitySwipe, useSwipeSelection } from './useSwipeSelection';
 import { useWorkbenchLongPress } from './useWorkbenchLongPress';
 import {
   WorkbenchSort,
@@ -40,6 +40,7 @@ import {
   workbenchLeaves,
   workbenchRegionTree,
   removeWorkbenchItems,
+  setWorkbenchVisibility,
   updateWorkbenchItem,
   type WorkbenchItem,
 } from './workbenchTree';
@@ -65,6 +66,7 @@ type Props = {
 export function WorkbenchPanel(props: Props) {
   const store = useWorkbenchData();
   const items = useMemo(() => store.items, [store.data]);
+  const allItems = useMemo(() => new Map(flattenWorkbench(items).map((item) => [item.id, item])), [items]);
   const [expanded, setExpanded] = useState(new Set<string>(['unfiled']));
   const [query, setQuery] = useState(''),
     [type, setType] = useState('all'),
@@ -94,7 +96,7 @@ export function WorkbenchPanel(props: Props) {
       `${i.name} ${workbenchDetails(i)}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()) &&
-      (type === 'all' || i.kind === type);
+      (type === 'all' || (type === 'hidden' ? i.visible === false : i.kind === type));
     const filter = (list: WorkbenchItem[]): WorkbenchItem[] =>
       list.flatMap((i) => {
         if (i.kind !== 'folder') return match(i) ? [i] : [];
@@ -225,6 +227,13 @@ export function WorkbenchPanel(props: Props) {
       setBusy(false);
     }
   };
+  const setFolderVisibility = (ids: string[], visible: boolean) => {
+    if (!ids.length) return;
+    commit(setWorkbenchVisibility(items, new Set(ids), visible),
+      visible ? `已显示 ${ids.length} 项` : `已隐藏 ${ids.length} 项`);
+  };
+  const folderSwipe = useFolderVisibilitySwipe((ids, visible) =>
+    setFolderVisibility(ids, visible));
   const exportMarkerExcel = async () => {
     const keys = new Set(selectedWorkbenchKeys(items, [...checked]));
     const markers = store.data?.annotations.filter(item => keys.has(`annotation:${item.id}`)) ?? [];
@@ -265,9 +274,15 @@ export function WorkbenchPanel(props: Props) {
     const ids = folder
       ? workbenchLeaves(item.children ?? []).map((i) => i.id)
       : [item.id];
+    const visibilityLeaves = folder
+      ? workbenchLeaves((synthetic ? item : allItems.get(item.id))?.children ?? [])
+      : [];
+    const visibilityIds = visibilityLeaves.map((leaf) => leaf.id);
     const selectedCount = ids.filter((id) => checked.has(id)).length,
       complete = !!ids.length && selectedCount === ids.length;
     const open = expanded.has(item.id) || !!query;
+    const visibleCount = visibilityLeaves.filter((leaf) => leaf.visible === true).length;
+    const allVisible = folder && visibilityIds.length > 0 && visibleCount === visibilityIds.length;
     const check = batch && (
       <button
         className="workbench-check"
@@ -290,9 +305,11 @@ export function WorkbenchPanel(props: Props) {
         <button
           className="workbench-item-open"
           aria-label={`${folder ? '展开文件夹' : '定位收藏'} ${item.name}`}
+          title={folder ? '左滑隐藏全部，右滑显示全部' : undefined}
           aria-expanded={folder ? open : undefined}
           onContextMenu={(e) => e.preventDefault()}
           onPointerDown={(e) => {
+            if (folder) folderSwipe.start(e, visibilityIds, key);
             if (!synthetic && item.id !== 'unfiled')
               hold.start(
                 e,
@@ -305,7 +322,7 @@ export function WorkbenchPanel(props: Props) {
               );
           }}
           onClick={() => {
-            if (hold.suppressClick()) return;
+            if (hold.suppressClick() || folderSwipe.suppressClick(key)) return;
             setActive(key);
             if (folder)
               setExpanded((old) => {
@@ -344,7 +361,9 @@ export function WorkbenchPanel(props: Props) {
             </small>
           </span>
         </button>
-        {!folder && <button className="workbench-visibility" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onClick={() => commit(updateWorkbenchItem(items, item.id, { visible: !item.visible }), item.visible ? '已从地图隐藏' : '已在地图显示')}>
+        {folder ? <button className="workbench-visibility" aria-label={`${allVisible ? '隐藏' : '显示'} ${item.name}内全部${visibilityIds.length}项`} aria-pressed={allVisible} disabled={!visibilityIds.length} onClick={() => setFolderVisibility(visibilityIds, !allVisible)}>
+          {allVisible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{allVisible ? '全显' : visibleCount ? '部分' : '全隐'}</small>
+        </button> : <button className="workbench-visibility" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onClick={() => commit(updateWorkbenchItem(items, item.id, { visible: !item.visible }), item.visible ? '已从地图隐藏' : '已在地图显示')}>
           {item.visible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{item.visible ? '显示' : '隐藏'}</small>
         </button>}
         {!synthetic && (
@@ -516,7 +535,7 @@ export function WorkbenchPanel(props: Props) {
           <div ref={swipe.list} className="workbench-tree-list">
             {type === 'all' && !batch && props.offlineMaps?.(query)}
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
-            {!view.length && <p className="workbench-empty">没有匹配的路线或地点</p>}
+            {!view.length && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : '没有匹配的路线或地点'}</p>}
           </div>
           {batch && (
             <div className="workbench-batch">

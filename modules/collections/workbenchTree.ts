@@ -69,6 +69,17 @@ export function updateWorkbenchItem(
         : item,
   );
 }
+export function setWorkbenchVisibility(
+  items: WorkbenchItem[],
+  ids: Set<string>,
+  visible: boolean,
+): WorkbenchItem[] {
+  return items.map((item) =>
+    item.kind === 'folder'
+      ? { ...item, children: setWorkbenchVisibility(item.children ?? [], ids, visible) }
+      : ids.has(item.id) ? { ...item, visible } : item,
+  );
+}
 export function removeWorkbenchItems(
   items: WorkbenchItem[],
   ids: Set<string>,
