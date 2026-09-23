@@ -386,6 +386,7 @@ export default function Home() {
     null,
   );
   const [annotationTab, setAnnotationTab] = useState<MarkerTab>('basic');
+  const [adjustingPinId, setAdjustingPinId] = useState<string | null>(null);
   const [sectionHistory, setSectionHistory] = useState<SectionSettings[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<SectionProfileData | null>(
@@ -606,7 +607,7 @@ export default function Home() {
     (track) => track.id === tracks.selectedId,
   );
   useEffect(() => {
-    if (panel !== 'favorites') return;
+    if (panel !== 'favorites' || boxSelecting || collectionSelectedKeys.length) return;
     const entries = catalogEntries(
       favorites.items,
       tracks.saved,
@@ -629,7 +630,7 @@ export default function Home() {
       if (target.length) map.current?.fitCollection(target);
     });
     return () => cancelAnimationFrame(frame);
-  }, [panel]);
+  }, [panel, boxSelecting, collectionSelectedKeys.length]);
   const selectedDraft =
     tracks.selectedId === DRAFT_ID && tracks.draft.length > 0;
   const railTrack =
@@ -862,6 +863,16 @@ export default function Home() {
       setPanel(null);
     },
   });
+  const stopNavigation = () => {
+    guidance.stop();
+    navigation.clear();
+    setNavigationTarget(null);
+    setRallyMode(false);
+    tracks.select(null);
+    setTrackLinePoint(null);
+    map.current?.previewRoute(null);
+    setPanel(null);
+  };
   const routeOverlay = useMemo(
     () => ({
       start: navigation.start,
@@ -1022,6 +1033,12 @@ export default function Home() {
     }),
     [annotations.items, tracks.saved, photos.items],
   );
+  const previousRoutePanel = useRef(panel);
+  useEffect(() => {
+    if (previousRoutePanel.current === 'route' && panel !== 'route' &&
+        !navigation.route && !guidance.active) navigation.clear();
+    previousRoutePanel.current = panel;
+  }, [panel]);
   const showCenterCursor = focusLock.locked || (panel === null &&
     !tracks.drawing &&
     !areas.drawing &&
@@ -1206,7 +1223,7 @@ export default function Home() {
               ? areaDrawing.current?.input(event)
               : drawing.current?.input(event)
           }
-          collectionPreviewActive={panel === 'favorites'}
+          collectionPreviewActive={panel === 'favorites' && !boxSelecting && collectionSelectedKeys.length === 0}
           photos={photoOverlay}
           onPhotoSelect={(ids) => {
             if (survey.active && survey.picking) {
@@ -1378,6 +1395,11 @@ export default function Home() {
             setActiveTrackNode(null);
             areas.select(null);
             setProfileOpen(false);
+            if (annotations.selected === id && panel === null) {
+              setAdjustingPinId(null);
+              setPanel('annotations');
+              return;
+            }
             if (!annotations.select(id)) return;
             tracks.select(
               annotations.items.find((a) => a.id === id)?.trackAnchor
@@ -1385,7 +1407,18 @@ export default function Home() {
             );
             tracks.finish();
             navigation.setPicking(null);
-            setPanel('annotations');
+            setAdjustingPinId(null);
+            setPanel(null);
+          }}
+          onAnnotationNavigate={(id, slot) => {
+            const item = annotations.items.find(annotation => annotation.id === id && annotation.visible);
+            if (!item) return;
+            navigation.place(slot, {
+              name: item.name || '标记位置',
+              coordinates: [...item.coordinates],
+            });
+            follow.pause();
+            setPanel('route');
           }}
           onMapHold={(value) => {
             if (offlinePicking) return;
@@ -1489,7 +1522,11 @@ export default function Home() {
                   onMarker={() => setRouteWindow('marker')}
                   onEdit={() => beginRouteEdit(railTrack)}
                   onDetails={() => setRouteWindow('details')}
-                  onCache={()=>beginMapDownload(railTrack.name,{kind:'route',segments:railTrack.segments,bufferKm:10})}
+                  onDelete={railTrack.id === DRAFT_ID ? undefined : () => {
+                    if (!tracks.remove(railTrack.id)) return false;
+                    setTrackLinePoint(null);
+                    return true;
+                  }}
                 />
                 </>
               )}
@@ -2013,7 +2050,7 @@ export default function Home() {
               }}
               guidance={guidance}
               following={follow.following}
-              onStop={guidance.stop}
+              onStop={stopNavigation}
               onFollow={() => {
                 follow.resume();
                 if (!position.watching || position.locationError)
@@ -2031,7 +2068,7 @@ export default function Home() {
         {rallyMode && navigation.route && <RallyNavigation
           display={routeDisplay}
           route={guidance.session?.route ?? navigation.route} guidance={guidance} fix={displayedFix}
-          onNormal={() => setRallyMode(false)} onStart={startGuidance} onStop={guidance.stop}
+          onNormal={() => setRallyMode(false)} onStart={startGuidance} onStop={stopNavigation}
           onLocate={() => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(); }}
           onOverview={() => map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 })}
         />}
@@ -2182,7 +2219,10 @@ export default function Home() {
             )}
             project={(p) => map.current?.toScreen(p) ?? null}
             selected={collectionSelectedKeys}
-            onChange={setCollectionSelectedKeys}
+            onChange={keys => {
+              setCollectionSelectedKeys(keys);
+              if (keys.length) setPanel('favorites');
+            }}
             onExit={() => {
               setBoxSelecting(false);
               setCollectionOutputKey(null);
@@ -2191,6 +2231,7 @@ export default function Home() {
           />
         )}
         <MapActions
+          boxSelecting={boxSelecting}
           markControl={showCenterCursor ? <CenterMarkButton map={() => map.current} onAdd={(coordinates) => {
             if (focusLock.locked) focusLock.toggle();
             map.current?.stop();
@@ -2237,6 +2278,12 @@ export default function Home() {
           } : undefined}
           compact={panel === 'favorites'}
           onBoxSelect={() => {
+            if (boxSelecting) {
+              setBoxSelecting(false);
+              setCollectionOutputKey(null);
+              setPanel('favorites');
+              return;
+            }
             follow.pause();
             map.current?.stop();
             tracks.pause();
@@ -2343,6 +2390,15 @@ export default function Home() {
               terrainStatus={modelTerrainStatus}
               photos={photosForMarker(photos.items, selectedAnnotation.id)}
               onCapture={markerCamera.capture}
+              onImport={markerCamera.importPhoto}
+              onAdjust={() => {
+                setAnnotationTab('position');
+                setAdjustingPinId(selectedAnnotation.id);
+                setPanel(null);
+                position.free();
+                follow.pause();
+                map.current?.focusPoint(selectedAnnotation.coordinates, annotationViewZoom(selectedAnnotation));
+              }}
               cameraBusy={markerCamera.busy}
               cameraStatus={
                 markerCamera.markerId === selectedAnnotation.id
@@ -2364,6 +2420,7 @@ export default function Home() {
                 setPanel(null);
               }}
               onClose={() => {
+                setAdjustingPinId(null);
                 if (annotations.select(null)) {
                   setPanel(null);
                   tracks.select(null);
@@ -2386,14 +2443,6 @@ export default function Home() {
                   name: item.name || '标记位置',
                   coordinates: item.coordinates,
                 });
-                if (
-                  position.fix &&
-                  Date.now() - position.fix.timestamp < 120000
-                )
-                  navigation.place('start', {
-                    name: '我的位置',
-                    coordinates: position.fix.coordinates,
-                  });
                 setPanel('route');
               }}
             />
@@ -2775,7 +2824,7 @@ export default function Home() {
               onImport={() => setRouteImportOpen(true)}
               onCache={()=>{if(navigation.route)beginMapDownload('规划路线',{kind:'route',segments:[navigation.route.coordinates],bufferKm:10});}}
               onEditPoints={editPlannedPoints}
-              onCancel={() => { guidance.stop(); navigation.clear(); setRallyMode(false); setPanel(null); }}
+              onCancel={stopNavigation}
               onRally={() => { setPanel(null); setRallyMode(true); }}
               weather={<RouteWeatherSettings journey={routeJourney} />}
               onShare={() => {
@@ -2907,13 +2956,14 @@ export default function Home() {
           !selectedAnnotation.sectionAnchor &&
           selectedPose &&
           annotations.edit &&
-          annotationTab === 'position' ? (
+          annotationTab === 'position' &&
+          (selectedAnnotation.kind !== 'pin' || adjustingPinId === selectedAnnotation.id) ? (
             <ObjectGizmo
               key={`annotation-gizmo:${selectedAnnotation.id}`}
               name={selectedAnnotation.name || '标记'}
               kind={selectedAnnotation.kind}
               pose={selectedPose}
-              hideToolbar
+              hideToolbar={panel === 'annotations'}
               watchProjection={watchObjectProjection}
               onLocate={() =>
                 map.current?.focusPoint(
@@ -2941,9 +2991,8 @@ export default function Home() {
               }}
               onUndo={annotations.undoMove}
               onDetails={() => setPanel('annotations')}
-              onClose={() => {
-                if (annotations.select(null)) setPanel(null);
-              }}
+              onClose={() => { setAdjustingPinId(null); setPanel('annotations'); }}
+              showPositionReadout
             />
           ) : section.enabled &&
             !section.survey &&

@@ -94,6 +94,10 @@
 .observatory.home-map .home-route-actions button { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 32px; font-size: 12px; white-space: nowrap; }
 .observatory.home-map .home-route-actions button + button { border-left: 1px solid #a6bdc0; border-radius: 0; }
 .observatory.home-map .home-route-actions button.is-primary { background: var(--home-active); color: var(--home-green); }
+.observatory.home-map .home-route-delete-confirm { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding-top:4px; border-top:1px solid var(--home-line); font-size:11px; }
+.observatory.home-map .home-route-delete-confirm span { grid-column:1/-1; }
+.observatory.home-map .home-route-delete-confirm button { min-height:32px; border:1px solid #a6bdc0; border-radius:4px; background:#fff; }
+.observatory.home-map .home-route-delete-confirm .route-danger { border-color:#bd5d50; color:#a33626; }
 .observatory.home-map .home-route-card > p { margin: 4px 0; color: #a33; font-size: 12px; }
 .observatory.home-map .home-journey-points { position: absolute; z-index: 6; left: var(--home-left); top: calc(var(--home-header-height) - 8px + var(--home-top) + var(--route-card-clearance, 126px)); width: clamp(100px,26vw,124px); max-height: min(200px,calc(100dvh - var(--home-footer) - var(--route-card-clearance,126px) - 196px)); padding: 4px 6px; overflow: auto; }
 .observatory.home-map .home-journey-heading { width: 100%; display: flex; justify-content: space-between; align-items: center; min-height: 25px; font-size: 12px; }

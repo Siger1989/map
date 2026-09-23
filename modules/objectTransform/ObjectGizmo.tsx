@@ -31,6 +31,7 @@ type Props = {
   canUndo: boolean;
   error?: string;
   hideToolbar?: boolean;
+  showPositionReadout?: boolean;
   onBegin: () => void;
   onPreview: (p: Pose | null) => void;
   onCommit: (p: Pose) => void;
@@ -200,6 +201,7 @@ export function ObjectGizmo(props: Props) {
       .map((a, i) => `${i ? 'L' : 'M'}${a.x.toFixed(2)},${a.y.toFixed(2)}`)
       .join(' ');
   const angles = rotationDegrees(previewPose ?? props.pose);
+  const shownPose = previewPose ?? props.pose;
   const commitRotation = (pose: Pose) => {
     if (gesture.current) return;
     props.onBegin();
@@ -210,6 +212,7 @@ export function ObjectGizmo(props: Props) {
       <svg
         ref={svg}
         className="object-gizmo-canvas"
+        data-kind={props.kind}
         aria-label={`${props.name}三维操控器`}
         data-active={!!active}
         onPointerMove={move}
@@ -263,7 +266,7 @@ export function ObjectGizmo(props: Props) {
                     <path
                       className="gizmo-solid"
                       transform={`translate(${a.tip.x} ${a.tip.y}) rotate(${angle})`}
-                      d="M13 0 L-15 -10 L-15 10 Z"
+                      d={props.kind === 'pin' ? 'M8 0 L-9 -6 L-9 6 Z' : 'M13 0 L-15 -10 L-15 10 Z'}
                       fill={a.color}
                     />
                   </g>
@@ -294,7 +297,7 @@ export function ObjectGizmo(props: Props) {
                     )}
                   <text
                     className="gizmo-axis-label"
-                    x={a.tip.x + 13}
+                    x={a.tip.x + (props.kind === 'pin' ? 9 : 13)}
                     y={a.tip.y - 10}
                     fill={a.color}
                   >
@@ -333,17 +336,25 @@ export function ObjectGizmo(props: Props) {
             <g {...handlers('move-free', '沿屏幕平面移动')}>
               <rect
                 className="gizmo-hit"
-                x={c.x - 118}
-                y={c.y - 118}
+                x={c.x - (props.kind === 'pin' ? 74 : 118)}
+                y={c.y - (props.kind === 'pin' ? 74 : 118)}
                 width="44"
                 height="44"
               />
               <path
                 className="gizmo-solid"
-                d={`M${c.x - 108} ${c.y - 108} h23 l-8 8 h-7 v7 l-8 8 Z`}
+                d={props.kind === 'pin'
+                  ? `M${c.x - 60} ${c.y - 60} h16 l-6 6 h-4 v4 l-6 6 Z`
+                  : `M${c.x - 108} ${c.y - 108} h23 l-8 8 h-7 v7 l-8 8 Z`}
                 fill="#d0d4d5"
               />
             </g>
+            {props.showPositionReadout && frame && <g className="gizmo-position-readout" transform={`translate(${Math.max(6, Math.min(frame.width - 174, c.x + 24 + 168 <= frame.width - 54 ? c.x + 24 : c.x - 184))} ${Math.max(58, Math.min(frame.height - 78, c.y + 22))})`} pointerEvents="none">
+              <rect width="168" height={props.kind === 'pin' ? 43 : 57} rx="5"/>
+              <text x="7" y="15">经度 {shownPose.coordinates[0].toFixed(6)}°</text>
+              <text x="7" y="29">纬度 {shownPose.coordinates[1].toFixed(6)}°</text>
+              {props.kind !== 'pin' && <text x="7" y="43">中心海拔 {shownPose.altitude.toFixed(1)} m</text>}
+            </g>}
           </>
         )}
       </svg>
@@ -351,6 +362,7 @@ export function ObjectGizmo(props: Props) {
         className="object-gizmo glass"
         aria-label={`${props.name}操作栏`}
         data-active={!!active}
+        data-kind={props.kind}
       >
         <header>
           <strong title={props.name}>{props.name}</strong>
@@ -366,10 +378,10 @@ export function ObjectGizmo(props: Props) {
             onClick={props.onClose}
             aria-label="结束对象操作"
           >
-            ✓
+            完成
           </button>
         </header>
-        <div className="object-rotation" aria-label="对象旋转角度">
+        {props.kind !== 'pin' && <div className="object-rotation" aria-label="对象旋转角度">
           {(['X', 'Y', 'Z'] as const).map((axis, index) => {
             const value = Number(angles[index].toFixed(1));
             return (
@@ -417,7 +429,7 @@ export function ObjectGizmo(props: Props) {
               </label>
             );
           })}
-        </div>
+        </div>}
         <div className="object-gizmo-actions">
           <button
             disabled={!!active || !props.canUndo}
@@ -426,7 +438,7 @@ export function ObjectGizmo(props: Props) {
           >
             撤销
           </button>
-          <button
+          {props.kind !== 'pin' && <button
             disabled={!!active}
             title={
               props.kind === 'plane'
@@ -436,7 +448,7 @@ export function ObjectGizmo(props: Props) {
             onClick={() => commitRotation(uprightPose(props.pose, props.kind))}
           >
             归正
-          </button>
+          </button>}
           <button disabled={!!active} onClick={props.onLocate}>
             回到对象
           </button>

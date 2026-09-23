@@ -1,4 +1,8 @@
-# 山兔0.2.58测试版（2026-09-23，Release已发布）
+# 山兔0.2.59测试版（2026-09-23）
+
+紧凑标记标签与快速导航、集中编辑窗口、框选即时操作、画线按钮底板和路线卡删除确认已纳入新包。结束导航会清除临时规划线与起终点，已保存轨迹仍保留。新包`../APK/Shantu-0.2.59-test-standalone.apk`，versionCode66、原独立测试包名和4a94签名，57,826,396字节，SHA256 `e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`。TypeScript、614项逻辑测试、390×857浏览器交互及Android构建/签名通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.59-test-standalone/Shantu-0.2.59-test-standalone.apk) · [发行说明](../docs/release-0.2.59.md)。
+
+# 历史版本：山兔0.2.58测试版（2026-09-23，Release已发布）
 
 恢复地图中心准星与标记按钮，右侧顺序为方向→标记→跟随；隐藏UI时也可使用标记。中心点弹窗移到十字星下方，不再盖住准星。已从本轮源码新构建`../APK/Shantu-0.2.58-test-standalone.apk`，versionCode65，独立测试包名和4a94签名保持。包大小57818204字节，SHA256 `ccf9fea95c50ebd0d20909691f57e3d5a0524dba27d45c093cccad1a8966b3cf`。390×857/360×780浏览器控件检查、TypeScript、614项测试、Android构建和签名通过；真机安装/触控待验，鸿蒙6.1原生包尚无交付。浏览后自动缓存尚在讨论中，不含于此版。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.58-test-standalone/Shantu-0.2.58-test-standalone.apk) · [发行说明](../docs/release-0.2.58.md)。
 

@@ -302,6 +302,7 @@
   flex-shrink: 0;
   color: var(--accent);
 }
+.catalog-row .collection-open svg path { fill: currentColor; stroke: none; }
 .catalog-row path {
   fill: none;
   stroke: currentColor;

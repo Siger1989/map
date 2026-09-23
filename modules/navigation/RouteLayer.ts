@@ -81,11 +81,14 @@ export class RouteLayer {
         filter: ['==', '$type', 'Point'],
         layout: {
           'text-field': ['get', 'label'],
-          'text-size': 11,
+          'text-size': 12,
           'text-font': ['Noto Sans Regular'],
+          'text-anchor': 'top',
+          'text-offset': [0, 1.7],
           'text-allow-overlap': true,
+          'text-ignore-placement': true,
         },
-        paint: { 'text-color': '#0c2530' },
+        paint: { 'text-color': '#ffffff', 'text-halo-color': '#14392e', 'text-halo-width': 2 },
       });
     }
     const features: Feature[] = [];
@@ -111,7 +114,7 @@ export class RouteLayer {
       if (state[slot])
         features.push({
           type: 'Feature',
-          properties: { slot, label: slot === 'start' ? '起' : '终' },
+          properties: { slot, label: slot === 'start' ? '起点' : '终点' },
           geometry: { type: 'Point', coordinates: state[slot]!.coordinates },
         });
     for (const [index, place] of (state.via ?? []).entries())

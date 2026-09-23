@@ -48,6 +48,12 @@
   stroke-width: 3px;
   pointer-events: none;
 }
+.object-gizmo-canvas[data-kind='pin'] .gizmo-line-shadow { stroke-width: 3; }
+.object-gizmo-canvas[data-kind='pin'] .gizmo-line { stroke-width: 1.8; }
+.object-gizmo-canvas[data-kind='pin'] .gizmo-solid { stroke-width: 1; }
+.object-gizmo-canvas[data-kind='pin'] .gizmo-axis-label { font-size: 10px; stroke-width: 2px; }
+.object-gizmo-canvas .gizmo-position-readout rect { fill: #fffdece8; stroke: #176a50; stroke-width: 1; }
+.object-gizmo-canvas .gizmo-position-readout text { fill: #173b34; font: 11px "Microsoft YaHei", sans-serif; }
 .object-gizmo-canvas g:focus .gizmo-line,
 .object-gizmo-canvas g:hover > .gizmo-line {
   stroke-width: 5;
@@ -70,6 +76,7 @@
   font-size: 12px;
   overflow: auto;
 }
+.object-gizmo[data-kind='pin'] { left: calc(var(--edge-left) + 48px); width: min(240px, calc(100% - 132px)); }
 .object-gizmo header,
 .object-gizmo-actions {
   display: flex;

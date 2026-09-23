@@ -1,7 +1,7 @@
 import { recordedStats, recordedDuration } from './recordedStats';
 import { trackSourceLabel, hasTrackTime } from './provenance';
 import { useMemo, useState } from 'react';
-import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Download } from 'lucide-react';
+import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Trash2 } from 'lucide-react';
 import type { ManualTrack } from './drawing';
 import type { TrackLinePoint } from './linePoint';
 import { trackAlternatives } from './alternatives';
@@ -12,13 +12,14 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onCache }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onDelete }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
-  onCache?: () => void;
+  onDelete?: () => boolean;
 }) {
   const [name, setName] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [renameError, setRenameError] = useState('');
   const dock = useDockClearance('--route-card-clearance');
   const choices = useMemo(() => trackAlternatives(track.segments), [track.segments]);
@@ -66,8 +67,13 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>
-      {onCache && <button onClick={onCache} aria-label="缓存当前路线"><Download size={18}/>缓存</button>}
+      {onDelete && <button onClick={() => setConfirmDelete(true)} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
     </nav></>}
+    {confirmDelete && <div className="home-route-delete-confirm" role="group" aria-label="确认删除路线">
+      <span>删除“{track.name}”？关联照片、标记及来源路线保留。</span>
+      <button onClick={() => setConfirmDelete(false)}>取消</button>
+      <button className="route-danger" onClick={() => { if (onDelete?.()) setConfirmDelete(false); }}>确认删除</button>
+    </div>}
     {error && <p role="alert">{error}</p>}
   </section>;
 }

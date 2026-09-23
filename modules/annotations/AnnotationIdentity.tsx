@@ -1,7 +1,7 @@
 import { SmartInput, SmartTextarea } from '../input/SmartText';
 import { useState, type ReactNode } from 'react';
 import type { Annotation } from './data';
-import { MARKER_ICONS, markerIcon } from './icons';
+import { MARKER_ICONS, markerIcon, markerSolidPath } from './icons';
 import {
   MAX_ATTRIBUTES,
   readAttributeTemplate,
@@ -39,7 +39,7 @@ export function AnnotationIdentity({
         onClick={() => setExpanded(!expanded)}
       >
         <svg viewBox="0 0 24 24" width="25" height="25" aria-hidden="true">
-          <path d={markerIcon(item.icon).path} />
+          <path d={markerSolidPath(item.icon)} fillRule="evenodd" />
         </svg>
         图标 · {markerIcon(item.icon).name}
         <span>更换 ▾</span>
@@ -62,7 +62,7 @@ export function AnnotationIdentity({
                 height="23"
                 aria-hidden="true"
               >
-                <path d={icon.path} />
+                <path d={markerSolidPath(id)} fillRule="evenodd" />
               </svg>
               <small>{icon.name}</small>
             </button>

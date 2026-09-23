@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { collectData, type Transfer } from '../outdoor/exchange';
 import { CATALOG_TYPES, type CatalogEntry } from './catalog';
@@ -7,17 +7,20 @@ import { saveWorkbench } from './workbenchStore';
 import './boxSelection.css';
 
 /** Review only this map selection; reuse the archive transaction and conflict-safe undo. */
-export function BoxSelectionResults({ entries, initialMessage, onClose, onReselect, onExport, storage = localStorage }: {
+export function BoxSelectionResults({ entries, initialMessage, onClose, onReselect, onExport, onShare, busy = false, storage = localStorage }: {
   entries: CatalogEntry[];
   initialMessage?: string;
   onClose: () => void;
   onReselect: (keys: string[]) => void;
   onExport: (keys: string[]) => void;
+  onShare: (keys: string[]) => void;
+  busy?: boolean;
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 }) {
   const [excluded, setExcluded] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState(initialMessage ?? '');
+  useEffect(() => { setMessage(initialMessage ?? ''); }, [initialMessage]);
   const [undo, setUndo] = useState<{ before: Transfer; after: Transfer } | null>(null);
   const chosen = useMemo(() => entries.filter(e => !excluded.includes(e.key)), [entries, excluded]);
   const remove = () => {
@@ -61,7 +64,7 @@ export function BoxSelectionResults({ entries, initialMessage, onClose, onResele
       {!entries.length && !message && <p className="box-results-note">本次框选中已没有对象，可以重新框选。</p>}
       <div className="box-results-actions">
         <button onClick={() => onReselect(chosen.map(e => e.key))}>继续框选</button>
-        {entries.length ? <><button disabled={!chosen.length} onClick={() => onExport(chosen.map(e => e.key))}>导出</button><button className="is-danger" disabled={!chosen.length} onClick={() => setConfirming(true)}>删除</button></> : <button onClick={onClose}>返回地图</button>}
+        {entries.length ? <><button disabled={!chosen.length || busy} onClick={() => onExport(chosen.map(e => e.key))}>导出</button><button disabled={!chosen.length || busy} onClick={() => onShare(chosen.map(e => e.key))}>{busy ? '生成中…' : '分享'}</button><button className="is-danger" disabled={!chosen.length || busy} onClick={() => setConfirming(true)}>删除</button></> : <button onClick={onClose}>返回地图</button>}
         {undo && <button onClick={restore}>撤销删除</button>}
       </div>
     </>}

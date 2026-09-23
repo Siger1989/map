@@ -24,7 +24,7 @@ import { coordinateKey } from './regions';
 import { collectionTransfer, collectionSpreadsheet } from './export';
 import { deliverFile } from '../files/delivery';
 import { XLSX_MIME } from '../files/spreadsheet';
-import { markerIcon } from '../annotations/icons';
+import { markerSolidPath } from '../annotations/icons';
 import type { Annotation } from '../annotations/data';
 import type { SectionObject } from '../section/sectionObjects';
 import type { MapArea } from '../areas/data';
@@ -151,13 +151,14 @@ export function CollectionsPanel(props: Props) {
     setEditing(e.key);
     setMessage('');
   };
-  const share = async (send: boolean) => {
+  const share = async (send: boolean, keys = selected) => {
     if (busy) return;
     setBusy(true);
     setMessage('');
     const controller = new AbortController();
     abort.current = controller;
     try {
+      const chosen = entries.filter((e) => keys.includes(e.key));
       const content =
         format === 'zip'
           ? await collectionArchive(
@@ -209,6 +210,8 @@ export function CollectionsPanel(props: Props) {
     onClose={props.onClose}
     onReselect={props.onReselect ?? props.onClose}
     onExport={keys => { setSelected(keys); setOutput(true); }}
+    onShare={keys => { void share(true, keys); }}
+    busy={busy}
   />;
   if (legacy)
     return (
@@ -522,7 +525,7 @@ export function CollectionsPanel(props: Props) {
                             height="18"
                             aria-hidden="true"
                           >
-                            <path d={markerIcon(e.annotation.icon).path} />
+                            <path d={markerSolidPath(e.annotation.icon)} fillRule="evenodd" />
                           </svg>
                         )}
                         <span>

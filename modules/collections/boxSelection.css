@@ -46,6 +46,10 @@
   box-shadow: 0 2px 10px #0005;
   font-size: 12px;
 }
+.observatory[data-panel='favorites'] .map-box-tools {
+  top: calc(58px + var(--safe-top));
+  bottom: auto;
+}
 .map-box-hit.route-node-hit { box-sizing: border-box; background: transparent; border: 1.5px solid #fff3a0; box-shadow: 0 0 3px 1px #fff8baaa; }
 .map-box-tools strong,
 .map-box-tools small {

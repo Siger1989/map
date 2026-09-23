@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Trash2,
 } from 'lucide-react';
-import { MARKER_ICONS, markerIcon } from './icons';
+import { MARKER_ICONS, markerIcon, markerSolidPath } from './icons';
 import { MAX_ATTRIBUTES } from './attributes';
 import type { Annotation } from './data';
 import {
@@ -32,7 +32,7 @@ export function AnnotationIcon({
 }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
-      <path d={markerIcon(item.icon).path} />
+      <path d={markerSolidPath(item.icon)} fillRule="evenodd" />
     </svg>
   );
 }

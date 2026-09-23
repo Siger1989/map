@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { VisiblePhoto } from '../photos/storage';
 import { MarkerPhotos } from './MarkerPhotos';
+import { PinEditor } from './PinEditor';
 import type { Annotation } from './data';
 import { dimensionLabel, volume } from './data';
 import type { AnnotationsState } from './useAnnotations';
@@ -42,6 +43,8 @@ export function AnnotationWorkspace({
   terrainStatus,
   photos = [],
   onCapture,
+  onImport,
+  onAdjust,
   onPhoto,
   cameraStatus,
   cameraBusy,
@@ -59,6 +62,8 @@ export function AnnotationWorkspace({
   terrainStatus?: string;
   photos?: VisiblePhoto[];
   onCapture: (item: Annotation) => void;
+  onImport: (item: Annotation) => void;
+  onAdjust: () => void;
   onPhoto: (id: string) => void;
   cameraStatus?: string;
   cameraBusy?: boolean;
@@ -169,6 +174,7 @@ export function AnnotationWorkspace({
   } catch {
     /* Exact coordinates remain in details if region cache is unavailable. */
   }
+  if (item.kind === 'pin') return <PinEditor state={state} item={item} photos={photos} onClose={onClose} onShare={onShare} onAdjust={onAdjust} onCapture={onCapture} onImport={onImport} onPhoto={onPhoto} cameraStatus={cameraStatus} cameraBusy={cameraBusy} cameraRetry={cameraRetry} onCameraRetry={onCameraRetry}/>;
   return (
     <section
       ref={root}
@@ -267,7 +273,7 @@ export function AnnotationWorkspace({
                 : `海拔 ${Number(item.groundElevation.toFixed(1))} m`}
             </span>
           </div>
-          <div className="marker-summary-actions" data-place-share={item.kind === 'pin'}>
+          <div className="marker-summary-actions">
             <button className="marker-primary" onClick={() => onNavigate(item)}>
               <Navigation size={17} />
               导航
@@ -284,7 +290,6 @@ export function AnnotationWorkspace({
               <FileText size={17} />
               详情
             </button>
-            {item.kind === 'pin' && <button aria-label="分享地点" onClick={() => onShare(item.id)}><Share2 size={17}/>分享</button>}
           </div>
         </>
       ) : (
@@ -342,6 +347,8 @@ export function AnnotationWorkspace({
                 {item.coordinates[1].toFixed(6)}
               </p>
             ) : (
+              <>
+              <button onClick={onAdjust}>到地图上调整位置与 3D 形状</button>
               <MarkerCoordinates
                 item={item}
                 base={base}
@@ -351,6 +358,7 @@ export function AnnotationWorkspace({
                   void state.refreshElevation(item.id, item.coordinates)
                 }
               />
+              </>
             ))}
           {tab === 'data' && <MarkerData item={item} change={change} />}
         </div>
@@ -359,11 +367,7 @@ export function AnnotationWorkspace({
         <div className="marker-scroll marker-details">
           <h3>{item.name || '未命名'}</h3>
           <AnnotationLocation item={item} onEdit={() => startEdit(true)} />
-          {item.kind !== 'pin' && (
-            <p>
-              {dimensionLabel(item)} · 体积约 {volume(item)?.toFixed(2)} m³
-            </p>
-          )}
+          <p>{dimensionLabel(item)} · 体积约 {volume(item)?.toFixed(2)} m³</p>
           {(item.attributes ?? []).length > 0 && (
             <dl>
               {item.attributes!.map((f, i) => (

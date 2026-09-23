@@ -37,7 +37,10 @@ export class AnnotationLayer implements CustomLayerInterface {
     exaggeration: 1,
   };
   private origin = MercatorCoordinate.fromLngLat([103.28, 31.08]);
-  constructor(private onSelect: (id: string) => void) {}
+  constructor(
+    private onSelect: (id: string) => void,
+    private onNavigate?: (id: string, slot: 'start' | 'end') => void,
+  ) {}
   private syncMarkerScale = () => {
     const zoom = this.map?.getZoom() ?? 16;
     const scale = markerScale(zoom).toFixed(3);
@@ -181,7 +184,7 @@ export class AnnotationLayer implements CustomLayerInterface {
       if (!item.visible) continue;
       const existing = this.markers.get(item.id);
       const element =
-        existing?.getElement() ?? document.createElement('button');
+        existing?.getElement() ?? document.createElement('div');
       // Marker owns its positioning classes. Replacing className detaches labels
       // from their geographic anchor after a selection or parameter edit.
       element.classList.add('annotation-marker');
@@ -193,7 +196,15 @@ export class AnnotationLayer implements CustomLayerInterface {
         item.placement === 'underground',
       );
       element.style.setProperty('--marker-color', item.color);
-      element.setAttribute('type', 'button');
+      const rgb = /^#([0-9a-f]{6})$/i.exec(item.color)?.[1];
+      if (rgb) {
+        const channels = [0, 2, 4].map(index => parseInt(rgb.slice(index, index + 2), 16) / 255);
+        const light = channels.map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
+        element.style.setProperty('--marker-ink', light[0] * .2126 + light[1] * .7152 + light[2] * .0722 > .45 ? '#17352b' : '#fff');
+      }
+      element.removeAttribute('type');
+      element.setAttribute('role', 'button');
+      element.tabIndex = 0;
       element.dataset.annotationId = item.id;
       const label = document.createElement('span');
       label.className = 'annotation-marker-name';
@@ -204,12 +215,53 @@ export class AnnotationLayer implements CustomLayerInterface {
       const visual = document.createElement('span');
       visual.className = 'annotation-marker-visual';
       visual.appendChild(body);
+      if (item.kind === 'pin' && this.onNavigate) {
+        const nav = document.createElement('button');
+        nav.type = 'button';
+        nav.className = 'annotation-marker-quick-nav';
+        nav.setAttribute('aria-label', `快速导航到${item.name || '标记'}`);
+        nav.setAttribute('aria-expanded', 'false');
+        nav.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21 11 3l3 7 7 3-18 8Zm7-7 4-2-2-2-2 4Z" fill-rule="evenodd"/></svg>';
+        const menu = document.createElement('span');
+        menu.className = 'annotation-marker-nav-menu';
+        menu.hidden = true;
+        for (const [slot, text] of [['start', '设为起点'], ['end', '设为终点']] as const) {
+          const choice = document.createElement('button');
+          choice.type = 'button';
+          choice.textContent = text;
+          choice.onclick = event => {
+            event.stopPropagation();
+            menu.hidden = true;
+            this.onNavigate?.(item.id, slot);
+          };
+          menu.appendChild(choice);
+        }
+        nav.onpointerdown = event => event.stopPropagation();
+        menu.onpointerdown = event => event.stopPropagation();
+        nav.onclick = event => {
+          event.stopPropagation();
+          const open = menu.hidden;
+          for (const marker of this.markers.values()) {
+            const other = marker.getElement().querySelector<HTMLElement>('.annotation-marker-nav-menu');
+            if (other) other.hidden = true;
+          }
+          menu.hidden = !open;
+          nav.setAttribute('aria-expanded', String(open));
+        };
+        visual.appendChild(nav);
+        visual.appendChild(menu);
+      }
       element.replaceChildren(visual);
       element.style.setProperty('--marker-scale', markerScale(map.getZoom()).toFixed(3));
       element.title = `${item.name} · 点击查看，长按拖动位置`;
       element.setAttribute('aria-label', `编辑标记 ${item.name}`);
       element.onclick = (event) => {
         event.stopPropagation();
+        this.onSelect(item.id);
+      };
+      element.onkeydown = event => {
+        if (event.target !== element || !['Enter', ' '].includes(event.key)) return;
+        event.preventDefault();
         this.onSelect(item.id);
       };
       if (existing) {

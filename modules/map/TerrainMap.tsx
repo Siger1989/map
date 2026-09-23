@@ -158,6 +158,7 @@ type Props = {
   annotationSelected: string | null;
   annotationEditingId?: string;
   onAnnotationSelect: (id: string) => void;
+  onAnnotationNavigate?: (id: string, slot: 'start' | 'end') => void;
   roadSnapping: boolean;
   nodeSnapping?: boolean;
   riverSnapping: boolean;
@@ -752,6 +753,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               !latest.current.pickingActive &&
               !latest.current.sectionEditing,
             hit: (point, element) => {
+              if (element instanceof Element &&
+                  element.closest('.annotation-marker-quick-nav, .annotation-marker-nav-menu'))
+                return null;
               if (
                 latest.current.trackOverlay.editing &&
                 !latest.current.drawingActive
@@ -821,8 +825,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               );
             },
             direct: (target) =>
-              (target.kind === 'annotation' &&
-                latest.current.annotationSelected === target.id) ||
               (target.kind === 'track' &&
                 latest.current.trackOverlay.activeNode?.trackId ===
                   target.node.trackId &&
@@ -921,7 +923,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                     latest.current.annotationPicking)
                 )
                   latest.current.onAnnotationSelect(id);
-              });
+              }, (id, slot) => latest.current.onAnnotationNavigate?.(id, slot));
               map.addLayer(annotationRef.current);
               if (modelMaskRef.current) {
                 modelTerrainRef.current = new ModelTerrainLayer(

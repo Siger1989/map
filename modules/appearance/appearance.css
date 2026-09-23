@@ -52,7 +52,7 @@ html[data-ui-theme] .observatory.home-map[data-panel='track'] .control-dock>.con
 html[data-ui-theme] .observatory.home-map .track-start-actions { gap:4px; }
 /* The same row holds the five route actions; preserve at least 36px targets at 360px. */
 html[data-ui-theme] .observatory.home-map .home-route-actions { grid-template-columns:repeat(4,minmax(0,1fr)); gap:2px; }
-html[data-ui-theme] .observatory.home-map .home-route-actions:has([aria-label='缓存当前路线']) { grid-template-columns:repeat(5,minmax(0,1fr)); }
+html[data-ui-theme] .observatory.home-map .home-route-actions:has([aria-label='删除当前路线']) { grid-template-columns:repeat(5,minmax(0,1fr)); }
 html[data-ui-theme] .observatory.home-map .home-route-actions button { min-height:36px; padding:1px; border-radius:4px; }
 html[data-ui-theme] .observatory.home-map .home-route-name { padding:2px 4px; }
 html[data-ui-theme] .observatory.home-map .home-route-name>span { text-decoration:none; color:var(--ui-active-ink); }

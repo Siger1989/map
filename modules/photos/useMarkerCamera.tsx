@@ -2,11 +2,13 @@ import { useRef, useState } from 'react';
 import type { Annotation } from '../annotations/data';
 import { readPhoto, type PhotoDraft } from './import';
 import { markerPhoto } from './association';
+import { PHOTO_ACCEPT } from './selection';
 import type { TripPhoto } from './storage';
 
 /** Keep the captured marker identity frozen while the external camera is foreground. */
 export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
   const input = useRef<HTMLInputElement>(null),
+    importInput = useRef<HTMLInputElement>(null),
     target = useRef<{ marker: Annotation; time: number } | null>(null);
   const pending = useRef<{
     file: File;
@@ -57,7 +59,19 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
         input.current.click();
       }
     },
+    importPhoto: (marker: Annotation) => {
+      if (busy) return;
+      target.current = { marker: structuredClone(marker), time: Date.now() };
+      setMarkerId(marker.id);
+      setStatus('');
+      setRetry(false);
+      if (importInput.current) {
+        importInput.current.value = '';
+        importInput.current.click();
+      }
+    },
     input: (
+      <>
       <input
         ref={input}
         hidden
@@ -74,6 +88,22 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
           void persist();
         }}
       />
+      <input
+        ref={importInput}
+        hidden
+        type="file"
+        accept={PHOTO_ACCEPT}
+        aria-label="导入标记点照片"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0],
+            request = target.current;
+          event.currentTarget.value = '';
+          if (!file || !request) return;
+          pending.current = { file, ...request };
+          void persist();
+        }}
+      />
+      </>
     ),
   };
 }

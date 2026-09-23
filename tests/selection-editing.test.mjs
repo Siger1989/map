@@ -65,6 +65,7 @@ test('model bodies are selectable; drag updates retain the pressed marker and ge
       style: { setProperty() {} },
       dataset: {},
       setAttribute() {},
+      removeAttribute() {},
       appendChild() {},
       replaceChildren() {},
     }),

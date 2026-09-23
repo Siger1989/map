@@ -40,7 +40,7 @@ export function gizmoHandles(
     for (let i = 0; i < 3; i++) {
       const axis = (['x', 'y', 'z'] as const)[i],
         v = p.axes[i],
-        tip = p.project(v.clone().multiplyScalar(p.radius * 1.8)),
+        tip = p.project(v.clone().multiplyScalar(p.radius * (kind === 'pin' ? 0.95 : 1.8))),
         box = p.project(v.clone().multiplyScalar(p.radius * 0.65));
       if (kind === 'pin' && axis === 'z') continue;
       axes.push({ axis, color: colors[i], tip, box });
@@ -112,7 +112,7 @@ export function gizmoHandles(
     targets.push({
       key: 'move-free',
       handle: { mode: 'move', axis: 'free' },
-      points: [{ x: c.x - 96, y: c.y - 96 }],
+      points: [{ x: c.x - (kind === 'pin' ? 52 : 96), y: c.y - (kind === 'pin' ? 52 : 96) }],
       label: '沿屏幕平面移动',
     });
   }

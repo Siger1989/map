@@ -87,6 +87,18 @@ export function RoutePanel({
       frame: number;
     } | null>(null);
   const previousCount = useRef(n.stops.length);
+  const destination = n.stops.at(-1)?.place;
+  useEffect(() => {
+    const origin = n.stops[0];
+    if (!destination || !origin || origin.place || origin.query.trim() || n.picking !== null) return;
+    setEditing(true);
+    setActive(origin.id);
+    const frame = requestAnimationFrame(() => {
+      rows.current?.querySelector<HTMLInputElement>(`[data-stop-id="${origin.id}"] input`)
+        ?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [destination, n.stops[0]?.place, n.stops[0]?.query, n.picking]);
   useEffect(() => {
     if (n.stops.length > previousCount.current) {
       const added = n.stops.at(-2)!;

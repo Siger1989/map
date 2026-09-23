@@ -1,5 +1,15 @@
 # Agent快速交接
 
+## 2026-09-23 0.2.59标记与导航退出
+
+用户在连续视觉反馈后要求修好并打包。当前分支`codex/rollback-ui-0235-20260921`；0.2.59-test/code66源码包括紧凑标记、快设起终点、两次点击打开编辑、调整轴仅调整时出现、集中标记编辑、框选期间操作、画线按钮底板、所选路线删除确认及结束导航清理临时规划线和起终点。隔离9433浏览器390×857验证导航图层3→0且无页面错误；TypeScript、614项测试及最终APK构建/签名/473地形通过。APK`APK/Shantu-0.2.59-test-standalone.apk`，57,826,396字节，SHA256`e2e533fc60089dfe468633c4bdd14eb06b945469b802d68974c6d7cd6c25cdc1`。源码/Release线上状态以当前实际提交与发布核对为准。奥维KMZ微信导入个案无原始样本，本版未修解析。用户9423标签、个人附件与PDF未动；真机安装/触控待验。见`docs/release-0.2.59.md`。
+
+## 2026-09-23 历史标记编辑视觉阶段（打包前）
+
+当前分支 `codex/rollback-ui-0235-20260921`，起点HEAD `622f4dc`，有未提交的标记编辑/框选修改。新 `modules/annotations/PinEditor.tsx` 与 `pinEditor.css` 负责手机单页编辑。用户最新反馈已处理：头部与名称/备注/坐标/图案颜色/照片固定，仅自定义条目列表滚动；图案和颜色点击入口后展开选项。右侧直接框选，退出后结果支持导出/分享/删除；地图调整有坐标读数。隔离9433浏览器390×857、360×780实点无页面错误，TypeScript、21相关测试、Android网页构建通过，截图见 `artifacts/screenshots/20260923-pin-editor-*-390.png` 与360同类文件。旧9423服务可能保留Vite模块缓存，未操作用户标签。请先让用户确认这版视觉，不在确认前自动做EXE/UTM或新APK；0.2.58发行包不含当前未提交修改。无关附件、PDF和用户缓存不触碰。
+
+最新反馈“条目多显示几行”将卡片改为随条目数增长，最多420px/半屏；少量条目不留大片空白。390条目区上限153px约4行，360上限123px约3行；名称等上方固定、地图右侧控件未遮挡。两种 `pin-editor-default` 和 `pin-editor-many-attributes` 截图已更新，浏览器操作无页面错误；此项仍待用户视觉确认。
+
 ## 2026-09-23 0.2.58中心标记打包
 
 用户确认地图中心准星及右侧“方向→标记→跟随”控件后要求隐藏UI仍保留标记，随后要求打包；打包发布中追加要求标记窗口不遮挡十字星。当前分支`codex/rollback-ui-0235-20260921`；本轮改`app/page.tsx`、`modules/{map/CenterCursor.tsx,map/centerCursor.css,controls/MapActions.tsx,controls/homeMap.css,position/PositionDock.tsx,tracks/routeWindows.css,annotations/QuickAdd.tsx,annotations/quickAdd.css}`及版本号。隐藏UI保留准星与标记，点标记显示UI和添加面板；中心点弹窗与十字星间隔约17px，去掉重复定位圆点。没有修改路线/图源/存储。0.2.58-test/code65最终重建APK`APK/Shantu-0.2.58-test-standalone.apk`，57818204字节，SHA256 `ccf9fea95c50ebd0d20909691f57e3d5a0524dba27d45c093cccad1a8966b3cf`；4a94签名v2/v3、473地形瓦片通过。TypeScript及614测试通过；390×857和360×780独立预览检查控件命中与隐藏UI标记流程。[GitHub Release](https://github.com/Siger1989/map/releases/tag/v0.2.58-test-standalone)已公开，tag为`3948fc217d5167096bff9a86b0c87e3d77813e2b`，GitHub APK资产状态/大小/digest匹配；本机直链HEAD连接重置，未证实HTTP200。浏览天地图后自动缓存仅调研/讨论，不在此APK。真机触控/覆盖安装仍待验，鸿蒙原生未交付。未触碰用户预览标签、私有数据、附件或旧PDF。

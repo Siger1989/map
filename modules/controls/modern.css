@@ -997,6 +997,14 @@
 .observatory .track-tools button {
   min-height: 32px;
   padding: 0 7px;
+  border: 1px solid #b7c8bd;
+  background: #fff;
+  color: #24443e;
+}
+.observatory .track-tools button[aria-pressed='true'] {
+  border-color: #176a50;
+  background: #dceee2;
+  color: #13533f;
 }
 @media (pointer: coarse) {
   .observatory .track-tools button {
