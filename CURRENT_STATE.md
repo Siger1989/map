@@ -1,4 +1,12 @@
-# 当前状态 — 2026-09-23 / 0.2.62剖面与路线互斥
+# 当前状态 — 2026-09-23 / 0.2.63词条输入与WPML KMZ
+
+## 2026-09-23 0.2.63 自定义条目输入与 KMZ 航线
+
+用户反馈标记点“自定义条目”输入与中文输入法冲突，并再次反馈奥维导出的KMZ无法识别。条目两列现使用原生输入框，不再叠加应用内联想弹层；中文组合输入按Escape不会误关编辑窗口，其他标记字段不变。用户附件`L016.kmz`仅在本机只读诊断：其`wpmz/template.kml`不含点线，实际37个航点位于`wpmz/waylines.wpml`，属于DJI WPML航线包结构。导入器现优先读取WPML，按航点编号组成一条路线，预览时明确提示不导入飞行高度/动作指令，且不表示地面可通行。保留原通用KML/KMZ、OVKML/OVKMZ解析路径；附件/坐标未进Git或发行包。
+
+- 改动`modules/annotations/PinEditor.tsx`、`modules/dataTransfer/fileImport.ts`、`modules/dataTransfer/djiWpmlImport.ts`、`modules/dataTransfer/TransferPanel.tsx`、定向测试与版本号。标记和路线存储格式、地图图源及既有照片/收藏不变。官方资料：[奥维文件格式](https://www.ovital.com/139064-2/)、[DJI WPML航线](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/waylines-wpml.html)。
+- TypeScript、617项逻辑测试、网页和Android构建通过。隔离9433浏览器390×857、360×780实测条目输入与KMZ导入预览，原附件解析和批次预览为1条路线/37航点；预览未写入本机数据。截图`artifacts/screenshots/20260923-pin-attribute-ime-{390,360}.png`、`20260923-wpml-kmz-preview-{390,360}.png`。Android中文输入法及微信文件关联仍待真机重试。
+- 新包`APK/Shantu-0.2.63-test-standalone.apk`，57,826,396字节，SHA256`e97734eca59572eea5808ac65f54921e0c96040ef7b3bfe09c3838694ed2a517`，versionCode70、原4a94签名v2/v3和473地形瓦片通过。发行说明见[0.2.63](docs/release-0.2.63.md)。0.2.62路线/剖面互斥修复继续包含在内。
 
 ## 2026-09-23 0.2.62 剖面编辑与路线选择互斥
 

@@ -58,6 +58,7 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   };
   const attributes = item.attributes ?? [];
   return <section className="pin-editor" aria-label="编辑标记" onKeyDown={event => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return;
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); leave(); }
   }}>
     <header className="pin-editor-header">
@@ -93,8 +94,8 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
     <div className="pin-attribute-head"><strong>自定义条目</strong><button disabled={attributes.length >= MAX_ATTRIBUTES} onClick={() => change({ attributes: [...attributes, { name: '', value: '' }] })}>＋ 添加条目</button></div>
     <div className="pin-attribute-list" aria-label="自定义条目列表">
       {attributes.map((field, index) => <div className="pin-attribute" key={index}>
-        <SmartInput aria-label={`条目 ${index + 1} 名称`} placeholder="名称" maxLength={60} value={field.name} onChange={event => change({ attributes: attributes.map((value, n) => n === index ? { ...value, name: event.target.value } : value) })}/>
-        <SmartTextarea aria-label={`条目 ${index + 1} 内容`} placeholder="内容" rows={1} maxLength={2000} value={field.value} onChange={event => change({ attributes: attributes.map((value, n) => n === index ? { ...value, value: event.target.value } : value) })}/>
+        <input aria-label={`条目 ${index + 1} 名称`} placeholder="名称" maxLength={60} value={field.name} onChange={event => change({ attributes: attributes.map((value, n) => n === index ? { ...value, name: event.target.value } : value) })}/>
+        <textarea aria-label={`条目 ${index + 1} 内容`} placeholder="内容" rows={1} maxLength={2000} value={field.value} onChange={event => change({ attributes: attributes.map((value, n) => n === index ? { ...value, value: event.target.value } : value) })}/>
         <button aria-label={`删除条目 ${index + 1}`} onClick={() => change({ attributes: attributes.filter((_, n) => n !== index) })}><X size={14}/></button>
       </div>)}
     </div>

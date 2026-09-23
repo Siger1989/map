@@ -102,7 +102,7 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
         <details>
           <summary>支持格式 / 奥维文件怎么导入</summary>
           <p className="route-note">可直接读取 GPX、KML / KMZ、OVKML / OVKMZ、TCX、FIT、GeoJSON、CSV / TSV、OVJSN、OVOBJ 和山兔 JSON 备份。CSV 按 WGS84 经纬度表头读取；OVOBJ 已接入 v105 的部分点线面结构，其他版本仍需适配。</p>
-          <p className="route-note">奥维文件可在上方调整坐标系。OVJSN 优先读取对象自身坐标标志；OVOBJ 未确认基准时按原坐标预览。</p>
+          <p className="route-note">奥维文件可在上方调整坐标系。OVJSN 优先读取对象自身坐标标志；OVOBJ 未确认基准时按原坐标预览。含 waylines.wpml 的无人机航线 KMZ 只导入航点连线，不导入飞行指令。</p>
         </details>
         <div ref={feedback} aria-live="polite" aria-atomic="true">
         {(message || loading) && <p role="status" className="route-note">{loading ? '正在校验文件，请稍候…' : message}</p>}

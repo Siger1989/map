@@ -6,6 +6,7 @@ import { parseOviJson } from './oviJsonImport.ts';
 import type { Transfer } from './types.ts';
 import { validateTransfer } from './validation.ts';
 import { parseXml } from './xmlImport.ts';
+import { parseDjiWpml } from './djiWpmlImport.ts';
 import {
   importCoordinate,
   type ImportCoordinates,
@@ -28,15 +29,21 @@ export async function parseFile(
       count = 0;
     const files = unzipSync(bytes, {
       filter: (f) => {
-        if (!/\.(kml|ovkml)$/i.test(f.name)) return false;
+        if (!/\.(kml|ovkml)$/i.test(f.name) && !/(?:^|\/)waylines\.wpml$/i.test(f.name)) return false;
         size += f.originalSize;
         count++;
         if (size > MAX_BYTES || count > 10)
-          throw new Error('KMZ 内的 KML 超过大小限制');
+          throw new Error('KMZ 内的航线文件超过大小限制');
         return true;
       },
     });
     const names = Object.keys(files);
+    const waylines = names.filter((name) => /(?:^|\/)waylines\.wpml$/i.test(name));
+    if (waylines.length > 1) throw new Error('KMZ 内有多个 waylines.wpml，无法确定航线');
+    if (waylines.length === 1) {
+      if (files[waylines[0]].length > MAX_BYTES) throw new Error('解压后的 WPML 过大');
+      return parseDjiWpml(decodeRouteText(files[waylines[0]]), file.name);
+    }
     if (names.length !== 1) throw new Error('请选择只含一个 KML 文档的 KMZ');
     if (files[names[0]].length > MAX_BYTES)
       throw new Error('解压后的 KML 过大');

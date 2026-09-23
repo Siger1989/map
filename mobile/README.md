@@ -1,4 +1,8 @@
-# 山兔0.2.62测试版（2026-09-23）
+# 山兔0.2.63测试版（2026-09-23）
+
+标记“自定义条目”输入改用原生文本框，避免应用内联想与中文输入法争抢；可导入含`waylines.wpml`的KMZ航线，用户附件在预览中识别为1条路线、37航点。飞行高度与动作指令不进入地面地图路线。新包`../APK/Shantu-0.2.63-test-standalone.apk`，versionCode70、原独立测试包名与4a94签名，57,826,396字节，SHA256 `e97734eca59572eea5808ac65f54921e0c96040ef7b3bfe09c3838694ed2a517`。浏览器预览、类型/逻辑测试、Android构建/签名通过；真机输入法、微信关联待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.63-test-standalone/Shantu-0.2.63-test-standalone.apk) · [发行说明](../docs/release-0.2.63.md)。
+
+## 0.2.62 剖面与路线互斥
 
 剖面 A 点编辑时点地图路线，不再同时弹路线卡和左侧行程栏；先选路线再开剖面会切换到剖面，关闭后路线仍可点选。新包`../APK/Shantu-0.2.62-test-standalone.apk`，versionCode69、原独立测试包名与4a94签名，57,826,396字节，SHA256 `8d66fdedce361a9cd6cfd3df238a8f524783ed345caa793b28ebb277701f76d7`。浏览器双尺寸操作、类型、逻辑测试、Android构建/签名通过；真机仍待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.62-test-standalone/Shantu-0.2.62-test-standalone.apk) · [发行说明](../docs/release-0.2.62.md)。
 
