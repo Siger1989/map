@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import type { useRecordingPreferences } from './useRecordingPreferences';
+import { DEFAULT_RECORDING_ACCURACY } from './recordingPreferences';
 
 export function RecordingPrecision({
   preferences,
@@ -35,14 +36,14 @@ export function RecordingPrecision({
         <button
           disabled={!preferences.supported}
           onClick={() => {
-            if (preferences.update(20)) setInput('20');
+            if (preferences.update(DEFAULT_RECORDING_ACCURACY)) setInput(String(DEFAULT_RECORDING_ACCURACY));
           }}
         >
-          恢复20米
+          恢复默认
         </button>
       </div>
       <p className="route-note">
-        5–80米，默认20米；保存后对新定位点生效。数值越小筛选越严格，弱信号时可能长时间不记点。这是接受门槛，不是定位精度保证。
+        可设5–80米，默认5米；保存后对新定位点生效。数值越小筛选越严格，弱信号时可能长时间不记点。这是接受门槛，不是定位精度保证。
       </p>
       {!preferences.supported && (
         <p className="route-note">当前安装包仍使用80米门槛，请升级后设置。</p>

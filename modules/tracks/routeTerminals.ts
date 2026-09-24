@@ -22,6 +22,15 @@ export function routeHasFork(segments:Coordinate[][]) {
   return [...neighboursOf(segments).values()].some(set=>set.size>2);
 }
 
+/** Coordinates of actual graph junctions with more than two distinct neighbours. */
+export function routeForkNodes(segments: Coordinate[][]): Coordinate[] {
+  const neighbours = neighboursOf(segments);
+  const vertices = new Map<string, Coordinate>();
+  for (const line of segments) for (const point of line) vertices.set(point.join(','), point);
+  return [...neighbours].filter(([, adjacent]) => adjacent.size > 2)
+    .map(([key]) => vertices.get(key)!).filter(Boolean);
+}
+
 /** Stored manual choices take precedence. Older paths keep their familiar ends unless they branch. */
 export function resolvedRouteTerminals(track: Pick<ManualTrack,'segments'|'routeTerminals'|'sharedRoute'>): [Coordinate | null, Coordinate | null] {
   const {segments,routeTerminals,sharedRoute}=track;

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseSavedTracks } from '../modules/tracks/drawing.ts';
 import { resolvedRouteTerminals } from '../modules/tracks/routeTerminals.ts';
 import { startRouteEdit, setEditEnd, toggleEditBranch, appendEditBranch, moveEditNode, removeEditNodes, undoRouteEdit, editedRouteRecord } from '../modules/tracks/routeEdit.ts';
-import { trackNavigation } from '../modules/guidance/savedRoute.ts';
+import { RouteEndpointRequiredError, trackNavigation } from '../modules/guidance/savedRoute.ts';
 
 const a=[104,30],b=[104.001,30],c=[104.002,30],d=[104.001,30.001],e=[104.001,30.002];
 const base={id:'terminals',name:'终点选择验证',source:'manual',createdAt:1,segments:[[a,b,c]],style:{color:'#33aa77',width:2}};
@@ -45,8 +45,8 @@ test('old branched tracks do not claim their last array endpoint; ordinary old t
 
 test('navigation follows the chosen fork endpoint and refuses an unconfirmed fork',()=>{
   const fork={...base,segments:[[a,b,c],[b,d]]};
-  assert.throws(()=>trackNavigation(fork),/终点未指定/);
-  assert.throws(()=>trackNavigation({...fork,routeTerminals:{start:a}}),/终点未指定/);
+  assert.throws(()=>trackNavigation(fork),error=>error instanceof RouteEndpointRequiredError && error.targetKind==='fork' && JSON.stringify(error.target)===JSON.stringify(b));
+  assert.throws(()=>trackNavigation({...fork,routeTerminals:{start:a}}),error=>error instanceof RouteEndpointRequiredError && error.targetKind==='fork' && JSON.stringify(error.target)===JSON.stringify(b));
   const selected={...fork,routeTerminals:{start:a,end:d}};
   const forward=trackNavigation(selected);
   assert.deepEqual(forward.route.coordinates,[a,b,d]);
@@ -54,4 +54,10 @@ test('navigation follows the chosen fork endpoint and refuses an unconfirmed for
   const reversed=trackNavigation(selected,3,'pedestrian',[],'main',true);
   assert.deepEqual(reversed.route.coordinates,[d,b,a]);
   assert.deepEqual(reversed.end.coordinates,a);
+});
+
+test('missing explicit end without a fork focuses the end candidate without calling it a fork',()=>{
+  const missingEnd={...base,routeTerminals:{start:a}};
+  assert.throws(()=>trackNavigation(missingEnd),error=>error instanceof RouteEndpointRequiredError && error.targetKind==='candidate' && JSON.stringify(error.target)===JSON.stringify(c));
+  assert.throws(()=>trackNavigation(missingEnd,1,'pedestrian',[],'main',true),error=>error instanceof RouteEndpointRequiredError && error.targetKind==='candidate' && JSON.stringify(error.target)===JSON.stringify(c));
 });

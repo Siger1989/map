@@ -20,6 +20,22 @@ export const selectionBox = (a: ScreenPoint, b: ScreenPoint): SelectionBox => ({
   top: Math.min(a.y, b.y),
   bottom: Math.max(a.y, b.y),
 });
+export function twoFingerGestureDelta(previous: [ScreenPoint, ScreenPoint], next: [ScreenPoint, ScreenPoint]) {
+  const center = (points: [ScreenPoint, ScreenPoint]) => ({
+    x: (points[0].x + points[1].x) / 2,
+    y: (points[0].y + points[1].y) / 2,
+  });
+  const distance = (points: [ScreenPoint, ScreenPoint]) => Math.max(1, Math.hypot(
+    points[0].x - points[1].x,
+    points[0].y - points[1].y,
+  ));
+  const from = center(previous), to = center(next);
+  return {
+    pan: { x: to.x - from.x, y: to.y - from.y },
+    zoom: Math.log2(distance(next) / distance(previous)),
+    around: to,
+  };
+}
 const inside = (p: ScreenPoint, r: SelectionBox) =>
   p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
 /** Slab clipping includes edges crossing the rectangle even when both vertices lie outside. */

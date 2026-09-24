@@ -43,6 +43,7 @@
 .record-console-settings { padding-top: 2px; }
 .record-console-grid { gap: 3px; margin-bottom: 2px; }
 .observatory .record-console-grid label { gap: 1px !important; line-height: 13px !important; }
+.observatory .record-accuracy-hint { display: block; margin: 0 0 2px; font-size: 11px; line-height: 14px; color: #516b78; }
 .record-console-checks { grid-template-columns: 1fr 1fr 1.5fr; gap: 2px; }
 .observatory .record-console-checks label { min-height: 25px; gap: 3px; white-space: nowrap; }
 .record-console-checks label:last-child { grid-column: auto; }

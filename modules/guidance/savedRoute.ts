@@ -1,4 +1,5 @@
 import { resolvedRouteTerminals, routeHasFork, type ManualTrack } from '../tracks/drawing.ts';
+import { routeForkNodes } from '../tracks/routeTerminals.ts';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping.ts';
 import {
   coordinate,
@@ -10,6 +11,17 @@ import { pathOf, project } from './geometry.ts';
 import { connectedNetwork, networkPath } from './network.ts';
 import { trackAlternatives } from '../tracks/alternatives.ts';
 import { preferredPath } from './preferredPath.ts';
+
+export class RouteEndpointRequiredError extends Error {
+  readonly target: Coordinate;
+  readonly targetKind: 'fork' | 'candidate';
+  constructor(target: Coordinate, targetKind: 'fork' | 'candidate') {
+    super('分叉终点未指定，请在线路编辑中点选一个节点并设为终点。');
+    this.name = 'RouteEndpointRequiredError';
+    this.target = target;
+    this.targetKind = targetKind;
+  }
+}
 
 /** Adapt saved geometry without requesting a replacement road route or editing the archive. */
 export function trackNavigation(
@@ -42,8 +54,14 @@ export function trackNavigation(
   const [chosenStart, chosenEnd] = resolvedRouteTerminals(track);
   // Newly edited tracks carry explicit terminal metadata. If their end was
   // removed, require another choice instead of promoting a branch tip.
-  if (!chosenEnd && (track.routeTerminals || routeHasFork(track.segments)))
+  if (!chosenEnd && (track.routeTerminals || routeHasFork(track.segments))) {
+    const forks = routeForkNodes(track.segments);
+    if (forks.length) throw new RouteEndpointRequiredError(forks[0], 'fork');
+    // The absent value is the original route end even when navigation runs in reverse.
+    const candidate = track.segments.at(-1)?.at(-1);
+    if (candidate) throw new RouteEndpointRequiredError(candidate, 'candidate');
     throw new Error('分叉终点未指定，请在线路编辑中点选一个节点并设为终点。');
+  }
   const coordinates = (track.routeTerminals && chosenEnd
     ? preferredPath(trackNetwork, defaultPath, reversed ? chosenEnd : chosenStart ?? defaultPath[0], reversed ? chosenStart ?? defaultPath[0] : chosenEnd)
     : reversed ? defaultPath.slice().reverse() : defaultPath

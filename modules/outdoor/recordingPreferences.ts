@@ -1,4 +1,4 @@
-export const DEFAULT_RECORDING_ACCURACY = 20;
+export const DEFAULT_RECORDING_ACCURACY = 5;
 export const LEGACY_RECORDING_ACCURACY = 80;
 export const RECORDING_ACCURACY_KEY = 'guanyun.recording.max-accuracy.v1';
 export function validRecordingAccuracy(value: unknown): value is number {

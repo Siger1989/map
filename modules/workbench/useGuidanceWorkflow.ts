@@ -7,7 +7,7 @@ import type { useNavigation } from '../navigation/useNavigation';
 import type { useManualTracks } from '../tracks/useManualTracks';
 import type { MapHandle } from '../map/TerrainMap';
 import { validFavorite, type RouteFavorite } from '../navigation/favorites';
-import { trackNavigation } from '../guidance/savedRoute';
+import { RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
 import { createSession } from '../guidance/session';
 import { routeGap } from '../tracks/routeInfo';
 
@@ -88,6 +88,7 @@ export function useGuidanceWorkflow({
     position.free();
     map.current?.previewRoute(null);
     map.current?.clearRouteGap();
+    map.current?.clearRouteIssue();
     if (position.mode === 'network') position.changeMode('auto');
     else position.locate();
   };
@@ -124,6 +125,7 @@ export function useGuidanceWorkflow({
   const navigateTrack = (id: string, reversed = false) => {
     setSavedNavigationError('');
     map.current?.clearRouteGap();
+    map.current?.clearRouteIssue();
     try {
       const track = tracks.saved.find((item) => item.id === id);
       if (!track) throw new Error('轨迹已不存在，请重新选择。');
@@ -139,6 +141,13 @@ export function useGuidanceWorkflow({
         ),
       );
     } catch (error) {
+      if (error instanceof RouteEndpointRequiredError) {
+        map.current?.focusRouteIssue(error.target, error.targetKind);
+        setSavedNavigationError(error.targetKind === 'fork'
+          ? '已定位一处分叉点。请在线路编辑中选择目标终点并设为终点。'
+          : '路线终点未指定，已定位末端候选节点。请进入线路编辑，点选节点并设为终点。');
+        return;
+      }
       // Only geometry failures get a missing-connection marker. Network, data
       // and provider failures must not be misrepresented as a route gap.
       if (

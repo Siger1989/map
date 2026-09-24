@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 
 /** Device-local acceptance threshold, independent of historical recording data. */
 final class RecordingPreferences {
-    static final int DEFAULT_ACCURACY = 20;
+    static final int DEFAULT_ACCURACY = 5;
     static boolean valid(double metres) { return !Double.isNaN(metres) && !Double.isInfinite(metres) && metres == Math.rint(metres) && metres >= 5 && metres <= 80; }
     private static SharedPreferences prefs(Context context) { return context.getSharedPreferences("recording-preferences-v1", Context.MODE_PRIVATE); }
     static int accuracy(Context context) {

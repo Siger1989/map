@@ -28,9 +28,11 @@ import type { GeologyState } from '../geology/data';
 import { RouteLayer } from '../navigation/RouteLayer';
 import { GuidanceLayer, type GuidanceOverlay } from '../guidance/GuidanceLayer';
 import { RouteGapLayer } from '../tracks/RouteGapLayer';
+import { RouteIssueLayer } from '../tracks/RouteIssueLayer';
 import type { RouteGap } from '../tracks/routeInfo';
 import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
+import { twoFingerGestureDelta } from '../collections/boxSelection';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
 import { AreaLayer, type AreaOverlay } from '../areas/AreaLayer';
 import { TerrainModelMask } from '../modelTerrain/terrainMask';
@@ -104,6 +106,8 @@ export type MapHandle = {
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
   focusRouteGap: (gap: RouteGap) => void;
   clearRouteGap: () => void;
+  focusRouteIssue: (point: Coordinate, kind: 'fork' | 'candidate') => void;
+  clearRouteIssue: () => void;
   focusPosition: (coordinates: Coordinate, zoom: number, pitch: number) => boolean;
   fitRoute: (coordinates: Coordinate[]) => void;
   fitCollection: (
@@ -120,6 +124,7 @@ export type MapHandle = {
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
+  panZoomGesture: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
 };
 type Props = {
   collectionPreviewActive?: boolean;
@@ -201,6 +206,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
     const routeGapRef = useRef<RouteGapLayer | null>(null);
+    const routeIssueRef = useRef<RouteIssueLayer | null>(null);
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
@@ -561,6 +567,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           mapRef.current
             ? observeMagnifier(mapRef.current, target, point)
             : () => {},
+        panZoomGesture: (previous, next) => {
+          const m = mapRef.current;
+          if (!m || !loaded.current || previous.length !== 2 || next.length !== 2) return;
+          const delta = twoFingerGestureDelta(previous as [ScreenPoint, ScreenPoint], next as [ScreenPoint, ScreenPoint]);
+          m.panBy([delta.pan.x, delta.pan.y], { duration: 0 });
+          const around = m.unproject([delta.around.x, delta.around.y]).toArray();
+          m.zoomTo(m.getZoom() + delta.zoom, {
+            around, duration: 0,
+          });
+        },
         toCoordinate: (point) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;
@@ -632,6 +648,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           });
         },
         clearRouteGap: () => routeGapRef.current?.sync(null),
+        focusRouteIssue: (point, kind) => {
+          const map = mapRef.current;
+          if (!map || !loaded.current) return;
+          latest.current.onBrowse();
+          collectionTarget.current = [];
+          map.stop();
+          routeGapRef.current?.sync(null);
+          routeIssueRef.current?.sync(point, kind);
+          map.jumpTo({ center: point, zoom: Math.min(17, map.getMaxZoom()), pitch: 0, bearing: 0 });
+        },
+        clearRouteIssue: () => routeIssueRef.current?.sync(null),
         focusPosition: (center, zoom, pitch) => {
           const map = mapRef.current;
           if (!map) return false;
@@ -959,6 +986,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             guidanceRef.current = new GuidanceLayer(map);
             guidanceRef.current.sync(latest.current.guidanceOverlay ?? null);
             routeGapRef.current = new RouteGapLayer(map);
+            routeIssueRef.current = new RouteIssueLayer(map);
             routeGapRef.current.sync(null);
             trackRef.current = new TrackLayer(map);
             areaRef.current = new AreaLayer(map);

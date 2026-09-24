@@ -7,9 +7,11 @@ import { saveWorkbench } from './workbenchStore';
 import './boxSelection.css';
 
 /** Review only this map selection; reuse the archive transaction and conflict-safe undo. */
-export function BoxSelectionResults({ entries, initialMessage, onClose, onReselect, onExport, onShare, busy = false, storage = localStorage }: {
+export function BoxSelectionResults({ entries, initialMessage, initialAction, onInitialActionHandled, onClose, onReselect, onExport, onShare, busy = false, storage = localStorage }: {
   entries: CatalogEntry[];
   initialMessage?: string;
+  initialAction?: 'export' | 'share' | 'delete' | null;
+  onInitialActionHandled?: () => void;
   onClose: () => void;
   onReselect: (keys: string[]) => void;
   onExport: (keys: string[]) => void;
@@ -23,6 +25,13 @@ export function BoxSelectionResults({ entries, initialMessage, onClose, onResele
   useEffect(() => { setMessage(initialMessage ?? ''); }, [initialMessage]);
   const [undo, setUndo] = useState<{ before: Transfer; after: Transfer } | null>(null);
   const chosen = useMemo(() => entries.filter(e => !excluded.includes(e.key)), [entries, excluded]);
+  useEffect(() => {
+    if (!initialAction) return;
+    if (initialAction === 'export') onExport(chosen.map(e => e.key));
+    else if (initialAction === 'share') onShare(chosen.map(e => e.key));
+    else setConfirming(true);
+    onInitialActionHandled?.();
+  }, [initialAction]); // An action is consumed once when the results dock is requested.
   const remove = () => {
     if (!chosen.length) return;
     try {
@@ -53,7 +62,7 @@ export function BoxSelectionResults({ entries, initialMessage, onClose, onResele
     {confirming ? <>
       <p className="box-results-note">删除勾选的整个对象。未选内容及照片原件保留；删除后可在此撤销。</p>
       <div className="box-results-list">{chosen.map(e => <p key={e.key}>{e.name}</p>)}</div>
-      <div className="box-results-actions"><button onClick={() => setConfirming(false)}>返回选择</button><button className="is-danger" disabled={!chosen.length} onClick={remove}>确认删除</button></div>
+      <div className="box-results-actions"><button onClick={() => onReselect(chosen.map(e => e.key))}>返回框选</button><button className="is-danger" disabled={!chosen.length} onClick={remove}>确认删除</button></div>
     </> : <>
       {!!entries.length && <div className="box-results-list" aria-label="本次框选对象">
         {entries.map(e => <label key={e.key}>

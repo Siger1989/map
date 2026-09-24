@@ -13,7 +13,7 @@ import {
   exportGPX,
 } from '../modules/outdoor/exchange.ts';
 import { planBounds, regionTiles } from '../modules/outdoor/offline.ts';
-const fix = (time, x = 103, accuracy = 10) => ({
+const fix = (time, x = 103, accuracy = 5) => ({
   coordinates: [x, 31],
   time,
   accuracy,
@@ -24,7 +24,7 @@ test('recording filters bad fixes, preserves pauses and long signal gaps', () =>
   r = appendFix(r, fix(1000), 1000);
   assert.equal(r.segments[0].length, 1);
   assert.equal(appendFix(r, fix(2000, 104), 2000), r);
-  assert.equal(appendFix(r, fix(2000, 103, 100), 2000), r);
+  assert.equal(appendFix(r, fix(2000, 103, 6), 2000), r);
   assert.equal(appendFix(r, fix(2000), 40000), r);
   r = appendFix(r, fix(10000, 103.001), 10000);
   assert.equal(r.segments[0].length, 2);

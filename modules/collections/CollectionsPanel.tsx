@@ -50,6 +50,8 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onSection: (id: string) => void;
   initialOutputKey?: string | null;
   initialSelectedKeys?: string[];
+  initialSelectionAction?: 'export' | 'share' | 'delete' | null;
+  onSelectionActionHandled?: () => void;
   photos: TripPhoto[];
   onClose: () => void;
   onReselect?: (keys: string[]) => void;
@@ -218,6 +220,8 @@ export function CollectionsPanel(props: Props) {
   if (boxResults && !output) return <BoxSelectionResults
     entries={entries.filter(e => props.initialSelectedKeys?.includes(e.key))}
     initialMessage={message}
+    initialAction={props.initialSelectionAction}
+    onInitialActionHandled={props.onSelectionActionHandled}
     onClose={props.onClose}
     onReselect={props.onReselect ?? props.onClose}
     onExport={keys => {
@@ -265,7 +269,7 @@ export function CollectionsPanel(props: Props) {
       />
     );
   return (
-    <section className="collections-panel catalog-panel" aria-label="全部收藏">
+    <section className="collections-panel catalog-panel" data-output={output} aria-label="全部收藏">
       <header className="collection-fixed-header">
         <button onClick={() => boxResults ? setOutput(false) : setLegacy(true)}>{boxResults ? '返回框选结果' : '文件夹分类'}</button>
         <button aria-label="关闭收藏" onClick={props.onClose}>

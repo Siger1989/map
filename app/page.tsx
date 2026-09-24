@@ -52,7 +52,7 @@ import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
-import { trackNavigation } from '@/modules/guidance/savedRoute';
+import { RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
@@ -340,6 +340,8 @@ export default function Home() {
     null,
   );
   const [boxSelecting, setBoxSelecting] = useState(false);
+  const [boxSelectionAction, setBoxSelectionAction] = useState<'export' | 'share' | 'delete' | null>(null);
+  const [boxSelectionResumeToken, setBoxSelectionResumeToken] = useState(0);
   const [collectionSelectedKeys, setCollectionSelectedKeys] = useState<
     string[]
   >([]);
@@ -842,6 +844,7 @@ export default function Home() {
   };
   const openRoute = (id: string) => {
     setSavedNavigationError('');
+    map.current?.clearRouteIssue();
     const track = tracks.saved.find((t) => t.id === id);
     if (!track) return;
     survey.close();
@@ -904,6 +907,7 @@ export default function Home() {
     editor.session?.history.length ? setUnsavedExit(true) : closeEditor();
   const beginRouteEdit = (track: ManualTrack) => {
     setSavedNavigationError('');
+    map.current?.clearRouteIssue();
     routeReturnPoint.current = trackLinePoint;
     tracks.select(track.id);
     tracks.finish();
@@ -966,12 +970,12 @@ export default function Home() {
     : selectedTrack?.name || (selectedDraft ? '路线草稿' : '');
   useEffect(() => {
     if (
-      (position.direction === 'device' || position.direction === 'motion') &&
+      (position.direction === 'device' || (position.direction === 'motion' && follow.following)) &&
       directionHeading !== null &&
       !follow.blocked
     )
       map.current?.view(view.pitch, directionHeading, false);
-  }, [position.direction, directionHeading, follow.blocked]);
+  }, [position.direction, directionHeading, follow.following, follow.blocked]);
   const {
     savedNavigationError,
     setSavedNavigationError,
@@ -1649,9 +1653,11 @@ export default function Home() {
                   onClearError={() => {
                     setSavedNavigationError('');
                     map.current?.clearRouteGap();
+                    map.current?.clearRouteIssue();
                   }}
                   onBack={() => {
                     map.current?.clearRouteGap();
+                    map.current?.clearRouteIssue();
                     setSavedNavigationError('');
                     tracks.select(null);
                     setTrackLinePoint(null);
@@ -1661,6 +1667,7 @@ export default function Home() {
                       navigateTrack(railTrack.id, routeReversed);
                       return;
                     }
+                    map.current?.clearRouteIssue();
                     const id = tracks.saveForMarker();
                     if (!id) return;
                     try {
@@ -1675,6 +1682,13 @@ export default function Home() {
                         ),
                       );
                     } catch (e) {
+                      if (e instanceof RouteEndpointRequiredError) {
+                        map.current?.focusRouteIssue(e.target, e.targetKind);
+                        setSavedNavigationError(e.targetKind === 'fork'
+                          ? '已定位一处分叉点。请在线路编辑中选择目标终点并设为终点。'
+                          : '路线终点未指定，已定位末端候选节点。请进入线路编辑，点选节点并设为终点。');
+                        return;
+                      }
                       if (e instanceof Error && e.message.includes('不相接的线段')) {
                         const gap = routeGap(railTrack);
                         if (gap) {
@@ -2389,6 +2403,14 @@ export default function Home() {
               measurement.saved.items,
             )}
             project={(p) => map.current?.toScreen(p) ?? null}
+            onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
+            onResultAction={(action, keys) => {
+              setCollectionSelectedKeys(keys);
+              setBoxSelectionAction(action);
+              setPanel('favorites');
+            }}
+            resumeToken={boxSelectionResumeToken}
+            onResumeActionFlow={() => setPanel(null)}
             selected={collectionSelectedKeys}
             onChange={keys => {
               setCollectionSelectedKeys(keys);
@@ -2397,7 +2419,8 @@ export default function Home() {
             onExit={() => {
               setBoxSelecting(false);
               setCollectionOutputKey(null);
-              setPanel('favorites');
+              setBoxSelectionAction(null);
+              setPanel(collectionSelectedKeys.length ? 'favorites' : null);
             }}
           />
         )}
@@ -2507,9 +2530,9 @@ export default function Home() {
           directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
           onDirection={direction => {
             cancelStartupCamera();
-            focusLock.adoptMode(follow.following,direction);
+            focusLock.adoptMode(direction === 'motion' || follow.following,direction);
             if(direction==='device') void position.device();
-            else if(direction==='motion') { position.motion(); if(recorder.record.phase !== 'recording')position.locate(); }
+            else if(direction==='motion') { position.motion(); follow.resume(); if(recorder.record.phase !== 'recording')position.locate(); }
             else if(direction==='north') { position.north(); map.current?.north(); }
             else position.free();
           }}
@@ -2895,9 +2918,11 @@ export default function Home() {
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
               onClose={() => { setPanel(null); }}
-              onReselect={keys => { setPanel(null); setCollectionSelectedKeys(keys); setBoxSelecting(true); }}
+              onReselect={keys => { setPanel(null); setCollectionSelectedKeys(keys); setBoxSelecting(true); setBoxSelectionResumeToken(token => token + 1); }}
               initialOutputKey={collectionOutputKey}
               initialSelectedKeys={collectionSelectedKeys}
+              initialSelectionAction={boxSelectionAction}
+              onSelectionActionHandled={() => setBoxSelectionAction(null)}
               photos={photos.items}
               areas={areas.items}
               measurements={measurement.saved.items}

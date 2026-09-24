@@ -27,6 +27,7 @@ export function RecordingCompactSettings({ recorder }: { recorder: ReturnType<ty
       <NumberField label="间隔秒" value={policy.intervalSeconds} min={1} max={30} disabled={!sampling.supported} onCommit={v => samplingNumber('intervalSeconds', v)} />
       <NumberField label="距离m" value={policy.distanceMetres} min={1} max={100} disabled={!sampling.supported} onCommit={v => samplingNumber('distanceMetres', v)} />
     </div>
+    <small className="record-accuracy-hint">精度范围 5–80 米 · 越小越严格</small>
     <div className="record-console-checks">
       <label title="按距离记点，原地不补点"><input type="checkbox" checked={policy.distanceOnly} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, distanceOnly: e.target.checked })} />仅按距离</label>
       <label title="静止时降低定位频率，移动后恢复"><input type="checkbox" checked={policy.adaptive} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, adaptive: e.target.checked })} />静止降频</label>

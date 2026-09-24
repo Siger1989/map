@@ -27,9 +27,9 @@ const fix = (time, accuracy, x = 104.066) => ({
 });
 test('recording default rejects coarse fixes; custom threshold accepts its exact boundary', () => {
   const record = initial();
-  assert.equal(appendFix(record, fix(100000, 21), 100000), record);
+  assert.equal(appendFix(record, fix(100000, 6), 100000), record);
   assert.equal(
-    appendFix(record, fix(100000, 20), 100000).segments[0].length,
+    appendFix(record, fix(100000, 5), 100000).segments[0].length,
     1,
   );
   assert.equal(appendFix(record, fix(100000, 11), 100000, 10), record);
@@ -59,7 +59,7 @@ test('precision preferences validate strict integers without accepting invalid s
     assert.ok(validRecordingAccuracy(value));
   for (const value of [null, '', '10', 0, 4, 81, 10.5, Infinity, NaN]) {
     assert.equal(validRecordingAccuracy(value), false);
-    assert.equal(readRecordingAccuracy(value), 20);
+    assert.equal(readRecordingAccuracy(value), 5);
   }
   assert.match(recordingAccuracyMessage(30.1, 10), /31 米.*10 米.*未记录/);
   assert.equal(recordingAccuracyMessage(10, 10), '');

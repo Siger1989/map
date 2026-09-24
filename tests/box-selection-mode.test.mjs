@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { updateBoxSelection, selectInBox } from '../modules/collections/boxSelection.ts';
+import { updateBoxSelection, selectInBox, twoFingerGestureDelta } from '../modules/collections/boxSelection.ts';
 
 test('repeated additive boxes union disjoint and overlapping hits; subtraction never selects outsiders', () => {
   const key = p => p.join(',');
@@ -26,4 +26,20 @@ test('object box subtraction uses the same geometry and leaves saved data unchan
   assert.deepEqual(updateBoxSelection(['a', 'b', 'c'], hit, 'subtract', k => k), ['a', 'c']);
   assert.deepEqual(updateBoxSelection(['a'], hit, 'add', k => k), ['a', 'b']);
   assert.equal(JSON.stringify(entries), before);
+});
+
+test('two-finger map gesture tracks centroid pan and pinch zoom from its first move', () => {
+  const delta = twoFingerGestureDelta(
+    [{ x: 10, y: 10 }, { x: 30, y: 10 }],
+    [{ x: 20, y: 25 }, { x: 60, y: 25 }],
+  );
+  assert.deepEqual(delta.pan, { x: 20, y: 15 });
+  assert.equal(delta.zoom, 1);
+  assert.deepEqual(delta.around, { x: 40, y: 25 });
+  const panOnly = twoFingerGestureDelta(
+    [{ x: 0, y: 0 }, { x: 20, y: 0 }],
+    [{ x: 5, y: 7 }, { x: 25, y: 7 }],
+  );
+  assert.deepEqual(panOnly.pan, { x: 5, y: 7 });
+  assert.equal(panOnly.zoom, 0);
 });

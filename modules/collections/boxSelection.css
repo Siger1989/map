@@ -5,6 +5,10 @@
   pointer-events: none;
 }
 .home-map:has(.map-box-selection[data-active='true']) .global-focus-lock { display: none; }
+.home-map:has(.map-box-selection[data-active='true']) .box-results { display: none !important; }
+.home-map:has(.map-box-selection[data-action-flow='true']) .box-results { display: flex !important; }
+.observatory.home-map:has(.map-box-selection[data-active='true'][data-action-flow='false']) .control-dock:has(.catalog-panel) .control-popover { display: none !important; }
+.observatory.home-map:has(.map-box-selection[data-action-flow='true']) .collections-panel[data-output='true'] .collection-fixed-header > button:first-child { display: none !important; }
 .map-box-selection[data-selection-mode='subtract'] .map-box-rectangle { border-color: #ef8b55; background: #ef8b5525; }
 .map-box-surface {
   position: absolute;
@@ -34,7 +38,7 @@
 }
 .map-box-tools {
   position: absolute;
-  bottom: calc(var(--home-footer, 56px) + 8px);
+  bottom: calc(var(--home-footer, 56px) + 3px);
   left: 8px;
   width: min(300px, calc(100% - 76px));
   box-sizing: border-box;
@@ -46,10 +50,6 @@
   box-shadow: 0 2px 10px #0005;
   font-size: 12px;
   pointer-events: auto;
-}
-.observatory[data-panel='favorites'] .map-box-tools {
-  top: calc(58px + var(--safe-top));
-  bottom: auto;
 }
 .map-box-hit.route-node-hit { box-sizing: border-box; background: transparent; border: 1.5px solid #fff3a0; box-shadow: 0 0 3px 1px #fff8baaa; }
 .map-box-tools-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
@@ -72,16 +72,56 @@
 }
 .map-box-tools button[aria-pressed='true'] { background: #246b53; color: white; }
 .map-box-tools button {
-  min-height: 36px;
+  min-height: 44px;
   min-width: 0;
-  padding: 0 2px;
+  padding: 0 3px;
   border-radius: 3px;
   background: #d7e6e0;
   color: #23423f;
   font-size: 12px;
+  white-space: nowrap;
 }
-.map-box-tools button:disabled {
-  opacity: 0.45;
+.map-box-tools button:disabled { opacity: 0.45; }
+.map-box-selected-results {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  max-height: 36px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.map-box-selected-result {
+  flex: 0 0 auto;
+  max-width: 130px;
+  padding: 3px 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-box-result-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.map-box-result-actions .is-danger { color: #a1342c; border: 1px solid #d7a7a2; background: #fff4f2; }
+.map-box-action-flow {
+  position: absolute;
+  top: calc(58px + var(--safe-top, 0px));
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+}
+.map-box-action-flow button {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid #50776d;
+  border-radius: 4px;
+  background: #f0f5ed;
+  color: #203b40;
 }
 
 /* Box results and advanced export are compact overlays, not the folder split view. */
