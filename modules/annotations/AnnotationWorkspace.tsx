@@ -57,7 +57,7 @@ export function AnnotationWorkspace({
   onTab: (tab: MarkerTab) => void;
   onClose: () => void;
   onNavigate: (item: Annotation) => void;
-  onShare: (id: string) => void;
+  onShare: (item: Annotation) => void;
   dragging: boolean;
   terrainStatus?: string;
   photos?: VisiblePhoto[];
@@ -305,7 +305,7 @@ export function AnnotationWorkspace({
           >
             <Trash2 size={16} />
           </button>
-          <button aria-label="分享标记" onClick={() => onShare(item.id)}>
+          <button aria-label="分享标记" onClick={() => onShare(item)}>
             <Share2 size={18} />
           </button>
         </header>

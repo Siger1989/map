@@ -1,7 +1,6 @@
-import type { RoutePlace } from '../navigation/types';
-import { placeShareData } from './data.ts';
+import { placeShareData, type PlaceShareSource } from './data.ts';
 
-export async function sharePlace(place: RoutePlace) {
+export async function sharePlace(place: PlaceShareSource) {
   const data = placeShareData(place);
   if (window.GuanyunNative) {
     if (!window.GuanyunNative.placeTextShare) throw new Error('请安装新版 APK，或复制地点信息后分享');

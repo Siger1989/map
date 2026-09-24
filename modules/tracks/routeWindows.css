@@ -490,11 +490,12 @@
   );
 }
 
-.route-branch-options {
+.route-edit-mode-row {
   display: flex;
   gap: 4px;
+  margin-top: 4px;
 }
-.route-branch-options button {
+.route-edit-mode-row button {
   flex: 1;
   min-height: 44px;
 }
@@ -532,7 +533,20 @@
   border-radius: 4px;
   background: #f0f3eefa;
   font-size: 11px;
+  display: flex;
+  flex-direction: column;
 }
+.observatory .route-edit-dock-heading,
+.observatory .route-edit-mode-row { position: sticky; z-index: 2; background: #f0f3ee; }
+.observatory .route-edit-dock-heading { top: 0; }
+.observatory .route-edit-mode-row { top: 35px; }
+.observatory .route-edit-style { order: 0; }
+.observatory .route-edit-status,
+.observatory .route-edit-actions-row,
+.observatory .route-selection-modes,
+.observatory .route-selection-fields,
+.observatory .route-point-marker-fields { order: 1; }
+.observatory .route-edit-dock .route-window-error { order: 2; }
 .observatory .route-edit-status { margin: 0 0 2px; font-size: 10px; }
 .route-selection-modes { display: flex; gap: 3px; margin-top: 3px; }
 .route-selection-modes button { flex: 1; }
@@ -584,9 +598,9 @@
 .observatory .route-edit-sliders { gap: 4px; }
 .observatory .route-edit-sliders label { border: 0; padding: 0; font-size: 10px; }
 .observatory .route-edit-dock .route-edit-sliders input[type='range'] { height: 30px; min-height: 30px; }
-.observatory .route-branch-options { display: flex; gap: 2px; margin-top: 3px; }
+.observatory .route-edit-mode-row { display: flex; gap: 2px; margin-top: 3px; }
+.observatory .route-edit-mode-row button { flex: 1 1 0; }
 .observatory .route-edit-style { margin-top: 3px; }
-.observatory .route-edit-dock[data-style-open='true'] .route-edit-actions-row { display: none; }
 .observatory.home-map[data-route-edit='true'] .home-topbar { display: none; }
 .observatory .route-edit-colors button { border-color: transparent; background: transparent; }
 

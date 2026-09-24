@@ -9,6 +9,7 @@ import type { MapHandle } from '../map/TerrainMap';
 import { validFavorite, type RouteFavorite } from '../navigation/favorites';
 import { trackNavigation } from '../guidance/savedRoute';
 import { createSession } from '../guidance/session';
+import { routeGap } from '../tracks/routeInfo';
 
 /** Navigation workflow owns its UI session and location lifecycle; other tools close through one callback. */
 export function useGuidanceWorkflow({
@@ -86,6 +87,7 @@ export function useGuidanceWorkflow({
     onActivateUi();
     position.free();
     map.current?.previewRoute(null);
+    map.current?.clearRouteGap();
     if (position.mode === 'network') position.changeMode('auto');
     else position.locate();
   };
@@ -121,6 +123,7 @@ export function useGuidanceWorkflow({
   };
   const navigateTrack = (id: string, reversed = false) => {
     setSavedNavigationError('');
+    map.current?.clearRouteGap();
     try {
       const track = tracks.saved.find((item) => item.id === id);
       if (!track) throw new Error('轨迹已不存在，请重新选择。');
@@ -136,6 +139,20 @@ export function useGuidanceWorkflow({
         ),
       );
     } catch (error) {
+      // Only geometry failures get a missing-connection marker. Network, data
+      // and provider failures must not be misrepresented as a route gap.
+      if (
+        error instanceof Error &&
+        error.message.includes('不相接的线段')
+      ) {
+        const track = tracks.saved.find((item) => item.id === id);
+        const gap = track && routeGap(track);
+        if (gap) {
+          map.current?.focusRouteGap(gap);
+          setSavedNavigationError(`${error.message} 已定位约${Math.max(0.1, Math.round(gap.distance * 10) / 10)}米缺口，红色虚线标出两端。`);
+          return;
+        }
+      }
       setSavedNavigationError(
         error instanceof Error ? error.message : '无法开始轨迹导航。',
       );

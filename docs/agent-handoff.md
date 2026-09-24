@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-24 标记分享/自动保存、断点定位、路线编辑（未出新包）
+
+当前源码在0.2.68发行版之后增加三项：地点标记改即时保存和完整信息文本分享（照片不随文本分享）；保存路线含不相接线段时定位最近缺口并画红色虚线/端点/距离，可关闭清理；路线编辑默认自由画线，模式和节点操作保持固定布局。主要文件：`modules/annotations/{PinEditor.tsx,share.ts}`、`modules/input/SmartText.tsx`、`modules/placeShare/*`、`modules/tracks/{routeInfo.ts,RouteGapLayer.ts,RouteViews.tsx,useManualTracks.ts,routeWindows.css}`、`modules/map/TerrainMap.tsx`、`modules/workbench/useGuidanceWorkflow.ts`、`app/page.tsx`。标记/路线存储键与格式、底图、天气、照片文件和Android工程未改。根代理审查子代理代码后，638项测试、类型、网页构建及隔离浏览器390×857/360×780的主要交互通过；截图见 `artifacts/screenshots/{pin-autosave,pin-share,route-gap,route-editor,route-editor-style}-{390,360}.png`。真机输入法、地形上的断点标注、拖线手感待验。用户明确要求后续说打包再打包，**当前无新APK**；0.2.68包不含此项。
+
 ## 2026-09-24 0.2.68 原路线反向
 
 用户截图中的“道路原路线不能直接反向”已改为直接反转保存线路，起终点/途经点/分段同步反向，正向转弯提示清空；收藏夹操作菜单进入导航后关闭，避免遮挡交换按钮。`modules/guidance/{NavigationStart.tsx,reverseRoadRoute.ts}`、`modules/collections/WorkbenchPanel.tsx`及定向测试为业务改动，存储格式、地图图源、轨迹/照片/标记不动。根代理审查了两名低消耗子代理的实现；632项测试、类型、网页和Android构建、签名/地形、打包网页启动通过。隔离浏览器390×857/360×780截图见 `artifacts/screenshots/reverse-original-{390,360}.png`；真机反向导航、通行规则、覆盖安装待验。`0.2.68-test`/code75 APK SHA256 `dd1b049e603c8a47c573a5a9a3587f2249f8b3393f5a1d60765a0958160951e3`，见 [发行说明](release-0.2.68.md)。远程发布状态需核对。

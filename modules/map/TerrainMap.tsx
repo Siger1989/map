@@ -27,6 +27,8 @@ import { GeologyLayer } from '../geology/GeologyLayer';
 import type { GeologyState } from '../geology/data';
 import { RouteLayer } from '../navigation/RouteLayer';
 import { GuidanceLayer, type GuidanceOverlay } from '../guidance/GuidanceLayer';
+import { RouteGapLayer } from '../tracks/RouteGapLayer';
+import type { RouteGap } from '../tracks/routeInfo';
 import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
@@ -100,6 +102,8 @@ export type MapHandle = {
   refreshGeology: () => void;
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
+  focusRouteGap: (gap: RouteGap) => void;
+  clearRouteGap: () => void;
   focusPosition: (coordinates: Coordinate, zoom: number, pitch: number) => boolean;
   fitRoute: (coordinates: Coordinate[]) => void;
   fitCollection: (
@@ -196,6 +200,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
+    const routeGapRef = useRef<RouteGapLayer | null>(null);
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
@@ -607,6 +612,26 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             duration: 700,
           });
         },
+        focusRouteGap: (gap) => {
+          const map = mapRef.current;
+          if (!map || !loaded.current) return;
+          latest.current.onBrowse();
+          collectionTarget.current = [];
+          map.stop();
+          routeGapRef.current?.sync(gap);
+          const { clientWidth, clientHeight } = map.getContainer();
+          const latitude = (gap.from[1] + gap.to[1]) / 2;
+          const pixels = Math.max(80, Math.min(clientWidth * 0.5, clientHeight * 0.35));
+          const zoom = Math.max(4, Math.min(20, map.getMaxZoom(), Math.log2(78271.5 * Math.cos(latitude * Math.PI / 180) * pixels / Math.max(gap.distance, 0.1))));
+          const longitudeDelta = ((gap.to[0] - gap.from[0] + 540) % 360) - 180;
+          map.jumpTo({
+            center: [gap.from[0] + longitudeDelta / 2, latitude],
+            zoom,
+            pitch: 0,
+            bearing: 0,
+          });
+        },
+        clearRouteGap: () => routeGapRef.current?.sync(null),
         focusPosition: (center, zoom, pitch) => {
           const map = mapRef.current;
           if (!map) return false;
@@ -933,6 +958,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             routeRef.current = new RouteLayer(map);
             guidanceRef.current = new GuidanceLayer(map);
             guidanceRef.current.sync(latest.current.guidanceOverlay ?? null);
+            routeGapRef.current = new RouteGapLayer(map);
+            routeGapRef.current.sync(null);
             trackRef.current = new TrackLayer(map);
             areaRef.current = new AreaLayer(map);
             areaRef.current.sync(latest.current.areaOverlay);

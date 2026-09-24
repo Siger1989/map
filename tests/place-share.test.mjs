@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { placeShareData } from '../modules/placeShare/data.ts';
 import { sharePlace } from '../modules/placeShare/delivery.ts';
+import { annotationSharePlace } from '../modules/annotations/share.ts';
+import { newAnnotation } from '../modules/annotations/data.ts';
 
 test('place links preserve longitude/latitude and explicitly declare WGS84', () => {
   for (const coordinates of [[103.52092, 30.79789], [-73.9, 40.7], [0, 0]]) {
@@ -24,6 +26,14 @@ test('sharing validates coordinates, bounds names, and excludes private marker m
   assert.deepEqual(place, before);
   assert.equal(placeShareData({ ...place, name: ' ' }).name, '地图位置');
   assert.equal(placeShareData({ ...place, name: '名'.repeat(300) }).name.length, 120);
+});
+test('pin sharing includes its editable information and explicitly excludes photo attachments', () => {
+  const pin = newAnnotation('pin', [103, 31], 1234.5, 'pin');
+  pin.name = '营地'; pin.note = '水源在东侧'; pin.icon = 'camp'; pin.color = '#598fff';
+  pin.attributes = [{ name: '补给', value: '2 天' }];
+  const data = placeShareData(annotationSharePlace(pin));
+  for (const value of ['营地', '水源在东侧', '图案：营地', '#598FFF', '补给：2 天', '海拔：1234.5 m', '显示：是', '照片附件不会进入系统文本分享']) assert.match(data.text, new RegExp(value));
+  assert.match(data.summary, /照片附件/);
 });
 test('native share uses the selected place and surfaces bridge failure without claiming success', async () => {
   const previous = globalThis.window;

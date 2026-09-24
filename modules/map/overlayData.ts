@@ -23,6 +23,8 @@ const overlayOrder = [
   'manual-track-selected-node',
   'track-line-selection-halo',
   'track-line-selection',
+  'route-gap-line',
+  'route-gap-points',
   'position-accuracy',
   'position-dot',
 ];

@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { X, Share2, Copy } from 'lucide-react';
-import type { RoutePlace } from '../navigation/types';
 import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
-import { placeShareData } from './data';
+import { placeShareData, type PlaceShareSource } from './data';
 import { sharePlace } from './delivery';
 import './placeShare.css';
 
 export function PlaceShare({ place, onClose, onExport }: {
-  place: RoutePlace;
+  place: PlaceShareSource;
   onClose: () => void;
   onExport?: () => void;
 }) {
@@ -22,7 +21,7 @@ export function PlaceShare({ place, onClose, onExport }: {
     finally { setBusy(false); }
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(data.text); setMessage('地点名称、坐标和链接已复制'); }
+    try { await navigator.clipboard.writeText(data.text); setMessage(place.shareText ? '完整标记信息已复制' : '地点名称、坐标和链接已复制'); }
     catch { setManualCopy(true); setMessage('请长按下方文字复制'); }
   };
   return <div className="place-share-backdrop">
@@ -31,8 +30,8 @@ export function PlaceShare({ place, onClose, onExport }: {
       <div className="place-share-body">
         <strong className="place-share-name" title={data.name}>{data.name}</strong>
         <p>经度、纬度：{data.coordinates}</p>
-        <small>名称、坐标和地图链接</small>
-        <div className="place-share-actions"><button disabled={busy} onClick={() => void share()}><Share2 size={16}/>分享位置</button><button onClick={() => void copy()}><Copy size={16}/>复制信息</button></div>
+        <small>{data.summary}</small>
+        <div className="place-share-actions"><button disabled={busy} onClick={() => void share()}><Share2 size={16}/>{place.shareText ? '分享标记' : '分享位置'}</button><button onClick={() => void copy()}><Copy size={16}/>复制信息</button></div>
         {onExport && <button className="place-share-export" onClick={onExport}>导出标记文件</button>}
         {message && <p role="status">{message}</p>}
         {manualCopy && <textarea readOnly aria-label="待复制的地点信息" value={data.text} onFocus={event => event.currentTarget.select()} />}

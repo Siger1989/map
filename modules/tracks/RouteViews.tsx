@@ -355,11 +355,17 @@ export function RouteEditToolbar({
       >
         <header className="route-edit-dock-heading">
           <strong>编辑路线</strong><small>{session.history.length ? '未保存' : ''}</small>
-          <button onClick={() => {setShowStyle(!showStyle);setShowMarker(false);onSelectionMode(null);}}>{showStyle ? '返回' : '线/点'}</button>
           <button onClick={onBack}>退出编辑</button>
           <button className="route-solid" onClick={onSave}>保存并退出</button>
         </header>
-        {showMarker && selectedCount === 1 ? <RoutePointMarkerFields initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setShowMarker(false)}/> : !showStyle && <>
+        <div className="route-edit-mode-row" role="group" aria-label="路线编辑方式">
+          <button aria-pressed={!roadSnapping} onClick={() => roadSnapping && onRoadSnapping()}>自由画线</button>
+          <button aria-pressed={roadSnapping} onClick={() => !roadSnapping && onRoadSnapping()}>道路吸附</button>
+          <button aria-pressed={snapping} onClick={onSnapping}>节点吸附</button>
+          <button aria-expanded={showStyle} onClick={() => setShowStyle(!showStyle)}>
+            <i className="route-style-chip" style={{ background: style.color }} />线条样式
+          </button>
+        </div>
         <p className="route-edit-status" role="status">
           {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 点“退出框选”恢复点选` : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}` : snapName
             ? `松手拼合：${snapName}`
@@ -407,22 +413,7 @@ export function RouteEditToolbar({
           <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
         </div>
         {!!selectedCount && <RouteSelectionFields key={`${selectedPoints.map(p => p.join(',')).join(';')}:${session.history.length}`} track={session.track} points={selectedPoints} onApply={onSelectionDetails} onMarker={()=>{onSelectionMode(null);setShowMarker(true);}} onSetEnd={onSetEnd} />}
-        {
-          !selectedCount && !boxMode && <div className="route-branch-options">
-            {branch && (
-              <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>
-                道路{roadSnapping ? '吸附' : '自由'}
-              </button>
-            )}
-            <button aria-pressed={snapping} onClick={onSnapping}>
-              节点吸附
-            </button>
-            <button aria-expanded={showStyle} onClick={() => setShowStyle(!showStyle)}>
-              <i className="route-style-chip" style={{ background: style.color }} />路线颜色 {showStyle ? '收起' : '展开'}
-            </button>
-          </div>
-        }
-        </>}
+        {showMarker && selectedCount === 1 && <RoutePointMarkerFields initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setShowMarker(false)}/>}
         {showStyle && <div className="route-edit-style">
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
           {TRACK_COLORS.map((color, i) => (

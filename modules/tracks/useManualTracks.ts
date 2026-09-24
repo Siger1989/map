@@ -60,7 +60,10 @@ export function useManualTracks() {
   const [selectedId, select] = useState<string | null>(null);
   const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
   const [snapping, setSnapping] = useState(true);
-  const [roadSnapping, setRoadSnapping] = useState(true);
+  // Drawing must begin as an unconstrained line. Road following is an explicit
+  // choice because it can otherwise make a route edit look as if points cannot
+  // be placed freely.
+  const [roadSnapping, setRoadSnapping] = useState(false);
   const [riverSnapping, setRiverSnapping] = useState(false);
   const [editing, setEditing] = useState(false),
     [drawing, setDrawing] = useState(false);

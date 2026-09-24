@@ -38,6 +38,7 @@ import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
+import { annotationSharePlace } from '@/modules/annotations/share';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
@@ -100,6 +101,7 @@ import type { ManualTrack } from '@/modules/tracks/drawing';
 import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
+import { routeGap } from '@/modules/tracks/routeInfo';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -286,7 +288,7 @@ export default function Home() {
   const startupFix = position.startupFix;
   const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
-  const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate }; markerId?: string } | null>(null);
+  const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate; shareText?: string; shareSummary?: string }; markerId?: string } | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
   const [routeImportOpen, setRouteImportOpen] = useState(false);
   const incomingRoute = useIncomingRoute();
@@ -1177,7 +1179,7 @@ export default function Home() {
         !navigation.route && !guidance.active) navigation.clear();
     previousRoutePanel.current = panel;
   }, [panel]);
-  const showCenterCursor = focusLock.locked || (panel === null &&
+  const showCenterCursor = !savedNavigationError.includes('已定位约') && (focusLock.locked || (panel === null &&
     !tracks.drawing &&
     !areas.drawing &&
     !annotations.picking &&
@@ -1188,7 +1190,7 @@ export default function Home() {
     !featureMove &&
     !measurement.active &&
     !guidance.active &&
-    !boxSelecting);
+    !boxSelecting));
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
@@ -1644,7 +1646,13 @@ export default function Home() {
                   point={linePoint}
                   alternative={activeAlternative}
                   error={savedNavigationError || tracks.error}
+                  onClearError={() => {
+                    setSavedNavigationError('');
+                    map.current?.clearRouteGap();
+                  }}
                   onBack={() => {
+                    map.current?.clearRouteGap();
+                    setSavedNavigationError('');
                     tracks.select(null);
                     setTrackLinePoint(null);
                   }}
@@ -1667,6 +1675,14 @@ export default function Home() {
                         ),
                       );
                     } catch (e) {
+                      if (e instanceof Error && e.message.includes('不相接的线段')) {
+                        const gap = routeGap(railTrack);
+                        if (gap) {
+                          map.current?.focusRouteGap(gap);
+                          setSavedNavigationError(`${e.message} 已定位约${Math.max(0.1, Math.round(gap.distance * 10) / 10)}米缺口，红色虚线标出两端。`);
+                          return;
+                        }
+                      }
                       setSavedNavigationError(
                         e instanceof Error ? e.message : '无法导航',
                       );
@@ -2591,13 +2607,12 @@ export default function Home() {
                   setTrackLinePoint(null);
                 }
               }}
-              onShare={(id) => {
-                const item = annotations.items.find(item => item.id === id);
-                if (item?.kind === 'pin') {
-                  setPlaceShareTarget({ place: { name: item.name || '地点标记', coordinates: [...item.coordinates] }, markerId: id });
+              onShare={(item) => {
+                if (item.kind === 'pin') {
+                  setPlaceShareTarget({ place: annotationSharePlace(item), markerId: item.id });
                   return;
                 }
-                setCollectionOutputKey(`annotation:${id}`);
+                setCollectionOutputKey(`annotation:${item.id}`);
                 setPanel('favorites');
               }}
               onNavigate={(item) => {

@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type CompositionEventHandler,
   type FocusEventHandler,
   type InputHTMLAttributes,
   type KeyboardEventHandler,
@@ -31,6 +32,7 @@ type FieldProps<T> = {
   onFocus?: FocusEventHandler<T>;
   onBlur?: FocusEventHandler<T>;
   onKeyDown?: KeyboardEventHandler<T>;
+  onCompositionEnd?: CompositionEventHandler<T>;
 };
 function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
   props: FieldProps<T>,
@@ -144,11 +146,12 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
         props.onBlur?.(e);
       }) as FocusEventHandler<T>,
       onCompositionStart: () => setComposing(true),
-      onCompositionEnd: () => {
+      onCompositionEnd: ((e) => {
         setComposing(false);
         setOpen(true);
         setIndex(-1);
-      },
+        props.onCompositionEnd?.(e);
+      }) as CompositionEventHandler<T>,
       onInput: () => {
         setOpen(true);
         setIndex(-1);

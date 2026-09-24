@@ -12,11 +12,12 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onDelete }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onDelete, onClearError }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
   onDelete?: () => boolean;
+  onClearError?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -74,6 +75,6 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button onClick={() => setConfirmDelete(false)}>取消</button>
       <button className="route-danger" onClick={() => { if (onDelete?.()) setConfirmDelete(false); }}>确认删除</button>
     </div>}
-    {error && <p role="alert">{error}</p>}
+    {error && <p role="alert">{error}{onClearError && <button onClick={onClearError}>关闭提示</button>}</p>}
   </section>;
 }
