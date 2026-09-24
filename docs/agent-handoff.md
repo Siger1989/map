@@ -1,5 +1,11 @@
 # Agent快速交接
 
+## 2026-09-24 回家电脑接续入口
+
+用户本轮再次明确授权“不加密直接上传”地图配置与原Android签名，`.env.local`和`mobile/.build/guanyun-test.jks`随仓库同步；当前PUBLIC仓库。原签名证书已核对为4a94系列；此项为本轮明确例外，后续不要依据旧文档删除这两项接续文件或生成替代签名。
+
+先读[进度与跨电脑交接](progress-handoff-20260924.md)。当前分支为 `codex/rollback-ui-0235-20260921`；0.2.71 Release已从草稿公开，源码基准 `9fcb885397e5fb20e519960c499e07b2498952dc`。本次上传另保存图层/图源记忆的开发源码、测试、设计提案和验证脚本；它们未进入0.2.71 APK。本轮仅整理和同步已有成果，不推进UI改版或生成新APK。以本文顶部及CURRENT_STATE顶部结论覆盖下方历史“尚未推送/出包”描述。
+
 ## 2026-09-24 0.2.71-test 最终构建与浏览器 QA 完成
 
 最终APK `APK/Shantu-0.2.71-test-standalone.apk`：57,842,780 bytes，SHA-256 `E298995A4394500E168EA2D6794C402FC674D5D5EA70B577E29965C111B318D6`，versionCode 78，最低 Android API 26（Android 8.0）；sidecar与实际hash一致，沿用原`4a94`证书。647/647测试、TypeScript、网页构建、签名v2/v3、zipalign和473张地形瓦片通过，最终bundle浏览器QA通过。

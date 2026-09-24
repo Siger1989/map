@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { addMaps, listMaps, removeMap } from './storage';
 import type { MapDraft, MapSource, StoredMap } from './types';
 import { freeMap } from './presets';
+import { resolveAvailableMapSelection } from './selection';
 
 const SELECTED = 'shantu-selected-map';
+export { resolveAvailableMapSelection } from './selection';
 export function useMapSources(restoreSelection = true) {
   const [maps, setMaps] = useState<MapSource[]>([]);
   const [selected, setSelected] = useState('');
@@ -22,11 +24,11 @@ export function useMapSources(restoreSelection = true) {
         setMaps(items);
         try {
           const id = localStorage.getItem(SELECTED);
-          if (
-            restoreSelection &&
-            (freeMap(id) || items.some((m) => m.id === id))
-          )
-            setSelected(id!);
+          if (restoreSelection) {
+            const available = resolveAvailableMapSelection(id, items);
+            setSelected(available);
+            if (!available && id) localStorage.removeItem(SELECTED);
+          }
         } catch {}
       })
       .catch(() => {

@@ -34,6 +34,7 @@ import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
+import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerPreferences';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
@@ -203,13 +204,23 @@ export default function Home() {
   const areas = useAreas();
   const [areaEditing, setAreaEditing] = useState(false);
   const [modelTerrainStatus, setModelTerrainStatus] = useState('');
-  const [layers, setLayers] = useState<LayerSettings>(() => ({
-    ...DEFAULT_LAYERS,
-    terrain: readLastView()?.terrain ?? DEFAULT_LAYERS.terrain,
-    satellite: true,
-    rasterDatums: readRasterDatums(),
-    contourInterval: readContourInterval(),
-  }));
+  const [layers, setLayers] = useState<LayerSettings>(() => {
+    const fallback: LayerSettings = {
+      ...DEFAULT_LAYERS,
+      terrain: readLastView()?.terrain ?? DEFAULT_LAYERS.terrain,
+      satellite: true,
+      rasterDatums: readRasterDatums(),
+      contourInterval: readContourInterval(),
+    };
+    const preferences = readLayerPreferences(fallback);
+    return {
+      ...preferences,
+      terrain: readLastView()?.terrain ?? preferences.terrain,
+      rasterDatums: fallback.rasterDatums,
+      contourInterval: fallback.contourInterval,
+    };
+  });
+  useEffect(() => { saveLayerPreferences(layers); }, [layers]);
   const [geology, setGeology] = useState(INITIAL_GEOLOGY);
   const [point, setPoint] = useState<Point>({
     lng: INITIAL_VIEW.center[0],
@@ -276,12 +287,21 @@ export default function Home() {
   const [routeNodeBox, setRouteNodeBox] = useState(false);
   const [routeNodeBoxMode, setRouteNodeBoxMode] = useState<'add' | 'subtract'>('add');
   const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
-  const mapSources = useMapSources(false);
+  const mapSources = useMapSources();
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
     : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
   const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
-  useEffect(() => { setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null }); }, [mapSources.selected, layers.satellite, layers.satelliteProvider, layers.imageryMode, layers.offlineBasemap]);
+  const rasterSelectionSignature = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mapSources.ready) return;
+    const signature = JSON.stringify([mapSources.selected, layers.satellite, layers.satelliteProvider, layers.imageryMode, layers.offlineBasemap]);
+    if (rasterSelectionSignature.current === null) rasterSelectionSignature.current = signature;
+    else if (rasterSelectionSignature.current !== signature) {
+      rasterSelectionSignature.current = signature;
+      setLayers(value => value.rasterLevel == null ? value : { ...value, rasterLevel: null });
+    }
+  }, [mapSources.ready, mapSources.selected, layers.satellite, layers.satelliteProvider, layers.imageryMode, layers.offlineBasemap]);
   const guidance = useGuidance(
     navigation.route,
     position.fix,

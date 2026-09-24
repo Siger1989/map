@@ -59,5 +59,6 @@ next-env.d.ts
 *.pfx
 
 # Local agent scratch files; project hosting metadata remains versioned.
+/.codex-remote-attachments/
 /.openai/*
 !/.openai/hosting.json
