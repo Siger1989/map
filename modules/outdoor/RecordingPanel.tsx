@@ -9,9 +9,10 @@ import { recordingTransfer, saveRecording } from './savedRecording';
 import { RecordingCompactSettings } from './RecordingCompactSettings';
 import './recordingConsole.css';
 
-export function RecordingPanel({ recorder, onShow, onSavedTrack, onPhotos, onMarkCurrent, locationStatus }: {
+export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped, onPhotos, onMarkCurrent, locationStatus }: {
   recorder: ReturnType<typeof useRecording>; points: Coordinate[];
   onShow: (points: Coordinate[]) => void; onSavedTrack: (id: string) => void;
+  onTrackRemapped: (from: string, to: string) => Promise<void>;
   onPhotos: () => void; onMarkCurrent: () => string; locationStatus: string;
 }) {
   const [message, setMessage] = useState('');
@@ -23,7 +24,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onPhotos, onMar
   const error = record.error || recorder.appearance.error || recorder.preferences.error || recorder.sampling.error;
   const act = (work: () => void) => { try { setMessage(''); work(); } catch (error) { setMessage((error as Error).message); } };
   const finish = async (keep:boolean) => {
-    try {setMessage('');const id=await recorder.finish(keep);setEnding(false);setMessage(keep?'记录已保存，可在收藏中查看':'本次记录已结束');if(id)onSavedTrack(id);}
+    try {setMessage('');const id=await recorder.finish(keep,onTrackRemapped);setEnding(false);setMessage(keep?'记录已保存，可在收藏中查看':'本次记录已结束');if(id)onSavedTrack(id);}
     catch(e){setMessage((e as Error).message);}
   };
   return <section className="record-console" aria-label="记录控制台">
@@ -48,7 +49,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onPhotos, onMar
     </div>
     <div className="record-function-group record-group-along"><small>沿途内容</small><div className="record-console-actions">
       <button onClick={()=>setMessage(onMarkCurrent())}><MapPinPlus size={16}/>位置标记</button>
-      <button onClick={onPhotos}><Images size={16}/>照片</button>
+      <button onClick={onPhotos}><Images size={16}/>拍摄 / 导入照片</button>
     </div></div>
     <details className="record-function-group record-group-settings"><summary>轨迹样式与采样设置</summary>
     <RecordingCompactSettings recorder={recorder} />

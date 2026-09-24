@@ -33,6 +33,7 @@ import { offlineMapStatus } from '@/modules/outdoor/tileCache';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
+import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
@@ -204,6 +205,7 @@ export default function Home() {
   const [modelTerrainStatus, setModelTerrainStatus] = useState('');
   const [layers, setLayers] = useState<LayerSettings>(() => ({
     ...DEFAULT_LAYERS,
+    terrain: readLastView()?.terrain ?? DEFAULT_LAYERS.terrain,
     satellite: true,
     rasterDatums: readRasterDatums(),
     contourInterval: readContourInterval(),
@@ -292,18 +294,6 @@ export default function Home() {
   const [routeQr, setRouteQr] = useState<string | null>(null);
   const [routeImportOpen, setRouteImportOpen] = useState(false);
   const incomingRoute = useIncomingRoute();
-  const shareTrackById = (id: string) => {
-    const track = tracks.saved.find((t) => t.id === id);
-    if (track) {
-      try {
-        setShareTarget(shareTrack(track, annotations.items, tracks.saved));
-      } catch (e) {
-        setSavedNavigationError(
-          e instanceof Error ? e.message : '无法分享轨迹',
-        );
-      }
-    }
-  };
   const [photoGroup, setPhotoGroup] = useState<string[]>([]);
 
   const { live: liveRecording, photos: photoTracks } = useRecordingTracks(
@@ -425,6 +415,49 @@ export default function Home() {
     null,
   );
   const [sectionCursor, setSectionCursor] = useState<ProfilePoint | null>(null);
+  const suspendPanelForDialog = () => {
+    preserveFavoritesFocus();
+    setPanel(null);
+    setSectionListOpen(false);
+    setAdjustingPinId(null);
+    setRouteChild(false);
+  };
+  const openRouteImportDialog = () => {
+    suspendPanelForDialog();
+    setRouteImportOpen(true);
+  };
+  const openRouteShareDialog = (target: ShareRoute) => {
+    suspendPanelForDialog();
+    setShareTarget(target);
+  };
+  const openPlaceShareDialog = (target: NonNullable<typeof placeShareTarget>) => {
+    suspendPanelForDialog();
+    setPlaceShareTarget(target);
+  };
+  const shareTrackById = (id: string) => {
+    const track = tracks.saved.find((t) => t.id === id);
+    if (track) {
+      try {
+        openRouteShareDialog(shareTrack(track, annotations.items, tracks.saved));
+      } catch (e) {
+        setSavedNavigationError(
+          e instanceof Error ? e.message : '无法分享轨迹',
+        );
+      }
+    }
+  };
+  useEffect(() => {
+    if (!incomingRoute.incoming) return;
+    preserveFavoritesFocus();
+    setPanel(null);
+    setSectionListOpen(false);
+    setAdjustingPinId(null);
+  }, [incomingRoute.incoming]);
+  useEffect(() => {
+    if (panel === null) return;
+    setSectionListOpen(false);
+    if (panel !== 'annotations') setAdjustingPinId(null);
+  }, [panel]);
   const section = useMemo(
     () =>
       TERRAIN_SECTION_ENABLED
@@ -487,6 +520,7 @@ export default function Home() {
     fix:cameraFix?.coordinates ?? null, pause:follow.pause, resume:follow.resume, north:position.north, free:position.free, device:position.device, motion:position.motion });
   const pendingPositionFocus = useRef(false);
   const startupCameraStatus = useRef<'pending' | 'applied' | 'cancelled'>('pending');
+  const startupSavedCamera = useRef<boolean | null>(null);
   const cancelStartupCamera = useCallback(() => {
     if (startupCameraStatus.current === 'pending')
       startupCameraStatus.current = 'cancelled';
@@ -510,6 +544,12 @@ export default function Home() {
     sectionEditing;
   useEffect(() => {
     if (startupCameraStatus.current !== 'pending') return;
+    if (startupSavedCamera.current === null)
+      startupSavedCamera.current = !shouldFocusStartupPosition(readLastView());
+    if (startupSavedCamera.current) {
+      startupCameraStatus.current = 'cancelled';
+      return;
+    }
     if (startupCameraBlocked) {
       startupCameraStatus.current = 'cancelled';
       return;
@@ -723,6 +763,10 @@ export default function Home() {
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
+  useEffect(() => {
+    if (adjustingPinId && selectedAnnotation?.id !== adjustingPinId)
+      setAdjustingPinId(null);
+  }, [adjustingPinId, selectedAnnotation?.id]);
   const selectedPose = selectedAnnotation
     ? editorPose(selectedAnnotation)
     : null;
@@ -1092,6 +1136,7 @@ export default function Home() {
   );
   const update = (patch: Partial<LayerSettings>) => {
     if (patch.contourInterval !== undefined) saveContourInterval(patch.contourInterval);
+    if (patch.terrain !== undefined) map.current?.setTerrainMode(patch.terrain);
     setLayers((current) => applyLayerPatch(current, patch));
   };
   const openOfflineMap = useOfflineMapMode(update, mapSources.select);
@@ -1828,6 +1873,8 @@ export default function Home() {
             points={editor.session.track.segments.flat()}
             selected={routeNodeSelection}
             project={(point) => map.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point,featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
+            onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
+            onTwoFingerEnd={() => map.current?.finishPanZoomGesture()}
             onChange={points => {setRouteNodeSelection(points);editor.change(session => ({...session,selected:points.length === 1 ? points[0] : null}));}}
             onExit={() => setRouteNodeBox(false)}
           />
@@ -1842,7 +1889,7 @@ export default function Home() {
         <FreeMapCredit id={mapSources.selected} />
         {quickAdd && (
           <QuickAdd
-            onShare={() => { setPlaceShareTarget({ place: { name: '地图位置', coordinates: [...quickAdd.coordinate] } }); setQuickAdd(null); }}
+            onShare={() => { openPlaceShareDialog({ place: { name: '地图位置', coordinates: [...quickAdd.coordinate] } }); setQuickAdd(null); }}
             onArea={startArea}
             at={quickAdd}
             centered={quickAdd.fromCenter === true}
@@ -2171,7 +2218,7 @@ export default function Home() {
             <h1>{PRODUCT_NAME}</h1>
           </button>
           <PlaceSearch
-            onShare={(place) => setPlaceShareTarget({ place: { name: place.name, coordinates: [...place.coordinates] } })}
+            onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
             center={mapCenter}
             zoom={view.zoom}
             onOpen={() => {
@@ -2223,7 +2270,7 @@ export default function Home() {
               onShare={() => {
                 const s = guidance.session;
                 if (s)
-                  setShareTarget(
+                  openRouteShareDialog(
                     sharePlanned(
                       s.route,
                       '当前导航全程',
@@ -2404,6 +2451,7 @@ export default function Home() {
             )}
             project={(p) => map.current?.toScreen(p) ?? null}
             onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
+            onTwoFingerEnd={() => map.current?.finishPanZoomGesture()}
             onResultAction={(action, keys) => {
               setCollectionSelectedKeys(keys);
               setBoxSelectionAction(action);
@@ -2551,8 +2599,12 @@ export default function Home() {
           }}
           direction={position.direction}
           onDimension={() => {
-            update({ terrain: !layers.terrain });
-            map.current?.view(layers.terrain ? 0 : 62, view.bearing);
+            const terrain = !layers.terrain;
+            update({ terrain });
+            const camera = map.current?.cameraSnapshot();
+            if (camera) saveLastView({ ...camera, pitch: terrain ? 62 : 0, terrain });
+            map.current?.view(terrain ? 62 : 0, view.bearing, false);
+            map.current?.syncCameraHash();
           }}
         />
         {panel === null &&
@@ -2632,7 +2684,7 @@ export default function Home() {
               }}
               onShare={(item) => {
                 if (item.kind === 'pin') {
-                  setPlaceShareTarget({ place: annotationSharePlace(item), markerId: item.id });
+                  openPlaceShareDialog({ place: annotationSharePlace(item), markerId: item.id });
                   return;
                 }
                 setCollectionOutputKey(`annotation:${item.id}`);
@@ -2711,6 +2763,8 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            setSectionListOpen(false);
+            if (next !== 'annotations') setAdjustingPinId(null);
             if (next === 'track' && panel !== 'track') tracks.select(null);
             setOfflinePicking(false);
             setOutdoorOffline(false);
@@ -2800,7 +2854,7 @@ export default function Home() {
           )}
           {panel === 'outdoor' && (
             <OutdoorPanel
-              onImport={() => setRouteImportOpen(true)}
+              onImport={openRouteImportDialog}
               key={outdoorOffline?'offline':outdoorPhotos?'photos':'record'}
               onDownloadCurrent={()=>beginMapDownload('当前地图区域')}
               onDownloadRoute={()=>beginMapDownload(selectedTrack?.name??'当前路线',{kind:'route',segments:selectedTrack?.segments??(navigation.route?[navigation.route.coordinates]:[[[point.lng,point.lat]]]),bufferKm:10})}
@@ -2825,6 +2879,7 @@ export default function Home() {
               selectedId={tracks.selectedId}
               recorder={recorder}
               onSavedTrack={tracks.select}
+              onTrackRemapped={photos.remapTrack}
               returnPanel={
                 <ReturnPanel
                   tracks={tracks.saved}
@@ -2845,7 +2900,11 @@ export default function Home() {
               photos={
                 <PhotoPanel
                   tracks={photoTracks}
-                  preferred={tracks.selectedId}
+                  preferred={recorder.record.phase !== 'idle' ? recorder.record.id : tracks.selectedId}
+                  folderReady={recorder.record.phase === 'idle' || recorder.record.phase === 'finished'}
+                  cameraPosition={displayedFix}
+                  liveTrackId={recorder.record.phase !== 'idle' ? recorder.record.id : null}
+                  onRequestLocation={position.locate}
                   photos={photos}
                   onOpen={(id) => {
                     const p = photos.items.find((p) => p.id === id);
@@ -2897,7 +2956,21 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
-              onImport={() => setRouteImportOpen(true)}
+              onImportedData={data => {
+                follow.pause(); position.free();
+                const track = data.tracks[0];
+                if (track) {
+                  tracks.pause(); tracks.select(track.id); tracks.setVisible(true);
+                  setActiveTrackNode(null); annotations.select(null); areas.select(null);
+                  map.current?.fitRoute(track.segments.flat());
+                  setPanel(null);
+                } else {
+                  const points = data.favorites[0]?.route.coordinates ?? [...data.annotations.map(a=>a.coordinates), ...(data.areas??[]).flatMap(a=>a.boundary)];
+                  if (points.length) map.current?.fitRoute(points);
+                  setPanel('favorites');
+                }
+                setMapStatus(`已导入 ${data.tracks.length} 条轨迹、${data.annotations.length} 个标记、${data.areas?.length??0} 个区域；可在收藏查看`);
+              }}
               offlineCount={offline.packages.length}
               offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{preserveFavoritesFocus();openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
@@ -2974,7 +3047,7 @@ export default function Home() {
                 openSection(id);
               }}
               onShareRoute={(favorite) =>
-                setShareTarget(sharePlanned(favorite.route, favorite.name))
+                openRouteShareDialog(sharePlanned(favorite.route, favorite.name))
               }
               onShareTrack={shareTrackById}
               favorites={favorites}
@@ -3039,7 +3112,7 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
-              onImport={() => setRouteImportOpen(true)}
+              onImport={openRouteImportDialog}
               onCache={()=>{if(navigation.route)beginMapDownload('规划路线',{kind:'route',segments:[navigation.route.coordinates],bufferKm:10});}}
               onEditPoints={editPlannedPoints}
               onCancel={stopNavigation}
@@ -3047,7 +3120,7 @@ export default function Home() {
               weather={<RouteWeatherSettings journey={routeJourney} />}
               onShare={() => {
                 if (navigation.route)
-                  setShareTarget(sharePlanned(navigation.route));
+                  openRouteShareDialog(sharePlanned(navigation.route));
               }}
               navigation={navigation}
               onStartNavigation={startGuidance}

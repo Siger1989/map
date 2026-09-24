@@ -1,6 +1,7 @@
 import { photoTime } from './matching';
 import { imageMime } from './selection';
 import { exifAltitude, type PhotoAltitude } from './details';
+import type { Coordinate } from '../navigation/types.ts';
 export type PhotoDraft = {
   hash: string;
   name: string;
@@ -9,6 +10,12 @@ export type PhotoDraft = {
   detail: Blob;
   altitude?: PhotoAltitude;
   zone: string;
+  timeSource?: 'exif' | 'camera';
+  timeSourceDetail?: 'return-estimate' | 'manual';
+  cameraCoordinates?: Coordinate;
+  cameraAccuracy?: number;
+  cameraTrackId?: string;
+  cameraLocationTimeSource?: 'capture' | 'return';
 };
 export async function readPhoto(
   file: File,
@@ -113,6 +120,7 @@ export async function readPhoto(
       .join(''),
     name: file.name.slice(0, 200),
     time: photoTime(meta?.DateTimeOriginal, meta?.OffsetTimeOriginal),
+    ...(photoTime(meta?.DateTimeOriginal, meta?.OffsetTimeOriginal) !== null ? { timeSource: 'exif' as const } : {}),
     preview,
     detail,
     altitude: exifAltitude(meta),

@@ -1,0 +1,103 @@
+.favorites-import-backdrop {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: #10251d66;
+}
+.favorites-import {
+  position: relative;
+  inset: auto;
+  width: min(300px, 100%);
+  max-height: min(56dvh, 480px);
+  overflow: hidden;
+  background: var(--panel);
+  border-radius: 8px;
+}
+.observatory .collection-workbench.favorites-import {
+  position: relative;
+  inset: auto;
+  width: min(300px, 100%);
+  height: auto;
+  max-height: min(56dvh, 480px);
+}
+.favorites-import .workbench-collections {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 0;
+}
+.favorites-import .workbench-heading > div { justify-content: center; text-align: center; }
+.favorites-import .workbench-heading button {
+  width: auto;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 4px;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.favorites-import .workbench-heading button[aria-label='关闭收藏'] { width: 36px; }
+.favorites-import .workbench-heading {
+  flex-shrink: 0;
+}
+.favorites-import-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.favorites-import-tabs button {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  padding: 2px 4px;
+  border: 1px solid #9db4a8;
+  border-radius: 5px;
+  background: #fff;
+  color: #234b3e;
+  font-size: 11px;
+}
+.favorites-import-tabs button[aria-pressed='true'] {
+  background: #266552;
+  color: #fff;
+}
+.favorites-import-body {
+  min-height: 0;
+  flex: 0 1 auto;
+  overflow: auto;
+  padding: 0 6px 6px;
+}
+.favorites-import-body > section {
+  gap: 4px;
+}
+.favorites-import-body .import-coordinate-options summary {
+  min-height: 32px;
+}
+.favorites-import-body .import-file,
+.favorites-import-body button,
+.favorites-import-body summary,
+.favorites-import-body select {
+  min-height: 36px;
+}
+.favorites-import-body .route-note {
+  font-size: 11px;
+}
+.favorites-import-body .marker-excel-import {
+  position: static;
+  inset: auto;
+  display: block;
+  height: auto;
+  min-height: 0;
+  background: transparent;
+}
+.favorites-import-body .marker-excel-import .workbench-collections {
+  height: auto;
+  min-height: 0;
+}
+.favorites-import-body .marker-excel-content {
+  overflow: visible;
+  padding: 0;
+}

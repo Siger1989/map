@@ -30,9 +30,18 @@ export function twoFingerGestureDelta(previous: [ScreenPoint, ScreenPoint], next
     points[0].y - points[1].y,
   ));
   const from = center(previous), to = center(next);
+  const angle = (points: [ScreenPoint, ScreenPoint]) => Math.atan2(
+    points[1].y - points[0].y,
+    points[1].x - points[0].x,
+  );
+  const rawRotation = angle(next) - angle(previous);
+  // MapLibre bearing is the camera's compass heading, so its visible map rotation
+  // runs opposite to a clockwise screen-space twist of the fingers.
+  const rotation = -Math.atan2(Math.sin(rawRotation), Math.cos(rawRotation)) * 180 / Math.PI;
   return {
     pan: { x: to.x - from.x, y: to.y - from.y },
     zoom: Math.log2(distance(next) / distance(previous)),
+    rotation,
     around: to,
   };
 }

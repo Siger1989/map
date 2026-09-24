@@ -247,7 +247,7 @@ export function PhotoLightbox({
           <p>
             {photo.trackName} · {photo.coordinates[1].toFixed(5)},{' '}
             {photo.coordinates[0].toFixed(5)} ·{' '}
-            {photoLocationLabel(photo)}{photo.timeSource === 'camera' && ' · 时间取自相机启动时刻'}
+            {photoLocationLabel(photo)}{photo.locationSource === 'camera' && Number.isFinite(photo.locationAccuracy) ? ` · ±${Math.round(photo.locationAccuracy!)} 米` : ''}{photo.timeSourceDetail === 'return-estimate' ? ' · 相机返回时间（估计）' : photo.timeSource === 'camera' && ' · 时间取自拍摄会话'}
           </p>
           <p>{altitudeLabel(photo.altitude)}</p>
           <p>{weatherLabel(photo)}</p>

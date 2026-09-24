@@ -7,7 +7,7 @@ import { saveWorkbench } from './workbenchStore';
 import './boxSelection.css';
 
 /** Review only this map selection; reuse the archive transaction and conflict-safe undo. */
-export function BoxSelectionResults({ entries, initialMessage, initialAction, onInitialActionHandled, onClose, onReselect, onExport, onShare, busy = false, storage = localStorage }: {
+export function BoxSelectionResults({ entries, initialMessage, initialAction, onInitialActionHandled, onClose, onReselect, onExport, busy = false, storage = localStorage }: {
   entries: CatalogEntry[];
   initialMessage?: string;
   initialAction?: 'export' | 'share' | 'delete' | null;
@@ -15,7 +15,6 @@ export function BoxSelectionResults({ entries, initialMessage, initialAction, on
   onClose: () => void;
   onReselect: (keys: string[]) => void;
   onExport: (keys: string[]) => void;
-  onShare: (keys: string[]) => void;
   busy?: boolean;
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 }) {
@@ -28,7 +27,7 @@ export function BoxSelectionResults({ entries, initialMessage, initialAction, on
   useEffect(() => {
     if (!initialAction) return;
     if (initialAction === 'export') onExport(chosen.map(e => e.key));
-    else if (initialAction === 'share') onShare(chosen.map(e => e.key));
+    else if (initialAction === 'share') onExport(chosen.map(e => e.key));
     else setConfirming(true);
     onInitialActionHandled?.();
   }, [initialAction]); // An action is consumed once when the results dock is requested.
@@ -73,7 +72,7 @@ export function BoxSelectionResults({ entries, initialMessage, initialAction, on
       {!entries.length && !message && <p className="box-results-note">本次框选中已没有对象，可以重新框选。</p>}
       <div className="box-results-actions">
         <button onClick={() => onReselect(chosen.map(e => e.key))}>继续框选</button>
-        {entries.length ? <><button disabled={!chosen.length || busy} onClick={() => onExport(chosen.map(e => e.key))}>导出</button><button disabled={!chosen.length || busy} onClick={() => onShare(chosen.map(e => e.key))}>{busy ? '生成中…' : '分享'}</button><button className="is-danger" disabled={!chosen.length || busy} onClick={() => setConfirming(true)}>删除</button></> : <button onClick={onClose}>返回地图</button>}
+        {entries.length ? <><button disabled={!chosen.length || busy} onClick={() => onExport(chosen.map(e => e.key))}>{busy ? '生成中…' : '分享'}</button><button className="is-danger" disabled={!chosen.length || busy} onClick={() => setConfirming(true)}>删除</button></> : <button onClick={onClose}>返回地图</button>}
         {undo && <button onClick={restore}>撤销删除</button>}
       </div>
     </>}

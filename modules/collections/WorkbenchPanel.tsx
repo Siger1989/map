@@ -48,7 +48,7 @@ import './workbench.css';
 import './workbenchLayout.css';
 import { useWorkbenchData } from './useWorkbenchData';
 import { catalogEntries } from './catalog';
-import { collectionTransfer } from './export';
+import { collectionSpreadsheet, collectionTransfer } from './export';
 import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 
@@ -234,21 +234,37 @@ export function WorkbenchPanel(props: Props) {
   };
   const folderSwipe = useFolderVisibilitySwipe((ids, visible) =>
     setFolderVisibility(ids, visible));
-  const exportMarkerExcel = async () => {
-    const keys = new Set(selectedWorkbenchKeys(items, [...checked]));
-    const markers = store.data?.annotations.filter(item => keys.has(`annotation:${item.id}`)) ?? [];
-    if (!markers.length) { setMessage('请先勾选标记或模型'); return; }
+  const shareExcel = async (ids: string[], send: boolean) => {
     setBusy(true);
+    setActionMessage('');
     try {
-      setMessage('正在补齐地点地区信息…');
-      const { regions, unresolved } = await spreadsheetRegions(markers, store.data?.regions ?? {});
-      setMessage(await deliverFile(new File(
-        [new Uint8Array(annotationSpreadsheet(markers, regions))],
-        `Shantu-markers-${Date.now()}.xlsx`,
+      const keys = new Set(selectedWorkbenchKeys(items, ids));
+      const entries = catalogEntries(
+        store.data?.favorites ?? [],
+        store.data?.tracks ?? [],
+        store.data?.annotations ?? [],
+        store.data?.sections ?? [],
+        store.data?.areas ?? [],
+        store.data?.measurements ?? [],
+      ).filter((entry) => keys.has(entry.key));
+      if (!entries.length) throw new Error('请先选择要分享的收藏');
+      const markers = entries.flatMap((entry) => 'annotation' in entry ? [entry.annotation] : []);
+      const markerOnly = entries.every((entry) => entry.kind === 'pin' || entry.kind === 'model');
+      if (markerOnly) setActionMessage('正在补齐地点地区信息…');
+      const resolved = markerOnly
+        ? await spreadsheetRegions(markers, store.data?.regions ?? {})
+        : { regions: store.data?.regions ?? {}, unresolved: 0 };
+      const bytes = markerOnly
+        ? annotationSpreadsheet(markers, resolved.regions)
+        : collectionSpreadsheet(entries, resolved.regions, localStorage);
+      const result = await deliverFile(new File(
+        [new Uint8Array(bytes)],
+        `Shantu-collection-${Date.now()}.xlsx`,
         { type: XLSX_MIME },
-      ), false) + (unresolved ? `；${unresolved} 个地点地区未识别，Excel中保持空白` : ''));
+      ), send);
+      setActionMessage(result + (resolved.unresolved ? `；${resolved.unresolved} 个地点地区未识别，Excel中保持空白` : ''));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Excel 导出失败');
+      setActionMessage(error instanceof Error ? error.message : 'Excel 导出失败');
     } finally {
       setBusy(false);
     }
@@ -539,7 +555,6 @@ export function WorkbenchPanel(props: Props) {
           </div>
           {batch && (
             <div className="workbench-batch">
-              <button disabled={!checked.size || busy} onClick={() => void exportMarkerExcel()}>标记 Excel</button>
               <button
                 disabled={!checked.size}
                 onClick={() => showAction({ type: 'share', ids: [...checked] })}
@@ -646,6 +661,7 @@ export function WorkbenchPanel(props: Props) {
           }}
           onManage={props.onManage}
           onShare={share}
+          onExcel={shareExcel}
           onCopy={copy}
           onEdit={(id, patch) =>
             commit(updateWorkbenchItem(items, id, patch), '已保存名称与颜色')

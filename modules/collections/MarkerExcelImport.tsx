@@ -12,10 +12,10 @@ import { XLSX_MIME } from '../files/spreadsheet';
 import type { Transfer } from '../outdoor/exchange';
 import './markerExcelImport.css';
 
-export function MarkerExcelImport({ onBack, onClose, onOtherImport }: {
+export function MarkerExcelImport({ onBack, onClose, embedded = false }: {
   onBack: () => void;
   onClose: () => void;
-  onOtherImport?: () => void;
+  embedded?: boolean;
 }) {
   const picker = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -73,17 +73,16 @@ export function MarkerExcelImport({ onBack, onClose, onOtherImport }: {
   };
   return <div className="collection-workbench marker-excel-import" aria-label="导入 Excel 标记">
     <section className="workbench-collections">
-      <header className="workbench-heading">
+      {!embedded && <header className="workbench-heading">
         <button onClick={onBack}>‹ 返回</button>
         <div><strong>导入标记 Excel</strong></div>
         <button aria-label="关闭收藏" onClick={onClose}>关闭 ×</button>
-      </header>
+      </header>}
       <div className="marker-excel-content">
         <p>每行一个点：经度（WGS84）、纬度（WGS84）、名称、备注；后续列写“属性：条目名”。ID 由导出自动填写，手建表可留空。</p>
         <div className="marker-excel-actions">
           <button disabled={loading} onClick={() => picker.current?.click()}>{loading ? '读取中…' : '选择 XLSX'}</button>
           <button disabled={loading} onClick={() => void template()}>下载空白模板</button>
-          {onOtherImport && <button disabled={loading} onClick={onOtherImport}>其他文件</button>}
           <input ref={picker} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="选择标记 Excel 文件" onChange={event => {
             const file = event.target.files?.[0];
             event.target.value = '';

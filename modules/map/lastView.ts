@@ -1,5 +1,9 @@
 export const LAST_VIEW_KEY = 'shantu.map.last-view.v1';
-export type SavedMapView = { center: [number, number]; zoom: number; bearing: number; pitch: number };
+export type SavedMapView = { center: [number, number]; zoom: number; bearing: number; pitch: number; terrain?: boolean };
+/** A previously used camera takes priority over automatic startup location focus. */
+export function shouldFocusStartupPosition(savedView: SavedMapView | null): boolean {
+  return savedView === null;
+}
 export function parseLastView(raw: string | null): SavedMapView | null {
   try {
     const v = JSON.parse(raw ?? 'null');
@@ -7,7 +11,13 @@ export function parseLastView(raw: string | null): SavedMapView | null {
       ![...v.center, v.zoom, v.bearing, v.pitch].every(n => typeof n === 'number' && Number.isFinite(n)) ||
       Math.abs(v.center[0]) > 180 || Math.abs(v.center[1]) > 85.051129 ||
       v.zoom < 0 || v.zoom > 20 || v.pitch < 0 || v.pitch > 80) return null;
-    return { center: [v.center[0], v.center[1]], zoom: v.zoom, bearing: v.bearing, pitch: v.pitch };
+    return {
+      center: [v.center[0], v.center[1]],
+      zoom: v.zoom,
+      bearing: v.bearing,
+      pitch: v.pitch,
+      ...(typeof v.terrain === 'boolean' ? { terrain: v.terrain } : {}),
+    };
   } catch { return null; }
 }
 export function readLastView(): SavedMapView | null {

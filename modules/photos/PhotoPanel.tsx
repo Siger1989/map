@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
-import { localPhotoInput, matchPhoto } from './matching';
+import { localPhotoInput, matchPhoto, type PhotoMatch } from './matching';
+import { cameraDraftTime, cameraLocationFallbackAllowed, reliableCaptureLocation } from './association';
 import { readPhoto, type PhotoDraft } from './import';
 import type { useTripPhotos } from './useTripPhotos';
 import { PhotoPicker } from './PhotoPicker';
 import { selectPhotoFiles } from './selection';
+import type { PositionFix } from '../position/types';
 import {
   hasTrackTime,
   photoTrackChoice,
@@ -23,11 +25,19 @@ function DraftImage({ blob, name }: { blob: Blob; name: string }) {
 export function PhotoPanel({
   tracks,
   preferred,
+  folderReady,
+  cameraPosition,
+  liveTrackId,
+  onRequestLocation,
   photos,
   onOpen,
 }: {
   tracks: ManualTrack[];
   preferred: string | null;
+  folderReady: boolean;
+  cameraPosition: PositionFix | null;
+  liveTrackId: string | null;
+  onRequestLocation: () => void;
   photos: ReturnType<typeof useTripPhotos>;
   onOpen: (id: string) => void;
 }) {
@@ -52,17 +62,20 @@ export function PhotoPanel({
   }, []);
   const matches = useMemo(
     () =>
-      drafts.map((p) => ({
+      drafts.map((p): { draft: PhotoDraft; time: number | null; match: (PhotoMatch & { locationSource?: 'track' | 'camera'; locationAccuracy?: number }) | null } => ({
         draft: p,
         time: p.time === null ? null : p.time + shift * 60000,
         match: track
-          ? matchPhoto(track, p.time === null ? null : p.time + shift * 60000)
+          ? matchPhoto(track, p.time === null ? null : p.time + shift * 60000) ??
+            (cameraLocationFallbackAllowed(p, shift, track.id)
+              ? { coordinates: p.cameraCoordinates!, kind: 'point' as const, locationSource: 'camera' as const, locationAccuracy: p.cameraAccuracy }
+              : null)
           : null,
       })),
     [drafts, shift, track],
   );
   const count = matches.filter((p) => p.match).length;
-  const loadFiles = async (selected: File[], folder: boolean) => {
+  const loadFiles = async (selected: File[], folder: boolean, capturedAt?: number, capturedTrackId?: string) => {
     let files: File[];
     try {
       files = selectPhotoFiles(selected, folder);
@@ -70,7 +83,9 @@ export function PhotoPanel({
       setMessage((error as Error).message);
       return;
     }
-    if (track) setTarget(track.id);
+    if (capturedTrackId)
+      setTarget(capturedTrackId);
+    else if (track) setTarget(track.id);
     setBusy(true);
     setDrafts([]);
     setShift(0);
@@ -80,7 +95,21 @@ export function PhotoPanel({
     for (const file of files) {
       if (!active.current) return;
       try {
-        next.push(await readPhoto(file));
+        let draft = await readPhoto(file);
+        // A camera result may use its capture-session time; imported files never do.
+        draft = cameraDraftTime(draft, capturedAt);
+        if (!folder && capturedTrackId) draft = { ...draft, cameraTrackId: capturedTrackId };
+        const fix = reliableCaptureLocation(cameraPosition, draft.time);
+        if (capturedTrackId && capturedTrackId === liveTrackId && fix) {
+          draft = {
+            ...draft,
+            cameraCoordinates: fix.coordinates,
+            cameraAccuracy: fix.accuracy,
+            cameraTrackId: capturedTrackId,
+            cameraLocationTimeSource: draft.timeSource === 'exif' ? 'capture' : 'return',
+          };
+        }
+        next.push(draft);
       } catch (error) {
         failed.push(
           `${file.name}：${error instanceof Error ? error.message : '无法解码，请选择 JPEG 原片'}`,
@@ -99,6 +128,7 @@ export function PhotoPanel({
   return (
     <div className="photo-panel">
       <div className="photo-choose" hidden={drafts.length > 0}>
+        <PhotoPicker disabled={busy} folderReady={folderReady} trackId={liveTrackId ?? track?.id ?? undefined} onFiles={loadFiles} />
         <label>
           匹配轨迹
           <select
@@ -116,13 +146,18 @@ export function PhotoPanel({
             ))}
           </select>
         </label>
-        <PhotoPicker disabled={busy || !track} onFiles={loadFiles} />
       </div>
       {!timed.length && (
         <p className="route-note">
           先保存一次实走记录，或导入含时间的
           GPX。无时间的旧轨迹无法自动定位照片；若有原始 GPX
           可重新导入，普通手绘线不能补出真实拍摄时间轴。
+        </p>
+      )}
+      {matches.some(({ draft, match }) => draft.cameraTrackId && !match) && (
+        <p className="route-note" role="status">
+          拍摄照片暂未取得可靠的轨迹位置或拍摄时定位，照片草稿已保留。可开启定位后重新拍摄，或补充拍摄时间并选择可匹配的实走记录。
+          <button type="button" onClick={onRequestLocation}>为后续拍摄获取当前位置</button>
         </p>
       )}
       {!!drafts.length && (
@@ -169,7 +204,9 @@ export function PhotoPanel({
                   <span title={draft.name}>{draft.name}</span>
                   <small>
                     {match
-                      ? match.kind === 'point'
+                      ? match.locationSource === 'camera'
+                        ? `${draft.cameraLocationTimeSource === 'return' ? '返回时定位' : '拍摄时定位'} · ±${Math.round(match.locationAccuracy ?? 0)} 米`
+                        : match.kind === 'point'
                         ? '匹配到记录点'
                         : '按前后记录点估算'
                       : '未匹配：补时间或检查轨迹断点'}
@@ -193,6 +230,8 @@ export function PhotoPanel({
                                   value !== null && Number.isFinite(value)
                                     ? value
                                     : null,
+                                timeSource: undefined,
+                                timeSourceDetail: value !== null && Number.isFinite(value) ? 'manual' : undefined,
                               }
                             : p,
                         ),
@@ -200,6 +239,7 @@ export function PhotoPanel({
                     }}
                   />
                   <small>{draft.zone}</small>
+                  <small>时间来源：{draft.timeSourceDetail === 'manual' ? '手动补充' : draft.timeSourceDetail === 'return-estimate' ? '相机返回时间（估计）' : draft.timeSource === 'exif' ? '照片 EXIF' : '未知'}</small>
                 </div>
               </article>
             ))}
@@ -224,6 +264,11 @@ export function PhotoPanel({
                               time,
                               coordinates: match.coordinates,
                               kind: match.kind,
+                              ...(draft.timeSource ? { timeSource: draft.timeSource } : {}),
+                              ...(draft.timeSourceDetail ? { timeSourceDetail: draft.timeSourceDetail } : {}),
+                              locationSource: match.locationSource ?? 'track',
+                              ...(match.locationAccuracy !== undefined ? { locationAccuracy: match.locationAccuracy } : {}),
+                              ...(draft.cameraLocationTimeSource ? { locationTimeSource: draft.cameraLocationTimeSource } : {}),
                               trackId: track.id,
                               trackName: track.name,
                             },
@@ -252,6 +297,7 @@ export function PhotoPanel({
               取消本次
             </button>
           </div>
+          <small className="route-note">确认后才写入本机照片库；当前未保存草稿只保留在此页面，离开前请先加入地图。</small>
         </>
       )}
       <div className="outdoor-actions">

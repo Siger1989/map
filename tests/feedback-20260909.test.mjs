@@ -32,8 +32,9 @@ test('two terrain points: inclination is distinct from compass bearing, missing 
 });
 test('distant pins and models use common dot/icon states, selected item stays named', () => {
   assert.equal(markerPresentation(6, false), 'dot');
-  assert.equal(markerPresentation(11, false), 'icon');
-  assert.equal(markerPresentation(15, false), 'label');
+  assert.equal(markerPresentation(10.99, false), 'icon');
+  assert.equal(markerPresentation(11, false), 'label');
+  assert.equal(markerPresentation(16, false), 'label');
   assert.equal(markerPresentation(6, true), 'label');
 });
 test('closest road candidate chosen by distance rather than provider order, empty results fail', () => {

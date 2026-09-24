@@ -12,10 +12,51 @@ import {
   trackSourceLabel,
 } from '../modules/tracks/provenance.ts';
 import { matchPhoto } from '../modules/photos/matching.ts';
+import { cameraDraftTime, cameraLocationFallbackAllowed, reliableCaptureLocation, photoLocationLabel } from '../modules/photos/association.ts';
+import { validPhoto } from '../modules/photos/storage.ts';
 import { selectPhotoFiles, imageMime } from '../modules/photos/selection.ts';
 import { moveTrackNode } from '../modules/tracks/editing.ts';
 
 const time = Date.UTC(2026, 8, 7, 2);
+
+test('only a successful camera result may use capture-session time when EXIF is missing', () => {
+  const unknown = { time: null, zone: '拍摄时间未知', hash: 'h' };
+  assert.deepEqual(cameraDraftTime(unknown), unknown);
+  assert.deepEqual(cameraDraftTime(unknown, time), {
+    ...unknown,
+    time,
+    timeSource: 'camera',
+    timeSourceDetail: 'return-estimate',
+    zone: '相机返回时间（估计）',
+  });
+  const exif = { ...unknown, time: time - 5000, zone: 'EXIF' };
+  assert.deepEqual(cameraDraftTime(exif, time), exif);
+});
+
+test('camera fallback requires a fresh reliable fix and preserves its source and accuracy', () => {
+  const fix = { coordinates: [104.066, 30.659], timestamp: time, accuracy: 18 };
+  assert.deepEqual(reliableCaptureLocation(fix, time, time + 1000), {
+    coordinates: fix.coordinates,
+    accuracy: 18,
+  });
+  assert.equal(reliableCaptureLocation({ ...fix, accuracy: 81 }, time, time + 1000), null);
+  assert.equal(reliableCaptureLocation({ ...fix, accuracy: -1 }, time, time + 1000), null);
+  assert.equal(reliableCaptureLocation(fix, time, time + 30000), null);
+  assert.equal(reliableCaptureLocation(fix, time + 31000, time + 1000), null);
+  const photo = {
+    id: 'camera:1', name: 'camera.jpg', trackId: 'recorded-test', trackName: '实走记录',
+    time, timeSource: 'camera', timeSourceDetail: 'return-estimate', coordinates: fix.coordinates, kind: 'point',
+    locationSource: 'camera', locationTimeSource: 'return', locationAccuracy: 18, preview: new Blob(['x'], { type: 'image/jpeg' }),
+  };
+  assert.equal(validPhoto(photo), true);
+  assert.equal(photoLocationLabel(photo), '返回时定位');
+  const draft = { cameraCoordinates: fix.coordinates, cameraTrackId: 'recorded-test' };
+  assert.equal(cameraLocationFallbackAllowed(draft, 0, 'recorded-test'), true);
+  assert.equal(cameraLocationFallbackAllowed(draft, 1, 'recorded-test'), false);
+  assert.equal(cameraLocationFallbackAllowed({ ...draft, timeSourceDetail: 'manual' }, 0, 'recorded-test'), false);
+  assert.equal(cameraLocationFallbackAllowed(draft, 0, 'other-track'), false);
+});
+
 const fix = (time, x) => ({
   coordinates: [x, 30.659],
   time,
@@ -63,6 +104,12 @@ test('finished recording saves real time and pause alignment; reloaded track sti
   saveRecording(record, storage);
   assert.equal(parseSavedTracks(storage.getItem(TRACK_STORAGE)).length, 1);
   assert.equal(record.segments.length, 4);
+});
+
+test('record save can reuse a matching track ID, which photos must follow', () => {
+  const storage = memory();
+  storage.setItem(TRACK_STORAGE, JSON.stringify([{ ...recordingTrack(record), id: 'existing-track-id' }]));
+  assert.equal(saveRecording(record, storage).id, 'existing-track-id');
 });
 
 test('finished singleton segments remain savable without stitching or losing times', () => {

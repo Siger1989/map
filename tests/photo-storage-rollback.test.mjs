@@ -59,3 +59,26 @@ for (const version of [0, 1, 3]) {
     if (version === 3) assert.equal(stores.size, 3, 'newer auxiliary stores are preserved');
   });
 }
+
+test('track ID remap updates only photos attached to the finished recording', async (t) => {
+  const photos = [
+    { id: 'capture-a', trackId: 'record-live', kind: 'point' },
+    { id: 'unrelated', trackId: 'other-track', kind: 'point' },
+    { id: 'marker-photo', trackId: '', kind: 'annotation', annotationId: 'pin-a' },
+  ];
+  const puts = [], tx = {
+    objectStore: () => ({
+      getAll() { const request = { result: photos }; queueMicrotask(() => { request.onsuccess(); queueMicrotask(() => tx.oncomplete()); }); return request; },
+      put(value) { puts.push(value); },
+    }),
+  };
+  const db = { objectStoreNames: { contains: () => true }, transaction: (name, mode) => {
+    assert.equal(name, 'photos'); assert.equal(mode, 'readwrite'); return tx;
+  }, close() {} };
+  const previous = globalThis.indexedDB;
+  globalThis.indexedDB = { open: () => { const request = { result: db }; queueMicrotask(() => request.onsuccess()); return request; } };
+  t.after(() => { if (previous === undefined) delete globalThis.indexedDB; else globalThis.indexedDB = previous; });
+  const storage = await import('../modules/photos/storage.ts?track-remap');
+  await storage.remapPhotoTrack('record-live', 'deduplicated-track');
+  assert.deepEqual(puts, [{ ...photos[0], trackId: 'deduplicated-track' }]);
+});

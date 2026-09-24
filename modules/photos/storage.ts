@@ -10,6 +10,10 @@ export type TripPhoto = {
   kind: 'point' | 'interpolated' | 'annotation';
   annotationId?: string;
   timeSource?: 'exif' | 'camera';
+  timeSourceDetail?: 'return-estimate' | 'manual';
+  locationSource?: 'track' | 'camera';
+  locationAccuracy?: number;
+  locationTimeSource?: 'capture' | 'return';
   preview: Blob;
 } & PhotoDetails;
 export type VisiblePhoto = TripPhoto & {
@@ -62,6 +66,10 @@ export function validPhoto(p: TripPhoto) {
         p.annotationId.length <= 100 &&
         p.trackId === '')) &&
     (p.timeSource === undefined || ['exif', 'camera'].includes(p.timeSource)) &&
+    (p.timeSourceDetail === undefined || ['return-estimate', 'manual'].includes(p.timeSourceDetail)) &&
+    (p.locationSource === undefined || ['track', 'camera'].includes(p.locationSource)) &&
+    (p.locationTimeSource === undefined || ['capture', 'return'].includes(p.locationTimeSource)) &&
+    (p.locationAccuracy === undefined || (Number.isFinite(p.locationAccuracy) && p.locationAccuracy >= 0 && p.locationAccuracy <= 100000)) &&
     p.preview instanceof Blob &&
     p.preview.type === 'image/jpeg' &&
     p.preview.size <= 1024 * 1024 &&
@@ -131,6 +139,24 @@ export async function writePhotos(add: TripPhoto[], remove?: string) {
     };
     tx.oncomplete = () => resolve(committed);
     tx.onabort = tx.onerror = () => reject(new Error(reason));
+  });
+}
+/** Keep photos attached when recording deduplication resolves to an existing track ID. */
+export async function remapPhotoTrack(from: string, to: string) {
+  if (!from || !to || from === to) return;
+  const db = await open();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite'),
+      table = tx.objectStore('photos'),
+      request = table.getAll();
+    request.onsuccess = () => {
+      for (const photo of request.result as TripPhoto[]) {
+        if (photo.kind !== 'annotation' && photo.trackId === from)
+          table.put({ ...photo, trackId: to });
+      }
+    };
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(new Error('照片轨迹关联保存失败，记录已保留，请重试'));
   });
 }
 /** Atomic patch: background weather must never undo edits or resurrect a removed photo. */

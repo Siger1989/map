@@ -9,7 +9,8 @@ import {
 } from 'react';
 import { WorkbenchPanel } from './WorkbenchPanel';
 import { BoxSelectionResults } from './BoxSelectionResults';
-import { MarkerExcelImport } from './MarkerExcelImport';
+import { FavoritesImportPanel } from './FavoritesImportPanel';
+import type { Transfer } from '../dataTransfer/types';
 import { RouteCollectionsPanel } from './RouteCollectionsPanel';
 import {
   catalogEntries,
@@ -38,6 +39,7 @@ import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onImport?: () => void;
+  onImportedData?: (data: Transfer) => void;
   offlineMaps?: (query: string) => ReactNode;
   offlineCount?: number;
   annotations: Annotation[];
@@ -80,7 +82,7 @@ export function CollectionsPanel(props: Props) {
   );
   const regions = useRegions(entries);
   const [boxResults, setBoxResults] = useState(!!props.initialSelectedKeys?.length);
-  const [excelImport, setExcelImport] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [legacy, setLegacy] = useState(
       !props.initialOutputKey && !props.initialSelectedKeys?.length,
     ),
@@ -230,18 +232,16 @@ export function CollectionsPanel(props: Props) {
       setFormat(chosen.length && chosen.every(entry => entry.kind === 'pin' || entry.kind === 'model') ? 'xlsx' : 'zip');
       setOutput(true);
     }}
-    onShare={keys => { void share(true, keys); }}
     busy={busy}
   />;
-  if (excelImport) return <MarkerExcelImport
-    onBack={() => setExcelImport(false)}
-    onClose={props.onClose}
-    onOtherImport={props.onImport}
+  if (importOpen) return <FavoritesImportPanel
+    onClose={() => setImportOpen(false)}
+    onImported={data => props.onImportedData?.(data)}
   />;
   if (legacy)
     return (
       <WorkbenchPanel
-        onImport={() => setExcelImport(true)}
+        onImport={() => setImportOpen(true)}
         offlineMaps={props.offlineMaps}
         offlineCount={props.offlineCount}
         center={props.mapCenter}
@@ -321,9 +321,11 @@ export function CollectionsPanel(props: Props) {
             </select>
           </label>
           <p className="collection-hint">
-            ZIP 包含勾选条目的 JSON、Excel
-            和通用地理文件；路线另附二维码全程图、行程标记与关联照片。模型完整参数保存在
-            JSON 中。
+            {format === 'xlsx'
+              ? 'Excel 表格用于查看与分析，不能替代完整备份，也不能完整还原路线、轨迹、模型参数或关联照片。'
+              : format === 'json'
+                ? '山兔 JSON 可重新导入，包含选中对象数据和文件夹归属；路线照片请使用 ZIP。'
+                : <>ZIP 包含勾选条目的 JSON、Excel和通用地理文件；路线另附二维码全程图、行程标记与关联照片。模型完整参数保存在 JSON 中。</>}
           </p>
           <div className="collection-actions">
             <button
@@ -591,8 +593,11 @@ export function CollectionsPanel(props: Props) {
               >
                 全选 {shown.length}
               </button>
-              <button disabled={!chosen.length} onClick={() => setOutput(true)}>
-                导出 {chosen.length}
+              <button disabled={!chosen.length} onClick={() => {
+                setFormat(chosen.length && chosen.every(entry => entry.kind === 'pin' || entry.kind === 'model') ? 'xlsx' : 'zip');
+                setOutput(true);
+              }}>
+                分享 {chosen.length}
               </button>
               <button
                 className="catalog-danger"

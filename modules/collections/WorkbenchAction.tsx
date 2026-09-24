@@ -25,6 +25,7 @@ type Props = {
   onDelete: (ids: string[]) => boolean;
   onDissolve: (id: string) => boolean;
   onShare: (ids: string[], send: boolean) => Promise<void>;
+  onExcel: (ids: string[], send: boolean) => Promise<void>;
   onCopy: (ids: string[]) => Promise<void>;
   onBatch: (ids: string[]) => void;
   onOpen: (key: string) => void;
@@ -326,6 +327,7 @@ export function WorkbenchAction(p: Props) {
         ids={ids}
         busy={p.busy}
         onShare={p.onShare}
+        onExcel={p.onExcel}
         onCopy={p.onCopy}
       />
     );

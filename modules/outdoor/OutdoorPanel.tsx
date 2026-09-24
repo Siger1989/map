@@ -21,6 +21,7 @@ export function OutdoorPanel({
   photos,
   returnPanel,
   onSavedTrack,
+  onTrackRemapped,
   tracks, selectedId,
   onMarkCurrent, locationStatus,
   initialTab = 'record',
@@ -39,6 +40,7 @@ export function OutdoorPanel({
   photos: ReactNode;
   returnPanel: ReactNode;
   onSavedTrack: (id: string) => void;
+  onTrackRemapped: (from: string, to: string) => Promise<void>;
   tracks: ManualTrack[];
   selectedId: string | null;
   onMarkCurrent: () => string;
@@ -69,6 +71,7 @@ export function OutdoorPanel({
           points={points}
           onShow={onShow}
           onSavedTrack={onSavedTrack}
+          onTrackRemapped={onTrackRemapped}
           onPhotos={() => setTab('photos')}
           onMarkCurrent={onMarkCurrent}
           locationStatus={locationStatus}

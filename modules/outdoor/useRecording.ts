@@ -216,7 +216,7 @@ export function useRecording() {
       setRecord((r) => ({ ...r, error: (e as Error).message }));
     }
   };
-  const finish = async (keep:boolean) => {
+  const finish = async (keep:boolean, onTrackRemapped?: (from: string, to: string) => Promise<void>) => {
     if(finishingRef.current)return null;
     finishingRef.current=true;setFinishing(true);setQualityNote('');
     const bridge=window.GuanyunNative;
@@ -232,7 +232,11 @@ export function useRecording() {
       }
     };
     try {
-      return await finishRecording({keep,read,send,save:r=>saveRecording({...r,style:appearance.style}).id});
+      return await finishRecording({keep,read,send,save:async r=>{
+        const id=saveRecording({...r,style:appearance.style}).id;
+        if(id!==r.id) await onTrackRemapped?.(r.id,id);
+        return id;
+      }});
     } finally {
       try {const next=read();current.current=next;setRecord(next);}catch{}
       finishingRef.current=false;setFinishing(false);

@@ -1,12 +1,19 @@
 # Agent快速交接
 
-## 2026-09-24 0.2.71-test 待新增修正并重建
+## 2026-09-24 0.2.71-test 最终构建与浏览器 QA 完成
 
-此前源码状态曾构建临时 `0.2.71-test` / code78 APK：`APK/Shantu-0.2.71-test-standalone.apk`，57,838,684 bytes，SHA-256 `41b41ad6674510bc8b7410661235435148fd1e558196457020bbe6a55897ce44`；包名 `com.guanyun.weather.shantu.preview`、原 `4a94` 证书不变，v2/v3签名、zipalign及473张地形瓦片核验通过。用户随后追加本轮修改，因此最终实现完成后必须重建；该文件不代表最终交付包。TypeScript、641项测试和网页构建是追加需求之前的已知基线结果。
+最终APK `APK/Shantu-0.2.71-test-standalone.apk`：57,842,780 bytes，SHA-256 `E298995A4394500E168EA2D6794C402FC674D5D5EA70B577E29965C111B318D6`，versionCode 78，最低 Android API 26（Android 8.0）；sidecar与实际hash一致，沿用原`4a94`证书。647/647测试、TypeScript、网页构建、签名v2/v3、zipalign和473张地形瓦片通过，最终bundle浏览器QA通过。
 
-本轮既定内容包括框选双指平移/缩放/旋转（旋转方向按真机报告修正）、收藏夹统一导入文件/标记Excel、分享集中选择JSON/XLSX并移除独立Excel导出、不同操作窗口互斥，以及上次地图视角被启动定位覆盖；另承接0.2.70的5米记录精度默认、保留已保存设置、运动朝向跟随和缺少路线终点时聚焦候选节点。新增待实现问题：编辑模式框选卡顿；记录中照片入口应优先直接拍摄，同时提供导入，并将文件夹导入放在末尾。弱信号轨迹问题仍未诊断。源代码手势模拟通过，最终bundle QA待完成；新增实现后需要重跑相关验证并重建APK。Android真机安装和触控待验，HarmonyOS 6.1原生包未交付。
+- 普通框选与路线编辑框选共用双指平移/缩放/旋转链路；指针更新按 RAF 合并，手势结束只做一次业务相机同步。取消、隐藏与卸载均结束手势并清理未执行帧。390/360两尺寸确认地点/模型名称在界面第12级显示（MapLibre raw zoom 11）。
+- 收藏夹统一导入保留文件和标记 Excel 入口；分享集中选择 JSON/XLSX，独立 Excel 导出已移除。操作窗口互斥，有效的历史视角不再被启动定位覆盖。
+- 记录期间，照片入口优先直接拍摄和导入，整文件夹入口及说明只在记录未开始或结束后显示。照片使用当前记录 ID；EXIF 时间优先，缺失时相机回传时间注明为估计。定位需要可靠精度且与照片时间相近，并记录来源和精度。没有记录点时可拍摄并留页面草稿，但尚无可关联轨迹，不能加入地图；相机取消不造标记，保存失败保留草稿。轨迹去重导致 ID 改变时，仅重映射原记录 ID 关联的照片；失败则不清记录检查点，可重试。
+- 同时包含5米记录精度默认且保留已存设置、运动朝向跟随、缺少终点时聚焦候选节点和保留有效历史地图视角。
+- 2D/3D当前选择写入已有`shantu.map.last-view.v1`相机快照，启动读取同一快照恢复；dimension state在`update()`里同步进入地图ref，切换用零时长相机变化并立即flush MapLibre节流的URL hash，避免React提交前`moveend/pagehide`或立即reload被旧模式/俯仰覆盖。390/360立即reload均通过，2D pitch0、3D pitch62；旧数据缺少可选字段时回退`DEFAULT_LAYERS`。
+- 弱信号轨迹断续仍未诊断；Android 真机安装、覆盖安装、触控和相机往返待验。HarmonyOS 6.1 原生 HAP/APP 未交付，Android APK 兼容性未经验证。
 
-GitHub源码提交与Release待根代理完成并核对远程SHA/资产；不要报告为已发布。0.2.70 tag与GitHub资产保留为草稿，原构建记录见 [release-0.2.70.md](release-0.2.70.md)。完整包状态与限制见 [release-0.2.71.md](release-0.2.71.md)。
+最终390×857/360×780 bundle验证：raw zoom10.99显示图标且名称隐藏，raw zoom11显示标签；普通和编辑框选双指手势通过；收藏统一导入与分享、记录照片入口通过；2D/3D点击后立即reload时URL hash和LAST_VIEW一致，pitch分别恢复0与62，其他相机值保持。此前locator失配来自QA脚本漏选轨迹，最终bundle复测通过。
+
+源码基于功能分支`codex/rollback-ui-0235-20260921`，不表示合入main。最终源码commit上的annotated回退基准tag `shantu-ui-baseline-0.2.71`用于后续UI风格调整回退；测试Release tag `v0.2.71-test-standalone`指向同一源码commit。Android真机覆盖安装/数据保留、相机往返和HarmonyOS原生交付仍未验/交付。Release详情见 [release-0.2.71.md](release-0.2.71.md)，0.2.70 draft保留原状。
 
 ## 2026-09-24 分叉终点错误自动定位（本地预览）
 

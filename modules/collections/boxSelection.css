@@ -10,6 +10,7 @@
 .observatory.home-map:has(.map-box-selection[data-active='true'][data-action-flow='false']) .control-dock:has(.catalog-panel) .control-popover { display: none !important; }
 .observatory.home-map:has(.map-box-selection[data-action-flow='true']) .collections-panel[data-output='true'] .collection-fixed-header > button:first-child { display: none !important; }
 .map-box-selection[data-selection-mode='subtract'] .map-box-rectangle { border-color: #ef8b55; background: #ef8b5525; }
+.map-box-selection[data-gesture-active='true'] .map-box-hit { visibility: hidden; }
 .map-box-surface {
   position: absolute;
   inset: 0;
@@ -102,7 +103,7 @@
 }
 .map-box-result-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
   margin-top: 4px;
 }

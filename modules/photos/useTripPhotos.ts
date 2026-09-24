@@ -3,6 +3,7 @@ import {
   readPhotos,
   writePhotos,
   patchPhoto,
+  remapPhotoTrack,
   type TripPhoto,
   type VisiblePhoto,
 } from './storage';
@@ -130,6 +131,11 @@ export function useTripPhotos() {
       const committed = await writePhotos(photos);
       revision.current++;
       if (mounted.current) publish(committed);
+    },
+    remapTrack: async (from: string, to: string) => {
+      await remapPhotoTrack(from, to);
+      revision.current++;
+      if (mounted.current) await refresh();
     },
     remove: async (id: string) => {
       await writePhotos([], id);

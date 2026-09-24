@@ -28,13 +28,14 @@ test('object box subtraction uses the same geometry and leaves saved data unchan
   assert.equal(JSON.stringify(entries), before);
 });
 
-test('two-finger map gesture tracks centroid pan and pinch zoom from its first move', () => {
+test('two-finger map gesture tracks centroid pan, pinch ratio, and clockwise rotation', () => {
   const delta = twoFingerGestureDelta(
     [{ x: 10, y: 10 }, { x: 30, y: 10 }],
     [{ x: 20, y: 25 }, { x: 60, y: 25 }],
   );
   assert.deepEqual(delta.pan, { x: 20, y: 15 });
   assert.equal(delta.zoom, 1);
+  assert.ok(Math.abs(delta.rotation) < 1e-12);
   assert.deepEqual(delta.around, { x: 40, y: 25 });
   const panOnly = twoFingerGestureDelta(
     [{ x: 0, y: 0 }, { x: 20, y: 0 }],
@@ -42,4 +43,29 @@ test('two-finger map gesture tracks centroid pan and pinch zoom from its first m
   );
   assert.deepEqual(panOnly.pan, { x: 5, y: 7 });
   assert.equal(panOnly.zoom, 0);
+
+  const pinchAndTwist = twoFingerGestureDelta(
+    [{ x: 20, y: 50 }, { x: 40, y: 50 }],
+    [{ x: 20, y: 35 }, { x: 50, y: 35 }],
+  );
+  assert.ok(Math.abs(pinchAndTwist.zoom - Math.log2(1.5)) < 1e-12);
+  assert.ok(Math.abs(pinchAndTwist.rotation) < 1e-12);
+
+  const pairAtAngle = degrees => {
+    const angle = degrees * Math.PI / 180;
+    const dx = 10 * Math.cos(angle), dy = 10 * Math.sin(angle);
+    return [{ x: 50 - dx, y: 50 - dy }, { x: 50 + dx, y: 50 + dy }];
+  };
+  const clockwise = twoFingerGestureDelta(pairAtAngle(0), pairAtAngle(30));
+  assert.ok(Math.abs(clockwise.rotation + 30) < 1e-10,
+    `clockwise screen twist should decrease MapLibre bearing: ${clockwise.rotation}`);
+
+  // Crossing from +170° to -170° is a -20° bearing delta, not a 340° turn.
+  const acrossPositiveBoundary = twoFingerGestureDelta(pairAtAngle(170), pairAtAngle(-170));
+  assert.ok(Math.abs(acrossPositiveBoundary.rotation + 20) < 1e-10,
+    `bearing should wrap across +180°: ${acrossPositiveBoundary.rotation}`);
+
+  const acrossNegativeBoundary = twoFingerGestureDelta(pairAtAngle(-170), pairAtAngle(170));
+  assert.ok(Math.abs(acrossNegativeBoundary.rotation - 20) < 1e-10,
+    `bearing should wrap across -180°: ${acrossNegativeBoundary.rotation}`);
 });

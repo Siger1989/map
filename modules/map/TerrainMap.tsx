@@ -83,6 +83,8 @@ export type MapHandle = {
   highlightOffline: (trip: import("../outdoor/offline").TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
+  setTerrainMode: (terrain: boolean) => void;
+  syncCameraHash: () => void;
   groundElevation: (coordinates: Coordinate) => number | null;
   centerCoordinate: () => Coordinate | null;
   offlineRegionBounds: (visible?: boolean) => [number, number, number, number] | null;
@@ -125,6 +127,7 @@ export type MapHandle = {
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
   panZoomGesture: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
+  finishPanZoomGesture: () => void;
 };
 type Props = {
   collectionPreviewActive?: boolean;
@@ -192,6 +195,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const coverageCleanup=useRef<(()=>void)|null>(null);
     useEffect(()=>()=>{coverageCleanup.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
+    const boxGestureActive = useRef<boolean>(false);
+    // Updated synchronously by the app before React propagates the new layer props.
+    const terrainMode = useRef(settings.terrain);
+    const weatherAnchor = useRef<[number, number]>(INITIAL_VIEW.center);
     const diagnostics = useRef<ReturnType<typeof observeMapRendering> | null>(
       null,
     );
@@ -471,12 +478,34 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         latest.current.annotations,
       );
     };
+    const finishBoxGesture = () => {
+      if (!boxGestureActive.current) return;
+      boxGestureActive.current = false;
+      const m = mapRef.current;
+      if (!m || !loaded.current) return;
+      saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
+      areaRef.current?.sync(latest.current.areaOverlay);
+      latest.current.onCenter?.(m.getCenter().wrap().toArray());
+      trackRef.current?.sync(latest.current.trackOverlay);
+      const p = m.getCenter();
+      if (Math.abs(p.lng - weatherAnchor.current[0]) + Math.abs(p.lat - weatherAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
+        weatherAnchor.current = [Number(p.lng.toFixed(2)), Number(p.lat.toFixed(2))];
+        latest.current.onAnchor(weatherAnchor.current);
+        syncSatellite();
+      }
+      latest.current.onView({ bearing: m.getBearing(), pitch: m.getPitch(), zoom: m.getZoom() });
+    };
     useImperativeHandle(
       ref,
       () => ({
         shareMapStyle: () => mapRef.current && loaded.current ? currentShareMapStyle(mapRef.current.getStyle()) : null,
         cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing()} : null; },
         restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
+        setTerrainMode: (terrain) => { terrainMode.current = terrain; },
+        syncCameraHash: () => {
+          const map = mapRef.current as (Map & { _hash?: { _updateHashUnthrottled?: () => void } }) | null;
+          map?._hash?._updateHashUnthrottled?.();
+        },
         offlineRegionBounds: (visible = false) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;
@@ -571,12 +600,42 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           const m = mapRef.current;
           if (!m || !loaded.current || previous.length !== 2 || next.length !== 2) return;
           const delta = twoFingerGestureDelta(previous as [ScreenPoint, ScreenPoint], next as [ScreenPoint, ScreenPoint]);
-          m.panBy([delta.pan.x, delta.pan.y], { duration: 0 });
-          const around = m.unproject([delta.around.x, delta.around.y]).toArray();
-          m.zoomTo(m.getZoom() + delta.zoom, {
-            around, duration: 0,
-          });
+          const anchor = m.unproject([
+            (previous[0]!.x + previous[1]!.x) / 2,
+            (previous[0]!.y + previous[1]!.y) / 2,
+          ]);
+          const zoom = Math.max(m.getMinZoom(), Math.min(m.getMaxZoom(), m.getZoom() + delta.zoom));
+          const bearing = m.getBearing() + delta.rotation;
+          boxGestureActive.current = true;
+          // MapLibre 6.7's public camera methods do not expose a way to calculate a new
+          // center for a geographic anchor at a new screen point while also changing
+          // zoom and bearing. Clone its transform so the gesture can be solved without
+          // mutating live state; the installed 6.7 source defines this on Map._camera.
+          type GestureTransform = {
+            setZoom: (value: number) => void;
+            setBearing: (value: number) => void;
+            setLocationAtPoint: (location: typeof anchor, point: { x: number; y: number }) => void;
+            center: typeof anchor;
+          };
+          const camera = (m as unknown as {
+            _camera?: { getTransformForUpdate?: () => { clone: () => GestureTransform } };
+          })._camera;
+          const transform = camera?.getTransformForUpdate?.().clone();
+          if (!transform) {
+            // Preserve pinch and twist if an older/newer MapLibre build changes internals.
+            m.jumpTo({ center: m.getCenter(), zoom, bearing }, { boxSelectionGesture: true });
+            return;
+          }
+          transform.setZoom(zoom);
+          transform.setBearing(bearing);
+          transform.setLocationAtPoint(
+            anchor,
+            m.project(m.unproject([delta.around.x, delta.around.y])),
+          );
+          // One camera transition keeps finger translation, pinch, and twist in sync.
+          m.jumpTo({ center: transform.center, zoom, bearing }, { boxSelectionGesture: true });
         },
+        finishPanZoomGesture: finishBoxGesture,
         toCoordinate: (point) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return null;
@@ -737,7 +796,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useEffect(() => {
       let disposed = false;
       let selected: [number, number] = INITIAL_VIEW.center;
-      let weatherAnchor: [number, number] = INITIAL_VIEW.center;
       let cameraFrame = 0;
       let releaseLastView: (() => void) | undefined;
       let releaseUserZoom: (() => void) | undefined;
@@ -782,23 +840,33 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           };
           rasterLockRef.current = new RasterLevelLock(map);
           map.on('sourcedata', syncRasterLock);
-          const rememberView = () =>
+          const rememberView = () => {
+            if (boxGestureActive.current) return;
             saveLastView({
               center: map.getCenter().wrap().toArray(),
               zoom: map.getZoom(),
               pitch: map.getPitch(),
               bearing: map.getBearing(),
+              terrain: terrainMode.current,
             });
+          };
           const onHidden = () => {
-            if (document.hidden) rememberView();
+            if (!document.hidden) return;
+            if (boxGestureActive.current) finishBoxGesture();
+            else rememberView();
+          };
+          const onPageHide = () => {
+            if (boxGestureActive.current) finishBoxGesture();
+            else rememberView();
           };
           map.on('moveend', rememberView);
-          window.addEventListener('pagehide', rememberView);
+          window.addEventListener('pagehide', onPageHide);
           document.addEventListener('visibilitychange', onHidden);
           releaseLastView = () => {
-            rememberView();
+            if (boxGestureActive.current) finishBoxGesture();
+            else rememberView();
             map.off('moveend', rememberView);
-            window.removeEventListener('pagehide', rememberView);
+            window.removeEventListener('pagehide', onPageHide);
             document.removeEventListener('visibilitychange', onHidden);
           };
           const terrainGL = map.getCanvas().getContext('webgl2');
@@ -1053,8 +1121,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             sync();
             const initialCenter = map.getCenter();
             latest.current.onCenter?.(initialCenter.wrap().toArray());
-            weatherAnchor = initialCenter.toArray();
-            latest.current.onAnchor(weatherAnchor);
+            weatherAnchor.current = initialCenter.toArray();
+            latest.current.onAnchor(weatherAnchor.current);
             latest.current.onView({
               pitch: map.getPitch(),
               bearing: map.getBearing(),
@@ -1185,10 +1253,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             latest.current.onMapPick([event.lngLat.lng, event.lngLat.lat]);
           });
           map.on('move', () => {
+            if (boxGestureActive.current) return;
             if (cameraFrame) return;
             cameraFrame = requestAnimationFrame(() => {
               cameraFrame = 0;
-              if (!disposed)
+              if (!disposed && !boxGestureActive.current)
                 latest.current.onView({
                   bearing: map.getBearing(),
                   pitch: map.getPitch(),
@@ -1203,6 +1272,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', (event) => {
+            if (boxGestureActive.current) return;
             areaRef.current?.sync(latest.current.areaOverlay);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) return;
@@ -1210,16 +1280,16 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               trackRef.current?.sync(latest.current.trackOverlay);
             const p = map.getCenter();
             if (
-              Math.abs(p.lng - weatherAnchor[0]) +
-                Math.abs(p.lat - weatherAnchor[1]) >
+              Math.abs(p.lng - weatherAnchor.current[0]) +
+                Math.abs(p.lat - weatherAnchor.current[1]) >
                 0.6 &&
               Math.abs(p.lat) < 75
             ) {
-              weatherAnchor = [
+              weatherAnchor.current = [
                 Number(p.lng.toFixed(2)),
                 Number(p.lat.toFixed(2)),
               ];
-              latest.current.onAnchor(weatherAnchor);
+              latest.current.onAnchor(weatherAnchor.current);
               syncSatellite();
             }
           });

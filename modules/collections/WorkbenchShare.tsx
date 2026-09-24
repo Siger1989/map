@@ -12,6 +12,7 @@ type Props = {
   ids: string[];
   busy: boolean;
   onShare: (ids: string[], send: boolean) => Promise<void>;
+  onExcel: (ids: string[], send: boolean) => Promise<void>;
   onCopy: (ids: string[]) => Promise<void>;
 };
 
@@ -23,6 +24,7 @@ export function WorkbenchShare(p: Props) {
     [p.items, p.ids],
   );
   const [tab, setTab] = useState(routes.length ? 'image' : 'data');
+  const [dataFormat, setDataFormat] = useState<'json' | 'xlsx'>('json');
   const [selectedId, setSelectedId] = useState(routes[0]?.id ?? '');
   const [images, setImages] = useState<Record<string, File>>({});
   const [bundle, setBundle] = useState<File | null>(null);
@@ -246,26 +248,37 @@ export function WorkbenchShare(p: Props) {
       ) : (
         <>
           <p>
-            包含选中条目的坐标、路线、文件夹层级和颜色，保存为可重新导入山兔的
-            JSON 文件。
+            JSON 可重新导入山兔并保留所选收藏数据；Excel 适合表格查看与分析，不能替代完整备份。
           </p>
+          <label>
+            文件格式
+            <select
+              aria-label="分享文件格式"
+              value={dataFormat}
+              disabled={p.busy}
+              onChange={(event) => setDataFormat(event.target.value as typeof dataFormat)}
+            >
+              <option value="json">山兔数据 · JSON（可重新导入）</option>
+              <option value="xlsx">Excel 表格 · XLSX（查看与分析）</option>
+            </select>
+          </label>
           <div className="collection-action-buttons">
             <button
               className="collection-action-primary"
               disabled={p.busy}
-              onClick={() => void p.onShare(p.ids, true)}
+              onClick={() => void (dataFormat === 'xlsx' ? p.onExcel(p.ids, true) : p.onShare(p.ids, true))}
             >
-              {p.busy ? '正在生成…' : '系统分享数据'}
+              {p.busy ? '正在生成…' : '系统分享'}
             </button>
             <button
               disabled={p.busy}
-              onClick={() => void p.onShare(p.ids, false)}
+              onClick={() => void (dataFormat === 'xlsx' ? p.onExcel(p.ids, false) : p.onShare(p.ids, false))}
             >
-              保存数据文件
+              保存文件
             </button>
-            <button disabled={p.busy} onClick={() => void p.onCopy(p.ids)}>
+            {dataFormat === 'json' && <button disabled={p.busy} onClick={() => void p.onCopy(p.ids)}>
               复制 JSON 内容
-            </button>
+            </button>}
           </div>
         </>
       )}
