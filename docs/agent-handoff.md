@@ -1,8 +1,12 @@
 # Agent快速交接
 
-## 2026-09-24 标记分享/自动保存、断点定位、路线编辑（未出新包）
+## 2026-09-24 0.2.69 Android 测试包
 
-当前源码在0.2.68发行版之后增加三项：地点标记改即时保存和完整信息文本分享（照片不随文本分享）；保存路线含不相接线段时定位最近缺口并画红色虚线/端点/距离，可关闭清理；路线编辑默认自由画线，模式和节点操作保持固定布局。主要文件：`modules/annotations/{PinEditor.tsx,share.ts}`、`modules/input/SmartText.tsx`、`modules/placeShare/*`、`modules/tracks/{routeInfo.ts,RouteGapLayer.ts,RouteViews.tsx,useManualTracks.ts,routeWindows.css}`、`modules/map/TerrainMap.tsx`、`modules/workbench/useGuidanceWorkflow.ts`、`app/page.tsx`。标记/路线存储键与格式、底图、天气、照片文件和Android工程未改。根代理审查子代理代码后，638项测试、类型、网页构建及隔离浏览器390×857/360×780的主要交互通过；截图见 `artifacts/screenshots/{pin-autosave,pin-share,route-gap,route-editor,route-editor-style}-{390,360}.png`。真机输入法、地形上的断点标注、拖线手感待验。用户明确要求后续说打包再打包，**当前无新APK**；0.2.68包不含此项。
+用户明确要求打包最新源码，现用0.2.69-test/code76独立测试包交付下方三项源码改动：标记自动保存与完整文本分享、导航断点定位、固定自由画线编辑栏。包名 `com.guanyun.weather.shantu.preview`、原4a94证书与存储格式不变。APK `APK/Shantu-0.2.69-test-standalone.apk`，57,834,588字节，SHA256 `72e21c1d3ad88ded583281e00fa186e541b89040eaaa80a51f54809472201b12`；详见[发行说明](release-0.2.69.md)。TypeScript、638测试、网页/Android构建、v2/v3签名、地形及打包网页启动通过；真机输入法、地图交互、导航及覆盖安装待验。HarmonyOS 6.1 原生包仍未交付。远程源码/Release状态以最终核对为准。
+
+## 2026-09-24 标记分享/自动保存、断点定位、路线编辑（已纳入0.2.69）
+
+当前源码在0.2.68发行版之后增加三项：地点标记改即时保存和完整信息文本分享（照片不随文本分享）；保存路线含不相接线段时定位最近缺口并画红色虚线/端点/距离，可关闭清理；路线编辑默认自由画线，模式和节点操作保持固定布局。主要文件：`modules/annotations/{PinEditor.tsx,share.ts}`、`modules/input/SmartText.tsx`、`modules/placeShare/*`、`modules/tracks/{routeInfo.ts,RouteGapLayer.ts,RouteViews.tsx,useManualTracks.ts,routeWindows.css}`、`modules/map/TerrainMap.tsx`、`modules/workbench/useGuidanceWorkflow.ts`、`app/page.tsx`。标记/路线存储键与格式、底图、天气、照片文件和Android工程未改。根代理审查子代理代码后，638项测试、类型、网页构建及隔离浏览器390×857/360×780的主要交互通过；截图见 `artifacts/screenshots/{pin-autosave,pin-share,route-gap,route-editor,route-editor-style}-{390,360}.png`。真机输入法、地形上的断点标注、拖线手感待验。上述改动已纳入0.2.69测试包；0.2.68包不含此项。
 
 ## 2026-09-24 0.2.68 原路线反向
 
