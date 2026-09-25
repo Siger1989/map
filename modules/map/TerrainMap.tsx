@@ -1178,17 +1178,23 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               !latest.current.pickingActive &&
               !latest.current.drawingActive
             ) {
-              if (sectionRef.current?.pick(event.point)) {
-                latest.current.onSectionSelect();
-                return;
+              if (latest.current.sectionEditing) {
+                const markerId = annotationRef.current?.pick(event.point);
+                if (markerId) {
+                  latest.current.onAnnotationSelect(markerId);
+                  return;
+                }
               }
               const savedId = sectionCollectionRef.current?.pick(event.point);
               if (savedId) {
                 latest.current.onSectionSelect(savedId);
                 return;
-              } else if (latest.current.sectionEditing) {
-                const id = annotationRef.current?.pick(event.point);
-                if (id) latest.current.onAnnotationSelect(id);
+              }
+              if (sectionRef.current?.pick(event.point)) {
+                latest.current.onSectionSelect();
+                return;
+              }
+              if (latest.current.sectionEditing) {
                 return;
               }
             }

@@ -26,7 +26,7 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   cameraRetry?: boolean;
   onCameraRetry?: () => void;
 }) {
-  const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null);
+  const [confirm, setConfirm] = useState<'delete' | null>(null);
   const [picker, setPicker] = useState<'coordinates' | 'icon' | 'color' | null>(null);
   const editor = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -82,17 +82,19 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   const save = () => {
     return commit();
   };
-  const leave = () => {
-    if (state.selectionRequest) { state.resolveSelection(false); setConfirm(null); return; }
-    if (state.dirty) setConfirm('leave');
-    else { state.cancelEdit(); onClose(); }
-  };
-  const finishLeave = (keep: boolean) => {
-    if (keep ? !save() : false) return;
-    if (!keep) state.cancelEdit();
+  useEffect(() => {
+    if (!state.selectionRequest) return;
+    if (state.dirty && !save()) return;
     setConfirm(null);
-    if (state.selectionRequest) state.resolveSelection(true);
-    else onClose();
+    state.resolveSelection(true);
+  }, [state.selectionRequest, state.dirty, item.id]);
+  const leave = () => {
+    const changed = state.dirty;
+    if (changed && !save()) return;
+    setConfirm(null);
+    if (state.selectionRequest) { state.resolveSelection(true); return; }
+    if (!changed) state.cancelEdit();
+    onClose();
   };
   const saveForPhoto = (action: (saved: Annotation) => void) => {
     if (!save()) return;
@@ -150,10 +152,10 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
     </>}
     {state.error && <p role="alert" className="pin-status">{state.error}</p>}
     {cameraStatus && <p role="status" className="pin-status">{cameraStatus}{cameraRetry && <button onClick={onCameraRetry}>重试保存</button>}</p>}
-    {(confirm || state.selectionRequest) && <div className="pin-confirm" role="alertdialog" aria-modal="true" aria-label={confirm === 'delete' ? '确认删除标记' : '保存标记修改'}>
-      <strong>{confirm === 'delete' ? `删除“${item.name || '未命名'}”？` : '保存这次修改？'}</strong>
-      <p>{confirm === 'delete' ? '仅删除这个标记；照片原文件保留。' : '保存后生效，放弃将恢复编辑前的内容。'}</p>
-      <div>{confirm === 'delete' ? <><button className="pin-danger" onClick={() => { if (state.remove(item.id)) onClose(); }}>确认删除</button><button onClick={() => setConfirm(null)}>取消</button></> : <><button className="pin-save" onClick={() => finishLeave(true)}>保存</button><button onClick={() => finishLeave(false)}>放弃</button><button onClick={() => { setConfirm(null); state.resolveSelection(false); }}>继续编辑</button></>}</div>
+    {confirm === 'delete' && <div className="pin-confirm" role="alertdialog" aria-modal="true" aria-label="确认删除标记">
+      <strong>{`删除“${item.name || '未命名'}”？`}</strong>
+      <p>仅删除这个标记；照片原文件保留。</p>
+      <div><button className="pin-danger" onClick={() => { if (state.remove(item.id)) onClose(); }}>确认删除</button><button onClick={() => setConfirm(null)}>取消</button></div>
     </div>}
   </section>;
 }

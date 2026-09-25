@@ -1,3 +1,9 @@
+# 当前状态 — 2026-09-26 / 0.2.74 APK交付
+
+- 目标：修正3D剖面时图层面板位置、标记返回自动保存、剖面选中后点击其他标记直接切换，并打包发布APK。路线详情误报已由用户撤回，本轮未改。
+- 已修改：modules/routeDisplay/routeDisplay.css、modules/controls/outdoorTheme.css、modules/annotations/{AnnotationWorkspace,PinEditor}.tsx、modules/map/TerrainMap.tsx、config/product.ts、mobile/android/AndroidManifest.xml、README.md、docs/release-0.2.74.md。
+- 验证：npx tsc --noEmit PASS；标记和图层设置13项针对性测试PASS；scripts/build-android.ps1 -StandaloneTest PASS。APK/Shantu-0.2.74-test-standalone.apk，57,850,972 bytes，SHA-256 1DC7FED90869D45459C4CE6075FC6F245A091FDE05BFB8ACB5F8324A613EC58F；构建日志.openai/apk-0274-build-20260926.log。真机未测。
+- 当前阻塞：无。下一步：推送源码，发布并远端核对APK。
 # 当前状态 — 2026-09-26 / 全局紧凑磨砂实装
 
 - 当前交付：用户要求最新APK，版本提升至0.2.73-test/code80；同独立包名和原签名。Android构建已PASS，产物APK/Shantu-0.2.73-test-standalone.apk，57,850,972 bytes，SHA256 002ECC04D0C2846FA02456B51DD8560C101076E546F8A99CA1ED8C471044AC1E。日志.openai/apk-0273-build-20260926.log，构建staging mobile/.build/apk-20260926-004456/web。全量首次657/659，更新旧TDT下载fixture和圆点选择器后659/659 PASS，无生产代码失败。TypeScript、签名v2/v3、zipalign、473地形/23修复瓦片、34项打包网页hash及浏览器版本0.2.73/code80/2026-09-26均PASS。日志apk-0273-{artifact-verify,tests-rerun}-20260926.log，截图apk-0273-version-20260926.png。未连接Android设备；纯鸿蒙原生包未交付。发布PASS：构建源码8705fc78e894363ab5d2923864347b8bfb6545be已推送到codex/rollback-ui-0235-20260921；Release v0.2.73-test-standalone已公开，APK/sha256/安装说明上传且服务端大小与SHA256均和本地一致。链接https://github.com/Siger1989/map/releases/tag/v0.2.73-test-standalone。首次commit缺少本机identity，临时沿用仓库已有Siger1989 noreply身份提交；网络用已配置Clash地址127.0.0.1:7897进程代理，无持久配置变更。无阻塞；下一步用户安装反馈。

@@ -5,8 +5,10 @@
   position: fixed;
   z-index: 70;
   top: calc(56px + var(--safe-top));
-  left: 4px;
-  width: min(276px, calc(100vw - 62px));
+  right: calc(var(--home-right, 8px) + 54px);
+  left: auto;
+  width: min(276px, calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px));
+  max-width: calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px);
   max-height: min(280px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   box-sizing: border-box;
   padding: 8px;
@@ -129,9 +131,10 @@
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-extended-controls .route-display-settings {
     position: fixed !important;
     top: calc(56px + var(--safe-top)) !important;
-    left: 4px !important;
-    width: min(276px, calc(100vw - 62px)) !important;
-    max-width: none !important;
+    right: calc(var(--home-right, 8px) + 54px) !important;
+    left: auto !important;
+    width: min(276px, calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px)) !important;
+    max-width: calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px) !important;
     max-height: min(280px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px))) !important;
   }
   .route-display-scroll { flex: 1 1 auto; scrollbar-width: none; }

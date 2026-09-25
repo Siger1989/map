@@ -71,32 +71,31 @@ export function AnnotationWorkspace({
   onCameraRetry?: () => void;
 }) {
   const [view, setView] = useState<'summary' | 'details'>('summary');
-  const [confirm, setConfirm] = useState<'delete' | 'leave' | null>(null);
+  const [confirm, setConfirm] = useState<'delete' | null>(null);
   const root = useRef<HTMLElement>(null);
   const editing = !!state.edit;
   const item = shownItem;
   const base = state.edit?.base ?? item;
-  const askLeave = confirm === 'leave' || !!state.selectionRequest;
-  const finishLeave = (save: boolean) => {
-    if (save && !state.saveEdit()) return;
-    if (!save) state.cancelEdit();
-    if (save) state.rememberAttributes(item.id);
-    setConfirm(null);
-    setView('summary');
-    if (state.selectionRequest) state.resolveSelection(true);
-  };
   const back = () => {
-    if (confirm || state.selectionRequest) {
+    if (confirm === 'delete') {
       setConfirm(null);
-      state.resolveSelection(false);
+      return;
+    }
+    if (state.selectionRequest) {
+      const changed = state.dirty;
+      if (changed && !state.saveEdit()) return;
+      if (changed) state.rememberAttributes(item.id);
+      setView('summary');
+      state.resolveSelection(true);
       return;
     }
     if (editing) {
-      if (state.dirty) setConfirm('leave');
-      else {
-        state.cancelEdit();
-        setView('summary');
-      }
+      const changed = state.dirty;
+      if (changed) {
+        if (!state.saveEdit()) return;
+        state.rememberAttributes(item.id);
+      } else state.cancelEdit();
+      setView('summary');
     } else if (view === 'details') setView('summary');
     else onClose();
   };
@@ -147,6 +146,15 @@ export function AnnotationWorkspace({
     window.addEventListener('beforeunload', leave);
     return () => window.removeEventListener('beforeunload', leave);
   }, [state.dirty]);
+  useEffect(() => {
+    if (item.kind === 'pin' || !state.selectionRequest) return;
+    const changed = state.dirty;
+    if (changed && !state.saveEdit()) return;
+    if (changed) state.rememberAttributes(item.id);
+    setConfirm(null);
+    setView('summary');
+    state.resolveSelection(true);
+  }, [item.id, item.kind, state.selectionRequest, state.dirty]);
   const startEdit = (precise = false) => {
     state.beginEdit(item.id);
     onTab(precise ? 'position' : 'basic');
@@ -190,7 +198,7 @@ export function AnnotationWorkspace({
           e.stopPropagation();
           back();
         }
-        if (e.key === 'Tab' && (confirm || state.selectionRequest)) {
+        if (e.key === 'Tab' && confirm === 'delete') {
           const buttons = root.current?.querySelectorAll<HTMLButtonElement>(
             '.marker-confirm button',
           );
@@ -401,58 +409,30 @@ export function AnnotationWorkspace({
           </button>
         </div>
       )}
-      {(confirm === 'delete' || askLeave) && (
+      {confirm === 'delete' && (
         <div
           className="marker-confirm"
           role="alertdialog"
           aria-modal="true"
-          aria-label={askLeave ? '保存标记修改' : '确认删除标记'}
+          aria-label="确认删除标记"
         >
-          <strong>
-            {askLeave ? '保存这次修改？' : `删除“${item.name || '未命名'}”？`}
-          </strong>
-          <p>
-            {askLeave
-              ? '保存后生效，放弃将恢复编辑前的内容。'
-              : '删除此标记及地图上的照片展示；关联路线与照片原文件保留。'}
-          </p>
+          <strong>{`删除“${item.name || '未命名'}”？`}</strong>
+          <p>删除此标记及地图上的照片展示；关联路线与照片原文件保留。</p>
           {state.error && (
             <p className="marker-error" role="alert">
               {state.error}
             </p>
           )}
           <div>
-            {askLeave ? (
-              <>
-                <button
-                  className="marker-primary"
-                  onClick={() => finishLeave(true)}
-                >
-                  保存
-                </button>
-                <button onClick={() => finishLeave(false)}>放弃</button>
-                <button
-                  onClick={() => {
-                    setConfirm(null);
-                    state.resolveSelection(false);
-                  }}
-                >
-                  继续编辑
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="marker-delete"
-                  onClick={() => {
-                    if (state.remove(item.id)) onClose();
-                  }}
-                >
-                  删除
-                </button>
-                <button onClick={() => setConfirm(null)}>取消</button>
-              </>
-            )}
+            <button
+              className="marker-delete"
+              onClick={() => {
+                if (state.remove(item.id)) onClose();
+              }}
+            >
+              删除
+            </button>
+            <button onClick={() => setConfirm(null)}>取消</button>
           </div>
         </div>
       )}

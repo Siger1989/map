@@ -1,6 +1,6 @@
 # 山兔
 
-2026-09-26：0.2.73磨砂界面与吸附修复APK，全局紧凑磨砂、标题留白、吸附与图层显示解耦、标记海拔及免费离线下载策略。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.73-test-standalone/Shantu-0.2.73-test-standalone.apk) · [验证与发行说明](docs/release-0.2.73.md)。
+2026-09-26：0.2.74测试APK，修正图层设置位置、标记返回自动保存及剖面选中时切换标记。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.74-test-standalone/Shantu-0.2.74-test-standalone.apk) · [验证与发行说明](docs/release-0.2.74.md)。
 
 2026-09-25：0.2.72界面优化APK已构建，包含统一UI、高亮修复及图层设置记忆。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.72-test-standalone/Shantu-0.2.72-test-standalone.apk) · [验证与发行说明](docs/release-0.2.72.md)。
 

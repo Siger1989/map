@@ -138,7 +138,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
     box-sizing: border-box; padding: 8px; overflow: auto; overscroll-behavior: contain;
     background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 16px; box-shadow: var(--ui-shadow);
   }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-extended-controls :is(.direction-menu,.route-display-settings,.raster-level-panel) { position: static; grid-column: 1/-1; max-width: 140px; width: 140px; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-extended-controls :is(.direction-menu,.raster-level-panel) { position: static; grid-column: 1/-1; max-width: 140px; width: 140px; }
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-focus-locked='true'] .position-extended-controls { display: contents; }
 @media (max-height: 410px) {
