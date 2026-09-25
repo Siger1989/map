@@ -14,18 +14,18 @@ import {
   TIANDITU_LAYERS,
 } from '../modules/cartography/tianditu.ts';
 import { DEFAULT_LAYERS, applyLayerPatch } from '../modules/map/types.ts';
+import { downloadNative } from '../modules/outdoor/nativeOffline.ts';
+import { cachedMapFetch, OFFLINE_MAP_KEY } from '../modules/outdoor/tileCache.ts';
 import {
   mapDownloadPlan,
   prepareMapPackage,
   downloadTrip,
+  canDownloadTrip,
+  TIANDITU_OFFLINE_DISABLED,
   tripPackages,
-  removeTrip,
   verifyTrip,
+  removeTrip,
 } from '../modules/outdoor/offline.ts';
-import {
-  cachedMapFetch,
-  OFFLINE_MAP_KEY,
-} from '../modules/outdoor/tileCache.ts';
 
 const tileAt = ([lng, lat], z) =>
   `${z}/${Math.floor(((lng + 180) / 360) * 2 ** z)}/${Math.floor(((1 - Math.asinh(Math.tan((lat * Math.PI) / 180)) / Math.PI) / 2) * 2 ** z)}`;
@@ -145,7 +145,7 @@ test('all seven layers are selectable with matching default labels and caps', ()
   );
   assert.throws(
     () => mapDownloadPlan(route, settings, 'tianditu', 16),
-    /清晰度/,
+    /天地图离线下载已暂停/,
   );
 });
 test('cache identity ignores host, token and query casing; invalid tile bodies never enter cache', async () => {
@@ -168,109 +168,79 @@ test('cache identity ignores host, token and query casing; invalid tile bodies n
     /配额/,
   );
 });
-test('TianDiTu package resumes, reads with network prohibited, shares cache and restores its settings', async () => {
+test('TianDiTu offline downloads are blocked before storage, network, or native calls', async () => {
   const saved = Object.fromEntries(
     ['window', 'caches', 'localStorage', 'fetch'].map((k) => [
       k,
       globalThis[k],
     ]),
   );
-  const oldKey = process.env.NEXT_PUBLIC_TIANDITU_KEY;
-  process.env.NEXT_PUBLIC_TIANDITU_KEY = 'offlineTestKey123456';
-  const storage = new Map(),
-    entries = new Map(),
-    requests = new Map();
-  globalThis.window = {
-    location: { origin: 'https://appassets.androidplatform.net' },
-  };
-  globalThis.localStorage = {
-    getItem: (k) => storage.get(k) ?? null,
-    setItem: (k, v) => storage.set(k, v),
-  };
-  globalThis.caches = {
-    open: async () => ({
-      match: async (k) => entries.get(k)?.clone(),
-      put: async (k, v) => entries.set(k, v.clone()),
-      delete: async (k) => entries.delete(k),
-    }),
-  };
-  const controller = new AbortController();
-  let interrupt = true;
-  globalThis.fetch = async (url) => {
-    const key = resourceCacheKey(url);
-    requests.set(key, (requests.get(key) ?? 0) + 1);
-    if (interrupt) {
-      interrupt = false;
-      controller.abort();
-    }
-    return new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]));
-  };
+  let calls = 0;
+  globalThis.window = { GuanyunNative: { offlineStart() { calls++; return 'ok'; } } };
+  globalThis.localStorage = { getItem() { calls++; return null; }, setItem() { calls++; } };
+  globalThis.caches = { open() { calls++; throw Error('unexpected cache access'); } };
+  globalThis.fetch = () => { calls++; throw Error('unexpected network request'); };
   try {
-    const settings = {
-      ...DEFAULT_LAYERS,
-      terrain: false,
-      tiandituBase: 'ter',
-      tiandituLabels: 'cta',
-      tiandituBoundaries: true,
-    };
-    const trip = await prepareMapPackage(
-      '测试沿线',
-      { kind: 'region', bounds: [103.5, 30.7, 103.501, 30.701] },
-      settings,
-      'tianditu',
-      12,
-      new AbortController().signal,
-    );
-    assert.equal(trip.display.tiandituBase, 'ter');
-    assert.equal(trip.display.offlineMaxZoom, 12);
-    assert.deepEqual(trip.layers, ['ter', 'cta', 'ibo']);
-    assert.ok(
-      trip.urls.every(
-        (u) =>
-          u.startsWith('tdt:') &&
-          !u.includes(process.env.NEXT_PUBLIC_TIANDITU_KEY),
-      ),
-    );
-    // Small representative subset exercises the actual downloader without a long test delay.
-    trip.urls = trip.urls.slice(0, 5);
-    await assert.rejects(
-      downloadTrip(trip, controller.signal, () => {}),
-      /暂停/,
-    );
-    assert.ok(tripPackages()[0].done > 0);
-    assert.equal(tripPackages()[0].complete, false);
-    await downloadTrip(trip, new AbortController().signal, () => {});
-    assert.equal(tripPackages()[0].complete, true);
-    assert.ok([...requests.values()].every((n) => n === 1));
-    assert.equal((await verifyTrip(trip)).complete, true);
-    globalThis.fetch = () => {
-      throw Error('Network prohibited');
-    };
-    storage.set(OFFLINE_MAP_KEY, 'true');
-    const [_, layer, z, x, y] = trip.urls[0].split(':');
-    const live = `https://t3.tianditu.gov.cn/${layer}_w/wmts?request=GetTile&layer=${layer}&tilematrixset=w&tilematrix=${z}&tilecol=${x}&tilerow=${y}&tk=changed`;
-    assert.equal(
-      (await cachedMapFetch(live, new AbortController().signal)).status,
-      200,
-    );
-    await assert.rejects(
-      cachedMapFetch(
-        live.replace('tilecol=1&', 'tilecol=999&'),
-        new AbortController().signal,
-      ),
-    );
-    const second = { ...trip, id: 'other' };
-    storage.set('guanyun.trips.v1', JSON.stringify([trip, second]));
-    await removeTrip(trip);
-    assert.equal(entries.size, 5);
-    await removeTrip(second);
-    assert.equal(entries.size, 0);
+    const settings = { ...DEFAULT_LAYERS, terrain: false };
+    assert.equal(canDownloadTrip({ provider: 'openfreemap', urls: ['https://tiles.openfreemap.org/a'] }), true);
+    assert.equal(canDownloadTrip({ provider: 'tianditu', urls: [] }), false);
+    assert.equal(canDownloadTrip({ urls: ['tdt:vec:8:201:105'] }), false);
+    assert.equal(canDownloadTrip({ urls: ['https://t4.tianditu.gov.cn/img_w/wmts?request=GetTile'] }), false);
+    assert.equal(canDownloadTrip({ urls: ['https://tiles.maps.tianditu.gov.cn/anything'] }), false);
+    assert.equal(canDownloadTrip({ urls: ['https://tiles.tianditu.com/anything'] }), false);
+    assert.throws(() => mapDownloadPlan(route, settings, 'tianditu', 12), new RegExp(TIANDITU_OFFLINE_DISABLED));
+    await assert.rejects(prepareMapPackage('x', { kind: 'region', bounds: [103, 30, 103.01, 30.01] }, settings, 'tianditu', 12, new AbortController().signal), new RegExp(TIANDITU_OFFLINE_DISABLED));
+    const legacy = { id: 'old', name: 'legacy', urls: ['tdt:vec:8:201:105'], done: 0, bytes: 0, createdAt: 0, complete: false };
+    await assert.rejects(downloadTrip(legacy, new AbortController().signal, () => {}), new RegExp(TIANDITU_OFFLINE_DISABLED));
+    await assert.rejects(downloadNative({ ...legacy, native: true }, new AbortController().signal, () => {}), new RegExp(TIANDITU_OFFLINE_DISABLED));
+    assert.equal(calls, 0);
   } finally {
     for (const [k, v] of Object.entries(saved)) {
       if (v === undefined) delete globalThis[k];
       else globalThis[k] = v;
     }
-    if (oldKey === undefined) delete process.env.NEXT_PUBLIC_TIANDITU_KEY;
-    else process.env.NEXT_PUBLIC_TIANDITU_KEY = oldKey;
+  }
+});
+
+test('legacy TianDiTu packages remain readable, verifiable, and safely removable offline', async () => {
+  const saved = Object.fromEntries(
+    ['window', 'caches', 'localStorage', 'fetch'].map((k) => [k, globalThis[k]]),
+  );
+  const storage = new Map();
+  const entries = new Map();
+  const shared = 'tdt:vec:8:201:105';
+  const firstOnly = 'tdt:vec:8:202:105';
+  const secondOnly = 'tdt:vec:8:203:105';
+  const png = new Response(new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]));
+  const cache = {
+    match: async (key) => entries.get(key)?.clone(),
+    put: async (key, value) => entries.set(key, value.clone()),
+    delete: async (key) => entries.delete(key),
+  };
+  const first = { id: 'legacy-1', name: '旧包1', provider: 'tianditu', urls: [shared, firstOnly], done: 0, bytes: 0, createdAt: 1, complete: false };
+  const second = { id: 'legacy-2', name: '旧包2', provider: 'tianditu', urls: [shared, secondOnly], done: 0, bytes: 0, createdAt: 2, complete: false };
+  for (const url of [shared, firstOnly, secondOnly]) entries.set(resourceCacheKey(url), png.clone());
+  storage.set('guanyun.trips.v1', JSON.stringify([first, second]));
+  storage.set(OFFLINE_MAP_KEY, 'true');
+  globalThis.window = { location: { origin: 'https://appassets.androidplatform.net' } };
+  globalThis.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
+  globalThis.caches = { open: async () => cache };
+  let requests = 0;
+  globalThis.fetch = () => { requests++; throw new Error('network prohibited'); };
+  try {
+    const live = 'https://t3.tianditu.gov.cn/vec_w/wmts?request=GetTile&layer=vec&tilematrixset=w&tilematrix=8&tilecol=201&tilerow=105&tk=expired';
+    assert.equal((await cachedMapFetch(live, new AbortController().signal)).status, 200);
+    assert.equal(requests, 0);
+    const checked = await verifyTrip(first);
+    assert.equal(checked.done, 2);
+    assert.equal(checked.complete, true);
+    await removeTrip(checked);
+    assert.equal(tripPackages().length, 1);
+    assert.equal(await cache.match(resourceCacheKey(shared)) instanceof Response, true);
+    assert.equal(await cache.match(resourceCacheKey(firstOnly)), undefined);
+    assert.equal(await cache.match(resourceCacheKey(secondOnly)) instanceof Response, true);
+    assert.equal(requests, 0);
+  } finally {
+    for (const [key, value] of Object.entries(saved)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
   }
 });

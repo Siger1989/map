@@ -116,7 +116,7 @@ export function PositionDock({
         >
           {fix
             ? `${Math.abs(fix.coordinates[1]).toFixed(5)}°${fix.coordinates[1] < 0 ? 'S' : 'N'} ${Math.abs(fix.coordinates[0]).toFixed(5)}°${fix.coordinates[0] < 0 ? 'W' : 'E'} · ±${Math.round(fix.accuracy)}m`
-            : '未定位 · 点击定位获取坐标'}
+            : '尚未定位'}
         </output>
       )}
     </nav>

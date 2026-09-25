@@ -85,6 +85,14 @@ export function Measurement({
     points.findIndex((p) => p.id === state.selected) - 1,
   );
   const metrics = total.segments[segment];
+  const shareCurrentMeasurement = () => {
+    if (points.length < 2) return;
+    setShowSaved(false);
+    setSharing({
+      points: structuredClone(points),
+      name: state.record?.name ?? '连线测量',
+    });
+  };
   const labels = Array.from(
     {
       length: Math.max(
@@ -231,6 +239,14 @@ export function Measurement({
               ))}
             </div>
             <button
+              aria-label="直接分享测量剖面图"
+              title="分享测量剖面图"
+              disabled={points.length < 2}
+              onClick={shareCurrentMeasurement}
+            >
+              <Share2 size={16} />
+            </button>
+            <button
               aria-label="更多测量选项"
               aria-expanded={showSaved}
               onClick={() => setShowSaved(!showSaved)}
@@ -267,19 +283,6 @@ export function Measurement({
                   >
                     <LocateFixed size={14} />
                     坐标
-                  </button>
-                  <button
-                    disabled={points.length < 2}
-                    aria-label="分享测量剖面图"
-                    onClick={() =>
-                      setSharing({
-                        points: structuredClone(points),
-                        name: state.record?.name ?? '连线测量',
-                      })
-                    }
-                  >
-                    <Share2 size={14} />
-                    分享
                   </button>
                 </div>
                 <div

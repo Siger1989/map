@@ -1,4 +1,34 @@
-# 当前状态 — 2026-09-25 / 0.2.72 APK 构建完成
+# 当前状态 — 2026-09-26 / 全局紧凑磨砂实装
+
+- 当前交付：用户要求最新APK，版本提升至0.2.73-test/code80；同独立包名和原签名。Android构建已PASS，产物APK/Shantu-0.2.73-test-standalone.apk，57,850,972 bytes，SHA256 002ECC04D0C2846FA02456B51DD8560C101076E546F8A99CA1ED8C471044AC1E。日志.openai/apk-0273-build-20260926.log，构建staging mobile/.build/apk-20260926-004456/web。全量首次657/659，更新旧TDT下载fixture和圆点选择器后659/659 PASS，无生产代码失败。TypeScript、签名v2/v3、zipalign、473地形/23修复瓦片、34项打包网页hash及浏览器版本0.2.73/code80/2026-09-26均PASS。日志apk-0273-{artifact-verify,tests-rerun}-20260926.log，截图apk-0273-version-20260926.png。未连接Android设备；纯鸿蒙原生包未交付。下一步提交源码、上传并核对Release。
+
+- 2026-09-26追加修订：用户要求更透明及所有标题/X留白，同时报告吸附按钮无颜色且影响地图显示。玻璃alpha先0.70再按新要求降至0.64，blur仍18px；共享标题透明/6px10px，原源修recording父8px、quickAdd及measurement标题48px+36关闭框、survey资料父8px。Luna修TerrainMap：国内矢量道路/河流加载改为!useDomestic||s.roads，sync只使用图层设置，移除roads&&roadSnapping及river强制visible；cartographySettingsForDisplay新增行为测试。共享track-tools pressed恢复主色。类型、7项raster-level行为测试、构建3.89s、diffcheck PASS，日志.openai/snap-final-{tests,tsc,build}-20260926.log。浏览器已实测record关闭36px，上/右距约9/11px，标题透明；吸附false普通浅字、true黄绿字且选中底色；第一次QA发现初始化仍随吸附触发，修复后刷新独立验证页：未开道路/河流吸附即有完整道路河流，截图snap-off-final-20260926.png；开关颜色分别为普通浅字/黄绿字，snap-on和snap-river截图保留。PASS。用户tab6正在操作，未主动刷新它。未出APK/提交/发布。
+
+- 当前目标：用户要求把选中的无亮边磨砂方案直接替换到全局，并减少上下空白。Luna分别负责outdoorTheme上下栏、theme.ts/outdoorSurfaces共享材质，主agent整合ControlDock实心图标及浏览器审核。顶栏48px/底栏56px+安全区，触控44px；玻璃背景78%/blur18px；Heroicons2.2.0固定版本，package-lock仅新增该依赖10行。修复底栏滤镜导致天气fixed按钮移到屏底的问题，改伪元素承载；修复图层旧底色及路线ID规则覆盖。
+- 验证进展：类型检查、6项appearance/layout测试、移动web构建5.24s均PASS，日志.openai/glass-final-{tsc,tests,build}-20260926.log。390/360路线外壳实际rgba(24,32,31,.78)、blur18px，底栏56px、按钮44px、天气top2px；360路线无水平溢出，图层外壳材质通过。截图artifacts/screenshots/glass-{route-390,route-360,layers-360}-20260926.png。短屏390×480记录面板200px、标题固定、内容可滚至底部离线入口；截图glass-record(-scrolled)-480-20260926.png。design-qa.md和docs/ui-standard.md已更新，最终diffcheck PASS；正式预览保持390×约857，QA临时页已关闭。下一步：按用户新视觉反馈调整；无阻塞，未出APK/提交/发布。
+
+- 离线下载收敛为免费图源（2026-09-25）：用户要求暂停天地图离线下载保护额度。Luna负责offline.ts/nativeOffline.ts/新offlineDownloadPolicy.ts及测试，主agent负责app下载目标、OfflineDownload/OfflinePanel/OfflineMapFolder及useOffline原生队列暂停。所有新入口只准备OpenFreeMap道路地名/勾选地形，确认窗口明示不含天地图和卫星；天地图新建/续传在网络和native调用前拒绝，旧包查看/校验/删除保留。Sentinel卫星仍无离线下载。浏览器PASS：下载窗口来源为OpenFreeMap，当前在线底图仍为天地图，未触发真实批量下载，窗口clientHeight=scrollHeight=162；截图 artifacts/screenshots/offline-free-only-20260925.png。tsc、14项离线回归PASS，补旧缓存测试文件6/6 PASS；网页构建4.31s、diffcheck PASS。首次native删除测试因默认JDK路径不存在失败，用进程JAVA_HOME=D:/GodotAndroid/jdk-17重跑通过，无持久环境变更。日志 .openai/offline-free-{tsc,tests,legacy-tests,build}-20260925.log。docs/tianditu-offline.md已标当前策略。无阻塞；旧手机APK尚未包含本轮修改，未出包/发布。
+
+- 标记编辑留白与海拔（2026-09-25）：Luna 修改 pinEditor.css，主 agent 修改 PinEditor.tsx 并审核。外框8px、名称/备注输入水平8px、16px字号和36px触控；坐标下直接显示地面海拔，缺值进入编辑时调用既有 refreshElevation，保留读取中/暂无数据/重读状态及坐标修改后重查，不伪造0米。浏览器 PASS：现有行程标记实际读到477.6米，输入 computed padding5px 8px，面板clientHeight=scrollHeight=333无裁切；截图 artifacts/screenshots/pin-spacing-elevation-20260925.png，用户预览tab2保留编辑面板。tsc、12/12标记编辑/导出测试、移动网页构建4.77s及diffcheck PASS，日志 .openai/pin-elevation-{tsc,tests,build}-20260925.log。无阻塞；未出新APK，真机/断网场景本轮未验证；下一步按用户反馈继续。
+
+- 摇杆主题色修复（2026-09-25）：Luna 修改 modules/controls/CameraGizmo.tsx，主 agent 审核；三角主面/北向点使用 --ui-accent，其他面及圆环用同色明暗，移除固定薄荷绿和固定绿色的辅助描述，保留几何/操作及底盘60%透明度。实时预览 PASS：主面实际 rgb(208,247,107) 与当前主题 #d0f76b 一致，截图 artifacts/screenshots/gizmo-theme-20260925.png。tsc/移动网页构建 PASS（底盘透明度恢复前已完成；恢复后浏览器计算样式PASS），日志 .openai/gizmo-theme-{tsc,build}-20260925.log；无阻塞，未出新APK。下一步继续按用户视觉反馈。
+
+- 手机地图清晰度只读诊断（2026-09-25）：用户确认 APK 地名/道路文字模糊、按钮文字清楚。主 agent 与 Luna 并行核查 PASS：TerrainMap.tsx:815 将 pixelRatio 限制为 min(devicePixelRatio,2)，DPR>2 设备会低于原生画布分辨率；terrain.ts 中天地图 cia/cva 注记是256px raster图片，无法像DOM文字一样按屏幕原生分辨率排字。未发现产品地图canvas的CSS blur/scale。WebView overview 与 device-width viewport 配置存在，但按钮清楚不支持整页缩放为首因。已核对 MapLibre 官方 pixelRatio 文档和本地实现；本轮未修改渲染策略，尚未取得手机实际DPR/canvas尺寸/图源加载状态，根因贡献及真机改善未验证。下一步修订高清渲染策略并对同视角、同图源做真机对照；需兼顾栅格注记原始分辨率，不能承诺只提高DPR就解决全部字糊。
+
+- 最新材质预览（2026-09-25）：用户要求深色磨砂无亮边、底栏简约实心图标、上下栏统一贴屏幕边缘，顶部合为一体，并再透一点。已用内置 imagegen 完成第四版概念图 C:/Users/sigeryang/.codex/generated_images/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/exec-7c092e13-5ef4-45a9-8f74-47a5aa9dd4e1.png。视觉检查 PASS：上下连续全宽磨砂面、底栏实心图标、背景柔和透出、无亮边；仅效果预览，尚未修改应用材质/图标。无阻塞；下一步按用户反馈调整或在明确实施时应用。QA tab3/tab4 已关闭，主预览保留。
+
+- 当前目标：按用户真机截图，全局核查内外圆角协调、文字/图标与圆角的安全距离；修复导航条按钮深字白框、海拔卡白底与内部大圆角不协调。
+- 进展：Luna完成路线卡控件12px圆角、起终点行6px水平留白和输入内距；导航模块与共享规则正在并行排查，主agent审核。
+- 当前文件：outdoorTheme/outdoorSurfaces、guidance/rally/routeDisplay、routeCompact、rasterLevel、boxSelection及docs/ui-standard；Luna并行修复，主agent逐页浏览器审核。新增反馈：路线行内部方角、画线说明顶角、框选旧白底、原生下拉白字白底、路线显示/标记菜单滚动条、绘制工具条顶边，均纳入本轮。
+- 预览恢复：此前9174前端及3108 API停止，已在可查看/停止的执行会话重新启动（22937/75745），右侧390×约857预览实际加载成功。后台Start-Process被自动审批拒绝，未更改系统设置，采用直接运行会话恢复。
+- 阶段验证PASS：360路线内部表单透明+12px角、提示条12px角；画线底部说明4px 8px 8px留白；框选面板深底20px圆角且scrollHeight=clientHeight=103；图层select/option实际浅字深底、dark色彩方案。截图artifacts/screenshots/ui-corners-{route,track,box}-360.png。类型检查和23项appearance/guidance/reroute/route-display测试PASS，日志.openai/ui-corners-*.log。
+- 下一步：完成新增菜单/绘制反馈，检查390/360与480、导航展开收起、移动web构建；本轮未重打APK。
+
+- 最新验证：Luna执行TypeScript、47项相关测试、移动web构建、diffcheck均PASS；日志.openai/ui-final-{tsc,tests,build,diffcheck}.log。新增RouteElevationProfile真实进度填充/缺测断点与浏览selection，RouteWeatherRail fraction已传给底部高程；选中路线不再隐藏GuidanceCard，导航选中linePoint允许标记并用所选坐标；坐标提示在panel/编辑/quickAdd避让。路线结果卡移除路书并合并详情是用户明确指令。
+- 新增实改：measurement/Measurement.tsx和measurement.css（直接分享、屏幕图表深色，导出画布保留），section/survey.css（上下编辑条内距），quickAdd.css（普通360菜单223px无溢出，首轮200px裁切已修为240上限），recordingConsole.css（8px内距、可滚动无可见条），tracks绘制条及homeMap路线摘要/行程点。最新整批尚待完整浏览器复验，不能称全部视觉验收。
+- 当前用户转入材质方案预览：要求半透明磨砂镜面，已调用内置imagegen生成第一版，用户反馈边缘太亮/不自然，第二版已完成：按用户磨砂矩形参考图去掉亮边，采用柔和均匀雾面、半透、背景扩散，用户尚未确认应用。第二图C:/Users/sigeryang/.codex/generated_images/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/exec-09c7076a-0fce-4070-8d38-e8214415d104.png。仅概念图，未把玻璃材质写入应用。第一图C:/Users/sigeryang/.codex/generated_images/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/exec-33c7fb02-f914-454b-8c43-7c21c24ffaaf.png。
+- 临时QA fixture mobile/ui-corners-qa.html/.tsx尚在，真实组件合成数据；验收完删除仅这两个临时文件，不得提交。主预览CUA tab2供用户操作，tab3窄屏QA/tab4组件QA待关闭。前端/API运行会话22937/75745保持。
+## 0.2.72 APK 构建完成
 
 - 用户明确要求打包 APK；将已确认的统一UI、高亮修复、记录按钮布局与已保存图层设置纳入0.2.72-test，versionCode79，沿用独立山兔包名及4a94签名。
 - 本轮改动：mobile/android/AndroidManifest.xml、config/product.ts提升版本，AboutPanel更新日期，docs/release-0.2.72.md与README；上一轮UI源码一起打包。Luna并行执行全量测试及构建要求审核，主agent完成构建/资源签名复核。

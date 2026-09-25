@@ -62,22 +62,21 @@ public class StartCheck {
 });
 
 test('failed native invocation keeps the package and enables retry; retry reaches completion', async (t) => {
-  const oldKey=process.env.NEXT_PUBLIC_TIANDITU_KEY;
-  process.env.NEXT_PUBLIC_TIANDITU_KEY='offlineTestPlaceholder';
-  t.after(()=>{if(oldKey===undefined)delete process.env.NEXT_PUBLIC_TIANDITU_KEY;else process.env.NEXT_PUBLIC_TIANDITU_KEY=oldKey;});
   const {window}=parseHTML('<html><body><div id="root"></div></body></html>');
   Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true});
   const data=new Map();globalThis.localStorage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)};
+  globalThis.fetch=async()=>new Response(JSON.stringify({tiles:['https://tiles.openfreemap.org/{z}/{x}/{y}.pbf']}),{status:200,headers:{'content-type':'application/json'}});
+  globalThis.caches={open:async()=>({put:async()=>{}})};
   let state={},fail=true,starts=0;
   window.GuanyunNative={offlineStart(raw){starts++;if(fail)throw Error('Error invoking offlineStart: Java exception');const task=JSON.parse(raw);state={id:task.id,state:'complete',done:task.urls.length,bytes:512};return 'ok';},offlineState:()=>JSON.stringify(state),offlinePause(){}};
   await build({entryPoints:['modules/outdoor/useOffline.ts','modules/outdoor/OfflineDownload.tsx'],outdir:'.openai/offline-start-ui',bundle:true,format:'esm',platform:'node',packages:'external',jsx:'automatic'});
   const React=await import('react'),{act}=React,{createRoot}=await import('react-dom/client');
   const {useOffline}=await import('../.openai/offline-start-ui/useOffline.js');
   const {OfflineDownload}=await import('../.openai/offline-start-ui/OfflineDownload.js');
-  let offline;const target={name:'测试路线',provider:'tianditu',area:{kind:'route',segments:[[[103,30],[103.001,30.001]]],bufferKm:5},settings:{baseMap:'tianditu-img',labels:false,terrain:false}};
+  let offline;const target={name:'测试路线',provider:'openfreemap',area:{kind:'route',segments:[[[103,30],[103.001,30.001]]],bufferKm:5},settings:{baseMap:'openfreemap',labels:false,terrain:false}};
   // Use repository defaults so the same real download plan is exercised.
   const {DEFAULT_LAYERS}=await import('../modules/map/types.ts');
-  target.settings={...DEFAULT_LAYERS,tiandituBase:'img',labels:false,terrain:false};
+  target.settings={...DEFAULT_LAYERS,offlineBasemap:true,labels:false,terrain:false};
   function Probe(){offline=useOffline();return React.createElement(OfflineDownload,{offline,target,onClose(){},onManage(){}});}
   const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(async()=>root.unmount());});await act(async()=>root.render(React.createElement(Probe)));
   const button=t=>[...document.querySelectorAll('button')].find(b=>b.textContent===t);

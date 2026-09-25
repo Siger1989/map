@@ -1,5 +1,6 @@
 import type { TripPackage } from './offline';
 import { resourceFetchUrl } from './tiandituCache.ts';
+import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 type State = { id?:string; done?:number; bytes?:number; total?:number; state?:string; error?:string };
 type Bridge = { offlineStart(raw:string):string; offlineState():string; offlinePause():void; offlineHas(url:string):boolean; offlineVerify(id:string):string; offlineRemove(id:string):boolean };
 export function nativeOffline():Bridge|null {
@@ -15,6 +16,7 @@ export function applyNativeProgress(trip:TripPackage,state:State):TripPackage {
   return {...trip, native:true, done, bytes:Math.max(0,state.bytes??trip.bytes),complete:done===trip.urls.length};
 }
 export async function downloadNative(trip:TripPackage, signal:AbortSignal, progress:(trip:TripPackage)=>void) {
+  if(!canDownloadTrip(trip))throw Error(TIANDITU_OFFLINE_DISABLED);
   const bridge=nativeOffline();if(!bridge)return false;
   let message:string;
   try { message=bridge.offlineStart(JSON.stringify({id:trip.id,name:trip.name,urls:trip.urls.map(resourceFetchUrl)})); }

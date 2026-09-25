@@ -264,6 +264,51 @@
 .track-tools button[aria-pressed='true'] {
   background: #9de8c430;
 }
+/* Outdoor drawing tools sit above the navigation footer with a 3-row layout. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] {
+  left: var(--edge-left, 8px);
+  right: calc(58px + var(--safe-right, 0px));
+  bottom: calc(var(--home-footer, 64px) + 8px);
+  width: min(300px, calc(100% - var(--edge-left, 8px) - 58px - var(--safe-right, 0px)));
+  max-width: min(300px, calc(100% - var(--edge-left, 8px) - 58px - var(--safe-right, 0px)));
+  padding: 8px;
+  gap: 4px;
+  border-radius: 12px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style {
+  width: 100%;
+  flex: 0 0 100%;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] :is(button, select, .track-condition-input, input[type='color']) {
+  min-height: 36px;
+  border-radius: 12px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button {
+  height: auto;
+  flex: 0 0 auto;
+  padding: 0 6px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] > button:last-of-type {
+  flex: 1 0 100%;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style input[type='color'] {
+  width: 40px;
+  height: 36px;
+  padding: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style select {
+  width: 68px;
+  min-width: 68px;
+  padding: 2px 6px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-condition-input {
+  flex: 1 1 80px;
+  width: 80px;
+  padding: 2px 8px;
+  font-size: 16px;
+}
 .point-magnifier {
   position: absolute;
   width: 96px;

@@ -5,23 +5,27 @@ html {
   --ui-shadow: 0 5px 20px #00000026;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] {
-  --home-header-height: 60px;
+  --home-header-height: 48px;
   --home-header-item-height: 44px;
-  --home-header-inset: 8px;
-  --home-footer: calc(64px + var(--home-bottom));
+  --home-header-inset: 2px;
+  --home-footer: calc(56px + var(--home-bottom));
   --ui-controls-bottom: calc(var(--home-footer) + 84px);
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']::before { background: linear-gradient(#111c1880, transparent); height: calc(var(--home-top) + 76px); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']::before {
+  height: calc(var(--home-top) + var(--home-header-height));
+  background: var(--ui-surface);
+  box-shadow: var(--ui-glass-shadow);
+}
 
 /* One top band: brand, elastic search, layers and weather keep their established positions. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar { grid-template-columns: 42px minmax(0,1fr); height: 44px; gap: 6px; right: calc(var(--home-right) + 104px); color: var(--ui-ink); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar .brand { background: var(--ui-surface); color: var(--ui-ink); border-radius: var(--ui-radius-control); box-shadow: var(--ui-shadow); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar { grid-template-columns: 44px minmax(0,1fr); height: 44px; gap: 4px; right: calc(var(--home-right) + 104px); color: var(--ui-ink); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar .brand { background: transparent; color: var(--ui-ink); border-radius: 0; box-shadow: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar h1 { font-size: 14px; font-weight: 700; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar .place-search form { background: var(--ui-surface); border: 0; border-radius: var(--ui-radius-control); box-shadow: var(--ui-shadow); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar .place-search form { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar input { height: 44px; color: var(--ui-ink); font-size: 16px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar input::placeholder { color: var(--ui-muted); font-size: 12px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar form > button { height: 44px; width: 36px; min-width: 36px; color: var(--ui-muted); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.map-layer-toggle,.weather-summary) { top: calc(var(--home-top) + var(--home-header-inset)); color: var(--ui-ink); background: var(--ui-surface); border: 0; border-radius: var(--ui-radius-control); box-shadow: var(--ui-shadow); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-topbar form > button { height: 44px; width: 44px; min-width: 44px; color: var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.map-layer-control > button.map-layer-toggle.glass,button.weather-summary.glass) { top: calc(var(--home-top) + var(--home-header-inset)); color: var(--ui-ink); background: transparent; background-image: none; border: 0; border-radius: 0; box-shadow: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-layer-toggle { right: calc(var(--home-right) + 52px); width: 46px; gap: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-layer-toggle span { display: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .weather-summary { width: 46px; }
@@ -30,7 +34,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .weather-summ
 
 /* The two tool groups read as rails, with no border around every action. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock) { padding: 3px; width: 50px; box-sizing: border-box; background: var(--ui-surface); border-radius: 16px; box-shadow: var(--ui-shadow); gap: 2px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock { bottom: var(--ui-controls-bottom); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-guiding='true']):not([data-route-edit='true']):not([data-survey='true']):not([data-focus-locked='true']) .home-position-dock { bottom: var(--ui-controls-bottom); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions > button,.home-position-dock .position-dock-button) { color: var(--ui-ink); background: transparent; border: 0; border-radius: var(--ui-radius-control); box-shadow: none; flex-shrink: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-tools-toggle { display: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions > button[aria-pressed='true'],.home-position-dock .position-dock-button[aria-pressed='true'],.home-position-dock .position-dock-button[aria-expanded='true']) { color: var(--ui-accent); background: var(--ui-selected); }
@@ -42,13 +46,28 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-recordi
 
 /* One navigation surface, not five outlined boxes. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-dock > .map-toolbar {
-  background: var(--ui-surface); border: 0; border-radius: 20px 20px 0 0;
-  padding-top: 6px; box-shadow: 0 -4px 24px #00000026;
+  background: transparent; border: 0; border-radius: 0;
+  padding: 6px max(8px,env(safe-area-inset-right,0px)) calc(6px + var(--home-bottom)) max(8px,env(safe-area-inset-left,0px));
+  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav { height: 52px; gap: 4px; color: var(--ui-muted); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav button { border: 0; background: transparent; color: var(--ui-muted); border-radius: 14px; font-size: 11px; gap: 3px; box-shadow: none; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav svg { width: 21px; height: 21px; stroke-width: 1.7; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav button[data-home-selected='true'] { color: var(--ui-accent); background: var(--ui-selected); font-weight: 700; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-dock > .map-toolbar::before {
+  content: ''; position: absolute; z-index: 0; inset: 0; pointer-events: none;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-glass-shadow);
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']::before,
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-dock > .map-toolbar::before {
+    background: var(--ui-glass-surface);
+    -webkit-backdrop-filter: var(--ui-glass-filter);
+    backdrop-filter: var(--ui-glass-filter);
+  }
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav { position: relative; z-index: 1; height: 44px; gap: 0; color: var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav button { position: relative; min-height: 44px; border: 0; background: transparent; color: var(--ui-muted); border-radius: 0; font-size: 12px; line-height: 14px; gap: 2px; box-shadow: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav svg { width: 22px; height: 22px; stroke-width: 1.7; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav button[data-home-selected='true'] { color: var(--ui-accent); background: transparent; font-weight: 700; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-bottom-nav button[data-home-selected='true']::after { content: ''; position: absolute; left: calc(50% - 12px); bottom: 1px; width: 24px; height: 2px; border-radius: 1px; background: currentColor; }
 
 /* Route theme tokens are local: legacy geometry stays in routeCompact.css. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) {
@@ -59,7 +78,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   --route-selected: var(--ui-selected);
   --route-accent: var(--ui-accent);
   --route-line: var(--ui-line);
-  --route-radius: 10px;
+  --route-radius: var(--ui-radius-control);
   --route-button-height: 36px;
   --route-primary-height: 44px;
   --route-padding: 8px 10px;
@@ -77,23 +96,25 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) .dock-heading { border: 0; gap: 4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) h2 { color: var(--ui-ink); font-size: 16px; letter-spacing: .01em; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) :is(.dock-section-link,.icon-button,.dock-back) { color: var(--ui-muted); border: 0; background: var(--ui-raised); border-radius: 10px; box-shadow: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) :is(.dock-section-link,.icon-button,.dock-back) { color: var(--ui-muted); border: 0; background: var(--ui-raised); border-radius: var(--ui-radius-control); box-shadow: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) .dock-heading .dock-section-link { min-height: var(--route-button-height); padding: 0 8px; margin-left: auto; flex: 0 0 auto; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel { display: flex; flex-direction: column; gap: 4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel :is(button,select,input) { font-size: 12px; color: var(--ui-ink); border-color: transparent; background: var(--ui-raised); border-radius: var(--ui-radius-control); box-shadow: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-load { align-self: flex-start; min-height: 28px; color: var(--ui-muted); background: transparent; padding: 0 4px; font-size: 11px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .routing-mode-control { color: var(--ui-muted); font-size: 11px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-modes { padding: 3px; border-radius: 13px; background: var(--ui-raised); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-modes { padding: 3px; border-radius: var(--ui-radius-control); background: var(--ui-raised); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-modes button { background: transparent; color: var(--ui-muted); font-size: 12px; font-weight: 500; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-modes button[aria-pressed='true'] { background: var(--ui-field); color: var(--ui-accent); font-weight: 700; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-list { display: flex; flex-direction: column; gap: 4px; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block { border-radius: 12px; padding: 3px; background: var(--ui-raised); border: 1px solid transparent; box-shadow: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block { border-radius: var(--ui-radius-control); padding: 3px 6px; background: var(--ui-raised); border: 1px solid transparent; box-shadow: none; }
 /* State uses a quiet surface; focus belongs only to the individual control. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block:is(.is-next,.is-picking,:focus-within) { border-color: var(--ui-line); background: var(--ui-selected); box-shadow: none; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-row { display: flex; align-items: center; gap: 3px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-row { display: flex; align-items: center; gap: 3px; background: transparent; border: 0; border-radius: var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-next-step { border-radius: var(--ui-radius-control); padding: 6px 8px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-label { display: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-dot { background: var(--ui-selected); color: var(--ui-accent); border: 0; width: 22px; height: 22px; flex: 0 0 22px; font-size: 11px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-dot.end { background: var(--ui-field); color: var(--ui-ink); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-row input { height: 40px; min-height: 40px; background: transparent; border: 0; border-radius: 7px; color: var(--ui-ink); font-size: 16px; padding: 2px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-row input { height: 40px; min-height: 40px; background: transparent; border: 0; border-radius: var(--ui-radius-control); color: var(--ui-ink); font-size: 16px; padding: 0 6px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel input::placeholder { color: var(--ui-muted); font-size: 13px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .stop-icon { width: 32px; min-width: 32px; height: 40px; padding: 0; color: var(--ui-muted); background: transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .stop-pick { display: flex; flex-direction: column; justify-content: center; gap: 1px; width: 40px; min-width: 40px; color: var(--ui-accent); }

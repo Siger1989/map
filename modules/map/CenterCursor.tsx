@@ -12,18 +12,20 @@ export function CenterReticle() {
 export function CenterMarkButton({
   map,
   onAdd,
+  target,
 }: {
   map: () => MapHandle | null;
   onAdd: (point: Coordinate) => void;
+  target?: Coordinate;
 }) {
   const [error, setError] = useState('');
   return (
     <>
       <button
         className="position-dock-button center-add glass"
-        aria-label="在地图中心准星处添加标记"
+        aria-label={target ? '在所选路线点添加标记' : '在地图中心准星处添加标记'}
         onClick={() => {
-          const coordinate = map()?.centerCoordinate();
+          const coordinate = target ?? map()?.centerCoordinate();
           if (!coordinate) {
             setError('准星下暂无可选地面，请移动地图后重试');
             return;

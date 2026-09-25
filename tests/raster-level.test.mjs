@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { fileURLToPath } from 'node:url';
 import { RasterLevelLock } from '../modules/cartography/RasterLevelLock.ts';
-import { syncCartography } from '../modules/cartography/cartography.ts';
+import {
+  cartographySettingsForDisplay,
+  syncCartography,
+} from '../modules/cartography/cartography.ts';
 
 const source = (id, maxzoom = 18) => ({ id, type: 'raster', minzoom: 0, maxzoom, tileSize: 256, loaded: () => true });
 function fixture() {
@@ -73,6 +76,33 @@ test('road opacity remains relative to original styles and never compounds or ch
   syncCartography(map, { roads: true, labels: true });
   assert.equal(paint.get('main-roads/line-opacity'), 0.85);
   assert.ok([...paint.keys()].every(key => !key.includes('route')));
+});
+test('map road and river visibility follows the layer setting, not snap mode', () => {
+  for (const roads of [true, false]) {
+    const visibility = new Map();
+    const map = {
+      getLayer: () => true,
+      setPaintProperty: () => {},
+      setLayoutProperty: (id, _property, value) => visibility.set(id, value),
+    };
+    const settings = { roads, labels: true };
+    const displaySettings = cartographySettingsForDisplay(settings, true);
+    assert.deepEqual(displaySettings, { roads, labels: false });
+    assert.notEqual(displaySettings, settings);
+    assert.deepEqual(settings, { roads, labels: true });
+    syncCartography(map, displaySettings);
+    for (const id of ['rivers', 'road-outline', 'main-roads', 'local-roads'])
+      assert.equal(visibility.get(id), roads ? 'visible' : 'none', id);
+    assert.equal(visibility.get('road-names'), roads ? 'visible' : 'none');
+    assert.equal(visibility.get('city-names'), 'none');
+
+    const internationalSettings = { roads, labels: true };
+    assert.equal(
+      cartographySettingsForDisplay(internationalSettings, false),
+      internationalSettings,
+    );
+    assert.deepEqual(internationalSettings, { roads, labels: true });
+  }
 });
 test('installed MapLibre keeps free zoom with bounded requests and a fixed maximum detail level', async () => {
   const compiled = await build({ stdin: { resolveDir: fileURLToPath(new URL('../', import.meta.url)), loader: 'ts', contents: `

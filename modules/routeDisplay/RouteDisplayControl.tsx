@@ -123,17 +123,22 @@ export function RouteDisplayControl({
                 </label>
               ))}
             </div>
-            <p>前三项在选中路线或导航时显示于底部；全部关闭可隐藏底栏。</p>
-            <p>
-              选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。
-              陡坡≥
-              {(
-                (Math.atan(ANALYSIS_POLICY.steepThresholdPercent / 100) * 180) /
-                Math.PI
-              ).toFixed(1)}
-              °，上下坡分开提示。
-            </p>
-            <p>海拔按本路线最低至最高渐变；坡角按约5.7°和11.3°分档，同档同色。</p>
+            <details className="route-display-explanation">
+              <summary>显示说明</summary>
+              <div>
+                <p>前三项在选中路线或导航时显示于底部；全部关闭可隐藏底栏。</p>
+                <p>
+                  选中的路线生效，开关自动保存。高程缺失时读取地形；灰色为缺测。
+                  陡坡≥
+                  {(
+                    (Math.atan(ANALYSIS_POLICY.steepThresholdPercent / 100) * 180) /
+                    Math.PI
+                  ).toFixed(1)}
+                  °，上下坡分开提示。
+                </p>
+                <p>海拔按本路线最低至最高渐变；坡角按约5.7°和11.3°分档，同档同色。</p>
+              </div>
+            </details>
             <button
               onClick={display.refresh}
               disabled={display.loading || !target}

@@ -259,3 +259,11 @@ export function syncCartography(map: Map, settings: LayerSettings) {
         map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
   }
 }
+
+/** Keep basemap presentation settings separate from editing/snap state. */
+export function cartographySettingsForDisplay(
+  settings: LayerSettings,
+  domestic: boolean,
+): LayerSettings {
+  return domestic ? { ...settings, labels: false } : settings;
+}

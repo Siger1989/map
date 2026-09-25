@@ -4,6 +4,7 @@ import { OfflineRoutingPanel } from '../offlineRouting/OfflineRoutingPanel';
 import { OfflineMapSettings } from './OfflineMapSettings';
 import { useState } from 'react';
 import { regionEstimate, type TripPackage } from './offline';
+import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy';
 import './offlineRegion.css';
 export function OfflinePanel({
   offline,
@@ -30,6 +31,7 @@ export function OfflinePanel({
   return (
     <>
       <strong>离线地图缓存</strong>
+      <small>仅支持 OpenFreeMap 道路、地名和地形下载；天地图离线下载已暂停。</small>
       {onDownloadCurrent && <div className="outdoor-actions"><button onClick={onDownloadCurrent}>下载当前地图范围</button><button disabled={!points.length} onClick={onDownloadRoute}>下载「{name}」沿线地图</button></div>}
       {!onDownloadCurrent && <>
       <section className="offline-download-region" aria-label="区域下载">
@@ -77,7 +79,8 @@ export function OfflinePanel({
               打开范围
             </button>
             <button
-              disabled={offline.busy}
+              disabled={offline.busy || !canDownloadTrip(p)}
+              title={!canDownloadTrip(p) ? TIANDITU_OFFLINE_DISABLED : undefined}
               onClick={() => void offline.resume(p)}
             >
               继续 / 补齐

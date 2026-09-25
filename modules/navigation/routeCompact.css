@@ -32,7 +32,7 @@
 .observatory #map-control-panel .route-panel .routing-mode-control select {
   height: var(--route-button-height, 28px) !important;
   min-height: var(--route-button-height, 28px) !important;
-  padding: 0 2px !important;
+  padding: 0 8px !important;
 }
 .observatory #map-control-panel .route-panel .route-modes {
   margin: 0 0 2px !important;

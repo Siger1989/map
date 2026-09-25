@@ -23,6 +23,7 @@
   );
   position: absolute;
   width: var(--card-width);
+  box-sizing: border-box;
   left: clamp(
     var(--edge-left),
     calc(var(--press-x) - 120px),
@@ -33,10 +34,10 @@
     calc(var(--press-y) + 14px),
     calc(100% - var(--safe-bottom) - 424px)
   );
-  max-height: min(38dvh, 220px);
+  max-height: min(240px, 48dvh, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px));
   display: flex;
   flex-direction: column;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-card, 20px);
   pointer-events: auto;
   overflow: hidden;
 }
@@ -45,57 +46,73 @@
 }
 .quick-add-centered .quick-add-card {
   top: calc(var(--press-y) + 28px);
-  max-height: min(200px, 38dvh, calc(100% - var(--press-y) - var(--safe-bottom) - 100px));
+  max-height: min(240px, 48dvh, calc(100% - var(--press-y) - var(--safe-bottom) - 100px));
 }
 .quick-add-card header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 10px;
-  min-height: 44px;
+  box-sizing: border-box;
+  padding: 6px 8px 6px 10px;
+  min-height: 48px;
   flex-shrink: 0;
   font-size: 14px;
 }
-.quick-add-card header button {
-  width: 44px;
-  height: 44px;
+.observatory .quick-add-card header button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   display: grid;
   place-items: center;
   background: transparent;
 }
 .quick-add-content {
-  padding: 0 10px 10px;
-  overflow: auto;
+  min-height: 0;
+  padding: 8px;
+  overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
 }
+.quick-add-content::-webkit-scrollbar { display: none; }
 .quick-add-content p {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   font-size: 12px;
   color: var(--muted);
 }
 .quick-add-content [role='alert'] {
-  margin: 8px 0 0;
-  color: #ffbf98;
+  margin: 4px 0 0;
+  color: var(--ui-danger, #ff9b8f);
 }
 .quick-add-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 .quick-add-options button {
+  box-sizing: border-box;
   min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  border-radius: 7px;
-  background: #28454e;
-  font-size: 14px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px;
+  border-radius: var(--ui-radius-control, 12px);
+  background: var(--ui-raised, #252e2b);
+  color: var(--ui-button-ink, #f2f5ed);
+  font-size: 11px;
+  line-height: 12px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 .quick-add-options button:first-child {
-  color: var(--accent);
-  background: #21483e;
+  color: var(--ui-active-ink, #d0f76b);
+  background: var(--ui-selected, #293321);
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-card.glass { border-radius:var(--ui-radius-card); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-content { padding:8px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-options button { padding:4px 6px; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-button-ink); }
 .map-hold-ready canvas {
   cursor: crosshair;
 }

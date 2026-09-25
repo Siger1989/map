@@ -309,6 +309,7 @@ export default function Home() {
   );
   const startupFix = position.startupFix;
   const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
+  const [navigationPreviewFraction, setNavigationPreviewFraction] = useState<number | null>(null);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate; shareText?: string; shareSummary?: string }; markerId?: string } | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
@@ -363,11 +364,9 @@ export default function Home() {
   const [offlineDownloadError, setOfflineDownloadError] = useState('');
   const beginMapDownload = (name: string, area?: DownloadArea) => {
     try {
-      if (usesSentinel(layers) && !mapSources.source) throw new Error('Sentinel-2 区域下载接口已预留，当前仅在线浏览；已有离线包仍可使用');
-      if (mapSources.source || (!domesticBasemap && layers.satellite)) throw new Error('此图源尚未接入区域下载，请选择开源底图或已有离线包');
       const bounds = area ? null : map.current?.offlineRegionBounds(true);
       if (!area && !bounds) throw new Error('地图尚未就绪');
-      setOfflineDownload({name, area: area ?? {kind:'region',bounds:bounds!},provider:domesticBasemap?'tianditu':'openfreemap',settings:{...layers}});
+      setOfflineDownload({name, area: area ?? {kind:'region',bounds:bounds!},provider:'openfreemap',settings:{...layers,satellite:false,offlineBasemap:true}});
       setOfflineDownloadError('');setPanel(null);setRallyMode(false);setRouteWindow('card');
     } catch(e) { setOfflineDownloadError((e as Error).message); }
   };
@@ -1258,7 +1257,7 @@ export default function Home() {
     !selectedPhoto &&
     !featureMove &&
     !measurement.active &&
-    !guidance.active &&
+    (!guidance.active || !!linePoint) &&
     !boxSelecting));
   return (
     <TextSuggestions.Provider value={suggestionValues}>
@@ -2282,7 +2281,6 @@ export default function Home() {
           !sectionEditing &&
           !annotations.picking &&
           navigation.picking === null &&
-          !selectionName &&
           !quickAdd &&
           !tracks.editing && (
           <GuidanceCard
@@ -2316,7 +2314,7 @@ export default function Home() {
               }}
             />
           )}
-        {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
+        {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} previewFraction={navigationPreviewFraction} />}
         {rallyMode && navigation.route && <RallyNavigation
           display={routeDisplay}
           route={guidance.session?.route ?? navigation.route} guidance={guidance} fix={displayedFix}
@@ -2398,7 +2396,8 @@ export default function Home() {
             <RouteWeatherRail
               route={guidance.session?.route ?? navigation.route}
               journey={routeJourney}
-              onPreview={(coordinates) => {
+              onPreview={(coordinates, fraction) => {
+                setNavigationPreviewFraction(coordinates ? fraction ?? null : null);
                 if (coordinates) position.free();
                 map.current?.previewRoute(coordinates);
               }}
@@ -2495,7 +2494,7 @@ export default function Home() {
         )}
         <MapActions
           boxSelecting={boxSelecting}
-          markControl={showCenterCursor ? <CenterMarkButton map={() => map.current} onAdd={(coordinates) => {
+          markControl={showCenterCursor ? <CenterMarkButton map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
             if (focusLock.locked) focusLock.toggle();
             map.current?.stop();
             position.free();
@@ -2510,7 +2509,7 @@ export default function Home() {
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           fix={displayedFix}
-          showCoordinates={routeDisplay.preferences.coordinates}
+          showCoordinates={routeDisplay.preferences.coordinates && !panel && !quickAdd && !tracks.editing && !editor.session}
           displayControl={
             <RouteDisplayControl
               navigating={guidance.active}

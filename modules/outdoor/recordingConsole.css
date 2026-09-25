@@ -4,9 +4,10 @@
   height: auto !important; max-height: calc(100dvh - var(--home-footer) - var(--home-top) - 66px) !important;
   padding: 4px 6px !important; overflow: hidden !important;
 }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 28px !important; min-height: 28px !important; margin: 0 !important; padding: 0 !important; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; margin: 0 !important; padding: 0 2px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading h2 { margin: 0 !important; font-size: 13px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 0 !important; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 8px !important; scrollbar-width: none; -ms-overflow-style: none; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-content::-webkit-scrollbar { display: none; }
 .observatory .record-console { color: var(--ui-ink, #10243c); font-size: 12px; }
 .observatory .record-console button,.observatory .record-console input,.observatory .record-console select {
   box-sizing: border-box; min-width: 0 !important; max-width: 100%; min-height: 30px !important; height: 30px !important;
@@ -34,7 +35,7 @@
 .observatory #map-control-panel:has(.record-console) .record-console-tools { display: flex; gap: 4px; margin-top: 4px; border-top: 1px solid var(--ui-line, #d2dfe4); }
 .observatory .record-console-tools button { flex: 1; min-height: 28px !important; padding: 0 !important; color: var(--ui-muted, #526b78) !important; font-size: 11px !important; }
 /* Dense revision: keep labels readable and reduce row/chrome spacing. */
-.observatory.home-map #map-control-panel:has(.record-console) { padding: 3px 5px !important; }
+.observatory.home-map #map-control-panel:has(.record-console) { padding: 8px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height: 28px !important; min-height: 28px !important; }
 .record-console-stats { min-height: 20px; }
@@ -62,7 +63,7 @@
 .observatory .record-console-tools button { min-height:36px !important; height:36px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) { max-height:min(200px,calc(100dvh - var(--home-footer) - var(--home-top) - 66px)) !important; }
 
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { position:sticky; top:-3px; z-index:2; background:var(--ui-surface, #fff); }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { position:sticky; top:0; z-index:2; background:transparent; }
 
 .observatory .record-console button.is-primary { min-height:var(--record-primary-height,36px) !important; height:var(--record-primary-height,36px) !important; }
 

@@ -41,6 +41,7 @@ export function themeTokens(p: Palette) {
   const button = p.button ?? DEFAULT_APPEARANCE.light.button;
   const buttonInk = contrastRatio(button,p.foreground) >= 4.5 ? p.foreground : contrastRatio(button,'#10243c') > contrastRatio(button,'#ffffff') ? '#10243c' : '#ffffff';
   const active = mix(button,p.accent,.16);
+  const [glassR,glassG,glassB] = rgb(p.background);
   return {
     '--ui-surface': p.background, '--ui-ink': ink, '--ui-accent': p.accent,
     '--ui-active': active, '--ui-active-ink': contrastRatio(active,p.accent) >= 4.5 ? p.accent : buttonInk,
@@ -51,5 +52,8 @@ export function themeTokens(p: Palette) {
     '--ui-line': mix(p.background,ink,.06+p.contrast/1000),
     '--ui-muted': mix(ink,p.background,.25),
     '--ui-on-accent': contrastRatio(p.accent,'#ffffff') >= contrastRatio(p.accent,'#10243c') ? '#ffffff' : '#10243c',
+    '--ui-glass-surface': `rgba(${glassR}, ${glassG}, ${glassB}, 0.64)`,
+    '--ui-glass-filter': 'blur(18px) saturate(110%)',
+    '--ui-glass-shadow': '0 10px 28px rgba(0, 0, 0, 0.18)',
   };
 }

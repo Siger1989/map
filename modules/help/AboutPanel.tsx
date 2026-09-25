@@ -36,7 +36,7 @@ export function AboutPanel() {
         <dt>构建号</dt>
         <dd>{APP_VERSION_CODE}</dd>
         <dt>更新日期</dt>
-        <dd>2026-09-25</dd>
+        <dd>2026-09-26</dd>
       </dl>
       <h3>使用教程</h3>
       <div className="help-topics">

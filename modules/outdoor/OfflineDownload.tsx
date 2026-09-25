@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import type { LayerSettings } from '../map/types';
 import type { DownloadArea } from './downloadPlan';
 import { mapDownloadPlan, type DownloadProvider } from './offline';
+import { canDownloadTrip } from './offlineDownloadPolicy';
 import { tiandituBase, TIANDITU_LAYERS } from '../cartography/tianditu';
 import type { useOffline } from './useOffline';
 import './offlineRegion.css';
@@ -44,7 +45,7 @@ export function OfflineDownload({
   const source =
     target.provider === 'tianditu'
       ? `天地图${TIANDITU_LAYERS[tiandituBase(target.settings)].name}`
-      : '开源道路地形';
+      : 'OpenFreeMap 免费道路地形';
   const max =
     target.provider === 'tianditu'
       ? TIANDITU_LAYERS[tiandituBase(target.settings)].maxzoom
@@ -67,6 +68,7 @@ export function OfflineDownload({
       </small>
       {!started ? (
         <>
+          <small>仅下载开源道路、地名和所选地形，不含天地图及卫星影像。</small>
           {target.area.kind === 'route' && (
             <label>
               路线两侧
@@ -107,7 +109,7 @@ export function OfflineDownload({
           </small>
           <button
             className="offline-download-primary"
-            disabled={offline.busy}
+            disabled={offline.busy || !result.plan}
             onClick={() => {
               if (!result.plan) return;
               setStarted(true);
@@ -120,7 +122,7 @@ export function OfflineDownload({
               );
             }}
           >
-            {result.plan ? '下载地图' : '范围过大，请调整上方设置'}{result.plan && target.settings.labels ? '及注记' : ''}
+            {result.plan ? '下载地图' : '当前无法下载'}{result.plan && target.settings.labels ? '及注记' : ''}
             {target.settings.terrain ? '、地形' : ''}
           </button>
         </>
@@ -137,7 +139,7 @@ export function OfflineDownload({
             {offline.busy ? (
               <button onClick={offline.pause}>暂停</button>
             ) : (
-              <><button disabled={!offline.current || offline.current.complete} onClick={()=>offline.current && void offline.resume(offline.current)}>继续下载</button><button onClick={() => setStarted(false)}>返回设置</button></>
+              <><button disabled={!offline.current || offline.current.complete || !canDownloadTrip(offline.current)} onClick={()=>offline.current && void offline.resume(offline.current)}>继续下载</button><button onClick={() => setStarted(false)}>返回设置</button></>
             )}
           </div>
         </>

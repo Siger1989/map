@@ -22,7 +22,11 @@ import {
 import type { WeatherLayer } from '../weather/WeatherLayer';
 import { TemperatureLayer } from '../weather/TemperatureLayer';
 import type { WeatherData } from '../weather/data';
-import { addCartography, syncCartography } from '../cartography/cartography';
+import {
+  addCartography,
+  cartographySettingsForDisplay,
+  syncCartography,
+} from '../cartography/cartography';
 import { GeologyLayer } from '../geology/GeologyLayer';
 import type { GeologyState } from '../geology/data';
 import { RouteLayer } from '../navigation/RouteLayer';
@@ -356,12 +360,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const custom = Boolean(latest.current.mapSource);
       void sourceRef.current?.select(latest.current.mapSource ?? null).then(syncRasterLock);
       syncRasterLock();
-      if (
-        !useDomestic ||
-        latest.current.roadSnapping ||
-        latest.current.riverSnapping
-      )
-        addCartography(map);
+      if (!useDomestic || s.roads) addCartography(map);
       temperatureRef.current ??= new TemperatureLayer(map);
       temperatureRef.current.update(
         latest.current.weather,
@@ -425,18 +424,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         latest.current.hourIndex,
         s,
       );
-      syncCartography(
-        map,
-        useDomestic
-          ? {
-              ...s,
-              roads: s.roads && latest.current.roadSnapping,
-              labels: false,
-            }
-          : s,
-      );
-      if (latest.current.riverSnapping && map.getLayer('rivers'))
-        map.setLayoutProperty('rivers', 'visibility', 'visible');
+      syncCartography(map, cartographySettingsForDisplay(s, useDomestic));
       if (custom)
         for (const id of ['open-landcover', 'open-water', 'open-buildings'])
           if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');

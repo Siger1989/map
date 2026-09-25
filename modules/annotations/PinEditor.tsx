@@ -29,7 +29,10 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null);
   const [picker, setPicker] = useState<'coordinates' | 'icon' | 'color' | null>(null);
   const editor = useRef<HTMLElement>(null);
-  useEffect(() => { state.beginEdit(item.id); }, [item.id]);
+  useEffect(() => {
+    state.beginEdit(item.id);
+    if (item.groundElevation === null) void state.refreshElevation(item.id, item.coordinates);
+  }, [item.id]);
   useEffect(() => {
     let frame = 0;
     const keepFocusedAttributeVisible = () => {
@@ -120,6 +123,11 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
       <div className="pin-coordinate-row">
         <button className="pin-coordinate-value" aria-label="编辑标记坐标" onClick={() => setPicker('coordinates')}><span>坐标</span><b>{item.coordinates[0].toFixed(6)}, {item.coordinates[1].toFixed(6)} · WGS84</b></button>
         <button aria-label="分享完整标记信息" title="分享完整信息" onClick={() => { if (save()) onShare(item); }}><Share2 size={17}/></button>
+      </div>
+      <div className="pin-elevation-row">
+        <span>地面海拔</span>
+        <output aria-label="标记地面海拔" aria-live="polite">{state.reading ? '读取中…' : item.groundElevation === null ? '暂无数据' : `${Number(item.groundElevation.toFixed(1))} 米`}</output>
+        <button disabled={state.reading} aria-label="重新读取标记地面海拔" onClick={() => void state.refreshElevation(item.id, item.coordinates)}>重读</button>
       </div>
       <div className="pin-style-row">
         <button aria-label="选择标记图案" onClick={() => setPicker('icon')}><span>图案</span><AnnotationIcon item={item} size={18}/><b>{markerIcon(item.icon).name}</b><span>⌄</span></button>

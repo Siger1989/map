@@ -529,7 +529,7 @@
   bottom: calc(var(--home-footer, 56px) + 8px + env(safe-area-inset-bottom));
   width: min(300px, calc(100% - 8px));
   max-height: min(200px, calc(100dvh - 64px));
-  padding: 4px;
+  padding: 8px;
   border-radius: 4px;
   background: #f0f3eefa;
   font-size: 11px;

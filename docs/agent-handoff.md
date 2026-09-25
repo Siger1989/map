@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-26 / 0.2.73交付
+
+最新构建为0.2.73-test/code80，紧凑磨砂界面、标题安全距、导航与标记海拔、吸附显示解耦及免费离线下载策略。659/659测试、类型、签名资源、包内网页版本检查PASS；发布状态以CURRENT_STATE顶部为准，见[本版说明](release-0.2.73.md)。
+
 ## 2026-09-25 / 0.2.72交付
 
 最新APK为0.2.72-test（versionCode79），统一UI、高亮修复、记录按钮和已保存图层设置记忆均已纳入。源码构建提交f48253adbc78084e1ca5cde12315fd5b16f0bb2e，分支codex/rollback-ui-0235-20260921；[Release已公开](https://github.com/Siger1989/map/releases/tag/v0.2.72-test-standalone)。653项测试、类型、构建/签名/资源和打包网页检查通过，远程资产hash与本地一致；真机仍待验。完整产物与限制见[发行说明](release-0.2.72.md)及CURRENT_STATE顶部，下方0.2.71为历史记录。

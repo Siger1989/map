@@ -3,11 +3,12 @@ import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { TERRAIN_URL } from '../terrain/tiles.ts';
 import { cachedMapFetch, offlineMapOnly } from './tileCache.ts';
-import { tdtIdentity, tdtResource, resourceCacheKey, resourceFetchUrl, validateTileResponse } from './tiandituCache.ts';
+import { tdtIdentity, resourceCacheKey, resourceFetchUrl, validateTileResponse } from './tiandituCache.ts';
 import { downloadBounds, downloadTiles, MAX_DOWNLOAD_RESOURCES, type DownloadArea } from './downloadPlan.ts';
-import { TIANDITU_LAYERS, tiandituLayers, type TiandituLayer } from '../cartography/tianditu.ts';
-import { basemapConfiguration } from '../cartography/basemaps.ts';
+import type { TiandituLayer } from '../cartography/tianditu.ts';
 import type { LayerSettings } from '../map/types';
+import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
+export { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1',
   INDEX = 'guanyun.trips.v1';
@@ -38,35 +39,31 @@ export function tripPackages(): TripPackage[] {
 }
 export type DownloadProvider = 'tianditu' | 'openfreemap';
 export function mapDownloadPlan(area: DownloadArea, settings: LayerSettings, provider: DownloadProvider, zoom: number) {
-  const layers = provider === 'tianditu' ? tiandituLayers(settings) : [];
-  const maximum = layers.length ? TIANDITU_LAYERS[layers[0]].maxzoom : 14;
-  if (![12,14,16,18].includes(zoom) || zoom > maximum) throw new Error('请选择此图源支持的清晰度');
-  const tiles = downloadTiles(area, zoom, Math.floor(MAX_DOWNLOAD_RESOURCES / Math.max(1,layers.length)), area.kind === 'route' && zoom > 14);
+  if (provider === 'tianditu') throw new Error(TIANDITU_OFFLINE_DISABLED);
+  const layers: TiandituLayer[] = [];
+  if (![12,14,16,18].includes(zoom) || zoom > 14) throw new Error('请选择此图源支持的清晰度');
+  const tiles = downloadTiles(area, zoom, MAX_DOWNLOAD_RESOURCES, area.kind === 'route' && zoom > 14);
   const terrain = settings.terrain ? downloadTiles(area, Math.min(12,zoom)) : [];
-  const count = (layers.length ? layers.reduce((n,l)=>n+tiles.filter(t=>t.z>=1&&t.z<=TIANDITU_LAYERS[l].maxzoom).length,0) : tiles.length+257) + terrain.length;
+  const count = tiles.length + 257 + terrain.length;
   if(count>MAX_DOWNLOAD_RESOURCES) throw new Error('资源超过 2 万项，请降低清晰度或范围');
-  const estimatedBytes = tiles.length * (provider === 'tianditu' ? layers.reduce((n,l)=>n+(l==='img'?35000:l==='vec'||l==='ter'?18000:6000),0) : 26000) + terrain.length*16000 + (provider==='openfreemap'?8000000:0);
+  const estimatedBytes = tiles.length * 26000 + terrain.length*16000 + 8000000;
   if(estimatedBytes>1024**3) throw new Error('预计超过 1 GB，请降低清晰度或范围');
   return { layers, tiles, terrain, count, estimatedBytes, bounds: downloadBounds(area) };
 }
 export async function prepareMapPackage(name: string, area: DownloadArea, settings: LayerSettings, provider: DownloadProvider, zoom: number, signal: AbortSignal): Promise<TripPackage> {
-  if(provider==='tianditu'&&!basemapConfiguration().domestic)throw new Error('未配置天地图 Key');
+  if (provider === 'tianditu') throw new Error(TIANDITU_OFFLINE_DISABLED);
   const plan=mapDownloadPlan(area,settings,provider,zoom);
   if(tripPackages().length>=8)throw new Error('已达 8 个离线包，请先移除不用的包');
   const estimate=await navigator.storage?.estimate?.();
   if(estimate?.quota && estimate.quota-(estimate.usage??0)<plan.estimatedBytes*1.15)throw new Error('可用存储空间不足，请降低清晰度或清理旧包');
   const terrain=plan.terrain.map(t=>(window.location.origin+TERRAIN_URL).replace('{z}',String(t.z)).replace('{x}',String(t.x)).replace('{y}',String(t.y)));
-  let urls: string[];
-  if(provider==='tianditu')urls=plan.layers.flatMap(l=>plan.tiles.filter(t=>t.z>=1&&t.z<=TIANDITU_LAYERS[l].maxzoom).map(t=>tdtResource(l,t.z,t.x,t.y)));
-  else {
-    const response=await fetch(TILEJSON,{signal});
-    if(!response.ok)throw new Error('开源地图源暂不可达');
-    const json=await response.clone().json() as {tiles?:unknown[]}; const template=json.tiles?.[0];
-    if(typeof template!=='string'||!template.startsWith('https://tiles.openfreemap.org/'))throw new Error('地图源地址不支持离线');
-    await (await caches.open(CACHE)).put(TILEJSON,response);
-    urls=[TILEJSON,...plan.tiles.map(t=>template.replace('{z}',String(t.z)).replace('{x}',String(t.x)).replace('{y}',String(t.y)))];
-    for(let start=0;start<65536;start+=256)urls.push(`https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/${start}-${start+255}.pbf`);
-  }
+  const response=await fetch(TILEJSON,{signal});
+  if(!response.ok)throw new Error('开源地图源暂不可达');
+  const json=await response.clone().json() as {tiles?:unknown[]}; const template=json.tiles?.[0];
+  if(typeof template!=='string'||!template.startsWith('https://tiles.openfreemap.org/'))throw new Error('地图源地址不支持离线');
+  await (await caches.open(CACHE)).put(TILEJSON,response);
+  const urls=[TILEJSON,...plan.tiles.map(t=>template.replace('{z}',String(t.z)).replace('{x}',String(t.x)).replace('{y}',String(t.y)))];
+  for(let start=0;start<65536;start+=256)urls.push(`https://tiles.openfreemap.org/fonts/Noto%20Sans%20Regular/${start}-${start+255}.pbf`);
   const trip: TripPackage={id:crypto.randomUUID(),name:name.trim().slice(0,60)||'离线地图',bounds:plan.bounds,urls:[...new Set([...urls,...terrain])],done:0,bytes:0,createdAt:Date.now(),complete:false,provider,layers:plan.layers,zoom,detailCorridor:area.kind==='route'&&zoom>14,bufferKm:area.kind==='route'?area.bufferKm:undefined,
     display:{satellite:settings.satellite,tiandituBase:settings.tiandituBase,tiandituLabels:settings.tiandituLabels,tiandituBoundaries:settings.tiandituBoundaries,terrain:settings.terrain,labels:settings.labels,roads:settings.roads,roadsOpacity:settings.roadsOpacity,imageryMode:'detail',offlineBasemap:provider==='openfreemap',offlineMaxZoom:zoom,rasterLevel:null}};
   putTrip(trip);return trip;
@@ -237,6 +234,7 @@ export async function downloadTrip(
   signal: AbortSignal,
   progress: (t: TripPackage) => void,
 ) {
+  if (!canDownloadTrip(trip)) throw new Error(TIANDITU_OFFLINE_DISABLED);
   if(nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
   const cache = await caches.open(CACHE);
   let cursor = 0,

@@ -37,7 +37,6 @@ export function RoutePanel({
   guidanceError,
   onShare,
   weather,
-  onRally,
   onEditPoints,
   onCancel,
   onCache,
@@ -261,7 +260,7 @@ export function RoutePanel({
     onCache={onCache}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
-    navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} weather={weather} onRally={onRally} onEditPoints={onEditPoints} onCancel={onCancel}
+    navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} weather={weather} onEditPoints={onEditPoints} onCancel={onCancel}
   />;
   return (
     <div className="route-panel" data-picking={n.picking !== null}>

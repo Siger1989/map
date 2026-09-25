@@ -40,13 +40,9 @@ test('appearance saves on measured original; geometry saves a named copy with no
   assert.match(copied.track.name,/编辑副本/); assert.equal(copied.track.samples,undefined); assert.equal(copied.track.source,'manual');
   assert.deepEqual(copied.records.find(v=>v.id===t.id).samples,t.samples);
 });
-test('high detail downloads a complete route with a narrower detailed corridor and wide overview', () => {
+test('high detail TianDiTu offline route plans are paused before creating resources', () => {
   const area={kind:'route',segments:[[[103,30],[103.2,30]]],bufferKm:10};
-  const plan=mapDownloadPlan(area,{...DEFAULT_LAYERS,satellite:true,tiandituBase:'img',labels:true},'tianditu',18);
-  assert.ok(plan.count<20000); assert.ok(plan.tiles.some(t=>t.z===18)); assert.ok(plan.tiles.some(t=>t.z===14));
-  const tail=area.segments[0][1], n=2**18;
-  const x=Math.floor((tail[0]+180)/360*n),y=Math.floor((1-Math.asinh(Math.tan(tail[1]*Math.PI/180))/Math.PI)/2*n);
-  assert.ok(plan.tiles.some(t=>t.z===18&&t.x===x&&t.y===y));
+  assert.throws(() => mapDownloadPlan(area,{...DEFAULT_LAYERS,satellite:true,tiandituBase:'img',labels:true},'tianditu',18), /天地图离线下载已暂停/);
 });
 test('collection visibility roundtrips without altering measured geometry or samples', () => {
   const data={format:'guanyun-backup',version:1,tracks:[t],favorites:[],annotations:[]};

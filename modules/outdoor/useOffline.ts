@@ -14,6 +14,7 @@ import {
 } from './offline';
 import type { DownloadArea } from './downloadPlan';
 import type { LayerSettings } from '../map/types';
+import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy';
 export function useOffline() {
   const [packages, setPackages] = useState<TripPackage[]>([]),
     [busy, setBusy] = useState(false),
@@ -55,6 +56,11 @@ export function useOffline() {
     const syncNative=()=>{
       if(!nativeOffline())return;
       const state=nativeOfflineState(),trip=tripPackages().find(t=>t.id===state.id);if(!trip || deleting.current.has(trip.id))return;
+      if (!canDownloadTrip(trip) && ['queued','running','waiting'].includes(state.state ?? '')) {
+        nativeOffline()?.offlinePause();
+        setBusy(false);setMessage(TIANDITU_OFFLINE_DISABLED);
+        return;
+      }
       const signature=JSON.stringify(state);if(signature===nativeSignature)return;nativeSignature=signature;
       const next=applyNativeProgress(trip,state);putTrip(next);setPackages(tripPackages());setCurrent(next);
       if(!task.current)setBusy(['queued','running','waiting'].includes(state.state??''));

@@ -1,4 +1,4 @@
-.observatory.home-map[data-rally='true'] { background: #e5f0e9; --rally-map-top: calc(58dvh + 4px); --rally-map-bottom: calc(var(--home-footer) + 80px); }
+.observatory.home-map[data-rally='true'] { background: #e5f0e9; --rally-map-top: calc(58dvh + 4px); --rally-map-bottom: calc(var(--home-footer) + 96px); }
 .observatory.home-map[data-rally='true'] .map-canvas { top: var(--rally-map-top) !important; bottom: var(--rally-map-bottom) !important; left: 8px !important; right: 8px !important; width: auto !important; height: auto !important; border: 1px solid #9bb7bc; border-radius: 4px; }
 .observatory.home-map[data-rally='true'] > :is(.home-topbar,.guidance-card,.route-map-notice,.route-weather-rail,.home-recording,.map-legends,.map-load-status,.position-status,.home-route-card,.home-map-actions,.home-position-dock,.map-actions,.map-toolbar) { display: none !important; }
 .observatory.home-map[data-rally='true'] :is(.map-layer-control,.weather-summary,.route-display-info) { display: none !important; }
@@ -48,14 +48,14 @@
 .rally-map-actions { position: absolute; bottom: calc(var(--rally-map-bottom) + 5px); right: 13px; display: flex; gap: 3px; }
 .rally-warning { position: absolute; left: 13px; right: 13px; top: calc(var(--rally-map-top) + 40px); border-radius: 3px; background: #fffc; color: #71411b; font-size: 11px; padding: 3px 5px; }
 .rally-help { position: absolute; z-index: 2; top: 80px; left: 8px; right: 8px; padding: 10px; border: 1px solid #9bb7bc; background: #fff; font-size: 13px; line-height: 1.5; }
-.rally-elevation { position: absolute; bottom: calc(var(--home-footer) + 8px); left: 8px; right: 8px; height: 64px; display: grid; grid-template-columns: minmax(0,1fr) 102px; grid-template-rows: 50px 12px; border: 1px solid #9bb7bc; border-radius: 4px; background: white; padding: 0 4px; overflow: hidden; }
-.rally-elevation .route-elevation-profile { background: none; box-shadow: none; border: 0; padding: 0; min-width: 0; }
+.rally-elevation { position: absolute; bottom: calc(var(--home-footer) + 8px); left: 8px; right: 8px; height: 80px; display: grid; grid-template-columns: minmax(0,1fr) 102px; grid-template-rows: 50px 12px; border: 1px solid var(--ui-line, var(--border)); border-radius: 20px; background: var(--ui-surface, var(--surface)); color: var(--ui-ink, var(--text)); padding: 8px; overflow: hidden; }
+.rally-elevation .route-elevation-profile { background: none; box-shadow: none; border: 0; border-radius: 12px; overflow: visible; padding: 0; min-width: 0; }
 .rally-elevation .route-elevation-profile > strong { display: none; }
-.rally-elevation svg { width: 100%; height: 50px; }
-.rally-elevation dl { border-left: 1px solid #c9d9d5; padding-left: 5px; margin: 1px 0; font-size: 10px; }
+.rally-elevation svg { width: calc(100% - 16px); height: 50px; margin: 0 8px; }
+.rally-elevation dl { border-left: 1px solid var(--ui-line, var(--border)); padding-left: 8px; margin: 1px 0; font-size: 10px; }
 .rally-elevation dl > div { display: flex; justify-content: space-between; gap: 2px; min-height: 16px; align-items: center; }
 .rally-elevation dd { margin: 0; font-weight: 700; }
-.rally-elevation > small { grid-column: 1 / -1; font-size: 9px; color: #5c6b65; }
+.rally-elevation > small { grid-column: 1 / -1; min-width: 0; padding-inline: 8px; font-size: 9px; color: var(--ui-muted, var(--muted)); }
 @media (max-height: 680px) { .rally-top { min-height: 0; } .rally-cue { min-height: 142px; grid-template-rows: minmax(90px,1fr) auto; } .rally-cue svg { width: 104px; height: 104px; } .rally-cue strong { font-size: 34px; } .rally-cue h3 { font-size: 24px; } .rally-next { min-height: 36px; font-size: 14px; } .rally-next svg { flex-basis: 28px; height: 28px; } }
 
 /* Semantic colour supplements the direction shape and text, never replaces them. */
@@ -78,6 +78,6 @@
 .rally-elevation[data-statistics='false'], .rally-elevation[data-profile='false'] { grid-template-columns: minmax(0,1fr); }
 .rally-elevation[data-profile='false'] dl { grid-column: 1; grid-row: 1; flex-direction: row; align-items: center; justify-content: space-around; border: 0; padding: 0 4px; }
 .rally-elevation[data-profile='false'] dl > div { display: block; text-align: center; }
-.rally-elevation[data-body='false'] { height: 20px; grid-template-rows: 18px; }
+.rally-elevation[data-body='false'] { height: 36px; grid-template-rows: 18px; padding: 8px; }
 .observatory.home-map[data-rally='true']:not(:has(.rally-elevation)) { --rally-map-bottom: calc(var(--home-footer) + 8px); }
 .observatory.home-map[data-rally='true']:has(.rally-elevation[data-body='false']) { --rally-map-bottom: calc(var(--home-footer) + 36px); }

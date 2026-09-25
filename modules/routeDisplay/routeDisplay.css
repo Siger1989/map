@@ -1,5 +1,5 @@
 .route-display-control {
-  color: var(--text);
+  color: var(--ui-ink, var(--text));
 }
 .route-display-settings {
   position: fixed;
@@ -7,9 +7,10 @@
   top: calc(56px + var(--safe-top));
   left: 4px;
   width: min(276px, calc(100vw - 62px));
-  max-height: var(--map-panel-max-height);
-  padding: 0 4px 4px;
-  border-radius: 6px;
+  max-height: min(280px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
+  box-sizing: border-box;
+  padding: 8px;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   font-size: 11px;
@@ -19,8 +20,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: 0 0 36px;
   min-height: 36px;
   gap: 2px;
+  padding: 0 2px;
 }
 .route-display-settings header strong {
   font-size: 12px;
@@ -31,24 +34,37 @@
   min-width: 36px;
   font: inherit;
   color: inherit;
-  background: #dce8e2;
-  border-radius: 4px;
+  color: var(--ui-button-ink, var(--ui-ink, var(--text)));
+  background: var(--ui-raised, var(--surface));
+  border: 1px solid var(--ui-line, var(--border));
+  border-radius: 12px;
   padding: 0 4px;
 }
 .route-display-settings header button {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
+  padding: 0;
 }
 .route-display-scroll {
-  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 2px 6px;
+  flex: 0 1 auto;
   min-height: 0;
+  overflow: auto;
   overscroll-behavior: contain;
 }
 .route-display-scroll > label {
   display: flex;
+  min-width: 0;
+  min-height: 36px;
   gap: 4px;
   align-items: center;
-  margin-bottom: 2px;
+  margin: 0;
 }
 .route-display-scroll select {
   flex: 1;
@@ -56,6 +72,7 @@
   width: 100%;
 }
 .route-display-options {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 4px;
@@ -71,8 +88,25 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: #246748;
+  accent-color: var(--ui-accent, var(--accent));
 }
+.route-display-scroll > button,
+.route-display-scroll > p[role='alert'] { grid-column: 1 / -1; }
+.route-display-scroll > button { justify-self: stretch; }
+.route-display-scroll > .route-display-explanation { grid-column: 1 / -1; min-width: 0; }
+.route-display-explanation > summary {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 6px;
+  border: 1px solid var(--ui-line, var(--border));
+  border-radius: 12px;
+  color: var(--ui-muted, var(--muted));
+  background: var(--ui-raised, var(--surface));
+  cursor: pointer;
+}
+.route-display-explanation > div { padding: 2px 4px 0; }
+.route-display-explanation p { margin: 2px 0; }
 .route-display-settings p {
   margin: 2px 0;
   font-size: 9px;
@@ -89,11 +123,25 @@
   max-height: min(200px, calc(100dvh - 510px - var(--safe-top) - var(--safe-bottom)));
   overflow-y: auto;
   pointer-events: auto;
-  color: #203d31;
+  color: var(--ui-ink, var(--text));
+}
+@media (max-height: 740px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-extended-controls .route-display-settings {
+    position: fixed !important;
+    top: calc(56px + var(--safe-top)) !important;
+    left: 4px !important;
+    width: min(276px, calc(100vw - 62px)) !important;
+    max-width: none !important;
+    max-height: min(280px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px))) !important;
+  }
+  .route-display-scroll { flex: 1 1 auto; scrollbar-width: none; }
+  .route-display-scroll::-webkit-scrollbar { display: none; }
 }
 .route-display-info > * {
-  padding: 3px 4px;
-  border-radius: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--ui-surface, var(--surface));
+  border: 1px solid var(--ui-line, var(--border));
 }
 .route-display-info strong {
   display: block;
@@ -138,7 +186,7 @@
   width: 100%;
 }
 .route-elevation-profile text {
-  fill: #203d31;
+  fill: var(--ui-muted, currentColor);
   font-size: 9px;
 }
 .observatory[data-panel='favorites'] .route-display-info {

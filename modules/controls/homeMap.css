@@ -203,17 +203,25 @@
 .observatory.home-map .home-position-dock { bottom: calc(var(--home-footer) + 76px); }
 /* Selected route and journey points share the top row; keep the map actions clear. */
 .observatory.home-map { --home-journey-width:clamp(88px,24vw,104px); }
-.observatory.home-map .home-route-card { top:calc(var(--home-header-height) + 8px); bottom:auto; left:calc(var(--home-left) + var(--home-journey-width) + 4px); width:min(276px,calc(100% - var(--home-left) - var(--home-journey-width) - var(--home-right) - 52px)); padding:4px; }
-.observatory.home-map .home-route-card header { gap:2px; }
+.observatory.home-map .home-route-card { top:calc(var(--home-header-height) + 8px); bottom:auto; left:calc(var(--home-left) + var(--home-journey-width) + 4px); width:min(276px,calc(100% - var(--home-left) - var(--home-journey-width) - var(--home-right) - 52px)); max-height:min(240px,calc(100dvh - var(--home-top) - var(--home-footer) - 90px)); overflow-y:auto; overflow-x:hidden; padding:8px; }
+.observatory.home-map .home-route-card header { gap:4px; align-items:flex-start; min-height:44px; }
 .observatory.home-map .home-route-card .home-route-symbol { display:none; }
-.observatory.home-map .home-route-card header strong { font-size:12px; }
-.observatory.home-map .home-route-card .home-route-back { min-width:36px; min-height:36px; gap:0; }
+.observatory.home-map .home-route-card header strong { min-height:44px; font-size:12px; line-height:1.35; white-space:normal; text-overflow:clip; overflow:visible; overflow-wrap:anywhere; }
+.observatory.home-map .home-route-card .home-route-name { box-sizing:border-box; min-height:44px; height:auto; align-items:flex-start; gap:4px; padding:6px; border-radius:12px; }
+.observatory.home-map .home-route-card .home-route-name strong { min-height:0; white-space:normal; text-overflow:clip; overflow:visible; overflow-wrap:anywhere; }
+.observatory.home-map .home-route-card .home-route-back { min-width:36px; min-height:36px; gap:0; padding:6px; border-radius:12px; }
 .observatory.home-map .home-route-card .home-route-back svg { width:12px; }
-.observatory.home-map .home-route-actions button { flex-direction:column; gap:1px; min-height:36px; font-size:11px; }
+.observatory.home-map .home-route-actions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding-top:6px; }
+.observatory.home-map .home-route-actions button { flex-direction:column; gap:1px; min-height:36px; padding:6px; border-radius:12px; font-size:11px; white-space:normal; }
 .observatory.home-map .home-route-actions button svg { width:15px; height:15px; }
 .observatory.home-map .home-route-kind { flex-wrap:wrap; }
 .observatory.home-map .home-journey-points { top: calc(var(--home-header-height) + 8px); }
-.observatory.home-map .home-journey-points { width:var(--home-journey-width); padding:4px; }
+.observatory.home-map .home-journey-points { width:var(--home-journey-width); padding:8px; }
+.observatory.home-map .home-journey-heading { box-sizing:border-box; min-height:36px; padding:6px; border-radius:12px; }
+.observatory.home-map .home-journey-list button { box-sizing:border-box; display:grid; grid-template-columns:10px minmax(0,1fr); grid-template-rows:auto auto; align-items:start; column-gap:6px; row-gap:1px; min-height:44px; margin-top:2px; padding:6px; border-radius:12px; text-align:left; }
+.observatory.home-map .home-journey-list button i { grid-column:1; grid-row:1 / span 2; margin-top:3px; }
+.observatory.home-map .home-journey-list button span { grid-column:2; grid-row:1; white-space:normal; text-overflow:clip; overflow:visible; overflow-wrap:anywhere; line-height:1.2; }
+.observatory.home-map .home-journey-list button small { grid-column:2; grid-row:2; white-space:normal; line-height:1.2; }
 .observatory.home-map[data-route-edit='true'] .home-camera-control { bottom: calc(var(--home-footer) + var(--route-edit-clearance, 150px)); }
 .observatory.home-map[data-route-edit='true'] .home-position-dock { bottom: calc(var(--home-footer) + var(--route-edit-clearance, 150px) + 72px); }
 .observatory.home-map[data-survey='true'] .home-camera-control { bottom: calc(var(--survey-reserved) + 8px); }

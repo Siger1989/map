@@ -93,10 +93,10 @@
   max-height: var(--map-panel-max-height, min(28dvh, 200px));
   display: flex;
   flex-direction: column;
-  color: #1b3436;
-  border: 1px solid #ffffff88;
-  border-radius: 8px;
-  background: rgba(249, 252, 248, 0.87);
+  color: var(--ui-ink, #f2f5ed);
+  border: 1px solid var(--ui-line, #39433f);
+  border-radius: var(--ui-radius-card, 20px);
+  background: var(--ui-surface, #18201f);
   backdrop-filter: blur(12px);
   font-size: 11px;
   overflow: hidden;
@@ -106,7 +106,7 @@
   height: 44px;
   min-height: 44px;
   align-items: center;
-  padding: 0 2px;
+  padding: 0 8px;
   gap: 0;
   flex-shrink: 0;
 }
@@ -117,7 +117,7 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  padding: 0 2px;
+  padding: 0 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -127,6 +127,7 @@
 }
 .measurement-panel header > button {
   width: 44px;
+  border-radius: var(--ui-radius-control, 12px);
 }
 .measurement-tabs {
   display: flex;
@@ -160,7 +161,7 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 .measurement-scroll > p {
   margin: 0;
@@ -265,12 +266,12 @@
 }
 .measurement-chart {
   margin: 0;
-  padding: 4px;
+  padding: 8px;
   flex: 0 0 auto;
-  color: #1b3436;
-  background: rgba(249, 252, 248, 0.96);
-  border: 1px solid #b3c6c4;
-  border-radius: 8px;
+  color: var(--ui-ink, #f2f5ed);
+  background: var(--ui-surface, #18201f);
+  border: 1px solid var(--ui-line, #39433f);
+  border-radius: var(--ui-radius-card, 20px);
   font-size: 10px;
   overflow: hidden;
 }
@@ -279,7 +280,8 @@
   align-items: center;
   gap: 4px;
   height: 16px;
-  border-bottom: 1px solid #b4c9c766;
+  padding-inline: 2px;
+  border-bottom: 1px solid var(--ui-line, #39433f);
 }
 .measurement-chart figcaption strong {
   font-size: 11px;
@@ -287,6 +289,7 @@
 .measurement-chart figcaption small {
   margin-left: auto;
   font-size: 9px;
+  color: var(--ui-muted, #bac4bc);
 }
 .measurement-chart-metrics {
   display: flex;
@@ -313,7 +316,9 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-top: 1px solid #b4c9c766;
+  padding-inline: 2px;
+  border-top: 1px solid var(--ui-line, #39433f);
+  color: var(--ui-muted, #bac4bc);
 }
 .measurement-chart-plot {
   display: block;
@@ -321,7 +326,7 @@
   height: 66px;
 }
 .measurement-chart-plot text {
-  fill: #21433e;
+  fill: var(--ui-muted, #bac4bc);
   font: 10px sans-serif;
 }
 .measurement-chart-scroll {
@@ -346,7 +351,7 @@
 }
 .measurement-chart-grid {
   fill: none;
-  stroke: #d6e0db;
+  stroke: var(--ui-line, #39433f);
   stroke-width: 0.5;
 }
 .measurement-chart-reference {
@@ -399,10 +404,10 @@
   inset: calc(8px + var(--safe-top)) 8px calc(8px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
-  background: #f5f7f5;
-  color: #173d43;
-  border: 1px solid #c6d2d0;
-  border-radius: 8px;
+  background: var(--ui-surface, #18201f);
+  color: var(--ui-ink, #f2f5ed);
+  border: 1px solid var(--ui-line, #39433f);
+  border-radius: var(--ui-radius-card, 20px);
   box-shadow: 0 5px 30px #1238;
   overflow: hidden;
 }
@@ -411,7 +416,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 4px;
+  padding: 6px 8px;
   flex-shrink: 0;
 }
 .measurement-share header strong {
@@ -423,10 +428,10 @@
   min-width: 44px;
   padding: 0 4px;
   font-size: 11px;
-  background: #e7efeb;
-  color: #174d57;
+  background: var(--ui-raised, #252e2b);
+  color: var(--ui-button-ink, #f2f5ed);
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--ui-radius-control, 12px);
 }
 .measurement-share button:disabled {
   opacity: 0.45;
@@ -435,7 +440,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: #d7dfde;
+  background: var(--ui-raised, #252e2b);
   display: flex;
   align-items: flex-start;
 }
@@ -446,23 +451,28 @@
 }
 .measurement-share p {
   font-size: 11px;
-  padding: 0 4px;
+  padding: 0 8px;
+  color: var(--ui-muted, #bac4bc);
 }
 
 .observatory .measurement-panel {
   gap: 0;
 }
 .observatory .measurement-chart {
-  background: #f5f8f4;
+  background: var(--ui-surface, #18201f);
 }
 
 .observatory .measurement-panel {
   min-height: 74px;
 }
 .observatory .measurement-panel header {
-  height: 36px;
-  min-height: 36px;
+  box-sizing: border-box;
+  height: 48px;
+  min-height: 48px;
+  padding: 6px 8px;
+  gap: 4px;
 }
+.observatory .measurement-panel header > button { width: 36px; min-width: 36px; height: 36px; }
 .observatory .measurement-panel button {
   min-height: 36px;
 }

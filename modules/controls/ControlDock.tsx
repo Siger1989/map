@@ -13,10 +13,9 @@ import {
   ScanLine,
   ChevronLeft,
   Ruler,
-  Star,
-  BriefcaseBusiness,
   NotebookPen,
 } from 'lucide-react';
+import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 
 export type ControlPanel =
   | 'about'
@@ -233,7 +232,7 @@ export function ControlDock({
             PANELS.find((p) => p.id === 'track')!,
             PANELS.find((p) => p.id === 'favorites')!,
             PANELS[1],
-          ].map(({ id, label, icon: Icon }) => (
+          ].map(({ id, label }) => (
             <button
               key={id}
               data-panel-toggle={id}
@@ -243,7 +242,7 @@ export function ControlDock({
               aria-controls={active === id ? 'map-control-panel' : undefined}
               onClick={() => onActive(active === id ? null : id)}
             >
-              {id === 'route' ? <MapIcon size={20} /> : id === 'favorites' ? <Star size={20} /> : id === 'tools' ? <BriefcaseBusiness size={20} /> : <Icon size={20} />}
+              {id === 'route' ? <SolidMapIcon aria-hidden="true" /> : id === 'favorites' ? <StarIcon aria-hidden="true" /> : id === 'tools' ? <BriefcaseIcon aria-hidden="true" /> : id === 'track' ? <PencilIcon aria-hidden="true" /> : <DocumentTextIcon aria-hidden="true" />}
               <span>{label}</span>
             </button>
           ))}

@@ -31,7 +31,7 @@ export function RouteWeatherRail({
   fix: PositionFix | null;
   following?: boolean;
   onSettings: () => void;
-  onPreview: (coordinates: Coordinate | null) => void;
+  onPreview: (coordinates: Coordinate | null, fraction?: number | null) => void;
 }) {
   const [selected, setSelected] = useState<number | null>(null),
     [legend, setLegend] = useState(false);
@@ -74,7 +74,7 @@ export function RouteWeatherRail({
   const select = (value: number) => {
     const f = Math.max(0, Math.min(1, value));
     setSelected(f);
-    callback.current(positionAt(f));
+    callback.current(positionAt(f), f);
   };
   const fromPointer = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect(),

@@ -1,33 +1,59 @@
 /* Approved shared skin. Module styles own geometry; map/chart/photo colours are content. */
 html[data-ui-theme] { --text:var(--ui-ink); --muted:var(--ui-muted); --border:var(--ui-line); --panel:var(--ui-surface); --accent:var(--ui-accent); --cyan:var(--ui-accent); }
 html[data-ui-theme] :is(.collection-workbench,.text-suggestions,.floating-search,.photo-lightbox,.layout-editor-panel) { color:var(--ui-ink); color-scheme:inherit; }
+/* Native menus need explicit option colours as well as the closed field palette. */
+html[data-ui-theme] :is(.observatory.home-map,.collection-workbench,.layout-editor-panel,.layout-mobile) select { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control); color-scheme:inherit; }
+html[data-ui-theme] :is(.observatory.home-map,.collection-workbench,.layout-editor-panel,.layout-mobile) :is(option,optgroup) { color:var(--ui-ink); background:var(--ui-surface); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .raster-level-panel :is(button,select) { border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card :is(header button,.guidance-actions button) { background:var(--ui-raised); color:var(--ui-button-ink); border:0; border-radius:var(--ui-radius-control); box-shadow:none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-route-card,.home-journey-points) button { border:0; border-radius:var(--ui-radius-control); padding:6px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions,
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions:has([aria-label='删除当前路线']) { grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions button { min-height:36px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-journey-list button { min-height:44px; padding:6px; }
 html[data-ui-theme] :is(.observatory.home-map,.collection-workbench,.photo-lightbox,.layout-editor-panel,.layout-mobile,.text-suggestions,.floating-search) :is(button,input,select,textarea,summary,a[href]):focus-visible { outline:2px solid var(--ui-accent); outline-offset:-2px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.glass,.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.selected-route-info,.home-map-popup,.home-recording-panel,.raster-level-panel,.route-display-settings,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.survey-panel,.trip-photo-viewer,.place-share-panel,.offline-region-actions,.offline-download-dock,.survey-workbar,.survey-dock,.object-gizmo-actions,.track-tools,.track-draw-tools) {
-  color:var(--ui-ink); background:var(--ui-surface); border-color:var(--ui-line); border-radius:var(--ui-radius-card); box-shadow:var(--ui-shadow); backdrop-filter:none;
+  color:var(--ui-ink); background:var(--ui-surface); border-color:var(--ui-line); border-radius:var(--ui-radius-control); box-shadow:var(--ui-shadow); backdrop-filter:none;
 }
+/* Glass is also used by compact controls, legends and chart content; only named outer surfaces get card rounding. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .rally-elevation .route-elevation-profile { background:transparent; box-shadow:none; border:0; border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.selected-route-info,.home-map-popup,.home-recording-panel,.raster-level-panel,.route-display-settings,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.survey-panel,.trip-photo-viewer,.place-share-panel,.offline-region-actions,.offline-download-dock,.survey-workbar,.survey-dock,.object-gizmo-actions,.track-tools,.track-draw-tools,.guidance-card,.geology-panel,.area-drawing-tools,.area-editor,.direction-menu) { border-radius:var(--ui-radius-card); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-map-popup,.home-recording-panel,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.survey-panel,.section-profile,.object-gizmo,.route-start-notice,.rail-detail-compact,.place-share-panel) :is(button,summary) {
   background:var(--ui-raised); color:var(--ui-button-ink); border-color:transparent; border-radius:var(--ui-radius-control); box-shadow:none;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.survey-panel,.photo-lightbox) :is(input,select,textarea):not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']) {
-  color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:10px; font-size:16px; min-width:0;
+  color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control); font-size:16px; min-width:0;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,.survey-panel,.photo-lightbox) :is(button[aria-pressed='true'],button[aria-selected='true'],button.is-active) { background:var(--ui-selected); color:var(--ui-active-ink); border-color:var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.pin-editor) :is(button.is-primary,button.route-primary,button.collection-primary,button.recording-start,button.pin-save) { background:var(--ui-accent); color:var(--ui-on-accent); border-color:transparent; min-height:44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-danger,.is-danger,.pin-danger,.record-console-status[data-error='true'],.route-error,.pin-status) { color:var(--ui-danger); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-heading,.route-surface>header,.route-dialog>header,.route-dialog>footer,.home-map-popup>header) { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); border-radius:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-heading,.route-surface>header,.route-dialog>header,.home-map-popup>header,.raster-level-panel>header,.place-share-panel>header) { background:transparent; color:var(--ui-ink); border-color:transparent; border-radius:0; box-sizing:border-box; min-height:48px; height:auto; padding:6px 10px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover .dock-heading { flex-shrink:0; border-bottom:0; gap:4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover .dock-heading h2 { color:var(--ui-ink); font-size:14px; }
+/* Keep title controls inset; route and recording retain their existing outer padding. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.record-console)) > .dock-heading { margin:0; padding:6px 10px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .layer-window.control-popover:not(:has(.record-console)) > .dock-heading { margin:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel.control-popover:has(.record-console) > .dock-heading { background:transparent; margin:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.record-console)) > .dock-heading .icon-button { box-sizing:border-box; width:36px; min-width:36px; height:36px; min-height:36px; margin:0; padding:0; flex:0 0 36px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .layer-window.control-popover > .dock-heading .icon-button { height:36px; min-height:36px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-heading,.route-surface>header,.route-dialog>header,.home-map-popup>header,.raster-level-panel>header,.place-share-panel>header) :is(.icon-button,button[aria-label^='关闭']) { box-sizing:border-box; width:36px; min-width:36px; height:36px; min-height:36px; margin:0; padding:0; flex:0 0 36px; display:grid; place-items:center; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-heading,.route-surface>header,.route-dialog>header,.home-map-popup>header,.raster-level-panel>header,.place-share-panel>header) :is(.icon-button,button[aria-label^='关闭']) svg { width:18px; height:18px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover :is(.route-note,.route-origin-note,.record-console-footer) { padding:4px 8px 8px; margin:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.collections-panel,.collection-workbench,.route-panel,.record-console)) { display:flex; flex-direction:column; overflow:hidden; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:not(:has(.collections-panel,.collection-workbench,.route-panel,.record-console)) .dock-content { min-height:0; overflow:auto; overscroll-behavior:contain; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.record-function-group,.recording-settings,.recording-summary,.route-result,.route-stats,.track-continue-picker,.tool-grid button,.weather-metrics>div,.layer-group,.map-source-card,.about-panel details,.layout-account-settings,.pin-field,.pin-coordinate-row,.pin-confirm) { color:var(--ui-ink); background:var(--ui-raised); border-color:var(--ui-line); border-radius:12px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .record-function-group { padding:6px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .tool-grid button { padding:4px 6px; white-space:normal; overflow-wrap:anywhere; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.weather-main p,.record-console-status,.record-accuracy-hint,.record-console-footer,.pin-field span,.pin-coordinate-value span,.pin-style-row button span:first-child,.photo-picker small,.photo-drafts small,.photo-saved small) { color:var(--ui-muted); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions button + button { border-left:0; border-radius:10px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions button + button { border-left:0; border-radius:var(--ui-radius-control); }
 /* Favorites retain their full-width split. Body portals inherit root tokens. */
 html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .control-dock .control-popover { border-radius:0; background:var(--ui-surface); color:var(--ui-ink); }
 html[data-ui-theme] .collection-workbench { background:var(--ui-surface); color:var(--ui-ink); }
-html[data-ui-theme] .collection-workbench :is(input,select,textarea) { background:var(--ui-field); color:var(--ui-ink); border-color:var(--ui-line); border-radius:10px; font-size:16px; }
-html[data-ui-theme] .collection-workbench :is(.collection-action-dialog,.workbench-share-dialog) { border-radius:20px; background:var(--ui-surface); color:var(--ui-ink); box-shadow:var(--ui-shadow); }
-html[data-ui-theme] .collection-workbench button { border-radius:10px; }
+html[data-ui-theme] .collection-workbench :is(input,select,textarea) { background:var(--ui-field); color:var(--ui-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); font-size:16px; }
+html[data-ui-theme] .collection-workbench :is(.collection-action-dialog,.workbench-share-dialog) { border-radius:var(--ui-radius-card); background:var(--ui-surface); color:var(--ui-ink); box-shadow:var(--ui-shadow); }
+html[data-ui-theme] .collection-workbench button { border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .collection-workbench.collection-modal-root .collection-action-content { padding:8px; }
+html[data-ui-theme] .collection-workbench.collection-modal-root .collection-action-content :is(button,input,select) { padding-inline:6px; }
 html[data-ui-theme] .collection-workbench :is(button[aria-pressed='true'],button[aria-selected='true']) { background:var(--ui-selected); color:var(--ui-active-ink); }
 html[data-ui-theme] .collection-workbench :is(.collection-primary,button.is-primary) { background:var(--ui-accent); color:var(--ui-on-accent); }
 html[data-ui-theme] :is(.photo-lightbox,.layout-editor-panel) { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); }
@@ -42,8 +68,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .collection-w
 html[data-ui-theme] .collection-workbench .collection-action-primary,
 html[data-ui-theme] .collection-workbench .workbench-check:is([aria-checked='true'],[aria-checked='mixed']) > span { color:var(--ui-on-accent); }
 html[data-ui-theme] .layout-mobile-toolbar { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); border-radius:16px; }
-html[data-ui-theme] .layout-mobile-toolbar :is(button,select,input) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:10px; }
+html[data-ui-theme] .layout-mobile-toolbar :is(button,select,input) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-workbar,.survey-dock,.object-gizmo-actions,.track-tools,.track-draw-tools,.offline-region-actions,.offline-download-dock) :is(button,select,input:not([type='color'])) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:12px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.track-draw-tools,.track-tools) button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-accent); border-color:var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-dock,.survey-workbar,.offline-download-dock) :is(.survey-primary,.offline-download-primary) { background:var(--ui-accent); color:var(--ui-on-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-delete,.offline-region-actions p,.offline-download-dock [role='alert']) { color:var(--ui-danger); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .offline-progress { color:var(--ui-muted); }
@@ -53,7 +80,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-layer-co
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .measurement-workspace { top:calc(var(--home-top) + var(--home-header-height) + 8px); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-workbar { top:calc(var(--home-top) + var(--home-header-height) + 8px); }
 html[data-ui-theme] .collection-workbench.collection-modal-root { background:transparent; }
-html[data-ui-theme] :is(.observatory.home-map,.collection-workbench) input[type='file']::file-selector-button { background:var(--ui-raised); color:var(--ui-button-ink); border:0; border-radius:10px; min-height:36px; margin-right:4px; }
+html[data-ui-theme] :is(.observatory.home-map,.collection-workbench) input[type='file']::file-selector-button { background:var(--ui-raised); color:var(--ui-button-ink); border:0; border-radius:var(--ui-radius-control); min-height:36px; margin-right:4px; }
 /* Route detail/edit/navigation child surfaces use their original module palette names. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface,.route-edit-dock,.route-edit-header) { --route-panel:var(--ui-surface); --route-ink:var(--ui-ink); --route-button:var(--ui-raised); --route-border:var(--ui-line); --route-green:var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header,.route-edit-mode-row,.recorded-point-info) { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); border-radius:12px; }
@@ -61,7 +88,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-ed
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface,.route-edit-dock,.route-edit-header) button.route-solid { background:var(--ui-accent); color:var(--ui-on-accent); border-color:transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-active-ink); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface header small,.recorded-stats-grid dt,.recorded-speed-legend,.navigation-start small) { color:var(--ui-muted); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-info-fields,.survey-dock) :is(input,select,textarea):not([type='color']) { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:10px; font-size:16px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-info-fields,.survey-dock) :is(input,select,textarea):not([type='color']) { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control); font-size:16px; }
 /* Engineering sheet and graph canvases remain their readable export palette. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-sheet { --text:#1b302b; --muted:#52665c; --accent:#315e49; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .measurement-tabs [aria-pressed='true']::after { background:var(--ui-accent); }
@@ -73,3 +100,86 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .record-conso
 html[data-ui-theme] .collection-workbench .workbench-search { gap:4px; padding:4px; }
 /* File inputs have a visible label wrapper: keep that ring inside, too. */
 html[data-ui-theme] .observatory.home-map :is(.import-file,.map-file-button,.track-custom-color):focus-within { outline:2px solid var(--ui-accent); outline-offset:-2px; }
+
+/* Shared frosted material for floating outer surfaces. Keep the opaque theme
+   surface as the fallback for WebViews without backdrop-filter support. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
+  .control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,
+  .selected-route-info,.home-map-popup,.home-recording-panel,.quick-add-card,.raster-level-panel,
+  .route-display-settings,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,
+  .survey-panel,.trip-photo-viewer,.place-share-panel,.offline-region-actions,
+  .offline-download-dock,.survey-workbar,.survey-dock,.object-gizmo-actions,
+  .track-tools,.track-draw-tools,.guidance-card,.geology-panel,.area-drawing-tools,
+  .area-editor,.direction-menu,.rail-detail-compact,.rally-elevation,
+  .map-layer-control .layer-window
+) {
+  background:var(--ui-surface);
+  border-color:transparent;
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+/* These controls are their own visible surfaces. The [class] qualifier gives
+   this shared skin precedence over later outdoorTheme base backgrounds. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock)[class],
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock,.home-recording .home-recording-toggle)[class] {
+  background:var(--ui-surface);
+  border-color:transparent;
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock[aria-pressed='true'],.home-recording-toggle[aria-expanded='true'],.home-recording-toggle[data-recording='true'])[class] {
+  background:var(--ui-selected);
+}
+/* The route variant is reset by a later ID-qualified outdoorTheme rule. This
+   same outer node remains the only blurred surface; its route contents stay clear. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel.control-popover:has(.route-panel,.route-summary) {
+  background:var(--ui-surface);
+  border-color:transparent;
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+html[data-ui-theme] :is(
+  .text-suggestions,.floating-search,.route-search-results,.place-search-results,
+  .collection-action-dialog,.workbench-share-dialog,.route-dialog
+) {
+  background:var(--ui-surface);
+  color:var(--ui-ink);
+  border-color:transparent;
+  box-shadow:var(--ui-glass-shadow);
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
+    .control-popover,.route-surface,.route-dialog,.home-route-card,.home-journey-points,
+    .selected-route-info,.home-map-popup,.home-recording-panel,.quick-add-card,.raster-level-panel,
+    .route-display-settings,.marker-workspace,.pin-editor,.measurement-panel,.section-panel,
+    .survey-panel,.trip-photo-viewer,.place-share-panel,.offline-region-actions,
+    .offline-download-dock,.survey-workbar,.survey-dock,.object-gizmo-actions,
+    .track-tools,.track-draw-tools,.guidance-card,.geology-panel,.area-drawing-tools,
+    .area-editor,.direction-menu,.rail-detail-compact,.rally-elevation,
+    .map-layer-control .layer-window
+  ),
+  html[data-ui-theme] :is(
+    .text-suggestions,.floating-search,.route-search-results,.place-search-results,
+    .collection-action-dialog,.workbench-share-dialog,.route-dialog
+  ) {
+    background:var(--ui-glass-surface);
+    -webkit-backdrop-filter:var(--ui-glass-filter);
+    backdrop-filter:var(--ui-glass-filter);
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock)[class],
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock,.home-recording .home-recording-toggle)[class] {
+    background:var(--ui-glass-surface);
+    -webkit-backdrop-filter:var(--ui-glass-filter);
+    backdrop-filter:var(--ui-glass-filter);
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel.control-popover:has(.route-panel,.route-summary) {
+    background:var(--ui-glass-surface);
+    -webkit-backdrop-filter:var(--ui-glass-filter);
+    backdrop-filter:var(--ui-glass-filter);
+  }
+}

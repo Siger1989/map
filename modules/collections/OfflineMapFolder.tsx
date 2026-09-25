@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { useOffline } from '../outdoor/useOffline';
 import type { TripPackage } from '../outdoor/offline';
+import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from '../outdoor/offlineDownloadPolicy';
 import './offlineMaps.css';
 
 /** A view of the existing cache index, never a second copy of map data. */
@@ -96,10 +97,11 @@ export function OfflineMapFolder({
                   ) : (
                     <div>
                       <button
-                        disabled={offline.busy}
+                        disabled={offline.busy || !canDownloadTrip(p)}
+                        title={!canDownloadTrip(p) ? TIANDITU_OFFLINE_DISABLED : undefined}
                         onClick={() => void offline.resume(p)}
                       >
-                        继续 / 补齐
+                        {canDownloadTrip(p) ? '继续 / 补齐' : '天地图下载已暂停'}
                       </button>
                       <button
                         disabled={offline.busy}

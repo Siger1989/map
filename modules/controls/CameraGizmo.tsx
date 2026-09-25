@@ -106,7 +106,7 @@ export function CameraGizmo({
   return (
     <aside
       className="camera-gizmo"
-      aria-label="地图视角：拖绿色模型上下调俯仰、左右旋转，外圈控制方向"
+      aria-label="地图视角：拖摇杆上下调俯仰、左右旋转，外圈控制方向"
     >
       <svg
         ref={svg}
@@ -121,8 +121,9 @@ export function CameraGizmo({
           cy="81"
           rx="46"
           ry="23"
-          fill="#10212b99"
-          stroke="#183d47"
+          fill="var(--ui-surface, #18201f)"
+          fillOpacity="0.6"
+          stroke="color-mix(in srgb, var(--ui-ink, #f2f5ed) 24%, var(--ui-surface, #18201f))"
           strokeWidth="7"
         />
         <g
@@ -165,14 +166,14 @@ export function CameraGizmo({
             rx="46"
             ry="23"
             fill="none"
-            stroke="#a3d6ce"
+            stroke="color-mix(in srgb, var(--ui-accent, #d0f76b) 68%, var(--ui-surface, #18201f))"
             strokeWidth="1.5"
           />
-          <circle cx={north.x} cy={north.y} r="7" fill="#a5efc8" />
+          <circle cx={north.x} cy={north.y} r="7" fill="var(--ui-accent, #d0f76b)" />
           <text
             x={north.x}
             y={north.y + 3}
-            fill="#163b31"
+            fill="var(--ui-on-accent, #18201f)"
             fontSize="8"
             textAnchor="middle"
           >
@@ -183,7 +184,7 @@ export function CameraGizmo({
           className="camera-model"
           role="slider"
           tabIndex={0}
-          aria-label="镜头角度：拖动绿色模型，上下俯仰、左右旋转"
+          aria-label="镜头角度：拖动模型，上下俯仰、左右旋转"
           aria-valuemin={0}
           aria-valuemax={80}
           aria-valuenow={Math.round(view.pitch)}
@@ -232,32 +233,26 @@ export function CameraGizmo({
           <rect x="31" y="19" width="48" height="64" fill="transparent" />
           <path
             d={`M 55 81 L 35 ${y + 6} L 76 ${y} Z`}
-            fill="#44ce8b"
-            stroke="#c5ffe0"
-            strokeWidth="1.4"
+            fill="var(--ui-accent, #d0f76b)"
           />
           <path
             d={`M 55 81 L 57 ${y + 18} L 76 ${y} Z`}
-            fill="#1c9e68"
-            stroke="#a7f5cc"
-            strokeWidth="1.1"
+            fill="color-mix(in srgb, var(--ui-accent, #d0f76b) 72%, black)"
           />
           <path
             d={`M 35 ${y + 6} L 57 ${y + 18} L 76 ${y} Z`}
-            fill="#a0f5bc"
-            stroke="#d1ffe0"
-            strokeWidth="1.1"
+            fill="color-mix(in srgb, var(--ui-accent, #d0f76b) 78%, white)"
           />
-          <circle cx="55" cy="81" r="3" fill="#b3ffd8" />
+          <circle cx="55" cy="81" r="3" fill="var(--ui-accent, #d0f76b)" />
         </g>
         <text
           x="55"
           y="115"
           textAnchor="middle"
-          fill="#e3f6ee"
+          fill="var(--ui-ink, #f2f5ed)"
           fontSize="10"
           paintOrder="stroke"
-          stroke="#10212b"
+          stroke="var(--ui-surface, #18201f)"
           strokeWidth="3"
         >
           俯仰 {Math.round(view.pitch)}° · 旋转
