@@ -63,6 +63,7 @@
 .observatory.home-map .home-map-actions small { position: static; font-size: 12px; line-height: 14px; }
 .observatory.home-map .home-position-dock { position: absolute; z-index: 12; right: var(--home-right); bottom: calc(var(--home-footer) + var(--home-breathe) + 32px); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
 .observatory.home-map .home-position-dock > * { pointer-events: auto; }
+.observatory.home-map .home-position-dock .position-tools-toggle { display: none; }
 .observatory.home-map .home-position-dock .position-dock-button small { font-size: 10px; line-height: 13px; }
 .observatory.home-map .home-position-dock > button:last-of-type { color: var(--home-green); }
 .observatory.home-map .home-position-dock > button:last-of-type svg { width: 23px; height: 23px; }
@@ -223,7 +224,7 @@
 
 .observatory.home-map .home-route-kind { display:flex; justify-content:space-between; gap:4px; font-size:10px; color:#15572b; padding:2px 0; }
 /* Keep 12px clear above the unchanged 68px camera controller, including its raised pose. */
-.observatory.home-map:not([data-route-edit='true']):not([data-survey='true']):not([data-guiding='true']) .home-position-dock { bottom:calc(var(--home-footer) + 84px); }
+.observatory.home-map:not([data-route-edit='true']):not([data-survey='true']):not([data-guiding='true']) .home-position-dock { bottom:var(--ui-controls-bottom,calc(var(--home-footer) + 84px)); }
 
 .observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .observatory.home-map .global-focus-lock small { font-size:9px; }
@@ -248,7 +249,8 @@
 .observatory.home-map[data-panel='favorites'] .control-dock { z-index:82; }
 /* Heading, center marker, and position follow remain reachable while locked. */
 .observatory.home-map[data-focus-locked=true] .home-position-dock { display:flex !important; right:8px; bottom:104px; }
-.observatory.home-map[data-focus-locked=true] .home-position-dock > :not(.position-locate-button):not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] .home-position-dock > :not(.position-locate-button):not(.position-extended-controls) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] .position-extended-controls > :not(.position-direction-button):not(.direction-menu):not(.center-add):not(.center-error) { display:none !important; }
 .route-travel-mode { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
 .route-travel-mode select { min-height:36px; flex:1; }
 .route-travel-mode small { flex-basis:100%; }

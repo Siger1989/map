@@ -19,6 +19,8 @@ import '@/modules/objectTransform/objectTransform.css';
 import '@/modules/controls/modern.css';
 import '@/modules/controls/compactDensity.css';
 import '@/modules/controls/homeMap.css';
+import '@/modules/controls/outdoorSurfaces.css';
+import '@/modules/controls/outdoorTheme.css';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,

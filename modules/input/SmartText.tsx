@@ -58,6 +58,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
     ...(pool[group] ?? []),
     ...(group === 'attribute' ? ['类型', '路况', '补给', '说明'] : []),
   ]);
+  const popupVisible = open && !composing && values.length > 0;
   const remember = (value: string) => {
     if (!value.trim() || value.length > 300) return;
     try {
@@ -116,10 +117,10 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
       autoComplete: 'off',
       role: 'combobox',
       'aria-autocomplete': 'list' as const,
-      'aria-expanded': open,
-      'aria-controls': open ? id : undefined,
+      'aria-expanded': popupVisible,
+      'aria-controls': popupVisible ? id : undefined,
       'aria-activedescendant':
-        open && index >= 0 ? `${id}-${index}` : undefined,
+        popupVisible && index >= 0 && index < values.length ? `${id}-${index}` : undefined,
       onFocus: ((e) => {
         props.onFocus?.(e);
         const actualLabel =
@@ -157,7 +158,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
         setIndex(-1);
       },
       onKeyDown: ((e) => {
-        if (!composing && open) {
+        if (popupVisible) {
           if (e.key === 'Escape') {
             e.preventDefault();
             e.stopPropagation();
@@ -185,7 +186,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
       }) as KeyboardEventHandler<T>,
     },
     popup:
-      open && !composing && typeof document !== 'undefined'
+      popupVisible && typeof document !== 'undefined'
         ? createPortal(
             <div
               id={id}
@@ -196,8 +197,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
               style={style}
             >
               <small>已有内容 / 历史输入</small>
-              {values.length ? (
-                values.map((value, i) => (
+              {values.map((value, i) => (
                   <button
                     key={value}
                     id={`${id}-${i}`}
@@ -210,10 +210,7 @@ function useSuggestions<T extends HTMLInputElement | HTMLTextAreaElement>(
                   >
                     {value}
                   </button>
-                ))
-              ) : (
-                <p>暂无匹配内容，可直接输入</p>
-              )}
+                ))}
             </div>,
             document.body,
           )

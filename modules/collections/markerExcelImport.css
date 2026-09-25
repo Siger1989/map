@@ -21,12 +21,12 @@
   min-width: 0;
   min-height: 36px;
   padding: 0 3px;
-  border: 1px solid #9db4a8;
+  border: 1px solid var(--ui-line, #9db4a8);
   border-radius: 4px;
-  background: #fff;
+  background: var(--ui-surface, #fff);
   font-size: 11px;
 }
-.marker-excel-import .marker-excel-footer button:first-child { background: #266552; color: #fff; }
+.marker-excel-import .marker-excel-footer button:first-child { background: var(--ui-accent, #266552); color: var(--ui-ink, #fff); }
 .marker-excel-import .marker-excel-actions input { display: none; }
 .marker-excel-import .marker-excel-filename {
   display: block;
@@ -37,9 +37,9 @@
 .marker-excel-import .marker-excel-preview {
   margin-top: 5px;
   padding: 4px;
-  border: 1px solid #a8c5af;
-  background: #fffdf0;
+  border: 1px solid var(--ui-line, #a8c5af);
+  background: var(--ui-surface, #fffdf0);
   overflow-wrap: anywhere;
 }
 .marker-excel-import .marker-excel-preview > div { padding: 2px 0; border-top: 1px solid #e5e6d8; }
-.marker-excel-import .marker-excel-error { color: #a52317; }
+.marker-excel-import .marker-excel-error { color: var(--ui-danger, #a52317); }

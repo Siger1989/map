@@ -21,6 +21,8 @@ import '../modules/controls/modern.css';
 import './compatibility.css';
 import '../modules/controls/compactDensity.css';
 import '../modules/controls/homeMap.css';
+import '../modules/controls/outdoorSurfaces.css';
+import '../modules/controls/outdoorTheme.css';
 
 // The APK owns its local HTTPS asset origin. No RSC server or development URL.
 installLayoutCompatibility();

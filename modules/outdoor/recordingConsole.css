@@ -2,40 +2,40 @@
 .observatory.home-map #map-control-panel:has(.record-console) {
   width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 48px)) !important;
   height: auto !important; max-height: calc(100dvh - var(--home-footer) - var(--home-top) - 66px) !important;
-  padding: 4px 6px !important; overflow: auto !important;
+  padding: 4px 6px !important; overflow: hidden !important;
 }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 28px !important; min-height: 28px !important; margin: 0 !important; padding: 0 !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading h2 { margin: 0 !important; font-size: 13px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; overflow: visible !important; padding: 0 !important; }
-.observatory .record-console { color: #10243c; font-size: 12px; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 0 !important; }
+.observatory .record-console { color: var(--ui-ink, #10243c); font-size: 12px; }
 .observatory .record-console button,.observatory .record-console input,.observatory .record-console select {
   box-sizing: border-box; min-width: 0 !important; max-width: 100%; min-height: 30px !important; height: 30px !important;
-  margin: 0 !important; padding: 0 4px !important; color: #10243c !important; background: white !important;
-  border: 1px solid #bed0d0 !important; border-radius: 3px !important; box-shadow: none !important; font-size: 12px !important;
+  margin: 0 !important; padding: 0 4px !important; color: var(--ui-ink, #10243c) !important; background: var(--ui-surface, white) !important;
+  border: 1px solid var(--ui-line, #bed0d0) !important; border-radius: var(--record-radius, 3px) !important; box-shadow: none !important; font-size: var(--record-font-size, 12px) !important;
 }
 .observatory .record-console button { display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap; }
-.observatory .record-console button.is-primary { background: #dcf0dd !important; color: #15572b !important; }
+.observatory .record-console button.is-primary { background: var(--ui-selected, #dcf0dd) !important; color: var(--ui-accent, #15572b) !important; }
 .record-console-stats { display: flex; align-items: center; justify-content: space-between; min-height: 24px; }
 .record-console-stats strong { font-size: 14px; }
-.observatory .record-console-status { margin: 0 0 4px !important; padding: 0 !important; font-size: 11px !important; line-height: 16px !important; color: #526b78; overflow-wrap: anywhere; }
-.record-console-status[data-error='true'] { color: #b03126; }
+.observatory .record-console-status { margin: 0 0 4px !important; padding: 0 !important; font-size: 11px !important; line-height: 16px !important; color: var(--ui-muted, #526b78); overflow-wrap: anywhere; }
+.record-console-status[data-error='true'] { color: var(--ui-danger, #b03126); }
 .record-console-actions { display: flex; gap: 4px; margin-bottom: 4px; }
 .record-console-actions > button { flex: 1; }
 .record-console-actions:first-of-type > button:first-child { flex: 2; }
-.record-console-settings { border-top: 1px solid #d2dfe4; padding-top: 4px; }
+.record-console-settings { border-top: 1px solid var(--ui-line, #d2dfe4); padding-top: 4px; }
 .record-console-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr .9fr; gap: 4px; margin-bottom: 4px; }
 .observatory .record-console-grid label { display: flex !important; flex-direction: column !important; gap: 2px !important; margin: 0 !important; font-size: 11px !important; line-height: 15px !important; }
 .record-console-grid label > :is(input,select) { width: 100% !important; }
 .record-console-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 0 4px; }
 .observatory .record-console-checks label { display: flex !important; align-items: center; gap: 4px; min-height: 26px; margin: 0 !important; font-size: 11px !important; }
-.observatory .record-console-checks input { appearance: auto !important; width: 15px !important; min-height: 15px !important; height: 15px !important; padding: 0 !important; accent-color: #15572b; }
+.observatory .record-console-checks input { appearance: auto !important; width: 15px !important; min-height: 15px !important; height: 15px !important; padding: 0 !important; accent-color: var(--ui-accent, #15572b); }
 .record-console-checks label:last-child { grid-column: 1 / -1; }
-.record-console-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; border-top: 1px solid #d2dfe4; padding-top: 4px; font-size: 10px; color: #526b78; }
-.observatory #map-control-panel:has(.record-console) .record-console-tools { display: flex; gap: 4px; margin-top: 4px; border-top: 1px solid #d2dfe4; }
-.observatory .record-console-tools button { flex: 1; min-height: 28px !important; padding: 0 !important; color: #526b78 !important; font-size: 11px !important; }
+.record-console-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; border-top: 1px solid var(--ui-line, #d2dfe4); padding-top: 4px; font-size: 10px; color: var(--ui-muted, #526b78); }
+.observatory #map-control-panel:has(.record-console) .record-console-tools { display: flex; gap: 4px; margin-top: 4px; border-top: 1px solid var(--ui-line, #d2dfe4); }
+.observatory .record-console-tools button { flex: 1; min-height: 28px !important; padding: 0 !important; color: var(--ui-muted, #526b78) !important; font-size: 11px !important; }
 /* Dense revision: keep labels readable and reduce row/chrome spacing. */
 .observatory.home-map #map-control-panel:has(.record-console) { padding: 3px 5px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 24px !important; min-height: 24px !important; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height: 28px !important; min-height: 28px !important; }
 .record-console-stats { min-height: 20px; }
 .observatory .record-console-status { margin-bottom: 2px !important; line-height: 14px !important; }
@@ -43,7 +43,7 @@
 .record-console-settings { padding-top: 2px; }
 .record-console-grid { gap: 3px; margin-bottom: 2px; }
 .observatory .record-console-grid label { gap: 1px !important; line-height: 13px !important; }
-.observatory .record-accuracy-hint { display: block; margin: 0 0 2px; font-size: 11px; line-height: 14px; color: #516b78; }
+.observatory .record-accuracy-hint { display: block; margin: 0 0 2px; font-size: 11px; line-height: 14px; color: var(--ui-muted, #516b78); }
 .record-console-checks { grid-template-columns: 1fr 1fr 1.5fr; gap: 2px; }
 .observatory .record-console-checks label { min-height: 25px; gap: 3px; white-space: nowrap; }
 .record-console-checks label:last-child { grid-column: auto; }
@@ -52,14 +52,43 @@
 .observatory .record-console-tools button { min-height: 24px !important; height: 24px !important; }
 
 /* Group related actions; advanced settings stay within the same compact window. */
-.observatory .record-function-group { padding:4px; margin:4px 0; border:1px solid #bfcec5; border-radius:4px; }
-.record-group-control { background:#e3eee2; }
-.record-group-along { background:#e5edf0; }
-.record-group-settings { background:#eeeadd; }
-.record-group-files { background:#e8e6f0; }
+.observatory .record-function-group { padding:4px; margin:4px 0; border:1px solid var(--ui-line, #bfcec5); border-radius:4px; }
+.record-group-control { background:var(--ui-raised, #e3eee2); }
+.record-group-along { background:var(--ui-raised, #e5edf0); }
+.record-group-settings { background:var(--ui-raised, #eeeadd); }
+.record-group-files { background:var(--ui-raised, #e8e6f0); }
 .observatory .record-console summary { min-height:36px; display:flex; align-items:center; cursor:pointer; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height:36px !important; min-height:36px !important; }
 .observatory .record-console-tools button { min-height:36px !important; height:36px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) { max-height:min(200px,calc(100dvh - var(--home-footer) - var(--home-top) - 66px)) !important; }
 
-.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { position:sticky; top:-3px; z-index:2; background:#fff; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-heading { position:sticky; top:-3px; z-index:2; background:var(--ui-surface, #fff); }
+
+.observatory .record-console button.is-primary { min-height:var(--record-primary-height,36px) !important; height:var(--record-primary-height,36px) !important; }
+
+/* Keep the two along-the-route actions readable inside narrow recording cards. */
+.observatory .record-group-along .record-console-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 4px;
+}
+.observatory .record-group-along .record-console-actions > button {
+  display: flex;
+  flex: initial;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  box-sizing: border-box;
+  min-width: 0 !important;
+  min-height: 48px !important;
+  height: auto !important;
+  padding: 4px 3px !important;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.observatory .record-group-along .record-console-actions > button > svg {
+  flex: none;
+}

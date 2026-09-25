@@ -1265,6 +1265,7 @@ export default function Home() {
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
       <main
         className="observatory home-map"
+        data-ui-style="outdoor"
         data-rally={rallyMode && !!navigation.route}
         data-guiding={guidance.active && !rallyMode}
         data-focus-locked={focusLock.locked}

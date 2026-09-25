@@ -1,5 +1,9 @@
 # 山兔
 
+2026-09-25：0.2.72界面优化APK已构建，包含统一UI、高亮修复及图层设置记忆。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.72-test-standalone/Shantu-0.2.72-test-standalone.apk) · [验证与发行说明](docs/release-0.2.72.md)。
+
+2026-09-25 UI：用户已确认深色黄绿样板。后续所有界面与子界面执行 [UI标准v1](docs/ui-standard.md)，当前迁移及验证见 [覆盖记录](docs/ui-migration-20260925.md)。
+
 手机优先的三维地图、天气与户外轨迹工作台。
 
 **2026-09-21：用户明确选择撤回整套 UI 改版，恢复 0.2.35。** 后续从本目录继续；PDF 保留为讨论资料，不代表授权重新套用被否定的实现。

@@ -421,14 +421,14 @@ export function RoutePanel({
                     <button onClick={() => n.edit(index, '')}>清空</button>
                   )}
                   <button
-                    aria-label={`完成编辑${label}`}
+                    aria-label={`收起${label}搜索`}
                     onClick={() => {
                       setActive(null);
                       (document.activeElement as HTMLElement)?.blur();
                     }}
                   >
                     <X size={13} />
-                    收起
+                    收起搜索
                   </button>
                 </div>
               )}

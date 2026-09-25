@@ -1,4 +1,45 @@
-# 当前状态 — 2026-09-24 / 进度同步与换电脑接续
+# 当前状态 — 2026-09-25 / 0.2.72 APK 构建完成
+
+- 用户明确要求打包 APK；将已确认的统一UI、高亮修复、记录按钮布局与已保存图层设置纳入0.2.72-test，versionCode79，沿用独立山兔包名及4a94签名。
+- 本轮改动：mobile/android/AndroidManifest.xml、config/product.ts提升版本，AboutPanel更新日期，docs/release-0.2.72.md与README；上一轮UI源码一起打包。Luna并行执行全量测试及构建要求审核，主agent完成构建/资源签名复核。
+- 最终包：APK/Shantu-0.2.72-test-standalone.apk，57,846,876字节，SHA256 BA2036A675122E507F0BDC4A14B36B27820587E07E3F4DD874775C63A656E378；sidecar一致。v2/v3签名、zipalign、473地形及资源清单均PASS；32个HTML/JS/CSS条目与最终web staging逐一hash一致。
+- 验证PASS：TypeScript、653/653全量测试、最终网页/Android构建、打包网页启动和版本0.2.72/79/2026-09-25显示。命令显式SDK D:/GodotAndroid/android-sdk、JDK D:/GodotAndroid/jdk-17；测试子进程JAVA_HOME及长路径TEMP/TMP避免旧路径与短路径403，无系统配置变更。日志.openai/apk-0272-*；截图artifacts/screenshots/apk-0272-*.png。
+- 当前步骤：源码同步及GitHub测试版资产上传/远程校验。直连失败，使用系统已配置的127.0.0.1:7897代理后GitHub访问恢复（仅进程参数）。无Android设备，真实安装、触控、相机及后台定位未验；HarmonyOS6.1原生包仍未交付。
+
+## 全局高亮框修订
+
+- 当前目标：统一全部界面控件焦点框，修复收藏搜索裁切、路线双框与记录沿途按钮文字不可读。
+- 进展：3个Luna子agent并行完成记录按钮布局、路线收起语义与只读样式审查；主agent已整合为2px内收焦点、路线活动分组弱底色、空候选不弹层、按钮双列图标竖排；“收起”明确为“收起搜索”。
+- 本轮文件：modules/controls/{outdoorSurfaces,outdoorTheme}.css、modules/input/{SmartText.tsx,suggestions.css}、modules/navigation/RoutePanel.tsx、modules/outdoor/recordingConsole.css、docs/ui-standard.md、AGENTS.md、本文件。
+- 验证PASS：主agent逐张审核收藏搜索、路线起点、记录按钮390/360截图及收藏新建子窗口360截图，焦点线均2px内收，路线父块无亮边/阴影。收起搜索保留已输入值并使输入失焦；空候选aria-expanded=false，无空弹层。记录按钮宽度无文字溢出；390×480卡片实测200px，scrollWidth=clientWidth=274，内部滚动可达两按钮。
+- 证据：artifacts/screenshots/ui-{search-focus,route-focus,record-actions}-fixed-{390,360}.png、ui-dialog-focus-fixed-360.png、ui-record-focus-fixed-480.png，均PASS。360记录首轮截图捕获过渡帧，已在稳定后重新截图审核覆盖。未验真实GPS记录、相机或真机IME/触控；未逐个触发有数据业务分支。
+- 命令PASS：npx tsc --noEmit；node --experimental-strip-types --test tests/appearance.test.mjs tests/search-viewport.test.mjs tests/feedback-20260909.test.mjs tests/route-stops-scrub.test.mjs（16/16）；npm run build:android:web（既有大chunk提示）；git diff --check。日志 .openai/ui-focus-{types,tests,build}-20260925.log。
+- 阻塞：无。右侧保留默认390×约857实时预览。下一步按用户视觉反馈局部修订；本轮仍是本地视觉确认，未提交/推送/打包发布。
+
+## UI 标准与统一样式已落地
+
+- 用户已确认上一版首页/路线样板，授权将执行规范做成标准并迁移其他主页面与子界面。
+- 正式标准 docs/ui-standard.md 已建立并接入 AGENTS；统一主题扩展到所有面板及 body portal。默认深色黄绿，已保存的个性化仍保留。
+- 已迁移：共享卡片/输入/操作/状态样式，记录、收藏/导入/管理、标记、图源、搜索建议、布局设置的硬编码UI颜色；地图/图表/照片业务色保留。
+- 本轮文件：docs/ui-standard.md、AGENTS.md、docs/ui-visual-system.md、appearance/theme.ts、appearance.css、controls/outdoorSurfaces.css、outdoorTheme.css、app/page.tsx、网页/移动样式入口及上述模块CSS。
+- 已完成共享样式覆盖：全部主面板、路线详情/编辑/导航子窗口、记录/照片/离线、收藏/导入/管理/根节点弹窗、天气/时间、标记/模型/测量/剖面、帮助/个性化/布局。源文件颜色迁移11份，完整范围及实际验证见 docs/ui-migration-20260925.md。
+- 验证 PASS：类型检查；11/11定向测试；移动网页构建4.72秒（既有大chunk警告）；git diff --check。日志 .openai/ui-standard-{types,tests,build}-20260925.log。截图 artifacts/screenshots/ui-standard-*.png，390/360主入口、图层、收藏弹窗及480高度记录/工具/剖面入口均检查，记录输入实际16px。
+- 修复：记录强制圆角/主操作色/标题滚动、收藏离线项白底、portal根背景覆盖地图、图层/测量顶栏净空。普通地图选区容器保持透明。原工程图、照片、QR、路线数据色未套UI色。
+- 当前限制：未逐一触发真实数据导航/分享/照片编辑分支；未写入测试收藏/记录、调用相机或下载；未真机验收。共享样式覆盖不等于全业务状态验收。
+- 阻塞：无。下一步按用户反馈修订，或在真实数据/设备上补充覆盖表中的状态；右侧保留390×约857实时预览。当前为快速视觉迁移，本轮未提交/推送/出APK或发布。
+
+## 当前工作：地图主页与路线规划视觉样板
+
+- 目标：基于已读 ChatGPT《Codex布局优化流程》《界面布局评估》与三屏参考图，保留功能入口和交互路径，实施深色、少描边、荧光黄绿强调的首屏样板；布局安全优先。
+- 初步检查：主页有独立浅色硬编码，路线紧凑样式含强覆盖；上下地图工具独立定位，矮屏有碰撞风险。Android 已消费系统栏/IME insets，网页浮层有 visualViewport 辅助，不能再次叠加原生 inset。
+- 进展：完成限定首屏/路线规划的深色主题变量、顶栏、地图工具组、底栏和路线卡样板。路线基础表单沿用既有内容例外（见 docs/ui-visual-system.md），标题固定、内容独立滚动；矮屏收起次要地图工具，极矮屏工具展开避开3D/框选与相机。工具支持外部点击及Esc关闭。其他业务页面尚未迁移。
+- 文件：新增 modules/controls/outdoorTheme.css；修改 app/page.tsx、app/layout.tsx、mobile/main.tsx、modules/controls/homeMap.css、modules/navigation/routeCompact.css、modules/position/PositionDock.tsx、modules/position/positionDock.css、mobile/phone-preview.html、CURRENT_STATE.md。预览增加命名QA尺寸参数，默认仍为390×约857。
+- 命令与结果：npx tsc --noEmit PASS；node --experimental-strip-types --test tests/appearance.test.mjs tests/route-stops-scrub.test.mjs tests/layout-home-migration.test.mjs 10/10 PASS；npm run build:android:web PASS（最终2.58秒，既有大chunk警告）；git diff --check PASS。日志：.openai/ui-sample-types-20260924.log、ui-sample-focused-tests-20260924.log、ui-sample-build-20260924.log。
+- 视觉验证 PASS：artifacts/screenshots/ui-style-route-390-20260924.png（390×约857）、ui-style-route-360-20260924.png（360×780），卡片/工具/底栏无碰撞和横向溢出；ui-style-short-20260924.png（390×480）内部滚动可达主操作、标题/关闭保留；ui-style-tools-short-20260924.png（360×360）工具浮层已避开右侧固定工具。极矮屏初次检查曾重叠，调整展开方向后复验PASS。改前：ui-style-before-20260924.png。
+- 交互验证：路线打开/关闭、出行方式、地图选点入口、添加/移除途经点及矮屏工具展开/收起通过。没有实际路线网络规划或真机IME/触控验收，不把压缩浏览器高度当作实际键盘测试。
+- 阻塞：无。右侧已恢复 http://127.0.0.1:9174/phone-preview.html 默认比例并打开路线样板。下一步由用户确认风格，再逐屏扩展或局部修订；按项目视觉快速确认流程暂不提交/推送/打包/发布，不宣称全局完成或真机验收。
+
+# 2026-09-24 / 进度同步与换电脑接续
 
 ## 本次同步入口（覆盖下方历史时态）
 

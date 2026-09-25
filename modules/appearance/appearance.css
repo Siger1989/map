@@ -86,5 +86,5 @@ html[data-ui-theme] .observatory.home-map .route-metric-grid dt { color:var(--ui
 html[data-ui-theme] .observatory.home-map .record-console { color:var(--ui-ink); }
 /* The existing recording console uses important rules; keep this override scoped to it. */
 html[data-ui-theme] .observatory.home-map .record-console :is(button,input,select) { background:var(--ui-button) !important; color:var(--ui-button-ink) !important; border-color:var(--ui-line) !important; }
-html[data-ui-theme] .observatory.home-map .record-console button.is-primary { background:var(--ui-active) !important; color:var(--ui-active-ink) !important; }
+html[data-ui-theme] .observatory.home-map .record-console button.is-primary { background:var(--ui-accent) !important; color:var(--ui-on-accent) !important; }
 html[data-ui-theme] .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { background:var(--ui-surface); }

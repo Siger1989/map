@@ -5,7 +5,7 @@
     12px system-ui,
     'Microsoft YaHei',
     sans-serif;
-  color: #163c2a;
+  color: var(--ui-ink, #163c2a);
 }
 .layout-account-settings {
   margin: 4px 0 8px;
@@ -57,10 +57,10 @@
   width: min(258px, calc(100vw - 8px));
   box-sizing: border-box;
   padding: 1px;
-  border: 1px solid #9db2a0;
+  border: 1px solid var(--ui-line, #9db2a0);
   border-radius: 5px;
-  background: #f8fcf5;
-  color: #153d28;
+  background: var(--ui-surface, #f8fcf5);
+  color: var(--ui-ink, #153d28);
   pointer-events: auto;
   box-shadow: 0 2px 8px #122f2520;
 }
@@ -74,8 +74,8 @@
   min-height: 36px;
   min-width: 36px;
   padding: 0 3px;
-  border: 1px solid #ced9cb;
-  background: #fff;
+  border: 1px solid var(--ui-line, #ced9cb);
+  background: var(--ui-surface, #fff);
   border-radius: 5px;
   flex-shrink: 0;
 }
@@ -83,12 +83,12 @@
   flex: 0 0 48px;
   width: 48px;
   padding: 0;
-  background: #285f42;
-  color: #fff;
+  background: var(--ui-accent, #285f42);
+  color: var(--ui-ink, #fff);
 }
 .layout-mobile-toolbar button[aria-pressed='true'] {
-  background: #285f42;
-  color: #fff;
+  background: var(--ui-accent, #285f42);
+  color: var(--ui-ink, #fff);
 }
 .layout-mobile-toolbar button:disabled {
   opacity: 0.4;
@@ -103,9 +103,9 @@
   height: 30px;
   padding: 0 2px;
   box-sizing: border-box;
-  border: 1px solid #ced9cb;
+  border: 1px solid var(--ui-line, #ced9cb);
   border-radius: 3px;
-  background: #fff;
+  background: var(--ui-surface, #fff);
 }
 .layout-mobile-toolbar .layout-mobile-layer select {
   flex: 0 0 68px;
@@ -198,7 +198,7 @@
   width: 5px;
   height: 5px;
   border: 1px solid #3479ff;
-  background: #fff;
+  background: var(--ui-surface, #fff);
 }
 .layout-mobile-members {
   position: absolute;

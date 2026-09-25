@@ -1,5 +1,7 @@
 # 山兔户外视觉系统（提案）
 
+2026-09-25：样板已获用户确认，正式执行以 [UI实施标准v1](ui-standard.md) 为准。本文保留为设计依据与改版前风险记录。
+
 ## 当前实现风险：改版前先处理这些边界
 
 - **主页仍是浅色硬编码皮肤，与目标深色沉浸方向冲突。** [modules/controls/homeMap.css](../modules/controls/homeMap.css) 第2–19行定义了 `--home-ink/#10243c`、`--home-green/#15572b`、白色 surface、5px 边角、固定字体；第37、42、47、50、71、77、111、115行又直接写浅绿背景、白色卡片和3–5px圆角。路线紧凑样式 [modules/navigation/routeCompact.css](../modules/navigation/routeCompact.css) 第111–137行以 `!important` 固定白底、灰边、浅绿选中态。若只改全局变量，这些局部值不会自动换肤。

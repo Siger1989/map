@@ -1,3 +1,5 @@
+.home-position-dock .position-extended-controls { display: contents; }
+.home-position-dock .position-tools-toggle { display: none; }
 .position-dock {
   position: absolute;
   left: 4px;

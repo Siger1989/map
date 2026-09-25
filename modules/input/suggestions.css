@@ -7,10 +7,10 @@
 .suggestion-surface,
 .observatory .place-search-results,
 .observatory .route-search-results {
-  background: rgba(248, 252, 249, 0.98) !important;
-  color: #193d38 !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-ink, #193d38) !important;
   backdrop-filter: blur(14px);
-  border: 1px solid #5b9489 !important;
+  border: 1px solid var(--ui-line, #5b9489) !important;
   border-radius: 9px;
   box-shadow: 0 8px 24px #102b3960;
   font-size: 12px !important;
@@ -21,7 +21,7 @@
   margin: 0;
   padding: 6px 8px;
   font-size: 11px;
-  color: #5a6e69;
+  color: var(--ui-muted, #5a6e69);
 }
 .text-suggestions button,
 .observatory .place-search-options button,
@@ -35,9 +35,9 @@
   padding: 5px 8px !important;
   background: transparent !important;
   border: 0 !important;
-  border-bottom: 1px solid #d3dfd75c !important;
+  border-bottom: 1px solid var(--ui-line, #d3dfd75c) !important;
   border-radius: 0 !important;
-  color: #193d38 !important;
+  color: var(--ui-ink, #193d38) !important;
   font: inherit;
   font-size: 12px !important;
   overflow-wrap: anywhere;
@@ -46,17 +46,17 @@
 .text-suggestions button:hover,
 .observatory .place-search-options button:focus,
 .observatory .route-search-results button:focus {
-  background: #dceaffc9 !important;
+  background: var(--ui-selected, #dceaffc9) !important;
 }
 .observatory .place-search-options strong,
 .observatory .route-search-results strong {
-  color: #193d38 !important;
+  color: var(--ui-ink, #193d38) !important;
   font-size: 12px !important;
   font-weight: 500;
 }
 .observatory .place-search-options small,
 .observatory .route-search-results small {
-  color: #567069 !important;
+  color: var(--ui-muted, #567069) !important;
   font-size: 11px !important;
 }
 
@@ -86,7 +86,7 @@
   justify-content: space-between;
   gap: 4px;
   height: 36px;
-  border-bottom: 1px solid #8eaea5;
+  border-bottom: 1px solid var(--ui-line, #8eaea5);
 }
 .floating-search-heading strong {
   font-size: 11px;
@@ -98,7 +98,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #193d38;
+  color: var(--ui-ink, #193d38);
 }
 .floating-search ul {
   list-style: none;
@@ -111,8 +111,8 @@
   padding: 3px 4px;
   background: transparent;
   border: 0;
-  border-bottom: 1px solid #d1ddd5;
-  color: #193d38;
+  border-bottom: 1px solid var(--ui-line, #d1ddd5);
+  color: var(--ui-ink, #193d38);
 }
 .floating-search :is(.route-search-results, .place-search-options) strong {
   display: block;
@@ -122,15 +122,15 @@
 .floating-search :is(.route-search-results, .place-search-options) small {
   display: block;
   font-size: 10px;
-  color: #46685e;
+  color: var(--ui-muted, #46685e);
 }
 .floating-search button:hover,
 .floating-search button:focus-visible {
-  background: #daeaff;
-  outline: 1px solid #4f82b5;
+  background: var(--ui-selected, #daeaff);
 }
+.floating-search button:focus-visible { outline: 2px solid var(--ui-accent, #176a50); outline-offset: -2px; }
 
 .floating-search { box-sizing: border-box; border-radius: 8px; }
 .floating-search-heading, .floating-search .place-search-heading {
-  position: sticky; top: 0; background: #f3f8f5; z-index: 1;
+  position: sticky; top: 0; background: var(--ui-surface, #f3f8f5); z-index: 1;
 }

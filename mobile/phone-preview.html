@@ -5,10 +5,15 @@
 <body><div id="phone"><iframe title="山兔手机预览 · OPPO Find X8 · 1256∶2760"></iframe></div>
 <script>
 const phone=document.querySelector('#phone'),frame=document.querySelector('iframe');
-const width=390,height=width*2760/1256;
+// Keep the right-side preview fixed by default; named sizes are for separate QA tabs.
+const checks={'360x780':[360,780],'390x480':[390,480],'360x360':[360,360]};
+const requested=new URLSearchParams(location.search).get('viewport');
+const check=Object.hasOwn(checks,requested)?checks[requested]:null;
+const [width,height]=check||[390,390*2760/1256];
+if(check)frame.title='山兔独立适配检查 · '+requested;
 frame.style.width=width+'px';frame.style.height=height+'px';
 function fit(){const scale=Math.min(1,Math.max(1,innerWidth-16)/width,Math.max(1,innerHeight-16)/height);phone.style.width=width*scale+'px';phone.style.height=height*scale+'px';frame.style.transform='scale('+scale+')'}
 frame.src='/'+location.hash;
-frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
+frame.addEventListener('load',()=>{const sync=()=>history.replaceState(null,'',location.pathname+location.search+frame.contentWindow.location.hash);frame.contentWindow.addEventListener('hashchange',sync);sync()});
 addEventListener('resize',fit);fit();
 </script></body></html>

@@ -25,3 +25,13 @@ test('background and button colours are independent, including old saved prefere
   const old=structuredClone(DEFAULT_APPEARANCE);delete old.light.button;
   assert.equal(parseAppearance(JSON.stringify(old)).light.button,DEFAULT_APPEARANCE.light.button);
 });
+
+test('all presets retain readable buttons after shared UI migration',()=>{
+  for(const palette of PRESETS.flatMap(p=>[p.light,p.dark])) {
+    const values=themeTokens(palette);
+    assert.ok(contrastRatio(values['--ui-button'],values['--ui-button-ink'])>=4.5);
+    assert.ok(contrastRatio(values['--ui-active'],values['--ui-active-ink'])>=4.5);
+  }
+  const legacy={mode:'light',light:{accent:'#15572b',background:'#ffffff',button:'#eef3f0',foreground:'#10243c',contrast:40},dark:{accent:'#9de8c4',background:'#17231f',button:'#30433a',foreground:'#edf6f0',contrast:50}};
+  assert.deepEqual(parseAppearance(JSON.stringify(legacy)),legacy);
+});

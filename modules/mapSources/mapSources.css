@@ -38,14 +38,14 @@
 }
 .free-map-info {
   padding: 7px;
-  background: #ffffff75;
+  background: var(--ui-raised, #ffffff75);
   border-radius: 6px;
 }
 .free-map-info a {
   display: inline-block;
   min-height: 44px;
   align-content: center;
-  color: #164cc6;
+  color: var(--ui-accent, #164cc6);
 }
 .free-map-info button {
   margin-left: 4px;
@@ -58,8 +58,8 @@
   max-width: var(--bottom-tool-width);
   padding: 3px 5px;
   border-radius: 4px;
-  background: #f4f6eff2;
-  color: #202725;
+  background: var(--ui-surface, #f4f6eff2);
+  color: var(--ui-ink, #202725);
   font-size: 9px;
   line-height: 12px;
   overflow-wrap: anywhere;
@@ -76,10 +76,10 @@
 .map-file-button,
 .map-sources select {
   min-height: 44px;
-  border: 1px solid #ffffff24;
+  border: 1px solid var(--ui-line, #ffffff24);
   border-radius: 10px;
   padding: 7px 10px;
-  background: #ffffff09;
+  background: var(--ui-raised, #ffffff09);
   color: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -90,8 +90,8 @@
   cursor: wait;
 }
 .map-sources button[aria-pressed='true'] {
-  border-color: #9de8c4;
-  background: #9de8c41a;
+  border-color: var(--ui-accent, #9de8c4);
+  background: var(--ui-selected, #9de8c41a);
 }
 .map-source-builtins,
 .map-source-actions {
@@ -126,7 +126,7 @@
 }
 .map-source-choice small,
 .map-source-hint {
-  color: #b2c3c7;
+  color: var(--ui-muted, #b2c3c7);
 }
 .map-source-confirm {
   width: 100%;
@@ -142,11 +142,11 @@
 .map-sources textarea {
   width: 100%;
   min-width: 0;
-  border: 1px solid #ffffff26;
+  border: 1px solid var(--ui-line, #ffffff26);
   border-radius: 8px;
   padding: 10px;
-  background: #071318;
-  color: #f0f7f8;
+  background: var(--ui-raised, #071318);
+  color: var(--ui-ink, #f0f7f8);
   font-size: 13px;
   min-height: 44px;
 }
@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 .map-file-button:focus-within {
-  outline: 2px solid #9de8c4;
+  outline: 2px solid var(--ui-accent, #9de8c4);
 }
 .map-sources details summary {
   min-height: 44px;
@@ -180,10 +180,10 @@
 }
 .map-sources details p {
   margin-bottom: 8px;
-  color: #b2c3c7;
+  color: var(--ui-muted, #b2c3c7);
 }
 .map-source-preview {
-  border: 1px solid #ffffff24;
+  border: 1px solid var(--ui-line, #ffffff24);
   padding: 10px;
   border-radius: 10px;
 }
@@ -212,9 +212,9 @@
 .map-source-link {
   width: 100%;
   min-height: 44px;
-  border: 1px solid #ffffff24;
+  border: 1px solid var(--ui-line, #ffffff24);
   border-radius: 10px;
-  background: #ffffff09;
+  background: var(--ui-raised, #ffffff09);
   color: inherit;
   padding: 8px;
   margin-bottom: 10px;

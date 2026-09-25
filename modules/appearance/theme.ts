@@ -2,9 +2,9 @@ export const THEME_KEY = 'shantu.appearance.v1';
 export type Palette = { accent: string; background: string; button: string; foreground: string; contrast: number };
 export type Appearance = { mode: 'light' | 'dark' | 'system'; light: Palette; dark: Palette };
 export const DEFAULT_APPEARANCE: Appearance = {
-  mode: 'light',
+  mode: 'dark',
   light: { accent: '#15572b', background: '#ffffff', button: '#eef3f0', foreground: '#10243c', contrast: 40 },
-  dark: { accent: '#9de8c4', background: '#17231f', button: '#30433a', foreground: '#edf6f0', contrast: 50 },
+  dark: { accent: '#d0f76b', background: '#18201f', button: '#252e2b', foreground: '#f2f5ed', contrast: 40 },
 };
 export const PRESETS = [
   { name: '山兔默认', light: DEFAULT_APPEARANCE.light, dark: DEFAULT_APPEARANCE.dark },
@@ -45,7 +45,10 @@ export function themeTokens(p: Palette) {
     '--ui-surface': p.background, '--ui-ink': ink, '--ui-accent': p.accent,
     '--ui-active': active, '--ui-active-ink': contrastRatio(active,p.accent) >= 4.5 ? p.accent : buttonInk,
     '--ui-button': button, '--ui-button-ink': buttonInk,
-    '--ui-line': mix(p.background,ink,.2+p.contrast/250),
+    '--ui-raised': button, '--ui-field': mix(button,ink,.055),
+    '--ui-selected': mix(p.background,p.accent,.11),
+    '--ui-danger': luminance(p.background) < .2 ? '#ff9b8f' : '#a33626',
+    '--ui-line': mix(p.background,ink,.06+p.contrast/1000),
     '--ui-muted': mix(ink,p.background,.25),
     '--ui-on-accent': contrastRatio(p.accent,'#ffffff') >= contrastRatio(p.accent,'#10243c') ? '#ffffff' : '#10243c',
   };

@@ -1,7 +1,7 @@
 .offline-map-folder {
-  color: #10243c;
+  color: var(--ui-ink);
   font-size: 11px;
-  border-bottom: 1px solid #9bb7bc;
+  border-bottom: 1px solid var(--ui-line);
 }
 .collection-workbench .offline-map-folder button {
   min-height: 36px;
@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start !important;
-  background: #dcf0dd !important;
+  background: var(--ui-selected) !important;
 }
 .offline-map-folder-heading span {
   margin-left: auto;
@@ -26,8 +26,8 @@
 }
 .offline-map-entry {
   min-width: 0;
-  background: #fff;
-  border: 1px solid #c8d5cf;
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-line);
   border-radius: 4px;
 }
 .offline-map-entry-row {
@@ -62,7 +62,7 @@
   display: grid;
   gap: 4px;
   padding: 4px;
-  border-top: 1px solid #d5e0d9;
+  border-top: 1px solid var(--ui-line);
 }
 .offline-map-entry-tools > div,
 .offline-map-folder-actions {
@@ -71,9 +71,9 @@
 }
 .offline-map-entry-tools button,
 .offline-map-folder-actions button {
-  border: 1px solid #9bb7bc !important;
+  border: 1px solid var(--ui-line) !important;
   border-radius: 4px;
-  background: white !important;
+  background: var(--ui-raised) !important;
 }
 .offline-map-folder p {
   margin: 0;

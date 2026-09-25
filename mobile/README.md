@@ -1,3 +1,7 @@
+# 山兔0.2.72界面优化测试版（2026-09-25）
+
+统一UI与焦点内收、记录按钮可读性和图层设置记忆已纳入新版；versionCode79，沿用原独立测试包名及4a94签名。653项测试及构建/签名/资源检查通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.72-test-standalone/Shantu-0.2.72-test-standalone.apk) · [完整发行说明](../docs/release-0.2.72.md)。
+
 # 山兔0.2.68测试版（2026-09-24）
 
 “导航准备”中的原始道路路线可点“交换”直接反向：起终点、途经点和线路同步更新，原收藏不变。正向转弯提示不沿用，反向仅沿线提示；驾车要核验单行/禁转可另行规划。收藏夹操作菜单不再盖住导航弹窗。`../APK/Shantu-0.2.68-test-standalone.apk`，versionCode75、原独立测试包名/4a94签名，57,834,588字节，SHA256 `dd1b049e603c8a47c573a5a9a3587f2249f8b3393f5a1d60765a0958160951e3`。632项测试、类型、网页/Android构建与打包网页启动通过；真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.68-test-standalone/Shantu-0.2.68-test-standalone.apk) · [发行说明](../docs/release-0.2.68.md)。

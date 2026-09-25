@@ -1,23 +1,28 @@
 /* Keep the planning form together; long itineraries still scroll within safe bounds. */
 .observatory.home-map #map-control-panel:has(.route-panel) {
   height: auto !important;
-  max-height: calc(100dvh - var(--home-footer) - var(--home-top) - 66px) !important;
-  padding: 3px 5px !important;
-  overflow: auto !important;
+  max-height: calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px) !important;
+  padding: var(--route-padding, 3px 5px) !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
-  height: 28px !important;
-  min-height: 28px !important;
+  flex-shrink: 0;
+  height: var(--route-button-height, 28px) !important;
+  min-height: var(--route-button-height, 28px) !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button {
-  height: 28px !important;
-  min-height: 28px !important;
+  height: var(--route-button-height, 28px) !important;
+  min-height: var(--route-button-height, 28px) !important;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-content {
   max-height: none !important;
-  overflow: visible !important;
+  min-height: 0;
+  overflow: auto !important;
+  overscroll-behavior: contain;
   padding: 0 !important;
 }
 .observatory #map-control-panel .route-panel .routing-mode-control {
@@ -25,8 +30,8 @@
   gap: 3px;
 }
 .observatory #map-control-panel .route-panel .routing-mode-control select {
-  height: 28px !important;
-  min-height: 28px !important;
+  height: var(--route-button-height, 28px) !important;
+  min-height: var(--route-button-height, 28px) !important;
   padding: 0 2px !important;
 }
 .observatory #map-control-panel .route-panel .route-modes {
@@ -34,15 +39,15 @@
   gap: 3px;
 }
 .observatory #map-control-panel .route-panel .route-modes button {
-  height: 30px !important;
-  min-height: 30px !important;
-  border-radius: 3px;
+  height: var(--route-button-height, 30px) !important;
+  min-height: var(--route-button-height, 30px) !important;
+  border-radius: var(--route-radius, 3px);
 }
 .observatory #map-control-panel .route-panel .route-next-step {
   min-height: 24px;
   padding: 3px 5px;
-  background: #e6f2e9;
-  color: #15572b;
+  background: var(--route-selected, #e6f2e9);
+  color: var(--route-accent, #15572b);
   font-size: 11px;
   font-weight: 700;
 }
@@ -52,7 +57,7 @@
   white-space: nowrap;
 }
 .route-stop-block.is-next:not(.is-picking) {
-  background: #edf6ee;
+  background: var(--route-field, #edf6ee);
   box-shadow: inset 3px 0 #257451;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions {
@@ -60,14 +65,14 @@
   gap: 2px;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions button {
-  height: 30px !important;
-  min-height: 30px !important;
+  height: var(--route-button-height, 30px) !important;
+  min-height: var(--route-button-height, 30px) !important;
 }
 .observatory #map-control-panel .route-panel .route-primary {
-  height: 32px !important;
-  min-height: 32px !important;
+  height: var(--route-primary-height, 32px) !important;
+  min-height: var(--route-primary-height, 32px) !important;
   margin-top: 0 !important;
-  border-radius: 3px;
+  border-radius: var(--route-radius, 3px);
 }
 .observatory #map-control-panel .route-panel .route-provider-note {
   margin-top: 2px !important;
@@ -99,42 +104,42 @@
 .observatory #map-control-panel .route-summary-metrics button { min-height: 28px; padding: 0 3px; }
 .route-summary-actions { display: flex; gap: 3px; padding-top: 2px; }
 .observatory #map-control-panel .route-summary-actions button { flex: 1; min-height: 30px; padding: 0 2px; white-space: nowrap; }
-.observatory #map-control-panel .route-summary-actions .is-primary { flex: 1.6; background: #dcf0dd; color: #15572b; }
-.observatory #map-control-panel .route-summary-actions button[aria-expanded='true'] { background: #dcf0dd; }
-.route-summary-detail { margin-top: 3px; border-top: 1px solid #bcc7bd; }
+.observatory #map-control-panel .route-summary-actions .is-primary { flex: 1.6; background: var(--route-selected, #dcf0dd); color: var(--route-accent, #15572b); }
+.observatory #map-control-panel .route-summary-actions button[aria-expanded='true'] { background: var(--route-selected, #dcf0dd); }
+.route-summary-detail { margin-top: 3px; border-top: 1px solid var(--route-line, #bcc7bd); }
 .route-summary-detail ol { margin: 3px 0; padding-left: 20px; font-size: 11px; }
 .route-summary-detail li { padding: 3px 0; }
 .observatory #map-control-panel .route-summary :is(.route-summary-metrics, .route-summary-actions) button {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  border: 1px solid #9bb7bc !important;
-  border-radius: 4px !important;
-  background: #fff !important;
-  color: #163c4a !important;
-  min-height: 30px !important;
+  border: 1px solid var(--route-line, #9bb7bc) !important;
+  border-radius: var(--route-radius, 4px) !important;
+  background: var(--route-field, #fff) !important;
+  color: var(--route-text, #163c4a) !important;
+  min-height: var(--route-button-height, 30px) !important;
   padding: 0 5px !important;
   font-size: 11px !important;
   white-space: nowrap;
 }
 .observatory #map-control-panel .route-summary .route-summary-actions .is-primary {
-  background: #dcf0dd !important;
-  border-color: #76a580 !important;
-  color: #15572b !important;
+  background: var(--route-selected, #dcf0dd) !important;
+  border-color: var(--route-line, #76a580) !important;
+  color: var(--route-accent, #15572b) !important;
 }
 .observatory #map-control-panel .route-summary button:disabled {
-  background: #edf0ef !important;
-  border-color: #c7d1ce !important;
-  color: #7b8782 !important;
+  background: var(--route-field, #edf0ef) !important;
+  border-color: var(--route-line, #c7d1ce) !important;
+  color: var(--route-muted, #7b8782) !important;
 }
 .observatory #map-control-panel .route-summary .route-summary-actions button[aria-expanded='true'] {
-  background: #dcf0dd !important;
-  border-color: #76a580 !important;
+  background: var(--route-selected, #dcf0dd) !important;
+  border-color: var(--route-line, #76a580) !important;
 }
 .observatory #map-control-panel:has(.route-summary) .dock-heading button {
-  border: 1px solid #9bb7bc !important;
-  border-radius: 4px !important;
-  background: #fff !important;
+  border: 1px solid var(--route-line, #9bb7bc) !important;
+  border-radius: var(--route-radius, 4px) !important;
+  background: var(--route-field, #fff) !important;
   padding: 0 4px !important;
   min-height: 26px !important;
   margin-left: 3px;

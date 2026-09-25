@@ -1,5 +1,5 @@
-import { LocateFixed } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { LocateFixed, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useRef, useState, useId, type ReactNode } from 'react';
 import type { PositionFix, DirectionMode } from './types';
 import { DirectionControl } from './DirectionControl';
 import './positionDock.css';
@@ -30,6 +30,28 @@ export function PositionDock({
   markControl?: ReactNode;
   children?: ReactNode;
 }) {
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const toolsId = useId();
+  const dock = useRef<HTMLElement>(null);
+  const toolsButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!toolsOpen) return;
+    const outside = (event: PointerEvent) => {
+      if (!dock.current?.contains(event.target as Node)) setToolsOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setToolsOpen(false);
+        toolsButton.current?.focus({ preventScroll: true });
+      }
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', escape);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [toolsOpen]);
   const clickTimer = useRef<number | null>(null);
   const lastClick = useRef(0);
   const lastDoubleClick = useRef(0);
@@ -45,10 +67,16 @@ export function PositionDock({
     onLocateAndFollow();
   };
   return (
-    <nav className="home-position-dock" aria-label="底部定位与路线显示">
+    <nav ref={dock} className="home-position-dock" aria-label="底部定位与路线显示" data-tools-open={toolsOpen}>
+      <button ref={toolsButton} className="position-dock-button position-tools-toggle" aria-label={toolsOpen ? '收起地图工具' : '展开地图工具'} aria-expanded={toolsOpen} aria-controls={toolsId} onClick={() => setToolsOpen(open => !open)}>
+        {toolsOpen ? <X size={20} /> : <SlidersHorizontal size={20} />}
+        <small>工具</small>
+      </button>
+      <div id={toolsId} className="position-extended-controls">
       {children}
       {onDirection && <DirectionControl mode={direction} status={directionStatus} onChange={onDirection}/>}
       {markControl}
+      </div>
       <button
         className="position-dock-button position-locate-button glass"
         aria-label={following ? '关闭位置跟随' : '开启位置跟随'}
