@@ -4,7 +4,8 @@
 - 本轮改动：mobile/android/AndroidManifest.xml、config/product.ts提升版本，AboutPanel更新日期，docs/release-0.2.72.md与README；上一轮UI源码一起打包。Luna并行执行全量测试及构建要求审核，主agent完成构建/资源签名复核。
 - 最终包：APK/Shantu-0.2.72-test-standalone.apk，57,846,876字节，SHA256 BA2036A675122E507F0BDC4A14B36B27820587E07E3F4DD874775C63A656E378；sidecar一致。v2/v3签名、zipalign、473地形及资源清单均PASS；32个HTML/JS/CSS条目与最终web staging逐一hash一致。
 - 验证PASS：TypeScript、653/653全量测试、最终网页/Android构建、打包网页启动和版本0.2.72/79/2026-09-25显示。命令显式SDK D:/GodotAndroid/android-sdk、JDK D:/GodotAndroid/jdk-17；测试子进程JAVA_HOME及长路径TEMP/TMP避免旧路径与短路径403，无系统配置变更。日志.openai/apk-0272-*；截图artifacts/screenshots/apk-0272-*.png。
-- 当前步骤：源码同步及GitHub测试版资产上传/远程校验。直连失败，使用系统已配置的127.0.0.1:7897代理后GitHub访问恢复（仅进程参数）。无Android设备，真实安装、触控、相机及后台定位未验；HarmonyOS6.1原生包仍未交付。
+- 发布PASS：源码构建提交f48253adbc78084e1ca5cde12315fd5b16f0bb2e已推送到codex/rollback-ui-0235-20260921；GitHub测试版v0.2.72-test-standalone已公开，APK/校验文件/安装说明均uploaded，远端size和SHA256与本地一致。Release：https://github.com/Siger1989/map/releases/tag/v0.2.72-test-standalone。
+- 阻塞：无。直连失败后，使用系统已配置的127.0.0.1:7897代理恢复GitHub访问（仅进程参数）。无Android设备，真实安装、触控、相机及后台定位未验；HarmonyOS6.1原生包仍未交付。下一步用户安装0.2.72反馈，右侧默认手机预览保留。
 
 ## 全局高亮框修订
 

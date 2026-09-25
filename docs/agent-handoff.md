@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-25 / 0.2.72交付
+
+最新APK为0.2.72-test（versionCode79），统一UI、高亮修复、记录按钮和已保存图层设置记忆均已纳入。源码构建提交f48253adbc78084e1ca5cde12315fd5b16f0bb2e，分支codex/rollback-ui-0235-20260921；[Release已公开](https://github.com/Siger1989/map/releases/tag/v0.2.72-test-standalone)。653项测试、类型、构建/签名/资源和打包网页检查通过，远程资产hash与本地一致；真机仍待验。完整产物与限制见[发行说明](release-0.2.72.md)及CURRENT_STATE顶部，下方0.2.71为历史记录。
+
 ## 2026-09-24 回家电脑接续入口
 
 用户本轮再次明确授权“不加密直接上传”地图配置与原Android签名，`.env.local`和`mobile/.build/guanyun-test.jks`随仓库同步；当前PUBLIC仓库。原签名证书已核对为4a94系列；此项为本轮明确例外，后续不要依据旧文档删除这两项接续文件或生成替代签名。
