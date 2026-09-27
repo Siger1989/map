@@ -3,13 +3,14 @@
 - 目标：用户要求按已确认收藏密度收紧实际记录/路线/剖面/标记/图层窗口，同时严格保留0.2.76版全部生产按钮、标签和业务行为；构建并发送新独立测试版APK。
 - 当前：确认分支codex/rollback-ui-0235-20260921，起始HEAD和远程均07fa6fd5e1f22b60ce7f5c673906deb1bfc4e3c9；保留上轮未提交的CURRENT_STATE和previews，以及无关未跟踪PDF。
 - 分工：Luna分别编辑recording/marker、route/section、layer的独立CSS文件；主agent改版本、集成验收、构建签名、GitHub发布及一致性核对。
-- 进度：CSS与APK构建完成，待源码推送及GitHub Release发布。生产TSX按钮定义未修改。
+- 进度：PASS，CSS与APK已交付；生产TSX按钮定义未修改。
 - 文件：modules/annotations/pinEditor.css、controls/layerWindow.css、navigation/routeCompact.css、outdoor/recordingConsole.css、section/{section,survey}.css、tracks/routeWindows.css、config/product.ts、mobile/android/AndroidManifest.xml、README.md、docs/release-0.2.77.md、docs/agent-handoff.md、previews/及本记录。
 - 命令：git status/diff/branch/remote，npm test，npx tsc --noEmit，scripts/build-android.ps1 -StandaloneTest，包内资源校验。日志 .openai/release-0277-{tests-pass,tsc}.log、apk-0277-{build,integrity}.log。
 - 验证 PASS：TypeScript、688/688测试、手机预览正式工具/路线规划/图层控件检查、Android全新构建、v2/v3原证书签名、zipalign、543个网页及地形文件与暂存内容一致。原测试命令因默认JDK不存在及Windows短路径导致3失败；指定现有JDK与完整TEMP后全通过，未改应用代码。
 - 产物：APK/Shantu-0.2.77-test-standalone.apk，57,859,164 bytes，SHA256 6226F66E653DA148083529C166B884A4E7B07272509FA36F32E44555E5DBE98A；versionCode84，原独立测试版包名与4a94签名，473张主地形瓦片。
 - 限制：正式预览不等于Android真机触控、GPS、性能或覆盖安装验证；用户无关PDF保留原状。
-- 下一步：提交并推送当前功能分支，公开0.2.77 prerelease、上传APK/SHA/安装说明，并核对远端资源大小与digest。
+- 交付 PASS：构建源码98778e15cdaa164717870998adb8e56bc7a51662已推送codex/rollback-ui-0235-20260921并核对远程一致；未合入main。公开prerelease https://github.com/Siger1989/map/releases/tag/v0.2.77-test-standalone，draft=false，APK/SHA256/安装说明三个远程资产大小和digest均与本地一致；发布日志.openai/release-0277-publish.log。
+- 下一步：用户在OPPO Find X8 Ultra上覆盖安装，复测窗口触控与尺寸；若发现任何旧按钮丢失，按0.2.76控件基线修复。
 
 # 当前状态 — 2026-09-28 / 窗口预览修正：只收紧，不改按钮
 

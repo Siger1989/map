@@ -13,3 +13,5 @@
 验证 PASS：TypeScript、688/688 测试、全新 Android 网页和 APK 构建、v2/v3 签名、zipalign、包内 543 个网页/地形文件与构建暂存文件一致（地形 PNG 按无损解码流与元数据核对）。在手机预览核对了工具、路线规划、图层三个正式窗口的原有控件；未改 JSX 按钮定义。Windows 测试环境需要指向已安装 JDK，并把临时目录设为完整路径，避免桌面网页测试的短路径与真实路径比较不一致。
 
 浏览器检查不能替代 Android 真机触控、性能、GPS 或覆盖安装验收。HarmonyOS 6.1 原生 HAP/APP 尚未生成。请覆盖安装同包名旧测试版，不要先卸载；源码位于 `codex/rollback-ui-0235-20260921`，尚未合入 `main`。
+
+构建源码提交：`98778e15cdaa164717870998adb8e56bc7a51662`。[公开预发布](https://github.com/Siger1989/map/releases/tag/v0.2.77-test-standalone) 的 APK、SHA256 和安装说明三个附件已核对远端大小与 digest，APK 远端 SHA256 与本地一致。
