@@ -2,6 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { syncOverlayData } from '../modules/map/overlayData.ts';
 
+test('access segments and slope warnings retain order after late base layers load', () => {
+  const ids = ['route-access', 'guidance-access', 'route-grade-warning-label',
+    'route-path', 'guidance-path', 'route-points', 'route-grade-warning-dot', 'late-roads'];
+  let moves = 0;
+  const map = {
+    getSource: () => ({ setData() {} }),
+    getStyle: () => ({ layers: ids.map(id => ({ id })) }),
+    moveLayer(id) { moves++; ids.splice(ids.indexOf(id), 1); ids.push(id); },
+  };
+  const data = { type: 'FeatureCollection', features: [] };
+  syncOverlayData(map, 'route', data);
+  assert.deepEqual(ids, ['late-roads', 'route-path', 'route-access', 'route-points',
+    'guidance-path', 'guidance-access', 'route-grade-warning-dot', 'route-grade-warning-label']);
+  const count = moves;
+  for (let i = 0; i < 100; i++) syncOverlayData(map, 'route', data);
+  assert.equal(moves, count);
+});
+
 test('identical overlay polls neither resend geometry nor reshuffle terrain layers', () => {
   let writes = 0,
     moves = 0;

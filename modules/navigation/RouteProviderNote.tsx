@@ -1,3 +1,5 @@
+import { defaultPlaceSearchSource } from './provider';
+
 export function RouteProviderNote() {
   return (
     <details className="route-provider-note">
@@ -14,8 +16,8 @@ export function RouteProviderNote() {
           在线 FOSSGIS / Valhalla
         </a>{' '}
         ·{' '}
-        <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">
-          Photon 搜索
+        <a href={defaultPlaceSearchSource() === 'tianditu' ? 'https://lbs.tianditu.gov.cn/server/search2.html' : 'https://photon.komoot.io/'} target="_blank" rel="noreferrer">
+          {defaultPlaceSearchSource() === 'tianditu' ? '天地图搜索 · 无结果时 Photon' : 'Photon 搜索'}
         </a>{' '}
         · © OpenStreetMap。路网无实时路况，通行条件需现场判断。
       </p>

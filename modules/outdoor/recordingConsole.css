@@ -1,17 +1,17 @@
 /* Single-page recording console; overrides the legacy stacked form skin only here. */
 .observatory.home-map #map-control-panel:has(.record-console) {
   width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 48px)) !important;
-  height: auto !important; max-height: calc(100dvh - var(--home-footer) - var(--home-top) - 66px) !important;
+  height: auto !important; max-height: min(500px,calc(100dvh - var(--home-footer) - var(--home-top) - 76px)) !important;
   padding: 4px 6px !important; overflow: hidden !important;
 }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { height: 36px !important; min-height: 36px !important; margin: 0 !important; padding: 0 2px !important; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading h2 { margin: 0 !important; font-size: 13px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 8px !important; scrollbar-width: none; -ms-overflow-style: none; }
+.observatory.home-map #map-control-panel:has(.record-console) .dock-content { max-height: none !important; min-height: 0; overflow: hidden auto !important; padding: 0 !important; scrollbar-width: none; -ms-overflow-style: none; }
 .observatory.home-map #map-control-panel:has(.record-console) .dock-content::-webkit-scrollbar { display: none; }
 .observatory .record-console { color: var(--ui-ink, #10243c); font-size: 12px; }
 .observatory .record-console button,.observatory .record-console input,.observatory .record-console select {
   box-sizing: border-box; min-width: 0 !important; max-width: 100%; min-height: 30px !important; height: 30px !important;
-  margin: 0 !important; padding: 0 4px !important; color: var(--ui-ink, #10243c) !important; background: var(--ui-surface, white) !important;
+  margin: 0 !important; padding: 0 6px !important; color: var(--ui-ink, #10243c) !important; background: var(--ui-surface, white) !important;
   border: 1px solid var(--ui-line, #bed0d0) !important; border-radius: var(--record-radius, 3px) !important; box-shadow: none !important; font-size: var(--record-font-size, 12px) !important;
 }
 .observatory .record-console button { display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap; }
@@ -61,7 +61,7 @@
 .observatory .record-console summary { min-height:36px; display:flex; align-items:center; cursor:pointer; }
 .observatory .record-console button,.observatory .record-console input:not([type='checkbox']),.observatory .record-console select { height:36px !important; min-height:36px !important; }
 .observatory .record-console-tools button { min-height:36px !important; height:36px !important; }
-.observatory.home-map #map-control-panel:has(.record-console) { max-height:min(200px,calc(100dvh - var(--home-footer) - var(--home-top) - 66px)) !important; }
+.observatory.home-map #map-control-panel:has(.record-console) { max-height:min(500px,calc(100dvh - var(--home-footer) - var(--home-top) - 76px)) !important; }
 
 .observatory.home-map #map-control-panel:has(.record-console) .dock-heading { position:sticky; top:0; z-index:2; background:transparent; }
 
@@ -82,9 +82,9 @@
   gap: 2px;
   box-sizing: border-box;
   min-width: 0 !important;
-  min-height: 48px !important;
+  min-height: 44px !important;
   height: auto !important;
-  padding: 4px 3px !important;
+  padding: 2px 6px !important;
   white-space: normal;
   text-align: center;
   line-height: 1.25;
@@ -92,4 +92,36 @@
 }
 .observatory .record-group-along .record-console-actions > button > svg {
   flex: none;
+}
+
+/* Keep all default recording actions in view without stacking nested cards. */
+.observatory.home-map #map-control-panel:has(.record-console) .record-console .record-function-group {
+  padding: 2px 0 !important;
+  margin: 2px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+.observatory.home-map #map-control-panel:has(.record-console) .record-console .record-group-control {
+  padding-top: 0 !important;
+}
+.observatory.home-map #map-control-panel:has(.record-console) .record-console .record-group-along {
+  padding-bottom: 0 !important;
+}
+.observatory.home-map #map-control-panel:has(.record-console) .record-console .record-console-footer {
+  margin-top: 2px;
+  padding: 2px 0 0;
+}
+.observatory.home-map #map-control-panel:has(.record-console) .outdoor-panel {
+  gap: 2px;
+}
+.observatory.home-map #map-control-panel:has(.record-console) .record-console-tools.record-function-group {
+  padding: 2px 0 !important;
+  margin: 2px 0 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+.observatory .record-console input:not([type='checkbox']):not([type='color']) {
+  font-size: 16px !important;
 }

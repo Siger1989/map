@@ -22,7 +22,7 @@ export function PhotoPicker({
   return (
     <div className="photo-picker">
       <label className="import-file">
-        直接拍摄
+        拍摄照片
         <input
           type="file"
           accept="image/jpeg"
@@ -57,9 +57,8 @@ export function PhotoPicker({
           }}
         />
       </label>
-      {folderReady && <small>可多选照片；文件夹导入用于记录结束后的整组照片整理。</small>}
-      {folderReady && <label className="import-file">
-        选择照片文件夹
+      {folderReady && <label className="import-file photo-folder-picker">
+        照片文件夹
         <input
           type="file"
           aria-label="选择照片文件夹"
@@ -76,7 +75,7 @@ export function PhotoPicker({
       </label>}
       {folderReady && <small>
         {folders
-          ? '文件夹含子目录，最多 200 张。请选择具体行程目录。'
+          ? '可多选；文件夹含子目录。每张≤20MB，最多200张/200MB。'
           : '当前安装包不支持选文件夹，请升级后使用；也可先多选照片。'}
       </small>}
     </div>

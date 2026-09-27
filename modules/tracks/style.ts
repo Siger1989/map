@@ -14,6 +14,7 @@ export const DEFAULT_TRACK_STYLE: TrackStyle = {
   opacity: 1,
 };
 export const TRACK_STYLE_STORAGE = 'guanyun.track-style.v1';
+export const TRACK_WIDTHS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 export const TRACK_COLORS = [
   '#ffb477',
   '#ff637c',

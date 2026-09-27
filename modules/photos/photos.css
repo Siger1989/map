@@ -422,3 +422,93 @@
   padding: 8px 0;
   z-index: 1;
 }
+
+/* Photo operations are one content-sized page, with bounded photo paging. */
+.home-map #map-control-panel.control-popover:has(.outdoor-panel[data-tab='photos']) {
+  height: auto !important;
+  max-height: none !important;
+  width: min(300px, calc(100vw - var(--home-left) - var(--home-right) - 48px)) !important;
+  padding: 8px !important;
+  overflow: visible !important;
+}
+.home-map #map-control-panel:has(.outdoor-panel[data-tab='photos']) .dock-heading {
+  min-height: 36px !important;
+  padding: 0 0 4px !important;
+}
+.home-map #map-control-panel:has(.outdoor-panel[data-tab='photos']) .dock-content {
+  flex: none !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.home-map .outdoor-panel[data-tab='photos'],
+.home-map .outdoor-panel[data-tab='photos'] .photo-panel,
+.home-map .outdoor-panel[data-tab='photos'] .photo-choose:not([hidden]) {
+  display: grid;
+  gap: 4px !important;
+}
+.home-map .outdoor-panel[data-tab='photos'] .route-tabs {
+  margin: 0 !important;
+  gap: 4px !important;
+}
+.home-map .outdoor-panel[data-tab='photos'] .route-tabs button {
+  min-height: 36px !important;
+  padding: 0 6px !important;
+}
+.home-map .photo-panel :is(.photo-picker,.photo-drafts,.photo-saved) { gap: 4px; }
+.home-map .photo-panel .photo-picker { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.home-map .photo-panel .photo-picker .import-file {
+  min-height: 44px !important;
+  padding: 0 6px !important;
+  font-size: 13px !important;
+  background: var(--ui-raised) !important;
+  border-color: transparent !important;
+  border-radius: 12px !important;
+}
+.photo-folder-picker { grid-column: auto; }
+.home-map .photo-panel :is(.route-note,.photo-picker small) {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  line-height: 15px !important;
+}
+.home-map .photo-panel :is(.photo-choose > label,.photo-time-shift) {
+  display: grid;
+  grid-template-columns: auto minmax(0,1fr);
+  gap: 4px;
+  align-items: center;
+  font-size: 12px;
+}
+.home-map .photo-panel :is(select,input:not([type='file'])) {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 0 6px !important;
+  font-size: 16px !important;
+}
+.home-map .photo-panel .outdoor-actions,
+.home-map .photo-panel .photo-page-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 4px;
+  font-size: 11px;
+}
+.home-map .photo-panel :is(.outdoor-actions,.photo-page-controls) button {
+  flex: 0 0 auto;
+  min-height: 36px !important;
+  padding: 0 6px !important;
+  font-size: 12px !important;
+}
+.home-map .photo-panel .photo-confirm {
+  position: static;
+  padding: 0;
+  background: transparent;
+}
+.home-map .photo-panel .photo-confirm button:first-child {
+  min-height: 44px !important;
+  background: var(--ui-accent) !important;
+  color: var(--ui-on-accent) !important;
+}
+.home-map .photo-panel .photo-saved:empty { display: none; }
+.home-map .photo-panel .photo-saved img { height: 44px; aspect-ratio: auto; }
+.home-map .photo-panel .photo-saved button { padding: 0 !important; }

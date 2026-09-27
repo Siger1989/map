@@ -304,7 +304,7 @@
   flex: 0 0 44px;
   padding: 0 !important;
 }
-.workbench-check {
+.workbench-check, .workbench-visibility {
   touch-action: none;
 }
 .workbench-item-open {

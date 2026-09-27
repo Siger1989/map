@@ -1,4 +1,4 @@
-import type { TrackStyle } from './style';
+import { TRACK_WIDTHS, type TrackStyle } from './style';
 
 /** Always-visible drawing appearance, one compact row using existing style state. */
 export function TrackDrawingStyle({
@@ -30,7 +30,7 @@ export function TrackDrawingStyle({
             onChange({ ...style, width: Number(e.target.value) })
           }
         >
-          {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map((n) => (
+          {TRACK_WIDTHS.map((n) => (
             <option key={n} value={n}>
               {n} px
             </option>

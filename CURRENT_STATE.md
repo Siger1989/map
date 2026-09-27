@@ -1,3 +1,198 @@
+# 当前状态 — 2026-09-27 / 0.2.75 最新 APK 交付中
+
+- 目标：将当前全部已授权的 UI、路线编辑、节点吸附、地图性能和天地图搜索修改纳入新 APK。
+- 进度：版本提升至 0.2.75-test / versionCode 82；使用原独立测试版包名和签名构建。
+- 文件：config/product.ts、mobile/android/AndroidManifest.xml；既有本轮源码与测试全部保留。
+- 命令：build-android.ps1 -StandaloneTest -SdkRoot D:\GodotAndroid\android-sdk -JdkRoot D:\GodotAndroid\jdk-17；TypeScript 和完整测试由检查 agent 并行执行。
+- 验证 PASS：类型检查、678/678 测试、全新 APK 构建、v2/v3 原签名、zipalign、473 张本地地形和修补瓦片；34 个 HTML/JS/CSS 与包内内容逐字节匹配。打包网页启动显示版本 0.2.75-test/code82，天地图默认搜索源返回四姑娘山及景区的真实结果。截图 artifacts/screenshots/apk-0275-about-390-20260927.png。测试使用实际 JDK 与长路径 TEMP/TMP，桌面短路径目录别名问题未扩大修改。
+- 阻塞：无 APK 构建阻塞。原生 HarmonyOS HAP/APP 未生成；真实 Android 触控、GPS、性能与覆盖安装待验。
+- 产物：APK/Shantu-0.2.75-test-standalone.apk，57,855,068 bytes；SHA256 4A18F85ED0691184D782FFE5152BC489AB6E9CEE89F545DC8E029C9AC2599495。日志 .openai/apk-0275-build-20260927.log、release-0275-tests-final-20260927.log、apk-0275-web-integrity.log。静态打包网页未配置 Android 网关，出现网络高程缺块提示；页面启动与版本检查 PASS。
+- 下一步：提交推送当前源码，上传校验并公开 GitHub 测试 Release。
+# 当前状态 — 2026-09-27 / 天地图地名搜索与导航顶部间距
+
+- 目标：用户要求搜索使用天地图，保留全球入口；导航条与首页顶部栏之间留标准间距。
+- 进度：新增天地图V2纯适配器与7项解析/请求整合测试（含城市行政区中心），provider复用已有请求节流/取消/缓存和原Key。顶部默认天地图、明确全球OSM来源切换；路线搜索默认天地图，无点位时Photon回退，授权/网络失败不吞；离线仍只下载路网道路名。输入取消/切换source会取消上轮请求，署名随source/离线状态变化。guidance.css两处top从header底边-2改+4px，卡片其他尺寸不动。
+- PASS：现有Key HTTPS实测四姑娘山状态1000、10条原始POI，浏览器实际跨域返回9条去重结果且正确地址可见；全球切换后能收到Photon结果。20项定向测试、TypeScript、移动网页构建通过。初次热更新引用文件早于Luna建文件，Vite缓存缺模块错误，已重启9174预览服务恢复；不修改用户数据。搜索标题换紧凑“搜索”避免来源选择器挤成两行。最终20项定向测试、TypeScript、移动网页构建、diff check全部PASS。390/360搜索结果浮栏clientWidth=scrollWidth220px，标题单行；浏览器四姑娘山/贡嘎山可见结果、成都返回行政区中心，天地图/全球切换和四姑娘山结果点击定位已实际执行。真实saved路线导航compact卡top51.999px、header变量48px，实际4px间距，卡高45.956px，不增加卡高。截图artifacts/screenshots/tianditu-search-siguniang-{390,360}-20260927.png（最终360图标题正确）、guidance-header-gap-390-20260927.png。
+- 文件：modules/navigation/{provider.ts,tiandituSearch.ts,RouteProviderNote.tsx}、modules/controls/PlaceSearch.tsx、modules/input/suggestions.css、modules/guidance/guidance.css、tests/tianditu-search.test.mjs、docs/place-search.md、CURRENT_STATE.md。日志.openai/tianditu-search-*-20260927.log；Key不输出/不另写。
+- 边界：地名POI包含景区/商户/乡镇同名项，不保证每座山或峰顶精度；坐标原值无GCJ转换。底图、路线计算、地址反查和保存结构不改；真机WebView跨域/使用体验未验，当前快速预览不打包/不推送。
+- 阻塞：无代码/现有授权阻塞。
+- 下一步：QA完成，独立tab21已关闭，用户原页保留且预览服务可用。服务重启/热更新后临时导航状态需用户重新进入；未修改/保存收藏或路线几何。按快速预览流程不生成APK、不推送。
+# 当前状态 — 2026-09-27 / 节点吸附与模式组底框修复，搜索和性能复查
+
+- 目标：同路线节点拖动吸附可用；吸附按钮不得超出底框；复查单指地图平移性能及 Google 图源/国内山名搜索。
+- 修改：TerrainMap 节点吸附只排除被拖动节点本身，不再排除整条当前路线。TrackLayer 节点特征增加仅渲染用 nodeLng/nodeLat 原始身份，pickNode 按显示位置算距离、返回原始身份，防止拖动预览吸附自己；不改保存格式。routeWindows.css 清除模式行重复背景/内距/边框，行和按钮均 border-box 36px。Luna 补路线合并、分支保留及预览身份拾取回归测试。
+- PASS：TypeScript、节点合并/selection-editing/camera-updates/route-edit-ui 定向测试。浏览器独立390预览真实选择节点后拖向同路线另一节点，原节点位置合入目标、出现未保存且可撤销；撤销后未保存消失，测试没有保存用户几何。模式行/四按钮实测同 top/bottom、36px，padding0且组背景透明；截图 artifacts/screenshots/node-snap-mode-bounds-390-20260927.png。最终网页构建、额外19项track-interaction/track-analysis-render及diff check通过；总56项定向测试通过。360×780实测按钮完整包含在组内、行高36px，主卡client/scroll均298×207，无滚动溢出；截图 artifacts/screenshots/node-snap-mode-bounds-360-20260927.png。
+- 性能调查：Luna只读复查普通pan没有逐帧React或GeoJSON更新；moveend才同步图层且数据去重。RouteGap/Issue提示存在时每move定位DOM，是条件热点，尚无真机GPU/触控证据，不作新的猜测性降清晰度改动。此前RAF、相机发布和GPU恢复优化仍在源码，未生成APK。
+- 搜索调查：实际顶部PlaceSearch调用 Photon/OSM，在线limit5、lang=default、lat/lon地图中心偏置，无bbox；离线仅用户下载路网道路名。国内山名缺失可能源数据无name/别名、候选上限/排序或离线无POI，不能换底图解决。只读，未替换服务。
+- Google：官方在线2D Map Tiles能接入，2026-09-27直接打开官方价格页确认每月100000瓦片免费、首档0.60美元/千瓦片（搜索摘要曾混入其他SKU，以直接页为准）。须个人Google Cloud项目、密钥、计费；禁止离线下载并须署名。用户还没有提供已启用项目；给官方申请入口，不使用他人Key/非官方瓦片。未宣称已加入图源。
+- 文件：modules/map/TerrainMap.tsx、modules/tracks/{TrackLayer.ts,routeWindows.css}、tests/route-node-join.test.mjs、CURRENT_STATE.md；日志 .openai/node-snap-bounds-*-20260927.log。
+- 阻塞：Google实际接入待用户自己的项目密钥；手机性能真机未验证。
+- 下一步：验证完成，保留用户原预览，关闭独立QA页；用户检查更新后的节点吸附和按钮组。按快速预览流程不打包、不推送。
+# 当前状态 — 2026-09-27 / 路线主编辑稳定布局及道路河道吸附
+
+- 目标：一级编辑卡不滚动、不因选点重排；选中效果与其他工具一致；用户进一步要求道路吸附/河道吸附独立入口，不设自由画线按钮。
+- 修改：RouteViews用tools/selection/style/marker显式视图。一级四行常驻，节点属性入口未选禁用、选中启用；点击节点只改状态和禁用，不挂载属性字段。颜色/备注、样式、标记移入同卡二级视图，返回回焦入口，进入子页退出框选。属性key仍按坐标/history，marker增加坐标key；选择无效时回主卡，避免旧草稿串点。routeWindows.css固定主行36/18/36/36及单行status，卡按内容尺寸无内滚动；二级属性grid、输入16px。outdoorSurfaces去自创底部亮线，保留共享selected弱底色/accent文字。
+- 吸附：RouteEditToolbar将自由画线按钮替换为河道吸附，新增riverSnapping/onRiverSnapping；app/page.tsx分别传真实road/river状态及setter，不再OR混合显示。沿用原道路/河道互斥开启规则、可点击当前开启项关闭；两者均关闭为自由画线。节点吸附独立，不改底图显示、TrackDrawing/FeatureDragBridge、路线几何或保存格式。route-edit-ui既有测试同步新入口语义。
+- PASS：TypeScript、39项route-edit-ui/route-edit-session/selection-editing、最终移动网页构建、git diff --check；Luna只读复核视图门控/草稿key和真实吸附传值。默认390×约857选点前后卡高208.915/上边583.954完全相同，clientHeight=scrollHeight207、clientWidth=scrollWidth298；清空选择尺寸不变，无自动属性栏/滚动条。属性/标记/样式子页内容均无横纵溢出，返回正确。360×780主卡同尺寸；390×480卡200px，client/scroll为264×198，所有按钮文字完整。河道按钮开关true→false、道路true→false实测，主题字色/底色切换且boxShadow none；恢复原道路/河道false、节点true。未改变/保存用户路线几何，退出编辑无保存询问。
+- 截图：artifacts/screenshots/route-edit-stable-{before-390,selected-390,390x480,360x780,road-390,final-390}-20260927.png；日志.openai/route-edit-stable-{tsc,tests,build,diff}-20260927.log。边界：真机触控、实际新建道路/河道连线路径、极矮360×360未验。本轮无APK、无推送，保留原预览；阻塞无，下一步用户看一级卡稳定布局。
+# 当前状态 — 2026-09-27 / 路线点选与吸附状态反馈
+
+- 目标：用户报告路线编辑点选与自由画线/道路吸附/节点吸附无反应。
+- 根因：真实浏览器中pressed=true/false全部为同一背景rgb(37,46,43)、文字rgb(242,245,237)。outdoorSurfaces通用控件规则包含input的两个:not属性，提高了:is选择器specificity，压过原active规则；非地图拾取链路损坏。
+- 修改：仅modules/controls/outdoorSurfaces.css限定route-edit-mode-row与route-selection-modes的pressed/expanded状态使用shared selected背景、accent文字和2px底部色线；相同原因的heading保存主按钮恢复accent。不覆盖颜色选色器和分叉按钮，不改吸附、节点选择、框选、路线几何和存储回调。
+- PASS：TypeScript无错误、移动网页构建、git diff --check；Luna只读复核事件链路与CSS范围。390×约857实际切道路吸附/节点吸附/框选加/退出框选，aria状态和高亮一致；恢复原自由画线=true、节点吸附=true偏好。点击路线两个不同可见节点，均显示已选1点，route-node-hit从left173.623/top228.545切至left279.35/top181.126；节点点选可直接切换。没有改位置或保存路线，退出编辑未触发保存询问。截图artifacts/screenshots/route-pick-{active,off}-390-20260927.png，日志.openai/route-pick-highlight-{tsc,build,diff}-20260927.log。
+- 阻塞无；下一步用户看当前按钮反馈。真机触控未验，本轮仅局部状态反馈，无新增布局；按快速预览流程不出APK、不推送。
+# 当前状态 — 2026-09-27 / 记录照片一屏操作
+
+- 目标：用户要求记录照片页集中显示，不再使用内部滑动窗口。
+- 修改：OutdoorPanel增加data-tab限定照片宿主；PhotoPicker拍摄/导入/文件夹三列44px，合并重复说明；PhotoPanel缩短常驻提示、时间校正直接显示，导入草稿逐张上一张/下一张（保留全量匹配与批量保存），已存照片每页4张；取消清理临时提示，不写入照片库。photos.css解除旧200px裁切，卡片内容自适应，dock-content无内部滚动，输入16px、次级36px，复用共享皮肤。未改相机回调、轨迹关联、存储、离线地图和记录逻辑。
+- 验证 PASS：TypeScript、21项 recording-photos/photo-matching/photo-details/photo-storage-rollback、最终移动网页构建、git diff --check。Pura X 440×707、360×780、默认390×约857、390×480默认照片页卡约330px，dock-content clientHeight=scrollHeight=270、横向258=258，3个文件入口44px完整。两张fixture照片通过真实filechooser导入，下一张显示timed-second.jpg/2/2，草稿卡约351px、内容293=293；取消后已存仍0，未保存测试照片。已存多页UI、真机原生相机/文件夹和极矮360×360尚未实测，不声称已验收。
+- 截图：artifacts/screenshots/photo-page-{390,390x480,360x780}-20260927.png；日志.openai/photo-page-{tsc,tests,build,diff}-20260927.log。构建只有既有大chunk提示。
+- 阻塞：无。下一步：用户查看本轮紧凑效果；按快速视觉流程未出APK、未推送。
+# 当前状态 — 2026-09-27 / 剖面移动实时坐标
+
+- 目标：移动时实时经纬度替代说明，移除已有标记按钮，错误不挤出滚动条。
+- 修改：SurveyPointEditor移动态改只读output，直接从state.object含preview的线路读取当前选中station坐标；取消按钮保留原cancelPreview/setPicking回调。移除已有标记重选按钮；错误从form网格移出独立行，保留真实错误语义。useSurveySection拖动中断提示缩为移动中断未保存，不改落位持久化。survey.css点编辑卡高度按内容自适应，内容overflow visible，错误时地图工具额外预留，坐标16px、按钮36/44px保持。
+- 核对：Luna只读确认editPoint(commitNow=false)仅预览，state.object返回preview，pointerup/点地图才提交；pointercancel不保存。验证PASS：TypeScript、26项survey-point-input/survey-line-and-collections/drawing-section-workflow、移动网页构建、diff check。Pura X 440×707、360×780、390×约857、390×480移动C坐标为103.850004/31.450141，卡约134px，内容clientHeight=scrollHeight=36；output clientWidth=scrollWidth=117，完整显示，无已有标记按钮。取消恢复同一坐标输入，普通编辑内容clientHeight=scrollHeight=74。无效经度abc触发真实校验错误，卡增至196px，clientHeight=scrollHeight=98，全部操作仍可见；重新移动清掉旧输入错误并恢复实时坐标。Luna最终复核取消/中断不会提交，commit失败提示保留。截图artifacts/screenshots/section-live-coordinate-{pura-x,360x780,390x480,390}-20260927.png与section-coordinate-error-pura-x-20260927.png；日志.openai/section-live-coordinates-{tsc,tests,build,diff}-20260927.log。边界：实时preview链路经代码复核，本轮未用用户现有剖面执行真实位置修改/持续拖动；未改变已保存几何。真机/触控/极矮360×360未验，阻塞无；不出APK、不推送。
+
+# 当前状态 — 2026-09-27 / 剖面资料与操作行统一
+
+- 目标：延续300px内容宽卡，修复资料UI重复标题/嵌套磨砂/字段挤压滚动，以及调方向命名和浅色提示块。
+- 修改：SurveySectionPanel增加data-view区分point-info/moving/editor；资料共用主标题，增加返回点位编辑，隐藏重复资料header与无关整条删除/图纸；X仍完整退出剖面。资料保存/定位/关联标记原处理保留，返回不保存当前资料草稿。SurveyPointEditor将调方向改为移动基准点，提示说明改变剖面方向，沿线模式提示限定剖面线，业务算法不变。survey.css资料200px/移动144px，名称备注两行+里程高程完整显示；移除内层磨砂与大框，操作主按钮明确主题色，模式选中/移动提示用主题深色。其余按钮继续内容宽度，次级36px/主操作44px/输入16px。
+- 当前验证PASS：390×约857资料只有一个header，名称备注36px、正文clientHeight=scrollHeight=100，内层透明/filter none，保存主色正确；返回到原点编辑，移动提示深色文字清楚，最终144px移动态clientHeight=scrollHeight=46。360×780/Pura X 440×707/390×约857/390×480资料正文clientHeight=scrollHeight=100；短按钮宽42/78/66/66，整排可见。返回/取消移动正常，X后data-survey=false且dock=0；390×480摇杆左上与右工具、卡无交叠。类型检查、26项定向测试、移动网页构建和diff check通过，日志.openai/section-details-{tsc,tests,build,diff}-20260927.log。截图artifacts/screenshots/section-point-info-{390,360,pura-x,390x480}-20260927.png、section-move-baseline-390-20260927.png、section-controls-pura-x-20260927.png。Luna只读复核原保存/照片标记/图纸信息/两种删除回调仍保留。无真实坐标或资料修改。真机与键盘未验，删除确认仍保留明确确认标题；当前阻塞无，不出APK、不推送。
+
+# 当前状态 — 2026-09-27 / 剖面按钮按内容宽度排列
+
+- 目标：继续收紧剖面UI，短文字按钮不应整行均分拉宽。
+- 修改：仅modules/section/survey.css；底部卡宽min(300px,可用宽减16px)，模式按钮和footer flex:0 0 auto按文字+安全留白宽度排列，不再均分。资料42px/调方向54px/沿线移动66px；次级36px、底部主操作44px、坐标16px保留。地图与SVG同步延伸至导航栏上沿，窄卡右侧直接显示地图，准星按实际地图高度居中，比例尺上移卡高避免遮挡；不改坐标数据或拾取实现。
+- 当前验证PASS：Pura X 440×707及360×780卡实际宽300px，内容clientHeight=scrollHeight=78，外卡无水平溢出；Pura X真实点击B点后标题及坐标成功切B，投影/拾取仍一致。Luna只读核实map project/overlay拖动局部坐标与resize/fit padding路径。截图artifacts/screenshots/section-content-width-{pura-x,360}-20260927.png。
+- 已完成：390×约857、390×480无滚动，主卡宽300px，地图/SVG高度一致；移动网页构建、diff check PASS。后续资料/移动态统一见本文件顶部。真机与键盘未验；快速预览流程不出APK、不推送。
+
+# 当前状态 — 2026-09-27 / 剖面合并紧凑底部卡
+
+- 目标：用户认为剖面UI过大且不应上下分成两部分；合并成单一底部操作卡。
+- 进度：完成。原survey-workbar移入survey-dock-heading，剖面名称/点号/整条删除/图纸/退出共用一行；删除PointEditor重复标题，资料/调方向或删点/沿线移动/已有标记排成一行。移动时只保留提示与取消。X直接state.close退出整个剖面，完成编辑保持同义入口，整条及沿线点删除语义未改。
+- 文件：modules/section/SurveySectionPanel.tsx、SurveyPointEditor.tsx、survey.css；docs/ui-standard.md。Luna section_compact_review只读检查保留资料/删除/移动/图纸等操作和视口预留关系。
+- 布局：点选卡176px、未展开120px；不再顶部栏。标题14px、输入16px；次级36px、底部44px、标题边距8px。保留实际地图高度与SVG overlay/准星预留一致。宽屏/矮屏直接工具分别两列/三列，避开3D、相机和卡片。未缩放字体/地图画布。
+- 验证PASS：TypeScript、26项survey-point-input/survey-line-and-collections/drawing-section-workflow、移动网页构建及diff check；Pura X 440×707、360×780、390×约857、390×480主卡实际176px，内容clientHeight=scrollHeight=78，无主面板滚动。Pura X点资料可开/关且页脚固定，调方向可取消；图纸可开/关；X后data-survey=false、dock=0。390×480工具三列与3D并排，不遮卡/摇杆。截图artifacts/screenshots/section-unified-{pura-x,360,390,390x480}-20260927.png。日志.openai/section-unified-{tsc,tests,build,format}-20260927.log。
+- 边界：点资料和添加标记类型内容仍按需内部滚动；本轮没有改几何/保存数据。极矮360×360、键盘弹出与Android真机触控未验。源码预览流程不出APK、不推送。
+- 阻塞：无。下一步：用户查看合并后的实际预览。
+# 当前状态 — 2026-09-27 / 路线详情补粗细
+
+- 目标：路线详情也能调整整条路线粗细，和画线一致。
+- 进度：完成。RouteDetails整条路线外观颜色下新增紧凑粗细select，共享TRACK_WIDTHS 0.5–5px/0.5px步长；TrackDrawingStyle复用同一档位。onAppearance只覆盖width，保留归一化颜色/透明度/模式/点大小与原几何；沿既有updateStyle保存。Luna只读追踪发现草稿ID调用updateStyle原本是假成功，app/page.tsx针对草稿改用tracks.setStyle，已保存路线仍updateStyle；色彩变化原有地图显示模式联动保持。
+- 文件：modules/tracks/{style.ts,TrackDrawingStyle.tsx,RouteViews.tsx,routeWindows.css}、app/page.tsx、docs/ui-standard.md、CURRENT_STATE.md。粗细控件88×36px，使用现有主题select样式，不加额外面板。
+- 验证PASS：TypeScript、18项route-edit-session/track-line-points定向测试、最终移动网页构建、diff check。独立360×780页打开已保存45.3km路线详情，从1.5改2.5px，提示粗细已保存；返回后重新打开详情仍2.5px，再恢复检查前1.5px。验证改动会更新路线updatedAt，原路线宽度已恢复，未改坐标/名称/颜色。截图artifacts/screenshots/route-details-width-360-20260927.png，日志.openai/route-details-width-{tsc,tests,build,diff}-20260927.log。Luna核实style只更新样式/updatedAt并持久化到原tracks存储，地图TrackLayer读取width；草稿分支代码核对，未单独新建草稿验收。
+- 阻塞：无。真机触控/存储满错误未验；草稿setStyle沿用既有存储失败错误提示，未重构保存接口。快速预览不打包/不推送。
+- 下一步：用户在当前右侧路线详情查看颜色下面的粗细入口；QA临时页关闭，用户tab8/tab9保留。
+# 当前状态 — 2026-09-27 / 收藏眼睛栏滑动连续显隐
+
+- 目标：按住右侧第一个眼睛下滑，将经过项连续关闭/打开；不是左侧勾选滑选。
+- 进度：完成。之前眼睛仅onClick；useFolderVisibilitySwipe是名称横向滑动，不覆盖此需求。
+- 修改：useSwipeSelection支持可选keyAttribute、共享list ref与onEnd；加入失焦结束及重复finish保护，原勾选默认保持。WorkbenchPanel新显隐gesture沿data-visibility-key收集真实叶项ID，文件夹包含其全部后代，地区虚拟文件夹包含对应地区项；以首项目标为准，松手一次setFolderVisibility提交，cancel/blur丢弃pending，避免过滤导致拖动过程中跳行且一次撤销恢复整次操作。单点同路径，click detail0保留键盘；眼睛touch-action:none，名称pan-y不变。docs/ui-standard.md追加规范。
+- 验证PASS：TypeScript、8项collection-workbench定向测试、移动网页构建、diff check。360×780独立页用真实鼠标从成都眼睛滑到德阳，两组共10项一起全隐，已隐藏10项；一次撤销两组全部全显；再次关闭后从全隐开始同样下滑两组全显；单点只关闭成都6项、德阳保持4项全显，无点击二次反转，再撤销恢复检查前全部可见。截图artifacts/screenshots/visibility-swipe-regions-hidden-360-20260927.png。Luna只读复核共享ref/默认勾选/地区解析/取消清理无严重回归。原勾选栏常驻是此前用户已授权的改动，本轮未改变该设计。
+- 文件：modules/collections/{useSwipeSelection.ts,WorkbenchPanel.tsx,workbench.css}、docs/ui-standard.md、CURRENT_STATE.md。日志.openai/visibility-swipe-{tsc,tests,build,diff}-20260927.log。保存结构与几何未改，沿用已测setWorkbenchVisibility/undo。
+- 阻塞：无。真机手指拖动与边缘自动滚动未单独验收；复用原hook，快速预览阶段不打包/不推送。
+- 下一步：用户在右侧当前预览按住眼睛栏下滑检查。QA临时页已关闭，用户两个预览tab8/tab9保留。
+# 当前状态 — 2026-09-27 / 阔屏预览与地图工具取消折叠
+
+- 目标：展示华为阔折叠展开比例，用户明确右侧工具不要折叠弹层。
+- 进度：完成最小修改。mobile/phone-preview.html增加pura-x（440×707逻辑像素）及横屏比例预设，默认OPPO 390×857保持。Pura X官方物理1320×2120比例只作模拟，具体型号与真机CSS密度未确认。
+- 修改：PositionDock.tsx移除工具toggle和弹层状态/监听；outdoorTheme.css删除740px折叠分支，601–740px常驻竖栏与摇杆分开，<=600px改两列44px常驻按钮，避让3D/框选，摇杆放在其左侧；短屏路线编辑卡扣除右侧工具宽度和上下预算。清理homeMap.css/positionDock.css过时toggle选择器。docs/ui-standard.md记录用户最新要求。未改路线数据、图源、地图像素密度或玻璃令牌。
+- 验证PASS：TypeScript、最终移动网页构建、git diff --check。实际Pura X模拟路线编辑：root宽440、无横向溢出；工具50×280在y287、3D/框选50×96在y56、编辑卡300×200在左下，无折叠按钮。390×480与360×360首页六个地图动作直接显示；极矮屏工具栏96×142在y156，各按钮44px，3D/框选截至y152，底栏起y304，摇杆72×68在左上不挡按钮。截图artifacts/screenshots/foldable-pura-x-direct-tools-20260927.png、direct-tools-{390x480,360x360}-20260927.png。Luna只读复核44px和focus-lock规则；真机触控、短屏剖面/导航的全部复杂组合未验。代码检查日志.openai/direct-tools-{tsc,build,diff}-20260927.log。
+- 阻塞：无实现阻塞。华为具体型号/系统显示密度仍待回复；不能将比例模拟认作真机适配验收。
+- 下一步：用户查看更新预览；本轮快速视觉确认不打包、不提交推送。新阔屏编辑预览tab9保留，原用户tab8状态不覆盖；浏览器临时viewport已reset。
+# 当前状态 — 2026-09-27 / 手机3D性能与路线闪烁调查
+
+- 目标：研究手机3D路线编辑卡顿和偶发闪烁，修证实的渲染热路径与恢复缺口。
+- 修改：Luna完成FeatureDragBridge的投影/吸附/预览RAF合并，松手同步最终坐标，取消清理帧；另一Luna完成TerrainModelMask关闭快速路径、零计数过渡、保留图集恢复纹理。主agent添加cameraUpdates限制周边控件10Hz、同角度/zoom平移跳过发布、moveend准确同步；quickAdd在movestart收起。补route-access/guidance-access/坡度警告统一排序；诊断增加最多120个相机运动render间隔。MapLibre6.7源码不自动恢复custom layers，首次真实GPU模拟复现restore的resize触发AreaLayer.addSource在style未加载时报错，现lost设置loaded=false、moveend防未加载写入、restored通过contextEpoch只重建地图资源，父React编辑数据保留。
+- 文件：modules/map/{FeatureDragBridge.ts,TerrainMap.tsx,cameraUpdates.ts,overlayData.ts,renderDiagnostics.ts}、modules/modelTerrain/terrainMask.ts、app/page.tsx；定向测试selection-editing/overlay-data/render-diagnostics、新增camera-updates/model-terrain-mask；docs/mobile-render-performance.md；新增仅开发验证页mobile/render-recovery-qa.html。不改保存格式、路线坐标/高程、图源、DEM256、DPR清晰度或磨砂样式。
+- 验证PASS：48项定向测试、TypeScript、移动网页构建。GL mock关闭100次draw为0次状态读取/纹理绑定，启用到关闭及恢复重上传通过。独立360×780页面真实WEBGL_lose_context连续两次丢失/恢复均重建画布，原路线编辑面板保留；恢复后DEM与瓦片ready、contextLost=false、路线图层可见，地图可继续拖动。最终连续恢复期间无新增console error。首次AreaLayer恢复错误已修，曾有QA临时页面MutationObserver旧错误，最终两次恢复检查没有复现。截图artifacts/screenshots/mobile-render-recovery-360-20260927.png。日志.openai/mobile-perf-{tests,tsc,build,diff}-20260927.log；最终构建5.00s；只读复核后补剖面/模型configure与cursor未加载门控，重建时恢复cursor。
+- 边界：尚无朋友手机型号/闪烁类型回复；Android GPU/低内存/长路线持续编辑/模型真机未验，不能认定其闪烁根因或给出真机性能提升百分比。完整DPR+额外MSAA、多块磨砂合成仍是待真机测量风险，本轮未盲目降清晰度。
+- 阻塞：无代码阻塞；真机验收需要设备反馈。当前预览流程不生成APK、不提交推送。
+- 下一步：用户检查更新后的源码预览，补充手机型号与路线闪/整图闪类型后按诊断区分CPU、GPU上下文或DEM加载；详见docs/mobile-render-performance.md。
+# 当前状态 — 2026-09-27 / 剖面选中直接切换目标
+
+- 目标：普通选中剖面时，点击其他标记/路线/照片/区域可直接切换，明确取点或移动时保留原操作。
+- 修改：app/page.tsx的pickingActive由survey.active收紧为实际picking/dragging/markerTarget；普通目标回调复用switchFromSection关闭当前编辑态后继续选择，旧矩形剖面也退出编辑；TerrainMap移除矩形剖面未命中后的全局提前return，保留命中剖面和取点优先级。不删除已保存剖面，不改数据结构。
+- 验证PASS：TypeScript、移动网页构建、25项survey/绘制工作流/路线拾取定向测试、diff check。独立360×780页面先选剖面2，真实鼠标点击地图标记后data-survey=false，survey-dock/workbar均0且目标标记显示选中名称；再次选剖面2后直接打开剖面1，标题成功切换；进入已有标记重选再取消，剖面仍在且picking恢复false。再次选剖面2真实点击路线后data-survey=false、routeCard=1，路线名称为德阳市 · 2026/09/27 15:52。截图artifacts/screenshots/section-switch-{marker,route}-360-20260927.png；日志.openai/section-switch-{tsc,tests,build}-20260927.log。Luna只读复核各目标回调和取点门控；旧矩形提前return亦已解除，尚未单独实测旧矩形。
+- 阻塞：无。快速预览阶段不出包、不提交推送。
+- 下一步：用户查看源码预览；照片、区域以及旧矩形切换未逐一视觉验证，真机触控未测。
+
+# 当前状态 — 2026-09-27 / 收藏滑动连选入口恢复
+
+- 目标：收藏默认列表可直接滑动连选，不必先按多选按钮。
+- 修改：WorkbenchPanel.tsx常驻左侧勾选栏，沿栏拖动复用useSwipeSelection；松手后再切换多选布局，避免拖动过程中离线入口隐藏导致行跳位；键盘勾选进入多选，选中数量即时显示，名称区域仍原生滚动。没有更改收藏数据或隐藏/排序行为。
+- 验证PASS：TypeScript、collection-workbench定向测试、移动网页构建、diff check。独立360×780页默认勾选栏可见、未进入多选；真实鼠标拖动首项至第三项后已选3项、自动进入多选，反向拖动已选栏后0项；完成退出保留勾选栏，Enter勾选进入多选且1项。栏宽44px/高36px、touch-action:none，名称区pan-y，列表clientWidth=scrollWidth=360px。截图artifacts/screenshots/collection-swipe-select-360-20260927.png；日志.openai/swipe-select-{tsc,tests,build}-20260927.log。Luna只读审核确认松手后切布局可避开行跳位。
+- 阻塞：无；快速预览阶段不出APK、不推送。
+- 下一步：用户查看默认收藏页；真机手指拖动及边缘自动滚动尚未实测，原hook保留，本轮不出APK/提交推送。
+
+# 当前状态 — 2026-09-27 / 导航标记与路线显示入口补全
+
+- 目标：导航未点选路线点也能标记；导航过程中可调整路线显示。
+- 修改：app/page.tsx移除准星/标记依赖导航点选的条件，无点选使用地图中心；GuidanceCard展开菜单增加路线显示，独立导航显示窗口以当前导航路线为目标，打开后导航条收起并保留。设置避开导航条；操作按钮换行避免窄屏挤压。显示窗口随退出导航或进入其他操作关闭，不改导航进度与已保存数据。
+- 文件：app/page.tsx、modules/guidance/GuidanceCard.tsx及guidance.css、modules/routeDisplay/RouteDisplaySettings.tsx及routeDisplay.css。Luna仅负责GuidanceCard入口，主agent整合状态及视觉验证。
+- 验证PASS：TypeScript、移动网页构建与diff check；独立360×780页面由收藏启动真实导航流程，未选路线点时中心标记入口1，点击成功打开快速添加并取消，导航仍在。导航展开可见路线显示入口，设置目标为当前规划/导航路线，内容clientHeight=scrollHeight=222px；设置top98px，导航条bottom92px，间距6px。操作区宽259px无横向溢出，按钮换行后高度36/37px。X和Esc关闭后导航region1、标记入口1、设置0。截图artifacts/screenshots/navigation-display-entry-360-20260927.png；日志.openai/navigation-entry-{tsc,build}-20260927.log。用户当前主预览持续操作，最终验证在独立QA页完成并已关闭。
+- 阻塞：无。仍沿用预览确认流程，不出APK或推送。
+- 下一步：用户查看当前源码预览；真机定位、触控未验，未生成新APK。
+
+# 当前状态 — 2026-09-27 / 路线显示收进所选路线菜单
+
+- 目标：右侧不再常驻路线显示，点击路线后在路线菜单中进入设置。
+- 修改：app/page.tsx增加display路线子窗口；HomeRouteCard新增路线显示操作，与其他操作组成三列布局；RouteDisplayControl改为独立RouteDisplaySettings，关闭/Esc/外部点击回路线菜单，选择时设置目标为当前路线；MapActions移除旧插槽，PositionDock更新标签，routeDisplay说明同步。显示偏好存储和渲染语义保留。
+- 验证PASS：TypeScript、移动网页构建、diff check；浏览器未选路线时入口0，所选路线菜单入口1，右侧栏入口0。设置自动选中该路线，X和Esc均返回路线菜单。390与360菜单内容clientHeight=scrollHeight（183/213px），三列六按钮无横向溢出；设置276px高，内容clientHeight=scrollHeight=222px，无滚动。截图artifacts/screenshots/route-display-menu-{390,360}-20260927.png；日志.openai/route-display-menu-{tsc,build}-20260927.log。
+- 阻塞：无。当前快速预览流程不出包、不提交推送。
+- 下一步：用户查看右侧当前路线菜单预览；真机触控未验，本轮只调整所选路线菜单入口。
+
+# 当前状态 — 2026-09-27 / 剖面点X直接退出
+
+- 目标：剖面点编辑的X直接退出整个当前剖面，避免只收起点位菜单后仍留在编辑状态。
+- 修改：modules/section/SurveyPointEditor.tsx将X从state.hidePointMenu改为state.close，与顶部返回及完成编辑一致，aria-label改为退出剖面。复用现有退出流程，不删除已保存剖面，不改其他子窗口关闭行为。
+- 验证PASS：浏览器打开剖面2的A点后触发X，data-survey=false，survey-workbar与survey-dock均0，退出按钮消失，已保存剖面2入口仍有1个；截图artifacts/screenshots/survey-x-exit-20260927.png。TypeScript、移动网页构建与diff check通过，日志.openai/survey-x-exit-{tsc,build}-20260927.log。
+- 阻塞：无。右侧已回地图；本轮先不出APK/提交/推送。未应用的坐标草稿仍按既有退出语义取消，已保存数据保留。
+
+# 当前状态 — 2026-09-27 / 工具面板下置
+
+- 目标：用户要求工具入口弹出的面板也放在下方，与记录浮窗统一。
+- 修改：modules/controls/outdoorTheme.css仅对data-panel=tools的map-control-panel设top:auto、bottom:home-footer+8px；功能和其他窗口未改。
+- 验证PASS：浏览器390×857实测面板bottom792.87px、底栏top800.87px，间距8px；面板181px，内容client/scroll均125px，无滚动。截图artifacts/screenshots/tools-bottom-390-20260927.png。npm run build:android:web与git diff --check通过，日志.openai/tools-bottom-build-20260927.log。
+- 阻塞：无。右侧保留工具下置预览，快速视觉确认阶段未出包/提交/推送。
+
+# 当前状态 — 2026-09-27 / 记录一屏紧凑化
+
+- 目标：记录页面缩减留白，正常手机比例一屏显示主要入口，保留主题、字距与触控规范。
+- 文件：modules/outdoor/RecordingPanel.tsx移除重复沿途标题；recordingConsole.css移除嵌套卡片和双重内距，缩紧分组、底部说明与离线入口；记录浮窗按可用空间限制最高500px，取代强制200px裁切。主操作/位置与照片44px，次操作36px，数值输入16px。
+- 验证PASS：默认390×857、360×780、390×480均实测面板高316px、内容client/scroll均260px，无滚动及水平溢出；正常屏展开设置高462px，内容client/scroll均406px，无滚动。480矮屏默认top100/bottom416，不遮底栏。截图artifacts/screenshots/record-compact-{390,360,480}-20260927.png、record-settings-360-20260927.png。右侧正式预览留在默认记录页。
+- 命令：npx tsc --noEmit、npm run build:android:web、recorded-details定向5项测试、git diff --check均PASS。日志.openai/record-compact-{tsc,build-final}-20260927.log与recording-compact-targeted-20260927.log。agent首次合跑无关offline-start因JAVA_HOME失败，此次未改离线代码；定向复验通过。
+- 阻塞：无。未验证真机定位/录制和结束状态；矮屏展开设置或长错误信息增长时保留必要滚动，不能裁切。按当前快速确认流程先不打包/提交/推送。
+
+# 当前状态 — 2026-09-27 / 右侧预览服务恢复
+
+- 目标：解决用户右侧看不到预览。定位：9174前端与3108 API均无监听，HTTP000。
+- 进展：以隐藏后台进程恢复Vite手机预览9174/PID28904及vinext API3108/PID13656；开发模式使用当前源码。右侧请求打开http://127.0.0.1:9174/phone-preview.html，open_in_codex返回queued，手机默认390×约857。
+- 文件变更：本状态记录；运行日志和PID记录.openai/preview-{api,mobile,pids}-20260927-*，无业务源码修改。
+- 命令/验证：git status/diff、端口检查、限时HTTP请求、Start-Process Hidden、最长35秒API就绪检查。初次API依赖扫描未完成导致502，启动完成后手机页/应用页/API品牌图/前端代理地形瓦片均HTTP200（地形image/png，106274字节）。服务验证PASS；浏览器实际显示/截图尚未验证，原浏览器读取策略阻塞未绕过。
+- 当前阻塞：无服务阻塞；用户需查看右侧新打开页面，旧错误页若仍显示可手动刷新。
+- 下一步：查看高清渲染改动效果；继续遵守先不打包，无APK/发布。
+
+# 当前状态 — 2026-09-27 / 高清屏地图清晰度（代码检查PASS，视觉待验）
+
+- 目标：处理地图文字/道路模糊；用户明确先不打包，沿用本地预览确认流程。
+- 进展及文件：modules/map/TerrainMap.tsx 移除2倍pixelRatio硬上限，使用MapLibre原生屏幕密度并保留默认4096画布/GPU限幅；modules/map/renderDiagnostics.ts及tests/render-diagnostics.test.mjs增加实际画布/CSS尺寸、屏幕密度与实际像素比诊断。图源、DEM tileSize、用户数据、既有磨砂修改不变。
+- 已执行：git status/diff、交接/代码阅读、MapLibre本地实现及官方MapOptions核查；浏览器读取尝试；npx tsc --noEmit等价直接Node命令、渲染诊断/栅格层11项定向测试、vite build --config mobile/vite.config.ts、git diff --check。检查/构建子进程限时120秒，日志.openai/map-sharpness-{tsc,tests,build}-20260927.log。
+- 验证PASS：类型、11项测试、移动网页构建、diff检查；实际安装的MapLibre原型在Node下6组密度/尺寸验证通过（DPR1/2/3/3.5、390×857/360×780、超大画布限幅），日志.openai/map-sharpness-ratios-20260927.log；不代表GPU或浏览器渲染验证。首次验证脚本误用default import失败，改用包的命名Map导出后通过。
+- 视觉BLOCKED：浏览器安全策略拒绝读取当前127.0.0.1:9174预览，未绕过；无本轮截图，未声称视觉或真机改善通过。
+- 注记审查：Luna只读核查确认天地图cia/cva/cta仍为原服务256px栅格，超maxzoom将放大最高级瓦片；不改图源/瓦片尺寸/来源覆盖，不以nearest插值或虚增服务级别冒充高清。本次处理应用DPR限制，源图片细节上限仍存在。官方依据https://maplibre.org/maplibre-gl-js/docs/API/type-aliases/MapOptions/与https://maplibre.org/maplibre-style-spec/sources/。
+- 当前阻塞：自动浏览器视觉检查不可用；手机实测仍待后续安装验证。
+- 下一步：用户刷新可用预览查看；后续明确打包时再验证手机相同视角/图源的清晰度和性能。按当前本地预览流程未提交/推送、未改版本、未生成APK或发布。
+
+# 当前状态 — 2026-09-26 / 路线显示磨砂一致性
+
+- 目标：修正路线显示面板与右侧工具栏磨砂观感不同。两者原computed透明度都是0.64，但home-position-dock祖先backdrop-filter建立了嵌套采样边界，并改变fixed浮窗定位。
+- 修改：modules/controls/outdoorSurfaces.css将右侧栏材质移到::before，父节点透明且无滤镜；仍使用64%/blur18px统一令牌，浮窗独立采样地图背景。无业务逻辑改动。
+- 验证PASS：npx tsc --noEmit、npm run build:android:web、git diff --check。浏览器实测面板与栏背景均rgba(24,32,31,.64)/blur18px，父栏无滤镜；面板恢复viewport top56px、宽276px、高280px且未越界。截图artifacts/screenshots/frost-nesting-20260926.png，观感一致。日志.openai/frost-nesting-{tsc,build}-20260926.log。
+- 阻塞：无。下一步用户查看右侧实时预览，按快速视觉确认流程暂不出APK/提交/推送。
+
 # 当前状态 — 2026-09-26 / 0.2.74 APK交付
 
 - 目标：修正3D剖面时图层面板位置、标记返回自动保存、剖面选中后点击其他标记直接切换，并打包发布APK。路线详情误报已由用户撤回，本轮未改。

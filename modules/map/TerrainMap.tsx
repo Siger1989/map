@@ -11,7 +11,7 @@ import { RasterCoordinates } from '../mapSources/RasterCoordinates';
 import { rasterDatumKey } from '../mapSources/coordinates';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
 ('use client');
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
 import { addContours, syncContourInterval, baseStyle } from '../terrain/terrain';
 import { readElevation } from '../terrain/elevation';
@@ -49,6 +49,7 @@ import {
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
+import { cameraViewPublisher } from './cameraUpdates';
 import { snapMapRoad } from './roadSnap';
 import {
   FeatureDragBridge,
@@ -150,6 +151,7 @@ type Props = {
   onPoint: (point: Point) => void;
   onStatus: (status: string) => void;
   onView: (view: ViewState) => void;
+  onCameraMoveStart?: () => void;
   onAnchor: (anchor: [number, number]) => void;
   onCenter?: (center: [number, number]) => void;
   onSatellite: (satellite: SatelliteState) => void;
@@ -199,6 +201,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const coverageCleanup=useRef<(()=>void)|null>(null);
     useEffect(()=>()=>{coverageCleanup.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
+    const [contextEpoch, setContextEpoch] = useState(0);
     const boxGestureActive = useRef<boolean>(false);
     // Updated synchronously by the app before React propagates the new layer props.
     const terrainMode = useRef(settings.terrain);
@@ -465,6 +468,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         latest.current.selectedSectionId,
         latest.current.annotations,
       );
+      sectionRef.current?.setCursor(latest.current.sectionCursor);
     };
     const finishBoxGesture = () => {
       if (!boxGestureActive.current) return;
@@ -800,7 +804,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             container: container.current,
             style: baseStyle(),
             transformRequest: offlineTransform,
-            pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+            // Use MapLibre's native devicePixelRatio; a 2x cap softens high-DPI
+            // labels and lines. Its default maxCanvasSize/GL limits still apply.
             ...(readLastView() ?? INITIAL_VIEW),
             // MapLibre gives a valid explicit URL hash priority over the saved camera.
             hash: true,
@@ -815,6 +820,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: true },
           });
           mapRef.current = map;
+          const publishView = cameraViewPublisher(value => latest.current.onView(value));
+          map.on('movestart', () => latest.current.onCameraMoveStart?.());
           const mapElement = map.getContainer();
           const onWheel = () => latest.current.onBrowse();
           const onPinch = (event: TouchEvent) => {
@@ -860,8 +867,18 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           const terrainGL = map.getCanvas().getContext('webgl2');
           if (terrainGL) modelMaskRef.current = new TerrainModelMask(terrainGL);
           diagnostics.current = observeMapRendering(map);
-          map.on('webglcontextlost', () => latest.current.onStatus('地图绘制上下文已中断，正在等待恢复；界面仍可操作'));
-          map.on('webglcontextrestored', () => latest.current.onStatus('地图绘制上下文已恢复，正在重新加载地图'));
+          map.on('webglcontextlost', () => {
+            loaded.current = false;
+            rememberView();
+            latest.current.onStatus('地图绘制上下文已中断，正在等待恢复；界面仍可操作');
+          });
+          map.on('webglcontextrestored', () => {
+            if (disposed) return;
+            latest.current.onStatus('地图绘制上下文已恢复，正在重新加载地图');
+            // MapLibre 6.7 cannot restore custom layers. Recreate only the map;
+            // React keeps the current route, editing state and saved objects.
+            setContextEpoch(epoch => epoch + 1);
+          });
           sourceRef.current = new MapSourceLayer(map, (text) =>
             latest.current.onSourceStatus?.(text),
           );
@@ -949,7 +966,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 trackRef.current?.pickNode(
                   point,
                   (node) =>
-                    node.trackId !== target.node.trackId &&
+                    !(node.trackId === target.node.trackId &&
+                      node.coordinate[0] === target.node.coordinate[0] &&
+                      node.coordinate[1] === target.node.coordinate[1]) &&
                     state.trackOverlay.saved.some(
                       (t) =>
                         t.id === node.trackId &&
@@ -1111,11 +1130,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             latest.current.onCenter?.(initialCenter.wrap().toArray());
             weatherAnchor.current = initialCenter.toArray();
             latest.current.onAnchor(weatherAnchor.current);
-            latest.current.onView({
+            publishView({
               pitch: map.getPitch(),
               bearing: map.getBearing(),
               zoom: map.getZoom(),
-            });
+            }, true);
             pick(initialCenter.lng, initialCenter.lat);
             syncSatellite();
             latest.current.onStatus('真实地形 · 点击地图读取海拔');
@@ -1194,9 +1213,6 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 latest.current.onSectionSelect();
                 return;
               }
-              if (latest.current.sectionEditing) {
-                return;
-              }
             }
             if (!latest.current.pickingActive) {
               if (
@@ -1252,7 +1268,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             cameraFrame = requestAnimationFrame(() => {
               cameraFrame = 0;
               if (!disposed && !boxGestureActive.current)
-                latest.current.onView({
+                publishView({
                   bearing: map.getBearing(),
                   pitch: map.getPitch(),
                   zoom: map.getZoom(),
@@ -1266,7 +1282,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.originalEvent) latest.current.onManualRotate();
           });
           map.on('moveend', (event) => {
-            if (boxGestureActive.current) return;
+            if (boxGestureActive.current || !loaded.current) return;
+            publishView({ bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom() }, true);
             areaRef.current?.sync(latest.current.areaOverlay);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) return;
@@ -1366,7 +1383,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         weatherRef.current = null;
         temperatureRef.current = null;
       };
-    }, []);
+    }, [contextEpoch]);
     useEffect(() => {
       sync();
     }, [
@@ -1379,6 +1396,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       props.mapSource,
     ]);
     useEffect(() => {
+      if (!loaded.current) return;
       sectionRef.current?.configure(props.section, props.annotations);
       sectionCollectionRef.current?.configure(
         props.sectionItems,
@@ -1392,7 +1410,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       props.selectedSectionId,
     ]);
     useEffect(() => {
-      sectionRef.current?.setCursor(props.sectionCursor);
+      if (loaded.current) sectionRef.current?.setCursor(props.sectionCursor);
     }, [props.sectionCursor]);
     useEffect(() => {
       syncSatellite();
@@ -1408,7 +1426,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (loaded.current) trackRef.current?.sync(props.trackOverlay);
     }, [props.trackOverlay]);
     useEffect(() => {
-      modelTerrainRef.current?.configure(props.annotations, settings);
+      if (loaded.current) modelTerrainRef.current?.configure(props.annotations, settings);
     }, [props.annotations, settings]);
     useEffect(() => {
       if (loaded.current) areaRef.current?.sync(props.areaOverlay);

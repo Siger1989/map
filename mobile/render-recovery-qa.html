@@ -1,0 +1,32 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>地图上下文恢复 QA</title>
+<style>body{background:#202622;color:#fff;font:14px sans-serif;margin:8px;overflow:hidden}button{padding:10px}iframe{border:0;width:360px;height:780px;position:absolute;left:440px;top:8px;transform:scale(.88);transform-origin:top left}pre{max-width:420px;white-space:pre-wrap}</style>
+<button id="lose">模拟GPU上下文丢失并恢复</button><pre id="report">请先在独立地图中打开路线编辑，再触发模拟。
+</pre><iframe title="独立地图恢复检查" src="/"></iframe>
+<script>
+const frame=document.querySelector('iframe'),report=document.querySelector('#report');
+const log=text=>report.textContent+=text+'\n';
+document.querySelector('#lose').onclick=()=>{
+  const doc=frame.contentDocument,canvas=doc.querySelector('.maplibregl-canvas');
+  if(!canvas)return log('BLOCKED: 地图未加载');
+  const gl=canvas.getContext('webgl2'),extension=gl?.getExtension('WEBGL_lose_context');
+  if(!extension)return log('BLOCKED: 不支持模拟上下文丢失');
+  const editor=doc.querySelector('[aria-label="路线编辑工具"]')?.textContent;
+  canvas.addEventListener('webglcontextlost',()=>log('context lost'),{once:true});
+  canvas.addEventListener('webglcontextrestored',()=>log('context restored'),{once:true});
+  let done=false;
+  const observer=new MutationObserver(()=>{
+    const current=doc.querySelector('.maplibregl-canvas');
+    if(current&&current!==canvas&&!done){
+      done=true; log('PASS: 画布已重建');
+      log('编辑面板保留: '+(Boolean(editor)&&editor===doc.querySelector('[aria-label="路线编辑工具"]')?.textContent));
+      observer.disconnect();
+    }
+  });
+  observer.observe(doc.body,{subtree:true,childList:true});
+  extension.loseContext();
+  setTimeout(()=>extension.restoreContext(),1000);
+  setTimeout(()=>{if(!done)log('FAIL: 10秒内未重建画布');observer.disconnect()},10000);
+};
+</script>

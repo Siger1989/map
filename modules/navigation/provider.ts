@@ -12,6 +12,13 @@ import { normalizeRegion } from '../collections/regions.ts';
 import { connectRoadAccess, nearestRoadPlaces } from './roadAccess.ts';
 import { tryOfflineRoute, offlinePlaces } from '../offlineRouting/provider.ts';
 import { routingMode } from '../offlineRouting/preferences.ts';
+import { basemapConfiguration } from '../cartography/basemaps.ts';
+import { buildTiandituSearchURL, normalizeTiandituPlaces } from './tiandituSearch.ts';
+
+export type PlaceSearchSource = 'tianditu' | 'photon';
+export function defaultPlaceSearchSource(): PlaceSearchSource {
+  return basemapConfiguration().domestic ? 'tianditu' : 'photon';
+}
 
 // Provider boundary: public demonstration services for this small test build.
 // Production clients should use an operated backend with application-wide limits.
@@ -317,10 +324,21 @@ export async function searchPlaces(
   query: string,
   near: Coordinate,
   signal: AbortSignal,
+  source?: PlaceSearchSource,
 ) {
   if (query.trim().length < 2)
     throw new Error('请输入至少两个字，或使用地图选点。');
   if (routingMode() === 'offline') return offlinePlaces(query.trim());
+  if ((source ?? defaultPlaceSearchSource()) === 'tianditu') {
+    const config = basemapConfiguration();
+    if (!config.domestic) throw new Error('未配置天地图搜索密钥，请选择全球搜索。');
+    const found = normalizeTiandituPlaces(
+      await requestJSON(buildTiandituSearchURL(query, config.token), signal),
+    );
+    // Route planning keeps worldwide coverage; the explicit search selector
+    // only uses its chosen provider.
+    if (found.length || source === 'tianditu') return found;
+  }
   const params = new URLSearchParams({
     q: query.trim().slice(0, 120),
     lang: 'default',

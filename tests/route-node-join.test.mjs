@@ -5,6 +5,7 @@ import {
   startRouteEdit,
   moveEditNode,
   undoRouteEdit,
+  storeRouteEdit,
 } from '../modules/tracks/routeEdit.ts';
 import { storeJoinedRouteEdit } from '../modules/tracks/joinedEditStore.ts';
 import { TRACK_STORAGE } from '../modules/tracks/drawing.ts';
@@ -69,6 +70,21 @@ test('snapped endpoint becomes a continuous editable route; undo and unsnapped m
   assert.equal(saved.annotations[0].trackAnchor.trackId, 'first');
   assert.deepEqual(saved.annotations[0].coordinates, d);
   assert.ok(saved.annotations[0].trackAnchor.distance > 200);
+});
+test('moving a node onto another node on the same route collapses only the shared edge and saves undoably', () => {
+  const branch = [104.001, 30.001];
+  const original = { ...route('same-route', '#ff0000', [a, b, c, d]), segments: [[a, b, c, d], [b, branch]] };
+  const disk = archive([original]);
+  const moved = moveEditNode(startRouteEdit(original), b, c, original);
+
+  assert.deepEqual(moved.track.segments, [[a, c, d], [c, branch]]);
+  assert.equal(moved.sources.length, 1, 'same-route snapping must not become an archive merge');
+  assert.deepEqual(undoRouteEdit(moved).track.segments, original.segments);
+
+  storeRouteEdit(moved, disk, 'unused', 2);
+  const saved = JSON.parse(disk.getItem(TRACK_STORAGE));
+  assert.equal(saved.length, 1);
+  assert.deepEqual(saved[0].segments, [[a, c, d], [c, branch]]);
 });
 test('interior junction keeps three real branches and a third snapped archive participates in undo', () => {
   const target = route('target', '#00ff00', [c, d, [104.004, 30]]);
@@ -212,8 +228,9 @@ test('rendered snap targets exist in edit mode and filtering ignores the closer 
     queryRenderedFeatures: () => hits,
   };
   const layer = new TrackLayer(map);
+  const sameRoute = { ...first, segments: [[a, b, c]] };
   const state = {
-    saved: [first, second],
+    saved: [sameRoute, second],
     draft: [],
     nodes: [],
     visible: true,
@@ -236,6 +253,40 @@ test('rendered snap targets exist in edit mode and filtering ignores the closer 
   assert.equal(
     layer.pickNode({ x: 220, y: 0 }, (n) => n.trackId !== 'first', 14),
     null,
+  );
+
+  const preview = { node: { trackId: 'first', coordinate: b }, coordinate: [104.0019, 30] };
+  layer.sync({ ...state, preview });
+  const previewNode = data.features.find(
+      (feature) => feature.properties.trackId === 'first' && feature.properties.nodeLng === b[0] && feature.properties.nodeLat === b[1],
+    ),
+    sameRouteTarget = data.features.find(
+      (feature) => feature.properties.trackId === 'first' && feature.properties.nodeLng === c[0] && feature.properties.nodeLat === c[1],
+    );
+  assert.equal(previewNode.properties.lng, preview.coordinate[0], 'the dragged point renders at its preview coordinate');
+  assert.equal(previewNode.properties.nodeLng, b[0], 'the point retains its original node identity');
+  hits = [previewNode, sameRouteTarget];
+  const closest = layer.pickNode({ x: 194, y: 0 }, undefined, 14);
+  assert.equal(closest.trackId, 'first');
+  assert.deepEqual(closest.coordinate, b, 'the returned node identity stays original');
+  assert.ok(Math.abs(closest.distance - 4) < 1e-6, 'hit distance follows the preview position');
+  assert.deepEqual(
+    layer.pickNode(
+      { x: 194, y: 0 },
+      (node) => node.trackId !== 'first' || node.coordinate[0] !== b[0] || node.coordinate[1] !== b[1],
+      14,
+    ).coordinate,
+    c,
+    'excluding the dragged node still allows another node on the same route',
+  );
+  assert.equal(
+    layer.pickNode(
+      { x: 180, y: 0 },
+      (node) => node.coordinate[0] !== b[0] || node.coordinate[1] !== b[1],
+      14,
+    ),
+    null,
+    'snap radius is measured from the displayed preview position',
   );
   layer.sync({ ...state, snapTargets: false });
   assert.equal(

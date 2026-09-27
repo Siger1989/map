@@ -1,6 +1,3 @@
-.route-display-control {
-  color: var(--ui-ink, var(--text));
-}
 .route-display-settings {
   position: fixed;
   z-index: 70;
@@ -26,6 +23,10 @@
   min-height: 36px;
   gap: 2px;
   padding: 0 2px;
+}
+.observatory.home-map .route-display-settings--navigation {
+  top: calc(var(--home-header-height) + var(--home-top) + 50px);
+  max-height: min(280px, calc(100dvh - var(--home-header-height) - var(--home-top) - var(--home-footer) - 74px));
 }
 .route-display-settings header strong {
   font-size: 12px;

@@ -4,7 +4,7 @@
 
 所有标记圆点进入地图，远景文字使用MapLibre避让，放大可看分散标签；不再通过丢弃后面的提示控制密度。长坡重复标记次数不等于详情中连续50米窗口统计的段数。回滚只需将useRouteDisplay改回旧标记生成、恢复文字布局设置；没有数据/偏好迁移。
 
-入口useRouteDisplay与RouteDisplayControl。输入既有TrackOverlay/RouteOverlay，输出只供渲染的副本；不修改原轨迹几何、逐点时间、海拔、暂停段和收藏。PositionDock通过MapActions插槽组合控件，位置逻辑仍在position。
+入口useRouteDisplay与RouteDisplaySettings。点击路线后，所选路线菜单提供“路线显示”；设置关闭返回路线菜单，右侧地图栏不再常驻此入口。导航时通过导航条展开菜单进入，目标为当前导航全程，关闭保留导航。输入既有TrackOverlay/RouteOverlay，输出只供渲染的副本；不修改原轨迹几何、逐点时间、海拔、暂停段和收藏。
 
 preferences独立持久化显示开关。海拔色阶共用routeAnalysis/elevationColors；无实测海拔时仅对选中路线调用既有DEM采样器（目标192点，每个独立段保留端点；三并发/24瓦片缓存），请求可取消。缺测/断段不插补。统计/剖面/陡坡/坐标分别可选，缺测灰色，估算明确标注。
 

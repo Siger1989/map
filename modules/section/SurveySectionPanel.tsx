@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  ChevronLeft,
   FileText,
   Plus,
   MapPin,
@@ -8,6 +7,7 @@ import {
   X,
   RefreshCw,
   Trash2,
+  ChevronLeft,
 } from 'lucide-react';
 import type { Annotation } from '../annotations/data';
 import {
@@ -87,23 +87,25 @@ export function SurveySectionPanel({
       className="survey-panel survey-details"
       aria-label={deletePoint ? '删除沿线点' : info ? '图纸信息' : '点位资料'}
     >
-      <header>
-        <strong>
-          {deletePoint ? '删除沿线点' : info ? '图纸信息' : '点位资料'}
-        </strong>
-        <button
-          aria-label="关闭资料窗口"
-          onClick={() => {
-            setInfo(null);
-            if (!sheet) {
-              setPointInfo(null);
-              setDeletePoint(null);
-            }
-          }}
-        >
-          <X size={16} />
-        </button>
-      </header>
+      {!pointInfo && (
+        <header>
+          <strong>
+            {deletePoint ? '删除沿线点' : info ? '图纸信息' : '点位资料'}
+          </strong>
+          <button
+            aria-label="关闭资料窗口"
+            onClick={() => {
+              setInfo(null);
+              if (!sheet) {
+                setPointInfo(null);
+                setDeletePoint(null);
+              }
+            }}
+          >
+            <X size={16} />
+          </button>
+        </header>
+      )}
       <div className="survey-panel-body">
         {deletePoint ? (
           <p>从剖面删除 {deletePoint.label} 点？关联标记仍保留在地图上。</p>
@@ -199,6 +201,7 @@ export function SurveySectionPanel({
         ) : pointInfo ? (
           <>
             <button
+              className="survey-primary"
               onClick={() => {
                 if (savePoint(pointInfo)) setPointInfo(null);
               }}
@@ -218,7 +221,6 @@ export function SurveySectionPanel({
                 照片/标记
               </button>
             )}
-            <button onClick={() => setPointInfo(null)}>返回</button>
           </>
         ) : (
           info &&
@@ -246,41 +248,65 @@ export function SurveySectionPanel({
   const genericPick = ['first', 'second', 'point', 'marker'].includes(
     state.picking ?? '',
   );
+  const movingPoint =
+    selected && (state.picking === selected.id || state.dragging);
   return (
     <>
-      <section className="survey-workbar" aria-label="勘探线剖面编辑">
-        <button onClick={state.close} aria-label="关闭勘探线剖面">
-          <ChevronLeft size={20} />
-        </button>
-        <strong>{object?.name ?? '新建勘探线'}</strong>
-        {state.busy && (
-          <RefreshCw
-            size={14}
-            className="survey-loading"
-            aria-label="正在更新地形"
-          />
-        )}
-        {line && (
-          <button
-            className="survey-delete"
-            aria-label="删除整条剖面"
-            onClick={() => {
-              state.select(state.selected);
-              setDeleteWhole(true);
-            }}
-          >
-            <Trash2 size={16} />
-            删除
+      <section
+        className="survey-dock"
+        aria-label="剖面点编辑区"
+        data-view={pointInfo ? 'point-info' : movingPoint ? 'moving' : 'editor'}
+      >
+        <header className="survey-dock-heading" aria-label="勘探线剖面编辑">
+          {pointInfo && (
+            <button
+              onClick={() => setPointInfo(null)}
+              aria-label="返回点位编辑"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          <strong title={object?.name}>
+            {object?.name ?? '新建勘探线'}
+            {selected && state.pointMenu && !genericPick && (
+              <small>
+                {' '}
+                ·{' '}
+                {pointInfo
+                  ? `${detailsStation?.label ?? selected.label} 点资料`
+                  : `${selected.label} 点`}
+              </small>
+            )}
+          </strong>
+          {state.busy && (
+            <RefreshCw
+              size={14}
+              className="survey-loading"
+              aria-label="正在更新地形"
+            />
+          )}
+          {line && !pointInfo && (
+            <button
+              className="survey-delete"
+              aria-label="删除整条剖面"
+              onClick={() => {
+                state.select(state.selected);
+                setDeleteWhole(true);
+              }}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+          {line && !pointInfo && (
+            <button onClick={() => setSheet(true)} aria-label="查看剖面图纸">
+              <FileText size={18} />
+              图纸
+            </button>
+          )}
+          <button onClick={state.close} aria-label="退出剖面">
+            <X size={18} />
           </button>
-        )}
-        {line && (
-          <button onClick={() => setSheet(true)}>
-            <FileText size={18} />
-            图纸
-          </button>
-        )}
-      </section>
-      <section className="survey-dock" aria-label="剖面点编辑区">
+        </header>
         {deleteWhole ? (
           <section
             className="survey-panel survey-details"

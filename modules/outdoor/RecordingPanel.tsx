@@ -47,7 +47,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped
       </div>}
       {recorder.finishing && <small role="status">正在结束并收尾…</small>}
     </div>
-    <div className="record-function-group record-group-along"><small>沿途内容</small><div className="record-console-actions">
+    <div className="record-function-group record-group-along"><div className="record-console-actions">
       <button onClick={()=>setMessage(onMarkCurrent())}><MapPinPlus size={16}/>位置标记</button>
       <button onClick={onPhotos}><Images size={16}/>拍摄 / 导入照片</button>
     </div></div>

@@ -33,10 +33,13 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .weather-summ
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .weather-summary .summary-icon { width: 16px; height: 16px; }
 
 /* The two tool groups read as rails, with no border around every action. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='tools'] #map-control-panel {
+  top: auto;
+  bottom: calc(var(--home-footer) + 8px);
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock) { padding: 3px; width: 50px; box-sizing: border-box; background: var(--ui-surface); border-radius: 16px; box-shadow: var(--ui-shadow); gap: 2px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-guiding='true']):not([data-route-edit='true']):not([data-survey='true']):not([data-focus-locked='true']) .home-position-dock { bottom: var(--ui-controls-bottom); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions > button,.home-position-dock .position-dock-button) { color: var(--ui-ink); background: transparent; border: 0; border-radius: var(--ui-radius-control); box-shadow: none; flex-shrink: 0; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-tools-toggle { display: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions > button[aria-pressed='true'],.home-position-dock .position-dock-button[aria-pressed='true'],.home-position-dock .position-dock-button[aria-expanded='true']) { color: var(--ui-accent); background: var(--ui-selected); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions > button.dimension-button { font-size: 16px; font-weight: 650; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-locate-button { color: var(--ui-accent); }
@@ -127,23 +130,21 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-provider-note { color: var(--ui-muted); border: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-provider-note summary { color: var(--ui-muted); font-size: 11px; background: transparent; border: 0; }
 
-/* A short viewport keeps the rail's primary follow action in place; the other
-   tools open together in a bounded, scrollable palette rather than colliding. */
-@media (max-height: 740px) {
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock .position-tools-toggle { display: flex; }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .position-extended-controls { display: none; }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock[data-tools-open='true'] .position-extended-controls {
-    position: absolute; display: grid; grid-template-columns: repeat(3,44px); gap: 4px;
-    right: 56px; bottom: 0; width: max-content; max-height: min(200px,calc(100dvh - var(--home-top) - var(--home-header-height) - var(--ui-controls-bottom) - 16px));
-    box-sizing: border-box; padding: 8px; overflow: auto; overscroll-behavior: contain;
-    background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 16px; box-shadow: var(--ui-shadow);
+/* Keep every map action directly reachable. Short screens wrap the same
+   44px targets into two columns instead of hiding them behind a tools menu. */
+@media (min-height: 601px) and (max-height: 740px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock {
+    bottom: calc(var(--home-footer) + 84px);
   }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .position-extended-controls :is(.direction-menu,.raster-level-panel) { position: static; grid-column: 1/-1; max-width: 140px; width: 140px; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-camera-control { bottom: calc(var(--home-footer) + 8px); }
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-focus-locked='true'] .position-extended-controls { display: contents; }
-@media (max-height: 410px) {
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] { --ui-controls-bottom: calc(var(--home-footer) + 76px); }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock { flex-direction: row; width: 96px; }
+@media (max-height: 600px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] { --ui-controls-bottom: auto; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock {
+    display: grid; grid-template-columns: repeat(2,44px); width: 96px;
+    top: calc(var(--home-top) + var(--home-header-height) + 108px); bottom: auto;
+  }
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel) { max-width: calc(100% - var(--home-left) - var(--home-right) - 108px); }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock[data-tools-open='true'] .position-extended-controls { right: 104px; bottom: 56px; max-height: min(120px,calc(100dvh - var(--ui-controls-bottom) - 56px - var(--home-top) - var(--home-header-height) - 8px)); }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-camera-control { top: calc(var(--home-top) + var(--home-header-height) + 8px); bottom: auto; right: calc(var(--home-right) + 104px); }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock { width: min(300px,calc(100% - var(--home-left) - var(--home-right) - 108px)); max-height: min(200px,calc(100dvh - var(--home-top) - var(--home-header-height) - 108px - var(--home-footer) - 8px)); }
 }

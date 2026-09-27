@@ -13,6 +13,7 @@ export function GuidanceCard({
   onShare,
   compact = true,
   onRally,
+  onDisplay,
   telemetry,
 }: {
   guidance: GuidanceState;
@@ -23,6 +24,7 @@ export function GuidanceCard({
   onShare: () => void;
   compact?: boolean;
   onRally?: () => void;
+  onDisplay?: () => void;
   telemetry?: ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -140,6 +142,7 @@ export function GuidanceCard({
           <div className="guidance-actions">
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
+            {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(false); onDisplay(); }}>路线显示</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '恢复跟随'}

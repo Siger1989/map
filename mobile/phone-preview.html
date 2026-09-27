@@ -6,11 +6,18 @@
 <script>
 const phone=document.querySelector('#phone'),frame=document.querySelector('iframe');
 // Keep the right-side preview fixed by default; named sizes are for separate QA tabs.
-const checks={'360x780':[360,780],'390x480':[390,480],'360x360':[360,360]};
+// Pura X presets reproduce the official 1320:2120 inner-screen shape.
+// CSS density is illustrative; HarmonyOS display settings/container may differ.
+const checks={'360x780':[360,780],'390x480':[390,480],'360x360':[360,360],
+  'pura-x':[440,440*2120/1320],'pura-x-landscape':[440*2120/1320,440]};
 const requested=new URLSearchParams(location.search).get('viewport');
 const check=Object.hasOwn(checks,requested)?checks[requested]:null;
 const [width,height]=check||[390,390*2760/1256];
-if(check)frame.title='山兔独立适配检查 · '+requested;
+if(check){
+  const fold=requested.startsWith('pura-x');
+  document.title=fold?'山兔 · 华为阔屏比例预览':'山兔 · 独立适配检查';
+  frame.title=fold?'山兔华为阔屏比例模拟 · '+(requested.endsWith('landscape')?'横屏':'竖屏')+' · 非真机':'山兔独立适配检查 · '+requested;
+}
 frame.style.width=width+'px';frame.style.height=height+'px';
 function fit(){const scale=Math.min(1,Math.max(1,innerWidth-16)/width,Math.max(1,innerHeight-16)/height);phone.style.width=width*scale+'px';phone.style.height=height*scale+'px';frame.style.transform='scale('+scale+')'}
 frame.src='/'+location.hash;

@@ -58,7 +58,7 @@
 .guidance-card[data-compact='true'] .guidance-status { font-size: 11px; margin: 2px 0; }
 .guidance-card[data-compact='true'] header button { margin: 0; }
 .observatory.home-map .guidance-card[data-compact='true'] {
-  top: calc(var(--home-header-height) + var(--home-top) - 2px) !important;
+  top: calc(var(--home-header-height) + var(--home-top) + 4px) !important;
   left: var(--home-left) !important;
   width: min(300px, calc(100vw - var(--home-left) - var(--home-right) - 52px)) !important;
   border-radius: 20px;
@@ -117,6 +117,7 @@
 }
 .guidance-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 .guidance-share {
@@ -135,7 +136,7 @@
   justify-content: center;
   gap: 4px;
   min-height: 44px;
-  flex: 1;
+  flex: 1 1 84px;
   background: #24424a;
   border-radius: 7px;
   font-size: 14px;
@@ -187,7 +188,7 @@
 .observatory.home-map[data-guiding='true'] .home-camera-control { bottom: calc(var(--home-footer) + 100px); right: 8px; }
 .observatory.home-map:has(.layer-window) .route-display-info { visibility: hidden; }
 /* Collapsed navigation is one row; expanded details stay compact. */
-.observatory.home-map .guidance-card { top: calc(var(--home-header-height) + var(--home-top) - 2px); left: var(--home-left); width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 52px)); border-radius: 20px; box-sizing: border-box; max-height: min(182px, calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 24px)); }
+.observatory.home-map .guidance-card { top: calc(var(--home-header-height) + var(--home-top) + 4px); left: var(--home-left); width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 52px)); border-radius: 20px; box-sizing: border-box; max-height: min(182px, calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 24px)); }
 .observatory.home-map .guidance-card[data-compact='false'] { min-height: 0; }
 .observatory.home-map .guidance-card[data-compact='false'] header { min-height: 44px; height: 44px; padding: 0 8px; gap: 4px; }
 .observatory.home-map .guidance-card[data-compact='false'] header strong { flex: 1 1 auto; min-width: 0; font-size: 11px; gap: 3px; }

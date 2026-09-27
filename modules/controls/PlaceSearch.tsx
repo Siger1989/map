@@ -2,9 +2,10 @@ import { isLayoutInteraction } from '../uiLayout/events';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, MapPin, Share2 } from 'lucide-react';
-import { searchPlaces } from '../navigation/provider';
+import { defaultPlaceSearchSource, searchPlaces, type PlaceSearchSource } from '../navigation/provider';
 import type { Coordinate, RoutePlace } from '../navigation/types';
 import { useMapPlaceLabel } from './PlaceName';
+import { routingMode } from '../offlineRouting/preferences';
 
 export function PlaceSearch({
   center,
@@ -20,6 +21,7 @@ export function PlaceSearch({
   onShare: (place: RoutePlace) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [source, setSource] = useState<PlaceSearchSource>(defaultPlaceSearchSource);
   const [open, setOpen] = useState(false);
   const [composing, setComposing] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -31,6 +33,7 @@ export function PlaceSearch({
   const near = useRef(center);
   near.current = center;
   const { title } = useMapPlaceLabel(center, zoom);
+  const offline = routingMode() === 'offline';
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +66,7 @@ export function PlaceSearch({
           query,
           near.current ?? [0, 20],
           controller.signal,
+          source,
         );
         if (!controller.signal.aborted) {
           setResults(found);
@@ -79,7 +83,7 @@ export function PlaceSearch({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, open, composing, revision]);
+  }, [query, open, composing, revision, source]);
 
   return (
     <div
@@ -174,7 +178,14 @@ export function PlaceSearch({
             aria-label="地点搜索结果"
           >
             <div className="place-search-heading">
-              <span>地点搜索</span>
+              <span>搜索</span>
+              {!offline && defaultPlaceSearchSource() === 'tianditu' && (
+                <select aria-label="搜索数据源" value={source}
+                  onChange={(event) => setSource(event.target.value as PlaceSearchSource)}>
+                  <option value="tianditu">天地图</option>
+                  <option value="photon">全球（OSM）</option>
+                </select>
+              )}
               <button
                 type="button"
                 aria-label="关闭地点搜索"
@@ -220,7 +231,7 @@ export function PlaceSearch({
               )}
             </div>
             <small className="place-search-credit">
-              Photon / OpenStreetMap
+              {offline ? '已下载离线路网 · 道路名' : source === 'tianditu' ? '天地图 · 地名搜索' : 'Photon / OpenStreetMap'}
             </small>
           </section>
         </FloatingSearch>

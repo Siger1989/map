@@ -114,7 +114,7 @@ import { useMotionHeading } from '@/modules/position/useMotionHeading';
 import { canFollow, recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import { useRouteDisplay } from '@/modules/routeDisplay/useRouteDisplay';
-import { RouteDisplayControl } from '@/modules/routeDisplay/RouteDisplayControl';
+import { RouteDisplaySettings } from '@/modules/routeDisplay/RouteDisplaySettings';
 import {
   formatDistance,
   formatDuration,
@@ -327,9 +327,10 @@ export default function Home() {
     const keys = new Set(editor.session?.track.segments.flat().map(p => p.join(',')) ?? []);
     setRouteNodeSelection(old => old.filter(p => keys.has(p.join(','))));
   }, [editor.session?.track]);
-  const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker'>(
+  const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker' | 'display'>(
     'card',
   );
+  const [navigationDisplayOpen, setNavigationDisplayOpen] = useState(false);
   const [unsavedExit, setUnsavedExit] = useState(false);
   const [routeChild, setRouteChild] = useState(false);
   const routeReturnPoint = useRef<TrackLinePoint | null>(null);
@@ -871,6 +872,7 @@ export default function Home() {
   const openFavoriteRoute = (id: string) => {
     const favorite = favorites.items.find((item) => item.id === id.slice('favorite:'.length));
     if (!favorite || !navigation.restore(favorite)) return;
+    survey.close();
     tracks.select(null);
     annotations.select(null);
     areas.select(null);
@@ -1153,6 +1155,10 @@ export default function Home() {
     railTrack?.id ?? null,
     follow.blocked || !!editor.session || measurement.active || survey.active,
   );
+  useEffect(() => {
+    if (!guidance.active || panel || quickAdd || rallyMode || editor.session || measurement.active || sectionEditing)
+      setNavigationDisplayOpen(false);
+  }, [guidance.active, panel, quickAdd, rallyMode, editor.session, measurement.active, sectionEditing]);
   const update = (patch: Partial<LayerSettings>) => {
     if (patch.contourInterval !== undefined) saveContourInterval(patch.contourInterval);
     if (patch.terrain !== undefined) map.current?.setTerrainMode(patch.terrain);
@@ -1257,8 +1263,17 @@ export default function Home() {
     !selectedPhoto &&
     !featureMove &&
     !measurement.active &&
-    (!guidance.active || !!linePoint) &&
     !boxSelecting));
+  const switchFromSection = () => {
+    if (survey.picking || survey.dragging || survey.markerTarget) return false;
+    if (survey.active) survey.close();
+    if (sectionEditing) {
+      setSectionEditing(false);
+      setProfileOpen(false);
+      setSectionCursor(null);
+    }
+    return true;
+  };
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
@@ -1400,8 +1415,8 @@ export default function Home() {
           onStatus={(message) => setMapStatus(offlineMapStatus(message))}
           onView={(value) => {
             setView(value);
-            setQuickAdd(null);
           }}
+          onCameraMoveStart={() => setQuickAdd(null)}
           onAnchor={setAnchor}
           onCenter={setMapCenter}
           onSatellite={setSatellite}
@@ -1415,7 +1430,7 @@ export default function Home() {
           onModelTerrainStatus={setModelTerrainStatus}
           onAreaSelect={(id) => {
             if (focusLock.locked) return;
-            if (editor.session || survey.active) return;
+            if (editor.session || !switchFromSection()) return;
             areas.select(id);
             annotations.select(null);
             tracks.select(null);
@@ -1440,7 +1455,7 @@ export default function Home() {
               if (photo) survey.pick(photo.coordinates);
               return;
             }
-            if (survey.active) return;
+            if (!switchFromSection()) return;
             if (measurement.active) {
               const photo = linkedPhotos.find((p) => p.id === ids[0]);
               if (photo && measurement.adding)
@@ -1484,25 +1499,25 @@ export default function Home() {
             annotations.picking ||
             navigation.picking !== null ||
             measurement.active ||
-            survey.active,
+            survey.picking || survey.dragging || survey.markerTarget,
           )}
           onTrackSelect={(id) => {
-            if (focusLock.locked || survey.active) return;
+            if (focusLock.locked || !switchFromSection()) return;
             if (id.startsWith('favorite:')) {
               if (!editor.session) openFavoriteRoute(id);
             } else if (!editor.session) openRoute(id);
           }}
           onRouteSelect={() => {
-            if (!navigation.route || focusLock.locked || editor.session || survey.active) return;
+            if (!navigation.route || focusLock.locked || editor.session || !switchFromSection()) return;
             tracks.select(null);
             annotations.select(null);
             areas.select(null);
             setTrackLinePoint(null);
             setPanel('route');
           }}
-          onTrackLineSelect={point => { if (!focusLock.locked && !survey.active) selectLinePoint(point); }}
+          onTrackLineSelect={point => { if (!focusLock.locked && switchFromSection()) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
-            if (survey.active) return;
+            if (!switchFromSection()) return;
             if (node.trackId === 'live-recording') return;
             if (editor.session) {
               if (editor.session.branch !== null)
@@ -1535,6 +1550,7 @@ export default function Home() {
             });
           }}
           onDragBegin={(target) => {
+            if (!switchFromSection()) return;
             position.free();
             tracks.finish();
             if (target.kind === 'track') {
@@ -1587,7 +1603,7 @@ export default function Home() {
               if (item) survey.pick(item.coordinates);
               return;
             }
-            if (survey.active) return;
+            if (!switchFromSection()) return;
             if (measurement.active) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -1633,7 +1649,7 @@ export default function Home() {
             setPanel(null);
           }}
           onAnnotationNavigate={(id, slot) => {
-            if (survey.active) return;
+            if (!switchFromSection()) return;
             const item = annotations.items.find(annotation => annotation.id === id && annotation.visible);
             if (!item) return;
             navigation.place(slot, {
@@ -1770,6 +1786,7 @@ export default function Home() {
                   onMarker={() => setRouteWindow('marker')}
                   onEdit={() => beginRouteEdit(railTrack)}
                   onDetails={() => setRouteWindow('details')}
+                  onDisplay={() => { routeDisplay.choose(railTrack.id); setRouteWindow('display'); }}
                   onDelete={railTrack.id === DRAFT_ID ? undefined : () => {
                     if (!tracks.remove(railTrack.id)) return false;
                     setTrackLinePoint(null);
@@ -1778,9 +1795,18 @@ export default function Home() {
                 />
                 </>
               )}
+              {routeWindow === 'display' && (
+                <RouteDisplaySettings display={routeDisplay} onClose={() => setRouteWindow('card')} />
+              )}
               {routeWindow === 'details' && (
                 <RouteDetails
-                  onAppearance={(style) => { const ok = tracks.updateStyle(railTrack.id, style); if (ok && (style.color !== railTrack.style?.color || style.colorMode !== railTrack.style?.colorMode)) routeDisplay.update({ mode: 'original' }); return ok; }}
+                  onAppearance={(style) => {
+                    let ok = true;
+                    if (railTrack.id === DRAFT_ID) tracks.setStyle(style);
+                    else ok = tracks.updateStyle(railTrack.id, style);
+                    if (ok && (style.color !== railTrack.style?.color || style.colorMode !== railTrack.style?.colorMode)) routeDisplay.update({ mode: 'original' });
+                    return ok;
+                  }}
                   sourceName={tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded')?.name}
                   onSource={tracks.saved.some(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded') ? () => { const source = tracks.saved.find(t => railTrack.sourceTrackIds?.includes(t.id) && t.source === 'recorded'); if (source) openRoute(source.id); } : undefined}
                   key={railTrack.id}
@@ -1854,12 +1880,11 @@ export default function Home() {
                 : undefined
             }
             snapping={tracks.snapping}
-            roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+            roadSnapping={tracks.roadSnapping}
+            riverSnapping={tracks.riverSnapping}
             onSnapping={() => tracks.setSnapping(!tracks.snapping)}
-            onRoadSnapping={() => {
-              if (tracks.riverSnapping) tracks.setRiverSnapping(false);
-              else tracks.setRoadSnapping(!tracks.roadSnapping);
-            }}
+            onRoadSnapping={() => tracks.setRoadSnapping(!tracks.roadSnapping)}
+            onRiverSnapping={() => tracks.setRiverSnapping(!tracks.riverSnapping)}
             error={editor.error}
             onBack={backEditor}
             onSave={() => saveEditor()}
@@ -2286,6 +2311,11 @@ export default function Home() {
           <GuidanceCard
               telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={displayedFix} />}
               onRally={() => { setPanel(null); setRallyMode(true); }}
+              onDisplay={() => {
+                setPanel(null);
+                routeDisplay.choose('display-planned-route');
+                setNavigationDisplayOpen(true);
+              }}
               onShare={() => {
                 const s = guidance.session;
                 if (s)
@@ -2314,6 +2344,9 @@ export default function Home() {
               }}
             />
           )}
+        {navigationDisplayOpen && guidance.active && !panel && !rallyMode && !quickAdd && !editor.session && !measurement.active && !sectionEditing && (
+          <RouteDisplaySettings display={routeDisplay} navigating onClose={() => setNavigationDisplayOpen(false)} />
+        )}
         {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} previewFraction={navigationPreviewFraction} />}
         {rallyMode && navigation.route && <RallyNavigation
           display={routeDisplay}
@@ -2510,18 +2543,6 @@ export default function Home() {
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           fix={displayedFix}
           showCoordinates={routeDisplay.preferences.coordinates && !panel && !quickAdd && !tracks.editing && !editor.session}
-          displayControl={
-            <RouteDisplayControl
-              navigating={guidance.active}
-              display={routeDisplay}
-              blocked={
-                follow.blocked ||
-                !!editor.session ||
-                measurement.active ||
-                survey.active
-              }
-            />
-          }
           viewControl={
             <CameraGizmo
               view={view}

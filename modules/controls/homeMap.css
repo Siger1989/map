@@ -63,7 +63,6 @@
 .observatory.home-map .home-map-actions small { position: static; font-size: 12px; line-height: 14px; }
 .observatory.home-map .home-position-dock { position: absolute; z-index: 12; right: var(--home-right); bottom: calc(var(--home-footer) + var(--home-breathe) + 32px); display: flex; flex-direction: column; gap: 4px; pointer-events: none; }
 .observatory.home-map .home-position-dock > * { pointer-events: auto; }
-.observatory.home-map .home-position-dock .position-tools-toggle { display: none; }
 .observatory.home-map .home-position-dock .position-dock-button small { font-size: 10px; line-height: 13px; }
 .observatory.home-map .home-position-dock > button:last-of-type { color: var(--home-green); }
 .observatory.home-map .home-position-dock > button:last-of-type svg { width: 23px; height: 23px; }

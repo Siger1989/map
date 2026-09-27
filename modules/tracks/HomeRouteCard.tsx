@@ -1,7 +1,7 @@
 import { recordedStats, recordedDuration } from './recordedStats';
 import { trackSourceLabel, hasTrackTime } from './provenance';
 import { useMemo, useState } from 'react';
-import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Trash2 } from 'lucide-react';
+import { Mountain, ChevronRight, Navigation, Bookmark, Pencil, FileText, Trash2, ChartNoAxesCombined } from 'lucide-react';
 import type { ManualTrack } from './drawing';
 import type { TrackLinePoint } from './linePoint';
 import { trackAlternatives } from './alternatives';
@@ -12,10 +12,11 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onRename, onDelete, onClearError }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
+  onDisplay?: () => void;
   onDelete?: () => boolean;
   onClearError?: () => void;
 }) {
@@ -68,6 +69,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>
+      {onDisplay && <button onClick={onDisplay} aria-label="路线显示设置"><ChartNoAxesCombined size={18} />路线显示</button>}
       {onDelete && <button onClick={() => setConfirmDelete(true)} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
     </nav></>}
     {confirmDelete && <div className="home-route-delete-confirm" role="group" aria-label="确认删除路线">

@@ -309,6 +309,19 @@ function fixture(t, kind = 'track', direct = false, snap) {
     previews = [],
     commits = [],
     begins = [];
+  let nextFrameId = 1;
+  const frames = new Map();
+  win.requestAnimationFrame = (callback) => {
+    const id = nextFrameId++;
+    frames.set(id, callback);
+    return id;
+  };
+  win.cancelAnimationFrame = (id) => frames.delete(id);
+  win.flushFrames = () => {
+    const pending = [...frames.values()];
+    frames.clear();
+    for (const callback of pending) callback(0);
+  };
   container.classList = {
     add: (name) => classes.add(name),
     remove: (name) => classes.delete(name),
@@ -401,12 +414,14 @@ test('drag snapping previews exact target identity and rechecks on release; seco
   const f = fixture(t,'track',true,(_,p)=>Math.abs(p.x-130)<14 ? target : null);
   f.win.fire('pointerdown',f.event());
   f.win.fire('pointermove',f.event(1,135,240));
+  f.win.flushFrames();
   assert.deepEqual(f.previews.at(-1).coordinate,target.coordinate);
   assert.deepEqual(f.previews.at(-1).snappedNode,target);
   f.win.fire('pointerup',f.event(1,135,240));
   assert.deepEqual(f.commits.at(-1).snappedNode,target);
   f.win.fire('pointerdown',f.event());
   f.win.fire('pointermove',f.event(1,130,240));
+  f.win.flushFrames();
   f.win.fire('pointerup',f.event(1,160,240));
   assert.equal(f.commits.at(-1).snappedNode,undefined);
   f.win.fire('pointerdown',f.event());
@@ -444,6 +459,7 @@ test('node hold previews without writes, release commits once and suppresses fol
   f.win.fire('pointerdown', f.event());
   t.mock.timers.tick(480);
   f.win.fire('pointermove', f.event(1, 130, 240));
+  f.win.flushFrames();
   assert.deepEqual(f.previews.at(-1).coordinate, [13, 24]);
   assert.equal(f.commits.length, 0);
   f.win.fire('pointerup', f.event(1, 130, 240));
@@ -459,12 +475,36 @@ test('node hold previews without writes, release commits once and suppresses fol
   assert.equal(f.classes.size, 0);
 });
 
+test('drag preview work is coalesced per frame and release synchronously commits its final coordinate', (t) => {
+  let snapCalls = 0;
+  const f = fixture(t, 'track', true, () => { snapCalls++; return null; });
+  f.win.fire('pointerdown', f.event());
+  const initialPreviews = f.previews.length;
+  f.win.fire('pointermove', f.event(1, 120, 220));
+  f.win.fire('pointermove', f.event(1, 130, 230));
+  f.win.fire('pointermove', f.event(1, 140, 240));
+  assert.equal(f.previews.length, initialPreviews);
+  assert.equal(snapCalls, 0);
+  f.win.flushFrames();
+  assert.equal(f.previews.length, initialPreviews + 1);
+  assert.equal(snapCalls, 1);
+  assert.deepEqual(f.previews.at(-1).coordinate, [14, 24]);
+  f.win.fire('pointermove', f.event(1, 150, 250));
+  f.win.fire('pointerup', f.event(1, 160, 260));
+  assert.equal(snapCalls, 2);
+  assert.deepEqual(f.commits.at(-1).coordinate, [16, 26]);
+  const previewCountAfterRelease = f.previews.length;
+  f.win.flushFrames();
+  assert.equal(f.previews.length, previewCountAfterRelease);
+});
+
 test('selected node begins dragging immediately, commits on release and cancels on second touch', (t) => {
   const f = fixture(t, 'track', true);
   f.win.fire('pointerdown', f.event());
   assert.equal(f.begins.length, 1);
   assert.equal(f.map.dragPan.active, false);
   f.win.fire('pointermove', f.event(1, 130, 240));
+  f.win.flushFrames();
   f.win.fire('pointerup', f.event(1, 130, 240));
   assert.deepEqual(f.commits[0].coordinate, [13, 24]);
   f.win.fire('pointerdown', f.event());
@@ -491,6 +531,7 @@ for (const phase of ['waiting', 'dragging'])
       f.win.fire('pointermove', f.event(1, 140, 200));
     }
     f.win.fire('pointerdown', f.event(2, 150, 250));
+    f.win.flushFrames();
     t.mock.timers.tick(1000);
     assert.equal(f.map.touchZoomRotate.active, true);
     assert.equal(f.map.dragPan.active, true);
@@ -531,6 +572,8 @@ for (const reason of [
     } else if (reason === 'dispose') f.bridge.dispose();
     else f.win.fire(reason, f.event());
     assert.equal(f.commits.length, 0);
+    assert.equal(f.previews.at(-1), null);
+    f.win.flushFrames();
     assert.equal(f.previews.at(-1), null);
     assert.equal(f.map.dragPan.active, true);
     assert.equal(f.map.dragRotate.active, false);

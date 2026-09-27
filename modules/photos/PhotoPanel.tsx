@@ -47,6 +47,11 @@ export function PhotoPanel({
     [shift, setShift] = useState(0);
   const [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
+  const [draftPage, setDraftPage] = useState(0);
+  const [savedPage, setSavedPage] = useState(0);
+  const draftIndex = Math.min(draftPage, Math.max(0, drafts.length - 1));
+  const savedPages = Math.ceil(photos.items.length / 4);
+  const savedIndex = Math.min(savedPage, Math.max(0, savedPages - 1));
   const track = photoTrackChoice(
     tracks,
     target,
@@ -118,6 +123,7 @@ export function PhotoPanel({
     }
     if (!active.current) return;
     setDrafts(next);
+    setDraftPage(0);
     setBusy(false);
     setMessage(
       failed.length
@@ -147,31 +153,22 @@ export function PhotoPanel({
           </select>
         </label>
       </div>
-      {!timed.length && (
+      {!timed.length && !drafts.length && (
         <p className="route-note">
-          先保存一次实走记录，或导入含时间的
-          GPX。无时间的旧轨迹无法自动定位照片；若有原始 GPX
-          可重新导入，普通手绘线不能补出真实拍摄时间轴。
+          自动定位需实走记录或含时间的 GPX，手绘线无法匹配。
         </p>
       )}
       {matches.some(({ draft, match }) => draft.cameraTrackId && !match) && (
         <p className="route-note" role="status">
-          拍摄照片暂未取得可靠的轨迹位置或拍摄时定位，照片草稿已保留。可开启定位后重新拍摄，或补充拍摄时间并选择可匹配的实走记录。
+          草稿已保留；补充拍摄时间，或定位后重新拍摄。
           <button type="button" onClick={onRequestLocation}>为后续拍摄获取当前位置</button>
         </p>
       )}
       {!!drafts.length && (
         <>
-          <strong className="photo-target">
-            {track?.name ?? '轨迹已不存在，请取消后重新选择'}
-          </strong>
-          <details>
-            <summary>
-              校正拍摄时间
-              {shift ? `（${shift > 0 ? '+' : ''}${shift} 分钟）` : ''}
-            </summary>
-            <label>
-              照片时间校正（分钟）
+          {track && <strong className="photo-target">{track.name}</strong>}
+          <label className="photo-time-shift" title="正数向后移；无时区按本机时区解释，不用文件修改时间猜测。">
+              时间校正（分钟）
               <input
                 type="number"
                 min={-1440}
@@ -188,16 +185,16 @@ export function PhotoPanel({
                   )
                 }
               />
-            </label>
-            <p className="route-note">
-              正数把照片时间向后移。无拍摄时区时按本机时区解释；下列时间可逐张修正，不使用文件修改时间猜测。
-            </p>
-          </details>
-          <strong role="status">
-            可匹配 {count} / {drafts.length} 张
-          </strong>
+          </label>
+          <div className="photo-page-controls" aria-label="照片草稿切换">
+            <button disabled={busy || draftIndex === 0} onClick={() => setDraftPage(draftIndex - 1)} aria-label="上一张照片">上一张</button>
+            <span role="status">{draftIndex + 1}/{drafts.length} · 可匹配 {count} 张</span>
+            <button disabled={busy || draftIndex >= drafts.length - 1} onClick={() => setDraftPage(draftIndex + 1)} aria-label="下一张照片">下一张</button>
+          </div>
           <div className="photo-drafts">
-            {matches.map(({ draft, match }, i) => (
+            {matches.slice(draftIndex, draftIndex + 1).map(({ draft, match }, offset) => {
+              const i = draftIndex + offset;
+              return (
               <article key={`${draft.hash}-${i}`}>
                 <DraftImage blob={draft.preview} name={draft.name} />
                 <div>
@@ -238,11 +235,11 @@ export function PhotoPanel({
                       );
                     }}
                   />
-                  <small>{draft.zone}</small>
-                  <small>时间来源：{draft.timeSourceDetail === 'manual' ? '手动补充' : draft.timeSourceDetail === 'return-estimate' ? '相机返回时间（估计）' : draft.timeSource === 'exif' ? '照片 EXIF' : '未知'}</small>
+                  <small title={draft.zone}>时间来源：{draft.timeSourceDetail === 'manual' ? '手动补充' : draft.timeSourceDetail === 'return-estimate' ? '相机返回时间（估计）' : draft.timeSource === 'exif' ? '照片 EXIF' : '未知'} · {draft.zone}</small>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
           <div className="outdoor-actions photo-confirm">
             <button
@@ -293,14 +290,15 @@ export function PhotoPanel({
             >
               加入地图（{count}）
             </button>
-            <button disabled={busy} onClick={() => setDrafts([])}>
+            <button disabled={busy} onClick={() => { setDrafts([]); setMessage(''); }}>
               取消本次
             </button>
           </div>
-          <small className="route-note">确认后才写入本机照片库；当前未保存草稿只保留在此页面，离开前请先加入地图。</small>
+          <small className="route-note">草稿尚未保存，离开前请先加入地图。</small>
         </>
       )}
-      <div className="outdoor-actions">
+      {!drafts.length && <>
+      <div className="outdoor-actions photo-library-heading">
         <button
           aria-pressed={photos.visible}
           onClick={() => photos.setVisible(!photos.visible)}
@@ -313,6 +311,7 @@ export function PhotoPanel({
         {photos.items
           .slice()
           .sort((a, b) => a.time - b.time)
+          .slice(savedIndex * 4, savedIndex * 4 + 4)
           .map((p) => (
             <button key={p.id} onClick={() => onOpen(p.id)} title={p.name}>
               <img src={p.url} alt={p.name} />
@@ -325,12 +324,15 @@ export function PhotoPanel({
             </button>
           ))}
       </div>
+      {savedPages > 1 && <div className="photo-page-controls" aria-label="已存照片翻页">
+        <button disabled={savedIndex === 0} onClick={() => setSavedPage(savedIndex - 1)}>上一页</button>
+        <span>{savedIndex + 1}/{savedPages}</span>
+        <button disabled={savedIndex >= savedPages - 1} onClick={() => setSavedPage(savedIndex + 1)}>下一页</button>
+      </div>}
       <p className="route-note">
-        原图保留不变，本机保存预览和最长边2560px的查看副本。每张 ≤20
-        MB，本机最多200张 /
-        200MB（预览≤40MB）。导入后按拍摄时间、位置向Open-Meteo查询天气，不上传图片。照片独立存储，暂不包含在普通
-        JSON/GPX 备份中。
+        原图不变，照片单独存储，不含在GPX/JSON备份中。按时间、位置查询天气，不上传图片。
       </p>
+      </>}
       {(message || photos.error) && (
         <p className="route-note" role="status">
           {photos.error || message}

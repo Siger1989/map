@@ -87,6 +87,19 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-ed
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) :is(button,select,input:not([type='color']):not([type='range'])) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:12px; min-height:36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface,.route-edit-dock,.route-edit-header) button.route-solid { background:var(--ui-accent); color:var(--ui-on-accent); border-color:transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-active-ink); }
+/* The generic input rule above has extra :not() specificity. Keep editor
+   modes visibly selected, including the point/box selection mode. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock :is(.route-edit-mode-row,.route-selection-modes) button:is([aria-pressed='true'],[aria-expanded='true']) {
+  background:var(--ui-selected);
+  color:var(--ui-accent);
+  border-color:transparent;
+  box-shadow:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock .route-edit-dock-heading button.route-solid {
+  background:var(--ui-accent);
+  color:var(--ui-on-accent);
+  border-color:transparent;
+}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface header small,.recorded-stats-grid dt,.recorded-speed-legend,.navigation-start small) { color:var(--ui-muted); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.survey-info-fields,.survey-dock) :is(input,select,textarea):not([type='color']) { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control); font-size:16px; }
 /* Engineering sheet and graph canvases remain their readable export palette. */
@@ -121,13 +134,33 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(
 }
 /* These controls are their own visible surfaces. The [class] qualifier gives
    this shared skin precedence over later outdoorTheme base backgrounds. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock)[class],
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions[class],
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock,.home-recording .home-recording-toggle)[class] {
   background:var(--ui-surface);
   border-color:transparent;
   box-shadow:var(--ui-glass-shadow);
   -webkit-backdrop-filter:none;
   backdrop-filter:none;
+}
+/* Keep floating settings outside a nested backdrop root and retain their
+   viewport positioning. Only the rail's decorative layer carries the frost. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock[class] {
+  background:transparent;
+  border-color:transparent;
+  box-shadow:none;
+  isolation:isolate;
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock::before {
+  content:'';
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  border-radius:inherit;
+  background:var(--ui-surface);
+  box-shadow:var(--ui-glass-shadow);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock[aria-pressed='true'],.home-recording-toggle[aria-expanded='true'],.home-recording-toggle[data-recording='true'])[class] {
   background:var(--ui-selected);
@@ -171,7 +204,8 @@ html[data-ui-theme] :is(
     -webkit-backdrop-filter:var(--ui-glass-filter);
     backdrop-filter:var(--ui-glass-filter);
   }
-  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map-actions,.home-position-dock)[class],
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions[class],
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock::before,
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock,.home-recording .home-recording-toggle)[class] {
     background:var(--ui-glass-surface);
     -webkit-backdrop-filter:var(--ui-glass-filter);

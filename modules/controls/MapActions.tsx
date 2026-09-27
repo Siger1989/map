@@ -35,7 +35,6 @@ export function MapActions(props: {
   onOverview?: () => void;
   fix?: PositionFix | null;
   showCoordinates?: boolean;
-  displayControl?: ReactNode;
   layerControl?: ReactNode;
   viewControl?: ReactNode;
   markControl?: ReactNode;
@@ -70,7 +69,6 @@ export function MapActions(props: {
         >
           <Minus size={23} />
         </button>
-        {props.displayControl}
         {props.elevationControl}
       </PositionDock>
       <div className="home-camera-control">{props.viewControl}</div>

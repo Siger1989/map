@@ -1,5 +1,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+
+test('motion frame timings exclude idle gaps and stay bounded across gestures', () => {
+  const s = scene();
+  let time = 0;
+  const observer = observeMapRendering(s.map, () => time);
+  s.state.moving = true;
+  s.emit('movestart');
+  s.emit('render');
+  for (let i = 0; i < 130; i++) { time += 16; s.emit('render'); }
+  assert.deepEqual(observer.snapshot().movingFrameIntervals,
+    { samples: 120, averageMs: 16, p95Ms: 16, over50Ms: 0 });
+  s.state.moving = false;
+  s.emit('moveend');
+  time += 10000;
+  s.emit('render');
+  s.state.moving = true;
+  s.emit('movestart');
+  s.emit('render');
+  time += 80;
+  s.emit('render');
+  assert.equal(observer.snapshot().movingFrameIntervals.over50Ms, 1);
+  assert.ok(observer.snapshot().movingFrameIntervals.averageMs < 17);
+  s.emit('webglcontextlost');
+  time += 10000;
+  s.emit('webglcontextrestored');
+  s.emit('render');
+  assert.equal(observer.snapshot().movingFrameIntervals.over50Ms, 1);
+  observer.dispose();
+});
 import { observeMapRendering } from '../modules/map/renderDiagnostics.ts';
 
 function scene() {
@@ -11,6 +40,8 @@ function scene() {
     zoom: 11,
     hidden: false,
     moving: false,
+    canvas: { width: 780, height: 1688, clientWidth: 390, clientHeight: 844,
+      ownerDocument: { defaultView: { devicePixelRatio: 3 } } },
   };
   const map = {
     on(name, callback) {
@@ -19,7 +50,7 @@ function scene() {
     off(name, callback) {
       if (listeners.get(name) === callback) listeners.delete(name);
     },
-    getCanvas: () => ({ width: 780, height: 1688 }),
+    getCanvas: () => state.canvas,
     getSource: () => (state.source ? {} : undefined),
     isSourceLoaded: () => state.loaded,
     getTerrain: () => (state.terrain ? { source: 'elevation' } : null),
@@ -75,6 +106,23 @@ test('road diagnostics distinguish loading, hidden roads and zoom thresholds wit
   );
   observer.dispose();
   assert.equal(s.listeners.size, 0);
+});
+
+test('canvas diagnostics distinguish screen density from actual backing pixels and follow resize', () => {
+  const s = scene(), observer = observeMapRendering(s.map);
+  let canvas = observer.snapshot().canvas;
+  assert.equal(canvas.devicePixelRatio, 3);
+  assert.equal(canvas.effectivePixelRatioX, 2);
+  assert.equal(canvas.effectivePixelRatioY, 2);
+  Object.assign(s.state.canvas, { width: 1170, height: 2532 });
+  canvas = observer.snapshot().canvas;
+  assert.equal(canvas.effectivePixelRatioX, 3);
+  assert.equal(canvas.effectivePixelRatioY, 3);
+  Object.assign(s.state.canvas, { clientWidth: 0, clientHeight: 0 });
+  canvas = observer.snapshot().canvas;
+  assert.equal(canvas.effectivePixelRatioX, null);
+  assert.equal(canvas.effectivePixelRatioY, null);
+  observer.dispose();
 });
 
 test('diagnostic history stays bounded and snapshot mutation cannot alter counters', () => {

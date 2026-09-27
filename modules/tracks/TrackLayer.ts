@@ -83,8 +83,8 @@ export class TrackLayer {
       )
       .map((feature) => {
         const p = feature.properties;
-        const coordinate: Coordinate = [Number(p.lng), Number(p.lat)];
-        const screen = this.map.project(coordinate);
+        const coordinate: Coordinate = [Number(p.nodeLng ?? p.lng), Number(p.nodeLat ?? p.lat)];
+        const screen = this.map.project([Number(p.lng), Number(p.lat)]);
         return {
           trackId: String(p.trackId),
           coordinate,
@@ -363,6 +363,9 @@ export class TrackLayer {
                   : {}),
                 lng: coordinates[0],
                 lat: coordinates[1],
+                // Preserve node identity while its geometry follows a drag preview.
+                nodeLng: point[0],
+                nodeLat: point[1],
               },
               geometry: { type: 'Point' as const, coordinates },
             };

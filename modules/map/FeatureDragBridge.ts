@@ -39,6 +39,8 @@ export class FeatureDragBridge {
     target: DragTarget;
   } | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
+  private frame: number | null = null;
+  private queuedPoint: ScreenPoint | null = null;
   private active = false;
   private last: FeatureMove | null = null;
   private offset = { x: 0, y: 0 };
@@ -123,6 +125,9 @@ export class FeatureDragBridge {
     else this.timer = setTimeout(activate, 480);
   };
   private move = (event: PointerEvent) => {
+    this.updateMove(event, false);
+  };
+  private updateMove(event: PointerEvent, flush: boolean) {
     if (!this.pending || event.pointerId !== this.pending.id) return;
     const point = this.point(event);
     if (!point) return;
@@ -141,6 +146,22 @@ export class FeatureDragBridge {
       this.finish(false);
       return;
     }
+    this.queuedPoint = point;
+    if (flush) {
+      if (this.frame !== null) this.ownerWindow.cancelAnimationFrame(this.frame);
+      this.frame = null;
+      this.flushMove();
+    } else if (this.frame === null) {
+      this.frame = this.ownerWindow.requestAnimationFrame(() => {
+        this.frame = null;
+        this.flushMove();
+      });
+    }
+  }
+  private flushMove() {
+    const point = this.queuedPoint;
+    this.queuedPoint = null;
+    if (!this.pending || !this.active || !point || !this.options.enabled()) return;
     const canvas = this.map.getCanvas();
     const aim = { x: point.x + this.offset.x, y: point.y + this.offset.y };
     // Do not commit a last valid position if the release is over sky/outside the map.
@@ -176,10 +197,15 @@ export class FeatureDragBridge {
       ...(snappedNode ? { snappedNode } : {}),
     };
     this.options.preview(this.last);
-  };
+  }
+  private cancelFrame() {
+    if (this.frame !== null) this.ownerWindow.cancelAnimationFrame(this.frame);
+    this.frame = null;
+    this.queuedPoint = null;
+  }
   private up = (event: PointerEvent) => {
     if (event.pointerId === this.pending?.id) {
-      if (this.active) this.move(event);
+      if (this.active) this.updateMove(event, true);
       this.finish(true);
     }
     this.contacts.delete(event.pointerId);
@@ -210,6 +236,7 @@ export class FeatureDragBridge {
       event.preventDefault();
   };
   private finish(commit: boolean) {
+    this.cancelFrame();
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     if (this.active) {

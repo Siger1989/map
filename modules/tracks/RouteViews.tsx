@@ -5,7 +5,7 @@ import { hasTrackTime } from './provenance';
 import { TrackColorProfile } from './TrackColorProfile';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
 import { RouteSelectionFields } from './RouteSelectionFields';
@@ -41,7 +41,7 @@ import { DRAFT_ID } from './editing';
 import { drawingTime } from './archive';
 import { trackSourceLabel } from './provenance';
 import { trackAlternatives } from './alternatives';
-import { normalizeTrackStyle, TRACK_COLORS, type TrackStyle } from './style';
+import { normalizeTrackStyle, TRACK_COLORS, TRACK_WIDTHS, type TrackStyle } from './style';
 import type { ManualTrack } from './drawing';
 import type { TrackLinePoint } from './linePoint';
 import { markerChainage } from './linePoint';
@@ -166,7 +166,11 @@ export function RouteDetails({
           </form>
           {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
           {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
-          {onAppearance && <section aria-label="整条路线外观"><h3>整条路线颜色</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div><small role="status">{appearanceMessage || '直接保存颜色，保留原始记录。'}</small></section>}
+          {onAppearance && <section aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
+            <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>
+              {TRACK_WIDTHS.map(width => <option key={width} value={width}>{width} px</option>)}
+            </select></label>
+            <small role="status">{appearanceMessage || '直接保存颜色和粗细，保留原始记录。'}</small></section>}
           {onAppearance && <label className="route-travel-mode">出行方式<select aria-label="路线出行方式" value={normalizeTravelMode(track.style?.travelMode)} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), travelMode: normalizeTravelMode(e.target.value) }) ? '出行方式已保存，速度色标已更新' : '保存失败，请重试')}>{Object.entries(TRAVEL_MODES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select><small>用于速度配色，不改变实走数据。</small></label>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
           <h3>基本资料</h3>
@@ -313,8 +317,10 @@ export function RouteEditToolbar({
   onStyle,
   snapping,
   roadSnapping,
+  riverSnapping,
   onSnapping,
   onRoadSnapping,
+  onRiverSnapping,
 }: {
   session: RouteEditSession;
   snapName?: string;
@@ -336,13 +342,23 @@ export function RouteEditToolbar({
   onStyle: (style: TrackStyle) => void;
   snapping: boolean;
   roadSnapping: boolean;
+  riverSnapping: boolean;
   onSnapping: () => void;
   onRoadSnapping: () => void;
+  onRiverSnapping: () => void;
 }) {
   const dock = useDockClearance('--route-edit-clearance');
-  const [showStyle, setShowStyle] = useState(false);
-  const [showMarker, setShowMarker] = useState(false);
+  const [view, setView] = useState<'tools' | 'selection' | 'style' | 'marker'>('tools');
   const selectedCount = selectedPoints.length;
+  const activeView = (view === 'selection' && !selectedCount) || (view === 'marker' && selectedCount !== 1) ? 'tools' : view;
+  useEffect(() => {
+    if ((view === 'selection' && !selectedCount) || (view === 'marker' && selectedCount !== 1)) setView('tools');
+  }, [view, selectedCount]);
+  const returnToTools = () => {
+    const entry = activeView === 'style' ? 'style' : 'selection';
+    setView('tools');
+    requestAnimationFrame(() => dock.current?.querySelector<HTMLButtonElement>(`[data-edit-entry='${entry}']:not(:disabled)`)?.focus({ preventScroll: true }));
+  };
   const style = normalizeTrackStyle(session.track.style),
     branch = session.branch !== null;
   return (
@@ -350,20 +366,24 @@ export function RouteEditToolbar({
       <section
         ref={dock}
         className="route-surface route-edit-dock"
-        data-style-open={showStyle}
+        data-view={activeView}
+        data-style-open={activeView === 'style'}
         aria-label="路线编辑工具"
       >
         <header className="route-edit-dock-heading">
-          <strong>编辑路线</strong><small>{session.history.length ? '未保存' : ''}</small>
+          {activeView !== 'tools' && <button autoFocus aria-label="返回编辑工具" onClick={returnToTools}><ArrowLeft size={16} />返回</button>}
+          <strong>{activeView === 'tools' ? '编辑路线' : activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点属性 · ${selectedCount}点`}</strong>
+          {activeView === 'tools' && <><small>{session.history.length ? '未保存' : ''}</small>
           <button onClick={onBack}>退出编辑</button>
-          <button className="route-solid" onClick={onSave}>保存并退出</button>
+          <button className="route-solid" onClick={onSave}>保存并退出</button></>}
         </header>
+        <div className="route-edit-primary" hidden={activeView !== 'tools'}>
         <div className="route-edit-mode-row" role="group" aria-label="路线编辑方式">
-          <button aria-pressed={!roadSnapping} onClick={() => roadSnapping && onRoadSnapping()}>自由画线</button>
-          <button aria-pressed={roadSnapping} onClick={() => !roadSnapping && onRoadSnapping()}>道路吸附</button>
+          <button aria-pressed={roadSnapping} onClick={onRoadSnapping}>道路吸附</button>
+          <button aria-pressed={riverSnapping} onClick={onRiverSnapping}>河道吸附</button>
           <button aria-pressed={snapping} onClick={onSnapping}>节点吸附</button>
-          <button aria-expanded={showStyle} onClick={() => setShowStyle(!showStyle)}>
-            <i className="route-style-chip" style={{ background: style.color }} />线条样式
+          <button data-edit-entry="style" aria-label="线条样式" aria-expanded={activeView === 'style'} onClick={() => {onSelectionMode(null);setView('style');}}>
+            <i className="route-style-chip" style={{ background: style.color }} />样式
           </button>
         </div>
         <p className="route-edit-status" role="status">
@@ -394,12 +414,13 @@ export function RouteEditToolbar({
           </button>
           <button
             className="route-branch-toggle"
+            aria-label={branch ? '结束分叉' : '分叉'}
             aria-pressed={branch}
             disabled={!session.selected}
             onClick={onBranch}
           >
             <GitBranch size={16} />
-            {branch ? '结束分叉' : '分叉'}
+            {branch ? '结束' : '分叉'}
           </button>
           <button onClick={onClearSelection} disabled={!selectedCount}>清空选择</button>
           <button disabled={!session.history.length} onClick={onUndo}>
@@ -411,10 +432,12 @@ export function RouteEditToolbar({
           <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
           <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
           <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
+          <button data-edit-entry="selection" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>节点属性</button>
         </div>
-        {!!selectedCount && <RouteSelectionFields key={`${selectedPoints.map(p => p.join(',')).join(';')}:${session.history.length}`} track={session.track} points={selectedPoints} onApply={onSelectionDetails} onMarker={()=>{onSelectionMode(null);setShowMarker(true);}} onSetEnd={onSetEnd} />}
-        {showMarker && selectedCount === 1 && <RoutePointMarkerFields initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setShowMarker(false)}/>}
-        {showStyle && <div className="route-edit-style">
+        </div>
+        {activeView === 'selection' && <RouteSelectionFields key={`${selectedPoints.map(p => p.join(',')).join(';')}:${session.history.length}`} track={session.track} points={selectedPoints} onApply={onSelectionDetails} onMarker={()=>{onSelectionMode(null);setView('marker');}} onSetEnd={onSetEnd} />}
+        {activeView === 'marker' && <RoutePointMarkerFields key={selectedPoints[0].join(',')} initial={{color:displayedPointColor(session.track,selectedPoints[0]),note:session.track.pointDetails?.[selectedPoints[0].join(',')]?.note}} onAdd={onPointMarker} onBack={()=>setView('selection')}/>}
+        {activeView === 'style' && <div className="route-edit-style">
         <div className="route-edit-colors" role="group" aria-label="轨迹颜色">
           {TRACK_COLORS.map((color, i) => (
             <button

@@ -50,7 +50,7 @@ export function OutdoorPanel({
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
   return (
-    <div className="outdoor-panel">
+    <div className="outdoor-panel" data-tab={tab}>
       {tab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={id=>id==='files'?onImport?.():setTab(id)} /> : <>
       {tab !== 'record' && <nav className="route-tabs" aria-label="记录工具">
         {(['record', 'offline', 'photos'] as const).map(

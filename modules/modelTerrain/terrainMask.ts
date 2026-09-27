@@ -49,8 +49,10 @@ export class TerrainModelMask {
   private inverse = new Matrix4();
   private revision = 0;
   private pixels: Uint8Array | null = null;
+  private atlas: Uint8Array;
   private texture: WebGLTexture | null;
   private restore: () => void;
+  private onContextRestored: () => void;
   private gl: WebGL2RenderingContext;
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
@@ -65,21 +67,37 @@ export class TerrainModelMask {
         gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS) - 1,
       );
     this.texture = gl.createTexture();
+    this.atlas = new Uint8Array(
+      MODEL_MASK_COLUMNS * MODEL_MASK_ROWS * MODEL_MASK_SIZE ** 2 * 4,
+    );
     let current: WebGLProgram | null = null;
-    const programs = new WeakMap<
+    let programs = new WeakMap<
       WebGLProgram,
       { revision: number; locations: (WebGLUniformLocation | null)[] } | null
     >();
-    gl.shaderSource = function (shader, source) {
+    this.onContextRestored = () => {
+      adapter.texture = gl.createTexture();
+      adapter.pixels = adapter.atlas;
+      adapter.revision++;
+      programs = new WeakMap();
+      current = null;
+    };
+    gl.canvas.addEventListener('webglcontextrestored', this.onContextRestored);
+    const shaderSourceHook: typeof gl.shaderSource = function (shader, source) {
       const changed = injectModelMask(source, source.includes('a_pos3d'));
       if (changed !== source) adapter.matched++;
       original.shaderSource.call(gl, shader, changed);
     };
-    gl.useProgram = function (program) {
+    const useProgramHook: typeof gl.useProgram = function (program) {
       current = program;
       original.useProgram.call(gl, program);
     };
-    gl.drawElements = function (mode, count, type, offset) {
+    const drawElementsHook: typeof gl.drawElements = function (
+      mode,
+      count,
+      type,
+      offset,
+    ) {
       if (!current) {
         original.drawElements.call(gl, mode, count, type, offset);
         return;
@@ -101,6 +119,15 @@ export class TerrainModelMask {
         original.drawElements.call(gl, mode, count, type, offset);
         return;
       }
+      if (adapter.count === 0) {
+        if (entry.revision !== adapter.revision) {
+          // Clear stale discard state once per program before the fast path.
+          gl.uniform1i(entry.locations[1], 0);
+          entry.revision = adapter.revision;
+        }
+        original.drawElements.call(gl, mode, count, type, offset);
+        return;
+      }
       if (entry.revision !== adapter.revision) {
         gl.uniformMatrix4fv(
           entry.locations[0],
@@ -112,6 +139,7 @@ export class TerrainModelMask {
         gl.uniform1i(entry.locations[3], unit);
         entry.revision = adapter.revision;
       }
+      if (!adapter.texture) adapter.texture = gl.createTexture();
       const active = gl.getParameter(gl.ACTIVE_TEXTURE);
       gl.activeTexture(gl.TEXTURE0 + unit);
       const binding = gl.getParameter(gl.TEXTURE_BINDING_2D);
@@ -140,22 +168,40 @@ export class TerrainModelMask {
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, premultiplied);
         adapter.pixels = null;
       }
-      original.drawElements.call(gl, mode, count, type, offset);
-      gl.bindTexture(gl.TEXTURE_2D, binding);
-      gl.activeTexture(active);
+      try {
+        original.drawElements.call(gl, mode, count, type, offset);
+      } finally {
+        gl.bindTexture(gl.TEXTURE_2D, binding);
+        gl.activeTexture(active);
+      }
     };
-    this.restore = () => Object.assign(gl, original);
-    this.pixels = new Uint8Array(
-      MODEL_MASK_COLUMNS * MODEL_MASK_ROWS * MODEL_MASK_SIZE ** 2 * 4,
-    );
+    gl.shaderSource = shaderSourceHook;
+    gl.useProgram = useProgramHook;
+    gl.drawElements = drawElementsHook;
+    this.restore = () => {
+      gl.canvas.removeEventListener(
+        'webglcontextrestored',
+        this.onContextRestored,
+      );
+      if (gl.shaderSource === shaderSourceHook)
+        gl.shaderSource = original.shaderSource;
+      if (gl.useProgram === useProgramHook) gl.useProgram = original.useProgram;
+      if (gl.drawElements === drawElementsHook)
+        gl.drawElements = original.drawElements;
+    };
   }
   setData(bounds: Float32Array, pixels: Uint8Array, count: number) {
     this.bounds = bounds;
+    this.atlas = pixels;
     this.pixels = pixels;
     this.count = count;
     this.revision++;
   }
   frame(inverse: Matrix4) {
+    if (this.count === 0) return;
+    const next = inverse.elements,
+      previous = this.inverse.elements;
+    if (next.every((value, index) => value === previous[index])) return;
     this.inverse.copy(inverse);
     this.revision++;
   }

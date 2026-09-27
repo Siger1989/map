@@ -2,14 +2,24 @@ import {
   useEffect,
   useRef,
   type PointerEvent as ReactPointerEvent,
+  type RefObject,
 } from 'react';
 
-/** Drag exclusively from the checkbox gutter; normal list gestures remain native scrolling. */
+/** Drag from a dedicated action gutter; names retain native list scrolling. */
 export function useSwipeSelection(
   paint: (keys: string[], checked: boolean) => void,
+  options?: {
+    keyAttribute?: string;
+    list?: RefObject<HTMLDivElement | null>;
+    onEnd?: (completed: boolean) => void;
+  },
 ) {
-  const list = useRef<HTMLDivElement>(null),
+  const ownList = useRef<HTMLDivElement>(null),
     callback = useRef(paint);
+  const list = options?.list ?? ownList;
+  const keyAttribute = options?.keyAttribute ?? 'data-select-key';
+  const onEnd = useRef(options?.onEnd);
+  onEnd.current = options?.onEnd;
   callback.current = paint;
   const stop = useRef<() => void>(() => {});
   useEffect(() => () => stop.current(), []);
@@ -24,28 +34,28 @@ export function useSwipeSelection(
       container = list.current,
       pointerId = event.pointerId;
     let y = event.clientY,
-      previous = button.dataset.selectKey!,
+      previous = button.getAttribute(keyAttribute)!,
       frame = 0,
       ended = false;
     const apply = () => {
       const bounds = container.getBoundingClientRect();
       const rows = Array.from(
-        container.querySelectorAll<HTMLElement>('[data-select-key]'),
+        container.querySelectorAll<HTMLElement>(`[${keyAttribute}]`),
       );
       const target = rows.find((row) => {
         const r = row.getBoundingClientRect();
         return y >= r.top && y <= r.bottom;
       });
-      const key = target?.dataset.selectKey;
+      const key = target?.getAttribute(keyAttribute);
       if (key) {
         const from = rows.findIndex(
-            (row) => row.dataset.selectKey === previous,
+            (row) => row.getAttribute(keyAttribute) === previous,
           ),
           to = rows.indexOf(target!);
         callback.current(
           rows
             .slice(Math.max(0, Math.min(from, to)), Math.max(from, to) + 1)
-            .map((row) => row.dataset.selectKey!),
+            .map((row) => row.getAttribute(keyAttribute)!),
           checked,
         );
         previous = key;
@@ -80,19 +90,24 @@ export function useSwipeSelection(
     };
     const finish = (e?: PointerEvent) => {
       if (e && e.pointerId !== pointerId) return;
+      if (ended) return;
       ended = true;
       cancelAnimationFrame(frame);
       button.removeEventListener('pointermove', move);
       button.removeEventListener('pointerup', finish);
       button.removeEventListener('pointercancel', finish);
       button.removeEventListener('lostpointercapture', finish);
+      window.removeEventListener('blur', blur);
       if (button.hasPointerCapture(pointerId))
         button.releasePointerCapture(pointerId);
+      onEnd.current?.(e?.type === 'pointerup');
     };
+    const blur = () => finish();
     button.addEventListener('pointermove', move, { passive: false });
     button.addEventListener('pointerup', finish);
     button.addEventListener('pointercancel', finish);
     button.addEventListener('lostpointercapture', finish);
+    window.addEventListener('blur', blur);
     stop.current = finish;
     frame = requestAnimationFrame(tick);
   };

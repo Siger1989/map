@@ -88,6 +88,19 @@
   height: 36px;
   border-bottom: 1px solid var(--ui-line, #8eaea5);
 }
+.floating-search .place-search-heading select {
+  min-width: 0;
+  width: 126px;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 16px;
+  color: var(--ui-ink);
+  background: var(--ui-field);
+  border: 0;
+  border-radius: var(--ui-radius-control);
+}
 .floating-search-heading strong {
   font-size: 11px;
 }

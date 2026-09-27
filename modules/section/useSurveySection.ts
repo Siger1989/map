@@ -245,11 +245,14 @@ export function useSurveySection(
     open,
     pick,
     editPoint,
-    cancelPreview: () => setPreview(null),
+    cancelPreview: () => {
+      setPreview(null);
+      setError('');
+    },
     interruptDrag: () => {
       setDragging(false);
       setPreview(null);
-      setError('拖动已中断，位置未保存。请重新拖点，或点击地图落位。');
+      setError('移动中断，未保存');
     },
     commit,
     remove: () => {

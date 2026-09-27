@@ -1,15 +1,15 @@
 /* Shared section UI surfaces: dock editing and the original engineering sheet. */
 .observatory[data-survey='true'] {
-  --survey-dock-height: 88px;
+  --survey-dock-height: 120px;
   --survey-nav-height: calc(var(--safe-bottom) + 58px);
   --survey-reserved: calc(var(--survey-dock-height) + var(--survey-nav-height));
 }
 .observatory[data-survey='true'][data-survey-expanded='true'] {
-  --survey-dock-height: 164px;
+  --survey-dock-height: 176px;
 }
 .observatory[data-survey='true'] .map-canvas,
 .observatory[data-survey='true'] .survey-map-overlay {
-  height: calc(100% - var(--survey-reserved));
+  height: calc(100% - var(--survey-nav-height));
   bottom: auto;
 }
 .observatory[data-survey='true'] .camera-gizmo {
@@ -17,14 +17,14 @@
   height: 88px;
 }
 .observatory[data-survey='true'] .map-center-cursor {
-  top: calc((100% - var(--survey-reserved)) / 2);
+  top: calc((100% - var(--survey-nav-height)) / 2);
 }
 .observatory[data-survey='true'] .map-actions {
   max-height: calc(100% - var(--survey-reserved) - 154px);
   overflow-y: auto;
 }
 .observatory[data-survey='true'] .maplibregl-ctrl-bottom-left {
-  bottom: 4px !important;
+  bottom: calc(var(--survey-dock-height) + 4px) !important;
 }
 .survey-workbar,
 .survey-dock,
@@ -539,23 +539,20 @@
   }
 }
 /* Match the compact map controls; editing commands and coordinate form stay visible. */
-.observatory.home-map[data-survey='true'] { --survey-dock-height: 148px; }
-.observatory.home-map[data-survey='true'][data-survey-expanded='true'] { --survey-dock-height: 192px; }
-.observatory.home-map .survey-workbar {
+.observatory.home-map[data-survey='true'] { --survey-dock-height: 120px; }
+.observatory.home-map[data-survey='true'][data-survey-expanded='true'] { --survey-dock-height: 176px; }
+.observatory.home-map .survey-dock-heading {
   box-sizing: border-box;
-  top: calc(var(--home-top) + var(--home-header-height) + 8px);
-  left: 8px;
-  min-height: 52px;
-  height: auto;
-  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  flex-shrink: 0;
   gap: 4px;
-  padding: 8px;
-  border-radius: 20px;
 }
-.observatory.home-map .survey-workbar strong { min-height: 36px; display: flex; align-items: center; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; font-size: 13px; }
-.observatory.home-map .survey-workbar button { box-sizing: border-box; min-height: 36px; height: auto; min-width: 36px; padding: 6px; font-size: 12px; }
-.observatory.home-map .survey-workbar button:last-child { border-left: 0; border-radius: 12px; }
-.observatory.home-map .survey-dock { box-sizing: border-box; left: 8px; right: 8px; padding: 8px; border: 1px solid #bccdc4; border-radius: 20px; font-size: 12px; }
+.observatory.home-map .survey-dock-heading strong { padding-inline: 2px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.observatory.home-map .survey-dock-heading small { font-size: 11px; font-weight: 400; }
+.observatory.home-map .survey-dock-heading button { min-width: 36px; }
+.observatory.home-map .survey-dock { box-sizing: border-box; left: 8px; right: auto; width: min(300px,calc(100% - 16px)); padding: 6px; border: 1px solid #bccdc4; border-radius: 20px; font-size: 12px; }
 .observatory.home-map .survey-dock-content { padding: 0; }
 .observatory.home-map .survey-point-editor header { box-sizing: border-box; min-height: 36px; height: auto; flex-wrap: wrap; gap: 4px; padding-inline: 2px; }
 .observatory.home-map .survey-point-editor header strong { min-width: 0; font-size: 12px; }
@@ -563,13 +560,46 @@
 .observatory.home-map .survey-dock button { box-sizing: border-box; min-height: 36px; height: auto; padding: 6px 8px; border-radius: 12px; font-size: 12px; gap: 4px; white-space: normal; }
 .observatory.home-map .survey-dock button svg { width: 14px; height: 14px; }
 .observatory.home-map .survey-coordinate-fields { gap: 3px; }
-.observatory.home-map .survey-coordinate-fields input { box-sizing: border-box; height: 32px; border-radius: 4px; padding-left: 19px; font-size: 11px; }
+.observatory.home-map .survey-coordinate-fields input { box-sizing: border-box; height: 36px; min-height: 36px; border-radius: 4px; padding-left: 19px; font-size: 16px; }
 .observatory.home-map .survey-coordinate-fields label span { left: 4px; top: 8px; font-size: 10px; }
 .observatory.home-map .survey-point-scroll form { grid-template-columns: minmax(0,1fr) 42px; gap: 3px; }
 .observatory.home-map .survey-point-modes, .observatory.home-map .survey-action-row { gap: 4px; }
-.observatory.home-map .survey-action-row { flex-wrap: wrap; }
-.observatory.home-map .survey-action-row button { min-height: 36px; flex: 1 1 96px; }
+.observatory.home-map .survey-point-modes { display: flex; flex-wrap: wrap; }
+.observatory.home-map .survey-point-modes button { min-width: 36px; flex: 0 0 auto; padding: 4px 8px; white-space: nowrap; }
+.observatory.home-map .survey-point-modes svg { display: none; }
+.observatory.home-map .survey-action-row { flex-wrap: nowrap; }
+.observatory.home-map .survey-action-row button { min-height: 36px; min-width: 36px; flex: 0 0 auto; padding: 4px 8px; }
 .observatory.home-map .survey-action-row .survey-primary { min-height: 44px; }
 .observatory.home-map .survey-pick-hint p { margin: 2px 0; font-size: 11px; }
-.observatory.home-map[data-survey='true'] .home-position-dock { bottom: calc(var(--survey-reserved) + 8px); }
+.observatory.home-map[data-survey='true'] .home-position-dock { bottom: calc(var(--survey-reserved) + 80px); }
 .observatory.home-map[data-survey='true'] .navigation-elevation { display: none; }
+@media (max-height: 740px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey='true']:not([data-focus-locked='true']) .home-position-dock { display: grid; grid-template-columns: repeat(2,44px); width: 96px; top: calc(var(--home-top) + var(--home-header-height) + 108px); bottom: auto; }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey='true']:not([data-focus-locked='true']) .home-camera-control { top: auto; right: var(--home-right); bottom: calc(var(--survey-reserved) + 8px); }
+}
+
+@media (max-height: 600px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey='true']:not([data-focus-locked='true']) .home-position-dock { grid-template-columns: repeat(3,44px); width: 142px; top: calc(var(--home-top) + var(--home-header-height) + 8px); right: calc(var(--home-right) + 56px); }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey='true']:not([data-focus-locked='true']) .home-camera-control { left: var(--home-left); right: auto; top: calc(var(--home-top) + var(--home-header-height) + 8px); bottom: auto; }
+}
+
+.observatory.home-map[data-survey='true']:has(.survey-dock[data-view='point-info']) { --survey-dock-height: 200px; }
+.observatory.home-map[data-survey='true']:has(.survey-dock[data-view='moving']) { --survey-dock-height: 144px; }
+.observatory.home-map .survey-dock[data-view='point-info'] .survey-details { flex: 1; gap: 4px; }
+.observatory.home-map .survey-dock[data-view='point-info'] .survey-info-fields { gap: 4px; }
+.observatory.home-map .survey-dock[data-view='point-info'] .survey-info-fields label { grid-template-columns: 32px minmax(0,1fr); gap: 4px; }
+.observatory.home-map .survey-dock[data-view='point-info'] .survey-info-fields p { margin: 0; font-size: 12px; }
+.observatory.home-map .survey-dock[data-view='point-info'] footer { border: 0; gap: 4px; }
+.observatory.home-map .survey-dock[data-view='point-info'] footer .survey-primary { min-height: 44px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-dock[data-view] > .survey-details { background: transparent; box-shadow: none; border: 0; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-move-hint { background: var(--ui-raised); color: var(--ui-ink); padding: 4px 6px; gap: 4px; border-radius: var(--ui-radius-control); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-point-modes button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-active-ink); border-color: var(--ui-line); }
+
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-dock[data-view] .survey-primary { background: var(--ui-accent); color: var(--ui-on-accent); border-color: transparent; }
+
+.observatory.home-map .survey-dock:has(.survey-point-editor) { height: auto; }
+.observatory.home-map .survey-dock:has(.survey-point-editor) .survey-dock-content { flex: 0 0 auto; overflow: visible; }
+.observatory.home-map[data-survey='true']:has(.survey-point-error) { --survey-dock-height: 232px; }
+.observatory.home-map .survey-live-coordinate-row { display: grid; grid-template-columns: minmax(0,1fr) 42px; gap: 3px; }
+.observatory.home-map .survey-coordinate-fields output { display: block; box-sizing: border-box; min-width: 0; height: 36px; padding: 0 4px 0 19px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); color: var(--ui-ink); background: var(--ui-field); font-size: 16px; line-height: 34px; white-space: nowrap; }
+.observatory.home-map .survey-point-error { margin: 2px 0; color: var(--ui-danger); font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }

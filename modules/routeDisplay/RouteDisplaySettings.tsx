@@ -1,6 +1,7 @@
 import { isLayoutInteraction } from '../uiLayout/events';
-import { useEffect, useRef, useState } from 'react';
-import { ChartNoAxesCombined, X } from 'lucide-react';
+import { useEffect } from 'react';
+import { X } from 'lucide-react';
+import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
 import type { useRouteDisplay } from './useRouteDisplay';
 import type { RouteDisplayPreferences } from './preferences';
 import {
@@ -9,61 +10,35 @@ import {
 import './routeDisplay.css';
 type Display = ReturnType<typeof useRouteDisplay>;
 
-export function RouteDisplayControl({
+export function RouteDisplaySettings({
   display,
+  onClose,
   navigating = false,
 }: {
   display: Display;
-  blocked: boolean;
+  onClose: () => void;
   navigating?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null),
-    toggle = useRef<HTMLButtonElement>(null);
+  const root = useRouteDialogFocus(onClose);
   useEffect(() => {
-    if (!open) return;
     const dismiss = (event: PointerEvent) => {
       if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
-        setOpen(false);
+        onClose();
     };
     document.addEventListener('pointerdown', dismiss, true);
     return () => document.removeEventListener('pointerdown', dismiss, true);
-  }, [open]);
+  }, [onClose, root]);
   const { preferences, target } = display;
-  const close = () => {
-    setOpen(false);
-    toggle.current?.focus({ preventScroll: true });
-  };
   return (
-    <div
-      className="route-display-control"
-      ref={root}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && open) {
-          e.stopPropagation();
-          close();
-        }
-      }}
-    >
-      <button
-        ref={toggle}
-        className="position-dock-button glass"
-        aria-label="路线显示设置"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
-      >
-        <ChartNoAxesCombined size={17} />
-        <small>路线显示</small>
-      </button>
-      {open && (
         <section
-          className="route-display-settings glass"
+          ref={root}
+          className={`route-display-settings glass${navigating ? ' route-display-settings--navigation' : ''}`}
           aria-label="路线显示设置面板"
         >
           <header>
             <strong>路线显示</strong>
-            <button aria-label="关闭路线显示设置" onClick={close}>
+            <button aria-label="关闭路线显示设置" onClick={onClose}>
               <X size={15} />
             </button>
           </header>
@@ -151,8 +126,5 @@ export function RouteDisplayControl({
             )}
           </div>
         </section>
-      )}
-
-    </div>
   );
 }

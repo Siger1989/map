@@ -234,6 +234,29 @@ export function WorkbenchPanel(props: Props) {
   };
   const folderSwipe = useFolderVisibilitySwipe((ids, visible) =>
     setFolderVisibility(ids, visible));
+  const visibilityPaint = useRef<{ ids: Set<string>; visible: boolean } | null>(null);
+  const visibilitySwipe = useSwipeSelection((keys, visible) => {
+    const pending = visibilityPaint.current ?? { ids: new Set<string>(), visible };
+    for (const key of keys) {
+      const item = nodes.get(key);
+      if (!item) continue;
+      const ids = item.kind === 'folder'
+        ? workbenchLeaves((item.id.startsWith('region:') ? item : allItems.get(item.id))?.children ?? []).map(leaf => leaf.id)
+        : [item.id];
+      ids.forEach(id => pending.ids.add(id));
+    }
+    visibilityPaint.current = pending;
+  }, {
+    keyAttribute: 'data-visibility-key',
+    list: swipe.list,
+    // Commit together on release so filtering cannot move rows during the swipe.
+    onEnd: completed => {
+      const pending = visibilityPaint.current;
+      visibilityPaint.current = null;
+      if (completed && pending?.ids.size)
+        setFolderVisibility([...pending.ids], pending.visible);
+    },
+  });
   const shareExcel = async (ids: string[], send: boolean) => {
     setBusy(true);
     setActionMessage('');
@@ -299,17 +322,21 @@ export function WorkbenchPanel(props: Props) {
     const open = expanded.has(item.id) || !!query;
     const visibleCount = visibilityLeaves.filter((leaf) => leaf.visible === true).length;
     const allVisible = folder && visibilityIds.length > 0 && visibleCount === visibilityIds.length;
-    const check = batch && (
+    const check = (
       <button
         className="workbench-check"
         role="checkbox"
         data-select-key={key}
         aria-label={`选择 ${item.name}`}
+        title="沿勾选栏滑动连选"
         aria-checked={complete ? true : selectedCount ? 'mixed' : false}
         disabled={!ids.length}
         onPointerDown={(e) => swipe.start(e, !complete)}
+        // Keep rows in place during the gesture; batch layout changes after release.
+        onPointerUp={() => setBatch(true)}
+        onPointerCancel={() => setBatch(true)}
         onClick={(e) => {
-          if (e.detail === 0) toggle(ids);
+          if (e.detail === 0) { setBatch(true); toggle(ids); }
         }}
       >
         <span>{complete ? <Check size={14} /> : selectedCount ? '−' : ''}</span>
@@ -377,9 +404,9 @@ export function WorkbenchPanel(props: Props) {
             </small>
           </span>
         </button>
-        {folder ? <button className="workbench-visibility" aria-label={`${allVisible ? '隐藏' : '显示'} ${item.name}内全部${visibilityIds.length}项`} aria-pressed={allVisible} disabled={!visibilityIds.length} onClick={() => setFolderVisibility(visibilityIds, !allVisible)}>
+        {folder ? <button className="workbench-visibility" data-visibility-key={key} title="沿眼睛栏滑动连续显示或隐藏" aria-label={`${allVisible ? '隐藏' : '显示'} ${item.name}内全部${visibilityIds.length}项`} aria-pressed={allVisible} disabled={!visibilityIds.length} onPointerDown={e => visibilitySwipe.start(e, !allVisible)} onClick={e => { if (e.detail === 0) setFolderVisibility(visibilityIds, !allVisible); }}>
           {allVisible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{allVisible ? '全显' : visibleCount ? '部分' : '全隐'}</small>
-        </button> : <button className="workbench-visibility" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onClick={() => commit(updateWorkbenchItem(items, item.id, { visible: !item.visible }), item.visible ? '已从地图隐藏' : '已在地图显示')}>
+        </button> : <button className="workbench-visibility" data-visibility-key={key} title="沿眼睛栏滑动连续显示或隐藏" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onPointerDown={e => visibilitySwipe.start(e, !item.visible)} onClick={e => { if (e.detail === 0) setFolderVisibility([item.id], !item.visible); }}>
           {item.visible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{item.visible ? '显示' : '隐藏'}</small>
         </button>}
         {!synthetic && (
@@ -456,7 +483,7 @@ export function WorkbenchPanel(props: Props) {
             <div>
               <strong>收藏</strong>
               <small>
-                {batch
+                {batch || checked.size > 0
                   ? `已选 ${checked.size} 项`
                   : `${workbenchLeaves(items).length + (props.offlineCount ?? 0)} 项`}
               </small>
