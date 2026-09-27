@@ -10,9 +10,8 @@ export function DirectionControl({mode,status,onChange}:{mode:DirectionMode;stat
   useEffect(()=>{
     if(!open)return;
     const outside=(e:PointerEvent)=>{if(!root.current?.contains(e.target as Node)&&!button.current?.contains(e.target as Node))setOpen(false);};
-    const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){setOpen(false);button.current?.focus();}};
-    document.addEventListener('pointerdown',outside);document.addEventListener('keydown',key);
-    return()=>{document.removeEventListener('pointerdown',outside);document.removeEventListener('keydown',key);};
+    document.addEventListener('pointerdown',outside);
+    return()=>{document.removeEventListener('pointerdown',outside);};
   },[open]);
   return <>
     <button ref={button} className="position-dock-button position-direction-button glass" aria-label="地图朝向模式"
@@ -20,7 +19,7 @@ export function DirectionControl({mode,status,onChange}:{mode:DirectionMode;stat
       {mode==='motion'?<Navigation2 size={17} fill="currentColor"/>:<Compass size={17}/>}
       <small>{mode==='motion'?'运动朝上':mode==='device'?'手机朝上':mode==='north'?'正北':'方向'}</small>
     </button>
-    {open&&<div ref={root} className="direction-menu glass" role="group" aria-label="选择地图朝向">
+    {open&&<div ref={root} className="direction-menu glass" data-app-back="40" role="group" aria-label="选择地图朝向" onKeyDown={e=>{if(e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();e.stopPropagation();setOpen(false);button.current?.focus();}}}>
       {MODES.map(m=><button key={m.id} aria-pressed={m.id===mode} onClick={()=>{onChange(m.id);setOpen(false);button.current?.focus();}}>{m.label}</button>)}
       <small>{mode==='motion'&&status?status:'运动方向根据定位航向计算；停下时保持方向。'}</small>
     </div>}

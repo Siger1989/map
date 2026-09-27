@@ -1,8 +1,8 @@
-import type { Map as MapLibreMap } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { alternativeLineParts } from './alternatives';
 import { resolvedRouteTerminals } from './routeTerminals';
 import { displayedNodeColors } from './displayColors';
-import { syncSelectedEdges } from './selectedEdgeLayer';
+import { selectedEdgeData, syncSelectedEdges } from './selectedEdgeLayer';
 import { syncTrackNotes } from './trackNotes';
 import { syncOverlayData } from '../map/overlayData';
 import { metricLineParts } from '../routeAnalysis/metrics';
@@ -22,7 +22,6 @@ import {
 } from './edgeColors';
 import {
   DRAFT_ID,
-  moveSegmentsNode,
   nodeHandles,
   equalCoordinate,
   type TrackNode,
@@ -54,6 +53,16 @@ export type TrackOverlay = {
 };
 export class TrackLayer {
   private state: TrackOverlay | null = null;
+  private baselineSource: GeoJSONSource | null = null;
+  private baselineFeatures = new Map<string | number, FeatureCollection['features'][number]>();
+  private nodeFeatures = new Map<string, Set<string | number>>();
+  private lineFeatures = new Map<string, Set<string | number>>();
+  private activePreview: TrackOverlay['preview'] = null;
+  private selectedEdgeSource: GeoJSONSource | null = null;
+  private selectedEdgeTrackId: string | null = null;
+  private selectedEdgeGeometry: FeatureCollection['features'][number]['geometry'] | null = null;
+  private selectedEdgeBaseline: FeatureCollection | null = null;
+  private previewRevision = 0;
   constructor(private map: MapLibreMap) {}
   pickLine(point: ScreenPoint): TrackLinePoint | null {
     const id = this.pickTrack(point),
@@ -109,6 +118,7 @@ export class TrackLayer {
     return hits[0]?.properties.trackId ?? null;
   }
   sync(state: TrackOverlay) {
+    if (this.activePreview) this.preview(null);
     syncRouteWarnings(this.map, state.analysisMarkers ?? []);
     this.state = state;
     const m = this.map;
@@ -227,8 +237,7 @@ export class TrackLayer {
                   })
                 : new Map();
               const parts =
-                state.analysisParts?.trackId === t.trackId &&
-                state.preview?.node.trackId !== t.trackId
+                state.analysisParts?.trackId === t.trackId
                   ? state.analysisParts.parts
                   : t.style.colorMode && t.style.colorMode !== 'solid'
                     ? metricLineParts(t, t.style.colorMode)
@@ -257,14 +266,7 @@ export class TrackLayer {
                 },
                 geometry: {
                   type: 'MultiLineString',
-                  coordinates: (state.preview?.node.trackId === t.trackId
-                    ? moveSegmentsNode(
-                        [part.coordinates],
-                        state.preview.node.coordinate,
-                        state.preview.coordinate,
-                      )
-                    : [part.coordinates]
-                  ).filter((line) => line.length >= 2),
+                  coordinates: [part.coordinates].filter((line) => line.length >= 2),
                 },
               }));
             })
@@ -331,11 +333,7 @@ export class TrackLayer {
           positions.push(state.activeNode.coordinate);
         data.features.push(
           ...positions.map((point) => {
-            const coordinates =
-              state.preview?.node.trackId === track.id &&
-              equalCoordinate(point, state.preview.node.coordinate)
-                ? state.preview.coordinate
-                : point;
+            const coordinates = point;
             return {
               type: 'Feature' as const,
               properties: {
@@ -373,10 +371,41 @@ export class TrackLayer {
         );
       }
     }
+    // updateData requires an explicit unique ID for each source feature. IDs are
+    // render-only and are regenerated with the full baseline on each sync.
+    const baselineFeatures = new Map<string | number, FeatureCollection['features'][number]>();
+    const nodeFeatures = new Map<string, Set<string | number>>();
+    const lineFeatures = new Map<string, Set<string | number>>();
+    data.features.forEach((feature, index) => {
+      const id = `manual-track:${index}`;
+      feature.id = id;
+      baselineFeatures.set(id, feature);
+      const trackId = String(feature.properties?.trackId ?? '');
+      if (!trackId) return;
+      if (feature.geometry.type === 'Point') {
+        const key = nodeKey(trackId, feature.geometry.coordinates as Coordinate);
+        addIndexed(nodeFeatures, key, id);
+      } else if (feature.geometry.type === 'MultiLineString') {
+        const coordinates = feature.geometry.coordinates as Coordinate[][];
+        for (const segment of coordinates) {
+          for (const point of segment) {
+            addIndexed(lineFeatures, nodeKey(trackId, point), id);
+          }
+        }
+      }
+    });
+    this.baselineFeatures = baselineFeatures;
+    this.nodeFeatures = nodeFeatures;
+    this.lineFeatures = lineFeatures;
     syncSelectedEdges(m, state);
-    syncTrackNotes(m, state.visible ? state.saved.map(track => state.preview?.node.trackId === track.id
-      ? {...track,segments:moveSegmentsNode(track.segments,state.preview.node.coordinate,state.preview.coordinate)} : track) : []);
+    const selectedEdges = selectedEdgeData(state);
+    this.selectedEdgeBaseline = selectedEdges;
+    this.selectedEdgeSource = m.getSource('manual-track-selection-edge') as GeoJSONSource | undefined ?? null;
+    this.selectedEdgeTrackId = state.nodeSelection?.trackId ?? null;
+    this.selectedEdgeGeometry = selectedEdges.features[0]?.geometry ?? null;
+    syncTrackNotes(m, state.visible ? state.saved : []);
     syncOverlayData(m, 'manual-tracks', data);
+    this.baselineSource = m.getSource('manual-tracks') as GeoJSONSource | undefined ?? null;
     if (!m.getSource('track-line-selection'))
       m.addSource('track-line-selection', {
         type: 'geojson',
@@ -421,4 +450,122 @@ export class TrackLayer {
           : [],
     });
   }
+
+  /** Update only the currently dragged node's line and point features. */
+  preview(preview: TrackOverlay['preview']) {
+    const revision = ++this.previewRevision;
+    const source = this.map.getSource('manual-tracks') as GeoJSONSource | undefined;
+    if (!source || source !== this.baselineSource || typeof source.updateData !== 'function') {
+      this.activePreview = null;
+      return;
+    }
+    const previous = this.activePreview;
+    if (!previous && !preview) return;
+    const targets = new Map<string, TrackOverlay['preview']>();
+    if (previous) targets.set(nodeKey(previous.node.trackId, previous.node.coordinate), null);
+    if (preview) targets.set(nodeKey(preview.node.trackId, preview.node.coordinate), preview);
+    const updates = new Map<string | number, {
+      id: string | number;
+      newGeometry?: FeatureCollection['features'][number]['geometry'];
+      addOrUpdateProperties?: Array<{ key: string; value: unknown }>;
+    }>();
+    for (const [key, current] of targets) {
+      const coordinate = current?.coordinate;
+      for (const id of this.lineFeatures.get(key) ?? []) {
+        const feature = this.baselineFeatures.get(id);
+        if (!feature || feature.geometry.type !== 'MultiLineString') continue;
+        updates.set(id, {
+          id,
+          newGeometry: coordinate
+            ? moveGeometryCoordinate(feature.geometry, current!.node.coordinate, coordinate)
+            : feature.geometry,
+        });
+      }
+      for (const id of this.nodeFeatures.get(key) ?? []) {
+        const feature = this.baselineFeatures.get(id);
+        if (!feature || feature.geometry.type !== 'Point') continue;
+        const point = coordinate
+          ? moveCoordinate(feature.geometry.coordinates as Coordinate, current!.node.coordinate, coordinate)
+          : feature.geometry.coordinates as Coordinate;
+        updates.set(id, {
+          id,
+          newGeometry: { type: 'Point', coordinates: point },
+          addOrUpdateProperties: [
+            { key: 'lng', value: point[0] },
+            { key: 'lat', value: point[1] },
+          ],
+        });
+      }
+    }
+    this.activePreview = preview;
+    if (updates.size) {
+      void source.updateData({ update: [...updates.values()] }).catch(() => {
+        if (revision !== this.previewRevision || this.map.getSource('manual-tracks') !== source) return;
+        this.activePreview = null;
+        void source.setData({ type: 'FeatureCollection', features: [...this.baselineFeatures.values()] })
+          .catch((error) => console.warn('Could not restore route preview baseline', error));
+        const edgeSource = this.map.getSource('manual-track-selection-edge') as GeoJSONSource | undefined;
+        if (edgeSource && edgeSource === this.selectedEdgeSource && this.selectedEdgeBaseline) {
+          void edgeSource.setData(this.selectedEdgeBaseline)
+            .catch((error) => console.warn('Could not restore selected-edge preview baseline', error));
+        }
+      });
+    }
+    this.previewSelectedEdge(preview, revision);
+  }
+
+  private previewSelectedEdge(preview: TrackOverlay['preview'], revision: number) {
+    const trackId = this.selectedEdgeTrackId,
+      source = this.map.getSource('manual-track-selection-edge') as GeoJSONSource | undefined;
+    if (
+      !trackId ||
+      !source ||
+      source !== this.selectedEdgeSource ||
+      !this.selectedEdgeGeometry ||
+      this.selectedEdgeGeometry.type !== 'MultiLineString' ||
+      typeof source.updateData !== 'function'
+    ) return;
+    const node = preview?.node.trackId === trackId ? preview.node : null;
+    const baseCoordinates = this.selectedEdgeGeometry.coordinates as Coordinate[][];
+    const containsNode = node && baseCoordinates.some((line) => line.some((point) => equalCoordinate(point as Coordinate, node.coordinate)));
+    const geometry = containsNode
+      ? moveGeometryCoordinate(this.selectedEdgeGeometry as Extract<FeatureCollection['features'][number]['geometry'], { type: 'MultiLineString' }>, node!.coordinate, preview!.coordinate)
+      : this.selectedEdgeGeometry;
+    void source.updateData({
+      update: [{ id: 'manual-track-selected-edge', newGeometry: geometry }],
+    }).catch(() => {
+      if (revision !== this.previewRevision || this.map.getSource('manual-track-selection-edge') !== source) return;
+      if (this.selectedEdgeBaseline) {
+        void source.setData(this.selectedEdgeBaseline)
+          .catch((error) => console.warn('Could not restore selected-edge preview baseline', error));
+      }
+    });
+  }
+}
+
+function nodeKey(trackId: string, coordinate: Coordinate) {
+  return `${trackId}\u0000${coordinate[0]}\u0000${coordinate[1]}`;
+}
+
+function addIndexed(index: Map<string, Set<string | number>>, key: string, id: string | number) {
+  let ids = index.get(key);
+  if (!ids) index.set(key, (ids = new Set()));
+  ids.add(id);
+}
+
+function moveCoordinate(from: Coordinate, source: Coordinate, target: Coordinate): Coordinate {
+  return equalCoordinate(from, source)
+    ? [target[0], target[1]]
+    : from;
+}
+
+function moveGeometryCoordinate(
+  geometry: Extract<FeatureCollection['features'][number]['geometry'], { type: 'MultiLineString' }>,
+  source: Coordinate,
+  target: Coordinate,
+) {
+  return {
+    type: 'MultiLineString' as const,
+    coordinates: geometry.coordinates.map((line) => line.map((point) => moveCoordinate(point as Coordinate, source, target))),
+  };
 }

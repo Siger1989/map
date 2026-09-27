@@ -50,6 +50,7 @@ import {
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
 import { cameraViewPublisher } from './cameraUpdates';
+import { featurePreviewUiPublisher } from './featurePreviewUi';
 import { snapMapRoad } from './roadSnap';
 import {
   FeatureDragBridge,
@@ -224,6 +225,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
+    const trackPreviewRef = useRef<TrackOverlay['preview']>(null);
+    const syncTracks = (state: TrackOverlay) => {
+      trackRef.current?.sync(state);
+      if (trackPreviewRef.current) trackRef.current?.preview(trackPreviewRef.current);
+    };
     const areaRef = useRef<AreaLayer | null>(null);
     const modelMaskRef = useRef<TerrainModelMask | null>(null);
     const modelTerrainRef = useRef<ModelTerrainLayer | null>(null);
@@ -445,7 +451,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       }
       geologyRef.current?.sync(s);
       routeRef.current?.sync(latest.current.routeOverlay);
-      trackRef.current?.sync(latest.current.trackOverlay);
+      syncTracks(latest.current.trackOverlay);
       areaRef.current?.sync(latest.current.areaOverlay);
       positionRef.current?.sync(latest.current.position);
       annotationRef.current?.update(
@@ -478,7 +484,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
       areaRef.current?.sync(latest.current.areaOverlay);
       latest.current.onCenter?.(m.getCenter().wrap().toArray());
-      trackRef.current?.sync(latest.current.trackOverlay);
+      syncTracks(latest.current.trackOverlay);
       const p = m.getCenter();
       if (Math.abs(p.lng - weatherAnchor.current[0]) + Math.abs(p.lat - weatherAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
         weatherAnchor.current = [Number(p.lng.toFixed(2)), Number(p.lat.toFixed(2))];
@@ -988,7 +994,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   target.node.coordinate[0] &&
                 latest.current.trackOverlay.activeNode.coordinate[1] ===
                   target.node.coordinate[1]),
-            preview: (move) => latest.current.onDragPreview(move),
+            preview: (() => {
+              const publishUi = featurePreviewUiPublisher(move => latest.current.onDragPreview(move));
+              return (move: FeatureMove | null) => {
+                trackPreviewRef.current = move?.target.kind === 'track'
+                  ? { node: move.target.node, coordinate: move.coordinate } : null;
+                trackRef.current?.preview(trackPreviewRef.current);
+                publishUi(move);
+              };
+            })(),
             commit: (move) => latest.current.onDragCommit(move),
           });
           longPressRef.current = new MapLongPress(map, {
@@ -1288,7 +1302,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) return;
             if (!('positionFollow' in event && event.positionFollow))
-              trackRef.current?.sync(latest.current.trackOverlay);
+              syncTracks(latest.current.trackOverlay);
             const p = map.getCenter();
             if (
               Math.abs(p.lng - weatherAnchor.current[0]) +
@@ -1423,7 +1437,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         guidanceRef.current?.sync(props.guidanceOverlay ?? null);
     }, [props.guidanceOverlay]);
     useEffect(() => {
-      if (loaded.current) trackRef.current?.sync(props.trackOverlay);
+      if (loaded.current) syncTracks(props.trackOverlay);
     }, [props.trackOverlay]);
     useEffect(() => {
       if (loaded.current) modelTerrainRef.current?.configure(props.annotations, settings);

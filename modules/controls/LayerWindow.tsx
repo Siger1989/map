@@ -51,6 +51,7 @@ export function LayerWindow({
     <section
       ref={root}
       className="map-layer-control"
+      data-app-back={open ? 30 : undefined}
       aria-label="图层窗口入口"
       onKeyDown={(event) => {
         if (event.key === 'Escape' && open) {
@@ -102,11 +103,10 @@ export function LayerWindow({
               <summary>场景预设</summary>
               <div className="view-presets" aria-label="观察模式">
                 <button
-                  aria-pressed={settings.clouds || settings.rain}
+                  aria-pressed={settings.rain}
                   onClick={() =>
                     onChange({
                       terrain: true,
-                      clouds: true,
                       rain: true,
                       contours: false,
                     })
@@ -116,11 +116,10 @@ export function LayerWindow({
                   天气总览
                 </button>
                 <button
-                  aria-pressed={!settings.clouds && !settings.rain}
+                  aria-pressed={!settings.rain}
                   onClick={() =>
                     onChange({
                       terrain: true,
-                      clouds: false,
                       rain: false,
                       contours: true,
                     })

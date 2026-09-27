@@ -32,6 +32,16 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
         setData(data) {
           this.data = data;
         },
+        updateData(diff) {
+          for (const update of diff.update ?? []) {
+            const feature = this.data.features.find((entry) => entry.id === update.id);
+            if (!feature) continue;
+            if (update.newGeometry) feature.geometry = structuredClone(update.newGeometry);
+            for (const { key, value } of update.addOrUpdateProperties ?? [])
+              feature.properties[key] = value;
+          }
+          return Promise.resolve();
+        },
       });
     },
     addLayer(spec) {
@@ -103,12 +113,9 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
   );
   assert.deepEqual(track, before);
   const destination = [0.005, 0.001];
-  layer.sync({
-    ...state,
-    preview: {
-      node: { trackId: 'a', coordinate: [0.004, 0] },
-      coordinate: destination,
-    },
+  layer.preview({
+    node: { trackId: 'a', coordinate: [0.004, 0] },
+    coordinate: destination,
   });
   const preview = sources
     .get('manual-tracks')

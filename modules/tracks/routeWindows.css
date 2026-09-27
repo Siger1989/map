@@ -167,6 +167,11 @@
   display: block;
   font-size: 11px;
 }
+.route-endpoint-value { user-select: all; }
+.route-endpoint-actions { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+.route-details .route-endpoint-actions button { width: 52px; min-height: 36px; padding: 4px; font-size: 12px; }
+.route-endpoint-feedback { flex-basis: 100%; font-size: 11px; }
+.route-endpoint-feedback:empty { display: none; }
 .route-composition > div {
   display: grid;
   grid-template-columns: 12px 48px 1fr;

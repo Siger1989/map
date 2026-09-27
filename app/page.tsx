@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
+import { requestAppBack } from '@/modules/input/appBack';
 import { CurrentMapContext } from '@/modules/routeShare/CurrentMapContext';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
 import { readRasterDatums } from '@/modules/mapSources/coordinates';
@@ -194,6 +195,13 @@ import {
 } from '@/modules/map/types';
 
 export default function Home() {
+  useEffect(() => {
+    const back = (event: Event) => {
+      if (!event.defaultPrevented && requestAppBack(document)) event.preventDefault();
+    };
+    window.addEventListener('shantu-app-back', back);
+    return () => window.removeEventListener('shantu-app-back', back);
+  }, []);
   const map = useRef<MapHandle>(null);
   const watchObjectProjection = useCallback<WatchProjection>(
     (listener) => map.current?.watchObjectProjection(listener) ?? (() => {}),
@@ -1118,13 +1126,6 @@ export default function Home() {
         snapTargets: tracks.snapping,
         alternativeId: activeAlternative,
         linePoint: panel === null ? linePoint : null,
-        preview:
-          featureMove?.target.kind === 'track'
-            ? {
-                node: featureMove.target.node,
-                coordinate: featureMove.coordinate,
-              }
-            : null,
       }),
     [
       liveRecording,
@@ -1146,7 +1147,6 @@ export default function Home() {
       tracks.selectedId,
       routeReversed,
       tracks.snapping,
-      featureMove,
     ],
   );
   const routeDisplay = useRouteDisplay(
@@ -1318,6 +1318,14 @@ export default function Home() {
             setPanel('route');
             return;
           }
+          if (quickAdd) { event.preventDefault(); setQuickAdd(null); return; }
+          if (navigationDisplayOpen) { event.preventDefault(); setNavigationDisplayOpen(false); return; }
+          if (panel !== null) {
+            event.preventDefault();
+            if (panel === 'annotations' && !annotations.select(null)) return;
+            setPanel(null);
+            return;
+          }
           if (editor.session) {
             event.preventDefault();
             backEditor();
@@ -1376,6 +1384,8 @@ export default function Home() {
             setSectionEditing(false);
             return;
           }
+          if (survey.active) { event.preventDefault(); survey.close(); return; }
+          if (measurement.active) { event.preventDefault(); measurement.close(); return; }
           if (annotations.picking) {
             event.preventDefault();
             annotations.setPicking(null);
@@ -1822,6 +1832,7 @@ export default function Home() {
                   photos={photos.items}
                   onBack={() => setRouteWindow('card')}
                   onShare={() => shareTrackById(railTrack.id)}
+                  onPointShare={(place) => openPlaceShareDialog({ place })}
                   deleteError={tracks.error}
                   onDelete={() => {
                     if (!tracks.remove(railTrack.id)) return false;

@@ -1,5 +1,4 @@
 import {
-  Cloud,
   CloudRain,
   Info,
   Layers,
@@ -74,16 +73,9 @@ const ITEMS = [
     color: 'green',
   },
   {
-    key: 'clouds',
-    label: '立体云层',
-    detail: '低 / 中 / 高云 · 模型示意',
-    icon: Cloud,
-    color: 'white',
-  },
-  {
     key: 'rain',
     label: '降雨动画',
-    detail: '雨区与强度 · 模型示意',
+    detail: '降雨预报 · 动画示意',
     icon: CloudRain,
     color: 'cyan',
   },
@@ -263,13 +255,13 @@ export function LayerPanel({
         </>
       )}
       <div className="panel-sliders">
-        {(settings.clouds || settings.rain) && (
+        {settings.rain && (
           <>
-            <label className="slider-label" htmlFor="weather-opacity">
-              云雨透明度 <span>{Math.round(settings.opacity * 100)}%</span>
+            <label className="slider-label" htmlFor="rain-opacity">
+              降雨透明度 <span>{Math.round(settings.opacity * 100)}%</span>
             </label>
             <input
-              id="weather-opacity"
+              id="rain-opacity"
               type="range"
               min="0"
               max="1"
@@ -317,7 +309,7 @@ export function LayerPanel({
         </p>
         <div className="layer-note">
           <Info size={15} />
-          <p>云的高度与形态为简化示意。数值以数据面板为准。</p>
+          <p>降雨动画依据预报数据展示，不是雷达观测；最新云况来自卫星日间影像，不是雷达回波。</p>
         </div>
       </details>
     </section>

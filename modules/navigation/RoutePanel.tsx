@@ -2,7 +2,6 @@ import { RouteProviderNote } from './RouteProviderNote';
 import { RouteResultSummary } from './RouteResultSummary';
 import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
-import { RoutingModeControl } from '../offlineRouting/RoutingModeControl';
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import {
   ArrowDownUp,
@@ -265,7 +264,6 @@ export function RoutePanel({
   return (
     <div className="route-panel" data-picking={n.picking !== null}>
       {onImport && <button className="route-load" onClick={onImport}>加载路线文件</button>}
-      <RoutingModeControl onOffline={() => n.setMode('pedestrian')} />
       {n.picking !== null && (
         <div className="route-picking-help" role="status">
           <span>

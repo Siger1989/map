@@ -598,15 +598,45 @@ test('rendered route features carry selection IDs and exact draggable coordinate
   const layers = new Map(),
     sources = new Map();
   let data,
-    hits = [];
+    hits = [],
+    setDataCalls = 0,
+    diffs = [],
+    selectedEdgeData,
+    failNextManualDiff = false;
   const map = {
     getSource: (id) => sources.get(id),
-    addSource: (id) =>
-      sources.set(id, {
+    addSource: (id) => {
+      const source = {
         setData: (next) => {
-          if (id === 'manual-tracks') data = next;
+          source.data = structuredClone(next);
+          if (id === 'manual-tracks') {
+            data = source.data;
+            setDataCalls++;
+          } else if (id === 'manual-track-selection-edge') {
+            selectedEdgeData = source.data;
+          }
+          return Promise.resolve();
         },
-      }),
+        updateData: (diff) => {
+          if (id === 'manual-tracks' && failNextManualDiff) {
+            failNextManualDiff = false;
+            return Promise.reject(new Error('source update failed'));
+          }
+          if (id === 'manual-tracks') diffs.push(diff);
+          for (const update of diff.update ?? []) {
+            const feature = source.data?.features.find((entry) => entry.id === update.id);
+            if (!feature) continue;
+            if (update.newGeometry) feature.geometry = structuredClone(update.newGeometry);
+            for (const { key, value } of update.addOrUpdateProperties ?? [])
+              feature.properties[key] = value;
+          }
+          if (id === 'manual-track-selection-edge') selectedEdgeData = source.data;
+          return Promise.resolve();
+        },
+      };
+      sources.set(id, source);
+      return source;
+    },
     getLayer: (id) => layers.get(id),
     getStyle: () => ({ layers: [...layers.values()] }),
     addLayer: (layer) => layers.set(layer.id, layer),
@@ -630,6 +660,8 @@ test('rendered route features carry selection IDs and exact draggable coordinate
     visible: true,
     style: { color: '#55d6ff', width: 1 },
     selectedId: track.id,
+    editing: true,
+    nodeSelection: { trackId: track.id, points: [a, b] },
   };
   layer.sync(state);
   const line = data.features.find((f) => f.geometry.type === 'MultiLineString');
@@ -653,16 +685,73 @@ test('rendered route features carry selection IDs and exact draggable coordinate
   assert.equal(layer.pickTrack({ x: 109, y: 0 }), track.id);
   hits = [{ ...line, layer: { id: 'manual-track-line' } }];
   assert.equal(layer.pickTrack({ x: 50, y: 0 }), track.id);
-  layer.sync({
-    ...state,
-    preview: { node: { trackId: track.id, coordinate: b }, coordinate: moved },
-  });
+  const source = sources.get('manual-tracks');
+  const baselineSetDataCalls = setDataCalls;
+  layer.preview({ node: { trackId: track.id, coordinate: b }, coordinate: moved });
   assert.deepEqual(
     data.features.find((f) => f.geometry.type === 'MultiLineString').geometry
       .coordinates,
     [[a, moved, c]],
   );
+  assert.equal(setDataCalls, baselineSetDataCalls, 'preview must not replace full GeoJSON');
+  assert.equal(diffs.at(-1).update.length, 2, 'only the affected route line and dragged node are diffed');
+  const changedIds = diffs.at(-1).update.map((entry) => entry.id);
+  assert.ok(changedIds.every((id) => {
+    const feature = data.features.find((entry) => entry.id === id);
+    return feature?.properties.trackId === track.id;
+  }), 'unrelated route features are not included in the incremental update');
+  const previewNode = data.features.find((f) => f.geometry.type === 'Point' && f.properties.nodeLng === b[0] && f.properties.nodeLat === b[1]);
+  assert.equal(previewNode.properties.lng, moved[0]);
+  assert.equal(previewNode.properties.nodeLng, b[0], 'rendered feature keeps the original node identity');
+  assert.deepEqual(selectedEdgeData.features[0].geometry.coordinates, [[a, moved]], 'the selected edge highlight follows the same node diff');
   assert.deepEqual(track.segments, [[a, b, c]]);
+  layer.preview(null);
+  assert.deepEqual(
+    data.features.find((f) => f.geometry.type === 'MultiLineString').geometry.coordinates,
+    [[a, b, c]],
+    'cancel restores the cached baseline geometry',
+  );
+  assert.equal(data.features.find((f) => f.geometry.type === 'Point' && f.properties.nodeLng === b[0] && f.properties.nodeLat === b[1]).properties.lng, b[0]);
+  assert.deepEqual(selectedEdgeData.features[0].geometry.coordinates, [[a, b]], 'cancel restores the selected edge highlight');
+
+  const committed = { ...track, segments: [[a, moved, c]], nodes: [moved] };
+  layer.preview({ node: { trackId: track.id, coordinate: b }, coordinate: moved });
+  layer.sync({ ...state, saved: [committed] });
+  assert.ok(setDataCalls > baselineSetDataCalls, 'a committed route change uses the full baseline sync');
+  assert.deepEqual(
+    data.features.find((f) => f.geometry.type === 'MultiLineString').geometry.coordinates,
+    [[a, moved, c]],
+    'a second sync replaces the baseline with committed geometry',
+  );
+  failNextManualDiff = true;
+  const beforeFailedPreview = setDataCalls;
+  layer.preview({ node: { trackId: track.id, coordinate: moved }, coordinate: c });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(setDataCalls > beforeFailedPreview, 'a rejected diff restores the current source baseline once');
+  assert.deepEqual(
+    data.features.find((f) => f.geometry.type === 'MultiLineString').geometry.coordinates,
+    [[a, moved, c]],
+    'a failed preview cannot leave stale geometry behind',
+  );
+  const diffCountAfterRecovery = diffs.length;
+  layer.preview(null);
+  assert.equal(diffs.length, diffCountAfterRecovery, 'a failed preview is cleared before the next sync');
+  layer.sync({ ...state, saved: [committed] });
+  layer.preview({ node: { trackId: track.id, coordinate: moved }, coordinate: c });
+  let replacementUpdates = 0;
+  const replacementSource = {
+    setData: (next) => {
+      data = structuredClone(next);
+      return Promise.resolve();
+    },
+    updateData: () => {
+      replacementUpdates++;
+      return Promise.resolve();
+    },
+  };
+  sources.set('manual-tracks', replacementSource);
+  layer.preview(null);
+  assert.equal(replacementUpdates, 0, 'a replaced source never receives a diff for the old baseline');
   layer.sync({ ...state, visible: false });
   assert.equal(data.features.length, 0);
 });

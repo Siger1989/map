@@ -9,6 +9,7 @@ export function useRouteDialogFocus(onBack: () => void) {
         ? document.activeElement
         : null;
     const node = root.current;
+    node?.setAttribute('data-app-back', '100');
     node
       ?.querySelector<HTMLElement>('button,select,input,[tabindex="0"]')
       ?.focus({ preventScroll: true });
@@ -45,6 +46,7 @@ export function useRouteDialogFocus(onBack: () => void) {
     node?.addEventListener('keydown', key);
     return () => {
       node?.removeEventListener('keydown', key);
+      node?.removeAttribute('data-app-back');
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);

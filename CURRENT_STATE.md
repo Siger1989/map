@@ -1,3 +1,15 @@
+# 当前状态 — 2026-09-28 / 0.2.76 路线拖动与本轮交互修正
+
+- 目标：修复 OPPO Find X8 Ultra 路线拖点不跟手；返回先退出当前菜单、精简工具、在线优先规划、起终点坐标复制/分享；移除立体云团，说明实际云图/降雨来源。
+- 证据：RAF 仍逐帧 setFeatureMove，导致整页 React 重渲染、所有轨迹 GeoJSON/备注/节点重建及全体 stringify；不是预览期存储写入。高分屏 GPU 负担仍可能存在，尚无真机 profiler。
+- 进度：拖点逐帧几何预览改为 imperative + GeoJSON updateData，仅更新相关线/节点；UI 仅发布开始/结束/吸附变化。原生返回通过可取消事件按当前窗口层级消费；工具只留测量/扫码路线/剖面。规划与地点搜索在线优先，网络失败回退已有步行路网。详情坐标可复制与单独分享地点。预报立体云体及开关已移除，保留真实 NASA 日间云况影像与预报降雨示意。
+- 文件：app/page.tsx、map/{TerrainMap,featurePreviewUi}、tracks/{TrackLayer,selectedEdgeLayer,RouteViews,RouteEndpointActions,routeWindows.css,useRouteDialogFocus}、input/appBack、controls/{ControlDock,PlaceSearch,LayerPanel,LayerWindow,useMapTools}、position/DirectionControl、navigation/{provider,RoutePanel,RouteProviderNote}、weather/WeatherLayer、Android MainActivity/Manifest、版本与针对性测试、docs/release-0.2.76.md/agent-handoff。
+- 命令：定向拖动/地图/返回/导航测试、端点 React 点击测试、TypeScript；最终全量测试与全新 APK 构建进行中，日志 .openai/*0276*。
+- 验证 PASS：最终688/688测试、类型、全新 APK 构建、原v2/v3签名、zipalign、473张地形/修补瓦片、32个网页资产逐字节一致。旧Android VM测试迁移真实cancelable协议后10项返回测试通过。独立390px打包网页拖点/撤销、三工具、规划无模式选择、菜单返回和地点分享返回层级通过；最后包版本0.2.76/code83、无云团开关且仍有预报降雨透明度。初步浏览器出现一次无来源MutationObserver.observe错误；静态QA没有Android网关，存在高程缺块，未声称真机/实时卫星连通性已验。截图 artifacts/screenshots/{node-drag-0276-*,route-endpoint-share-390-0276-20260928.png,weather-layers-0276-390-20260928.png}。
+- 阻塞：真机性能需用户复测；MapLibre6.7 地形存在 devicePixelRatio 硬编码，暂不通过修改 DPR 降画质。
+- 新版本：0.2.76-test / versionCode83，原独立测试版包名与签名。
+- 最终产物：APK/Shantu-0.2.76-test-standalone.apk，57,855,068 bytes，SHA256 D39A8B4B41FD3F3465B831D0994E0C5FE469501B3AFF9C0C3D9B2A0CA2FFF386；fresh stage mobile/.build/apk-20260928-003747/web。日志 .openai/{release-0276-tests-final-20260928,release-0276-tsc-final-20260928,apk-0276-build-final-20260928,apk-0276-web-integrity}.log。
+- 下一步：提交推送构建源码，创建并核对三个 Release 资产后公开；真机复测跟手程度和系统返回。
 # 当前状态 — 2026-09-27 / 0.2.75 最新 APK 交付中
 
 - 目标：将当前全部已授权的 UI、路线编辑、节点吸附、地图性能和天地图搜索修改纳入新 APK。

@@ -11,7 +11,6 @@ import { normalizePlaceName } from './placeName.ts';
 import { normalizeRegion } from '../collections/regions.ts';
 import { connectRoadAccess, nearestRoadPlaces } from './roadAccess.ts';
 import { tryOfflineRoute, offlinePlaces } from '../offlineRouting/provider.ts';
-import { routingMode } from '../offlineRouting/preferences.ts';
 import { basemapConfiguration } from '../cartography/basemaps.ts';
 import { buildTiandituSearchURL, normalizeTiandituPlaces } from './tiandituSearch.ts';
 
@@ -30,6 +29,27 @@ export const NAVIGATION_SERVICES = {
 };
 const cache = new Map<string, { time: number; data: unknown }>();
 const nextRequestAt = new Map<string, number>();
+export class NetworkFailure extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'NetworkFailure';
+  }
+}
+
+export async function onlineFirstWithOfflineFallback<T>(
+  online: () => Promise<T>,
+  offline: () => Promise<T>,
+  isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false,
+): Promise<T> {
+  if (!isOnline()) return offline();
+  try {
+    return await online();
+  } catch (error) {
+    if (!(error instanceof NetworkFailure)) throw error;
+    return offline();
+  }
+}
+
 async function requestJSON(url: string, signal: AbortSignal) {
   signal.throwIfAborted();
   const hit = cache.get(url);
@@ -50,11 +70,19 @@ async function requestJSON(url: string, signal: AbortSignal) {
       signal.addEventListener('abort', cancel, { once: true });
     });
   signal.throwIfAborted();
-  const response = await fetch(url, {
-    signal: AbortSignal.any([signal, AbortSignal.timeout(25_000)]),
-    headers: { Accept: 'application/json' },
-    credentials: 'omit',
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(25_000)]),
+      headers: { Accept: 'application/json' },
+      credentials: 'omit',
+    });
+  } catch (error) {
+    if (signal.aborted) throw error;
+    if (error instanceof TypeError || (error instanceof Error && error.name === 'TimeoutError'))
+      throw new NetworkFailure('路线服务网络连接失败或超时。', { cause: error });
+    throw error;
+  }
   if (response.status === 429) throw new Error('服务请求较多，请稍后再试。');
   if (!response.ok)
     throw new Error(
@@ -64,7 +92,15 @@ async function requestJSON(url: string, signal: AbortSignal) {
     );
   if (Number(response.headers.get('content-length')) > 4_000_000)
     throw new Error('返回内容过大，请分段规划。');
-  const text = await response.text();
+  let text: string;
+  try {
+    text = await response.text();
+  } catch (error) {
+    if (signal.aborted) throw error;
+    if (error instanceof TypeError || (error instanceof Error && error.name === 'TimeoutError'))
+      throw new NetworkFailure('路线服务网络连接失败或超时。', { cause: error });
+    throw error;
+  }
   if (text.length > 4_000_000) throw new Error('返回内容过大，请分段规划。');
   const data: unknown = JSON.parse(text);
   if (cache.size >= 24) cache.delete(cache.keys().next().value!);
@@ -221,73 +257,80 @@ export async function planRoute(
   // Validate the requested places before making a network call.
   routeURL(start, end, mode, via);
   const stops = [start, ...via, end];
-  const offline = await tryOfflineRoute(stops, mode, signal);
-  if (offline) return offline;
-  const nearest = nearestRoadPlaces(
-    await requestJSON(
-      NAVIGATION_SERVICES.locate +
-        '?json=' +
-        encodeURIComponent(
-          JSON.stringify({
-            locations: stops.map((p) => ({
-              lon: p.coordinates[0],
-              lat: p.coordinates[1],
-              radius: 0,
-              node_snap_tolerance: 0,
-              search_cutoff: 35000,
-            })),
-            costing: mode,
-            verbose: false,
-          }),
+  return onlineFirstWithOfflineFallback(
+    async () => {
+      const nearest = nearestRoadPlaces(
+        await requestJSON(
+          NAVIGATION_SERVICES.locate +
+            '?json=' +
+            encodeURIComponent(
+              JSON.stringify({
+                locations: stops.map((p) => ({
+                  lon: p.coordinates[0],
+                  lat: p.coordinates[1],
+                  radius: 0,
+                  node_snap_tolerance: 0,
+                  search_cutoff: 35000,
+                })),
+                costing: mode,
+                verbose: false,
+              }),
+            ),
+          signal,
         ),
-      signal,
-    ),
-    stops,
-  );
-  // Allow coincident road projections: two off-road places may meet the same access point.
-  const query = JSON.parse(
-    new URL(routeURL(start, end, mode, via)).searchParams.get('json')!,
-  );
-  query.locations = nearest.map((p) => ({
-    lon: p.coordinates[0],
-    lat: p.coordinates[1],
-    type: 'break',
-    radius: 0,
-    node_snap_tolerance: 0,
-  }));
-  if (
-    nearest.every(
-      (p) => metresBetween(p.coordinates, nearest[0].coordinates) < 0.1,
-    )
-  ) {
-    return connectRoadAccess(
-      {
+        stops,
+      );
+      // Allow coincident road projections: two off-road places may meet the same access point.
+      const query = JSON.parse(
+        new URL(routeURL(start, end, mode, via)).searchParams.get('json')!,
+      );
+      query.locations = nearest.map((p) => ({
+        lon: p.coordinates[0],
+        lat: p.coordinates[1],
+        type: 'break',
+        radius: 0,
+        node_snap_tolerance: 0,
+      }));
+      if (
+        nearest.every(
+          (p) => metresBetween(p.coordinates, nearest[0].coordinates) < 0.1,
+        )
+      ) {
+        return connectRoadAccess(
+          {
+            mode,
+            coordinates: nearest.map((p) => p.coordinates),
+            distance: 0,
+            duration: 0,
+            steps: [],
+            snapped: nearest.map((p) => p.coordinates),
+            roadLegs: nearest
+              .slice(1)
+              .map((p, i) => [nearest[i].coordinates, p.coordinates]),
+            createdAt: Date.now(),
+          },
+          stops,
+        );
+      }
+      const route = normalizeRoute(
+        await requestJSON(
+          NAVIGATION_SERVICES.route +
+            '?json=' +
+            encodeURIComponent(JSON.stringify(query)),
+          signal,
+        ),
         mode,
-        coordinates: nearest.map((p) => p.coordinates),
-        distance: 0,
-        duration: 0,
-        steps: [],
-        snapped: nearest.map((p) => p.coordinates),
-        roadLegs: nearest
-          .slice(1)
-          .map((p, i) => [nearest[i].coordinates, p.coordinates]),
-        createdAt: Date.now(),
-      },
-      stops,
-    );
-  }
-  const route = normalizeRoute(
-    await requestJSON(
-      NAVIGATION_SERVICES.route +
-        '?json=' +
-        encodeURIComponent(JSON.stringify(query)),
-      signal,
-    ),
-    mode,
+      );
+      if (route.snapped.length !== via.length + 2)
+        throw new Error('路线服务返回的途经点数量不一致，请重试。');
+      return connectRoadAccess(route, stops);
+    },
+    async () => {
+      const offline = await tryOfflineRoute(stops, mode, signal, 'offline');
+      if (offline) return offline;
+      throw new Error('没有可用的离线路线。');
+    },
   );
-  if (route.snapped.length !== via.length + 2)
-    throw new Error('路线服务返回的途经点数量不一致，请重试。');
-  return connectRoadAccess(route, stops);
 }
 export function normalizePlaces(input: unknown): RoutePlace[] {
   const raw = input as {
@@ -328,26 +371,32 @@ export async function searchPlaces(
 ) {
   if (query.trim().length < 2)
     throw new Error('请输入至少两个字，或使用地图选点。');
-  if (routingMode() === 'offline') return offlinePlaces(query.trim());
-  if ((source ?? defaultPlaceSearchSource()) === 'tianditu') {
-    const config = basemapConfiguration();
-    if (!config.domestic) throw new Error('未配置天地图搜索密钥，请选择全球搜索。');
-    const found = normalizeTiandituPlaces(
-      await requestJSON(buildTiandituSearchURL(query, config.token), signal),
-    );
-    // Route planning keeps worldwide coverage; the explicit search selector
-    // only uses its chosen provider.
-    if (found.length || source === 'tianditu') return found;
-  }
-  const params = new URLSearchParams({
-    q: query.trim().slice(0, 120),
-    lang: 'default',
-    limit: '5',
-    lat: String(near[1]),
-    lon: String(near[0]),
-  });
-  return normalizePlaces(
-    await requestJSON(NAVIGATION_SERVICES.search + '?' + params, signal),
+  const trimmed = query.trim();
+  return onlineFirstWithOfflineFallback(
+    async () => {
+      if ((source ?? defaultPlaceSearchSource()) === 'tianditu') {
+        const config = basemapConfiguration();
+        if (!config.domestic)
+          throw new Error('未配置天地图搜索密钥，请选择全球搜索。');
+        const found = normalizeTiandituPlaces(
+          await requestJSON(buildTiandituSearchURL(trimmed, config.token), signal),
+        );
+        // Route planning keeps worldwide coverage; the explicit search selector
+        // only uses its chosen provider.
+        if (found.length || source === 'tianditu') return found;
+      }
+      const params = new URLSearchParams({
+        q: trimmed.slice(0, 120),
+        lang: 'default',
+        limit: '5',
+        lat: String(near[1]),
+        lon: String(near[0]),
+      });
+      return normalizePlaces(
+        await requestJSON(NAVIGATION_SERVICES.search + '?' + params, signal),
+      );
+    },
+    () => offlinePlaces(trimmed),
   );
 }
 

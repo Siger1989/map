@@ -14,6 +14,7 @@ import type { BoxSelectionMode } from '../collections/boxSelection';
 import { RoutePointMarkerFields, type PointMarkerInput } from './RoutePointMarkerFields';
 import { displayedPointColor } from './displayColors';
 import { resolvedRouteTerminals } from './routeTerminals';
+import { RouteEndpointActions } from './RouteEndpointActions';
 import {
   ArrowLeft,
   Plus,
@@ -34,7 +35,7 @@ import {
   type AnnotationChoice,
 } from '../annotations/data';
 import { AnnotationTypeOptions } from '../annotations/AnnotationTypeOptions';
-import { formatDistance, type Coordinate } from '../navigation/types';
+import { formatDistance, type Coordinate, type RoutePlace } from '../navigation/types';
 import type { VisiblePhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos';
 import { DRAFT_ID } from './editing';
@@ -70,6 +71,7 @@ export function RouteDetails({
   photos,
   onBack,
   onShare,
+  onPointShare,
   onMarker,
   onPhoto,
   onDelete,
@@ -88,6 +90,7 @@ export function RouteDetails({
   photos: VisiblePhoto[];
   onBack: () => void;
   onShare: () => void;
+  onPointShare?: (place: RoutePlace) => void;
   onMarker: (id: string) => void;
   onPhoto: (id: string) => void;
   onDelete: () => boolean;
@@ -204,9 +207,10 @@ export function RouteDetails({
                 <dt>{String(label)}</dt>
                 <dd>
                   {name ? <span>{String(name)}</span> : null}
-                  <small>
+                  <small className="route-endpoint-value">
                     {coordinate ? formatCoordinate(coordinate as Coordinate) : '未设置'}
                   </small>
+                  {coordinate && <RouteEndpointActions routeName={track.name} label={String(label)} stopName={name ? String(name) : undefined} point={coordinate as Coordinate} onShare={onPointShare}/>}
                 </dd>
               </div>
             ))}
@@ -366,9 +370,16 @@ export function RouteEditToolbar({
       <section
         ref={dock}
         className="route-surface route-edit-dock"
+        data-app-back="10"
         data-view={activeView}
         data-style-open={activeView === 'style'}
         aria-label="路线编辑工具"
+        onKeyDown={event => {
+          if (event.key !== 'Escape' || event.defaultPrevented || activeView === 'tools') return;
+          event.preventDefault();
+          event.stopPropagation();
+          returnToTools();
+        }}
       >
         <header className="route-edit-dock-heading">
           {activeView !== 'tools' && <button autoFocus aria-label="返回编辑工具" onClick={returnToTools}><ArrowLeft size={16} />返回</button>}

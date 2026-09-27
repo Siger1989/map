@@ -21,7 +21,7 @@ const seeded = (n: number) => {
   return x - Math.floor(x);
 };
 
-/** Model-driven illustration only: cloud geometry and drop trajectories are not observations. */
+/** Model-driven rain illustration only; it is not an observation. */
 export class WeatherLayer implements CustomLayerInterface {
   id = 'cloud-rain-3d';
   type = 'custom' as const;
@@ -30,7 +30,6 @@ export class WeatherLayer implements CustomLayerInterface {
   private renderer?: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.Camera();
-  private cloudGroup = new THREE.Group();
   private rainGroup = new THREE.Group();
   private drops: Drop[] = [];
   private dropGeometry?: THREE.BufferGeometry;
@@ -53,7 +52,7 @@ export class WeatherLayer implements CustomLayerInterface {
       antialias: true,
     });
     this.renderer.autoClear = false;
-    this.scene.add(this.cloudGroup, this.rainGroup);
+    this.scene.add(this.rainGroup);
     this.scene.add(new THREE.AmbientLight(0xe4f4ff, 2.2));
     const sun = new THREE.DirectionalLight(0xffffff, 2.5);
     sun.position.set(-10000, -20000, 30000);
@@ -72,12 +71,7 @@ export class WeatherLayer implements CustomLayerInterface {
     this.index = index;
     this.settings = settings;
     if (changed) this.rebuild();
-    this.cloudGroup.visible = settings.clouds;
     this.rainGroup.visible = settings.rain;
-    this.cloudGroup.traverse((object) => {
-      if (object instanceof THREE.Mesh)
-        (object.material as THREE.Material).opacity = settings.opacity * 0.48;
-    });
     if (this.rainMaterial) this.rainMaterial.opacity = settings.opacity * 0.95;
     this.map?.triggerRepaint();
   }
@@ -97,7 +91,6 @@ export class WeatherLayer implements CustomLayerInterface {
     group.clear();
   }
   private rebuild() {
-    this.clear(this.cloudGroup);
     this.clear(this.rainGroup);
     this.drops = [];
     this.dropGeometry = undefined;
@@ -105,7 +98,6 @@ export class WeatherLayer implements CustomLayerInterface {
     if (!this.data || !this.map) return;
     this.origin = MercatorCoordinate.fromLngLat(this.data.anchor);
     const unit = this.origin.meterInMercatorCoordinateUnits();
-    const matrices: THREE.Matrix4[][] = [[], [], []];
     const colors: number[] = [];
     this.data.cells.forEach((cell, cellIndex) => {
       const hour = cell.hours[this.index];
@@ -116,30 +108,6 @@ export class WeatherLayer implements CustomLayerInterface {
       const floor = this.settings.terrain
         ? Math.max(0, cell.elevation ?? 0) * this.settings.exaggeration
         : 0;
-      [hour.low, hour.mid, hour.high].forEach((cover, level) => {
-        if (cover == null || cover < 5) return;
-        const count = Math.ceil(cover / 12.5);
-        for (let j = 0; j < count; j++) {
-          const seed = cellIndex * 71 + level * 29 + j * 3;
-          const location = new THREE.Vector3(
-            x + (seeded(seed) - 0.5) * 25000,
-            y + (seeded(seed + 1) - 0.5) * 27000,
-            floor + [1800, 4200, 7600][level],
-          );
-          const scale = new THREE.Vector3(
-            2800 + cover * 28,
-            2600 + cover * 24,
-            [500, 550, 350][level],
-          );
-          matrices[level].push(
-            new THREE.Matrix4().compose(
-              location,
-              new THREE.Quaternion(),
-              scale,
-            ),
-          );
-        }
-      });
       if (hour.rain == null || hour.rain < 0.1) return;
       const count = Math.min(130, Math.ceil(22 + hour.rain * 16));
       const color = new THREE.Color(rainColor(hour.rain));
@@ -155,21 +123,6 @@ export class WeatherLayer implements CustomLayerInterface {
         });
         for (let k = 0; k < 2; k++) colors.push(color.r, color.g, color.b);
       }
-    });
-    matrices.forEach((values, level) => {
-      if (!values.length) return;
-      const geometry = new THREE.SphereGeometry(1, 12, 8);
-      const material = new THREE.MeshLambertMaterial({
-        color: [0xc4d1da, 0xe0e9ef, 0xecf3f7][level],
-        transparent: true,
-        opacity: this.settings.opacity * 0.48,
-        depthWrite: false,
-      });
-      const mesh = new THREE.InstancedMesh(geometry, material, values.length);
-      values.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
-      mesh.instanceMatrix.needsUpdate = true;
-      mesh.frustumCulled = false;
-      this.cloudGroup.add(mesh);
     });
     if (this.drops.length) {
       this.dropGeometry = new THREE.BufferGeometry();
@@ -197,7 +150,6 @@ export class WeatherLayer implements CustomLayerInterface {
       lines.frustumCulled = false;
       this.rainGroup.add(lines);
     }
-    this.cloudGroup.visible = this.settings.clouds;
     this.rainGroup.visible = this.settings.rain;
   }
   render(_gl: WebGL2RenderingContext, input: CustomRenderMethodInput) {
@@ -249,7 +201,6 @@ export class WeatherLayer implements CustomLayerInterface {
   }
   onRemove() {
     if (this.timer) clearTimeout(this.timer);
-    this.clear(this.cloudGroup);
     this.clear(this.rainGroup);
     this.renderer?.dispose();
     this.map = undefined;

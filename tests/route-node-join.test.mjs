@@ -214,12 +214,27 @@ test('rendered snap targets exist in edit mode and filtering ignores the closer 
     hits = [];
   const map = {
     getSource: (id) => sources.get(id),
-    addSource: (id) =>
-      sources.set(id, {
+    addSource: (id) => {
+      const source = {
         setData: (next) => {
           if (id === 'manual-tracks') data = next;
         },
-      }),
+        updateData: (diff) => {
+          if (id === 'manual-tracks') {
+            for (const update of diff.update ?? []) {
+              const feature = data.features.find((entry) => entry.id === update.id);
+              if (!feature) continue;
+              if (update.newGeometry) feature.geometry = update.newGeometry;
+              for (const { key, value } of update.addOrUpdateProperties ?? [])
+                feature.properties[key] = value;
+            }
+          }
+          return Promise.resolve();
+        },
+      };
+      sources.set(id, source);
+      return source;
+    },
     getLayer: (id) => layers.get(id),
     getStyle: () => ({ layers: [...layers.values()] }),
     addLayer: (l) => layers.set(l.id, l),
@@ -256,7 +271,7 @@ test('rendered snap targets exist in edit mode and filtering ignores the closer 
   );
 
   const preview = { node: { trackId: 'first', coordinate: b }, coordinate: [104.0019, 30] };
-  layer.sync({ ...state, preview });
+  layer.preview(preview);
   const previewNode = data.features.find(
       (feature) => feature.properties.trackId === 'first' && feature.properties.nodeLng === b[0] && feature.properties.nodeLat === b[1],
     ),

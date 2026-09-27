@@ -175,7 +175,15 @@ export function PlaceSearch({
           <section
             id="place-search-results"
             className="place-search-results glass suggestion-surface"
+            data-app-back="50"
             aria-label="地点搜索结果"
+            onKeyDown={event => {
+              if (event.key !== 'Escape' || event.defaultPrevented) return;
+              event.preventDefault();
+              event.stopPropagation();
+              input.current?.focus();
+              setOpen(false);
+            }}
           >
             <div className="place-search-heading">
               <span>搜索</span>

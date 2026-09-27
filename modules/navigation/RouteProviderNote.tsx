@@ -5,7 +5,7 @@ export function RouteProviderNote() {
     <details className="route-provider-note">
       <summary>使用说明与数据来源</summary>
       <p className="route-note">
-        输入地名后选结果，或在地图选点。最多8个途经点，拖动右侧柄调整顺序后重新规划。仅离线模式使用已下载步行路网；离线搜索仅含该路网道路名。
+        默认优先联网规划；网络断开或请求超时后，自动尝试已下载的步行路网。请提前下载覆盖路线范围的路网。无网时的地名搜索仅包含已下载路网中的道路名。最多8个途经点，拖动右侧柄调整顺序后重新规划。
       </p>
       <p className="route-note">
         <a

@@ -20,6 +20,7 @@ export function selectedEdgeData(state: TrackOverlay): FeatureCollection {
   return {
     type: 'FeatureCollection',
     features: coordinates.length ? [{
+      id: 'manual-track-selected-edge',
       type: 'Feature', properties: { width: normalizeTrackStyle(track.style).width + 2.5 },
       geometry: { type: 'MultiLineString', coordinates },
     }] : [],

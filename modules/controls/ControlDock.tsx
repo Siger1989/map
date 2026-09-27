@@ -6,7 +6,6 @@ import {
   MapPinPlus,
   X,
   Menu,
-  Footprints,
   Map as MapIcon,
   Bookmark,
   PencilLine,
@@ -108,13 +107,15 @@ export function ControlDock({
     <section
       ref={root}
       className={`control-dock ${active ? 'is-expanded' : ''}`}
+      data-app-back={active ? 10 : undefined}
       aria-label="地图工具"
       onKeyDown={(event) => {
         if (event.key === 'Escape' && active) {
           // The parent owns cancelling a map-pick operation without closing its panel.
           if (mapPicking) return;
           event.preventDefault();
-          close();
+          if (back && !back.disabled) back.onClick();
+          else close();
         }
       }}
     >
@@ -186,10 +187,6 @@ export function ControlDock({
                     扫码路线
                   </button>
                 )}
-                <button onClick={() => onActive('track')}>
-                  <PencilLine size={18} />
-                  画线
-                </button>
                 {onSection && (
                   <button
                     onClick={onSection}
@@ -201,19 +198,6 @@ export function ControlDock({
                     剖面
                   </button>
                 )}
-                {PANELS.filter(
-                  (p) =>
-                    !['tools', 'outdoor', 'favorites', 'track'].includes(p.id),
-                ).map(({ id, label, icon: Icon }) => (
-                  <button key={id} onClick={() => onActive(id)}>
-                    <Icon size={18} />
-                    {label}
-                  </button>
-                ))}
-                <button onClick={() => onActive('outdoor')}>
-                  <Footprints size={18} />
-                  记录与数据
-                </button>
               </div>
             ) : active === 'time' ? (
               timeline

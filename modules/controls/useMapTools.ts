@@ -40,7 +40,6 @@ export function useMapTools(actions: Actions) {
       'geology',
       'roads',
       'labels',
-      'clouds',
       'rain',
       'temperature',
     ] as const;
