@@ -1,5 +1,8 @@
 /* Keep the planning form together; long itineraries still scroll within safe bounds. */
 .observatory.home-map #map-control-panel:has(.route-panel) {
+  --route-button-height: 36px;
+  --route-primary-height: 44px;
+  --route-padding: 3px 4px;
   height: auto !important;
   max-height: calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px) !important;
   padding: var(--route-padding, 3px 5px) !important;
@@ -9,14 +12,14 @@
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
   flex-shrink: 0;
-  height: var(--route-button-height, 28px) !important;
-  min-height: var(--route-button-height, 28px) !important;
+  height: var(--route-button-height) !important;
+  min-height: var(--route-button-height) !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button {
-  height: var(--route-button-height, 28px) !important;
-  min-height: var(--route-button-height, 28px) !important;
+  height: var(--route-button-height) !important;
+  min-height: var(--route-button-height) !important;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-content {
   max-height: none !important;
@@ -30,8 +33,8 @@
   gap: 3px;
 }
 .observatory #map-control-panel .route-panel .routing-mode-control select {
-  height: var(--route-button-height, 28px) !important;
-  min-height: var(--route-button-height, 28px) !important;
+  height: var(--route-button-height, 36px) !important;
+  min-height: var(--route-button-height, 36px) !important;
   padding: 0 8px !important;
 }
 .observatory #map-control-panel .route-panel .route-modes {
@@ -39,8 +42,8 @@
   gap: 3px;
 }
 .observatory #map-control-panel .route-panel .route-modes button {
-  height: var(--route-button-height, 30px) !important;
-  min-height: var(--route-button-height, 30px) !important;
+  height: var(--route-button-height, 36px) !important;
+  min-height: var(--route-button-height, 36px) !important;
   border-radius: var(--route-radius, 3px);
 }
 .observatory #map-control-panel .route-panel .route-next-step {
@@ -65,8 +68,8 @@
   gap: 2px;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions button {
-  height: var(--route-button-height, 30px) !important;
-  min-height: var(--route-button-height, 30px) !important;
+  height: var(--route-button-height, 36px) !important;
+  min-height: var(--route-button-height, 36px) !important;
 }
 .observatory #map-control-panel .route-panel .route-primary {
   height: var(--route-primary-height, 32px) !important;
@@ -78,10 +81,16 @@
   margin-top: 2px !important;
 }
 .observatory #map-control-panel .route-panel .route-provider-note summary {
-  min-height: 24px;
+  min-height: 36px;
   display: list-item;
   align-content: center;
 }
+/* Keep every editable stop and secondary action compact without shrinking targets below 36px. */
+.observatory #map-control-panel .route-panel .route-stop-row { min-height: 38px; }
+.observatory #map-control-panel .route-panel .route-stop-row input { height: 36px; font-size: 16px; }
+.observatory #map-control-panel .route-panel :is(.stop-icon, .stop-drag) { height: 36px; }
+.observatory #map-control-panel .route-panel :is(.stop-remove, .stop-drag) { width: 36px; }
+.observatory #map-control-panel .route-panel .route-load { min-height: 36px; }
 /* A completed route gives the map back; details occupy a bounded secondary area. */
 .observatory.home-map #map-control-panel:has(.route-summary) {
   top: auto !important;
@@ -101,9 +110,9 @@
 }
 .route-summary-metrics { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 26px; font-size: 12px; }
 .route-summary-metrics button:first-of-type { margin-left: auto; }
-.observatory #map-control-panel .route-summary-metrics button { min-height: 28px; padding: 0 3px; }
+.observatory #map-control-panel .route-summary-metrics button { min-height: 36px; padding: 0 3px; }
 .route-summary-actions { display: flex; gap: 3px; padding-top: 2px; }
-.observatory #map-control-panel .route-summary-actions button { flex: 1; min-height: 30px; padding: 0 2px; white-space: nowrap; }
+.observatory #map-control-panel .route-summary-actions button { flex: 1; min-height: 36px; padding: 0 2px; white-space: nowrap; }
 .observatory #map-control-panel .route-summary-actions .is-primary { flex: 1.6; background: var(--route-selected, #dcf0dd); color: var(--route-accent, #15572b); }
 .observatory #map-control-panel .route-summary-actions button[aria-expanded='true'] { background: var(--route-selected, #dcf0dd); }
 .route-summary-detail { margin-top: 3px; border-top: 1px solid var(--route-line, #bcc7bd); }
@@ -117,12 +126,13 @@
   border-radius: var(--route-radius, 4px) !important;
   background: var(--route-field, #fff) !important;
   color: var(--route-text, #163c4a) !important;
-  min-height: var(--route-button-height, 30px) !important;
+  min-height: var(--route-button-height, 36px) !important;
   padding: 0 5px !important;
   font-size: 11px !important;
   white-space: nowrap;
 }
 .observatory #map-control-panel .route-summary .route-summary-actions .is-primary {
+  min-height: 44px !important;
   background: var(--route-selected, #dcf0dd) !important;
   border-color: var(--route-line, #76a580) !important;
   color: var(--route-accent, #15572b) !important;
@@ -141,6 +151,6 @@
   border-radius: var(--route-radius, 4px) !important;
   background: var(--route-field, #fff) !important;
   padding: 0 4px !important;
-  min-height: 26px !important;
+  min-height: 36px !important;
   margin-left: 3px;
 }

@@ -1,3 +1,38 @@
+# 当前状态 — 2026-09-28 / 0.2.77 真正压紧窗口并交付新APK
+
+- 目标：用户要求按已确认收藏密度收紧实际记录/路线/剖面/标记/图层窗口，同时严格保留0.2.76版全部生产按钮、标签和业务行为；构建并发送新独立测试版APK。
+- 当前：确认分支codex/rollback-ui-0235-20260921，起始HEAD和远程均07fa6fd5e1f22b60ce7f5c673906deb1bfc4e3c9；保留上轮未提交的CURRENT_STATE和previews，以及无关未跟踪PDF。
+- 分工：Luna分别编辑recording/marker、route/section、layer的独立CSS文件；主agent改版本、集成验收、构建签名、GitHub发布及一致性核对。
+- 进度：CSS与APK构建完成，待源码推送及GitHub Release发布。生产TSX按钮定义未修改。
+- 文件：modules/annotations/pinEditor.css、controls/layerWindow.css、navigation/routeCompact.css、outdoor/recordingConsole.css、section/{section,survey}.css、tracks/routeWindows.css、config/product.ts、mobile/android/AndroidManifest.xml、README.md、docs/release-0.2.77.md、docs/agent-handoff.md、previews/及本记录。
+- 命令：git status/diff/branch/remote，npm test，npx tsc --noEmit，scripts/build-android.ps1 -StandaloneTest，包内资源校验。日志 .openai/release-0277-{tests-pass,tsc}.log、apk-0277-{build,integrity}.log。
+- 验证 PASS：TypeScript、688/688测试、手机预览正式工具/路线规划/图层控件检查、Android全新构建、v2/v3原证书签名、zipalign、543个网页及地形文件与暂存内容一致。原测试命令因默认JDK不存在及Windows短路径导致3失败；指定现有JDK与完整TEMP后全通过，未改应用代码。
+- 产物：APK/Shantu-0.2.77-test-standalone.apk，57,859,164 bytes，SHA256 6226F66E653DA148083529C166B884A4E7B07272509FA36F32E44555E5DBE98A；versionCode84，原独立测试版包名与4a94签名，473张主地形瓦片。
+- 限制：正式预览不等于Android真机触控、GPS、性能或覆盖安装验证；用户无关PDF保留原状。
+- 下一步：提交并推送当前功能分支，公开0.2.77 prerelease、上传APK/SHA/安装说明，并核对远端资源大小与digest。
+
+# 当前状态 — 2026-09-28 / 窗口预览修正：只收紧，不改按钮
+
+- 目标：用户纠正上一张六窗预览改动了实际按钮；以0.2.76现有组件为唯一控件基线，只展示密度/布局收紧。
+- 进度：两名子agent只读审计生产控件与旧预览的差异；主agent修正六类静态预览。记录补回全程、导出GPX、离线地图与状态/结束行为；路线规划补回加载路线、出行方式、可编辑起终点、选点、拖排、途经点、我的位置、反向、清除和原说明入口；路线编辑保留现有按钮/禁用状态语义；A点恢复资料/移动基准点/沿线移动；标记恢复返回/调整/删除/分享、坐标、海拔、图案颜色、拍照/导入、自定义条目及即时保存；图层恢复九项开关、图源、影像模式、滑块与原有折叠入口。
+- 文件：仅previews/window-density-20260928.html/.css/.README及CURRENT_STATE.md；生产React/地图/数据、版本、APK均未改。artifacts/screenshots/window-density-corrected-six-panels-20260928.png取代上一张内容不准确的总图。
+- 命令：生产组件定向读取、CUA DOM+计算边界、390×857和360×780断点检查、六张浏览器裁剪截图、sharp原图拼板、git diff --check。
+- 验证 PASS：所有六类预览控件无卡内滚动和裁切，390/360页面无横向溢出，右侧地图工具间隔分别15/8px；图层604px为保留全部原有开关与设置入口的内容例外。图片人工检查PASS；静态预览不验证实际业务点击/真机手感。上一张总图按钮不准确，已废弃。
+- 阻塞：无。快速视觉确认阶段不打包或推送；待用户核对新图，再调整生产窗口的CSS密度，不改生产按钮定义。
+- 下一步：把修正图直接发给用户在手机查看。
+
+# 当前状态 — 2026-09-28 / 以收藏密度统一窗口预览
+
+- 目标：用户认可收藏窗口尺寸与密度，要求其他窗口按同一标准优化，并直接发送预览图，后续在手机继续控制。
+- 范围：先制作记录、路线规划、路线编辑、剖面点编辑、标记编辑、图层六类版式预览；参考实际收藏36px内容行、13px面板字、4px间距和紧凑标题。主操作44px，输入16px；不改变已有数据和业务流程。
+- 进度：两名Luna分别审阅密度和制作独立HTML/CSS；主agent补齐路线编辑的加减/分叉/清空/撤销/点选/框选/属性，保留在线优先自动策略及出行方式；统一激活描边与颜色。
+- 文件：新增previews/window-density-20260928.html/.css、previews/README.md及本状态；生产app/modules/mobile与版本未修改。
+- 命令：git status、git diff --stat、相关文档/CSS读取；CUA核对收藏实际样式及390×857、360×780边界；本地限时9178白名单预览服务；sharp只将六张原始浏览器窗口截图排成总览，不更改UI内容。
+- 验证 PASS：两种手机尺寸页面及六卡均无横向溢出、卡内无滚动/裁切，360px右侧地图工具间隔8px，普通控件约36px/主操作44px（浮点误差<0.01px），输入16px。六类静态样板截图可读；不作为真机业务/性能验收。
+- 截图：artifacts/screenshots/window-density-six-panels-20260928.png及window-density-panel-01..06-20260928.png。初始window-density-overview和window-density-390截图FAIL：Windows 2× IAB capture缩半并重复fullPage拼接；保留诊断图，改用独立presentation导出缩放+正常裁剪解决。图片不改变生产字号/布局。限时服务中途自动到期，重启后新建自有预览tab26，原用户页面未改动。
+- 阻塞：无。此轮按AGENTS快速视觉确认流程仅做预览，不打包/推送；实际应用改动等待用户对图反馈。
+- 下一步：发送六类预览总图至聊天，用户可在手机按01–06编号反馈；然后将确认样式应用到现有共享组件。
+
 # 当前状态 — 2026-09-28 / 0.2.76 路线拖动与本轮交互修正
 
 - 目标：修复 OPPO Find X8 Ultra 路线拖点不跟手；返回先退出当前菜单、精简工具、在线优先规划、起终点坐标复制/分享；移除立体云团，说明实际云图/降雨来源。

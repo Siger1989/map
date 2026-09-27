@@ -25,3 +25,27 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .
 .pin-elevation-row > :first-child { color:var(--ui-muted, #596b66); }
 .pin-elevation-row > :nth-child(2) { color:var(--ui-ink, #1b3534); min-width:0; }
 .pin-elevation-row :is(button,[role='button']) { min-width:36px; min-height:36px; border-radius:12px; }
+
+/* Compact production marker editor: 36px controls, with 44px map/primary actions. */
+.pin-editor { padding:4px; }
+.pin-editor button { min-height:36px; }
+.pin-editor-header button[title],
+.pin-editor .pin-save { min-height:44px; }
+.pin-field { min-height:36px; }
+.pin-field :is(input,textarea) { height:36px; min-height:36px; }
+.pin-coordinate-row { height:36px; }
+.pin-style-row,
+.pin-photo-row,
+.pin-attribute-head { min-height:36px; }
+.pin-photo-row > button:not(.pin-photo-thumb) { min-height:36px; }
+.pin-photo-row .pin-photo-thumb { width:36px; min-width:36px; height:36px; min-height:36px; }
+.pin-attribute-head button { min-height:36px; font-size:11px; }
+.pin-attribute { grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) 36px; min-height:36px; }
+.pin-attribute :is(input,textarea) { height:36px; min-height:36px; }
+.pin-attribute button { min-height:36px; }
+.pin-icon-grid button,
+.pin-color-grid button { min-height:36px; }
+.pin-picker .marker-number input { height:36px; min-height:36px; }
+.pin-picker .marker-number button { min-width:36px; min-height:36px; }
+.pin-status button { min-height:36px; }
+.pin-confirm { padding:4px; gap:4px; }

@@ -290,6 +290,37 @@
   color: var(--accent);
   font-size: 11px;
 }
+/* Compact controls for the active rectangular section, with complete 36px targets. */
+.observatory.home-map .section-panel {
+  padding: 4px;
+  gap: 4px;
+  font-size: 12px;
+}
+.observatory.home-map .section-panel > header {
+  min-height: 36px;
+  gap: 4px;
+}
+.observatory.home-map .section-panel > header strong { font-size: 13px; }
+.observatory.home-map .section-panel > header button,
+.observatory.home-map .section-panel-body button {
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 8px;
+}
+.observatory.home-map .section-panel > p { margin: 0 2px; line-height: 18px; }
+.observatory.home-map .section-panel-body { display: grid; gap: 4px; }
+.observatory.home-map .section-panel-body nav { display: flex; gap: 4px; }
+.observatory.home-map .section-panel-body nav button { flex: 1; }
+.observatory.home-map .section-panel .section-fields { gap: 4px; margin: 2px 0; }
+.observatory.home-map .section-panel .section-field { gap: 3px; }
+.observatory.home-map .section-panel .section-field input { box-sizing: border-box; min-height: 36px; height: 36px; padding: 3px 5px; font-size: 16px; }
+.observatory.home-map .section-panel .section-range { display: grid; gap: 2px; margin: 0; line-height: 18px; }
+.observatory.home-map .section-panel .section-range input { height: 36px; margin: 0; }
+.observatory.home-map .section-panel .section-presets { display: flex; gap: 4px; margin: 2px 0 0; }
+.observatory.home-map .section-panel .section-presets button { flex: 1; }
+.observatory.home-map .section-panel-body > p { margin: 0 2px; line-height: 18px; }
+.observatory.home-map .section-panel .section-color-control { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.observatory.home-map .section-panel .section-color-control input { width: 36px; height: 36px; }
 .observatory[data-section='true'] .map-legends,
 .observatory[data-section='true'] .route-map-notice {
   display: none;

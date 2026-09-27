@@ -599,6 +599,12 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-dock[
 
 .observatory.home-map .survey-dock:has(.survey-point-editor) { height: auto; }
 .observatory.home-map .survey-dock:has(.survey-point-editor) .survey-dock-content { flex: 0 0 auto; overflow: visible; }
+.observatory.home-map .survey-point-editor,
+.observatory.home-map .survey-point-scroll { gap: 2px; }
+.observatory.home-map .survey-point-editor .survey-apply,
+.observatory.home-map .survey-live-coordinate-row > button { min-height: 44px; height: 44px; }
+.observatory.home-map .survey-point-modes { gap: 2px; }
+.observatory.home-map .survey-point-modes button { min-height: 36px; height: 36px; padding: 0 6px; }
 .observatory.home-map[data-survey='true']:has(.survey-point-error) { --survey-dock-height: 232px; }
 .observatory.home-map .survey-live-coordinate-row { display: grid; grid-template-columns: minmax(0,1fr) 42px; gap: 3px; }
 .observatory.home-map .survey-coordinate-fields output { display: block; box-sizing: border-box; min-width: 0; height: 36px; padding: 0 4px 0 19px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); color: var(--ui-ink); background: var(--ui-field); font-size: 16px; line-height: 34px; white-space: nowrap; }

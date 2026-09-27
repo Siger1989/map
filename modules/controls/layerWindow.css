@@ -43,3 +43,88 @@
   width: 44px;
   height: 44px;
 }
+
+/* Dense layer browser: preserve every setting while keeping touch targets at
+   the shared 36px minimum. Expanded controls remain in the scrollable content. */
+.observatory .map-layer-control .layer-window.control-popover {
+  width: min(248px, calc(100% - 74px));
+  padding: 0 6px 6px;
+  gap: 2px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']
+  .map-layer-control .layer-window.control-popover > .dock-heading {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 6px;
+}
+.observatory .map-layer-control .layer-window .dock-content {
+  min-height: 0;
+  padding-top: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.observatory .map-layer-control .layer-window .layer-panel .map-source-link {
+  min-height: 36px;
+  gap: 4px;
+  padding: 0 2px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .layer-row {
+  min-height: 36px;
+  gap: 4px;
+  padding: 0;
+}
+.observatory .map-layer-control .layer-window .layer-panel .layer-icon {
+  width: 20px;
+  height: 24px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .layer-text label {
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .layer-text p {
+  margin: 1px 0 0;
+  font-size: 10px;
+  line-height: 13px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .switch {
+  box-sizing: border-box;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .imagery-selector {
+  margin-top: 4px;
+  padding: 2px;
+  gap: 2px;
+}
+.observatory .map-layer-control .layer-window .layer-panel .imagery-selector button,
+.observatory .map-layer-control .layer-window .layer-panel .layer-help > summary,
+.observatory .map-layer-control .layer-window .layer-presets > summary,
+.observatory .map-layer-control .layer-window .view-presets button {
+  min-height: 36px;
+}
+.observatory .map-layer-control .layer-window .layer-panel :is(
+  .panel-sliders,
+  .geology-opacity
+) {
+  margin-top: 4px;
+  padding: 4px 0 0;
+}
+.observatory .map-layer-control .layer-window .layer-panel .slider-label {
+  margin: 2px 0;
+  font-size: 11px;
+}
+.observatory .map-layer-control .layer-window .layer-presets > summary {
+  min-height: 36px;
+}
+.observatory .map-layer-control .layer-window .view-presets {
+  gap: 4px;
+  margin: 0 0 4px;
+}
+.observatory .map-layer-control .layer-window .view-presets button {
+  gap: 4px;
+  padding: 2px 4px;
+}

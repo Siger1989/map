@@ -534,7 +534,7 @@
   bottom: calc(var(--home-footer, 56px) + 8px + env(safe-area-inset-bottom));
   width: min(300px, calc(100% - 8px));
   max-height: min(200px, calc(100dvh - 64px));
-  padding: 8px;
+  padding: 4px;
   border-radius: 4px;
   background: #f0f3eefa;
   font-size: 11px;
@@ -544,7 +544,7 @@
 .observatory .route-edit-dock-heading,
 .observatory .route-edit-mode-row { position: sticky; z-index: 2; background: #f0f3ee; }
 .observatory .route-edit-dock-heading { top: 0; }
-.observatory .route-edit-mode-row { top: 35px; }
+.observatory .route-edit-mode-row { top: 40px; }
 .observatory .route-edit-style { order: 0; }
 .observatory .route-edit-status,
 .observatory .route-edit-actions-row,
@@ -619,7 +619,8 @@
 .observatory .route-edit-dock-heading { display: flex; align-items: center; gap: 3px; margin-bottom: 3px; }
 .observatory .route-edit-dock-heading strong { font-size: 11px; white-space: nowrap; }
 .observatory .route-edit-dock-heading small { flex: 1; font-size: 9px; color: #986014; }
-.observatory .route-edit-dock-heading button { min-height: 32px; height: 32px; padding: 0 4px; }
+.observatory .route-edit-dock-heading button { min-height: 36px; height: 36px; padding: 0 4px; }
+.observatory .route-edit-dock-heading .route-solid { min-height: 44px; height: 44px; }
 .observatory .route-edit-dock-heading .route-solid { background: #236b50; border-color: #236b50; color: #fff; }
 .observatory .route-edit-header .route-edit-exit { color: #395d50; border: 1px solid #bbcec5; background: #fff; padding: 0 4px; }
 .observatory.home-map[data-route-edit='true'] .home-position-dock {
