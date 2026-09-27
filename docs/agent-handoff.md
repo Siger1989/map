@@ -2,7 +2,7 @@
 
 ## 2026-09-27 / 0.2.75 最新 APK
 
-0.2.75-test / versionCode82 纳入当前紧凑 UI、剖面编辑、路线吸附、折叠屏工具、地图更新性能处理与天地图地名搜索。678 项测试、类型、全新 APK/签名/资源和包内网页版本检查 PASS；真机性能、覆盖安装与纯鸿蒙支持未验。详见 [发行说明](release-0.2.75.md) 与 CURRENT_STATE 顶部；公开下载与源码 SHA 待最终发布记录。
+0.2.75-test / versionCode82 纳入当前紧凑 UI、剖面编辑、路线吸附、折叠屏工具、地图更新性能处理与天地图地名搜索。678 项测试、类型、全新 APK/签名/资源和包内网页版本检查 PASS；真机性能、覆盖安装与纯鸿蒙支持未验。详见 [发行说明](release-0.2.75.md) 与 CURRENT_STATE 顶部；[Release 已公开](https://github.com/Siger1989/map/releases/tag/v0.2.75-test-standalone)，构建源码 ab8556967aaf304efc789f6ca1a5297d81317726 已同步功能分支，未合入 main；远程资产大小与 SHA256 已核对一致。
 
 ## 2026-09-26 / 0.2.73交付
 

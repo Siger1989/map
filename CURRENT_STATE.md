@@ -7,7 +7,8 @@
 - 验证 PASS：类型检查、678/678 测试、全新 APK 构建、v2/v3 原签名、zipalign、473 张本地地形和修补瓦片；34 个 HTML/JS/CSS 与包内内容逐字节匹配。打包网页启动显示版本 0.2.75-test/code82，天地图默认搜索源返回四姑娘山及景区的真实结果。截图 artifacts/screenshots/apk-0275-about-390-20260927.png。测试使用实际 JDK 与长路径 TEMP/TMP，桌面短路径目录别名问题未扩大修改。
 - 阻塞：无 APK 构建阻塞。原生 HarmonyOS HAP/APP 未生成；真实 Android 触控、GPS、性能与覆盖安装待验。
 - 产物：APK/Shantu-0.2.75-test-standalone.apk，57,855,068 bytes；SHA256 4A18F85ED0691184D782FFE5152BC489AB6E9CEE89F545DC8E029C9AC2599495。日志 .openai/apk-0275-build-20260927.log、release-0275-tests-final-20260927.log、apk-0275-web-integrity.log。静态打包网页未配置 Android 网关，出现网络高程缺块提示；页面启动与版本检查 PASS。
-- 下一步：提交推送当前源码，上传校验并公开 GitHub 测试 Release。
+- 交付 PASS：源码构建提交 ab8556967aaf304efc789f6ca1a5297d81317726 已推送 codex/rollback-ui-0235-20260921 并核对远程一致，未合入 main。公开 Release https://github.com/Siger1989/map/releases/tag/v0.2.75-test-standalone；APK、SHA256、安装说明三个远程资产大小与 digest 均与本地一致，draft=false / prerelease=true，验证日志 .openai/release-apk-0275-verified.log。
+- 下一步：用户下载覆盖同包名测试版，进行真机安装与触控/GPS/性能验收。
 # 当前状态 — 2026-09-27 / 天地图地名搜索与导航顶部间距
 
 - 目标：用户要求搜索使用天地图，保留全球入口；导航条与首页顶部栏之间留标准间距。

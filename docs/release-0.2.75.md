@@ -19,3 +19,4 @@
 Android 真机触控、GPS、相机、覆盖安装、性能和闪烁仍待实测，浏览器验证不能保证真机帧率。HarmonyOS 6.1 原生 HAP/APP 未生成，不宣称 APK 可直接用于纯鸿蒙系统。
 
 更新时选择安装/更新，不要先卸载原独立测试版。源码同步至 codex/rollback-ui-0235-20260921，未合入 main；精确源码提交与公开下载见本版本 GitHub Release 标签。
+构建源码提交：ab8556967aaf304efc789f6ca1a5297d81317726。公开 Release：https://github.com/Siger1989/map/releases/tag/v0.2.75-test-standalone。远程 APK 与本地 SHA256 完全一致。
