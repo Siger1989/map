@@ -9,7 +9,8 @@
 - 阻塞：真机性能需用户复测；MapLibre6.7 地形存在 devicePixelRatio 硬编码，暂不通过修改 DPR 降画质。
 - 新版本：0.2.76-test / versionCode83，原独立测试版包名与签名。
 - 最终产物：APK/Shantu-0.2.76-test-standalone.apk，57,855,068 bytes，SHA256 D39A8B4B41FD3F3465B831D0994E0C5FE469501B3AFF9C0C3D9B2A0CA2FFF386；fresh stage mobile/.build/apk-20260928-003747/web。日志 .openai/{release-0276-tests-final-20260928,release-0276-tsc-final-20260928,apk-0276-build-final-20260928,apk-0276-web-integrity}.log。
-- 下一步：提交推送构建源码，创建并核对三个 Release 资产后公开；真机复测跟手程度和系统返回。
+- 交付 PASS：构建源码5675cb9662dcca0a6f4ca6ed5785cb7c917cec7f已推送codex/rollback-ui-0235-20260921并核对远程一致，未合入main。Release https://github.com/Siger1989/map/releases/tag/v0.2.76-test-standalone 已公开（draft=false/prerelease=true），APK/sha256/安装说明三个远程资产大小与digest一致；验证日志.openai/release-apk-0276-verified.log。
+- 下一步：用户覆盖安装0.2.76，真机复测节点跟手程度和系统返回。独立QA页关闭，原用户预览保留；没有删除/替换用户路线。
 # 当前状态 — 2026-09-27 / 0.2.75 最新 APK 交付中
 
 - 目标：将当前全部已授权的 UI、路线编辑、节点吸附、地图性能和天地图搜索修改纳入新 APK。

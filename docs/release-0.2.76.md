@@ -21,3 +21,5 @@ Android 返回改为先由当前页面处理：子菜单先返回，浮窗先关
 浏览器静态 QA 未接入 Android LocalGateway，存在高程瓦片缺块提示；初步验证页加载有无来源 MutationObserver.observe 错误，验证 HTML 补显式 body 后重新加载未新增同类错误，此修正只涉及本地验证页。云况入口和选中状态已验证，实时卫星服务连通性没有在 Android 真机验收。原生系统返回手势、触控/GPS、覆盖安装、性能和闪烁需真机确认。HarmonyOS6.1 原生 HAP/APP 尚未生成，不宣称此 APK 可直接安装到纯鸿蒙系统。
 
 请覆盖安装同包名旧测试版，不要先卸载。源码位于 codex/rollback-ui-0235-20260921，未合入 main。精确构建提交与远程资产核对见 CURRENT_STATE.md 及本版 GitHub Release。
+
+构建源码提交：5675cb9662dcca0a6f4ca6ed5785cb7c917cec7f。公开 [Release](https://github.com/Siger1989/map/releases/tag/v0.2.76-test-standalone) 的 APK、SHA256 和安装说明三个资产大小与 digest 均已核对；远程 APK 与本地 SHA256 一致。

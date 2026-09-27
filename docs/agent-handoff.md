@@ -4,6 +4,8 @@
 
 0.2.76-test/code83 包含路线节点 imperative 差分预览、按当前菜单层级消费 Android 返回、工具三入口、联网优先规划/搜索、起终点坐标复制/地点分享、移除预报立体云团。TypeScript、688/688 测试、最终 APK 原签名与473张瓦片、32个网页资产一致性 PASS。独立390px打包网页验证工具/返回/分享/天气入口，真机性能和系统手势未验。详见 [发行说明](release-0.2.76.md)，同步与公开状态以 CURRENT_STATE.md 顶部为准。
 
+已公开 [0.2.76 Release](https://github.com/Siger1989/map/releases/tag/v0.2.76-test-standalone)，构建源码5675cb9662dcca0a6f4ca6ed5785cb7c917cec7f已推送功能分支，三个远程资产digest核对一致，未合入main。
+
 ## 2026-09-27 / 0.2.75 最新 APK
 
 0.2.75-test / versionCode82 纳入当前紧凑 UI、剖面编辑、路线吸附、折叠屏工具、地图更新性能处理与天地图地名搜索。678 项测试、类型、全新 APK/签名/资源和包内网页版本检查 PASS；真机性能、覆盖安装与纯鸿蒙支持未验。详见 [发行说明](release-0.2.75.md) 与 CURRENT_STATE 顶部；[Release 已公开](https://github.com/Siger1989/map/releases/tag/v0.2.75-test-standalone)，构建源码 ab8556967aaf304efc789f6ca1a5297d81317726 已同步功能分支，未合入 main；远程资产大小与 SHA256 已核对一致。
