@@ -3,7 +3,8 @@
 - 证据：浏览器390×857、DPR2.04实测单次摇杆拖动触发8组movestart/moveend；普通地图拖动一组，39个运动帧间隔平均8ms/p95 13.7ms（桌面，非OPPO数据）。源码确认摇杆每pointermove调用duration0，会触发路线重建/保存视角及MapLibre标记强制深度读取。分叉吸附每输入额外5次CPU地形反算。
 - 修改：DrawingGestureBridge每RAF合并最新输入并松手flush；DrawingSession缓存屏幕网格；app稳定候选和投影函数；CameraGizmo手势合并、TerrainMap公开easeId统一移动生命周期；恢复MapLibre默认无MSAA，保留DPR与DEM256。
 - 验证：PASS（代码/浏览器/APK）：695项测试、tsc、摇杆8组事件降至1组、分叉落点/撤销、原签名及资源校验均通过。未连接ADB设备，OPPO真机性能未验收。
-- 下一步：核对GitHub发布和源码SHA，再交用户覆盖安装对比普通3D手势及分叉。
+- 交付 PASS：构建源码93545060b251f14bad488c16bc7fa9754388a59e已推送codex/rollback-ui-0235-20260921并核对远程一致；未合入main。公开预发布 https://github.com/Siger1989/map/releases/tag/v0.2.79-test-standalone（397960158），APK/sha256/INSTALL三附件大小及digest与本地一致。最终APK SHA256 48B14C24737A4A4C55ADEC2BE1C95B0239643951F141E49D1FAE8AF6A2FB57B3。
+- 下一步：用户覆盖安装对比普通3D旋转/平移/缩放及分叉；OPPO真机性能仍待验。
 # 当前状态 — 2026-09-28 / 0.2.78 真机卡顿原因调查
 
 - 目标：用户在OPPO Find X8 Ultra反馈路线编辑时缩放、平移、画分支仍明显卡顿；本轮先研究原因，不以继续猜测改动或新APK替代性能证据。
@@ -1000,4 +1001,4 @@
 ## 0.2.79 当前验证补记
 - PASS：全量695/695、tsc；相同摇杆拖动movestart/end由8组降至1组、最终姿态一致；普通平移1组、缩放无source错误/上下文丢失；分叉落点累计6.0km并可撤销至0。WebGL antialias=false，原生画布795×1748保留。截图与原始数据路径见docs/performance-0.2.79.md。
 - PASS：APK 57,859,164 bytes，SHA256 48B14C24737A4A4C55ADEC2BE1C95B0239643951F141E49D1FAE8AF6A2FB57B3；v2/v3原证书、zipalign、543网页文件/496地形PNG无差异（473主地形瓦片）。
-- 交付：待提交推送/发布；下一步核对远端commit与Release三附件。Android真机性能、图像边缘和覆盖安装仍未验收。
+- 交付 PASS：源码与Release已发布并校验，见顶部记录。Android真机性能、图像边缘和覆盖安装仍未验收。
