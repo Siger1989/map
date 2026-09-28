@@ -1,4 +1,5 @@
 # 2026-09-28 / 最新版每步编辑与菜单卡顿
+- 交付 PASS：构建源码d599fab26a5933dd76a59d925306dec17102e8c5已推送codex/rollback-ui-0235-20260921，远程SHA一致，未合入main。公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.80-test-standalone（398018285），三附件大小/digest一致、tag指向构建源码。首次直连上传重置；本机代理重试成功，本轮误留空草稿核验无附件后清理。下一步：OPPO覆盖安装复测菜单、分叉、拖点与3D，真机性能及天地图字清晰度仍未验收；无构建/发布阻塞。
 - 最终验证 PASS：707/707、tsc、Android独立包构建、原证书/zipalign、543网页文件/496PNG一致性；APK 0.2.80-test/code87，57,859,164 bytes，SHA256 B1113ADE792E05C6599525069132BDE26B483BFD41204DD844BE76EAD403FC4D。尚待提交与发布，OPPO真机未验。
 - 最终修改：单保存路线geometry diff已完成并冻结；同源旧异步diff失败恢复最新基线+当前预览，换源忽略旧失败；collectData相同原始数据有界缓存。10×6000坐标单轨变动26.9ms对完整162.2ms（桌面CPU合成）。最终浏览器菜单零增量、选点/分叉新增2.6km/撤销0m/不保存退出PASS；截图artifacts/screenshots/route-edit-0280-final.png。
 - 天地图地名诊断：用户确认TDT，当前256px栅格注记放大/3D贴地插值；底图锁级不锁注记，默认WGS84无额外变形。未更改原生DPR，矢量halo试验已撤回，未宣称天地图字清晰度已修复。详见docs/performance-0.2.80.md。
