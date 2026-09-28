@@ -26,46 +26,84 @@ import { ANNOTATION_STORAGE } from '../annotations/data.ts';
 import { FAVORITES_STORAGE } from '../navigation/favorites.ts';
 import { DATA_CHANGED, type Transfer } from './types.ts';
 import { validateTransfer } from './validation.ts';
+
+const COLLECT_DATA_KEYS = [
+  TRACK_STORAGE,
+  ANNOTATION_STORAGE,
+  FAVORITES_STORAGE,
+  SAVED_MEASUREMENTS_KEY,
+  AREA_STORAGE,
+  PROFILE_NOTES_KEY,
+  REGION_STORAGE,
+  COLLECTION_STORAGE,
+  SECTION_OBJECTS_KEY,
+  SAVED_SECTION_KEY,
+] as const;
+let lastCollected: {
+  storage: Pick<Storage, 'getItem'>;
+  raw: (string | null)[];
+  data: Transfer;
+} | null = null;
+
+function clonePlain<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(clonePlain) as T;
+  if (value && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, clonePlain(item)]),
+    ) as T;
+  return value;
+}
+
 export function collectData(
   storage: Pick<Storage, 'getItem'> = localStorage,
 ): Transfer {
-  return validateTransfer({
+  const raw = COLLECT_DATA_KEYS.map((key) => storage.getItem(key));
+  if (
+    lastCollected &&
+    lastCollected.storage === storage &&
+    raw.every((value, index) => value === lastCollected!.raw[index])
+  )
+    return clonePlain(lastCollected.data);
+
+  const [
+    tracks,
+    annotations,
+    favorites,
+    measurements,
+    areas,
+    notes,
+    regions,
+    collections,
+    sectionObjects,
+    savedSections,
+  ] = raw;
+  const data = validateTransfer({
     format: 'guanyun-backup',
     version: 1,
-    tracks: JSON.parse(storage.getItem(TRACK_STORAGE) ?? '[]'),
-    annotations: JSON.parse(storage.getItem(ANNOTATION_STORAGE) ?? '[]'),
-    favorites: JSON.parse(storage.getItem(FAVORITES_STORAGE) ?? '[]'),
-    ...(storage.getItem(SAVED_MEASUREMENTS_KEY) === null
+    tracks: JSON.parse(tracks ?? '[]'),
+    annotations: JSON.parse(annotations ?? '[]'),
+    favorites: JSON.parse(favorites ?? '[]'),
+    ...(measurements === null
       ? {}
-      : {
-          measurements: parseSavedMeasurements(
-            storage.getItem(SAVED_MEASUREMENTS_KEY),
-          ),
-        }),
-    ...(storage.getItem(AREA_STORAGE) === null
+      : { measurements: parseSavedMeasurements(measurements) }),
+    ...(areas === null
       ? {}
-      : { areas: parseAreas(storage.getItem(AREA_STORAGE)) }),
-    ...(storage.getItem(PROFILE_NOTES_KEY) === null
+      : { areas: parseAreas(areas) }),
+    ...(notes === null
       ? {}
-      : {
-          sectionNotes: readSavedSections(storage.getItem(PROFILE_NOTES_KEY)),
-        }),
-    ...(storage.getItem(REGION_STORAGE) === null
+      : { sectionNotes: readSavedSections(notes) }),
+    ...(regions === null
       ? {}
-      : { regions: readRegions(storage.getItem(REGION_STORAGE)) }),
-    ...(storage.getItem(COLLECTION_STORAGE) === null
+      : { regions: readRegions(regions) }),
+    ...(collections === null
       ? {}
-      : { collections: parseLayout(storage.getItem(COLLECTION_STORAGE)) }),
-    ...(storage.getItem(SECTION_OBJECTS_KEY) === null &&
-    storage.getItem(SAVED_SECTION_KEY) === null
+      : { collections: parseLayout(collections) }),
+    ...(sectionObjects === null && savedSections === null
       ? {}
-      : {
-          sections: readSectionObjects(
-            storage.getItem(SECTION_OBJECTS_KEY),
-            storage.getItem(SAVED_SECTION_KEY),
-          ),
-        }),
+      : { sections: readSectionObjects(sectionObjects, savedSections) }),
   });
+  lastCollected = { storage, raw, data: clonePlain(data) };
+  return data;
 }
 /** Validate the entire merge before any write, roll back if a quota write fails. */
 export function mergeData(

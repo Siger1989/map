@@ -227,8 +227,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const trackPreviewRef = useRef<TrackOverlay['preview']>(null);
+    const measure = (name: string, run: () => void) => diagnostics.current ? diagnostics.current.measure(name, run) : run();
     const syncTracks = (state: TrackOverlay) => {
-      trackRef.current?.sync(state);
+      measure('tracks', () => trackRef.current?.sync(state));
       if (trackPreviewRef.current) trackRef.current?.preview(trackPreviewRef.current);
     };
     const areaRef = useRef<AreaLayer | null>(null);
@@ -789,6 +790,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           return {
             ready: true,
             rendering: diagnostics.current?.snapshot(),
+            scene: {
+              tracks: latest.current.trackOverlay.saved.length,
+              visibleTrackCoordinates: latest.current.trackOverlay.saved.filter(t => !t.hidden).reduce((sum, t) => sum + t.segments.reduce((n, line) => n + line.length, 0), 0),
+              annotations: latest.current.annotations.length,
+              sections: latest.current.sectionItems.length,
+            },
             terrain: map.getTerrain(),
             elevationReady: map.isSourceLoaded('elevation'),
             renderedElevation: map.queryTerrainElevation(map.getCenter()),
@@ -1429,12 +1436,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     ]);
     useEffect(() => {
       if (!loaded.current) return;
-      sectionRef.current?.configure(props.section, props.annotations);
-      sectionCollectionRef.current?.configure(
-        props.sectionItems,
-        props.selectedSectionId,
-        props.annotations,
-      );
+      measure('sections', () => {
+        sectionRef.current?.configure(props.section, props.annotations);
+        sectionCollectionRef.current?.configure(
+          props.sectionItems,
+          props.selectedSectionId,
+          props.annotations,
+        );
+      });
     }, [
       props.section,
       props.annotations,
@@ -1458,7 +1467,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       if (loaded.current) syncTracks(props.trackOverlay);
     }, [props.trackOverlay]);
     useEffect(() => {
-      if (loaded.current) modelTerrainRef.current?.configure(props.annotations, settings);
+      if (loaded.current) measure('models', () => modelTerrainRef.current?.configure(props.annotations, settings));
     }, [props.annotations, settings]);
     useEffect(() => {
       if (loaded.current) areaRef.current?.sync(props.areaOverlay);
@@ -1471,13 +1480,13 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     }, [props.photos]);
     useEffect(() => {
       if (loaded.current)
-        annotationRef.current?.update(
+        measure('annotations', () => annotationRef.current?.update(
           props.annotations,
           props.annotationSelected,
           props.section.enabled
             ? { ...latest.current.settings, terrain: true, exaggeration: 1 }
             : latest.current.settings,
-        );
+        ));
     }, [props.annotations, props.annotationSelected, props.section.enabled]);
     useEffect(() => {
       if (props.drawingActive || props.pickingActive || props.sectionEditing) {

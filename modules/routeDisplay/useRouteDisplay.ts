@@ -120,6 +120,12 @@ export function useRouteDisplay(
         : undefined,
     [data, profile, mode],
   );
+  const styledTracks = useMemo(() => {
+    if (!data) return tracks.saved;
+    return tracks.saved.map(t => t.id === data.id && (t.style?.colorMode ?? 'solid') !== mode
+      ? { ...t, style: { ...(t.style ?? DEFAULT_TRACK_STYLE), colorMode: mode } }
+      : t);
+  }, [tracks.saved, data?.id, mode]);
   const displayTracks = useMemo(
     () => ({
       ...tracks,
@@ -129,21 +135,9 @@ export function useRouteDisplay(
         data?.id === DRAFT_ID
           ? { ...tracks.style, colorMode: mode }
           : tracks.style,
-      saved: !data
-        ? tracks.saved
-        : tracks.saved.map((t) =>
-            t.id === data.id
-              ? {
-                  ...t,
-                  style: {
-                    ...(t.style ?? DEFAULT_TRACK_STYLE),
-                    colorMode: mode,
-                  },
-                }
-              : t,
-          ),
+      saved: styledTracks,
     }),
-    [tracks, data, mode, parts, warnings],
+    [tracks, data, mode, parts, warnings, styledTracks],
   );
   const displayRoute = useMemo(
     () => ({

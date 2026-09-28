@@ -1,3 +1,33 @@
+# 2026-09-28 / 最新版每步编辑与菜单卡顿
+- 最终验证 PASS：707/707、tsc、Android独立包构建、原证书/zipalign、543网页文件/496PNG一致性；APK 0.2.80-test/code87，57,859,164 bytes，SHA256 B1113ADE792E05C6599525069132BDE26B483BFD41204DD844BE76EAD403FC4D。尚待提交与发布，OPPO真机未验。
+- 最终修改：单保存路线geometry diff已完成并冻结；同源旧异步diff失败恢复最新基线+当前预览，换源忽略旧失败；collectData相同原始数据有界缓存。10×6000坐标单轨变动26.9ms对完整162.2ms（桌面CPU合成）。最终浏览器菜单零增量、选点/分叉新增2.6km/撤销0m/不保存退出PASS；截图artifacts/screenshots/route-edit-0280-final.png。
+- 天地图地名诊断：用户确认TDT，当前256px栅格注记放大/3D贴地插值；底图锁级不锁注记，默认WGS84无额外变形。未更改原生DPR，矢量halo试验已撤回，未宣称天地图字清晰度已修复。详见docs/performance-0.2.80.md。
+- 进度更新：用户确认最新版，点菜单也慢。浏览器localhost隔离2条/1068坐标：开工具原tracks/sections/models/annotations各+1，稳定props后各+0。真实点选、分叉新增/撤销PASS，无关标记/剖面计数不增。对应.openai/perf-0280-{menu-before,menu-after,node-browser}.json。
+- 代码更新：app派生路线、照片、标记、剖面memo及实际linePoint依赖；选择列表无变化保留引用；routeDisplay保留原track对象；TrackLayer活动节点diff/投影缓存，附相机、DEM、terrain、resize、context/source失效测试；overlayData允许主动失效快照。
+- 新证据：10×6000点分叉投影cache虽降10倍，整体约200ms仅改善1.3%，仍需单轨geometry diff；另备注图层无备注也遍历全60k坐标，纯函数中位65.85ms，判空早退后0.0018ms。备注语义与免扫描测试3/3 PASS。并行实施受限单track差分更新，尚未冻结/打包。
+- 目标：用户确认0.2.79，少量节点下每步编辑甚至点菜单仍慢；重新检查全局渲染链，保留按钮/数据。
+- 进度：并行审计确认选点重复全路线构建/投影/序列化，annotations与sectionItems每root render新建唤醒无关图层；新增只读operation计数/CPU耗时与场景数量，先对比再修复。
+- 文件：modules/map/{TerrainMap.tsx,renderDiagnostics.ts}；保留前两轮收藏未提交修改与无关PDF。
+- 命令：git status/diff、源码审阅；合成基准10条6000点选点每次59990投影，中位203ms（桌面Node，非真机）。
+- 验证：IN PROGRESS；未连接OPPO，真机根因全部归属仍未确认。
+- 下一步：操作计数baseline、稳定无关图层输入、保守选点快路径、回归、打包。
+
+# 2026-09-28 / 收藏显隐滑选与勾选一致
+- 目标：右侧眼睛栏沿用左侧勾选的直接按下/上下连选/边缘滚动与即时状态反馈，保留现有按钮。
+- 原因：两栏已共用useSwipeSelection，但左侧setChecked立即反馈，右侧仅ref累积直到松手才显示，造成操作不一致。
+- 修改：modules/collections/WorkbenchPanel.tsx新增不可变显隐预览状态；按下/划过立即更新Eye图标、文案、aria与文件夹全显/部分/全隐；列表筛选仍用已存items；松手一次commit，取消清预览不保存，仍支持一次撤销。
+- 已验证 PASS：tsc；collection-workbench 8/8；浏览器右眼睛从第一条拖到第二条隐藏2项、一次撤销全部恢复。保持前轮41px行/36px按钮修复。
+- 证据：artifacts/screenshots/favorites-visibility-swipe-20260928.png；.openai/visibility-swipe-{tsc,workbench}.log。
+- 验证 PASS：新增tests/collection-visibility-swipe.test.mjs，真实WorkbenchPanel/useSwipeSelection组件测试2/2：按下即时反馈、划过第二项、松手前零提交/松手一次提交、取消恢复零提交、隐藏筛选在松手前不移行。日志.openai/visibility-swipe-interaction.log。
+- 当前：局部交互修复完成，无阻塞；当前公开0.2.79不含两轮收藏调整，本轮延续局部预览，尚未打包。
+# 2026-09-28 / 收藏按钮越出列表底框
+- 目标：修复用户手机截图收藏每行按钮/显隐框挤出底框，保留业务按钮和操作。
+- 证据：浏览器实测行高36px、clientHeight35px，内部四按钮均36px，超过行内高度；按钮与上下行贴边。
+- 修改：modules/collections/workbench.css，行min-height41px、上下内距2px/按钮间距2px；按钮维持36px，行可随内容增长。
+- 验证 PASS：390×857与360×780实际行高约41px、按钮36px，上边2px/下边3px（含分隔线）；展开条目与已显示眼睛高亮均在行内。360px列表scrollWidth=clientWidth=350，无横溢出。git diff --check PASS；纯CSS未增加测试或跑全套。
+- 命令：git status/diff、定向CSS查找、CUA实际computedStyle/DOM测量。
+- 截图 PASS：artifacts/screenshots/favorites-row-inset-390-20260928.png、favorites-row-inset-360-20260928.png，检查行内边距/完整按钮/无横溢出，均通过。
+- 阻塞：无。下一步：本轮局部UI修复已在预览生效，尚未打包；当前公开0.2.79不含此次CSS调整。
 # 2026-09-28 / 0.2.79 性能修复验证中
 - 目标：同时优化路线分叉及正常3D平移、缩放、旋转；保留按钮与原生分辨率。
 - 证据：浏览器390×857、DPR2.04实测单次摇杆拖动触发8组movestart/moveend；普通地图拖动一组，39个运动帧间隔平均8ms/p95 13.7ms（桌面，非OPPO数据）。源码确认摇杆每pointermove调用duration0，会触发路线重建/保存视角及MapLibre标记强制深度读取。分叉吸附每输入额外5次CPU地形反算。

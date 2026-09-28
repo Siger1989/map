@@ -333,7 +333,10 @@ export default function Home() {
   const editor = useRouteEditor();
   useEffect(() => {
     const keys = new Set(editor.session?.track.segments.flat().map(p => p.join(',')) ?? []);
-    setRouteNodeSelection(old => old.filter(p => keys.has(p.join(','))));
+    setRouteNodeSelection(old => {
+      const kept = old.filter(p => keys.has(p.join(',')));
+      return kept.length === old.length ? old : kept;
+    });
   }, [editor.session?.track]);
   const [routeWindow, setRouteWindow] = useState<'card' | 'details' | 'marker' | 'display'>(
     'card',
@@ -778,16 +781,20 @@ export default function Home() {
     () => mapPhotos(photos.items, annotationOverlay),
     [photos.items, annotationOverlay],
   );
-  const photoOverlay =
-    photos.visible && navigation.picking === null ? linkedPhotos : [];
-  const photoMarkerIds = new Set(
-    photoOverlay
-      .filter((p) => p.kind === 'annotation')
-      .map((p) => p.annotationId),
+  const photoOverlay = useMemo(
+    () => photos.visible && navigation.picking === null ? linkedPhotos : [],
+    [photos.visible, navigation.picking, linkedPhotos],
   );
-  const displayedAnnotations = annotationOverlay.map((a) =>
-    a.kind === 'pin' && photoMarkerIds.has(a.id) ? { ...a, visible: false } : a,
+  const displayedAnnotations = useMemo(() => {
+    const photoMarkerIds = new Set(photoOverlay.filter(p => p.kind === 'annotation').map(p => p.annotationId));
+    return annotationOverlay.map(a => a.kind === 'pin' && photoMarkerIds.has(a.id) ? { ...a, visible: false } : a);
+  }, [annotationOverlay, photoOverlay]);
+  const mapAnnotations = useMemo(
+    () => [...displayedAnnotations, ...(editor.session?.pendingMarkers ?? [])],
+    [displayedAnnotations, editor.session?.pendingMarkers],
   );
+  const mapSection = useMemo(() => section.survey ? { ...section, enabled: false } : section, [section]);
+  const mapSections = useMemo(() => sections.items.filter(s => !s.settings.survey), [sections.items]);
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
@@ -1105,13 +1112,17 @@ export default function Home() {
       guidance.session?.route,
     ],
   );
-  const trackOverlay = useMemo(
-    () =>
-      composeTrackOverlay({
-        saved: [...tracks.overlaySaved,
+  const savedTrackOverlay = useMemo(() => [...tracks.overlaySaved,
           ...favorites.items.filter(f => f.visible).map(f => ({ id:`favorite:${f.id}`, name:f.name, createdAt:f.savedAt, segments:f.route.segments?.map(s => s.coordinates) ?? [f.route.coordinates], style:{ color:'#337aaa', width:2 } })),
           ...measurement.saved.items.filter(m => m.visible).map(m => ({ id:`measurement:${m.id}`, name:m.name, createdAt:m.updatedAt, segments:[m.points.map(p => p.coordinates)], style:{ color:'#bc5d22', width:2 } })),
         ],
+    [tracks.overlaySaved, favorites.items, measurement.saved.items],
+  );
+  const visibleLinePoint = panel === null ? linePoint : null;
+  const trackOverlay = useMemo(
+    () =>
+      composeTrackOverlay({
+        saved: savedTrackOverlay,
         draft: tracks.draft,
         session: editor.session,
         nodeSelection: editor.session ? { trackId: editor.session.track.id, points: routeNodeSelection } : undefined,
@@ -1125,19 +1136,16 @@ export default function Home() {
         reversed:routeReversed,
         snapTargets: tracks.snapping,
         alternativeId: activeAlternative,
-        linePoint: panel === null ? linePoint : null,
+        linePoint: visibleLinePoint,
       }),
     [
       liveRecording,
       editor.session,
       routeNodeSelection,
       activeAlternative,
-      linePoint,
-      panel,
+      visibleLinePoint,
       recorder.record.phase,
-      tracks.overlaySaved,
-      favorites.items,
-      measurement.saved.items,
+      savedTrackOverlay,
       tracks.draft,
       tracks.edgeColors,
       tracks.visible,
@@ -1409,8 +1417,8 @@ export default function Home() {
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
           ref={map}
-          section={section.survey ? { ...section, enabled: false } : section}
-          sectionItems={sections.items.filter((s) => !s.settings.survey)}
+          section={mapSection}
+          sectionItems={mapSections}
           selectedSectionId={sections.selectedId}
           sectionEditing={sectionEditing}
           onSectionStatus={setSectionStatus}
@@ -1493,7 +1501,7 @@ export default function Home() {
           position={displayedFix}
           onBrowse={userBrowse}
           onManualRotate={position.free}
-          annotations={[...displayedAnnotations, ...(editor.session?.pendingMarkers ?? [])]}
+          annotations={mapAnnotations}
           roadSnapping={tracks.roadSnapping}
           nodeSnapping={tracks.snapping}
           riverSnapping={tracks.riverSnapping}

@@ -53,3 +53,9 @@ export function syncOverlayData(map: Map, id: string, data: FeatureCollection) {
   }
   return changed;
 }
+
+/** The source was mutated outside syncOverlayData; force its next full baseline write. */
+export function invalidateOverlayData(map: Map, id: string) {
+  const source = map.getSource(id) as GeoJSONSource | undefined;
+  if (source) snapshots.delete(source);
+}

@@ -41,3 +41,15 @@ test('map notes stay beside contiguous matching edges, respect per-edge override
   assert.equal([...note].length,19);
   assert.ok(note.endsWith('…'));
 });
+
+test('routes without labels do not traverse route geometry during note synchronization', () => {
+  const track = { id: 'large', name: 'large', createdAt: 0,
+    get segments() { throw new Error('unnecessary full route traversal'); },
+    style: { color: '#ff0000', width: 2 },
+  };
+  assert.deepEqual(trackNoteFeatures([track]).features, []);
+  assert.deepEqual(trackNoteFeatures([Object.assign(Object.create(track), {
+    pointDetails: { '104,30': { color: '#00ff00', note: ' ' } },
+    edgeNotes: [[null, '', '  ']], colorConditions: { '#ff0000': '\n' },
+  })]).features, []);
+});

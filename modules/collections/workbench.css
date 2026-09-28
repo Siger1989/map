@@ -243,15 +243,19 @@
 }
 .workbench-folder-heading,
 .workbench-tree-item {
-  height: 36px;
+  /* 36px controls + 2px inset on each side + the 1px row divider. */
+  min-height: 41px;
   display: flex;
   align-items: stretch;
+  gap: 2px;
+  padding-block: 2px;
   border-bottom: 1px solid var(--folder-line, var(--ui-line, #bacabd));
   padding-left: calc(2px + var(--tree-depth, 0)*8px);
 }
 .workbench-folder-heading button,
 .workbench-tree-item button {
   min-height: 36px;
+  height: 36px;
 }
 .workbench-tree-item.is-active,
 .workbench-folder-heading.is-active {

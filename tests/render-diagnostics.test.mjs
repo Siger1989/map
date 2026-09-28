@@ -153,3 +153,16 @@ test('render diagnostics report context recovery, DEM failure and camera motion 
   assert.equal(snapshot.counts.render,1);
   observer.dispose();
 });
+
+
+test('operation timings preserve results and errors without mutable snapshots', () => {
+  const s = scene(); let time = 0;
+  const observer = observeMapRendering(s.map, () => time);
+  assert.equal(observer.measure('tracks', () => { time += 8; return 42; }), 42);
+  assert.throws(() => observer.measure('tracks', () => { time += 3; throw new Error('test'); }), /test/);
+  const snapshot = observer.snapshot();
+  assert.deepEqual(snapshot.operations.tracks, { count: 2, totalMs: 11, maxMs: 8, lastMs: 3 });
+  snapshot.operations.tracks.count = 0;
+  assert.equal(observer.snapshot().operations.tracks.count, 2);
+  observer.dispose();
+});

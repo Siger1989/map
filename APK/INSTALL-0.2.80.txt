@@ -1,0 +1,15 @@
+山兔 0.2.80-test / versionCode 87 独立测试版
+
+安装文件：Shantu-0.2.80-test-standalone.apk
+最低系统：Android 8.0（API 26），包名 com.guanyun.weather.shantu.preview。
+沿用同包名旧测试版签名，请直接覆盖安装，不要先卸载。
+
+本版减少地图菜单同步、选点与单条路线编辑的全量重建，空备注跳过坐标扫描，收藏数据校验缓存，并改进收藏行内距和显隐即时反馈。
+
+验证通过：707/707 测试与 TypeScript、Android 独立测试版构建、APK 签名及 zipalign；包内 543 个网页文件和 496 张 PNG 与构建暂存一致，其中 473 张为 FABDEM 主地形瓦片。
+
+APK 大小：57,859,164 bytes
+APK SHA256：b1113ade792e05c6599525069132bde26b483bfd41204dd844be76ead403fc4d
+签名证书 SHA256：4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f
+
+浏览器菜单、选点、分叉新增与撤销、收藏行内距及显隐滑选验证PASS。Android 真机交互与性能待验收；天地图栅格地名模糊已排查，尚未改善。HarmonyOS 6.1 原生 HAP/APP 未生成。

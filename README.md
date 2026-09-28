@@ -1,5 +1,7 @@
 # 山兔
 
+2026-09-28：0.2.80测试版，减少菜单同步与路线编辑全量重建，加入单轨差分和收藏数据缓存，修复收藏按钮内距及显隐滑选反馈。天地图栅格地名模糊完成排查，尚未改善；OPPO真机性能待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.80-test-standalone/Shantu-0.2.80-test-standalone.apk) · [性能证据](docs/performance-0.2.80.md) · [发行说明](docs/release-0.2.80.md)。
+
 2026-09-28：0.2.79测试版，优化分叉输入与吸附缓存、合并摇杆移动事件，降低3D渲染采样负担；真机效果待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.79-test-standalone/Shantu-0.2.79-test-standalone.apk) · [性能证据](docs/performance-0.2.79.md) · [发行说明](docs/release-0.2.79.md)。
 
 2026-09-28：0.2.78测试版，修复路线分叉候选扫描与按钮文字选择，并调整短横屏添加标记、工具和摇杆位置。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.78-test-standalone/Shantu-0.2.78-test-standalone.apk) · [验证与发行说明](docs/release-0.2.78.md)。

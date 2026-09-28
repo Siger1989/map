@@ -13,6 +13,12 @@ const shortNote = (note: string) => { const text = note.replace(/\s+/g, ' ').tri
 export function trackNoteFeatures(tracks: ManualTrack[]): FeatureCollection {
   const features: FeatureCollection['features'] = [];
   for (const track of tracks) {
+    // Most tracks have no notes. Do not walk every route edge merely to emit
+    // an empty label collection on every edit or selection change.
+    const hasNotes = Object.values(track.pointDetails ?? {}).some(detail => detail.note?.trim()) ||
+      Object.values(track.colorConditions ?? {}).some(note => note?.trim()) ||
+      track.edgeNotes?.some(row => row.some(note => note?.trim()));
+    if (!hasNotes) continue;
     const style = normalizeTrackStyle(track.style), colors = edgeColorIndex(track), notes = edgeNoteIndex(track);
     if (track.hidden || style.opacity === 0) continue;
     for (const line of track.segments) {

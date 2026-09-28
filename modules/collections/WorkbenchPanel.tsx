@@ -235,8 +235,12 @@ export function WorkbenchPanel(props: Props) {
   const folderSwipe = useFolderVisibilitySwipe((ids, visible) =>
     setFolderVisibility(ids, visible));
   const visibilityPaint = useRef<{ ids: Set<string>; visible: boolean } | null>(null);
+  const [visibilityPreview, setVisibilityPreview] = useState<{
+    ids: Set<string>; visible: boolean;
+  } | null>(null);
   const visibilitySwipe = useSwipeSelection((keys, visible) => {
-    const pending = visibilityPaint.current ?? { ids: new Set<string>(), visible };
+    const previous = visibilityPaint.current;
+    const pending = { ids: new Set(previous?.ids), visible: previous?.visible ?? visible };
     for (const key of keys) {
       const item = nodes.get(key);
       if (!item) continue;
@@ -246,6 +250,10 @@ export function WorkbenchPanel(props: Props) {
       ids.forEach(id => pending.ids.add(id));
     }
     visibilityPaint.current = pending;
+    // Match the checkbox gutter's immediate feedback without changing/filtering
+    // the stored list under the finger. One persistence/undo operation on release.
+    if (!previous || pending.ids.size !== previous.ids.size)
+      setVisibilityPreview(pending);
   }, {
     keyAttribute: 'data-visibility-key',
     list: swipe.list,
@@ -253,6 +261,7 @@ export function WorkbenchPanel(props: Props) {
     onEnd: completed => {
       const pending = visibilityPaint.current;
       visibilityPaint.current = null;
+      setVisibilityPreview(null);
       if (completed && pending?.ids.size)
         setFolderVisibility([...pending.ids], pending.visible);
     },
@@ -320,7 +329,10 @@ export function WorkbenchPanel(props: Props) {
     const selectedCount = ids.filter((id) => checked.has(id)).length,
       complete = !!ids.length && selectedCount === ids.length;
     const open = expanded.has(item.id) || !!query;
-    const visibleCount = visibilityLeaves.filter((leaf) => leaf.visible === true).length;
+    const isVisible = (leaf: WorkbenchItem) => visibilityPreview?.ids.has(leaf.id)
+      ? visibilityPreview.visible : leaf.visible === true;
+    const itemVisible = isVisible(item);
+    const visibleCount = visibilityLeaves.filter(isVisible).length;
     const allVisible = folder && visibilityIds.length > 0 && visibleCount === visibilityIds.length;
     const check = (
       <button
@@ -406,8 +418,8 @@ export function WorkbenchPanel(props: Props) {
         </button>
         {folder ? <button className="workbench-visibility" data-visibility-key={key} title="沿眼睛栏滑动连续显示或隐藏" aria-label={`${allVisible ? '隐藏' : '显示'} ${item.name}内全部${visibilityIds.length}项`} aria-pressed={allVisible} disabled={!visibilityIds.length} onPointerDown={e => visibilitySwipe.start(e, !allVisible)} onClick={e => { if (e.detail === 0) setFolderVisibility(visibilityIds, !allVisible); }}>
           {allVisible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{allVisible ? '全显' : visibleCount ? '部分' : '全隐'}</small>
-        </button> : <button className="workbench-visibility" data-visibility-key={key} title="沿眼睛栏滑动连续显示或隐藏" aria-label={`${item.visible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={item.visible === true} onPointerDown={e => visibilitySwipe.start(e, !item.visible)} onClick={e => { if (e.detail === 0) setFolderVisibility([item.id], !item.visible); }}>
-          {item.visible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{item.visible ? '显示' : '隐藏'}</small>
+        </button> : <button className="workbench-visibility" data-visibility-key={key} title="沿眼睛栏滑动连续显示或隐藏" aria-label={`${itemVisible ? '隐藏' : '显示'} ${item.name}`} aria-pressed={itemVisible} onPointerDown={e => visibilitySwipe.start(e, !itemVisible)} onClick={e => { if (e.detail === 0) setFolderVisibility([item.id], !itemVisible); }}>
+          {itemVisible ? <Eye size={16}/> : <EyeOff size={16}/>}<small>{itemVisible ? '显示' : '隐藏'}</small>
         </button>}
         {!synthetic && (
           <button

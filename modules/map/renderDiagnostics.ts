@@ -7,6 +7,7 @@ export function observeMapRendering(map: Map, now: () => number = () => performa
   const context = map.getCanvas().getContext?.('webgl2');
   const contextAttributes = context?.getContextAttributes() ?? null;
   const counts: Record<string, number> = {};
+  const operations: Record<string, { count: number; totalMs: number; maxMs: number; lastMs: number }> = {};
   const sources: Record<string, number> = {};
   const sourceRequests: Record<string, number> = {};
   const sourceErrors: Record<string, number> = {};
@@ -66,9 +67,19 @@ export function observeMapRendering(map: Map, now: () => number = () => performa
     return () => map.off(name, listener);
   });
   return {
+    measure<T>(name: string, run: () => T): T {
+      const start = now();
+      try { return run(); } finally {
+        const duration = now() - start;
+        const record = operations[name] ??= { count: 0, totalMs: 0, maxMs: 0, lastMs: 0 };
+        record.count++; record.totalMs += duration;
+        record.maxMs = Math.max(record.maxMs, duration); record.lastMs = duration;
+      }
+    },
     snapshot: () => ({
       elapsedMs: Math.round(now() - started),
       counts: { ...counts },
+      operations: Object.fromEntries(Object.entries(operations).map(([key, value]) => [key, { ...value }])),
       sources: { ...sources },
       sourceRequests: { ...sourceRequests },
       sourceErrors: { ...sourceErrors },
