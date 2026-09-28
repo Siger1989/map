@@ -1,3 +1,10 @@
+# 2026-09-28 / 0.2.80 分叉仍卡的只读对照
+- 目标：回答分叉相比普通选点/画线多耗在哪里，先验证原因，不继续猜测出包。
+- 进度：PASS（代码与桌面对照）；分叉connecting/snapTargets/movableTrackId改变使两个增量守卫失效，完整重建/序列化所有可见路线；分叉候选为全部坐标，普通画线仅端点/显式节点。
+- 验证：实际session→compose→TrackLayer Mock，10×6000坐标选点1.893ms/开分叉168.939ms/结束173.529ms；10×24坐标分别0.044/0.830/1.046ms。候选数普通100 vs分叉60001（8显式nodes/route、空草稿）。仅桌面同步JS，不含真实worker/GPU/React/OPPO，不能外推手机耗时。
+- 文件：docs/branch-performance-audit-20260928.md及本记录；生产源码未改、无新APK。命令：源码定向检索、.openai/branch-phase-bench.mjs和branch-candidate-count.mjs；输出同名json，约3秒完成。
+- 阻塞：未连接OPPO profiler；小场景桌面差异不足解释全部长停顿。下一步：按诊断收窄分叉切换的全量更新和候选投影范围，保留吸附语义。上一轮优化未覆盖这两条路径。
+
 # 2026-09-28 / 最新版每步编辑与菜单卡顿
 - 交付 PASS：构建源码d599fab26a5933dd76a59d925306dec17102e8c5已推送codex/rollback-ui-0235-20260921，远程SHA一致，未合入main。公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.80-test-standalone（398018285），三附件大小/digest一致、tag指向构建源码。首次直连上传重置；本机代理重试成功，本轮误留空草稿核验无附件后清理。下一步：OPPO覆盖安装复测菜单、分叉、拖点与3D，真机性能及天地图字清晰度仍未验收；无构建/发布阻塞。
 - 最终验证 PASS：707/707、tsc、Android独立包构建、原证书/zipalign、543网页文件/496PNG一致性；APK 0.2.80-test/code87，57,859,164 bytes，SHA256 B1113ADE792E05C6599525069132BDE26B483BFD41204DD844BE76EAD403FC4D。尚待提交与发布，OPPO真机未验。
