@@ -219,7 +219,7 @@ export class DrawingSession {
           : o.candidates.filter((c) => !sameNode(c, s.points[0]));
       const snap =
         o.snapping && !roadMatch && s.points.length > 1
-          ? findSnap(tip, candidates, o.project)
+          ? findSnap(tip, candidates, o.project, o.unproject)
           : null;
       s.snap = snap?.coordinate ?? roadMatch?.coordinate ?? null;
       return {
@@ -249,7 +249,7 @@ export class DrawingSession {
       this.aim = null;
       return { ...empty, hint: '准星需要对准地面，双指可调整视角。' };
     }
-    const snap = o.snapping ? findSnap(aim, o.candidates, o.project) : null;
+    const snap = o.snapping ? findSnap(aim, o.candidates, o.project, o.unproject) : null;
     const from = o.mode === 'points' ? o.lastVertex : null;
     const road = o.roadSnapping
       ? o.snapRoad?.(aim, null, from ?? undefined)

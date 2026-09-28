@@ -1,3 +1,14 @@
+# 当前状态 — 2026-09-28 / 路线分叉卡顿与手机文字选择
+
+- 目标：修复OPPO Find X8 Ultra在0.2.77版路线编辑中点击/延伸“分叉”卡顿及按钮文字选择；按用户最新截图检查横屏添加标记窗口、右侧工具框与底部摇杆遮挡，先给右侧比例预览。
+- 当前：用户真机截图 1000052519.jpg 可见路线编辑标题/按钮上的文本选择手柄与系统菜单；未把浏览器复现等同于真机验收。起始分支 codex/rollback-ui-0235-20260921，HEAD=FETCH_HEAD=eb1785503564d9c2cb7e34870f547c10fd844783；仅无关PDF未跟踪。
+- 范围：分叉操作数据/地图热路径及路线编辑面板的不可编辑文字选择；保持路线几何、保存、撤销、输入框复制和已有按钮语义。Luna并行处理性能与CSS两个独立文件范围，主agent集成、验证、构建发布。
+- 进度：本地修改/构建 PASS，待GitHub同步/Release。分叉热路径预过滤与路线按钮禁选文字已完成；横屏准星添加标记8个原按钮、正式标记编辑基础资料一屏显示，右侧工具上移、摇杆位于其下。右侧857×390比例预览已打开并保留；另检857×350更矮内容区。用户新增要求的桌面ChatGPT快捷方式已建在 C:\Users\sigeryang\Desktop\ChatGPT.lnk，解析目标为系统ChatGPT入口 OpenAI.Codex_2p2nqsd0c76g0!App，原Codex快捷方式未动。
+- 文件：CURRENT_STATE.md、config/product.ts、mobile/android/AndroidManifest.xml、mobile/phone-preview.html、modules/tracks/{DrawingSession.ts,snapping.ts,routeWindows.css}、modules/annotations/{quickAdd.css,pinEditor.css}、modules/controls/outdoorTheme.css、tests/track-interaction.test.mjs、README.md、docs/{agent-handoff.md,release-0.2.78.md}、APK/{INSTALL-0.2.78.txt,Shantu-0.2.78-test-standalone.sha256}。无关未跟踪PDF保留。命令：git status/diff/branch/fetch，源码审阅，npm test、npx tsc --noEmit、scripts/build-android.ps1 -StandaloneTest、APK内资源/签名/zipalign核对、CUA横屏预览。
+- 验证 PASS：最终源码689/689测试、tsc、全新APK构建；v2/v3原证书、zipalign；包内543网页/地形文件一致，473主地形瓦片。APK 57,859,164 bytes，SHA256 EE4CB050409E641A6CD9615E048DA861D1D16DEC65BAC19830B9A19238494161，versionCode85。浏览器857×390：快捷卡y56–277，内容scroll/client均170、8按钮可见；正式标记编辑y56–266、scroll/client均208；工具x699–795/y104–246、摇杆x777–849/y258–326、底栏y340起，无重叠。更矮857×350按钮中心可点的独立验证PASS。日志 .openai/release-0278-{tests,tsc}-final.log、apk-0278-{build,integrity,signature}-final.log。
+- 限制：浏览器比例模拟非OPPO实际物理/可用尺寸；Android真机性能、文字选择菜单、触控、GPS和覆盖安装仍待用户复测。HarmonyOS6.1原生包未生成。
+- 下一步：检查改动与说明、提交并推送当前分支、核对远程SHA；发布0.2.78公开预发布并验证三附件远端digest，再将APK链接发给用户。
+
 # 当前状态 — 2026-09-28 / 0.2.77 真正压紧窗口并交付新APK
 
 - 目标：用户要求按已确认收藏密度收紧实际记录/路线/剖面/标记/图层窗口，同时严格保留0.2.76版全部生产按钮、标签和业务行为；构建并发送新独立测试版APK。

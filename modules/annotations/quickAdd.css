@@ -116,3 +116,30 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-op
 .map-hold-ready canvas {
   cursor: crosshair;
 }
+
+/* Short landscape maps have no room for a card below the center reticle.
+   Keep every action visible between the app header and bottom navigation. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .quick-add-card,
+  .quick-add-centered .quick-add-card {
+    top: calc(56px + var(--safe-top));
+    max-height: calc(100% - 124px - var(--safe-top) - var(--safe-bottom));
+  }
+  .quick-add-card header {
+    min-height: 40px;
+    padding-block: 2px;
+  }
+  .observatory .quick-add-card header button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+  .quick-add-content,
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-content {
+    padding: 4px 6px 6px;
+  }
+  .quick-add-options {
+    gap: 3px;
+  }
+}

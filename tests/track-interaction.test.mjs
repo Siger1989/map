@@ -231,6 +231,20 @@ const options = {
   project: (c) => ({ x: (c[0] - 100) * 1000, y: c[1] * 10 }),
   unproject: (p) => [100 + p.x / 1000, p.y / 10],
 };
+test('snap lookup projects only vertices inside the touch radius footprint', () => {
+  const projected = [];
+  const snap = findSnap(
+    { x: 100, y: 100 },
+    [[100.1, 10], [100.5, 10], [100.1, 20]],
+    (coordinate) => {
+      projected.push(coordinate);
+      return { x: (coordinate[0] - 100) * 1000, y: coordinate[1] * 10 };
+    },
+    (point) => [100 + point.x / 1000, point.y / 10],
+  );
+  assert.deepEqual(snap?.coordinate, [100.1, 10]);
+  assert.deepEqual(projected, [[100.1, 10]]);
+});
 test('precision origin is offset, uncommitted until release, and cancels for navigation', () => {
   const s = new DrawingSession();
   const first = s.input({ type: 'start', point: { x: 100, y: 244 } }, options);

@@ -29,10 +29,54 @@ export function findSnap(
   point: ScreenPoint,
   candidates: Coordinate[],
   project: (c: Coordinate) => ScreenPoint | null,
+  unproject?: (p: ScreenPoint) => Coordinate | null,
 ) {
+  // Route forks can expose thousands of vertices as snap targets. On every
+  // touch-move, reject candidates outside the geographic footprint of the
+  // 14px snap circle before asking MapLibre to project them to screen space.
+  let bounds: {
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
+    centerLng: number;
+  } | null = null;
+  if (unproject) {
+    const center = unproject(point);
+    const corners = [
+      unproject({ x: point.x - SNAP_RADIUS, y: point.y - SNAP_RADIUS }),
+      unproject({ x: point.x + SNAP_RADIUS, y: point.y - SNAP_RADIUS }),
+      unproject({ x: point.x - SNAP_RADIUS, y: point.y + SNAP_RADIUS }),
+      unproject({ x: point.x + SNAP_RADIUS, y: point.y + SNAP_RADIUS }),
+    ];
+    if (center && corners.every((p): p is Coordinate => !!p)) {
+      const longitudes = corners.map(
+        ([lng]) => center[0] + ((((lng - center[0]) + 540) % 360) - 180),
+      );
+      bounds = {
+        minLat: Math.min(...corners.map((p) => p[1])),
+        maxLat: Math.max(...corners.map((p) => p[1])),
+        minLng: Math.min(...longitudes),
+        maxLng: Math.max(...longitudes),
+        centerLng: center[0],
+      };
+    }
+  }
   let best: { coordinate: Coordinate; screen: ScreenPoint } | null = null,
     distance = SNAP_RADIUS;
   for (const coordinate of candidates) {
+    if (bounds) {
+      const lng =
+        bounds.centerLng +
+        ((((coordinate[0] - bounds.centerLng) + 540) % 360) - 180);
+      if (
+        coordinate[1] < bounds.minLat ||
+        coordinate[1] > bounds.maxLat ||
+        lng < bounds.minLng ||
+        lng > bounds.maxLng
+      )
+        continue;
+    }
     const screen = project(coordinate);
     if (!screen) continue;
     const d = Math.hypot(screen.x - point.x, screen.y - point.y);

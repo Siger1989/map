@@ -251,6 +251,19 @@
   max-height: 43dvh;
   overflow: auto;
 }
+/* Android WebView should not select route-editor chrome when controls are
+   touched; keep genuine text fields editable and selectable. Endpoint values
+   live outside this dock and retain their explicit user-select: all rule. */
+.route-edit-dock {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.route-edit-dock :is(input, textarea, [contenteditable='true']) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
 .route-edit-status {
   margin: 0 0 5px;
   font-size: 12px;

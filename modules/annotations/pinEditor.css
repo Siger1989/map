@@ -49,3 +49,27 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .
 .pin-picker .marker-number button { min-width:36px; min-height:36px; }
 .pin-status button { min-height:36px; }
 .pin-confirm { padding:4px; gap:4px; }
+
+/* In short landscape viewports, two columns keep the complete base editor
+   above the bottom navigation without reducing the 36/44px touch targets. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .pin-editor {
+    width: min(520px, calc(100% - 128px));
+    max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom));
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']
+    .pin-editor:has(:is(input,textarea):focus) {
+    max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)) !important;
+  }
+  .pin-editor-main {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px 4px;
+  }
+  .pin-editor-main > * {
+    min-width: 0;
+  }
+  .pin-attribute-list {
+    max-height: min(72px, calc(100dvh - 340px));
+  }
+}

@@ -148,3 +148,22 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-camera-control { top: calc(var(--home-top) + var(--home-header-height) + 8px); bottom: auto; right: calc(var(--home-right) + 104px); }
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock { width: min(300px,calc(100% - var(--home-left) - var(--home-right) - 108px)); max-height: min(200px,calc(100dvh - var(--home-top) - var(--home-header-height) - 108px - var(--home-footer) - 8px)); }
 }
+@media (min-width: 600px) and (max-height: 600px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions {
+    flex-direction: column;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock {
+    top: calc(var(--home-top) + var(--home-header-height) + 56px);
+    right: calc(var(--home-right) + 54px);
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-camera-control {
+    top: auto;
+    right: var(--home-right);
+    bottom: calc(var(--home-footer) + 8px);
+  }
+}
+@media (min-width: 600px) and (max-height: 380px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock {
+    right: calc(var(--home-right) + 76px);
+  }
+}
