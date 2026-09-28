@@ -1,4 +1,5 @@
 # 2026-09-29 / 0.2.82 分叉切换局部更新与APK
+- 交付 PASS：构建源码545f2c0dd230e9fcfe348679a3add5a966b6a701已推送codex/rollback-ui-0235-20260921并核对远程一致，未合入main。公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.82-test-standalone（398421085），APK/SHA/INSTALL三附件大小及digest匹配，draft=false、prerelease=true。用户手机可覆盖安装复测，OPPO真机性能仍未验收；云图/天地图地名清晰度仍未解决。下一步：按真机反馈继续定位剩余卡顿，无本地发布阻塞。
 - 最终独立校验 PASS：APK 0.2.82-test/code89，57,863,260 bytes，SHA256 c15207b2762d06ff5f7bd472920409568bf57541d8a5ca2ce40bfbce40c6d806；v2/v3原证书及zipalign通过，543网页文件/496地形PNG与apk-20260929-001028/web逐项一致，最后收藏CSS/删除文案/分叉快路径确认在包内。正在提交推送并发布，尚未宣称公开交付。
 - UI最终验证 PASS：横屏收藏左360×334列表/右497×334地图，SVG覆盖层边界一致；展开与定位、关闭通过，390竖屏仍上下布局。删除确认固定短句，保持全部六路线按钮与确认/取消，857×390/350、390×844、360×780均179px高，clientHeight=scrollHeight=177，无滚动。截图artifacts/screenshots/{favorites-landscape-0282,favorites-portrait-0282,route-delete-landscape-0282,route-delete-857x350-0282,route-delete-360-0282}.png。确认测试均取消，未删除路线。
 - 最终构建 PASS：用户追加左右收藏/删除UI已纳入后重跑python .openai/run-0282-build.py成功；待独立签名/资源校验及Git/Release发布。新增文件范围含workbenchLayout.css、HomeRouteCard.tsx，生产代码冻结。
