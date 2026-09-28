@@ -1,4 +1,5 @@
 # 2026-09-28 / 按当前屏幕筛选吸附候选
+- 交付 PASS：构建源码2944cee0bb506d947dbf98e14b0bdabaa8fa8896已推送codex/rollback-ui-0235-20260921，tag同构建源码；公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.81-test-standalone（398102956），APK/SHA/INSTALL三附件大小及digest一致。上传经7897代理约9分钟、600s限时内完成。未合入main；OPPO性能仍待复测，分叉开关全量更新仍待处理。随交接仅清理测试文件尾空行，不影响APK源码。
 - 最终本地验证 PASS：719/719、tsc、全新0.2.81/code88 APK、原证书/zipalign、543网页文件/496PNG一致；57,863,260 bytes，SHA256 5D110838E6060BA7071FD0E113E95D29EFDA66BDA7C48327F6CC908E697B6D07。浏览器40°地形范围非空、45°旋转更新、分叉新增/撤销PASS；截图artifacts/screenshots/viewport-snap-0281.png。桌面60k候选投影60000→607（非OPPO），详见docs/performance-0.2.81.md。待提交/发布，无本地阻塞。
 - 目标：用户明确只需屏幕内吸附；此前“可见路线”仅排除收藏隐藏项，导致屏幕外全部坐标投影。本轮只改吸附视野预筛与保存候选缓存，不改节点含义/按钮/地图分辨率。
 - 进度：接线完成，复核中。snapViewport读取并缓存当前视角地理范围，扩14px边缘；候选地理索引预筛再精确屏幕投影，视野/DEM变更失效；不可靠俯仰/天空等回退完整投影。保存候选flatten与当前编辑track拆分memo。

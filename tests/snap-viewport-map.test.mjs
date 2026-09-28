@@ -195,4 +195,3 @@ function contains(viewport, lng, lat, centerLng) {
   if (east < viewport.west) east += 360;
   return wrappedLng >= viewport.west && wrappedLng <= east && lat >= viewport.south && lat <= viewport.north;
 }
-
