@@ -174,15 +174,18 @@ export function addEditMarker(session: RouteEditSession, point: Coordinate, inpu
 }
 export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
   if (session.branch !== null) {
-    const segments = session.track.segments.filter(
-      (line, i) => i !== session.branch || line.length >= 2,
-    );
+    const branchLine = session.track.segments[session.branch];
+    if (branchLine?.length >= 2) return revise(session, { branch: null });
+
+    // The unfinished branch contains only its start point, which is already in
+    // the route. Drop its empty metadata rows without rebuilding every edge.
+    const { edgeColors, edgeNotes } = session.track;
     return revise(session, {
       track: {
         ...session.track,
-        segments,
-        ...inheritTrackDetails(segments, [session.track]),
-        edgeColors: inheritEdgeColors(segments, [session.track]),
+        segments: session.track.segments.filter((_, i) => i !== session.branch),
+        ...(edgeColors ? { edgeColors: edgeColors.filter((_, i) => i !== session.branch) } : {}),
+        ...(edgeNotes ? { edgeNotes: edgeNotes.filter((_, i) => i !== session.branch) } : {}),
       },
       branch: null,
     });
@@ -190,15 +193,13 @@ export function toggleEditBranch(session: RouteEditSession): RouteEditSession {
   if (!session.selected) throw new Error('请先选中分叉的起始节点。');
   if (session.track.segments.length >= 100)
     throw new Error('路线已达100段，请先整理。');
+  const { edgeColors, edgeNotes } = session.track;
   return revise(session, {
     track: {
       ...session.track,
       segments: [...session.track.segments, [session.selected]],
-      ...inheritTrackDetails([...session.track.segments, [session.selected]], [session.track]),
-      edgeColors: inheritEdgeColors(
-        [...session.track.segments, [session.selected]],
-        [session.track],
-      ),
+      ...(edgeColors ? { edgeColors: [...edgeColors, []] } : {}),
+      ...(edgeNotes ? { edgeNotes: [...edgeNotes, []] } : {}),
     },
     branch: session.track.segments.length,
   });

@@ -101,7 +101,6 @@ import { equalCoordinate } from '@/modules/tracks/editing';
 import { moveSelectedPoints } from '@/modules/tracks/displayColors';
 import type { ManualTrack } from '@/modules/tracks/drawing';
 
-import { TrackJourneyRail } from '@/modules/tracks/TrackJourneyRail';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
 import { routeGap } from '@/modules/tracks/routeInfo';
@@ -2404,45 +2403,6 @@ export default function Home() {
             />
           )}
         </div>
-        {railTrack &&
-          !editor.session &&
-          panel === null &&
-          routeWindow === 'card' &&
-          !routeChild &&
-          !navigationTarget &&
-          !shareTarget &&
-          tracks.visible &&
-          !tracks.drawing &&
-          !areas.drawing &&
-          !sectionEditing &&
-          !survey.active &&
-          !guidance.active && (
-            <TrackJourneyRail
-              homeOverview={routeVisible && routeWindow === 'card'}
-              reversed={routeReversed}
-              onReverse={() => { setRouteDirection({id:railTrack.id,reversed:!routeReversed}); setTrackLinePoint(null); }}
-              key={railTrack.id}
-              track={railTrack}
-              activeAlternative={activeAlternative}
-              onAlternative={(id) => {
-                setActiveAlternative(id);
-              }}
-              markers={annotations.items}
-              selected={linePoint}
-              onPoint={selectLinePoint}
-              onMarker={(id) => {
-                const marker = annotations.items.find((a) => a.id === id);
-                if (!marker) return;
-                map.current?.focusPoint(
-                  marker.coordinates,
-                  Math.max(15, view.zoom),
-                );
-                annotations.select(id);
-                setTrackLinePoint(null);
-                setPanel('annotations');
-              }}
-            />
-          )}
         {guidance.active && navigation.route &&
           (!railTrack || guidance.active) &&
           !editor.session &&

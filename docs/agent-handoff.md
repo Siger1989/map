@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-29 / 0.2.82 分叉切换与横屏界面
+
+routeEdit分叉开/关复用原元数据行；TrackLayer受限快路径只更新变化的节点显示，保持路线线段几何，空差分不派发worker。10×6000桌面同步JS开/空关193.1/183.9ms降至2.00/1.88ms，非OPPO实测。730tests/tsc通过。压紧路线卡、移除左行程点、剖面低于UI；横屏工具贴右安全边，摇杆右下，收藏左列表/右地图；删除确认一屏无滚动，原实际按钮保留。最终源码已重打APK，校验/发布结果以CURRENT_STATE顶部为准。详见[性能记录](performance-0.2.82.md)与[发行说明](release-0.2.82.md)。云图、天地图栅格地名清晰度与真机卡顿验收仍未完成。
+
 ## 2026-09-28 / 0.2.81 屏幕内候选预筛
 
 新增snapViewport reader与SnapCandidateIndex，普通/分叉先地理范围筛再精确屏幕投影；14px边缘，相机/DEM失效，>=75°或不可靠反投影回退完整集合。保存候选memo独立。719tests/tsc/APK签名资源PASS，浏览器40°地形有效/45°旋转更新及新增撤销PASS，OPPO未验。分叉按钮connecting状态的全量TrackLayer重建未改，继续修该项前读[0.2.80诊断](branch-performance-audit-20260928.md)。本版证据见[性能记录](performance-0.2.81.md)。

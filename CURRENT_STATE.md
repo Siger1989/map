@@ -1,3 +1,24 @@
+# 2026-09-29 / 0.2.82 分叉切换局部更新与APK
+- 最终独立校验 PASS：APK 0.2.82-test/code89，57,863,260 bytes，SHA256 c15207b2762d06ff5f7bd472920409568bf57541d8a5ca2ce40bfbce40c6d806；v2/v3原证书及zipalign通过，543网页文件/496地形PNG与apk-20260929-001028/web逐项一致，最后收藏CSS/删除文案/分叉快路径确认在包内。正在提交推送并发布，尚未宣称公开交付。
+- UI最终验证 PASS：横屏收藏左360×334列表/右497×334地图，SVG覆盖层边界一致；展开与定位、关闭通过，390竖屏仍上下布局。删除确认固定短句，保持全部六路线按钮与确认/取消，857×390/350、390×844、360×780均179px高，clientHeight=scrollHeight=177，无滚动。截图artifacts/screenshots/{favorites-landscape-0282,favorites-portrait-0282,route-delete-landscape-0282,route-delete-857x350-0282,route-delete-360-0282}.png。确认测试均取消，未删除路线。
+- 最终构建 PASS：用户追加左右收藏/删除UI已纳入后重跑python .openai/run-0282-build.py成功；待独立签名/资源校验及Git/Release发布。新增文件范围含workbenchLayout.css、HomeRouteCard.tsx，生产代码冻结。
+- 目标：完成分叉开关局部更新，合并已预览的剖面层级/路线卡/行程点调整，出新APK供OPPO实测。
+- 进度：IN PROGRESS。已分派TrackLayer增量路径、routeEdit元数据、版本/打包准备三项并行任务；主agent整合、浏览器和最终发行校验。
+- 文件：本轮计划TrackLayer.ts、routeEdit.ts、定向测试、版本与发行文档；保留已有三个UI文件和无关PDF。
+- 命令：git status/diff、AGENTS/README/交接/技能读取；branch-phase-bench基线运行；远程分支核对中。
+- 验证：730/730与tsc PASS；真实routeEdit→compose→TrackLayer桌面10×6000开/空关193.1/183.9ms降至2.00/1.88ms，main setData/updateData/project均0；背景recorded/samples节点与全量渲染一致，早期diff失败恢复最新状态PASS。浏览器新增分支3.0km→结束→撤销结束→撤销点回0m→不保存退出PASS。首轮APK构建已PASS但不发布：用户新增横屏收藏左右布局，完成后须全新重打包。
+- 阻塞：无已知本地阻塞，手机性能待安装复测。
+- 下一步：横屏收藏改左列表/右地图后实际检查；最终重新构建/校验APK，再Git及公开Release。横屏工具贴安全区右缘、摇杆右下已实测857×390：工具50×220、摇杆64×48，间隔8px，无重叠；普通和剖面态均生效，见artifacts/screenshots/landscape-right-edge-0282.png。
+# 2026-09-28 / 剖面遮挡与路线卡紧凑预览
+- 目标：剖面线低于UI；收紧所选路线顶部卡，保留实际按钮；移除左侧行程点栏。
+- 进度：PASS（浏览器预览）。app/page.tsx移除TrackJourneyRail挂载；homeMap.css收紧路线卡至最高200px/宽300px、六按钮三列两行；survey.css将地图剖面SVG层级7降到3，低于顶栏底色4。
+- 文件：app/page.tsx、modules/controls/homeMap.css、modules/section/survey.css、CURRENT_STATE.md。原行程点组件文件保留；导航沿途天气栏未改。
+- 命令：git status/diff/check、源码定向检索、agent npx tsc --noEmit；CUA真实浏览器点击与DOM边界验证。typecheck和diff-check PASS。
+- 验证：390×857、360×780、857×390三尺寸路线卡高152.93px，clientHeight=scrollHeight=151，无内部滚动；宽分别300/291.8/300px。六路线操作按钮保留；改名打开/取消、地图剖面进入编辑PASS；行程点栏无挂载。
+- 层级验证：首次预览仍缓存旧CSS z7，重写文件触发热更新后实测SVG z3、顶栏底色z4；拖动地图使剖面经过顶栏/路线卡，遮挡PASS。测试新增剖面1已通过UI删除，仅清理本轮测试对象。
+- 截图：artifacts/screenshots/route-card-section-compact-20260928.png（390路线卡）；route-card-landscape-20260928.png（横屏）；route-card-360-section-layer-20260928.png（360窄屏/最终层级）。均PASS；第1/2图主要记录卡片，最后图记录实际新层级。
+- 阻塞：无本地阻塞，未连接手机，浏览器不能代替Android验收。
+- 下一步：用户查看预览；遵循UI快速确认流程，本轮不打包、不升版本、不发布。保留无关output/pdf文件。
 # 2026-09-28 / 按当前屏幕筛选吸附候选
 - 交付 PASS：构建源码2944cee0bb506d947dbf98e14b0bdabaa8fa8896已推送codex/rollback-ui-0235-20260921，tag同构建源码；公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.81-test-standalone（398102956），APK/SHA/INSTALL三附件大小及digest一致。上传经7897代理约9分钟、600s限时内完成。未合入main；OPPO性能仍待复测，分叉开关全量更新仍待处理。随交接仅清理测试文件尾空行，不影响APK源码。
 - 最终本地验证 PASS：719/719、tsc、全新0.2.81/code88 APK、原证书/zipalign、543网页文件/496PNG一致；57,863,260 bytes，SHA256 5D110838E6060BA7071FD0E113E95D29EFDA66BDA7C48327F6CC908E697B6D07。浏览器40°地形范围非空、45°旋转更新、分叉新增/撤销PASS；截图artifacts/screenshots/viewport-snap-0281.png。桌面60k候选投影60000→607（非OPPO），详见docs/performance-0.2.81.md。待提交/发布，无本地阻塞。

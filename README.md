@@ -1,5 +1,7 @@
 # 山兔
 
+2026-09-29：0.2.82-test（versionCode 89）优化路线分叉更新，压紧路线卡、移除左侧行程点栏、调整剖面线层级；横屏工具贴右边，摇杆右下，收藏左列表右地图，路线删除无需内部滚动。730tests/tsc/最终APK与原签名资源校验通过，OPPO性能仍待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.82-test-standalone/Shantu-0.2.82-test-standalone.apk) · [发行说明](docs/release-0.2.82.md) · [性能证据](docs/performance-0.2.82.md)。
+
 2026-09-28：0.2.81测试版，按当前视野筛选普通/分叉吸附候选，避免逐点投影远处路线，保留14px边缘范围与异常视角回退。分叉按钮整批更新仍待处理。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.81-test-standalone/Shantu-0.2.81-test-standalone.apk) · [性能验证](docs/performance-0.2.81.md)。
 
 2026-09-28：0.2.80测试版，减少菜单同步与路线编辑全量重建，加入单轨差分和收藏数据缓存，修复收藏按钮内距及显隐滑选反馈。天地图栅格地名模糊完成排查，尚未改善；OPPO真机性能待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.80-test-standalone/Shantu-0.2.80-test-standalone.apk) · [性能证据](docs/performance-0.2.80.md) · [发行说明](docs/release-0.2.80.md)。

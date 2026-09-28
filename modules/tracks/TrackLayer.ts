@@ -195,6 +195,13 @@ export class TrackLayer {
       const source = this.map.getSource('manual-tracks') as GeoJSONSource | undefined;
       if (source && source === this.baselineSource && TRACK_LAYER_IDS.every((id) => this.map.getLayer(id)) && typeof source.updateData === 'function' && this.patchSingleTrack(source, previous, state)) return;
     }
+    if (
+      !hadActivePreview && previous && this.projectionValid && !this.map.isMoving?.() &&
+      this.canPatchHandleVisibility(previous, state)
+    ) {
+      const source = this.map.getSource('manual-tracks') as GeoJSONSource | undefined;
+      if (source && source === this.baselineSource && TRACK_LAYER_IDS.every((id) => this.map.getLayer(id)) && typeof source.updateData === 'function' && this.patchHandleVisibility(source, previous, state)) return;
+    }
     syncRouteWarnings(this.map, state.analysisMarkers ?? []);
     this.state = state;
     const m = this.map;
@@ -479,6 +486,105 @@ export class TrackLayer {
     return true;
   }
 
+  /** Branch mode changes which node handles are visible, but never change route lines. */
+  private canPatchHandleVisibility(previous: TrackOverlay, next: TrackOverlay) {
+    if (!previous.visible || !next.visible || previous.editing === false || next.editing === false ||
+      previous.visible !== next.visible || previous.editing !== next.editing ||
+      previous.selectedId !== next.selectedId || previous.reversed !== next.reversed ||
+      previous.drawing !== next.drawing || previous.alternativeId !== next.alternativeId ||
+      previous.analysisMarkers !== next.analysisMarkers || previous.analysisParts !== next.analysisParts ||
+      previous.linePoint !== next.linePoint || previous.preview !== next.preview ||
+      previous.saved.length !== next.saved.length || !sameDraft(previous.draft, next.draft) ||
+      previous.style !== next.style ||
+      previous.nodes !== next.nodes) return false;
+    let changedTrack: ManualTrack | null = null;
+    for (let i = 0; i < previous.saved.length; i++) {
+      if (previous.saved[i]?.id !== next.saved[i]?.id) return false;
+      if (previous.saved[i] !== next.saved[i]) {
+        if (changedTrack || !sameApartFromEmptyBranch(previous.saved[i], next.saved[i], previous.activeNode?.coordinate ?? next.activeNode?.coordinate)) return false;
+        changedTrack = next.saved[i];
+      }
+    }
+    if (previous.draftEdgeColors !== next.draftEdgeColors && (!changedTrack || previous.draft.length > 0 || next.draft.length > 0)) return false;
+    return previous.connecting !== next.connecting || previous.snapTargets !== next.snapTargets ||
+      previous.movableTrackId !== next.movableTrackId || !sameTrackNode(previous.activeNode, next.activeNode) ||
+      previous.nodeSelection !== next.nodeSelection;
+  }
+
+  private patchHandleVisibility(source: GeoJSONSource, previous: TrackOverlay, next: TrackOverlay) {
+    const candidates = [...next.saved.map(savedTrackRenderItem), draftTrackRenderItem(next)];
+    const activeChangedIds = new Set<string>();
+    if (!sameTrackNode(previous.activeNode, next.activeNode)) {
+      if (previous.activeNode) activeChangedIds.add(previous.activeNode.trackId);
+      if (next.activeNode) activeChangedIds.add(next.activeNode.trackId);
+    }
+    const changed = candidates.filter(({ track }) => {
+      const before = track.id === DRAFT_ID ? draftTrackRenderItem(previous) : savedTrackRenderItem(previous.saved.find((item) => item.id === track.id)!);
+      const wasRendered = trackRendersNodes(before, previous);
+      const nowRendered = trackRendersNodes(track.id === DRAFT_ID ? draftTrackRenderItem(next) : savedTrackRenderItem(track), next);
+      const wasExpanded = before.track.id === previous.selectedId || !!previous.connecting || (!!previous.snapTargets && before.track.id !== DRAFT_ID && !before.track.hidden && before.track.source !== 'recorded' && before.track.samples === undefined);
+      const isExpanded = track.id === next.selectedId || !!next.connecting || (!!next.snapTargets && track.id !== DRAFT_ID && !track.hidden && track.source !== 'recorded' && track.samples === undefined);
+      return wasRendered !== nowRendered || wasExpanded !== isExpanded || activeChangedIds.has(String(track.id));
+    });
+    const replacements = changed.map(({ track, draft }) => {
+      const item = draft ? draftTrackRenderItem(next) : savedTrackRenderItem(track);
+      const [start, end] = resolvedRouteTerminals(track);
+      const positions = this.routeHandles(String(track.id), track.segments, track.nodes ?? EMPTY_NODE_COORDINATES,
+        track.id === next.selectedId || !!next.connecting || (!!next.snapTargets && track.id !== DRAFT_ID && !track.hidden && track.source !== 'recorded' && track.samples === undefined));
+      for (const terminal of [start, end]) if (terminal && !positions.some((point) => equalCoordinate(point, terminal))) positions.push(terminal);
+      if (next.activeNode?.trackId === track.id && !positions.some((point) => equalCoordinate(point, next.activeNode!.coordinate)) && track.segments.some((segment) => segment.some((point) => equalCoordinate(point, next.activeNode!.coordinate)))) positions.push(next.activeNode.coordinate);
+      return { id: String(track.id), features: trackRendersNodes(item, next) ? trackNodeFeatures(item, next, positions) : [] };
+    });
+    const remove: (string | number)[] = [];
+    const add: FeatureCollection['features'][number][] = [];
+    for (const { id, features } of replacements) {
+      const oldIds = [...(this.trackFeatureIds.get(id) ?? [])].filter((featureId) => this.baselineFeatures.get(featureId)?.geometry.type === 'Point');
+      remove.push(...oldIds);
+      for (const featureId of oldIds) {
+        const old = this.baselineFeatures.get(featureId);
+        if (old) unindexFeature(old, this.nodeFeatures, this.lineFeatures);
+        this.baselineFeatures.delete(featureId);
+        this.trackFeatureIds.get(id)?.delete(featureId);
+      }
+      assignTrackFeatureIds(features);
+      add.push(...features);
+      for (const feature of features) indexFeature(feature, this.baselineFeatures, this.trackFeatureIds, this.nodeFeatures, this.lineFeatures);
+    }
+    if (remove.length || add.length) {
+      invalidateOverlayData(this.map, 'manual-tracks');
+      try {
+        void source.updateData({ remove, add }).catch((error) => {
+          if (this.map.getSource('manual-tracks') !== source) return;
+          this.restoreCanonicalBaseline(source, 'Could not restore branch handle baseline');
+          console.warn('Could not patch branch handles', error);
+        });
+      } catch {
+        return false;
+      }
+    } else {
+      // An empty branch row does not alter the sampled handle positions. Keep
+      // the projection cache keyed to the new segments array without dispatching
+      // an empty worker diff.
+      for (let i = 0; i < previous.saved.length; i++) {
+        if (previous.saved[i] === next.saved[i]) continue;
+        const track = next.saved[i];
+        const id = String(track.id), cached = this.handleCache.get(id);
+        const expanded = track.id === next.selectedId || !!next.connecting || (!!next.snapTargets && !track.hidden && track.source !== 'recorded' && track.samples === undefined);
+        if (cached && cached.explicit === (track.nodes ?? EMPTY_NODE_COORDINATES) && cached.expanded === expanded && cached.epoch === this.projectionEpoch) {
+          cached.segments = track.segments;
+        } else this.handleCache.delete(id);
+      }
+    }
+    this.state = next;
+    syncSelectedEdges(this.map, next);
+    const selectedEdges = selectedEdgeData(next);
+    this.selectedEdgeBaseline = selectedEdges;
+    this.selectedEdgeSource = this.map.getSource('manual-track-selection-edge') as GeoJSONSource | undefined ?? null;
+    this.selectedEdgeTrackId = next.nodeSelection?.trackId ?? null;
+    this.selectedEdgeGeometry = selectedEdges.features[0]?.geometry ?? null;
+    return true;
+  }
+
   private patchSingleTrack(source: GeoJSONSource, previous: TrackOverlay, next: TrackOverlay) {
     if (typeof source.updateData !== 'function') return false;
     const changedIndex = previous.saved.findIndex((track, index) => track !== next.saved[index]);
@@ -666,6 +772,35 @@ export class TrackLayer {
       }
     });
   }
+}
+
+function sameApartFromEmptyBranch(previous: ManualTrack, next: ManualTrack, selected?: Coordinate) {
+  const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+  keys.delete('segments');
+  keys.delete('edgeColors');
+  keys.delete('edgeNotes');
+  for (const key of keys) if (previous[key as keyof ManualTrack] !== next[key as keyof ManualTrack]) return false;
+  const samePrefix = (a: Coordinate[][], b: Coordinate[][]) => a.length === b.length && a.every((line, i) => line === b[i]);
+  const opened = next.segments.length === previous.segments.length + 1 &&
+    samePrefix(previous.segments, next.segments.slice(0, -1)) && next.segments.at(-1)?.length === 1 &&
+    !!selected && equalCoordinate(next.segments.at(-1)![0], selected);
+  const closed = previous.segments.length === next.segments.length + 1 &&
+    samePrefix(next.segments, previous.segments.slice(0, -1)) && previous.segments.at(-1)?.length === 1 &&
+    !!selected && equalCoordinate(previous.segments.at(-1)![0], selected);
+  if (!opened && !closed) return false;
+  const alignedRows = (a: unknown[] | undefined, b: unknown[] | undefined) => {
+    if (a === b) return true;
+    if (a && b && b.length === a.length + 1 && a.every((row, i) => row === b[i])) {
+      const last = b[b.length - 1];
+      return Array.isArray(last) && last.length === 0;
+    }
+    if (a && b && a.length === b.length + 1 && b.every((row, i) => row === a[i])) {
+      const last = a[a.length - 1];
+      return Array.isArray(last) && last.length === 0;
+    }
+    return false;
+  };
+  return alignedRows(previous.edgeColors, next.edgeColors) && alignedRows(previous.edgeNotes, next.edgeNotes);
 }
 
 function nodeKey(trackId: string, coordinate: Coordinate) {

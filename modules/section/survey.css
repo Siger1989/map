@@ -305,7 +305,9 @@
 .survey-map-overlay {
   position: absolute;
   inset: 0;
-  z-index: 7;
+  /* Keep map ink below the home header wash (z-index: 4) and all UI chrome,
+     while staying above the MapLibre canvas for visible, interactive strokes. */
+  z-index: 3;
   pointer-events: none;
   /* SVG groups do not establish CSS layout boxes. Declare this on the root
      before contact, so touch dragging is not cancelled for browser panning.
@@ -609,3 +611,59 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .survey-dock[
 .observatory.home-map .survey-live-coordinate-row { display: grid; grid-template-columns: minmax(0,1fr) 42px; gap: 3px; }
 .observatory.home-map .survey-coordinate-fields output { display: block; box-sizing: border-box; min-width: 0; height: 36px; padding: 0 4px 0 19px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); color: var(--ui-ink); background: var(--ui-field); font-size: 16px; line-height: 34px; white-space: nowrap; }
 .observatory.home-map .survey-point-error { margin: 2px 0; color: var(--ui-danger); font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+
+/* In landscape, including survey editing, keep tools against the right edge and leave the
+   profile editor's left-side controls untouched. */
+@media (min-width: 600px) and (max-height: 600px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-position-dock {
+    display: grid;
+    grid-template-columns: 44px;
+    grid-auto-rows: 36px;
+    align-content: start;
+    gap: 0;
+    padding: 2px;
+    box-sizing: border-box;
+    width: 50px;
+    top: calc(var(--home-top) + var(--home-header-height) + 6px);
+    right: env(safe-area-inset-right, 0px);
+    bottom: auto;
+    border-radius: 16px 0 0 16px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-position-dock .position-dock-button,
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-position-dock .raster-level-control > button {
+    width: 44px;
+    height: 36px;
+    min-height: 36px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-map-actions {
+    top: calc(var(--home-top) + var(--home-header-height) + 6px);
+    right: calc(env(safe-area-inset-right, 0px) + 54px);
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-camera-control {
+    left: auto;
+    right: env(safe-area-inset-right, 0px);
+    top: auto;
+    bottom: calc(var(--home-footer) + 4px);
+    width: 64px;
+    height: 48px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-camera-control .camera-gizmo {
+    width: 64px;
+    height: 48px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-camera-control .camera-gizmo > svg {
+    width: 64px;
+    height: 48px;
+  }
+}
+
+@media (min-width: 600px) and (max-height: 380px) {
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-position-dock {
+    grid-template-columns: repeat(2, 44px);
+    grid-auto-rows: 36px;
+    width: 96px;
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-survey]:not([data-focus-locked='true']) .home-map-actions {
+    right: calc(env(safe-area-inset-right, 0px) + 100px);
+  }
+}

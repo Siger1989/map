@@ -73,7 +73,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       {onDelete && <button onClick={() => setConfirmDelete(true)} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
     </nav></>}
     {confirmDelete && <div className="home-route-delete-confirm" role="group" aria-label="确认删除路线">
-      <span>删除“{track.name}”？关联照片、标记及来源路线保留。</span>
+      <span>删除这条路线？关联照片、标记及来源路线保留。</span>
       <button onClick={() => setConfirmDelete(false)}>取消</button>
       <button className="route-danger" onClick={() => { if (onDelete?.()) setConfirmDelete(false); }}>确认删除</button>
     </div>}
