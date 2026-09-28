@@ -1,5 +1,7 @@
 # 山兔
 
+2026-09-28：0.2.79测试版，优化分叉输入与吸附缓存、合并摇杆移动事件，降低3D渲染采样负担；真机效果待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.79-test-standalone/Shantu-0.2.79-test-standalone.apk) · [性能证据](docs/performance-0.2.79.md) · [发行说明](docs/release-0.2.79.md)。
+
 2026-09-28：0.2.78测试版，修复路线分叉候选扫描与按钮文字选择，并调整短横屏添加标记、工具和摇杆位置。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.78-test-standalone/Shantu-0.2.78-test-standalone.apk) · [验证与发行说明](docs/release-0.2.78.md)。
 
 2026-09-28：0.2.77测试版，收紧记录、路线、剖面、标记和图层窗口，保留0.2.76全部按钮与操作。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.77-test-standalone/Shantu-0.2.77-test-standalone.apk) · [验证与发行说明](docs/release-0.2.77.md)。

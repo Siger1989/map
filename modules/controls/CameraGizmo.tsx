@@ -2,42 +2,101 @@ import { useCallback, useEffect, useRef, type PointerEvent } from 'react';
 import type { ViewState } from '../map/types';
 import {
   clampPitch,
+  createCameraGestureFrame,
   orbitCamera,
   ringAngle,
   ringDelta,
   wrapBearing,
+  type CameraGesturePhase,
+  type CameraGesturePose,
 } from './cameraGesture';
+
+type CameraDrag = {
+  pointer: number;
+  kind: 'orbit' | 'bearing';
+  x: number;
+  y: number;
+  pitch: number;
+  angle: number;
+  bearing: number;
+};
+function dragPose(
+  drag: CameraDrag,
+  point: { x: number; y: number },
+): CameraGesturePose {
+  if (drag.kind === 'orbit') {
+    const next = orbitCamera(drag, point.x - drag.x, point.y - drag.y);
+    return { pitch: next.pitch, bearing: next.bearing };
+  }
+  const angle = ringAngle(point.x - 55, point.y - 81);
+  drag.bearing = wrapBearing(drag.bearing + ringDelta(drag.angle, angle));
+  drag.angle = angle;
+  return { pitch: drag.pitch, bearing: drag.bearing };
+}
 
 /** The model orbits/tilts around the map centre; the ring changes heading only. */
 export function CameraGizmo({
   view,
   onView,
+  onGestureView,
 }: {
   view: ViewState;
   onView: (pitch: number, bearing: number) => void;
+  onGestureView?: (
+    pitch: number,
+    bearing: number,
+    phase: CameraGesturePhase,
+  ) => void;
 }) {
   const svg = useRef<SVGSVGElement>(null);
-  const drag = useRef<{
-    pointer: number;
-    kind: 'orbit' | 'bearing';
-    x: number;
-    y: number;
-    pitch: number;
-    angle: number;
-    bearing: number;
-  } | null>(null);
+  const callbacks = useRef({ onView, onGestureView });
+  callbacks.current = { onView, onGestureView };
+  const gestureFrame = useRef<ReturnType<
+    typeof createCameraGestureFrame
+  > | null>(null);
+  if (!gestureFrame.current) {
+    gestureFrame.current = createCameraGestureFrame((pose, phase) => {
+      const publish = callbacks.current.onGestureView;
+      if (publish) publish(pose.pitch, pose.bearing, phase);
+      else if (phase !== 'cancel')
+        callbacks.current.onView(pose.pitch, pose.bearing);
+    });
+  }
+  const drag = useRef<CameraDrag | null>(null);
   const cancel = useCallback(() => {
     const current = drag.current;
     drag.current = null;
     if (current && svg.current?.hasPointerCapture(current.pointer))
       svg.current.releasePointerCapture(current.pointer);
+    gestureFrame.current?.cancel();
   }, []);
   const end = useCallback(
-    (event: { pointerId: number }) => {
-      if (drag.current?.pointer === event.pointerId) cancel();
+    (event: { pointerId: number; clientX?: number; clientY?: number }) => {
+      const current = drag.current;
+      if (current?.pointer !== event.pointerId) return;
+      let finalPose: CameraGesturePose | undefined;
+      if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+        const rect = svg.current!.getBoundingClientRect();
+        finalPose = dragPose(current, {
+          x: ((event.clientX! - rect.left) * 110) / rect.width,
+          y: ((event.clientY! - rect.top) * 118) / rect.height,
+        });
+      }
+      drag.current = null;
+      if (svg.current?.hasPointerCapture(current.pointer))
+        svg.current.releasePointerCapture(current.pointer);
+      gestureFrame.current?.end(finalPose);
     },
-    [cancel],
+    [],
   );
+  const cancelPointer = useCallback((event: { pointerId: number }) => {
+    const current = drag.current;
+    if (current?.pointer !== event.pointerId) return;
+    drag.current = null;
+    if (svg.current?.hasPointerCapture(current.pointer))
+      svg.current.releasePointerCapture(current.pointer);
+    gestureFrame.current?.cancel();
+  }, []);
   useEffect(() => {
     const visibility = () => {
       if (document.hidden) cancel();
@@ -48,17 +107,17 @@ export function CameraGizmo({
     window.addEventListener('blur', cancel);
     window.addEventListener('pointerdown', anotherPointer, true);
     window.addEventListener('pointerup', end, true);
-    window.addEventListener('pointercancel', end, true);
+    window.addEventListener('pointercancel', cancelPointer, true);
     document.addEventListener('visibilitychange', visibility);
     return () => {
       cancel();
       window.removeEventListener('blur', cancel);
       window.removeEventListener('pointerdown', anotherPointer, true);
       window.removeEventListener('pointerup', end, true);
-      window.removeEventListener('pointercancel', end, true);
+      window.removeEventListener('pointercancel', cancelPointer, true);
       document.removeEventListener('visibilitychange', visibility);
     };
-  }, [cancel, end]);
+  }, [cancel, end, cancelPointer]);
   const position = (e: PointerEvent) => {
     const rect = svg.current!.getBoundingClientRect();
     return {
@@ -90,15 +149,7 @@ export function CameraGizmo({
       return;
     }
     const p = position(e);
-    if (d.kind === 'orbit') {
-      const next = orbitCamera(d, p.x - d.x, p.y - d.y);
-      onView(next.pitch, next.bearing);
-    } else {
-      const next = ringAngle(p.x - 55, p.y - 81);
-      d.bearing = wrapBearing(d.bearing + ringDelta(d.angle, next));
-      d.angle = next;
-      onView(d.pitch, d.bearing);
-    }
+    gestureFrame.current?.move(dragPose(d, p));
   };
   const y = 70 - 40 * Math.sin((view.pitch * Math.PI) / 180);
   const rad = (-view.bearing * Math.PI) / 180;
@@ -113,8 +164,8 @@ export function CameraGizmo({
         viewBox="0 0 110 118"
         onPointerMove={move}
         onPointerUp={end}
-        onPointerCancel={end}
-        onLostPointerCapture={end}
+        onPointerCancel={cancelPointer}
+        onLostPointerCapture={cancelPointer}
       >
         <ellipse
           cx="55"
@@ -169,7 +220,12 @@ export function CameraGizmo({
             stroke="color-mix(in srgb, var(--ui-accent, #d0f76b) 68%, var(--ui-surface, #18201f))"
             strokeWidth="1.5"
           />
-          <circle cx={north.x} cy={north.y} r="7" fill="var(--ui-accent, #d0f76b)" />
+          <circle
+            cx={north.x}
+            cy={north.y}
+            r="7"
+            fill="var(--ui-accent, #d0f76b)"
+          />
           <text
             x={north.x}
             y={north.y + 3}

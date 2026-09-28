@@ -1,0 +1,12 @@
+山兔 0.2.79-test / versionCode 86 独立测试版
+
+安装文件：Shantu-0.2.79-test-standalone.apk
+最低系统：Android 8.0（API 26），包名 com.guanyun.weather.shantu.preview。
+沿用同包名旧测试版签名，请直接覆盖安装，不要先卸载。
+
+本版：分叉绘制输入按动画帧合并并在松手时处理最后位置；吸附候选投影缓存为屏幕空间网格，避免每次移动额外执行五次 CPU 地形反算。摇杆相机更新使用同一 easeId 合并 moveend；关闭 MSAA 并保留原生分辨率。
+
+695/695 测试与 TypeScript、全新 Android 构建、原 v2/v3 签名、zipalign 和包内网页/地形资源一致性检查通过。OPPO Find X8 Ultra 等真机上的分叉手感、三维旋转、图像质量、触控及覆盖安装均待复测。HarmonyOS 6.1 原生 HAP/APP 未生成。
+
+APK 大小：57,859,164 bytes
+APK SHA256：48B14C24737A4A4C55ADEC2BE1C95B0239643951F141E49D1FAE8AF6A2FB57B3

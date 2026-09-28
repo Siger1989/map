@@ -1198,7 +1198,7 @@ export default function Home() {
   const branchTip = branchEditing
     ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
     : null;
-  const branchCandidates = branchEditing
+  const branchCandidates = useMemo(() => branchEditing
     ? [
         ...editor.session!.track.segments.flat(),
         ...tracks.saved
@@ -1208,7 +1208,8 @@ export default function Home() {
           )
           .flatMap((t) => t.segments.flat()),
       ]
-    : [];
+    : [], [branchEditing, editor.session?.track, editor.session?.sources, tracks.saved]);
+  const drawingToScreen = useCallback((point: Coordinate) => map.current?.toScreen(point) ?? null, []);
   const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
     editor.change((value) =>
       appendEditBranch(
@@ -1993,7 +1994,7 @@ export default function Home() {
           lastVertex={
             branchEditing ? branchTip : (tracks.draft.at(-1)?.at(-1) ?? null)
           }
-          toScreen={(point) => map.current?.toScreen(point) ?? null}
+          toScreen={drawingToScreen}
           magnify={(canvas, point) =>
             map.current?.magnify(canvas, point) ?? (() => {})
           }
@@ -2557,6 +2558,15 @@ export default function Home() {
           viewControl={
             <CameraGizmo
               view={view}
+              onGestureView={(pitch, bearing, phase) => {
+                if (phase !== 'cancel') {
+                  follow.pause();
+                  position.free();
+                  if (pitch > 0 && !layers.terrain && !section.enabled)
+                    update({ terrain: true });
+                }
+                map.current?.viewGesture(pitch, bearing, phase);
+              }}
               onView={(pitch, bearing) => {
                 follow.pause();
                 position.free();

@@ -2,6 +2,7 @@ import { metresBetween, type Coordinate } from '../navigation/types.ts';
 import type { ScreenPoint } from './drawing';
 
 export const SNAP_RADIUS = 14;
+const SNAP_CELL_SIZE = SNAP_RADIUS;
 export function sameNode(a: Coordinate, b: Coordinate) {
   return metresBetween(a, b) < 0.15;
 }
@@ -86,6 +87,48 @@ export function findSnap(
     }
   }
   return best;
+}
+
+/** A screen-space index whose cached projections remain valid for one camera pose. */
+export class ProjectedSnapGrid {
+  private cells = new Map<string, { coordinate: Coordinate; screen: ScreenPoint; order: number }[]>();
+  constructor(
+    candidates: Coordinate[],
+    project: (c: Coordinate) => ScreenPoint | null,
+  ) {
+    candidates.forEach((coordinate, order) => {
+      const screen = project(coordinate);
+      if (!screen) return;
+      const key = this.cellKey(screen.x, screen.y);
+      const cell = this.cells.get(key);
+      const entry = { coordinate, screen, order };
+      if (cell) cell.push(entry);
+      else this.cells.set(key, [entry]);
+    });
+  }
+  nearest(point: ScreenPoint) {
+    const cellX = Math.floor(point.x / SNAP_CELL_SIZE);
+    const cellY = Math.floor(point.y / SNAP_CELL_SIZE);
+    const nearby: { coordinate: Coordinate; screen: ScreenPoint; order: number }[] = [];
+    for (let x = cellX - 1; x <= cellX + 1; x++)
+      for (let y = cellY - 1; y <= cellY + 1; y++)
+        nearby.push(...(this.cells.get(`${x},${y}`) ?? []));
+    nearby.sort((a, b) => a.order - b.order);
+    let best: { coordinate: Coordinate; screen: ScreenPoint } | null = null;
+    let distance = SNAP_RADIUS;
+    for (const entry of nearby) {
+      const d = Math.hypot(entry.screen.x - point.x, entry.screen.y - point.y);
+      // Keep findSnap's <= tie rule: equal-distance later candidates win.
+      if (d <= distance) {
+        best = { coordinate: entry.coordinate, screen: entry.screen };
+        distance = d;
+      }
+    }
+    return best;
+  }
+  private cellKey(x: number, y: number) {
+    return `${Math.floor(x / SNAP_CELL_SIZE)},${Math.floor(y / SNAP_CELL_SIZE)}`;
+  }
 }
 /** Join only unambiguous endpoints. Never bridge gaps or choose a branch for the user. */
 export function joinSegments(input: Coordinate[][]): Coordinate[][] {

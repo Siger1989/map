@@ -5,6 +5,7 @@ import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec';
 import {
   DrawingTouchSession,
   DrawingGestureBridge,
+  FrameCoalescedDrawingInput,
 } from '../modules/tracks/DrawingGestureBridge.ts';
 import { DrawingSession } from '../modules/tracks/DrawingSession.ts';
 import {
@@ -13,6 +14,7 @@ import {
   connectedTracks,
   hasLoosePoints,
   draftSnapNodes,
+  ProjectedSnapGrid,
 } from '../modules/tracks/snapping.ts';
 import {
   appendStroke,
@@ -55,10 +57,57 @@ test('second finger cancels immediate ink; remaining finger cannot draw', (t) =>
   gesture.update('end', []);
   assert.equal(events.at(-1).reason, 'release');
 });
+test('drawing input coalesces moves per frame and release flushes the latest point first', () => {
+  const callbacks = new Map(),
+    emitted = [],
+    canceled = [],
+    queue = new FrameCoalescedDrawingInput(
+      (e) => emitted.push(e),
+      (callback) => {
+        const id = callbacks.size + 1;
+        callbacks.set(id, callback);
+        return id;
+      },
+      (id) => canceled.push(id),
+    );
+  queue.input({ type: 'start', point: { x: 0, y: 0 } });
+  queue.input({ type: 'move', point: { x: 1, y: 1 } });
+  queue.input({ type: 'move', point: { x: 2, y: 2 } });
+  queue.input({ type: 'move', point: { x: 3, y: 3 } });
+  assert.equal(callbacks.size, 1);
+  assert.equal(emitted.length, 1, 'move processing waits for its frame');
+  queue.input({ type: 'end', reason: 'release' });
+  assert.deepEqual(emitted.map((e) => e.type), ['start', 'move', 'end']);
+  assert.deepEqual(emitted[1].point, { x: 3, y: 3 });
+  assert.deepEqual(canceled, [1], 'release cancels the now-obsolete frame');
+  callbacks.get(1)();
+  assert.equal(emitted.length, 3, 'obsolete frame cannot duplicate the final point');
+});
+test('cancel, camera interruption, navigation, and explicit discard drop a pending move', () => {
+  for (const terminal of [
+    { type: 'cancel' },
+    { type: 'end', reason: 'interrupt' },
+    { type: 'end', reason: 'navigation' },
+    null,
+  ]) {
+    const callbacks = new Map(), emitted = [];
+    const queue = new FrameCoalescedDrawingInput(
+      (e) => emitted.push(e),
+      (callback) => { callbacks.set(1, callback); return 1; },
+      () => {},
+    );
+    queue.input({ type: 'move', point: { x: 9, y: 9 } });
+    if (terminal) queue.input(terminal);
+    else queue.discard();
+    callbacks.get(1)?.();
+    assert.deepEqual(emitted, terminal ? [terminal] : []);
+  }
+});
 test('public bridge preserves native two-finger events and restores map controls', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const handlers = new Map(),
     windowHandlers = new Map(),
+    frames = new Map(),
     emitted = [],
     canvas = {};
   const control = () => ({
@@ -78,6 +127,8 @@ test('public bridge preserves native two-finger events and restores map controls
       defaultView: {
         addEventListener: (n, f) => windowHandlers.set(n, f),
         removeEventListener: (n) => windowHandlers.delete(n),
+        requestAnimationFrame: (callback) => { frames.set(1, callback); return 1; },
+        cancelAnimationFrame: (id) => frames.delete(id),
       },
     },
     classList: { toggle() {} },
@@ -129,6 +180,8 @@ test('public bridge preserves native two-finger events and restores map controls
     'the first touch must reach MapLibre pinch recognizers too',
   );
   assert.equal(map.dragPan.active, false);
+  handlers.get('touchmove')(one);
+  assert.equal(emitted.length, 1, 'move is queued until the next frame');
   const two = event(2);
   handlers.get('touchstart')(two);
   assert.equal(
@@ -136,6 +189,7 @@ test('public bridge preserves native two-finger events and restores map controls
     'cancel',
     'late second finger cancels tentative ink',
   );
+  assert.equal(frames.size, 0, 'second finger discards the queued move');
   assert.equal(two.prevented, false);
   assert.equal(map.dragPan.active, true);
   handlers.get('movestart')();
@@ -244,6 +298,47 @@ test('snap lookup projects only vertices inside the touch radius footprint', () 
   );
   assert.deepEqual(snap?.coordinate, [100.1, 10]);
   assert.deepEqual(projected, [[100.1, 10]]);
+});
+test('projected snap grid caches projections, preserves exact coordinates and tie order', () => {
+  const first = [100.1, 20],
+    tied = [100.2, 20],
+    far = [100.3, 20],
+    projected = [],
+    grid = new ProjectedSnapGrid([first, tied, far], (coordinate) => {
+      projected.push(coordinate);
+      if (coordinate === first) return { x: 10, y: 10 };
+      if (coordinate === tied) return { x: 18, y: 10 };
+      return { x: 100, y: 100 };
+    });
+  assert.equal(projected.length, 3, 'each candidate is projected once at index build');
+  assert.strictEqual(grid.nearest({ x: 14, y: 10 }).coordinate, tied,
+    'equal distances retain findSnap semantics: the later candidate wins');
+  assert.equal(grid.nearest({ x: 33, y: 10 }), null, 'outside the exact 14px radius does not snap');
+  assert.equal(projected.length, 3, 'queries do not project or unproject points');
+});
+test('drawing session reuses projected grid and rebuilds it when candidate array changes', () => {
+  let projections = 0, unprojections = 0;
+  const project = (coordinate) => {
+      projections++;
+      return { x: (coordinate[0] - 100) * 1000, y: coordinate[1] * 10 };
+    },
+    unproject = (point) => {
+      unprojections++;
+      return [100 + point.x / 1000, point.y / 10];
+    },
+    target = [100.1, 20],
+    candidates = [target],
+    s = new DrawingSession(),
+    o = { ...options, mode: 'points', candidates, project, unproject };
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+  assert.equal(projections, 1);
+  s.input({ type: 'move', point: { x: 109, y: 244 } }, o);
+  assert.equal(projections, 1, 'same candidates and camera projection reuse the index');
+  assert.equal(unprojections, 2, 'each pointer sample performs only its one ground lookup');
+  const replacement = [target, [100.4, 20]];
+  s.input({ type: 'move', point: { x: 109, y: 244 } }, { ...o, candidates: replacement });
+  assert.equal(projections, 3, 'new candidate snapshot is projected once to rebuild the index');
+  assert.strictEqual(s.input({ type: 'end', reason: 'release' }, { ...o, candidates: replacement }).vertex, target);
 });
 test('precision origin is offset, uncommitted until release, and cancels for navigation', () => {
   const s = new DrawingSession();

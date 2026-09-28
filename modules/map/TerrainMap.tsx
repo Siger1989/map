@@ -108,6 +108,7 @@ export type MapHandle = {
   north: () => void;
   reset: () => void;
   view: (pitch: number, bearing: number, animate?: boolean) => void;
+  viewGesture: (pitch: number, bearing: number, phase: 'move' | 'end' | 'cancel') => void;
   refreshSatellite: () => void;
   refreshGeology: () => void;
   inspect: () => unknown;
@@ -765,6 +766,21 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             bearing,
             duration: animate ? 500 : 0,
           }),
+        viewGesture: (pitch, bearing, phase) => {
+          const map = mapRef.current;
+          if (!map) return;
+          if (phase === 'cancel') { map.stop(); return; }
+          // One camera lifecycle for a stream of joystick frames. Duration zero
+          // on every sample emits moveend (and forces terrain marker readbacks).
+          // Apply the target on the next frame, keep the easing identity alive,
+          // then synchronously settle the last pose on release.
+          map.easeTo({
+            pitch: Math.min(80, Math.max(0, pitch)), bearing,
+            easeId: 'camera-gizmo', essential: true,
+            duration: phase === 'end' ? 0 : 250,
+            easing: () => 1,
+          });
+        },
         refreshSatellite: syncSatellite,
         refreshGeology: () => geologyRef.current?.retry(),
         inspect: () => {
@@ -823,7 +839,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             touchZoomRotate: true,
             touchPitch: true,
             dragPan: true,
-            canvasContextAttributes: { antialias: true },
+            // Keep native pixel resolution, but avoid a multisampled full-screen
+            // framebuffer on mobile. MapLibre line/text shaders antialias edges.
+            canvasContextAttributes: { antialias: false },
           });
           mapRef.current = map;
           const publishView = cameraViewPublisher(value => latest.current.onView(value));

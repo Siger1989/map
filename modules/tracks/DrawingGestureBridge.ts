@@ -4,6 +4,55 @@ export type DrawingInput =
   | { type: 'start' | 'move'; point: ScreenPoint }
   | { type: 'end'; reason: 'release' | 'navigation' | 'interrupt' }
   | { type: 'cancel' };
+
+/** Keep drawing work to one latest touch or mouse sample per rendered frame. */
+export class FrameCoalescedDrawingInput {
+  private pending: DrawingInput | null = null;
+  private frame: number | null = null;
+  private emit: (input: DrawingInput) => void;
+  private requestFrame: (callback: FrameRequestCallback) => number;
+  private cancelFrame: (frame: number) => void;
+  constructor(
+    emit: (input: DrawingInput) => void,
+    requestFrame: (callback: FrameRequestCallback) => number,
+    cancelFrame: (frame: number) => void,
+  ) {
+    this.emit = emit;
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+  }
+  input(input: DrawingInput) {
+    if (input.type === 'start') this.discard();
+    if (input.type === 'move') {
+      this.pending = input;
+      if (this.frame === null) {
+        this.frame = this.requestFrame(() => {
+          this.frame = null;
+          this.flush();
+        });
+      }
+      return;
+    }
+    if (input.type === 'cancel' || (input.type === 'end' && input.reason !== 'release')) {
+      this.discard();
+    } else if (input.type === 'end') {
+      this.flush();
+    }
+    this.emit(input);
+  }
+  discard() {
+    if (this.frame !== null) this.cancelFrame(this.frame);
+    this.frame = null;
+    this.pending = null;
+  }
+  private flush() {
+    const pending = this.pending;
+    this.pending = null;
+    if (this.frame !== null) this.cancelFrame(this.frame);
+    this.frame = null;
+    if (pending) this.emit(pending);
+  }
+}
 type Contact = { id: number; point: ScreenPoint };
 /** A second finger preempts ink immediately, until every finger is lifted. */
 export class DrawingTouchSession {
@@ -43,7 +92,6 @@ export class DrawingTouchSession {
 /** Public MapLibre events arbitrate ink versus its real native two-finger handlers. */
 export class DrawingGestureBridge {
   private map: Map;
-  private emit: (input: DrawingInput) => void;
   private touch: DrawingTouchSession;
   private enabled = false;
   private mouseDown = false;
@@ -52,11 +100,16 @@ export class DrawingGestureBridge {
   private panWasEnabled = true;
   private doubleClickWasEnabled = true;
   private ownerWindow: Window;
+  private inputQueue: FrameCoalescedDrawingInput;
   constructor(map: Map, emit: (input: DrawingInput) => void) {
     this.map = map;
-    this.emit = emit;
-    this.touch = new DrawingTouchSession(emit);
     this.ownerWindow = map.getCanvasContainer().ownerDocument.defaultView!;
+    this.inputQueue = new FrameCoalescedDrawingInput(
+      emit,
+      (callback) => this.ownerWindow.requestAnimationFrame(callback),
+      (frame) => this.ownerWindow.cancelAnimationFrame(frame),
+    );
+    this.touch = new DrawingTouchSession((input) => this.inputQueue.input(input));
     map.on('touchstart', this.touchStart);
     map.on('touchmove', this.touchMove);
     map.on('touchend', this.touchEnd);
@@ -74,6 +127,7 @@ export class DrawingGestureBridge {
       this.doubleClickWasEnabled = this.map.doubleClickZoom.isEnabled();
       this.map.doubleClickZoom.disable();
     } else {
+      this.inputQueue.discard();
       this.touch.reset(false, 'interrupt');
       this.finishMouse('interrupt');
       this.touchCount = 0;
@@ -139,32 +193,35 @@ export class DrawingGestureBridge {
     e.preventDefault();
     this.map.stop();
     this.mouseDown = true;
-    this.emit({ type: 'start', point: e.point });
+    this.inputQueue.input({ type: 'start', point: e.point });
   };
   private mouseMove = (e: MapMouseEvent) => {
     if (this.enabled && this.mouseDown)
-      this.emit({ type: 'move', point: e.point });
+      this.inputQueue.input({ type: 'move', point: e.point });
   };
   private finishMouse(reason: 'release' | 'interrupt') {
     if (this.mouseDown) {
       this.mouseDown = false;
-      this.emit({ type: 'end', reason });
+      this.inputQueue.input({ type: 'end', reason });
     }
   }
   private mouseEnd = () => this.finishMouse('release');
   private cameraMove = () => {
     if (this.enabled) {
+      this.inputQueue.discard();
       this.touch.interrupt();
       this.finishMouse('interrupt');
     }
   };
   private blur = () => {
+    this.inputQueue.discard();
     this.touch.reset(false, 'interrupt');
     this.finishMouse('interrupt');
     this.touchCount = 0;
     if (this.enabled) this.pan(this.panWasEnabled);
   };
   dispose() {
+    this.inputQueue.discard();
     this.configure(false);
     this.map.off('touchstart', this.touchStart);
     this.map.off('touchmove', this.touchMove);

@@ -3,6 +3,9 @@ import type { Map } from 'maplibre-gl';
 /** Bounded counters for the existing read-only map inspection tool. No pixel reads. */
 export function observeMapRendering(map: Map, now: () => number = () => performance.now()) {
   const started = now();
+  // Read once when attaching diagnostics, never in the render event hot path.
+  const context = map.getCanvas().getContext?.('webgl2');
+  const contextAttributes = context?.getContextAttributes() ?? null;
   const counts: Record<string, number> = {};
   const sources: Record<string, number> = {};
   const sourceRequests: Record<string, number> = {};
@@ -112,6 +115,7 @@ export function observeMapRendering(map: Map, now: () => number = () => performa
       },
       recent: [...recent],
       canvas: canvasResolution(map.getCanvas()),
+      contextAttributes,
     }),
     dispose: () => listeners.forEach((remove) => remove()),
   };

@@ -1,7 +1,7 @@
 import type { Coordinate } from '../navigation/types';
 import { MAX_TRACK_POINTS, pullTip, trackDistance, type ScreenPoint } from './drawing.ts';
 import { aimPoint, handlePoint, nearHandle } from './precision.ts';
-import { findSnap, sameNode } from './snapping.ts';
+import { ProjectedSnapGrid, sameNode } from './snapping.ts';
 import type { DrawingInput } from './DrawingGestureBridge';
 import type { DrawingMode } from './draft';
 import {
@@ -50,6 +50,9 @@ export class DrawingSession {
   private aimSection: Coordinate[] | undefined;
   private aimHint = '';
   private crossing = false;
+  private snapCandidates: Coordinate[] | null = null;
+  private snapProject: Options['project'] | null = null;
+  private snapGrid: ProjectedSnapGrid | null = null;
   private stroke: {
     tip: ScreenPoint;
     sample: ScreenPoint;
@@ -58,6 +61,9 @@ export class DrawingSession {
     travelled: number;
     snap: Coordinate | null;
     road: RoadMatch | null;
+    snapCandidateSource: Coordinate[];
+    snapCandidates: Coordinate[];
+    includesOriginSnap: boolean;
   } | null = null;
   clear() {
     this.aim = null;
@@ -65,6 +71,20 @@ export class DrawingSession {
     this.aimHint = '';
     this.crossing = false;
     this.stroke = null;
+    this.invalidateSnapGrid();
+  }
+  private invalidateSnapGrid() {
+    this.snapCandidates = null;
+    this.snapProject = null;
+    this.snapGrid = null;
+  }
+  private snap(point: ScreenPoint, o: Options, candidates = o.candidates) {
+    if (this.snapCandidates !== candidates || this.snapProject !== o.project) {
+      this.snapCandidates = candidates;
+      this.snapProject = o.project;
+      this.snapGrid = new ProjectedSnapGrid(candidates, o.project);
+    }
+    return this.snapGrid?.nearest(point) ?? null;
   }
   input(event: DrawingInput, o: Options): DrawingResult {
     const empty = { preview: null, hint: '' };
@@ -129,6 +149,9 @@ export class DrawingSession {
           travelled: 0,
           snap: null,
           road: null,
+          snapCandidateSource: o.candidates,
+          snapCandidates: o.candidates.filter((c) => !sameNode(c, o.anchor!)),
+          includesOriginSnap: false,
         };
         return {
           ...empty,
@@ -213,13 +236,20 @@ export class DrawingSession {
           s.road = roadMatch;
         }
       } else if (!roadMatch) s.road = null;
-      const candidates =
-        s.travelled > o.length * 2
-          ? [...o.candidates, s.points[0]]
-          : o.candidates.filter((c) => !sameNode(c, s.points[0]));
+      if (s.snapCandidateSource !== o.candidates) {
+        s.snapCandidateSource = o.candidates;
+        s.snapCandidates = o.candidates.filter((c) => !sameNode(c, s.points[0]));
+        s.includesOriginSnap = false;
+        this.invalidateSnapGrid();
+      }
+      if (s.travelled > o.length * 2 && !s.includesOriginSnap) {
+        s.snapCandidates = [...s.snapCandidates, s.points[0]];
+        s.includesOriginSnap = true;
+        this.invalidateSnapGrid();
+      }
       const snap =
         o.snapping && !roadMatch && s.points.length > 1
-          ? findSnap(tip, candidates, o.project, o.unproject)
+          ? this.snap(tip, o, s.snapCandidates)
           : null;
       s.snap = snap?.coordinate ?? roadMatch?.coordinate ?? null;
       return {
@@ -249,7 +279,7 @@ export class DrawingSession {
       this.aim = null;
       return { ...empty, hint: '准星需要对准地面，双指可调整视角。' };
     }
-    const snap = o.snapping ? findSnap(aim, o.candidates, o.project, o.unproject) : null;
+    const snap = o.snapping ? this.snap(aim, o) : null;
     const from = o.mode === 'points' ? o.lastVertex : null;
     const road = o.roadSnapping
       ? o.snapRoad?.(aim, null, from ?? undefined)
