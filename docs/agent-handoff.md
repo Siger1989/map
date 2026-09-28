@@ -1,5 +1,9 @@
 # Agent快速交接
 
+## 2026-09-28 / 0.2.81 屏幕内候选预筛
+
+新增snapViewport reader与SnapCandidateIndex，普通/分叉先地理范围筛再精确屏幕投影；14px边缘，相机/DEM失效，>=75°或不可靠反投影回退完整集合。保存候选memo独立。719tests/tsc/APK签名资源PASS，浏览器40°地形有效/45°旋转更新及新增撤销PASS，OPPO未验。分叉按钮connecting状态的全量TrackLayer重建未改，继续修该项前读[0.2.80诊断](branch-performance-audit-20260928.md)。本版证据见[性能记录](performance-0.2.81.md)。
+
 ## 2026-09-28 / 0.2.80 菜单与编辑性能
 
 稳定路线/标记/剖面输入，菜单开关避免无关同步；活动点局部更新，单保存路线几何差分复用背景；无备注不扫描路线，收藏校验有界缓存。收藏行内距和右侧眼睛滑选即时反馈同步交付。707/707、tsc、APK原证书/zipalign/资源一致性PASS，浏览器选点/分叉新增/撤销PASS；OPPO真机性能未验。天地图地名为256px栅格注记，当前没有额外底图锁级或默认坐标重采样证据，不能说字模糊已修复。详见[性能记录](performance-0.2.80.md)与[发行说明](release-0.2.80.md)。Git/Release状态以CURRENT_STATE最新记录为准。

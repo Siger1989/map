@@ -3,6 +3,84 @@ import type { ScreenPoint } from './drawing';
 
 export const SNAP_RADIUS = 14;
 const SNAP_CELL_SIZE = SNAP_RADIUS;
+export type SnapViewport = {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+  width: number;
+  height: number;
+  revision?: number | string;
+};
+const GEO_CELL_SIZE = 0.1;
+const normalizeLng = (lng: number) => ((lng % 360) + 360) % 360;
+
+export function isValidSnapViewport(v: SnapViewport | null | undefined): v is SnapViewport {
+  const longitudeSpan = v ? v.east - v.west : Number.NaN;
+  return !!v && [v.west, v.south, v.east, v.north, v.width, v.height].every(Number.isFinite) &&
+    v.south >= -90 && v.north <= 90 && v.south <= v.north && v.width > 0 && v.height > 0 &&
+    longitudeSpan <= 360 && longitudeSpan > -360;
+}
+
+/** Geographic index over a candidate snapshot; viewport bounds already include the snap-radius margin. */
+export class SnapCandidateIndex {
+  private cells = new Map<string, number[]>();
+  private candidates: Coordinate[];
+  constructor(candidates: Coordinate[]) {
+    this.candidates = candidates;
+    candidates.forEach(([lng, lat], index) => {
+      if (!Number.isFinite(lng) || !Number.isFinite(lat) || lat < -90 || lat > 90) return;
+      const key = this.cellKey(normalizeLng(lng), lat);
+      const cell = this.cells.get(key);
+      if (cell) cell.push(index);
+      else this.cells.set(key, [index]);
+    });
+  }
+  within(viewport: SnapViewport | null | undefined): Coordinate[] {
+    if (!isValidSnapViewport(viewport)) return this.candidates;
+    const { west, east, south, north } = viewport;
+    let span = east - west;
+    if (span < 0) span += 360;
+    if (span >= 360) return this.candidates;
+    const start = normalizeLng(west), end = start + span;
+    const intervals: [number, number][] = end < 360 ? [[start, end]] : [[start, 360], [0, end - 360]];
+    const lat0 = Math.max(-90, south), lat1 = Math.min(90, north);
+    const y0 = Math.floor((lat0 + 90) / GEO_CELL_SIZE), y1 = Math.floor((lat1 + 90) / GEO_CELL_SIZE);
+    const xRanges = intervals.map(([x0, x1]) => [
+      Math.floor(x0 / GEO_CELL_SIZE),
+      Math.floor(Math.min(x1, 360 - Number.EPSILON) / GEO_CELL_SIZE),
+    ] as const);
+    const keyCount = xRanges.reduce((count, [x0, x1]) => count + Math.max(0, x1 - x0 + 1) * Math.max(0, y1 - y0 + 1), 0);
+    // A broad viewport is cheaper as a direct bounded scan. Check before
+    // allocating cell-key strings; world-scale bounds span millions of cells.
+    if (keyCount > 10000) return this.filterBounds(viewport);
+    const keys: string[] = [];
+    for (const [x0, x1] of xRanges)
+      for (let x = x0; x <= x1; x++)
+        for (let y = y0; y <= y1; y++) keys.push(`${x},${y}`);
+    const indices = new Set<number>();
+    for (const key of keys) for (const index of this.cells.get(key) ?? []) indices.add(index);
+    return [...indices].sort((a, b) => a - b).map((index) => this.candidates[index]).filter((c) => {
+      const lng = normalizeLng(c[0]);
+      const inLng = intervals.some(([a, b]) => lng >= a && lng <= b);
+      return inLng && c[1] >= south && c[1] <= north;
+    });
+  }
+  private filterBounds(v: SnapViewport) {
+    let span = v.east - v.west;
+    if (span < 0) span += 360;
+    if (span >= 360) return this.candidates;
+    const start = normalizeLng(v.west), end = start + span;
+    return this.candidates.filter(([lng, lat]) => {
+      if (lat < v.south || lat > v.north) return false;
+      const n = normalizeLng(lng);
+      return end < 360 ? n >= start && n <= end : n >= start || n <= end - 360;
+    });
+  }
+  private cellKey(lng: number, lat: number) {
+    return `${Math.floor(lng / GEO_CELL_SIZE)},${Math.floor((lat + 90) / GEO_CELL_SIZE)}`;
+  }
+}
 export function sameNode(a: Coordinate, b: Coordinate) {
   return metresBetween(a, b) < 0.15;
 }
@@ -95,10 +173,13 @@ export class ProjectedSnapGrid {
   constructor(
     candidates: Coordinate[],
     project: (c: Coordinate) => ScreenPoint | null,
+    viewport?: Pick<SnapViewport, 'width' | 'height'>,
   ) {
     candidates.forEach((coordinate, order) => {
       const screen = project(coordinate);
       if (!screen) return;
+      if (viewport && Number.isFinite(viewport.width) && Number.isFinite(viewport.height) && viewport.width > 0 && viewport.height > 0 &&
+        (screen.x < -SNAP_RADIUS || screen.x > viewport.width + SNAP_RADIUS || screen.y < -SNAP_RADIUS || screen.y > viewport.height + SNAP_RADIUS)) return;
       const key = this.cellKey(screen.x, screen.y);
       const cell = this.cells.get(key);
       const entry = { coordinate, screen, order };

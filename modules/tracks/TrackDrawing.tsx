@@ -16,6 +16,7 @@ import { handlePoint } from './precision';
 import { PointMagnifier, type MagnifierObserver } from './PointMagnifier';
 import type { RoadSnapper } from './roadSnapping';
 import { riverHint } from './riverSnapping';
+import type { SnapViewport } from './snapping';
 export type TrackDrawingHandle = { input: (event: DrawingInput) => void };
 
 /** Visual-only overlay: touches continue to the map's native two-finger handlers. */
@@ -36,6 +37,7 @@ export const TrackDrawing = forwardRef<
     lastVertex: Coordinate | null;
     toCoordinate: (point: ScreenPoint) => Coordinate | null;
     toScreen: (point: Coordinate) => ScreenPoint | null;
+    getSnapViewport?: () => SnapViewport | null;
     magnify: MagnifierObserver;
     onAnchor: (point: Coordinate) => void;
     onVertex: (point: Coordinate, section?: Coordinate[]) => void;
@@ -86,6 +88,7 @@ export const TrackDrawing = forwardRef<
         lastVertex: p.lastVertex,
         project: p.toScreen,
         unproject: p.toCoordinate,
+        getSnapViewport: p.getSnapViewport,
       });
       setPreview(result.preview);
       setHint(p.riverSnapping ? riverHint(result.hint) : result.hint);

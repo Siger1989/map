@@ -1,3 +1,11 @@
+# 2026-09-28 / 按当前屏幕筛选吸附候选
+- 最终本地验证 PASS：719/719、tsc、全新0.2.81/code88 APK、原证书/zipalign、543网页文件/496PNG一致；57,863,260 bytes，SHA256 5D110838E6060BA7071FD0E113E95D29EFDA66BDA7C48327F6CC908E697B6D07。浏览器40°地形范围非空、45°旋转更新、分叉新增/撤销PASS；截图artifacts/screenshots/viewport-snap-0281.png。桌面60k候选投影60000→607（非OPPO），详见docs/performance-0.2.81.md。待提交/发布，无本地阻塞。
+- 目标：用户明确只需屏幕内吸附；此前“可见路线”仅排除收藏隐藏项，导致屏幕外全部坐标投影。本轮只改吸附视野预筛与保存候选缓存，不改节点含义/按钮/地图分辨率。
+- 进度：接线完成，复核中。snapViewport读取并缓存当前视角地理范围，扩14px边缘；候选地理索引预筛再精确屏幕投影，视野/DEM变更失效；不可靠俯仰/天空等回退完整投影。保存候选flatten与当前编辑track拆分memo。
+- 文件：app/page.tsx，modules/map/{TerrainMap.tsx,snapViewport.ts}，modules/tracks/{snapping.ts,DrawingSession.ts,TrackDrawing.tsx}，tests/{track-interaction,snap-viewport-map}.test.mjs，版本0.2.81-test/code88。
+- 验证：初步定向30测试PASS，待边缘/真实投影对照、最终集成与APK检查。阻塞：无连接OPPO真机；分叉开关触发整批路线重建仍是独立未解决路径，不宣称本次全部卡顿修复。
+- 下一步：完成安全边界/投影计数验证、最终构建与发行。日志.openai，保留无关PDF。
+
 # 2026-09-28 / 0.2.80 分叉仍卡的只读对照
 - 目标：回答分叉相比普通选点/画线多耗在哪里，先验证原因，不继续猜测出包。
 - 进度：PASS（代码与桌面对照）；分叉connecting/snapTargets/movableTrackId改变使两个增量守卫失效，完整重建/序列化所有可见路线；分叉候选为全部坐标，普通画线仅端点/显式节点。

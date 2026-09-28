@@ -1206,18 +1206,19 @@ export default function Home() {
   const branchTip = branchEditing
     ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
     : null;
-  const branchCandidates = useMemo(() => branchEditing
-    ? [
-        ...editor.session!.track.segments.flat(),
-        ...tracks.saved
+  const branchSavedCandidates = useMemo(() => branchEditing
+    ? tracks.saved
           .filter(
             (t) =>
               !t.hidden && !editor.session!.sources.some((s) => s.id === t.id),
           )
-          .flatMap((t) => t.segments.flat()),
-      ]
-    : [], [branchEditing, editor.session?.track, editor.session?.sources, tracks.saved]);
+          .flatMap((t) => t.segments.flat())
+    : [], [branchEditing, editor.session?.sources, tracks.saved]);
+  const branchCandidates = useMemo(() => branchEditing
+    ? [...editor.session!.track.segments.flat(), ...branchSavedCandidates]
+    : [], [branchEditing, editor.session?.track.segments, branchSavedCandidates]);
   const drawingToScreen = useCallback((point: Coordinate) => map.current?.toScreen(point) ?? null, []);
+  const drawingSnapViewport = useCallback(() => map.current?.getSnapViewport() ?? null, []);
   const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
     editor.change((value) =>
       appendEditBranch(
@@ -2003,6 +2004,7 @@ export default function Home() {
             branchEditing ? branchTip : (tracks.draft.at(-1)?.at(-1) ?? null)
           }
           toScreen={drawingToScreen}
+          getSnapViewport={drawingSnapViewport}
           magnify={(canvas, point) =>
             map.current?.magnify(canvas, point) ?? (() => {})
           }

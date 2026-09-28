@@ -50,6 +50,8 @@ import {
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
 import { cameraViewPublisher } from './cameraUpdates';
+import { createSnapViewportReader } from './snapViewport';
+import type { SnapViewport } from '../tracks/snapping';
 import { featurePreviewUiPublisher } from './featurePreviewUi';
 import { snapMapRoad } from './roadSnap';
 import {
@@ -132,6 +134,7 @@ export type MapHandle = {
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
+  getSnapViewport: () => SnapViewport | null;
   magnify: (target: HTMLCanvasElement, point: ScreenPoint) => () => void;
   panZoomGesture: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
   finishPanZoomGesture: () => void;
@@ -236,6 +239,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const modelMaskRef = useRef<TerrainModelMask | null>(null);
     const modelTerrainRef = useRef<ModelTerrainLayer | null>(null);
     const drawingRef = useRef<DrawingGestureBridge | null>(null);
+    const snapViewportRef = useRef<ReturnType<typeof createSnapViewportReader> | null>(null);
     const featureDragRef = useRef<FeatureDragBridge | null>(null);
     const longPressRef = useRef<MapLongPress | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
@@ -584,6 +588,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         stop: () => {
           mapRef.current?.stop();
         },
+        getSnapViewport: () => loaded.current ? snapViewportRef.current?.read() ?? null : null,
         toScreen: (point) => {
           const projected = mapRef.current?.project(point);
           return projected &&
@@ -790,6 +795,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           return {
             ready: true,
             rendering: diagnostics.current?.snapshot(),
+            snapViewport: snapViewportRef.current?.read() ?? null,
             scene: {
               tracks: latest.current.trackOverlay.saved.length,
               visibleTrackCoordinates: latest.current.trackOverlay.saved.filter(t => !t.hidden).reduce((sum, t) => sum + t.segments.reduce((n, line) => n + line.length, 0), 0),
@@ -851,6 +857,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: false },
           });
           mapRef.current = map;
+          const snapViewport = createSnapViewportReader(map);
+          snapViewportRef.current = snapViewport;
+          map.on('terrain', snapViewport.invalidate);
+          map.on('styledata', snapViewport.invalidate);
+          map.on('webglcontextrestored', snapViewport.invalidate);
+          map.on('sourcedata', (event) => {
+            if (event.sourceId && event.sourceId === map.getTerrain()?.source) snapViewport.invalidate();
+          });
           const publishView = cameraViewPublisher(value => latest.current.onView(value));
           map.on('movestart', () => latest.current.onCameraMoveStart?.());
           const mapElement = map.getContainer();
@@ -1404,6 +1418,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         guidanceRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
+        snapViewportRef.current = null;
         sourceRef.current?.clear();
         sourceRef.current = null;
         coordinatesRef.current?.dispose();

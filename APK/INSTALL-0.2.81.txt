@@ -1,0 +1,15 @@
+山兔 0.2.81-test / versionCode 88 独立测试版
+
+安装文件：Shantu-0.2.81-test-standalone.apk
+最低系统：Android 8.0（API 26），包名 com.guanyun.weather.shantu.preview。
+沿用同包名旧测试版签名，请直接覆盖安装，不要先卸载。
+
+本版为普通点绘制与分叉绘制增加共享的视口候选预筛和节点投影缓存，屏幕边缘保留14 CSS px候选范围；高俯仰或估算不可靠时沿用原有完整候选精确投影。TrackLayer分叉按钮全量切换问题仍待处理。
+
+验证通过：719/719 测试、TypeScript、Android 独立测试版构建、APK 签名与 zipalign；包内 543 个网页文件、496 张 terrain PNG 与新构建暂存一致，其中 473 张为 FABDEM 主地形瓦片。
+
+APK 大小：57,863,260 bytes
+APK SHA256：5d110838e6060ba7071fd0e113e95d29efda66bda7c48327f6cc908e697b6d07
+签名证书 SHA256：4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f
+
+浏览器及 Android 真机吸附体验、性能与覆盖安装尚未验收；HarmonyOS 6.1 原生 HAP/APP 未生成。

@@ -1,7 +1,7 @@
 import type { Coordinate } from '../navigation/types';
 import { MAX_TRACK_POINTS, pullTip, trackDistance, type ScreenPoint } from './drawing.ts';
 import { aimPoint, handlePoint, nearHandle } from './precision.ts';
-import { ProjectedSnapGrid, sameNode } from './snapping.ts';
+import { isValidSnapViewport, ProjectedSnapGrid, sameNode, SnapCandidateIndex, type SnapViewport } from './snapping.ts';
 import type { DrawingInput } from './DrawingGestureBridge';
 import type { DrawingMode } from './draft';
 import {
@@ -43,6 +43,7 @@ type Options = {
   lastVertex?: Coordinate | null;
   project: (point: Coordinate) => ScreenPoint | null;
   unproject: (point: ScreenPoint) => Coordinate | null;
+  getSnapViewport?: () => SnapViewport | null;
 };
 /** Input state is separate from rendering so handoff and exact endpoints can be checked. */
 export class DrawingSession {
@@ -51,8 +52,11 @@ export class DrawingSession {
   private aimHint = '';
   private crossing = false;
   private snapCandidates: Coordinate[] | null = null;
+  private snapIndexCandidates: Coordinate[] | null = null;
   private snapProject: Options['project'] | null = null;
   private snapGrid: ProjectedSnapGrid | null = null;
+  private snapIndex: SnapCandidateIndex | null = null;
+  private snapViewportKey = '';
   private stroke: {
     tip: ScreenPoint;
     sample: ScreenPoint;
@@ -77,12 +81,24 @@ export class DrawingSession {
     this.snapCandidates = null;
     this.snapProject = null;
     this.snapGrid = null;
+    this.snapViewportKey = '';
   }
   private snap(point: ScreenPoint, o: Options, candidates = o.candidates) {
-    if (this.snapCandidates !== candidates || this.snapProject !== o.project) {
+    const v = o.getSnapViewport?.() ?? null;
+    const validViewport = isValidSnapViewport(v);
+    const viewportKey = v ? JSON.stringify([v.west, v.south, v.east, v.north, v.width, v.height, v.revision]) : '';
+    if (this.snapIndexCandidates !== candidates) {
+      this.snapIndexCandidates = candidates;
+      this.snapIndex = validViewport && candidates.length ? new SnapCandidateIndex(candidates) : null;
+    } else if (validViewport && candidates.length && !this.snapIndex) {
+      this.snapIndex = new SnapCandidateIndex(candidates);
+    }
+    if (this.snapCandidates !== candidates || this.snapProject !== o.project || this.snapViewportKey !== viewportKey) {
       this.snapCandidates = candidates;
       this.snapProject = o.project;
-      this.snapGrid = new ProjectedSnapGrid(candidates, o.project);
+      this.snapViewportKey = viewportKey;
+      const visibleCandidates = validViewport ? (this.snapIndex?.within(v) ?? candidates) : candidates;
+      this.snapGrid = new ProjectedSnapGrid(visibleCandidates, o.project, validViewport ? v : undefined);
     }
     return this.snapGrid?.nearest(point) ?? null;
   }

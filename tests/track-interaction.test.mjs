@@ -15,6 +15,8 @@ import {
   hasLoosePoints,
   draftSnapNodes,
   ProjectedSnapGrid,
+  SnapCandidateIndex,
+  isValidSnapViewport,
 } from '../modules/tracks/snapping.ts';
 import {
   appendStroke,
@@ -309,12 +311,44 @@ test('projected snap grid caches projections, preserves exact coordinates and ti
       if (coordinate === first) return { x: 10, y: 10 };
       if (coordinate === tied) return { x: 18, y: 10 };
       return { x: 100, y: 100 };
-    });
+    }, { width: 400, height: 800 });
   assert.equal(projected.length, 3, 'each candidate is projected once at index build');
   assert.strictEqual(grid.nearest({ x: 14, y: 10 }).coordinate, tied,
     'equal distances retain findSnap semantics: the later candidate wins');
   assert.equal(grid.nearest({ x: 33, y: 10 }), null, 'outside the exact 14px radius does not snap');
   assert.equal(projected.length, 3, 'queries do not project or unproject points');
+});
+test('viewport snapping avoids projecting offscreen candidates and keeps the 14px margin', () => {
+  const candidates = Array.from({ length: 1000 }, (_, i) => [100 + i * 0.01, 20]),
+    inside = [1, 20], edge = [2, 21], screenFar = [3, 22];
+  candidates.push(inside, edge, screenFar);
+  const viewport = { west: 0, east: 10, south: 10, north: 30, width: 400, height: 800 },
+    spatial = new SnapCandidateIndex(candidates),
+    visible = spatial.within(viewport), projected = [],
+    grid = new ProjectedSnapGrid(visible, (c) => {
+      projected.push(c);
+      return c === inside ? { x: 100, y: 200 } : c === edge ? { x: -14, y: 210 } : { x: 500, y: 200 };
+    }, viewport);
+  assert.deepEqual(projected, [inside, edge, screenFar], 'geographic bounds reject distant routes before project');
+  assert.equal(grid.nearest({ x: -1, y: 210 })?.coordinate, edge, 'screen-edge candidates within the padded viewport remain eligible');
+  assert.equal(grid.nearest({ x: 100, y: 200 })?.coordinate, inside);
+  assert.equal(grid.nearest({ x: 300, y: 200 }), null, 'projected points beyond viewport plus 14px do not enter the grid');
+});
+test('viewport candidate index handles antimeridian and falls back when bounds are unavailable', () => {
+  const west = [179, 0], east = [-179, 0], middle = [0, 0], candidates = [west, east, middle],
+    index = new SnapCandidateIndex(candidates);
+  assert.deepEqual(index.within({ west: 170, east: -170, south: -5, north: 5, width: 400, height: 800 }), [west, east]);
+  assert.strictEqual(index.within(null), candidates, 'missing bounds preserve correctness via full-candidate fallback');
+  assert.equal(isValidSnapViewport({ west: 170, east: -170, south: -5, north: 5, width: 400, height: 800 }), true);
+  assert.equal(isValidSnapViewport({ west: 180, east: -181, south: -5, north: 5, width: 400, height: 800 }), false,
+    'spans below -360 degrees safely use the full-candidate fallback');
+});
+test('wide view bounds use exact linear filtering without enumerating geographic cells', () => {
+  const candidates = [[-179, -89], [0, 0], [178, 45], [179.5, 46]],
+    index = new SnapCandidateIndex(candidates),
+    viewport = { west: -179.2, east: 179.2, south: -90, north: 90, width: 400, height: 800 },
+    expected = candidates.filter(([lng]) => lng >= viewport.west && lng <= viewport.east);
+  assert.deepEqual(index.within(viewport), expected);
 });
 test('drawing session reuses projected grid and rebuilds it when candidate array changes', () => {
   let projections = 0, unprojections = 0;
@@ -339,6 +373,50 @@ test('drawing session reuses projected grid and rebuilds it when candidate array
   s.input({ type: 'move', point: { x: 109, y: 244 } }, { ...o, candidates: replacement });
   assert.equal(projections, 3, 'new candidate snapshot is projected once to rebuild the index');
   assert.strictEqual(s.input({ type: 'end', reason: 'release' }, { ...o, candidates: replacement }).vertex, target);
+});
+test('drawing session rebuilds viewport projection cache when its revision changes', () => {
+  let projections = 0;
+  const target = [1, 20],
+    s = new DrawingSession(),
+    o = {
+      ...options,
+      mode: 'points',
+      candidates: [target],
+      project: (c) => { projections++; return { x: c[0] * 100, y: c[1] * 10 }; },
+      unproject: () => [1, 20],
+      getSnapViewport: () => ({ west: 0, east: 0.5, south: 0, north: 10, width: 400, height: 800, revision: 1 }),
+    };
+  assert.equal(s.input({ type: 'start', point: { x: 100, y: 244 } }, o).preview.snapped, false);
+  assert.equal(projections, 0, 'outside geographic viewport is not projected');
+  const moved = { ...o, getSnapViewport: () => ({ west: 0, east: 2, south: 10, north: 30, width: 400, height: 800, revision: 1 }) };
+  assert.equal(s.input({ type: 'move', point: { x: 100, y: 244 } }, moved).preview.snapped, true);
+  assert.equal(projections, 1, 'new viewport revision reprojects newly visible candidates');
+});
+test('drawing session reads viewport lazily only when a snapping lookup is needed', () => {
+  let reads = 0;
+  const s = new DrawingSession(), target = [1, 20],
+    o = { ...options, mode: 'points', candidates: [target], getSnapViewport: () => { reads++; return null; } };
+  s.input({ type: 'end', reason: 'release' }, o);
+  s.input({ type: 'cancel' }, o);
+  assert.equal(reads, 0, 'terminal inputs never sample expensive viewport bounds');
+  s.input({ type: 'start', point: { x: 100, y: 244 } }, { ...o, snapping: false });
+  assert.equal(reads, 0, 'disabled snapping does not sample bounds');
+  s.input({ type: 'start', point: { x: 100, y: 244 } }, o);
+  assert.equal(reads, 1, 'a real snap query samples the current viewport once');
+});
+test('invalid viewport falls back to projecting all candidates without building a spatial index', () => {
+  let projections = 0;
+  const candidates = [[1, 20], [2, 21]], s = new DrawingSession(),
+    o = {
+      ...options,
+      mode: 'points',
+      candidates,
+      project: (c) => { projections++; return { x: c[0] * 100, y: c[1] * 10 }; },
+      unproject: () => [1, 20],
+      getSnapViewport: () => ({ west: 0, east: -720, south: 0, north: 90, width: 400, height: 800 }),
+    };
+  s.input({ type: 'start', point: { x: 100, y: 244 } }, o);
+  assert.equal(projections, candidates.length, 'invalid span conservatively uses the legacy full projection path');
 });
 test('precision origin is offset, uncommitted until release, and cancels for navigation', () => {
   const s = new DrawingSession();
