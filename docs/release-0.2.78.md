@@ -14,4 +14,4 @@
 
 浏览器测试不能代替 Android 真机分叉跟手程度、系统文字菜单、触控、GPS 或覆盖安装验收。HarmonyOS 6.1 原生 HAP/APP 尚未生成。请覆盖安装同包名旧测试版，不要先卸载；源码位于 `codex/rollback-ui-0235-20260921`，尚未合入 `main`。
 
-构建源码提交与公开预发布链接以 [CURRENT_STATE.md](../CURRENT_STATE.md) 顶部最终交付记录为准。
+构建源码提交：`0bbb5cbbffa61a974cd53551b63282c966306bf7`。[公开预发布](https://github.com/Siger1989/map/releases/tag/v0.2.78-test-standalone) 的 APK、SHA256 和安装说明三个附件已核对远端大小与 digest，APK 远端 SHA256 与本地一致。
