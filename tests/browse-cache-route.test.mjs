@@ -142,4 +142,3 @@ test('passive writes stop when automatic caching is disabled after route synchro
   const inside=tile(.5,0);assert.equal(s.writePolicy(inside),true);
   s.enabled=false;assert.equal(s.writePolicy(inside),false);
 });
-

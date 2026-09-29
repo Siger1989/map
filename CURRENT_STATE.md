@@ -1,12 +1,14 @@
-# 2026-09-30 / 0.2.87 沿线被动缓存与导入图源主动下载 — APK核验通过，上传中
+# 2026-09-30 / 0.2.87 沿线被动缓存与导入图源主动下载 — 已交付
 
-- 目标：浏览缓存仅保存画线/已存路线附近实际请求的瓦片，不预取；删除路线清理独占瓦片，共用保留。主动下载仅导入在线图源、仅路线附近、手动确认范围/级别/数量。
-- 进展：已删除RouteCacheWarmup及接线；沿线被动写入/删除独占缓存、共享保护、草稿保存交接及XYZ/TMS模板识别已接入。主动下载已接入导入图源沿线计划/前台队列；旧内置整区入口关闭，打开导入包恢复原图源/有效坐标并保留其他坐标覆盖；用户补充19级，界面改按声明列出所有整数级别。
-- 已改/待整合：browseCache、browseCacheRoute/useBrowseCacheRoute、MapSourceLayer、tileCache/tileTransport、OfflineDownload/OfflinePanel/useOffline/offline/downloadPlan、app/page/TerrainMap；新定向测试。旧主动包保留并可读取/删除，自动删除仅作用独立浏览缓存。
-- 命令：git status/diff、项目文档与缓存/路线/下载链路读取；日志.openai。基线6ca6690，未跟踪PDF保留。
-- 验证：PASS：最终完整857/857、TypeScript、网页构建通过；日志.openai/passive-full-final与passive-type-final/passive-web。首轮完整测试826/833，5项受新增运行时导入扩展名影响、2项旧UI用例需适配新入口，已修复并通过最终整套；浏览缓存/路线/模板/坐标协议/OVMAP定向57项PASS；后续38项缓存/清理/离线读回归PASS；整合中TypeScript通过一次。补充非地图剖面请求不写浏览缓存，主动下载复用已有有效浏览瓦片。新增打开19级导入包/保留坐标覆盖与手动下载复用缓存回归6/6 PASS，完整TypeScript PASS；导入下载4项回归覆盖有效图片/复用、HTML200拒绝、429不自动重试、错误缓存完整性；公开APK构建/原签名/对齐/543网页资源与496PNG/DEX/隐私核验PASS；APK/Shantu-0.2.87-test-standalone-public.apk，57896028bytes，SHA256 063775f4fa92a0100d37966ed5f41ee2d7525d4b269d72190dd8e9ab4cc9c173。浏览器仍受之前URL安全拒绝限制，不绕过。
-- 阻塞：第三方图源额度未知，不把导入/购买当不限额；真机尚未测试。无其他阻塞。
-- 下一步：提交源码、推送并发布公开无凭据APK，核对远端SHA；原生定位中断不在本轮改动。
+- 目标：只缓存画线/已存路线附近实际浏览的瓦片；不预取；删路线清理独占自动缓存，共用保留。主动下载仅导入在线图源、仅路线附近、由用户点击开始。
+- 完成：按图源声明逐级选择，包含19级；默认14级；宽度500米/1/2公里。打开包恢复图源和有效坐标；高清屏普通/@2x与GCJ邻片纳入计划，沿线不连接断段。下载复用缓存、逐张请求，HTML伪图片/授权/额度/请求失败暂停，旧包仍可读/删除。
+- 文件：outdoor缓存/路线/下载与useOfflineMapMode、mapSources瓦片/坐标/选择入口、app/page/TerrainMap、收藏离线列表；新增registry/导入计划及相关tests，删除RouteCacheWarmup与其测试。原定位记录/用户轨迹/照片格式未改。
+- 命令：git status/diff、源码审计；tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs、vinext build、build-android.ps1（公开环境无Key/私有种子），签名/资源/远端检查。详细日志.openai/passive-*与release-0287-publish.log。原未跟踪PDF保留。
+- 验证：PASS：857/857完整测试、TypeScript、网页/Android构建；原证书4a941b9d、v2/v3及对齐；543网页资产、496地形PNG、DEX匹配，ZIP完整，公开包无私有图源/本机Key/签名文件。首轮826/833因新runtime扩展名及旧入口测试失败，最小修正后最终全部通过。
+- 产物：APK/Shantu-0.2.87-test-standalone-public.apk，versionCode94，57896028bytes，SHA256 063775f4fa92a0100d37966ed5f41ee2d7525d4b269d72190dd8e9ab4cc9c173。
+- 发布：构建源码 54f20262a1f67ce51324fe2a8f522c011dfaf1cc 已推送codex/rollback-ui-0235-20260921，未合入main。https://github.com/Siger1989/map/releases/tag/v0.2.87-test-standalone 已公开预发布（ID399337976），APK/SHA256/安装说明3附件远端size/digest全部匹配。后续仅文档与测试空白整理提交，不重打包。
+- 边界/阻塞：浏览器既有URL安全策略拒绝，未绕过，没有新截图/真机缓存、性能、覆盖安装验收；HarmonyOS6.1原生包未交付。原7项架构行数超预算不在本轮修复；第三方额度依图源规则，未请求真实付费图源测试。原生轨迹中断未修复。
+- 下一步：手机覆盖安装后查看路线、缩放至图源19级、仅缓存读回；核对删路线共享缓存与手动包独立管理。Git最终交付文档SHA见提交记录。
 
 
 # 2026-09-29 / 0.2.86 自动瓦片缓存与路线优先 — 已交付

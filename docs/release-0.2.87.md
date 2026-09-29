@@ -16,6 +16,6 @@
 
 Android versionCode94，原独立测试包名`com.guanyun.weather.shantu.preview`和4a941b9d证书沿用。公开包排除私有图源种子和本机天地图Key；已有导入图源保留。HarmonyOS6.1原生包未交付。
 
-完整857/857测试、TypeScript及网页构建通过；覆盖19级、高清屏URL、沿线缓存/删除共享保护、导入包离线读回、有效图片验证与429停止请求。Android编译/原签名/对齐检查通过；543网页资产、496地形PNG与DEX匹配，ZIP完整，无私有图源种子/本机Key/签名文件。公开APK：57,896,028 bytes；SHA256 `063775f4fa92a0100d37966ed5f41ee2d7525d4b269d72190dd8e9ab4cc9c173`。Git与Release上传结果见CURRENT_STATE。浏览器工具受既有URL安全策略拒绝，不能绕过，因此没有新的界面截图；手机缓存/网络、覆盖安装和性能待设备验收。原有架构文件行数超预算不属本轮修复范围。
+完整857/857测试、TypeScript及网页构建通过；覆盖19级、高清屏URL、沿线缓存/删除共享保护、导入包离线读回、有效图片验证与429停止请求。Android编译/原签名/对齐检查通过；543网页资产、496地形PNG与DEX匹配，ZIP完整，无私有图源种子/本机Key/签名文件。公开APK：57,896,028 bytes；SHA256 `063775f4fa92a0100d37966ed5f41ee2d7525d4b269d72190dd8e9ab4cc9c173`。构建源码 `54f20262a1f67ce51324fe2a8f522c011dfaf1cc`。公开[测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.87-test-standalone)的三附件大小和哈希已与本地匹配，最终交付记录见CURRENT_STATE。浏览器工具受既有URL安全策略拒绝，不能绕过，因此没有新的界面截图；手机缓存/网络、覆盖安装和性能待设备验收。原有架构文件行数超预算不属本轮修复范围。
 
 使用和模块说明见[自动缓存与下载](automatic-map-cache.md)。当前实际功能分支`codex/rollback-ui-0235-20260921`，未合入main。
