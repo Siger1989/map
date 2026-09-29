@@ -1,6 +1,9 @@
 import { nativeOffline } from './nativeOffline.ts';
 import { legacyTerrainCacheUrl } from '../terrain/tiles.ts';
 import { resourceCacheKey } from './tiandituCache.ts';
+import { browseCachedFetch, type BrowseTile } from './browseCache.ts';
+import { readBrowseCacheSettings } from './browseCachePreferences.ts';
+import { tileFromUrl } from './routeCachePolicy.ts';
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
 export const OFFLINE_MAP_KEY = 'shantu.offline-map-only.v1';
 export function offlineMapStatus(message: string) {
@@ -21,6 +24,7 @@ export function offlineMapOnly() {
 export async function cachedMapFetch(
   url: string,
   signal: AbortSignal,
+  tile?: BrowseTile,
 ): Promise<Response> {
   signal.throwIfAborted();
   const absolute =
@@ -39,6 +43,12 @@ export async function cachedMapFetch(
     /* Online fallback is explicit below. */
   }
   if(nativeOffline()?.offlineHas(absolute))return fetch(absolute,{signal});
-  if (offlineMapOnly()) throw new Error('此处地图数据未缓存，请联网补齐离线包');
-  return fetch(absolute, { signal });
+  return browseCachedFetch(absolute, signal, async () => {
+    if (offlineMapOnly()) throw new Error('此处地图数据未缓存，请联网补齐离线包');
+    return fetch(absolute, { signal });
+  }, {
+    tile: tile ?? tileFromUrl(absolute), cacheable: readBrowseCacheSettings().enabled,
+    allowStale: offlineMapOnly() || (typeof navigator !== 'undefined' && navigator.onLine === false),
+    allowTileJson: /^https:\/\/tiles\.openfreemap\.org\/planet(?:\?|$)/.test(absolute),
+  });
 }

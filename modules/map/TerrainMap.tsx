@@ -9,6 +9,7 @@ import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '.
 import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { RasterCoordinates } from '../mapSources/RasterCoordinates';
+import { RouteCacheWarmup } from '../outdoor/RouteCacheWarmup';
 import { rasterDatumKey } from '../mapSources/coordinates';
 import { defaultRasterDatum } from '../mapSources/sourceDatum';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
@@ -868,6 +869,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let releaseLastView: (() => void) | undefined;
       let releaseUserZoom: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
+      let routeCacheWarmup: RouteCacheWarmup | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
         try {
@@ -977,6 +979,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           maplibre.addProtocol(sourceProtocolScheme.current!, sourceRef.current.protocol);
           const coordinates = new RasterCoordinates(map, sourceRef.current.protocol, sourceProtocolScheme.current!);
           coordinatesRef.current = coordinates;
+          if (latest.current.persistCamera !== false) routeCacheWarmup = new RouteCacheWarmup(map, coordinates.fetch, () => latest.current.mapSource);
           maplibre.addProtocol(coordinates.scheme, coordinates.protocol);
           detailPatchRef.current = new RasterDetailPatch(map, coordinates.fetch);
           releaseSourceProtocol = () => { maplibre.removeProtocol(sourceProtocolScheme.current!); maplibre.removeProtocol(coordinates.scheme); };
@@ -1454,6 +1457,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         }
       });
       return () => {
+        routeCacheWarmup?.dispose();
         releaseLastView?.();
         releaseUserZoom?.();
         previewRef.current?.remove();

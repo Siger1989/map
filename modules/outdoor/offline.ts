@@ -86,7 +86,7 @@ export const offlineTransform: RequestTransformFunction = (url, kind) => {
       u.pathname.startsWith('/api/terrain/'));
   return {
     url:
-      (supported || (offlineMapOnly() && /^https?:$/.test(u.protocol))) &&
+      (supported || (kind === 'Tile' && /^https?:$/.test(u.protocol)) || (offlineMapOnly() && /^https?:$/.test(u.protocol))) &&
       ['Source', 'Tile', 'Glyphs'].includes(kind ?? '')
         ? `tripcache://${encodeURIComponent(u.href)}`
         : url,

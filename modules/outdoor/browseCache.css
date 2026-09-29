@@ -1,0 +1,5 @@
+.browse-cache-settings { display: grid; gap: 4px; min-width: 0; }
+.browse-cache-settings label { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.browse-cache-settings select { min-height: 36px; max-width: 100%; }
+.browse-cache-settings small { display: block; overflow-wrap: anywhere; }
+.browse-cache-settings .outdoor-actions { display: flex; flex-wrap: wrap; gap: 4px; }

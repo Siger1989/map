@@ -1,4 +1,5 @@
 'use client';
+import { useBrowseCacheRoute } from '../modules/outdoor/useBrowseCacheRoute';
 import { RallyNavigation } from '@/modules/rally/RallyNavigation';
 import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
@@ -822,6 +823,9 @@ export default function Home() {
   const selectedTrack = tracks.saved.find(
     (track) => track.id === tracks.selectedId,
   );
+  const cacheRouteSegments = useMemo(() => selectedTrack?.segments ??
+    (navigation.route ? [navigation.route.coordinates] : []), [selectedTrack?.segments, navigation.route?.coordinates]);
+  useBrowseCacheRoute(cacheRouteSegments);
   useEffect(() => {
     if (panel !== 'favorites' || boxSelecting || collectionSelectedKeys.length) return;
     const entries = catalogEntries(

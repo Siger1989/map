@@ -40,7 +40,7 @@ export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: nu
     try {
       const template = layer.tiles[(x + y) % layer.tiles.length];
       const address = renderOvmapTemplate(template, z, x, y).replaceAll('{', '%7B').replaceAll('}', '%7D');
-      const response = await fetchMapTile(address, requestAbort.signal);
+      const response = await fetchMapTile(address, requestAbort.signal, { z, x, y });
       if (!response.ok) throw tileResponseError(response);
       const bytes = await response.arrayBuffer();
       signal.throwIfAborted();

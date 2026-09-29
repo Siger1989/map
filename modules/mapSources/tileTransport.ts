@@ -1,3 +1,8 @@
+import { browseCachedFetch, type BrowseTile } from '../outdoor/browseCache.ts';
+import { readBrowseCacheSettings } from '../outdoor/browseCachePreferences.ts';
+import { offlineMapOnly } from '../outdoor/tileCache.ts';
+import { tileFromUrl } from '../outdoor/routeCachePolicy.ts';
+
 function isTiandituHost(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
   return normalized === 'tianditu.gov.cn' || normalized.endsWith('.tianditu.gov.cn');
@@ -46,7 +51,18 @@ function tiandituBrowserUrl(rawUrl: string): string | undefined {
 export async function fetchMapTile(
   url: string,
   signal: AbortSignal,
+  tile?: BrowseTile,
 ): Promise<Response> {
+  return browseCachedFetch(url, signal, () => {
+    if (offlineMapOnly()) throw new Error('此处地图数据未缓存，请联网补齐离线包');
+    return fetchUncachedMapTile(url, signal);
+  }, {
+    tile: tile ?? tileFromUrl(url), cacheable: readBrowseCacheSettings().enabled,
+    allowStale: offlineMapOnly() || (typeof navigator !== 'undefined' && navigator.onLine === false),
+  });
+}
+
+async function fetchUncachedMapTile(url: string, signal: AbortSignal): Promise<Response> {
   const browserUrl = tiandituBrowserUrl(url);
   if (browserUrl) {
     return fetch(browserUrl, {

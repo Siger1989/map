@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { OFFLINE_MAP_KEY, offlineMapOnly } from './tileCache';
+import { BrowseCacheSettings } from './BrowseCacheSettings';
 export function OfflineMapSettings({ onOpenMap }: { onOpenMap: () => void }) {
   const [only, setOnly] = useState(false),
     [storage, setStorage] = useState(''),
@@ -16,6 +17,7 @@ export function OfflineMapSettings({ onOpenMap }: { onOpenMap: () => void }) {
   }, []);
   return (
     <section className="offline-map-settings" aria-label="离线地图设置">
+      <BrowseCacheSettings />
       <label>
         <input
           type="checkbox"
