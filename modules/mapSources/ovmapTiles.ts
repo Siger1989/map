@@ -1,6 +1,7 @@
 import type { OvmapTileLayer } from './types';
 import { renderOvmapTemplate } from './ovmapTemplates';
 import { fetchMapTile, tileResponseError } from './tileTransport';
+import type { BrowseTile } from '../outdoor/browseCache';
 
 function tileCanvas() {
   if (typeof OffscreenCanvas === 'function') {
@@ -20,7 +21,7 @@ function tileCanvas() {
 }
 
 /** Render only the imported raster stack; track/map coordinates remain unchanged. */
-export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: number, y: number, signal: AbortSignal, onPartial?: () => void): Promise<ArrayBuffer> {
+export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: number, y: number, signal: AbortSignal, onPartial?: () => void, cacheTile: BrowseTile = { z, x, y }): Promise<ArrayBuffer> {
   if (![z, x, y].every(Number.isInteger) || z < 0 || z > 24 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z)
     throw new Error('无效图源瓦片坐标');
   const base = layers[0];
@@ -40,7 +41,7 @@ export async function renderOvmapTile(layers: OvmapTileLayer[], z: number, x: nu
     try {
       const template = layer.tiles[(x + y) % layer.tiles.length];
       const address = renderOvmapTemplate(template, z, x, y).replaceAll('{', '%7B').replaceAll('}', '%7D');
-      const response = await fetchMapTile(address, requestAbort.signal, { z, x, y });
+      const response = await fetchMapTile(address, requestAbort.signal, cacheTile);
       if (!response.ok) throw tileResponseError(response);
       const bytes = await response.arrayBuffer();
       signal.throwIfAborted();

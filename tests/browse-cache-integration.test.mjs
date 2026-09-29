@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { createBrowseCacheEngine } from '../modules/outdoor/browseCache.ts';
 
 const bundle = await build({
-  stdin: { contents: `export {cachedMapFetch} from './modules/outdoor/tileCache.ts'; export {fetchMapTile} from './modules/mapSources/tileTransport.ts'; export {offlineTransform} from './modules/outdoor/offline.ts';`, resolveDir: process.cwd() },
+  stdin: { contents: `export {cachedMapFetch} from './modules/outdoor/tileCache.ts'; export {fetchMapTile,fetchOnlineMapTile} from './modules/mapSources/tileTransport.ts'; export {offlineTransform} from './modules/outdoor/offline.ts';`, resolveDir: process.cwd() },
   bundle: true, platform: 'node', format: 'esm', write: false,
   plugins: [{ name: 'cache-backend', setup(b) {
     b.onResolve({ filter: /browseCache\.ts$/ }, () => ({ path: 'cache', namespace: 'backend' }));
@@ -38,21 +38,30 @@ test('online direct/proxied tiles survive revisits and offline mode; clearing le
     const importedTile='https://imported.example.test/9/403/192.jpg';
     assert.match(api.offlineTransform(publicTile,'Tile').url,/^tripcache:/);
     assert.equal(api.offlineTransform('https://weather.example.test/data.json','Source').url,'https://weather.example.test/data.json');
-    await (await api.cachedMapFetch(publicTile,signal)).arrayBuffer();
+    await (await api.cachedMapFetch(publicTile,signal,undefined,true)).arrayBuffer();
     await (await api.fetchMapTile(importedTile,signal,{z:9,x:403,y:192})).arrayBuffer();
-    await (await api.cachedMapFetch('https://tiles.openfreemap.org/planet',signal)).json();
+    await (await api.cachedMapFetch('https://tiles.openfreemap.org/planet',signal,undefined,true)).json();
     await engine.flush(); assert.equal(requests,3);
+    await (await api.fetchOnlineMapTile(importedTile,signal)).arrayBuffer();
+    assert.equal(requests,3,'manual downloading reuses fresh browsed tiles without another request');
+    await (await api.cachedMapFetch('https://tiles.example.test/9/404/192.png',signal)).arrayBuffer();
+    await engine.flush();
+    assert.equal(entries.size,3,'profile/elevation reads do not populate viewed-tile cache');
+    assert.equal(requests,4);
     offline=true;
     now+=2*86400*1000;
     assert.deepEqual(new Uint8Array(await (await api.cachedMapFetch(publicTile,signal)).arrayBuffer()),png);
     assert.deepEqual(new Uint8Array(await (await api.fetchMapTile(importedTile,signal)).arrayBuffer()),png);
     assert.equal((await (await api.cachedMapFetch('https://tiles.openfreemap.org/planet',signal)).json()).tiles.length,1);
-    assert.equal(requests,3);
+    assert.equal(requests,4);
     await engine.clearBrowseCache();
     await assert.rejects(()=>api.fetchMapTile(importedTile,signal),/未缓存/);
     const saved=await api.cachedMapFetch('/api/terrain/1/0/0.png',signal);
     assert.deepEqual(new Uint8Array(await saved.arrayBuffer()),png);
-    assert.equal(manual.size,1); assert.equal(requests,3);
+    manual.set(importedTile,new Response(png,{headers:{'Content-Type':'image/png'}}));
+    const importedSaved=await api.fetchMapTile(importedTile,signal,{z:9,x:403,y:192});
+    assert.deepEqual(new Uint8Array(await importedSaved.arrayBuffer()),png);
+    assert.equal(manual.size,2); assert.equal(requests,4);
   } finally {
     await engine.flush();
     for(const [key,descriptor] of originals) if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];

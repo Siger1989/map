@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { LayerSettings } from '../map/types';
 import { offlineMapOnly } from './tileCache';
 import { tripPackages, type TripPackage } from './offline';
+import { readRasterDatums } from '../mapSources/coordinates';
 export function useOfflineMapMode(
   change: (patch: Partial<LayerSettings>) => void,
   clearSource: (id: string) => void,
@@ -10,7 +11,7 @@ export function useOfflineMapMode(
   callbacks.current = { change, clearSource };
   const open = (trip?: TripPackage) => {
     if (trip) {
-      callbacks.current.clearSource('');
+      callbacks.current.clearSource(trip.provider === 'imported' ? trip.sourceId ?? '' : '');
       try { localStorage.setItem('shantu.offline-package.v1',trip.id); } catch {}
     }
     callbacks.current.change({
@@ -21,6 +22,10 @@ export function useOfflineMapMode(
       geology: false,
       elevationColors: false,
       ...(trip ? trip.display ?? { satellite:false,tiandituBase:'vec' as const,offlineBasemap:true,roads:true,labels:true,rasterLevel:null } : {}),
+      ...(trip?.provider === 'imported' ? {
+        terrain: false, offlineBasemap: false, rasterLevel: null,
+        rasterDatums: { ...readRasterDatums(), ...(trip.sourceId && trip.datum ? { [`custom:${trip.sourceId}`]: trip.datum } : {}) },
+      } : {}),
       offlineMaxZoom: offlineMapOnly() ? trip?.zoom ?? trip?.display?.offlineMaxZoom ?? 14 : null,
     });
   };

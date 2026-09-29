@@ -25,6 +25,19 @@ const imageText = async (response) => new TextDecoder().decode((await response.a
 const call = (engine, url, fetcher, opts = {}, signal = new AbortController().signal) =>
   engine.browseCachedFetch(url, signal, fetcher, { tile: tile(1), ...opts });
 
+test('clearing during a disk read does not retry a failed map request twice', async () => {
+  const storage=memoryStorage();
+  let finishRead;
+  storage.get=()=>new Promise(resolve=>{finishRead=resolve;});
+  const engine=createBrowseCacheEngine({storage});
+  let requests=0;
+  const pending=call(engine,'/clear-read',async()=>{requests++;throw Error('provider unavailable');});
+  await engine.clearBrowseCache();
+  finishRead(undefined);
+  await assert.rejects(pending,/provider unavailable/);
+  assert.equal(requests,1);
+});
+
 test('serves fresh cache hits without calling the network and tracks route metadata', async () => {
   const storage = memoryStorage();
   const engine = createBrowseCacheEngine({ storage, now: () => 10_000 });
@@ -47,6 +60,90 @@ test('cacheable false still serves a prior entry but never writes a miss', async
   assert.equal(requests, 0);
   await call(engine, '/no-write', async () => { requests++; return image(); }, { cacheable: false });
   assert.equal((await engine.browseCacheStats()).count, 1);
+});
+
+test('write policy controls storage only: denied tiles still render and allowed route tiles cache', async () => {
+  const storage = memoryStorage();
+  const engine = createBrowseCacheEngine({ storage });
+  let requests = 0;
+  engine.setBrowseCacheWritePolicy(t => t?.x === 1);
+  const denied = await call(engine, '/outside-route', async () => { requests++; return image('shown'); }, { tile: tile(2) });
+  assert.equal(await imageText(denied), 'shown');
+  await engine.flush();
+  assert.equal(storage.rows.size, 0);
+  const allowed = await call(engine, '/inside-route', async () => { requests++; return image('saved'); }, { tile: tile(1) });
+  assert.equal(await imageText(allowed), 'saved');
+  await engine.flush();
+  assert.equal(storage.rows.size, 1);
+  assert.equal(requests, 2);
+});
+
+test('policy changes during a pending network request or body clone deny the eventual write', async () => {
+  const storage = memoryStorage();
+  const engine = createBrowseCacheEngine({ storage });
+  engine.setBrowseCacheWritePolicy(() => true);
+
+  let finishNetwork;
+  const networkPending = call(engine, '/network-pending', () => new Promise(resolve => { finishNetwork = resolve; }));
+  while (!finishNetwork) await Promise.resolve();
+  engine.setBrowseCacheWritePolicy(() => false);
+  finishNetwork(image('network'));
+  assert.equal(await imageText(await networkPending), 'network');
+  await engine.flush();
+  assert.equal(storage.rows.size, 0);
+
+  engine.setBrowseCacheWritePolicy(() => true);
+  let finishClone;
+  const response = image('clone');
+  response.clone = () => ({ arrayBuffer: () => new Promise(resolve => { finishClone = resolve; }) });
+  const clonePending = await call(engine, '/clone-pending', async () => response);
+  assert.equal(await imageText(clonePending), 'clone');
+  while (!finishClone) await Promise.resolve();
+  engine.setBrowseCacheWritePolicy(() => false);
+  finishClone(new Uint8Array([137,80,78,71,13,10,26,10,99]).buffer);
+  await engine.flush();
+  assert.equal(storage.rows.size, 0);
+});
+
+test('existing cache hits remain readable after route write policy denies that tile', async () => {
+  const storage = memoryStorage();
+  const engine = createBrowseCacheEngine({ storage });
+  engine.setBrowseCacheWritePolicy(() => true);
+  await call(engine, '/already-cached', async () => image('saved'));
+  await engine.flush();
+  engine.setBrowseCacheWritePolicy(() => false);
+  let requests = 0;
+  const result = await call(engine, '/already-cached', async () => { requests++; return image('network'); });
+  assert.equal(await imageText(result), 'saved');
+  assert.equal(requests, 0);
+});
+
+test('selective pruning removes only matching automatic tiles and preserves overlapping route tiles', async () => {
+  const engine = createBrowseCacheEngine({ storage: memoryStorage() });
+  await call(engine, '/route-a-exclusive', async () => image('exclusive'), { tile: tile(1) });
+  await engine.flush();
+  await call(engine, '/route-b-overlap', async () => image('overlap'), { tile: tile(2) });
+  await engine.flush();
+  await engine.pruneBrowseCache(t => t?.x === 1);
+  assert.equal((await engine.browseCacheStats()).count, 1);
+  let requests = 0;
+  const overlapping = await call(engine, '/route-b-overlap', async () => { requests++; return image('network'); }, { tile: tile(2) });
+  assert.equal(await imageText(overlapping), 'overlap');
+  const removed = await call(engine, '/route-a-exclusive', async () => { requests++; return image('refetched'); }, { tile: tile(1) });
+  assert.equal(await imageText(removed), 'refetched');
+  assert.equal(requests, 1);
+});
+
+test('prune generation prevents an older delayed network response from restoring a removed tile', async () => {
+  const engine = createBrowseCacheEngine({ storage: memoryStorage() });
+  let finishNetwork;
+  const pending = call(engine, '/pruned-in-flight', () => new Promise(resolve => { finishNetwork = resolve; }), { tile: tile(1) });
+  while (!finishNetwork) await Promise.resolve();
+  await engine.pruneBrowseCache(t => t?.x === 1);
+  finishNetwork(image('late-response'));
+  assert.equal(await imageText(await pending), 'late-response');
+  await engine.flush();
+  assert.equal((await engine.browseCacheStats()).count, 0);
 });
 
 test('skips errors, opaque responses, non-tile payloads, no-store, and corrupt cache records', async () => {

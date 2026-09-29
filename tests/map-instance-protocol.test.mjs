@@ -42,6 +42,17 @@ const cameraSyncResult = await build({
 const cameraSyncModule = await import(`data:text/javascript;base64,${Buffer.from(cameraSyncResult.outputFiles[0].contents).toString('base64')}`);
 const { CameraSync } = cameraSyncModule;
 
+test('warped provider tiles keep their displayed WGS84 tile for passive route caching', async () => {
+  let received;
+  const coordinates=new RasterCoordinates({getSource:()=>undefined},async request=>{
+    received=request;return {data:Uint8Array.of(1).buffer};
+  },'shantu-map-cache');
+  const displayed={z:16,x:51200,y:26000};
+  await coordinates.fetch('shantu-map-cache://source/16/51202/26001',new AbortController().signal,displayed);
+  assert.deepEqual(received.cacheTile,displayed);
+  coordinates.dispose();
+});
+
 test('raster coordinate adapters route only their own map-source protocol scheme', async () => {
   const requests = [];
   const adapter = (scheme, value) => new RasterCoordinates(

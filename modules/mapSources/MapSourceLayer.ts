@@ -4,6 +4,8 @@ import { OfflineClient } from './offlineClient';
 import { SOURCE_ID, type MapSource } from './types';
 import { renderOvmapTile } from './ovmapTiles';
 import { TileTransportError } from './tileTransport';
+import type { BrowseTile } from '../outdoor/browseCache';
+import { registerBrowseTileSource } from '../outdoor/browseTileSources.ts';
 
 const EMPTY = Uint8Array.from(
   atob(
@@ -22,6 +24,7 @@ export class MapSourceLayer {
   private opening: Promise<unknown> = Promise.resolve();
   private onlineAbort = new AbortController();
   private partialOverlay = false;
+  private releaseBrowseTileSource?: () => void;
   constructor(
     private map: LibreMap,
     private status: (text: string) => void,
@@ -44,7 +47,8 @@ export class MapSourceLayer {
       const timeout = setTimeout(cancel, 20000);
       try {
         abort.signal.throwIfAborted(); lifetime.throwIfAborted();
-        const data = await renderOvmapTile(this.selected.ovmap.layers, Number(match[2]), Number(match[3]), Number(match[4]), controller.signal, () => { if (!lifetime.aborted) this.partialOverlay = true; });
+        const cacheTile = (params as typeof params & { cacheTile?: BrowseTile }).cacheTile;
+        const data = await renderOvmapTile(this.selected.ovmap.layers, Number(match[2]), Number(match[3]), Number(match[4]), controller.signal, () => { if (!lifetime.aborted) this.partialOverlay = true; }, cacheTile);
         if (!lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
         return { data };
       } catch (error) {
@@ -124,6 +128,13 @@ export class MapSourceLayer {
           await this.opening;
           if (generation !== this.generation) return;
         }
+        if (source.kind === 'online') {
+          this.releaseBrowseTileSource = registerBrowseTileSource(
+            this,
+            source.tiles ?? [],
+            source.scheme === 'tms' ? 'tms' : 'xyz',
+          );
+        }
         this.map.addSource(SOURCE_ID, {
           type: 'raster',
           tiles:
@@ -163,15 +174,20 @@ export class MapSourceLayer {
           : '离线地图已加载',
       );
     } catch (error) {
-      if (generation === this.generation)
+      if (generation === this.generation) {
+        this.releaseBrowseTileSource?.();
+        this.releaseBrowseTileSource = undefined;
         this.status(
           error instanceof Error && error.name === 'AbortError'
             ? '加载已取消，请重新选择'
             : '地图加载失败，请重试或重新导入',
         );
+      }
     }
   }
   clear() {
+    this.releaseBrowseTileSource?.();
+    this.releaseBrowseTileSource = undefined;
     this.partialOverlay = false;
     this.onlineAbort.abort();
     this.onlineAbort = new AbortController();

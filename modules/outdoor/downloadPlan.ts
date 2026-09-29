@@ -30,7 +30,7 @@ export function downloadBounds(
   if (
     !points.length ||
     !points.every(coordinate) ||
-    ![5, 10, 20].includes(area.bufferKm)
+    ![0.5, 1, 2, 5, 10, 20].includes(area.bufferKm)
   )
     throw new Error('请选择有效路线和沿线范围');
   let w = 180,
@@ -64,12 +64,13 @@ export function downloadTiles(
   zoom: number,
   limit = MAX_DOWNLOAD_RESOURCES,
   detailCorridor = false,
+  minZoom = 0,
 ): Tile[] {
   downloadBounds(area);
-  if (!Number.isInteger(zoom) || zoom < 1 || zoom > 18)
+  if (!Number.isInteger(zoom) || zoom < 0 || zoom > 24 || !Number.isInteger(minZoom) || minZoom < 0 || minZoom > zoom)
     throw new Error('无效下载清晰度');
   const tiles: Tile[] = [];
-  for (let z = 0; z <= zoom; z++) {
+  for (let z = minZoom; z <= zoom; z++) {
     const bufferKm = area.kind === 'route' ? detailCorridor && z > 14 ? Math.min(area.bufferKm, z > 16 ? 0.25 : 1) : area.bufferKm : 0;
     const n = 2 ** z,
       rows = new Map<number, [number, number][]>();

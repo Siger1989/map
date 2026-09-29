@@ -61,30 +61,23 @@ public class StartCheck {
   assert.match(execFileSync(bin('java'),['-cp',dir,'StartCheck'],{encoding:'utf8'}),/5 native startup scenarios passed/);
 });
 
-test('failed native invocation keeps the package and enables retry; retry reaches completion', async (t) => {
+test('imported route estimate is passive and starts only after the explicit user click', async (t) => {
   const {window}=parseHTML('<html><body><div id="root"></div></body></html>');
   Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true});
-  const data=new Map();globalThis.localStorage={getItem:k=>data.get(k)??null,setItem:(k,v)=>data.set(k,v)};
-  globalThis.fetch=async()=>new Response(JSON.stringify({tiles:['https://tiles.openfreemap.org/{z}/{x}/{y}.pbf']}),{status:200,headers:{'content-type':'application/json'}});
-  globalThis.caches={open:async()=>({put:async()=>{}})};
-  let state={},fail=true,starts=0;
-  window.GuanyunNative={offlineStart(raw){starts++;if(fail)throw Error('Error invoking offlineStart: Java exception');const task=JSON.parse(raw);state={id:task.id,state:'complete',done:task.urls.length,bytes:512};return 'ok';},offlineState:()=>JSON.stringify(state),offlinePause(){}};
-  await build({entryPoints:['modules/outdoor/useOffline.ts','modules/outdoor/OfflineDownload.tsx'],outdir:'.openai/offline-start-ui',bundle:true,format:'esm',platform:'node',packages:'external',jsx:'automatic'});
+  let network=0,starts=0,calls=[];
+  globalThis.fetch=async()=>{network++;throw Error('The estimate must not fetch');};
+  window.GuanyunNative={offlineStart(){starts++;return 'ok';},offlineState:()=>JSON.stringify({}),offlinePause(){}};
+  await build({entryPoints:['modules/outdoor/OfflineDownload.tsx'],outdir:'.openai/offline-start-ui',bundle:true,format:'esm',platform:'node',packages:'external',jsx:'automatic'});
   const React=await import('react'),{act}=React,{createRoot}=await import('react-dom/client');
-  const {useOffline}=await import('../.openai/offline-start-ui/useOffline.js');
   const {OfflineDownload}=await import('../.openai/offline-start-ui/OfflineDownload.js');
-  let offline;const target={name:'测试路线',provider:'openfreemap',area:{kind:'route',segments:[[[103,30],[103.001,30.001]]],bufferKm:5},settings:{baseMap:'openfreemap',labels:false,terrain:false}};
-  // Use repository defaults so the same real download plan is exercised.
-  const {DEFAULT_LAYERS}=await import('../modules/map/types.ts');
-  target.settings={...DEFAULT_LAYERS,offlineBasemap:true,labels:false,terrain:false};
-  function Probe(){offline=useOffline();return React.createElement(OfflineDownload,{offline,target,onClose(){},onManage(){}});}
+  const target={name:'测试路线',area:{kind:'route',segments:[[[103,30],[103.001,30.001]]],bufferKm:1},source:{id:'imported-test',name:'导入影像',kind:'online',format:'XYZ',attribution:'',minzoom:12,maxzoom:19,tileSize:256,tiles:['https://tiles.example.test/{z}/{x}/{y}.png'],scheme:'xyz',bytes:0}};
+  const offline={current:null,busy:false,background:true,message:'',pause(){},resume(){},createImportedRoute(...args){calls.push(args);return Promise.resolve();}};
+  function Probe(){return React.createElement(OfflineDownload,{offline,target,onClose(){},onManage(){}});}
   const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(async()=>root.unmount());});await act(async()=>root.render(React.createElement(Probe)));
   const button=t=>[...document.querySelectorAll('button')].find(b=>b.textContent===t);
-  await act(async()=>button('下载地图').click());
-  assert.equal(starts,1);assert.equal(offline.busy,false);assert.ok(offline.current);assert.equal(offline.packages.length,1);
-  assert.match(document.body.textContent,/后台下载启动失败/);assert.doesNotMatch(document.body.textContent,/Java exception/);
-  assert.equal(button('继续下载').disabled,false);const id=offline.current.id;
-  fail=false;await act(async()=>button('继续下载').click());
-  assert.equal(starts,2);assert.equal(offline.current.id,id);assert.equal(offline.current.complete,true);assert.equal(offline.packages.length,1);
-  assert.equal(button('继续下载').disabled,true);
+  assert.equal(network,0);assert.equal(calls.length,0);assert.equal(starts,0);
+  assert.ok(button('开始下载'));assert.equal(button('开始下载').disabled,false);
+  await act(async()=>button('开始下载').click());
+  assert.equal(calls.length,1);assert.equal(calls[0][0],target.name);assert.equal(calls[0][2].id,target.source.id);assert.equal(calls[0][3],14);
+  assert.equal(network,0);assert.equal(starts,0);
 });

@@ -84,13 +84,14 @@ assert.equal(offline.packages.length, 1);
 await click(document.querySelector('[aria-label^="打开离线地图"]'));
 assert.equal(opened.id, 'old');
 await click(document.querySelector('[aria-label^="管理离线地图"]'));
+assert.equal(button('旧包仅查看').disabled, true);
 await click(button('检查'));
 await act(async () => {
   await new Promise((r) => setTimeout(r, 20));
 });
 assert.equal(offline.packages[0].complete, true);
 assert.equal(JSON.parse(storage.get('guanyun.trips.v1'))[0].complete, true);
-await click(button('缓存当前地图'));
+await click(button('下载沿线地图'));
 assert.equal(downloaded, 1);
 await click(button('移除'));
 assert.equal(offline.packages.length, 1);

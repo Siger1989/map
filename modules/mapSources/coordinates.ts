@@ -1,6 +1,6 @@
 import converter from 'coordtransform';
 import type { LayerSettings } from '../map/types';
-import { usesSentinel } from '../cartography/sentinel';
+import { usesSentinel } from '../cartography/sentinel.ts';
 
 export type RasterDatum = 'wgs84' | 'gcj02' | 'bd09';
 export const COORDINATES_KEY = 'shantu.map-source-coordinates.v1';

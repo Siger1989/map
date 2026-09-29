@@ -11,7 +11,8 @@ import { TextSuggestions } from '@/modules/input/SmartText';
 import { requestAppBack } from '@/modules/input/appBack';
 import { CurrentMapContext } from '@/modules/routeShare/CurrentMapContext';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
-import { readRasterDatums } from '@/modules/mapSources/coordinates';
+import { readRasterDatums, rasterDatumKey } from '@/modules/mapSources/coordinates';
+import { defaultRasterDatum } from '@/modules/mapSources/sourceDatum';
 import { readContourInterval, saveContourInterval } from '@/modules/terrain/contourInterval';
 import { RouteImportDialog } from '@/modules/dataTransfer/RouteImportDialog';
 import { useIncomingRoute } from '@/modules/dataTransfer/useIncomingRoute';
@@ -380,9 +381,16 @@ export default function Home() {
   const [offlineDownloadError, setOfflineDownloadError] = useState('');
   const beginMapDownload = (name: string, area?: DownloadArea) => {
     try {
-      const bounds = area ? null : map.current?.offlineRegionBounds(true);
-      if (!area && !bounds) throw new Error('地图尚未就绪');
-      setOfflineDownload({name, area: area ?? {kind:'region',bounds:bounds!},provider:'openfreemap',settings:{...layers,satellite:false,offlineBasemap:true}});
+      const source = mapSources.source;
+      if (!source || source.kind !== 'online' || !mapSources.maps.some(item => item.id === source.id)) throw new Error('请先选择你导入的在线图源，再下载沿线地图');
+      const savedRoute = tracks.saved.find(track => track.id === tracks.selectedId);
+      const useDraft = tracks.draft.some(line => line.length >= 2);
+      const segments = useDraft ? tracks.draft :
+        savedRoute?.segments ?? (navigation.route ? [navigation.route.coordinates] : []);
+      const routeArea = area ?? { kind: 'route' as const, segments, bufferKm: 1 };
+      if (routeArea.kind !== 'route' || !routeArea.segments.some(line => line.length >= 2)) throw new Error('请先画线或选择一条路线，只下载路线附近区域');
+      const datum = layers.rasterDatums?.[rasterDatumKey(layers, source.id)] ?? defaultRasterDatum(source);
+      setOfflineDownload({name: area ? name : useDraft ? '当前画线' : savedRoute?.name ?? '当前路线', area: {...routeArea, segments:routeArea.segments.filter(line=>line.length>=2), bufferKm:1}, source: {...source,datum}});
       setOfflineDownloadError('');setPanel(null);setRallyMode(false);setRouteWindow('card');
     } catch(e) { setOfflineDownloadError((e as Error).message); }
   };
@@ -823,9 +831,7 @@ export default function Home() {
   const selectedTrack = tracks.saved.find(
     (track) => track.id === tracks.selectedId,
   );
-  const cacheRouteSegments = useMemo(() => selectedTrack?.segments ??
-    (navigation.route ? [navigation.route.coordinates] : []), [selectedTrack?.segments, navigation.route?.coordinates]);
-  useBrowseCacheRoute(cacheRouteSegments);
+  useBrowseCacheRoute(tracks.saved, tracks.draft);
   useEffect(() => {
     if (panel !== 'favorites' || boxSelecting || collectionSelectedKeys.length) return;
     const entries = catalogEntries(

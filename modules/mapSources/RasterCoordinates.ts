@@ -66,10 +66,11 @@ export class RasterCoordinates {
     if (url.startsWith(`${this.mapScheme}://`)) {
       const abort = new AbortController(), cancel = () => abort.abort(signal.reason);
       signal.addEventListener('abort', cancel, { once: true });
-      try { signal.throwIfAborted(); return new Response((await this.localProtocol({ url, type: 'arrayBuffer' }, abort)).data as ArrayBuffer); }
+      const request = { url, type: 'arrayBuffer' as const, cacheTile: tile };
+      try { signal.throwIfAborted(); return new Response((await this.localProtocol(request, abort)).data as ArrayBuffer); }
       finally { signal.removeEventListener('abort', cancel); }
     }
-    return cachedMapFetch(url, signal, tile);
+    return cachedMapFetch(url, signal, tile, true);
   };
 
   private async slot(signal: AbortSignal) {

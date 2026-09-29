@@ -3,18 +3,19 @@ import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import {
   downloadTrip,
-  prepareTrip,
-  prepareRegion,
+  prepareImportedRoutePackage,
   removeTrip,
   tripPackages,
   putTrip,
   verifyTrip,
   type TripPackage,
-  prepareMapPackage, type DownloadProvider,
+  type DownloadProvider,
 } from './offline';
 import type { DownloadArea } from './downloadPlan';
 import type { LayerSettings } from '../map/types';
 import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy';
+import { fetchOnlineMapTile } from '../mapSources/tileTransport';
+import type { MapSource } from '../mapSources/types';
 export function useOffline() {
   const [packages, setPackages] = useState<TripPackage[]>([]),
     [busy, setBusy] = useState(false),
@@ -22,6 +23,7 @@ export function useOffline() {
     [current, setCurrent] = useState<TripPackage|null>(null);
   const task = useRef<AbortController | null>(null);
   const activeId = useRef<string | null>(null);
+  const activeProvider = useRef<TripPackage['provider']>(null);
   const deleting = useRef(new Set<string>());
   const [removing, setRemoving] = useState<string[]>([]);
   const remove = async (trip: TripPackage) => {
@@ -55,6 +57,7 @@ export function useOffline() {
     let nativeSignature="";
     const syncNative=()=>{
       if(!nativeOffline())return;
+      if (task.current && activeProvider.current === 'imported') return;
       const state=nativeOfflineState(),trip=tripPackages().find(t=>t.id===state.id);if(!trip || deleting.current.has(trip.id))return;
       if (!canDownloadTrip(trip) && ['queued','running','waiting'].includes(state.state ?? '')) {
         nativeOffline()?.offlinePause();
@@ -67,7 +70,7 @@ export function useOffline() {
       setMessage(state.state==='waiting' ? '等待网络恢复，已下载内容保留' : state.error || (next.complete?'缓存完成':state.state==='running' || state.state==='queued'?'后台缓存中':'已下载内容保留，可继续'));
     };
     syncNative();const timer=setInterval(syncNative,1000);
-    return () => {clearInterval(timer);if(!nativeOffline())task.current?.abort();};
+    return () => {clearInterval(timer);if(!nativeOffline() || activeProvider.current === 'imported')task.current?.abort();};
   }, []);
   const run = async (work: (signal: AbortSignal) => Promise<unknown>) => {
     if (task.current) return;
@@ -84,6 +87,7 @@ export function useOffline() {
     } finally {
       task.current = null;
       activeId.current = null;
+      activeProvider.current = null;
       setBusy(false);
       setPackages(tripPackages());
     }
@@ -91,37 +95,49 @@ export function useOffline() {
   const download = (trip: TripPackage, signal: AbortSignal) => {
     // Keep the retry target even if native startup fails before its first update.
     activeId.current=trip.id;
+    activeProvider.current=trip.provider;
     setCurrent(trip);
     return downloadTrip(trip, signal, (progress) => {
       if(deleting.current.has(trip.id))return;
       setPackages(tripPackages());
       setCurrent(progress);
       setMessage(`${progress.done}/${progress.urls.length} 项 · ${(progress.bytes / 1048576).toFixed(1)} MB`);
-    });
+    }, trip.provider === 'imported' ? fetchOnlineMapTile : undefined);
   };
   return {
     packages,
     removing,
     current,
-    background: !!nativeOffline(),
+    background: !!nativeOffline() && current?.provider !== 'imported',
     busy,
     message,
-    createMap: (name: string, area: DownloadArea, settings: LayerSettings, provider: DownloadProvider, zoom: number) => run(async signal => {
-      const trip=await prepareMapPackage(name,area,settings,provider,zoom,signal);
+    createMap: (_name: string, _area: DownloadArea, _settings: LayerSettings, _provider: DownloadProvider, _zoom: number) => {
+      setMessage('新离线下载仅支持已导入图源的路线走廊');
+      return Promise.resolve();
+    },
+    createImportedRoute: (name: string, area: Extract<DownloadArea, { kind: 'route' }>, source: MapSource, zoom: number) => run(async signal => {
+      activeProvider.current='imported';
+      setCurrent(null);
+      const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal);
       await download(trip,signal);
     }),
-    createRegion: (name: string, bounds: TripPackage['bounds'], zoom: number) => run(async signal => {
-      const trip = await prepareRegion(name, bounds, signal, zoom);
-      await download(trip, signal);
-    }),
-    create: (name: string, points: Coordinate[]) =>
-      run(async (signal) => {
-        const trip = await prepareTrip(name, points, signal);
-        await download(trip, signal);
-      }),
-    resume: (trip: TripPackage) => deleting.current.has(trip.id) ? Promise.resolve() : run((signal) => download(trip, signal)),
+    createRegion: (_name: string, _bounds: TripPackage['bounds'], _zoom: number) => {
+      setMessage('新离线下载仅支持已导入图源的路线走廊');
+      return Promise.resolve();
+    },
+    create: (_name: string, _points: Coordinate[]) => {
+      setMessage('新离线下载仅支持已导入图源的路线走廊');
+      return Promise.resolve();
+    },
+    resume: (trip: TripPackage) => {
+      if (trip.provider !== 'imported') {
+        setMessage('旧版整区下载已停止续传；已有数据仍可查看或移除');
+        return Promise.resolve();
+      }
+      return deleting.current.has(trip.id) ? Promise.resolve() : run((signal) => download(trip, signal));
+    },
     verify: (trip: TripPackage) => deleting.current.has(trip.id) ? Promise.resolve() : run(() => {activeId.current=trip.id;return verifyTrip(trip);}),
     remove,
-    pause: () => {if(nativeOffline())nativeOffline()!.offlinePause();task.current?.abort();},
+    pause: () => {if(activeProvider.current !== 'imported' && nativeOffline())nativeOffline()!.offlinePause();task.current?.abort();},
   };
 }

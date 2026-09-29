@@ -18,7 +18,6 @@ import { FreeMapLibrary } from './FreeMapLibrary';
 import { TiandituHelp } from './TiandituHelp';
 import { TiandituSources } from '../cartography/TiandituSources';
 import type { LayerSettings } from '../map/types';
-import { usesSentinel } from '../cartography/sentinel';
 import { RasterDatumChoice } from './RasterDatumChoice';
 import { defaultRasterDatum } from './sourceDatum';
 import { SavedMapSources } from './SavedMapSources';
@@ -79,7 +78,6 @@ export function MapSourcesPanel({
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
   const domestic = basemapConfiguration().domestic;
-  const sentinelDownloadPending = !sources.selected && !!settings && usesSentinel(settings);
   const work = useRef<AbortController | null>(null);
   const root = useRef<HTMLElement>(null);
   const alert = useRef<HTMLParagraphElement>(null);
@@ -256,7 +254,7 @@ export function MapSourcesPanel({
           onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}
         {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正与下载</summary>
           <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={defaultRasterDatum(sources.source)} onChange={onSettings} onError={setError}/>
-          {onOffline && <button onClick={onOffline}>下载当前范围</button>}
+          {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
         </details>}
         {sources.status && <p role="status">{sources.status}</p>}
       </>}
@@ -287,7 +285,7 @@ export function MapSourcesPanel({
           </div>)}
           {step === 'list' && category === 'builtin' && settings && onSettings && <RasterDatumChoice settings={settings}
             selected={sources.selected} image={sources.source?.kind === 'image'} onChange={onSettings} onError={setError} />}
-          {step === 'list' && category === 'builtin' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载待接入':'下载当前范围'}</button>}<button disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
+          {step === 'list' && category === 'builtin' && <div className="map-source-actions"><button disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
           {step === 'library' && <>
           {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary

@@ -1,3 +1,14 @@
+# 2026-09-30 / 0.2.87 沿线被动缓存与导入图源主动下载 — APK核验通过，上传中
+
+- 目标：浏览缓存仅保存画线/已存路线附近实际请求的瓦片，不预取；删除路线清理独占瓦片，共用保留。主动下载仅导入在线图源、仅路线附近、手动确认范围/级别/数量。
+- 进展：已删除RouteCacheWarmup及接线；沿线被动写入/删除独占缓存、共享保护、草稿保存交接及XYZ/TMS模板识别已接入。主动下载已接入导入图源沿线计划/前台队列；旧内置整区入口关闭，打开导入包恢复原图源/有效坐标并保留其他坐标覆盖；用户补充19级，界面改按声明列出所有整数级别。
+- 已改/待整合：browseCache、browseCacheRoute/useBrowseCacheRoute、MapSourceLayer、tileCache/tileTransport、OfflineDownload/OfflinePanel/useOffline/offline/downloadPlan、app/page/TerrainMap；新定向测试。旧主动包保留并可读取/删除，自动删除仅作用独立浏览缓存。
+- 命令：git status/diff、项目文档与缓存/路线/下载链路读取；日志.openai。基线6ca6690，未跟踪PDF保留。
+- 验证：PASS：最终完整857/857、TypeScript、网页构建通过；日志.openai/passive-full-final与passive-type-final/passive-web。首轮完整测试826/833，5项受新增运行时导入扩展名影响、2项旧UI用例需适配新入口，已修复并通过最终整套；浏览缓存/路线/模板/坐标协议/OVMAP定向57项PASS；后续38项缓存/清理/离线读回归PASS；整合中TypeScript通过一次。补充非地图剖面请求不写浏览缓存，主动下载复用已有有效浏览瓦片。新增打开19级导入包/保留坐标覆盖与手动下载复用缓存回归6/6 PASS，完整TypeScript PASS；导入下载4项回归覆盖有效图片/复用、HTML200拒绝、429不自动重试、错误缓存完整性；公开APK构建/原签名/对齐/543网页资源与496PNG/DEX/隐私核验PASS；APK/Shantu-0.2.87-test-standalone-public.apk，57896028bytes，SHA256 063775f4fa92a0100d37966ed5f41ee2d7525d4b269d72190dd8e9ab4cc9c173。浏览器仍受之前URL安全拒绝限制，不绕过。
+- 阻塞：第三方图源额度未知，不把导入/购买当不限额；真机尚未测试。无其他阻塞。
+- 下一步：提交源码、推送并发布公开无凭据APK，核对远端SHA；原生定位中断不在本轮改动。
+
+
 # 2026-09-29 / 0.2.86 自动瓦片缓存与路线优先 — 已交付
 
 - 目标：浏览时自动保存瓦片，当前选中路线周边优先保留/空闲补齐，可单独清理自动缓存；主动离线包与用户轨迹保留。
@@ -139,7 +150,7 @@
 - 进度：并行审计确认选点重复全路线构建/投影/序列化，annotations与sectionItems每root render新建唤醒无关图层；新增只读operation计数/CPU耗时与场景数量，先对比再修复。
 - 文件：modules/map/{TerrainMap.tsx,renderDiagnostics.ts}；保留前两轮收藏未提交修改与无关PDF。
 - 命令：git status/diff、源码审阅；合成基准10条6000点选点每次59990投影，中位203ms（桌面Node，非真机）。
-- 验证：IN PROGRESS；未连接OPPO，真机根因全部归属仍未确认。
+- 验证：IN PROGRESS；首轮完整测试826/833，5项受新增运行时导入扩展名影响、2项旧UI用例需适配新入口，正在最小修正；未连接OPPO，真机根因全部归属仍未确认。
 - 下一步：操作计数baseline、稳定无关图层输入、保守选点快路径、回归、打包。
 
 # 2026-09-28 / 收藏显隐滑选与勾选一致

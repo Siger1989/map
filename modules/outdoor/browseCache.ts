@@ -176,6 +176,7 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
   const entryLimit = options.entryLimit ?? DEFAULT_ENTRIES;
   const entryBytesLimit = options.entryBytesLimit ?? DEFAULT_ENTRY_LIMIT;
   let priorityTest: ((tile: BrowseTile) => boolean) | undefined;
+  let writePolicy: (tile?: BrowseTile) => boolean = () => true;
   let generation = 0;
   let writes = Promise.resolve();
   let metadataSnapshot: BrowseMeta[] | undefined;
@@ -192,6 +193,9 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
     return run;
   };
   const route = (entry: BrowseMeta) => entry.tile ? !!priorityTest?.(entry.tile) : !!entry.priority;
+  const writesAllowed = (tile?: BrowseTile) => {
+    try { return writePolicy(tile); } catch { return false; }
+  };
   const metadata = async () => {
     if (!storage) throw new Error('IndexedDB is unavailable; browsing cache cannot be read');
     if (!metadataSnapshot) {
@@ -241,14 +245,10 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
     const requestGeneration = generation;
     if (storage) {
       try {
-        const cached = await storage.get(cacheKey);
+        let cached = await storage.get(cacheKey);
         abortIfNeeded(signal);
-        if (generation !== requestGeneration) {
-          abortIfNeeded(signal);
-          const fresh = await fetcher();
-          abortIfNeeded(signal);
-          return fresh;
-        }
+        // A concurrent clear/prune invalidates this read; network fallback runs once below.
+        if (generation !== requestGeneration) cached = undefined;
         if (cached && (cached.expiresAt > now() || (requestOptions.allowStale ?? (typeof navigator !== 'undefined' && navigator.onLine === false))) && cached.status === 200 &&
             cached.body instanceof ArrayBuffer && cached.body.byteLength > 0 &&
             cached.body.byteLength <= entryBytesLimit &&
@@ -275,7 +275,7 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
     abortIfNeeded(signal);
     const response = await fetcher();
     abortIfNeeded(signal);
-    if (!canWrite || !storage || (!cacheableResponse(response) && !tileJsonResponse(response, requestOptions.allowTileJson ?? false))) return response;
+    if (!canWrite || !storage || !writesAllowed(requestOptions.tile) || (!cacheableResponse(response) && !tileJsonResponse(response, requestOptions.allowTileJson ?? false))) return response;
     const ttl = cacheTtl(response, now());
     if (!ttl) return response;
     track((async () => {
@@ -299,7 +299,7 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
         };
         await enqueue(async () => {
           abortIfNeeded(signal);
-          if (generation !== requestGeneration) return;
+          if (generation !== requestGeneration || !writesAllowed(requestOptions.tile)) return;
           await storage.write(entry, signal);
           const rows = await metadata();
           const { body: _body, ...metadataEntry } = entry;
@@ -333,13 +333,28 @@ export function createBrowseCacheEngine(options: EngineOptions = {}) {
       if (!storage) throw new Error('IndexedDB is unavailable; browsing cache cannot be cleared');
       await enqueue(async () => { await storage.clear(); metadataSnapshot = []; }).catch(error => { throw error; });
     },
+    async pruneBrowseCache(shouldRemove: (tile?: BrowseTile) => boolean) {
+      generation++;
+      if (!storage) throw new Error('IndexedDB is unavailable; browsing cache cannot be pruned');
+      await enqueue(async () => {
+        const rows = await metadata();
+        const remove = rows.filter(row => shouldRemove(row.tile)).map(row => row.key);
+        await storage.remove(remove);
+        const removed = new Set(remove);
+        metadataSnapshot = rows.filter(row => !removed.has(row.key));
+      });
+    },
     setBrowseCachePriority(test: (tile: BrowseTile) => boolean) { priorityTest = test; },
+    setBrowseCacheWritePolicy(policy: (tile?: BrowseTile) => boolean) { writePolicy = policy; },
     async flush() { while (pending.size) await Promise.allSettled([...pending]); await writes; },
   };
 }
 
 const engine = createBrowseCacheEngine();
+engine.setBrowseCacheWritePolicy(() => false);
 export const browseCachedFetch = engine.browseCachedFetch;
 export const browseCacheStats = engine.browseCacheStats;
 export const clearBrowseCache = engine.clearBrowseCache;
+export const pruneBrowseCache = engine.pruneBrowseCache;
 export const setBrowseCachePriority = engine.setBrowseCachePriority;
+export const setBrowseCacheWritePolicy = engine.setBrowseCacheWritePolicy;

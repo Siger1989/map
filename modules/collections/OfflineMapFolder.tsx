@@ -28,7 +28,7 @@ export function OfflineMapFolder({
     [active, setActive] = useState<string | null>(null),
     [removing, setRemoving] = useState<string | null>(null);
   const packages = offline.packages.filter((p) =>
-    `${p.name} ${p.provider === 'tianditu' ? '天地图' : '开源地图'}`
+    `${p.name} ${p.provider === 'imported' ? p.sourceName ?? '导入图源' : p.provider === 'tianditu' ? '天地图' : '开源地图'}`
       .toLowerCase()
       .includes(query.trim().toLowerCase()),
   );
@@ -58,7 +58,7 @@ export function OfflineMapFolder({
                   <strong>{p.name}</strong>
                   <small>
                     {p.complete ? '已缓存' : '未完成'} ·{' '}
-                    {p.provider === 'tianditu' ? '天地图' : '开源地图'} ·{' '}
+                    {p.provider === 'imported' ? p.sourceName ?? '导入图源' : p.provider === 'tianditu' ? '天地图' : '开源地图'} ·{' '}
                     {p.zoom ?? 14}级 · {(p.bytes / 1048576).toFixed(1)} MB
                   </small>
                 </button>
@@ -97,11 +97,11 @@ export function OfflineMapFolder({
                   ) : (
                     <div>
                       <button
-                        disabled={offline.busy || !canDownloadTrip(p)}
-                        title={!canDownloadTrip(p) ? TIANDITU_OFFLINE_DISABLED : undefined}
+                        disabled={offline.busy || p.provider !== 'imported' || !canDownloadTrip(p)}
+                        title={p.provider !== 'imported' ? '仅导入的在线图源可继续下载；旧包仍可查看和删除' : !canDownloadTrip(p) ? TIANDITU_OFFLINE_DISABLED : undefined}
                         onClick={() => void offline.resume(p)}
                       >
-                        {canDownloadTrip(p) ? '继续 / 补齐' : '天地图下载已暂停'}
+                        {p.provider === 'imported' && canDownloadTrip(p) ? '继续 / 补齐' : '旧包仅查看'}
                       </button>
                       <button
                         disabled={offline.busy}
@@ -127,7 +127,7 @@ export function OfflineMapFolder({
           <div className="offline-map-folder-actions">
             <button onClick={onDownload}>
               <Download size={15} />
-              缓存当前地图
+              下载沿线地图
             </button>
             {offline.busy && <button onClick={offline.pause}>暂停下载</button>}
           </div>

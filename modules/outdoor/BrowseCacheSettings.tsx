@@ -19,19 +19,19 @@ export function BrowseCacheSettings() {
   }
   async function clear() {
     setBusy(true);
-    // Cancel idle warmups before clearing; old network responses cannot refill the store.
+    // Old network responses cannot refill the store after this clear.
     window.dispatchEvent(new Event(BROWSE_CACHE_CLEARED));
     try { await clearBrowseCache(); await refresh(); setConfirm(false); setMessage('自动缓存已清理，离线包和轨迹保留'); }
     catch { setMessage('自动缓存清理失败，请重试'); }
     finally { setBusy(false); }
   }
   return <section className="browse-cache-settings" aria-label="自动地图缓存">
-    <label><input type="checkbox" checked={settings.enabled} onChange={e => update({ ...settings, enabled: e.target.checked })} />边看边缓存</label>
-    <label>优先缓存路线两侧各 <select aria-label="路线自动缓存范围" value={settings.bufferKm} onChange={e => update({ ...settings, bufferKm: Number(e.target.value) })}>
+    <label><input type="checkbox" checked={settings.enabled} onChange={e => update({ ...settings, enabled: e.target.checked })} />仅缓存路线附近浏览过的地图</label>
+    <label>路线两侧各 <select aria-label="路线自动缓存范围" value={settings.bufferKm} onChange={e => update({ ...settings, bufferKm: Number(e.target.value) })}>
       <option value={0.5}>500 米</option><option value={1}>1 公里</option><option value={2}>2 公里</option>
     </select></label>
     <small>{summary}</small>
-    <small>选中路线后，停稳时逐步缓存当前图源与级别附近瓦片；满额先清理非沿线旧缓存。</small>
+    <small>画线后生效，只保存沿线实际浏览的瓦片，不主动下载。删除路线时清理独占缓存，共用瓦片保留。</small>
     <div className="outdoor-actions">{confirm ? <>
       <button disabled={busy} onClick={() => void clear()}>{busy ? '清理中…' : '确认清理自动缓存'}</button>
       <button disabled={busy} onClick={() => setConfirm(false)}>取消</button>
