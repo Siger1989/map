@@ -3,6 +3,7 @@ import type { useMapSources } from './useMapSources';
 import {
   MAX_CONFIG_BYTES,
   MAX_FILE_BYTES,
+  MAX_MAPS,
   type Bounds,
   type MapDraft,
 } from './types';
@@ -19,6 +20,9 @@ import { TiandituSources } from '../cartography/TiandituSources';
 import type { LayerSettings } from '../map/types';
 import { usesSentinel } from '../cartography/sentinel';
 import { RasterDatumChoice } from './RasterDatumChoice';
+import { SavedMapSources } from './SavedMapSources';
+import { parseOvmap } from './ovmap';
+import { existingMapIndexes } from './importReview';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -53,9 +57,13 @@ export function MapSourcesPanel({
     [name, setName] = useState('');
   const [scheme, setScheme] = useState('xyz');
   const [pending, setPending] = useState<Pending[]>([]);
+  const [category, setCategory] = useState<'builtin' | 'saved'>(sources.selected ? 'saved' : 'builtin');
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const [duplicates, setDuplicates] = useState<Set<number>>(new Set());
+  const [skipped, setSkipped] = useState<{ name: string; reason: string }[]>([]);
+  const [previewPage, setPreviewPage] = useState(0);
   const [error, setError] = useState(''),
     [busy, setBusy] = useState(false);
-  const [removing, setRemoving] = useState('');
   const domestic = basemapConfiguration().domestic;
   const sentinelDownloadPending = !sources.selected && !!settings && usesSentinel(settings);
   const work = useRef<AbortController | null>(null);
@@ -67,7 +75,7 @@ export function MapSourcesPanel({
         ? null
         : {
             title:
-              step === 'library' ? '其他图源与本机地图' : step === 'add'
+              step === 'library' ? '公共图源库' : step === 'add'
                 ? '添加地图'
                 : step === 'preview'
                   ? '图源预览'
@@ -134,11 +142,17 @@ export function MapSourcesPanel({
     }
   };
   const preview = (items: Pending[]) => {
+    const repeated = existingMapIndexes(items.map(item => item.draft), sources.maps);
     setPending(items);
+    setDuplicates(repeated);
+    setPicked(new Set(items.map((_, i) => i).filter(i => !repeated.has(i)).slice(0, Math.max(0, MAX_MAPS - sources.maps.length))));
+    setPreviewPage(0);
     setStep('preview');
   };
+  const openAdd = () => { setError(''); setSkipped([]); setStep('add'); };
   const readInput = () =>
     run(async (signal) => {
+      setSkipped([]);
       const drafts = await resolveMapInput(input, signal);
       if (signal.aborted) return;
       preview(
@@ -161,11 +175,19 @@ export function MapSourcesPanel({
   const file = (selected?: File) => {
     if (!selected) return;
     void run(async (signal) => {
+      setSkipped([]);
       if (/\.(mbtiles|tiff?)$/i.test(selected.name)) {
         if (selected.size > MAX_FILE_BYTES)
           throw new Error('离线地图单个文件不能超过 64 MB，请先切片或缩小范围');
         const result = await inspectOffline(selected, signal);
         if (!signal.aborted) preview([result]);
+      } else if (/\.ovmap$/i.test(selected.name)) {
+        if (selected.size > MAX_CONFIG_BYTES) throw new Error('图源配置不能超过 1 MB');
+        const result = parseOvmap(new Uint8Array(await selected.arrayBuffer()));
+        if (!signal.aborted) {
+          setSkipped(result.skipped);
+          preview(result.drafts.map(draft => ({ draft })));
+        }
       } else if (/\.(json|xml|txt)$/i.test(selected.name)) {
         if (selected.size > MAX_CONFIG_BYTES)
           throw new Error('图源配置不能超过 1 MB');
@@ -174,9 +196,7 @@ export function MapSourcesPanel({
           preview(parseMapConfig(text).map((draft) => ({ draft })));
       } else
         throw new Error(
-          /\.ovmap$/i.test(selected.name)
-            ? '奥维 .ovmap 属于专有格式，请向提供方索取标准栅格文件或通用图源地址'
-            : '此处支持 MBTiles、GeoTIFF、JSON / XML / TXT 配置；路线文件请到“路线”或“收藏”导入',
+          '此处支持 OVMAP、MBTiles、GeoTIFF、JSON / XML / TXT 配置；路线文件请到“路线”或“收藏”导入',
         );
     });
   };
@@ -191,10 +211,26 @@ export function MapSourcesPanel({
     setError('已识别二维码，请检查内容，再点“识别并预览”');
   };
   return (
-    <section ref={root} className="map-sources" data-step={step} aria-label="地图图源管理">
+    <section ref={root} className="map-sources" data-step={step} data-category={category} aria-label="地图图源管理">
+      {step === 'list' && <>
+        <div className="map-source-tabs" role="group" aria-label="图源分类">
+          <button aria-pressed={category === 'builtin'} onClick={() => setCategory('builtin')}>内置</button>
+          <button aria-pressed={category === 'saved'} onClick={() => setCategory('saved')}>我的图源{sources.maps.length ? ` · ${sources.maps.length}` : ''}</button>
+          <button onClick={() => { setError(''); setStep('library'); }}>公共库</button>
+        </div>
+        <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
+        {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy}
+          onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
+          onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}
+        {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正与下载</summary>
+          <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={sources.source?.datum} onChange={onSettings} onError={setError}/>
+          {onOffline && <button onClick={onOffline}>下载当前范围</button>}
+        </details>}
+        {sources.status && <p role="status">{sources.status}</p>}
+      </>}
       {(step === 'list' || step === 'library') && (
         <>
-          {step === 'list' && (domestic && settings && onSettings ? <TiandituSources active={!sources.selected} settings={settings} onChange={onSettings}/> : <div className="map-source-builtins" aria-label="内置图源">
+          {step === 'list' && category === 'builtin' && (domestic && settings && onSettings ? <TiandituSources active={!sources.selected} settings={settings} onChange={onSettings}/> : <div className="map-source-builtins" aria-label="内置图源">
             {(
               [
                 ['terrain', domestic ? '天地图矢量' : '地形地图'],
@@ -217,9 +253,9 @@ export function MapSourcesPanel({
               </button>
             ))}
           </div>)}
-          {step === 'list' && settings && onSettings && <RasterDatumChoice settings={settings}
+          {step === 'list' && category === 'builtin' && settings && onSettings && <RasterDatumChoice settings={settings}
             selected={sources.selected} image={sources.source?.kind === 'image'} onChange={onSettings} onError={setError} />}
-          {step === 'list' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载待接入':'下载当前范围'}</button>}<button onClick={()=>setStep('library')}>其他图源 / 本机</button></div>}
+          {step === 'list' && category === 'builtin' && <div className="map-source-actions">{onOffline && <button disabled={sentinelDownloadPending} onClick={onOffline}>{sentinelDownloadPending?'区域下载待接入':'下载当前范围'}</button>}<button disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
           {step === 'library' && <>
           {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary
@@ -227,84 +263,29 @@ export function MapSourcesPanel({
             onSelect={sources.select}
             onFocus={onFocus}
           />
-          <button
-            className="map-source-add"
-            disabled={!sources.ready}
-            onClick={() => {
-              setStep('add');
-              setError('');
-            }}
-          >
-            ＋ 添加地图 · 图源 / 文件 / 二维码
-          </button>
+          <button className="map-source-add" disabled={!sources.ready} onClick={openAdd}>导入自己的图源</button>
           {domestic ? <small className="map-source-hint">天地图已配置 · 含中文注记 · <a href="https://lbs.tianditu.gov.cn/server/MapService.html" target="_blank" rel="noreferrer">图层说明</a></small> : <TiandituHelp />}
-          <p className="map-source-hint">
-            已保存 {sources.maps.length} / 20 项 ·{' '}
-            {(
-              sources.maps.reduce((sum, m) => sum + m.bytes, 0) /
-              1024 /
-              1024
-            ).toFixed(1)}{' '}
-            / 256 MB
-          </p>
-          {[...sources.maps]
-            .sort(
-              (a, b) =>
-                Number(b.id === sources.selected) -
-                Number(a.id === sources.selected),
-            )
-            .map((map) => (
-              <div className="map-source-row" key={map.id}>
-                <button
-                  className="map-source-choice"
-                  aria-pressed={sources.selected === map.id}
-                  onClick={() => {
-                    sources.select(map.id);
-                    if (map.bounds) onFocus(map.bounds);
-                  }}
-                >
-                  <strong>{map.name}</strong>
-                  <small>
-                    {map.format} · {map.kind === 'online' ? '在线' : '离线'}
-                    {sources.selected === map.id ? ' · 当前' : ''}
-                  </small>
-                </button>
-                <button
-                  aria-label={`移除 ${map.name}`}
-                  onClick={() => setRemoving(map.id)}
-                >
-                  移除
-                </button>
-                {removing === map.id && (
-                  <div className="map-source-confirm">
-                    <p>从本机地图库移除？原始文件仍保留。</p>
-                    <button
-                      disabled={busy}
-                      onClick={() =>
-                        void run(async () => {
-                          await sources.remove(map.id);
-                          setRemoving('');
-                        })
-                      }
-                    >
-                      确认移除
-                    </button>
-                    <button onClick={() => setRemoving('')}>取消</button>
-                  </div>
-                )}
-              </div>
-            ))}
-          {!sources.maps.length && (
-            <p className="map-source-hint">
-              可添加在线图源，也可选择本机 MBTiles / GeoTIFF 离线影像。
-            </p>
-          )}
-          {sources.status && <p role="status">{sources.status}</p>}
           </>}
         </>
       )}
       {step === 'add' && (
         <>
+          <div className="map-source-import-entry">
+            <label className="map-file-button">
+              导入地图文件
+              <input
+                disabled={busy}
+                aria-label="导入地图文件"
+                type="file"
+                accept=".mbtiles,.tif,.tiff,.json,.xml,.txt,.ovmap"
+                onChange={(e) => {
+                  file(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            <small>奥维 OVMAP 合集 / 通用配置 / 离线影像</small>
+          </div>
           <div className="map-source-actions">
             {!onNavigation && (
               <button
@@ -345,6 +326,8 @@ export function MapSourcesPanel({
               />
             </label>
           </div>
+          <details className="map-source-manual" open={input.length > 0 || undefined}>
+          <summary>粘贴图源地址 / 手动填写</summary>
           <label>
             名称（可选）
             <input
@@ -380,20 +363,9 @@ export function MapSourcesPanel({
             <button disabled={busy || !input.trim()} onClick={readInput}>
               识别并预览
             </button>
-            <label className="map-file-button">
-              选择地图文件
-              <input
-                disabled={busy}
-                aria-label="选择地图文件"
-                type="file"
-                accept=".mbtiles,.tif,.tiff,.json,.xml,.txt,.ovmap"
-                onChange={(e) => {
-                  file(e.target.files?.[0]);
-                  e.target.value = '';
-                }}
-              />
-            </label>
+
           </div>
+          </details>
           <details>
             <summary>支持的格式与填写说明</summary>
             <p>
@@ -407,8 +379,7 @@ export function MapSourcesPanel({
               MB；GeoTIFF 保存最长边 2048 像素的显示副本。
             </p>
             <p>
-              暂不支持奥维加密二维码 / .ovmap、矢量瓦片、GCJ-02 / BD-09
-              图源。二维码识别后仍需检查格式。离线文件只保存在当前设备，在线图源由提供方负责覆盖、授权和可用性。
+              奥维 OVMAP 按可识别配置导入；不支持的条目会说明原因。加密二维码、矢量瓦片和百度专用瓦片矩阵暂不支持。文件只保存在当前设备，在线服务的覆盖与可用性由提供方决定。
             </p>
           </details>
         </>
@@ -418,31 +389,31 @@ export function MapSourcesPanel({
       )}
       {step === 'preview' && (
         <>
-          <p>已识别 {pending.length} 个地图，确认后保存到本机并切换。</p>
-          {pending.map(({ draft, blob }, i) => (
-            <div className="map-source-preview" key={i}>
-              <strong>{draft.name}</strong>
-              <p>
-                {draft.format} · {blob ? '离线' : '在线'} · {draft.minzoom}–
-                {draft.maxzoom} 级
-              </p>
-              {draft.tiles && (
-                <p className="map-source-url">
-                  {new URL(draft.tiles[0]).hostname} ·{' '}
-                  {draft.scheme?.toUpperCase()}
-                </p>
-              )}
-              {draft.bounds && (
-                <p>范围：{draft.bounds.map((v) => v.toFixed(4)).join(', ')}</p>
-              )}
-              {draft.detail && <p>{draft.detail}</p>}
-              <p>{draft.attribution}</p>
-            </div>
-          ))}
-          <p className="map-source-hint">
-            在线地图须使用标准 Web Mercator 瓦片；GCJ-02 / BD-09
-            偏移可在图源菜单校正，百度专用瓦片矩阵暂不支持。识别配置成功不代表服务已连通。
-          </p>
+          <p role="status">识别 {pending.length + skipped.length} 项 · 可导入 {pending.length - duplicates.size} 项 · 已选 {picked.size}
+            {duplicates.size > 0 ? ` · 重复 ${duplicates.size} 项` : ''}
+            {skipped.length > 0 ? ` · 不支持 ${skipped.length} 项` : ''}</p>
+          {pending.length > 0 && <div className="map-source-actions">
+            <button disabled={busy} onClick={() => setPicked(new Set(pending.map((_, i) => i).filter(i => !duplicates.has(i)).slice(0, Math.max(0, MAX_MAPS - sources.maps.length))))}>全选可导入</button>
+            <button disabled={busy || !picked.size} onClick={() => setPicked(new Set())}>清空选择</button>
+          </div>}
+          {pending.slice(previewPage * 4, previewPage * 4 + 4).map(({ draft, blob }, offset) => {
+            const index = previewPage * 4 + offset;
+            return <label className="map-source-preview-choice" key={index}>
+              <input type="checkbox" checked={picked.has(index)} disabled={busy || duplicates.has(index)} aria-label={`导入 ${draft.name}`}
+                onChange={event => { const next = new Set(picked); if (event.target.checked) next.add(index); else next.delete(index); setPicked(next); }} />
+              <span><strong>{draft.name}</strong><small>{draft.format} · {blob ? '离线' : '在线'} · {draft.minzoom}–{draft.maxzoom} 级{duplicates.has(index) ? ' · 已有或重复' : ''}</small></span>
+            </label>;
+          })}
+          {pending.length > 4 && <nav className="map-source-pages" aria-label="导入预览分页">
+            <button disabled={busy || previewPage === 0} onClick={() => setPreviewPage(page => page - 1)}>上一页</button>
+            <span>{previewPage + 1} / {Math.ceil(pending.length / 4)}</span>
+            <button disabled={busy || (previewPage + 1) * 4 >= pending.length} onClick={() => setPreviewPage(page => page + 1)}>下一页</button>
+          </nav>}
+          {skipped.length > 0 && <details className="map-source-skipped"><summary>查看 {skipped.length} 项未导入原因</summary>
+            {skipped.map((item, i) => <p key={i}><strong>{item.name}</strong>：{item.reason}</p>)}
+          </details>}
+          <p className="map-source-hint">配置仅保存本机；确认后使用首个勾选图源。识别成功不代表服务已连通。</p>
+          {picked.size > MAX_MAPS - sources.maps.length && <p role="alert">本机还可保存 {Math.max(0, MAX_MAPS - sources.maps.length)} 项，请减少勾选。</p>}
           <div className="map-source-actions">
             {!onNavigation && (
               <button
@@ -456,19 +427,20 @@ export function MapSourcesPanel({
               </button>
             )}
             <button
-              disabled={busy}
+              disabled={busy || picked.size === 0 || picked.size > MAX_MAPS - sources.maps.length}
               onClick={() =>
                 void run(async () => {
-                  const added = await sources.add(pending);
+                  const added = await sources.add(pending.filter((_, i) => picked.has(i) && !duplicates.has(i)));
                   if (added.bounds) onFocus(added.bounds);
                   setPending([]);
                   setInput('');
                   setName('');
+                  setCategory('saved');
                   setStep('list');
                 })
               }
             >
-              确认添加并使用
+              导入已选 {picked.size} 项
             </button>
           </div>
         </>

@@ -100,8 +100,8 @@ test('configs refuse proprietary, scripted XML, vector and oversized inputs', ()
   );
   assert.throws(
     () =>
-      parseMapConfig(JSON.stringify(Array.from({ length: 21 }, () => ({})))),
-    /20/,
+      parseMapConfig(JSON.stringify(Array.from({ length: 101 }, () => ({})))),
+    /100/,
   );
 });
 test('URL config reads are bounded and resolve relative tiles', async () => {

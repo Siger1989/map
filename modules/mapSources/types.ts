@@ -1,5 +1,13 @@
 /** User maps are local to this browser/device; existing trip stores are independent. */
 export type Bounds = [number, number, number, number];
+export type OvmapTileLayer = {
+  tiles: string[];
+  tileSize: number;
+  minzoom: number;
+  maxzoom: number;
+  /** A 512-pixel provider tile covers a 2x2 group of Ovi tiles. */
+  subdivide?: boolean;
+};
 export type MapSource = {
   id: string;
   name: string;
@@ -14,12 +22,22 @@ export type MapSource = {
   scheme?: 'xyz' | 'tms';
   bytes: number;
   detail?: string;
+  datum?: 'wgs84' | 'gcj02' | 'bd09';
+  ovmap?: {
+    layers: OvmapTileLayer[];
+    missingOverlayIds?: number[];
+    sourceId?: number;
+    coordType?: number;
+    declaredTileSize?: number;
+    overlayIds?: number[];
+    overlayFlags?: number[];
+  };
 };
 export type MapDraft = Omit<MapSource, 'id' | 'bytes'>;
 export type StoredMap = MapSource & { blob?: Blob };
 export const MAX_FILE_BYTES = 64 * 1024 * 1024;
 export const MAX_STORAGE_BYTES = 256 * 1024 * 1024;
-export const MAX_MAPS = 20;
+export const MAX_MAPS = 100;
 export const MAX_CONFIG_BYTES = 1024 * 1024;
 export const SOURCE_ID = 'shantu-user-map';
 

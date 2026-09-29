@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { addMaps, listMaps, removeMap } from './storage';
+import { addMaps, ensureDefaultMaps, listMaps, removeMap } from './storage';
 import type { MapDraft, MapSource, StoredMap } from './types';
 import { freeMap } from './presets';
 import { resolveAvailableMapSelection } from './selection';
+import { loadDefaultSeeds, seedThenList } from './defaultSeeds';
 
 const SELECTED = 'shantu-selected-map';
 export { resolveAvailableMapSelection } from './selection';
@@ -18,7 +19,9 @@ export function useMapSources(restoreSelection = true) {
       const id = localStorage.getItem(SELECTED);
       if (restoreSelection && freeMap(id)) setSelected(id!);
     } catch {}
-    listMaps()
+    seedThenList(loadDefaultSeeds, ensureDefaultMaps, listMaps, (message) => {
+      if (alive) setStatus(`内置图源初始化未完成：${message}`);
+    })
       .then((items) => {
         if (!alive) return;
         setMaps(items);
@@ -32,7 +35,7 @@ export function useMapSources(restoreSelection = true) {
         } catch {}
       })
       .catch(() => {
-        if (alive) setStatus('本机地图库暂不可用');
+        if (alive) setStatus('本机地图库或内置图源暂不可用');
       })
       .finally(() => {
         if (alive) setReady(true);

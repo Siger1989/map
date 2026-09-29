@@ -1,8 +1,9 @@
 import type { LayerSettings } from '../map/types';
 import { COORDINATES_KEY, rasterDatumKey, type RasterDatum } from './coordinates';
 
-export function RasterDatumChoice({ settings, selected, image, onChange, onError }: {
+export function RasterDatumChoice({ settings, selected, image, defaultDatum = 'wgs84', onChange, onError }: {
   settings: LayerSettings; selected?: string | null; image: boolean;
+  defaultDatum?: RasterDatum;
   onChange: (patch: Partial<LayerSettings>) => void; onError: (message: string) => void;
 }) {
   const key = rasterDatumKey(settings, selected ?? undefined);
@@ -10,7 +11,7 @@ export function RasterDatumChoice({ settings, selected, image, onChange, onError
     <label className="map-coordinate-choice">
       <span>图源坐标系</span>
       <select aria-label="图源坐标系" disabled={image || (!selected && !settings.satellite && settings.satelliteProvider !== 'tianditu')}
-        value={settings.rasterDatums?.[key] ?? 'wgs84'}
+        value={settings.rasterDatums?.[key] ?? defaultDatum}
         onChange={e => {
           const rasterDatums = { ...settings.rasterDatums, [key]: e.target.value as RasterDatum };
           onChange({ rasterDatums });

@@ -2,6 +2,7 @@ import type { Map as LibreMap, AddProtocolAction } from 'maplibre-gl';
 import { readMap } from './storage';
 import { OfflineClient } from './offlineClient';
 import { SOURCE_ID, type MapSource } from './types';
+import { renderOvmapTile } from './ovmapTiles';
 
 const EMPTY = Uint8Array.from(
   atob(
@@ -18,17 +19,43 @@ export class MapSourceLayer {
   private client?: OfflineClient;
   private imageUrl?: string;
   private opening: Promise<unknown> = Promise.resolve();
+  private onlineAbort = new AbortController();
+  private partialOverlay = false;
   constructor(
     private map: LibreMap,
     private status: (text: string) => void,
+    private readonly scheme = 'shantu-map',
   ) {}
   protocol: AddProtocolAction = async (params, abort) => {
-    const match = /^shantu-map:\/\/([a-z0-9-]+)\/(\d+)\/(\d+)\/(\d+)$/.exec(
+    const escapedScheme = this.scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = new RegExp(`^${escapedScheme}://([a-z0-9-]+)/(\\d+)/(\\d+)/(\\d+)$`).exec(
       params.url,
     );
     const client = this.client;
-    if (!match || match[1] !== this.current || !client)
+    if (!match || match[1] !== this.current)
       throw new DOMException('图源已切换', 'AbortError');
+    if (this.selected?.ovmap) {
+      const controller = new AbortController();
+      const lifetime = this.onlineAbort.signal;
+      const cancel = () => controller.abort();
+      abort.signal.addEventListener('abort', cancel, { once: true });
+      lifetime.addEventListener('abort', cancel, { once: true });
+      const timeout = setTimeout(cancel, 20000);
+      try {
+        abort.signal.throwIfAborted(); lifetime.throwIfAborted();
+        const data = await renderOvmapTile(this.selected.ovmap.layers, Number(match[2]), Number(match[3]), Number(match[4]), controller.signal, () => { if (!lifetime.aborted) this.partialOverlay = true; });
+        if (!lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
+        return { data };
+      } catch (error) {
+        if (!controller.signal.aborted && !lifetime.aborted) this.status('部分图源影像暂未加载，可重试或切换图源');
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+        abort.signal.removeEventListener('abort', cancel);
+        lifetime.removeEventListener('abort', cancel);
+      }
+    }
+    if (!client) throw new DOMException('图源已切换', 'AbortError');
     await this.opening;
     const bytes = await client.request<Uint8Array | undefined>(
       {
@@ -96,8 +123,8 @@ export class MapSourceLayer {
         this.map.addSource(SOURCE_ID, {
           type: 'raster',
           tiles:
-            source.kind === 'mbtiles'
-              ? [`shantu-map://${id}/{z}/{x}/{y}`]
+            source.kind === 'mbtiles' || source.ovmap
+              ? [`${this.scheme}://${id}/{z}/{x}/{y}`]
               : source.tiles,
           scheme: source.kind === 'online' ? source.scheme : 'xyz',
           tileSize: source.tileSize,
@@ -141,6 +168,9 @@ export class MapSourceLayer {
     }
   }
   clear() {
+    this.partialOverlay = false;
+    this.onlineAbort.abort();
+    this.onlineAbort = new AbortController();
     this.generation++;
     this.current = '';
     this.selected = null;

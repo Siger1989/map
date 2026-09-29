@@ -5,6 +5,7 @@ import mobileHasCompatibility from '../scripts/mobile-has-compat.mjs';
 import mobileViewportCompatibility from '../scripts/mobile-css-compat.mjs';
 import mobileWorkerCompatibility from '../scripts/mobile-worker-compat.mjs';
 import layoutEditor from '../tools/layout-editor/plugin.mjs';
+import { mapTileVitePlugin } from '../tools/map-tile-proxy.mjs';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ mode }) => ({
@@ -30,7 +31,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
-  plugins: [react(), mobileWorkerCompatibility(), layoutEditor()],
+  plugins: [mapTileVitePlugin(), react(), mobileWorkerCompatibility(), layoutEditor()],
   css: {
     postcss: {
       plugins: [

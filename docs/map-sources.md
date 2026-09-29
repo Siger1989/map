@@ -4,6 +4,8 @@
 
 ## 添加方式
 
+2026-09-29本地预览新增[OVMAP合集导入及图源搜索](ovmap-import.md)。该能力尚未发布到APK；其平台与验证边界以专题文档为准。
+
 1. 粘贴图源地址、JSON / XML 配置，或选择配置文件。
 2. 使用相机扫码，或选择已有二维码图片。识别结果先回到填写页，检查内容后再预览；不会自动跳转二维码中的网站。
 3. 从系统文件选择器选择 MBTiles / GeoTIFF，检查名称、坐标范围和格式后确认。确认保存成功才切换底图；取消或识别失败保留当前地图。
@@ -18,11 +20,11 @@
 | MBTiles         | 标准 SQLite metadata / tiles，TMS 行号、PNG / JPEG / WebP 栅格；最多 10 万张，单瓦片 ≤4 MB；不支持 PBF 矢量、加密或非标准 XYZ 行号文件           |
 | GeoTIFF         | 8 位灰度 / RGB / RGBA 北向区域影像；EPSG:4326、3857、WGS84 UTM（32601–32660 / 32701–32760）。转换为 Web Mercator 显示副本，最长边 2048 像素      |
 
-离线单文件 ≤64 MB；GeoTIFF 输入 ≤1600 万像素。地图库最多 20 项 / 256 MB，另受设备剩余存储空间影响。原文件不修改；GeoTIFF 保存转换后的 PNG 副本，大文件宜用 GIS 缩小范围或转栅格 MBTiles。跨日期变更线、旋转 TIFF、未知坐标系、PixelIsPoint、16 位 / 浮点高程及多光谱不在本次范围。
+离线单文件 ≤64 MB；GeoTIFF 输入 ≤1600 万像素。地图库最多 100 项 / 256 MB，另受设备剩余存储空间影响。原文件不修改；GeoTIFF 保存转换后的 PNG 副本，大文件宜用 GIS 缩小范围或转栅格 MBTiles。跨日期变更线、旋转 TIFF、未知坐标系、PixelIsPoint、16 位 / 浮点高程及多光谱不在本次范围。
 
 网页需要先打开应用、加载读取模块后再断网使用；本次没有新增网页离线启动缓存。Android 构建将页面、后台模块与 SQL WASM 一起内置，本机文件地图不依赖远程瓦片服务。在线天气、道路叠加和未缓存的三维高程仍各自需要网络，不能将其称为整个应用完全离线。
 
-奥维提供的 `.ovmap` 和部分二维码属于专有格式，**不能保证通用导入**；本应用不解密。请向提供方索取本表中的标准格式。GPX / KML / KMZ 属于轨迹导入，使用“行程”入口。暂不支持 PMTiles、GeoPackage、Shapefile、矢量 Style JSON、GCJ-02 / BD-09 图源。
+OVMAP目前支持专题文档列明的普通封装；其他版本和加密二维码尚未支持。标准墨卡托栅格可以使用GCJ-02 / BD-09偏移校正，百度专用瓦片矩阵仍未支持。GPX / KML / KMZ属于轨迹导入。暂不支持PMTiles、GeoPackage、Shapefile和矢量Style JSON。
 
 示例（example.org 仅为格式示例，不能实际取图）：
 
@@ -66,3 +68,6 @@
 执行类型检查、全套逻辑测试、网页构建、完整 Android 未签名构建。原生相机与 Android 系统文件选择器仍须真机验收；浏览器拒权模拟不等于真机授权通过。本机缺少原 0.2.4 私钥，不能发布可覆盖安装的新签名包；原包名与预期证书配置保持。
 
 格式依据：[奥维自定义地图二维码](https://www.ovital.com/137268-2/)、[奥维地图分享](https://www.ovital.com/142734-2/)、[MapLibre sources](https://maplibre.org/maplibre-style-spec/sources/)、[MBTiles 1.3](https://github.com/mapbox/mbtiles-spec/blob/master/1.3/spec.md)。
+# APK 默认图源（0.2.83）
+
+APK可在构建时通过 `-DefaultMapSources` 注入私有在线清单。首次运行事务初始化到可删除的本机图库，去重保留已有条目；重启/覆盖升级不复活已删除项。初始化失败保留已有图源可用。Android `/api/map-tile` 已有原生通道：逐跳公网校验、固定DNS地址、TLS主机验证、有限重定向、响应大小与时限限制，不放开WebView混合内容。提供方鉴权、可达性和覆盖限制仍适用。

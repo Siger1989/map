@@ -2,6 +2,7 @@ import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
 import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentMapStyle';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { readLastView, saveLastView } from './lastView';
+import { CameraSync } from './cameraSync';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import { offlineProtocol, offlineTransform } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
@@ -80,6 +81,7 @@ import { PhotoLayer } from '../photos/PhotoLayer';
 import type { VisiblePhoto } from '../photos/storage';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
+import type { CameraSnapshot } from '../controls/useMapFocusLock';
 import {
   INITIAL_VIEW,
   type LayerSettings,
@@ -87,6 +89,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  applyCamera: (camera: CameraSnapshot) => void;
   shareMapStyle: () => ShareMapStyle | null;
   highlightOffline: (trip: import("../outdoor/offline").TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
@@ -139,7 +142,14 @@ export type MapHandle = {
   panZoomGesture: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
   finishPanZoomGesture: () => void;
 };
-type Props = {
+export type TerrainMapProps = {
+  initialCamera?: CameraSnapshot;
+  persistCamera?: boolean;
+  onCameraChange?: (camera: CameraSnapshot) => void;
+  onReady?: () => void;
+  readOnly?: boolean;
+  queryOnPick?: boolean;
+  className?: string;
   collectionPreviewActive?: boolean;
   mapSource?: MapSource | null;
   onSourceStatus?: (status: string) => void;
@@ -199,13 +209,18 @@ type Props = {
   onDragPreview: (move: FeatureMove | null) => void;
   onDragCommit: (move: FeatureMove) => void;
 };
-export const TerrainMap = forwardRef<MapHandle, Props>(
+let terrainMapProtocolInstance = 0;
+
+export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
   function TerrainMap(props, ref) {
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
     const coverageCleanup=useRef<(()=>void)|null>(null);
     useEffect(()=>()=>{coverageCleanup.current?.();},[]);
     const mapRef = useRef<Map | null>(null);
+    const cameraSync = useRef(new CameraSync());
+    const sourceProtocolScheme = useRef<string | null>(null);
+    if (!sourceProtocolScheme.current) sourceProtocolScheme.current = `shantu-map-${++terrainMapProtocolInstance}`;
     const [contextEpoch, setContextEpoch] = useState(0);
     const boxGestureActive = useRef<boolean>(false);
     // Updated synchronously by the app before React propagates the new layer props.
@@ -254,6 +269,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     const satelliteAbort = useRef<AbortController | null>(null);
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
+    const applyCameraToMap = (map: Map, camera: CameraSnapshot) => cameraSync.current.apply(map, camera);
     const collectionTarget = useRef<Coordinate[]>([]);
     const fitCollection = (
       coordinates: Coordinate[],
@@ -348,7 +364,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
         : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
-      const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? 'wgs84';
+      const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? mapSource?.datum ?? 'wgs84';
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
       const source=ids[0] ? map.getSource(ids[0]) : null;
@@ -487,7 +503,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
       boxGestureActive.current = false;
       const m = mapRef.current;
       if (!m || !loaded.current) return;
-      saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
+      if (latest.current.persistCamera !== false) saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
       areaRef.current?.sync(latest.current.areaOverlay);
       latest.current.onCenter?.(m.getCenter().wrap().toArray());
       syncTracks(latest.current.trackOverlay);
@@ -502,6 +518,11 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
+        applyCamera: (camera) => {
+          const map = mapRef.current;
+          if (map) applyCameraToMap(map, camera);
+          else cameraSync.current.queue(camera);
+        },
         shareMapStyle: () => mapRef.current && loaded.current ? currentShareMapStyle(mapRef.current.getStyle()) : null,
         cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing()} : null; },
         restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
@@ -835,15 +856,17 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
           maplibre.setWorkerCount(2);
           maplibre.addProtocol('tripcache', offlineProtocol);
+          const initialCamera = cameraSync.current.pendingCamera() ?? latest.current.initialCamera ??
+            (latest.current.persistCamera === false ? INITIAL_VIEW : readLastView() ?? INITIAL_VIEW);
           const map = new maplibre.Map({
             container: container.current,
             style: baseStyle(),
             transformRequest: offlineTransform,
             // Use MapLibre's native devicePixelRatio; a 2x cap softens high-DPI
             // labels and lines. Its default maxCanvasSize/GL limits still apply.
-            ...(readLastView() ?? INITIAL_VIEW),
+            ...initialCamera,
             // MapLibre gives a valid explicit URL hash priority over the saved camera.
-            hash: true,
+            hash: latest.current.persistCamera !== false,
             maxPitch: 80,
             maxZoom: 20,
             minZoom: 0,
@@ -857,6 +880,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             canvasContextAttributes: { antialias: false },
           });
           mapRef.current = map;
+          const queuedCamera = cameraSync.current.pendingCamera();
+          if (queuedCamera) applyCameraToMap(map, queuedCamera);
           const snapViewport = createSnapViewportReader(map);
           snapViewportRef.current = snapViewport;
           map.on('terrain', snapViewport.invalidate);
@@ -866,7 +891,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             if (event.sourceId && event.sourceId === map.getTerrain()?.source) snapViewport.invalidate();
           });
           const publishView = cameraViewPublisher(value => latest.current.onView(value));
-          map.on('movestart', () => latest.current.onCameraMoveStart?.());
+          map.on('movestart', (event) => {
+            if (event.originalEvent || !cameraSync.current.hasTarget()) latest.current.onCameraMoveStart?.();
+          });
           const mapElement = map.getContainer();
           const onWheel = () => latest.current.onBrowse();
           const onPinch = (event: TouchEvent) => {
@@ -881,7 +908,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           rasterLockRef.current = new RasterLevelLock(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () => {
-            if (boxGestureActive.current) return;
+            if (boxGestureActive.current || latest.current.persistCamera === false) return;
             saveLastView({
               center: map.getCenter().wrap().toArray(),
               zoom: map.getZoom(),
@@ -925,14 +952,14 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             setContextEpoch(epoch => epoch + 1);
           });
           sourceRef.current = new MapSourceLayer(map, (text) =>
-            latest.current.onSourceStatus?.(text),
+            latest.current.onSourceStatus?.(text), sourceProtocolScheme.current!,
           );
-          maplibre.addProtocol('shantu-map', sourceRef.current.protocol);
-          const coordinates = new RasterCoordinates(map, sourceRef.current.protocol);
+          maplibre.addProtocol(sourceProtocolScheme.current!, sourceRef.current.protocol);
+          const coordinates = new RasterCoordinates(map, sourceRef.current.protocol, sourceProtocolScheme.current!);
           coordinatesRef.current = coordinates;
           maplibre.addProtocol(coordinates.scheme, coordinates.protocol);
           detailPatchRef.current = new RasterDetailPatch(map, coordinates.fetch);
-          releaseSourceProtocol = () => { maplibre.removeProtocol('shantu-map'); maplibre.removeProtocol(coordinates.scheme); };
+          releaseSourceProtocol = () => { maplibre.removeProtocol(sourceProtocolScheme.current!); maplibre.removeProtocol(coordinates.scheme); };
           const preview = document.createElement('div');
           preview.className = 'route-preview-cursor';
           preview.setAttribute('aria-label', '行程预览位置');
@@ -945,9 +972,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           drawingRef.current = new DrawingGestureBridge(map, (input) =>
             latest.current.onDrawingInput(input),
           );
-          drawingRef.current.configure(latest.current.drawingActive);
+          drawingRef.current.configure(!latest.current.readOnly && latest.current.drawingActive);
           featureDragRef.current = new FeatureDragBridge(map, {
             enabled: () =>
+              !latest.current.readOnly &&
               !latest.current.drawingActive &&
               !latest.current.pickingActive &&
               !latest.current.sectionEditing,
@@ -1047,6 +1075,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
           longPressRef.current = new MapLongPress(map, {
             enabled: () =>
               loaded.current &&
+              !latest.current.readOnly &&
               !!latest.current.onMapHold &&
               !latest.current.drawingActive &&
               !latest.current.pickingActive &&
@@ -1091,6 +1120,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             .setLngLat(selected)
             .addTo(map);
           const pick = (lng: number, lat: number) => {
+            if (latest.current.readOnly) return;
             terrainAbort.current?.abort();
             const abort = new AbortController();
             terrainAbort.current = abort;
@@ -1120,9 +1150,9 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             areaRef.current = new AreaLayer(map);
             areaRef.current.sync(latest.current.areaOverlay);
             positionRef.current = new PositionLayer(map);
-            photosRef.current = new PhotoLayer(map, (ids) =>
-              latest.current.onPhotoSelect(ids),
-            );
+            photosRef.current = new PhotoLayer(map, (ids) => {
+              if (!latest.current.readOnly) latest.current.onPhotoSelect(ids);
+            });
             photosRef.current.sync(latest.current.photos);
             try {
               const { AnnotationLayer } =
@@ -1130,12 +1160,15 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               if (disposed) return;
               annotationRef.current = new AnnotationLayer((id) => {
                 if (
+                  !latest.current.readOnly &&
                   !latest.current.drawingActive &&
                   (!latest.current.pickingActive ||
                     latest.current.annotationPicking)
                 )
                   latest.current.onAnnotationSelect(id);
-              }, (id, slot) => latest.current.onAnnotationNavigate?.(id, slot));
+              }, (id, slot) => {
+                if (!latest.current.readOnly) latest.current.onAnnotationNavigate?.(id, slot);
+              });
               map.addLayer(annotationRef.current);
               if (modelMaskRef.current) {
                 modelTerrainRef.current = new ModelTerrainLayer(
@@ -1179,6 +1212,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
             if (disposed) return;
             sync();
+            const latestQueuedCamera = cameraSync.current.pendingCamera();
+            if (latestQueuedCamera) applyCameraToMap(map, latestQueuedCamera);
             const initialCenter = map.getCenter();
             latest.current.onCenter?.(initialCenter.wrap().toArray());
             weatherAnchor.current = initialCenter.toArray();
@@ -1188,7 +1223,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
               bearing: map.getBearing(),
               zoom: map.getZoom(),
             }, true);
-            pick(initialCenter.lng, initialCenter.lat);
+            if (!latest.current.readOnly && latest.current.queryOnPick !== false)
+              pick(initialCenter.lng, initialCenter.lat);
+            latest.current.onCameraChange?.(cameraSync.current.remember(map));
+            latest.current.onReady?.();
             syncSatellite();
             latest.current.onStatus('真实地形 · 点击地图读取海拔');
             try {
@@ -1219,6 +1257,7 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
             }
           });
           map.on('click', (event) => {
+            if (latest.current.readOnly) return;
             if (
               latest.current.drawingActive ||
               featureDragRef.current?.blocksClick() ||
@@ -1312,7 +1351,8 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                 return;
               }
             }
-            pick(event.lngLat.lng, event.lngLat.lat);
+            if (latest.current.queryOnPick !== false)
+              pick(event.lngLat.lng, event.lngLat.lat);
             latest.current.onMapPick([event.lngLat.lng, event.lngLat.lat]);
           });
           map.on('move', () => {
@@ -1326,6 +1366,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
                   pitch: map.getPitch(),
                   zoom: map.getZoom(),
                 });
+              if (!disposed && !boxGestureActive.current && !cameraSync.current.isProgrammatic(map)) {
+                const camera = cameraSync.current.remember(map);
+                latest.current.onCameraChange?.(camera);
+              }
             });
           });
           map.on('dragstart', (event) => {
@@ -1504,12 +1548,12 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
         ));
     }, [props.annotations, props.annotationSelected, props.section.enabled]);
     useEffect(() => {
-      if (props.drawingActive || props.pickingActive || props.sectionEditing) {
+      if (props.readOnly || props.drawingActive || props.pickingActive || props.sectionEditing) {
         featureDragRef.current?.cancel();
         longPressRef.current?.cancel();
       }
-      drawingRef.current?.configure(props.drawingActive);
-    }, [props.drawingActive, props.pickingActive, props.sectionEditing]);
+      drawingRef.current?.configure(!props.readOnly && props.drawingActive);
+    }, [props.drawingActive, props.pickingActive, props.sectionEditing, props.readOnly]);
     useEffect(() => {
       if (!props.collectionPreviewActive) collectionTarget.current = [];
     }, [props.collectionPreviewActive]);
@@ -1534,10 +1578,10 @@ export const TerrainMap = forwardRef<MapHandle, Props>(
     return (
       <div
         ref={container}
-        className="map-canvas"
-        data-annotation-picking={props.annotationPicking === true}
+        className={`map-canvas${props.className ? ` ${props.className}` : ''}`}
+        data-annotation-picking={props.annotationPicking === true && !props.readOnly}
         data-picking={
-          props.pickingActive || props.drawingActive || props.sectionEditing
+          !props.readOnly && (props.pickingActive || props.drawingActive || props.sectionEditing)
         }
         aria-label="全球三维地形地图"
       />

@@ -55,6 +55,18 @@ final class LocalGateway {
                 if (!DataTransport.validTile(z, x, y, 5)) return text(400, "Invalid geology tile");
                 return binary(DataTransport.get("https://tiles.macrostrat.org/carto/" + z + "/" + x + "/" + y + ".mvt", 4 * 1024 * 1024), "application/vnd.mapbox-vector-tile");
             }
+            if ("/api/map-tile".equals(path)) {
+                String source = uri.getQueryParameter("url");
+                if (source == null || source.isEmpty()) return text(400, "Missing tile URL");
+                try {
+                    MapTileProxy.Tile tile = MapTileProxy.fetch(source);
+                    return response(200, tile.mime, new ByteArrayInputStream(tile.bytes), "private, max-age=300");
+                } catch (MapTileProxy.TileException error) {
+                    return text(error.status, error.status == 400 ? "Invalid tile URL" : "Map tile unavailable");
+                } catch (Exception error) {
+                    return text(502, "Map tile unavailable");
+                }
+            }
             if ("/api/satellite".equals(path)) return json(200, "{\"date\":\"" + satelliteDate() + "\"}");
             if ("/api/geology/geocloud".equals(path)) return json(503, "{\"message\":\"安卓测试版尚未配置地质云授权服务；可切换世界概览。\"}");
             if (path.startsWith("/api/")) return text(404, "Unknown endpoint");

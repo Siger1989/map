@@ -1,0 +1,73 @@
+/* Two equal map canvases; toolbar space is outside each map's projection viewport. */
+.observatory.home-map[data-comparing='true'] {
+  --compare-top: calc(var(--home-top) + 36px);
+  --compare-half: calc((100% - var(--compare-top) - var(--home-bottom) - 44px) / 2);
+}
+.observatory.home-map[data-comparing='true'] > :not(.map-canvas):not(.map-comparison-ui) { display: none !important; }
+.observatory.home-map[data-comparing='true']::before { display: none; }
+.observatory.home-map[data-comparing='true'] > .map-canvas {
+  left: 0 !important; right: 0 !important; bottom: auto !important;
+  width: 100% !important; height: calc(var(--compare-half) - 36px) !important;
+  border: 0; border-radius: 0;
+  isolation: isolate;
+}
+/* Each pane owns its scale; full-screen footer offsets must not leak in. */
+.observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-bottom-left {
+  top: auto !important; bottom: 2px !important; left: 4px !important; right: 4px !important;
+}
+.observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {
+  min-height: 20px; padding: 1px 3px; gap: 2px; font-size: 11px; line-height: 18px;
+}
+.observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body svg { width: 12px; height: 12px; }
+.observatory.home-map[data-comparing='true'] > .map-comparison-primary { top: calc(var(--compare-top) + 36px) !important; }
+.observatory.home-map[data-comparing='true'] > .map-comparison-secondary { top: calc(var(--compare-top) + var(--compare-half) + 36px) !important; }
+.map-comparison-ui {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  color: var(--ui-ink); padding-top: var(--home-top); padding-bottom: var(--home-bottom);
+  display: flex; flex-direction: column; box-sizing: border-box;
+}
+.map-comparison-heading {
+  display: flex; align-items: center; gap: 8px; padding: 0 8px;
+  height: 36px; flex: 0 0 36px; background: var(--ui-surface); pointer-events: auto;
+}
+.map-comparison-heading strong { font-size: 12px; }
+.map-comparison-heading span { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
+.map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }
+.map-comparison-pane { position: relative; min-width: 0; min-height: 0; }
+.map-comparison-toolbar {
+  display: flex; height: 36px; gap: 4px; align-items: center;
+  padding: 0 4px; background: var(--ui-surface); box-sizing: border-box; pointer-events: auto;
+}
+.map-comparison-toolbar > span { font-size: 12px; padding: 0 4px; color: var(--ui-muted); }
+.map-comparison-ui select {
+  flex: 1; min-width: 0; width: 0; height: 36px; padding: 0 6px;
+  font: inherit; font-size: 16px; border: 0; border-radius: var(--ui-radius-control);
+  background: var(--ui-field); color: var(--ui-ink); text-overflow: ellipsis;
+}
+.map-comparison-toolbar select { font-size: 12px; }
+.map-comparison-ui button {
+  min-height: 36px; min-width: 36px; flex-shrink: 0; padding: 0 8px; border: 0;
+  border-radius: var(--ui-radius-control); background: var(--ui-raised); color: var(--ui-ink);
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+.map-comparison-ui .map-comparison-use { background: var(--ui-accent); color: var(--ui-on-accent); }
+.map-comparison-ui .map-comparison-step { padding: 0; width: 36px; font-size: 18px; }
+.map-comparison-ui :is(button, select):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.map-comparison-status {
+  position: absolute; top: 36px; left: 4px; right: 4px; margin: 4px 0; padding: 4px 8px;
+  font-size: 11px; line-height: 1.4; background: var(--ui-surface); border-radius: var(--ui-radius-control);
+}
+.map-comparison-actions { position: relative; display: flex; align-items: center; justify-content: space-evenly; gap: 2px; flex: 0 0 44px; background: var(--ui-surface); pointer-events: auto; }
+.map-comparison-actions button { min-width: 44px; height: 44px; padding: 0 4px; }
+.map-comparison-actions button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
+.map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-surface); color: var(--ui-danger); font-size: 12px; margin: 0; }
+.map-comparison-gizmo { position: absolute; right: max(4px, var(--home-right)); bottom: calc(44px + var(--home-bottom) + 4px); width: 88px; height: 94px; pointer-events: auto; }
+.observatory.home-map .map-comparison-gizmo .camera-gizmo { display: block; position: relative; inset: auto; width: 88px; height: 94px; margin: 0; }
+.observatory.home-map .map-comparison-gizmo .camera-gizmo > svg { width: 88px; height: 94px; }
+.map-comparison-gizmo .camera-gizmo > svg > text { display: none; }
+.map-comparison-cross { position: absolute; left: 50%; top: calc(50% + 18px); width: 14px; height: 14px; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 0 1px #000); }
+.map-comparison-cross::before, .map-comparison-cross::after { content: ''; position: absolute; background: var(--ui-ink); }
+.map-comparison-cross::before { left: 6px; top: 0; width: 2px; height: 14px; }
+.map-comparison-cross::after { left: 0; top: 6px; width: 14px; height: 2px; }
+.map-comparison-actions .map-comparison-properties-button { min-width: 36px; font-size: 11px; padding: 0 2px; }
+@media (max-width: 379px) { .map-comparison-actions .map-comparison-north { display: none; } }

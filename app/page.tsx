@@ -34,6 +34,8 @@ import { offlineMapStatus } from '@/modules/outdoor/tileCache';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
+import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
+import { comparisonChoices } from '@/modules/mapComparison/choices';
 import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
 import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerPreferences';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
@@ -295,6 +297,7 @@ export default function Home() {
   const [routeNodeBoxMode, setRouteNodeBoxMode] = useState<'add' | 'subtract'>('add');
   const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
   const mapSources = useMapSources();
+  const [comparison, setComparison] = useState<ComparisonSession | null>(null);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
     : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
@@ -1288,6 +1291,7 @@ export default function Home() {
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
       <main
         className="observatory home-map"
+        data-comparing={comparison !== null}
         data-ui-style="outdoor"
         data-rally={rallyMode && !!navigation.route}
         data-guiding={guidance.active && !rallyMode}
@@ -1315,6 +1319,7 @@ export default function Home() {
         data-offline-picking={offlinePicking}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
+          if (comparison) { event.preventDefault(); setComparison(null); return; }
           if (offlineDownload) { event.preventDefault();setOfflineDownload(null);return; }
           if (offlinePicking) {
             event.preventDefault();
@@ -1413,6 +1418,28 @@ export default function Home() {
         {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !offlineDownload && !offlinePicking && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
           disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
+        <MapComparisonHost session={comparison} primary={map} view={view} onClose={() => setComparison(null)} onUse={choice => {
+          mapSources.select(choice.source?.id ?? '');
+          map.current?.setTerrainMode(choice.settings.terrain);
+          setLayers(choice.settings);
+          setComparison(null);
+        }} operations={{
+          onMark: coordinates => annotations.add('pin', coordinates),
+          onDraw: () => { tracks.start(); setPanel(null); },
+          onVertex: tracks.addVertex,
+          onUndo: tracks.undo,
+          onSave: () => tracks.save('', true),
+          onPause: tracks.finish,
+          onLocate: () => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(fix => map.current?.focusPoint(fix.coordinates)); },
+          canUndo: tracks.canUndo,
+          error: tracks.error || annotations.error,
+          markerError: annotations.error,
+          style: tracks.style,
+          onStyle: tracks.setStyle,
+          marker: selectedAnnotation,
+          onSelectMarker: id => annotations.items.some(item => item.id === id) && annotations.select(id),
+          onUpdateMarker: annotations.update,
+        }}>
         <TerrainMap
           mapSource={mapSources.source}
           onSourceStatus={mapSources.setStatus}
@@ -1730,6 +1757,7 @@ export default function Home() {
             }
           }}
         />
+        </MapComparisonHost>
         {routeVisible &&
           !offlineDownload &&
           railTrack &&
@@ -1975,7 +2003,7 @@ export default function Home() {
           ref={drawing}
           distanceSegments={branchEditing ? [editor.session!.track.segments[editor.session!.branch!]] : tracks.draft}
           enabled={
-            (branchEditing || tracks.drawing) &&
+            !comparison && (branchEditing || tracks.drawing) &&
             !areas.drawing &&
             panel === null
           }
@@ -2733,6 +2761,18 @@ export default function Home() {
             />
           )}
         <ControlDock
+          onCompare={() => {
+            const camera = map.current?.cameraSnapshot();
+            if (!camera) return;
+            map.current?.stop();
+            follow.pause();
+            position.free();
+            tracks.pause();
+            setRallyMode(false);
+            setQuickAdd(null);
+            setPanel(null);
+            setComparison({ camera, choices: comparisonChoices(layers, mapSources.source, rasterName, mapSources.maps) });
+          }}
           onMeasure={() => {
             if (editor.session) {
               backEditor();

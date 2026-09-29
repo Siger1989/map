@@ -231,10 +231,10 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
   grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding-top:2px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button {
-  box-sizing:border-box; flex-direction:row; gap:4px; min-width:0; min-height:36px; padding:4px 6px;
+  box-sizing:border-box; flex-direction:row; gap:4px; min-width:0; width:100%; height:36px; min-height:36px; padding:2px 4px;
   border-radius:var(--ui-radius-control); font-size:11px; white-space:nowrap;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button.is-primary { min-height:44px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button.is-primary { height:36px; min-height:36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button svg { width:15px; height:15px; flex:0 0 15px; }
 /* Keep every route action and both delete choices visible in compact screens. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card:has(.home-route-delete-confirm) {

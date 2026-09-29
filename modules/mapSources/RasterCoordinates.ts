@@ -27,7 +27,7 @@ export class RasterCoordinates {
   private waiting = new Set<() => void>();
   private idleWorkers: Worker[] = [];
   private closed = false;
-  constructor(private map: LibreMap, private localProtocol: AddProtocolAction) {}
+  constructor(private map: LibreMap, private localProtocol: AddProtocolAction, private mapScheme = 'shantu-map') {}
 
   sync(ids: string[], datum: RasterDatum) {
     const active = new Set(ids.map(id => this.map.getSource(id)).filter(s => s?.type === 'raster'));
@@ -62,7 +62,7 @@ export class RasterCoordinates {
         return new Response(result.data as ArrayBuffer, { headers: { 'Content-Type': 'image/png' } });
       } finally { signal.removeEventListener('abort', cancel); }
     }
-    if (url.startsWith('shantu-map://')) {
+    if (url.startsWith(`${this.mapScheme}://`)) {
       const abort = new AbortController(), cancel = () => abort.abort(signal.reason);
       signal.addEventListener('abort', cancel, { once: true });
       try { signal.throwIfAborted(); return new Response((await this.localProtocol({ url, type: 'arrayBuffer' }, abort)).data as ArrayBuffer); }
@@ -117,7 +117,7 @@ export class RasterCoordinates {
     try {
       await this.slot(abort.signal); acquired = true;
       const z = Number(match[2]), x = Number(match[3]), y = Number(match[4]);
-      if (!Number.isInteger(z) || z < 0 || z > 22 || x >= 2**z || y >= 2**z) throw Error('无效瓦片坐标');
+      if (!Number.isInteger(z) || z < 0 || z > 24 || x >= 2**z || y >= 2**z) throw Error('无效瓦片坐标');
       const plan = warpPlan(z, x, y, binding.source.tileSize, binding.datum);
       const tiles: ArrayBuffer[] = [];
       // Bounded input fan-out, and the same offline/native fetch path as the map.

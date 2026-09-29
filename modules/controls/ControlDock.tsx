@@ -1,4 +1,5 @@
 import { isLayoutInteraction } from '../uiLayout/events';
+import { FullscreenButton } from './FullscreenButton';
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
   Clock3,
@@ -13,6 +14,7 @@ import {
   ChevronLeft,
   Ruler,
   NotebookPen,
+  PanelsTopLeft,
 } from 'lucide-react';
 import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, BriefcaseIcon } from '@heroicons/react/24/solid';
 
@@ -55,6 +57,7 @@ export function ControlDock({
   children,
   onScanRoute,
   onMeasure,
+  onCompare,
   keepOpenOnMapInteraction = false,
   mapPicking = false,
 }: {
@@ -71,6 +74,7 @@ export function ControlDock({
   children: ReactNode;
   onScanRoute?: () => void;
   onMeasure?: () => void;
+  onCompare?: () => void;
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
 }) {
@@ -175,6 +179,8 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
+                {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
+                <FullscreenButton />
                 {onMeasure && (
                   <button onClick={onMeasure}>
                     <Ruler size={18} />

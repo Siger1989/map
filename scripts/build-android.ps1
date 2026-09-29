@@ -5,6 +5,7 @@
   [string]$SigningKey = $env:GUANYUN_SIGNING_KEY,
   [switch]$UnsignedOnly,
   [switch]$StandaloneTest,
+  [string]$DefaultMapSources,
   [switch]$SkipCompression
 )
 $ErrorActionPreference = 'Stop'
@@ -85,6 +86,19 @@ try {
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
   }
   Copy-Item -LiteralPath (Join-Path $projectRoot 'modules\terrain\ground-coverage.json') -Destination (Join-Path $webRoot 'native\ground-coverage.json')
+  $defaultMapsTarget = Join-Path $webRoot 'native\default-map-sources.json'
+  if ($DefaultMapSources) {
+    # User-owned source credentials are injected only into this local build, never public/ or Git.
+    $defaultMapsFile = [IO.Path]::GetFullPath($DefaultMapSources)
+    if (!(Test-Path -LiteralPath $defaultMapsFile -PathType Leaf)) { throw 'Default map sources file missing' }
+    if ((Get-Item -LiteralPath $defaultMapsFile).Length -gt 1MB) { throw 'Default map sources exceed 1 MB' }
+    $defaultMaps = Get-Content -LiteralPath $defaultMapsFile -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($defaultMaps.version -ne 1 -or @($defaultMaps.maps).Count -lt 1 -or @($defaultMaps.maps).Count -gt 100) { throw 'Invalid default map sources manifest' }
+    Copy-Item -LiteralPath $defaultMapsFile -Destination $defaultMapsTarget
+    Write-Output "Local default map sources included: $(@($defaultMaps.maps).Count). This APK contains user-owned source configuration; do not upload it automatically."
+  } elseif (Test-Path -LiteralPath $defaultMapsTarget) {
+    throw 'Unexpected default map sources in web assets; use a fresh build with explicit -DefaultMapSources'
+  }
   $aapt = Join-Path $toolRoot 'aapt2.exe'
   $resources = Join-Path $stage 'resources.zip'
   $baseApk = Join-Path $stage 'base.apk'
@@ -165,6 +179,15 @@ try {
       }
     }
     if (@($names | Where-Object { $_ -match '(^|/)\.env|\.jks$|\.keystore$|node_modules/|\.openai/' }).Count) { throw 'Private build files found in APK' }
+    if ($DefaultMapSources) {
+      $entry = $archive.GetEntry('assets/native/default-map-sources.json')
+      if (!$entry) { throw 'Default map sources missing from APK' }
+      $entryStream = $entry.Open()
+      $algorithm = [Security.Cryptography.SHA256]::Create()
+      try { $assetDigest = [BitConverter]::ToString($algorithm.ComputeHash($entryStream)).Replace('-', '') }
+      finally { $entryStream.Dispose(); $algorithm.Dispose() }
+      if ($assetDigest -ne (Get-Sha256 $defaultMapsFile)) { throw 'Packaged default map sources do not match input' }
+    }
     Write-Output "Bundled terrain tiles verified: $tileCount"
   } finally { $archive.Dispose() }
   $digest = Get-Sha256 $apk

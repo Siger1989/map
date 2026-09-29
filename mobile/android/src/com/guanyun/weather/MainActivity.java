@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.WindowInsets;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -34,6 +35,21 @@ public final class MainActivity extends Activity {
     private void applyScreenOn() {
         if (screenRequested && foreground) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         else getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+    private void applyImmersiveFullscreen() {
+        if (!hasWindowFocus()) return;
+        if (Build.VERSION.SDK_INT >= 30) {
+            android.view.WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller == null) return;
+            controller.setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            );
+        }
     }
     boolean trustedForeground() { return foreground && webView != null && webView.getUrl() != null && webView.getUrl().startsWith(START); }
     private static final String START = "https://appassets.androidplatform.net/index.html";
@@ -104,6 +120,7 @@ public final class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
         root.requestApplyInsets();
+        applyImmersiveFullscreen();
         // OEM package versions are not Chromium versions. The bundled bootstrap
         // supplies missing web APIs and checks actual rendering capabilities.
         webView.loadUrl(START);
@@ -126,8 +143,12 @@ public final class MainActivity extends Activity {
             if (!"true".equals(result)) MainActivity.super.onBackPressed();
         });
     }
+    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) applyImmersiveFullscreen();
+    }
     @Override protected void onPause() { foreground = false; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.pause(); if(nativeBridge!=null)nativeBridge.motion.pause(); if(nativeBridge!=null)nativeBridge.position.pause(); webView.onPause(); webView.pauseTimers(); super.onPause(); }
-    @Override protected void onResume() { super.onResume(); foreground = true; applyScreenOn(); if(nativeBridge!=null)nativeBridge.compass.resume(); if(nativeBridge!=null)nativeBridge.motion.resume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
+    @Override protected void onResume() { super.onResume(); foreground = true; applyScreenOn(); applyImmersiveFullscreen(); if(nativeBridge!=null)nativeBridge.compass.resume(); if(nativeBridge!=null)nativeBridge.motion.resume(); if (webView != null) { webView.resumeTimers(); webView.onResume(); } if(nativeBridge!=null)nativeBridge.position.resume(); if(locationPermissions!=null)locationPermissions.camera.resume(); }
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode == NativeBridge.REQUEST && nativeBridge != null) nativeBridge.resolve();

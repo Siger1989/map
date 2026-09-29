@@ -9,6 +9,7 @@ import { GET as terrain } from '../app/api/terrain/[z]/[x]/[y]/route';
 import { GET as geology } from '../app/api/geology/tiles/[z]/[x]/[y]/route';
 import { GET as satellite } from '../app/api/satellite/route';
 import { GET as geocloud } from '../app/api/geology/geocloud/route';
+import { GET as mapTile } from '../app/api/map-tile/route';
 import { APP_VERSION } from '../config/product';
 
 const mime: Record<string, string> = {
@@ -75,6 +76,8 @@ export function createDesktopServer(root: string) {
       } else if (pathname === '/api/satellite') result = await satellite();
       else if (pathname === '/api/geology/geocloud')
         result = await geocloud(new Request(url));
+      else if (pathname === '/api/map-tile')
+        result = await mapTile(new Request(url, { method: req.method }));
       else if (pathname.startsWith('/api/'))
         result = new Response('Not found', { status: 404 });
       if (result) {

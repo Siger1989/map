@@ -1,13 +1,14 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import {
   MAX_CONFIG_BYTES,
+  MAX_MAPS,
   plainText,
   validBounds,
   type MapDraft,
 } from './types.ts';
 
 const PRIVATE_FORMAT =
-  '这是专有或暂不支持的地图配置。奥维加密二维码 / .ovmap 不能直接通用导入，请向提供方索取 XYZ / WMTS 图源地址或标准栅格文件。';
+  '此专有文本或二维码尚未支持。OVMAP 文件请使用“导入地图文件”；也可填写 XYZ / WMTS 图源地址。';
 
 /** No proxy: templates are requested directly by the map, subject to provider CORS. */
 export function mapUrl(raw: string, base?: string): string {
@@ -158,7 +159,7 @@ export function parseMapConfig(text: string, base?: string): MapDraft[] {
         'XML 支持 MOBAC customMapSource；WMS / WMTS 请使用包含图层与瓦片矩阵集的完整瓦片地址',
       );
     const list = Array.isArray(maps) ? maps : [maps];
-    if (list.length > 20) throw new Error('一次最多导入 20 个图源');
+    if (list.length > MAX_MAPS) throw new Error(`一次最多导入 ${MAX_MAPS} 个图源`);
     return list.map((m: Record<string, unknown>) => {
       if (m.tileUpdate || m.script) throw new Error('不执行图源配置中的脚本');
       return onlineDraft(
@@ -188,8 +189,8 @@ export function parseMapConfig(text: string, base?: string): MapDraft[] {
     : data && typeof data === 'object' && 'maps' in data
       ? (data as { maps: unknown }).maps
       : [data];
-  if (!Array.isArray(list) || !list.length || list.length > 20)
-    throw new Error('一次支持 1–20 个图源');
+  if (!Array.isArray(list) || !list.length || list.length > MAX_MAPS)
+    throw new Error(`一次支持 1–${MAX_MAPS} 个图源`);
   return list.map((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item))
       throw new Error('图源配置必须是对象');
