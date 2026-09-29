@@ -51,7 +51,7 @@ final class IncomingRoutes {
                 if (filename == null || filename.trim().isEmpty()) filename = document.getLastPathSegment();
                 if (filename == null) filename = "";
                 filename = filename.replaceAll("[\\\\/\\r\\n]", "_");
-                if (!filename.toLowerCase(Locale.ROOT).matches(".*\\.(gpx|kml|kmz|ovkml|ovkmz|json|geojson|tcx|fit|csv|tsv|ovjsn|ovobj)$")) {
+                if (!filename.toLowerCase(Locale.ROOT).matches(".*\\.(gpx|kml|kmz|ovkml|ovkmz|json|geojson|tcx|fit|csv|tsv|ovjsn|ovobj|ovmap)$")) {
                     String mime = activity.getContentResolver().getType(document);
                     if ("application/gpx+xml".equals(mime)) filename = "路线.gpx";
                     else if ("application/vnd.google-earth.kml+xml".equals(mime)) filename = "路线.kml";
@@ -62,6 +62,7 @@ final class IncomingRoutes {
                     else if ("text/tab-separated-values".equals(mime)) filename = "路线.tsv";
                     else if ("application/vnd.garmin.tcx+xml".equals(mime)) filename = "路线.tcx";
                     else if ("application/vnd.ant.fit".equals(mime)) filename = "路线.fit";
+                    else if ("application/x-ovmap".equals(mime) || "application/vnd.ovmap".equals(mime)) filename = "图源.ovmap";
                     else throw new Exception("请选择带格式后缀的路线文件（如 GPX、KML、OVOBJ、FIT）；ZIP 请先解压");
                 }
                 if (filename.length() > 180) filename = filename.substring(filename.length()-180);

@@ -1,4 +1,4 @@
-import { cloneElement, useEffect, useMemo, useRef, useState, type ReactElement, type RefObject } from 'react';
+import { cloneElement, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode, type RefObject } from 'react';
 import type { MapHandle, TerrainMapProps } from '../map/TerrainMap';
 import type { CameraSnapshot } from '../controls/useMapFocusLock';
 import type { ComparisonChoice } from './choices';
@@ -8,6 +8,8 @@ import { CameraGizmo } from '../controls/CameraGizmo';
 import { FullscreenButton } from '../controls/FullscreenButton';
 import type { Annotation } from '../annotations/data';
 import type { TrackStyle } from '../tracks/style';
+import type { DrawingMode } from '../tracks/draft';
+import type { DrawingInput } from '../tracks/DrawingGestureBridge';
 import { ComparisonLineProperties, ComparisonMarkerEditor } from './ComparisonProperties';
 import './mapComparison.css';
 
@@ -18,15 +20,20 @@ type Props = {
   onClose: () => void;
   onUse: (choice: ComparisonChoice) => void;
   view?: ViewState;
+  search?: ReactNode;
+  drawingMode?: DrawingMode;
+  onDrawingModeChange?: (mode: DrawingMode) => void;
+  onDrawingInput?: (index: 0 | 1, event: DrawingInput) => void;
+  drawingOverlay?: (index: 0 | 1, map: RefObject<MapHandle | null>) => ReactNode;
   operations?: {
     onMark: (point: Coordinate) => boolean;
     onDraw: () => void;
-    onVertex: (point: Coordinate) => void;
     onUndo: () => void;
     onSave: () => boolean;
     onPause: () => void;
     onLocate: () => void;
     canUndo: boolean;
+    drawingEnabled?: boolean;
     error: string;
     markerError?: string;
     style?: TrackStyle;
@@ -40,7 +47,7 @@ type Props = {
 const noop = () => {};
 
 /** The primary map remains mounted in its original DOM position during comparison. */
-export function MapComparisonHost({ session, primary, onClose, onUse, children, operations, view }: Props) {
+export function MapComparisonHost({ session, primary, onClose, onUse, children, operations, view, search, drawingMode = 'points', onDrawingModeChange, onDrawingInput, drawingOverlay }: Props) {
   const secondary = useRef<MapHandle | null>(null);
   const camera = useRef<CameraSnapshot | null>(null);
   const previous = useRef<ComparisonSession | null>(null);
@@ -50,6 +57,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   const [properties, setProperties] = useState<'line' | 'marker' | null>(null);
   const [notice, setNotice] = useState('');
   const [forceTerrain, setForceTerrain] = useState(false);
+  const [landscape, setLandscape] = useState(false);
   const close = useRef<HTMLButtonElement>(null);
   // A new session uses the currently displayed camera/source, including wrapped worlds.
   if (previous.current !== session) {
@@ -66,6 +74,27 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     setForceTerrain(false);
     close.current?.focus({ preventScroll: true });
   }, [session]);
+  useEffect(() => {
+    if (mode === 'draw' && operations?.drawingEnabled === false) {
+      setMode('browse');
+      setNotice('');
+    }
+  }, [mode, operations?.drawingEnabled]);
+  useEffect(() => {
+    const media = window.matchMedia?.('(orientation: landscape)');
+    if (!media) return;
+    const update = () => setLandscape(media.matches);
+    update();
+    if (media.addEventListener) media.addEventListener('change', update);
+    else media.addListener?.(update);
+    return () => {
+      if (media.removeEventListener) media.removeEventListener('change', update);
+      else media.removeListener?.(update);
+    };
+  }, []);
+  const side = (index: 0 | 1) => landscape
+    ? index === 0 ? '左' : '右'
+    : index === 0 ? '上' : '下';
   const synchronize = (from: 0 | 1, next: CameraSnapshot) => {
     camera.current = next;
     (from === 0 ? secondary : primary).current?.applyCamera(next);
@@ -91,9 +120,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   };
   const pause = () => { if (mode === 'draw') operations?.onPause(); setMode('browse'); setNotice(''); };
   const finish = (action: () => void) => { pause(); setProperties(null); action(); };
-  const pick = (point: Coordinate) => {
-    if (mode === 'draw') operations?.onVertex(point);
-  };
   const markCenter = () => {
     const center = primary.current?.centerCoordinate() ?? camera.current?.center;
     if (center && operations?.onMark(center)) { setNotice('标记已添加，可编辑'); setProperties('marker'); }
@@ -109,12 +135,13 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     readOnly: !operations,
     queryOnPick: false,
     onPoint: noop,
-    drawingActive: false,
-    pickingActive: true,
+    drawingActive: mode === 'draw' && operations?.drawingEnabled !== false,
+    pickingActive: mode !== 'draw',
     sectionEditing: false,
     annotationPicking: mode === 'browse',
     measurementPicking: false,
-    onMapPick: pick,
+    onMapPick: noop,
+    onDrawingInput: event => onDrawingInput?.(index, event),
     onMapHold: noop,
     onAnnotationSelect: selectMarker,
     onAnnotationNavigate: noop,
@@ -142,24 +169,30 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (properties) setProperties(null); else if (mode !== 'browse') pause(); else finish(onClose); }
       }}>
         <header className="map-comparison-heading">
-          <strong>双图对比</strong><span>{mode === 'draw' ? '点图连线 · 拖动移动' : notice || '十字定位 · 双向同步'}</span>
+          <strong>对比</strong>{search}
+          <span className="map-comparison-live" role="status" aria-live="polite">{mode === 'draw' ? '标准轨迹绘制已开启' : notice || '十字定位 · 双向同步'}</span>
           <FullscreenButton compact />
           <button ref={close} onClick={() => finish(onClose)} aria-label="退出双图源对比">退出</button>
         </header>
         <div className="map-comparison-panes">
-          {([0, 1] as const).map(index => <section key={index} className="map-comparison-pane" aria-label={index === 0 ? '上方地图' : '下方地图'}>
+          {([0, 1] as const).map(index => <section key={index} className="map-comparison-pane" aria-label={`${side(index)}方地图`}>
             <div className="map-comparison-toolbar">
-              <span>{index === 0 ? '上' : '下'}</span>
-              <select aria-label={`${index === 0 ? '上' : '下'}方图源`} value={choice(index).id} onChange={event => select(index, event.target.value)}>
+              <span>{side(index)}</span>
+              <select aria-label={`${side(index)}方图源`} value={choice(index).id} onChange={event => select(index, event.target.value)}>
                 {(['当前', '内置', '我的图源', '公共库'] as const).map(group => <optgroup key={group} label={group}>
                   {session.choices.filter(item => item.group === group).map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </optgroup>)}
               </select>
-              <button className="map-comparison-step" aria-label={`${index === 0 ? '上' : '下'}图：上一图源`} title="上一图源" onClick={() => step(index, -1)}>↑</button>
-              <button className="map-comparison-step" aria-label={`${index === 0 ? '上' : '下'}图：下一图源`} title="下一图源" onClick={() => step(index, 1)}>↓</button>
-              <button className="map-comparison-use" aria-label={`使用${index === 0 ? '上' : '下'}方图源`} onClick={() => finish(() => onUse(choice(index)))}>选用</button>
+              <button className="map-comparison-step" aria-label={`${side(index)}图：上一图源`} title="上一图源" onClick={() => step(index, -1)}>↑</button>
+              <button className="map-comparison-step" aria-label={`${side(index)}图：下一图源`} title="下一图源" onClick={() => step(index, 1)}>↓</button>
+              <button className="map-comparison-use" aria-label={`使用${side(index)}方图源`} onClick={() => finish(() => onUse(choice(index)))}>选用</button>
             </div>
-            <span className="map-comparison-cross" aria-label={`${index === 0 ? '上' : '下'}图中心十字`} role="img" />
+            {mode === 'draw' && operations?.drawingEnabled !== false && drawingOverlay?.(index, index === 0 ? primary : secondary)}
+            {index === 0 && mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线方式">
+              <button type="button" aria-pressed={drawingMode === 'points'} onClick={() => onDrawingModeChange?.('points')}>标准</button>
+              <button type="button" aria-pressed={drawingMode === 'freehand'} onClick={() => onDrawingModeChange?.('freehand')}>自由手绘</button>
+            </div>}
+            <span className="map-comparison-cross" aria-label={`${side(index)}图中心十字`} role="img" />
             {status[index] && /失败|未能|暂未|拒绝|中断/.test(status[index]) && <p className="map-comparison-status" role="status">{status[index]}</p>}
           </section>)}
         </div>

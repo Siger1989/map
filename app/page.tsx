@@ -176,6 +176,7 @@ import {
   TrackDrawing,
   type TrackDrawingHandle,
 } from '@/modules/tracks/TrackDrawing';
+import type { DrawingMode } from '@/modules/tracks/draft';
 import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { INITIAL_GEOLOGY } from '@/modules/geology/data';
 import { GeologyPanel } from '@/modules/geology/GeologyPanel';
@@ -210,6 +211,7 @@ export default function Home() {
   );
   const drawing = useRef<TrackDrawingHandle>(null);
   const areaDrawing = useRef<TrackDrawingHandle>(null);
+  const comparisonDrawings = [useRef<TrackDrawingHandle>(null), useRef<TrackDrawingHandle>(null)] as const;
   const areas = useAreas();
   const [areaEditing, setAreaEditing] = useState(false);
   const [modelTerrainStatus, setModelTerrainStatus] = useState('');
@@ -298,6 +300,7 @@ export default function Home() {
   const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
   const mapSources = useMapSources();
   const [comparison, setComparison] = useState<ComparisonSession | null>(null);
+  const [comparisonDrawingMode, setComparisonDrawingMode] = useState<DrawingMode>('points');
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
     : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
@@ -486,6 +489,13 @@ export default function Home() {
     setSectionListOpen(false);
     setAdjustingPinId(null);
   }, [incomingRoute.incoming]);
+  useEffect(() => {
+    if (!incomingRoute.mapSource) return;
+    setRouteImportOpen(false);
+    setComparison(null);
+    setSourcesParent('tools');
+    setPanel('sources');
+  }, [incomingRoute.mapSource]);
   useEffect(() => {
     if (panel === null) return;
     setSectionListOpen(false);
@@ -1286,6 +1296,27 @@ export default function Home() {
     }
     return true;
   };
+  const placeSearch = (
+    <PlaceSearch
+      onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
+      center={mapCenter}
+      zoom={view.zoom}
+      onOpen={() => {
+        setPanel(null);
+        photos.setSelected(null);
+        tracks.pause();
+      }}
+      onSelect={(place) => {
+        setPanel(null);
+        follow.pause();
+        position.free();
+        navigation.setPicking(null);
+        annotations.setPicking(null);
+        setQuickAdd(null);
+        map.current?.focusPoint(place.coordinates, 14);
+      }}
+    />
+  );
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
@@ -1418,20 +1449,55 @@ export default function Home() {
         {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !offlineDownload && !offlinePicking && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
           disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
-        <MapComparisonHost session={comparison} primary={map} view={view} onClose={() => setComparison(null)} onUse={choice => {
+        <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
+          drawingMode={comparisonDrawingMode} onDrawingModeChange={setComparisonDrawingMode}
+          onDrawingInput={(index, event) => comparisonDrawings[index].current?.input(event)}
+          drawingOverlay={(index, mapRef) => (
+            <div className="map-comparison-drawing">
+              <TrackDrawing
+                ref={comparisonDrawings[index]}
+                enabled={tracks.drawing}
+                distanceSegments={tracks.draft}
+                length={tracks.rodLength}
+                style={tracks.style}
+                mode={comparisonDrawingMode}
+                anchor={tracks.anchor}
+                candidates={tracks.candidates}
+                snapping={tracks.snapping}
+                roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
+                riverSnapping={tracks.riverSnapping}
+                snapRoad={(point, previous, from) =>
+                  (tracks.riverSnapping
+                    ? mapRef.current?.snapRiver(point, previous, from)
+                    : mapRef.current?.snapRoad(point, previous, from)) ?? {
+                    status: 'loading', match: null,
+                  }
+                }
+                lastVertex={tracks.draft.at(-1)?.at(-1) ?? null}
+                toScreen={(point) => mapRef.current?.toScreen(point) ?? null}
+                getSnapViewport={() => mapRef.current?.getSnapViewport() ?? null}
+                magnify={(canvas, point) => mapRef.current?.magnify(canvas, point) ?? (() => {})}
+                onAnchor={tracks.setAnchor}
+                onVertex={tracks.addVertex}
+                toCoordinate={(point) => mapRef.current?.toCoordinate(point) ?? null}
+                onStroke={tracks.addStroke}
+              />
+            </div>
+          )}
+          onClose={() => setComparison(null)} onUse={choice => {
           mapSources.select(choice.source?.id ?? '');
           map.current?.setTerrainMode(choice.settings.terrain);
           setLayers(choice.settings);
           setComparison(null);
         }} operations={{
           onMark: coordinates => annotations.add('pin', coordinates),
-          onDraw: () => { tracks.start(); setPanel(null); },
-          onVertex: tracks.addVertex,
+          onDraw: () => { setComparisonDrawingMode('points'); tracks.start(); setPanel(null); },
           onUndo: tracks.undo,
           onSave: () => tracks.save('', true),
           onPause: tracks.finish,
           onLocate: () => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(fix => map.current?.focusPoint(fix.coordinates)); },
           canUndo: tracks.canUndo,
+          drawingEnabled: tracks.drawing,
           error: tracks.error || annotations.error,
           markerError: annotations.error,
           style: tracks.style,
@@ -2311,25 +2377,7 @@ export default function Home() {
             </span>
             <h1>{PRODUCT_NAME}</h1>
           </button>
-          <PlaceSearch
-            onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
-            center={mapCenter}
-            zoom={view.zoom}
-            onOpen={() => {
-              setPanel(null);
-              photos.setSelected(null);
-              tracks.pause();
-            }}
-            onSelect={(place) => {
-              setPanel(null);
-              follow.pause();
-              position.free();
-              navigation.setPicking(null);
-              annotations.setPicking(null);
-              setQuickAdd(null);
-              map.current?.focusPoint(place.coordinates, 14);
-            }}
-          />
+          {!comparison && placeSearch}
           <span className="map-load-status" role="status">
             {mapStatus}
           </span>
@@ -2896,6 +2944,8 @@ export default function Home() {
         >
           {panel === 'sources' && (
             <MapSourcesPanel
+              incomingFile={incomingRoute.mapSource}
+              onIncomingConsumed={incomingRoute.dismissMapSource}
               settings={layers}
               onSettings={patch=>{if (!patch.rasterDatums) mapSources.select('');update(patch);}}
               onOffline={()=>beginMapDownload('当前地图区域')}

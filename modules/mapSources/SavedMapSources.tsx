@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { MapSource } from './types';
 import './savedMapSources.css';
+import { getMapSourcesSessionState, updateMapSourcesSessionState, type SavedSourceFilter } from './sessionState';
 
-type Filter = 'all' | 'online' | 'offline';
+type Filter = SavedSourceFilter;
 
 export function SavedMapSources({
   maps,
@@ -21,8 +22,8 @@ export function SavedMapSources({
   onRemove: (id: string) => void;
   onAdd: () => void;
 }) {
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [query, setQuery] = useState(() => getMapSourcesSessionState().savedQuery);
+  const [filter, setFilter] = useState<Filter>(() => getMapSourcesSessionState().savedFilter);
   const [confirming, setConfirming] = useState('');
 
   const filtered = useMemo(() => {
@@ -40,9 +41,11 @@ export function SavedMapSources({
     !!selectedMap && !filtered.some((map) => map.id === selected);
 
   const updateQuery = (value: string) => {
+    updateMapSourcesSessionState({ savedQuery: value });
     setQuery(value);
   };
   const updateFilter = (value: Filter) => {
+    updateMapSourcesSessionState({ savedFilter: value });
     setFilter(value);
   };
 

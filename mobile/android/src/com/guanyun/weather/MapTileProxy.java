@@ -38,7 +38,8 @@ final class MapTileProxy {
 
     static final class TileException extends IOException {
         final int status;
-        TileException(int status, String message) { super(message); this.status = status; }
+        final String diagnostic;
+        TileException(int status, String diagnostic, String message) { super(message); this.status = status; this.diagnostic=diagnostic; }
     }
 
     private static final class Target {
@@ -54,6 +55,7 @@ final class MapTileProxy {
         final Tile tile;
         UpstreamResponse(int status, String location, Tile tile) { this.status=status; this.location=location; this.tile=tile; }
     }
+    interface PinnedAttempt { UpstreamResponse run(InetAddress address,long attemptDeadline) throws IOException; }
 
     static Tile fetch(String rawUrl) throws IOException {
         long deadline = System.nanoTime() + TIMEOUT_MS * 1_000_000L;
@@ -61,33 +63,71 @@ final class MapTileProxy {
         for (int hop=0; hop<=MAX_REDIRECTS; hop++) {
             final Target target;
             try { target = validate(current); }
-            catch (IOException error) { throw new TileException(hop==0?400:502, "Invalid tile URL"); }
+            catch (IOException error) { throw new TileException(hop==0?400:502, "url", "Invalid tile URL"); }
             UpstreamResponse response = request(target, deadline);
             if (response.tile != null) return response.tile;
             if (!isRedirect(response.status) || response.location == null || response.location.isEmpty() || hop==MAX_REDIRECTS)
-                throw new TileException(502, "Map tile unavailable");
+                throw new TileException(502, "upstream_http", "Map tile unavailable");
             try { current = resolveRedirect(current,response.location); }
-            catch (IOException error) { throw new TileException(502, "Invalid tile redirect"); }
+            catch (IOException error) { throw new TileException(502, "upstream_http", "Invalid tile redirect"); }
         }
-        throw new TileException(502, "Map tile unavailable");
+        throw new TileException(502, "upstream_http", "Map tile unavailable");
     }
 
     private static UpstreamResponse request(Target target,long deadline) throws IOException {
         InetAddress[] addresses;
         java.util.concurrent.Future<InetAddress[]> lookup = DNS_LOOKUP.submit(() -> InetAddress.getAllByName(target.host));
         try { addresses = lookup.get(remainingMs(deadline), java.util.concurrent.TimeUnit.MILLISECONDS); }
-        catch (java.util.concurrent.TimeoutException error) { lookup.cancel(true); throw new TileException(502, "Tile request timed out"); }
+        catch (IOException error) { lookup.cancel(true); throw new TileException(502,"timeout","Tile request timed out"); }
+        catch (java.util.concurrent.TimeoutException error) { lookup.cancel(true); throw new TileException(502, "timeout", "Tile request timed out"); }
         catch (java.util.concurrent.ExecutionException error) {
             Throwable cause=error.getCause();
-            if (cause instanceof UnknownHostException) throw new TileException(502, "Tile host unavailable");
-            throw new TileException(502, "Tile host unavailable");
-        } catch (InterruptedException error) { lookup.cancel(true); Thread.currentThread().interrupt(); throw new TileException(502, "Tile request interrupted"); }
-        if (addresses.length == 0) throw new IOException("No public address");
-        for (InetAddress address : addresses) if (!isPublicAddress(address)) throw new TileException(502, "Tile host rejected");
-        InetAddress pinned = addresses[0];
-        int remaining = remainingMs(deadline);
+            if (cause instanceof UnknownHostException) throw new TileException(502, "dns", "Tile host unavailable");
+            throw new TileException(502, "dns", "Tile host unavailable");
+        } catch (InterruptedException error) { lookup.cancel(true); Thread.currentThread().interrupt(); throw new TileException(502, "timeout", "Tile request interrupted"); }
+        return tryAddresses(addresses,deadline,(address,attemptDeadline)->requestPinned(target,address,attemptDeadline));
+    }
+
+    static UpstreamResponse tryAddresses(InetAddress[] addresses,long deadline,PinnedAttempt attempt) throws IOException {
+        requirePublicAddresses(addresses);
+        IOException lastFailure=null;
+        for (int i=0;i<addresses.length;i++) {
+            try { remainingMs(deadline); }
+            catch (IOException error) { throw new TileException(502,"timeout","Tile request timed out"); }
+            int remainingCandidates=addresses.length-i;
+            long remainingNanos=deadline-System.nanoTime();
+            long slice=remainingCandidates==1?remainingNanos:Math.min(4_000_000_000L,Math.max(1_000_000_000L,remainingNanos/remainingCandidates));
+            long attemptDeadline=Math.min(deadline,System.nanoTime()+slice);
+            try { return attempt.run(addresses[i],attemptDeadline); }
+            catch (IOException error) { lastFailure=error; }
+        }
+        if (lastFailure instanceof TileException) throw lastFailure;
+        throw classifyAttemptFailure(lastFailure,deadline);
+    }
+
+    static TileException classifyAttemptFailure(IOException failure,long deadline) {
+        if (failure instanceof java.net.SocketTimeoutException || System.nanoTime()>=deadline)
+            return new TileException(502,"timeout","Tile request timed out");
+        if (failure instanceof javax.net.ssl.SSLException)
+            return new TileException(502,"tls","Tile TLS connection failed");
+        if (failure instanceof java.net.ConnectException || failure instanceof java.net.NoRouteToHostException || failure instanceof java.net.SocketException)
+            return new TileException(502,"connect","Tile connection failed");
+        return new TileException(502,"upstream_http","Tile host unavailable");
+    }
+
+    static void requirePublicAddresses(InetAddress[] addresses) throws TileException {
+        if (addresses==null || addresses.length==0) throw new TileException(502,"dns","Tile host unavailable");
+        // Check the complete answer set before attempts so a mixed public/private set cannot fall through.
+        for (InetAddress address : addresses) if (address==null || !isPublicAddress(address)) throw new TileException(502,"blocked","Tile host rejected");
+    }
+
+    private static UpstreamResponse requestPinned(Target target,InetAddress pinned,long deadline) throws IOException {
+        final int remaining;
+        try { remaining=remainingMs(deadline); }
+        catch (IOException error) { throw new TileException(502,"timeout","Tile request timed out"); }
         final Socket transport = new Socket();
         Socket socket = transport;
+        String phase="connect";
         java.util.concurrent.ScheduledFuture<?> watchdog = DEADLINE_CLOSER.schedule(() -> {
             try { transport.close(); } catch (IOException ignored) { }
         }, remaining, java.util.concurrent.TimeUnit.MILLISECONDS);
@@ -96,6 +136,7 @@ final class MapTileProxy {
             socket.setSoTimeout(Math.min(TIMEOUT_MS, remainingMs(deadline)));
             boolean secure = "https".equalsIgnoreCase(target.uri.getScheme());
             if (secure) {
+                phase="tls";
                 SSLSocket tls = (SSLSocket) ((SSLSocketFactory) SSLSocketFactory.getDefault())
                     .createSocket(socket, target.host, target.port, true);
                 SSLParameters parameters = tls.getSSLParameters();
@@ -105,6 +146,7 @@ final class MapTileProxy {
                 tls.startHandshake();
                 socket = tls;
             }
+            phase="upstream_http";
             OutputStream out = socket.getOutputStream();
             String path = target.uri.getRawPath();
             if (path == null || path.isEmpty()) path = "/";
@@ -118,43 +160,53 @@ final class MapTileProxy {
             out.flush();
             InputStream in = new DeadlineInputStream(socket.getInputStream(), socket, deadline);
             return parseResponse(in);
+        } catch (TileException error) {
+            throw error;
+        } catch (IOException error) {
+            if (error instanceof java.net.SocketTimeoutException || System.nanoTime()>=deadline)
+                throw new TileException(502,"timeout","Tile request timed out");
+            if ("connect".equals(phase)) throw new TileException(502,"connect","Tile connection failed");
+            if ("tls".equals(phase)) throw new TileException(502,"tls","Tile TLS connection failed");
+            throw new TileException(502,"upstream_http","Tile response unavailable");
         } finally { watchdog.cancel(false); try { socket.close(); } catch (IOException ignored) { } }
     }
 
     static UpstreamResponse parseResponse(InputStream in) throws IOException {
         String statusLine = readLine(in, 8192);
-        if (statusLine == null || !statusLine.matches("HTTP/1\\.[01] [0-9]{3}.*")) throw new IOException("Invalid response");
+        if (statusLine == null || !statusLine.matches("HTTP/1\\.[01] [0-9]{3}.*")) throw formatError("Invalid response");
         int status = Integer.parseInt(statusLine.substring(9, 12));
         java.util.Map<String, String> headers = new java.util.HashMap<>();
         int headerBytes = statusLine.length();
         for (;;) {
             String line = readLine(in, MAX_HEADER_BYTES);
-            if (line == null) throw new IOException("Incomplete response headers");
+            if (line == null) throw formatError("Incomplete response headers");
             headerBytes += line.length() + 2;
-            if (headerBytes > MAX_HEADER_BYTES) throw new IOException("Response headers too large");
+            if (headerBytes > MAX_HEADER_BYTES) throw formatError("Response headers too large");
             if (line.isEmpty()) break;
             int colon = line.indexOf(':');
-            if (colon <= 0) throw new IOException("Invalid response header");
+            if (colon <= 0) throw formatError("Invalid response header");
             headers.put(line.substring(0, colon).trim().toLowerCase(Locale.ROOT), line.substring(colon + 1).trim());
         }
         if (isRedirect(status)) return new UpstreamResponse(status, headers.get("location"), null);
-        if (status != 200) throw new IOException("Upstream status unavailable");
+        if (status != 200) throw new TileException(502,"upstream_http","Upstream status unavailable");
         String transfer = headers.get("transfer-encoding");
         byte[] body;
         if (transfer != null && transfer.toLowerCase(Locale.ROOT).contains("chunked")) body = readChunked(in, MAX_BYTES);
         else {
             long declared = -1;
             try { if (headers.containsKey("content-length")) declared = Long.parseLong(headers.get("content-length")); }
-            catch (NumberFormatException error) { throw new IOException("Invalid content length"); }
-            if (declared > MAX_BYTES || declared < -1) throw new IOException("Tile too large");
+            catch (NumberFormatException error) { throw formatError("Invalid content length"); }
+            if (declared > MAX_BYTES || declared < -1) throw formatError("Tile too large");
             body = readLimited(in, MAX_BYTES);
-            if (declared >= 0 && body.length != declared) throw new IOException("Incomplete tile body");
+            if (declared >= 0 && body.length != declared) throw formatError("Incomplete tile body");
         }
         String actualMime = imageMime(body);
         String declaredMime = headers.getOrDefault("content-type", "").split(";", 2)[0].trim().toLowerCase(Locale.ROOT);
-        if (actualMime == null || !actualMime.equals(declaredMime)) throw new IOException("Invalid tile image");
+        if (actualMime == null || !actualMime.equals(declaredMime)) throw formatError("Invalid tile image");
         return new UpstreamResponse(status,null,new Tile(body,actualMime));
     }
+
+    private static TileException formatError(String message) { return new TileException(502,"format",message); }
 
     static boolean isRedirect(int status) { return status==301 || status==302 || status==303 || status==307 || status==308; }
     static String resolveRedirect(String current,String location) throws IOException {
@@ -197,6 +249,10 @@ final class MapTileProxy {
         }
         if (!(address instanceof Inet6Address)) return false;
         byte[] b=address.getAddress();
+        if (isWellKnownNat64(b)) {
+            try { return isPublicAddress(InetAddress.getByAddress(new byte[] {b[12],b[13],b[14],b[15]})); }
+            catch (UnknownHostException impossible) { return false; }
+        }
         if ((b[0]&0xe0)!=0x20) return false; // Only global unicast 2000::/3.
         boolean allZero=true; for(byte value:b) if(value!=0){allZero=false;break;}
         if (allZero || address.isAnyLocalAddress() || address.isLoopbackAddress() || address.isLinkLocalAddress() || address.isSiteLocalAddress() || address.isMulticastAddress()) return false;
@@ -206,6 +262,12 @@ final class MapTileProxy {
         if (firstWord==0x2001 && (secondWord<=0x03ff || secondWord==0x0db8 || (secondWord>=0x0020 && secondWord<=0x002f))) return false;
         if (firstWord==0x2002) return false;
         if (firstWord==0x3fff && (b[2]&0xf0)==0) return false;
+        return true;
+    }
+
+    private static boolean isWellKnownNat64(byte[] b) {
+        if ((b[0]&255)!=0 || (b[1]&255)!=0x64 || (b[2]&255)!=0xff || (b[3]&255)!=0x9b) return false;
+        for(int i=4;i<12;i++) if(b[i]!=0) return false;
         return true;
     }
 
@@ -225,20 +287,20 @@ final class MapTileProxy {
     }
     private static byte[] readLimited(InputStream in,int limit) throws IOException {
         ByteArrayOutputStream out=new ByteArrayOutputStream(); byte[] buffer=new byte[8192];
-        for(int n;(n=in.read(buffer))!=-1;) { if(n>limit-out.size()) throw new IOException("Tile too large"); out.write(buffer,0,n); }
+        for(int n;(n=in.read(buffer))!=-1;) { if(n>limit-out.size()) throw formatError("Tile too large"); out.write(buffer,0,n); }
         return out.toByteArray();
     }
     private static byte[] readChunked(InputStream in,int limit) throws IOException {
         ByteArrayOutputStream out=new ByteArrayOutputStream();
         int trailerBytes=0;
         for(;;) {
-            String line=readLine(in,128); if(line==null) throw new IOException("Invalid chunk");
+            String line=readLine(in,128); if(line==null) throw formatError("Invalid chunk");
             int semi=line.indexOf(';'); String sizeText=semi<0?line:line.substring(0,semi);
-            final int size; try { size=Integer.parseInt(sizeText.trim(),16); } catch(Exception error) { throw new IOException("Invalid chunk"); }
-            if(size<0 || size>limit-out.size()) throw new IOException("Tile too large");
-            if(size==0) { while(true) { String trailer=readLine(in,MAX_HEADER_BYTES); if(trailer==null) throw new IOException("Invalid chunk trailer"); trailerBytes+=trailer.length()+2; if(trailerBytes>MAX_HEADER_BYTES) throw new IOException("Chunk trailers too large"); if(trailer.isEmpty()) break; } return out.toByteArray(); }
+            final int size; try { size=Integer.parseInt(sizeText.trim(),16); } catch(Exception error) { throw formatError("Invalid chunk"); }
+            if(size<0 || size>limit-out.size()) throw formatError("Tile too large");
+            if(size==0) { while(true) { String trailer=readLine(in,MAX_HEADER_BYTES); if(trailer==null) throw formatError("Invalid chunk trailer"); trailerBytes+=trailer.length()+2; if(trailerBytes>MAX_HEADER_BYTES) throw formatError("Chunk trailers too large"); if(trailer.isEmpty()) break; } return out.toByteArray(); }
             byte[] chunk=new byte[size]; int offset=0; while(offset<size) { int n=in.read(chunk,offset,size-offset); if(n<0) throw new IOException("Incomplete tile"); offset+=n; }
-            out.write(chunk); if(in.read()!=13 || in.read()!=10) throw new IOException("Invalid chunk ending");
+            out.write(chunk); if(in.read()!=13 || in.read()!=10) throw formatError("Invalid chunk ending");
         }
     }
 

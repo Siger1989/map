@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="90" android:versionName="0.2.83-test">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.guanyun.weather.preview" android:versionCode="91" android:versionName="0.2.84-test">
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -31,6 +31,8 @@
         <data android:mimeType="application/geo+json" />
         <data android:mimeType="application/vnd.garmin.tcx+xml" />
         <data android:mimeType="application/vnd.ant.fit" />
+        <data android:mimeType="application/x-ovmap" />
+        <data android:mimeType="application/vnd.ovmap" />
         <data android:mimeType="text/csv" />
         <data android:mimeType="text/tab-separated-values" />
         <data android:scheme="content" />
@@ -49,6 +51,8 @@
         <data android:mimeType="application/geo+json" />
         <data android:mimeType="application/vnd.garmin.tcx+xml" />
         <data android:mimeType="application/vnd.ant.fit" />
+        <data android:mimeType="application/x-ovmap" />
+        <data android:mimeType="application/vnd.ovmap" />
         <data android:mimeType="text/csv" />
         <data android:mimeType="text/tab-separated-values" />
         <data android:mimeType="application/gpx+xml" />

@@ -29,6 +29,39 @@ public final class MapTileProxyTest {
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("fd00::1")), "private IPv6");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("fe80::1")), "link local IPv6");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("2002:0808:0808::1")), "6to4 IPv6");
+        check(MapTileProxy.isPublicAddress(InetAddress.getByName("64:ff9b::808:808")), "NAT64 public IPv4");
+        check(!MapTileProxy.isPublicAddress(InetAddress.getByName("64:ff9b::a00:1")), "NAT64 private IPv4");
+        check(!MapTileProxy.isPublicAddress(InetAddress.getByName("64:ff9a::808:808")), "reject alternate NAT64 prefix");
+        check(!MapTileProxy.isPublicAddress(InetAddress.getByName("64:ff9b:1::808:808")), "reject nonstandard NAT64 prefix");
+        for (InetAddress[] mixed : new InetAddress[][] {
+            {InetAddress.getByName("8.8.8.8"),InetAddress.getByName("127.0.0.1")},
+            {InetAddress.getByName("127.0.0.1"),InetAddress.getByName("8.8.8.8")}
+        }) {
+            try { MapTileProxy.requirePublicAddresses(mixed); throw new AssertionError("mixed public/private DNS answer accepted"); }
+            catch (MapTileProxy.TileException expected) { check("blocked".equals(expected.diagnostic),"private DNS answer diagnostic"); }
+        }
+        check("connect".equals(MapTileProxy.classifyAttemptFailure(new java.net.ConnectException(),System.nanoTime()+1_000_000_000L).diagnostic),"connect diagnostic category");
+        check("tls".equals(MapTileProxy.classifyAttemptFailure(new javax.net.ssl.SSLException("fixture"),System.nanoTime()+1_000_000_000L).diagnostic),"TLS diagnostic category");
+        check("timeout".equals(MapTileProxy.classifyAttemptFailure(new IOException(),System.nanoTime()-1).diagnostic),"timeout diagnostic category");
+        check("upstream_http".equals(MapTileProxy.classifyAttemptFailure(new IOException(),System.nanoTime()+1_000_000_000L).diagnostic),"upstream diagnostic category");
+        final int[] attempts={0};
+        InetAddress first=InetAddress.getByName("8.8.8.8"), second=InetAddress.getByName("1.1.1.1");
+        final long overallDeadline=System.nanoTime()+MapTileProxy.TIMEOUT_MS*1_000_000L;
+        MapTileProxy.UpstreamResponse fallback=MapTileProxy.tryAddresses(new InetAddress[] {first,second},overallDeadline,(address,attemptDeadline)->{
+            attempts[0]++;
+            check(attemptDeadline<=overallDeadline,"attempt deadline bounded");
+            if(address.equals(first)) throw new IOException("simulated unreachable first address");
+            return new MapTileProxy.UpstreamResponse(200,null,new MapTileProxy.Tile(new byte[] {1},"image/png"));
+        });
+        check(attempts[0]==2 && fallback.status==200,"fallback to next validated IP");
+        final boolean[] attemptedMixed={false};
+        try {
+            MapTileProxy.tryAddresses(new InetAddress[] {first,InetAddress.getByName("127.0.0.1")},System.nanoTime()+MapTileProxy.TIMEOUT_MS*1_000_000L,(address,attemptDeadline)->{
+                attemptedMixed[0]=true; return new MapTileProxy.UpstreamResponse(200,null,null);
+            });
+            throw new AssertionError("mixed address set accepted");
+        } catch(MapTileProxy.TileException expected) { }
+        check(!attemptedMixed[0],"private address blocks fallback before any socket attempt");
         check("image/png".equals(MapTileProxy.imageMime(new byte[] {(byte)137,80,78,71,13,10,26,10})), "PNG signature");
         check("image/jpeg".equals(MapTileProxy.imageMime(new byte[] {(byte)255,(byte)216,(byte)255})), "JPEG signature");
         check(MapTileProxy.imageMime("not an image".getBytes(StandardCharsets.US_ASCII)) == null, "reject non-image");
@@ -62,7 +95,10 @@ public final class MapTileProxyTest {
         brokenChunk.write(new byte[] {(byte)137,80,78,71,13,10,26,10});
         brokenChunk.write("\r\n0\r\nX\n\r\n".getBytes(StandardCharsets.US_ASCII));
         try { MapTileProxy.parseResponse(new ByteArrayInputStream(brokenChunk.toByteArray())); throw new AssertionError("accepted bad chunk"); }
-        catch (IOException expected) { }
+        catch (MapTileProxy.TileException expected) { check("format".equals(expected.diagnostic),"bad chunk diagnostic category"); }
+        String httpError="HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
+        try { MapTileProxy.parseResponse(new ByteArrayInputStream(httpError.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("accepted HTTP error"); }
+        catch (MapTileProxy.TileException expected) { check("upstream_http".equals(expected.diagnostic),"HTTP status diagnostic category"); }
         System.out.println("MapTileProxyTest PASS");
     }
 }

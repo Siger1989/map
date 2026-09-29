@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FREE_MAPS, freeMap } from './presets';
 import type { Bounds } from './types';
+import { getMapSourcesSessionState, updateMapSourcesSessionState } from './sessionState';
 export function FreeMapLibrary({
   selected,
   onSelect,
@@ -10,7 +11,7 @@ export function FreeMapLibrary({
   onSelect: (id: string) => void;
   onFocus: (b: Bounds) => void;
 }) {
-  const [category, setCategory] = useState('全球');
+  const [category, setCategory] = useState(() => getMapSourcesSessionState().libraryCategory);
   const active = freeMap(selected);
   return (
     <section className="free-map-library" aria-label="免费图源库">
@@ -23,7 +24,7 @@ export function FreeMapLibrary({
           <button
             key={c}
             aria-pressed={category === c}
-            onClick={() => setCategory(c)}
+            onClick={() => { setCategory(c); updateMapSourcesSessionState({ libraryCategory: c }); }}
           >
             {c}
           </button>

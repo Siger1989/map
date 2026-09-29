@@ -27,10 +27,20 @@
   display: flex; flex-direction: column; box-sizing: border-box;
 }
 .map-comparison-heading {
-  display: flex; align-items: center; gap: 8px; padding: 0 8px;
+  display: flex; align-items: center; gap: 4px; padding: 0 4px; min-width: 0;
   height: 36px; flex: 0 0 36px; background: var(--ui-surface); pointer-events: auto;
 }
 .map-comparison-heading strong { font-size: 12px; }
+.map-comparison-heading > strong { flex-shrink: 0; }
+.observatory.home-map .map-comparison-heading .place-search { position: relative; inset: auto; flex: 1; width: auto; min-width: 0; max-width: none; }
+.observatory.home-map .map-comparison-heading .place-search form { width: 100%; min-width: 0; height: 36px; box-sizing: border-box; }
+.observatory.home-map .map-comparison-heading .place-search input { min-width: 0; width: 100%; height: 36px; font-size: 16px; box-sizing: border-box; }
+.observatory.home-map .map-comparison-heading .place-search button { width: 36px; height: 36px; padding: 0; }
+.map-comparison-heading .map-comparison-live { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
+.map-comparison-drawing { position: absolute; inset: 36px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
+.map-comparison-drawing .track-drawing { inset: 0; }
+.map-comparison-drawing-mode { position: absolute; top: 40px; left: 4px; display: flex; gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
+.map-comparison-drawing-mode button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
 .map-comparison-heading span { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
 .map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }
 .map-comparison-pane { position: relative; min-width: 0; min-height: 0; }
@@ -57,8 +67,8 @@
   position: absolute; top: 36px; left: 4px; right: 4px; margin: 4px 0; padding: 4px 8px;
   font-size: 11px; line-height: 1.4; background: var(--ui-surface); border-radius: var(--ui-radius-control);
 }
-.map-comparison-actions { position: relative; display: flex; align-items: center; justify-content: space-evenly; gap: 2px; flex: 0 0 44px; background: var(--ui-surface); pointer-events: auto; }
-.map-comparison-actions button { min-width: 44px; height: 44px; padding: 0 4px; }
+.map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: center; gap: 2px; flex: 0 0 44px; min-width: 0; padding: 0 4px; box-sizing: border-box; background: var(--ui-surface); pointer-events: auto; }
+.map-comparison-actions button { box-sizing: border-box; min-width: 0; width: 100%; height: 44px; padding: 0 2px; white-space: nowrap; }
 .map-comparison-actions button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
 .map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-surface); color: var(--ui-danger); font-size: 12px; margin: 0; }
 .map-comparison-gizmo { position: absolute; right: max(4px, var(--home-right)); bottom: calc(44px + var(--home-bottom) + 4px); width: 88px; height: 94px; pointer-events: auto; }
@@ -69,5 +79,18 @@
 .map-comparison-cross::before, .map-comparison-cross::after { content: ''; position: absolute; background: var(--ui-ink); }
 .map-comparison-cross::before { left: 6px; top: 0; width: 2px; height: 14px; }
 .map-comparison-cross::after { left: 0; top: 6px; width: 14px; height: 2px; }
-.map-comparison-actions .map-comparison-properties-button { min-width: 36px; font-size: 11px; padding: 0 2px; }
+.map-comparison-actions .map-comparison-properties-button { min-width: 0; font-size: 11px; padding: 0 2px; }
 @media (max-width: 379px) { .map-comparison-actions .map-comparison-north { display: none; } }
+
+/* Rotate the split as well as the controls, keeping both landscape maps useful. */
+@media (orientation: landscape) {
+  .observatory.home-map[data-comparing='true'] > .map-canvas {
+    width: 50% !important;
+    height: calc(100% - var(--compare-top) - 36px - var(--home-bottom) - 44px) !important;
+    top: calc(var(--compare-top) + 36px) !important;
+    right: auto !important;
+  }
+  .observatory.home-map[data-comparing='true'] > .map-comparison-secondary { left: 50% !important; }
+  .map-comparison-panes { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .map-comparison-pane + .map-comparison-pane { box-shadow: -1px 0 var(--ui-line); }
+}

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fetchMapTile } from '../modules/mapSources/tileTransport.ts';
+import { fetchMapTile, tileResponseError, TileTransportError } from '../modules/mapSources/tileTransport.ts';
 
 test('Tianditu browser tiles use HTTPS direct requests and preserve key parameters', async () => {
   const originalFetch = globalThis.fetch;
@@ -52,4 +52,26 @@ test('unrelated domains and non-HTTPS URLs keep using the app map-tile bridge', 
     if (originalLocation) Object.defineProperty(globalThis, 'location', originalLocation);
     else delete globalThis.location;
   }
+});
+
+test('native diagnostic response codes become safe, specific Chinese errors', () => {
+  const expected = new Map([
+    ['url', '图源地址无效或格式不受支持'],
+    ['dns', '图源域名解析失败'],
+    ['blocked', '图源地址被安全规则拒绝'],
+    ['connect', '无法连接图源服务器'],
+    ['tls', '图源 HTTPS 证书或加密连接失败'],
+    ['timeout', '图源请求超时'],
+    ['upstream_http', '图源服务器返回错误'],
+    ['format', '图源返回的内容不是受支持的地图图片'],
+  ]);
+  for (const [code, message] of expected) {
+    const response = new Response(null, { status: 502, headers: { 'X-Shantu-Tile-Error': code } });
+    const error = tileResponseError(response);
+    assert.ok(error instanceof TileTransportError);
+    assert.equal(error.message, `图源加载失败：${message}`);
+  }
+  const unknown = tileResponseError(new Response(null, { status: 502, headers: { 'X-Shantu-Tile-Error': 'private-host-token-secret' } }));
+  assert.equal(unknown.message, '图源加载失败：图源瓦片暂不可用 (502)');
+  assert.equal(unknown.message.includes('private-host-token-secret'), false);
 });

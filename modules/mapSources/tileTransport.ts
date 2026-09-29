@@ -3,6 +3,29 @@ function isTiandituHost(hostname: string): boolean {
   return normalized === 'tianditu.gov.cn' || normalized.endsWith('.tianditu.gov.cn');
 }
 
+const TILE_ERROR_MESSAGES: Record<string, string> = {
+  url: '图源地址无效或格式不受支持',
+  dns: '图源域名解析失败',
+  blocked: '图源地址被安全规则拒绝',
+  connect: '无法连接图源服务器',
+  tls: '图源 HTTPS 证书或加密连接失败',
+  timeout: '图源请求超时',
+  upstream_http: '图源服务器返回错误',
+  format: '图源返回的内容不是受支持的地图图片',
+};
+
+export class TileTransportError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TileTransportError';
+  }
+}
+
+export function tileResponseError(response: Response): TileTransportError {
+  const code = response.headers.get('X-Shantu-Tile-Error') ?? '';
+  return new TileTransportError(`图源加载失败：${TILE_ERROR_MESSAGES[code] ?? `图源瓦片暂不可用 (${response.status})`}`);
+}
+
 /** Fetch Tianditu browser-key tiles from the official site in the browser. */
 function tiandituBrowserUrl(rawUrl: string): string | undefined {
   try {

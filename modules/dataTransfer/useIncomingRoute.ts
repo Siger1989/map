@@ -8,6 +8,7 @@ function bridge(): Bridge | undefined {
 /** Cold start and an already-open app use the same preview, without navigating/reloading the map. */
 export function useIncomingRoute() {
   const [incoming, setIncoming] = useState<Incoming | null>(null);
+  const [mapSource, setMapSource] = useState<File | null>(null);
   const handled = useRef('');
   useEffect(() => {
     const native = bridge(); if (!native) return;
@@ -20,7 +21,7 @@ export function useIncomingRoute() {
         const token = info.token;
         if (!token || handled.current === token || reading === token) return;
         if (info.state === 'loading') {
-          setIncoming({ token, status: '正在读取收到的路线文件…' });
+          setIncoming({ token, status: '正在读取收到的文件…' });
           timer = setTimeout(check, 500); return;
         }
         if (info.state === 'error') {
@@ -28,7 +29,7 @@ export function useIncomingRoute() {
         }
         if (info.state !== 'ready') return;
         reading = token;
-        setIncoming({ token, status: '正在接收路线，完成后显示预览…' });
+        setIncoming({ token, status: '正在接收文件，完成后打开…' });
         const size = info.size ?? 0;
         if (!Number.isInteger(size) || size <= 0 || size > 8 * 1024 * 1024) throw Error('文件为空或超过 8 MB');
         const bytes = new Uint8Array(size);
@@ -42,7 +43,12 @@ export function useIncomingRoute() {
         }
         if (!alive || handled.current === token) return;
         handled.current = token;
-        setIncoming({ token, files: [new File([bytes], info.name || '路线.gpx')] });
+        const file = new File([bytes], info.name || '路线.gpx');
+        if (/\.ovmap$/i.test(file.name)) {
+          native.incomingRouteDismiss(token);
+          setIncoming(null);
+          setMapSource(file);
+        } else setIncoming({ token, files: [file] });
       } catch (error) {
         if (alive && reading) { handled.current = reading; setIncoming({ token: reading, error: error instanceof Error ? error.message : '文件接收失败' }); }
       } finally { reading = ''; }
@@ -58,5 +64,6 @@ export function useIncomingRoute() {
     if (incoming) { handled.current = incoming.token; bridge()?.incomingRouteDismiss(incoming.token); }
     setIncoming(null);
   };
-  return { incoming, dismiss };
+  const dismissMapSource = () => setMapSource(null);
+  return { incoming, dismiss, mapSource, dismissMapSource };
 }

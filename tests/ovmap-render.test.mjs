@@ -12,6 +12,30 @@ const bundle = await build({
 });
 const { renderOvmapTile } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].contents).toString('base64')}`);
 
+test('single-layer mobile tiles load without OffscreenCanvas or bitmap decoding', async t => {
+  const saved = { fetch: globalThis.fetch, OffscreenCanvas: globalThis.OffscreenCanvas, createImageBitmap: globalThis.createImageBitmap };
+  t.after(() => Object.assign(globalThis, saved));
+  globalThis.OffscreenCanvas = undefined;
+  globalThis.createImageBitmap = undefined;
+  globalThis.fetch = async () => new Response(new Uint8Array([1, 2, 3]));
+  const layer = { tiles: ['https://example.test/{z}/{x}/{y}.png'], tileSize: 256, minzoom: 0, maxzoom: 18 };
+  assert.deepEqual([...new Uint8Array(await renderOvmapTile([layer], 5, 6, 10, new AbortController().signal))], [1, 2, 3]);
+});
+
+test('mobile composite tiles use the document canvas when OffscreenCanvas is unavailable', async t => {
+  const saved = { fetch: globalThis.fetch, OffscreenCanvas: globalThis.OffscreenCanvas, createImageBitmap: globalThis.createImageBitmap, document: globalThis.document };
+  t.after(() => Object.assign(globalThis, saved));
+  globalThis.OffscreenCanvas = undefined;
+  let draws = 0;
+  globalThis.document = { createElement: () => ({ getContext: () => ({ drawImage: () => draws++ }), toBlob: done => done(new Blob([new Uint8Array([7])])) }) };
+  globalThis.createImageBitmap = async () => ({ width: 256, height: 256, close() {} });
+  globalThis.fetch = async () => new Response(new Uint8Array([1]));
+  const layer = { tiles: ['https://example.test/{z}/{x}/{y}.png'], tileSize: 256, minzoom: 0, maxzoom: 18 };
+  const result = await renderOvmapTile([layer, layer], 5, 6, 10, new AbortController().signal);
+  assert.equal(draws, 2);
+  assert.deepEqual([...new Uint8Array(result)], [7]);
+});
+
 test('512-pixel OVMAP parent tiles render the four x/y child quadrants', async () => {
   const originals = {
     fetch: globalThis.fetch,

@@ -3,6 +3,7 @@ import { readMap } from './storage';
 import { OfflineClient } from './offlineClient';
 import { SOURCE_ID, type MapSource } from './types';
 import { renderOvmapTile } from './ovmapTiles';
+import { TileTransportError } from './tileTransport';
 
 const EMPTY = Uint8Array.from(
   atob(
@@ -47,7 +48,10 @@ export class MapSourceLayer {
         if (!lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
         return { data };
       } catch (error) {
-        if (!controller.signal.aborted && !lifetime.aborted) this.status('部分图源影像暂未加载，可重试或切换图源');
+        if (!controller.signal.aborted && !lifetime.aborted) {
+          const detail = error instanceof TileTransportError ? error.message : '部分图源影像暂未加载，可重试或切换图源';
+          this.status(detail);
+        }
         throw error;
       } finally {
         clearTimeout(timeout);

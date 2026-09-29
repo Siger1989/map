@@ -35,6 +35,17 @@ async function loadHost() {
 
 function setupDom() {
   const { window } = parseHTML('<html><body></body></html>');
+  let landscape = false;
+  const mediaListeners = new Set();
+  window.matchMedia = () => ({
+    get matches() { return landscape; },
+    addEventListener(_type, listener) { mediaListeners.add(listener); },
+    removeEventListener(_type, listener) { mediaListeners.delete(listener); },
+  });
+  window.setLandscape = value => {
+    landscape = value;
+    for (const listener of mediaListeners) listener({ matches: landscape });
+  };
   Object.assign(globalThis, {
     window, document: window.document,
     localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
@@ -112,8 +123,9 @@ function makeFixture(React) {
   const marked = [];
   const vertices = [];
   const pauses = [];
-  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0 };
+  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0, drawingMode: null };
   const operationState = { saveResult: true, error: '' };
+  const drawingInputs = [];
   let mapCenter = [104.25, 30.75];
   const cameraValue = { center: [104, 30], zoom: 9, bearing: 12, pitch: 0 };
   const handleCalls = { terrain: [], view: [], viewGesture: [], zoom: [], north: 0 };
@@ -163,12 +175,17 @@ function makeFixture(React) {
     primary,
     onClose: () => closed.push(true),
     onUse: choice => used.push(choice),
+    search: React.createElement('div', { 'data-place-search': true }),
+    drawingMode: 'points',
+    onDrawingModeChange(mode) { operationsCalls.drawingMode = mode; props.drawingMode = mode; },
+    onDrawingInput(index, event) { drawingInputs.push([index, event]); },
+    drawingOverlay(index) { return React.createElement('div', { 'data-comparison-overlay': index }); },
     operations,
     children: child,
   };
   return {
     props, session, choices, overlays, used, closed, primary, marked, vertices, pauses,
-    operationsCalls, operationState, mapCenter, cameraValue, handleCalls, markerState, styleState,
+    operationsCalls, operationState, drawingInputs, mapCenter, cameraValue, handleCalls, markerState, styleState,
     setMapCenter(value) { mapCenter = value; },
   };
 }
@@ -282,22 +299,29 @@ test('draw mode accepts vertices from both maps, supports undo, and stays active
   const f = await mount(t);
   await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '画线').click());
   assert.equal(f.operationsCalls.draw, 1);
-  assert.equal(counters.latest['map-comparison-primary'].drawingActive, false, 'map-wide drawing bridge stays disabled');
-  assert.equal(counters.latest['map-comparison-secondary'].pickingActive, true);
-  const first = [104.1, 30.5], second = [104.2, 30.6];
-  await f.act(async () => counters.latest['map-comparison-primary'].onMapPick(first));
-  await f.act(async () => counters.latest['map-comparison-secondary'].onMapPick(second));
-  assert.deepEqual(f.vertices, [first, second]);
+  assert.equal(counters.latest['map-comparison-primary'].drawingActive, true, 'primary map uses the normal drawing gesture bridge');
+  assert.equal(counters.latest['map-comparison-secondary'].drawingActive, true, 'secondary map uses the normal drawing gesture bridge');
+  assert.equal(counters.latest['map-comparison-secondary'].pickingActive, false, 'drawing input is not reduced to map clicks');
+  assert.equal(f.host.querySelectorAll('[data-comparison-overlay]').length, 2, 'each map gets a viewport-local drawing overlay');
+  assert.ok(f.host.querySelector('[data-place-search]'), 'the comparison header keeps a real search element');
+  const first = { type: 'start', point: { x: 10, y: 20 } }, second = { type: 'move', point: { x: 30, y: 40 } };
+  await f.act(async () => counters.latest['map-comparison-primary'].onDrawingInput(first));
+  await f.act(async () => counters.latest['map-comparison-secondary'].onDrawingInput(second));
+  assert.deepEqual(f.drawingInputs, [[0, first], [1, second]], 'input reaches the matching pane drawing session');
+  f.vertices.push([104.1, 30.5], [104.2, 30.6]); // the pane-local TrackDrawing sessions share the regular route draft
+  await f.act(async () => f.host.querySelector('.map-comparison-drawing-mode button[aria-pressed="false"]').click());
+  await f.render(f.session);
+  assert.equal(f.operationsCalls.drawingMode, 'freehand', 'the compact mode row selects the existing freehand mode');
   await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '撤销').click());
   assert.equal(f.operationsCalls.undo, 1);
-  assert.deepEqual(f.vertices, [first]);
+  assert.deepEqual(f.vertices, [[104.1, 30.5]]);
   f.operationState.saveResult = false;
   f.operationState.error = '保存失败，路线草稿已保留';
   await f.render(f.session);
   await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '保存').click());
   assert.equal(f.operationsCalls.save, 1);
   assert.ok([...f.host.querySelectorAll('.map-comparison-actions button')].some(button => button.textContent === '暂停'), 'failed save keeps drawing active');
-  assert.deepEqual(f.vertices, [first], 'failed save keeps the remaining draft point');
+  assert.deepEqual(f.vertices, [[104.1, 30.5]], 'failed save keeps the remaining draft point');
   assert.equal(f.host.querySelector('[role="alert"]')?.textContent, f.operationState.error);
   f.operationState.saveResult = true;
   f.operationState.error = '';
@@ -307,11 +331,20 @@ test('draw mode accepts vertices from both maps, supports undo, and stays active
   assert.equal([...f.host.querySelectorAll('.map-comparison-actions button')].some(button => button.textContent === '暂停'), false, 'successful save exits drawing mode');
 });
 
+test('comparison pane names follow portrait and landscape orientation', async t => {
+  const f = await mount(t);
+  assert.ok(f.host.querySelector('[aria-label="上方地图"]'));
+  await f.act(async () => f.window.setLandscape(true));
+  assert.ok(f.host.querySelector('[aria-label="左方地图"]'));
+  assert.ok(f.host.querySelector('[aria-label="右方地图"]'));
+});
+
 test('leaving comparison or choosing a source pauses drawing and preserves the draft', async t => {
   const closeFixture = await mount(t);
   await closeFixture.act(async () => [...closeFixture.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '画线').click());
   const closePoint = [103.5, 30.5];
-  await closeFixture.act(async () => counters.latest['map-comparison-secondary'].onMapPick(closePoint));
+  closeFixture.vertices.push(closePoint);
+  await closeFixture.act(async () => counters.latest['map-comparison-secondary'].onDrawingInput({ type: 'end', reason: 'release' }));
   await closeFixture.act(async () => closeFixture.host.querySelector('[aria-label="退出双图源对比"]').click());
   assert.deepEqual(closeFixture.pauses, [[closePoint]], 'exit pauses without clearing the draft');
   assert.deepEqual(closeFixture.closed, [true]);
@@ -320,7 +353,8 @@ test('leaving comparison or choosing a source pauses drawing and preserves the d
   const useFixture = await mount(t);
   await useFixture.act(async () => [...useFixture.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '画线').click());
   const usePoint = [105.5, 31.5];
-  await useFixture.act(async () => counters.latest['map-comparison-primary'].onMapPick(usePoint));
+  useFixture.vertices.push(usePoint);
+  await useFixture.act(async () => counters.latest['map-comparison-primary'].onDrawingInput({ type: 'end', reason: 'release' }));
   const lower = useFixture.host.querySelector('[aria-label="下方图源"]');
   Object.defineProperty(lower, 'value', { configurable: true, value: 'beta' });
   await useFixture.act(async () => lower.dispatchEvent(new useFixture.window.Event('change', { bubbles: true })));

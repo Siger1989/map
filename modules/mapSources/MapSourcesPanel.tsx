@@ -23,6 +23,7 @@ import { RasterDatumChoice } from './RasterDatumChoice';
 import { SavedMapSources } from './SavedMapSources';
 import { parseOvmap } from './ovmap';
 import { existingMapIndexes } from './importReview';
+import { getMapSourcesSessionState, mapSourcesBrowseScrollToRestore, mapSourcesBrowseStepToRestore, rememberMapSourcesBrowseScroll, rememberMapSourcesBrowseStep, updateMapSourcesSessionState, type MapSourcesStep, type SourceCategory } from './sessionState';
 
 type Pending = { draft: MapDraft; blob?: Blob };
 export type MapSourcesNavigation = {
@@ -38,6 +39,8 @@ export function MapSourcesPanel({
   onFocus,
   onNavigation,
   onRouteQr,
+  incomingFile,
+  onIncomingConsumed,
   settings, onSettings, onOffline,
 }: {
   sources: ReturnType<typeof useMapSources>;
@@ -46,18 +49,28 @@ export function MapSourcesPanel({
   onFocus: (bounds: Bounds) => void;
   onNavigation?: (navigation: MapSourcesNavigation | null) => void;
   onRouteQr?: (text: string) => void;
+  incomingFile?: File | null;
+  onIncomingConsumed?: () => void;
   settings?: LayerSettings;
   onSettings?: (patch: Partial<LayerSettings>) => void;
   onOffline?: () => void;
 }) {
-  const [step, setStep] = useState<'list' | 'library' | 'add' | 'camera' | 'preview'>(
-    'list',
-  );
+  const [step, setStepState] = useState<MapSourcesStep>(() => mapSourcesBrowseStepToRestore());
+  const setStep = (value: MapSourcesStep) => {
+    rememberMapSourcesBrowseStep(value);
+    setStepState(value);
+  };
+  const currentStep = useRef(step);
+  currentStep.current = step;
   const [input, setInput] = useState(''),
     [name, setName] = useState('');
   const [scheme, setScheme] = useState('xyz');
   const [pending, setPending] = useState<Pending[]>([]);
-  const [category, setCategory] = useState<'builtin' | 'saved'>(sources.selected ? 'saved' : 'builtin');
+  const [category, setCategoryState] = useState<SourceCategory>(() => getMapSourcesSessionState().category ?? (sources.selected ? 'saved' : 'builtin'));
+  const setCategory = (value: SourceCategory) => {
+    updateMapSourcesSessionState({ category: value });
+    setCategoryState(value);
+  };
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const [duplicates, setDuplicates] = useState<Set<number>>(new Set());
   const [skipped, setSkipped] = useState<{ name: string; reason: string }[]>([]);
@@ -96,8 +109,21 @@ export function MapSourcesPanel({
   useEffect(() => () => onNavigation?.(null), [onNavigation]);
   useEffect(() => {
     const scroller = root.current?.closest('.dock-content');
-    if (scroller) scroller.scrollTop = 0;
-  }, [step]);
+    if (!scroller) return;
+    const restore = mapSourcesBrowseScrollToRestore(step, sources.ready);
+    if (restore !== null) scroller.scrollTop = restore;
+    else if (step !== 'list') scroller.scrollTop = 0;
+  }, [step, sources.ready]);
+  useEffect(() => {
+    const scroller = root.current?.closest('.dock-content');
+    if (!scroller) return;
+    const saveScroll = () => rememberMapSourcesBrowseScroll(currentStep.current, scroller.scrollTop);
+    scroller.addEventListener('scroll', saveScroll, { passive: true });
+    return () => {
+      saveScroll();
+      scroller.removeEventListener('scroll', saveScroll);
+    };
+  }, []);
   useEffect(() => {
     if (error) alert.current?.scrollIntoView({ block: 'nearest' });
   }, [error]);
@@ -200,6 +226,11 @@ export function MapSourcesPanel({
         );
     });
   };
+  useEffect(() => {
+    if (!incomingFile || !sources.ready) return;
+    file(incomingFile);
+    onIncomingConsumed?.();
+  }, [incomingFile, sources.ready, onIncomingConsumed]);
   const qr = (text: string) => {
     if (text.startsWith(ROUTE_QR_PREFIX) && onRouteQr) {
       onRouteQr(text);

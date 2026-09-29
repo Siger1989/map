@@ -62,7 +62,7 @@ final class LocalGateway {
                     MapTileProxy.Tile tile = MapTileProxy.fetch(source);
                     return response(200, tile.mime, new ByteArrayInputStream(tile.bytes), "private, max-age=300");
                 } catch (MapTileProxy.TileException error) {
-                    return text(error.status, error.status == 400 ? "Invalid tile URL" : "Map tile unavailable");
+                    return tileError(error);
                 } catch (Exception error) {
                     return text(502, "Map tile unavailable");
                 }
@@ -105,10 +105,19 @@ final class LocalGateway {
     private static WebResourceResponse binary(byte[] bytes, String mime) { return response(200, mime, new ByteArrayInputStream(bytes), "public, max-age=86400"); }
     private static WebResourceResponse text(int status, String text) { return response(status, "text/plain", new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)), "no-store"); }
     private static WebResourceResponse json(int status, String text) { return response(status, "application/json", new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)), "no-store"); }
+    private static WebResourceResponse tileError(MapTileProxy.TileException error) {
+        String code = java.util.Arrays.asList("url", "dns", "blocked", "connect", "tls", "timeout", "upstream_http", "format").contains(error.diagnostic) ? error.diagnostic : "upstream_http";
+        String message = error.status == 400 ? "Invalid tile URL" : "Map tile unavailable";
+        return response(error.status, "text/plain", new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)), "no-store", code);
+    }
     private static WebResourceResponse response(int status, String mime, InputStream data, String cache) {
+        return response(status,mime,data,cache,null);
+    }
+    private static WebResourceResponse response(int status, String mime, InputStream data, String cache, String tileError) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Cache-Control", cache);
         headers.put("X-Content-Type-Options", "nosniff");
+        if (tileError != null) headers.put("X-Shantu-Tile-Error", tileError);
         return new WebResourceResponse(mime, mime.startsWith("text/") || mime.equals("application/json") ? "UTF-8" : null, status, status == 200 ? "OK" : "Unavailable", headers, data);
     }
     private static String mime(String name) {
