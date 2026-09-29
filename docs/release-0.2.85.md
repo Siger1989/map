@@ -17,3 +17,7 @@ EOX为[年度合成产品](https://cloudless.eox.at/)。部分服务另有按区
 ## 验证与交付边界
 
 坐标/日期定向9项与TypeScript通过；最终完整检查、构建与签名资产核验见CURRENT_STATE。本地浏览器读取连接失败，无新实际截图/真机验收；原始瓦片对照不等于已验收屏幕最终位置。39项外部配置仍只注入本机APK，不进Git或自动公开Release。Android网络全部图源的实际恢复状态仍待手机验证。HarmonyOS6.1原生包未交付。
+
+## GitHub公开变体（2026-09-29）
+
+用户要求上传后，以f5069d3源码重新构建未注入购买图源、未配置本机天地图Key的公开APK。[公开测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.85-test-standalone)已发布并核对三附件digest。首次安装需自行导入购买图源；已有图源存储保持。原本机39项包未公开且保留。公开APK SHA256：ed7f0031e7194ec794c30b23ed93d8c0e0eeecd1e9d80f707c16333c5db22004。

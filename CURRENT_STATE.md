@@ -1,3 +1,10 @@
+# 2026-09-29 / 0.2.85 GitHub公开版已发布
+
+- 用户要求上传GitHub。本次使用相同源码f5069d3314b2e86897e3871e297a6fee46774e5e重新构建公开变体：未传DefaultMapSources；仅构建子进程NEXT_PUBLIC_TIANDITU_KEY设为空白，经trim为空。版本92/0.2.85-test、包名与原签名不变。没有修改本机.env或用户存档。
+- 公开APK：APK/Shantu-0.2.85-test-standalone-public.apk；57887836 bytes；SHA256 ed7f0031e7194ec794c30b23ed93d8c0e0eeecd1e9d80f707c16333c5db22004。不含39项购买配置或本机天地图Key，首次安装可自行导入图源；源码公共底图仍在。旧地图库不会被缺失的种子资产清理。
+- 本机原含39项配置的Shantu-0.2.85-test-standalone.apk已恢复并核对6d9bc8e7哈希，未公开。两个变体不能混用SHA。本次543网页资产、496地形PNG无损内容、DEX、v2/v3签名/zipalign及3个已知私有凭据值排除检查通过。
+- 已公开预发布：https://github.com/Siger1989/map/releases/tag/v0.2.85-test-standalone （ID399034614，draft=false/prerelease=true）。APK、SHA256文件、安装说明三附件远端size/digest均与本机一致，tag与构建源码一致。交付记录随后推送codex/rollback-ui-0235-20260921，未合入main。
+- 手机网络/触控/覆盖安装仍待真机验证；HarmonyOS6.1原生包未交付。以下“仅本地/未公开”均指此前含购买配置的私有变体，不代表本次公开变体状态。
 # 0.2.85 最终交付核验
 
 - 构建源码2523570aa1c2f125cf7acc81cd0ab18c9f8c3443；APK/Shantu-0.2.85-test-standalone.apk，57887920 bytes，SHA256 6d9bc8e7678415bceca852975677d784a67978f2eb5ce466ad112d5dc669d63e。版本92/0.2.85-test，原独立包名和4a941b9d签名，v2/v3与对齐检查通过。
