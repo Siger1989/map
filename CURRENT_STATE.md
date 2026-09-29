@@ -1,15 +1,18 @@
-# 2026-09-29 / 0.2.82 分叉切换局部更新与APK
-- 交付 PASS：构建源码545f2c0dd230e9fcfe348679a3add5a966b6a701已推送codex/rollback-ui-0235-20260921并核对远程一致，未合入main。公开预发布https://github.com/Siger1989/map/releases/tag/v0.2.82-test-standalone（398421085），APK/SHA/INSTALL三附件大小及digest匹配，draft=false、prerelease=true。用户手机可覆盖安装复测，OPPO真机性能仍未验收；云图/天地图地名清晰度仍未解决。下一步：按真机反馈继续定位剩余卡顿，无本地发布阻塞。
-- 最终独立校验 PASS：APK 0.2.82-test/code89，57,863,260 bytes，SHA256 c15207b2762d06ff5f7bd472920409568bf57541d8a5ca2ce40bfbce40c6d806；v2/v3原证书及zipalign通过，543网页文件/496地形PNG与apk-20260929-001028/web逐项一致，最后收藏CSS/删除文案/分叉快路径确认在包内。正在提交推送并发布，尚未宣称公开交付。
-- UI最终验证 PASS：横屏收藏左360×334列表/右497×334地图，SVG覆盖层边界一致；展开与定位、关闭通过，390竖屏仍上下布局。删除确认固定短句，保持全部六路线按钮与确认/取消，857×390/350、390×844、360×780均179px高，clientHeight=scrollHeight=177，无滚动。截图artifacts/screenshots/{favorites-landscape-0282,favorites-portrait-0282,route-delete-landscape-0282,route-delete-857x350-0282,route-delete-360-0282}.png。确认测试均取消，未删除路线。
-- 最终构建 PASS：用户追加左右收藏/删除UI已纳入后重跑python .openai/run-0282-build.py成功；待独立签名/资源校验及Git/Release发布。新增文件范围含workbenchLayout.css、HomeRouteCard.tsx，生产代码冻结。
-- 目标：完成分叉开关局部更新，合并已预览的剖面层级/路线卡/行程点调整，出新APK供OPPO实测。
-- 进度：IN PROGRESS。已分派TrackLayer增量路径、routeEdit元数据、版本/打包准备三项并行任务；主agent整合、浏览器和最终发行校验。
-- 文件：本轮计划TrackLayer.ts、routeEdit.ts、定向测试、版本与发行文档；保留已有三个UI文件和无关PDF。
-- 命令：git status/diff、AGENTS/README/交接/技能读取；branch-phase-bench基线运行；远程分支核对中。
-- 验证：730/730与tsc PASS；真实routeEdit→compose→TrackLayer桌面10×6000开/空关193.1/183.9ms降至2.00/1.88ms，main setData/updateData/project均0；背景recorded/samples节点与全量渲染一致，早期diff失败恢复最新状态PASS。浏览器新增分支3.0km→结束→撤销结束→撤销点回0m→不保存退出PASS。首轮APK构建已PASS但不发布：用户新增横屏收藏左右布局，完成后须全新重打包。
-- 阻塞：无已知本地阻塞，手机性能待安装复测。
-- 下一步：横屏收藏改左列表/右地图后实际检查；最终重新构建/校验APK，再Git及公开Release。横屏工具贴安全区右缘、摇杆右下已实测857×390：工具50×220、摇杆64×48，间隔8px，无重叠；普通和剖面态均生效，见artifacts/screenshots/landscape-right-edge-0282.png。
+# 当前状态 — 2026-09-29 / 完整交接与 GitHub 同步
+
+- 当前目标：汇总现有版本、实现/验证边界、未完成问题、图源上线许可和平台讨论，提交到当前开发分支供接续。本轮仅文档，不改业务、不升级版本、不重建APK。
+- 当前进度：交接文档与内容/链接/差异检查完成；本节随交接提交，最终提交SHA和远端一致性以Git历史及交付回复为准。入口为 docs/handoff-20260929.md；图源专题为 docs/map-launch-readiness-20260929.md。
+- 当前交付：0.2.82-test/code89，构建源码545f2c0dd230e9fcfe348679a3add5a966b6a701；公开Release v0.2.82-test-standalone（398421085），tag匹配源码；本轮查询draft=false/prerelease=true。此前交付记录b3b053c与远端开发分支一致，未合入main。
+- APK：57,863,260 bytes；SHA256 c15207b2762d06ff5f7bd472920409568bf57541d8a5ca2ce40bfbce40c6d806；独立包com.guanyun.weather.shantu.preview，原签名不变。三附件远端大小/digest在发行时通过校验。
+- 实现/验证：分叉元数据复用和TrackLayer受限节点快路径；屏幕候选预筛、单轨/单点更新等累计优化已在包中。730/730测试、tsc、最终构建、v2/v3/zipalign、543网页文件与496地形PNG一致性均为上轮已通过记录，本轮文档整理不重复跑全套。
+- UI验证：路线卡约153px；删除确认约179px，无滚动，保留原按钮。横屏收藏左列表右地图、SVG边界一致，工具靠右安全边，摇杆右下。857×390/350、390×844及360×780相关浏览器验证PASS，不能替代OPPO实测。
+- 未完成：尚无0.2.82真机性能验收；天地图栅格地名清晰度、真实云图/实况雷达未解决。EOX/FABDEM/Open-Meteo等商用许可需处理，天地图正式运营/额度/离线授权待核实。iOS仅讨论未开工；HarmonyOS6.1原生未交付。首发市场/商业模式未确定。
+- 本轮文件：docs/handoff-20260929.md、docs/map-launch-readiness-20260929.md、docs/agent-handoff.md、README.md、CURRENT_STATE.md。无关未跟踪PDF保留，密钥/日志/截图/APK不入源码提交。
+- 命令：git status/diff/log/branch、远端分支/tag查询、GitHub公开Release查询、文档/当前来源代码核对；随后执行本地链接与git diff --check、精确文件提交/push/远端SHA核对。
+- 验证结果：PASS（文档相对链接5项、引用源码路径、git diff --check及忽略产物边界核对通过；此结果不代表新增真机验收）。当前阻塞：无本地阻塞；产品性能及商业上线仍受上述待验/待授权事项限制。
+- 下一步：提交后核对远端同分支SHA；接续按完整交接第6节优先级执行，不将历史“待发布”当成当前状态，不将个人测试包当成正式商业包。
+
+以下保留历史工作记录；其中进行中/待打包描述属于当时状态，以本节和完整交接为准。
 # 2026-09-28 / 剖面遮挡与路线卡紧凑预览
 - 目标：剖面线低于UI；收紧所选路线顶部卡，保留实际按钮；移除左侧行程点栏。
 - 进度：PASS（浏览器预览）。app/page.tsx移除TrackJourneyRail挂载；homeMap.css收紧路线卡至最高200px/宽300px、六按钮三列两行；survey.css将地图剖面SVG层级7降到3，低于顶栏底色4。
