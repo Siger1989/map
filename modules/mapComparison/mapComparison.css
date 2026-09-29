@@ -39,7 +39,8 @@
 .map-comparison-heading .map-comparison-live { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
 .map-comparison-drawing { position: absolute; inset: 36px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
 .map-comparison-drawing .track-drawing { inset: 0; }
-.map-comparison-drawing-mode { position: absolute; top: 40px; left: 4px; display: flex; gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
+.map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
+.map-comparison-drawing-mode button { min-width: 0; padding: 0 2px; font-size: 11px; }
 .map-comparison-drawing-mode button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
 .map-comparison-heading span { color: var(--ui-muted); font-size: 11px; flex: 1; min-width: 0; }
 .map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }

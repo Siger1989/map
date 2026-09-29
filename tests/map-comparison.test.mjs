@@ -123,9 +123,10 @@ function makeFixture(React) {
   const marked = [];
   const vertices = [];
   const pauses = [];
-  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0, drawingMode: null };
+  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0 };
   const operationState = { saveResult: true, error: '' };
   const drawingInputs = [];
+  const snappingState = { nodes: true, roads: false, rivers: false, calls: [] };
   let mapCenter = [104.25, 30.75];
   const cameraValue = { center: [104, 30], zoom: 9, bearing: 12, pitch: 0 };
   const handleCalls = { terrain: [], view: [], viewGesture: [], zoom: [], north: 0 };
@@ -147,6 +148,12 @@ function makeFixture(React) {
     onPause() { pauses.push([...vertices]); },
     onLocate() { operationsCalls.locate += 1; },
     canUndo: true,
+    get snapping() { return snappingState.nodes; },
+    onSnappingChange(enabled) { snappingState.nodes = enabled; snappingState.calls.push(['nodes', enabled]); },
+    get roadSnapping() { return snappingState.roads; },
+    onRoadSnappingChange(enabled) { snappingState.roads = enabled; if (enabled) snappingState.rivers = false; snappingState.calls.push(['roads', enabled]); },
+    get riverSnapping() { return snappingState.rivers; },
+    onRiverSnappingChange(enabled) { snappingState.rivers = enabled; if (enabled) snappingState.roads = false; snappingState.calls.push(['rivers', enabled]); },
     get error() { return operationState.error; },
     get style() { return styleState.current; },
     onStyle(style) { styleState.calls.push(style); styleState.current = style; },
@@ -176,8 +183,6 @@ function makeFixture(React) {
     onClose: () => closed.push(true),
     onUse: choice => used.push(choice),
     search: React.createElement('div', { 'data-place-search': true }),
-    drawingMode: 'points',
-    onDrawingModeChange(mode) { operationsCalls.drawingMode = mode; props.drawingMode = mode; },
     onDrawingInput(index, event) { drawingInputs.push([index, event]); },
     drawingOverlay(index) { return React.createElement('div', { 'data-comparison-overlay': index }); },
     operations,
@@ -185,7 +190,7 @@ function makeFixture(React) {
   };
   return {
     props, session, choices, overlays, used, closed, primary, marked, vertices, pauses,
-    operationsCalls, operationState, drawingInputs, mapCenter, cameraValue, handleCalls, markerState, styleState,
+    operationsCalls, operationState, drawingInputs, snappingState, mapCenter, cameraValue, handleCalls, markerState, styleState,
     setMapCenter(value) { mapCenter = value; },
   };
 }
@@ -295,7 +300,7 @@ test('selecting an existing marker from either map opens its editor', async t =>
   assert.ok(f.host.querySelector('[aria-label="编辑对比标记"]'));
 });
 
-test('draw mode accepts vertices from both maps, supports undo, and stays active on save failure', async t => {
+test('draw mode uses both standard gesture bridges and the existing snap settings', async t => {
   const f = await mount(t);
   await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '画线').click());
   assert.equal(f.operationsCalls.draw, 1);
@@ -304,14 +309,28 @@ test('draw mode accepts vertices from both maps, supports undo, and stays active
   assert.equal(counters.latest['map-comparison-secondary'].pickingActive, false, 'drawing input is not reduced to map clicks');
   assert.equal(f.host.querySelectorAll('[data-comparison-overlay]').length, 2, 'each map gets a viewport-local drawing overlay');
   assert.ok(f.host.querySelector('[data-place-search]'), 'the comparison header keeps a real search element');
+  const nodeSnap = f.host.querySelector('[aria-label="节点吸附"]');
+  const roadSnap = f.host.querySelector('[aria-label="道路吸附"]');
+  const riverSnap = f.host.querySelector('[aria-label="河流吸附"]');
+  assert.equal(nodeSnap.getAttribute('aria-pressed'), 'true');
+  assert.equal(roadSnap.getAttribute('aria-pressed'), 'false');
+  assert.equal(riverSnap.getAttribute('aria-pressed'), 'false');
+  assert.equal(f.host.querySelector('[aria-label="自由手绘"]'), null, 'comparison stays in the normal extension-stick points mode');
+  await f.act(async () => nodeSnap.click());
+  assert.deepEqual(f.snappingState.calls, [['nodes', false]]);
+  await f.render(f.session);
+  await f.act(async () => f.host.querySelector('[aria-label="道路吸附"]').click());
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[aria-label="道路吸附"]').getAttribute('aria-pressed'), 'true');
+  await f.act(async () => f.host.querySelector('[aria-label="河流吸附"]').click());
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[aria-label="道路吸附"]').getAttribute('aria-pressed'), 'false', 'river setting preserves the ordinary mutual-exclusion rule');
+  assert.equal(f.host.querySelector('[aria-label="河流吸附"]').getAttribute('aria-pressed'), 'true');
   const first = { type: 'start', point: { x: 10, y: 20 } }, second = { type: 'move', point: { x: 30, y: 40 } };
   await f.act(async () => counters.latest['map-comparison-primary'].onDrawingInput(first));
   await f.act(async () => counters.latest['map-comparison-secondary'].onDrawingInput(second));
   assert.deepEqual(f.drawingInputs, [[0, first], [1, second]], 'input reaches the matching pane drawing session');
   f.vertices.push([104.1, 30.5], [104.2, 30.6]); // the pane-local TrackDrawing sessions share the regular route draft
-  await f.act(async () => f.host.querySelector('.map-comparison-drawing-mode button[aria-pressed="false"]').click());
-  await f.render(f.session);
-  assert.equal(f.operationsCalls.drawingMode, 'freehand', 'the compact mode row selects the existing freehand mode');
   await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '撤销').click());
   assert.equal(f.operationsCalls.undo, 1);
   assert.deepEqual(f.vertices, [[104.1, 30.5]]);

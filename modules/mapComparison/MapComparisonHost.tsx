@@ -8,7 +8,6 @@ import { CameraGizmo } from '../controls/CameraGizmo';
 import { FullscreenButton } from '../controls/FullscreenButton';
 import type { Annotation } from '../annotations/data';
 import type { TrackStyle } from '../tracks/style';
-import type { DrawingMode } from '../tracks/draft';
 import type { DrawingInput } from '../tracks/DrawingGestureBridge';
 import { ComparisonLineProperties, ComparisonMarkerEditor } from './ComparisonProperties';
 import './mapComparison.css';
@@ -21,8 +20,6 @@ type Props = {
   onUse: (choice: ComparisonChoice) => void;
   view?: ViewState;
   search?: ReactNode;
-  drawingMode?: DrawingMode;
-  onDrawingModeChange?: (mode: DrawingMode) => void;
   onDrawingInput?: (index: 0 | 1, event: DrawingInput) => void;
   drawingOverlay?: (index: 0 | 1, map: RefObject<MapHandle | null>) => ReactNode;
   operations?: {
@@ -34,6 +31,12 @@ type Props = {
     onLocate: () => void;
     canUndo: boolean;
     drawingEnabled?: boolean;
+    snapping: boolean;
+    onSnappingChange: (enabled: boolean) => void;
+    roadSnapping: boolean;
+    onRoadSnappingChange: (enabled: boolean) => void;
+    riverSnapping: boolean;
+    onRiverSnappingChange: (enabled: boolean) => void;
     error: string;
     markerError?: string;
     style?: TrackStyle;
@@ -47,7 +50,7 @@ type Props = {
 const noop = () => {};
 
 /** The primary map remains mounted in its original DOM position during comparison. */
-export function MapComparisonHost({ session, primary, onClose, onUse, children, operations, view, search, drawingMode = 'points', onDrawingModeChange, onDrawingInput, drawingOverlay }: Props) {
+export function MapComparisonHost({ session, primary, onClose, onUse, children, operations, view, search, onDrawingInput, drawingOverlay }: Props) {
   const secondary = useRef<MapHandle | null>(null);
   const camera = useRef<CameraSnapshot | null>(null);
   const previous = useRef<ComparisonSession | null>(null);
@@ -188,14 +191,15 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
               <button className="map-comparison-use" aria-label={`使用${side(index)}方图源`} onClick={() => finish(() => onUse(choice(index)))}>选用</button>
             </div>
             {mode === 'draw' && operations?.drawingEnabled !== false && drawingOverlay?.(index, index === 0 ? primary : secondary)}
-            {index === 0 && mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线方式">
-              <button type="button" aria-pressed={drawingMode === 'points'} onClick={() => onDrawingModeChange?.('points')}>标准</button>
-              <button type="button" aria-pressed={drawingMode === 'freehand'} onClick={() => onDrawingModeChange?.('freehand')}>自由手绘</button>
-            </div>}
             <span className="map-comparison-cross" aria-label={`${side(index)}图中心十字`} role="img" />
             {status[index] && /失败|未能|暂未|拒绝|中断/.test(status[index]) && <p className="map-comparison-status" role="status">{status[index]}</p>}
           </section>)}
         </div>
+        {mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线吸附设置">
+          <button type="button" title="节点吸附" aria-label="节点吸附" aria-pressed={operations?.snapping ?? false} disabled={!operations} onClick={() => operations?.onSnappingChange(!operations.snapping)}>点吸附</button>
+          <button type="button" title="道路吸附" aria-label="道路吸附" aria-pressed={operations?.roadSnapping ?? false} disabled={!operations} onClick={() => operations?.onRoadSnappingChange(!operations.roadSnapping)}>道路</button>
+          <button type="button" title="河流吸附" aria-label="河流吸附" aria-pressed={operations?.riverSnapping ?? false} disabled={!operations} onClick={() => operations?.onRiverSnappingChange(!operations.riverSnapping)}>河流</button>
+        </div>}
         <div className="map-comparison-gizmo">
           <CameraGizmo view={view ?? camera.current ?? session.camera} onView={(pitch, bearing) => {
             enableTerrain(pitch);
