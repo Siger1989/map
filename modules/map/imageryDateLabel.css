@@ -1,0 +1,26 @@
+.map-imagery-date-label {
+  position: absolute;
+  z-index: 4;
+  bottom: calc(var(--home-footer, 56px) + 32px);
+  left: 8px;
+  max-width: min(70%, 220px);
+  overflow: hidden;
+  padding: 3px 6px;
+  border-radius: 8px;
+  color: var(--ui-ink, #f2f5ed);
+  background: color-mix(in srgb, var(--ui-surface, #18201f) 90%, transparent);
+  font-size: 11px;
+  line-height: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 1px 4px #0005;
+}
+
+.map-comparison-primary .map-imagery-date-label,
+.map-comparison-secondary .map-imagery-date-label {
+  top: 8px;
+  right: 8px;
+  bottom: auto;
+  left: auto;
+}

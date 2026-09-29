@@ -20,6 +20,7 @@ import { TiandituSources } from '../cartography/TiandituSources';
 import type { LayerSettings } from '../map/types';
 import { usesSentinel } from '../cartography/sentinel';
 import { RasterDatumChoice } from './RasterDatumChoice';
+import { defaultRasterDatum } from './sourceDatum';
 import { SavedMapSources } from './SavedMapSources';
 import { parseOvmap } from './ovmap';
 import { existingMapIndexes } from './importReview';
@@ -254,7 +255,7 @@ export function MapSourcesPanel({
           onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
           onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}
         {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正与下载</summary>
-          <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={sources.source?.datum} onChange={onSettings} onError={setError}/>
+          <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={defaultRasterDatum(sources.source)} onChange={onSettings} onError={setError}/>
           {onOffline && <button onClick={onOffline}>下载当前范围</button>}
         </details>}
         {sources.status && <p role="status">{sources.status}</p>}

@@ -10,6 +10,7 @@ import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { RasterCoordinates } from '../mapSources/RasterCoordinates';
 import { rasterDatumKey } from '../mapSources/coordinates';
+import { defaultRasterDatum } from '../mapSources/sourceDatum';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -77,6 +78,8 @@ import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { RasterLevelLock } from '../cartography/RasterLevelLock';
+import { imageryDateLabel, imageryDateSourceKey } from './imageryDateLabel';
+import './imageryDateLabel.css';
 import { PhotoLayer } from '../photos/PhotoLayer';
 import type { VisiblePhoto } from '../photos/storage';
 import { PositionLayer } from '../position/PositionLayer';
@@ -222,6 +225,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const sourceProtocolScheme = useRef<string | null>(null);
     if (!sourceProtocolScheme.current) sourceProtocolScheme.current = `shantu-map-${++terrainMapProtocolInstance}`;
     const [contextEpoch, setContextEpoch] = useState(0);
+    const [satelliteDateState, setSatelliteDateState] = useState<{
+      key: string;
+      state: SatelliteState;
+    } | null>(null);
     const boxGestureActive = useRef<boolean>(false);
     // Updated synchronously by the app before React propagates the new layer props.
     const terrainMode = useRef(settings.terrain);
@@ -312,6 +319,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const syncSatellite = () => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
+      const dateKey = imageryDateSourceKey(
+        latest.current.settings,
+        latest.current.mapSource,
+        domestic,
+      );
       satelliteAbort.current?.abort();
       const abort = new AbortController();
       satelliteAbort.current = abort;
@@ -324,7 +336,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         !latest.current.settings.satellite ||
         latest.current.settings.imageryMode !== 'latest'
       ) {
-        latest.current.onSatellite({
+        const state = {
           date: '',
           ready: false,
           status: usesSentinel(latest.current.settings)
@@ -332,28 +344,36 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             : usesTianditu(latest.current.settings, domestic)
             ? '天地图地表影像，非实时云况；拍摄日期由图源提供'
             : '选择最新云况影像时获取卫星观测',
-        });
+        };
+        setSatelliteDateState(dateKey ? { key: dateKey, state } : null);
+        latest.current.onSatellite(state);
         return;
       }
-      latest.current.onSatellite({
+      const pending = {
         date: '',
         ready: false,
         status: '正在检查当前位置最新可用卫星影像…',
-      });
+      };
+      setSatelliteDateState(dateKey ? { key: dateKey, state: pending } : null);
+      latest.current.onSatellite(pending);
       loadLatestSatellite(map, center.lng, center.lat, abort.signal)
         .then((result) => {
           if (!abort.signal.aborted) {
+            setSatelliteDateState(dateKey ? { key: dateKey, state: result } : null);
             latest.current.onSatellite(result);
             sync();
           }
         })
         .catch((e) => {
-          if (!abort.signal.aborted)
-            latest.current.onSatellite({
+          if (!abort.signal.aborted) {
+            const failed = {
               date: '',
               ready: false,
               status: e instanceof Error ? e.message : '卫星影像暂不可用',
-            });
+            };
+            setSatelliteDateState(dateKey ? { key: dateKey, state: failed } : null);
+            latest.current.onSatellite(failed);
+          }
         });
     };
     const syncRasterLock = () => {
@@ -364,7 +384,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
         : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
-      const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? mapSource?.datum ?? 'wgs84';
+      const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
       const source=ids[0] ? map.getSource(ids[0]) : null;
@@ -1575,6 +1595,15 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const map = mapRef.current;
       if (map && !settings.terrain) map.easeTo({ pitch: 0, duration: 750 });
     }, [settings.terrain]);
+    const sourceKey = imageryDateSourceKey(settings, props.mapSource, domestic);
+    const dateLabel = imageryDateLabel(
+      settings,
+      props.mapSource,
+      domestic,
+      sourceKey && satelliteDateState?.key === sourceKey
+        ? satelliteDateState.state
+        : null,
+    );
     return (
       <div
         ref={container}
@@ -1584,7 +1613,13 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           !props.readOnly && (props.pickingActive || props.drawingActive || props.sectionEditing)
         }
         aria-label="全球三维地形地图"
-      />
+      >
+        {dateLabel && (
+          <div className="map-imagery-date-label" aria-label={dateLabel.text}>
+            {dateLabel.text}
+          </div>
+        )}
+      </div>
     );
   },
 );
