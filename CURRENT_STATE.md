@@ -1,14 +1,15 @@
-# 2026-09-29 / 自动瓦片缓存与路线优先 — 实施中
+# 2026-09-29 / 0.2.86 自动瓦片缓存与路线优先 — 已交付
 
 - 目标：浏览时自动保存瓦片，当前选中路线周边优先保留/空闲补齐，可单独清理自动缓存；主动离线包与用户轨迹保留。
 - 进展：独立IndexedDB缓存、路线走廊策略由Luna并行实现；主agent已接入普通地图瓦片/OVMAP/坐标校正请求、离线设置入口和空闲补图调度。默认两侧1km、256MiB上限，范围可选500m/1km/2km。
 - 文件：modules/outdoor/browseCache*、routeCachePolicy、RouteCacheWarmup、BrowseCacheSettings、useBrowseCacheRoute；tileCache/offline/OfflineMapSettings；mapSources瓦片通道、TerrainMap、app/page；相关定向tests。
 - 命令：git status/diff、源码定向审计；tsc --noEmit、node --experimental-strip-types --test tests/*.test.mjs、build-android.ps1（SDK/JDK显式传入）。日志在.openai/cache-*。
 - 验证：PASS：834/834完整测试、TypeScript、网页/Android编译/签名/zipalign；543网页资产/496地形PNG/DEX匹配，ZIP完整、公开包无私有图源种子/本机Key/签名文件。首次全套833/834，旧desktop-web测试在系统短路径TEMP下403；仅测试进程TEMP/TMP改为本仓库.openai后834/834，不改系统设置或业务代码。
-- 产物：APK/Shantu-0.2.86-test-standalone-public.apk；versionCode93，57891932 bytes；SHA256 e452cffdbc20f9c3dd7c2ffe9e18c5adac3c3716f76cfbbf3f34915c1f224801；原独立包名与4a941b9d证书。源码/Release尚待远端确认，详见docs/release-0.2.86.md。
+- 产物：APK/Shantu-0.2.86-test-standalone-public.apk；versionCode93，57891932 bytes；SHA256 e452cffdbc20f9c3dd7c2ffe9e18c5adac3c3716f76cfbbf3f34915c1f224801；原独立包名与4a941b9d证书，详见docs/release-0.2.86.md。
+- 发布：构建源码1848e7b2109553365fabf6f7a28bd3a788f63cee已推送codex/rollback-ui-0235-20260921且远端一致，未合入main。https://github.com/Siger1989/map/releases/tag/v0.2.86-test-standalone 已公开预发布（ID399298653）；APK/SHA256/安装说明三附件大小与远端digest匹配。后续仅交付文档提交，不重打包。
 - 边界：清理与旧包隔离；空闲补图单并发、每轮限量，移动/后台/仅缓存/省流取消；遵循天地图批量下载暂停规则，不对天地图主动沿线预取。
 - 阻塞：浏览器工具此前URL安全策略拒绝当前预览，不能绕过做UI验证；手机性能/磁盘缓存/覆盖安装未验。架构检查仍7个原有文件超行数预算，不为本次放宽预算或无关重构。
-- 下一步：核对最终网页资产/公开包排除私有凭据，提交推送与Release校验。
+- 下一步：真机回看同一区域、切换图源、仅缓存和清理后检查；本轮未改后台定位，记录中断需另采设备日志确认。
 
 # 2026-09-29 / 0.2.85 交接文件同步
 
