@@ -12,4 +12,4 @@ Android不再注册地图下载服务，也不允许旧页面启动下载；地�
 
 860/860完整测试、TypeScript和网页构建通过，应用运行依赖图确认已排除原缓存/下载模块。覆盖旧缓存偏好失效、正常联网、坐标校正/组合源、原生下载关闭及原有存档保留；Android构建、原证书v2/v3签名与对齐核验通过；543网页资产、496地形PNG及DEX与构建目录匹配，ZIP完整。最终APK脚本中不存在旧浏览缓存/主动包/仅缓存存储键；无私有图源种子、本机Key或签名文件。公开APK 57,875,548 bytes；SHA256 `27b4aed676cff4e1a75cbed56d1101c802d6960cec3a9ff29edb47f0c8ed9cb6`。浏览器受本会话既有URL安全策略拒绝限制，没有绕过或新增截图；手机性能和覆盖安装待实测。
 
-源码同步分支codex/rollback-ui-0235-20260921，不自动合入main；实际SHA、测试Release与远端校验见CURRENT_STATE。
+源码同步分支codex/rollback-ui-0235-20260921，不自动合入main；构建源码 `8816441e9b50ca98caf3407f8ca314f84e9ffa71` 与远端一致；[测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.88-test-standalone)三附件远端大小/digest匹配，交付记录见CURRENT_STATE。

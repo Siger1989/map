@@ -1,6 +1,6 @@
 # 山兔
 
-2026-09-30：0.2.88-test（versionCode95）根据使用反馈移除地图自动缓存、沿线下载和仅缓存入口，恢复正常联网请求，保留轨迹和导入图源。旧缓存数据不自动删除。[发行说明](docs/release-0.2.88.md)。
+2026-09-30：0.2.88-test（versionCode95）根据使用反馈移除地图自动缓存、沿线下载和仅缓存入口，恢复正常联网请求，保留轨迹和导入图源。旧缓存数据不自动删除。860项测试、类型检查、APK资源与签名验证通过；手机速度待实测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.88-test-standalone/Shantu-0.2.88-test-standalone-public.apk) · [发行说明](docs/release-0.2.88.md)。
 
 2026-09-30：0.2.87-test（versionCode94）将自动缓存限定为路线附近实际浏览的瓦片，取消预取；删路线清理独占自动缓存。主动下载仅支持自行导入的在线图源和沿线区域，按图源声明开放19等整数级别。857项测试、类型检查和APK资源/签名核验通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.87-test-standalone/Shantu-0.2.87-test-standalone-public.apk) · [发行说明](docs/release-0.2.87.md) · [使用说明](docs/automatic-map-cache.md)。
 
