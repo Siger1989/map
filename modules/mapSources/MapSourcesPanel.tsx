@@ -41,7 +41,7 @@ export function MapSourcesPanel({
   onRouteQr,
   incomingFile,
   onIncomingConsumed,
-  settings, onSettings, onOffline,
+  settings, onSettings,
 }: {
   sources: ReturnType<typeof useMapSources>;
   builtin: 'terrain' | 'detail' | 'latest';
@@ -53,7 +53,6 @@ export function MapSourcesPanel({
   onIncomingConsumed?: () => void;
   settings?: LayerSettings;
   onSettings?: (patch: Partial<LayerSettings>) => void;
-  onOffline?: () => void;
 }) {
   const [step, setStepState] = useState<MapSourcesStep>(() => mapSourcesBrowseStepToRestore());
   const setStep = (value: MapSourcesStep) => {
@@ -252,9 +251,8 @@ export function MapSourcesPanel({
         {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy}
           onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
           onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}
-        {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正与下载</summary>
+        {category === 'saved' && settings && onSettings && <details className="map-source-settings"><summary>坐标校正</summary>
           <RasterDatumChoice settings={settings} selected={sources.selected} image={sources.source?.kind === 'image'} defaultDatum={defaultRasterDatum(sources.source)} onChange={onSettings} onError={setError}/>
-          {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
         </details>}
         {sources.status && <p role="status">{sources.status}</p>}
       </>}

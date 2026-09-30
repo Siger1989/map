@@ -1,9 +1,3 @@
-import { browseCachedFetch, type BrowseTile } from '../outdoor/browseCache.ts';
-import { readBrowseCacheSettings } from '../outdoor/browseCachePreferences.ts';
-import { offlineMapOnly, storedMapResponse } from '../outdoor/tileCache.ts';
-import { tileFromUrl } from '../outdoor/routeCachePolicy.ts';
-import { browseTileCoordinate } from '../outdoor/browseTileSources.ts';
-
 function isTiandituHost(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
   return normalized === 'tianditu.gov.cn' || normalized.endsWith('.tianditu.gov.cn');
@@ -52,23 +46,15 @@ function tiandituBrowserUrl(rawUrl: string): string | undefined {
 export async function fetchMapTile(
   url: string,
   signal: AbortSignal,
-  tile?: BrowseTile,
 ): Promise<Response> {
-  const stored = await storedMapResponse(url, signal);
-  if (stored) return stored;
-  return browseCachedFetch(url, signal, () => {
-    if (offlineMapOnly()) throw new Error('此处地图数据未缓存，请联网补齐离线包');
-    return fetchProviderTile(url, signal);
-  }, {
-    tile: tile ?? browseTileCoordinate(url) ?? tileFromUrl(url), cacheable: readBrowseCacheSettings().enabled,
-    allowStale: offlineMapOnly() || (typeof navigator !== 'undefined' && navigator.onLine === false),
-  });
+  signal.throwIfAborted();
+  return fetchProviderTile(url, signal);
 }
 
 /** Explicit user download: shares provider transport, without automatic cache writes. */
 export async function fetchOnlineMapTile(url: string, signal: AbortSignal): Promise<Response> {
-  // Reuse a fresh passive hit before charging another provider request; the caller saves it in its manual package.
-  return browseCachedFetch(url, signal, () => fetchProviderTile(url, signal), { cacheable: false, allowStale: false });
+  signal.throwIfAborted();
+  return fetchProviderTile(url, signal);
 }
 
 async function fetchProviderTile(url: string, signal: AbortSignal): Promise<Response> {

@@ -4,8 +4,6 @@ import type { LayerSettings } from '../map/types';
 import { routeBounds } from '../routeShare/data';
 import { basemapConfiguration, tiandituTiles } from '../cartography/basemaps';
 import { tiandituBase, TIANDITU_LAYERS } from '../cartography/tianditu';
-import { offlineProtocol, offlineTransform } from '../outdoor/offline';
-import { offlineMapOnly } from '../outdoor/tileCache';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { SENTINEL_TILES, SENTINEL_MAXZOOM, usesSentinel, usesTianditu } from '../cartography/sentinel';
 type Option={id:string;coordinates:Coordinate[];color:string};
@@ -27,10 +25,10 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
     const timer=setTimeout(()=>{if(!disposed)setError('底图暂未加载，可重试；路线仍可查看');},15000);
     void import('maplibre-gl').then(ml=>{
       if(disposed || !container.current)return;
-      ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');ml.addProtocol('tripcache',offlineProtocol);
-      map=new ml.Map({container:container.current,interactive:true,keyboard:false,attributionControl:false,fadeDuration:0,transformRequest:offlineTransform,
+      ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
+      map=new ml.Map({container:container.current,interactive:true,keyboard:false,attributionControl:false,fadeDuration:0,
         bounds:routeBounds(latest.current.options.map(r=>r.coordinates)),fitBoundsOptions:{padding:{top:30,bottom:30,left:30,right:86},maxZoom:16},
-        style:{version:8,sources:{base:{type:'raster',tiles:sentinel?SENTINEL_TILES:tdt?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:sentinel?SENTINEL_MAXZOOM:tdt?Math.min(TIANDITU_LAYERS[base].maxzoom,offlineMapOnly()?settings?.offlineMaxZoom??18:18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
+        style:{version:8,sources:{base:{type:'raster',tiles:sentinel?SENTINEL_TILES:tdt?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:sentinel?SENTINEL_MAXZOOM:tdt?Math.min(TIANDITU_LAYERS[base].maxzoom,18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
           {id:'background',type:'background',paint:{'background-color':'#dce6d5'}},{id:'base',type:'raster',source:'base'},
           {id:'other',type:'line',source:'routes',filter:['==',['get','selected'],false],paint:{'line-color':['get','color'],'line-width':3,'line-opacity':0.5}},
           {id:'outline',type:'line',source:'routes',filter:['==',['get','selected'],true],paint:{'line-color':'#fff','line-width':7}},
@@ -53,10 +51,10 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
       map.on('style.load',()=>update.current());
       if(map.isStyleLoaded())update.current();
       map.on('sourcedata',event=>{if(event.sourceId==='base' && event.tile && event.isSourceLoaded){clearTimeout(timer);if(!disposed)setError('');}});
-      map.on('error',()=>{if(!disposed)setError('底图加载失败，请检查网络或缓存后重试');});
+      map.on('error',()=>{if(!disposed)setError('底图加载失败，请检查网络后重试');});
     }).catch(()=>{if(!disposed)setError('底图暂不可用，请重试');});
     return()=>{disposed=true;clearTimeout(timer);update.current=()=>{};camera.current=null;markers.forEach(m=>m.remove());map?.remove();};
-  },[base,sentinel,tdt,domestic.token,retry,settings?.offlineMaxZoom]);
+  },[base,sentinel,tdt,domestic.token,retry]);
   const geometry=JSON.stringify([options,selectedId,coordinates]);
   useEffect(()=>update.current(),[geometry]);
   return <section className="route-mini-overview" aria-label="路线缩略图：选中路线高亮，其他方案淡色显示">

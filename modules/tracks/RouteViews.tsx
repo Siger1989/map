@@ -79,7 +79,6 @@ export function RouteDetails({
   onCondition,
   onShowMetric,
   onRename,
-  onOffline,
   onAppearance,
   onSource,
   sourceName,
@@ -98,7 +97,6 @@ export function RouteDetails({
   onCondition: (color: string, value: string) => boolean;
   onShowMetric?: (mode: 'elevation' | 'slope') => void;
   onRename: (name: string) => boolean;
-  onOffline?: () => void;
   onAppearance?: (style: TrackStyle) => boolean;
   onSource?: () => void;
   sourceName?: string;
@@ -167,7 +165,6 @@ export function RouteDetails({
             {nameError && <p role="alert">{nameError}</p>}
             {nameSaved && <p role="status">名称已保存</p>}
           </form>
-          {onOffline && <button onClick={onOffline}>下载沿线地图</button>}
           {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
           {onAppearance && <section aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
             <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>

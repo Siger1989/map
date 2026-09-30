@@ -24,7 +24,7 @@ test('map layer preferences round-trip actual user selections', () => {
       roadsOpacity: 0.6, rasterDatums: { 'custom:abc': 'gcj02' },
     };
     saveLayerPreferences(selected);
-    const { rasterDatums: _datumPreferences, ...expected } = selected;
+    const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, ...expected } = selected;
     assert.deepEqual(readLayerPreferences(), expected);
     const persisted = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(persisted.version, 1);
@@ -91,4 +91,12 @@ test('map source restoration accepts existing built-ins or stored maps and rejec
   assert.equal(resolveAvailableMapSelection('builtin-osm', maps), 'builtin-osm');
   assert.equal(resolveAvailableMapSelection('deleted-custom-map', maps), '');
   assert.equal(resolveAvailableMapSelection(null, maps), '');
+});
+
+
+test('old offline package caps are ignored without changing source or user detail choice', () => {
+  const parsed = parseLayerPreferences(JSON.stringify({ version: 1, layers: { offlineMaxZoom: 14, rasterLevel: 19, satellite: true, satelliteProvider: 'tianditu' } }));
+  assert.equal(parsed.offlineMaxZoom, undefined);
+  assert.equal(parsed.rasterLevel, 19);
+  assert.equal(parsed.satelliteProvider, 'tianditu');
 });

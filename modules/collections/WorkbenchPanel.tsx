@@ -1,5 +1,5 @@
 import { SmartInput } from '../input/SmartText';
-import { useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
   Check,
   Eye,
@@ -54,8 +54,6 @@ import { CollectionTabs } from './CollectionTabs';
 
 type Props = {
   onImport?: () => void;
-  offlineMaps?: (query: string) => ReactNode;
-  offlineCount?: number;
   center: [number, number];
   onClose: () => void;
   onLocate: (key: string) => void;
@@ -497,7 +495,7 @@ export function WorkbenchPanel(props: Props) {
               <small>
                 {batch || checked.size > 0
                   ? `已选 ${checked.size} 项`
-                  : `${workbenchLeaves(items).length + (props.offlineCount ?? 0)} 项`}
+                  : `${workbenchLeaves(items).length} 项`}
               </small>
             </div>
             {props.onImport && <button aria-label="导入收藏文件" onClick={props.onImport}>导入</button>}
@@ -588,7 +586,6 @@ export function WorkbenchPanel(props: Props) {
             </div>
           )}
           <div ref={swipe.list} className="workbench-tree-list">
-            {type === 'all' && !batch && props.offlineMaps?.(query)}
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
             {!view.length && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : '没有匹配的路线或地点'}</p>}
           </div>

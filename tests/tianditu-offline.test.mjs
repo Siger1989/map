@@ -226,11 +226,11 @@ test('legacy TianDiTu packages remain readable, verifiable, and safely removable
   globalThis.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
   globalThis.caches = { open: async () => cache };
   let requests = 0;
-  globalThis.fetch = () => { requests++; throw new Error('network prohibited'); };
+  globalThis.fetch = async () => { requests++; return new Response('network tile'); };
   try {
     const live = 'https://t3.tianditu.gov.cn/vec_w/wmts?request=GetTile&layer=vec&tilematrixset=w&tilematrix=8&tilecol=201&tilerow=105&tk=expired';
-    assert.equal((await cachedMapFetch(live, new AbortController().signal)).status, 200);
-    assert.equal(requests, 0);
+    assert.equal(await (await cachedMapFetch(live, new AbortController().signal)).text(), 'network tile');
+    assert.equal(requests, 1, 'stale trip cache is not consulted by normal rendering');
     const checked = await verifyTrip(first);
     assert.equal(checked.done, 2);
     assert.equal(checked.complete, true);
@@ -239,7 +239,7 @@ test('legacy TianDiTu packages remain readable, verifiable, and safely removable
     assert.equal(await cache.match(resourceCacheKey(shared)) instanceof Response, true);
     assert.equal(await cache.match(resourceCacheKey(firstOnly)), undefined);
     assert.equal(await cache.match(resourceCacheKey(secondOnly)) instanceof Response, true);
-    assert.equal(requests, 0);
+    assert.equal(requests, 1);
   } finally {
     for (const [key, value] of Object.entries(saved)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
   }

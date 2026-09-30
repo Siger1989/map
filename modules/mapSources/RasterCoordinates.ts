@@ -1,6 +1,4 @@
 import type { AddProtocolAction, Map as LibreMap, RasterTileSource } from 'maplibre-gl';
-import { cachedMapFetch } from '../outdoor/tileCache';
-import type { BrowseTile } from '../outdoor/browseCache';
 import { warpPlan, type RasterDatum, type WarpPlan } from './coordinates';
 import workerUrl from './rasterWarp.worker.ts?worker&url';
 
@@ -53,7 +51,7 @@ export class RasterCoordinates {
     }
   }
 
-  fetch = async (url: string, signal: AbortSignal, tile?: BrowseTile): Promise<Response> => {
+  fetch = async (url: string, signal: AbortSignal): Promise<Response> => {
     if (url.startsWith(`${this.scheme}://`)) {
       const abort = new AbortController(), cancel = () => abort.abort(signal.reason);
       signal.addEventListener('abort', cancel, { once: true });
@@ -66,11 +64,12 @@ export class RasterCoordinates {
     if (url.startsWith(`${this.mapScheme}://`)) {
       const abort = new AbortController(), cancel = () => abort.abort(signal.reason);
       signal.addEventListener('abort', cancel, { once: true });
-      const request = { url, type: 'arrayBuffer' as const, cacheTile: tile };
+      const request = { url, type: 'arrayBuffer' as const };
       try { signal.throwIfAborted(); return new Response((await this.localProtocol(request, abort)).data as ArrayBuffer); }
       finally { signal.removeEventListener('abort', cancel); }
     }
-    return cachedMapFetch(url, signal, tile, true);
+    signal.throwIfAborted();
+    return fetch(url, { signal });
   };
 
   private async slot(signal: AbortSignal) {
@@ -124,7 +123,7 @@ export class RasterCoordinates {
       const tiles: ArrayBuffer[] = [];
       // Bounded input fan-out, and the same offline/native fetch path as the map.
       for (let row = 0; row < plan.height; row++) for (let col = 0; col < plan.width; col++) {
-        const response = await this.fetch(rasterTileUrl(binding.tiles, z, plan.left+col, plan.top+row, binding.scheme), abort.signal, { z, x, y });
+        const response = await this.fetch(rasterTileUrl(binding.tiles, z, plan.left+col, plan.top+row, binding.scheme), abort.signal);
         if (!response.ok) throw Error(`图源瓦片请求失败 (${response.status})`);
         tiles.push(await response.arrayBuffer());
       }

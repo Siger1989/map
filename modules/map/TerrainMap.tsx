@@ -4,7 +4,7 @@ import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { readLastView, saveLastView } from './lastView';
 import { CameraSync } from './cameraSync';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
-import { offlineProtocol, offlineTransform } from '../outdoor/offline';
+import type { TripPackage } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
@@ -94,7 +94,7 @@ import {
 export type MapHandle = {
   applyCamera: (camera: CameraSnapshot) => void;
   shareMapStyle: () => ShareMapStyle | null;
-  highlightOffline: (trip: import("../outdoor/offline").TripPackage) => void;
+  highlightOffline: (trip: TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
   restoreCamera: (camera: import('../controls/useMapFocusLock').CameraSnapshot) => void;
   setTerrainMode: (terrain: boolean) => void;
@@ -391,7 +391,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
       if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
         const id = TDT_SOURCE_IDS[layer], source = map.getSource(id);
-        const maxzoom = Math.min(TIANDITU_LAYERS[layer].maxzoom, s.offlineMaxZoom ?? Infinity);
+        const maxzoom = TIANDITU_LAYERS[layer].maxzoom;
         if (source && source.maxzoom !== maxzoom) { source.maxzoom = maxzoom; map.refreshTiles(id); }
       }
     };
@@ -875,13 +875,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           // DEM and vector decoding do not silently wait on an HTML fallback URL.
           maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
           maplibre.setWorkerCount(2);
-          maplibre.addProtocol('tripcache', offlineProtocol);
           const initialCamera = cameraSync.current.pendingCamera() ?? latest.current.initialCamera ??
             (latest.current.persistCamera === false ? INITIAL_VIEW : readLastView() ?? INITIAL_VIEW);
           const map = new maplibre.Map({
             container: container.current,
             style: baseStyle(),
-            transformRequest: offlineTransform,
             // Use MapLibre's native devicePixelRatio; a 2x cap softens high-DPI
             // labels and lines. Its default maxCanvasSize/GL limits still apply.
             ...initialCamera,

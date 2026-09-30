@@ -2,12 +2,11 @@ import { useState, type ReactNode } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
-export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onEditPoints, onCancel, onCache, onImport }: {
+export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onEditPoints, onCancel, onImport }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string; weather?: ReactNode;
   onEditPoints?: () => void; onCancel?: () => void;
-  onCache?: () => void;
   onImport?: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -22,7 +21,6 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
       {onImport && <button onClick={onImport}>加载路线</button>}
       {onEditPoints && <button onClick={onEditPoints}>编辑线点</button>}
       {onCancel && <button onClick={onCancel}>取消路线</button>}
-      {onCache && <button onClick={onCache} aria-label="缓存当前路线">缓存</button>}
     </nav>
     <nav className="route-summary-actions" aria-label="路线操作">
       <button className="is-primary" onClick={onStartNavigation} disabled={navigating}>{navigating ? '导航中' : '开始导航'}</button>

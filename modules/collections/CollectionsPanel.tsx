@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
   type ComponentProps,
-  type ReactNode,
 } from 'react';
 import { WorkbenchPanel } from './WorkbenchPanel';
 import { BoxSelectionResults } from './BoxSelectionResults';
@@ -40,8 +39,6 @@ import type { TripPhoto } from '../photos/storage';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onImport?: () => void;
   onImportedData?: (data: Transfer) => void;
-  offlineMaps?: (query: string) => ReactNode;
-  offlineCount?: number;
   annotations: Annotation[];
   sections: SectionObject[];
   areas: MapArea[];
@@ -242,8 +239,6 @@ export function CollectionsPanel(props: Props) {
     return (
       <WorkbenchPanel
         onImport={() => setImportOpen(true)}
-        offlineMaps={props.offlineMaps}
-        offlineCount={props.offlineCount}
         center={props.mapCenter}
         onClose={props.onClose}
         onLocate={(key) => {

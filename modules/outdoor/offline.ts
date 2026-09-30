@@ -12,6 +12,8 @@ import { readMap } from '../mapSources/storage.ts';
 import type { MapSource } from '../mapSources/types.ts';
 import { planImportedRouteDownload } from './importedRouteDownload.ts';
 export { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
+import { planBounds } from '../offlineRouting/routeBounds.ts';
+export { planBounds } from '../offlineRouting/routeBounds.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1',
   INDEX = 'guanyun.trips.v1';
@@ -166,30 +168,6 @@ const tileY = (lat: number, z: number) =>
   Math.floor(
     ((1 - Math.asinh(Math.tan((lat * Math.PI) / 180)) / Math.PI) / 2) * 2 ** z,
   );
-export function planBounds(points: Coordinate[]): TripPackage['bounds'] {
-  if (!points.length || !points.every(coordinate))
-    throw new Error('请先选择有效路线或地图位置');
-  let west = 180,
-    south = 85,
-    east = -180,
-    north = -85;
-  for (const [lng, lat] of points) {
-    west = Math.min(west, lng);
-    east = Math.max(east, lng);
-    south = Math.min(south, lat);
-    north = Math.max(north, lat);
-  }
-  if (east - west > 2 || north - south > 2)
-    throw new Error('范围过大，请分成较短行程下载');
-  const padding =
-    0.02 / Math.max(0.1, Math.cos((((north + south) / 2) * Math.PI) / 180));
-  return [
-    Math.max(-180, west - padding),
-    Math.max(-85, south - 0.02),
-    Math.min(179.999, east + padding),
-    Math.min(85, north + 0.02),
-  ];
-}
 export function regionTiles(
   bounds: TripPackage['bounds'],
   maxzoom: number,

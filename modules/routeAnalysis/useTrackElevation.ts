@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ManualTrack } from '../tracks/drawing';
 import { sampleTerrain } from '../journey/metrics';
 import { readProfile } from '../journey/elevationProvider';
-import { offlineMapOnly } from '../outdoor/tileCache';
 import { finiteHeight } from './elevationColors';
 import { withTerrainHeights } from './trackElevation';
 import { terrainProfileTrack } from './terrainProfileTrack';
@@ -60,9 +59,7 @@ export function useTrackElevation(
           const error =
             available === heights.length && available > 0
               ? ''
-              : offlineMapOnly()
-                ? '离线包缺少部分路线地形，请联网下载覆盖整条路线的地图包后重试。'
-                : available > 0
+              : available > 0
                   ? '部分地形读取失败，缺测路段保留灰色，可重试。'
                   : '地形高程读取失败，请检查网络后重试。';
           setResult({

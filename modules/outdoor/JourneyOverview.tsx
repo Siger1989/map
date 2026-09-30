@@ -14,7 +14,7 @@ export function JourneyOverview({ tracks, selectedId, recordingStarted, onSelect
   recordingStarted: boolean;
   onSelect: (id: string) => void; onShow: (points: Coordinate[]) => void;
   onRecord: () => void; onPhotos: () => void;
-  onTool: (tool: 'files' | 'offline' | 'return') => void;
+  onTool: (tool: 'files' | 'routing' | 'return') => void;
 }) {
   const [tab, setTab] = useState<'track' | 'data' | 'along'>('track');
   const [more, setMore] = useState(false);
@@ -38,7 +38,7 @@ export function JourneyOverview({ tracks, selectedId, recordingStarted, onSelect
       <button onClick={() => setMore(false)}><ChevronLeft size={16} />返回行程</button>
       <button onClick={onRecord}><Settings2 size={16} />实走记录与设置</button>
       <button onClick={() => onTool('files')}>导入 / 导出数据</button>
-      <button onClick={() => onTool('offline')}>离线地图</button>
+      <button onClick={() => onTool('routing')}>离线路网管理</button>
     </nav> : <>
       {track && <div className="journey-summary"><span>{formatDistance(trackDistance(track.segments))}</span><span>{trackSourceLabel(track)}</span><span>{times.length ? time(times[0]) : '未记录时间'}</span></div>}
       {track && <nav className="journey-tabs" aria-label="行程内容">

@@ -1,3 +1,13 @@
+# 2026-09-30 / 0.2.88 移除地图缓存功能 — 构建核验通过，上传中
+
+- 目标：用户认为缓存慢且无用，移除浏览缓存/沿线下载/仅缓存地图功能，恢复普通联网地图；上传GitHub和新版公开APK。
+- 进展：Luna分别移除界面与地图请求接线；主agent已去掉Android每GET的OfflineStore查盘、禁用原生下载启动/服务声明并保留存档，旧offlineMaxZoom偏好不再限制在线图源。
+- 文件：app/page与地图/收藏/记录工具接线；tileCache/tileTransport及地图/缩略图/分享图、原生LocalGateway/NativeBridge/Manifest、layerPreferences、版本与tests/docs。
+- 命令：git status/diff、fetch origin、入口/请求/native链路审计；详细日志.openai/remove-cache-*。起点9af9a98，本地比远端多2个文档提交，无远端新增；未跟踪PDF保留。
+- 验证：PASS：最终860/860完整测试、TypeScript、网页构建，运行依赖图确认缓存引擎/下载/离线包模块不进入应用。首轮857/860的3个旧用例已更新为验证正常联网/数据保留；Java与desktop测试使用已验证JAVA_HOME和本仓库TEMP。原生停下载/旧偏好定向8项PASS；APK/原签名/对齐、543网页资产/496PNG/DEX及隐私核验PASS；最终APK脚本不含退休缓存键。产物APK/Shantu-0.2.88-test-standalone-public.apk，57875548bytes，SHA256 27b4aed676cff4e1a75cbed56d1101c802d6960cec3a9ff29edb47f0c8ed9cb6。
+- 边界：保留路线/照片/导入图源与MBTiles/离线路网、应用内置地形及浏览器标准HTTP缓存；不自动删除旧缓存文件。无真机性能实测，既有浏览器安全拒绝不绕过。
+- 下一步：整合界面/请求链路、验证无旧缓存读写/仅缓存阻断，完成公开APK与Git交付。
+
 # 2026-09-30 / 0.2.87 沿线被动缓存与导入图源主动下载 — 已交付
 
 - 目标：只缓存画线/已存路线附近实际浏览的瓦片；不预取；删路线清理独占自动缓存，共用保留。主动下载仅导入在线图源、仅路线附近、由用户点击开始。

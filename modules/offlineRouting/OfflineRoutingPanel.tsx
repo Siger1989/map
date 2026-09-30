@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
-import { planBounds } from '../outdoor/offline';
+import { planBounds } from './routeBounds';
 import { downloadGraph } from './download';
 import {
   deleteGraph,

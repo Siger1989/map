@@ -1,5 +1,4 @@
 'use client';
-import { useBrowseCacheRoute } from '../modules/outdoor/useBrowseCacheRoute';
 import { RallyNavigation } from '@/modules/rally/RallyNavigation';
 import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
@@ -11,8 +10,7 @@ import { TextSuggestions } from '@/modules/input/SmartText';
 import { requestAppBack } from '@/modules/input/appBack';
 import { CurrentMapContext } from '@/modules/routeShare/CurrentMapContext';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
-import { readRasterDatums, rasterDatumKey } from '@/modules/mapSources/coordinates';
-import { defaultRasterDatum } from '@/modules/mapSources/sourceDatum';
+import { readRasterDatums } from '@/modules/mapSources/coordinates';
 import { readContourInterval, saveContourInterval } from '@/modules/terrain/contourInterval';
 import { RouteImportDialog } from '@/modules/dataTransfer/RouteImportDialog';
 import { useIncomingRoute } from '@/modules/dataTransfer/useIncomingRoute';
@@ -28,11 +26,7 @@ import { PhotoViewer } from '@/modules/photos/PhotoViewer';
 import { useMapFocusLock } from '@/modules/controls/useMapFocusLock';
 import { useScreenAwake } from '@/modules/position/useScreenAwake';
 import { useRecording } from '@/modules/outdoor/useRecording';
-import { useOffline } from '@/modules/outdoor/useOffline';
-import { OfflineRegionPicker } from '@/modules/outdoor/OfflineRegionPicker';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
-import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
-import { offlineMapStatus } from '@/modules/outdoor/tileCache';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
@@ -50,8 +44,6 @@ import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
-import { OfflineDownload, type OfflineDownloadTarget } from '@/modules/outdoor/OfflineDownload';
-import type { DownloadArea } from '@/modules/outdoor/downloadPlan';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
 import { Timeline } from '@/modules/controls/Timeline';
@@ -75,7 +67,6 @@ import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
 import { catalogEntries } from '@/modules/collections/catalog';
 import { CollectionsPanel } from '@/modules/collections/CollectionsPanel';
-import { OfflineMapFolder } from '@/modules/collections/OfflineMapFolder';
 import { CenterMarkButton, CenterReticle } from '@/modules/map/CenterCursor';
 import { FreeMapCredit } from '@/modules/mapSources/FreeMapLibrary';
 import {
@@ -292,7 +283,6 @@ export default function Home() {
   const tracks = useManualTracks();
   const annotations = useAnnotations();
   const recorder = useRecording();
-  const offline = useOffline();
   const photos = useTripPhotos();
   const markerCamera = useMarkerCamera(photos.save);
   const measurement = useMeasurement();
@@ -303,7 +293,7 @@ export default function Home() {
   const [comparison, setComparison] = useState<ComparisonSession | null>(null);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
-    : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? Math.min(TIANDITU_LAYERS[tiandituBase(layers)].maxzoom, layers.offlineMaxZoom??Infinity) : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
+    : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? TIANDITU_LAYERS[tiandituBase(layers)].maxzoom : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
   const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
   const rasterSelectionSignature = useRef<string | null>(null);
   useEffect(() => {
@@ -374,26 +364,6 @@ export default function Home() {
     string[]
   >([]);
   const [outdoorPhotos, setOutdoorPhotos] = useState(false);
-  const [offlinePicking, setOfflinePicking] = useState(false);
-  const [offlineRegion, setOfflineRegion] = useState<[number, number, number, number] | null>(null);
-  const [outdoorOffline, setOutdoorOffline] = useState(false);
-  const [offlineDownload, setOfflineDownload] = useState<OfflineDownloadTarget | null>(null);
-  const [offlineDownloadError, setOfflineDownloadError] = useState('');
-  const beginMapDownload = (name: string, area?: DownloadArea) => {
-    try {
-      const source = mapSources.source;
-      if (!source || source.kind !== 'online' || !mapSources.maps.some(item => item.id === source.id)) throw new Error('请先选择你导入的在线图源，再下载沿线地图');
-      const savedRoute = tracks.saved.find(track => track.id === tracks.selectedId);
-      const useDraft = tracks.draft.some(line => line.length >= 2);
-      const segments = useDraft ? tracks.draft :
-        savedRoute?.segments ?? (navigation.route ? [navigation.route.coordinates] : []);
-      const routeArea = area ?? { kind: 'route' as const, segments, bufferKm: 1 };
-      if (routeArea.kind !== 'route' || !routeArea.segments.some(line => line.length >= 2)) throw new Error('请先画线或选择一条路线，只下载路线附近区域');
-      const datum = layers.rasterDatums?.[rasterDatumKey(layers, source.id)] ?? defaultRasterDatum(source);
-      setOfflineDownload({name: area ? name : useDraft ? '当前画线' : savedRoute?.name ?? '当前路线', area: {...routeArea, segments:routeArea.segments.filter(line=>line.length>=2), bufferKm:1}, source: {...source,datum}});
-      setOfflineDownloadError('');setPanel(null);setRallyMode(false);setRouteWindow('card');
-    } catch(e) { setOfflineDownloadError((e as Error).message); }
-  };
   const [outdoorRecording, setOutdoorRecording] = useState(false);
   useEffect(() => {
     if (panel !== 'favorites') {
@@ -831,7 +801,6 @@ export default function Home() {
   const selectedTrack = tracks.saved.find(
     (track) => track.id === tracks.selectedId,
   );
-  useBrowseCacheRoute(tracks.saved, tracks.draft);
   useEffect(() => {
     if (panel !== 'favorites' || boxSelecting || collectionSelectedKeys.length) return;
     const entries = catalogEntries(
@@ -1192,7 +1161,6 @@ export default function Home() {
     if (patch.terrain !== undefined) map.current?.setTerrainMode(patch.terrain);
     setLayers((current) => applyLayerPatch(current, patch));
   };
-  const openOfflineMap = useOfflineMapMode(update, mapSources.select);
   useMapTools({
     read: () => ({
       layers,
@@ -1355,16 +1323,9 @@ export default function Home() {
         data-picking-route={navigation.picking !== null}
         data-route-rail={Boolean(navigation.route)}
         data-placing-annotation={Boolean(annotations.picking)}
-        data-offline-picking={offlinePicking}
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || event.defaultPrevented) return;
           if (comparison) { event.preventDefault(); setComparison(null); return; }
-          if (offlineDownload) { event.preventDefault();setOfflineDownload(null);return; }
-          if (offlinePicking) {
-            event.preventDefault();
-            setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor');
-            return;
-          }
           if (navigation.picking !== null) {
             event.preventDefault();
             navigation.setPicking(null);
@@ -1454,7 +1415,7 @@ export default function Home() {
           }
         }}
       >
-        {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !offlineDownload && !offlinePicking && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
+        {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
           disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
         <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
@@ -1537,7 +1498,7 @@ export default function Home() {
           }}
           settings={layers}
           onPoint={setPoint}
-          onStatus={(message) => setMapStatus(offlineMapStatus(message))}
+          onStatus={setMapStatus}
           onView={(value) => {
             setView(value);
           }}
@@ -1565,7 +1526,7 @@ export default function Home() {
             setPanel(null);
           }}
           drawingActive={
-            !offlinePicking && (branchEditing || tracks.drawing || areas.drawing) && panel === null
+            (branchEditing || tracks.drawing || areas.drawing) && panel === null
           }
           onDrawingInput={(event) =>
             areas.drawing
@@ -1620,7 +1581,6 @@ export default function Home() {
             !!survey.picking
           }
           pickingActive={Boolean(
-            offlinePicking ||
             annotations.picking ||
             navigation.picking !== null ||
             measurement.active ||
@@ -1720,7 +1680,6 @@ export default function Home() {
             }
           }}
           onAnnotationSelect={(id) => {
-            if (offlinePicking) return;
             if (survey.active && survey.picking) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -1785,7 +1744,6 @@ export default function Home() {
             setPanel('route');
           }}
           onMapHold={(value) => {
-            if (offlinePicking) return;
             if (
               editor.session ||
               measurement.active ||
@@ -1802,7 +1760,6 @@ export default function Home() {
             setQuickAdd(value);
           }}
           onMapPick={(coordinates) => {
-            if (offlinePicking) return;
             if (survey.pick(coordinates)) return;
             if (measurement.active) {
               if (measurement.adding)
@@ -1838,7 +1795,6 @@ export default function Home() {
         />
         </MapComparisonHost>
         {routeVisible &&
-          !offlineDownload &&
           railTrack &&
           panel === null &&
           !editor.session &&
@@ -1938,7 +1894,6 @@ export default function Home() {
                   key={railTrack.id}
                   track={railTrack}
                   onRename={(name) => tracks.rename(railTrack.id, name)}
-                  onOffline={()=>beginMapDownload(railTrack.name,{kind:'route',segments:railTrack.segments,bufferKm:10})}
                   onShowMetric={(mode) => { routeDisplay.choose(railTrack.id); routeDisplay.update({ mode, legend: true }); setRouteWindow('card'); }}
                   alternative={activeAlternative}
                   onCondition={(color, value) =>
@@ -2558,9 +2513,6 @@ export default function Home() {
           satelliteStatus={satellite.status}
           mapStatus={mapStatus}
         />
-        {offlinePicking && <OfflineRegionPicker readBounds={() => map.current?.offlineRegionBounds() ?? null} onCancel={() => { setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} onDone={bounds => { setOfflineRegion(bounds); setOfflinePicking(false); setOutdoorOffline(true); setPanel('outdoor'); }} />}
-        {offlineDownload && <OfflineDownload key={`${offlineDownload.name}-${offlineDownload.area.kind}`} target={offlineDownload} offline={offline} onClose={()=>setOfflineDownload(null)} onManage={()=>{setOfflineDownload(null);setCollectionOutputKey(null);setCollectionSelectedKeys([]);setPanel('favorites');}}/>}
-        {offlineDownloadError && <div className="offline-download-dock" role="alert"><span>{offlineDownloadError}</span><button onClick={()=>setOfflineDownloadError('')}>关闭</button></div>}
         {boxSelecting && (
           <MapBoxSelect
             entries={catalogEntries(
@@ -2899,8 +2851,6 @@ export default function Home() {
             setSectionListOpen(false);
             if (next !== 'annotations') setAdjustingPinId(null);
             if (next === 'track' && panel !== 'track') tracks.select(null);
-            setOfflinePicking(false);
-            setOutdoorOffline(false);
             if (next !== panel) setCollectionSelectedKeys([]);
             measurement.close();
             if (
@@ -2961,7 +2911,6 @@ export default function Home() {
               onIncomingConsumed={incomingRoute.dismissMapSource}
               settings={layers}
               onSettings={patch=>{if (!patch.rasterDatums) mapSources.select('');update(patch);}}
-              onOffline={()=>beginMapDownload('当前地图区域')}
               onRouteQr={(text) => {
                 setPanel(null);
                 setRouteQr(text);
@@ -2973,7 +2922,6 @@ export default function Home() {
                 mapSources.select('');
                 update({
                   offlineBasemap: false,
-                  offlineMaxZoom: null,
                   satellite: id !== 'terrain',
                   satelliteProvider: 'sentinel',
                   ...(id !== 'terrain' ? { imageryMode: id } : {}),
@@ -2990,12 +2938,8 @@ export default function Home() {
           {panel === 'outdoor' && (
             <OutdoorPanel
               onImport={openRouteImportDialog}
-              key={outdoorOffline?'offline':outdoorPhotos?'photos':'record'}
-              onDownloadCurrent={()=>beginMapDownload('当前地图区域')}
-              onDownloadRoute={()=>beginMapDownload(selectedTrack?.name??'当前路线',{kind:'route',segments:selectedTrack?.segments??(navigation.route?[navigation.route.coordinates]:[[[point.lng,point.lat]]]),bufferKm:10})}
-              initialTab={outdoorOffline ? 'offline' : outdoorPhotos ? 'photos' : 'record'}
-              offlineRegion={offlineRegion}
-              onChooseOfflineRegion={() => { setPanel(null); setRallyMode(false); follow.pause(); position.free(); map.current?.view(0, 0, false); setOfflinePicking(true); }}
+              key={outdoorPhotos?'photos':'record'}
+              initialTab={outdoorPhotos ? 'photos' : 'record'}
               locationStatus={position.locationError || (position.locating ? '正在定位…' : displayedFix && Date.now() - displayedFix.timestamp < 30000 ? `定位估计误差 ±${Math.round(displayedFix.accuracy)} 米` : '当前位置尚未定位，点标记可获取位置')}
               onMarkCurrent={() => {
                 if (!displayedFix || Date.now() - displayedFix.timestamp >= 30000) {
@@ -3051,7 +2995,6 @@ export default function Home() {
                   }}
                 />
               }
-              offline={offline}
               points={
                 selectedTrack?.segments.flat() ??
                 navigation.route?.coordinates ?? [[point.lng, point.lat]]
@@ -3064,7 +3007,6 @@ export default function Home() {
                 map.current?.fitRoute(points);
                 setPanel(null);
               }}
-              onOpenMap={openOfflineMap}
             />
           )}
           {panel === 'annotations' && !selectedAnnotation && (
@@ -3106,8 +3048,6 @@ export default function Home() {
                 }
                 setMapStatus(`已导入 ${data.tracks.length} 条轨迹、${data.annotations.length} 个标记、${data.areas?.length??0} 个区域；可在收藏查看`);
               }}
-              offlineCount={offline.packages.length}
-              offlineMaps={query=><OfflineMapFolder offline={offline} query={query} onDownload={()=>beginMapDownload('当前地图区域')} onOpen={trip=>{preserveFavoritesFocus();openOfflineMap(trip);position.free();follow.pause();map.current?.fitRoute([[trip.bounds[0],trip.bounds[1]],[trip.bounds[2],trip.bounds[3]]]);map.current?.highlightOffline(trip);setPanel(null);}}/>}
               mapCenter={map.current?.centerCoordinate() ?? anchor}
               onLocate={(entry) => {
                 preserveFavoritesFocus();
@@ -3248,7 +3188,6 @@ export default function Home() {
           {panel === 'route' && (
             <RoutePanel
               onImport={openRouteImportDialog}
-              onCache={()=>{if(navigation.route)beginMapDownload('规划路线',{kind:'route',segments:[navigation.route.coordinates],bufferKm:10});}}
               onEditPoints={editPlannedPoints}
               onCancel={stopNavigation}
               onRally={() => { setPanel(null); setRallyMode(true); }}

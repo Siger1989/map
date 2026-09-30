@@ -2,7 +2,7 @@ import { DEFAULT_LAYERS, type LayerSettings } from './types.ts';
 
 export const LAYER_PREFERENCES_KEY = 'shantu.map.layer-preferences.v1';
 const CURRENT_VERSION = 1;
-type PersistedLayers = Omit<LayerSettings, 'rasterDatums'>;
+type PersistedLayers = Omit<LayerSettings, 'rasterDatums' | 'offlineMaxZoom'>;
 
 function bounded(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
@@ -32,7 +32,8 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (bounded(value.opacity, 0, 1)) result.opacity = value.opacity;
     if (bounded(value.exaggeration, 0.1, 5)) result.exaggeration = value.exaggeration;
     if (value.rasterLevel === null || bounded(value.rasterLevel, 0, 24)) result.rasterLevel = value.rasterLevel;
-    if (value.offlineMaxZoom === null || bounded(value.offlineMaxZoom, 0, 24)) result.offlineMaxZoom = value.offlineMaxZoom;
+    // Retired offline packages must not cap normal online map detail.
+    delete result.offlineMaxZoom;
     return result;
   } catch { return null; }
 }
@@ -43,7 +44,7 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
 }
 
 export function saveLayerPreferences(settings: LayerSettings): void {
-  const { rasterDatums: _rasterDatums, ...layers } = settings;
+  const { rasterDatums: _rasterDatums, offlineMaxZoom: _offlineMaxZoom, ...layers } = settings;
   try {
     const current = localStorage.getItem(LAYER_PREFERENCES_KEY);
     if (current) {

@@ -1,8 +1,10 @@
 # 山兔
 
+2026-09-30：0.2.88-test（versionCode95）根据使用反馈移除地图自动缓存、沿线下载和仅缓存入口，恢复正常联网请求，保留轨迹和导入图源。旧缓存数据不自动删除。[发行说明](docs/release-0.2.88.md)。
+
 2026-09-30：0.2.87-test（versionCode94）将自动缓存限定为路线附近实际浏览的瓦片，取消预取；删路线清理独占自动缓存。主动下载仅支持自行导入的在线图源和沿线区域，按图源声明开放19等整数级别。857项测试、类型检查和APK资源/签名核验通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.87-test-standalone/Shantu-0.2.87-test-standalone-public.apk) · [发行说明](docs/release-0.2.87.md) · [使用说明](docs/automatic-map-cache.md)。
 
-**2026-09-29 接续开发：** [完整交接](docs/handoff-20260929.md) · [上线图源准备与待核授权](docs/map-launch-readiness-20260929.md)。当前版本0.2.87，真机性能、真实云图/雷达和部分数据商用授权仍未完成。
+**2026-09-29 接续开发：** [完整交接](docs/handoff-20260929.md) · [上线图源准备与待核授权](docs/map-launch-readiness-20260929.md)。当前版本0.2.88，真机性能、真实云图/雷达和部分数据商用授权仍未完成。
 
 2026-09-29：0.2.82-test（versionCode 89）优化路线分叉更新，压紧路线卡、移除左侧行程点栏、调整剖面线层级；横屏工具贴右边，摇杆右下，收藏左列表右地图，路线删除无需内部滚动。730tests/tsc/最终APK与原签名资源校验通过，OPPO性能仍待复测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.82-test-standalone/Shantu-0.2.82-test-standalone.apk) · [发行说明](docs/release-0.2.82.md) · [性能证据](docs/performance-0.2.82.md)。
 

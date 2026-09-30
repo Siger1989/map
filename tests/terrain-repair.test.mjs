@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { terrainRepairPath, legacyTerrainCacheUrl, TERRAIN_URL } from '../modules/terrain/tiles.ts';
-import { offlineProtocol, regionTiles } from '../modules/outdoor/offline.ts';
+import { cachedMapFetch } from '../modules/outdoor/tileCache.ts';
+import { regionTiles } from '../modules/outdoor/offline.ts';
 
 test('repair manifest references verified bundled tiles with original Terrarium size', async () => {
   const root = new URL('../public/terrain/repairs-v1/', import.meta.url);
@@ -34,17 +35,21 @@ test('old offline DEMs are reusable only outside corrected tiles', () => {
   assert.ok(urls.every((url) => url.endsWith('?revision=repairs-v1')));
 });
 
-test('offline protocol bypasses cached bad tile but preserves unaffected offline package', async () => {
-  const cachesBefore = globalThis.caches, fetchBefore = globalThis.fetch;
+test('repaired and unaffected terrain requests both use current network data', async () => {
+  const cachesBefore = Object.getOwnPropertyDescriptor(globalThis, 'caches'), fetchBefore = globalThis.fetch;
   const fetched = [];
-  globalThis.caches = { open: async () => ({match: async (url) => url.includes('?') ? undefined : new Response('old')}) };
-  globalThis.fetch = async (url) => { fetched.push(url); return new Response('repaired'); };
+  Object.defineProperty(globalThis, 'caches', { configurable: true, get() { throw Error('terrain render accessed CacheStorage'); } });
+  globalThis.fetch = async (url) => { fetched.push(url); return new Response('network'); };
   try {
-    const read = async (path) => new TextDecoder().decode((await offlineProtocol({url: `tripcache://${encodeURIComponent('http://localhost' + path + '?revision=repairs-v1')}`, type: 'arrayBuffer'}, new AbortController())).data);
-    assert.equal(await read('/api/terrain/12/3160/1624.png'), 'repaired');
-    assert.equal(await read('/api/terrain/12/3219/1676.png'), 'old');
-    assert.equal(fetched.length, 1);
-  } finally { globalThis.caches = cachesBefore; globalThis.fetch = fetchBefore; }
+    const read = async (path) => (await (await cachedMapFetch(path, new AbortController().signal)).text());
+    assert.equal(await read('/api/terrain/12/3160/1624.png?revision=repairs-v1'), 'network');
+    assert.equal(await read('/api/terrain/12/3219/1676.png?revision=repairs-v1'), 'network');
+    assert.equal(fetched.length, 2);
+  } finally {
+    if (cachesBefore) Object.defineProperty(globalThis, 'caches', cachesBefore);
+    else delete globalThis.caches;
+    globalThis.fetch = fetchBefore;
+  }
 });
 
 test('module and bundled Android repair manifests stay identical', async () => {

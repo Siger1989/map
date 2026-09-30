@@ -37,38 +37,11 @@ final class NativeBridge {
             activity.requestScreenOn(enabled);
         });
     }
-    @JavascriptInterface public String offlineStart(String raw) {
-        try {
-            String result=OfflineStore.prepare(activity,raw);if(!"ok".equals(result))return result;
-            OfflineDownloadService.running=true;
-            // JS bridges run on WebView's background thread. Never read getUrl()
-            // there, or synchronously wait for UI (the page may be waiting on us).
-            activity.runOnUiThread(()->{
-                try {
-                    if(!activity.trustedForeground()) {
-                        OfflineDownloadService.running=false;
-                        OfflineStore.status(activity,"paused","请返回应用后继续下载");
-                        return;
-                    }
-                    activity.startForegroundService(new Intent(activity,OfflineDownloadService.class).setAction("start"));
-                } catch(Exception e) {
-                    OfflineDownloadService.running=false;
-                    OfflineStore.status(activity,"paused","后台下载未启动，请重试");
-                    android.util.Log.e("ShantuOffline","Unable to start download service",e);
-                    return;
-                }
-                // Permission failure must not stop a service already started.
-                try {
-                    if(Build.VERSION.SDK_INT>=33 && activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)
-                        activity.requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},4204);
-                } catch(Exception e) { android.util.Log.w("ShantuOffline","Notification permission unavailable",e); }
-            });
-            return "ok";
-        }catch(Exception e){OfflineDownloadService.running=false;OfflineStore.status(activity,"paused","后台下载未启动，请重试");return "后台下载未启动，请重试";}
-    }
+    // Compatibility boundary for older pages; new downloads are no longer available.
+    @JavascriptInterface public String offlineStart(String raw) { return "地图缓存功能已移除"; }
     @JavascriptInterface public String offlineState() { return OfflineStore.snapshot(activity); }
     @JavascriptInterface public void offlinePause() { activity.stopService(new Intent(activity,OfflineDownloadService.class));OfflineStore.status(activity,"paused","下载已暂停，可继续"); }
-    @JavascriptInterface public boolean offlineHas(String url) { try{return OfflineStore.allowed(url) && OfflineStore.tile(activity,url).isFile();}catch(Exception e){return false;} }
+    @JavascriptInterface public boolean offlineHas(String url) { return false; }
     @JavascriptInterface public String offlineVerify(String id) { return OfflineStore.verify(activity,id); }
     @JavascriptInterface public boolean offlineRemove(String id) { return OfflineStore.remove(activity,id); }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }
