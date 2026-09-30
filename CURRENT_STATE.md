@@ -1,4 +1,4 @@
-# 2026-09-30 / 0.2.89 UI门禁与功能收尾 — 构建完成、发布准备
+# 2026-09-30 / 0.2.89 UI门禁与功能收尾 — 已发布测试Release
 
 用户已明确要求结束快速预览：打包新APK、同步GitHub、保存交接并在成功后关机。本轮源码基于e79a90b、分支codex/rollback-ui-0235-20260921，下面早先记录的20/12圆角、浮动图例、日期/i位置已被当前8/4及贴底布局覆盖。
 
@@ -6,7 +6,7 @@
 - 实际390×857/360×780复验，导航设置294/264×308.8px，无正常内部滚动/横溢/控件碰撞，返回269.4px详情；绘制264×129.9px无碰撞，曲线貼底并独立摇杆列；详情曲线位于统计之前。完整证据见docs/ui-gate-20260930.md、docs/handoff-20260930-ui.md。最终安装包网页已启动、无JS错误；图源网络/地形缺块不等于完成设备验收。
 - 最终880/880完整测试、类型、网页和全新移动网页/Android构建PASS，原4a94证书v2/v3签名、zipalign、ZIP CRC、543网页资源/DEX与stage匹配、496地形PNG通过，公开包排除私有图源和本机Key。架构长度预算FAIL：7项已有超限、RouteViews本轮新增1行预算超限；不把该项当通过。
 - APK：`APK/Shantu-0.2.89-test-standalone.apk`，versionCode96，独立包名com.guanyun.weather.shantu.preview，57,883,740 bytes；SHA256 `1fd3efe719d884d38a4c3ffda8309f4e5b7a86427de9c25e707d55a7f6516087`。安装覆盖、真实GPS、手机触控/系统分享待真机；HarmonyOS6.1原生未交付。
-- 当前正在提交及上传本轮源码/APK；远端核对完成后补实际提交与Release状态。旧用户数据、照片、存档/布局/原始实走不清理。原有未跟踪`output/pdf/shantu-status-2026-09-22.pdf`保留本地、不混入本次源码交付。
+- 构建源码`586dfe45e1fa459060e1489fe078ab9252c4b250`已推送origin当前功能分支，标签`v0.2.89-test-standalone`指向同一提交；[测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.89-test-standalone)已公开，APK与sha256附件远端大小/digest一致。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.89-test-standalone/Shantu-0.2.89-test-standalone.apk)。补充交付文档另作提交，不改变构建源码。旧用户数据、照片、存档/布局/原始实走不清理。原有未跟踪`output/pdf/shantu-status-2026-09-22.pdf`保留本地、不混入本次源码交付。用户明确要求上传完成后关机，最终回报后执行。
 
 # 2026-09-30 / 行程示例、直接画线、分享导入与导航修正 — 本地预览（历史阶段）
 

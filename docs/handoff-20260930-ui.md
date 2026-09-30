@@ -5,7 +5,7 @@
 - 项目：`D:\天气系统`
 - 基线：`e79a90b`
 - 分支：`codex/rollback-ui-0235-20260921`
-- 本轮目标发行版：`0.2.89-test` / `versionCode 96`
+- 本轮已发布：`0.2.89-test` / `versionCode 96`，[公开测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.89-test-standalone)；构建源码586dfe45e1fa459060e1489fe078ab9252c4b250，标签及远端源码一致，APK/校验附件大小与digest一致。
 - Android 包名及独立测试签名沿用原系列。构建前确认工作树内容、签名证书与目标版本；不得清理用户存储。
 - 完整交付证据见 [`release-0.2.89.md`](release-0.2.89.md)；UI实测见 [`ui-gate-20260930.md`](ui-gate-20260930.md)。源码同步功能分支，不自动合入main。
 
@@ -21,10 +21,10 @@
 
 本轮只读诊断发现在线规划先请求 `locate` 再请求 `route`，流程串行；两者共用约1100ms主机节流并受单次超时限制。UI 已有重复计算禁用和编辑时取消行为。没有修改服务端请求顺序、节流、吸附或超时，也没有证明路线计算变快。后续若获授权要优化，应先分段测量耗时并核验取消预约回收和可行的 `route` 优先路径。
 
-## 主 agent 接续步骤
+## 换机接续与后续交付流程
 
-1. 检查 `git status --short --branch`、当前 SHA 与 diff，保留所有已授权未提交改动；只提交本轮应交付的文件。
-2. 收尾道路/路线与地名的图层次序问题，按 `docs/ui-quality-gate.md` 对受影响尺寸/状态复查截图和关键点击。项目门禁适用于本项目；不要改 Codex 全局配置。
+1. 从origin取最新功能分支，检查 `git status --short --branch`、SHA与diff；工作区干净才pull --ff-only。本轮源码/交接已同步，不能把旧0.2.88记录当当前状态；保留本机未跟踪历史PDF和真实草稿。
+2. 道路/路线与地名层级已修；后续新增地图层按 `docs/ui-quality-gate.md` 复查截图与关键点击，不重新把线置顶压字。项目门禁仅适用于本项目；不要改 Codex 全局配置。
 3. 按影响范围完成最终类型检查、定向/完整测试与网页构建，并逐项记录命令及结果。检查失败或未运行项必须如实记录。
 4. 将 `mobile/android/AndroidManifest.xml` 版本设为目标 `0.2.89-test` / `96`（先核对实际值），从最终源码运行 `npm run build:apk -- -StandaloneTest`，必要时传 `-SdkRoot <路径> -JdkRoot <JDK17路径>`。脚本位于 `scripts/build-android.ps1`，会校验证书并执行 APK 对齐与资源检查；不要加 `-UnsignedOnly` 作为可安装发行包。
 5. 核对实际 APK 路径、文件大小、SHA-256、包名、版本、签名和资源；确认公开 APK 不含本机私有图源种子、Key、签名材料、环境文件或日志。把证据填入 `release-0.2.89.md`。

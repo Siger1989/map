@@ -1,10 +1,10 @@
 # 山兔 0.2.89-test 发行记录
 
-> 状态：交付准备中。本文中的 APK、源码提交和 GitHub 发布字段须由实际构建与发布结果填写；空字段不代表成功。
+> 状态：已公开发布测试Release；APK与校验附件远端大小/digest已核对，构建源码与Release标签一致。手机验收尚未完成。
 
 ## 版本与兼容
 
-- 版本：`0.2.89-test`，计划 `versionCode 96`
+- 版本：`0.2.89-test`，`versionCode 96`
 - Android 包名：沿用独立系列 `com.guanyun.weather.shantu.preview`（构建使用 `-StandaloneTest`，源码默认原系列包名不改）
 - 签名：沿用原独立测试包系列签名；构建脚本须核对证书，签名不匹配时停止，不能用新证书冒充可覆盖更新。
 - 目标：把本轮已确认的地图 UI、收藏、分享/导入、画线续画和导航起点调整交付为可安装测试包。
@@ -27,14 +27,14 @@
 
 ## 构建与发布证据
 
-- 构建源码提交：`[待填写 SHA]`
+- 构建源码提交：`586dfe45e1fa459060e1489fe078ab9252c4b250`；分支 `codex/rollback-ui-0235-20260921`，未合入main
 - APK：`APK/Shantu-0.2.89-test-standalone.apk`，本机构建路径 `D:\天气系统\APK\Shantu-0.2.89-test-standalone.apk`
 - 大小：`57,883,740`字节
 - SHA-256：`1fd3efe719d884d38a4c3ffda8309f4e5b7a86427de9c25e707d55a7f6516087`
 - 原证书SHA-256：`4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`；v2/v3签名、zipalign、ZIP CRC PASS；543网页资源和DEX与全新stage匹配、496地形PNG通过；公开包无私有图源种子或本机Key。
 - `npx tsc --noEmit`、完整880/880测试（JAVA_HOME指定可用JDK17）、`npm run build`、全新移动网页及Android构建 PASS；浏览器复验见 [UI门禁记录](ui-gate-20260930.md)。
 - `npm run check:architecture` FAIL：7项已有文件长度预算超限，RouteViews新增1行预算超限，详见门禁记录；不冒充架构通过，本轮未扩散重构。手机验收另列待办。
-- GitHub Release URL、标签、附件大小与远端摘要核对：`[待填写实际结果]`
+- [测试Release](https://github.com/Siger1989/map/releases/tag/v0.2.89-test-standalone) · [下载APK](https://github.com/Siger1989/map/releases/download/v0.2.89-test-standalone/Shantu-0.2.89-test-standalone.apk)；APK/sha256附件远端大小/digest一致，标签指向构建源码586dfe4。发行记录随源码同步，另附Release。
 - 真机覆盖安装、GPS、触控、系统分享：`未验证；待设备实测`
 
 构建入口见 [`mobile/README.md`](../mobile/README.md) 与 [`scripts/build-android.ps1`](../scripts/build-android.ps1)。独立测试版命令为 `npm run build:apk -- -StandaloneTest`；可通过 `-SdkRoot` 和 `-JdkRoot` 指定 SDK 与 JDK 17。必须基于最终源码重新构建并核对产物；旧版 APK 不能替代本轮构建。
