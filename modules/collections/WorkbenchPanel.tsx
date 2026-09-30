@@ -51,6 +51,7 @@ import { catalogEntries } from './catalog';
 import { collectionSpreadsheet, collectionTransfer } from './export';
 import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
+import { matchesCollectionTab } from './tabOrder';
 
 type Props = {
   onImport?: () => void;
@@ -76,7 +77,7 @@ export function WorkbenchPanel(props: Props) {
     [checked, setChecked] = useState(new Set<string>()),
     [active, setActive] = useState('');
   const [action, setAction] = useState<WorkbenchActionType | null>(null),
-    [message, setMessage] = useState(''),
+    [listError, setListError] = useState(''),
     [actionMessage, setActionMessage] = useState(''),
     [busy, setBusy] = useState(false);
   const visibleAction = useMemo(
@@ -94,7 +95,7 @@ export function WorkbenchPanel(props: Props) {
       `${i.name} ${workbenchDetails(i)}`
         .toLowerCase()
         .includes(query.trim().toLowerCase()) &&
-      (type === 'all' || (type === 'hidden' ? i.visible === false : i.kind === type));
+      matchesCollectionTab(i, type);
     const filter = (list: WorkbenchItem[]): WorkbenchItem[] =>
       list.flatMap((i) => {
         if (i.kind !== 'folder') return match(i) ? [i] : [];
@@ -133,10 +134,10 @@ export function WorkbenchPanel(props: Props) {
       setAction({ ...next, ids });
     } else setAction(next);
   };
-  const commit = (next: WorkbenchItem[], text: string) => {
+  const commit = (next: WorkbenchItem[]) => {
     const ok = store.commit(next);
     if (ok) {
-      setMessage(text);
+      setListError('');
       setActionMessage('');
     }
     return ok;
@@ -148,36 +149,42 @@ export function WorkbenchPanel(props: Props) {
       ids.forEach((id) => (remove ? next.delete(id) : next.add(id)));
       return next;
     });
-  const swipe = useSwipeSelection((keys, selected) =>
+  const selectionGesture = useRef<{ before: Set<string> } | null>(null);
+  const swipe = useSwipeSelection((keys, selected) => {
+    if (!batch) return;
+    const ids = keys.flatMap((key) => {
+      const item = nodes.get(key);
+      return !item ? [] : item.kind === 'folder'
+        ? workbenchLeaves(item.children ?? []).map((i) => i.id)
+        : [item.id];
+    });
+    if (!ids.length) return;
     setChecked((old) => {
       const next = new Set(old);
-      for (const key of keys) {
-        const item = nodes.get(key);
-        if (!item) continue;
-        for (const id of item.kind === 'folder'
-          ? workbenchLeaves(item.children ?? []).map((i) => i.id)
-          : [item.id])
-          selected ? next.add(id) : next.delete(id);
-      }
+      for (const id of ids) selected ? next.add(id) : next.delete(id);
       return next;
-    }),
-  );
+    });
+  }, { onEnd: (completed) => {
+    const gesture = selectionGesture.current;
+    selectionGesture.current = null;
+    if (!gesture) return;
+    if (!completed) setChecked(gesture.before);
+  } });
   const hold = useWorkbenchLongPress(swipe.list, (ids, target) => {
     try {
       if (
         commit(
           dropWorkbenchItems(items, new Set(ids), target.id, target.position),
-          target.position === 'inside'
-            ? `已移入 ${target.name}`
-            : '已调整排列位置',
         )
       )
         setSort('manual');
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : '移动失败，请重试');
+      setListError(e instanceof Error ? e.message : '移动失败，请重试');
     }
   });
   const startBatch = (ids: string[]) => {
+    if (!ids.length) return;
+    swipe.cancel();
     setChecked(new Set(ids));
     setBatch(true);
     setAction(null);
@@ -227,8 +234,7 @@ export function WorkbenchPanel(props: Props) {
   };
   const setFolderVisibility = (ids: string[], visible: boolean) => {
     if (!ids.length) return;
-    commit(setWorkbenchVisibility(items, new Set(ids), visible),
-      visible ? `已显示 ${ids.length} 项` : `已隐藏 ${ids.length} 项`);
+    commit(setWorkbenchVisibility(items, new Set(ids), visible));
   };
   const folderSwipe = useFolderVisibilitySwipe((ids, visible) =>
     setFolderVisibility(ids, visible));
@@ -341,12 +347,13 @@ export function WorkbenchPanel(props: Props) {
         title="沿勾选栏滑动连选"
         aria-checked={complete ? true : selectedCount ? 'mixed' : false}
         disabled={!ids.length}
-        onPointerDown={(e) => swipe.start(e, !complete)}
-        // Keep rows in place during the gesture; batch layout changes after release.
-        onPointerUp={() => setBatch(true)}
-        onPointerCancel={() => setBatch(true)}
+        onPointerDown={(e) => {
+          if (!batch || !ids.length || e.button !== 0 || !e.isPrimary || selectionGesture.current || !swipe.list.current) return;
+          selectionGesture.current = { before: new Set(checked) };
+          swipe.start(e, !complete);
+        }}
         onClick={(e) => {
-          if (e.detail === 0) { setBatch(true); toggle(ids); }
+          if (batch && ids.length && e.detail === 0) toggle(ids);
         }}
       >
         <span>{complete ? <Check size={14} /> : selectedCount ? '−' : ''}</span>
@@ -354,7 +361,7 @@ export function WorkbenchPanel(props: Props) {
     );
     const controls = (
       <>
-        {check}
+        {batch && check}
         <button
           className="workbench-item-open"
           aria-label={`${folder ? '展开文件夹' : '定位收藏'} ${item.name}`}
@@ -401,7 +408,7 @@ export function WorkbenchPanel(props: Props) {
           ) : (
             <Route size={16} color={item.color} />
           )}
-          <span>
+          <span className={folder ? 'workbench-folder-label' : undefined}>
             <strong>{item.name}</strong>
             <small>
               {folder
@@ -503,6 +510,7 @@ export function WorkbenchPanel(props: Props) {
               aria-label={batch ? '完成多选' : '进入多选'}
               aria-pressed={batch}
               onClick={() => {
+                swipe.cancel();
                 setBatch(!batch);
                 setChecked(new Set());
               }}
@@ -575,7 +583,7 @@ export function WorkbenchPanel(props: Props) {
             }}
             onReorder={(order) => {
               const ok = store.reorderTabs(order);
-              if (ok) setMessage('已保存分类顺序');
+              if (ok) setListError('');
               return ok;
             }}
           />
@@ -587,7 +595,7 @@ export function WorkbenchPanel(props: Props) {
           )}
           <div ref={swipe.list} className="workbench-tree-list">
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
-            {!view.length && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : '没有匹配的路线或地点'}</p>}
+            {!view.length && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : type === 'route' ? '暂无匹配的行程或路线计划' : '没有匹配的收藏'}</p>}
           </div>
           {batch && (
             <div className="workbench-batch">
@@ -625,18 +633,9 @@ export function WorkbenchPanel(props: Props) {
               </button>
             </div>
           )}
-          {(message || store.error) && (
-            <div className="workbench-status" role="status">
-              <span>{store.error || message}</span>
-              {store.canUndo && (
-                <button
-                  onClick={() => {
-                    if (store.restore()) setMessage('已撤销上次修改');
-                  }}
-                >
-                  撤销
-                </button>
-              )}
+          {(listError || store.error) && (
+            <div className="workbench-status" role="alert">
+              <span>{store.error || listError}</span>
             </div>
           )}
         </section>
@@ -687,6 +686,12 @@ export function WorkbenchPanel(props: Props) {
           items={items}
           error={actionMessage || store.error}
           busy={busy}
+          canUndo={store.canUndo}
+          onUndo={() => {
+            const ok = store.restore();
+            if (ok) setListError('');
+            return ok;
+          }}
           onClose={() => setAction(null)}
           onAction={showAction}
           onBatch={startBatch}
@@ -700,7 +705,7 @@ export function WorkbenchPanel(props: Props) {
           onExcel={shareExcel}
           onCopy={copy}
           onEdit={(id, patch) =>
-            commit(updateWorkbenchItem(items, id, patch), '已保存名称与颜色')
+            commit(updateWorkbenchItem(items, id, patch))
           }
           onNew={(name, color, parent) => {
             const item: WorkbenchItem = {
@@ -717,14 +722,12 @@ export function WorkbenchPanel(props: Props) {
                     children: [...(target.children ?? []), item],
                   })
                 : [...items, item],
-              '文件夹已创建',
             );
           }}
           onMove={(ids, target) => {
             try {
               return commit(
                 moveWorkbenchItems(items, new Set(ids), target),
-                '已移动到所选文件夹',
               );
             } catch (e) {
               setActionMessage(e instanceof Error ? e.message : '移动失败');
@@ -734,7 +737,6 @@ export function WorkbenchPanel(props: Props) {
           onDelete={(ids) => {
             const ok = commit(
               removeWorkbenchItems(items, new Set(ids)),
-              '所选收藏已删除',
             );
             if (ok) {
               setChecked(new Set());
@@ -746,7 +748,6 @@ export function WorkbenchPanel(props: Props) {
             try {
               const ok = commit(
                 dissolveWorkbenchFolder(items, id),
-                '已解散文件夹，全部收藏内容保留',
               );
               if (ok) setActive('');
               return ok;

@@ -10,6 +10,8 @@ import { validFavorite, type RouteFavorite } from '../navigation/favorites';
 import { RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
 import { createSession } from '../guidance/session';
 import { routeGap } from '../tracks/routeInfo';
+import { freshFix } from '../guidance/session';
+import type { PositionFix } from '../position/types';
 
 /** Navigation workflow owns its UI session and location lifecycle; other tools close through one callback. */
 export function useGuidanceWorkflow({
@@ -24,6 +26,7 @@ export function useGuidanceWorkflow({
   onOpenRoute,
   onActivateUi,
   onInvalidRoute,
+  initialFix,
 }: {
   guidance: ReturnType<typeof useGuidance>;
   position: Pick<
@@ -45,6 +48,8 @@ export function useGuidanceWorkflow({
   onOpenRoute: (id: string) => void;
   onActivateUi: () => void;
   onInvalidRoute: () => void;
+  /** Last real fix known by the page; absent/stale fixes never become a user origin. */
+  initialFix?: PositionFix | null;
 }) {
   const guidanceOwnsLocation = useRef(false),
     guidanceFocused = useRef(false);
@@ -84,6 +89,10 @@ export function useGuidanceWorkflow({
     guidanceOwnsLocation.current =
       guidanceOwnsLocation.current || !position.watching;
     guidanceFocused.current = false;
+    const cameraTarget = initialFix && freshFix(initialFix)
+      ? initialFix.coordinates
+      : route?.coordinates[0];
+    if (cameraTarget) map.current?.focusPoint(cameraTarget, route?.mode === 'auto' ? 16 : 17);
     onActivateUi();
     position.free();
     map.current?.previewRoute(null);

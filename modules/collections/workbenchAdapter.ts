@@ -16,6 +16,7 @@ import { withoutEntries } from './remove.ts';
 import { validateTransfer, type Transfer } from '../outdoor/exchange.ts';
 import { normalizeTrackStyle } from '../tracks/style.ts';
 import { sharePlanned, shareTrack } from '../routeShare/data.ts';
+import { hasTrackTime } from '../tracks/provenance.ts';
 
 /** A projection only: provenance, geometry, model parameters and photos remain in their original records. */
 export function workbenchTree(data: Transfer): WorkbenchItem[] {
@@ -68,6 +69,7 @@ export function workbenchTree(data: Transfer): WorkbenchItem[] {
       item.line = e.route.route.coordinates;
       item.shareData = sharePlanned(e.route.route, e.name);
     } else if (e.kind === 'track') {
+      item.journey = e.track.source === 'recorded' || hasTrackTime(e.track);
       item.createdAt = e.track.createdAt;
       item.color = normalizeTrackStyle(e.track.style).color;
       item.line = e.track.segments.flat();

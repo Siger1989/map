@@ -1,5 +1,21 @@
-import { sendArchive, type ArchiveBridge } from './nativeArchive';
+import { sendArchive, type ArchiveBridge } from './nativeArchive.ts';
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
+export function canShareGeneratedFile(name: string, mime: string) {
+  if (typeof window !== 'undefined' && window.GuanyunNative) {
+    const native = window.GuanyunNative;
+    return name.endsWith('.zip')
+      ? !!(native.archiveBegin && native.archiveAppend && native.archiveFinish && native.archiveCancel)
+      : !!native.routeOutput;
+  }
+  if (typeof navigator === 'undefined' || !navigator.canShare) return false;
+  try {
+    const file = new File([], name, { type: mime });
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
 export async function deliverFile(
   file: File,
   share: boolean,

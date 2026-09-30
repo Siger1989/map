@@ -144,7 +144,8 @@ export function RouteDetails({
             分享
           </button>
         </header>
-        <div className="route-details-body">
+        <div className="route-details-body route-details-groups">
+          <section className="route-detail-group route-detail-name-group" aria-label="名称编辑">
           <form className="route-details-name" aria-label="修改路线名称" onSubmit={(event) => {
             event.preventDefault();
             const value = (name ?? track.name).trim();
@@ -165,31 +166,39 @@ export function RouteDetails({
             {nameError && <p role="alert">{nameError}</p>}
             {nameSaved && <p role="status">名称已保存</p>}
           </form>
+          </section>
+          <section className="route-detail-group route-detail-profile-group" aria-label="海拔曲线与采样点">
+          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedProfile track={track} /> : <TrackColorProfile
+            track={track}
+            lines={lines}
+            onCondition={onCondition}
+          />}
+          </section>
+          <section className="route-detail-group route-detail-stats-group" aria-label="路线统计">
           {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedDetails track={track} /> : <p className="route-origin-note">{trackSourceLabel(track)} · 不包含实走用时、速度记录。{onSource && <button onClick={onSource}>查看实走原件：{sourceName}</button>}</p>}
-          {onAppearance && <section aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
-            <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>
-              {TRACK_WIDTHS.map(width => <option key={width} value={width}>{width} px</option>)}
-            </select></label>
-            <small role="status">{appearanceMessage || '直接保存颜色和粗细，保留原始记录。'}</small></section>}
-          {onAppearance && <label className="route-travel-mode">出行方式<select aria-label="路线出行方式" value={normalizeTravelMode(track.style?.travelMode)} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), travelMode: normalizeTravelMode(e.target.value) }) ? '出行方式已保存，速度色标已更新' : '保存失败，请重试')}>{Object.entries(TRAVEL_MODES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}</select><small>用于速度配色，不改变实走数据。</small></label>}
           <RouteAnalysisSummary track={track} onShowMetric={onShowMetric} />
-          <h3>基本资料</h3>
+          <details className="route-detail-basic-more">
+          <summary>基本资料</summary>
           <dl className="route-data-rows">
             {[
               ['来源', trackSourceLabel(track)],
               ['创建', drawingTime(track.createdAt)],
               ['更新', track.updatedAt ? drawingTime(track.updatedAt) : '—'],
-              [
-                '节点',
-                `${new Set(track.segments.flat().map((p) => p.join(','))).size}个 · ${routeConnectionLabel(track)}`,
-              ],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
+              ['节点', `${new Set(track.segments.flat().map((p) => p.join(','))).size}个 · ${routeConnectionLabel(track)}`],
+            ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
           </dl>
+          </details>
+          </section>
+          {onAppearance && <section className="route-detail-group route-detail-appearance-group" aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
+            <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>
+              {TRACK_WIDTHS.map(width => <option key={width} value={width}>{width} px</option>)}
+            </select></label>
+            <small role="status">{appearanceMessage || '直接保存颜色和粗细，保留原始记录。'}</small>
+          <label className="route-travel-mode">出行方式<select aria-label="路线出行方式" value={normalizeTravelMode(track.style?.travelMode)} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), travelMode: normalizeTravelMode(e.target.value) }) ? '出行方式已保存，速度色标已更新' : '保存失败，请重试')}>
+              {Object.entries(TRAVEL_MODES).map(([id,label]) => <option key={id} value={id}>{label}</option>)}
+            </select><small>用于速度配色，不改变实走数据。</small></label>
+          </section>}
+          <section className="route-detail-group route-detail-composition-group" aria-label="起终点与路线组成">
           <h3>起终点</h3>
           <dl className="route-data-rows">
             {[
@@ -212,11 +221,6 @@ export function RouteDetails({
               </div>
             ))}
           </dl>
-          {(track.source === 'recorded' || hasTrackTime(track)) ? <RecordedProfile track={track} /> : <TrackColorProfile
-            track={track}
-            lines={lines}
-            onCondition={onCondition}
-          />}
           <h3>路线组成</h3>
           <div className="route-composition">
             {variants.map((v) => (
@@ -230,6 +234,8 @@ export function RouteDetails({
               </div>
             ))}
           </div>
+          </section>
+          <section className="route-detail-group route-detail-media-group" aria-label="沿途标记与关联照片">
           <h3>沿途标记 · {linked.length}个</h3>
           <div className="route-detail-markers">
             {linked.length ? (
@@ -264,7 +270,9 @@ export function RouteDetails({
               <p>暂无关联照片</p>
             )}
           </div>
+          </section>
           {track.id !== DRAFT_ID && (
+            <section className="route-detail-group route-detail-delete-group" aria-label="删除路线">
             <div className="route-delete-area">
               {confirmDelete ? (
                 <>
@@ -291,6 +299,7 @@ export function RouteDetails({
                 </button>
               )}
             </div>
+            </section>
           )}
         </div>
       </section>

@@ -11,8 +11,7 @@ import {
 import { calculateRejoin, type Rejoin } from './rejoin';
 import { nextInstruction, project, pathOf } from './geometry';
 import { planRoute } from '../navigation/provider';
-import { atStart, connectDeparture } from './departure';
-import { routeOnNetwork } from './network';
+import { atStart, connectDeparture, isNoPassableRoute, referenceDeparture } from './departure';
 import { advanceNetwork } from './networkSession';
 import { remainingRoutePlaces } from './reroute';
 
@@ -81,15 +80,9 @@ export function useGuidance(
     )
       return;
     const original = session.originalRoute;
-    const nearest = original.trackNetwork
-      ? routeOnNetwork(original, fix.coordinates)
-      : null;
-    const departureTarget =
-      nearest && nearest.route.distance >= 20 ? nearest.route : original;
-    if (
-      atStart(departureTarget, fix) ||
-      (nearest && nearest.offset <= Math.max(20, Math.min(35, fix.accuracy)))
-    ) {
+    const departureTarget = original;
+    // Starting navigation always visits the chosen start, even near a later branch.
+    if (atStart(departureTarget, fix)) {
       setSession((s) =>
         s?.originalRoute === original
           ? {
@@ -111,7 +104,7 @@ export function useGuidance(
     void planRoute(
       { name: '当前位置', coordinates: fix.coordinates },
       {
-        name: nearest ? '最近接入点' : '主体起点',
+        name: '主体起点',
         coordinates: departureTarget.coordinates[0],
       },
       original.mode,
@@ -140,10 +133,29 @@ export function useGuidance(
         });
       })
       .catch((e) => {
-        if (!abort.signal.aborted)
-          setError(
-            e instanceof Error ? e.message : '到起点的路线计算失败，请重试',
-          );
+        if (abort.signal.aborted || current.current.session?.originalRoute !== original) return;
+        if (isNoPassableRoute(e)) {
+          try {
+            const latestFix = current.current.fix;
+            if (!latestFix || !freshFix(latestFix) || current.current.locationError ||
+              project(pathOf([fix.coordinates, departureTarget.coordinates[0]]), latestFix.coordinates).offset > deviationLimit(latestFix))
+              throw new Error('位置已变化或过期，请重新计算到起点的路线。');
+            const result = referenceDeparture(departureTarget, fix.coordinates);
+            setSession({
+              ...createSession(result.route),
+              originalRoute: original,
+              departureLength: result.length,
+              departureRoute: result.approach,
+              departureReference: true,
+            });
+            setError('');
+            return;
+          } catch (fallbackError) {
+            setError(fallbackError instanceof Error ? fallbackError.message : '无法连接到路线起点');
+            return;
+          }
+        }
+        setError(e instanceof Error ? e.message : '到起点的路线计算失败，请重试');
       })
       .finally(() => {
         if (!abort.signal.aborted) {
@@ -282,7 +294,9 @@ export function useGuidance(
     instruction = {
       ...next,
       text:
-        next.text === '接回原路线'
+        session.departureReference
+          ? `${session.nextCheckpoint === 0 ? '虚线仅作直线参考，不代表可通行道路；' : ''}${next.text}`
+          : next.text === '接回原路线'
           ? session.originalRoute.trackNetwork
             ? '到达最近接入点'
             : '到达主体起点'
@@ -339,9 +353,7 @@ export function useGuidance(
             : '定位已过期，等待更新'
           : !online
             ? '请联网后计算接入路线'
-            : route?.trackNetwork
-              ? '前往最近相连路段'
-              : '先前往主体起点'),
+            : '先前往路线起点'),
     active,
     session: active ? session : null,
     rejoin: active ? rejoin : null,

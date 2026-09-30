@@ -4,6 +4,7 @@ import type {
   SymbolLayerSpecification,
 } from 'maplibre-gl';
 import type { LayerSettings } from '../map/types';
+import { syncPlaceLabelLayerOrder } from '../map/overlayData.ts';
 const chineseName: ExpressionSpecification = [
   'coalesce',
   ['get', 'name:zh'],
@@ -236,6 +237,7 @@ export function addCartography(map: Map) {
       '',
     ],
   ]);
+  syncPlaceLabelLayerOrder(map);
 }
 export function syncCartography(map: Map, settings: LayerSettings) {
   const opacity = Math.max(0, Math.min(1, settings.roadsOpacity ?? 1));
@@ -258,6 +260,7 @@ export function syncCartography(map: Map, settings: LayerSettings) {
       if (map.getLayer(id))
         map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
   }
+  syncPlaceLabelLayerOrder(map);
 }
 
 /** Keep basemap presentation settings separate from editing/snap state. */

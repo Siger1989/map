@@ -27,7 +27,7 @@ export function useSwipeSelection(
     event: ReactPointerEvent<HTMLButtonElement>,
     checked: boolean,
   ) => {
-    if (event.button !== 0 || !list.current) return;
+    if (event.button !== 0 || !event.isPrimary || event.currentTarget.disabled || !list.current) return;
     stop.current();
     event.preventDefault();
     const button = event.currentTarget,
@@ -40,8 +40,8 @@ export function useSwipeSelection(
     const apply = () => {
       const bounds = container.getBoundingClientRect();
       const rows = Array.from(
-        container.querySelectorAll<HTMLElement>(`[${keyAttribute}]`),
-      );
+        container.querySelectorAll<HTMLButtonElement>(`[${keyAttribute}]`),
+      ).filter((row) => !row.disabled);
       const target = rows.find((row) => {
         const r = row.getBoundingClientRect();
         return y >= r.top && y <= r.bottom;
@@ -111,7 +111,7 @@ export function useSwipeSelection(
     stop.current = finish;
     frame = requestAnimationFrame(tick);
   };
-  return { list, start };
+  return { list, start, cancel: () => stop.current() };
 }
 
 /** Horizontal touch gesture on a folder name; vertical list scrolling stays native. */

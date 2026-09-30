@@ -23,7 +23,7 @@ import { useSwipeSelection } from './useSwipeSelection';
 import { useRegions } from './useRegions';
 import { coordinateKey } from './regions';
 import { collectionTransfer, collectionSpreadsheet } from './export';
-import { deliverFile } from '../files/delivery';
+import { canShareGeneratedFile, deliverFile } from '../files/delivery';
 import { XLSX_MIME } from '../files/spreadsheet';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
 import { spreadsheetRegions } from '../annotations/spreadsheetRegions';
@@ -97,10 +97,23 @@ export function CollectionsPanel(props: Props) {
     [country, setCountry] = useState('');
   const [output, setOutput] = useState(!!props.initialOutputKey),
     [format, setFormat] = useState<'zip' | 'json' | 'xlsx'>('zip'),
+    [shareCapability, setShareCapability] = useState<{
+      format: 'zip' | 'json' | 'xlsx';
+      supported: boolean;
+    } | null>(null),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
   const abort = useRef<AbortController | null>(null);
   useEffect(() => () => abort.current?.abort(), []);
+  useEffect(() => {
+    setShareCapability({
+      format,
+      supported: canShareGeneratedFile(
+        `Shantu-collection.${format}`,
+        format === 'zip' ? ZIP_MIME : format === 'json' ? 'application/json' : XLSX_MIME,
+      ),
+    });
+  }, [format]);
   const shown = entries.filter((e) => {
     const r = regionFor(e, regions.regions);
     return (
@@ -113,6 +126,8 @@ export function CollectionsPanel(props: Props) {
   const groups = groupCatalog(shown, regions.regions),
     item = entries.find((e) => e.key === editing);
   const chosen = entries.filter((e) => selected.includes(e.key));
+  const canSystemShare = shareCapability?.format === format && shareCapability.supported;
+  const outputMime = format === 'zip' ? ZIP_MIME : format === 'json' ? 'application/json' : XLSX_MIME;
   const toggle = (key: string) =>
     setSelected((a) =>
       a.includes(key) ? a.filter((k) => k !== key) : [...a, key],
@@ -193,12 +208,7 @@ export function CollectionsPanel(props: Props) {
       setMessage(
         await deliverFile(
           new File([content], `Shantu-collection-${Date.now()}.${format}`, {
-            type:
-              format === 'zip'
-                ? ZIP_MIME
-                : format === 'json'
-                  ? 'application/json'
-                  : XLSX_MIME,
+            type: outputMime,
           }),
           send,
           controller.signal,
@@ -265,10 +275,19 @@ export function CollectionsPanel(props: Props) {
     );
   return (
     <section className="collections-panel catalog-panel" data-output={output} aria-label="全部收藏">
-      <header className="collection-fixed-header">
-        <button onClick={() => boxResults ? setOutput(false) : setLegacy(true)}>{boxResults ? '返回框选结果' : '文件夹分类'}</button>
+      <header className={`collection-fixed-header${output ? ' collection-output-header' : ''}`}>
+        {output ? (
+          <>
+            <button className="collection-back" disabled={busy} onClick={() => setOutput(false)}>‹ 返回</button>
+            <strong className="collection-output-title">分享 {chosen.length} 个条目</strong>
+          </>
+        ) : (
+          <button onClick={() => boxResults ? setOutput(false) : setLegacy(true)}>
+            {boxResults ? '返回框选结果' : '文件夹分类'}
+          </button>
+        )}
         <button aria-label="关闭收藏" onClick={props.onClose}>
-          关闭 ×
+          {output ? '×' : '关闭 ×'}
         </button>
       </header>
       {deleting ? (
@@ -291,16 +310,8 @@ export function CollectionsPanel(props: Props) {
             </button>
           </div>
         </div>
-      ) : output ? (
-        <div className="collection-editor collection-scroll">
-          <button
-            className="collection-back"
-            disabled={busy}
-            onClick={() => setOutput(false)}
-          >
-            ‹ 返回批量选择
-          </button>
-          <strong>分享 {chosen.length} 个条目</strong>
+      ) : output ? (<>
+        <div className="collection-editor collection-scroll" data-output-editor>
           <label>
             文件格式
             <select
@@ -308,39 +319,40 @@ export function CollectionsPanel(props: Props) {
               disabled={busy}
               onChange={(e) => setFormat(e.target.value as typeof format)}
             >
-              <option value="zip">
-                压缩包 · ZIP（路线图 / 照片 / 全部数据）
-              </option>
-              <option value="json">山兔数据 · JSON（可重新载入）</option>
-              <option value="xlsx">Excel 表格 · XLSX</option>
+              <option value="zip">完整数据与照片 · ZIP</option>
+              <option value="json">山兔存档 · JSON</option>
+              <option value="xlsx">查看表格 · XLSX</option>
             </select>
           </label>
-          <p className="collection-hint">
+          <details className="collection-output-help"><summary>格式与输出说明</summary><p className="collection-hint">
             {format === 'xlsx'
               ? 'Excel 表格用于查看与分析，不能替代完整备份，也不能完整还原路线、轨迹、模型参数或关联照片。'
               : format === 'json'
                 ? '山兔 JSON 可重新导入，包含选中对象数据和文件夹归属；路线照片请使用 ZIP。'
                 : <>ZIP 包含勾选条目的 JSON、Excel和通用地理文件；路线另附二维码全程图、行程标记与关联照片。模型完整参数保存在 JSON 中。</>}
-          </p>
-          <div className="collection-actions">
+          </p><p className="collection-delivery-note">
+            保存到设备：保留一份本机文件。分享给应用：打开系统分享面板，把文件交给其他应用。
+          </p></details>
+          {!canSystemShare && <p className="collection-delivery-note" role="status">
+            此格式不支持系统分享；保存后可从文件管理器分享。
+          </p>}
+        </div>
+          <div className="collection-actions collection-output-actions">
             <button
               disabled={busy || !chosen.length}
               onClick={() => void share(false)}
             >
-              {busy ? '生成中…' : '保存文件'}
+              {busy ? '生成中…' : '保存到设备'}
             </button>
-            <button
+            {canSystemShare && <button
               disabled={busy || !chosen.length}
               onClick={() => void share(true)}
-            >
-              系统分享
-            </button>
-          </div>
+            >分享给应用</button>}
           {busy && (
             <button onClick={() => abort.current?.abort()}>取消生成</button>
           )}
-        </div>
-      ) : item ? (
+          </div>
+      </>) : item ? (
         <div className="collection-editor collection-scroll">
           <button className="collection-back" onClick={() => setEditing(null)}>
             ‹ 返回收藏

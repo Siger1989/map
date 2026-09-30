@@ -26,6 +26,8 @@ export type ManualTrack = {
   edgeNotes?: (string | null)[][];
   routeTerminals?: RouteTerminals;
   source?: 'recorded' | 'gpx' | 'kml' | 'manual' | 'shared';
+  /** Explicit synthetic fixture; never present generated samples as GPS measurements. */
+  simulation?: boolean;
   importFormat?: string;
   navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
   sharedRoute?: {
@@ -126,10 +128,12 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         pointDetails,
         edgeNotes,
         routeTerminals,
+        simulation,
         ...rest
       } = track;
       return {
         ...rest,
+        ...(simulation === true ? { simulation: true } : {}),
         ...(typeof importFormat==='string' && /^[A-Za-z0-9 /-]{1,20}$/.test(importFormat) ? {importFormat} : {}),
         ...(validEdgeColors(edgeColors, track.segments) ? { edgeColors } : {}),
         ...(validColorConditions(colorConditions) ? { colorConditions } : {}),

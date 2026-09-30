@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { atStart, connectDeparture } from '../modules/guidance/departure.ts';
+import { atStart, connectDeparture, isNoPassableRoute, referenceDeparture } from '../modules/guidance/departure.ts';
 import { trackNavigation } from '../modules/guidance/savedRoute.ts';
 import {
   advance,
@@ -83,4 +83,21 @@ test('same-start bypass and endpoint gaps cannot invent a road connection', () =
       ),
     /无法接到/,
   );
+});
+
+test('only explicit no-road results create a dashed straight reference and preserve the planned route', () => {
+  const before = JSON.stringify(original);
+  const result = referenceDeparture(original, fix.coordinates, now);
+  assert.equal(result.referenceOnly, true);
+  assert.deepEqual(result.route.segments.slice(0, 1), [{ kind: 'access', coordinates: [mid, start] }]);
+  assert.deepEqual(result.route.segments.at(-1), { kind: 'road', coordinates: original.coordinates });
+  assert.deepEqual(result.route.coordinates.slice(-original.coordinates.length), original.coordinates);
+  assert.match(result.route.steps[0].instruction, /不代表可通行道路/);
+  assert.ok(result.length > 0);
+  assert.equal(JSON.stringify(original), before);
+  assert.equal(isNoPassableRoute(new Error('没有找到可通行路线，请更换地点')), true);
+  assert.equal(isNoPassableRoute(new Error('附近道路无法连通')), true);
+  assert.equal(isNoPassableRoute(new Error('路线服务网络连接失败')), false);
+  assert.equal(isNoPassableRoute(Object.assign(new Error('附近道路无法连通'), { name: 'AbortError' })), false);
+  assert.equal(isNoPassableRoute(new Error('没有可用的离线路线')), false);
 });

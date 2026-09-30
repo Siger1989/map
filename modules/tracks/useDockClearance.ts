@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /** Publish the occupied height for map controls without sharing component internals. */
-export function useDockClearance(variable: string) {
-  const ref = useRef<HTMLElement>(null);
+export function useDockClearance<T extends HTMLElement = HTMLElement>(variable: string, state?: unknown) {
+  const ref = useRef<T>(null);
   useEffect(() => {
     const dock = ref.current,
       root = dock?.closest('main');
@@ -19,6 +19,6 @@ export function useDockClearance(variable: string) {
       observer.disconnect();
       root.style.removeProperty(variable);
     };
-  }, [variable]);
+  }, [variable, state]);
   return ref;
 }

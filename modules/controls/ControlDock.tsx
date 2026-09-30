@@ -1,4 +1,5 @@
 import { isLayoutInteraction } from '../uiLayout/events';
+import { useDockClearance } from '../tracks/useDockClearance';
 import { FullscreenButton } from './FullscreenButton';
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
@@ -46,6 +47,7 @@ const PANELS = [
 export function ControlDock({
   active,
   onActive,
+  drawingActive = false,
   summary,
   timeline,
   timeLabel = '时间',
@@ -63,6 +65,7 @@ export function ControlDock({
 }: {
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
+  drawingActive?: boolean;
   summary: ReactNode;
   timeline: ReactNode;
   timeLabel?: string;
@@ -79,6 +82,7 @@ export function ControlDock({
   mapPicking?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
+  const panelDock = useDockClearance('--operation-info-clearance', active);
   const closeButton = useRef<HTMLButtonElement>(null);
   const changePanel = useRef(onActive);
   changePanel.current = onActive;
@@ -129,6 +133,7 @@ export function ControlDock({
           role="region"
           aria-labelledby="dock-title"
           id="map-control-panel"
+          ref={panelDock}
         >
           <div className="dock-heading">
             {back && (
@@ -159,14 +164,6 @@ export function ControlDock({
                             ? '路线规划'
                             : PANELS.find((p) => p.id === active)?.label)}
             </h2>
-            {(active === 'route' || active === 'track') && (
-              <button
-                className="dock-section-link"
-                onClick={() => onActive(active === 'route' ? 'track' : 'route')}
-              >
-                {active === 'route' ? '画线 / 轨迹' : '道路规划'}
-              </button>
-            )}
             <button
               ref={closeButton}
               className="icon-button"
@@ -179,7 +176,17 @@ export function ControlDock({
           <div className="dock-content" key={active}>
             {active === 'tools' ? (
               <div className="tool-grid">
-                {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
+                {onSection && (
+                  <button
+                    onClick={onSection}
+                    aria-label="勘探线剖面"
+                    aria-pressed={sectionActive}
+                    disabled={!sectionReady}
+                  >
+                    <ScanLine size={18} />
+                    剖面
+                  </button>
+                )}
                 <FullscreenButton />
                 {onMeasure && (
                   <button onClick={onMeasure}>
@@ -193,17 +200,7 @@ export function ControlDock({
                     扫码路线
                   </button>
                 )}
-                {onSection && (
-                  <button
-                    onClick={onSection}
-                    aria-label="勘探线剖面"
-                    aria-pressed={sectionActive}
-                    disabled={!sectionReady}
-                  >
-                    <ScanLine size={18} />
-                    剖面
-                  </button>
-                )}
+                {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
               </div>
             ) : active === 'time' ? (
               timeline
@@ -228,9 +225,11 @@ export function ControlDock({
               data-panel-toggle={id}
               aria-label={label}
               aria-expanded={active === id}
-              data-home-selected={active === id}
+              data-home-selected={active === id || (id === 'track' && drawingActive)}
               aria-controls={active === id ? 'map-control-panel' : undefined}
-              onClick={() => onActive(active === id ? null : id)}
+              onClick={() => onActive(
+                id === 'track' ? 'track' : active === id ? null : id,
+              )}
             >
               {id === 'route' ? <SolidMapIcon aria-hidden="true" /> : id === 'favorites' ? <StarIcon aria-hidden="true" /> : id === 'tools' ? <BriefcaseIcon aria-hidden="true" /> : id === 'track' ? <PencilIcon aria-hidden="true" /> : <DocumentTextIcon aria-hidden="true" />}
               <span>{label}</span>

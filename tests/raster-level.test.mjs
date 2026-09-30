@@ -12,7 +12,7 @@ const source = (id, maxzoom = 18) => ({ id, type: 'raster', minzoom: 0, maxzoom,
 function fixture() {
   const sources = new Map([['detail', source('detail')], ['custom', source('custom', 14)]]), refresh = [];
   let floor = 0;
-  const map = { getSource: id => sources.get(id), getMinZoom: () => floor, setMinZoom: value => { floor = value; }, refreshTiles: id => refresh.push(id) };
+  const map = { getSource: id => sources.get(id), getMinZoom: () => floor, setMinZoom: value => { floor = value; }, refreshTiles: id => refresh.push(id), getStyle: () => ({ layers: [] }), moveLayer() {} };
   return { sources, refresh, map, lock: new RasterLevelLock(map) };
 }
 test('detail cap changes and source restoration never constrain camera zoom', () => {
@@ -66,7 +66,8 @@ test('metadata reload does not release a selected raster cap or cause refresh os
 });
 test('road opacity remains relative to original styles and never compounds or changes routes', () => {
   const paint = new Map();
-  const map = { getLayer: () => true, setPaintProperty: (id, property, value) => paint.set(`${id}/${property}`, value), setLayoutProperty: () => {} };
+  const layers = ['rivers','road-outline','main-roads','local-roads','railways','road-names','road-numbers','city-names','town-names','village-names','neighborhood-names','peak-names','water-names'].map(id => ({ id, layout: {} }));
+  const map = { getLayer: () => true, setPaintProperty: (id, property, value) => paint.set(`${id}/${property}`, value), setLayoutProperty: (id, _property, value) => { const layer = layers.find(item => item.id === id); if (layer) layer.layout.visibility = value; }, getStyle: () => ({ layers }), moveLayer(id, before) { const from = layers.findIndex(layer => layer.id === id); if (from < 0) return; const [layer] = layers.splice(from, 1); const to = before ? layers.findIndex(item => item.id === before) : -1; layers.splice(to < 0 ? layers.length : to, 0, layer); } };
   syncCartography(map, { roads: true, labels: true, roadsOpacity: 0.5 });
   syncCartography(map, { roads: true, labels: true, roadsOpacity: 0.5 });
   assert.equal(paint.get('main-roads/line-opacity'), 0.425);
@@ -80,10 +81,13 @@ test('road opacity remains relative to original styles and never compounds or ch
 test('map road and river visibility follows the layer setting, not snap mode', () => {
   for (const roads of [true, false]) {
     const visibility = new Map();
+    const layers = ['rivers','road-outline','main-roads','local-roads','railways','road-names','road-numbers','city-names','town-names','village-names','neighborhood-names','peak-names','water-names'].map(id => ({ id, layout: {} }));
     const map = {
       getLayer: () => true,
       setPaintProperty: () => {},
-      setLayoutProperty: (id, _property, value) => visibility.set(id, value),
+      setLayoutProperty: (id, _property, value) => { visibility.set(id, value); const layer = layers.find(item => item.id === id); if (layer) layer.layout.visibility = value; },
+      getStyle: () => ({ layers }),
+      moveLayer(id, before) { const from = layers.findIndex(layer => layer.id === id); if (from < 0) return; const [layer] = layers.splice(from, 1); const to = before ? layers.findIndex(item => item.id === before) : -1; layers.splice(to < 0 ? layers.length : to, 0, layer); },
     };
     const settings = { roads, labels: true };
     const displaySettings = cartographySettingsForDisplay(settings, true);

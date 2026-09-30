@@ -1,4 +1,5 @@
 import { SmartInput } from '../input/SmartText';
+import { useDockClearance } from './useDockClearance';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, History, Play } from 'lucide-react';
 import { formatDistance, type Coordinate } from '../navigation/types';
@@ -465,8 +466,9 @@ export function TrackTools({
   onFinish: () => void;
   onLocate: (point: Coordinate) => void;
 }) {
+  const dock = useDockClearance<HTMLDivElement>('--drawing-info-clearance');
   return (
-    <div className="track-tools glass" aria-label="绘制工具">
+    <div ref={dock} className="track-tools glass" aria-label="绘制工具">
       <TrackDrawingStyle
         style={t.style}
         onChange={(style) => t.setStyle(style, true)}

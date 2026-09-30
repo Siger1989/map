@@ -1,7 +1,7 @@
 .observatory.home-map .selected-route-info {
   position:absolute; z-index:12; left:var(--home-left); bottom:calc(var(--home-footer) + 8px);
   width:min(300px,calc(100% - var(--home-left) - 88px)); box-sizing:border-box;
-  max-height:180px; overflow:auto; padding:4px; display:grid; gap:2px;
+  max-height:200px; overflow:auto; padding:8px 10px; display:grid; gap:2px;
   border:1px solid var(--home-line); border-radius:4px; background:white; color:var(--home-ink);
 }
 .selected-route-info .route-elevation-profile { position:static; width:100%; min-width:0; padding:0; border:0; background:none; box-shadow:none; }
@@ -14,3 +14,15 @@
 .selected-route-point > span { white-space:nowrap; }
 .selected-route-info > small { font-size:9px; color:#5c6b65; }
 .selected-route-info .navigation-color-key { display:flex; flex-wrap:wrap; gap:3px; font-size:9px; }
+
+/* The chart clears the camera and map controls; a lone key uses the free footer
+   space to the right of the scale and attribution. */
+.observatory.home-map .selected-route-info:has(> .navigation-color-key):not(:has(> .route-elevation-profile, > dl, > .selected-route-point)) {
+  left:auto; right:calc(var(--home-right) + 80px); bottom:calc(var(--home-footer) + 4px); transform:none;
+  width:max-content; max-width:calc(100% - var(--home-left) - var(--home-right) - 184px);
+  max-height:none; overflow:visible; padding:4px 8px;
+}
+.selected-route-info:has(> .navigation-color-key):not(:has(> .route-elevation-profile, > dl, > .selected-route-point)) .navigation-color-key {
+  width:100%; max-width:100%;
+  display:flex; flex-wrap:wrap;
+}

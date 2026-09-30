@@ -1,5 +1,5 @@
 import type { PlannedRoute } from '../navigation/types';
-import { metresBetween } from '../navigation/types.ts';
+import { coordinate, metresBetween, type Coordinate } from '../navigation/types.ts';
 import type { PositionFix } from '../position/types';
 import { pathOf } from './geometry.ts';
 import { validateRejoinEndpoints } from './rejoin.ts';
@@ -55,4 +55,35 @@ export function connectDeparture(
     ],
   };
   return { route: combined, length };
+}
+
+/** A clearly marked straight reference used only when routing confirms no passable road. */
+export function referenceDeparture(
+  original: PlannedRoute,
+  origin: Coordinate,
+  createdAt = Date.now(),
+) {
+  if (!coordinate(origin)) throw new Error('当前位置无效，无法生成起点参考线。');
+  const target = original.coordinates[0];
+  const distance = metresBetween(origin, target);
+  if (!Number.isFinite(distance) || distance < 1)
+    throw new Error('当前位置已在路线起点附近。');
+  const seconds = distance / ({ auto: 12, bicycle: 4, pedestrian: 1.2 }[original.mode]);
+  const approach: PlannedRoute = {
+    mode: original.mode,
+    coordinates: [origin, target],
+    segments: [{ kind: 'access', coordinates: [origin, target] }],
+    distance,
+    duration: seconds,
+    steps: [{ kind: 'access', instruction: '沿虚线直线参考前往路线起点（不代表可通行道路）', distance, duration: seconds, elapsedSeconds: 0, coordinates: [origin, target] }],
+    snapped: [origin, target],
+    createdAt,
+  };
+  const fix: PositionFix = { coordinates: origin, accuracy: 0, timestamp: createdAt };
+  return { ...connectDeparture(original, approach, fix), approach, referenceOnly: true as const };
+}
+
+export function isNoPassableRoute(error: unknown) {
+  if (!(error instanceof Error) || error.name === 'AbortError' || error.name === 'NetworkFailure') return false;
+  return /没有找到可通行路线|附近道路无法连通/.test(error.message);
 }

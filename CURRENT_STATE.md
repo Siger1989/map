@@ -1,3 +1,77 @@
+# 2026-09-30 / 0.2.89 UI门禁与功能收尾 — 构建完成、发布准备
+
+用户已明确要求结束快速预览：打包新APK、同步GitHub、保存交接并在成功后关机。本轮源码基于e79a90b、分支codex/rollback-ui-0235-20260921，下面早先记录的20/12圆角、浮动图例、日期/i位置已被当前8/4及贴底布局覆盖。
+
+- 收藏分类/显隐/多选/拖动、直接绘制/副本续画、分享能力与导入布局、导航实际起点接入、同卡路线显示设置、底部图表避让、详情分区与项目门禁已整合。最新绘制卡最大276px、右侧预留80px；标题留白10px；3D/框选选中只变文字色，绘制时隐藏UI可往返恢复草稿。移除首页影像日期和i，图源/地形/道路署名集中说明；比例尺右上44px真实动态刻度。道路/路线位于地名下方，端点/用户说明/定位仍可见。路线规划慢仅诊断、未宣称提速。
+- 实际390×857/360×780复验，导航设置294/264×308.8px，无正常内部滚动/横溢/控件碰撞，返回269.4px详情；绘制264×129.9px无碰撞，曲线貼底并独立摇杆列；详情曲线位于统计之前。完整证据见docs/ui-gate-20260930.md、docs/handoff-20260930-ui.md。最终安装包网页已启动、无JS错误；图源网络/地形缺块不等于完成设备验收。
+- 最终880/880完整测试、类型、网页和全新移动网页/Android构建PASS，原4a94证书v2/v3签名、zipalign、ZIP CRC、543网页资源/DEX与stage匹配、496地形PNG通过，公开包排除私有图源和本机Key。架构长度预算FAIL：7项已有超限、RouteViews本轮新增1行预算超限；不把该项当通过。
+- APK：`APK/Shantu-0.2.89-test-standalone.apk`，versionCode96，独立包名com.guanyun.weather.shantu.preview，57,883,740 bytes；SHA256 `1fd3efe719d884d38a4c3ffda8309f4e5b7a86427de9c25e707d55a7f6516087`。安装覆盖、真实GPS、手机触控/系统分享待真机；HarmonyOS6.1原生未交付。
+- 当前正在提交及上传本轮源码/APK；远端核对完成后补实际提交与Release状态。旧用户数据、照片、存档/布局/原始实走不清理。原有未跟踪`output/pdf/shantu-status-2026-09-22.pdf`保留本地、不混入本次源码交付。
+
+# 2026-09-30 / 行程示例、直接画线、分享导入与导航修正 — 本地预览（历史阶段）
+
+- 收藏分类“路线”改为“行程”：规划路线、实走或带时间轨迹归入行程，无时间手绘线仍在轨迹；内部键及存档格式兼容。新增 `scripts/create-demo-journey.mjs` 和 `artifacts/demo/shantu-demo-running-journey-20260930.json`；通过正常导入界面添加“示例 · 30分钟跑步行程（模拟）”，4.2km/30分钟/181点/2分钟停留/4个标记，坐标、时间、高程均为明确标注的模拟数据，无真实GPS或照片。行程卡内距8px 10px，外20/内12px圆角，爬升按记录样本69m与详情一致。
+- 底部画线直接进入绘制工具；空草稿点老路线可自动继续该线，命中中点时只在草稿插入连通节点，样式及备注继承。实走/模拟线续画生成无GPS样本的手绘副本，原件不改；切换面板保留草稿。独立预览已验证中点接续4.2→4.6km及面板切回，未保存该测试草稿。
+- 框选分享/删除时移除顶部“返回框选/退出框选”；用户进一步要求退出不再开结果窗，已统一退出按钮、框选切换关闭、收藏关闭及底部离开收藏时清除临时框选。下方主动分享/删除、返回继续框选保留。真实选择1项后退出实测：地图状态、无结果窗/临时勾选/顶部残留；没有删除用户条目。
+- 分享输出统一主题标题/返回/关闭，格式说明按需展开；“保存到设备”与“分享给应用”分开并固定在底部，仅支持实际文件分享的平台才显示分享入口。JSON为可重载存档，ZIP携带照片，XLSX供查看分析；没有触发真实系统分享或文件输出。导入使用单张居中上置卡，取消收藏宿主空背景和地图下移；606×780实际360×264px，360×780实际344×264px，390×480展开说明内部滚动且标题固定，输入16px。
+- 导航启动立即聚焦有效用户定位；无有效定位先显示主体起点、等待真实GPS，不用地图中心伪造位置。接入必须先到选定起点，不能跳过起点接到后续分叉；确认无可通行道路时以access虚线直连并明确仅作距离参考，网络故障/取消/无离线资料不会伪装成无路。新增departureReference会话提示，原主体/存档不改。
+- 导航标题/定位状态分行，路书/展开/结束为36px图标按钮；完整操作内容上限280px，正常手机无内部滚动，长错误/矮屏仍可滚。ResizeObserver发布实际卡高，沿途条始终在卡片下方8px：390及360实测展开约270px、内容scrollHeight=clientHeight，收起约64px，无横溢。普通导航与选中路线的纯图例缩至内容宽并上移，避开影像日期/比例尺/署名/摇杆；拉力模式布局不变。
+- 规划慢只读诊断：在线请求先locate再route，依赖串行，两者共用1100ms主机节流及单次25s超时；缓存要求完整URL一致。UI已有禁用重复计算/修改时取消。后续提速候选为分别测阶段耗时、取消预约回收、验证route-first快路径；本轮未改服务/节流/吸附策略。
+- 检查日志：`.openai/journey-final-{types,tests,web}-20260930.log`，此前27项定向、类型、移动网页编译通过；追加导航/退出最终检查见`.openai/navigation-final-*`。截图在`artifacts/screenshots/`：journey-card/details、box-exit-map、draw-direct/continuation、box-share、favorites-import、navigation-compact/expanded。开发热更新发生过Hook顺序异常，完整加载恢复，不清存储；浏览器模拟不等于真机定位/触控/系统分享验收。
+- 涉及收藏分类/框选/分享导入、画线入口与续画helper、行程详情、导航流程/卡片及图例；未改凭据、签名、包名、真实记录/照片、地形源。Luna独立任务由主agent整合审核。分支`codex/rollback-ui-0235-20260921`、基线`e79a90b`；当前快速视觉确认不打APK、不升版本、不提交或推送，GitHub仍是基线交付状态。
+
+# 2026-09-30 / 画线参照路线样式、移除互跳标题按钮 — 本地预览
+
+- 用户要求画线与其他紧凑窗口统一参照路线卡，并先后指出路线标题“画线 / 轨迹”和画线标题“道路规划”均需去掉。ControlDock.tsx移除整段互跳按钮；两窗口标题仅保留名称/原有必要返回及关闭，底部路线与画线入口保留。
+- outdoorTheme.css仅给track宿主入口增加路线样板密度：实色主题底（不叠磨砂）、12px外圆角/8px按钮、4px间距、4px 8px内距、28px标题/次级可见与32px透明命中、36px主操作。继续绘制选择器32px/16px字号；新建、续画、轨迹几何/草稿/导航逻辑未改。已有工具、记录、收藏和路线小样保留。
+- 主agent真实9174独立预览：390×857默认画线276×98px，360×780为264px宽，继续绘制展开约198px，两尺寸及390×480均无横向溢出；正常展开无内部滚动，保留动态长内容滚动兜底。两标题均实测dock-section-link数量0，底部切换与继续绘制展开/收起通过；未新建/续写真实轨迹。截图draw-route-style-{390,360}-20260930.png、route-heading-clean-{390,360}-20260930.png；原反馈图draw-style/route-heading/draw-heading-feedback-20260930.png。暂时检查页已关闭，用户浏览页保留。
+- 修改模块仅ControlDock.tsx和outdoorTheme.css，文档更新本页/UI标准/覆盖表；无业务模块删除。类型检查、移动网页编译、CSS解析、diff-check通过；日志.openai/draw-route-{types,web}-20260930.log。Luna当前额度受限，由主agent复核。
+- 分支codex/rollback-ui-0235-20260921，基线e79a90b；本地视觉确认阶段不升版本、不打包、不提交/推送，真机触控待验。
+
+# 2026-09-30 / 工具拖图保留与记录卡压薄 — 本地预览
+
+- 用户追加“工具栏一拖动地图就自动关闭”及继续指令；实际浏览器复现：ControlDock捕获document pointerdown时将tools列为可外点关闭，地图按下即收起。仅改app/page.tsx的keepOpenOnMapInteraction条件，tools现在跟其他主操作面板一样保留，time维持原行为；关闭键、Esc和底部工具按钮仍可主动收起，工具功能回调不变。
+- 同时完成前面“相同要求优化记录窗口”：仅在modules/outdoor/recordingConsole.css追加记录宿主局部规则，实色主题底、12px外圆角/8px控件、4px间距；28px标题/次级按钮+32px透明命中区、36px主操作；位置标记和拍摄/导入图文同行，设置入口32px，输入继续16px。保留记录/结束/保存/照片/采样逻辑、个性化、数据及已有其他未提交UI小样。本轮为用户指定的局部密度例外。
+- 主agent在当前9174浏览器实际复现并复验：390×857拖图+缩放、360×780拖图后工具均可见，Esc关闭、记录关闭键、底部入口切换通过。记录窗口实测276×225px，展开设置276×371.14px，两手机尺寸无内容滚动/横向溢出；390×480展开为276×348px，标题28px固定，内容306px/329px可滚动，位于顶栏和底栏之间。未开始真实GPS记录或触发相机/导出/保存；结束及错误状态真机待验。
+- 类型检查、移动网页编译、CSS解析及diff-check PASS；日志.openai/record-tools-{types,web}-20260930.log。截图artifacts/screenshots/record-{compact,settings}-{390,360}-20260930.png、record-settings-480-20260930.png、tools-pan-{390,360}-20260930.png；用户原反馈另行存档。Luna只读复核因额度限制未完成，本轮由主agent完成级联和实际浏览器复核。最终右侧保持390×857。
+- 当前分支codex/rollback-ui-0235-20260921，基线e79a90b；快速预览阶段不升版本、不打包、不提交/推送。Android真机触控待验；用户确认后再继续指定页面。
+
+# 2026-09-30 / 路线规划紧凑小样 — 待用户视觉确认
+
+- 用户要求参照工具压薄路线规划卡，解决出行选项与背景难分。仅修改 modules/controls/outdoorTheme.css 的规划表单样式及 modules/navigation/routeCompact.css 的可配置密度回退；规划卡实色主题底，出行方式独立 field 底板与细边线，选中/悬停用共享主色。结果摘要尺寸不变。
+- 规划专属变量：标题/次级按钮28px、输入/选点行32px、主按钮36px、说明入口28px，外距4px 8px、内容/站点行间距4px；去除模式/动作/说明重复 margin。起终点块为32px行+2px边框，无纵向padding；选点图文横排，输入16px保持。次级按钮透明扩展垂直点击区32px，关闭32px方形；选点/拖动/删除透明扩展至36px高，拖动/删除36px宽，相邻4px间距不重叠。尺寸均为源码盒模型，未冒充运行时测量。
+- 这是用户本轮明确要求的局部压薄例外：规划主操作36px及部分次级32px命中、12px外圆角/8px按钮、规划卡不透明；不变更全局44/36触控规范与磨砂令牌。保留内部滚动、选点显隐、途经点重排、导入、规划回调、来源说明、完成结果卡和已存布局/数据。
+- Luna只读复核样式级联与选点状态；主agent补选点/拖动命中区、统一4px行内距。CSS解析、TypeScript、移动网页编译、diff check通过；日志 .openai/route-flat-types.log、route-flat-web-build.log。9174实际主题CSS模块200并包含新规则。参考截图 artifacts/screenshots/route-planner-density-feedback-20260930.png 仅为用户修改前反馈；当前浏览器工具因URL安全策略无法读取，390×857/360×780/矮屏实际几何、截图及真机触控待验，未绕过或宣称视觉验收。
+- 本地快速小样，不打包、不升版本、不提交/推送；后续明确打包时加入用户自申请天地图Key，当前不改/输出凭证。
+
+# 2026-09-30 / 收藏颜色、紧凑布局与空多选修复 — 待用户视觉确认
+
+- 追加反馈“分类仍没优化”：首次分类规则与mobile/main.tsx后导入的outdoorSurfaces通用弹层按钮皮肤同优先级，后者又给button本体铺满raised/selected背景和12px圆角，挡住28px内缩底板。根agent修原分类规则，增加首页favorites宿主条件，并给selected本体明确transparent；普通/选中分别(0,6,2)/(0,7,2)，超过共享普通(0,5,2)/选中(0,6,2)，不依赖源顺序碰巧生效。保持内缩4px、28px可见底/36px命中、原色令牌及hover/focus/排序。app/page.tsx根class/data-panel接线已核对；用户反馈截图favorites-category-cascade-feedback-20260930.png保存，不把源码/HTTP检查当computed实测。
+- 并行复核发现空文件夹更多菜单仍能触发空多选：菜单用文件夹自身ID判可用，实际传入叶子ID却为空。Luna修WorkbenchAction使禁用和onBatch共用selectionIds；WorkbenchPanel.startBatch拦空数组并取消旧滑选。新增真实菜单组件测试collection-empty-folder-menu.test.mjs，验证空项禁用、非空叶子选择、scopedIds范围；1/1 PASS。没有扩散到其他业务模块。
+- 用户追加“被遮挡分类手机能否滑动，电脑拖不动”：CollectionTabs原鼠标移动超过7px立即进入排序，触摸才按横滑处理，造成电脑横拖不滚动。独立Luna已修CollectionTabs：鼠标/触摸普通拖动都横向滚动，450ms静止长按才排序；普通拖动松手不误选/不改顺序。原生非passive滚轮监听仅在可横滚时转scrollLeft；水平触控板、Ctrl缩放、无溢出和到边界时放行。新增collection-tabs-pan.test.mjs覆盖鼠标/触摸pan、长按排序、取消、键盘选择/Alt排序、滚轮边界。主agent审核接线并统一验证，手机与桌面实际触控/鼠标操作仍待用户确认。
+- 本次并行整合最终验证：31/31定向组件/收藏/显隐/排序测试、TypeScript、移动网页编译、CSS解析及diff-check PASS；日志.openai/favorites-integrated-tests.log、favorites-integrated-types.log、favorites-integrated-web-build.log。9174实际CollectionTabs模块200 text/javascript、wheel监听可见且鼠标自动排序分支已移除；分类CSS200 text/css含新宿主与selected transparent。新增两份测试，无业务模块删除；仍不打包/升版/提交/推送。用户反馈图favorites-category-pan-feedback-20260930.png存档。
+- 用户截图（artifacts/screenshots/folder-colors-feedback-20260930.png）指出分类颜色被深色内部控件遮住，只剩左侧细线。原因：workbenchLayout将文件夹原色混为14%淡色，共享主题又给行内按钮铺不透明底板；颜色数据本身仍在。
+- 首轮只恢复标题原色，漏了展开子项；用户新截图指出该遗漏。现在workbenchLayout.css恢复整个文件夹保存原色及folderTheme对比文字，透明控件覆盖扩到子项，嵌套文件夹使用自身颜色，路线/标记图标保留业务色。活动行、hover/全显轻覆盖、复选框状态和内收焦点保留。
+- 用户要求项数放名称后并参考工具压扁：WorkbenchPanel仅给文件夹标签增加同排布局类；名称可省略，项数固定，叶子说明保留双行。列表行/按钮41px/36px统一为32px，去上下内距，分隔线内收；这是用户连续明确压薄要求下的收藏局部密度例外，不能宣称仍有36px纵向命中。44px勾选/更多栏宽、40px显隐栏宽及滑选语义保留，不改上下面板分屏和保存布局。
+- 用户嫌分类按钮圆框顶满整条：参考Material内容区secondary tabs（https://github.com/material-components/material-web/blob/main/docs/components/tabs.md）后做本地适配；分类保持36px点击高，28px可见底板上下各退4px，6px局部圆角、列距2px/左右4px，去常驻描边，选中用黄绿文字/弱底/14×2短线；hover、按下、焦点和拖动排序反馈保留。静态最小条宽386px，390/360窄空间沿用横向滚动，实际尺寸待验。
+- 用户不要底部“已撤销上次修改”等提示行：移除常驻成功提示，只在真实错误时显示；WorkbenchAction全局更多菜单保留“撤销上次修改”，沿用store.canUndo/restore，删除确认文字同步指向更多菜单。
+- 用户截图出现点击空文件夹勾选区后“已选0项”：根因是disabled勾选框仍挂无条件pointerup/pointercancel进batch，且取消未回滚按下时paint。首轮只修空项仍保留直接勾选进多选，用户再次明确“没点多选就不该有选中框”，此新指令覆盖旧常驻勾选标准。最终WorkbenchPanel仅在batch渲染勾选框，普通点击只展开/定位；顶部“多选”或菜单明确选择操作才进入，“完成”先取消手势再退出清选择。勾选/键盘/paint都守卫batch，手势完成不再自动切模式；取消/lostcapture/blur恢复原选择。useSwipeSelection拦截disabled/nonprimary，扫选过滤disabled并提供cancel供模式退出。勾选/滑选只在已进入多选时生效。
+- 修改文件：modules/collections/WorkbenchPanel.tsx、WorkbenchAction.tsx、useSwipeSelection.ts、CollectionTabs.tsx、workbenchLayout.css，tests/collection-visibility-swipe.test.mjs、新增collection-empty-folder-menu.test.mjs与collection-tabs-pan.test.mjs及本说明/覆盖表；未改收藏存储、颜色数据、业务回调及其他面板，工具小样继续保留。
+- 验证：TypeScript、CSS解析、29/29收藏/显隐/排序相关定向测试、移动网页编译、diff-check通过；新增组件回归覆盖普通浏览无勾选框、展开/定位不切模式、明确进入后空项/点击/键盘/滑选/取消/失焦还原、完成期间取消手势不复活选择、成功操作不挂底部状态行；Luna只读审核。日志.openai/favorites-final-types.log、favorites-final-tests.log、favorites-final-web-build.log与favorites-selection-tests.log。9174实际/@fs样式200 text/css包含紧凑/展开规则；用户反馈截图保存artifacts/screenshots/favorites-*-20260930.png。浏览器接口安全策略先前拒绝，未绕过；本轮最新实际尺寸、截图/真机触控及菜单撤销操作仍待确认，不把合成DOM测试与源码检查当视觉/真机验收。
+- 沿用本地快速预览阶段：不打包、不升版、不提交/推送；之前工具小样保留，不自动推进其他页面。
+
+# 2026-09-30 / 工具面板轻量小样 — 待用户视觉确认
+
+- 用户要求先做一个小样，沿用最小修改、定向检查、实际预览与截图、用户确认后再推进流程。本轮只改工具面板，不打APK、不升版、不提交/推送。
+- 用户截图反馈：首版透明按钮像一串文字、悬停不明显；第二版按内容宽度排列导致按钮参差、标题和第二排留白，该排版未被接受。第三版修改modules/controls/outdoorSurfaces.css、homeMap.css和outdoorTheme.css：工具主面板改两列等宽，最后一个奇数项占整行，错误提示也独占整行；仅该面板宽度上限240px、外距6px、标题36px，减少标题空白。保留按钮raised底板与细边界，悬停/选中主题底色和描边，按下主色。入口/回调、字号图标、36px点击高度、禁用和焦点保留。路线、记录、图源与用户保存数据未修改。
+- 用户再次截图要求更精细且层距一致。第四版保留两列结构，将工具面板宽上限232px、外内距8px，外框/按钮圆角局部调整为12px/8px（本次新反馈下的局部小样，尚非全局标准）。标题到内容、网格行列、图标文字共用--tool-panel-gap=4px；去掉dock-content顶部padding，避免与容器gap叠加。按钮固定36px、横内距6px，11px文字/16px行高/500字重，底板混合主题表面以减轻块面，不取消选项边界及hover/选中/按下反馈。
+- 最新用户截图及追加要求：间距看起来仍不一致、整体再压扁、减少上下空间。对截图（artifacts/screenshots/tools-spacing-feedback-20260930.png）像素分析：三排边框分别y89/124、129/164、169/204，两道缝125–128与165–168均4个图像像素；后一道透底亮度较高（约RGB54/59/54，对比前一道36/43/41），不能把截图像素当CSS实测。工具卡局部改不透明主题表面消除透底亮度差；标题/按钮可见高32px、面板上下内距4px/左右8px。按钮及关闭用居中36px透明伪元素补点击区，网格上下各2px留边、行距4px；容器gap2px与网格顶部2px组成可见4px间隔，不叠加多层空白。
+- 最新参考图要求继续降高（artifacts/screenshots/tools-flat-reference-20260930.png）：仅工具小样按钮/标题/关闭可见尺寸32px降为28px，保持文字字号/图标与4px行距。透明点击区同步36px降为32px，避免在32px行节距下相邻目标重叠；这是本轮用户连续明确压薄要求下的局部尺寸例外，不推广为全局36px规范变更，不宣称仍保留36px命中区。
+- 随后用户截图要求交换左上“双图源对比”和末行“剖面”：仅调整modules/controls/ControlDock.tsx工具按钮顺序，剖面置首、双图源对比置末。原回调、ARIA、剖面可用条件与其他按钮顺序保持，CSS不变；五项时末行对比自动跨两列。TypeScript、移动网页编译、diff-check、Luna只读审核通过；9174实际ControlDock模块200 text/javascript且新顺序正确。日志.openai/tools-order-types.log与tools-order-web-build.log。仍为本地小样，不打包/提交/推送。
+- 页面覆盖：用户持续提供实际反馈截图，已确认上述问题；最新28px版实际390×857画面、点击及截图仍待确认，32px点击区仅静态盒模型核对，非运行时命中验证。此前浏览器自动读取被URL安全策略拒绝，未绕过，不能把静态检查当视觉验收；保留已保存个性化布局，未为此次小样重置布局存储。
+- 验证：本次两份修改CSS解析、git diff --check、移动网页编译PASS；Luna只读检查旧样式覆盖、边框盒与伪元素中心定位、裁剪和相邻区域边界通过。9174实际/@fs两份修改样式返回200 text/css并包含28px规则。日志.openai/tools-28-web-build.log。用户确认前不扩展到下一面板。
+- 后续明确打包时，用户要求加入其自申请天地图Key；本次不打包，未修改或输出Key。
+
 # 2026-09-30 / 0.2.88 移除地图缓存功能 — 已交付
 
 - 目标：用户认为缓存慢且无用，移除浏览缓存/沿线下载/仅缓存地图功能，恢复普通联网地图；上传GitHub和新版公开APK。

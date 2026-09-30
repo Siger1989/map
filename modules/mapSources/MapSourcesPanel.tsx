@@ -12,7 +12,9 @@ import { inspectOffline } from './offlineClient';
 import { readQr } from './qr';
 import { QrCamera } from './QrCamera';
 import { ROUTE_QR_PREFIX } from '../routeShare/qrCodec';
-import { basemapConfiguration } from '../cartography/basemaps';
+import { basemapConfiguration, TIANDITU_CREDIT } from '../cartography/basemaps';
+import { SENTINEL_CREDIT } from '../cartography/sentinel';
+import { TERRAIN_CREDIT } from '../terrain/terrain';
 import './mapSources.css';
 import { FreeMapLibrary } from './FreeMapLibrary';
 import { TiandituHelp } from './TiandituHelp';
@@ -248,6 +250,11 @@ export function MapSourcesPanel({
           <button onClick={() => { setError(''); setStep('library'); }}>公共库</button>
         </div>
         <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
+        <details className="map-source-settings"><summary>图源与地形署名</summary>
+          <p>{(sources.source?.attribution ?? (domestic ? TIANDITU_CREDIT : SENTINEL_CREDIT)).replace(/<[^>]*>/g, '')}</p>
+          <p>{TERRAIN_CREDIT.replace(/<[^>]*>/g, '')}</p>
+          <p>道路与地名：<a href="https://openfreemap.org/" target="_blank" rel="noreferrer">OpenFreeMap</a> · <a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p>
+        </details>
         {category === 'saved' && <SavedMapSources maps={sources.maps} selected={sources.selected} ready={sources.ready} busy={busy}
           onAdd={openAdd} onRemove={id => void run(async () => { await sources.remove(id); })}
           onSelect={map => { sources.select(map.id); if (map.bounds) onFocus(map.bounds); }} />}

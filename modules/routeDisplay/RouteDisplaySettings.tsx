@@ -14,13 +14,16 @@ export function RouteDisplaySettings({
   display,
   onClose,
   navigating = false,
+  embedded = false,
 }: {
   display: Display;
   onClose: () => void;
   navigating?: boolean;
+  embedded?: boolean;
 }) {
-  const root = useRouteDialogFocus(onClose);
+  const root = useRouteDialogFocus(onClose, embedded ? '.guidance-card' : undefined);
   useEffect(() => {
+    if (embedded) return;
     const dismiss = (event: PointerEvent) => {
       if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
@@ -28,22 +31,23 @@ export function RouteDisplaySettings({
     };
     document.addEventListener('pointerdown', dismiss, true);
     return () => document.removeEventListener('pointerdown', dismiss, true);
-  }, [onClose, root]);
+  }, [onClose, root, embedded]);
   const { preferences, target } = display;
   return (
         <section
           ref={root}
           className={`route-display-settings glass${navigating ? ' route-display-settings--navigation' : ''}`}
           aria-label="路线显示设置面板"
+          data-embedded={embedded}
         >
-          <header>
+          {!embedded && <header>
             <strong>路线显示</strong>
             <button aria-label="关闭路线显示设置" onClick={onClose}>
               <X size={15} />
             </button>
-          </header>
+          </header>}
           <div className="route-display-scroll">
-            <label>
+            {navigating ? <p className="route-display-scope">当前导航路线</p> : <label>
               路线
               <select
                 aria-label="显示设置作用路线"
@@ -57,8 +61,8 @@ export function RouteDisplaySettings({
                   </option>
                 ))}
               </select>
-            </label>
-            <label>
+            </label>}
+            <label className={navigating ? 'route-display-color' : undefined}>
               着色
               <select
                 aria-label="地图路线着色"

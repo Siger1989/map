@@ -602,6 +602,41 @@
 .route-details-name button { min-height: 36px; }
 .route-details-name p[role='alert'] { color: #9c3420; }
 .route-details-name p[role='status'] { color: var(--route-green); }
+.observatory .route-details-groups { display:flex; flex-direction:column; gap:8px; }
+.observatory .route-detail-group { min-width:0; padding:10px; border-radius:var(--ui-radius-control,4px); color:var(--ui-ink); background:var(--ui-raised); }
+.observatory .route-detail-group h3 { margin:0 0 4px; color:var(--ui-ink); font-size:13px; }
+.observatory .route-detail-group :is(p,small,dt,dd,label,output) { color:var(--ui-ink); }
+.observatory .route-detail-name-group,
+.observatory .route-detail-profile-group,
+.observatory .route-detail-appearance-group { background:var(--ui-raised); }
+.observatory .route-detail-stats-group { background:var(--ui-raised); }
+.observatory .route-detail-basic-more,
+.observatory .recorded-more-stats { margin-top:6px; padding:6px 8px; border-radius:var(--ui-radius-control,4px); background:var(--ui-field); color:var(--ui-ink); }
+.observatory .route-detail-basic-more > summary,
+.observatory .recorded-more-stats > summary { min-height:32px; display:flex; align-items:center; color:var(--ui-accent); cursor:pointer; font-size:12px; }
+.observatory .route-detail-basic-more[open] > summary,
+.observatory .recorded-more-stats[open] > summary { margin-bottom:4px; }
+.observatory .route-detail-group .route-details-name { margin:0; gap:4px; }
+.observatory .route-detail-group .route-details-name input { border-color:var(--ui-line); border-radius:var(--ui-radius-control,4px); background:var(--ui-field); color:var(--ui-ink); }
+.observatory .route-detail-group .route-details-name label,
+.observatory .route-detail-group .route-travel-mode { font-size:12px; }
+.observatory .route-detail-group :is(button,select) { border-radius:var(--ui-radius-control,4px); }
+.observatory .route-detail-group .route-note { margin:4px 0; padding:6px 8px; border-radius:var(--ui-radius-control,4px); background:var(--ui-field); font-size:11px; line-height:1.45; }
+.observatory .route-detail-group .route-appearance-row { gap:4px; }
+.observatory .route-detail-group .route-width-control { margin:4px 0; }
+.observatory .route-detail-group .route-width-control select,
+.observatory .route-detail-group .route-travel-mode select { min-height:36px; border:1px solid var(--ui-line); background:var(--ui-field); color:var(--ui-ink); }
+.observatory .recorded-details { padding:0; color:var(--ui-ink); background:transparent; }
+.observatory .recorded-details h3 { margin:0 0 4px; }
+.observatory .recorded-details .recorded-stats-grid > div { border-bottom-color:var(--ui-line); }
+.observatory .recorded-details .recorded-stats-grid dt { color:var(--ui-muted); }
+.observatory .recorded-details .recorded-stats-grid dd { color:var(--ui-ink); }
+.observatory .recorded-profile { color:var(--ui-ink); }
+.observatory .recorded-profile h3 { margin:0 0 4px; }
+.observatory .recorded-profile svg { background:var(--ui-surface); border-color:var(--ui-line); border-radius:var(--ui-radius-control,4px); }
+.observatory .recorded-profile svg text { fill:var(--ui-ink); }
+.observatory .recorded-point-info { border-radius:var(--ui-radius-control,4px); background:var(--ui-selected); color:var(--ui-ink); }
+.observatory .recorded-speed-legend { color:var(--ui-muted); font-size:10px; }
 .observatory .route-edit-actions-row button svg { flex-shrink: 0; }
 .observatory .route-edit-actions-row button:nth-last-child(-n+2) svg { display: none; }
 .observatory .route-edit-actions-row svg { width: 14px; height: 14px; }

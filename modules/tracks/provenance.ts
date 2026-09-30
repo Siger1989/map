@@ -15,6 +15,7 @@ export function keepsOriginalPoints(track: ManualTrack) {
 }
 
 export function trackSourceLabel(track: ManualTrack) {
+  if (track.simulation) return '模拟行程';
   if (track.importFormat) return `${track.importFormat} 导入路线`;
   if (track.source === 'shared') return '扫码分享路线';
   if (track.source === 'recorded') return '实走轨迹';

@@ -1131,7 +1131,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             map.on('remove', () => observer.disconnect());
           }
           map.addControl(
-            new maplibre.ScaleControl({ maxWidth: 100, unit: 'metric' }),
+            new maplibre.ScaleControl({ maxWidth: 44, unit: 'metric' }),
             'bottom-left',
           );
           const marker = new maplibre.Marker({ color: '#9de8c4', scale: 0.6 })

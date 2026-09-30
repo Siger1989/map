@@ -267,13 +267,13 @@
 /* Outdoor drawing tools sit above the navigation footer with a 3-row layout. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] {
   left: var(--edge-left, 8px);
-  right: calc(58px + var(--safe-right, 0px));
+  right: calc(var(--home-right) + 80px);
   bottom: calc(var(--home-footer, 64px) + 8px);
-  width: min(300px, calc(100% - var(--edge-left, 8px) - 58px - var(--safe-right, 0px)));
-  max-width: min(300px, calc(100% - var(--edge-left, 8px) - 58px - var(--safe-right, 0px)));
-  padding: 8px;
+  width: min(276px, calc(100% - var(--home-left) - var(--home-right) - 80px));
+  max-width: min(276px, calc(100% - var(--home-left) - var(--home-right) - 80px));
+  box-sizing:border-box; padding:6px 10px;
   gap: 4px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-card,8px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style {
   width: 100%;
@@ -281,7 +281,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] :is(button, select, .track-condition-input, input[type='color']) {
   min-height: 36px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-control,4px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button {
   height: auto;

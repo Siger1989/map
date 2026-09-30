@@ -20,12 +20,11 @@ type Gesture = {
   x: number;
   y: number;
   lastX: number;
-  mouse: boolean;
   moved: boolean;
   dragging: boolean;
   order: CollectionTab[];
 };
-/** Touch pans immediately; stationary long press enters reorder. Capture stays on the stable nav. */
+/** Pointer drags pan immediately; stationary long press enters reorder. Capture stays on the stable nav. */
 export function CollectionTabs(props: Props) {
   const nav = useRef<HTMLElement>(null),
     gesture = useRef<Gesture | null>(null);
@@ -53,6 +52,26 @@ export function CollectionTabs(props: Props) {
       window.removeEventListener('blur', cancel);
     };
   }, []);
+  useEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      // Horizontal touchpad gestures already target overflow-x natively.
+      if (
+        event.ctrlKey ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ||
+        event.deltaY === 0
+      ) return;
+      const max = el.scrollWidth - el.clientWidth;
+      const canScroll = event.deltaY < 0 ? el.scrollLeft > 0 : el.scrollLeft < max;
+      if (max > 0 && canScroll) {
+        el.scrollLeft += event.deltaY;
+        event.preventDefault();
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
   const startDrag = () => {
     const g = gesture.current;
     if (!g) return;
@@ -70,7 +89,6 @@ export function CollectionTabs(props: Props) {
     if (!g.dragging && distance > 7) {
       clearTimer();
       g.moved = true;
-      if (g.mouse) startDrag();
     }
     if (!g.dragging) {
       if (g.moved) el.scrollLeft += g.lastX - e.clientX;
@@ -119,7 +137,6 @@ export function CollectionTabs(props: Props) {
           x: e.clientX,
           y: e.clientY,
           lastX: e.clientX,
-          mouse: e.pointerType === 'mouse',
           moved: false,
           dragging: false,
           order,

@@ -238,9 +238,7 @@ export function NavigationStart({
           <RouteMiniMap coordinates={preview.coordinates} routes={routeOptions} selectedId={routeChoice==='original'?'original':roadReady?previewKey:''} settings={mapSettings} />
           {!selectionError && roadReady && <RouteElevationSummary coordinates={preview.coordinates} distance={selectedDistance} duration={preview.duration} />}
           <p className="navigation-entry-note">
-            {routeChoice==='original' && target.route.trackNetwork
-              ? '从当前位置最近的相连路段接入，走另一分叉时自动切换，终点保持不变。'
-              : '不在起点时，先按相同方式规划到起点，再继续主体线路。'}
+            不在起点时，先按相同方式规划到起点，再继续主体线路。无可通行道路时显示到起点的虚线直线参考。
           </p>
           {routeChoice === 'original' && (
             <p className="route-note">

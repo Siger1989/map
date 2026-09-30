@@ -1,8 +1,20 @@
-import { Navigation, X, RefreshCw, LocateFixed } from 'lucide-react';
+import { Navigation, X, RefreshCw, LocateFixed, BookOpen, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
 import './guidance.css';
+
+/** Share the rendered height with the adjacent weather rail, including wrapped status text. */
+function observeNavigationCard(node: HTMLElement | null) {
+  if (!node) return;
+  const host = node.closest<HTMLElement>('.observatory.home-map');
+  if (!host) return;
+  const update = () => host.style.setProperty('--normal-nav-card-height', `${node.getBoundingClientRect().height}px`);
+  update();
+  const observer = new ResizeObserver(update);
+  observer.observe(node);
+  return () => { observer.disconnect(); host.style.removeProperty('--normal-nav-card-height'); };
+}
 
 export function GuidanceCard({
   guidance: g,
@@ -15,6 +27,8 @@ export function GuidanceCard({
   onRally,
   onDisplay,
   telemetry,
+  displayPanel,
+  onCloseDisplay,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
@@ -26,23 +40,23 @@ export function GuidanceCard({
   onRally?: () => void;
   onDisplay?: () => void;
   telemetry?: ReactNode;
+  displayPanel?: ReactNode;
+  onCloseDisplay?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const s = g.session;
   if (!s) return null;
   const status = s.departurePending
     ? g.loading
-      ? s.originalRoute.trackNetwork
-        ? '正在计算最近路段接入路线…'
-        : '正在计算当前位置到起点的路线…'
+      ? '正在计算当前位置到起点的路线…'
       : g.departureMessage
     : s.departureLength > 0 &&
         s.nextCheckpoint === 0 &&
         !s.quality &&
         !s.offRoute
-      ? s.originalRoute.trackNetwork
-        ? '正在前往最近接入点'
-        : '正在前往主体起点 · 与主体出行方式一致'
+      ? s.departureReference
+        ? '前往路线起点 · 虚线仅作直线参考'
+        : '正在前往路线起点'
       : s.arrived
         ? '已到达终点'
         : s.quality ||
@@ -63,8 +77,10 @@ export function GuidanceCard({
       ? `${formatDistance(g.instruction.distance)} · ${g.instruction.text}` : compactStatus;
   return (
     <section
+      ref={observeNavigationCard}
       className="guidance-card glass"
-      data-compact={compact && !expanded}
+      data-compact={compact && !expanded && !displayPanel}
+      data-content={displayPanel ? 'display' : 'navigation'}
       aria-label="路线导航"
       data-status={
         s.arrived
@@ -77,19 +93,24 @@ export function GuidanceCard({
       }
     >
       <header>
-        <strong>
-          <Navigation size={17} />
-          {s.arrived
-            ? '导航完成'
-            : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
-        </strong>
-        {compact && !expanded && <span className="guidance-inline-status" role="status" title={compactStatus}>{statusLabel}</span>}
-        {onRally && <button aria-label="打开拉力路书" onClick={onRally}>路书</button>}
-        {compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? '⌃' : '⌄'}</button>}
-        <button onClick={onStop} aria-label="结束导航">
-          <X size={18} />
-        </button>
+        <div className="guidance-heading-row">
+          <strong>
+            <Navigation size={17} />
+            {displayPanel ? '路线显示' : s.arrived
+              ? '导航完成'
+              : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
+          </strong>
+          <div className="guidance-header-actions">
+            {onRally && <button aria-label="打开拉力路书" title="路书" onClick={onRally}><BookOpen size={17} /></button>}
+            {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
+            <button onClick={onStop} aria-label="结束导航" title="结束导航">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+        {compact && !expanded && !displayPanel && <span className="guidance-inline-status" role="status" title={compactStatus}>{statusLabel}</span>}
       </header>
+      {displayPanel ? <div className="guidance-display-content">{displayPanel}</div> : <>
       {(!compact || expanded) && telemetry}
       <div className="guidance-content">
         <p className="guidance-status" role="status">
@@ -142,7 +163,7 @@ export function GuidanceCard({
           <div className="guidance-actions">
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
-            {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(false); onDisplay(); }}>路线显示</button>}
+            {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '恢复跟随'}
@@ -169,6 +190,7 @@ export function GuidanceCard({
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>
         )}
       </div>
+      </>}
     </section>
   );
 }

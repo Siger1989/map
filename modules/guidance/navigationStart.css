@@ -12,7 +12,7 @@
   max-height: 80dvh;
   overflow: auto;
   padding: 16px;
-  border-radius: 18px;
+  border-radius: var(--ui-radius-card,8px);
   color: var(--text);
 }
 .route-dialog header {

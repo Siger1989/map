@@ -196,7 +196,9 @@
 .observatory.home-map .home-camera-control .camera-gizmo:focus-within, .observatory.home-map .home-camera-control .camera-gizmo:hover { opacity: 1; }
 .observatory.home-map .home-camera-control .camera-gizmo > svg { width: 72px; height: 68px; }
 .observatory.home-map .home-camera-control .camera-gizmo > svg > text { display: none; }
-.observatory.home-map #map-control-panel:has(.tool-grid) .tool-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; }
+.observatory.home-map #map-control-panel:has(.tool-grid) .tool-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--tool-panel-gap,4px); margin:0; padding:calc(var(--tool-panel-gap,4px) / 2) 0; }
+.observatory.home-map #map-control-panel .tool-grid > button:last-of-type:nth-of-type(odd),
+.observatory.home-map #map-control-panel .tool-grid > [role='alert'] { grid-column:1 / -1; }
 .observatory.home-map #map-control-panel .tool-grid button { min-height: 36px; padding: 2px 3px; gap: 3px; font-size: 11px; white-space: nowrap; }
 .observatory.home-map #map-control-panel .tool-grid button svg { width: 16px; height: 16px; flex-shrink: 0; }
 .observatory.home-map .home-position-dock { bottom: calc(var(--home-footer) + 76px); }
@@ -205,7 +207,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
   top:calc(var(--home-header-height) + 8px); bottom:auto; left:var(--home-left);
   box-sizing:border-box; width:min(300px,calc(100% - var(--home-left) - var(--home-right) - 52px));
   max-height:min(200px,calc(100dvh - var(--home-top) - var(--home-footer) - 90px));
-  overflow-y:auto; overflow-x:hidden; padding:4px 6px;
+  overflow-y:auto; overflow-x:hidden; padding:10px 12px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card header { gap:4px; align-items:center; min-height:36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-symbol { display:none; }
@@ -213,28 +215,29 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
   min-height:0; font-size:12px; line-height:1.25; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-name {
-  box-sizing:border-box; min-width:0; min-height:36px; height:36px; align-items:center; gap:4px; padding:0 4px;
+  box-sizing:border-box; min-width:0; min-height:36px; height:36px; align-items:center; gap:4px; padding:0 10px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-name strong {
   min-width:0; min-height:0; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-name > span { flex-shrink:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-back {
-  box-sizing:border-box; min-width:44px; width:44px; min-height:36px; height:36px; gap:2px; padding:0 3px;
+  box-sizing:border-box; min-width:56px; width:56px; min-height:36px; height:36px; gap:2px; padding:0 8px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-back svg { width:12px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-metrics {
-  min-height:20px; column-gap:5px; row-gap:1px; padding:1px 0; font-size:10px;
+  min-height:20px; column-gap:5px; row-gap:2px; padding:4px; font-size:11px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-metrics > span + span::before { margin-right:4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions {
-  grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding-top:2px;
+  grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; padding-top:4px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button {
   box-sizing:border-box; flex-direction:row; gap:4px; min-width:0; width:100%; height:36px; min-height:36px; padding:2px 4px;
   border-radius:var(--ui-radius-control); font-size:11px; white-space:nowrap;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button.is-primary { height:36px; min-height:36px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button + button { border-radius:var(--ui-radius-control); border-left:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card .home-route-actions button svg { width:15px; height:15px; flex:0 0 15px; }
 /* Keep every route action and both delete choices visible in compact screens. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-card:has(.home-route-delete-confirm) {
@@ -248,8 +251,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 .observatory.home-map .home-route-kind { flex-wrap:wrap; }
 .observatory.home-map .home-journey-points { top: calc(var(--home-header-height) + 8px); }
 .observatory.home-map .home-journey-points { width:var(--home-journey-width); padding:8px; }
-.observatory.home-map .home-journey-heading { box-sizing:border-box; min-height:36px; padding:6px; border-radius:12px; }
-.observatory.home-map .home-journey-list button { box-sizing:border-box; display:grid; grid-template-columns:10px minmax(0,1fr); grid-template-rows:auto auto; align-items:start; column-gap:6px; row-gap:1px; min-height:44px; margin-top:2px; padding:6px; border-radius:12px; text-align:left; }
+.observatory.home-map .home-journey-heading { box-sizing:border-box; min-height:36px; padding:6px; border-radius:var(--ui-radius-control); }
+.observatory.home-map .home-journey-list button { box-sizing:border-box; display:grid; grid-template-columns:10px minmax(0,1fr); grid-template-rows:auto auto; align-items:start; column-gap:6px; row-gap:1px; min-height:44px; margin-top:2px; padding:6px; border-radius:var(--ui-radius-control); text-align:left; }
 .observatory.home-map .home-journey-list button i { grid-column:1; grid-row:1 / span 2; margin-top:3px; }
 .observatory.home-map .home-journey-list button span { grid-column:2; grid-row:1; white-space:normal; text-overflow:clip; overflow:visible; overflow-wrap:anywhere; line-height:1.2; }
 .observatory.home-map .home-journey-list button small { grid-column:2; grid-row:2; white-space:normal; line-height:1.2; }
@@ -267,7 +270,41 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 
 .observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .observatory.home-map .global-focus-lock small { font-size:9px; }
-.observatory.home-map .home-recording { bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px)); }
+.observatory.home-map .home-recording { bottom:calc(var(--home-footer) + max(var(--map-bottom-clearance, 0px), 60px)); }
+/* Bottom task cards own the lower-left area. Measure their real height and put
+   map metadata above them, while the camera keeps its reserved right column. */
+.observatory.home-map { --map-bottom-clearance:0px; }
+.observatory.home-map:not([data-rally='true']):has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']) {
+  --map-bottom-clearance:max(var(--selected-info-clearance,0px),var(--nav-info-clearance,0px));
+}
+.observatory.home-map:is([data-panel='tools'],[data-panel='outdoor']) {
+  --map-bottom-clearance:max(var(--selected-info-clearance,0px),var(--nav-info-clearance,0px),var(--operation-info-clearance,0px));
+}
+.observatory.home-map:has(.track-tools[aria-label='绘制工具']) { --map-bottom-clearance:var(--drawing-info-clearance,0px); }
+.observatory.home-map .map-canvas .maplibregl-ctrl-bottom-left {
+  bottom:calc(var(--home-footer) + var(--map-bottom-clearance)) !important;
+}
+.observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label {
+  bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 32px);
+}
+.observatory.home-map:not([data-rally='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']),[data-panel='tools'],[data-panel='outdoor']) .home-recording {
+  bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 64px);
+}
+.observatory.home-map:not([data-rally='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true'],.track-tools[aria-label='绘制工具']),[data-panel='tools'],[data-panel='outdoor']) .global-focus-lock {
+  bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 124px);
+}
+.observatory.home-map:not([data-comparing='true']) .map-canvas .maplibregl-ctrl-scale {
+  position:fixed; top:calc(var(--home-top) + var(--home-header-height) + 112px);
+  bottom:auto; left:auto; right:calc(var(--home-right) + 3px);
+  box-sizing:border-box; padding:0 2px; font-size:9px; line-height:14px;
+  white-space:nowrap; overflow:visible;
+}
+.observatory.home-map .home-position-dock .position-dock-coordinates {
+  max-width:72px; bottom:calc(100% + 4px); right:0; left:auto;
+  white-space:normal; overflow-wrap:anywhere;
+}
+.observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label,
+.observatory.home-map:not([data-comparing='true']) > .map-canvas .maplibregl-ctrl-attrib { display:none; }
 .observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) { display:none !important; }
 .observatory.home-map[data-focus-locked=true]:not([data-guiding=true]) > .route-weather-rail { display:none !important; }
 .observatory.home-map[data-focus-locked=true]::before { display:none !important; }
@@ -285,6 +322,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 /* Operation panels own their area; the lock control returns when they close. */
 .observatory.home-map:not([data-focus-locked=true]):has(.raster-level-panel,.route-display-settings,.layer-window,.home-map-popup,.home-recording-panel) .global-focus-lock { display:none; }
 .observatory.home-map[data-panel='favorites'] :is(.home-position-dock,.home-map-actions) { display:none; }
+.observatory.home-map[data-panel='favorites'] .map-canvas .maplibregl-ctrl-scale { display:none; }
 .observatory.home-map[data-panel='favorites'] .control-dock { z-index:82; }
 /* Heading, center marker, and position follow remain reachable while locked. */
 .observatory.home-map[data-focus-locked=true] .home-position-dock { display:flex !important; right:8px; bottom:104px; }

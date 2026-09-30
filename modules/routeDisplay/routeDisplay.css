@@ -6,10 +6,10 @@
   left: auto;
   width: min(276px, calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px));
   max-width: calc(100vw - var(--home-left, 8px) - var(--home-right, 8px) - 62px);
-  max-height: min(280px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
+  max-height: min(320px, calc(100dvh - 112px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   box-sizing: border-box;
   padding: 8px;
-  border-radius: 20px;
+  border-radius: var(--ui-radius-card,8px);
   display: flex;
   flex-direction: column;
   font-size: 11px;
@@ -19,14 +19,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex: 0 0 36px;
+  flex: 0 0 auto;
   min-height: 36px;
   gap: 2px;
-  padding: 0 2px;
+  padding: 0 2px 4px;
 }
 .observatory.home-map .route-display-settings--navigation {
   top: calc(var(--home-header-height) + var(--home-top) + 50px);
-  max-height: min(280px, calc(100dvh - var(--home-header-height) - var(--home-top) - var(--home-footer) - 74px));
+  max-height: min(320px, calc(100dvh - var(--home-header-height) - var(--home-top) - var(--home-footer) - 74px));
 }
 .route-display-settings header strong {
   font-size: 12px;
@@ -40,7 +40,7 @@
   color: var(--ui-button-ink, var(--ui-ink, var(--text)));
   background: var(--ui-raised, var(--surface));
   border: 1px solid var(--ui-line, var(--border));
-  border-radius: 12px;
+  border-radius: var(--ui-radius-control,4px);
   padding: 0 4px;
 }
 .route-display-settings header button {
@@ -103,7 +103,7 @@
   min-height: 36px;
   padding: 0 6px;
   border: 1px solid var(--ui-line, var(--border));
-  border-radius: 12px;
+  border-radius: var(--ui-radius-control,4px);
   color: var(--ui-muted, var(--muted));
   background: var(--ui-raised, var(--surface));
   cursor: pointer;
@@ -143,7 +143,7 @@
 }
 .route-display-info > * {
   padding: 8px;
-  border-radius: 12px;
+  border-radius: var(--ui-radius-control,4px);
   background: var(--ui-surface, var(--surface));
   border: 1px solid var(--ui-line, var(--border));
 }
@@ -198,3 +198,19 @@
 }
 
 .navigation-color-key { flex-wrap:wrap; }
+
+/* In navigation, settings replace the card body rather than opening another overlay. */
+html[data-ui-theme] .observatory.home-map .guidance-card .route-display-settings[data-embedded='true'] {
+  position:static; inset:auto; z-index:auto; width:100%; max-width:none;
+  max-height:none; min-height:0; padding:0; border:0; border-radius:0;
+  background:transparent; box-shadow:none; backdrop-filter:none; overflow:visible;
+}
+.guidance-card .route-display-settings[data-embedded='true'] .route-display-scroll {
+  flex:none; overflow:visible; gap:4px;
+}
+.guidance-card .route-display-settings[data-embedded='true'] .route-display-scroll select { font-size:16px; }
+.route-display-scroll > .route-display-scope { grid-column:1 / -1; margin:0; padding:0 2px; font-size:12px; line-height:18px; color:var(--ui-muted,var(--muted)); }
+.route-display-scroll > .route-display-color { grid-column:1 / -1; font-size:12px; }
+.guidance-card .route-display-settings[data-embedded='true'] .route-display-options label,
+.guidance-card .route-display-settings[data-embedded='true'] .route-display-explanation > summary,
+.guidance-card .route-display-settings[data-embedded='true'] .route-display-scroll > button { font-size:12px; }

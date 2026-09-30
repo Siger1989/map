@@ -48,8 +48,8 @@
 .rally-map-actions { position: absolute; bottom: calc(var(--rally-map-bottom) + 5px); right: 13px; display: flex; gap: 3px; }
 .rally-warning { position: absolute; left: 13px; right: 13px; top: calc(var(--rally-map-top) + 40px); border-radius: 3px; background: #fffc; color: #71411b; font-size: 11px; padding: 3px 5px; }
 .rally-help { position: absolute; z-index: 2; top: 80px; left: 8px; right: 8px; padding: 10px; border: 1px solid #9bb7bc; background: #fff; font-size: 13px; line-height: 1.5; }
-.rally-elevation { position: absolute; bottom: calc(var(--home-footer) + 8px); left: 8px; right: 8px; height: 80px; display: grid; grid-template-columns: minmax(0,1fr) 102px; grid-template-rows: 50px 12px; border: 1px solid var(--ui-line, var(--border)); border-radius: 20px; background: var(--ui-surface, var(--surface)); color: var(--ui-ink, var(--text)); padding: 8px; overflow: hidden; }
-.rally-elevation .route-elevation-profile { background: none; box-shadow: none; border: 0; border-radius: 12px; overflow: visible; padding: 0; min-width: 0; }
+.rally-elevation { position: absolute; bottom: calc(var(--home-footer) + 8px); left: 8px; right: 8px; height: 80px; display: grid; grid-template-columns: minmax(0,1fr) 102px; grid-template-rows: 50px 12px; border: 1px solid var(--ui-line, var(--border)); border-radius: var(--ui-radius-card,12px); background: var(--ui-surface, var(--surface)); color: var(--ui-ink, var(--text)); padding: 8px; overflow: hidden; }
+.rally-elevation .route-elevation-profile { background: none; box-shadow: none; border: 0; border-radius: var(--ui-radius-control,8px); overflow: visible; padding: 0; min-width: 0; }
 .rally-elevation .route-elevation-profile > strong { display: none; }
 .rally-elevation svg { width: calc(100% - 16px); height: 50px; margin: 0 8px; }
 .rally-elevation dl { border-left: 1px solid var(--ui-line, var(--border)); padding-left: 8px; margin: 1px 0; font-size: 10px; }
@@ -81,3 +81,25 @@
 .rally-elevation[data-body='false'] { height: 36px; grid-template-rows: 18px; padding: 8px; }
 .observatory.home-map[data-rally='true']:not(:has(.rally-elevation)) { --rally-map-bottom: calc(var(--home-footer) + 8px); }
 .observatory.home-map[data-rally='true']:has(.rally-elevation[data-body='false']) { --rally-map-bottom: calc(var(--home-footer) + 36px); }
+
+/* In ordinary navigation, keep the telemetry card clear of the imagery date
+   and MapLibre controls. The roadbook uses its own map-sized layout above. */
+.observatory.home-map:not([data-rally='true']) .navigation-elevation .rally-elevation {
+  bottom:calc(var(--home-footer) + 8px);
+}
+.observatory.home-map:not([data-rally='true']) .navigation-elevation .rally-elevation[data-body='false'] {
+  left:auto; right:calc(var(--home-right) + 80px); bottom:calc(var(--home-footer) + 4px); width:max-content;
+  max-width:calc(100% - var(--home-left) - var(--home-right) - 184px);
+  height:auto; grid-template-rows:auto; padding:4px 8px; transform:none;
+}
+.observatory.home-map:not([data-rally='true']) .rally-elevation[data-body='false'] .navigation-color-key {
+  display:flex; flex-wrap:wrap; white-space:normal;
+}
+.observatory.home-map:not([data-rally='true']) .navigation-elevation .rally-elevation[data-body='true'] {
+  right:calc(var(--home-right) + 80px);
+  height:auto; min-height:80px; grid-template-rows:50px auto;
+  padding:8px;
+}
+.observatory.home-map:not([data-rally='true']) .rally-elevation[data-body='true'] > small {
+  grid-column:1 / -1; white-space:normal; flex-wrap:wrap; padding:4px 0 0;
+}

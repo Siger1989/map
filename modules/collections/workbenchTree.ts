@@ -14,6 +14,8 @@ export type WorkbenchItem = {
     | 'measurement';
   color: string;
   detail?: string;
+  /** Derived presentation only; original track data stays in its archive. */
+  journey?: boolean;
   visible?: boolean;
   shareData?: ShareRoute;
   children?: WorkbenchItem[];

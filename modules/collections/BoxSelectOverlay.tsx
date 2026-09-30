@@ -4,7 +4,7 @@ import { selectionBox, type SelectionBox, type BoxSelectionMode } from './boxSel
 import './boxSelection.css';
 
 /** The rectangle previews the gesture; selected results live independently. */
-export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0, onResumeActionFlow }: {
+export function BoxSelectOverlay({ active = true, label, count, children, onBox, onExit, onClear, mode: controlledMode, tools = true, filter, onTwoFingerMove, onTwoFingerEnd, selectedResults, onResultAction, resumeToken = 0 }: {
   active?: boolean; label: string; count: number; children: ReactNode;
   onBox: (box: SelectionBox, mode: BoxSelectionMode) => void;
   onExit: () => void; onClear: () => void;
@@ -13,7 +13,6 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
   onTwoFingerEnd?: () => void;
   selectedResults?: ReactNode; onResultAction?: (action: 'export' | 'share' | 'delete') => void;
   resumeToken?: number;
-  onResumeActionFlow?: () => void;
 }) {
   const start = useRef<{ point: ScreenPoint; id: number } | null>(null);
   const overlay = useRef<HTMLDivElement | null>(null);
@@ -166,10 +165,6 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
           <button className="is-danger" onClick={() => { setActionFlow(true); onResultAction?.('delete'); }}>删除</button>
         </div>
       </>}
-    </div>}
-    {active && tools && actionFlow && <div className="map-box-action-flow" role="group" aria-label="框选结果操作中">
-      <button onClick={() => { setActionFlow(false); onResumeActionFlow?.(); }}>返回框选</button>
-      <button onClick={onExit}>退出框选</button>
     </div>}
   </div>;
 }

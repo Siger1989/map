@@ -119,6 +119,10 @@ function layOutRows(host) {
     const top = index * 40;
     button.getBoundingClientRect = () => ({ top, bottom: top + 36, left: 0, right: 320, width: 320, height: 36 });
   });
+  [...list.querySelectorAll('[data-select-key]')].forEach((button, index) => {
+    const top = index * 40;
+    button.getBoundingClientRect = () => ({ top, bottom: top + 36, left: 0, right: 44, width: 44, height: 36 });
+  });
 }
 
 test('visibility gutter previews each painted row, commits once on release, and restores on cancel', async t => {
@@ -159,6 +163,7 @@ test('visibility gutter previews each painted row, commits once on release, and 
   assert.equal(allVisible.commits.length, 0, 'crossing rows still does not commit');
   await act(async () => first.dispatchEvent(pointer(window, 'pointerup', 90)));
   assert.equal(allVisible.commits.length, 1, 'release creates exactly one commit');
+  assert.equal(host.querySelector('.workbench-status'), null, 'successful edits do not add a persistent bottom status row');
   const hiddenAfterRelease = allVisible.commits[0][0].children;
   assert.deepEqual(hiddenAfterRelease.map(item => [item.id, item.visible]), [
     ['pin:a', false], ['route:b', false],
@@ -202,4 +207,93 @@ test('hidden-filter rows stay mounted during show preview and disappear only aft
   await act(async () => hidden.dispatchEvent(pointer(window, 'pointerup', 50, 3)));
   assert.equal(initial.commits.length, 1);
   assert.equal(host.querySelector('[data-visibility-key$="/pin:a"]'), null, 'the committed visible row leaves the hidden filter');
+});
+
+test('checkboxes exist only in explicit batch mode; empty rows and cancellation remain safe', async t => {
+  const { window } = setupDom();
+  const React = await import('react');
+  const { act } = React;
+  const { createRoot } = await import('react-dom/client');
+  const WorkbenchPanel = await loadPanel();
+  const initial = fixture();
+  initial.items.push({ id: 'empty', name: '空文件夹', kind: 'folder', color: '#efc', children: [] });
+  globalThis.__collectionVisibilityFixture = initial;
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  const located = [];
+  t.after(async () => act(async () => root.unmount()));
+  await act(async () => root.render(React.createElement(WorkbenchPanel, {
+    center: [104, 30], onClose() {}, onLocate(id) { located.push(id); }, onOpen() {}, onNavigate() {}, onManage() {},
+  })));
+  layOutRows(host);
+  const batchVisible = () => !!host.querySelector('.workbench-batch');
+  assert.equal(host.querySelector('[data-select-key]'), null, 'normal browsing has no selection boxes');
+  const emptyOpen = host.querySelector('[aria-label="展开文件夹 空文件夹"]');
+  await act(async () => emptyOpen.click());
+  assert.equal(emptyOpen.getAttribute('aria-expanded'), 'true');
+  assert.equal(batchVisible(), false, 'opening a folder is separate from selection');
+  await act(async () => host.querySelector('[aria-label="定位收藏 营地"]').click());
+  assert.deepEqual(located, ['pin:a']);
+  assert.equal(batchVisible(), false, 'locating a single item does not enter batch mode');
+  assert.equal(host.querySelector('[data-select-key]'), null);
+  const modeButton = label => [...host.querySelectorAll('.workbench-heading button')].find(button => button.textContent === label);
+  await act(async () => modeButton('多选').click());
+  assert.equal(batchVisible(), true);
+  layOutRows(host);
+  const empty = host.querySelector('[data-select-key="empty"]');
+  assert.equal(empty.disabled, true);
+  await act(async () => {
+    empty.firstElementChild.dispatchEvent(pointer(window, 'pointerdown', 130));
+    empty.firstElementChild.dispatchEvent(pointer(window, 'pointerup', 130));
+    empty.firstElementChild.dispatchEvent(pointer(window, 'pointercancel', 130));
+  });
+  assert.equal(empty.getAttribute('aria-checked'), 'false');
+
+  const first = host.querySelector('[data-select-key$="/pin:a"]');
+  const second = host.querySelector('[data-select-key$="/route:b"]');
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerdown', 50, 4)));
+  assert.equal(first.getAttribute('aria-checked'), 'true');
+  assert.equal(batchVisible(), true, 'the explicitly entered mode remains stable while painting');
+  await act(async () => first.dispatchEvent(pointer(window, 'pointermove', 90, 4)));
+  assert.equal(second.getAttribute('aria-checked'), 'true');
+  await act(async () => first.dispatchEvent(pointer(window, 'pointercancel', 90, 4)));
+  assert.equal(first.getAttribute('aria-checked'), 'false');
+  assert.equal(second.getAttribute('aria-checked'), 'false');
+  assert.equal(batchVisible(), true, 'cancel restores selection without changing the entered mode');
+
+  const keyboardClick = () => {
+    const event = new window.Event('click', { bubbles: true });
+    Object.assign(event, { detail: 0 });
+    first.dispatchEvent(event);
+  };
+  await act(async () => keyboardClick());
+  assert.equal(first.getAttribute('aria-checked'), 'true');
+  await act(async () => keyboardClick());
+  assert.equal(first.getAttribute('aria-checked'), 'false');
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerdown', 50, 7)));
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerup', 50, 7)));
+  assert.equal(first.getAttribute('aria-checked'), 'true');
+  assert.equal(batchVisible(), true, 'a valid checkbox tap works within batch mode');
+  await act(async () => keyboardClick());
+
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerdown', 50, 5)));
+  await act(async () => first.dispatchEvent(pointer(window, 'pointermove', 90, 5)));
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerup', 90, 5)));
+  assert.equal(batchVisible(), true);
+  assert.equal(first.getAttribute('aria-checked'), 'true');
+  assert.equal(second.getAttribute('aria-checked'), 'true', 'release still completes a valid multi-row selection');
+
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerdown', 50, 6)));
+  assert.equal(first.getAttribute('aria-checked'), 'false');
+  await act(async () => window.dispatchEvent(new window.Event('blur')));
+  assert.equal(first.getAttribute('aria-checked'), 'true', 'blur restores the selection that existed before the gesture');
+  assert.equal(second.getAttribute('aria-checked'), 'true');
+  assert.equal(batchVisible(), true, 'cancellation preserves an already open batch mode');
+  await act(async () => first.dispatchEvent(pointer(window, 'pointerdown', 50, 8)));
+  await act(async () => modeButton('完成').click());
+  assert.equal(batchVisible(), false);
+  assert.equal(host.querySelector('[data-select-key]'), null, 'completion removes selection boxes');
+  await act(async () => window.dispatchEvent(new window.Event('blur')));
+  assert.equal(host.querySelector('.workbench-heading small').textContent, '2 项', 'exit clears selection and cancels any in-flight gesture');
 });

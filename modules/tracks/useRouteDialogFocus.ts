@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-export function useRouteDialogFocus(onBack: () => void) {
+export function useRouteDialogFocus(onBack: () => void, scopeSelector?: string) {
   const root = useRef<HTMLElement>(null),
     back = useRef(onBack);
   back.current = onBack;
@@ -8,7 +8,7 @@ export function useRouteDialogFocus(onBack: () => void) {
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    const node = root.current;
+    const node = (scopeSelector ? root.current?.closest<HTMLElement>(scopeSelector) : root.current) ?? root.current;
     node?.setAttribute('data-app-back', '100');
     node
       ?.querySelector<HTMLElement>('button,select,input,[tabindex="0"]')

@@ -5,14 +5,13 @@ import { CATALOG_TYPES, type CatalogEntry } from './catalog';
 import { selectInBox, updateBoxSelection } from './boxSelection';
 import { BoxSelectOverlay } from './BoxSelectOverlay';
 
-export function MapBoxSelect({ entries, project, selected, onChange, onExit, onTwoFingerMove, onTwoFingerEnd, onResultAction, resumeToken, onResumeActionFlow }: {
+export function MapBoxSelect({ entries, project, selected, onChange, onExit, onTwoFingerMove, onTwoFingerEnd, onResultAction, resumeToken }: {
   entries: CatalogEntry[]; project: (p: Coordinate) => ScreenPoint | null;
   selected: string[]; onChange: (keys: string[]) => void; onExit: () => void;
   onTwoFingerMove?: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
   onTwoFingerEnd?: () => void;
   onResultAction?: (action: 'export' | 'share' | 'delete', keys: string[]) => void;
   resumeToken?: number;
-  onResumeActionFlow?: () => void;
 }) {
   const [kind, setKind] = useState<keyof typeof CATALOG_TYPES>('all');
   return <BoxSelectOverlay label="地图框选" count={selected.length}
@@ -25,7 +24,7 @@ export function MapBoxSelect({ entries, project, selected, onChange, onExit, onT
       const hit = selectInBox(entries, box, project, kind);
       onChange(updateBoxSelection(selected, hit, mode, k => k));
     }}
-    onClear={() => onChange([])} onExit={onExit} onTwoFingerMove={onTwoFingerMove} onTwoFingerEnd={onTwoFingerEnd} resumeToken={resumeToken} onResumeActionFlow={onResumeActionFlow}
+    onClear={() => onChange([])} onExit={onExit} onTwoFingerMove={onTwoFingerMove} onTwoFingerEnd={onTwoFingerEnd} resumeToken={resumeToken}
     selectedResults={entries.filter(e => selected.includes(e.key)).map(e => <span className="map-box-selected-result" key={e.key}>{e.name}</span>)}
     onResultAction={action => onResultAction?.(action, selected)}>
     {entries.filter(e => selected.includes(e.key)).map(e => {

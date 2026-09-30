@@ -38,7 +38,7 @@
   padding: 0 8px !important;
 }
 .observatory #map-control-panel .route-panel .route-modes {
-  margin: 0 0 2px !important;
+  margin: 0 0 var(--route-mode-margin, 2px) !important;
   gap: 3px;
 }
 .observatory #map-control-panel .route-panel .route-modes button {
@@ -64,7 +64,7 @@
   box-shadow: inset 3px 0 #257451;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions {
-  margin: 2px 0 !important;
+  margin: var(--route-action-margin, 2px) 0 !important;
   gap: 2px;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions button {
@@ -78,19 +78,19 @@
   border-radius: var(--route-radius, 3px);
 }
 .observatory #map-control-panel .route-panel .route-provider-note {
-  margin-top: 2px !important;
+  margin-top: var(--route-note-margin, 2px) !important;
 }
 .observatory #map-control-panel .route-panel .route-provider-note summary {
-  min-height: 36px;
+  min-height: var(--route-note-height, 36px);
   display: list-item;
   align-content: center;
 }
-/* Keep every editable stop and secondary action compact without shrinking targets below 36px. */
-.observatory #map-control-panel .route-panel .route-stop-row { min-height: 38px; }
-.observatory #map-control-panel .route-panel .route-stop-row input { height: 36px; font-size: 16px; }
-.observatory #map-control-panel .route-panel :is(.stop-icon, .stop-drag) { height: 36px; }
+/* The themed planner supplies local density tokens; legacy forms keep their geometry. */
+.observatory #map-control-panel .route-panel .route-stop-row { min-height: var(--route-row-height, 38px); }
+.observatory #map-control-panel .route-panel .route-stop-row input { height: var(--route-row-height, 36px); font-size: 16px; }
+.observatory #map-control-panel .route-panel :is(.stop-icon, .stop-drag) { height: var(--route-row-height, 36px); }
 .observatory #map-control-panel .route-panel :is(.stop-remove, .stop-drag) { width: 36px; }
-.observatory #map-control-panel .route-panel .route-load { min-height: 36px; }
+.observatory #map-control-panel .route-panel .route-load { min-height: var(--route-load-height, 36px); }
 /* A completed route gives the map back; details occupy a bounded secondary area. */
 .observatory.home-map #map-control-panel:has(.route-summary) {
   top: auto !important;

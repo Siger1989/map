@@ -33,6 +33,8 @@ type Props = {
   onManage: (keys?: string[]) => void;
   error: string;
   busy: boolean;
+  canUndo: boolean;
+  onUndo: () => boolean;
 };
 
 export function WorkbenchAction(p: Props) {
@@ -82,9 +84,18 @@ export function WorkbenchAction(p: Props) {
     const keys =
       p.action.scopedIds ??
       (item ? [item.id] : workbenchLeaves(p.items).map((i) => i.id));
+    const selectionIds = p.action.scopedIds ??
+      (item?.kind === 'folder'
+        ? workbenchLeaves(item.children ?? []).map((i) => i.id)
+        : keys);
     title = item?.name ?? '收藏管理';
     body = (
       <div className="collection-action-buttons">
+        {!item && (
+          <button disabled={!p.canUndo || p.busy} onClick={() => { if (p.onUndo()) p.onClose(); }}>
+            撤销上次修改
+          </button>
+        )}
         {item && item.kind !== 'folder' && (
           <button onClick={() => p.onOpen(item.id)}>打开 / 编辑详情</button>
         )}
@@ -106,16 +117,8 @@ export function WorkbenchAction(p: Props) {
           </button>
         )}
         <button
-          disabled={!keys.length}
-          onClick={() =>
-            p.onBatch(
-              p.action.type === 'menu' && p.action.scopedIds
-                ? p.action.scopedIds
-                : item?.kind === 'folder'
-                  ? workbenchLeaves(item.children ?? []).map((i) => i.id)
-                  : keys,
-            )
-          }
+          disabled={!selectionIds.length}
+          onClick={() => p.onBatch(selectionIds)}
         >
           选择 / 多选
         </button>
@@ -299,7 +302,7 @@ export function WorkbenchAction(p: Props) {
     title = `删除 ${count} 个收藏${selected.some((i) => i.kind === 'folder') ? '及所选文件夹' : ''}？`;
     body = (
       <>
-        <p>将删除本次选中的项目。删除后可用底部“撤销”恢复。</p>
+        <p>将删除本次选中的项目。删除后可在收藏更多菜单中撤销。</p>
         <ul>
           {selected.slice(0, 8).map((i) => (
             <li key={i.id}>{i.name}</li>

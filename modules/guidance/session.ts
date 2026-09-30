@@ -14,6 +14,7 @@ export type GuidanceSession = {
   departurePending: boolean;
   departureLength: number;
   departureRoute: PlannedRoute | null;
+  departureReference?: boolean;
   path: Path;
   checkpoints: Projection[];
   nextCheckpoint: number;

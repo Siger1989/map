@@ -32,6 +32,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
   const duration = track.sharedRoute?.duration;
   const measured = useMemo(() => recordedStats(track), [track]);
   const timed = hasTrackTime(track);
+  const ascent = timed ? measured.ascent : stats.ascent;
   return <section ref={dock} className="home-route-card" aria-label="所选路线">
     {name !== null ? <form className="home-route-rename" aria-label="修改路线名称" onSubmit={event => {
       event.preventDefault();
@@ -58,9 +59,9 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button className="home-route-back" onClick={onBack} aria-label="返回"><span>返回</span><ChevronRight size={17} /></button>
     </header>
     <div className="home-route-metrics">
-      <span className="home-route-source">{track.source === 'recorded' ? '实走原件' : trackSourceLabel(track)}</span>
+      <span className="home-route-source">{track.source === 'recorded' && !track.simulation ? '实走原件' : trackSourceLabel(track)}</span>
       <span>{timed ? formatDistance(measured.distance) : choice ? formatDistance(choice.distance) : '—'}</span>
-      <span title={stats.ascent === null ? '高程数据尚不可用' : elevation.estimated ? '含地形估算' : '轨迹自带高程'}>爬升 {stats.ascent === null || choices.length > 1 ? '—' : `${Math.round(stats.ascent)} m`}</span>
+      <span title={ascent === null ? '高程数据尚不可用' : timed ? '按逐点海拔采样统计，与详情一致' : elevation.estimated ? '含地形估算' : '轨迹自带高程'}>爬升 {ascent === null || choices.length > 1 ? '—' : `${Math.round(ascent)} m`}</span>
       {(timed || duration != null) && <span>{timed ? `用时 ${recordedDuration(measured.elapsed)}` : `预计 ${formatDuration(duration!)}`}</span>}
       {timed && measured.averageSpeed !== null && <span>均速 {measured.averageSpeed.toFixed(1)} km/h</span>}
     </div>

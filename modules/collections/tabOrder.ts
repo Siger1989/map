@@ -3,7 +3,7 @@ export const COLLECTION_TABS = {
   regions: '地区',
   all: '全部',
   hidden: '隐藏',
-  route: '路线',
+  route: '行程',
   track: '轨迹',
   pin: '标记',
   model: '模型',
@@ -12,6 +12,14 @@ export const COLLECTION_TABS = {
   measurement: '测量',
 } as const;
 export type CollectionTab = keyof typeof COLLECTION_TABS;
+/** Keep archive kinds and saved tab keys stable; journeys also include timed originals. */
+export function matchesCollectionTab(item: { kind: string; journey?: boolean; visible?: boolean }, tab: string) {
+  if (tab === 'all') return true;
+  if (tab === 'hidden') return item.visible === false;
+  if (tab === 'route') return item.kind === 'route' || item.journey === true;
+  if (tab === 'track') return item.kind === 'track' && !item.journey;
+  return item.kind === tab;
+}
 export const DEFAULT_TAB_ORDER = Object.keys(
   COLLECTION_TABS,
 ) as CollectionTab[];

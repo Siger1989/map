@@ -1,34 +1,46 @@
 .favorites-import-backdrop {
-  position: fixed;
+  position: absolute;
   z-index: 90;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 8px;
-  background: #10251d66;
+  background: transparent;
 }
-.favorites-import {
+.collection-workbench.favorites-import {
   position: relative;
   inset: auto;
-  width: min(300px, 100%);
-  max-height: min(56dvh, 480px);
+  display: flex;
+  flex-direction: column;
+  width: min(360px, 100%);
+  max-height: min(56dvh, 480px, calc(100dvh - 24px), 100%);
   overflow: hidden;
-  background: var(--panel);
-  border-radius: 8px;
+  background: var(--ui-surface, #18201f);
+  color: var(--ui-ink, #f2f5ed);
+  border: 1px solid var(--ui-line, #39413e);
+  border-radius: var(--ui-radius-card, 20px);
+  box-shadow: var(--ui-shadow, 0 12px 32px #0008);
 }
-.observatory .collection-workbench.favorites-import {
-  position: relative;
-  inset: auto;
-  width: min(300px, 100%);
-  height: auto;
-  max-height: min(56dvh, 480px);
+/* Keep the existing favorites/map split. Only clear the dock's surface while
+   import is open, so this reads as one card without dimming or blocking the map. */
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .control-dock:has(.favorites-import-backdrop) .control-popover {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
+/* Import is an overlay task, not the collection directory: keep the map behind
+   the whole card and avoid inheriting the directory's forced 100% height. */
+html[data-ui-theme] .observatory.home-map[data-panel='favorites']:has(.favorites-import-backdrop) > .map-canvas { top:0; }
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench.favorites-import { height:auto; min-height:0; }
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-import .workbench-collections { height:auto; flex:1 1 auto; min-height:0; }
 .favorites-import .workbench-collections {
   display: flex;
   flex-direction: column;
   height: auto;
   min-height: 0;
+  overflow: hidden;
 }
 .favorites-import .workbench-heading > div { justify-content: center; text-align: center; }
 .favorites-import .workbench-heading button {
@@ -39,9 +51,11 @@
   white-space: nowrap;
   font-size: 11px;
 }
-.favorites-import .workbench-heading button[aria-label='关闭收藏'] { width: 36px; }
+.favorites-import .workbench-heading button[aria-label='关闭导入'] { width: 36px; }
 .favorites-import .workbench-heading {
   flex-shrink: 0;
+  min-height: 40px;
+  height: 40px;
 }
 .favorites-import-tabs {
   display: flex;
@@ -66,9 +80,10 @@
 }
 .favorites-import-body {
   min-height: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   overflow: auto;
-  padding: 0 6px 6px;
+  overscroll-behavior: contain;
+  padding: 0 8px 8px;
 }
 .favorites-import-body > section {
   gap: 4px;
@@ -100,4 +115,9 @@
 .favorites-import-body .marker-excel-content {
   overflow: visible;
   padding: 0;
+}
+
+@media (max-height: 560px) {
+  .favorites-import-backdrop { align-items: flex-start; }
+  .collection-workbench.favorites-import { max-height: min(100%, calc(100dvh - 24px)); }
 }

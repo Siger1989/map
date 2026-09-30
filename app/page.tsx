@@ -98,6 +98,7 @@ import type { ManualTrack } from '@/modules/tracks/drawing';
 
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
+import { pickTrackContinuation } from '@/modules/tracks/prepareTrackContinuation';
 import { routeGap } from '@/modules/tracks/routeInfo';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
@@ -1057,6 +1058,7 @@ export default function Home() {
   } = useGuidanceWorkflow({
     guidance,
     position,
+    initialFix: position.fix,
     follow,
     recorder,
     navigation,
@@ -1066,6 +1068,11 @@ export default function Home() {
     onOpenRoute: openRoute,
     onInvalidRoute: () => setPanel('route'),
     onActivateUi: () => {
+      setNavigationDisplayOpen(false);
+      setBoxSelecting(false);
+      setCollectionSelectedKeys([]);
+      setCollectionOutputKey(null);
+      setBoxSelectionAction(null);
       setSectionEditing(false);
       setProfileOpen(false);
       tracks.finish();
@@ -1077,6 +1084,7 @@ export default function Home() {
     },
   });
   const stopNavigation = () => {
+    setNavigationDisplayOpen(false);
     guidance.stop();
     navigation.clear();
     setNavigationTarget(null);
@@ -1206,6 +1214,21 @@ export default function Home() {
     ? [...editor.session!.track.segments.flat(), ...branchSavedCandidates]
     : [], [branchEditing, editor.session?.track.segments, branchSavedCandidates]);
   const drawingToScreen = useCallback((point: Coordinate) => map.current?.toScreen(point) ?? null, []);
+  const continueAtVisibleTrack = (point: Coordinate) => {
+    if (tracks.draft.some((segment) => segment.length)) return false;
+    const activeMap = map.current,
+      screen = drawingToScreen(point);
+    if (!activeMap || !screen) return false;
+    const hit = pickTrackContinuation(
+      tracks.saved,
+      screen,
+      (coordinate) =>
+        drawingToScreen(coordinate) ?? { x: Number.POSITIVE_INFINITY, y: Number.POSITIVE_INFINITY },
+      { draftEmpty: true },
+    );
+    if (!hit) return false;
+    return tracks.continueTrack(hit.track.id, { coordinate: hit.coordinate, distance: hit.distance });
+  };
   const drawingSnapViewport = useCallback(() => map.current?.getSnapViewport() ?? null, []);
   const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
     editor.change((value) =>
@@ -1415,8 +1438,8 @@ export default function Home() {
           }
         }}
       >
-        {(focusLock.locked || (panel === null && !follow.blocked && !rallyMode && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
-          disabled={!focusLock.locked && (follow.blocked || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
+        {(focusLock.locked || (panel === null && (!follow.blocked || (tracks.drawing && tracks.editing)) && !rallyMode && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
+          disabled={!focusLock.locked && ((follow.blocked && !(tracks.drawing && tracks.editing)) || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
         <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
           onDrawingInput={(index, event) => comparisonDrawings[index].current?.input(event)}
@@ -2069,8 +2092,13 @@ export default function Home() {
           magnify={(canvas, point) =>
             map.current?.magnify(canvas, point) ?? (() => {})
           }
-          onAnchor={branchEditing ? () => {} : tracks.setAnchor}
-          onVertex={branchEditing ? drawBranchVertex : tracks.addVertex}
+          onAnchor={branchEditing ? () => {} : (point) => {
+            if (!continueAtVisibleTrack(point)) tracks.setAnchor(point);
+          }}
+          onVertex={branchEditing ? drawBranchVertex : (point, section) => {
+            if (section?.length || !continueAtVisibleTrack(point))
+              tracks.addVertex(point, section);
+          }}
           toCoordinate={(point) => map.current?.toCoordinate(point) ?? null}
           onStroke={tracks.addStroke}
         />
@@ -2374,6 +2402,9 @@ export default function Home() {
           !quickAdd &&
           !tracks.editing && (
           <GuidanceCard
+              displayPanel={navigationDisplayOpen && !panel && !rallyMode && !quickAdd && !measurement.active
+                ? <RouteDisplaySettings display={routeDisplay} embedded navigating onClose={() => setNavigationDisplayOpen(false)} /> : undefined}
+              onCloseDisplay={() => setNavigationDisplayOpen(false)}
               telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={displayedFix} />}
               onRally={() => { setPanel(null); setRallyMode(true); }}
               onDisplay={() => {
@@ -2409,9 +2440,6 @@ export default function Home() {
               }}
             />
           )}
-        {navigationDisplayOpen && guidance.active && !panel && !rallyMode && !quickAdd && !editor.session && !measurement.active && !sectionEditing && (
-          <RouteDisplaySettings display={routeDisplay} navigating onClose={() => setNavigationDisplayOpen(false)} />
-        )}
         {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} previewFraction={navigationPreviewFraction} />}
         {rallyMode && navigation.route && <RallyNavigation
           display={routeDisplay}
@@ -2534,7 +2562,6 @@ export default function Home() {
               setPanel('favorites');
             }}
             resumeToken={boxSelectionResumeToken}
-            onResumeActionFlow={() => setPanel(null)}
             selected={collectionSelectedKeys}
             onChange={keys => {
               setCollectionSelectedKeys(keys);
@@ -2542,9 +2569,10 @@ export default function Home() {
             }}
             onExit={() => {
               setBoxSelecting(false);
+              setCollectionSelectedKeys([]);
               setCollectionOutputKey(null);
               setBoxSelectionAction(null);
-              setPanel(collectionSelectedKeys.length ? 'favorites' : null);
+              setPanel(null);
             }}
           />
         )}
@@ -2595,8 +2623,10 @@ export default function Home() {
           onBoxSelect={() => {
             if (boxSelecting) {
               setBoxSelecting(false);
+              setCollectionSelectedKeys([]);
               setCollectionOutputKey(null);
-              setPanel('favorites');
+              setBoxSelectionAction(null);
+              setPanel(null);
               return;
             }
             userBrowse();
@@ -2804,7 +2834,7 @@ export default function Home() {
             measurement.open();
           }}
           keepOpenOnMapInteraction={
-            panel !== null && !['tools', 'time'].includes(panel)
+            panel !== null && panel !== 'time'
           }
           mapPicking={navigation.picking !== null || !!annotations.picking}
           onScanRoute={() => {
@@ -2820,6 +2850,7 @@ export default function Home() {
               ? null
               : panel
           }
+          drawingActive={panel === null && tracks.drawing}
           title={panel === 'sources' ? sourcesNavigation?.title : undefined}
           back={
             selectedAnnotation && panel === 'route'
@@ -2850,7 +2881,6 @@ export default function Home() {
           onActive={(next) => {
             setSectionListOpen(false);
             if (next !== 'annotations') setAdjustingPinId(null);
-            if (next === 'track' && panel !== 'track') tracks.select(null);
             if (next !== panel) setCollectionSelectedKeys([]);
             measurement.close();
             if (
@@ -2859,6 +2889,12 @@ export default function Home() {
               !annotations.select(null)
             )
               return;
+            if (boxSelecting && next !== 'favorites') {
+              setBoxSelecting(false);
+              setCollectionSelectedKeys([]);
+              setCollectionOutputKey(null);
+              setBoxSelectionAction(null);
+            }
             navigation.setPicking(null);
             if (!next && routeChild) {
               setRouteChild(false);
@@ -2870,9 +2906,18 @@ export default function Home() {
             }
             if (next) {
               photos.setSelected(null);
-              tracks.pause();
+              if (next !== 'track') tracks.pause();
               navigation.setPicking(null);
               annotations.setPicking(null);
+            }
+            if (next === 'track') {
+              if (routeChild) {
+                setRouteChild(false);
+                annotations.select(null);
+              }
+              tracks.start();
+              setPanel(null);
+              return;
             }
             setPanel(next);
           }}
@@ -3065,7 +3110,15 @@ export default function Home() {
                 if (entry.kind === 'track') tracks.select(entry.track.id);
                 map.current?.fitCollection(collectionPreviewPoints(entry));
               }}
-              onClose={() => { setPanel(null); }}
+              onClose={() => {
+                if (boxSelecting) {
+                  setBoxSelecting(false);
+                  setCollectionSelectedKeys([]);
+                  setCollectionOutputKey(null);
+                  setBoxSelectionAction(null);
+                }
+                setPanel(null);
+              }}
               onReselect={keys => { setPanel(null); setCollectionSelectedKeys(keys); setBoxSelecting(true); setBoxSelectionResumeToken(token => token + 1); }}
               initialOutputKey={collectionOutputKey}
               initialSelectedKeys={collectionSelectedKeys}

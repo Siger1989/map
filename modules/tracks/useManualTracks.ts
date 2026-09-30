@@ -10,6 +10,11 @@ import { saveWorkbench } from '../collections/workbenchStore';
 import { mergeTrackArchives } from './mergeArchives';
 import { storeJoinedRouteEdit } from './joinedEditStore';
 import {
+  prepareTrackContinuation,
+  trackContinuationDetails,
+  type TrackContinuationStart,
+} from './prepareTrackContinuation';
+import {
   DRAFT_ID,
   equalCoordinate,
   moveTrackNode,
@@ -56,6 +61,7 @@ export function useManualTracks() {
   draftRef.current = draftState;
   const [anchor, setAnchor] = useState<Coordinate | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const continuationDetailsSource = useRef<ManualTrack | null>(null);
   const [copyName, setCopyName] = useState<string | null>(null);
   const [selectedId, select] = useState<string | null>(null);
   const [nodeHistory, setNodeHistory] = useState<ManualTrack[]>([]);
@@ -142,6 +148,7 @@ export function useManualTracks() {
     setDraftState(EMPTY_DRAFT);
     setCopyName(null);
     setEditingId(null);
+    continuationDetailsSource.current = null;
     setAnchor(null);
     setNodeHistory([]);
     startedAt.current = Date.now();
@@ -150,7 +157,7 @@ export function useManualTracks() {
     try {
       const records = savedRef.current;
       const prior = records.find((t) => t.id === editingId);
-      const track = drawingRecord({
+      const drawn = drawingRecord({
         segments: draftRef.current.segments,
         edgeColors: draftRef.current.edgeColors,
         colorConditions: draftRef.current.colorConditions,
@@ -163,6 +170,15 @@ export function useManualTracks() {
         now: Date.now(),
         place: place?.place?.local,
       });
+      const track = continuationDetailsSource.current
+        ? {
+            ...drawn,
+            ...trackContinuationDetails(
+              drawn.segments,
+              continuationDetailsSource.current,
+            ),
+          }
+        : drawn;
       const next = storeDrawingRecord(track, localStorage);
       savedRef.current = next;
       setSaved(next);
@@ -624,36 +640,34 @@ export function useManualTracks() {
       resetDraft();
       setError('');
     },
-    continueTrack: (id: string) => {
-      if (draftRef.current.segments.length && !saveDraft()) return false;
-      const track = savedRef.current.find((t) => t.id === id);
-      if (!track) return false;
-      setCopyName(
-        keepsOriginalPoints(track) ? `${track.name} · 手绘副本` : null,
-      );
-      const nextDraft = {
-        edgeColors: track.edgeColors,
-        colorConditions: track.colorConditions,
-        segments: track.segments,
-        kinds: track.segments.map(() => 'freehand' as const),
-        history: [],
-        pointLine: null,
-        nodes: track.nodes,
-      };
-      draftRef.current = nextDraft;
-      setDraftState(nextDraft);
-      startedAt.current = Date.now();
-      select(DRAFT_ID);
-      setNodeHistory([]);
-      // Editing a recorded/imported time series starts a copy; its original stays immutable.
-      setEditingId(keepsOriginalPoints(track) ? null : id);
-      setAnchor(track.segments.at(-1)?.at(-1) ?? null);
-      setStyle(normalizeTrackStyle(track.style));
-      setEditing(true);
-      setDrawing(true);
-      setVisible(true);
-      setError('');
-      return true;
+    continueTrack: (id: string, startAt?: TrackContinuationStart) => {
+      try {
+        const track = savedRef.current.find((t) => t.id === id);
+        if (!track) throw new Error('路线已不存在，请重新选择。');
+        // Validate/split the target first so a limit error never saves the current draft.
+        const prepared = prepareTrackContinuation(track, startAt);
+        if (draftRef.current.segments.length && !saveDraft()) return false;
+        const nextDraft = prepared.draft;
+        draftRef.current = nextDraft;
+        setDraftState(nextDraft);
+        startedAt.current = Date.now();
+        select(DRAFT_ID);
+        setNodeHistory([]);
+        // Recorded/imported time series start as untimed copies; saved originals remain unchanged.
+        setEditingId(prepared.editingId);
+        setCopyName(prepared.copyName);
+        setAnchor(prepared.anchor);
+        continuationDetailsSource.current = prepared.detailsSource ?? null;
+        setStyle(normalizeTrackStyle(track.style));
+        setEditing(true);
+        setDrawing(true);
+        setVisible(true);
+        setError('');
+        return true;
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '无法继续绘制此路线。');
+        return false;
+      }
     },
     save: saveDraft,
     remove: (id: string) => {

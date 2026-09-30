@@ -32,6 +32,80 @@ const overlayOrder = [
   'position-accuracy',
   'position-dot',
 ];
+const ROAD_LINE_LAYERS = [
+  'rivers',
+  'road-outline',
+  'main-roads',
+  'local-roads',
+  'railways',
+];
+const LINE_BELOW_PLACE_LABELS = new Set([
+  ...ROAD_LINE_LAYERS,
+  'route-outline',
+  'route-path',
+  'route-access',
+  'manual-track-outline',
+  'manual-track-selection-edge',
+  'manual-track-line',
+  'guidance-outline',
+  'guidance-path',
+  'guidance-access',
+  'route-gap-line',
+]);
+const PLACE_LABEL_LAYERS = new Set([
+  'domestic-labels-map',
+  'domestic-labels-image',
+  'domestic-labels-terrain',
+  'road-numbers',
+  'road-names',
+  'city-names',
+  'town-names',
+  'village-names',
+  'neighborhood-names',
+  'peak-names',
+  'water-names',
+]);
+
+/** Keep geographic strokes below visible raster/vector labels; retain annotations above them. */
+export function syncPlaceLabelLayerOrder(map: Map) {
+  const layers = map.getStyle().layers;
+  const present = layers.map((layer) => layer.id);
+  const visibleLabels = layers.filter(
+    (layer) => PLACE_LABEL_LAYERS.has(layer.id) && layer.layout?.visibility !== 'none',
+  );
+  const anchor = visibleLabels.reduce<typeof visibleLabels[number] | undefined>(
+    (first, layer) => !first || present.indexOf(layer.id) < present.indexOf(first.id) ? layer : first,
+    undefined,
+  );
+  const lineLayers = [
+    ...ROAD_LINE_LAYERS,
+    ...overlayOrder.filter((id) => LINE_BELOW_PLACE_LABELS.has(id) && !ROAD_LINE_LAYERS.includes(id)),
+  ].filter((id) => present.includes(id));
+  const topOverlays = overlayOrder.filter(
+    (id) => present.includes(id) && !LINE_BELOW_PLACE_LABELS.has(id),
+  );
+
+  if (anchor) {
+    const index = present.indexOf(anchor.id);
+    const immediatelyBefore = present.slice(Math.max(0, index - lineLayers.length), index);
+    if (immediatelyBefore.length !== lineLayers.length || immediatelyBefore.some((id, i) => id !== lineLayers[i])) {
+      for (const id of lineLayers) map.moveLayer(id, anchor.id);
+    }
+    const current = map.getStyle().layers.map((layer) => layer.id);
+    const suffix = current.slice(-topOverlays.length);
+    if (topOverlays.length && suffix.some((id, i) => id !== topOverlays[i]))
+      for (const id of topOverlays) map.moveLayer(id);
+    return;
+  }
+
+  // Without visible labels, preserve the established overlayOrder exactly;
+  // base roads keep their style position and overlays remain above late roads.
+  const desiredTop = overlayOrder.filter((id) => present.includes(id));
+  const current = map.getStyle().layers.map((layer) => layer.id);
+  const suffix = current.slice(-desiredTop.length);
+  if (desiredTop.length && suffix.some((id, i) => id !== desiredTop[i]))
+    for (const id of desiredTop) map.moveLayer(id);
+}
 
 /** Avoid invalidating terrain drape textures for unchanged geometry or layer order. */
 export function syncOverlayData(map: Map, id: string, data: FeatureCollection) {
@@ -43,14 +117,7 @@ export function syncOverlayData(map: Map, id: string, data: FeatureCollection) {
     source.setData(data);
     snapshots.set(source, serialized);
   }
-  const present = map.getStyle().layers.map((layer) => layer.id);
-  const desired = overlayOrder.filter((layer) => present.includes(layer));
-  const actual = present.slice(-desired.length);
-  if (actual.some((layer, index) => layer !== desired[index])) {
-    // Base roads may load after the route. Keep overlays above them, then leave
-    // the order untouched on subsequent location/recording polls.
-    for (const layer of desired) map.moveLayer(layer);
-  }
+  syncPlaceLabelLayerOrder(map);
   return changed;
 }
 
