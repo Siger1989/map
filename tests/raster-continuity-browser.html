@@ -1,0 +1,75 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>山兔三维连续覆盖对照</title>
+<link rel="stylesheet" href="../node_modules/maplibre-gl/dist/maplibre-gl.css">
+<style>body{margin:12px;background:#18201f;color:#f2f5ed;font:13px system-ui}button{padding:8px;margin:3px}#map{width:390px;height:650px;max-width:100%}pre{white-space:pre-wrap;max-height:240px;overflow:auto}</style>
+<button id="plain">加载标准流程</button><button id="coalesce">仅合并缩放请求</button><button id="overview">加载同源概览原型</button><button id="far">快速拉远</button><button id="near">返回近景</button><button id="east">移到新区域</button><button id="stripe">复现条带视角</button>
+<button id="coverage">测试缺口父片优先</button>
+<pre id="result">独立会话：不读写用户存档。影像与高程错误独立统计。</pre><div id="map"></div>
+<script type="module">
+import * as maplibre from '../node_modules/maplibre-gl/dist/maplibre-gl.mjs';
+import { MapSourceLayer } from '../modules/mapSources/MapSourceLayer.ts';
+import { RasterCoordinates } from '../modules/mapSources/RasterCoordinates.ts';
+import { terrainRenderUrl } from '../modules/terrain/tiles.ts';
+import { rasterOverviewSource } from '../modules/mapSources/rasterOverview.ts';
+import { installRasterCoverage } from '../modules/mapSources/RasterCoverage.ts';
+import { SOURCE_ID } from '../modules/mapSources/types.ts';
+let map, coordinates, sourceLayer, scheme, lastStart=0, variant='', totalErrors={}, errorDetails=[], runs=[], timer, quiescentMs=null, coverageAdapter, idealIDs=[], coverageSamples=[], firstCoveredMs=null;
+const result=document.querySelector('#result');
+const near={center:[103.674162,31.061692],zoom:15.18,bearing:10.1,pitch:23};
+function report(){
+  if(!map || !coordinates || !map.style)return;
+  const rasters=coordinates.snapshot();
+  const imageReady=!!map.getSource(SOURCE_ID)&&map.isSourceLoaded(SOURCE_ID);
+  const outstanding=rasters.started-rasters.completed-rasters.cancelled-rasters.failed;
+  if(quiescentMs===null && rasters.completed>0 && imageReady && !map.isMoving() && outstanding===0 && rasters.input.active===0 && rasters.input.pending===0)quiescentMs=Math.round(performance.now()-lastStart);
+  const manager=map.style.tileManagers[SOURCE_ID];
+  const missing=new Set(idealIDs.filter(id=>!manager?.getTile(id)?.hasData()));
+  const incomplete=manager?manager._retainLoadedChildren({},missing):missing;
+  const visible=manager?.getRenderableIds().map(key=>manager.getTileByID(key)?.tileID).filter(Boolean)??[];
+  const uncovered=[...incomplete].filter(id=>!visible.some(parent=>id.key===parent.key || id.isChildOf(parent))).length;
+  const elapsedMs=Math.round(performance.now()-lastStart);
+  if(idealIDs.length && !map.isMoving() && uncovered===0 && firstCoveredMs===null)firstCoveredMs=elapsedMs;
+  if(idealIDs.length && coverageSamples.length<120 && (!coverageSamples.length || elapsedMs-coverageSamples.at(-1).ms>=200))coverageSamples.push({ms:elapsedMs,uncovered,missing:missing.size});
+  result.textContent=JSON.stringify({variant,zoom:+map.getZoom().toFixed(2),pitch:+map.getPitch().toFixed(1),elapsedMs,quiescentMs,firstCoveredMs,idealCount:idealIDs.length,uncovered,coverageSamples,imageReady,overviewReady:!!map.getSource('qa-overview')&&map.isSourceLoaded('qa-overview'),errors:totalErrors,errorDetails,rasters,runs},null,2);
+}
+async function start(withOverview,coalesce=withOverview,coverage=false){
+  clearInterval(timer);coverageAdapter?.dispose();idealIDs=[];coverageSamples=[];firstCoveredMs=null;
+  if(coordinates){const previous=coordinates;coordinates=undefined;maplibre.removeProtocol(previous.scheme);previous.dispose();}
+  sourceLayer?.clear();map?.remove();
+  if(scheme)maplibre.removeProtocol(scheme);
+  runs=[];totalErrors={};errorDetails=[];variant=coverage?'visible-parent-prototype':withOverview?'same-source-overview':coalesce?'zoom-coalesce':'normal';lastStart=performance.now();
+  result.textContent='加载同一私有图源，地址不输出…';
+  const bundle=await(await fetch('/native/default-map-sources.json')).json();
+  const chosen=bundle.maps.find(s=>s.name.includes('超强'));
+  if(!chosen)throw Error('私有预览图源不可用');
+  maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');maplibre.setWorkerCount(2);
+  map=new maplibre.Map({container:'map',...near,maxPitch:80,attributionControl:false,canvasContextAttributes:{antialias:false},style:{version:8,sources:{elevation:{type:'raster-dem',tiles:[terrainRenderUrl(location.origin)],encoding:'terrarium',tileSize:256,maxzoom:12}},terrain:{source:'elevation',exaggeration:1},layers:[{id:'background',type:'background',paint:{'background-color':'#203b3f'}}]}});
+  map.on('error',e=>{const id=e.sourceId??'render';totalErrors[id]=(totalErrors[id]??0)+1;if(errorDetails.length<12)errorDetails.push({source:id,name:e.error?.name,status:e.error?.status,message:String(e.error?.message??'').replace(/https?:\/\/\S+/g,'[URL hidden]')});report();});
+  map.on('idle',()=>{runs.push({zoom:+map.getZoom().toFixed(2),settledMs:Math.round(performance.now()-lastStart)});report();});
+  await new Promise(resolve=>map.once('style.load',resolve));
+  scheme='qa-map-'+Date.now();
+  sourceLayer=new MapSourceLayer(map,()=>{},scheme); maplibre.addProtocol(scheme,sourceLayer.protocol);
+  await sourceLayer.select({...chosen,id:'benchmark',bytes:0});
+  const ids=[SOURCE_ID];
+  if(withOverview){
+    const main=map.getSource(SOURCE_ID).serialize();
+    const overview=rasterOverviewSource(main,'ovmap-base');
+    overview.maxzoom=Math.min(overview.maxzoom??22,Math.max(overview.minzoom??0,5));
+    map.addSource('qa-overview',overview);
+    map.addLayer({id:'qa-overview',type:'raster',source:'qa-overview',paint:{'raster-fade-duration':0}},SOURCE_ID);
+    ids.push('qa-overview');
+  }
+  coordinates=new RasterCoordinates(map,sourceLayer.protocol,scheme);
+  if(!coalesce)coordinates.coalesceZoom=async()=>{};
+  maplibre.addProtocol(coordinates.scheme,coordinates.protocol);
+  const sync=()=>coordinates.sync(ids,chosen.datum??'gcj02');
+  map.on('sourcedata',sync);sync();
+  if(coverage)coverageAdapter=installRasterCoverage(map,[SOURCE_ID]);
+  const manager=map.style.tileManagers[SOURCE_ID];
+  const retain=manager._updateRetainedTiles;
+  manager._updateRetainedTiles=function(ideal,zoom){idealIDs=ideal;return retain.call(this,ideal,zoom);};
+  timer=setInterval(report,500);report();
+}
+document.getElementById('coverage').onclick=()=>start(false,true,true).catch(e=>{result.textContent='FAIL '+e.name+': '+String(e.message).replace(/https?:\/\/\S+/g,'[URL hidden]');});
+for(const [id,fn]of [['plain',()=>start(false)],['coalesce',()=>start(false,true)],['overview',()=>start(true)],['far',()=>map.easeTo({zoom:7,pitch:65,duration:1000})],['near',()=>map.easeTo({...near,duration:1000})],['east',()=>map.easeTo({...near,center:[103.710162,31.061692],duration:1000})],['stripe',()=>map.easeTo({center:[103.6824,31.1095],zoom:10.27,bearing:14.9,pitch:72.3,duration:1000})]])document.getElementById(id).onclick=()=>{lastStart=performance.now();quiescentMs=null, coverageAdapter, idealIDs=[], coverageSamples=[], firstCoveredMs=null;Promise.resolve().then(fn).catch(e=>{result.textContent='FAIL '+e.name+': '+(e.message?.includes('http')?'请求异常，地址隐藏':e.message);});};
+</script></html>

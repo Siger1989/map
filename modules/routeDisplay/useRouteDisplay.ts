@@ -77,7 +77,7 @@ export function useRouteDisplay(
         )
           .filter((s) => s.kind !== 'access')
           .map((s) => s.coordinates),
-        style: { ...DEFAULT_TRACK_STYLE, color: '#59dcff', width: 4 },
+        style: { ...DEFAULT_TRACK_STYLE, color: '#59dcff', width: 4, opacity: route.route.displayOpacity ?? 1 },
       });
     return values;
   }, [tracks.saved, tracks.visible, tracks.draft, tracks.style, route.route]);
@@ -120,24 +120,35 @@ export function useRouteDisplay(
         : undefined,
     [data, profile, mode],
   );
-  const styledTracks = useMemo(() => {
-    if (!data) return tracks.saved;
-    return tracks.saved.map(t => t.id === data.id && (t.style?.colorMode ?? 'solid') !== mode
-      ? { ...t, style: { ...(t.style ?? DEFAULT_TRACK_STYLE), colorMode: mode } }
-      : t);
-  }, [tracks.saved, data?.id, mode]);
+  const displayTarget = tracks.saved.find(t => t.id === data?.id);
+  // Selecting another node changes the overlay container, not route geometry.
+  // Keep the display track and analysis wrapper stable for TrackLayer's diff path.
+  const styledTarget = useMemo(() => displayTarget && (displayTarget.style?.colorMode ?? 'solid') !== mode
+    ? { ...displayTarget, style: { ...(displayTarget.style ?? DEFAULT_TRACK_STYLE), colorMode: mode } }
+    : displayTarget, [displayTarget, mode]);
+  const styledTracks = useMemo(() => styledTarget === displayTarget ? tracks.saved
+    : tracks.saved.map(t => t === displayTarget ? styledTarget! : t), [tracks.saved, displayTarget, styledTarget]);
+  const analysisParts = useMemo(() => data && parts ? {
+    trackId: data.id,
+    parts,
+    // Keep the exact geometry identities used to derive the colored parts.
+    // Terrain profiles may insert display-only coordinates between editable
+    // vertices; TrackLayer needs both paths to move those samples with a node.
+    sourceSegments: data.segments,
+    profileSegments: (mode === 'speed' ? data : profile)?.segments,
+  } : undefined, [data?.id, data?.segments, parts, mode, profile?.segments]);
   const displayTracks = useMemo(
     () => ({
       ...tracks,
       analysisMarkers: warnings,
-      analysisParts: data && parts ? { trackId: data.id, parts } : undefined,
+      analysisParts,
       style:
         data?.id === DRAFT_ID
           ? { ...tracks.style, colorMode: mode }
           : tracks.style,
       saved: styledTracks,
     }),
-    [tracks, data, mode, parts, warnings, styledTracks],
+    [tracks, data, mode, analysisParts, warnings, styledTracks],
   );
   const displayRoute = useMemo(
     () => ({

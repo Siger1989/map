@@ -4,6 +4,7 @@ export type PositionFix = {
   accuracy: number;
   timestamp: number;
   source?: 'gps' | 'network';
+  provider?: 'ip';
   speed?: number;
   heading?: number;
   headingAccuracy?: number;

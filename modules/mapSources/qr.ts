@@ -1,5 +1,8 @@
 import jsQR from 'jsqr';
 
+const IMAGE_CROP_LIMIT = 12;
+const IMAGE_CROP_MAX_SIDE = 1200;
+
 export function decodeQr(
   image: CanvasImageSource,
   width: number,
@@ -25,7 +28,16 @@ export async function readQr(file: File): Promise<string> {
   if (file.size > 20 * 1024 * 1024) throw new Error('二维码图片不能超过 20 MB');
   const bitmap = await createImageBitmap(file);
   try {
-    const result = decodeQr(bitmap, bitmap.width, bitmap.height) || (bitmap.height>bitmap.width ? decodeQr(bitmap,bitmap.width,bitmap.height,{x:0,y:Math.max(0,bitmap.height-bitmap.width),width:bitmap.width,height:Math.min(bitmap.width,bitmap.height)}) : null);
+    // The first pass handles ordinary images. Long screenshots often shrink
+    // small QR codes below a useful module size, so retry a bounded set of
+    // native-resolution square windows across the image.
+    let result = decodeQr(bitmap, bitmap.width, bitmap.height);
+    if (!result) {
+      for (const crop of imageQrCrops(bitmap.width, bitmap.height)) {
+        result = decodeQr(bitmap, bitmap.width, bitmap.height, crop);
+        if (result) break;
+      }
+    }
     if (!result)
       throw new Error('没有找到二维码，请选择清晰、完整的二维码图片');
     if (result.length > 100000) throw new Error('二维码内容过长');
@@ -33,4 +45,27 @@ export async function readQr(file: File): Promise<string> {
   } finally {
     bitmap.close();
   }
+}
+
+function imageQrCrops(width: number, height: number) {
+  const side = Math.floor(Math.min(width, height, IMAGE_CROP_MAX_SIDE));
+  if (side <= 0) return [];
+  const positions = (length: number) => {
+    if (length <= side) return [0];
+    const last = length - side;
+    const step = Math.max(1, Math.floor(side / 2));
+    const values: number[] = [];
+    for (let position = 0; position < last; position += step) values.push(position);
+    values.push(last);
+    return values;
+  };
+  const candidates = positions(width)
+    .flatMap((x) =>
+      positions(height).map((y) => ({ x, y, width: side, height: side })),
+    )
+    .filter((crop) => crop.width !== width || crop.height !== height);
+  if (candidates.length <= IMAGE_CROP_LIMIT) return candidates;
+  return Array.from({ length: IMAGE_CROP_LIMIT }, (_, index) =>
+    candidates[Math.round((index * (candidates.length - 1)) / (IMAGE_CROP_LIMIT - 1))],
+  );
 }

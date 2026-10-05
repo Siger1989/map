@@ -224,13 +224,13 @@
   min-height: 44px;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-visual {
-  padding-bottom: 7px;
+  padding-bottom: 16px;
   transform: none;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-visual::after {
   border-left-width: 5px;
   border-right-width: 5px;
-  border-top-width: 7px;
+  border-top-width: 16px;
   filter: none;
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {
@@ -501,6 +501,56 @@
 .observatory[data-placing-annotation='true'] .map-canvas {
   cursor: crosshair;
 }
+
+/* User-requested compact marker controls: preserve every action while reducing
+   the full editing surface below the shared standard sizes. */
+.observatory[data-panel='annotations'] .control-popover {
+  width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
+  padding: 0 6px 6px;
+}
+.observatory[data-panel='annotations'] .dock-content { padding-top: 4px; }
+.annotation-panel { gap: 4px; font-size: 12px; }
+.annotation-panel button,
+.annotation-panel input,
+.annotation-panel select,
+.annotation-panel textarea { font-size: 12px; }
+.annotation-panel button { min-height: 30px; padding: 3px 5px; border-radius: 4px; }
+.annotation-add, .annotation-grid { gap: 4px; }
+.annotation-list { gap: 4px; }
+.annotation-list > div { gap: 4px; }
+.annotation-list button { gap: 5px; }
+.annotation-list small { font-size: 11px; }
+.annotation-editor, .annotation-browse { gap: 4px; }
+.annotation-field { gap: 3px; }
+.annotation-field input,
+.annotation-field select,
+.annotation-field textarea { min-height: 30px; padding: 4px; border-radius: 4px; font-size: 13px; }
+.annotation-actions { gap: 4px; }
+.annotation-details summary { padding: 4px 0; }
+.annotation-details[open] > :not(summary) { margin-top: 5px; }
+.annotation-metrics { gap: 3px; padding: 6px; border-radius: 4px; }
+.annotation-comparison td, .annotation-comparison th { padding: 4px 3px; }
+.annotation-toolbar, .annotation-tabs { gap: 3px; }
+.annotation-toolbar select { min-height: 30px; font-size: 13px; }
+.annotation-add { gap: 3px; }
+.annotation-add button { padding: 3px 2px; font-size: 11px; line-height: 1.15; }
+.annotation-fields, .annotation-scroll { gap: 5px; padding: 1px; }
+.annotation-list input[type='checkbox'] { width: 20px; height: 28px; }
+.annotation-location { font-size: 11px; padding: 4px; border-radius: 4px; }
+.annotation-location header button { min-height: 28px; font-size: 11px; }
+.annotation-location dl { gap: 3px; margin: 4px 0; }
+.annotation-logo-current { gap: 5px; }
+.annotation-logo-grid button { padding: 3px 1px; }
+.annotation-attribute-head { grid-template-columns: 1fr 1.3fr 30px; font-size: 11px; }
+.annotation-attribute-row { grid-template-columns: minmax(0,1fr) minmax(0,1.3fr) 30px; gap: 2px; }
+.annotation-attribute-row input, .annotation-attribute-row textarea { min-height: 30px; padding: 3px; font-size: 12px; }
+.annotation-input-done { min-height: 28px; }
+.observatory.home-map[data-panel='annotations'] .control-popover { width: min(280px, calc(100% - var(--edge-left) - var(--edge-right) - 46px)); padding: 0 5px 5px; }
+.observatory.home-map[data-panel='annotations'] .control-popover .dock-heading { min-height: 30px; height: 30px; padding: 2px 5px; }
+.observatory.home-map[data-panel='annotations'] .control-popover .dock-heading .icon-button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; flex-basis: 28px; }
+.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel button { min-height: 30px; font-size: 12px; border-radius: 4px; }
+.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel :is(input,select,textarea) { min-height: 30px; font-size: 13px; }
+.observatory.home-map[data-panel='annotations'] .control-popover .annotation-panel .annotation-field :is(input,select,textarea) { min-height: 30px; }
 .selection-tools.is-annotation {
   top: calc(52px + var(--safe-top));
   bottom: auto;
@@ -515,3 +565,4 @@
 .selection-tools.is-annotation span {
   margin: 3px 0 6px;
 }
+.observatory.home-map .control-popover .annotation-panel :is(button,input,select,summary):not([type='range']):not([type='color']):not([type='checkbox']):not([type='radio']) { min-height:28px; }

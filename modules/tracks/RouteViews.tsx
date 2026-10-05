@@ -5,9 +5,10 @@ import { hasTrackTime } from './provenance';
 import { TrackColorProfile } from './TrackColorProfile';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
+import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import { RouteSelectionFields } from './RouteSelectionFields';
 import type { PointDetail } from './selectionDetails';
 import type { BoxSelectionMode } from '../collections/boxSelection';
@@ -38,7 +39,7 @@ import { AnnotationTypeOptions } from '../annotations/AnnotationTypeOptions';
 import { formatDistance, type Coordinate, type RoutePlace } from '../navigation/types';
 import type { VisiblePhoto } from '../photos/storage';
 import { photosForTrack } from '../photos/trackPhotos';
-import { DRAFT_ID } from './editing';
+import { DRAFT_ID, equalCoordinate } from './editing';
 import { drawingTime } from './archive';
 import { trackSourceLabel } from './provenance';
 import { trackAlternatives } from './alternatives';
@@ -70,6 +71,7 @@ export function RouteDetails({
   markers,
   photos,
   onBack,
+  onHide,
   onShare,
   onPointShare,
   onMarker,
@@ -88,6 +90,7 @@ export function RouteDetails({
   markers: Annotation[];
   photos: VisiblePhoto[];
   onBack: () => void;
+  onHide?: () => void;
   onShare: () => void;
   onPointShare?: (place: RoutePlace) => void;
   onMarker: (id: string) => void;
@@ -131,6 +134,11 @@ export function RouteDetails({
         aria-label="路线详情"
       >
         <header>
+          {onHide && (track.source === 'recorded' || hasTrackTime(track)) && (
+            <button className="route-hide" aria-label={`${track.hidden ? '显示' : '隐藏'}实走行程`} title={`${track.hidden ? '显示' : '隐藏'}实走行程`} aria-pressed={!track.hidden} onClick={onHide}>
+              {track.hidden ? '显示' : '隐藏'}
+            </button>
+          )}
           <RouteBack
             onBack={() => (confirmDelete ? setConfirmDelete(false) : onBack())}
           />
@@ -331,13 +339,15 @@ export function RouteEditToolbar({
   onSnapping,
   onRoadSnapping,
   onRiverSnapping,
+  onName,
 }: {
   session: RouteEditSession;
   snapName?: string;
   error: string;
-  onBack: () => void;
-  onSave: () => void;
-  onSaveCopy?: () => void;
+  onBack: (name?: string) => void;
+  onSave: (name?: string) => void;
+  onSaveCopy?: (name?: string) => void;
+  onName: (name: string) => void;
   onAdd: () => void;
   onRemove: () => void;
   onSelectionMode: (mode: BoxSelectionMode | null) => void;
@@ -359,6 +369,15 @@ export function RouteEditToolbar({
 }) {
   const dock = useDockClearance('--route-edit-clearance');
   const [view, setView] = useState<'tools' | 'selection' | 'style' | 'marker'>('tools');
+  const [routeName, setRouteName] = useState(session.track.name);
+  const routeNameBuffer = useRef(session.track.name);
+  const committedRouteName = useRef(session.track.name);
+  const composingName = useRef(false);
+  useEffect(() => {
+    routeNameBuffer.current = session.track.name;
+    committedRouteName.current = session.track.name;
+    setRouteName(session.track.name);
+  }, [session.track.name]);
   const selectedCount = selectedPoints.length;
   const activeView = (view === 'selection' && !selectedCount) || (view === 'marker' && selectedCount !== 1) ? 'tools' : view;
   useEffect(() => {
@@ -371,6 +390,22 @@ export function RouteEditToolbar({
   };
   const style = normalizeTrackStyle(session.track.style),
     branch = session.branch !== null;
+  const commitRouteName = (raw = routeNameBuffer.current) => {
+    const name = raw.trim().slice(0, 60);
+    if (!name) {
+      routeNameBuffer.current = session.track.name;
+      committedRouteName.current = session.track.name;
+      setRouteName(session.track.name);
+      return session.track.name;
+    }
+    routeNameBuffer.current = name;
+    setRouteName(name);
+    if (name !== committedRouteName.current) {
+      committedRouteName.current = name;
+      onName(name);
+    }
+    return name;
+  };
   return (
     <>
       <section
@@ -387,12 +422,39 @@ export function RouteEditToolbar({
           returnToTools();
         }}
       >
-        <header className="route-edit-dock-heading">
+        <header className="route-edit-dock-heading" data-edit-tools={activeView === 'tools' ? 'true' : undefined}>
           {activeView !== 'tools' && <button autoFocus aria-label="返回编辑工具" onClick={returnToTools}><ArrowLeft size={16} />返回</button>}
-          <strong>{activeView === 'tools' ? '编辑路线' : activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点属性 · ${selectedCount}点`}</strong>
-          {activeView === 'tools' && <><small>{session.history.length ? '未保存' : ''}</small>
-          <button onClick={onBack}>退出编辑</button>
-          <button className="route-solid" onClick={onSave}>保存并退出</button></>}
+          {activeView === 'tools' ? <>
+            <div className="route-edit-name-row">
+              <input className="route-edit-name-input" aria-label="路线名称" value={routeName} maxLength={60}
+                onChange={event => { routeNameBuffer.current = event.currentTarget.value; setRouteName(event.currentTarget.value); }}
+                onCompositionStart={() => { composingName.current = true; }}
+                onCompositionEnd={event => { composingName.current = false; routeNameBuffer.current = event.currentTarget.value; setRouteName(event.currentTarget.value); }}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    routeNameBuffer.current = session.track.name;
+                    committedRouteName.current = session.track.name;
+                    setRouteName(session.track.name);
+                    return;
+                  }
+                  if (event.key !== 'Enter' || event.nativeEvent.isComposing || composingName.current) return;
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }}
+                onBlur={() => { if (!composingName.current) commitRouteName(); }} />
+              <ComparisonEditorPositionButton kind="路线"/>
+            </div>
+            <div className="route-edit-heading-actions">
+              <small>{session.history.length ? '未保存' : ''}</small>
+              <button onClick={() => onBack(commitRouteName())}>退出编辑</button>
+              <button className="route-solid" onClick={() => onSave(commitRouteName())}>保存并退出</button>
+            </div>
+          </> : <>
+            <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点属性 · ${selectedCount}点`}</strong>
+            <ComparisonEditorPositionButton kind="路线"/>
+          </>}
         </header>
         <div className="route-edit-primary" hidden={activeView !== 'tools'}>
         <div className="route-edit-mode-row" role="group" aria-label="路线编辑方式">
@@ -449,7 +511,8 @@ export function RouteEditToolbar({
           <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
           <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
           <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
-          <button data-edit-entry="selection" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>节点属性</button>
+          <button data-edit-entry="selection" aria-label="节点属性" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>属性</button>
+          <button className="route-set-endpoint" disabled={selectedCount !== 1 || branch} aria-pressed={selectedCount === 1 && !!session.track.routeTerminals?.end && equalCoordinate(selectedPoints[0],session.track.routeTerminals.end)} onClick={onSetEnd}>设终点</button>
         </div>
         </div>
         {activeView === 'selection' && <RouteSelectionFields key={`${selectedPoints.map(p => p.join(',')).join(';')}:${session.history.length}`} track={session.track} points={selectedPoints} onApply={onSelectionDetails} onMarker={()=>{onSelectionMode(null);setView('marker');}} onSetEnd={onSetEnd} />}
@@ -511,7 +574,7 @@ export function RouteEditToolbar({
         {error && (
           <p role="alert" className="route-window-error">
             {error}
-            {error.includes('其他窗口更新') && onSaveCopy && <button onClick={onSaveCopy}>另存副本并退出</button>}
+            {error.includes('其他窗口更新') && onSaveCopy && <button onClick={() => onSaveCopy(commitRouteName())}>另存副本并退出</button>}
           </p>
         )}
       </section>

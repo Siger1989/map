@@ -12,13 +12,14 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError, onLocateGap }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
   onDisplay?: () => void;
   onDelete?: () => boolean;
   onClearError?: () => void;
+  onLocateGap?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -78,6 +79,12 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button onClick={() => setConfirmDelete(false)}>取消</button>
       <button className="route-danger" onClick={() => { if (onDelete?.()) setConfirmDelete(false); }}>确认删除</button>
     </div>}
-    {error && <p role="alert">{error}{onClearError && <button onClick={onClearError}>关闭提示</button>}</p>}
+    {error && <div className="home-route-error" role="alert">
+      {onLocateGap
+        ? <button type="button" className="home-route-error-message" title={error} aria-label={`查看轨迹断开处：${error}`} onClick={onLocateGap}>{error}</button>
+        : <span className="home-route-error-message">{error}</span>}
+      {onLocateGap && <button type="button" className="home-route-gap-button" onClick={onLocateGap}>查看断开处</button>}
+      {onClearError && <button type="button" className="home-route-error-close" onClick={onClearError}>关闭提示</button>}
+    </div>}
   </section>;
 }

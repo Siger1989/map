@@ -3,6 +3,7 @@ html {
   --ui-radius-card: 8px;
   --ui-radius-control: 4px;
   --ui-shadow: 0 5px 20px #00000026;
+  --ui-compact-control-height: 28px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] {
   --home-header-height: 48px;
@@ -12,7 +13,11 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] {
   --ui-controls-bottom: calc(var(--home-footer) + 84px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']::before {
-  height: calc(var(--home-top) + var(--home-header-height));
+  /* Give the shared 18px blur three radii of space above the visible band.
+     Clip the fill back to the header, without moving the map or controls. */
+  top: -54px;
+  height: calc(var(--home-top) + var(--home-header-height) + 54px);
+  clip-path: inset(54px -28px -28px);
   background: var(--ui-surface);
   box-shadow: var(--ui-glass-shadow);
 }
@@ -56,7 +61,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-map
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions > button[aria-pressed='true'] { color: var(--ui-accent); background: transparent; border-color: transparent; box-shadow:none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-position-dock .position-dock-button[aria-pressed='true'],.home-position-dock .position-dock-button[aria-expanded='true']) { color: var(--ui-accent); background: var(--ui-selected); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-map-actions > button.dimension-button { font-size: 16px; font-weight: 650; }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-locate-button { color: var(--ui-accent); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-locate-button { color: var(--ui-ink); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-locate-button[aria-pressed='true'] { color: var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-position-dock .position-dock-button small { color: inherit; font-size: 10px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.global-focus-lock,.home-recording .home-recording-toggle) { color: var(--ui-ink); background: var(--ui-surface); border: 0; border-radius: var(--ui-radius-control); box-shadow: var(--ui-shadow); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-recording .home-recording-toggle { color: var(--ui-accent); }
@@ -250,4 +256,20 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='t
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:not([data-focus-locked='true']) .home-position-dock {
     right: calc(var(--home-right) + 76px);
   }
+}
+
+/* Keep close and remove X marks a muted gold across both theme palettes. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(button:has(svg.lucide-x),button[aria-label*='关闭']),
+html[data-ui-theme] :is(.collection-workbench,.photo-lightbox,.layout-editor-panel,.layout-mobile,.floating-search,.text-suggestions) :is(button:has(svg.lucide-x),button[aria-label*='关闭']) {
+  color:var(--ui-close);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] button[aria-label='收起定位提示'],
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] button[aria-label^='删除属性 '],
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] button[aria-label^='删除数据 '],
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] button[aria-label='取消沿线选点'] {
+  color:var(--ui-close);
+}
+/* The route header sets a more specific muted colour for all its buttons. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.route-panel,.route-summary) .dock-heading :is(button:has(svg.lucide-x),button[aria-label*='关闭']) {
+  color:var(--ui-close);
 }

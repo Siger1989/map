@@ -30,6 +30,9 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (bounded(value.geologyOpacity, 0, 1)) result.geologyOpacity = value.geologyOpacity;
     if (bounded(value.roadsOpacity, 0, 1)) result.roadsOpacity = value.roadsOpacity;
     if (bounded(value.opacity, 0, 1)) result.opacity = value.opacity;
+    if (bounded(value.cloudOpacity, 0, 1)) result.cloudOpacity = value.cloudOpacity;
+    // Historic observation times are session-only; reopening follows the latest frame.
+    delete result.cloudTime;
     if (bounded(value.exaggeration, 0.1, 5)) result.exaggeration = value.exaggeration;
     if (value.rasterLevel === null || bounded(value.rasterLevel, 0, 24)) result.rasterLevel = value.rasterLevel;
     // Retired offline packages must not cap normal online map detail.
@@ -44,7 +47,7 @@ export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): 
 }
 
 export function saveLayerPreferences(settings: LayerSettings): void {
-  const { rasterDatums: _rasterDatums, offlineMaxZoom: _offlineMaxZoom, ...layers } = settings;
+  const { rasterDatums: _rasterDatums, offlineMaxZoom: _offlineMaxZoom, cloudTime: _cloudTime, ...layers } = settings;
   try {
     const current = localStorage.getItem(LAYER_PREFERENCES_KEY);
     if (current) {

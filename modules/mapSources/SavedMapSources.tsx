@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MapSource } from './types';
 import './savedMapSources.css';
 import { getMapSourcesSessionState, updateMapSourcesSessionState, type SavedSourceFilter } from './sessionState';
+import { readFavoriteSourceKeys, savedMapSourceFavoriteKey, subscribeFavoriteSourceKeys, writeFavoriteSourceKeys } from './favorites';
 
 type Filter = SavedSourceFilter;
 
@@ -25,17 +26,39 @@ export function SavedMapSources({
   const [query, setQuery] = useState(() => getMapSourcesSessionState().savedQuery);
   const [filter, setFilter] = useState<Filter>(() => getMapSourcesSessionState().savedFilter);
   const [confirming, setConfirming] = useState('');
+  const [favoriteKeys, setFavoriteKeys] = useState(() => readFavoriteSourceKeys());
+  const [favoriteError, setFavoriteError] = useState(false);
+  const favorites = useMemo(() => new Set(favoriteKeys), [favoriteKeys]);
+
+  useEffect(() => subscribeFavoriteSourceKeys(setFavoriteKeys), []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const available = new Set(maps.map(map => map.id));
+    const next = favoriteKeys.filter(key => !key.startsWith('saved:') || available.has(key.slice('saved:'.length)));
+    if (next.length !== favoriteKeys.length) {
+      setFavoriteKeys(next);
+      writeFavoriteSourceKeys(next);
+    }
+  }, [favoriteKeys, maps, ready]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase();
     return maps.filter((map) => {
         const online = map.kind === 'online';
+        const matchesKind = filter === 'all' || filter === 'favorites' || (filter === 'online' ? online : !online);
         return (
-          (filter === 'all' || (filter === 'online' ? online : !online)) &&
+          matchesKind && (filter !== 'favorites' || favorites.has(savedMapSourceFavoriteKey(map.id))) &&
           (!needle || map.name.toLocaleLowerCase().includes(needle))
         );
       });
-  }, [filter, maps, query]);
+  }, [favorites, filter, maps, query]);
+  const groups = useMemo(() => ({
+    common: filtered.filter(map => favorites.has(savedMapSourceFavoriteKey(map.id))),
+    online: filtered.filter(map => !favorites.has(savedMapSourceFavoriteKey(map.id)) && map.kind === 'online'),
+    offline: filtered.filter(map => !favorites.has(savedMapSourceFavoriteKey(map.id)) && map.kind !== 'online'),
+  }), [favorites, filtered]);
+  const showFavoriteHint = !query.trim() && !favoriteKeys.some(key => key.startsWith('saved:')) && (filter === 'all' || filter === 'favorites');
   const selectedMap = maps.find((map) => map.id === selected);
   const selectedHidden =
     !!selectedMap && !filtered.some((map) => map.id === selected);
@@ -77,10 +100,12 @@ export function SavedMapSources({
           onChange={(event) => updateFilter(event.currentTarget.value as Filter)}
         >
           <option value="all">全部</option>
+          <option value="favorites">常用</option>
           <option value="online">在线</option>
           <option value="offline">离线</option>
         </select>
       </div>
+      {favoriteError && <p className="saved-map-sources__message" role="status">常用设置未能保存</p>}
 
       {!ready ? (
         <p className="saved-map-sources__message" role="status">正在读取本机图源…</p>
@@ -91,7 +116,7 @@ export function SavedMapSources({
             添加图源
           </button>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && !showFavoriteHint ? (
         <div className="saved-map-sources__empty" role="status">
           <p>没有符合条件的图源</p>
           {selectedHidden && <p>当前图源“{selectedMap.name}”不在此筛选结果中。</p>}
@@ -113,12 +138,20 @@ export function SavedMapSources({
               当前图源“{selectedMap.name}”不在此筛选结果中。
             </p>
           )}
-          <ul className="saved-map-sources__list">
-            {filtered.map((map) => {
+          {(['common', 'online', 'offline'] as const).map(group => {
+            const title = group === 'common' ? '常用' : group === 'online' ? '在线' : '离线';
+            const items = groups[group];
+            if (!items.length && !(group === 'common' && showFavoriteHint)) return null;
+            return <section className="saved-map-sources__group" data-group={group} aria-label={`${title}图源`} key={group}>
+              <h4>{title}</h4>
+              {!items.length && group === 'common' && showFavoriteHint ? <small className="saved-map-sources__favorite-hint">点☆加入常用</small> : <ul className="saved-map-sources__list">
+            {items.map((map) => {
               const isSelected = map.id === selected;
               const isConfirming = confirming === map.id;
+              const favoriteKey = savedMapSourceFavoriteKey(map.id);
+              const isFavorite = favorites.has(favoriteKey);
               return (
-                <li className="saved-map-sources__item" key={map.id}>
+                <li className="saved-map-sources__item" key={map.id} data-group={group}>
                   <button
                     className="saved-map-sources__choice"
                     type="button"
@@ -129,6 +162,23 @@ export function SavedMapSources({
                   >
                     <span className="saved-map-sources__name">{map.name}</span>
                   </button>
+                  {!isConfirming && <button
+                    className="saved-map-sources__favorite"
+                    type="button"
+                    aria-label={`${isFavorite ? '移出' : '加入'}常用：${map.name}`}
+                    aria-pressed={isFavorite}
+                    title={isFavorite ? '移出常用' : '加入常用'}
+                    disabled={busy}
+                    onClick={() => {
+                      const next = isFavorite ? favoriteKeys.filter(key => key !== favoriteKey) : [...favoriteKeys, favoriteKey];
+                      if (writeFavoriteSourceKeys(next)) {
+                        setFavoriteKeys(next);
+                        setFavoriteError(false);
+                      } else {
+                        setFavoriteError(true);
+                      }
+                    }}
+                  >{isFavorite ? '★' : '☆'}</button>}
                   {isConfirming ? (
                     <div className="saved-map-sources__confirm" aria-label={`确认移除${map.name}`}>
                       <span>移除此图源？</span>
@@ -160,7 +210,9 @@ export function SavedMapSources({
                 </li>
               );
             })}
-          </ul>
+              </ul>}
+            </section>;
+          })}
         </>
       )}
     </section>

@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useEffect,
+  useLayoutEffect,
   useImperativeHandle,
   useRef,
   useMemo,
@@ -17,13 +18,20 @@ import { PointMagnifier, type MagnifierObserver } from './PointMagnifier';
 import type { RoadSnapper } from './roadSnapping';
 import { riverHint } from './riverSnapping';
 import type { SnapViewport } from './snapping';
-export type TrackDrawingHandle = { input: (event: DrawingInput) => void };
+import type { TrackRenderReceipt } from './trackRenderHandoff';
+export type TrackDrawingHandle = {
+  input: (event: DrawingInput) => void;
+  retainCommit: (receipt: TrackRenderReceipt, line: Coordinate[]) => void;
+};
+type CommitInk = { receipt: TrackRenderReceipt; paths: string[]; style: TrackStyle };
 
 /** Visual-only overlay: touches continue to the map's native two-finger handlers. */
 export const TrackDrawing = forwardRef<
   TrackDrawingHandle,
   {
     enabled: boolean;
+    committedSegments?: Coordinate[][];
+    waitForCommit?: (receipt: TrackRenderReceipt, done: () => void) => () => void;
     distanceSegments?: Coordinate[][];
     length: number;
     style: TrackStyle;
@@ -49,6 +57,20 @@ export const TrackDrawing = forwardRef<
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [preview, setPreview] = useState<DrawingPreview | null>(null),
     [hint, setHint] = useState('');
+  const [commitInk, setCommitInk] = useState<CommitInk | null>(null);
+  const pendingInk = useRef<CommitInk | null>(null);
+  const stopWaiting = useRef<(() => void) | null>(null);
+  const clearCommit = () => {
+    stopWaiting.current?.();
+    stopWaiting.current = null;
+    pendingInk.current = null;
+    setCommitInk(null);
+  };
+  useEffect(() => () => stopWaiting.current?.(), []);
+  useLayoutEffect(() => {
+    // Undo, exit, or a different edit invalidates this accepted geometry.
+    if (pendingInk.current && p.committedSegments !== pendingInk.current.receipt.segments) clearCommit();
+  }, [p.committedSegments]);
   const committedDistance = useMemo(() => trackDistance(p.distanceSegments ?? []), [p.distanceSegments]);
   useEffect(() => {
     if (!p.enabled || !svg.current) {
@@ -70,6 +92,20 @@ export const TrackDrawing = forwardRef<
     setPreview(null);
   }, [p.mode, p.anchor, p.roadSnapping, p.riverSnapping]);
   useImperativeHandle(ref, () => ({
+    retainCommit: (receipt, line) => {
+      if (!p.waitForCommit || line.length < 2) return;
+      const screen = line.map(p.toScreen);
+      if (screen.some(point => !point)) return;
+      const path = screen.map((point, index) => `${index ? 'L' : 'M'} ${point!.x} ${point!.y}`).join(' ');
+      stopWaiting.current?.();
+      const previous = pendingInk.current;
+      const ink = { receipt, paths: [...(previous?.receipt.trackId === receipt.trackId ? previous.paths : []), path], style: p.style };
+      pendingInk.current = ink;
+      setCommitInk(ink);
+      stopWaiting.current = p.waitForCommit(receipt, () => {
+        if (pendingInk.current === ink) clearCommit();
+      });
+    },
     input: (event) => {
       if (!p.enabled) {
         session.current.clear();
@@ -97,7 +133,7 @@ export const TrackDrawing = forwardRef<
       if (result.stroke) p.onStroke(result.stroke);
     },
   }));
-  if (!p.enabled) return null;
+  if (!p.enabled && !commitInk) return null;
   const anchor = p.anchor && p.toScreen(p.anchor),
     handle = anchor && handlePoint(anchor, p.length, size.height);
   const last = p.lastVertex && p.toScreen(p.lastVertex);
@@ -118,6 +154,12 @@ export const TrackDrawing = forwardRef<
   return (
     <>
       <svg ref={svg} className="track-drawing" aria-hidden="true">
+        {commitInk && <g data-drawing-commit="pending">
+          {commitInk.paths.map((path, index) => <g key={index}>
+            <path d={path} fill="none" stroke="white" strokeOpacity={.65 * (commitInk.style.opacity ?? 1)} strokeWidth={commitInk.style.width + 2} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={path} fill="none" stroke={commitInk.style.color} strokeOpacity={commitInk.style.opacity ?? 1} strokeWidth={commitInk.style.width} strokeLinecap="round" strokeLinejoin="round" />
+          </g>)}
+        </g>}
         {!preview && p.mode === 'freehand' && anchor && handle && (
           <g>
             <line
@@ -251,9 +293,9 @@ export const TrackDrawing = forwardRef<
           top: Math.max(4, Math.min(size.height-28, distanceTip.y+(labelBelow?12:-52))),
         }}>{distanceText}</output>
       )}
-      <div className="track-draw-hint glass" role="status">
+      {p.enabled && <div className="track-draw-hint glass" role="status">
         {instruction}
-      </div>
+      </div>}
     </>
   );
 });

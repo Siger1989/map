@@ -115,7 +115,7 @@
   gap: 4px;
 }
 
-.map-comparison-ui .comparison-marker-editor { width: min(calc(100% - 104px), 248px); }
+.map-comparison-ui .comparison-marker-editor { width: min(calc(100% - 16px), 180px); }
 .comparison-marker-editor .comparison-property-heading { margin-bottom: 0; }
 
 .comparison-marker-color {
@@ -194,5 +194,65 @@
 @media (max-height: 420px) {
   .map-comparison-ui .map-comparison-property {
     max-height: min(200px, calc(100dvh - var(--home-top) - 36px - 44px - var(--home-bottom) - 8px));
+  }
+}
+/* Reuse the full map annotation editor while keeping the pane's center visible. */
+.map-comparison-ui .map-comparison-editor-slot {
+  position: absolute;
+  z-index: 9;
+  top: calc(var(--compare-top) + 32px + 8px);
+  left: 8px;
+  width: min(232px, calc(100vw - 104px));
+  max-height: calc(var(--compare-half) - 16px);
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-comparison-ui .map-comparison-editor-slot :is(.pin-editor, .marker-workspace) {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(var(--compare-half) - 16px);
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.map-comparison-ui .map-comparison-editor-slot :is(.pin-editor, .marker-workspace) :is(input, textarea, select) {
+  font-size: 16px;
+}
+
+.map-comparison-ui .map-comparison-editor-slot .pin-editor {
+  font-size: 11px;
+  padding: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-comparison-ui .map-comparison-editor-slot .pin-editor-main {
+  display: flex;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.map-comparison-ui .map-comparison-editor-slot :is(.pin-attribute-list, .pin-picker) {
+  max-height: none;
+  overflow: visible;
+}
+.map-comparison-ui .map-comparison-editor-slot .pin-editor-header strong,
+.map-comparison-ui .map-comparison-editor-slot .marker-summary-title strong,
+.map-comparison-ui .map-comparison-editor-slot .marker-details-bar strong {
+  font-size: 10px;
+}
+.map-comparison-ui .map-comparison-editor-slot .marker-workspace {
+  font-size: 11px;
+}
+
+@media (orientation: landscape) {
+  .map-comparison-ui .map-comparison-editor-slot {
+    width: min(232px, calc(50vw - 104px));
+    max-height: calc(100dvh - var(--compare-top) - 32px - var(--home-bottom) - 44px - 16px);
+  }
+  html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .map-comparison-ui .map-comparison-editor-slot :is(.pin-editor, .marker-workspace) {
+    max-height: calc(100dvh - var(--compare-top) - 32px - var(--home-bottom) - 44px - 16px);
   }
 }

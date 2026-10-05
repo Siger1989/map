@@ -27,6 +27,31 @@ export const NAVIGATION_SERVICES = {
   search: 'https://photon.komoot.io/api/',
   reverse: 'https://photon.komoot.io/reverse',
 };
+export function buildPhotonSearchURL(query: string, near?: Coordinate | null): string {
+  const params = new URLSearchParams({
+    q: query.trim().slice(0, 120),
+    lang: 'default',
+    limit: '5',
+  });
+  if (near) {
+    params.set('lat', String(near[1]));
+    params.set('lon', String(near[0]));
+    params.set('zoom', '12');
+    params.set('location_bias_scale', '0.1');
+  }
+  return `${NAVIGATION_SERVICES.search}?${params}`;
+}
+
+export function sortPlacesByDistance(
+  places: RoutePlace[],
+  near?: Coordinate | null,
+): RoutePlace[] {
+  if (!near || places.length < 2) return places;
+  return places
+    .map((place, index) => ({ place, index, distance: metresBetween(near, place.coordinates) }))
+    .sort((a, b) => a.distance - b.distance || a.index - b.index)
+    .map(({ place }) => place);
+}
 const cache = new Map<string, { time: number; data: unknown }>();
 const nextRequestAt = new Map<string, number>();
 export class NetworkFailure extends Error {
@@ -365,7 +390,7 @@ export function normalizePlaces(input: unknown): RoutePlace[] {
 }
 export async function searchPlaces(
   query: string,
-  near: Coordinate,
+  near: Coordinate | null,
   signal: AbortSignal,
   source?: PlaceSearchSource,
 ) {
@@ -383,20 +408,14 @@ export async function searchPlaces(
         );
         // Route planning keeps worldwide coverage; the explicit search selector
         // only uses its chosen provider.
-        if (found.length || source === 'tianditu') return found;
+        if (found.length || source === 'tianditu') return sortPlacesByDistance(found, near);
       }
-      const params = new URLSearchParams({
-        q: trimmed.slice(0, 120),
-        lang: 'default',
-        limit: '5',
-        lat: String(near[1]),
-        lon: String(near[0]),
-      });
-      return normalizePlaces(
-        await requestJSON(NAVIGATION_SERVICES.search + '?' + params, signal),
+      return sortPlacesByDistance(
+        normalizePlaces(await requestJSON(buildPhotonSearchURL(trimmed, near), signal)),
+        near,
       );
     },
-    () => offlinePlaces(trimmed),
+    async () => sortPlacesByDistance(await offlinePlaces(trimmed), near),
   );
 }
 

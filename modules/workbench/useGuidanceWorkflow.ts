@@ -7,9 +7,9 @@ import type { useNavigation } from '../navigation/useNavigation';
 import type { useManualTracks } from '../tracks/useManualTracks';
 import type { MapHandle } from '../map/TerrainMap';
 import { validFavorite, type RouteFavorite } from '../navigation/favorites';
-import { RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
+import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
 import { createSession } from '../guidance/session';
-import { routeGap } from '../tracks/routeInfo';
+import type { RouteGap } from '../tracks/routeInfo';
 import { freshFix } from '../guidance/session';
 import type { PositionFix } from '../position/types';
 
@@ -53,7 +53,16 @@ export function useGuidanceWorkflow({
 }) {
   const guidanceOwnsLocation = useRef(false),
     guidanceFocused = useRef(false);
-  const [savedNavigationError, setSavedNavigationError] = useState('');
+  const [savedNavigationError, setSavedNavigationErrorState] = useState('');
+  const [savedNavigationGap, setSavedNavigationGap] = useState<RouteGap | null>(null);
+  const setSavedNavigationError = (error: string) => {
+    setSavedNavigationErrorState(error);
+    setSavedNavigationGap(null);
+  };
+  const setDisconnectedNavigationError = (error: RouteDisconnectedError) => {
+    setSavedNavigationErrorState(error.message);
+    setSavedNavigationGap(error.gap);
+  };
   const [navigationTarget, setNavigationTarget] =
     useState<RouteFavorite | null>(null);
   useEffect(() => {
@@ -65,10 +74,7 @@ export function useGuidanceWorkflow({
     const s = guidance.session;
     if (s?.last && !s.quality && !guidanceFocused.current) {
       guidanceFocused.current = true;
-      map.current?.focusPoint(
-        s.last.coordinates,
-        s.route.mode === 'auto' ? 16 : 17,
-      );
+      map.current?.focusPoint(s.last.coordinates);
       follow.resume();
     }
   }, [
@@ -92,7 +98,7 @@ export function useGuidanceWorkflow({
     const cameraTarget = initialFix && freshFix(initialFix)
       ? initialFix.coordinates
       : route?.coordinates[0];
-    if (cameraTarget) map.current?.focusPoint(cameraTarget, route?.mode === 'auto' ? 16 : 17);
+    if (cameraTarget) map.current?.focusPoint(cameraTarget);
     onActivateUi();
     position.free();
     map.current?.previewRoute(null);
@@ -122,7 +128,6 @@ export function useGuidanceWorkflow({
         throw new Error('收藏路线数据无效，无法导航。');
       createSession(favorite.route);
       if (!navigation.restore(favorite)) return;
-      map.current?.fitRoute(favorite.route.coordinates);
       activateGuidance(favorite.route);
       setNavigationTarget(null);
     } catch (error) {
@@ -147,29 +152,20 @@ export function useGuidanceWorkflow({
           tracks.saved,
           activeAlternative,
           reversed,
+          true,
         ),
       );
     } catch (error) {
+      if (error instanceof RouteDisconnectedError) {
+        setDisconnectedNavigationError(error);
+        return;
+      }
       if (error instanceof RouteEndpointRequiredError) {
         map.current?.focusRouteIssue(error.target, error.targetKind);
         setSavedNavigationError(error.targetKind === 'fork'
           ? '已定位一处分叉点。请在线路编辑中选择目标终点并设为终点。'
           : '路线终点未指定，已定位末端候选节点。请进入线路编辑，点选节点并设为终点。');
         return;
-      }
-      // Only geometry failures get a missing-connection marker. Network, data
-      // and provider failures must not be misrepresented as a route gap.
-      if (
-        error instanceof Error &&
-        error.message.includes('不相接的线段')
-      ) {
-        const track = tracks.saved.find((item) => item.id === id);
-        const gap = track && routeGap(track);
-        if (gap) {
-          map.current?.focusRouteGap(gap);
-          setSavedNavigationError(`${error.message} 已定位约${Math.max(0.1, Math.round(gap.distance * 10) / 10)}米缺口，红色虚线标出两端。`);
-          return;
-        }
       }
       setSavedNavigationError(
         error instanceof Error ? error.message : '无法开始轨迹导航。',
@@ -179,7 +175,9 @@ export function useGuidanceWorkflow({
 
   return {
     savedNavigationError,
+    savedNavigationGap,
     setSavedNavigationError,
+    setDisconnectedNavigationError,
     navigationTarget,
     setNavigationTarget,
     startGuidance,

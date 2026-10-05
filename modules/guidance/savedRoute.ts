@@ -11,6 +11,8 @@ import { pathOf, project } from './geometry.ts';
 import { connectedNetwork, networkPath } from './network.ts';
 import { trackAlternatives } from '../tracks/alternatives.ts';
 import { preferredPath } from './preferredPath.ts';
+import { routeGap, type RouteGap } from '../tracks/routeInfo.ts';
+import { connectTrackGaps, trackConnectionSegments, type TrackConnection } from './trackConnections.ts';
 
 export class RouteEndpointRequiredError extends Error {
   readonly target: Coordinate;
@@ -23,6 +25,15 @@ export class RouteEndpointRequiredError extends Error {
   }
 }
 
+export class RouteDisconnectedError extends Error {
+  readonly gap: RouteGap | null;
+  constructor(gap: RouteGap | null) {
+    super('轨迹含不相接的线段，请先连接成连续路线再导航。');
+    this.name = 'RouteDisconnectedError';
+    this.gap = gap;
+  }
+}
+
 /** Adapt saved geometry without requesting a replacement road route or editing the archive. */
 export function trackNavigation(
   track: ManualTrack,
@@ -31,20 +42,34 @@ export function trackNavigation(
   tracks: ManualTrack[] = [],
   alternativeId = 'main',
   reversed = false,
+  allowGapConnections = false,
 ): RouteFavorite {
   if (!track.segments.every((line) => line.every(coordinate)))
     throw new Error('轨迹坐标无效，无法导航。');
   const lines = joinSegments(track.segments);
-  if (!lines.length || hasLoosePoints(track.segments))
-    throw new Error('轨迹含不相接的线段，请先连接成连续路线再导航。');
-  const trackNetwork = connectedNetwork({ ...track, segments: lines }, tracks);
+  const gap = routeGap(track);
+  if ((!lines.length && !gap) || (!allowGapConnections && hasLoosePoints(track.segments) && gap))
+    throw new RouteDisconnectedError(gap);
+  let trackNetwork: ReturnType<typeof connectedNetwork>;
+  let connections: TrackConnection[] = [];
+  try {
+    trackNetwork = connectedNetwork({ ...track, segments: allowGapConnections ? [...lines, ...track.segments.filter(line => line.length === 1)] : lines }, tracks);
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes('不相接的线段')) throw error;
+    if (!allowGapConnections) throw new RouteDisconnectedError(routeGap(track));
+    const connected = connectTrackGaps(track.segments);
+    connections = connected.connections;
+    trackNetwork = connectedNetwork({ ...track, segments: connected.segments }, tracks);
+  }
   const variants = trackAlternatives(
     lines.length === 1 ? lines : track.segments,
   );
   const preferred = (
     variants.find((v) => v.id === alternativeId) ?? variants[0]
   )?.coordinates;
-  const defaultPath = (
+  const defaultPath = connections.length
+    ? networkPath(trackNetwork, track.segments.find(line => line.length)![0], track.segments.filter(line => line.length).at(-1)!.at(-1)!).coordinates
+    : (
     preferred?.length
       ? preferred
       : lines.length === 1
@@ -96,6 +121,8 @@ export function trackNavigation(
     route: {
       mode,
       geometryKind: 'track',
+      displayOpacity: track.style?.opacity,
+      ...(connections.length ? { trackConnections: connections, segments: trackConnectionSegments(coordinates, connections) } : {}),
       trackNetwork,
       preferredTrackPath: coordinates,
       coordinates,

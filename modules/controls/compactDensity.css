@@ -145,7 +145,6 @@
 .observatory[data-route-edit='true'] .position-dock {
   bottom: calc(var(--route-edit-clearance, 225px) + var(--safe-bottom));
 }
-.observatory[data-route-edit='true'] .position-dock-coordinates { display: none; }
 .observatory[data-route-window='true']:not([data-route-edit='true']) .track-journey-rail {
   top: calc(56px + var(--route-card-clearance, 224px) + var(--safe-top));
   height: min(350px, calc(100dvh - var(--route-card-clearance, 224px) - 236px - var(--safe-top) - var(--safe-bottom)));

@@ -1,4 +1,5 @@
 import type { ElevationSample } from '../journey/metrics';
+import { useEffect, useRef, useState } from 'react';
 import {
   elevationColor,
   type ElevationScale,
@@ -23,9 +24,22 @@ export function RouteElevationProfile({
   selection?: { distance: number; elevation: number | null } | null;
   status?: string;
 }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [compactWidth, setCompactWidth] = useState(240);
+  useEffect(() => {
+    if (!compact || !svgRef.current || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      const measuredWidth = entry.contentRect.width;
+      if (measuredWidth > 0) {
+        setCompactWidth(current => Math.abs(current - measuredWidth) < 0.5 ? current : measuredWidth);
+      }
+    });
+    observer.observe(svgRef.current);
+    return () => observer.disconnect();
+  }, [compact]);
   const routeProgress = profileProgress(samples, progress);
   const distance = routeProgress.routeDistance;
-  const width = compact ? 240 : 180, baseline = compact ? 38 : 58, height = compact ? 52 : 74;
+  const width = compact ? compactWidth : 180, baseline = compact ? 38 : 58, height = compact ? 52 : 74;
   const x = (d: number) => 4 + (Math.max(0, Math.min(distance, Number.isFinite(d) ? d : 0)) / (distance || 1)) * (width - 8);
   const y = (h: number) =>
     baseline -
@@ -60,6 +74,7 @@ export function RouteElevationProfile({
     >
       <strong>海拔剖面</strong>
       <svg
+        ref={compact ? svgRef : undefined}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
         aria-label={`路线海拔剖面，全长 ${(distance / 1000).toFixed(1)} 公里`}

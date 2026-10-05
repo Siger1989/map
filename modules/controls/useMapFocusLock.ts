@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { MapHandle } from '../map/TerrainMap';
 import type { Coordinate } from '../navigation/types';
 import type { DirectionMode } from '../position/types';
-export type CameraSnapshot = { center: Coordinate; zoom: number; pitch: number; bearing: number };
+export type CameraSnapshot = { center: Coordinate; zoom: number; pitch: number; bearing: number; detailZoom?: number };
 export function useMapFocusLock(options: {
   map: () => MapHandle | null; following: boolean; guiding: boolean; direction: DirectionMode;
   fix: Coordinate | null; pause: () => void; resume: () => void;

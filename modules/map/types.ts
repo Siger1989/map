@@ -16,6 +16,8 @@ export type LayerSettings = {
   geologySource: 'world' | 'geocloud20w';
   geologyOpacity: number;
   clouds: boolean;
+  cloudOpacity?: number;
+  cloudTime?: string;
   rain: boolean;
   temperature: boolean;
   roads: boolean;
@@ -38,6 +40,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   geologySource: 'world',
   geologyOpacity: 0.85,
   clouds: false,
+  cloudOpacity: 0.55,
   rain: false,
   temperature: false,
   roads: true,

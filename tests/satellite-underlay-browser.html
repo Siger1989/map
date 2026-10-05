@@ -1,0 +1,29 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>卫星底图缺口验证</title>
+<link rel="stylesheet" href="../node_modules/maplibre-gl/dist/maplibre-gl.css">
+<style>body{margin:12px;background:#18201f;color:#f2f5ed;font:14px system-ui}button{padding:8px;margin:3px}#map{width:390px;height:650px;max-width:100%}pre{white-space:pre-wrap}</style>
+<button id="base">模拟高清未到：卫星兜底</button><button id="blue">对照：原蓝色背景</button><button id="detail">加载高清影像</button>
+<pre id="status">初始化…</pre><div id="map"></div>
+<script type="module">
+import * as maplibre from '../node_modules/maplibre-gl/dist/maplibre-gl.mjs';
+import { SATELLITE_UNDERLAY, satelliteUnderlaySource } from '../modules/cartography/satelliteUnderlay.ts';
+import { SENTINEL_TILES } from '../modules/cartography/sentinel.ts';
+import { terrainRenderUrl } from '../modules/terrain/tiles.ts';
+maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');maplibre.setWorkerCount(2);
+const map = new maplibre.Map({container:'map',center:[100,35],zoom:8,pitch:60,maxPitch:80,attributionControl:true,
+  style:{version:8,terrain:{source:'elevation',exaggeration:1},sources:{
+    [SATELLITE_UNDERLAY]:satelliteUnderlaySource(location.origin),
+    elevation:{type:'raster-dem',tiles:[terrainRenderUrl(location.origin)],encoding:'terrarium',tileSize:256,maxzoom:12},
+    detail:{type:'raster',tiles:SENTINEL_TILES,tileSize:256,maxzoom:14},
+  },layers:[{id:'background',type:'background',paint:{'background-color':'#203b3f'}},
+    {id:SATELLITE_UNDERLAY,type:'raster',source:SATELLITE_UNDERLAY,paint:{'raster-fade-duration':0}},
+    {id:'detail',type:'raster',source:'detail',layout:{visibility:'none'},paint:{'raster-fade-duration':0}},
+  ]}});
+let errors=0,mode='卫星兜底',started=performance.now(),readyMs=null;
+const status=document.getElementById('status');
+const report=()=>{const entries=performance.getEntriesByType('resource').filter(r=>r.name.includes('/basemaps/satellite-overview-v1/'));status.textContent=JSON.stringify({mode,errors,underlayReadyMs:readyMs,underlayRequests:entries.length,underlayRemoteRequests:entries.filter(r=>new URL(r.name).origin!==location.origin).length,zoom:Math.round(map.getZoom()*10)/10},null,2)};
+map.on('error',()=>{errors++;report()});
+map.on('sourcedata',e=>{if(e.sourceId===SATELLITE_UNDERLAY&&e.isSourceLoaded&&readyMs===null){readyMs=Math.round(performance.now()-started);report()}});
+map.on('idle',report);
+for(const [id,base,detail,label]of [['base',true,false,'卫星兜底'],['blue',false,false,'原蓝色背景'],['detail',true,true,'高清影像覆盖兜底']])document.getElementById(id).onclick=()=>{mode=label;map.setLayoutProperty(SATELLITE_UNDERLAY,'visibility',base?'visible':'none');map.setLayoutProperty('detail','visibility',detail?'visible':'none');report()};
+</script></html>

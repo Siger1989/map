@@ -210,22 +210,18 @@ test('numeric rotation preserves position and size and agrees with rendered plan
     assert.equal(edited.altitude, pose.altitude);
     const converted = planePose(applyPlanePose(settings, edited));
     for (const basis of [new Vector3(1, 0, 0), new Vector3(0, 1, 0)]) {
-      const a = basis
-        .clone()
-        .applyQuaternion({
-          x: edited.rotation[0],
-          y: edited.rotation[1],
-          z: edited.rotation[2],
-          w: edited.rotation[3],
-        });
-      const b = basis
-        .clone()
-        .applyQuaternion({
-          x: converted.rotation[0],
-          y: converted.rotation[1],
-          z: converted.rotation[2],
-          w: converted.rotation[3],
-        });
+      const a = basis.clone().applyQuaternion({
+        x: edited.rotation[0],
+        y: edited.rotation[1],
+        z: edited.rotation[2],
+        w: edited.rotation[3],
+      });
+      const b = basis.clone().applyQuaternion({
+        x: converted.rotation[0],
+        y: converted.rotation[1],
+        z: converted.rotation[2],
+        w: converted.rotation[3],
+      });
       near(a.distanceTo(b), 0, 0.00001);
     }
   }
@@ -310,10 +306,71 @@ test('unloaded DEM placeholder is unknown; genuinely loaded sea level remains a 
         getCoverageIndex: () => ({ zooms: [0], samplerPerTile: tile }),
       },
       getCenter: () => ({ lng: 0 }),
+      on: () => map,
     };
   assert.equal(loadedTerrainSampler(map)([0, 0]), null);
   tile.set('0/0/0/0', () => 0);
   assert.equal(loadedTerrainSampler(map)([0, 0]), 0);
   tile.clear();
   assert.equal(loadedTerrainSampler(map)([0, 0]), null);
+});
+test('unloaded fine DEM tiles fall back to a loaded parent coverage tile', () => {
+  const tiles = new Map([
+      ['0/1/1/1', null],
+      ['0/0/0/0', () => 2375.5],
+    ]),
+    map = {
+      terrain: {
+        getCoverageIndex: () => ({ zooms: [1, 0], samplerPerTile: tiles }),
+      },
+      getCenter: () => ({ lng: 0 }),
+      on: () => map,
+    };
+  assert.equal(loadedTerrainSampler(map)([0, 0]), 2375.5);
+  tiles.set('0/1/1/1', () => NaN);
+  assert.equal(loadedTerrainSampler(map)([0, 0]), 2375.5);
+});
+test('2D editing view samples its already-loaded hillshade DEM source cache', () => {
+  const point = [90, -40],
+    projected = mercator(point),
+    listeners = new Map(),
+    tile = {
+      tileID: { wrap: 0, canonical: { z: 1, x: 1, y: 1 } },
+      dem: {
+        dim: 256,
+        sampleBilinear(x, y) {
+          near(x, (projected.x * 2 - 1) * 256);
+          near(y, (projected.y * 2 - 1) * 256);
+          return 3661;
+        },
+      },
+    };
+  let scans = 0;
+  const manager = {
+      getRenderableIds() {
+        scans++;
+        return ['loaded-z1'];
+      },
+      getTileByID: () => tile,
+    },
+    map = {
+      terrain: null,
+      style: { tileManagers: { shading: manager } },
+      getCenter: () => ({ lng: 0 }),
+      on(event, listener) {
+        listeners.set(event, listener);
+        return map;
+      },
+    };
+  const sample = loadedTerrainSampler(map);
+  assert.equal(sample(point), 3661);
+  assert.equal(sample(point), 3661);
+  assert.equal(scans, 1, 'large survey grids reuse one loaded-tile snapshot');
+  listeners.get('sourcedata')();
+  assert.equal(sample(point), 3661);
+  assert.equal(
+    scans,
+    2,
+    'source-data changes refresh the cached tile snapshot',
+  );
 });

@@ -23,6 +23,7 @@ export function elevationLineParts(
       coordinates: ManualTrack['segments'][number];
       color: string;
       muted: boolean;
+      sourceSegment?: number;
     }[] = [];
     for (let i = 1; i < line.length; i++) {
       const a = line[i - 1],
@@ -65,6 +66,7 @@ export function elevationLineParts(
             coordinates: [point(step / steps), next],
             color,
             muted: false,
+            sourceSegment: part,
           });
       }
     }

@@ -18,6 +18,7 @@ export function validEdgeNotes(value: unknown, lines: Coordinate[][]): value is 
   return Array.isArray(value) && value.length === lines.length && value.every((row, i) => Array.isArray(row) && row.length === Math.max(0, lines[i].length - 1) && row.every(note => note === null || typeof note === 'string' && note.length <= 1600));
 }
 export function selectedEdges(lines: Coordinate[][], points: Coordinate[]) {
+  if (!points.length) return [];
   const keys = new Set(points.map(p => p.join(',')));
   return lines.flatMap((line, segment) => line.slice(1).flatMap((b, edge) => keys.has(line[edge].join(',')) && keys.has(b.join(',')) ? [{segment, edge, a: line[edge], b}] : []));
 }
@@ -31,7 +32,7 @@ export function edgeNoteIndex(track: GeometryDetails) {
 }
 export function explicitNodeColors(track: GeometryDetails & { edgeColors?: (string | null)[][] }) {
   const colors = new Map<string, string>();
-  track.segments.forEach((line, i) => line.slice(1).forEach((b, j) => {
+  if (track.edgeColors) track.segments.forEach((line, i) => line.slice(1).forEach((b, j) => {
     const color = track.edgeColors?.[i]?.[j];
     if (!color) return;
     colors.set(line[j].join(','), color);

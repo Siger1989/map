@@ -2,19 +2,23 @@ import { isLayoutInteraction } from '../uiLayout/events';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, MapPin, Share2 } from 'lucide-react';
-import { defaultPlaceSearchSource, searchPlaces, type PlaceSearchSource } from '../navigation/provider';
+import { defaultPlaceSearchSource, searchPlaces, sortPlacesByDistance, type PlaceSearchSource } from '../navigation/provider';
 import type { Coordinate, RoutePlace } from '../navigation/types';
+import { canFollow } from '../position/follow';
+import type { PositionFix } from '../position/types';
 import { useMapPlaceLabel } from './PlaceName';
 import { routingMode } from '../offlineRouting/preferences';
 
 export function PlaceSearch({
   center,
+  position,
   zoom,
   onOpen,
   onSelect,
   onShare,
 }: {
   center: Coordinate | null;
+  position?: PositionFix | null;
   zoom: number;
   onOpen: () => void;
   onSelect: (place: RoutePlace) => void;
@@ -30,8 +34,24 @@ export function PlaceSearch({
   const [message, setMessage] = useState('');
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const near = useRef(center);
-  near.current = center;
+  const devicePosition = position && position.provider !== 'ip' && canFollow(position)
+    ? position
+    : null;
+  const near = useRef<Coordinate | null>(null);
+  near.current = devicePosition?.coordinates ?? center;
+  const orderedResults = sortPlacesByDistance(results, near.current);
+  const sortLabel = devicePosition
+    ? devicePosition.source === 'network'
+      ? `设备位置 · ±${Math.round(devicePosition.accuracy)}米`
+      : '当前定位'
+    : center
+      ? '地图中心参考'
+      : '无位置参考';
+  const sortDescription = devicePosition
+    ? `按当前设备位置排序${devicePosition.source === 'network' ? `，估计误差±${Math.round(devicePosition.accuracy)}米` : ''}`
+    : center
+      ? '按地图中心排序，仅作地图参考，不代表GPS位置'
+      : '没有可用的位置参考，按搜索服务原顺序显示';
   const { title } = useMapPlaceLabel(center, zoom);
   const offline = routingMode() === 'offline';
 
@@ -64,7 +84,7 @@ export function PlaceSearch({
       try {
         const found = await searchPlaces(
           query,
-          near.current ?? [0, 20],
+          near.current,
           controller.signal,
           source,
         );
@@ -171,7 +191,7 @@ export function PlaceSearch({
         </button>
       </form>
       {open && (
-        <FloatingSearch anchor={input.current} owner="place">
+        <FloatingSearch anchor={input.current} owner="place" scrollable={results.length > 3}>
           <section
             id="place-search-results"
             className="place-search-results glass suggestion-surface"
@@ -187,6 +207,7 @@ export function PlaceSearch({
           >
             <div className="place-search-heading">
               <span>搜索</span>
+              <small className="place-search-order" title={sortDescription}>{sortLabel}</small>
               {!offline && defaultPlaceSearchSource() === 'tianditu' && (
                 <select aria-label="搜索数据源" value={source}
                   onChange={(event) => setSource(event.target.value as PlaceSearchSource)}>
@@ -203,7 +224,7 @@ export function PlaceSearch({
               </button>
             </div>
             <div className="place-search-options">
-              {results.map((place, index) => (
+              {orderedResults.map((place, index) => (
                 <div className="place-search-row" key={`${place.coordinates.join(',')}-${index}`}>
                 <button
                   type="button"

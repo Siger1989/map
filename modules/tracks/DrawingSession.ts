@@ -57,6 +57,7 @@ export class DrawingSession {
   private snapGrid: ProjectedSnapGrid | null = null;
   private snapIndex: SnapCandidateIndex | null = null;
   private snapViewportKey = '';
+  private snapGridHasStableRevision = false;
   private stroke: {
     tip: ScreenPoint;
     sample: ScreenPoint;
@@ -70,18 +71,22 @@ export class DrawingSession {
     includesOriginSnap: boolean;
   } | null = null;
   clear() {
+    this.resetGestureState();
+    this.invalidateSnapGrid();
+  }
+  private resetGestureState() {
     this.aim = null;
     this.aimSection = undefined;
     this.aimHint = '';
     this.crossing = false;
     this.stroke = null;
-    this.invalidateSnapGrid();
   }
   private invalidateSnapGrid() {
     this.snapCandidates = null;
     this.snapProject = null;
     this.snapGrid = null;
     this.snapViewportKey = '';
+    this.snapGridHasStableRevision = false;
   }
   private snap(point: ScreenPoint, o: Options, candidates = o.candidates) {
     const v = o.getSnapViewport?.() ?? null;
@@ -99,6 +104,7 @@ export class DrawingSession {
       this.snapViewportKey = viewportKey;
       const visibleCandidates = validViewport ? (this.snapIndex?.within(v) ?? candidates) : candidates;
       this.snapGrid = new ProjectedSnapGrid(visibleCandidates, o.project, validViewport ? v : undefined);
+      this.snapGridHasStableRevision = validViewport && v.revision !== undefined && v.revision !== null;
     }
     return this.snapGrid?.nearest(point) ?? null;
   }
@@ -114,7 +120,8 @@ export class DrawingSession {
         section = this.aimSection,
         hint = this.aimHint,
         crossing = this.crossing;
-      this.clear();
+      this.resetGestureState();
+      if (!this.snapGridHasStableRevision) this.invalidateSnapGrid();
       if (s && s.points.length > 1) {
         // The visible magnet is the final geographic endpoint, never the finger.
         if (
@@ -138,7 +145,8 @@ export class DrawingSession {
     }
     const finger = event.point;
     if (event.type === 'start') {
-      this.clear();
+      this.resetGestureState();
+      if (!this.snapGridHasStableRevision) this.invalidateSnapGrid();
       if (o.mode === 'freehand' && o.anchor) {
         const tip = o.project(o.anchor);
         if (

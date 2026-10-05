@@ -85,6 +85,50 @@ test('online map transport ignores app cache stores and offline browser state', 
   }
 });
 
+test('aborting a proxied tile cancels the matching native request without sending its URL', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousLocation = Object.getOwnPropertyDescriptor(globalThis, 'location');
+  const previousBridge = Object.getOwnPropertyDescriptor(globalThis, 'GuanyunNative');
+  const calls = [];
+  const cancelled = [];
+  let finish;
+  Object.defineProperty(globalThis, 'location', {
+    configurable: true,
+    value: { origin: 'https://appassets.androidplatform.net' },
+  });
+  Object.defineProperty(globalThis, 'GuanyunNative', {
+    configurable: true,
+    value: { cancelMapTile: (id) => cancelled.push(id) },
+  });
+  globalThis.fetch = (endpoint, options) => {
+    calls.push([endpoint, options]);
+    return new Promise((resolve) => { finish = () => resolve(new Response('tile')); });
+  };
+  try {
+    const controller = new AbortController();
+    const pending = fetchMapTile('https://private.example/tiles/1/2/3.png?token=do-not-log', controller.signal);
+    const request = new URL(calls[0][0]);
+    const requestId = request.searchParams.get('requestId');
+    assert.match(requestId, /^mt-[a-f0-9-]+$/);
+    assert.ok(requestId.length <= 64);
+    assert.equal(request.searchParams.get('url'), 'https://private.example/tiles/1/2/3.png?token=do-not-log');
+    assert.equal(calls[0][1].signal, controller.signal);
+
+    controller.abort();
+    assert.deepEqual(cancelled, [requestId]);
+    assert.equal(cancelled.join(' ').includes('private.example'), false);
+    assert.equal(cancelled.join(' ').includes('do-not-log'), false);
+    finish();
+    assert.equal(await (await pending).text(), 'tile');
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousLocation) Object.defineProperty(globalThis, 'location', previousLocation);
+    else delete globalThis.location;
+    if (previousBridge) Object.defineProperty(globalThis, 'GuanyunNative', previousBridge);
+    else delete globalThis.GuanyunNative;
+  }
+});
+
 test('native diagnostic response codes become safe, specific Chinese errors', () => {
   const expected = new Map([
     ['url', '图源地址无效或格式不受支持'],

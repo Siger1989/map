@@ -5,7 +5,8 @@ import {
   validFavorite,
   type RouteFavorite,
 } from './favorites';
-import type { PlannedRoute, RoutePlace } from './types';
+import type { Coordinate, PlannedRoute, RoutePlace } from './types';
+import { routeNameOrDefault } from './routeName';
 export function useRouteFavorites() {
   const [items, setItems] = useState<RouteFavorite[]>([]),
     [message, setMessage] = useState('');
@@ -62,7 +63,7 @@ export function useRouteFavorites() {
       }
       const item: RouteFavorite = {
         id: crypto.randomUUID(),
-        name: `${start.name} → ${end.name}`,
+        name: routeNameOrDefault(route.name, start, end),
         savedAt: Date.now(),
         start,
         end,
@@ -73,6 +74,26 @@ export function useRouteFavorites() {
         return;
       }
       if (persist([item, ...items])) setMessage('已保存到本机收藏夹。');
+    },
+    rename: (route: PlannedRoute, value: string) => {
+      const name = value.slice(0, 60).trim();
+      if (!name) return false;
+      setMessageRoute(route.createdAt);
+      const start = route.stops?.[0]?.coordinates ?? route.coordinates[0];
+      const end = route.stops?.at(-1)?.coordinates ?? route.coordinates.at(-1);
+      const samePoint = (a: RoutePlace, b: Coordinate | undefined) =>
+        !!b && a.coordinates[0] === b[0] && a.coordinates[1] === b[1];
+      const next = items.map((item) => item.route.createdAt === route.createdAt &&
+        item.route.mode === route.mode &&
+        samePoint(item.start, start) &&
+        samePoint(item.end, end)
+        ? { ...item, name, route: { ...item.route, name } }
+        : item);
+      const changed = next.some((item, index) => item !== items[index]);
+      if (!changed) return true;
+      if (!persist(next)) return false;
+      setMessage('收藏路线名称已更新。');
+      return true;
     },
     remove: (id: string) => {
       if (persist(items.filter((i) => i.id !== id))) setMessage('已移除收藏。');

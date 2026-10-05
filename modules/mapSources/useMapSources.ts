@@ -3,7 +3,7 @@ import { addMaps, ensureDefaultMaps, listMaps, removeMap } from './storage';
 import type { MapDraft, MapSource, StoredMap } from './types';
 import { freeMap } from './presets';
 import { resolveAvailableMapSelection } from './selection';
-import { loadDefaultSeeds, seedThenList } from './defaultSeeds';
+import { loadDefaultSeedBundle, seedThenList } from './defaultSeeds';
 
 const SELECTED = 'shantu-selected-map';
 export { resolveAvailableMapSelection } from './selection';
@@ -19,7 +19,7 @@ export function useMapSources(restoreSelection = true) {
       const id = localStorage.getItem(SELECTED);
       if (restoreSelection && freeMap(id)) setSelected(id!);
     } catch {}
-    seedThenList(loadDefaultSeeds, ensureDefaultMaps, listMaps, (message) => {
+    seedThenList(loadDefaultSeedBundle, ensureDefaultMaps, listMaps, (message) => {
       if (alive) setStatus(`内置图源初始化未完成：${message}`);
     })
       .then((items) => {

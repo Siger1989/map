@@ -56,10 +56,14 @@ export function ControlDock({
   sectionReady = true,
   back,
   title,
+  titleContent,
+  onHide,
+  hideLabel = '隐藏',
   children,
   onScanRoute,
   onMeasure,
   onCompare,
+  onArea,
   keepOpenOnMapInteraction = false,
   mapPicking = false,
 }: {
@@ -74,10 +78,14 @@ export function ControlDock({
   sectionReady?: boolean;
   back?: { label: string; onClick: () => void; disabled?: boolean };
   title?: string;
+  titleContent?: ReactNode;
+  onHide?: () => void;
+  hideLabel?: string;
   children: ReactNode;
   onScanRoute?: () => void;
   onMeasure?: () => void;
   onCompare?: () => void;
+  onArea?: () => void;
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
 }) {
@@ -136,6 +144,7 @@ export function ControlDock({
           ref={panelDock}
         >
           <div className="dock-heading">
+            {back && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
             {back && (
               <button
                 className="dock-back"
@@ -164,6 +173,8 @@ export function ControlDock({
                             ? '路线规划'
                             : PANELS.find((p) => p.id === active)?.label)}
             </h2>
+            {titleContent}
+            {!back && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
             <button
               ref={closeButton}
               className="icon-button"
@@ -201,6 +212,7 @@ export function ControlDock({
                   </button>
                 )}
                 {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
+                {onArea && <button onClick={onArea}>▱ 划区域</button>}
               </div>
             ) : active === 'time' ? (
               timeline

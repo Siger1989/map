@@ -5,7 +5,8 @@ import {
   type StoredMap,
   type MapSource,
 } from './types.ts';
-import { existingMapIndexes } from './importReview.ts';
+import { existingMapIndexes, sameOnlineMap } from './importReview.ts';
+import type { DefaultSeedBundle } from './defaultSeeds.ts';
 
 let opening: Promise<IDBDatabase> | undefined;
 function database() {
@@ -34,6 +35,25 @@ function database() {
   return opening;
 }
 const DEFAULTS_KEY = 'default-map-sources-initialized';
+const DEFAULTS_STATE_VERSION = 1;
+const DEFAULTS_FINGERPRINTS = 'processedSeedFingerprintsV1';
+
+async function defaultMapFingerprint(draft: MapDraft): Promise<string> {
+  if (!globalThis.crypto?.subtle) throw new Error('无法安全记录默认图源状态');
+  // Keep this tuple aligned with sameOnlineMap so imported and seeded maps dedupe identically.
+  const value = JSON.stringify([
+    draft.tiles,
+    draft.scheme ?? 'xyz',
+    draft.tileSize,
+    draft.minzoom,
+    draft.maxzoom,
+    draft.datum ?? 'wgs84',
+    draft.ovmap?.layers,
+  ]);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 function metadata(record: StoredMap): MapSource {
   const { blob: _blob, ...map } = record;
   return map;
@@ -91,8 +111,13 @@ export async function addMaps(records: StoredMap[]): Promise<void> {
   });
 }
 
-/** Seed built-in maps once. Map rows and the completion marker commit together. */
-export async function ensureDefaultMaps(drafts: MapDraft[]): Promise<boolean> {
+/** Add each built-in map once without overwriting user maps or reviving deleted defaults. */
+export async function ensureDefaultMaps(seed: MapDraft[] | DefaultSeedBundle): Promise<boolean> {
+  const drafts = Array.isArray(seed) ? seed : seed.drafts;
+  const legacyMapCount = Array.isArray(seed) ? drafts.length : (seed as DefaultSeedBundle).legacyMapCount;
+  if (!Number.isInteger(legacyMapCount) || legacyMapCount < 0 || legacyMapCount > drafts.length)
+    throw new Error('内置图源旧版数量无效');
+  const fingerprints = await Promise.all(drafts.map(defaultMapFingerprint));
   const db = await database();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['maps', 'meta'], 'readwrite');
@@ -100,39 +125,82 @@ export async function ensureDefaultMaps(drafts: MapDraft[]): Promise<boolean> {
     const meta = tx.objectStore('meta');
     let result = false;
     let reason = '默认图源保存失败，可能本机空间不足';
+    let finished = false;
+    let markerDone = false;
+    let mapsDone = false;
+    let previousMarker: Record<string, unknown> | undefined;
+    const saved: MapSource[] = [];
+    const initialize = () => {
+      if (!markerDone || !mapsDone || finished) return;
+      const stateVersion = previousMarker?.seedStateVersion;
+      if (stateVersion !== undefined && stateVersion !== DEFAULTS_STATE_VERSION) {
+        reason = '默认图源状态版本不受支持';
+        tx.abort();
+        return;
+      }
+      const storedFingerprints = previousMarker?.[DEFAULTS_FINGERPRINTS];
+      const hasCurrentState = stateVersion === DEFAULTS_STATE_VERSION;
+      if (hasCurrentState && (!Array.isArray(storedFingerprints) || storedFingerprints.some((value) => typeof value !== 'string' || !/^[0-9a-f]{64}$/.test(value)))) {
+        reason = '默认图源处理记录无效';
+        tx.abort();
+        return;
+      }
+      const processed = new Set<string>(hasCurrentState ? storedFingerprints as string[] : []);
+      // The legacy boolean marker proves the old manifest completed. Its prefix is
+      // the only recoverable history; never replay those maps during migration.
+      if (previousMarker?.value === true && !hasCurrentState) {
+        for (const fingerprint of fingerprints.slice(0, legacyMapCount)) processed.add(fingerprint);
+      }
+      const accepted: MapDraft[] = [];
+      for (let index = 0; index < drafts.length; index++) {
+        const fingerprint = fingerprints[index];
+        if (processed.has(fingerprint)) continue;
+        const duplicate = [...saved, ...accepted].some((map) => sameOnlineMap(drafts[index], map));
+        if (!duplicate) accepted.push(drafts[index]);
+        processed.add(fingerprint);
+      }
+      const additions: StoredMap[] = accepted.map((draft) => ({
+        ...draft,
+        id: crypto.randomUUID(),
+        bytes: new TextEncoder().encode(JSON.stringify(draft)).byteLength,
+      }));
+      const count = saved.length + additions.length;
+      const bytes = saved.reduce((total, item) => total + item.bytes, 0) + additions.reduce((total, item) => total + item.bytes, 0);
+      if (count > MAX_MAPS || bytes > MAX_STORAGE_BYTES) {
+        reason = `默认图源超出地图库容量上限（${MAX_MAPS} 项 / 256 MB）`;
+        tx.abort();
+        return;
+      }
+      for (const record of additions) maps.add(record);
+      meta.put({
+        key: DEFAULTS_KEY,
+        value: true,
+        seedStateVersion: DEFAULTS_STATE_VERSION,
+        [DEFAULTS_FINGERPRINTS]: [...processed].sort(),
+      });
+      result = additions.length > 0;
+    };
     const marker = meta.get(DEFAULTS_KEY);
     marker.onsuccess = () => {
-      if (marker.result?.value === true) return;
-      const saved: MapSource[] = [];
-      const read = maps.openCursor();
-      read.onsuccess = () => {
-        const cursor = read.result;
-        if (cursor) {
-          saved.push(metadata(cursor.value as StoredMap));
-          cursor.continue();
-          return;
-        }
-        const duplicates = existingMapIndexes(drafts, saved);
-        const accepted = drafts.filter((_draft, index) => !duplicates.has(index));
-        const additions: StoredMap[] = accepted.map((draft) => ({
-          ...draft,
-          id: crypto.randomUUID(),
-          bytes: new TextEncoder().encode(JSON.stringify(draft)).byteLength,
-        }));
-        const count = saved.length + additions.length;
-        const bytes = saved.reduce((total, item) => total + item.bytes, 0) + additions.reduce((total, item) => total + item.bytes, 0);
-        if (count > MAX_MAPS || bytes > MAX_STORAGE_BYTES) {
-          reason = `默认图源超出地图库容量上限（${MAX_MAPS} 项 / 256 MB）`;
-          tx.abort();
-          return;
-        }
-        for (const record of additions) maps.add(record);
-        meta.put({ key: DEFAULTS_KEY, value: true });
-        result = additions.length > 0;
-      };
+      previousMarker = marker.result as Record<string, unknown> | undefined;
+      markerDone = true;
+      initialize();
     };
-    tx.oncomplete = () => resolve(result);
-    tx.onabort = () => reject(new Error(reason));
+    marker.onerror = () => { reason = '读取默认图源状态失败'; tx.abort(); };
+    const read = maps.openCursor();
+    read.onsuccess = () => {
+      const cursor = read.result;
+      if (cursor) {
+        saved.push(metadata(cursor.value as StoredMap));
+        cursor.continue();
+        return;
+      }
+      mapsDone = true;
+      initialize();
+    };
+    read.onerror = () => { reason = '读取本机地图库失败'; tx.abort(); };
+    tx.oncomplete = () => { finished = true; resolve(result); };
+    tx.onabort = () => { finished = true; reject(new Error(reason)); };
     tx.onerror = () => {};
   });
 }

@@ -165,6 +165,7 @@
 .observatory :is(.control-popover, .marker-workspace) {
   --compact-row: 36px;
 }
+.observatory .marker-workspace { --compact-row: 28px; }
 .observatory
   .control-popover
   :is(button, input, select, summary):not([type='range']):not(
@@ -208,13 +209,13 @@
   padding: 0 2px;
 }
 .observatory .marker-workspace .marker-editor-bar {
-  min-height: 36px;
+  min-height: 28px;
 }
 .observatory
   .marker-workspace
   :is(.marker-number input, .marker-number button) {
-  height: 36px;
-  min-height: 36px;
+  height: 28px;
+  min-height: 28px;
 }
 .collection-modal-root button {
   min-height: 36px;

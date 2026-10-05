@@ -340,7 +340,7 @@
 .measurement-chart-plot.measurement-chart-full {
   max-width: none;
   min-width: 100%;
-  height: 104px;
+  height: 120px;
 }
 .measurement-chart-retry {
   border: 0;

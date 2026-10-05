@@ -221,7 +221,7 @@ function skipReason(record: OvmapRecord): string | undefined {
   return;
 }
 
-function expandHosts(record: OvmapRecord): string[] {
+function expandHosts(record: Pick<OvmapRecord, 'host' | 'hostStart' | 'hostEnd'>): string[] {
   const token = '{$serverpart}';
   if (!record.host.includes(token)) return [record.host];
   const validPart = (value: number) =>
@@ -241,7 +241,13 @@ function expandHosts(record: OvmapRecord): string[] {
   );
 }
 
-function toLayer(record: OvmapRecord): OvmapTileLayer {
+export type OvmapLayerTemplate = Pick<
+  OvmapRecord,
+  'host' | 'path' | 'port' | 'tls' | 'hostStart' | 'hostEnd' | 'minzoom' | 'maxzoom' | 'tileSize'
+>;
+
+/** Validate and convert one bounded OVMAP-compatible raster template. */
+export function ovmapTemplateToLayer(record: OvmapLayerTemplate): OvmapTileLayer {
   const path = record.path;
   if (!/\{\$?[xyz](?:[+*/-]\d+)?\}/i.test(path)) throw new Error('此项不是瓦片图源');
   if (!supportedOvmapTemplate(path)) throw new Error('图源包含未支持的变量');
@@ -267,14 +273,14 @@ function toLayer(record: OvmapRecord): OvmapTileLayer {
 }
 
 function toDraft(record: OvmapRecord, records: OvmapRecord[]): MapDraft {
-  const layers: OvmapTileLayer[] = [toLayer(record)];
+  const layers: OvmapTileLayer[] = [ovmapTemplateToLayer(record)];
   const missing: number[] = [];
   if ((record.layerFlags & 0xff) !== 0) {
     for (const id of new Set([record.overlayBig, record.overlaySmall].filter(Boolean))) {
       if (id === record.id) continue;
       const overlay = records.find(item => item.id === id);
       if (!overlay || skipReason(overlay) || overlay.coordType !== record.coordType) { missing.push(id); continue; }
-      try { layers.push(toLayer(overlay)); } catch { missing.push(id); }
+      try { layers.push(ovmapTemplateToLayer(overlay)); } catch { missing.push(id); }
     }
   }
   return {

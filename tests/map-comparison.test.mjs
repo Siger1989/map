@@ -3,15 +3,16 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
 
-const counters = { mount: {}, unmount: {}, latest: {}, cameraCalls: {} };
+const counters = { mount: {}, unmount: {}, latest: {}, cameraCalls: {}, previews: {} };
+let PositionButton;
 const sources = {
   '../map/TerrainMap': `export type TerrainMapProps = any; export type MapHandle = any;`,
 };
 
 async function loadHost() {
   await build({
-    entryPoints: ['modules/mapComparison/MapComparisonHost.tsx'],
-    outdir: '.openai/map-comparison-test',
+    stdin: { contents: "export { MapComparisonHost } from './modules/mapComparison/MapComparisonHost'; export { ComparisonEditorPositionButton } from './modules/mapComparison/ComparisonEditorPosition';", resolveDir: process.cwd(), loader: 'tsx' },
+    outfile: '.openai/map-comparison-test/MapComparisonHost.js',
     bundle: true,
     format: 'esm',
     platform: 'node',
@@ -30,11 +31,15 @@ async function loadHost() {
       },
     }],
   });
-  return (await import('../.openai/map-comparison-test/MapComparisonHost.js')).MapComparisonHost;
+  const module = await import('../.openai/map-comparison-test/MapComparisonHost.js');
+  PositionButton = module.ComparisonEditorPositionButton;
+  return module.MapComparisonHost;
 }
 
 function setupDom() {
   const { window } = parseHTML('<html><body></body></html>');
+  const storage = new Map();
+  let failStorage = false;
   let landscape = false;
   const mediaListeners = new Set();
   window.matchMedia = () => ({
@@ -48,10 +53,22 @@ function setupDom() {
   };
   Object.assign(globalThis, {
     window, document: window.document,
-    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    localStorage: {
+      getItem: key => storage.get(key) ?? null,
+      setItem(key, value) { if (failStorage) throw new Error('storage unavailable'); storage.set(key, String(value)); },
+      removeItem: key => storage.delete(key),
+    },
     IS_REACT_ACT_ENVIRONMENT: true,
   });
+  window.setStorageFailure = value => { failStorage = value; };
+  window.storage = storage;
   return window;
+}
+
+async function chooseSource(f, pane, id) {
+  const control = f.host.querySelector(`[aria-label="${pane}方图源"]`);
+  await f.act(async () => control.click());
+  await f.act(async () => f.host.querySelector(`[data-choice-id="${id}"]`).click());
 }
 
 function changeControl(f, element, value) {
@@ -79,13 +96,44 @@ function makeChoice(id, source, settings, group = '我的图源') {
   return { id, name: id, group, source, settings };
 }
 
+function layerSettings(overrides = {}) {
+  return {
+    terrain: true,
+    satellite: false,
+    satelliteProvider: 'sentinel',
+    offlineBasemap: false,
+    tiandituBase: 'vec',
+    tiandituLabels: 'auto',
+    tiandituBoundaries: true,
+    offlineMaxZoom: null,
+    contours: false,
+    contourInterval: 30,
+    elevationColors: false,
+    elevationColorsOpacity: 1,
+    geology: false,
+    geologySource: 'world',
+    geologyOpacity: 0.85,
+    clouds: false,
+    rain: false,
+    temperature: false,
+    roads: true,
+    roadsOpacity: 1,
+    rasterLevel: null,
+    labels: true,
+    opacity: 0.6,
+    exaggeration: 1,
+    imageryMode: 'detail',
+    ...overrides,
+  };
+}
+
 function makeFixture(React) {
   for (const key of Object.keys(counters)) counters[key] = {};
   const sourceA = { id: 'source-a' };
   const sourceB = { id: 'source-b' };
-  const settingsCurrent = { satellite: false, label: 'current' };
-  const settingsA = { satellite: false, label: 'A' };
-  const settingsB = { satellite: true, label: 'B' };
+  const settingsCurrent = layerSettings({ satellite: false, label: 'current' });
+  const settingsA = layerSettings({ satellite: false, label: 'A' });
+  const settingsB = layerSettings({ satellite: true, label: 'B' });
   const choices = [
     makeChoice('current', sourceA, settingsCurrent, '当前'),
     makeChoice('sentinel', null, settingsA, '内置'),
@@ -103,6 +151,10 @@ function makeFixture(React) {
       return () => { counters.unmount[identity] = (counters.unmount[identity] ?? 0) + 1; };
     }, []);
     React.useImperativeHandle(ref, () => ({
+      previewTrackNode(preview) {
+        counters.previews[identity] ??= [];
+        counters.previews[identity].push(preview);
+      },
       applyCamera(camera) {
         counters.cameraCalls[identity] ??= [];
         counters.cameraCalls[identity].push(camera);
@@ -123,8 +175,10 @@ function makeFixture(React) {
   const marked = [];
   const vertices = [];
   const pauses = [];
-  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0 };
-  const operationState = { saveResult: true, error: '' };
+  const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0, outline: 0, follow: 0 };
+  const directionState = { mode: 'free', status: '设备朝向暂不可用', calls: [] };
+  const followState = { active: false };
+  const operationState = { saveResult: true, error: '', selectedTrack: null, editingTrack: false, editSelectedTrackCalls: 0, deleteSelectedTrackCalls: 0, deleteResult: true };
   const drawingInputs = [];
   const snappingState = { nodes: true, roads: false, rivers: false, calls: [] };
   let mapCenter = [104.25, 30.75];
@@ -136,17 +190,23 @@ function makeFixture(React) {
     calls: [],
   };
   const operations = {
-    onMark(point) {
-      marked.push(point);
+    onMark(point, kind) {
+      marked.push({ point, kind });
       markerState.current = { id: `new-${marked.length}`, name: '新标记', note: '', color: '#ff0000', coordinates: point };
       return true;
     },
+    onOutline() { operationsCalls.outline += 1; },
     onDraw() { operationsCalls.draw += 1; },
     onVertex(point) { vertices.push(point); },
     onUndo() { operationsCalls.undo += 1; vertices.pop(); },
     onSave() { operationsCalls.save += 1; return operationState.saveResult; },
     onPause() { pauses.push([...vertices]); },
     onLocate() { operationsCalls.locate += 1; },
+    get direction() { return directionState.mode; },
+    get directionStatus() { return directionState.status; },
+    onDirectionChange(mode) { directionState.mode = mode; directionState.calls.push(mode); },
+    get following() { return followState.active; },
+    onToggleFollowing() { operationsCalls.follow += 1; followState.active = !followState.active; },
     canUndo: true,
     get snapping() { return snappingState.nodes; },
     onSnappingChange(enabled) { snappingState.nodes = enabled; snappingState.calls.push(['nodes', enabled]); },
@@ -155,6 +215,14 @@ function makeFixture(React) {
     get riverSnapping() { return snappingState.rivers; },
     onRiverSnappingChange(enabled) { snappingState.rivers = enabled; if (enabled) snappingState.roads = false; snappingState.calls.push(['rivers', enabled]); },
     get error() { return operationState.error; },
+    get selectedTrack() { return operationState.selectedTrack; },
+    get editingTrack() { return operationState.editingTrack; },
+    onEditSelectedTrack() { operationState.editSelectedTrackCalls += 1; },
+    onDeleteSelectedTrack() {
+      operationState.deleteSelectedTrackCalls += 1;
+      if (operationState.deleteResult) operationState.selectedTrack = null;
+      return operationState.deleteResult;
+    },
     get style() { return styleState.current; },
     onStyle(style) { styleState.calls.push(style); styleState.current = style; },
     get marker() { return markerState.current; },
@@ -176,8 +244,28 @@ function makeFixture(React) {
     guidanceOverlay: { id: 'guidance-overlay' },
     trackOverlay: { id: 'track-overlay' },
   };
-  const child = React.createElement(MapProbe, { ...overlays, persistCamera: true, settings: settingsCurrent, ref: primary });
-  const props = {
+  let props;
+  const trackCallbacks = {
+    onTrackSelect() {},
+    onTrackLineSelect() {},
+    onTrackNodeSelect() {},
+    onRouteSelect() {
+      plannedRouteCalls.selected += 1;
+      props.plannedRoute = plannedRoute;
+    },
+  };
+  const plannedRouteCalls = { selected: 0, edit: 0, show: 0, details: 0, close: 0 };
+  const plannedRoute = {
+    distance: 12500,
+    duration: 3600,
+    onEdit() { plannedRouteCalls.edit += 1; },
+    onShow() { plannedRouteCalls.show += 1; },
+    onDetails() { plannedRouteCalls.details += 1; },
+    onClose() { plannedRouteCalls.close += 1; props.plannedRoute = null; },
+  };
+  const mapPickCalls = [];
+  const child = React.createElement(MapProbe, { ...overlays, ...trackCallbacks, onMapPick: point => mapPickCalls.push(point), drawingActive: false, persistCamera: true, settings: settingsCurrent, ref: primary });
+  props = {
     session,
     primary,
     onClose: () => closed.push(true),
@@ -185,13 +273,22 @@ function makeFixture(React) {
     search: React.createElement('div', { 'data-place-search': true }),
     onDrawingInput(index, event) { drawingInputs.push([index, event]); },
     drawingOverlay(index) { return React.createElement('div', { 'data-comparison-overlay': index }); },
+    markerEditor(onClose) {
+      return React.createElement('section', { 'aria-label': '共享标记工作区' },
+        React.createElement('button', { 'aria-label': '关闭共享标记工作区', onClick: onClose }, '关闭'),
+      );
+    },
+    editorOverlay: null,
+    plannedRoute: null,
+    editorPaneOverlay(index) { return React.createElement('div', { 'aria-label': `双图框选层-${index}` }); },
     operations,
     children: child,
   };
   return {
-    props, session, choices, overlays, used, closed, primary, marked, vertices, pauses,
-    operationsCalls, operationState, drawingInputs, snappingState, mapCenter, cameraValue, handleCalls, markerState, styleState,
+    props, session, choices, overlays, trackCallbacks, mapPickCalls, used, closed, primary, marked, vertices, pauses,
+    operationsCalls, operationState, drawingInputs, snappingState, directionState, followState, mapCenter, cameraValue, handleCalls, markerState, styleState, plannedRouteCalls,
     setMapCenter(value) { mapCenter = value; },
+    setMapDrawingActive(value) { props.children = React.cloneElement(child, { drawingActive: value }); },
   };
 }
 
@@ -228,6 +325,42 @@ test('keeps the primary map mounted while comparison opens and closes, and remov
   assert.deepEqual(f.used, [], 'closing does not apply either source');
 });
 
+test('browse, marker workspace, layer menu, and paused drawing all return through comparison close', async t => {
+  const browse = await mount(t);
+  await browse.act(async () => browse.host.querySelector('[aria-label="退出双图源对比"]').click());
+  assert.deepEqual(browse.closed, [true], 'ordinary comparison browsing closes through the host callback');
+  await browse.render(null);
+  assert.equal(counters.unmount['map-comparison-secondary'], 1);
+
+  const marker = await mount(t);
+  await marker.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('saved-marker'));
+  assert.ok(marker.host.querySelector('[aria-label="共享标记工作区"]'));
+  await marker.act(async () => marker.host.querySelector('[aria-label="退出双图源对比"]').click());
+  assert.deepEqual(marker.closed, [true], 'closing comparison can leave the saved selection to the page state');
+  assert.equal(marker.markerState.current.id, 'saved-marker', 'the existing annotation remains intact');
+
+  const layer = await mount(t);
+  await layer.act(async () => layer.host.querySelector('[aria-label="对比图层"]').click());
+  assert.ok(layer.host.querySelector('[aria-label="对比图层设置"]'));
+  await layer.act(async () => layer.host.querySelector('[aria-label="关闭对比图层"]').click());
+  assert.equal(layer.host.querySelector('[aria-label="对比图层设置"]'), null);
+  await layer.act(async () => layer.host.querySelector('[aria-label="退出双图源对比"]').click());
+  assert.deepEqual(layer.closed, [true], 'the layer menu does not trap the user in comparison');
+
+  const drawing = await mount(t);
+  const drawButton = [...drawing.host.querySelectorAll('.map-comparison-actions button')]
+    .find(button => button.textContent.includes('画线'));
+  await drawing.act(async () => drawButton.click());
+  const pauseButton = [...drawing.host.querySelectorAll('.map-comparison-actions button')]
+    .find(button => button.textContent.includes('暂停'));
+  await drawing.act(async () => pauseButton.click());
+  assert.equal(drawing.pauses.length, 1, 'pausing drawing preserves the normal finish callback');
+  assert.equal([...drawing.host.querySelectorAll('.map-comparison-actions button')]
+    .some(button => button.textContent.includes('暂停')), false);
+  await drawing.act(async () => drawing.host.querySelector('[aria-label="退出双图源对比"]').click());
+  assert.deepEqual(drawing.closed, [true], 'paused draft state does not prevent returning to the map');
+});
+
 test('both panes retain shared route and marker overlays and synchronize camera changes in either direction', async t => {
   const f = await mount(t);
   const upper = counters.latest['map-comparison-primary'];
@@ -238,16 +371,210 @@ test('both panes retain shared route and marker overlays and synchronize camera 
   }
   assert.equal(upper.readOnly, false, 'operations keep normal map gestures available');
   assert.equal(lower.readOnly, false);
-  assert.equal(upper.pickingActive, true);
+  assert.equal(upper.pickingActive, false, 'browse mode leaves the normal track and route hit tests enabled');
   assert.equal(upper.annotationPicking, true, 'existing markers stay selectable in browse mode');
+  for (const key of Object.keys(f.trackCallbacks)) {
+    if (key === 'onRouteSelect') {
+      assert.notEqual(upper[key], f.trackCallbacks[key], 'route selection is wrapped to clear comparison panes');
+      assert.notEqual(lower[key], f.trackCallbacks[key]);
+      continue;
+    }
+    assert.equal(upper[key], f.trackCallbacks[key], `${key} reuses the main map business callback`);
+    assert.equal(lower[key], f.trackCallbacks[key], `${key} is available from both map panes`);
+  }
+  await f.act(async () => upper.onMapPick([103.5, 31.5]));
+  assert.deepEqual(f.mapPickCalls, [[103.5, 31.5]], 'blank-map clicks retain the main map clear/picking behavior');
   assert.equal(upper.queryOnPick, false, 'comparison clicks do not trigger the regular elevation query');
   assert.equal(lower.persistCamera, false);
   const fromUpper = { center: [103, 31], zoom: 11, bearing: 30, pitch: 15 };
   await f.act(async () => upper.onCameraChange(fromUpper));
   assert.equal(counters.cameraCalls['map-comparison-secondary'].at(-1), fromUpper);
   const fromLower = { center: [105, 32], zoom: 8, bearing: 270, pitch: 0 };
+  await f.act(async () => counters.latest['map-comparison-secondary'].onReady());
   await f.act(async () => counters.latest['map-comparison-secondary'].onCameraChange(fromLower));
   assert.equal(counters.cameraCalls['map-comparison-primary'].at(-1), fromLower);
+  const preview = { node: { trackId: 'route', coordinate: [104, 30] }, coordinate: [104.001, 30] };
+  await f.act(async () => upper.onTrackPreview(preview));
+  assert.equal(counters.previews['map-comparison-secondary'].at(-1), preview);
+  assert.equal(counters.previews['map-comparison-primary'], undefined, 'forwarding a preview does not echo it back');
+  await f.act(async () => lower.onTrackPreview(null));
+  assert.equal(counters.previews['map-comparison-primary'].at(-1), null, 'cancel/reset reaches the peer pane');
+});
+
+test('planned route selection from either pane clears comparison overlays and shows its card inside the UI', async t => {
+  for (const pane of ['primary', 'secondary']) {
+    for (const obstruction of ['layer', 'properties']) {
+      const f = await mount(t);
+      if (obstruction === 'layer') {
+        await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+        assert.ok(f.host.querySelector('[aria-label="对比图层设置"]'));
+      } else {
+        await f.act(async () => f.host.querySelector('[aria-label="画线属性"]').click());
+        assert.ok(f.host.querySelector('[aria-label="对比路线样式"]'));
+      }
+
+      await f.act(async () => counters.latest[`map-comparison-${pane}`].onRouteSelect());
+      assert.equal(f.plannedRouteCalls.selected, 1, `${pane} pane calls the shared route selection`);
+      await f.render(f.session);
+
+      assert.equal(f.host.querySelector('[aria-label="对比图层设置"]'), null);
+      assert.equal(f.host.querySelector('[aria-label="对比路线样式"]'), null);
+      const card = f.host.querySelector('[aria-label="已选规划路线"]');
+      const comparisonUi = f.host.querySelector('[aria-label="双图源对比"]');
+      assert.ok(card, 'the planned route operation card is rendered');
+      assert.ok(comparisonUi.contains(card), 'the card is inside the visible comparison UI');
+      assert.equal(f.closed.length, 0, 'selecting the route does not exit comparison');
+    }
+  }
+});
+
+test('planned route card delegates actions, closes without exiting comparison, and hides during editing', async t => {
+  const f = await mount(t);
+  await f.act(async () => counters.latest['map-comparison-primary'].onRouteSelect());
+  await f.render(f.session);
+
+  const nav = f.host.querySelector('[aria-label="双图规划路线操作"]');
+  await f.act(async () => nav.querySelector('button.route-solid').click());
+  await f.act(async () => nav.querySelector('button:not(.route-solid)').click());
+  await f.act(async () => nav.querySelectorAll('button:not(.route-solid)')[1].click());
+  assert.deepEqual(f.plannedRouteCalls, { selected: 1, edit: 1, show: 1, details: 1, close: 0 });
+
+  await f.act(async () => f.host.querySelector('[aria-label="关闭规划路线操作"]').click());
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[aria-label="已选规划路线"]'), null);
+  assert.equal(f.host.querySelector('[data-map="map-comparison-secondary"]') !== null, true);
+  assert.deepEqual(f.closed, [], 'closing the card only clears route selection');
+
+  await f.act(async () => counters.latest['map-comparison-secondary'].onRouteSelect());
+  f.operationState.editingTrack = true;
+  f.props.editorOverlay = f.React.createElement('section', { 'aria-label': '规划路线编辑器' }, '编辑中');
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[aria-label="已选规划路线"]'), null, 'editing suppresses browse actions');
+  assert.ok(f.host.querySelector('[aria-label="规划路线编辑器"]'), 'the editor is visible');
+  assert.equal(f.closed.length, 0);
+});
+
+test('selecting a saved route exposes the comparison edit entry', async t => {
+  const f = await mount(t);
+  f.operationState.selectedTrack = { id: 'saved-route', name: '林间路线' };
+  await f.render(f.session);
+  const entry = f.host.querySelector('.map-comparison-track-selection button');
+  assert.equal(entry?.textContent, '编辑');
+  await f.act(async () => entry.click());
+  assert.equal(f.operationState.editSelectedTrackCalls, 1, 'the visible entry invokes the shared route editor callback');
+  f.operationState.editingTrack = true;
+  f.props.editorOverlay = f.React.createElement('section', { 'aria-label': '路线编辑工具' }, '点选 / 框选加 / 保存并退出');
+  await f.render(f.session);
+  assert.equal(counters.latest['map-comparison-primary'].annotationPicking, false, 'markers do not intercept edit-mode node selection');
+  assert.equal(counters.latest['map-comparison-secondary'].annotationPicking, false);
+  assert.ok(f.host.querySelector('[aria-label="路线编辑工具"]'), 'the shared editor toolbar is mounted inside the comparison UI');
+  assert.ok(f.host.querySelector('[aria-label="双图框选层-0"]'));
+  assert.ok(f.host.querySelector('[aria-label="双图框选层-1"]'));
+  await f.act(async () => counters.latest['map-comparison-secondary'].onMapPick([104, 30]));
+  assert.deepEqual(f.mapPickCalls.at(-1), [104, 30], 'blank clicks in the lower pane retain branch placement');
+});
+
+test('route and marker editor position toggles keep fields, sub-pages, maps and camera intact', async t => {
+  const f = await mount(t);
+  const cameraCalls = JSON.stringify(counters.cameraCalls);
+  const mounts = JSON.stringify(counters.mount);
+  f.props.editorOverlay = f.React.createElement('section', { 'aria-label': '测试路线编辑工具' },
+    f.React.createElement('header', null, '编辑路线', f.React.createElement(PositionButton, {kind: '路线'})),
+    f.React.createElement('input', { defaultValue: '路线未保存草稿' }));
+  await f.render(f.session);
+  let route = f.host.querySelector('[aria-label="双图路线编辑窗口"]');
+  assert.equal(route.dataset.pane, '1');
+  const input = route.querySelector('input');
+  input.value = '保留路线草稿';
+  await f.act(async () => route.querySelector('button').click());
+  assert.equal(route.dataset.pane, '0');
+  assert.equal(route.querySelector('input'), input, 'moving uses the same editor DOM');
+  assert.equal(input.value, '保留路线草稿');
+  assert.equal(route.querySelector('.map-comparison-editor-position'), null, 'no added hint bar');
+  assert.equal(route.querySelector('button').textContent, '', 'switch is icon-only in the original heading');
+  assert.equal(route.querySelector('button').getAttribute('aria-label'), '路线编辑窗口移到下图');
+  await f.act(async () => route.querySelector('button').click());
+  assert.equal(route.dataset.pane, '1');
+  f.props.editorOverlay = null;
+  f.props.editorDialog = f.React.createElement('section', { role: 'dialog', 'aria-label': '测试未保存确认' }, '保留编辑');
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[role="dialog"]').closest('.map-comparison-edit-window'), null, 'unsaved confirmation stays outside the moving editor');
+  f.props.editorDialog = null;
+  f.props.markerEditor = () => f.React.createElement('section', null,
+    f.React.createElement('header', null, '编辑标记', f.React.createElement(PositionButton, {kind: '标记'})),
+    f.React.createElement('input', { 'aria-label': '测试标记名称', defaultValue: '标记草稿' }));
+  await f.render(f.session);
+  await f.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('marker'));
+  const marker = f.host.querySelector('[aria-label="双图标记编辑窗口"]');
+  const markerInput = marker.querySelector('input');
+  markerInput.value = '标记未保存名称';
+  await f.act(async () => marker.querySelector('button').click());
+  assert.equal(marker.dataset.pane, '0');
+  assert.equal(marker.querySelector('input'), markerInput);
+  assert.equal(markerInput.value, '标记未保存名称');
+  await f.act(async () => f.window.setLandscape(true));
+  assert.equal(marker.querySelector('button').getAttribute('aria-label'), '标记编辑窗口移到右图');
+  await f.act(async () => marker.querySelector('button').click());
+  assert.equal(marker.dataset.pane, '1');
+  assert.equal(marker.querySelector('button').getAttribute('aria-label'), '标记编辑窗口移到左图');
+  assert.equal(JSON.stringify(counters.cameraCalls), cameraCalls);
+  assert.equal(JSON.stringify(counters.mount), mounts);
+  assert.equal(f.closed.length, 0);
+});
+
+test('selected comparison route has an independent delete confirmation that preserves the two-map session', async t => {
+  const f = await mount(t);
+  f.operationState.selectedTrack = { id: 'saved-route', name: '林间路线' };
+  await f.render(f.session);
+  const upper = counters.latest['map-comparison-primary'];
+  const camera = { center: [103.8483, 31.5621], zoom: 8.69, bearing: 35, pitch: 50 };
+  await f.act(async () => upper.onCameraChange(camera));
+  const secondaryCallsBeforeDelete = counters.cameraCalls['map-comparison-secondary'].length;
+
+  await f.act(async () => f.host.querySelector('[aria-label="删除双图已选路线"]').click());
+  assert.ok(f.host.querySelector('[aria-label="确认删除双图已选路线"]'), 'delete first opens a confirmation');
+  assert.match(f.host.querySelector('[aria-label="确认删除双图已选路线"]').textContent, /关联照片、标记及来源路线保留/);
+  await f.act(async () => f.host.querySelector('[aria-label="确认删除双图已选路线"] button').click());
+  assert.equal(f.operationState.deleteSelectedTrackCalls, 0, 'cancel never calls the delete callback');
+  assert.ok(f.host.querySelector('[aria-label="已选路线"]'), 'cancel keeps the selected route card');
+
+  await f.act(async () => f.host.querySelector('[aria-label="删除双图已选路线"]').click());
+  f.operationState.deleteResult = false;
+  await f.act(async () => f.host.querySelector('[aria-label="确认删除双图已选路线"] button.route-danger').click());
+  assert.equal(f.operationState.deleteSelectedTrackCalls, 1, 'confirmation calls the existing delete callback');
+  assert.ok(f.host.querySelector('[aria-label="确认删除双图已选路线"]'), 'a failed persistence result keeps the confirmation open');
+  assert.ok(f.host.querySelector('[aria-label="已选路线"]'), 'a failed delete keeps the selected route');
+  f.operationState.deleteResult = true;
+  await f.act(async () => f.host.querySelector('[aria-label="确认删除双图已选路线"] button.route-danger').click());
+  assert.equal(f.operationState.deleteSelectedTrackCalls, 2, 'a failed delete can be retried through the same confirmation');
+  assert.equal(f.host.querySelector('[aria-label="已选路线"]'), null, 'successful deletion removes the selected-route card');
+  assert.equal(f.closed.length, 0, 'deleting a route does not close comparison');
+  assert.equal(counters.unmount['map-comparison-secondary'] ?? 0, 0, 'both panes stay mounted after deletion');
+  assert.deepEqual(counters.cameraCalls['map-comparison-secondary'].at(-1), camera, 'the secondary pane retains the live view');
+  assert.equal(counters.cameraCalls['map-comparison-secondary'].length, secondaryCallsBeforeDelete, 'deletion does not reset or resynchronize camera');
+});
+
+test('a loading comparison pane cannot overwrite the primary zoom and adopts the latest view when ready', async t => {
+  const f = await mount(t);
+  const upper = counters.latest['map-comparison-primary'];
+  const lower = counters.latest['map-comparison-secondary'];
+  const live = { center: [103.8483, 31.5621], zoom: 8.69, bearing: 35, pitch: 50 };
+  await f.act(async () => upper.onCameraChange(live));
+  await f.act(async () => lower.onCameraChange({ ...f.session.camera, zoom: 15 }));
+  assert.equal(counters.cameraCalls['map-comparison-primary']?.length ?? 0, 0);
+  await f.act(async () => lower.onReady());
+  assert.deepEqual(counters.cameraCalls['map-comparison-secondary'].at(-1), live);
+  const gesture = { ...live, zoom: 9.2 };
+  await f.act(async () => lower.onCameraChange(gesture));
+  assert.deepEqual(counters.cameraCalls['map-comparison-primary'].at(-1), gesture);
+
+  await f.render(null);
+  await f.render({ ...f.session, camera: gesture });
+  const before = counters.cameraCalls['map-comparison-primary'].length;
+  await f.act(async () => counters.latest['map-comparison-secondary'].onCameraChange({ ...live, zoom: 3 }));
+  assert.equal(counters.cameraCalls['map-comparison-primary'].length, before, 'reopening resets the loading guard');
+  await f.act(async () => counters.latest['map-comparison-secondary'].onReady());
+  assert.deepEqual(counters.cameraCalls['map-comparison-secondary'].at(-1), gesture);
 });
 
 test('source stepping changes only that pane, wraps, and does not use or persist a source', async t => {
@@ -257,9 +584,7 @@ test('source stepping changes only that pane, wraps, and does not use or persist
   assert.equal(counters.latest['map-comparison-primary'].mapSource, null, 'upper advances from current to sentinel');
   assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[1].settings);
   assert.equal(counters.latest['map-comparison-secondary'].settings, f.choices[1].settings, 'lower stays on sentinel');
-  const lowerSelect = f.host.querySelector('[aria-label="下方图源"]');
-  Object.defineProperty(lowerSelect, 'value', { configurable: true, value: 'beta' });
-  await f.act(async () => lowerSelect.dispatchEvent(new f.window.Event('change', { bubbles: true })));
+  await chooseSource(f, '下', 'beta');
   assert.equal(counters.latest['map-comparison-secondary'].mapSource, f.choices[3].source);
   assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[1].settings, 'changing lower leaves upper unchanged');
   await f.act(async () => f.host.querySelector('[aria-label="下图：下一图源"]').click());
@@ -267,37 +592,297 @@ test('source stepping changes only that pane, wraps, and does not use or persist
   assert.deepEqual(f.used, []);
 });
 
+test('comparison picker groups, shared favorites, collapsed-group persistence and common-only stepping stay in sync', async t => {
+  const f = await mount(t);
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源"]').click());
+  const alphaFavorite = f.host.querySelector('[aria-label="加入常用：alpha"]');
+  await f.act(async () => alphaFavorite.click());
+  await f.act(async () => f.host.querySelector('[aria-label="加入常用：beta"]').click());
+  const commonHeader = [...f.host.querySelectorAll('.comparison-source-group-heading')].find(button => button.textContent.includes('常用'));
+  assert.ok(commonHeader);
+  assert.deepEqual([...f.host.querySelectorAll('.comparison-source-group-heading')].map(button => button.textContent.replace(/[+−]/g, '').trim()), ['常用', '当前', '内置', '我的图源', '公共库'], 'each named group has its own collapsible heading');
+  assert.equal(f.host.querySelectorAll('[data-choice-id="alpha"]').length, 1, 'a favorited choice appears only in 常用');
+  assert.equal(f.host.querySelector('[aria-label="移出常用：alpha"]').getAttribute('aria-pressed'), 'true');
+
+  for (const name of ['当前', '内置', '我的图源', '公共库']) {
+    const header = [...f.host.querySelectorAll('.comparison-source-group-heading')].find(button => button.textContent.includes(name));
+    if (header?.getAttribute('aria-expanded') === 'true') await f.act(async () => header.click());
+  }
+  assert.deepEqual(JSON.parse(f.window.storage.get('shantu-map-comparison-source-groups-v1')), ['常用']);
+  await f.act(async () => f.host.querySelector('[aria-label="下方图源"]').click());
+  assert.equal([...f.host.querySelectorAll('[aria-label="下方图源选择"] .comparison-source-group-heading')]
+    .find(button => button.textContent.includes('当前')).getAttribute('aria-expanded'), 'false', 'both panes read the same open-group preference');
+  await f.act(async () => f.host.querySelector('[aria-label="上图：下一图源"]').click());
+  assert.equal(counters.latest['map-comparison-primary'].mapSource, f.choices[2].source, 'a hidden current group is skipped; next selects the first visible favorite');
+  await f.act(async () => f.host.querySelector('[aria-label="下图：下一图源"]').click());
+  assert.equal(counters.latest['map-comparison-secondary'].mapSource, f.choices[2].source, 'an unavailable current lower choice also starts at the first common source');
+  await f.act(async () => f.host.querySelector('[aria-label="上图：下一图源"]').click());
+  assert.equal(counters.latest['map-comparison-primary'].mapSource, f.choices[3].source);
+  await f.act(async () => f.host.querySelector('[aria-label="上图：下一图源"]').click());
+  assert.equal(counters.latest['map-comparison-primary'].mapSource, f.choices[2].source, 'quick-step wraps within the common group');
+
+  const upperPopup = f.host.querySelector('[aria-label="上方图源选择"]');
+  while ([...upperPopup.querySelectorAll('.comparison-source-group-heading')].some(button => button.getAttribute('aria-expanded') === 'true')) {
+    const heading = [...upperPopup.querySelectorAll('.comparison-source-group-heading')].find(button => button.getAttribute('aria-expanded') === 'true');
+    await f.act(async () => heading.click());
+  }
+  assert.equal(f.host.querySelector('[aria-label="上图：上一图源"]').disabled, true, 'all collapsed groups disable source stepping');
+  assert.equal(f.host.querySelector('[aria-label="上图：下一图源"]').disabled, true);
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源选择"] .comparison-source-group-heading').click());
+  assert.equal(f.host.querySelector('[aria-label="上图：下一图源"]').disabled, false, 'the picker remains openable to restore an expanded group');
+});
+
+test('picker failed favorite writes are inert; keyboard, outside click, Escape, collapse and Use preserve map camera', async t => {
+  const f = await mount(t);
+  const cameraCalls = ['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0);
+  const trigger = f.host.querySelector('[aria-label="上方图源"]');
+  let focusReturned = false;
+  trigger.focus = () => { focusReturned = true; };
+  await f.act(async () => trigger.click());
+  f.window.setStorageFailure(true);
+  await f.act(async () => f.host.querySelector('[aria-label="加入常用：alpha"]').click());
+  assert.equal(f.host.querySelector('[aria-label="加入常用：alpha"]').getAttribute('aria-pressed'), 'false', 'failed persistence does not show a favorite that was not saved');
+  f.window.setStorageFailure(false);
+
+  const picker = f.host.querySelector('[aria-label="上方图源选择"]');
+  const currentHeader = [...picker.querySelectorAll('.comparison-source-group-heading')].find(button => button.textContent.includes('当前'));
+  await f.act(async () => currentHeader.click());
+  assert.equal(currentHeader.getAttribute('aria-expanded'), 'false');
+  assert.equal(counters.latest['map-comparison-primary'].mapSource, f.choices[0].source, 'collapsing the selected group does not change its map source');
+  const firstEscape = new f.window.Event('keydown', { bubbles: true });
+  Object.defineProperty(firstEscape, 'key', { value: 'Escape' });
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源选择"]').dispatchEvent(firstEscape));
+  assert.equal(f.host.querySelector('[aria-label="上方图源选择"]'), null, 'Escape closes the popup without exiting comparison');
+  const arrowDown = new f.window.Event('keydown', { bubbles: true });
+  Object.defineProperty(arrowDown, 'key', { value: 'ArrowDown' });
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源"]').dispatchEvent(arrowDown));
+  assert.equal(f.host.querySelector('[aria-label="上方图源"]').getAttribute('aria-expanded'), 'true', 'arrow-down opens the picker');
+  const escape = new f.window.Event('keydown', { bubbles: true });
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源选择"]').dispatchEvent(escape));
+  assert.equal(f.host.querySelector('[aria-label="上方图源选择"]'), null, 'Escape closes the popup without exiting comparison');
+  assert.equal(focusReturned, true, 'Escape restores trigger focus');
+  assert.equal(f.closed.length, 0);
+
+  focusReturned = false;
+  await f.act(async () => f.host.querySelector('[aria-label="上方图源"]').click());
+  const outside = f.host.querySelector('[aria-label="地图朝向模式"]');
+  await f.act(async () => outside.dispatchEvent(new f.window.Event('pointerdown', { bubbles: true })));
+  assert.equal(f.host.querySelector('[aria-label="上方图源选择"]'), null, 'outside click closes the popup');
+  assert.equal(focusReturned, true, 'outside click restores selector focus');
+  assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCalls, 'picker interactions never apply a camera or change zoom');
+});
+
 test('Use applies the exact upper or lower choice only when its button is pressed', async t => {
   const f = await mount(t);
   await f.act(async () => f.host.querySelector('[aria-label="使用上方图源"]').click());
   assert.equal(f.used.at(-1), f.choices[0]);
   assert.equal(f.used.length, 1);
-  const lower = f.host.querySelector('[aria-label="下方图源"]');
-  Object.defineProperty(lower, 'value', { configurable: true, value: 'beta' });
-  await f.act(async () => lower.dispatchEvent(new f.window.Event('change', { bubbles: true })));
+  await chooseSource(f, '下', 'beta');
   await f.act(async () => f.host.querySelector('[aria-label="使用下方图源"]').click());
   assert.equal(f.used.at(-1), f.choices[3]);
   assert.equal(f.used.length, 2);
 });
 
-test('Mark creates one pin at the primary map center and opens its properties editor', async t => {
+test('comparison layer menu exposes per-pane complete switches with custom-source satellite rules', async t => {
   const f = await mount(t);
-  await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '标记').click());
-  assert.deepEqual(f.marked, [f.mapCenter], 'the click creates a marker once at the live primary center');
-  assert.ok(f.host.querySelector('[aria-label="编辑对比标记"]'));
+  const beforeCameraCalls = Object.fromEntries(Object.entries(counters.cameraCalls).map(([key, calls]) => [key, calls.length]));
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+  let switches = [...f.host.querySelectorAll('#comparison-layer-window [role="switch"]')];
+  assert.equal(switches.length, 9, 'the upper custom source hides only the inapplicable satellite toggle');
+  assert.equal(f.host.querySelector('#satellite-toggle'), null);
+  for (const key of ['clouds', 'temperature', 'terrain', 'elevationColors', 'contours', 'geology', 'roads', 'labels', 'rain'])
+    assert.ok(f.host.querySelector(`#${key}-toggle`), `upper pane has ${key} toggle`);
+
+  await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
+  switches = [...f.host.querySelectorAll('#comparison-layer-window [role="switch"]')];
+  assert.equal(switches.length, 10, 'the lower built-in choice exposes all standard layer switches');
+  assert.ok(f.host.querySelector('#satellite-toggle'));
+  assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[0].settings);
+  assert.equal(counters.latest['map-comparison-secondary'].settings, f.choices[1].settings);
+  for (const [key, count] of Object.entries(beforeCameraCalls))
+    assert.equal(counters.cameraCalls[key].length, count, `opening and switching layer tabs leaves ${key} camera unchanged`);
+});
+
+test('comparison layer switches keep upper and lower settings independent and preserve thematic exclusivity', async t => {
+  const f = await mount(t);
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+
+  await f.act(async () => f.host.querySelector('#geology-toggle').click());
+  let upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.geology, true);
+  assert.equal(upper.temperature, false);
+  assert.equal(upper.elevationColors, false);
+  assert.equal(counters.latest['map-comparison-secondary'].settings.geology, false, 'upper edit does not change lower settings');
+
+  await f.act(async () => f.host.querySelector('#elevationColors-toggle').click());
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.elevationColors, true);
+  assert.equal(upper.geology, false);
+  assert.equal(upper.temperature, false);
+  await f.act(async () => f.host.querySelector('#temperature-toggle').click());
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.temperature, true);
+  assert.equal(upper.geology, false);
+  assert.equal(upper.elevationColors, false);
+
+  await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
+  await f.act(async () => f.host.querySelector('#geology-toggle').click());
+  const lower = counters.latest['map-comparison-secondary'].settings;
+  assert.equal(lower.geology, true);
+  assert.equal(lower.temperature, false);
+  assert.equal(lower.elevationColors, false);
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.temperature, true, 'lower edit leaves upper thematic choice intact');
+});
+
+test('roads, rain and display parameters update only the active comparison pane', async t => {
+  const f = await mount(t);
+  const cameraCallsAtStart = ['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0);
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+  await f.act(async () => f.host.querySelector('#roads-toggle').click());
+  await f.act(async () => f.host.querySelector('#rain-toggle').click());
+  let upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.roads, false);
+  assert.equal(upper.rain, true);
+
+  const parameters = f.host.querySelector('details.layer-display-settings');
+  assert.ok(parameters);
+  assert.equal(parameters.hasAttribute('open'), false, 'display parameters start collapsed');
+  const roadsOpacity = f.host.querySelector('#roads-opacity');
+  assert.ok(roadsOpacity);
+  await changeReactControl(f, roadsOpacity, '0.4');
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.roadsOpacity, 0.4);
+  assert.equal(counters.latest['map-comparison-secondary'].settings.roadsOpacity, f.choices[1].settings.roadsOpacity);
+
+  await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
+  await f.act(async () => f.host.querySelector('#rain-toggle').click());
+  assert.equal(counters.latest['map-comparison-secondary'].settings.rain, true);
+  assert.equal(counters.latest['map-comparison-primary'].settings.rain, true, 'changing lower rain keeps upper rain choice');
+  assert.equal(counters.latest['map-comparison-secondary'].settings.roads, true);
+  assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer toggles do not apply a new camera');
+});
+
+test('layer settings persist after close and by source choice, and Use returns only the selected pane settings', async t => {
+  const f = await mount(t);
+  const cameraCallsAtStart = ['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0);
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+  await f.act(async () => f.host.querySelector('#roads-toggle').click());
+  await changeReactControl(f, f.host.querySelector('#roads-opacity'), '0.45');
+  await f.act(async () => f.host.querySelector('[aria-label="关闭对比图层"]').click());
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+  assert.equal(counters.latest['map-comparison-primary'].settings.roads, false);
+  await changeReactControl(f, f.host.querySelector('#roads-opacity'), '0.45');
+  assert.equal(counters.latest['map-comparison-primary'].settings.roadsOpacity, 0.45);
+
+  await chooseSource(f, '上', 'beta');
+  await f.act(async () => f.host.querySelector('#rain-toggle').click());
+  await f.act(async () => f.host.querySelector('#roads-toggle').click());
+  await changeReactControl(f, f.host.querySelector('#roads-opacity'), '0.35');
+  await chooseSource(f, '上', 'sentinel');
+  await chooseSource(f, '上', 'beta');
+  assert.equal(counters.latest['map-comparison-primary'].settings.rain, true, 'switching away and back restores this choice\'s edits');
+  assert.equal(counters.latest['map-comparison-primary'].settings.roads, false);
+  assert.equal(counters.latest['map-comparison-primary'].settings.roadsOpacity, 0.35);
+  assert.equal(counters.latest['map-comparison-secondary'].settings.rain, false, 'upper choice edits do not leak to the lower pane');
+
+  await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
+  await f.act(async () => f.host.querySelector('#geology-toggle').click());
+  await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(1)').click());
+  assert.equal(counters.latest['map-comparison-secondary'].settings.geology, true);
+  assert.equal(counters.latest['map-comparison-primary'].settings.geology, false);
+
+  const lowerBefore = counters.latest['map-comparison-secondary'].settings;
+  await f.act(async () => f.host.querySelector('[aria-label="使用上方图源"]').click());
+  const used = f.used.at(-1);
+  assert.equal(used.id, 'beta');
+  assert.equal(used.source, f.choices[3].source);
+  assert.equal(used.settings.roads, false);
+  assert.equal(used.settings.rain, true);
+  assert.equal(used.settings.roadsOpacity, 0.35);
+  assert.equal(used.settings.temperature, false);
+  assert.equal(used.settings.geology, false, 'lower geology setting is not included in upper Use');
+  assert.equal(used.settings.elevationColors, false);
+  assert.equal(f.choices[3].settings.rain, false, 'temporary pane settings do not mutate the source choice');
+  assert.equal(lowerBefore.rain, false);
+  assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer changes and Use do not apply a new camera');
+});
+
+test('comparison marker entry directly creates a pin at the primary center and opens the shared workspace slot', async t => {
+  const f = await mount(t);
+  await f.act(async () => f.host.querySelector('[aria-label="添加地点标记"]').click());
+  assert.deepEqual(f.marked, [{ point: f.mapCenter, kind: 'pin' }], 'the entry creates a pin directly at the live primary center');
+  assert.equal(f.host.querySelector('[aria-label="选择添加类型"]'), null);
+  assert.ok(f.host.querySelector('[aria-label="共享标记工作区"]'));
   assert.equal(f.host.querySelector('[aria-label="上图中心十字"]')?.getAttribute('role'), 'img');
   assert.equal(f.host.querySelector('[aria-label="下图中心十字"]')?.getAttribute('role'), 'img');
 });
 
-test('selecting an existing marker from either map opens its editor', async t => {
+test('comparison reuses direction modes and reports actual direction status', async t => {
+  const f = await mount(t);
+  assert.equal(f.host.querySelector('.map-comparison-direction-status').textContent, '设备朝向暂不可用');
+  await f.act(async () => f.host.querySelector('[aria-label="地图朝向模式"]').click());
+  assert.ok(f.host.querySelector('[aria-label="选择地图朝向"]'));
+  await f.act(async () => [...f.host.querySelectorAll('[aria-label="选择地图朝向"] button')].find(button => button.textContent === '运动方向朝上').click());
+  assert.deepEqual(f.directionState.calls, ['motion']);
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('[aria-label="地图朝向模式"]').getAttribute('aria-pressed'), 'true');
+});
+
+test('comparison follow action reflects and toggles the supplied follow state', async t => {
+  const f = await mount(t);
+  const button = f.host.querySelector('[aria-label="开启位置跟随"]');
+  assert.equal(button.getAttribute('aria-pressed'), 'false');
+  await f.act(async () => {
+    button.click();
+    await new Promise(resolve => f.window.setTimeout(resolve, 300));
+  });
+  await f.render(f.session);
+  assert.equal(f.operationsCalls.follow, 1);
+  assert.equal(f.host.querySelector('[aria-label="关闭位置跟随"]').getAttribute('aria-pressed'), 'true');
+});
+
+test('deleting the selected marker removes the editor host and another marker can reopen it', async t => {
+  const f = await mount(t);
+  await f.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('removed-marker'));
+  assert.ok(f.host.querySelector('.map-comparison-editor-slot'));
+  const renderWorkspace = f.props.markerEditor;
+  f.props.markerEditor = () => null;
+  await f.render(f.session);
+  assert.equal(f.host.querySelector('.map-comparison-editor-slot'), null);
+  f.props.markerEditor = renderWorkspace;
+  await f.act(async () => counters.latest['map-comparison-secondary'].onAnnotationSelect('next-marker'));
+  await f.render(f.session);
+  assert.ok(f.host.querySelector('[aria-label="共享标记工作区"]'));
+});
+
+test('double clicking the shared locate/follow action locates without toggling follow', async t => {
+  const f = await mount(t);
+  const button = f.host.querySelector('[aria-label="开启位置跟随"]');
+  await f.act(async () => {
+    const first = new f.window.Event('click', { bubbles: true });
+    Object.defineProperty(first, 'detail', { value: 1 });
+    const second = new f.window.Event('click', { bubbles: true });
+    Object.defineProperty(second, 'detail', { value: 2 });
+    button.dispatchEvent(first);
+    button.dispatchEvent(second);
+  });
+  assert.equal(f.operationsCalls.locate, 1);
+  assert.equal(f.operationsCalls.follow, 0);
+});
+
+test('selecting an existing marker from either map opens its shared editor slot', async t => {
   const f = await mount(t);
   await f.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('saved-1'));
   assert.deepEqual(f.markerState.selectCalls, ['saved-1']);
-  assert.ok(f.host.querySelector('[aria-label="编辑对比标记"]'));
-  await f.act(async () => f.host.querySelector('[aria-label="关闭标记编辑"]').click());
+  assert.ok(f.host.querySelector('[aria-label="共享标记工作区"]'));
+  await f.act(async () => f.host.querySelector('[aria-label="关闭共享标记工作区"]').click());
+  assert.equal(f.host.querySelector('[aria-label="共享标记工作区"]'), null);
+  assert.equal(f.closed.length, 0, 'closing the marker workspace does not exit comparison');
   await f.act(async () => counters.latest['map-comparison-secondary'].onAnnotationSelect('saved-2'));
   assert.deepEqual(f.markerState.selectCalls, ['saved-1', 'saved-2']);
-  assert.ok(f.host.querySelector('[aria-label="编辑对比标记"]'));
+  assert.ok(f.host.querySelector('[aria-label="共享标记工作区"]'));
 });
 
 test('draw mode uses both standard gesture bridges and the existing snap settings', async t => {
@@ -350,6 +935,18 @@ test('draw mode uses both standard gesture bridges and the existing snap setting
   assert.equal([...f.host.querySelectorAll('.map-comparison-actions button')].some(button => button.textContent === '暂停'), false, 'successful save exits drawing mode');
 });
 
+test('branch editing keeps the main map drawing bridge and pane-local overlay active in browse mode', async t => {
+  const f = await mount(t);
+  f.operationState.editingTrack = true;
+  f.setMapDrawingActive(true);
+  await f.render(f.session);
+  assert.equal(counters.latest['map-comparison-primary'].drawingActive, true, 'branch editing carries the main map drawing request to the upper pane');
+  assert.equal(counters.latest['map-comparison-secondary'].drawingActive, true, 'branch editing carries the main map drawing request to the lower pane');
+  assert.equal(f.host.querySelectorAll('[data-comparison-overlay]').length, 2, 'both branch tips get a map-local TrackDrawing host while comparison remains in browse mode');
+  assert.equal(f.host.querySelector('.map-comparison-drawing-mode'), null, 'branch editing does not enable the ordinary new-track controls');
+  assert.equal(f.host.querySelector('.map-comparison-track-selection'), null, 'the selected-route action does not cover the edit toolbar');
+});
+
 test('comparison pane names follow portrait and landscape orientation', async t => {
   const f = await mount(t);
   assert.ok(f.host.querySelector('[aria-label="上方地图"]'));
@@ -374,9 +971,7 @@ test('leaving comparison or choosing a source pauses drawing and preserves the d
   const usePoint = [105.5, 31.5];
   useFixture.vertices.push(usePoint);
   await useFixture.act(async () => counters.latest['map-comparison-primary'].onDrawingInput({ type: 'end', reason: 'release' }));
-  const lower = useFixture.host.querySelector('[aria-label="下方图源"]');
-  Object.defineProperty(lower, 'value', { configurable: true, value: 'beta' });
-  await useFixture.act(async () => lower.dispatchEvent(new useFixture.window.Event('change', { bubbles: true })));
+  await chooseSource(useFixture, '下', 'beta');
   await useFixture.act(async () => useFixture.host.querySelector('[aria-label="使用下方图源"]').click());
   assert.deepEqual(useFixture.pauses, [[usePoint]], 'using a source pauses without clearing the draft');
   assert.equal(useFixture.used[0], useFixture.choices[3]);
@@ -386,8 +981,8 @@ test('leaving comparison or choosing a source pauses drawing and preserves the d
 test('mark falls back to the comparison camera center if the map center is unavailable', async t => {
   const f = await mount(t);
   f.setMapCenter(null);
-  await f.act(async () => [...f.host.querySelectorAll('.map-comparison-actions button')].find(button => button.textContent === '标记').click());
-  assert.deepEqual(f.marked, [f.cameraValue.center]);
+  await f.act(async () => f.host.querySelector('[aria-label="添加地点标记"]').click());
+  assert.deepEqual(f.marked, [{ point: f.cameraValue.center, kind: 'pin' }]);
 });
 
 test('3D control enables terrain on both panes and changes the primary camera view', async t => {
@@ -408,64 +1003,4 @@ test('line properties send color edits to the existing route-style callback', as
   assert.equal(f.styleState.calls.length, 1);
   assert.deepEqual(f.styleState.calls[0], { color: '#00ff00', width: 3, opacity: 0.5 });
   assert.ok(f.host.querySelector('[aria-label="对比路线样式"]'));
-});
-
-test('marker editor keeps edits after save failure and closes after a successful retry', async t => {
-  const f = await mount(t);
-  await f.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('saved-marker'));
-  const name = f.host.querySelector('[aria-label="标记名称"]');
-  await changeReactControl(f, name, '新名称');
-  const note = f.host.querySelector('[aria-label="标记备注"]');
-  await changeReactControl(f, note, '新备注');
-  f.markerState.updateResult = false;
-  await f.act(async () => f.host.querySelector('[aria-label="编辑对比标记"] form').dispatchEvent(new f.window.Event('submit', { bubbles: true, cancelable: true })));
-  assert.equal(f.markerState.updateCalls.length, 1);
-  assert.equal(f.markerState.updateCalls[0].id, 'saved-marker');
-  assert.deepEqual(f.markerState.updateCalls[0].patch, { name: '新名称', note: '新备注', color: '#00aa00' });
-  assert.ok(f.host.querySelector('[role="alert"]'));
-  assert.ok(f.host.querySelector('[aria-label="编辑对比标记"]'), 'failed save leaves the editor open');
-  assert.equal(f.host.querySelector('[aria-label="标记名称"]').value, '新名称');
-  f.markerState.updateResult = true;
-  await f.act(async () => f.host.querySelector('[aria-label="编辑对比标记"] form').dispatchEvent(new f.window.Event('submit', { bubbles: true, cancelable: true })));
-  assert.equal(f.markerState.updateCalls.length, 2);
-  assert.equal(f.host.querySelector('[aria-label="编辑对比标记"]'), null, 'successful save closes the editor');
-});
-
-test('cancelling marker edits does not call the saved-annotation update callback', async t => {
-  const f = await mount(t);
-  await f.act(async () => counters.latest['map-comparison-secondary'].onAnnotationSelect('saved-marker'));
-  const name = f.host.querySelector('[aria-label="标记名称"]');
-  await changeReactControl(f, name, '不保存');
-  await f.act(async () => f.host.querySelector('[aria-label="标记符号"]').click());
-  await f.act(async () => f.host.querySelector('[aria-label="营地"]').click());
-  await f.act(async () => [...f.host.querySelectorAll('.comparison-marker-actions button')].find(button => button.textContent === '取消').click());
-  assert.equal(f.markerState.updateCalls.length, 0);
-  assert.equal(f.host.querySelector('[aria-label="编辑对比标记"]'), null);
-});
-
-test('marker symbol selection is saved with the existing marker fields', async t => {
-  const f = await mount(t);
-  await f.act(async () => counters.latest['map-comparison-secondary'].onAnnotationSelect('saved-marker'));
-  const symbol = f.host.querySelector('[aria-label="标记符号"]');
-  await f.act(async () => symbol.click());
-  assert.equal(f.host.querySelectorAll('.comparison-symbol-grid button').length, 18);
-  assert.equal(f.host.querySelector('[aria-label="地点"]').getAttribute('aria-pressed'), 'true');
-  await f.act(async () => f.host.querySelector('[aria-label="营地"]').click());
-  assert.equal(f.host.querySelector('.comparison-symbol-grid'), null);
-  await f.act(async () => f.host.querySelector('[aria-label="编辑对比标记"] form').dispatchEvent(new f.window.Event('submit', { bubbles: true, cancelable: true })));
-  assert.deepEqual(f.markerState.updateCalls[0].patch, { name: '已有标记', note: '旧备注', color: '#00aa00', icon: 'camp' });
-  assert.equal(f.host.querySelector('[aria-label="编辑对比标记"]'), null);
-});
-
-test('returning from symbol page retains unsaved marker text and selected symbol', async t => {
-  const f = await mount(t);
-  await f.act(async () => counters.latest['map-comparison-primary'].onAnnotationSelect('saved-marker'));
-  await changeReactControl(f, f.host.querySelector('[aria-label="标记名称"]'), '保留草稿');
-  await f.act(async () => f.host.querySelector('[aria-label="标记符号"]').click());
-  await f.act(async () => f.host.querySelector('[aria-label="营地"]').click());
-  await f.act(async () => f.host.querySelector('[aria-label="标记符号"]').click());
-  assert.equal(f.host.querySelector('[aria-label="营地"]').getAttribute('aria-pressed'), 'true');
-  await f.act(async () => f.host.querySelector('[aria-label="返回标记编辑"]').click());
-  assert.equal(f.host.querySelector('[aria-label="标记名称"]').value, '保留草稿');
-  assert.equal(f.markerState.updateCalls.length, 0);
 });

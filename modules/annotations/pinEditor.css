@@ -73,3 +73,69 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .
     max-height: min(72px, calc(100dvh - 340px));
   }
 }
+
+/* Compact pass requested for all marker editor states, including comparison. */
+.pin-editor { width: min(220px, calc(100% - 74px)); max-height: min(38dvh, 300px); padding: 3px; gap: 3px; font-size: 12px; }
+.pin-editor button { min-width: 28px; min-height: 28px; padding-inline: 3px; gap: 2px; font-size: 12px; }
+.pin-editor-header { min-height: 29px; gap: 2px; }
+.pin-editor-header strong { font-size: 12px; }
+.pin-heading-space { flex:1; min-width:0; }
+.pin-editor-header button,
+.pin-editor-header button[title],
+.pin-editor .pin-save { min-height: 28px; }
+.pin-editor-main { gap: 2px; }
+.pin-editor .pin-note-field { align-items:flex-start; }
+.pin-editor .pin-note-field > span { padding-top:6px; }
+.pin-editor .pin-note-field textarea,
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-note-field textarea {
+  height:88px; min-height:88px; padding:6px 8px; line-height:18px; overflow-y:auto; overscroll-behavior:contain;
+}
+.pin-field { min-height: 30px; padding-inline: 5px; gap: 3px; }
+.pin-field span { width: 25px; font-size: 11px; }
+.pin-field :is(input,textarea) { height: 28px; min-height: 28px; padding: 2px 4px; font-size: 13px; }
+.pin-coordinate-row { height: 30px; }
+.pin-coordinate-row .pin-coordinate-value { padding-inline: 3px; font-size: 11px; }
+.pin-style-row, .pin-photo-row, .pin-attribute-head { min-height: 30px; }
+.pin-style-row button { padding-inline: 3px; }
+.pin-photo-actions { position: relative; min-width: 0; }
+.pin-editor { max-height:calc(100dvh - 72px - var(--safe-top) - var(--safe-bottom)); overflow:hidden; }
+.pin-editor-header { position:sticky; top:0; z-index:4; background:var(--ui-surface, #fff6d4); }
+.pin-attribute-list { flex:0 1 auto; min-height:0; max-height:148px; }
+.pin-attribute-list:has(.pin-attribute) { min-height:0; }
+.pin-photo-row .pin-add-model-trigger { margin-left: auto; min-width: 0; padding-inline: 4px; font-size: 11px; white-space: nowrap; }
+.pin-photo-row:has(.pin-add-model-trigger) { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: visible; }
+.pin-photo-row:has(.pin-add-model-trigger) > button { min-width: 0; margin: 0; padding-inline: 0; font-size: 10px; gap: 2px; }
+.pin-photo-row:has(.pin-add-model-trigger) > button svg { width: 12px; height: 12px; flex-shrink: 0; }
+.pin-photo-row:has(.pin-add-model-trigger) > .pin-photo-thumb { order: 1; width: 100%; }
+.pin-model-options { position: absolute; z-index: 3; right: 0; bottom: calc(100% + 2px); box-sizing: border-box; display: grid; width: min(208px,100%); max-height: min(60px,calc(38dvh - 100px)); grid-template-columns: repeat(3,minmax(0,1fr)); gap: 2px; overflow-y: auto; padding: 2px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); background: var(--ui-raised); box-shadow: 0 3px 10px #071b1840; }
+.pin-model-options button { min-width: 0; min-height: 28px; padding: 0 3px; font-size: 11px; white-space: nowrap; }
+.pin-model-options svg { flex: 0 0 14px; width: 14px; height: 14px; }
+.pin-style-row i, .pin-color-grid i { width: 14px; height: 14px; }
+.pin-photo-row { min-height: 30px; }
+.pin-photo-row > button:not(.pin-photo-thumb) { min-height: 28px; }
+.pin-photo-row .pin-photo-thumb { width: 28px; min-width: 28px; height: 28px; min-height: 28px; }
+.pin-attribute-head { min-height: 28px; }
+.pin-attribute-head button { min-height: 28px; font-size: 10px; }
+.pin-attribute-list { gap: 2px; }
+.pin-attribute { grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) 28px; min-height: 28px; }
+.pin-attribute :is(input,textarea) { height: 28px; min-height: 28px; padding: 2px; font-size: 12px; }
+.pin-attribute button { min-height: 28px; }
+.pin-picker { gap: 3px; }
+.pin-icon-grid, .pin-color-grid { gap: 3px; }
+.pin-editor .pin-icon-grid button { height: 32px; min-height: 32px; padding: 1px; box-sizing: border-box; }
+.pin-editor .pin-icon-grid svg { width: 14px; height: 14px; }
+.pin-icon-grid small { font-size: 10px; line-height: 11px; }
+.pin-color-grid button { min-height: 30px; }
+.pin-color-grid i { width: 18px; height: 18px; }
+.pin-color-grid input { width: 26px; height: 26px; }
+.pin-picker .marker-number input { height: 28px; min-height: 28px; font-size: 12px; }
+.pin-picker .marker-number button { min-width: 28px; min-height: 28px; }
+.pin-status button { min-height: 28px; }
+.pin-confirm { padding: 3px; gap: 3px; font-size: 12px; }
+.pin-confirm button { min-height: 30px; }
+.pin-elevation-row { gap: 4px; min-height: 30px; padding-inline: 4px; font-size: 11px; }
+.pin-elevation-row :is(button,[role='button']) { min-width: 28px; min-height: 28px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-field :is(input,textarea) { padding-inline: 4px; font-size: 13px; min-height: 28px; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .pin-editor { width: min(440px, calc(100% - 128px)); max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)); }
+}

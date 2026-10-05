@@ -15,6 +15,12 @@ export type RouteStep = {
   coordinates: Coordinate[];
 };
 export type PlannedRoute = {
+  /** User-editable display title; absent on routes saved by older versions. */
+  name?: string;
+  /** Temporary missing-track connections; never written into the saved track. */
+  trackConnections?: import('../guidance/trackConnections').TrackConnection[];
+  /** Preserve the saved track's altitude/slope coloring transparency in navigation. */
+  displayOpacity?: number;
   routingSource?: { kind: 'offline'; name: string; createdAt: number };
   segments?: { kind: 'road' | 'access'; coordinates: Coordinate[] }[];
   roadLegs?: Coordinate[][];

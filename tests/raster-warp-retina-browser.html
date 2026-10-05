@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>坐标校正 256/512 Retina Worker 检查</title>
+<style>body{font:14px system-ui;padding:16px;background:#17201e;color:#eef4e8}button{padding:10px}pre{white-space:pre-wrap}</style>
+<button id="run">运行 256/512 Worker 像素检查</button>
+<pre id="result">等待检查</pre>
+<script type="module">
+import { RasterCoordinates } from '../modules/mapSources/RasterCoordinates.ts';
+import { fromWgs84, pixelLngLat, worldPixel } from '../modules/mapSources/coordinates.ts';
+
+const result = document.querySelector('#result');
+const component = value => ((value % 251) + 251) % 251;
+
+async function runCase(pixelSize, datum) {
+  const z = 12, tileSize = 256;
+  const [mapPx, mapPy] = worldPixel(103.63, 31.74, tileSize * 2 ** z);
+  const x = Math.floor(mapPx / tileSize), y = Math.floor(mapPy / tileSize);
+  const source = {
+    type: 'raster', id: `fixture-${pixelSize}-${datum}`, tileSize, scheme: 'xyz',
+    tiles: [`shantu-map://fixture-${pixelSize}-${datum}/{z}/{x}/{y}`],
+    setTiles(tiles) { this.tiles = tiles; },
+  };
+  let requests = 0;
+  const raw = async ({ url }) => {
+    requests++;
+    const match = url.match(/\/(\d+)\/(\d+)\/(\d+)$/);
+    if (!match) throw Error(`瓦片URL格式错误: ${url}`);
+    const [, , tx, ty] = match.map(Number);
+    const canvas = new OffscreenCanvas(pixelSize, pixelSize);
+    const ctx = canvas.getContext('2d'), image = ctx.createImageData(pixelSize, pixelSize);
+    for (let row = 0; row < pixelSize; row++) for (let col = 0; col < pixelSize; col++) {
+      const index = (row * pixelSize + col) * 4;
+      image.data.set([component(tx * pixelSize + col), component(ty * pixelSize + row), 97, 255], index);
+    }
+    ctx.putImageData(image, 0, 0);
+    return { data: await (await canvas.convertToBlob({ type: 'image/png' })).arrayBuffer() };
+  };
+  const coordinates = new RasterCoordinates({ getSource: id => id === source.id ? source : undefined }, raw);
+  try {
+    coordinates.sync([source.id], datum);
+    const url = source.tiles[0].replace('{z}', z).replace('{x}', x).replace('{y}', y);
+    const response = await coordinates.protocol({ url, type: 'arrayBuffer' }, new AbortController());
+    const initialRequests = requests;
+    await coordinates.protocol({ url, type: 'arrayBuffer' }, new AbortController());
+    if (requests !== initialRequests) throw Error(`${pixelSize}px cache did not reuse its transformed output`);
+    const bitmap = await createImageBitmap(new Blob([response.data]));
+    const outputWidth = bitmap.width, outputHeight = bitmap.height;
+    if (outputWidth !== pixelSize || outputHeight !== pixelSize) {
+      bitmap.close();
+      throw Error(`${pixelSize}px input produced ${outputWidth}x${outputHeight}`);
+    }
+    const canvas = new OffscreenCanvas(pixelSize, pixelSize), ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0); bitmap.close();
+    let checked = 0, maxError = 0;
+    for (const row of [pixelSize * .14, pixelSize * .34, pixelSize * .58, pixelSize * .82].map(Math.floor))
+      for (const col of [pixelSize * .14, pixelSize * .34, pixelSize * .58, pixelSize * .82].map(Math.floor)) {
+        const ll = pixelLngLat((x + (col + .5) / pixelSize) * tileSize, (y + (row + .5) / pixelSize) * tileSize, tileSize * 2 ** z);
+        const scale = pixelSize / tileSize;
+        const p = worldPixel(...fromWgs84(...ll, datum), tileSize * 2 ** z).map(value => value * scale - .5);
+        if (p.some(value => component(Math.floor(value)) === 250)) continue;
+        const sample = ctx.getImageData(col, row, 1, 1).data;
+        const error = Math.max(Math.abs(sample[0] - component(p[0])), Math.abs(sample[1] - component(p[1])));
+        if (error > 2 || sample[2] !== 97 || sample[3] !== 255)
+          throw Error(`${pixelSize}px ${datum} pixel mismatch: error=${error}, rgba=${[...sample]}`);
+        checked++; maxError = Math.max(maxError, error);
+      }
+    if (checked < 12) throw Error(`${pixelSize}px ${datum}: only ${checked} sample pixels checked`);
+    return `PASS ${pixelSize}px ${datum}: output ${outputWidth}x${outputHeight}, ${checked} coordinates, max error ${maxError.toFixed(2)}, ${initialRequests} input tiles, cached`;
+  } finally { coordinates.dispose(); }
+}
+
+document.querySelector('#run').onclick = async () => {
+  result.textContent = 'Running actual rasterWarp.worker.ts...';
+  const lines = [];
+  try {
+    for (const size of [256, 512]) for (const datum of ['gcj02', 'bd09']) lines.push(await runCase(size, datum));
+    result.textContent = lines.join('\n');
+  } catch (error) { result.textContent = `${lines.join('\n')}\nFAIL ${error?.stack ?? error}`; }
+};
+</script>
+</html>

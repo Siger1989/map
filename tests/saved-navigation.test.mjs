@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { trackNavigation } from '../modules/guidance/savedRoute.ts';
+import {
+  RouteDisconnectedError,
+  RouteEndpointRequiredError,
+  trackNavigation,
+} from '../modules/guidance/savedRoute.ts';
 import { validFavorite } from '../modules/navigation/favorites.ts';
 import { createSession, advance } from '../modules/guidance/session.ts';
 import { nextInstruction } from '../modules/guidance/geometry.ts';
@@ -98,6 +102,69 @@ test('connected saved segments join but detached segments and lone points are ne
         now,
       ),
     /坐标无效/,
+  );
+});
+
+test('connected forks and a point on a shared interior vertex are not reported as gaps', () => {
+  const center = [103, 30];
+  const fork = track([
+    [center, [103.001, 30]],
+    [center, [103, 30.001]],
+    [center, [102.999, 30]],
+  ]);
+  assert.throws(
+    () => trackNavigation(fork, now),
+    (error) => error instanceof RouteEndpointRequiredError && !(error instanceof RouteDisconnectedError),
+  );
+
+  const sharedInteriorPoint = track([line, [line[1]]]);
+  const route = trackNavigation(sharedInteriorPoint, now);
+  assert.deepEqual(route.route.coordinates, line);
+});
+
+test('disconnected components carry the nearest real gap regardless of segment order or direction', () => {
+  const far = [[104, 31], [104.001, 31]];
+  const reversedNear = [[103.001, 30], [103, 30]];
+  const close = [[103.0012, 30], [103.002, 30]];
+  let disconnected;
+  assert.throws(
+    () => trackNavigation(track([far, close, reversedNear]), now),
+    (error) => {
+      disconnected = error;
+      return error instanceof RouteDisconnectedError;
+    },
+  );
+  assert.equal(disconnected.message, '轨迹含不相接的线段，请先连接成连续路线再导航。');
+  assert.deepEqual(disconnected.gap.from, close[0]);
+  assert.deepEqual(disconnected.gap.to, reversedNear[0]);
+
+  let isolated;
+  assert.throws(
+    () => trackNavigation(track([line, [[104, 31]]]), now),
+    (error) => {
+      isolated = error;
+      return error instanceof RouteDisconnectedError;
+    },
+  );
+  assert.deepEqual(isolated.gap.from, line.at(-1));
+  assert.deepEqual(isolated.gap.to, [104, 31]);
+});
+
+test('empty or unlocatable geometry keeps the compatible error without inventing a gap', () => {
+  let disconnected;
+  assert.throws(
+    () => trackNavigation(track([]), now),
+    (error) => {
+      disconnected = error;
+      return error instanceof RouteDisconnectedError;
+    },
+  );
+  assert.equal(disconnected.gap, null);
+  assert.equal(disconnected.message, '轨迹含不相接的线段，请先连接成连续路线再导航。');
+
+  assert.throws(
+    () => trackNavigation(track([[[104, 31]]]), now),
+    (error) => error instanceof RouteDisconnectedError && error.gap === null,
   );
 });
 

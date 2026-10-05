@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { planRoute } from './provider';
 import { validFavorite, type RouteFavorite } from './favorites';
+import { defaultRouteName, routeNameOrDefault } from './routeName';
 import { MAX_ROUTE_STOPS, moveStop, stopLabel, type RouteStop } from './stops';
 import type {
   Coordinate,
@@ -19,6 +20,7 @@ export function useNavigation() {
   current.current = stops;
   const [mode, setMode] = useState<TravelMode>('auto');
   const [route, setRoute] = useState<PlannedRoute | null>(null);
+  const [visible, setVisible] = useState(true);
   const [picking, setPickingState] = useState<Endpoint | null>(null);
   const [loading, setLoading] = useState(false),
     [error, setError] = useState('');
@@ -27,6 +29,7 @@ export function useNavigation() {
     request.current?.abort();
     setLoading(false);
     setRoute(null);
+    setVisible(true);
     setError('');
   };
   const indexOf = (slot: Endpoint) =>
@@ -107,7 +110,11 @@ export function useNavigation() {
         })),
       );
       setMode(favorite.route.mode);
-      setRoute(favorite.route);
+      setRoute({
+        ...favorite.route,
+        name: routeNameOrDefault(favorite.route.name || favorite.name, favorite.start, favorite.end),
+      });
+      setVisible(true);
       return true;
     },
     setMode: (value: TravelMode) => {
@@ -155,8 +162,10 @@ export function useNavigation() {
           values.slice(1, -1),
         );
         if (abort.signal.aborted) return null;
-        setRoute(result);
-        return result;
+        const named = { ...result, name: defaultRouteName(values[0], values.at(-1)!) };
+        setRoute(named);
+        setVisible(true);
+        return named;
       } catch (e) {
         if (!abort.signal.aborted)
           setError(
@@ -170,6 +179,14 @@ export function useNavigation() {
         if (!abort.signal.aborted) setLoading(false);
       }
     },
+    rename: (value: string) => {
+      const name = value.slice(0, 60).trim();
+      if (!name || !route) return false;
+      setRoute((current) => current ? { ...current, name } : current);
+      return true;
+    },
+    visible,
+    setVisible,
   };
 }
 export type NavigationState = ReturnType<typeof useNavigation>;

@@ -1,5 +1,5 @@
 import { SmartInput, SmartTextarea } from '../input/SmartText';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactNode, type Ref } from 'react';
 import type { Annotation } from './data';
 import { MARKER_ICONS, markerIcon, markerSolidPath } from './icons';
 import {
@@ -13,6 +13,7 @@ export function AnnotationIdentity({
   change,
   remember,
   location,
+  nameRef,
 }: {
   item: Pick<Annotation, 'name' | 'attributes' | 'icon'>;
   change: (
@@ -20,6 +21,7 @@ export function AnnotationIdentity({
   ) => boolean;
   remember: () => void;
   location?: ReactNode;
+  nameRef?: Ref<HTMLInputElement>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [recent] = useState(() => {
@@ -71,8 +73,10 @@ export function AnnotationIdentity({
       )}
       <label className="annotation-field">
         <span>名称</span>
-        <SmartInput
+        <input
+          ref={nameRef}
           aria-label="标记名称"
+          autoComplete="off"
           value={item.name}
           maxLength={60}
           onChange={(e) => change({ name: e.target.value })}

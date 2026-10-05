@@ -10,7 +10,6 @@ export const groups = [
   ['.camera-gizmo', '视角方向盘'],
   ['.position-dock > .position-dock-button', '定位入口'],
   ['.route-display-control > .position-dock-button', '海拔显示入口'],
-  ['.position-dock-coordinates', '定位坐标'],
   ['.position-status', '定位提示'],
   ['.recording-quick', '快捷记录'],
   ['.dock-navigation', '底部导航'],

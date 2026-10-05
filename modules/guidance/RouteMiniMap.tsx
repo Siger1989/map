@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Coordinate } from '../navigation/types';
+import type { Coordinate, PlannedRoute } from '../navigation/types';
 import type { LayerSettings } from '../map/types';
 import { routeBounds } from '../routeShare/data';
 import { basemapConfiguration, tiandituTiles } from '../cartography/basemaps';
 import { tiandituBase, TIANDITU_LAYERS } from '../cartography/tianditu';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { SENTINEL_TILES, SENTINEL_MAXZOOM, usesSentinel, usesTianditu } from '../cartography/sentinel';
-type Option={id:string;coordinates:Coordinate[];color:string};
+type Option={id:string;coordinates:Coordinate[];color:string;segments?:PlannedRoute['segments'];opacity?:number};
 export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='original',settings}: {
   coordinates:Coordinate[];color?:string;routes?:Option[];selectedId?:string;settings?:LayerSettings;
 }) {
@@ -31,8 +31,9 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
         style:{version:8,sources:{base:{type:'raster',tiles:sentinel?SENTINEL_TILES:tdt?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:sentinel?SENTINEL_MAXZOOM:tdt?Math.min(TIANDITU_LAYERS[base].maxzoom,18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
           {id:'background',type:'background',paint:{'background-color':'#dce6d5'}},{id:'base',type:'raster',source:'base'},
           {id:'other',type:'line',source:'routes',filter:['==',['get','selected'],false],paint:{'line-color':['get','color'],'line-width':3,'line-opacity':0.5}},
-          {id:'outline',type:'line',source:'routes',filter:['==',['get','selected'],true],paint:{'line-color':'#fff','line-width':7}},
-          {id:'selected',type:'line',source:'routes',filter:['==',['get','selected'],true],paint:{'line-color':['get','color'],'line-width':4}}
+          {id:'outline',type:'line',source:'routes',filter:['all',['==',['get','selected'],true],['!=',['get','kind'],'access']],paint:{'line-color':'#fff','line-width':7,'line-opacity':['get','opacity']}},
+          {id:'selected',type:'line',source:'routes',filter:['all',['==',['get','selected'],true],['!=',['get','kind'],'access']],paint:{'line-color':['get','color'],'line-width':4,'line-opacity':['get','opacity']}},
+          {id:'connection',type:'line',source:'routes',filter:['all',['==',['get','selected'],true],['==',['get','kind'],'access']],paint:{'line-color':['get','color'],'line-width':4,'line-dasharray':[2,2],'line-opacity':['get','opacity']}}
         ]}});
       camera.current=map;
       const syncView=()=>{if(map&&!disposed)setView({zoom:map.getZoom(),pitch:map.getPitch(),bearing:map.getBearing()});};
@@ -41,7 +42,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
         if(!map?.getSource('routes'))return;
         const v=latest.current,bounds=routeBounds(v.options.map(r=>r.coordinates)),center=(bounds[0][0]+bounds[1][0])/2;
         const unwrap=([lng,lat]:Coordinate):Coordinate=>[center+((((lng-center+180)%360)+360)%360)-180,lat];
-        (map.getSource('routes') as import('maplibre-gl').GeoJSONSource).setData({type:'FeatureCollection',features:v.options.map(r=>({type:'Feature',properties:{selected:r.id===v.selectedId,color:r.color},geometry:{type:'LineString',coordinates:r.coordinates.map(unwrap)}}))});
+        (map.getSource('routes') as import('maplibre-gl').GeoJSONSource).setData({type:'FeatureCollection',features:v.options.flatMap(r=>(r.segments??[{kind:'road',coordinates:r.coordinates}]).map(s=>({type:'Feature' as const,properties:{selected:r.id===v.selectedId,color:r.color,kind:s.kind,opacity:r.opacity??1},geometry:{type:'LineString' as const,coordinates:s.coordinates.map(unwrap)}})))});
         map.fitBounds(bounds,{padding:{top:30,bottom:30,left:30,right:86},maxZoom:16,duration:0});markers.splice(0).forEach(m=>m.remove());
         if(v.coordinates.length && v.selectedId)for(const [i,p] of [v.coordinates[0],v.coordinates.at(-1)!].entries()){
           const element=document.createElement('span');element.className=`route-endpoint-badge ${i?'is-end':'is-start'}`;element.textContent=i?'终':'起';

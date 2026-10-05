@@ -39,23 +39,6 @@
   color: #fff;
   background: #246748;
 }
-.position-dock-coordinates {
-  position: absolute;
-  bottom: 46px;
-  left: 0;
-  width: max-content;
-  max-width: calc(100vw - 128px);
-  padding: 2px 4px;
-  font-size: 9px;
-  line-height: 14px;
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .observatory[data-panel='favorites'] .position-dock {
   bottom: calc(4px + var(--safe-bottom));
-}
-.observatory[data-panel='favorites'] .position-dock-coordinates {
-  display: none;
 }

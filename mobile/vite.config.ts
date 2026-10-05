@@ -6,11 +6,13 @@ import mobileViewportCompatibility from '../scripts/mobile-css-compat.mjs';
 import mobileWorkerCompatibility from '../scripts/mobile-worker-compat.mjs';
 import layoutEditor from '../tools/layout-editor/plugin.mjs';
 import { mapTileVitePlugin } from '../tools/map-tile-proxy.mjs';
+import { apkPreviewSeeds } from '../tools/apk-preview-seeds.mjs';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig(({ mode }) => ({
   worker: { format: 'es' },
   define: {
+    'process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW': JSON.stringify(mode === 'apk-preview' ? '1' : ''),
     'process.env.NEXT_PUBLIC_TIANDITU_KEY': JSON.stringify(
       loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '')
         .NEXT_PUBLIC_TIANDITU_KEY ?? '',
@@ -31,7 +33,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
-  plugins: [mapTileVitePlugin(), react(), mobileWorkerCompatibility(), layoutEditor()],
+  plugins: [apkPreviewSeeds({ enabled: mode === 'apk-preview', privatePath: fileURLToPath(new URL('../.openai/default-map-sources-private.json', import.meta.url)) }), mapTileVitePlugin(), react(), mobileWorkerCompatibility(), layoutEditor()],
   css: {
     postcss: {
       plugins: [

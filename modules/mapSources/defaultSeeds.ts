@@ -4,6 +4,8 @@ import { MAX_CONFIG_BYTES, MAX_MAPS, MAX_STORAGE_BYTES, plainText, validBounds, 
 
 export const DEFAULT_SEED_ASSET = '/native/default-map-sources.json';
 
+export type DefaultSeedBundle = { drafts: MapDraft[]; legacyMapCount: number };
+
 function validOvmaps(draft: Record<string, unknown>): boolean {
   const ovmap = draft.ovmap;
   if (!ovmap || typeof ovmap !== 'object' || Array.isArray(ovmap)) return false;
@@ -66,18 +68,38 @@ function validateSeedDraft(value: unknown, index: number): MapDraft {
   return draft;
 }
 
-export function parseDefaultSeeds(value: unknown): MapDraft[] {
+export function parseDefaultSeedBundle(value: unknown): DefaultSeedBundle {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('内置图源文件格式无效');
   const asset = value as Record<string, unknown>;
   if (asset.version !== 1 || !Array.isArray(asset.maps) || asset.maps.length < 1 || asset.maps.length > MAX_MAPS) throw new Error('内置图源文件版本或数量无效');
   const drafts = asset.maps.map(validateSeedDraft);
   const total = drafts.reduce((sum, draft) => sum + new TextEncoder().encode(JSON.stringify(draft)).byteLength, 0);
   if (total > MAX_STORAGE_BYTES) throw new Error('内置图源总量超过本机存储上限');
-  return drafts;
+  const legacyMapCount = asset.legacyMapCount === undefined ? drafts.length : asset.legacyMapCount;
+  if (!Number.isInteger(legacyMapCount) || Number(legacyMapCount) < 0 || Number(legacyMapCount) > drafts.length)
+    throw new Error('内置图源旧版数量无效');
+  return { drafts, legacyMapCount: Number(legacyMapCount) };
 }
 
-export async function loadDefaultSeeds(): Promise<MapDraft[] | undefined> {
-  if (typeof location === 'undefined' || location.origin !== 'https://appassets.androidplatform.net') return;
+/** Keep the original array-returning API for existing callers and tests. */
+export function parseDefaultSeeds(value: unknown): MapDraft[] {
+  return parseDefaultSeedBundle(value).drafts;
+}
+
+function mayLoadDefaultSeedAsset(): boolean {
+  if (typeof location === 'undefined') return false;
+  if (location.origin === 'https://appassets.androidplatform.net') return true;
+  if (process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW !== '1') return false;
+  try {
+    const origin = new URL(location.origin);
+    if (!['http:', 'https:'].includes(origin.protocol)) return false;
+    const hostname = origin.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  } catch { return false; }
+}
+
+export async function loadDefaultSeedBundle(): Promise<DefaultSeedBundle | undefined> {
+  if (!mayLoadDefaultSeedAsset()) return;
   const response = await fetch(DEFAULT_SEED_ASSET, { credentials: 'omit', cache: 'no-store', redirect: 'error' });
   if (response.status === 404) return;
   if (!response.ok) throw new Error(`读取内置图源失败（${response.status}）`);
@@ -102,13 +124,17 @@ export async function loadDefaultSeeds(): Promise<MapDraft[] | undefined> {
   let parsed: unknown;
   try { parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
   catch { throw new Error('内置图源文件不是有效 JSON'); }
-  return parseDefaultSeeds(parsed);
+  return parseDefaultSeedBundle(parsed);
+}
+
+export async function loadDefaultSeeds(): Promise<MapDraft[] | undefined> {
+  return (await loadDefaultSeedBundle())?.drafts;
 }
 
 /** A seed failure is surfaced while still returning the user's saved maps. */
 export async function seedThenList(
-  load: () => Promise<MapDraft[] | undefined>,
-  ensure: (drafts: MapDraft[]) => Promise<unknown>,
+  load: () => Promise<MapDraft[] | DefaultSeedBundle | undefined>,
+  ensure: (drafts: MapDraft[] | DefaultSeedBundle) => Promise<unknown>,
   list: () => Promise<MapSource[]>,
   onSeedError: (message: string) => void,
 ): Promise<MapSource[]> {

@@ -1,5 +1,5 @@
-export type SavedSourceFilter = 'all' | 'online' | 'offline';
-export type SourceCategory = 'builtin' | 'saved';
+export type SavedSourceFilter = 'all' | 'favorites' | 'online' | 'offline';
+export type SourceCategory = 'builtin' | 'saved' | 'library';
 export type MapSourcesStep = 'list' | 'library' | 'add' | 'camera' | 'preview';
 
 type MapSourcesSessionState = {

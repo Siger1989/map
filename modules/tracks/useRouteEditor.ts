@@ -22,6 +22,7 @@ export function useRouteEditor() {
   };
   return {
     session,
+    currentSession: () => ref.current,
     error,
     setError,
     change,

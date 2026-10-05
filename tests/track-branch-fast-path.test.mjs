@@ -8,12 +8,32 @@ import { composeTrackOverlay } from '../modules/workbench/trackOverlay.ts';
 const bundled = await build({ entryPoints: ['modules/tracks/TrackLayer.ts'], bundle: true, platform: 'node', format: 'esm', write: false, logLevel: 'silent' });
 const { TrackLayer } = await import('data:text/javascript;base64,' + Buffer.from(bundled.outputFiles[0].text).toString('base64'));
 const diffBundle = await build({ entryPoints: ['node_modules/maplibre-gl/src/source/geojson_source_diff.ts'], bundle: true, platform: 'node', format: 'esm', write: false, logLevel: 'silent' });
-const { toUpdateable, applySourceDiff } = await import('data:text/javascript;base64,' + Buffer.from(diffBundle.outputFiles[0].text).toString('base64'));
+const { toUpdateable, applySourceDiff, mergeSourceDiffs } = await import('data:text/javascript;base64,' + Buffer.from(diffBundle.outputFiles[0].text).toString('base64'));
 
-function harness({ rejectNextDiff = false, deferNextDiff = false } = {}) {
+test('MapLibre queued route replacement then preview update keeps the final same-ID geometry', () => {
+  const feature = (id, coords) => ({ type: 'Feature', id, properties: { trackId: 'route' }, geometry: { type: 'MultiLineString', coordinates: [coords] } });
+  const id = 'manual-track:route:line:0';
+  const original = feature(id, [[0, 0], [1, 0]]);
+  const replacement = feature(id, [[0, 0], [1, 0], [2, 0]]);
+  const preview = [[0, 0], [1, 0], [2, 1]];
+  const replacementDiff = { remove: [id], add: [replacement] };
+  const previewDiff = { update: [{ id, newGeometry: { type: 'MultiLineString', coordinates: [preview] } }] };
+  const merged = mergeSourceDiffs(replacementDiff, previewDiff);
+  const updateable = toUpdateable({ type: 'FeatureCollection', features: [original] });
+  applySourceDiff(updateable, merged);
+  assert.deepEqual(updateable.get(id).geometry.coordinates, [preview], 'MapLibre applies the surviving add before a queued update to that ID');
+
+  const cancelDiff = { update: [{ id, newGeometry: replacement.geometry }] };
+  const canceled = mergeSourceDiffs(merged, cancelDiff);
+  applySourceDiff(updateable, canceled);
+  assert.deepEqual(updateable.get(id).geometry, replacement.geometry, 'a later cancel update restores the newest canonical geometry');
+});
+
+function harness({ rejectNextDiff = false, deferNextDiff = false, emitNextDiffError = false } = {}) {
   const sources = new Map(), layers = new Map(), handlers = new Map();
   const counts = { setData: 0, diff: 0, project: 0, lineBuilds: 0, lineRemovals: 0 };
   let rejectDiff = rejectNextDiff;
+  let emitDiffError = emitNextDiffError;
   let deferDiff = deferNextDiff, rejectDeferredDiff = null;
   const map = {
     getSource: (id) => sources.get(id), getLayer: (id) => layers.get(id),
@@ -23,6 +43,7 @@ function harness({ rejectNextDiff = false, deferNextDiff = false } = {}) {
         updateData(diff) {
           if (id !== 'manual-tracks') return Promise.resolve();
           counts.diff++;
+          if (emitDiffError) { emitDiffError = false; handlers.get('error')?.({ sourceId: id, error: new Error('worker error emitted, promise resolves') }); return Promise.resolve(); }
           if (rejectDiff) { rejectDiff = false; return Promise.reject(new Error('simulated worker failure')); }
           if (deferDiff) {
             deferDiff = false;
@@ -72,6 +93,62 @@ function assertMatchesFull(state, incremental) {
   fullLayer.sync(state);
   assert.deepEqual(canonical(incremental), canonical(rebuilt), 'incremental feature collection matches fresh full render including IDs');
 }
+
+test('adding and undoing a branch retains unchanged dense-route line features on both maps', () => {
+  const points = Array.from({ length: 5800 }, (_, i) => [103 + i * .000002, 30]);
+  const route = { ...makeTrack('dense'), segments: [points], nodes: [points[0], points.at(-1)] };
+  let session = toggleEditBranch(selectEditNode(startRouteEdit(route), points[2000]));
+  const display = { saved: [route], draft: [], recording: null, visible: true, style: route.style, nodes: route.nodes, selectedId: route.id, snapTargets: true };
+  const overlay = () => composeTrackOverlay({ ...display, session });
+  const maps = [harness(), harness()], renderers = maps.map(h => new TrackLayer(h.map));
+  renderers.forEach(layer => layer.sync(overlay()));
+  const before = maps.map(h => ({ ...h.counts }));
+  const refs = maps.map(h => geometryRefs(lines(h)));
+  session = appendEditBranch(session, [103.004, 30.001]);
+  renderers.forEach(layer => layer.sync(overlay()));
+  maps.forEach((h, i) => {
+    assert.equal(h.counts.setData, before[i].setData);
+    assert.equal(h.counts.lineRemovals, before[i].lineRemovals, 'unchanged main-line chunks stay in the worker');
+    assertSameLineReferences(refs[i], lines(h));
+    assertMatchesFull(overlay(), h);
+  });
+  session = undoRouteEdit(session);
+  renderers.forEach(layer => layer.sync(overlay()));
+  maps.forEach((h, i) => { assertSameLineReferences(refs[i], lines(h)); assertMatchesFull(overlay(), h); });
+});
+
+test('resolved worker-error events restore newest route data once without a retry loop', async () => {
+  const h = harness({ emitNextDiffError: true }), layer = new TrackLayer(h.map), initial = baseline();
+  layer.sync(initial);
+  const changed = { ...initial, saved: [{ ...initial.saved[0], style: { ...initial.saved[0].style, opacity: .4, pointSize: 12 } }, ...initial.saved.slice(1)] };
+  layer.sync(changed);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assertMatchesFull(changed, h);
+  assert.equal(h.counts.setData, 2, 'error event recovered although updateData did not reject');
+  h.handlers.get('error')({ sourceId: 'manual-tracks', error: new Error('persistent worker failure') });
+  h.handlers.get('error')({ sourceId: 'other', error: new Error('unrelated tile failure') });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(h.counts.setData, 2, 'persistent or unrelated errors cannot cause an infinite retry');
+});
+
+test('partial route replacements retain color, translucent lines, endpoint labels and preview indexes', () => {
+  const h = harness(), layer = new TrackLayer(h.map);
+  let state = baseline();
+  layer.sync(state);
+  for (const change of [
+    track => ({ ...track, edgeColors: [track.segments[0].slice(1).map((_, i) => i < 8 ? '#aabbcc' : '#445566')] }),
+    track => ({ ...track, style: { ...track.style, opacity: .4, pointSize: 12 } }),
+    track => ({ ...track, routeTerminals: { start: track.segments[0][2], end: track.segments[0][5] } }),
+    track => ({ ...track, segments: [track.segments[0].map((point, i) => i === 7 ? [point[0], .002] : point)] }),
+  ]) {
+    state = { ...state, saved: [change(state.saved[0]), ...state.saved.slice(1)] };
+    layer.sync(state);
+    assertMatchesFull(state, h);
+    layer.preview({ node: { trackId: 'selected', coordinate: state.saved[0].segments[0][7] }, coordinate: [.007, .004] });
+    layer.preview(null);
+    assertMatchesFull(state, h);
+  }
+});
 
 test('ordinary active-node updates remain incremental, while empty branch open/close patches handles only', () => {
   const h = harness(), layer = new TrackLayer(h.map), initial = baseline();

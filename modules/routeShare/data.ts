@@ -5,6 +5,7 @@ import type {
   RoutePlace,
   TravelMode,
 } from '../navigation/types';
+import { routeNameOrDefault } from '../navigation/routeName.ts';
 import { trackDistance, resolvedRouteTerminals } from '../tracks/drawing.ts';
 import { exportGPX, exportKML } from '../outdoor/exchange.ts';
 import type { Annotation } from '../annotations/data';
@@ -24,7 +25,7 @@ export type ShareRoute = {
 };
 export function sharePlanned(
   route: PlannedRoute,
-  name = '导航路线',
+  name = routeNameOrDefault(route.name, route.stops?.[0] ?? { name: '起点', coordinates: route.coordinates[0] }, route.stops?.at(-1) ?? { name: '终点', coordinates: route.coordinates.at(-1)! }),
   approach = false,
 ): ShareRoute {
   return {

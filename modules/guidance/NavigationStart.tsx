@@ -17,6 +17,7 @@ const sessions=new Map<string,Record<string,RouteFavorite['route']>>();
 import { orientTrack } from './direction';
 import { reverseRoadRoute } from './reverseRoadRoute';
 import { networkEndpoints, vertexKey } from './network';
+import { resolveTrackConnections } from './trackConnections';
 import type { RoutePlace } from '../navigation/types';
 export function NavigationStart({
   target,
@@ -113,7 +114,8 @@ export function NavigationStart({
   },[target,source,startPlace,endPlace,reversed,routeChoice,plans,previewKey]);
   const preview=prepared.route, selectedDistance=preview.distance, selectionError=prepared.error;
   const roadReady=routeChoice==='original' || !!plans[previewKey];
-  const routeOptions=[{id:'original',coordinates:routeChoice==='original'?prepared.route.coordinates:source.route.coordinates,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0'} as const)[route.mode]}))];
+  const originalPreview=routeChoice==='original'?prepared.route:source.route;
+  const routeOptions=[{id:'original',coordinates:originalPreview.coordinates,segments:originalPreview.segments,opacity:originalPreview.displayOpacity,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0'} as const)[route.mode]}))];
   const start = async () => {
     if(!roadReady || busy || selectionError)return;
     const abort = new AbortController();
@@ -124,6 +126,7 @@ export function NavigationStart({
       let route = preview;
       if (routeChoice === 'original' && source.route.geometryKind==='track') {
         route = orientTrack(source, startPlace, endPlace, source.route.mode, reversed).route;
+        route = await resolveTrackConnections(route, planRoute, abort.signal);
       }
       if (!abort.signal.aborted)
         onStart({ ...target, start: startPlace, end: endPlace, route });
@@ -152,6 +155,7 @@ export function NavigationStart({
           <p>
             {target.name} · {formatDistance(selectedDistance)}
           </p>
+          {routeChoice === 'original' && !!preview.trackConnections?.length && <p role="status" className="navigation-entry-note">有断开路段，可继续导航；缺口优先沿路连接，无法规划时用直线虚线参考。</p>}
           <div className="navigation-mode-row">
             {TRAVEL_MODES.slice()
               .reverse()
@@ -247,19 +251,19 @@ export function NavigationStart({
                 : '保留原轨迹；预计用时按所选方式估算，未核实车辆通行条件。接入段按道路规划。'}
             </p>
           )}
-          {((routeChoice==='road' && error) || selectionError || startError) && (
+          {(error || selectionError || startError) && (
             <p role="alert" className="route-error">
-              {(routeChoice==='road' && error) || selectionError || startError}
+              {error || selectionError || startError}
             </p>
           )}
         </div>
         <footer>
           <button
             className="route-solid"
-            disabled={!!selectionError || (routeChoice==='road' && (busy || !roadReady))}
+            disabled={!!selectionError || busy || !roadReady}
             onClick={() => void start()}
           >
-            {routeChoice==='road' && busy ? '正在按出行方式规划…' : routeChoice==='original' ? reversed ? '沿反向原路线开始导航' : '沿原路线开始导航' : '使用新规划开始导航'}
+            {busy ? '正在规划连接…' : routeChoice==='original' ? reversed ? '沿反向原路线开始导航' : '沿原路线开始导航' : '使用新规划开始导航'}
           </button>
         </footer>
       </section>

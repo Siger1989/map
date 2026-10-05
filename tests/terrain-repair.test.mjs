@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { terrainRepairPath, legacyTerrainCacheUrl, TERRAIN_URL } from '../modules/terrain/tiles.ts';
+import { terrainRepairPath, legacyTerrainCacheUrl, TERRAIN_URL, terrainRenderUrl } from '../modules/terrain/tiles.ts';
 import { cachedMapFetch } from '../modules/outdoor/tileCache.ts';
 import { regionTiles } from '../modules/outdoor/offline.ts';
 
@@ -33,6 +33,16 @@ test('old offline DEMs are reusable only outside corrected tiles', () => {
   assert.equal(legacyTerrainCacheUrl(`${origin}/api/geology/tiles/1/1/1`), null);
   const urls = regionTiles([97.76, 34.85, 97.761, 34.851], 12, origin + TERRAIN_URL);
   assert.ok(urls.every((url) => url.endsWith('?revision=repairs-v1')));
+});
+
+test('web terrain bypasses stale external redirects without changing native or offline tile identity', () => {
+  const native = 'https://appassets.androidplatform.net';
+  assert.equal(terrainRenderUrl(native), native + TERRAIN_URL);
+  for (const origin of ['http://127.0.0.1:9174', 'https://map.example']) {
+    const url = terrainRenderUrl(origin);
+    assert.equal(url, origin + TERRAIN_URL + '&transport=same-origin-v1');
+    assert.equal(new URL(url).searchParams.get('revision'), 'repairs-v1');
+  }
 });
 
 test('repaired and unaffected terrain requests both use current network data', async () => {

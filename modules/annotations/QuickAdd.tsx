@@ -79,10 +79,7 @@ export function QuickAdd({
           </p>
           <div className="quick-add-options">
             <button type="button" onClick={onShare}><Share2 size={16}/>分享位置</button>
-            <button type="button" onClick={onArea}>
-              ▱ 划区域
-            </button>
-            <AnnotationTypeOptions onAdd={onAdd} onOutline={onArea} />
+            <AnnotationTypeOptions onAdd={onAdd} />
           </div>
           {error && <p role="alert">{error}</p>}
         </div>

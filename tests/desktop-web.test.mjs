@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { request, createServer } from 'node:http';
@@ -17,7 +17,7 @@ test('portable web server serves public files and existing terrain APIs without 
   const { createDesktopServer } = await import(
     `data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`
   );
-  const dir = await mkdtemp(resolve(tmpdir(), 'shantu-web-test-'));
+  const dir = await realpath(await mkdtemp(resolve(tmpdir(), 'shantu-web-test-')));
   const root = resolve(dir, 'web');
   await mkdir(root);
   await writeFile(resolve(root, 'index.html'), '<title>山兔</title>');
@@ -40,10 +40,10 @@ test('portable web server serves public files and existing terrain APIs without 
     redirect: 'manual',
   });
   assert.equal(terrain.status, 302);
-  assert.match(
-    terrain.headers.get('location'),
-    /^https:\/\/elevation-tiles-prod/,
-  );
+  const remoteTerrain = new URL(terrain.headers.get('location'), base);
+  assert.equal(remoteTerrain.origin, base, 'remote DEM stays same-origin through the validated image proxy');
+  assert.equal(remoteTerrain.pathname, '/api/map-tile');
+  assert.equal(remoteTerrain.searchParams.get('url'), 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/0/0/0.png');
   const localTerrain = await fetch(base + '/api/terrain/9/395/203.png', {
     redirect: 'manual',
   });

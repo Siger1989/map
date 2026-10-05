@@ -1,5 +1,6 @@
 import { SectionTerrainStore } from './elevation';
 import { mercator } from './planeMath';
+import type { Coordinate } from '../navigation/types';
 import {
   surveyBasis,
   surveyCoordinate,
@@ -13,6 +14,7 @@ import {
 export async function sampleSurveyTerrain(
   line: SurveyLine,
   signal: AbortSignal,
+  groundElevation?: (point: Coordinate) => number | null,
 ): Promise<SurveyTerrain> {
   const range = surveyRange(line),
     columns = 257,
@@ -31,7 +33,7 @@ export async function sampleSurveyTerrain(
   );
   const n = 2 ** zoom,
     tiles = new Map<string, { z: number; x: number; y: number }>();
-  const cells: { x: number; y: number }[] = [];
+  const cells: { x: number; y: number; point: Coordinate }[] = [];
   const key = (px: number, py: number) => {
     const x = ((Math.floor(px / 256) % n) + n) % n,
       y = Math.floor(py / 256);
@@ -47,7 +49,7 @@ export async function sampleSurveyTerrain(
       const m = mercator(p),
         x = m.x * n * 256 - 0.5,
         y = m.y * n * 256 - 0.5;
-      cells.push({ x, y });
+      cells.push({ x, y, point: p });
       for (const dx of [0, 1])
         for (const dy of [0, 1]) {
           const t = key(Math.floor(x) + dx, Math.floor(y) + dy);
@@ -57,14 +59,16 @@ export async function sampleSurveyTerrain(
   if (tiles.size > 80)
     throw new Error('剖面范围过大，请缩短勘探线或平面图带宽');
   const store = new SectionTerrainStore(),
-    heights = new Map<string, Float32Array>();
+    heights = new Map<string, Float32Array>(),
+    failures: unknown[] = [];
   try {
     await Promise.all(
       [...tiles].map(async ([k, tile]) => {
         try {
           heights.set(k, await store.read(tile, signal));
-        } catch {
+        } catch (error) {
           signal.throwIfAborted();
+          failures.push(error);
         }
       }),
     );
@@ -77,6 +81,8 @@ export async function sampleSurveyTerrain(
         NaN
       );
     };
+    let loadedSamples = 0,
+      networkSamples = 0;
     const samples = cells.map((p) => {
       const x = Math.floor(p.x),
         y = Math.floor(p.y),
@@ -86,13 +92,39 @@ export async function sampleSurveyTerrain(
         b = pixel(x + 1, y),
         c = pixel(x, y + 1),
         d = pixel(x + 1, y + 1);
-      if (![a, b, c, d].every(Number.isFinite)) return null;
-      const value =
-        (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy;
-      return value >= -12000 && value <= 10000
-        ? Math.round(value * 100) / 100
-        : null;
+      const value = [a, b, c, d].every(Number.isFinite)
+        ? (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy
+        : NaN;
+      if (value >= -12000 && value <= 10000) {
+        networkSamples++;
+        return Math.round(value * 100) / 100;
+      }
+      let loaded: number | null = null;
+      try {
+        loaded = groundElevation?.(p.point) ?? null;
+      } catch {
+        loaded = null;
+      }
+      if (
+        loaded !== null &&
+        Number.isFinite(loaded) &&
+        loaded >= -12000 &&
+        loaded <= 10000
+      ) {
+        loadedSamples++;
+        return Math.round(loaded * 100) / 100;
+      }
+      return null;
     });
+    if (samples.every((v) => v === null) && !heights.size && failures.length) {
+      if (
+        failures.some(
+          (error) => (error as { name?: string })?.name === 'TimeoutError',
+        )
+      )
+        throw new Error('地形加载超时，请检查网络后重试');
+      throw new Error('地形瓦片读取失败，请联网后重试');
+    }
     if (samples.every((v) => v === null))
       throw new Error('当前范围没有可用地形，请联网后重试');
     return {
@@ -104,7 +136,11 @@ export async function sampleSurveyTerrain(
       heights: samples,
       zoom,
       sampledAt: Date.now(),
-      source: '成都区域 FABDEM V1-2（CC BY-NC-SA 4.0）；其他区域 Mapzen/SRTM',
+      source: loadedSamples
+        ? networkSamples
+          ? '网络 DEM：成都区域 FABDEM V1-2（CC BY-NC-SA 4.0）；其他区域 Mapzen/SRTM；网络缺测处由当前地图已加载 DEM 补充'
+          : '当前地图已加载 DEM（网络采样无有效点）'
+        : '成都区域 FABDEM V1-2（CC BY-NC-SA 4.0）；其他区域 Mapzen/SRTM',
     };
   } finally {
     store.clear();

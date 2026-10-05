@@ -94,12 +94,15 @@ export function GuidanceCard({
     >
       <header>
         <div className="guidance-heading-row">
-          <strong>
+          {displayPanel || s.arrived ? <strong>
             <Navigation size={17} />
             {displayPanel ? '路线显示' : s.arrived
               ? '导航完成'
               : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
-          </strong>
+          </strong> : <button className="guidance-resume" aria-label="继续导航" aria-pressed={following} onClick={onFollow}>
+            <Navigation size={15} />
+            <span>{following ? `导航中 · ${TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}` : '继续导航'}</span>
+          </button>}
           <div className="guidance-header-actions">
             {onRally && <button aria-label="打开拉力路书" title="路书" onClick={onRally}><BookOpen size={17} /></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
@@ -166,7 +169,7 @@ export function GuidanceCard({
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
-              {following ? '当前位置' : '恢复跟随'}
+              {following ? '当前位置' : '继续导航'}
             </button>}
             {!s.arrived && (s.offRoute || s.departurePending) && (
               <button

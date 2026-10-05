@@ -16,7 +16,7 @@ test('map layer preferences round-trip actual user selections', () => {
       ...DEFAULT_LAYERS,
       terrain: false, satellite: true, satelliteProvider: 'tianditu', tiandituBase: 'ter',
       tiandituLabels: 'cta', tiandituBoundaries: false, imageryMode: 'latest',
-      clouds: true, rain: true, temperature: false, roads: false, labels: false,
+      clouds: true, cloudOpacity: 0.4, cloudTime: '202610030600', rain: true, temperature: false, roads: false, labels: false,
       geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.45,
       contours: true, contourInterval: 100, elevationColors: true,
       elevationColorsOpacity: 0.35, opacity: 0.72, exaggeration: 1.6,
@@ -24,11 +24,12 @@ test('map layer preferences round-trip actual user selections', () => {
       roadsOpacity: 0.6, rasterDatums: { 'custom:abc': 'gcj02' },
     };
     saveLayerPreferences(selected);
-    const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, ...expected } = selected;
+    const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, cloudTime: _historicCloudTime, ...expected } = selected;
     assert.deepEqual(readLayerPreferences(), expected);
     const persisted = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(persisted.version, 1);
     assert.equal('rasterDatums' in persisted.layers, false, 'datum choices remain in their existing preference key');
+    assert.equal('cloudTime' in persisted.layers, false, 'reopening follows latest observation');
   } finally {
     if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
     else delete globalThis.localStorage;

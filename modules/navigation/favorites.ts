@@ -29,6 +29,10 @@ export function validFavorite(value: unknown): value is RouteFavorite {
     place(f.start) &&
     place(f.end) &&
     !!r &&
+    (r.name === undefined || (typeof r.name === 'string' && r.name.length <= 60)) &&
+    (r.displayOpacity === undefined || (finitePositive(r.displayOpacity) && r.displayOpacity <= 1)) &&
+    (r.trackConnections === undefined || (Array.isArray(r.trackConnections) && r.trackConnections.length <= 64 &&
+      r.trackConnections.every(c => c && ['direct', 'road'].includes(c.routing) && Array.isArray(c.coordinates) && c.coordinates.length >= 2 && c.coordinates.length <= 100000 && c.coordinates.every(coordinate)))) &&
     (r.preferredTrackPath === undefined ||
       (Array.isArray(r.preferredTrackPath) &&
         r.preferredTrackPath.length >= 2 &&

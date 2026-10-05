@@ -26,7 +26,9 @@ export async function GET(
     ? new URL(repair, request.url).href
     : local
       ? new URL(`/terrain/fabdem-v1-2/${z}/${x}/${y}.png`, request.url).href
-      : `https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`;
+      // Keep browser DEM reads same-origin: the upstream response may omit CORS.
+      // This existing proxy validates public destinations and preserves image bytes.
+      : new URL(`/api/map-tile?url=${encodeURIComponent(`https://elevation-tiles-prod.s3.amazonaws.com/terrarium/${z}/${x}/${y}.png`)}`, request.url).href;
   return new Response(null, {
     status: 302,
     headers: {

@@ -2,7 +2,7 @@ import type { Map as LibreMap, AddProtocolAction } from 'maplibre-gl';
 import { readMap } from './storage';
 import { OfflineClient } from './offlineClient';
 import { SOURCE_ID, type MapSource } from './types';
-import { renderOvmapTile } from './ovmapTiles';
+import { ovmapSourceIds, ovmapTileSize, renderOvmapLayerTile } from './ovmapTiles';
 import { TileTransportError } from './tileTransport';
 
 const EMPTY = Uint8Array.from(
@@ -22,6 +22,7 @@ export class MapSourceLayer {
   private opening: Promise<unknown> = Promise.resolve();
   private onlineAbort = new AbortController();
   private partialOverlay = false;
+  private sourceIds: string[] = [];
   constructor(
     private map: LibreMap,
     private status: (text: string) => void,
@@ -29,13 +30,16 @@ export class MapSourceLayer {
   ) {}
   protocol: AddProtocolAction = async (params, abort) => {
     const escapedScheme = this.scheme.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = new RegExp(`^${escapedScheme}://([a-z0-9-]+)/(\\d+)/(\\d+)/(\\d+)$`).exec(
+    const match = new RegExp(`^${escapedScheme}://([^/]+)/(?:layer/(\\d+)/)?(\\d+)/(\\d+)/(\\d+)$`).exec(
       params.url,
     );
     const client = this.client;
     if (!match || match[1] !== this.current)
       throw new DOMException('图源已切换', 'AbortError');
     if (this.selected?.ovmap) {
+      const layerIndex = match[2] === undefined ? 0 : Number(match[2]);
+      const layer = this.selected.ovmap.layers[layerIndex];
+      if (!layer) throw new DOMException('图源图层已切换', 'AbortError');
       const controller = new AbortController();
       const lifetime = this.onlineAbort.signal;
       const cancel = () => controller.abort();
@@ -44,13 +48,16 @@ export class MapSourceLayer {
       const timeout = setTimeout(cancel, 20000);
       try {
         abort.signal.throwIfAborted(); lifetime.throwIfAborted();
-        const data = await renderOvmapTile(this.selected.ovmap.layers, Number(match[2]), Number(match[3]), Number(match[4]), controller.signal, () => { if (!lifetime.aborted) this.partialOverlay = true; });
-        if (!lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
+        const data = await renderOvmapLayerTile(layer, Number(match[3]), Number(match[4]), Number(match[5]), controller.signal);
+        if (layerIndex === 0 && !lifetime.aborted) this.status(this.partialOverlay ? '底图已加载，部分叠加注记暂未加载' : '图源影像已加载');
         return { data };
       } catch (error) {
         if (!controller.signal.aborted && !lifetime.aborted) {
           const detail = error instanceof TileTransportError ? error.message : '部分图源影像暂未加载，可重试或切换图源';
-          this.status(detail);
+          if (layerIndex > 0) {
+            this.partialOverlay = true;
+            this.status('底图已加载，部分叠加注记暂未加载');
+          } else this.status(detail);
         }
         throw error;
       } finally {
@@ -64,9 +71,9 @@ export class MapSourceLayer {
     const bytes = await client.request<Uint8Array | undefined>(
       {
         op: 'tile',
-        z: Number(match[2]),
-        x: Number(match[3]),
-        y: Number(match[4]),
+        z: Number(match[3]),
+        x: Number(match[4]),
+        y: Number(match[5]),
       },
       abort.signal,
     );
@@ -91,6 +98,7 @@ export class MapSourceLayer {
           ? 'hillshade'
           : undefined;
       if (source.kind === 'image') {
+        this.sourceIds = [SOURCE_ID];
         const record = await readMap(id);
         if (generation !== this.generation) return;
         if (!record?.blob || !source.bounds)
@@ -107,7 +115,36 @@ export class MapSourceLayer {
             [w, s],
           ],
         });
+      } else if (source.ovmap?.layers.length) {
+        this.sourceIds = ovmapSourceIds(source);
+        source.ovmap.layers.forEach((layer, index) => {
+          const sourceId = this.sourceIds[index];
+          const layerPath = index === 0 ? '' : `layer/${index}/`;
+          const tiles = [`${this.scheme}://${id}/${layerPath}{z}/{x}/{y}`];
+          const attribution = index === 0 ? source.attribution.replace(
+            /[<>&"']/g,
+            (c) =>
+              ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c]!,
+          ) : '';
+          this.map.addSource(sourceId, {
+            type: 'raster',
+            tiles,
+            scheme: 'xyz',
+            tileSize: ovmapTileSize(layer),
+            minzoom: layer.minzoom,
+            maxzoom: layer.maxzoom,
+            bounds: source.bounds,
+            attribution,
+          });
+          this.map.addLayer({
+            id: sourceId,
+            type: 'raster',
+            source: sourceId,
+            paint: { 'raster-fade-duration': 0 },
+          }, before);
+        });
       } else {
+        this.sourceIds = [SOURCE_ID];
         if (source.kind === 'mbtiles') {
           const client = new OfflineClient();
           this.client = client;
@@ -148,15 +185,16 @@ export class MapSourceLayer {
           ),
         });
       }
-      this.map.addLayer(
-        {
-          id: SOURCE_ID,
-          type: 'raster',
-          source: SOURCE_ID,
-          paint: { 'raster-fade-duration': 0 },
-        },
-        before,
-      );
+      if (source.kind === 'image' || !source.ovmap?.layers.length)
+        this.map.addLayer(
+          {
+            id: SOURCE_ID,
+            type: 'raster',
+            source: SOURCE_ID,
+            paint: { 'raster-fade-duration': 0 },
+          },
+          before,
+        );
       this.status(
         source.kind === 'online'
           ? '已选择在线图源 · 显示范围由提供方决定'
@@ -164,6 +202,7 @@ export class MapSourceLayer {
       );
     } catch (error) {
       if (generation === this.generation) {
+        this.removeSources();
         this.status(
           error instanceof Error && error.name === 'AbortError'
             ? '加载已取消，请重新选择'
@@ -181,9 +220,15 @@ export class MapSourceLayer {
     this.selected = null;
     this.client?.close();
     this.client = undefined;
-    if (this.map.getLayer(SOURCE_ID)) this.map.removeLayer(SOURCE_ID);
-    if (this.map.getSource(SOURCE_ID)) this.map.removeSource(SOURCE_ID);
+    this.removeSources();
     if (this.imageUrl) URL.revokeObjectURL(this.imageUrl);
     this.imageUrl = undefined;
+  }
+  private removeSources() {
+    for (const id of [...this.sourceIds].reverse()) {
+      if (this.map.getLayer(id)) this.map.removeLayer(id);
+      if (this.map.getSource(id)) this.map.removeSource(id);
+    }
+    this.sourceIds = [];
   }
 }

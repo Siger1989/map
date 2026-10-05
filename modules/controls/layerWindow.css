@@ -48,26 +48,33 @@
    the shared 36px minimum. Expanded controls remain in the scrollable content. */
 .observatory .map-layer-control .layer-window.control-popover {
   width: min(248px, calc(100% - 74px));
+  left: max(8px, var(--home-left, 8px));
+  right: auto;
   padding: 0 6px 6px;
   gap: 2px;
 }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']
-  .map-layer-control .layer-window.control-popover > .dock-heading {
+.observatory.home-map .map-layer-control .layer-window.control-popover > .dock-heading {
   height: 36px;
   min-height: 36px;
-  padding: 0 6px;
+  padding: 0 4px;
 }
-.observatory .map-layer-control .layer-window .dock-content {
+.observatory.home-map .map-layer-control .layer-window.control-popover .dock-content {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  padding-top: 0;
+  padding: 0 0 4px;
+  gap: 2px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+.observatory.home-map .map-layer-control .layer-window.control-popover .dock-content > :is(.layer-panel,.map-status) { flex: 0 0 auto; }
 .observatory .map-layer-control .layer-window .layer-panel .map-source-link {
   min-height: 36px;
   gap: 4px;
   padding: 0 2px;
+  font-size: 12px;
 }
+.observatory.home-map .map-layer-control .layer-window .layer-panel button:not(.switch) { font-size: 12px; }
 .observatory .map-layer-control .layer-window .layer-panel .layer-row {
   min-height: 36px;
   gap: 4px;
@@ -94,6 +101,25 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']
   height: 36px;
   min-height: 36px;
   flex: 0 0 36px;
+}
+.observatory.home-map .map-layer-control .layer-window .layer-panel button.switch {
+  background: transparent;
+  border: 0;
+  border-radius: var(--ui-radius-control, 4px);
+  box-shadow: none;
+}
+.observatory.home-map .map-layer-control .layer-window .layer-panel .switch::before {
+  border-radius: var(--ui-radius-control, 4px);
+  background: var(--ui-line);
+}
+.observatory.home-map .map-layer-control .layer-window .layer-panel .switch[aria-checked='true']::before {
+  background: var(--ui-accent);
+}
+.observatory.home-map .map-layer-control .layer-window .layer-panel .switch span {
+  background: var(--ui-muted);
+}
+.observatory.home-map .map-layer-control .layer-window .layer-panel .switch[aria-checked='true'] span {
+  background: var(--ui-on-accent);
 }
 .observatory .map-layer-control .layer-window .layer-panel .imagery-selector {
   margin-top: 4px;
@@ -128,3 +154,57 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']
   gap: 4px;
   padding: 2px 4px;
 }
+.observatory .map-layer-control .layer-window .layer-settings-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 4px;
+}
+.observatory .map-layer-control .layer-window .layer-settings-actions details {
+  min-width: 0;
+  margin: 0;
+}
+.observatory .map-layer-control .layer-window .layer-settings-actions details[open] {
+  grid-column: 1 / -1;
+}
+.observatory .map-layer-control .layer-window .layer-settings-actions summary {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 4px;
+  font-size: 12px;
+  border-radius: var(--ui-radius-control, 4px);
+  cursor: pointer;
+}
+.observatory .map-layer-control .layer-window .layer-settings-actions summary::before {
+  content: '▸';
+  margin-right: 4px;
+}
+.observatory .map-layer-control .layer-window .layer-settings-actions details[open] > summary::before { content: '▾'; }
+.observatory .map-layer-control .layer-window .layer-display-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+.observatory .map-layer-control .layer-window .layer-display-content :is(input,select) {
+  font-size: 16px;
+  min-width: 0;
+}
+.observatory .map-layer-control .layer-window .layer-display-content input[type='range'] {
+  min-height: 36px;
+  height: 36px;
+  margin: 0;
+}
+.observatory .map-layer-control .layer-window .layer-display-content :is(p,small) {
+  font-size: 11px;
+  line-height: 16px;
+  margin: 2px 0;
+  color: var(--ui-muted);
+}
+.observatory .map-layer-control .layer-window .layer-help ul {
+  font-size: 11px;
+  line-height: 16px;
+  padding-left: 16px;
+}
+.observatory .map-layer-control .layer-window .map-status { margin: 0; padding: 0; font-size: 11px; line-height: 16px; }

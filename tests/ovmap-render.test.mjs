@@ -18,7 +18,7 @@ test('single-layer mobile tiles load without OffscreenCanvas or bitmap decoding'
   globalThis.OffscreenCanvas = undefined;
   globalThis.createImageBitmap = undefined;
   globalThis.fetch = async () => new Response(new Uint8Array([1, 2, 3]));
-  const layer = { tiles: ['https://example.test/{z}/{x}/{y}.png'], tileSize: 256, minzoom: 0, maxzoom: 18 };
+  const layer = { tiles: ['https://example.test/{z}/{x}/{y}.png'], tileSize: 512, minzoom: 0, maxzoom: 18 };
   assert.deepEqual([...new Uint8Array(await renderOvmapTile([layer], 5, 6, 10, new AbortController().signal))], [1, 2, 3]);
 });
 

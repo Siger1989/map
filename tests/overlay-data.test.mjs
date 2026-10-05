@@ -2,6 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { syncOverlayData } from '../modules/map/overlayData.ts';
 
+test('independent OVMAP labels remain above roads and route strokes while pins remain on top', () => {
+  const ids = ['shantu-user-map','shantu-user-map-ovmap-1','position-dot','route-path','main-roads'];
+  const map = {
+    getSource: () => ({ setData() {} }),
+    getStyle: () => ({ layers: ids.map(id => ({ id })) }),
+    moveLayer(id, before) {
+      ids.splice(ids.indexOf(id), 1);
+      if (before) ids.splice(ids.indexOf(before), 0, id); else ids.push(id);
+    },
+  };
+  syncOverlayData(map, 'route', { type:'FeatureCollection', features:[] });
+  assert.deepEqual(ids, ['shantu-user-map','main-roads','route-path','shantu-user-map-ovmap-1','position-dot']);
+});
+
 test('access segments and slope warnings retain order after late base layers load', () => {
   const ids = ['route-access', 'guidance-access', 'route-grade-warning-label',
     'route-path', 'guidance-path', 'route-points', 'route-grade-warning-dot', 'late-roads'];

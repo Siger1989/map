@@ -5,6 +5,7 @@ import {
 } from '../navigation/types.ts';
 import { pathOf, project, type Path } from './geometry.ts';
 import type { ManualTrack } from '../tracks/drawing';
+import { trackConnectionSegments } from './trackConnections.ts';
 
 // Only coincident saved vertices form a junction. Lines crossing on screen do not.
 export const vertexKey = (p: Coordinate) =>
@@ -232,6 +233,7 @@ export function routeOnNetwork(
     route: {
       ...route,
       coordinates: hit.coordinates,
+      ...(route.trackConnections ? { segments: trackConnectionSegments(hit.coordinates, route.trackConnections) } : {}),
       distance,
       duration:
         distance /

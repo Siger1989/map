@@ -4,7 +4,6 @@
   z-index: 24;
   pointer-events: none;
 }
-.home-map:not([data-focus-locked='true']):has(.map-box-selection[data-active='true']) .global-focus-lock { display: none; }
 .home-map:has(.map-box-selection[data-active='true']) .box-results { display: none !important; }
 .home-map:has(.map-box-selection[data-action-flow='true']) .box-results { display: flex !important; }
 .observatory.home-map:has(.map-box-selection[data-active='true'][data-action-flow='false']) .control-dock:has(.catalog-panel) .control-popover { display: none !important; }

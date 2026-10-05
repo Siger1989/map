@@ -77,6 +77,13 @@ html[data-ui-theme] :is(.photo-lightbox,.layout-editor-panel) button { backgroun
 html[data-ui-theme] :is(.text-suggestions,.floating-search) { border-radius:var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor :is(button,input,textarea):not([type='color']) { min-height:36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-save { min-height:44px; }
+/* Marker-size exception requested by the user: pin editor controls stay compact
+   across themes; this intentionally supersedes the general 36/44px rules above. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor :is(button,input,textarea,select,summary):not([type='color']) { min-height:28px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.pin-editor,.marker-workspace,.annotation-panel) :is(input,textarea,select):not([type='color']):not([type='range']):not([type='checkbox']):not([type='radio']) { font-size:13px; min-height:28px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-save { min-height:28px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover:has(.annotation-panel) .annotation-panel :is(input,select,textarea) { min-height:30px; font-size:13px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .marker-workspace :is(input,select,textarea) { min-height:28px; font-size:13px; }
 html[data-ui-theme] :is(.pin-attribute-list,.position-extended-controls,.dock-content,.text-suggestions,.floating-search) { scrollbar-width:thin; scrollbar-color:var(--ui-muted) var(--ui-surface); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .record-console { --record-radius:var(--ui-radius-control); --record-primary-height:44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel:has(.record-console) { display:flex; flex-direction:column; }
@@ -100,7 +107,7 @@ html[data-ui-theme] :is(.observatory.home-map,.collection-workbench) input[type=
 /* Route detail/edit/navigation child surfaces use their original module palette names. */
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface,.route-edit-dock,.route-edit-header) { --route-panel:var(--ui-surface); --route-ink:var(--ui-ink); --route-button:var(--ui-raised); --route-border:var(--ui-line); --route-green:var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header,.route-edit-mode-row,.recorded-point-info) { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) :is(button,select,input:not([type='color']):not([type='range'])) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); min-height:36px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) :is(button,select,input:not([type='color']):not([type='range'])) { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); min-height:var(--ui-compact-control-height,28px); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-surface,.route-edit-dock,.route-edit-header) button.route-solid { background:var(--ui-accent); color:var(--ui-on-accent); border-color:transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-edit-dock,.route-edit-header) button[aria-pressed='true'] { background:var(--ui-selected); color:var(--ui-active-ink); }
 /* The generic input rule above has extra :not() specificity. Keep editor
@@ -111,6 +118,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-d
   border-color:transparent;
   box-shadow:none;
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock .route-edit-dock-heading[data-edit-tools='true'] { padding: 0 4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock .route-edit-dock-heading button.route-solid {
   background:var(--ui-accent);
   color:var(--ui-on-accent);

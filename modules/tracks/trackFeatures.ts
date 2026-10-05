@@ -19,6 +19,23 @@ export type TrackRenderItem = {
   samples?: ManualTrack['samples'];
 };
 
+const lineFeatureCache = new WeakMap<ManualTrack, {
+  style: string;
+  edgeColors: TrackRenderItem['edgeColors'];
+  samples: TrackRenderItem['samples'];
+  analysis: TrackOverlay['analysisParts'];
+  selected: boolean;
+  editing: boolean;
+  alternativeId: string | undefined;
+  draft: boolean;
+  features: FeatureCollection['features'];
+}>();
+// Each map owns its feature/property wrappers; geometry comes from an immutable
+// route snapshot just like the original route coordinates.
+const copyLineFeatures = (features: FeatureCollection['features']) => features.map(feature => ({
+  ...feature, properties: { ...feature.properties }, geometry: { ...feature.geometry },
+}));
+
 export function savedTrackRenderItem(track: ManualTrack): TrackRenderItem {
   return { track, draft: false, style: normalizeTrackStyle(track.style), edgeColors: track.edgeColors, samples: track.samples };
 }
@@ -43,12 +60,26 @@ export function draftTrackRenderItem(state: TrackOverlay): TrackRenderItem {
 export function trackLineFeatures(item: TrackRenderItem, state: TrackOverlay): FeatureCollection['features'] {
   const { track, style } = item;
   if (!track.segments.length) return [];
+  const selected = track.id === state.selectedId;
+  const editing = !!state.editing && selected;
+  const alternativeId = selected ? state.alternativeId : 'main';
+  const analysis = state.analysisParts?.trackId === track.id ? state.analysisParts : undefined;
+  const styleKey = JSON.stringify(style);
+  const cached = lineFeatureCache.get(track);
+  if (cached && cached.style === styleKey && cached.edgeColors === item.edgeColors &&
+      cached.samples === item.samples && cached.analysis === analysis && cached.selected === selected &&
+      cached.editing === editing && cached.alternativeId === alternativeId && cached.draft === item.draft)
+    return copyLineFeatures(cached.features);
   const colors = item.edgeColors
     ? edgeColorIndex({ segments: track.segments, edgeColors: item.edgeColors })
     : new Map();
   const metricTrack = { ...track, style, edgeColors: item.edgeColors, samples: item.samples };
-  const parts: ReturnType<typeof metricLineParts> = state.analysisParts?.trackId === track.id
+  const analysisParts = state.analysisParts?.trackId === track.id &&
+    (!state.analysisParts.sourceSegments || state.analysisParts.sourceSegments === track.segments)
     ? state.analysisParts.parts
+    : undefined;
+  const parts: ReturnType<typeof metricLineParts> = analysisParts
+    ? analysisParts
     : style.colorMode && style.colorMode !== 'solid'
       ? metricLineParts(metricTrack, style.colorMode)
       : alternativeLineParts(
@@ -59,7 +90,20 @@ export function trackLineFeatures(item: TrackRenderItem, state: TrackOverlay): F
           coloredLineParts(part.coordinates, colors, part.color ?? style.color)
             .map((piece) => ({ ...part, ...piece })),
         );
-  return parts.map((part) => ({
+  // During editing a node drag patches only its neighbouring chunks. Keep every
+  // original edge, including the shared boundary vertex, without simplification.
+  const renderParts = state.editing && track.id === state.selectedId
+    ? parts.flatMap(part => {
+        // Translucent round caps overlap at a split vertex. Keep their original
+        // feature to preserve opacity rather than introducing darker joints.
+        if ((style.opacity ?? 1) < 1 || part.muted) return [part];
+        const chunks = [];
+        for (let start = 0; start < part.coordinates.length - 1; start += 127)
+          chunks.push({ ...part, coordinates: part.coordinates.slice(start, start + 128) });
+        return chunks;
+      })
+    : parts;
+  const features = renderParts.map((part) => ({
     type: 'Feature' as const,
     properties: {
       trackId: track.id,
@@ -74,6 +118,9 @@ export function trackLineFeatures(item: TrackRenderItem, state: TrackOverlay): F
       coordinates: [part.coordinates].filter((line) => line.length >= 2),
     },
   })).filter((feature) => feature.geometry.type === 'MultiLineString' && feature.geometry.coordinates.length > 0);
+  lineFeatureCache.set(track, { style: styleKey, edgeColors: item.edgeColors, samples: item.samples,
+    analysis, selected, editing, alternativeId, draft: item.draft, features });
+  return copyLineFeatures(features);
 }
 
 export function trackNodeFeatures(

@@ -3,6 +3,7 @@ import type { RoutePlace, TravelMode } from '../navigation/types';
 import { pathOf } from './geometry.ts';
 import { networkPath, vertexKey } from './network.ts';
 import { preferredPath } from './preferredPath.ts';
+import { trackConnectionSegments } from './trackConnections.ts';
 
 /** Reorient a track copy. Road directions must instead be replanned by their provider. */
 export function orientTrack(
@@ -51,6 +52,7 @@ export function orientTrack(
       ...original,
       mode,
       coordinates,
+      ...(original.trackConnections ? { segments: trackConnectionSegments(coordinates, original.trackConnections) } : {}),
       ...(original.preferredTrackPath
         ? { preferredTrackPath: coordinates }
         : {}),

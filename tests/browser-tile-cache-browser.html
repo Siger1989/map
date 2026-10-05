@@ -1,0 +1,31 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>山兔浏览缓存验证</title>
+<style>body{background:#18201f;color:#f2f5ed;font:15px system-ui;padding:20px}button{padding:12px}pre{white-space:pre-wrap}</style>
+<button id="run">读取同一组12张图</button><pre id="result">每次可重新载入此页，再读取同一组。只显示计时、字节和摘要，不输出图源地址。</pre>
+<script type="module">
+import { fetchMapTile, tileTransportSnapshot } from '../modules/mapSources/tileTransport.ts';
+import { renderOvmapTemplate } from '../modules/mapSources/ovmapTemplates.ts';
+const result=document.getElementById('result'),button=document.getElementById('run');
+button.onclick=async()=>{
+  button.disabled=true;result.textContent='读取中…';
+  try{
+    const seed=await(await fetch('/native/default-map-sources.json')).json();
+    const layer=seed.maps.find(s=>s.name.includes('超强')).ovmap.layers[0];
+    const z=11,x=Math.floor((103.6824+180)/360*2**z),y=Math.floor((1-Math.asinh(Math.tan(31.1095*Math.PI/180))/Math.PI)/2*2**z);
+    const before=tileTransportSnapshot(),start=performance.now(),digests=[];let next=0,bytes=0,failures=0;
+    await Promise.all(Array.from({length:4},async()=>{
+      while(next<12){const i=next++,tx=x+i%4-1,ty=y+Math.floor(i/4)-1;
+        try{
+          const url=renderOvmapTemplate(layer.tiles[(tx+ty)%layer.tiles.length],z,tx,ty).replaceAll('{','%7B').replaceAll('}','%7D');
+          const response=await fetchMapTile(url,new AbortController().signal);if(!response.ok)throw Error('response');
+          const data=await response.arrayBuffer();bytes+=data.byteLength;
+          digests[i]=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',data)),n=>n.toString(16).padStart(2,'0')).join('');
+        }catch{failures++;}
+      }
+    }));
+    const after=tileTransportSnapshot();
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digests.join('')))),n=>n.toString(16).padStart(2,'0')).join('');
+    result.textContent=JSON.stringify({elapsedMs:Math.round(performance.now()-start),bytes,failures,hits:after.hits-before.hits,networkRequests:after.networkRequests-before.networkRequests,digest},null,2);
+  }catch(e){result.textContent='FAIL '+e.name;}
+  finally{button.disabled=false;}
+};
+</script></html>

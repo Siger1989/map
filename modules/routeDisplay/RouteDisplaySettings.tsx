@@ -87,7 +87,6 @@ export function RouteDisplaySettings({
                   ['statistics', '底部海拔数据'],
                   ['profile', '底部海拔曲线'],
                   ['steep', '陡坡标记'],
-                  ['coordinates', '底部定位坐标'],
                 ] as const
               ).map(([key, label]) => (
                 <label key={key}>

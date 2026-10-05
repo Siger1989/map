@@ -16,6 +16,21 @@ test('full projection retains every segment and missing heights without inventin
   assert.ok(missing.segments.every(s=>s.rise===null));
 });
 
+test('projection labels every segment rise, including descent and zero, without fabricating missing heights',async()=>{
+  await build({entryPoints:['modules/measurement/ProjectionChart.tsx'],outfile:'.openai/projection-rise.js',bundle:true,format:'esm',platform:'node',packages:'external',jsx:'automatic'});
+  const React=await import('react'),{renderToStaticMarkup}=await import('react-dom/server');
+  const {ProjectionChart}=await import('../.openai/projection-rise.js');
+  const {segmentMetrics}=await import('../modules/measurement/data.ts');
+  const points=[point(0),{...point(1),altitude:128.7},{...point(2),altitude:100}, {...point(3),altitude:100}];
+  const render=ps=>parseHTML(renderToStaticMarkup(React.createElement(ProjectionChart,{points:ps,metrics:segmentMetrics(ps[0],ps[1]),segment:0,total:300,saved:false,hint:null,reading:false,onRetry(){}}))).document;
+  const doc=render(points);
+  assert.deepEqual([...doc.querySelectorAll('[data-profile-rise]')].map(el=>el.textContent),['+28.7 m','-28.7 m','+0.0 m']);
+  assert.match(doc.querySelector('[data-profile-rise="1"]').getAttribute('aria-label'),/B到C高差 -28.7米/);
+  const missing=render([points[0],{...points[1],altitude:null,heightSource:'unknown'},points[2]]);
+  assert.equal(missing.querySelectorAll('[data-profile-rise]').length,0);
+  assert.match(missing.querySelector('figure').textContent,/部分海拔缺失/);
+});
+
 test('toolbar point picks replace that point repeatedly, existing marker snaps it, undo preserves identities',async(t)=>{
   const {window}=parseHTML('<html><body><div id="root"></div></body></html>');
   Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true});

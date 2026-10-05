@@ -1,3 +1,21 @@
+import { createBrowserTileCache } from './browserTileCache.ts';
+import { createCachedTileFetcher } from './cachedTileTransport.ts';
+
+// Open metadata while the map itself initializes, before its first tile batch.
+const browseStore = typeof globalThis.indexedDB === 'undefined' ? undefined : createBrowserTileCache();
+let browserTileFetcher = browseStore ? createCachedTileFetcher(browseStore, fetchProviderTile) : undefined;
+const directTileFetcher = browseStore ? createCachedTileFetcher(browseStore,(url,signal)=>fetch(url,{signal})) : undefined;
+export function tileTransportSnapshot() {
+  const total={hits:0,misses:0,networkRequests:0,stored:0};
+  for(const reader of [browserTileFetcher,directTileFetcher])if(reader){const stats=reader.snapshot();for(const key of Object.keys(total) as (keyof typeof total)[])total[key]+=stats[key];}
+  return total;
+}
+/** Retain direct/CORS semantics for ordinary coordinate-corrected XYZ sources. */
+export function fetchDirectRasterTile(url:string,signal:AbortSignal):Promise<Response>{
+  signal.throwIfAborted();
+  return directTileFetcher ? directTileFetcher.fetch(url,signal) : fetch(url,{signal});
+}
+
 function isTiandituHost(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
   return normalized === 'tianditu.gov.cn' || normalized.endsWith('.tianditu.gov.cn');
@@ -13,6 +31,26 @@ const TILE_ERROR_MESSAGES: Record<string, string> = {
   upstream_http: '图源服务器返回错误',
   format: '图源返回的内容不是受支持的地图图片',
 };
+
+let tileRequestSequence = 0;
+
+function tileRequestId(): string {
+  try {
+    const random = new Uint32Array(4);
+    globalThis.crypto.getRandomValues(random);
+    return `mt-${Array.from(random, (part) => part.toString(16).padStart(8, '0')).join('')}`;
+  } catch {
+    tileRequestSequence = (tileRequestSequence + 1) % Number.MAX_SAFE_INTEGER;
+    return `mt-${Date.now().toString(36)}-${tileRequestSequence.toString(36)}`;
+  }
+}
+
+function cancelNativeTile(requestId: string): void {
+  const bridge = (globalThis as typeof globalThis & {
+    GuanyunNative?: { cancelMapTile?: (id: string) => void };
+  }).GuanyunNative;
+  try { bridge?.cancelMapTile?.(requestId); } catch { /* Preserve AbortSignal behavior if an older bridge rejects the call. */ }
+}
 
 export class TileTransportError extends Error {
   constructor(message: string) {
@@ -48,7 +86,11 @@ export async function fetchMapTile(
   signal: AbortSignal,
 ): Promise<Response> {
   signal.throwIfAborted();
-  return fetchProviderTile(url, signal);
+  // Only interactive browsing uses the new bounded cache. Explicit downloads
+  // and the removed OfflineStore/route-area cache do not participate.
+  if (typeof globalThis.indexedDB === 'undefined') return fetchProviderTile(url, signal);
+  browserTileFetcher ??= createCachedTileFetcher(createBrowserTileCache(), fetchProviderTile);
+  return browserTileFetcher.fetch(url, signal);
 }
 
 /** Explicit user download: shares provider transport, without automatic cache writes. */
@@ -68,13 +110,27 @@ async function fetchProviderTile(url: string, signal: AbortSignal): Promise<Resp
     });
   }
 
+  const requestId = tileRequestId();
+  let cancelled = false;
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    cancelNativeTile(requestId);
+  };
+  signal.addEventListener('abort', cancel, { once: true });
+  if (signal.aborted) cancel();
   const endpoint = new URL('/api/map-tile', globalThis.location?.origin ?? 'http://localhost');
   endpoint.searchParams.set('url', url);
-  return fetch(endpoint, {
-    method: 'GET',
-    signal,
-    credentials: 'omit',
-    referrerPolicy: 'no-referrer',
-    headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg' },
-  });
+  endpoint.searchParams.set('requestId', requestId);
+  try {
+    return await fetch(endpoint, {
+      method: 'GET',
+      signal,
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer',
+      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg' },
+    });
+  } finally {
+    signal.removeEventListener('abort', cancel);
+  }
 }

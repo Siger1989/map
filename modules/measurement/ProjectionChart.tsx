@@ -23,20 +23,21 @@ export function ProjectionChart({ points, metrics, segment, total, saved, hint, 
       </div>
       <p className="measurement-chart-distance">水平 {lengthLabel(metrics.horizontal)} · 高差 {metrics.rise===null?'—':`${metrics.rise>=0?'+':''}${metrics.rise.toFixed(1)} m`}</p>
       <div className="measurement-chart-scroll" role="region" aria-label="整段测量剖面，可左右滑动" tabIndex={0}>
-        <svg className="measurement-chart-plot measurement-chart-full" style={{width:layout.width}} viewBox={`0 0 ${layout.width} 104`} role="img" aria-label={`A到${pointLabel(points.length-1)}全部测点连线、水平参考与垂直投影；距离压缩显示，非连续地形剖面`}>
+        <svg className="measurement-chart-plot measurement-chart-full" style={{width:layout.width}} viewBox={`0 0 ${layout.width} 120`} role="img" aria-label={`A到${pointLabel(points.length-1)}全部测点连线、每段高差、水平参考与垂直投影；距离压缩显示，非连续地形剖面`}>
           <path className="measurement-chart-grid" d={`M18 24H${layout.width-18} M18 46H${layout.width-18} M18 68H${layout.width-18}`}/>
           {layout.segments.map((s,i)=>{
             const a=layout.nodes[i],b=layout.nodes[i+1];
             return s.rise===null ? null : <g key={points[i].id}>
               <path className="measurement-chart-reference" d={`M${a.x} ${a.y} H${b.x} V${b.y}`}/>
               <path className="measurement-chart-slope" data-segment={i} d={`M${a.x} ${a.y} L${b.x} ${b.y}`} style={i===segment?{stroke:'#176bdf',strokeWidth:2.5}:undefined}/>
+              <text data-profile-rise={i} x={b.x-6} y={Math.max(a.y,b.y)+14} textAnchor="end" aria-label={`${pointLabel(i)}到${pointLabel(i+1)}高差 ${s.rise>=0?'+':''}${s.rise.toFixed(1)}米`}>{s.rise>=0?'+':''}{s.rise.toFixed(1)} m</text>
             </g>;
           })}
           {points.map((p,i)=>{
             const {x,y}=layout.nodes[i];return <g key={p.id} data-profile-point={pointLabel(i)}>
               <circle cx={x} cy={y} r="3" fill={p.altitude===null?'#899895':i===0?'#d4a02b':'#3478ed'}/>
               <text x={x} y={y-9} textAnchor="middle">{pointLabel(i)}{p.altitude===null?' ?':''}</text>
-              <text x={x} y="88" textAnchor={i===0?'start':i===points.length-1?'end':'middle'}>{lengthLabel(layout.chainage[i])}</text>
+              <text x={x} y="104" textAnchor={i===0?'start':i===points.length-1?'end':'middle'}>{lengthLabel(layout.chainage[i])}</text>
             </g>;
           })}
         </svg>

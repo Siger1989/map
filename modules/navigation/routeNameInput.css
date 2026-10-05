@@ -1,0 +1,39 @@
+.observatory.home-map #map-control-panel .dock-heading:has(.route-header-name) {
+  gap: 4px;
+}
+.observatory.home-map #map-control-panel .dock-heading:has(.route-header-name) h2 {
+  flex: 0 0 auto;
+  margin-right: 0;
+  white-space: nowrap;
+}
+html[data-ui-theme] .observatory.home-map #map-control-panel .dock-heading .route-header-name,
+html[data-ui-theme] .observatory.home-map .map-comparison-planned-route .route-header-name {
+  flex: 1 1 100px;
+  box-sizing: border-box;
+  width: 100px;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  padding: 2px 4px;
+  font-size: 16px;
+  line-height: 22px;
+  border: 0;
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-ink);
+  background: var(--ui-field);
+}
+.observatory.home-map .map-comparison-planned-route header { gap: 4px; }
+.observatory.home-map .map-comparison-planned-route header strong { flex: 0 0 auto; white-space: nowrap; }
+.observatory.home-map .map-comparison-planned-route header .comparison-route-hide { width: auto; padding: 0 4px; color: var(--ui-ink); }
+html[data-ui-theme] .observatory.home-map #map-control-panel .dock-heading .route-header-name[aria-invalid='true'] {
+  outline: 2px solid var(--ui-danger);
+  outline-offset: -2px;
+}
+.observatory.home-map #map-control-panel .dock-heading .dock-hide {
+  flex: 0 0 auto;
+  height: var(--ui-compact-control-height,28px);
+  min-height: var(--ui-compact-control-height,28px);
+  padding: 0 6px;
+  border-radius: var(--ui-radius-control,4px);
+  font-size: 12px;
+}

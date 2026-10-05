@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDefaultSeeds, loadDefaultSeeds, seedThenList } from '../modules/mapSources/defaultSeeds.ts';
+import { parseDefaultSeeds, loadDefaultSeeds, loadDefaultSeedBundle, seedThenList } from '../modules/mapSources/defaultSeeds.ts';
 
 const makeDraft = (index) => ({
   name: `Seed ${index}`, kind: 'online', format: 'XYZ', attribution: 'Test provider',
@@ -33,20 +33,55 @@ test('accepts safe HTTP OVMAP templates and keeps them online', () => {
   assert.throws(() => parseDefaultSeeds({ version: 1, maps }), /模板无效/);
 });
 
-test('asset fetch is Android-appassets-only, bounded, and treats 404 as a no-op', async (t) => {
+test('seed asset loads only from Android appassets or explicitly enabled loopback APK preview', async (t) => {
   const oldLocation = globalThis.location, oldFetch = globalThis.fetch;
-  t.after(() => { if (oldLocation === undefined) delete globalThis.location; else globalThis.location = oldLocation; globalThis.fetch = oldFetch; });
-  globalThis.location = { origin: 'https://example.test' };
-  globalThis.fetch = () => { throw new Error('must not fetch outside APK'); };
-  assert.equal(await loadDefaultSeeds(), undefined);
-  globalThis.location = { origin: 'https://appassets.androidplatform.net' };
+  const oldPreview = process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW;
+  t.after(() => {
+    if (oldLocation === undefined) delete globalThis.location; else globalThis.location = oldLocation;
+    globalThis.fetch = oldFetch;
+    if (oldPreview === undefined) delete process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW;
+    else process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW = oldPreview;
+  });
+
+  let requests = 0;
   globalThis.fetch = async (path, options) => {
+    requests++;
     assert.equal(path, '/native/default-map-sources.json');
     assert.equal(options.credentials, 'omit');
     assert.equal(options.redirect, 'error');
-    return new Response(null, { status: 404 });
+    return new Response(JSON.stringify({ version: 1, maps: [makeDraft(1)] }), {
+      status: 200,
+      headers: { 'content-length': String(JSON.stringify({ version: 1, maps: [makeDraft(1)] }).length) },
+    });
   };
+
+  globalThis.location = { origin: 'https://example.test' };
+  process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW = '1';
+  assert.equal(await loadDefaultSeedBundle(), undefined);
+  assert.equal(requests, 0, 'public website origin must never load private seeds');
+
+  globalThis.location = { origin: 'http://127.0.0.1:9174' };
+  process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW = '';
   assert.equal(await loadDefaultSeeds(), undefined);
+  assert.equal(requests, 0, 'loopback origin without the explicit build flag must not load seeds');
+
+  process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW = '1';
+  assert.equal((await loadDefaultSeedBundle()).drafts.length, 1);
+  globalThis.location = { origin: 'http://localhost:9174' };
+  assert.equal((await loadDefaultSeedBundle()).drafts.length, 1);
+  globalThis.location = { origin: 'http://[::1]:9174' };
+  assert.equal((await loadDefaultSeedBundle()).drafts.length, 1);
+  assert.equal(requests, 3);
+  for (const origin of ['http://127.0.0.2:9174', 'http://localhost.example.test:9174', 'file://localhost/preview']) {
+    globalThis.location = { origin };
+    assert.equal(await loadDefaultSeedBundle(), undefined, `non-approved origin must be rejected: ${origin}`);
+  }
+  assert.equal(requests, 3);
+
+  globalThis.location = { origin: 'https://appassets.androidplatform.net' };
+  process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW = '';
+  assert.equal((await loadDefaultSeedBundle()).drafts.length, 1, 'Android appassets remains allowed without the preview flag');
+  assert.equal(requests, 4);
 });
 
 test('seed failure still loads saved maps and reports the initialization error', async () => {
@@ -58,14 +93,19 @@ test('seed failure still loads saved maps and reports the initialization error',
 });
 
 function createIndexedDb({ maps = [], marker = undefined, failAdd = false } = {}) {
-  const state = { maps: structuredClone(maps), marker: structuredClone(marker), failAdd, version: 0 };
+  const meta = new Map();
+  if (marker !== undefined) meta.set(marker.key, structuredClone(marker));
+  const state = {
+    maps: structuredClone(maps), meta, failAdd, version: 0,
+    get marker() { return this.meta.get('default-map-sources-initialized'); },
+  };
   const names = new Set();
   const db = {
     get objectStoreNames() { return { contains: (name) => names.has(name) }; },
     createObjectStore(name) { names.add(name); return {}; },
     transaction(_storeNames, mode) {
       assert.equal(mode, 'readwrite');
-      const staged = { maps: structuredClone(state.maps), marker: structuredClone(state.marker) };
+      const staged = { maps: structuredClone(state.maps), meta: new Map([...state.meta].map(([key, value]) => [key, structuredClone(value)])) };
       const tx = { aborted: false, abort() { if (this.aborted) return; this.aborted = true; queueMicrotask(() => this.onabort?.()); },
         objectStore(name) {
           if (name === 'maps') return {
@@ -87,13 +127,13 @@ function createIndexedDb({ maps = [], marker = undefined, failAdd = false } = {}
             delete(id) { staged.maps = staged.maps.filter((item) => item.id !== id); },
           };
           return {
-            get(key) { const request = { result: undefined }; queueMicrotask(() => { request.result = staged.marker?.key === key ? structuredClone(staged.marker) : undefined; request.onsuccess?.(); }); return request; },
-            put(value) { staged.marker = structuredClone(value); },
+            get(key) { const request = { result: undefined }; queueMicrotask(() => { request.result = staged.meta.has(key) ? structuredClone(staged.meta.get(key)) : undefined; request.onsuccess?.(); }); return request; },
+            put(value) { staged.meta.set(value.key, structuredClone(value)); },
           };
         },
       };
       setTimeout(() => {
-        if (!tx.aborted) { state.maps = staged.maps; state.marker = staged.marker; tx.oncomplete?.(); }
+        if (!tx.aborted) { state.maps = staged.maps; state.meta = staged.meta; tx.oncomplete?.(); }
       }, 0);
       return tx;
     }, close() {},

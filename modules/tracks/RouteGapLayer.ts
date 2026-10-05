@@ -8,6 +8,7 @@ import type { Coordinate } from '../navigation/types.ts';
 export class RouteGapLayer {
   private map: Map;
   private gap: RouteGap | null = null;
+  private editing = false;
   private overlay: HTMLDivElement | null = null;
   private ends: HTMLDivElement[] = [];
   private connector: HTMLDivElement | null = null;
@@ -84,7 +85,14 @@ export class RouteGapLayer {
     this.position();
   }
 
+  setEditing(editing: boolean) {
+    if (editing === this.editing) return;
+    this.editing = editing;
+    if (editing) this.sync(null);
+  }
+
   sync(gap: RouteGap | null) {
+    if (this.editing) gap = null;
     const map = this.map;
     this.gap = gap;
     this.showDom(gap);

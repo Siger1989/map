@@ -7,22 +7,28 @@ import {
   rememberAttributes,
 } from '../annotations/attributes';
 import { useState } from 'react';
+import { Check, Trash2, X } from 'lucide-react';
+import {
+  AREA_DISPLAY_UNITS,
+  formatAreaValue,
+  readAreaDisplayUnit,
+  writeAreaDisplayUnit,
+  type AreaDisplayUnit,
+} from './areaDisplayUnits';
 import './areas.css';
 export function AreaTools({
   state,
   onFinish,
   onHide,
-  onExtrude,
 }: {
   state: AreasState;
   onFinish: () => void;
   onHide: () => void;
-  onExtrude: (height: number) => string | null;
 }) {
   const item = state.items.find((a) => a.id === state.selected);
   const [removing, setRemoving] = useState(false),
     [notice, setNotice] = useState('');
-  const [height, setHeight] = useState('20');
+  const [areaUnit, setAreaUnit] = useState<AreaDisplayUnit>(readAreaDisplayUnit);
   if (state.drawing)
     return (
       <section className="area-drawing-tools glass" aria-label="划区域工具">
@@ -49,21 +55,47 @@ export function AreaTools({
   const metrics = areaMetrics(item.boundary);
   return (
     <section
-      className="area-editor glass annotation-panel"
+      className="area-editor glass"
       aria-label="区域编辑"
     >
       <header>
-        <strong>
-          区域 ·{' '}
-          {metrics.area >= 1e6
-            ? (metrics.area / 1e6).toFixed(2) + ' km²'
-            : metrics.area.toFixed(0) + ' m²'}
-        </strong>
-        <button aria-label="关闭区域编辑" onClick={onHide}>
-          ×
+        <strong title={item.name}>{item.name || '区域'}</strong>
+        <label className="area-area-summary">
+          <output aria-label="区域面积">{formatAreaValue(metrics.area, areaUnit)}</output>
+          <select className="area-area-unit" aria-label="面积单位" value={areaUnit} onChange={event => {
+            const next = event.target.value as AreaDisplayUnit;
+            setAreaUnit(next);
+            writeAreaDisplayUnit(next);
+          }}>
+            {AREA_DISPLAY_UNITS.map(unit => <option key={unit.id} value={unit.id}>{unit.label}</option>)}
+          </select>
+        </label>
+        <button className="area-delete" aria-label={removing ? '取消删除区域' : '删除区域'} title="删除区域" onClick={() => setRemoving(value => !value)}>
+          <Trash2 size={14}/>
+        </button>
+        <button className="area-close" aria-label="关闭区域编辑" title="关闭区域编辑" onClick={onHide}>
+          <X size={16}/>
         </button>
       </header>
-      <div className="annotation-fields">
+      {removing && <div className="area-delete-confirm" role="alertdialog" aria-label="确认删除区域">
+        <span>确认删除“{item.name || '区域'}”？</span>
+        <button aria-label="确认删除区域" onClick={() => state.remove(item.id)}><Check size={14}/>删除</button>
+        <button aria-label="取消删除区域" onClick={() => setRemoving(false)}>取消</button>
+      </div>}
+      <div className="area-editor-content">
+        <div className="area-editor-basics">
+          <label className="area-color-field">颜色<input type="color" value={item.color} onChange={(e) => state.update(item.id, { color: e.target.value })}/></label>
+          <label className="area-visible-field"><input type="checkbox" checked={item.visible} onChange={(e) => state.update(item.id, { visible: e.target.checked })}/>显示区域</label>
+        </div>
+        <div className="area-editor-actions">
+          <button onClick={onHide}>收起编辑</button>
+          <button disabled={!state.canUndo} onClick={state.undoMove}>撤销移动</button>
+        </div>
+        <details className="area-metrics">
+          <summary title="闭合边界点可长按拖动，双指取消">球面面积估算 · 周长约 {Math.round(metrics.perimeter).toLocaleString('zh-CN')} m</summary>
+          <p>闭合边界点可长按拖动，双指取消。</p>
+        </details>
+        {(state.error || notice) && <p role="status" className="area-status">{state.error || notice}</p>}
         <AnnotationIdentity
           item={item}
           change={(patch) => state.update(item.id, patch)}
@@ -85,61 +117,6 @@ export function AreaTools({
             }
           }}
         />
-        <label className="annotation-field">
-          颜色
-          <input
-            type="color"
-            value={item.color}
-            onChange={(e) => state.update(item.id, { color: e.target.value })}
-          />
-        </label>
-        <div className="annotation-grid">
-          <label className="annotation-field">
-            拉伸高度（米）
-            <input
-              aria-label="拉伸高度"
-              type="number"
-              min="0.1"
-              max="10000"
-              value={height}
-              onChange={(e) => setHeight(e.target.value)}
-            />
-          </label>
-          <button onClick={() => setNotice(onExtrude(Number(height)) ?? '')}>
-            拉伸成模型
-          </button>
-        </div>
-        <div className="annotation-actions">
-          <button onClick={onHide}>收起编辑，长按调点</button>
-          <button disabled={!state.canUndo} onClick={state.undoMove}>
-            撤销移动
-          </button>
-        </div>
-        <label>
-          <input
-            type="checkbox"
-            checked={item.visible}
-            onChange={(e) =>
-              state.update(item.id, { visible: e.target.checked })
-            }
-          />
-          显示区域
-        </label>
-        <p>
-          周长约 {metrics.perimeter.toFixed(0)} m ·
-          球面面积估算。闭合边界点可长按拖动，双指取消。
-        </p>
-        <button
-          onClick={() => {
-            if (removing) state.remove(item.id);
-            else setRemoving(true);
-          }}
-        >
-          {removing ? '确认删除区域' : '删除区域'}
-        </button>
-        {(state.error || notice) && (
-          <p role="status">{state.error || notice}</p>
-        )}
       </div>
     </section>
   );

@@ -350,7 +350,7 @@ test('wide view bounds use exact linear filtering without enumerating geographic
     expected = candidates.filter(([lng]) => lng >= viewport.west && lng <= viewport.east);
   assert.deepEqual(index.within(viewport), expected);
 });
-test('drawing session reuses projected grid and rebuilds it when candidate array changes', () => {
+test('drawing session reuses a projected grid across taps with a stable viewport revision', () => {
   let projections = 0, unprojections = 0;
   const project = (coordinate) => {
       projections++;
@@ -362,17 +362,73 @@ test('drawing session reuses projected grid and rebuilds it when candidate array
     },
     target = [100.1, 20],
     candidates = [target],
-    s = new DrawingSession(),
-    o = { ...options, mode: 'points', candidates, project, unproject };
-  s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+    s = new DrawingSession();
+  let viewport = { west: 99, east: 101, south: 0, north: 30, width: 400, height: 800, revision: 1 };
+  const o = { ...options, mode: 'points', candidates, project, unproject, getSnapViewport: () => viewport };
+  assert.equal(s.input({ type: 'start', point: { x: 109, y: 244 } }, o).preview.snapped, true);
   assert.equal(projections, 1);
   s.input({ type: 'move', point: { x: 109, y: 244 } }, o);
   assert.equal(projections, 1, 'same candidates and camera projection reuse the index');
   assert.equal(unprojections, 2, 'each pointer sample performs only its one ground lookup');
+  assert.strictEqual(s.input({ type: 'end', reason: 'release' }, o).vertex, target);
+  assert.equal(s.input({ type: 'start', point: { x: 109, y: 244 } }, o).preview.snapped, true);
+  assert.equal(projections, 1, 'a new tap reuses projections for the same candidate snapshot and camera revision');
+  s.input({ type: 'end', reason: 'release' }, o);
+
   const replacement = [target, [100.4, 20]];
-  s.input({ type: 'move', point: { x: 109, y: 244 } }, { ...o, candidates: replacement });
-  assert.equal(projections, 3, 'new candidate snapshot is projected once to rebuild the index');
-  assert.strictEqual(s.input({ type: 'end', reason: 'release' }, { ...o, candidates: replacement }).vertex, target);
+  const changedCandidates = { ...o, candidates: replacement };
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, changedCandidates);
+  assert.equal(projections, 3, 'a new candidate snapshot rebuilds the projection grid');
+  s.input({ type: 'end', reason: 'release' }, changedCandidates);
+  const changedProject = { ...changedCandidates, project: (coordinate) => {
+    projections++;
+    return { x: (coordinate[0] - 100) * 1000, y: coordinate[1] * 10 };
+  } };
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, changedProject);
+  assert.equal(projections, 5, 'a changed projection function invalidates cached screen coordinates');
+  s.input({ type: 'end', reason: 'release' }, changedProject);
+  viewport = { ...viewport, revision: 2 };
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, changedProject);
+  assert.equal(projections, 7, 'a changed camera or terrain revision rebuilds projected coordinates');
+  assert.strictEqual(s.input({ type: 'end', reason: 'release' }, changedProject).vertex, target);
+});
+test('drawing session does not reuse projections across taps without a reliable viewport revision', () => {
+  for (const viewport of [null, { west: 99, east: 101, south: 0, north: 30, width: 400, height: 800 }]) {
+    let projections = 0;
+    const s = new DrawingSession(), candidates = [[100.1, 20]],
+      o = {
+        ...options,
+        mode: 'points',
+        candidates,
+        project: (coordinate) => { projections++; return { x: (coordinate[0] - 100) * 1000, y: coordinate[1] * 10 }; },
+        unproject: (point) => [100 + point.x / 1000, point.y / 10],
+        getSnapViewport: () => viewport,
+      };
+    s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+    s.input({ type: 'end', reason: 'release' }, o);
+    s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+    assert.equal(projections, 2, 'null or revisionless camera state forces a safe projection rebuild');
+  }
+});
+test('clear invalidates cross-tap projection reuse and cancel never commits a pending vertex', () => {
+  let projections = 0;
+  const target = [100.1, 20], candidates = [target],
+    s = new DrawingSession(),
+    o = {
+      ...options,
+      mode: 'points',
+      candidates,
+      project: (coordinate) => { projections++; return { x: (coordinate[0] - 100) * 1000, y: coordinate[1] * 10 }; },
+      unproject: (point) => [100 + point.x / 1000, point.y / 10],
+      getSnapViewport: () => ({ west: 99, east: 101, south: 0, north: 30, width: 400, height: 800, revision: 1 }),
+    };
+  assert.equal(s.input({ type: 'start', point: { x: 109, y: 244 } }, o).preview.snapped, true);
+  assert.equal(s.input({ type: 'cancel' }, o).vertex, undefined);
+  assert.equal(s.input({ type: 'start', point: { x: 109, y: 244 } }, o).preview.snapped, true);
+  assert.equal(projections, 2, 'cancel clears pending input and the projected grid');
+  s.clear();
+  s.input({ type: 'start', point: { x: 109, y: 244 } }, o);
+  assert.equal(projections, 3, 'public clear retains its explicit cache-invalidation behavior');
 });
 test('drawing session rebuilds viewport projection cache when its revision changes', () => {
   let projections = 0;

@@ -1,0 +1,14 @@
+.observatory.home-map .map-comparison-ui .comparison-layer-control { z-index: 9; }
+.observatory.home-map .map-comparison-ui .map-layer-control.comparison-layer-control .layer-window.control-popover {
+  top: calc(var(--home-top) + 68px);
+  --map-panel-max-height: min(480px, calc(100% - var(--home-top) - var(--home-bottom) - 116px));
+  max-height: var(--map-panel-max-height);
+  pointer-events: auto;
+}
+.observatory.home-map .comparison-layer-window .dock-heading h2 { flex: 1; margin: 0; font-size: 14px; }
+.observatory.home-map .comparison-layer-window .comparison-layer-tabs { display: flex; gap: 2px; }
+.observatory.home-map .comparison-layer-window .comparison-layer-tabs button {
+  min-width: 36px; min-height: 36px; height: 36px; padding: 0 4px; font-size: 12px; background: transparent;
+}
+.observatory.home-map .comparison-layer-window .comparison-layer-tabs button[aria-pressed='true'] { color: var(--ui-accent); background: var(--ui-selected); }
+.observatory.home-map .comparison-layer-window .dock-heading .icon-button { width: 36px; height: 36px; min-height: 36px; min-width: 36px; color: var(--ui-close); }

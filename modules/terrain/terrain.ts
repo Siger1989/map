@@ -6,15 +6,16 @@ import {
   tiandituTiles,
   TIANDITU_CREDIT,
 } from '../cartography/basemaps';
-import { TERRAIN_URL } from './tiles';
+import { terrainRenderUrl } from './tiles';
 import { SENTINEL_TILES, SENTINEL_MAXZOOM, SENTINEL_CREDIT } from '../cartography/sentinel';
+import { SATELLITE_UNDERLAY, satelliteUnderlaySource } from '../cartography/satelliteUnderlay';
 import { TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 export { TERRAIN_URL } from './tiles';
 export const TERRAIN_MAXZOOM = 12;
 export const TERRAIN_CREDIT =
   '<a href="https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn" target="_blank">成都区域 FABDEM V1-2 · Hawker / Neal · CC BY-NC-SA 4.0</a> · <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">其他区域 Mapzen / SRTM</a>';
 export function baseStyle(): StyleSpecification {
-  const tiles = [window.location.origin + TERRAIN_URL];
+  const tiles = [terrainRenderUrl(window.location.origin)];
   const { domestic, token } = basemapConfiguration();
   return {
     version: 8,
@@ -23,6 +24,7 @@ export function baseStyle(): StyleSpecification {
       ? window.location.origin + '/fonts/{fontstack}/{range}.pbf'
       : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sources: {
+      [SATELLITE_UNDERLAY]: satelliteUnderlaySource(window.location.origin),
       sentinel: { type: 'raster', tiles: SENTINEL_TILES, tileSize: 256, maxzoom: SENTINEL_MAXZOOM, attribution: SENTINEL_CREDIT },
       elevation: {
         type: 'raster-dem',
@@ -95,6 +97,13 @@ export function baseStyle(): StyleSpecification {
         id: 'background',
         type: 'background',
         paint: { 'background-color': '#203b3f' },
+      },
+      {
+        id: SATELLITE_UNDERLAY,
+        type: 'raster',
+        source: SATELLITE_UNDERLAY,
+        layout: { visibility: 'none' },
+        paint: { 'raster-fade-duration': 0 },
       },
       {
         id: 'relief',
@@ -172,7 +181,7 @@ export async function addContours(map: Map, interval: unknown = 30, alive = () =
   ]);
   if (!alive() || map.getSource('contour-lines')) return;
   const dem = sharedContourDem ??= new contour.DemSource({
-    url: window.location.origin + TERRAIN_URL,
+    url: terrainRenderUrl(window.location.origin),
     encoding: 'terrarium',
     maxzoom: TERRAIN_MAXZOOM,
     worker: true,

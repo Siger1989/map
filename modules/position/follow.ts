@@ -27,7 +27,7 @@ export function canFollow(
     fix.accuracy >= 0 &&
     fix.accuracy <= (fix.source === 'network' ? 50000 : 80) &&
     Number.isFinite(fix.timestamp) &&
-    now - fix.timestamp <= 20000 &&
+    now - fix.timestamp <= (fix.provider === 'ip' ? 120000 : 20000) &&
     fix.timestamp <= now + 5000
   );
 }

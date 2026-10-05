@@ -64,6 +64,9 @@ export class FeatureDragBridge {
     this.ownerWindow.addEventListener('keydown', this.key, true);
     this.ownerWindow.addEventListener('blur', this.blur);
     map.getContainer().addEventListener('click', this.click, true);
+    // A quick select-then-drag can emit dblclick after pointerup restores the
+    // native handlers. Consume that trailing event as part of the edit gesture.
+    map.getContainer().addEventListener('dblclick', this.click, true);
     map.getContainer().addEventListener('contextmenu', this.contextMenu, true);
   }
   private point(event: PointerEvent): ScreenPoint | null {
@@ -273,6 +276,7 @@ export class FeatureDragBridge {
     this.ownerWindow.removeEventListener('keydown', this.key, true);
     this.ownerWindow.removeEventListener('blur', this.blur);
     this.map.getContainer().removeEventListener('click', this.click, true);
+    this.map.getContainer().removeEventListener('dblclick', this.click, true);
     this.map
       .getContainer()
       .removeEventListener('contextmenu', this.contextMenu, true);

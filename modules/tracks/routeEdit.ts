@@ -11,13 +11,15 @@ import {
 } from './drawing.ts';
 import { normalizeTrackStyle, type TrackStyle } from './style.ts';
 import { keepsOriginalPoints } from './provenance.ts';
-import { inheritEdgeColors, preserveTrackColors } from './edgeColors.ts';
+import { preserveTrackColors } from './edgeColors.ts';
+import { inheritAppendedBranchMetadata } from './branchMetadata.ts';
 import { joinMovedRoute } from './nodeJoin.ts';
 import { joinUniqueSegments } from './snapping.ts';
-import { changeSelectionDetails, inheritTrackDetails, type PointDetail } from './selectionDetails.ts';
+import { changeSelectionDetails, type PointDetail } from './selectionDetails.ts';
 import { newAnnotation, validAnnotation, type Annotation } from '../annotations/data.ts';
 import { resolvedRouteTerminals } from './routeTerminals.ts';
 import type { PointMarkerInput } from './RoutePointMarkerFields';
+import { applyTrackVisibleNodeMove, moves as visibleNodeMoves, type VisibleNodeMovePlan } from './visibleNodeMove.ts';
 
 export type RouteEditSnapshot = {
   track: ManualTrack;
@@ -87,16 +89,31 @@ export function selectEditNode(
     throw new Error('请选择当前路线上的节点。');
   return { ...session, selected: point };
 }
+/** Commit a route name as one undoable edit without changing its source record. */
+export function renameEditRoute(session: RouteEditSession, name: string): RouteEditSession {
+  if (typeof name !== 'string') throw new Error('路线名称无效。');
+  const normalized = name.trim();
+  if (!normalized) throw new Error('路线名称不能为空。');
+  if (normalized.length > 60) throw new Error('路线名称不能超过60个字符。');
+  if (normalized === session.track.name) return session;
+  return revise(session, { track: { ...session.track, name: normalized } });
+}
 export function moveEditNode(
   session: RouteEditSession,
   from: Coordinate,
   to: Coordinate,
   snappedTarget?: ManualTrack,
+  visiblePlan?: VisibleNodeMovePlan,
 ): RouteEditSession {
   if (session.branch !== null)
     throw new Error('分叉起点已固定，请先结束分叉再移动节点。');
   if (!coordinate(to)) throw new Error('节点坐标无效。');
-  let moved = moveTrackNode(session.track, from, to);
+  if (visiblePlan && visiblePlan.fromKey !== from.join(',')) throw new Error('编辑节点已变化，请重新选择。');
+  if (visiblePlan && equalCoordinate(from, to)) return session;
+  let moved = visiblePlan
+    ? applyTrackVisibleNodeMove(session.track, visiblePlan, to)
+    : moveTrackNode(session.track, from, to);
+  const plannedMoves = visiblePlan ? visibleNodeMoves(visiblePlan, to) : undefined;
   // A cut route can reconnect to itself; normalize that junction just like cross-route joining.
   if (!equalCoordinate(from, to) && session.track.segments.some(line => line.some(p => equalCoordinate(p, to)))) {
     moved = preserveTrackColors({ ...moved, segments: joinUniqueSegments(moved.segments) }, [moved]);
@@ -111,7 +128,12 @@ export function moveEditNode(
     track: target ? joinMovedRoute(moved, target, to) : moved,
     sources: target ? [...session.sources, target] : session.sources,
     selected: to,
-    pendingMarkers: session.pendingMarkers?.map(marker => equalCoordinate(marker.coordinates,from) ? {...marker,coordinates:[...to] as Coordinate} : marker),
+    pendingMarkers: visiblePlan
+      ? session.pendingMarkers?.map(marker => {
+          const destination = plannedMoves!.get(marker.coordinates.join(','));
+          return destination ? { ...marker, coordinates: [...destination] as Coordinate } : marker;
+        })
+      : session.pendingMarkers?.map(marker => equalCoordinate(marker.coordinates,from) ? {...marker,coordinates:[...to] as Coordinate} : marker),
   });
 }
 export function insertEditNode(
@@ -238,14 +260,14 @@ export function appendEditBranch(
   );
   if (segments.length > 100 || segments.flat().length > MAX_TRACK_POINTS)
     throw new Error('连接后超过100段或6000点上限。');
+  const track = {
+    ...session.track,
+    segments,
+    nodes: [...(session.track.nodes ?? []), point],
+  };
+  Object.assign(track, inheritAppendedBranchMetadata(session.track, track, session.branch, line.length));
   return revise(session, {
-    track: {
-      ...session.track,
-      segments,
-      ...inheritTrackDetails(segments, [session.track]),
-      edgeColors: inheritEdgeColors(segments, [session.track]),
-      nodes: [...(session.track.nodes ?? []), point],
-    },
+    track,
     branch: target || joinsSelf ? null : session.branch,
     selected: point,
   });
@@ -275,7 +297,7 @@ export function editedRouteRecord(
   const geometryChanged = sources.length > 1 || JSON.stringify(track.segments) !== JSON.stringify(original.segments);
   if (keepsOriginalPoints(original) && !geometryChanged && !session.history.length) return { ...original, hidden: false };
   if (keepsOriginalPoints(original) && !geometryChanged) return {
-    ...original, style: track.style, edgeColors: track.edgeColors, pointDetails: track.pointDetails, edgeNotes: track.edgeNotes,
+    ...original, name: track.name, style: track.style, edgeColors: track.edgeColors, pointDetails: track.pointDetails, edgeNotes: track.edgeNotes,
     colorConditions: track.colorConditions, routeTerminals:track.routeTerminals, hidden: false, updatedAt: now,
   };
   const copied = original.id === DRAFT_ID || keepsOriginalPoints(original);
@@ -287,10 +309,11 @@ export function editedRouteRecord(
     id: copied ? id : original.id,
     hidden: false,
     sourceTrackIds,
-    name:
-      sources.length > 1
+    name: track.name !== original.name
+      ? track.name
+      : sources.length > 1
         ? `${original.name} · 组合路线`.slice(0, 60)
-        : copied && keepsOriginalPoints(original) ? `${original.name.slice(0, 52)} · 编辑副本` : original.name,
+        : copied && keepsOriginalPoints(original) ? `${original.name.slice(0, 52)} · 编辑副本` : track.name,
     createdAt: copied ? now : original.createdAt,
     updatedAt: now,
   };

@@ -98,13 +98,15 @@ test('navigation display settings replace card data and return to expanded navig
   const root = createRoot(mount);
   let displayCalls = 0;
   let closeDisplayCalls = 0;
+  let followCalls = 0;
+  let following = false;
   let displayPanel = null;
   const baseProps = {
     guidance: makeGuidance(),
     onStop() {},
-    onFollow() {},
+    onFollow() { followCalls++; following = true; },
     onShow() {},
-    following: false,
+    get following() { return following; },
     onShare() {},
     onDisplay() { displayCalls++; },
     onCloseDisplay() { closeDisplayCalls++; },
@@ -122,6 +124,11 @@ test('navigation display settings replace card data and return to expanded navig
   await render();
   assert.equal(host.querySelectorAll('.guidance-card').length, 1);
   assert.equal(host.querySelector('.navigation-telemetry'), null, 'collapsed card starts without telemetry');
+  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '继续导航');
+  await act(async () => host.querySelector('.guidance-resume').click());
+  assert.equal(followCalls, 1, 'the navigation heading invokes the real follow callback');
+  await render();
+  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '导航中 · 步行');
   await act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
   assert.ok(host.querySelector('.navigation-telemetry'), 'ordinary expansion shows telemetry');
   assert.ok(host.querySelector('[data-testid="guidance-travelled"]'), 'ordinary expansion shows route data');
@@ -143,5 +150,5 @@ test('navigation display settings replace card data and return to expanded navig
   assert.equal(host.querySelectorAll('.guidance-card').length, 1);
   assert.ok(host.querySelector('.navigation-telemetry'), 'return restores the expanded telemetry');
   assert.ok(host.querySelector('[data-testid="guidance-travelled"]'), 'return restores expanded route details');
-  assert.equal(host.querySelector('.guidance-heading-row strong')?.textContent.trim(), '导航中 · 步行');
+  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '导航中 · 步行');
 });

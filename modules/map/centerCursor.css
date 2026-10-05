@@ -2,30 +2,47 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 22px;
-  height: 22px;
+  width: 52px;
+  height: 52px;
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 8;
   filter: drop-shadow(0 1px 1px #000);
+  opacity: .68;
 }
 .map-center-cursor i,
 .map-center-cursor b {
+  position: absolute;
+  background: transparent;
+}
+.map-center-cursor i {
+  width: 52px;
+  height: 2px;
+  top: 25px;
+}
+.map-center-cursor b {
+  width: 2px;
+  height: 52px;
+  left: 25px;
+}
+.map-center-cursor i::before,
+.map-center-cursor i::after,
+.map-center-cursor b::before,
+.map-center-cursor b::after {
+  content: '';
   position: absolute;
   background: #fff;
   box-shadow: 0 0 0 1px #173833;
   border-radius: 2px;
 }
-.map-center-cursor i {
-  width: 22px;
-  height: 2px;
-  top: 10px;
-}
-.map-center-cursor b {
-  width: 2px;
-  height: 22px;
-  left: 10px;
-}
+.map-center-cursor i::before,
+.map-center-cursor i::after { width: 6px; height: 2px; top: 0; }
+.map-center-cursor i::before { left: 0; }
+.map-center-cursor i::after { right: 0; }
+.map-center-cursor b::before,
+.map-center-cursor b::after { width: 2px; height: 6px; left: 0; }
+.map-center-cursor b::before { top: 0; }
+.map-center-cursor b::after { bottom: 0; }
 .center-add {
   width: 44px;
   min-height: 44px;

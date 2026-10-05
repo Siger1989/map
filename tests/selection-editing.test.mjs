@@ -755,3 +755,21 @@ test('rendered route features carry selection IDs and exact draggable coordinate
   layer.sync({ ...state, visible: false });
   assert.equal(data.features.length, 0);
 });
+
+
+test('select then drag consumes the trailing double click that would zoom the camera', t => {
+  const f = fixture(t, 'track', true);
+  f.win.fire('pointerdown', f.event());
+  assert.equal(f.map.doubleClickZoom.active, false);
+  f.win.fire('pointermove', f.event(1, 140, 240));
+  f.win.fire('pointerup', f.event(1, 140, 240));
+  assert.equal(f.map.doubleClickZoom.active, true, 'original control state restores');
+  const doubleClick = f.event();
+  f.container.fire('dblclick', doubleClick);
+  assert.equal(doubleClick.prevented, true);
+  assert.equal(doubleClick.stopped, true, 'MapLibre must not receive edit gesture dblclick');
+  t.mock.timers.tick(601);
+  const later = f.event();
+  f.container.fire('dblclick', later);
+  assert.equal(later.stopped, undefined, 'ordinary double-click zoom remains available later');
+});

@@ -41,36 +41,91 @@
   z-index: 12;
   left: var(--edge-left);
   top: calc(var(--safe-top) + 56px);
-  width: min(360px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
-  max-height: min(38dvh, 320px);
-  padding: 8px;
-  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-sizing: border-box;
+  width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
+  max-height: min(48dvh, 420px);
+  min-height: 0;
+  padding: 4px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  box-shadow: var(--ui-shadow);
+  overflow: hidden;
 }
 .area-editor header {
   display: flex;
-  justify-content: space-between;
+  gap: 4px;
   align-items: center;
   flex-shrink: 0;
+  min-height: 28px;
+  min-width: 0;
 }
-.area-editor header button {
-  width: 44px;
-  flex-shrink: 0;
+.area-editor header > strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.area-area-summary { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 2px; font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.area-area-summary output { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+.observatory .area-editor .area-area-unit { box-sizing: border-box; width: 76px; min-width: 76px; height: 28px; min-height: 28px; padding: 0 2px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); background: var(--ui-field); color: var(--ui-ink); font-size: 10px; }
+.area-editor header > button {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-raised);
+  color: var(--ui-button-ink);
 }
-.area-editor p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
+.area-editor header > .area-delete { color: var(--ui-danger); }
+.area-delete-confirm { display:flex; align-items:center; gap:3px; min-width:0; min-height:28px; flex:0 0 auto; padding:2px 3px; border-radius:var(--ui-radius-control); background:var(--ui-raised); font-size:11px; }
+.area-delete-confirm span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.area-delete-confirm button { display:flex; align-items:center; justify-content:center; gap:2px; min-width:28px; min-height:28px; padding:0 4px; border:0; border-radius:var(--ui-radius-control); background:var(--ui-field); color:var(--ui-ink); font-size:11px; }
+.area-delete-confirm button[aria-label='确认删除区域'] { color:var(--ui-danger); }
+.area-editor-content { display:flex; flex:1 1 auto; flex-direction:column; gap:3px; min-height:0; overflow:hidden; }
+.area-editor-basics { display:flex; align-items:center; gap:8px; min-height:28px; flex:0 0 auto; }
+.area-color-field,.area-visible-field { display:inline-flex; align-items:center; gap:4px; min-height:28px; font-size:11px; color:var(--ui-ink); }
+.area-color-field { flex:1; min-width:0; }
+.area-color-field input[type='color'] { width:34px; height:26px; min-height:26px; padding:1px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field); }
+.area-visible-field { flex:0 0 auto; white-space:nowrap; }
+.area-visible-field input[type='checkbox'] { width:18px; height:18px; margin:0; accent-color:var(--ui-accent); }
+.area-editor-actions { display:grid; grid-template-columns:1fr 1fr; gap:3px; flex:0 0 auto; }
+.area-editor-actions button { min-width:0; min-height:28px; height:28px; padding:0 4px; border:0; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-button-ink); font:inherit; font-size:11px; white-space:nowrap; }
+.area-metrics { flex:0 0 auto; min-width:0; color:var(--ui-muted); font-size:10px; line-height:14px; }
+.area-metrics summary { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.area-metrics p,.area-status { margin:0; color:var(--ui-muted); font-size:10px; line-height:13px; }
+.area-status { color:var(--ui-danger); max-height:26px; overflow:auto; }
+.area-editor .annotation-logo-current { display:flex; align-items:center; gap:4px; width:100%; min-height:28px; flex:0 0 auto; padding:0 4px; border:0; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-button-ink); font-size:11px; text-align:left; }
+.area-editor .annotation-logo-current svg { width:16px; height:16px; flex:0 0 16px; }
+.area-editor .annotation-logo-current span { margin-left:auto; font-size:10px; }
+.area-editor .annotation-logo-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:2px; flex:0 0 auto; }
+.area-editor .annotation-logo-grid button { display:flex; flex-direction:column; align-items:center; min-width:0; min-height:30px; padding:1px; border:0; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-ink); font:inherit; font-size:9px; }
+.area-editor .annotation-logo-grid svg { width:16px; height:16px; }
+.area-editor .annotation-field { display:flex; flex-direction:row; align-items:center; gap:4px; min-height:28px; flex:0 0 auto; font-size:11px; }
+.area-editor .annotation-field > span { flex:0 0 28px; }
+.area-editor .annotation-field :is(input,textarea,select):not([type='color']) { box-sizing:border-box; width:100%; height:28px; min-height:28px; padding:2px 5px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field); color:var(--ui-ink); font:inherit; font-size:12px; }
+.area-editor .annotation-attributes { display:flex; flex:1 1 140px; flex-direction:column; gap:2px; min-height:120px; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--ui-muted) var(--ui-surface); }
+.area-editor .annotation-attribute-head { display:grid; grid-template-columns:1fr 1.3fr 30px; flex:0 0 auto; font-size:10px; color:var(--ui-muted); }
+.area-editor .annotation-attribute-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) 28px; gap:2px; min-height:30px; flex:0 0 auto; }
+.area-editor .annotation-attribute-row :is(input,textarea) { box-sizing:border-box; width:100%; min-width:0; height:30px; min-height:30px; padding:2px 4px; border:1px solid var(--ui-line); border-radius:var(--ui-radius-control); background:var(--ui-field); color:var(--ui-ink); font:inherit; font-size:11px; resize:none; }
+.area-editor .annotation-attribute-row button { display:grid; place-items:center; min-width:28px; min-height:28px; height:28px; padding:0; border:0; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-danger); }
+.area-editor .annotation-attributes > button { min-height:26px; height:26px; flex:0 0 auto; padding:0 4px; border:0; border-radius:var(--ui-radius-control); background:var(--ui-raised); color:var(--ui-ink); font-size:10px; }
+.area-editor :is(input,textarea,select,button,summary):focus-visible { outline:2px solid var(--ui-accent); outline-offset:-2px; }
+.observatory .area-editor :is(input,textarea,select):not([type='checkbox']):not([type='color']):not([type='range']) { border-color:var(--ui-line); background:var(--ui-field); color:var(--ui-ink); }
+.observatory .area-editor input[type='color'] { background:var(--ui-field); border-color:var(--ui-line); }
+.observatory .area-editor :is(input,textarea)::placeholder { color:var(--ui-muted); opacity:1; }
+.area-editor button { font:inherit; cursor:pointer; }
+.area-editor button:disabled { opacity:.45; cursor:default; }
+@media (max-height: 600px) {
+  .area-editor { max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 120px); }
+  .area-editor .annotation-attributes { min-height:90px; }
 }
-.observatory .area-editor :is(input, textarea, select):not([type='checkbox']):not([type='color']):not([type='range']) {
-  background: #f8faf6;
-  color: #202725;
-  border: 1px solid #7e9185;
-  min-height: 44px;
-  border-radius: 6px;
-  caret-color: #2348ef;
-}
-.observatory .area-editor :is(input, textarea)::placeholder { color: #53615c; opacity: 1; }
-.observatory .area-editor :is(input, textarea, select):focus { outline: 2px solid #2348ef; outline-offset: -2px; }
 .area-selection {
   position: absolute;
   left: var(--edge-left);

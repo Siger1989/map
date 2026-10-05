@@ -147,3 +147,76 @@
 .floating-search-heading, .floating-search .place-search-heading {
   position: sticky; top: 0; background: var(--ui-surface, #f3f8f5); z-index: 1;
 }
+.floating-search[data-search-owner='place'][data-search-scroll='true'] {
+  min-height: 0;
+}
+.floating-search[data-search-owner='place'][data-search-scroll='true'] .place-search-results {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.floating-search[data-search-owner='place'] .place-search-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+  grid-template-rows: 36px auto;
+  gap: 2px 4px;
+  height: auto;
+  min-height: 36px;
+  padding: 0 4px 4px;
+}
+.floating-search[data-search-owner='place'] .place-search-heading > span:first-child {
+  grid-column: 1;
+  grid-row: 1;
+}
+.floating-search[data-search-owner='place'] .place-search-heading select {
+  grid-column: 2;
+  grid-row: 1;
+}
+.floating-search[data-search-owner='place'] .place-search-heading > button {
+  grid-column: 3;
+  grid-row: 1;
+}
+.floating-search[data-search-owner='place'] .place-search-heading .place-search-order {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ui-muted, #596b66);
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.floating-search[data-search-owner='place'] .place-search-options {
+  min-height: 0;
+  max-height: 112px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.floating-search[data-search-owner='place'] .place-search-heading > span:first-child {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .floating-search[data-search-owner='place'] .place-search-heading select {
+    flex: 0 1 clamp(76px, 26vw, 100px);
+    width: clamp(76px, 26vw, 100px);
+  }
+}
+.floating-search[data-search-owner='place'][data-search-scroll='true'] .place-search-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}

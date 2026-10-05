@@ -190,6 +190,29 @@ export function useAnnotations() {
     void refreshElevation(item.id, coordinates);
     return true;
   };
+  const beginEdit = (id: string) => {
+    if (editing.current?.draft.id === id) return;
+    const item = current.current.find((a) => a.id === id);
+    if (!item) return;
+    lookup.current?.abort();
+    setReading(false);
+    setEditing({
+      base: structuredClone(item),
+      draft: structuredClone(item),
+      origin: editorPose(item),
+    });
+    setMoveHistory([]);
+    setError('');
+  };
+  const addAndEdit = (kind: AnnotationChoice, coordinates: Coordinate) => {
+    if (!add(kind, coordinates)) return false;
+    const item = current.current.at(-1);
+    if (!item) return false;
+    beginEdit(item.id);
+    if (item.groundElevation === null)
+      void refreshElevation(item.id, item.coordinates);
+    return true;
+  };
   return {
     addOutline: (
       shape: Pick<
@@ -222,25 +245,13 @@ export function useAnnotations() {
       void refreshElevation(item.id, item.coordinates);
       return true;
     },
+    addAndEdit,
     add,
     items: annotationEditItems(items, edit),
     edit,
     selectionRequest,
     dirty: !!edit && !sameAnnotation(edit.base, edit.draft),
-    beginEdit: (id: string) => {
-      if (editing.current?.draft.id === id) return;
-      const item = current.current.find((a) => a.id === id);
-      if (!item) return;
-      lookup.current?.abort();
-      setReading(false);
-      setEditing({
-        base: structuredClone(item),
-        draft: structuredClone(item),
-        origin: editorPose(item),
-      });
-      setMoveHistory([]);
-      setError('');
-    },
+    beginEdit,
     saveEdit: () => {
       const session = editing.current;
       if (!session) return true;

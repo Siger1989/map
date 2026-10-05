@@ -12,11 +12,16 @@ import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
 import type { TrackStyle } from './style';
 import { metricLineParts } from '../routeAnalysis/metrics';
+import { profilePreviewIndex, profilePreviewMoves } from './profilePreviewGeometry';
+import { sameTrackFeature } from './trackFeatureDiff';
+import { SegmentHandleCache } from './SegmentHandleCache';
+import { cameraDetailZoom } from '../map/cameraDetailZoom';
+import { prepareVisibleNodeMove, moves as visibleNodeMoves } from './visibleNodeMove';
+import type { SnapViewport } from './snapping';
 import { pickLinePoint, type TrackLinePoint } from './linePoint';
 import type { TrackEdgeColors } from './edgeColors';
 import {
   DRAFT_ID,
-  nodeHandles,
   equalCoordinate,
   type TrackNode,
 } from './editing';
@@ -32,6 +37,8 @@ export type TrackOverlay = {
   analysisParts?: {
     trackId: string;
     parts: ReturnType<typeof metricLineParts>;
+    sourceSegments?: Coordinate[][];
+    profileSegments?: Coordinate[][];
   };
   saved: ManualTrack[];
   draft: Coordinate[][];
@@ -75,16 +82,35 @@ export class TrackLayer {
   private selectedEdgeGeometry: FeatureCollection['features'][number]['geometry'] | null = null;
   private selectedEdgeBaseline: FeatureCollection | null = null;
   private previewRevision = 0;
+  private recoveryAttempted = new WeakSet<GeoJSONSource>();
   private projectionValid = false;
   private projectionEpoch = 0;
-  private handleCache = new Map<string, {
-    segments: Coordinate[][];
-    explicit: Coordinate[];
-    expanded: boolean;
-    epoch: number;
-    positions: Coordinate[];
-  }>();
-  constructor(private map: MapLibreMap) {
+  private handleCameraKey = '';
+  private handleCameraEpoch = 0;
+  private handleCache = new SegmentHandleCache();
+  constructor(private map: MapLibreMap, private getViewport: () => SnapViewport | null = () => null) {
+    if (typeof map.getZoom === 'function') cameraDetailZoom(map);
+    // MapLibre emits source errors after catching worker failures; updateData's
+    // promise may resolve. Retry once per source/sync, never an unbounded loop.
+    map.on?.('error', event => {
+      const id = (event as { sourceId?: string }).sourceId;
+      if (id !== 'manual-tracks' && id !== 'manual-track-selection-edge') return;
+      const source = map.getSource(id) as GeoJSONSource | undefined;
+      const expected = id === 'manual-tracks' ? this.baselineSource : this.selectedEdgeSource;
+      if (!source || source !== expected || this.recoveryAttempted.has(source)) return;
+      this.recoveryAttempted.add(source);
+      // A synchronous failure can arrive before the new canonical indexes commit.
+      queueMicrotask(() => {
+        if (map.getSource(id) !== source) return;
+        if (id === 'manual-tracks') this.restoreCanonicalBaseline(source, 'Could not restore route source after worker error');
+        else if (this.selectedEdgeBaseline) {
+          invalidateOverlayData(map, id);
+          void source.setData(this.selectedEdgeBaseline).then(() => {
+            if (map.getSource(id) === source) this.previewSelectedEdge(this.activePreview, this.previewRevision);
+          }).catch(error => console.warn('Could not restore selection after worker error', error));
+        }
+      });
+    });
     // Handle visibility is selected by screen-space spacing, so camera movement
     // invalidates the result even when route geometry itself has not changed.
     map.on?.('movestart', () => {
@@ -147,6 +173,23 @@ export class TrackLayer {
       .sort((a, b) => a.distance - b.distance);
     return hits[0] ?? null;
   }
+  /** Capture the rendered control nodes once, before either pane changes selection. */
+  pickEditableNode(point: ScreenPoint, accept?: (node: TrackNode) => boolean): TrackNode | null {
+    const node = this.pickNode(point, accept);
+    if (!node) return null;
+    const segments = node.trackId === DRAFT_ID ? this.state?.draft
+      : this.state?.saved.find(track => String(track.id) === node.trackId)?.segments;
+    if (!segments) return node;
+    const controls = this.handleCache.boundaryControls(node.trackId);
+    for (const id of this.trackFeatureIds.get(node.trackId) ?? []) {
+      const feature = this.baselineFeatures.get(id);
+      if (feature?.geometry.type !== 'Point') continue;
+      const props = feature.properties ?? {};
+      controls.push([Number(props.nodeLng ?? props.lng), Number(props.nodeLat ?? props.lat)]);
+    }
+    const controlMove = prepareVisibleNodeMove(segments, node.coordinate, controls);
+    return controlMove ? { ...node, controlMove } : node;
+  }
   pickTrack(point: ScreenPoint): string | null {
     const node = this.pickNode(point);
     if (node) return node.trackId;
@@ -161,6 +204,7 @@ export class TrackLayer {
     return hits[0]?.properties.trackId ?? null;
   }
   sync(state: TrackOverlay) {
+    this.recoveryAttempted = new WeakSet();
     const previous = this.state;
     const hadActivePreview = !!this.activePreview;
     if (hadActivePreview) this.preview(null);
@@ -329,7 +373,7 @@ export class TrackLayer {
           )
         )
           positions.push(state.activeNode.coordinate);
-        data.features.push(...trackNodeFeatures(item, state, positions));
+        data.features.push(...trackNodeFeatures(item, state, this.visiblePositions(positions)));
       }
     }
     // Stable per-track IDs let a one-route edit add/remove only that route's features.
@@ -397,9 +441,7 @@ export class TrackLayer {
     });
     const currentTrackIds = new Set(state.saved.map((track) => String(track.id)));
     currentTrackIds.add(DRAFT_ID);
-    for (const id of this.handleCache.keys()) {
-      if (!currentTrackIds.has(id)) this.handleCache.delete(id);
-    }
+    this.handleCache.retain(currentTrackIds);
     this.projectionValid = !this.map.isMoving?.();
   }
 
@@ -415,18 +457,42 @@ export class TrackLayer {
     expanded: boolean,
   ) {
     const moving = this.map.isMoving?.() ?? false;
-    const cached = this.handleCache.get(trackId);
-    if (
-      !moving &&
-      cached?.segments === segments &&
-      cached.explicit === explicit &&
-      cached.expanded === expanded &&
-      cached.epoch === this.projectionEpoch
-    ) return cached.positions.slice();
-    const positions = nodeHandles(segments, explicit, expanded, (point) => this.map.project(point));
-    if (!moving) this.handleCache.set(trackId, { segments, explicit, expanded, epoch: this.projectionEpoch, positions });
-    else this.handleCache.delete(trackId);
-    return positions.slice();
+    const viewport = this.getViewport();
+    let epoch = this.projectionEpoch;
+    if (viewport && this.map.getCenter && this.map.getZoom && this.map.getPitch && this.map.getBearing) {
+      const center = this.map.getCenter();
+      const cameraKey = [center.lng, center.lat, this.map.getZoom(), this.map.getPitch(),
+        this.map.getBearing(), viewport.width, viewport.height].join(',');
+      if (cameraKey !== this.handleCameraKey) {
+        this.handleCameraKey = cameraKey;
+        this.handleCameraEpoch++;
+      }
+      epoch = this.handleCameraEpoch;
+    }
+    return this.handleCache.get(
+      trackId,
+      segments,
+      explicit,
+      expanded,
+      epoch,
+      (point) => this.map.project(point),
+      moving,
+      // Pan/DEM corrections refresh projection, but only deliberate zoom
+      // events (including the linked pane's intent) change editing detail.
+      viewport ? { ...viewport, revision: 0 } : null,
+      typeof this.map.getZoom === 'function' ? cameraDetailZoom(this.map) : undefined,
+    );
+  }
+
+  private visiblePositions(positions: Coordinate[]) {
+    const viewport = this.getViewport();
+    if (!viewport) return positions;
+    return positions.filter(point => {
+      const screen = this.map.project(point);
+      return Number.isFinite(screen.x) && Number.isFinite(screen.y) &&
+        screen.x >= -24 && screen.x <= viewport.width + 24 &&
+        screen.y >= -24 && screen.y <= viewport.height + 24;
+    });
   }
 
   private canPatchActiveNode(previous: TrackOverlay, next: TrackOverlay) {
@@ -533,7 +599,7 @@ export class TrackLayer {
         track.id === next.selectedId || !!next.connecting || (!!next.snapTargets && track.id !== DRAFT_ID && !track.hidden && track.source !== 'recorded' && track.samples === undefined));
       for (const terminal of [start, end]) if (terminal && !positions.some((point) => equalCoordinate(point, terminal))) positions.push(terminal);
       if (next.activeNode?.trackId === track.id && !positions.some((point) => equalCoordinate(point, next.activeNode!.coordinate)) && track.segments.some((segment) => segment.some((point) => equalCoordinate(point, next.activeNode!.coordinate)))) positions.push(next.activeNode.coordinate);
-      return { id: String(track.id), features: trackRendersNodes(item, next) ? trackNodeFeatures(item, next, positions) : [] };
+      return { id: String(track.id), features: trackRendersNodes(item, next) ? trackNodeFeatures(item, next, this.visiblePositions(positions)) : [] };
     });
     const remove: (string | number)[] = [];
     const add: FeatureCollection['features'][number][] = [];
@@ -561,19 +627,6 @@ export class TrackLayer {
       } catch {
         return false;
       }
-    } else {
-      // An empty branch row does not alter the sampled handle positions. Keep
-      // the projection cache keyed to the new segments array without dispatching
-      // an empty worker diff.
-      for (let i = 0; i < previous.saved.length; i++) {
-        if (previous.saved[i] === next.saved[i]) continue;
-        const track = next.saved[i];
-        const id = String(track.id), cached = this.handleCache.get(id);
-        const expanded = track.id === next.selectedId || !!next.connecting || (!!next.snapTargets && !track.hidden && track.source !== 'recorded' && track.samples === undefined);
-        if (cached && cached.explicit === (track.nodes ?? EMPTY_NODE_COORDINATES) && cached.expanded === expanded && cached.epoch === this.projectionEpoch) {
-          cached.segments = track.segments;
-        } else this.handleCache.delete(id);
-      }
     }
     this.state = next;
     syncSelectedEdges(this.map, next);
@@ -592,12 +645,18 @@ export class TrackLayer {
     const id = String(next.saved[changedIndex].id);
     const replacement = this.buildTrackFeatures(next.saved[changedIndex], next);
     const oldIds = [...(this.trackFeatureIds.get(id) ?? [])];
-    const remove = oldIds;
-    const add = replacement;
+    const nextIds = new Set(replacement.map(feature => feature.id!));
+    const remove = oldIds.filter(featureId => !nextIds.has(featureId));
+    const add = replacement.filter(feature => {
+      const old = this.baselineFeatures.get(feature.id!);
+      if (old && sameTrackFeature(old, feature)) return false;
+      if (old) remove.push(feature.id!);
+      return true;
+    });
     // Invalidate the complete-collection snapshot before mutating the live source.
     invalidateOverlayData(this.map, 'manual-tracks');
     try {
-      void source.updateData({ remove, add }).catch((error) => {
+      if (remove.length || add.length) void source.updateData({ remove, add }).catch((error) => {
         if (this.map.getSource('manual-tracks') !== source) return;
         this.restoreCanonicalBaseline(source, 'Could not restore route edit baseline');
         console.warn('Could not patch edited route', error);
@@ -605,13 +664,13 @@ export class TrackLayer {
     } catch {
       return false;
     }
-    for (const featureId of oldIds) {
+    for (const featureId of remove) {
       const feature = this.baselineFeatures.get(featureId);
       if (feature) unindexFeature(feature, this.nodeFeatures, this.lineFeatures);
       this.baselineFeatures.delete(featureId);
+      this.trackFeatureIds.get(id)?.delete(featureId);
     }
-    this.trackFeatureIds.delete(id);
-    for (const feature of replacement) indexFeature(feature, this.baselineFeatures, this.trackFeatureIds, this.nodeFeatures, this.lineFeatures);
+    for (const feature of add) indexFeature(feature, this.baselineFeatures, this.trackFeatureIds, this.nodeFeatures, this.lineFeatures);
     this.state = next;
     syncSelectedEdges(this.map, next);
     const selectedEdges = selectedEdgeData(next);
@@ -632,7 +691,7 @@ export class TrackLayer {
         track.id === state.selectedId || !!state.connecting || (!!state.snapTargets && !track.hidden && track.source !== 'recorded' && track.samples === undefined));
       for (const terminal of [routeStart, routeEnd]) if (terminal && !positions.some((point) => equalCoordinate(point, terminal))) positions.push(terminal);
       if (state.activeNode?.trackId === track.id && !positions.some((point) => equalCoordinate(point, state.activeNode!.coordinate)) && track.segments.some((segment) => segment.some((point) => equalCoordinate(point, state.activeNode!.coordinate)))) positions.push(state.activeNode.coordinate);
-      features.push(...trackNodeFeatures(item, state, positions));
+      features.push(...trackNodeFeatures(item, state, this.visiblePositions(positions)));
     }
     assignTrackFeatureIds(features);
     return features;
@@ -692,39 +751,38 @@ export class TrackLayer {
     }
     const previous = this.activePreview;
     if (!previous && !preview) return;
-    const targets = new Map<string, TrackOverlay['preview']>();
-    if (previous) targets.set(nodeKey(previous.node.trackId, previous.node.coordinate), null);
-    if (preview) targets.set(nodeKey(preview.node.trackId, preview.node.coordinate), preview);
+    const currentMoves = this.previewMoves(preview);
+    const previousMoves = this.previewMoves(previous);
+    const affected = new Set<string | number>();
+    for (const [item, pointMoves] of [[previous, previousMoves], [preview, currentMoves]] as const) {
+      if (!item) continue;
+      const keys = new Set([item.node.coordinate.join(','), ...pointMoves.keys()]);
+      for (const key of keys) {
+        const [lng, lat] = key.split(',').map(Number);
+        const indexedKey = nodeKey(item.node.trackId, [lng, lat]);
+        for (const id of this.lineFeatures.get(indexedKey) ?? []) affected.add(id);
+        for (const id of this.nodeFeatures.get(indexedKey) ?? []) affected.add(id);
+      }
+    }
     const updates = new Map<string | number, {
       id: string | number;
       newGeometry?: FeatureCollection['features'][number]['geometry'];
       addOrUpdateProperties?: Array<{ key: string; value: unknown }>;
     }>();
-    for (const [key, current] of targets) {
-      const coordinate = current?.coordinate;
-      for (const id of this.lineFeatures.get(key) ?? []) {
-        const feature = this.baselineFeatures.get(id);
-        if (!feature || feature.geometry.type !== 'MultiLineString') continue;
+    for (const id of affected) {
+      const feature = this.baselineFeatures.get(id);
+      if (!feature) continue;
+      const current = preview?.node.trackId === String(feature.properties?.trackId) ? preview : null;
+      if (feature.geometry.type === 'MultiLineString') {
+        updates.set(id, { id, newGeometry: current
+          ? moveGeometryCoordinates(feature.geometry, current.node.coordinate, current.coordinate, currentMoves)
+          : feature.geometry });
+      } else if (feature.geometry.type === 'Point') {
+        const base = feature.geometry.coordinates as Coordinate;
+        const point = current ? currentMoves.get(base.join(',')) ?? base : base;
         updates.set(id, {
-          id,
-          newGeometry: coordinate
-            ? moveGeometryCoordinate(feature.geometry, current!.node.coordinate, coordinate)
-            : feature.geometry,
-        });
-      }
-      for (const id of this.nodeFeatures.get(key) ?? []) {
-        const feature = this.baselineFeatures.get(id);
-        if (!feature || feature.geometry.type !== 'Point') continue;
-        const point = coordinate
-          ? moveCoordinate(feature.geometry.coordinates as Coordinate, current!.node.coordinate, coordinate)
-          : feature.geometry.coordinates as Coordinate;
-        updates.set(id, {
-          id,
-          newGeometry: { type: 'Point', coordinates: point },
-          addOrUpdateProperties: [
-            { key: 'lng', value: point[0] },
-            { key: 'lat', value: point[1] },
-          ],
+          id, newGeometry: { type: 'Point', coordinates: point },
+          addOrUpdateProperties: [{ key: 'lng', value: point[0] }, { key: 'lat', value: point[1] }],
         });
       }
     }
@@ -745,6 +803,19 @@ export class TrackLayer {
     this.previewSelectedEdge(preview, revision);
   }
 
+  private previewMoves(preview: TrackOverlay['preview']): ReadonlyMap<string, Coordinate> {
+    if (!preview) return new Map();
+    if (preview.node.controlMove) return visibleNodeMoves(preview.node.controlMove, preview.coordinate);
+    const track = this.state?.saved.find(item => String(item.id) === preview.node.trackId);
+    const analysis = this.state?.analysisParts;
+    if (track && analysis?.trackId === preview.node.trackId &&
+      analysis.sourceSegments === track.segments && analysis.profileSegments) {
+      const index = profilePreviewIndex(track.segments, analysis.profileSegments, analysis);
+      if (index) return profilePreviewMoves(index, preview.node.coordinate, preview.coordinate);
+    }
+    return new Map([[preview.node.coordinate.join(','), preview.coordinate]]);
+  }
+
   private previewSelectedEdge(preview: TrackOverlay['preview'], revision: number) {
     const trackId = this.selectedEdgeTrackId,
       source = this.map.getSource('manual-track-selection-edge') as GeoJSONSource | undefined;
@@ -757,10 +828,8 @@ export class TrackLayer {
       typeof source.updateData !== 'function'
     ) return;
     const node = preview?.node.trackId === trackId ? preview.node : null;
-    const baseCoordinates = this.selectedEdgeGeometry.coordinates as Coordinate[][];
-    const containsNode = node && baseCoordinates.some((line) => line.some((point) => equalCoordinate(point as Coordinate, node.coordinate)));
-    const geometry = containsNode
-      ? moveGeometryCoordinate(this.selectedEdgeGeometry as Extract<FeatureCollection['features'][number]['geometry'], { type: 'MultiLineString' }>, node!.coordinate, preview!.coordinate)
+    const geometry = node
+      ? moveGeometryCoordinates(this.selectedEdgeGeometry, node.coordinate, preview!.coordinate, this.previewMoves(preview))
       : this.selectedEdgeGeometry;
     void source.updateData({
       update: [{ id: 'manual-track-selected-edge', newGeometry: geometry }],
@@ -890,5 +959,18 @@ function moveGeometryCoordinate(
   return {
     type: 'MultiLineString' as const,
     coordinates: geometry.coordinates.map((line) => line.map((point) => moveCoordinate(point as Coordinate, source, target))),
+  };
+}
+
+function moveGeometryCoordinates(
+  geometry: Extract<FeatureCollection['features'][number]['geometry'], { type: 'MultiLineString' }>,
+  source: Coordinate,
+  target: Coordinate,
+  profileMoves?: ReadonlyMap<string, Coordinate>,
+) {
+  return {
+    type: 'MultiLineString' as const,
+    coordinates: geometry.coordinates.map(line => line.map(point =>
+      profileMoves?.get((point as Coordinate).join(',')) ?? moveCoordinate(point as Coordinate, source, target))),
   };
 }

@@ -41,9 +41,11 @@ export function themeTokens(p: Palette) {
   const button = p.button ?? DEFAULT_APPEARANCE.light.button;
   const buttonInk = contrastRatio(button,p.foreground) >= 4.5 ? p.foreground : contrastRatio(button,'#10243c') > contrastRatio(button,'#ffffff') ? '#10243c' : '#ffffff';
   const active = mix(button,p.accent,.16);
+  const close = luminance(p.background) < .2 ? '#c7b86d' : '#766100';
   const [glassR,glassG,glassB] = rgb(p.background);
   return {
     '--ui-surface': p.background, '--ui-ink': ink, '--ui-accent': p.accent,
+    '--ui-close': close,
     '--ui-active': active, '--ui-active-ink': contrastRatio(active,p.accent) >= 4.5 ? p.accent : buttonInk,
     '--ui-button': button, '--ui-button-ink': buttonInk,
     '--ui-raised': button, '--ui-field': mix(button,ink,.055),

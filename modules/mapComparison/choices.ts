@@ -27,6 +27,7 @@ export function comparisonChoices(
     { id: 'current', name, group: '当前', source, settings },
     builtin('terrain', '开源道路地形', { satellite: false, satelliteProvider: 'sentinel', tiandituBase: 'vec', offlineBasemap: true }),
     builtin('sentinel', 'Sentinel-2 2025', { satellite: true, satelliteProvider: 'sentinel', imageryMode: 'detail' }),
+    ...(!domestic ? [builtin('latest', '最新云况', { satellite: true, satelliteProvider: 'sentinel', imageryMode: 'latest' })] : []),
     ...(domestic ? (['vec', 'img', 'ter'] as const).map(id => builtin(`tdt-${id}`, `天地图${id === 'vec' ? '矢量' : id === 'img' ? '影像' : '地形'}`, {
       satelliteProvider: 'tianditu', tiandituBase: id, satellite: id === 'img',
     })) : []),

@@ -5,7 +5,7 @@ import {
   Scan,
 } from 'lucide-react';
 import { PositionDock } from '../position/PositionDock';
-import type { DirectionMode, PositionFix } from '../position/types';
+import type { DirectionMode } from '../position/types';
 
 /** Home chrome; camera, positioning and route state stay with their owners. */
 export function MapActions(props: {
@@ -23,6 +23,8 @@ export function MapActions(props: {
   locating: boolean;
   watching: boolean;
   following: boolean;
+  tracking?: boolean;
+  locationError?: string;
   followBlocked: boolean;
   direction: DirectionMode;
   onStopLocation: () => void;
@@ -33,9 +35,8 @@ export function MapActions(props: {
   onBoxSelect: () => void;
   boxSelecting?: boolean;
   onOverview?: () => void;
-  fix?: PositionFix | null;
-  showCoordinates?: boolean;
   layerControl?: ReactNode;
+  favoriteControl?: ReactNode;
   viewControl?: ReactNode;
   markControl?: ReactNode;
 }) {
@@ -44,16 +45,17 @@ export function MapActions(props: {
       <PositionDock
         direction={props.direction}
         following={props.following}
+        tracking={props.tracking}
+        error={props.locationError}
         locating={props.locating}
         blocked={props.followBlocked}
         onLocate={props.onLocate}
         onLocateAndFollow={props.onLocateAndFollow}
         onDirection={props.onDirection}
         directionStatus={props.directionStatus}
-        fix={props.fix}
-        showCoordinates={props.showCoordinates}
         markControl={props.markControl}
       >
+        {props.favoriteControl}
         {props.layerControl}
         <button
           className="position-dock-button glass"

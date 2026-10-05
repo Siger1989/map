@@ -1,6 +1,7 @@
 import type { LayerSettings } from '../map/types';
 import { tiandituBase, TIANDITU_LAYERS } from './tianditu';
 import { usesSentinel } from './sentinel';
+import { FavoriteSourceStar } from '../mapSources/FavoriteSourceStar';
 export function TiandituSources({
   settings,
   onChange,
@@ -13,10 +14,10 @@ export function TiandituSources({
   return (
     <section className="tianditu-sources" aria-label="内置图源">
       <div className="map-source-builtins map-source-primary-grid">
-      <button aria-pressed={active && usesSentinel(settings)} onClick={() => onChange({satellite:true,satelliteProvider:'sentinel',imageryMode:'detail',offlineBasemap:false,offlineMaxZoom:null,rasterLevel:null})}>Sentinel-2 2025</button>
+      <div className="tianditu-source-choice"><button aria-pressed={active && usesSentinel(settings)} onClick={() => onChange({satellite:true,satelliteProvider:'sentinel',imageryMode:'detail',offlineBasemap:false,offlineMaxZoom:null,rasterLevel:null})}>Sentinel-2 2025</button><FavoriteSourceStar sourceKey="sentinel" name="Sentinel-2 2025" group="builtin" /></div>
         {(['vec', 'img', 'ter'] as const).map((id) => (
+          <div className="tianditu-source-choice" key={id}>
           <button
-            key={id}
             aria-pressed={
               active && settings.satelliteProvider === 'tianditu' &&
               tiandituBase(settings) === id &&
@@ -33,6 +34,8 @@ export function TiandituSources({
           >
             {id === 'img' ? '天地图影像' : TIANDITU_LAYERS[id].name}
           </button>
+          <FavoriteSourceStar sourceKey={`tdt-${id}`} name={id === 'img' ? '天地图影像' : TIANDITU_LAYERS[id].name} group="builtin" />
+          </div>
         ))}
       </div>
       <small>{settings.satelliteProvider === 'tianditu' ? '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>

@@ -86,14 +86,98 @@ async function resolvePublic(hostname, lookup) {
   return records;
 }
 
-function requestPinned(url, hostname, address, family, port, timeoutMs, maxBytes, signal) {
-  return new Promise((resolve, reject) => {
+export function createPinnedRequester({
+  connectTcp = net.connect,
+  connectTls = tls.connect,
+  maxEntries = 16,
+  idleTimeoutMs = 30_000,
+} = {}) {
+  const agents = new Map();
+
+  function destroyEntry(key, entry) {
+    if (entry.active || agents.get(key) !== entry) return false;
+    clearTimeout(entry.timer);
+    agents.delete(key);
+    entry.agent.destroy();
+    return true;
+  }
+
+  function scheduleIdleEviction(key, entry) {
+    clearTimeout(entry.timer);
+    entry.timer = setTimeout(() => {
+      if (entry.active || agents.get(key) !== entry) return;
+      const remaining = idleTimeoutMs - (Date.now() - entry.lastUsed);
+      if (remaining > 0) scheduleIdleEviction(key, entry);
+      else destroyEntry(key, entry);
+    }, idleTimeoutMs);
+    entry.timer.unref?.();
+  }
+
+  function acquire(url, hostname, address, family, port) {
+    const secure = url.protocol === 'https:';
+    const servername = secure && !net.isIP(hostname) ? hostname : '';
+    // DNS is resolved and validated for every request before this key is used.
+    const key = JSON.stringify([url.protocol, hostname, servername, address, family, port]);
+    let entry = agents.get(key);
+    if (entry) {
+      clearTimeout(entry.timer);
+      entry.timer = undefined;
+      entry.active++;
+      entry.lastUsed = Date.now();
+      return { agent: entry.agent, release() { release(key, entry); } };
+    }
+
+    // Opportunistically trim expired entries and make room only by evicting idle agents.
+    const now = Date.now();
+    for (const [candidateKey, candidate] of agents) {
+      if (!candidate.active && now - candidate.lastUsed >= idleTimeoutMs) destroyEntry(candidateKey, candidate);
+    }
+    if (agents.size >= maxEntries) {
+      const oldest = [...agents.entries()]
+        .filter(([, candidate]) => !candidate.active)
+        .sort((a, b) => a[1].lastUsed - b[1].lastUsed)[0];
+      if (oldest) destroyEntry(oldest[0], oldest[1]);
+    }
+
+    // If every pool slot is busy, do not expand memory/socket bounds or evict active users.
+    if (agents.size >= maxEntries) {
+      const oneShot = secure ? new https.Agent({ keepAlive: false, maxSockets: 1 }) : new http.Agent({ keepAlive: false, maxSockets: 1 });
+      oneShot.createConnection = createConnection;
+      return { agent: oneShot, release() { oneShot.destroy(); } };
+    }
+
+    const agentOptions = { keepAlive: true, maxSockets: 4, maxFreeSockets: 2, maxTotalSockets: 4 };
+    const agent = secure ? new https.Agent(agentOptions) : new http.Agent(agentOptions);
+    agent.createConnection = createConnection;
+    function createConnection(_options, callback) {
+      return secure
+        ? connectTls({ host: address, family, port, servername: servername || undefined, rejectUnauthorized: true }, callback)
+        : connectTcp({ host: address, family, port }, callback);
+    }
+
+    entry = { agent, active: 1, lastUsed: Date.now(), timer: undefined };
+    agents.set(key, entry);
+    return { agent, release() { release(key, entry); } };
+  }
+
+  function release(key, entry) {
+    if (entry.active <= 0) return;
+    entry.active--;
+    if (!entry.active && agents.get(key) === entry) scheduleIdleEviction(key, entry);
+  }
+
+  return function requestPinned(url, hostname, address, family, port, timeoutMs, maxBytes, signal) {
+    return new Promise((resolve, reject) => {
     const secure = url.protocol === 'https:';
     const transport = secure ? https : http;
-    const agent = secure ? new https.Agent({ keepAlive: false }) : new http.Agent({ keepAlive: false });
-    agent.createConnection = () => secure
-      ? tls.connect({ host: address, family, port, servername: net.isIP(hostname) ? undefined : hostname, rejectUnauthorized: true })
-      : net.connect({ host: address, family, port });
+    const lease = acquire(url, hostname, address, family, port);
+    const { agent } = lease;
+    let leaseReleased = false;
+    const releaseLease = () => {
+      if (leaseReleased) return;
+      leaseReleased = true;
+      lease.release();
+    };
     const options = {
       protocol: url.protocol,
       hostname: url.hostname,
@@ -108,21 +192,23 @@ function requestPinned(url, hostname, address, family, port, timeoutMs, maxBytes
       },
       ...(secure && !net.isIP(hostname) ? { servername: hostname } : {}),
     };
-    const request = transport.request(options, (response) => {
+    let settled = false;
+    const settleReject = (error) => { if (settled) return; settled = true; reject(error); };
+    const settleResolve = (value) => { if (settled) return; settled = true; resolve(value); };
+    let request;
+    try { request = transport.request(options, (response) => {
       const status = response.statusCode ?? 0;
       const location = response.headers.location;
       if ([301, 302, 303, 307, 308].includes(status) && location) {
-        response.resume();
-        agent.destroy();
-        resolve({ status, location });
+        settleResolve({ status, location });
+        response.destroy();
         return;
       }
       const mime = String(response.headers['content-type'] ?? '').split(';', 1)[0].trim().toLowerCase();
       const declared = Number(response.headers['content-length']);
       if (status !== 200 || (Number.isFinite(declared) && declared > maxBytes)) {
         response.destroy();
-        agent.destroy();
-        reject(Object.assign(new Error('Map tile response rejected'), { upstreamStatus: status }));
+        settleReject(Object.assign(new Error('Map tile response rejected'), { upstreamStatus: status }));
         return;
       }
       const chunks = [];
@@ -131,27 +217,41 @@ function requestPinned(url, hostname, address, family, port, timeoutMs, maxBytes
         total += chunk.length;
         if (total > maxBytes) {
           response.destroy(new Error('Map tile response too large'));
+          settleReject(new Error('Map tile response too large'));
           return;
         }
         chunks.push(chunk);
       });
-      response.once('error', (error) => { agent.destroy(); reject(error); });
+      response.once('error', settleReject);
       response.once('end', () => {
-        agent.destroy();
         const body = Buffer.concat(chunks, total), verifiedMime = imageMime(body);
-        if (!verifiedMime) { reject(Object.assign(new Error('Map tile is not an image'), { upstreamStatus: status })); return; }
-        resolve({ status: 200, mime: verifiedMime, body });
+        if (!verifiedMime) { settleReject(Object.assign(new Error('Map tile is not an image'), { upstreamStatus: status })); return; }
+        settleResolve({ status: 200, mime: verifiedMime, body });
       });
-    });
-    const timeout = setTimeout(() => request.destroy(new Error('Map tile request timed out')), timeoutMs);
-    const abort = () => request.destroy(signal.reason instanceof Error ? signal.reason : new Error('Map tile request aborted'));
+    }); } catch (error) { releaseLease(); settleReject(error); return; }
+    const cleanup = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', abort);
+    };
+    const fail = (error) => {
+      if (settled) return;
+      settleReject(error);
+      cleanup();
+      releaseLease();
+      request.destroy(error);
+    };
+    const timeout = setTimeout(() => fail(new Error('Map tile request timed out')), timeoutMs);
+    const abort = () => fail(signal.reason instanceof Error ? signal.reason : new Error('Map tile request aborted'));
+    request.once('error', (error) => { cleanup(); releaseLease(); settleReject(error); });
+    request.once('close', () => { cleanup(); releaseLease(); });
     if (signal?.aborted) abort();
     else signal?.addEventListener('abort', abort, { once: true });
-    request.once('error', (error) => { clearTimeout(timeout); signal?.removeEventListener('abort', abort); agent.destroy(); reject(error); });
-    request.once('close', () => { clearTimeout(timeout); signal?.removeEventListener('abort', abort); });
     request.end();
-  });
+    });
+  };
 }
+
+const requestPinned = createPinnedRequester();
 
 export async function fetchPublicMapTile(rawUrl, {
   lookup = dns.lookup,
@@ -161,19 +261,40 @@ export async function fetchPublicMapTile(rawUrl, {
   signal,
 } = {}) {
   let current = rawUrl;
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const { url, hostname, port } = validateUrl(current);
-    const records = await resolvePublic(hostname, lookup);
-    const response = await request(url, hostname, records[0].address, records[0].family, port, timeoutMs, maxBytes, signal);
-    if (!response.location) {
-      if (response.status !== 200 || !MIME.has(response.mime) || !response.body || response.body.byteLength > maxBytes)
-        throw new Error('Map tile response rejected');
-      return response;
+  const deadlineAt = Date.now() + timeoutMs;
+  const deadline = new AbortController();
+  const timer = setTimeout(() => deadline.abort(new Error('Map tile request timed out')), timeoutMs);
+  const abort = () => deadline.abort(signal.reason instanceof Error ? signal.reason : new Error('Map tile request aborted'));
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
+  const raceSignal = (promise) => new Promise((resolve, reject) => {
+    if (deadline.signal.aborted) { reject(deadline.signal.reason); return; }
+    const onAbort = () => reject(deadline.signal.reason);
+    deadline.signal.addEventListener('abort', onAbort, { once: true });
+    Promise.resolve(promise).then(resolve, reject).finally(() => deadline.signal.removeEventListener('abort', onAbort));
+  });
+  try {
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      const remainingMs = deadlineAt - Date.now();
+      if (remainingMs <= 0) throw new Error('Map tile request timed out');
+      const { url, hostname, port } = validateUrl(current);
+      const records = await raceSignal(resolvePublic(hostname, lookup));
+      const response = await raceSignal(request(
+        url, hostname, records[0].address, records[0].family, port, remainingMs, maxBytes, deadline.signal,
+      ));
+      if (!response.location) {
+        if (response.status !== 200 || !MIME.has(response.mime) || !response.body || response.body.byteLength > maxBytes)
+          throw new Error('Map tile response rejected');
+        return response;
+      }
+      if (hop === MAX_REDIRECTS) throw new Error('Too many map tile redirects');
+      current = new URL(response.location, url).href;
     }
-    if (hop === MAX_REDIRECTS) throw new Error('Too many map tile redirects');
-    current = new URL(response.location, url).href;
+    throw new Error('Map tile request failed');
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', abort);
   }
-  throw new Error('Map tile request failed');
 }
 
 export async function proxyMapTileRequest(request) {

@@ -15,7 +15,7 @@ export function DirectionControl({mode,status,onChange}:{mode:DirectionMode;stat
   },[open]);
   return <>
     <button ref={button} className="position-dock-button position-direction-button glass" aria-label="地图朝向模式"
-      aria-expanded={open} aria-pressed={mode==='device'||mode==='motion'} title={status||MODES.find(m=>m.id===mode)?.label} onClick={()=>setOpen(v=>!v)}>
+      aria-expanded={open} aria-pressed={mode!=='free'} title={status||MODES.find(m=>m.id===mode)?.label} onClick={()=>setOpen(v=>!v)}>
       {mode==='motion'?<Navigation2 size={17} fill="currentColor"/>:<Compass size={17}/>}
       <small>{mode==='motion'?'运动朝上':mode==='device'?'手机朝上':mode==='north'?'正北':'方向'}</small>
     </button>

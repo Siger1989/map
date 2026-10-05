@@ -12,13 +12,15 @@ import java.util.zip.GZIPInputStream;
 
 /** Bounded native requests for the three public providers used by local API routes. */
 final class DataTransport {
-    private static final String[] HOSTS = { "tiles.macrostrat.org", "elevation-tiles-prod.s3.amazonaws.com", "gibs.earthdata.nasa.gov" };
+    private static final String[] HOSTS = { "tiles.macrostrat.org", "elevation-tiles-prod.s3.amazonaws.com", "gibs.earthdata.nasa.gov", "ipwho.is" };
     static byte[] get(String source, int limit) throws IOException {
         URL url = new URL(source);
         if (!"https".equals(url.getProtocol()) || !Arrays.asList(HOSTS).contains(url.getHost()) || url.getUserInfo() != null) throw new IOException("Unsupported provider");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setConnectTimeout(15000);
-        connection.setReadTimeout(20000);
+        boolean ipLocation = "ipwho.is".equals(url.getHost());
+        connection.setConnectTimeout(ipLocation ? 5000 : 15000);
+        connection.setReadTimeout(ipLocation ? 5000 : 20000);
+        if (ipLocation) { connection.setUseCaches(false); connection.setRequestProperty("Cache-Control", "no-cache"); }
         connection.setInstanceFollowRedirects(false);
         connection.setRequestProperty("User-Agent", "Guanyun-Android-Test/0.1");
         connection.setRequestProperty("Accept-Encoding", "gzip");

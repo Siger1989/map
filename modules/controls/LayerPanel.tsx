@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import {
   CloudRain,
+  Cloud,
   Info,
   Layers,
   Mountain,
@@ -12,10 +14,12 @@ import {
   Thermometer,
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
+import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { CONTOUR_INTERVALS, contourInterval } from '../terrain/contourInterval';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 const ITEMS = [
+  { key: 'clouds', label: '卫星云图', detail: '国家卫星气象中心 · 红外观测', icon: Cloud, color: 'cyan' },
   {
     key: 'temperature',
     label: '气温',
@@ -87,6 +91,8 @@ export function LayerPanel({
   satelliteStatus,
   onOpenSources,
   customSource,
+  presets,
+  cloudState,
 }: {
   settings: LayerSettings;
   onChange: (patch: Partial<LayerSettings>) => void;
@@ -94,6 +100,8 @@ export function LayerPanel({
   satelliteStatus?: string;
   onOpenSources?: () => void;
   customSource?: string;
+  presets?: ReactNode;
+  cloudState?: SatelliteCloudState | null;
 }) {
   const domestic = usesTianditu(settings, basemapConfiguration().domestic);
   return (
@@ -128,9 +136,11 @@ export function LayerPanel({
                   <p>
                     {key === 'satellite'
                       ? settings.imageryMode === 'detail'
-                        ? usesSentinel(settings) ? 'Sentinel-2 · 2025年合成 · 约10米' : domestic
-                          ? '天地图地表影像 · 非实时云况'
-                          : '10 米级地表 · 2025 年合成'
+                        ? usesSentinel(settings)
+                          ? 'Sentinel-2 · 2025年合成 · 约10米'
+                          : domestic
+                            ? '天地图地表影像 · 非实时云况'
+                            : '10 米级地表 · 2025 年合成'
                         : satelliteDate
                           ? `影像日期 ${satelliteDate}`
                           : '正在获取最新可用日期'
@@ -149,169 +159,235 @@ export function LayerPanel({
               >
                 <span />
               </button>
-              {key === 'elevationColors' && settings.elevationColors && (
-                <div className="elevation-opacity">
-                  <label
-                    className="slider-label"
-                    htmlFor="elevation-colors-opacity"
-                  >
-                    海拔着色不透明度{' '}
-                    <span>
-                      {Math.round((settings.elevationColorsOpacity ?? 1) * 100)}
-                      %
-                    </span>
-                  </label>
-                  <input
-                    id="elevation-colors-opacity"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={settings.elevationColorsOpacity ?? 1}
-                    aria-valuetext={`${Math.round((settings.elevationColorsOpacity ?? 1) * 100)}%${settings.elevationColorsOpacity === 0 ? '，完全透明' : ''}`}
-                    onChange={(e) =>
-                      onChange({
-                        elevationColorsOpacity: Number(e.target.value),
-                      })
-                    }
-                  />
-                  <p>0% 完全透明，100% 完全显示。</p>
-                </div>
-              )}
-              {key === 'contours' && settings.contours && <div className="elevation-opacity contour-interval">
-                <label htmlFor="contour-interval">等高线高差间隔</label>
-                <select id="contour-interval" value={contourInterval(settings.contourInterval)}
-                  onChange={e => onChange({ contourInterval: contourInterval(Number(e.target.value)) })}>
-                  {CONTOUR_INTERVALS.map(value => <option key={value} value={value}>{value}米{value === 30 ? ' · 最细' : ''}</option>)}
-                </select>
-                <small>放大后使用所选间隔；缩小时自动稀疏，避免卡顿。线旁数值为海拔米数。</small>
-              </div>}
-              {key === 'roads' && <div className="elevation-opacity">
-                <label className="slider-label" htmlFor="roads-opacity">道路/注记不透明度 <span>{Math.round((settings.roadsOpacity ?? 1) * 100)}%</span></label>
-                <input id="roads-opacity" type="range" min="0" max="1" step="0.05" value={settings.roadsOpacity ?? 1} onChange={e => onChange({ roadsOpacity: Number(e.target.value) })}/>
-                <p>0% 隐藏，100% 正常显示。天地图道路/地名注记一起变化；矢量底图内的道路不能单独分离。</p>
-              </div>}
-              {key === 'geology' && settings.geology && (
-                <div
-                  className="elevation-opacity geology-source-choice"
-                  role="group"
-                  aria-label="地质图源"
-                >
-                  <button
-                    aria-pressed={settings.geologySource === 'world'}
-                    onClick={() => onChange({ geologySource: 'world' })}
-                  >
-                    全球地质
-                  </button>
-                  <button
-                    aria-pressed={settings.geologySource === 'geocloud20w'}
-                    onClick={() => onChange({ geologySource: 'geocloud20w' })}
-                  >
-                    1∶20 万 · 地质云
-                  </button>
-                </div>
-              )}
             </div>
           ),
         )}
       </div>
-      {!customSource && settings.satellite && (
-        <div className="imagery-selector" aria-label="卫星影像类型">
-          <button
-            aria-pressed={settings.imageryMode === 'detail'}
-            onClick={() => onChange({ imageryMode: 'detail', satellite: true })}
-          >
-            高清地表
-          </button>
-          <button
-            aria-pressed={settings.imageryMode === 'latest'}
-            disabled={domestic}
-            onClick={() => onChange({ imageryMode: 'latest', satellite: true })}
-          >
-            最新云况影像
-          </button>
-        </div>
-      )}
-      {settings.geology && (
-        <>
-          <div className="geology-opacity">
-            <label className="slider-label" htmlFor="geology-opacity">
-              地质图不透明度{' '}
-              <span>{Math.round(settings.geologyOpacity * 100)}%</span>
-            </label>
-            <input
-              id="geology-opacity"
-              type="range"
-              min="0.15"
-              max="1"
-              step="0.05"
-              value={settings.geologyOpacity}
-              onChange={(e) =>
-                onChange({ geologyOpacity: Number(e.target.value) })
-              }
-            />
-            <p>地质着色与海拔着色互相切换，避免颜色混淆。</p>
+      {settings.clouds && <p className="satellite-note" role="status" aria-label="卫星云图状态">
+        {cloudState?.error || (cloudState?.loading ? '正在加载卫星云图…' : cloudState?.ready && cloudState.frame ? `观测 ${new Date(cloudState.frame.timeUTC).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' })} · 北京时间` : '正在查询卫星云图…')}
+      </p>}
+      <div className="layer-settings-actions">
+        <details className="layer-display-settings">
+          <summary>显示参数</summary>
+          <div className="layer-display-content">
+            {settings.clouds && <div className="elevation-opacity">
+              <label className="slider-label" htmlFor="cloud-opacity">云图不透明度 <span>{Math.round((settings.cloudOpacity ?? 0.55) * 100)}%</span></label>
+              <input id="cloud-opacity" type="range" min="0" max="1" step="0.05" value={settings.cloudOpacity ?? 0.55} onChange={event => onChange({ cloudOpacity: Number(event.target.value) })} />
+              <label htmlFor="cloud-time">观测时间</label>
+              <select id="cloud-time" value={settings.cloudTime ?? ''} onChange={event => onChange({ cloudTime: event.target.value || undefined })}>
+                <option value="">最新观测</option>
+                {cloudState?.frames.slice().reverse().map(frame => <option key={frame.stamp} value={frame.stamp}>{new Date(frame.timeUTC).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' })}</option>)}
+              </select>
+              <p>北京时间 · 全球红外云图概览，适合缩小看云带。</p>
+            </div>}
+            {settings.elevationColors && (
+              <div className="elevation-opacity">
+                <label
+                  className="slider-label"
+                  htmlFor="elevation-colors-opacity"
+                >
+                  海拔着色不透明度{' '}
+                  <span>
+                    {Math.round((settings.elevationColorsOpacity ?? 1) * 100)}%
+                  </span>
+                </label>
+                <input
+                  id="elevation-colors-opacity"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={settings.elevationColorsOpacity ?? 1}
+                  aria-valuetext={`${Math.round((settings.elevationColorsOpacity ?? 1) * 100)}%${settings.elevationColorsOpacity === 0 ? '，完全透明' : ''}`}
+                  onChange={(e) =>
+                    onChange({
+                      elevationColorsOpacity: Number(e.target.value),
+                    })
+                  }
+                />
+                <p>0% 完全透明，100% 完全显示。</p>
+              </div>
+            )}
+            {settings.contours && (
+              <div className="elevation-opacity contour-interval">
+                <label htmlFor="contour-interval">等高线高差间隔</label>
+                <select
+                  id="contour-interval"
+                  value={contourInterval(settings.contourInterval)}
+                  onChange={(e) =>
+                    onChange({
+                      contourInterval: contourInterval(Number(e.target.value)),
+                    })
+                  }
+                >
+                  {CONTOUR_INTERVALS.map((value) => (
+                    <option key={value} value={value}>
+                      {value}米{value === 30 ? ' · 最细' : ''}
+                    </option>
+                  ))}
+                </select>
+                <small>
+                  放大后使用所选间隔；缩小时自动稀疏，避免卡顿。线旁数值为海拔米数。
+                </small>
+              </div>
+            )}
+            <div className="elevation-opacity">
+              <label className="slider-label" htmlFor="roads-opacity">
+                道路/注记不透明度{' '}
+                <span>{Math.round((settings.roadsOpacity ?? 1) * 100)}%</span>
+              </label>
+              <input
+                id="roads-opacity"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={settings.roadsOpacity ?? 1}
+                onChange={(e) =>
+                  onChange({ roadsOpacity: Number(e.target.value) })
+                }
+              />
+              <p>
+                0% 隐藏，100%
+                正常显示。天地图道路/地名注记一起变化；矢量底图内的道路不能单独分离。
+              </p>
+            </div>
+            {settings.geology && (
+              <div
+                className="elevation-opacity geology-source-choice"
+                role="group"
+                aria-label="地质图源"
+              >
+                <button
+                  aria-pressed={settings.geologySource === 'world'}
+                  onClick={() => onChange({ geologySource: 'world' })}
+                >
+                  全球地质
+                </button>
+                <button
+                  aria-pressed={settings.geologySource === 'geocloud20w'}
+                  onClick={() => onChange({ geologySource: 'geocloud20w' })}
+                >
+                  1∶20 万 · 地质云
+                </button>
+              </div>
+            )}
+            {!customSource && settings.satellite && (
+              <div className="imagery-selector" aria-label="卫星影像类型">
+                <button
+                  aria-pressed={settings.imageryMode === 'detail'}
+                  onClick={() =>
+                    onChange({ imageryMode: 'detail', satellite: true })
+                  }
+                >
+                  高清地表
+                </button>
+                <button
+                  aria-pressed={settings.imageryMode === 'latest'}
+                  disabled={domestic}
+                  onClick={() =>
+                    onChange({ imageryMode: 'latest', satellite: true })
+                  }
+                >
+                  最新云况影像
+                </button>
+              </div>
+            )}
+            {settings.geology && (
+              <>
+                <div className="geology-opacity">
+                  <label className="slider-label" htmlFor="geology-opacity">
+                    地质图不透明度{' '}
+                    <span>{Math.round(settings.geologyOpacity * 100)}%</span>
+                  </label>
+                  <input
+                    id="geology-opacity"
+                    type="range"
+                    min="0.15"
+                    max="1"
+                    step="0.05"
+                    value={settings.geologyOpacity}
+                    onChange={(e) =>
+                      onChange({ geologyOpacity: Number(e.target.value) })
+                    }
+                  />
+                  <p>地质着色与海拔着色互相切换，避免颜色混淆。</p>
+                </div>
+              </>
+            )}
+            <div className="panel-sliders">
+              {settings.rain && (
+                <>
+                  <label className="slider-label" htmlFor="rain-opacity">
+                    降雨透明度{' '}
+                    <span>{Math.round(settings.opacity * 100)}%</span>
+                  </label>
+                  <input
+                    id="rain-opacity"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={settings.opacity}
+                    onChange={(e) =>
+                      onChange({ opacity: Number(e.target.value) })
+                    }
+                  />
+                </>
+              )}
+              {settings.terrain && (
+                <>
+                  <label
+                    className="slider-label"
+                    htmlFor="terrain-exaggeration"
+                  >
+                    地形起伏增强{' '}
+                    <span>{settings.exaggeration.toFixed(1)}×</span>
+                  </label>
+                  <input
+                    id="terrain-exaggeration"
+                    type="range"
+                    min="1"
+                    max="2"
+                    step="0.1"
+                    disabled={!settings.terrain}
+                    value={settings.exaggeration}
+                    onChange={(e) =>
+                      onChange({ exaggeration: Number(e.target.value) })
+                    }
+                  />
+                </>
+              )}
+            </div>
           </div>
-        </>
-      )}
-      <div className="panel-sliders">
-        {settings.rain && (
-          <>
-            <label className="slider-label" htmlFor="rain-opacity">
-              降雨透明度 <span>{Math.round(settings.opacity * 100)}%</span>
-            </label>
-            <input
-              id="rain-opacity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={settings.opacity}
-              onChange={(e) => onChange({ opacity: Number(e.target.value) })}
-            />
-          </>
-        )}
-        {settings.terrain && (
-          <>
-            <label className="slider-label" htmlFor="terrain-exaggeration">
-              地形起伏增强 <span>{settings.exaggeration.toFixed(1)}×</span>
-            </label>
-            <input
-              id="terrain-exaggeration"
-              type="range"
-              min="1"
-              max="2"
-              step="0.1"
-              disabled={!settings.terrain}
-              value={settings.exaggeration}
-              onChange={(e) =>
-                onChange({ exaggeration: Number(e.target.value) })
-              }
-            />
-          </>
-        )}
+        </details>
+        <details className="layer-help">
+          <summary aria-label="图层说明、数据来源与场景预设">
+            说明与场景
+          </summary>
+          {presets}
+          <ul>
+            {ITEMS.map(({ key, label, detail }) => (
+              <li key={key}>
+                <b>{label}</b> · {detail}
+              </li>
+            ))}
+          </ul>
+          <p className="satellite-note" role="status">
+            {domestic
+              ? '底图与中文标注：天地图。卫星云图：国家卫星气象中心。天气、道路吸附及区域外高程仍可能需要境外连接。'
+              : settings.imageryMode === 'detail'
+                ? 'EOX / Sentinel-2 · 2025 年少云合成，约10米，非实时影像。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'
+                : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
+          </p>
+          <div className="layer-note">
+            <Info size={15} />
+            <p>
+              降雨动画依据预报数据展示，不是雷达观测；最新云况来自卫星日间影像，不是雷达回波。
+            </p>
+          </div>
+        </details>
       </div>
-      <details className="layer-help">
-        <summary>图层说明与数据来源</summary>
-        <ul>
-          {ITEMS.map(({ key, label, detail }) => (
-            <li key={key}>
-              <b>{label}</b> · {detail}
-            </li>
-          ))}
-        </ul>
-        <p className="satellite-note" role="status">
-          {domestic
-            ? '底图与中文标注：天地图。最新云况暂无国内替代；天气、道路吸附及区域外高程仍可能需要境外连接。'
-            : settings.imageryMode === 'detail'
-              ? 'EOX / Sentinel-2 · 2025 年少云合成，约10米，非实时影像。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'
-              : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
-        </p>
-        <div className="layer-note">
-          <Info size={15} />
-          <p>降雨动画依据预报数据展示，不是雷达观测；最新云况来自卫星日间影像，不是雷达回波。</p>
-        </div>
-      </details>
     </section>
   );
 }

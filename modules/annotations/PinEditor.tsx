@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Share2, Upload, X } from 'lucide-react';
-import { SmartInput, SmartTextarea } from '../input/SmartText';
+import { ArrowLeft, Camera, Share2, Upload, X } from 'lucide-react';
+import { SmartTextarea } from '../input/SmartText';
 import type { VisiblePhoto } from '../photos/storage';
 import { MAX_ATTRIBUTES } from './attributes';
 import { AnnotationIcon, MarkerCoordinates } from './AnnotationFields';
 import { MARKER_ICONS, markerIcon, type MarkerIconId } from './icons';
 import type { Annotation } from './data';
+import { ANNOTATION_CHOICES, type AnnotationChoice } from './data';
+import type { Coordinate } from '../navigation/types';
 import type { AnnotationsState } from './useAnnotations';
 import './pinEditor.css';
+import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
+import { AnnotationTypeOptions } from './AnnotationTypeOptions';
 
 const COLORS = ['#f2b45f', '#ef5652', '#5fdf79', '#598fff', '#a379de', '#ffffff'];
+const MODEL_CHOICES = Object.keys(ANNOTATION_CHOICES).filter(
+  (kind): kind is AnnotationChoice => kind !== 'pin',
+);
 
-export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onCapture, onImport, onPhoto, cameraStatus, cameraBusy, cameraRetry, onCameraRetry }: {
+export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onCapture, onImport, onPhoto, cameraStatus, cameraBusy, cameraRetry, onCameraRetry, onAddModel }: {
   state: AnnotationsState;
   item: Annotation;
   photos: VisiblePhoto[];
@@ -25,13 +32,25 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   cameraBusy?: boolean;
   cameraRetry?: boolean;
   onCameraRetry?: () => void;
+  onAddModel?: (kind: Exclude<AnnotationChoice, 'pin'>, coordinates: Coordinate) => boolean;
 }) {
   const [confirm, setConfirm] = useState<'delete' | null>(null);
   const [picker, setPicker] = useState<'coordinates' | 'icon' | 'color' | null>(null);
   const editor = useRef<HTMLElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const focusedNameFor = useRef<string | null>(null);
+  const [addingModel, setAddingModel] = useState(false);
   useEffect(() => {
     state.beginEdit(item.id);
     if (item.groundElevation === null) void state.refreshElevation(item.id, item.coordinates);
+  }, [item.id]);
+  useEffect(() => {
+    if (focusedNameFor.current === item.id) return;
+    focusedNameFor.current = item.id;
+    const input = nameInput.current;
+    if (!input) return;
+    input.focus({ preventScroll: true });
+    input.select?.();
   }, [item.id]);
   useEffect(() => {
     let frame = 0;
@@ -82,6 +101,11 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
   const save = () => {
     return commit();
   };
+  const addModel = (kind: AnnotationChoice) => {
+    if (!save()) return;
+    if (kind === 'pin' || !onAddModel || !onAddModel(kind, item.coordinates)) return;
+    setAddingModel(false);
+  };
   useEffect(() => {
     if (!state.selectionRequest) return;
     if (state.dirty && !save()) return;
@@ -107,11 +131,12 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); leave(); }
   }}>
     <header className="pin-editor-header">
-      <button aria-label="返回地图" onClick={leave}>← 返回</button>
-      <strong>编辑标记</strong>
-      <button disabled={!!(item.trackAnchor || item.sectionAnchor)} title={item.trackAnchor || item.sectionAnchor ? '已绑定路线或剖面，请到对应编辑中移动' : '切换到地图，调整标记位置'} onClick={onAdjust}>调整</button>
+      <button aria-label="返回地图" title="返回地图" onClick={leave}><ArrowLeft size={14}/><span className="pin-heading-label">返回</span></button>
+      <span className="pin-heading-space" aria-hidden="true"/>
+      <ComparisonEditorPositionButton kind="标记"/>
+      <button aria-label={item.visible ? '隐藏标记' : '显示标记'} title="切换地图上这个标记的显示，名称和资料保留" onClick={() => changeAndSave({ visible: !item.visible })}>{item.visible ? '隐藏' : '显示'}</button>
       <button className="pin-danger" onClick={() => setConfirm('delete')}>删除</button>
-      <button className="pin-save" onClick={() => { if (save()) onShare(item); }}><Share2 size={15}/>分享</button>
+      <button className="pin-save" aria-label="分享" title="分享" onClick={() => { if (save()) onShare(item); }}><Share2 size={15}/><span className="pin-heading-label">分享</span></button>
     </header>
     {picker ? <div className="pin-picker">
       <button className="pin-picker-back" onClick={() => setPicker(null)}>← 返回编辑</button>
@@ -120,8 +145,8 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
       {picker === 'color' ? <div className="pin-color-grid" aria-label="选择标记颜色">{COLORS.map(color => <button key={color} aria-label={`选择颜色 ${color}`} aria-pressed={item.color.toLowerCase() === color} onClick={() => { if (changeAndSave({ color })) setPicker(null); }}><i style={{ background: color }}/></button>)}<label>自定义颜色<input type="color" aria-label="自定义标记颜色" value={item.color} onChange={event => changeAndSave({ color: event.target.value })}/></label></div> : null}
     </div> : <>
     <div className="pin-editor-main">
-      <label className="pin-field"><span>名称</span><SmartInput aria-label="标记名称" maxLength={60} value={item.name} onChange={event => changeAndSave({ name: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
-      <label className="pin-field"><span>备注</span><SmartTextarea aria-label="标记备注" rows={1} maxLength={500} value={item.note} placeholder="可填写位置说明" onChange={event => changeAndSave({ note: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
+      <label className="pin-field"><span>名称</span><input ref={nameInput} aria-label="标记名称" autoComplete="off" maxLength={60} value={item.name} onChange={event => changeAndSave({ name: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
+      <label className="pin-field pin-note-field"><span>备注</span><SmartTextarea aria-label="标记备注" rows={4} maxLength={500} value={item.note} placeholder="可填写位置说明" onChange={event => changeAndSave({ note: event.target.value }, isComposing(event))} onCompositionEnd={() => save()} onBlur={() => save()} /></label>
       <div className="pin-coordinate-row">
         <button className="pin-coordinate-value" aria-label="编辑标记坐标" onClick={() => setPicker('coordinates')}><span>坐标</span><b>{item.coordinates[0].toFixed(6)}, {item.coordinates[1].toFixed(6)} · WGS84</b></button>
         <button aria-label="分享完整标记信息" title="分享完整信息" onClick={() => { if (save()) onShare(item); }}><Share2 size={17}/></button>
@@ -135,10 +160,19 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
         <button aria-label="选择标记图案" onClick={() => setPicker('icon')}><span>图案</span><AnnotationIcon item={item} size={18}/><b>{markerIcon(item.icon).name}</b><span>⌄</span></button>
         <button aria-label="选择标记颜色" onClick={() => setPicker('color')}><span>颜色</span><i style={{ background: item.color }}/><b>{COLORS.includes(item.color.toLowerCase()) ? '预设' : '自定'}</b><span>⌄</span></button>
       </div>
-      <div className="pin-photo-row">
-        <button disabled={cameraBusy} onClick={() => saveForPhoto(onCapture)}><Camera size={15}/>拍照</button>
-        <button disabled={cameraBusy} onClick={() => saveForPhoto(onImport)}><Upload size={15}/>导入照片</button>
-        {photos.map(photo => <button key={photo.id} className="pin-photo-thumb" aria-label={`查看照片 ${photo.name}`} onClick={() => saveForPhoto(() => onPhoto(photo.id))}><img src={photo.url} alt={photo.title || photo.name}/></button>)}
+      <div className="pin-photo-actions">
+        <div className="pin-photo-row">
+          <button disabled={cameraBusy} onClick={() => saveForPhoto(onCapture)}><Camera size={15}/>拍照</button>
+          <button disabled={cameraBusy} onClick={() => saveForPhoto(onImport)}><Upload size={15}/>导入照片</button>
+          {photos.map(photo => <button key={photo.id} className="pin-photo-thumb" aria-label={`查看照片 ${photo.name}`} onClick={() => saveForPhoto(() => onPhoto(photo.id))}><img src={photo.url} alt={photo.title || photo.name}/></button>)}
+          {onAddModel && <button type="button" className="pin-add-model-trigger" aria-expanded={addingModel} onClick={() => setAddingModel(value => !value)}>＋添加模型</button>}
+        </div>
+        {addingModel && onAddModel && <div className="pin-model-options" aria-label="添加模型类型">
+          <AnnotationTypeOptions
+            kinds={MODEL_CHOICES}
+            onAdd={addModel}
+          />
+        </div>}
       </div>
     </div>
     <div className="pin-attribute-head"><strong>自定义条目</strong><button disabled={attributes.length >= MAX_ATTRIBUTES} onClick={() => changeAndSave({ attributes: [...attributes, { name: '', value: '' }] })}>＋ 添加条目</button></div>

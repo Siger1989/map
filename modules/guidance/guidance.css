@@ -72,6 +72,14 @@
   min-width: 36px !important; width: 36px !important; height: 36px !important; min-height: 36px !important;
   flex: 0 0 36px; margin: 0; padding: 0; color: var(--ui-button-ink, var(--text)); border-radius: var(--ui-radius-control, 12px);
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header button.guidance-resume {
+  display:flex; align-items:center; justify-content:flex-start; gap:4px;
+  flex:1 1 auto; min-width:0 !important; width:auto !important;
+  padding:0 2px; border:0; background:transparent; font-size:11px;
+  white-space:nowrap; color:var(--ui-accent);
+}
+.guidance-resume svg { flex-shrink:0; }
+.guidance-resume span { overflow:hidden; text-overflow:ellipsis; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-content { display: none; }
 .guidance-content p {
   margin: 0 0 6px;

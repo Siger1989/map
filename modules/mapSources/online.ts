@@ -1,4 +1,5 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
+import { parseOviQr } from './oviQr.ts';
 import {
   MAX_CONFIG_BYTES,
   MAX_MAPS,
@@ -139,6 +140,7 @@ export function parseMapConfig(text: string, base?: string): MapDraft[] {
     throw new Error('图源配置不能超过 1 MB');
   const content = text.trim();
   if (!content) throw new Error('请先粘贴图源地址或配置');
+  if (/^ovobj\?/i.test(content)) return [parseOviQr(content)];
   if (/^https:\/\//i.test(content)) return [onlineDraft({ url: content })];
   let data: unknown;
   if (content.startsWith('<')) {
@@ -183,6 +185,18 @@ export function parseMapConfig(text: string, base?: string): MapDraft[] {
     data = JSON.parse(content);
   } catch {
     throw new Error(PRIVATE_FORMAT);
+  }
+  if (Array.isArray(data) && data.every((item) => typeof item === 'string')) {
+    if (!data.length || data.length > MAX_MAPS)
+      throw new Error(`一次最多导入 ${MAX_MAPS} 个 OVI 二维码`);
+    return data.flatMap((item, index) => {
+      try {
+        return [parseOviQr(item)];
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : '二维码内容无法识别';
+        throw new Error(`第 ${index + 1} 个二维码无法导入：${reason}`);
+      }
+    });
   }
   const list = Array.isArray(data)
     ? data

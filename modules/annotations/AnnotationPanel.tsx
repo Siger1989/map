@@ -1,5 +1,5 @@
 import { SmartTextarea } from '../input/SmartText';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import {
   altitudeRange,
@@ -84,6 +84,16 @@ function Editor({
   const change = (patch: Partial<Annotation>) => state.update(item.id, patch);
   const [removing, setRemoving] = useState(false);
   const [tab, setTab] = useState('identity');
+  const nameInput = useRef<HTMLInputElement>(null);
+  const focusedName = useRef(false);
+  useEffect(() => {
+    if (tab !== 'identity' || focusedName.current) return;
+    const input = nameInput.current;
+    if (!input) return;
+    focusedName.current = true;
+    input.focus({ preventScroll: true });
+    input.select?.();
+  }, [tab]);
   const range = altitudeRange(item),
     size = volume(item);
   return (
@@ -114,6 +124,7 @@ function Editor({
               item={item}
               change={change}
               remember={() => state.rememberAttributes(item.id)}
+              nameRef={nameInput}
             />
             {item.trackAnchor && (
               <p className="route-note">
@@ -527,12 +538,11 @@ export function AnnotationPanel({
       ) : (
         <div className="annotation-browse">
           <div className="annotation-add">
-            <button onClick={onArea}>＋划区域</button>
             {Object.entries(ANNOTATION_CHOICES).map(([kind, label]) => (
               <button
                 key={kind}
                 onClick={() =>
-                  kind === 'prism' ? onArea() : onPick(kind as AnnotationChoice)
+                  onPick(kind as AnnotationChoice)
                 }
               >
                 ＋{kind === 'pin' ? '地点' : label}

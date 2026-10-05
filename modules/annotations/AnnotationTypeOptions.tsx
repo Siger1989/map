@@ -12,9 +12,11 @@ import { ANNOTATION_CHOICES, type AnnotationChoice } from './data';
 export function AnnotationTypeOptions({
   onAdd,
   onOutline,
+  kinds,
 }: {
   onAdd: (kind: AnnotationChoice) => void;
   onOutline?: () => void;
+  kinds?: readonly AnnotationChoice[];
 }) {
   const icons = {
     pin: MapPinPlus,
@@ -26,7 +28,7 @@ export function AnnotationTypeOptions({
   };
   return (
     <>
-      {(Object.keys(ANNOTATION_CHOICES) as AnnotationChoice[]).map((kind) => {
+      {(kinds ?? (Object.keys(ANNOTATION_CHOICES) as AnnotationChoice[])).map((kind) => {
         const Icon = icons[kind];
         return (
           <button

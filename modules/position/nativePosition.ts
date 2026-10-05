@@ -84,7 +84,8 @@ export function watchNativePosition(
       }
     }
   };
-  const timer = setInterval(update, 1000);
+  update();
+  const timer = setInterval(update, 250);
   return () => {
     stopped = true;
     clearInterval(timer);

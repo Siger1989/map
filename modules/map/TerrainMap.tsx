@@ -1,17 +1,21 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
 import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentMapStyle';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
+import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
 import { readLastView, saveLastView } from './lastView';
-import { CameraSync } from './cameraSync';
+import { CameraSync, focusPointCamera } from './cameraSync';
+import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import type { TripPackage } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { RasterCoordinates } from '../mapSources/RasterCoordinates';
+import { tileTransportSnapshot } from '../mapSources/tileTransport';
 import { rasterDatumKey } from '../mapSources/coordinates';
 import { defaultRasterDatum } from '../mapSources/sourceDatum';
 import { SOURCE_ID, type MapSource } from '../mapSources/types';
+import { ovmapSourceIds } from '../mapSources/ovmapTiles';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { Map, Marker } from 'maplibre-gl';
@@ -22,6 +26,7 @@ import {
   type SatelliteState,
 } from '../satellite/satellite';
 import type { WeatherLayer } from '../weather/WeatherLayer';
+import { SatelliteCloudLayer, type SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { TemperatureLayer } from '../weather/TemperatureLayer';
 import type { WeatherData } from '../weather/data';
 import {
@@ -40,6 +45,8 @@ import type { Coordinate, RouteOverlay } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { twoFingerGestureDelta } from '../collections/boxSelection';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
+import { handlePlannedRoutePick, handleTrackEditClick } from './trackEditClick';
+import { waitForTrackRender, type TrackRenderReceipt } from '../tracks/trackRenderHandoff';
 import { AreaLayer, type AreaOverlay } from '../areas/AreaLayer';
 import { TerrainModelMask } from '../modelTerrain/terrainMask';
 import { ModelTerrainLayer } from '../modelTerrain/ModelTerrainLayer';
@@ -55,6 +62,7 @@ import { cameraViewPublisher } from './cameraUpdates';
 import { createSnapViewportReader } from './snapViewport';
 import type { SnapViewport } from '../tracks/snapping';
 import { featurePreviewUiPublisher } from './featurePreviewUi';
+import { cameraOverlayRefresh } from './cameraOverlayRefresh';
 import { snapMapRoad } from './roadSnap';
 import {
   FeatureDragBridge,
@@ -92,7 +100,9 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  waitForTrackRender: (receipt: TrackRenderReceipt, done: () => void) => () => void;
   applyCamera: (camera: CameraSnapshot) => void;
+  previewTrackNode: (preview: TrackOverlay['preview']) => void;
   shareMapStyle: () => ShareMapStyle | null;
   highlightOffline: (trip: TripPackage) => void;
   cameraSnapshot: () => import('../controls/useMapFocusLock').CameraSnapshot | null;
@@ -136,6 +146,7 @@ export type MapHandle = {
     coordinates: Coordinate,
     animate?: boolean,
     maximumZoom?: number,
+    preferredZoom?: number,
   ) => boolean;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
@@ -149,6 +160,7 @@ export type TerrainMapProps = {
   initialCamera?: CameraSnapshot;
   persistCamera?: boolean;
   onCameraChange?: (camera: CameraSnapshot) => void;
+  onTrackPreview?: (preview: TrackOverlay['preview']) => void;
   onReady?: () => void;
   readOnly?: boolean;
   queryOnPick?: boolean;
@@ -173,6 +185,7 @@ export type TerrainMapProps = {
   onAnchor: (anchor: [number, number]) => void;
   onCenter?: (center: [number, number]) => void;
   onSatellite: (satellite: SatelliteState) => void;
+  onCloud?: (state: SatelliteCloudState) => void;
   onGeology: (state: GeologyState) => void;
   weather: WeatherData | null;
   hourIndex: number;
@@ -187,6 +200,7 @@ export type TerrainMapProps = {
   drawingActive: boolean;
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
+  positionHeading?: number | null;
   photos: VisiblePhoto[];
   onPhotoSelect: (ids: string[]) => void;
   onManualRotate: () => void;
@@ -242,6 +256,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const latest = useRef(props);
     latest.current = props;
     const weatherRef = useRef<WeatherLayer | null>(null);
+    const cloudRef = useRef<SatelliteCloudLayer | null>(null);
     const temperatureRef = useRef<TemperatureLayer | null>(null);
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
@@ -251,10 +266,18 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
+    const syncedTracks = useRef<TrackOverlay | null>(null);
     const trackPreviewRef = useRef<TrackOverlay['preview']>(null);
+    const inspectionEditingRef = useRef(false);
     const measure = (name: string, run: () => void) => diagnostics.current ? diagnostics.current.measure(name, run) : run();
     const syncTracks = (state: TrackOverlay) => {
+      routeGapRef.current?.setEditing(!!state.editing);
+      if (state.editing && !inspectionEditingRef.current) {
+        routeIssueRef.current?.sync(null);
+      }
+      inspectionEditingRef.current = !!state.editing;
       measure('tracks', () => trackRef.current?.sync(state));
+      syncedTracks.current = state;
       if (trackPreviewRef.current) trackRef.current?.preview(trackPreviewRef.current);
     };
     const areaRef = useRef<AreaLayer | null>(null);
@@ -277,7 +300,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const terrainAbort = useRef<AbortController | null>(null);
     const loaded = useRef(false);
     const applyCameraToMap = (map: Map, camera: CameraSnapshot) => cameraSync.current.apply(map, camera);
-    const collectionTarget = useRef<Coordinate[]>([]);
     const fitCollection = (
       coordinates: Coordinate[],
       duration = 350,
@@ -285,7 +307,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     ) => {
       const m = mapRef.current;
       if (!m || !coordinates.length) return;
-      collectionTarget.current = coordinates;
       m.resize();
       const first = coordinates[0][0];
       const min: Coordinate = [Infinity, Infinity],
@@ -381,7 +402,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (!map) return;
       const { settings: s, mapSource } = latest.current;
       const domesticMap = usesTianditu(s, domestic);
-      const ids = mapSource ? mapSource.kind === 'image' ? [] : [SOURCE_ID]
+      const ids = mapSource ? mapSource.kind === 'image' ? [] : mapSource.ovmap?.layers.length ? ovmapSourceIds(mapSource) : [SOURCE_ID]
         : usesSentinel(s) ? ['sentinel'] : domesticMap ? [TDT_SOURCE_IDS[tiandituBase(s)]]
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
       const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
@@ -413,6 +434,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       syncRasterLock();
       if (!useDomestic || s.roads) addCartography(map);
       temperatureRef.current ??= new TemperatureLayer(map);
+      cloudRef.current?.update(s);
       temperatureRef.current.update(
         latest.current.weather,
         latest.current.hourIndex,
@@ -452,6 +474,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         );
       }
       map.setLayoutProperty('sentinel', 'visibility', !custom && usesSentinel(s) ? 'visible' : 'none');
+      map.setLayoutProperty(SATELLITE_UNDERLAY, 'visibility', showSatelliteUnderlay(s, custom) ? 'visible' : 'none');
       for (const id of ['relief', 'detail', 'satellite'])
         if (map.getLayer(id))
           map.setLayoutProperty(
@@ -495,7 +518,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       routeRef.current?.sync(latest.current.routeOverlay);
       syncTracks(latest.current.trackOverlay);
       areaRef.current?.sync(latest.current.areaOverlay);
-      positionRef.current?.sync(latest.current.position);
+      positionRef.current?.sync(latest.current.position, latest.current.positionHeading);
       annotationRef.current?.update(
         latest.current.annotations,
         latest.current.annotationSelected,
@@ -538,13 +561,23 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     useImperativeHandle(
       ref,
       () => ({
+        waitForTrackRender: (receipt, done) => {
+          const current = mapRef.current;
+          if (current) return waitForTrackRender(current, () => syncedTracks.current, receipt, done);
+          queueMicrotask(done);
+          return () => {};
+        },
+        previewTrackNode: (preview) => {
+          trackPreviewRef.current = preview;
+          trackRef.current?.preview(preview);
+        },
         applyCamera: (camera) => {
           const map = mapRef.current;
           if (map) applyCameraToMap(map, camera);
           else cameraSync.current.queue(camera);
         },
         shareMapStyle: () => mapRef.current && loaded.current ? currentShareMapStyle(mapRef.current.getStyle()) : null,
-        cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing()} : null; },
+        cameraSnapshot: () => { const m=mapRef.current; return m && loaded.current ? {center:m.getCenter().toArray(), zoom:m.getZoom(), pitch:m.getPitch(), bearing:m.getBearing(), detailZoom:cameraDetailZoom(m)} : null; },
         restoreCamera: (camera) => { mapRef.current?.easeTo({...camera, duration:600}); },
         setTerrainMode: (terrain) => { terrainMode.current = terrain; },
         syncCameraHash: () => {
@@ -692,16 +725,17 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             ? p
             : null;
         },
-        followPosition: (center, animate = true, maximumZoom?: number) => {
+        followPosition: (center, animate = true, maximumZoom?: number, preferredZoom?: number) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return false;
-          // Keep the user's zoom, pitch and bearing; only follow geographic position.
+          // Zoom in once when following starts; subsequent fixes retain the user's view.
           m.easeTo(
             {
               center,
               ...(maximumZoom === undefined
                 ? {}
                 : { zoom: Math.min(m.getZoom(), maximumZoom) }),
+              ...(preferredZoom === undefined ? {} : { zoom: Math.max(m.getZoom(), Math.min(m.getMaxZoom(), preferredZoom)) }),
               duration: animate ? 650 : 0,
             },
             { positionFollow: true },
@@ -725,19 +759,15 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           if (!marker.getElement().isConnected) marker.addTo(map);
           map.jumpTo({ center }, { routePreview: true });
         },
-        focusPoint: (center, zoom = 13) => {
+        focusPoint: (center, zoom) => {
           latest.current.onBrowse();
-          mapRef.current?.flyTo({
-            center,
-            zoom: Math.max(3, Math.min(20, zoom)),
-            duration: 700,
-          });
+          const map = mapRef.current;
+          if (map) focusPointCamera(map, center, zoom);
         },
         focusRouteGap: (gap) => {
           const map = mapRef.current;
           if (!map || !loaded.current) return;
           latest.current.onBrowse();
-          collectionTarget.current = [];
           map.stop();
           routeGapRef.current?.sync(gap);
           const { clientWidth, clientHeight } = map.getContainer();
@@ -757,7 +787,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           const map = mapRef.current;
           if (!map || !loaded.current) return;
           latest.current.onBrowse();
-          collectionTarget.current = [];
           map.stop();
           routeGapRef.current?.sync(null);
           routeIssueRef.current?.sync(point, kind);
@@ -836,9 +865,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           return {
             ready: true,
             rendering: diagnostics.current?.snapshot(),
+            rasterLoading: coordinatesRef.current?.snapshot(),
+            tileTransport: tileTransportSnapshot(),
             snapViewport: snapViewportRef.current?.read() ?? null,
             scene: {
               tracks: latest.current.trackOverlay.saved.length,
+              tracksVisible: latest.current.trackOverlay.visible,
+              renderedTrackLines: map.getLayer('manual-track-line') ? map.queryRenderedFeatures({ layers: ['manual-track-line'] }).length : 0,
+              loadedTrackFeatures: map.getSource('manual-tracks') ? map.querySourceFeatures('manual-tracks').length : 0,
               visibleTrackCoordinates: latest.current.trackOverlay.saved.filter(t => !t.hidden).reduce((sum, t) => sum + t.segments.reduce((n, line) => n + line.length, 0), 0),
               annotations: latest.current.annotations.length,
               sections: latest.current.sectionItems.length,
@@ -847,11 +881,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             elevationReady: map.isSourceLoaded('elevation'),
             renderedElevation: map.queryTerrainElevation(map.getCenter()),
             cloudRainLayerReady: Boolean(map.getLayer('cloud-rain-3d')),
+            satelliteCloudLayerReady: Boolean(map.getLayer('satellite-cloud-observation')),
+            satelliteCloudOpacity: map.getLayer('satellite-cloud-observation') ? map.getPaintProperty('satellite-cloud-observation', 'raster-opacity') : null,
             geologyReady: geologyRef.current?.isReady() ?? false,
             center: map.getCenter().toArray(),
             pitch: map.getPitch(),
             bearing: map.getBearing(),
             zoom: map.getZoom(),
+            detailZoom: cameraDetailZoom(map),
             layers: map.getStyle().layers.map((l) => ({
               id: l.id,
               visible: l.layout?.visibility !== 'none',
@@ -865,6 +902,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let disposed = false;
       let selected: [number, number] = INITIAL_VIEW.center;
       let cameraFrame = 0;
+      const refreshCameraOverlays = cameraOverlayRefresh(() => {
+        if (disposed || !loaded.current || boxGestureActive.current) return;
+        areaRef.current?.sync(latest.current.areaOverlay);
+        syncTracks(latest.current.trackOverlay);
+      });
       let releaseLastView: (() => void) | undefined;
       let releaseUserZoom: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
@@ -973,6 +1015,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             latest.current.onSourceStatus?.(text), sourceProtocolScheme.current!,
           );
           maplibre.addProtocol(sourceProtocolScheme.current!, sourceRef.current.protocol);
+          cloudRef.current = new SatelliteCloudLayer(map, maplibre, state => latest.current.onCloud?.(state));
           const coordinates = new RasterCoordinates(map, sourceRef.current.protocol, sourceProtocolScheme.current!);
           coordinatesRef.current = coordinates;
           maplibre.addProtocol(coordinates.scheme, coordinates.protocol);
@@ -1005,7 +1048,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 latest.current.trackOverlay.editing &&
                 !latest.current.drawingActive
               ) {
-                const node = trackRef.current?.pickNode(
+                const node = trackRef.current?.pickEditableNode(
                   point,
                   (node) =>
                     node.trackId === latest.current.trackOverlay.movableTrackId,
@@ -1028,7 +1071,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 item?.id !== latest.current.annotationEditingId
               )
                 return null;
-              if (item?.kind === 'pin' && !item.trackAnchor)
+              if (item?.kind === 'pin' && !item.trackAnchor && !item.sectionAnchor)
                 return {
                   kind: 'annotation',
                   id: item.id,
@@ -1085,6 +1128,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 trackPreviewRef.current = move?.target.kind === 'track'
                   ? { node: move.target.node, coordinate: move.coordinate } : null;
                 trackRef.current?.preview(trackPreviewRef.current);
+                latest.current.onTrackPreview?.(trackPreviewRef.current);
                 publishUi(move);
               };
             })(),
@@ -1164,7 +1208,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             routeGapRef.current = new RouteGapLayer(map);
             routeIssueRef.current = new RouteIssueLayer(map);
             routeGapRef.current.sync(null);
-            trackRef.current = new TrackLayer(map);
+            trackRef.current = new TrackLayer(map, () => snapViewportRef.current?.read() ?? null);
             areaRef.current = new AreaLayer(map);
             areaRef.current.sync(latest.current.areaOverlay);
             positionRef.current = new PositionLayer(map);
@@ -1329,17 +1373,18 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 latest.current.trackOverlay.editing &&
                 !latest.current.drawingActive
               ) {
-                const node = trackRef.current?.pickNode(event.point);
-                if (node) latest.current.onTrackNodeSelect(node);
-                else {
-                  const point = trackRef.current?.pickLine(event.point);
-                  if (point) latest.current.onTrackLineSelect(point);
-                  else
-                    latest.current.onMapPick([
-                      event.lngLat.lng,
-                      event.lngLat.lat,
-                    ]);
-                }
+                handleTrackEditClick({
+                  pickNode: () => trackRef.current?.pickNode(event.point) ?? null,
+                  pickLine: () => trackRef.current?.pickLine(event.point) ?? null,
+                  pickRoute: () => !!routeRef.current?.pick(event.point),
+                  onNodeSelect: node => latest.current.onTrackNodeSelect(node),
+                  onLineSelect: point => latest.current.onTrackLineSelect(point),
+                  onRouteSelect: () => latest.current.onRouteSelect?.(),
+                  onMapPick: () => latest.current.onMapPick([
+                    event.lngLat.lng,
+                    event.lngLat.lat,
+                  ]),
+                });
                 return;
               }
               const annotation = annotationRef.current?.pick(event.point);
@@ -1347,6 +1392,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 latest.current.onAnnotationSelect(annotation);
                 return;
               }
+              if (handlePlannedRoutePick(
+                () => !!routeRef.current?.pick(event.point),
+                () => latest.current.onRouteSelect?.(),
+              )) return;
               const track = trackRef.current?.pickTrack(event.point);
               const node = trackRef.current?.pickNode(event.point);
               if (node) {
@@ -1357,10 +1406,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 const point = trackRef.current?.pickLine(event.point);
                 if (point) latest.current.onTrackLineSelect(point);
                 else latest.current.onTrackSelect(track);
-                return;
-              }
-              if (routeRef.current?.pick(event.point)) {
-                latest.current.onRouteSelect?.();
                 return;
               }
               const area = areaRef.current?.pick(event.point);
@@ -1399,11 +1444,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.on('moveend', (event) => {
             if (boxGestureActive.current || !loaded.current) return;
             publishView({ bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom() }, true);
-            areaRef.current?.sync(latest.current.areaOverlay);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
-            if ('routePreview' in event && event.routePreview) return;
+            if ('routePreview' in event && event.routePreview) {
+              areaRef.current?.sync(latest.current.areaOverlay);
+              return;
+            }
             if (!('positionFollow' in event && event.positionFollow))
-              syncTracks(latest.current.trackOverlay);
+              refreshCameraOverlays.request(cameraSync.current.isProgrammatic(map));
+            else areaRef.current?.sync(latest.current.areaOverlay);
             const p = map.getCenter();
             if (
               Math.abs(p.lng - weatherAnchor.current[0]) +
@@ -1426,6 +1474,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             }
             if ('sourceId' in event && event.sourceId === 'sentinel') {
               latest.current.onStatus('Sentinel-2 连接失败，请稍后重试或手动选择图源');
+              return;
+            }
+            if ('sourceId' in event && typeof event.sourceId === 'string' && event.sourceId.startsWith(`${SOURCE_ID}-ovmap-`)) {
+              latest.current.onSourceStatus?.('底图可继续显示，部分叠加注记暂未加载');
               return;
             }
             if ('sourceId' in event && event.sourceId === SOURCE_ID) {
@@ -1459,8 +1511,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         disposed = true;
         loaded.current = false;
         cancelAnimationFrame(cameraFrame);
+        refreshCameraOverlays.cancel();
         satelliteAbort.current?.abort();
         terrainAbort.current?.abort();
+        cloudRef.current?.dispose();
+        cloudRef.current = null;
         geologyRef.current?.dispose();
         geologyRef.current = null;
         routeRef.current = null;
@@ -1550,8 +1605,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (loaded.current) areaRef.current?.sync(props.areaOverlay);
     }, [props.areaOverlay]);
     useEffect(() => {
-      if (loaded.current) positionRef.current?.sync(props.position);
-    }, [props.position]);
+      if (loaded.current) positionRef.current?.sync(props.position, props.positionHeading);
+    }, [props.position, props.positionHeading]);
     useEffect(() => {
       if (loaded.current) photosRef.current?.sync(props.photos);
     }, [props.photos]);
@@ -1573,21 +1628,12 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       drawingRef.current?.configure(!props.readOnly && props.drawingActive);
     }, [props.drawingActive, props.pickingActive, props.sectionEditing, props.readOnly]);
     useEffect(() => {
-      if (!props.collectionPreviewActive) collectionTarget.current = [];
-    }, [props.collectionPreviewActive]);
-    useEffect(() => {
       if (!container.current) return;
-      let fitFrame = 0;
       const observer = new ResizeObserver(() => {
         mapRef.current?.resize();
-        cancelAnimationFrame(fitFrame);
-        fitFrame = requestAnimationFrame(() => {
-          if (latest.current.collectionPreviewActive && collectionTarget.current.length)
-            fitCollection(collectionTarget.current, 0);
-        });
       });
       observer.observe(container.current);
-      return () => { observer.disconnect(); cancelAnimationFrame(fitFrame); };
+      return () => observer.disconnect();
     }, []);
     useEffect(() => {
       const map = mapRef.current;

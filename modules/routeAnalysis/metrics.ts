@@ -144,6 +144,7 @@ export function metricLineParts(
       coordinates: ManualTrack['segments'][number];
       color: string;
       muted: boolean;
+      sourceSegment?: number;
     }[] = [];
     for (let i = 1; i < line.length; i++) {
       const color = colors[part][i - 1] ?? ANALYSIS_POLICY.missingColor;
@@ -154,6 +155,7 @@ export function metricLineParts(
           coordinates: [line[i - 1], line[i]],
           color,
           muted: false,
+          sourceSegment: part,
         });
     }
     return pieces;

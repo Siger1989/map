@@ -26,7 +26,7 @@
   box-sizing: border-box;
   left: clamp(
     var(--edge-left),
-    calc(var(--press-x) - 120px),
+    calc(var(--press-x) - 100px),
     calc(100% - var(--edge-right) - 52px - var(--card-width))
   );
   top: clamp(
@@ -142,4 +142,27 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-op
   .quick-add-options {
     gap: 3px;
   }
+}
+
+/* Compact type chooser while preserving its complete option list. */
+.quick-add-card, .quick-add-centered .quick-add-card {
+  --card-width: min(200px, calc(100% - var(--edge-left) - var(--edge-right) - 52px));
+  left: var(--edge-left);
+  top: calc(56px + var(--safe-top));
+  max-height: min(200px, 42dvh, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px));
+  border-radius: 8px;
+}
+.quick-add-card header { min-height: 36px; padding: 3px 5px 3px 7px; font-size: 12px; }
+.observatory.home-map .quick-add-card header button { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
+.quick-add-content { padding: 5px; }
+.quick-add-content p { font-size: 11px; }
+.quick-add-options { gap: 3px; }
+.observatory .quick-add-card .quick-add-options button { height: 32px; min-height: 32px; padding: 3px 2px; font-size: 11px; line-height: 12px; border-radius: 4px; }
+.observatory .quick-add-card .quick-add-options button svg { width: 16px; height: 16px; flex-shrink: 0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-content { padding: 5px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .quick-add-options button { padding: 3px 2px; border-radius: 4px; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .quick-add-card, .quick-add-centered .quick-add-card { max-height: calc(100% - 124px - var(--safe-top) - var(--safe-bottom)); }
+  .quick-add-card header { min-height: 32px; padding-block: 2px; }
+  .observatory .quick-add-card header button { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
 }

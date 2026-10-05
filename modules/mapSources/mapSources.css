@@ -7,6 +7,9 @@
 .free-map-library {
   display: grid;
   gap: 6px;
+  padding: 4px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui-surface) 84%, var(--ui-raised) 16%);
 }
 .free-map-library header {
   display: flex;
@@ -265,9 +268,9 @@
 .tianditu-options > label:first-child { flex:1; }
 .tianditu-options > label:last-child { flex:none; white-space:nowrap; }
 
-/* Explicit single-page source chooser; reserve the real content height, not a clipped 200px viewport. */
+/* Built-in source settings are a single fixed page; give them room beyond the generic 38dvh popover cap. */
 .observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources[data-step='list']) {
-  --map-panel-max-height: min(340px, calc(100dvh - 180px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
+  --map-panel-max-height: min(450px, calc(100dvh - 180px - var(--safe-top, 0px) - var(--safe-bottom, 0px)));
   height: auto;
   max-height: var(--map-panel-max-height);
 }
@@ -278,22 +281,25 @@
 .map-source-primary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
 .observatory.home-map .map-sources .map-coordinate-choice { display:flex; align-items:center; gap:4px; min-height:36px; }
 .map-coordinate-choice > span { flex:none; }
-.map-coordinate-choice > select { flex:1; min-width:0; min-height:36px; font-size:12px; }
+.map-coordinate-choice > select { flex:1; min-width:0; min-height:36px; font-size:16px; }
 .map-coordinate-hint { line-height:1.3; }
 
 /* Source collections need a bounded content page; controls stay reachable on short screens. */
-.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources:is([data-step='preview'],[data-step='add'],[data-step='list'][data-category='saved'])) {
+.observatory.home-map[data-panel='sources'] .control-popover:has(.map-sources:is([data-step='preview'],[data-step='add'],[data-step='list'][data-category='saved'],[data-step='list'][data-category='library'])) {
   --map-panel-max-height: min(480px, calc(100dvh - 148px - var(--safe-top,0px) - var(--safe-bottom,0px)));
   width: min(300px, calc(100% - 80px));
   max-height: var(--map-panel-max-height);
 }
-.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources:is([data-step='preview'],[data-step='add'],[data-step='list'][data-category='saved'])) {
+.observatory.home-map[data-panel='sources'] .dock-content:has(.map-sources:is([data-step='preview'],[data-step='add'],[data-step='list'][data-category='saved'],[data-step='list'][data-category='library'])) {
   max-height: calc(var(--map-panel-max-height) - 44px);
   overflow-y: auto;
 }
 .observatory.home-map .map-sources { gap:4px; }
 .map-source-tabs { display:grid; grid-template-columns:.8fr 1.4fr .8fr; gap:4px; }
 .map-source-tabs button { min-width:0; }
+.map-source-tabs button[data-group='builtin']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 90%,var(--ui-accent) 10%); }
+.map-source-tabs button[data-group='saved']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 78%,var(--ui-field) 22%); }
+.map-source-tabs button[data-group='public']:not([aria-pressed='true']) { background:color-mix(in srgb,var(--ui-surface) 84%,var(--ui-raised) 16%); }
 .map-source-current { color:var(--ui-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .map-source-import-entry { display:grid; gap:4px; }
 .map-source-import-entry small { color:var(--ui-muted); font-size:11px; }

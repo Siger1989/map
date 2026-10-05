@@ -20,6 +20,7 @@ import { addSurveyMarker, commitSurveySettings } from './surveyStore';
 export function useSurveySection(
   sections: SectionObjectsState,
   onMarker: (id: string) => void,
+  groundElevation?: (point: Coordinate) => number | null,
 ) {
   const [active, setActive] = useState(false),
     [first, setFirst] = useState<Coordinate | null>(null),
@@ -34,6 +35,8 @@ export function useSurveySection(
   const [pointMenu, setPointMenu] = useState(true),
     [dragging, setDragging] = useState(false);
   const refreshRequested = useRef(false);
+  const groundElevationRef = useRef(groundElevation);
+  groundElevationRef.current = groundElevation;
   const [markerTarget, setMarkerTarget] = useState<{
     point: Coordinate;
     stationId?: string;
@@ -59,7 +62,11 @@ export function useSurveySection(
       id = current.id,
       line = current.settings.survey;
     setBusy(true);
-    void sampleSurveyTerrain(line, request.signal)
+    void sampleSurveyTerrain(
+      line,
+      request.signal,
+      (point) => groundElevationRef.current?.(point) ?? null,
+    )
       .then((terrain) => {
         const live = latest.current;
         if (

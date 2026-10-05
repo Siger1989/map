@@ -28,6 +28,10 @@
 
 ## 3. 施工流程
 
+### 跨电脑开工与执行
+
+每次开工先确认实际工作目录、Git分支、本地改动和预览变体；先保留已有未提交改动。读取 `CURRENT_STATE.md` 最新条目、`docs/agent-handoff.md` 最新交接，以及本文件的项目目标、功能清单、施工流程和项目门禁；UI任务再核对 `AGENTS.md` 顶部门禁、`docs/ui-standard.md` 与 `docs/ui-quality-gate.md` 的最新覆盖规则。低消耗 Luna（`gpt-6-luna`）只接边界明确的小任务；主 agent 亲自检查实际截图与 computed 值，并点击关键操作、走返回路径。将受影响的状态矩阵及 PASS/FAIL/未验证证据写入本轮交接/报告；必需状态未验证或失败时不得报通过或据此出包。快速预览只做当前指定工作，不自动推送或打包。规则仅适用于本项目；不得改 Codex 全局配置、覆盖用户改动或写入凭据。
+
 1. 开工前阅读 `CURRENT_STATE.md`、`docs/agent-handoff.md`、本文件、`docs/continue-development.md` 和相关模块文档；涉及 UI 时另读 `docs/ui-standard.md` 与 `docs/ui-quality-gate.md`。
 2. 写清用户目标、涉及范围、明确不涉及的部分和当前验证边界。先定位现有入口、数据流、存储格式、接口及平台适配边界。
 3. 按“scope → 接口 → 最小改动 → 验收 → 交接”执行：控制改动范围；跨模块变更通过既有类型接口、props、事件或适配器；先修必要问题，不顺手重构。

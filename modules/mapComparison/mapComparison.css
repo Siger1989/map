@@ -1,43 +1,47 @@
 /* Two equal map canvases; toolbar space is outside each map's projection viewport. */
 .observatory.home-map[data-comparing='true'] {
-  --compare-top: calc(var(--home-top) + 36px);
+  --compare-top: calc(var(--home-top) + 32px);
   --compare-half: calc((100% - var(--compare-top) - var(--home-bottom) - 44px) / 2);
 }
 .observatory.home-map[data-comparing='true'] > :not(.map-canvas):not(.map-comparison-ui) { display: none !important; }
 .observatory.home-map[data-comparing='true']::before { display: none; }
 .observatory.home-map[data-comparing='true'] > .map-canvas {
   left: 0 !important; right: 0 !important; bottom: auto !important;
-  width: 100% !important; height: calc(var(--compare-half) - 36px) !important;
+  width: 100% !important; height: calc(var(--compare-half) - 32px) !important;
   border: 0; border-radius: 0;
   isolation: isolate;
 }
-/* Each pane owns its scale; full-screen footer offsets must not leak in. */
+/* Match the main map's compact scale and keep credits in source information. */
 .observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-bottom-left {
-  top: auto !important; bottom: 2px !important; left: 4px !important; right: 4px !important;
+  top: 8px !important; bottom: auto !important; left: auto !important; right: 8px !important;
 }
+.observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-scale { box-sizing: border-box; max-width: 44px; height: auto; min-height: 0; padding: 0 2px 1px; font-size: 9px; line-height: 11px; white-space: nowrap; }
+.observatory.home-map[data-comparing='true'] > .map-canvas > .map-imagery-date-label,
+.observatory.home-map[data-comparing='true'] > .map-canvas .maplibregl-ctrl-attrib { display: none; }
 .observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body {
   min-height: 20px; padding: 1px 3px; gap: 2px; font-size: 11px; line-height: 18px;
 }
 .observatory.home-map[data-comparing='true'] .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body svg { width: 12px; height: 12px; }
-.observatory.home-map[data-comparing='true'] > .map-comparison-primary { top: calc(var(--compare-top) + 36px) !important; }
-.observatory.home-map[data-comparing='true'] > .map-comparison-secondary { top: calc(var(--compare-top) + var(--compare-half) + 36px) !important; }
+.observatory.home-map[data-comparing='true'] > .map-comparison-primary { top: calc(var(--compare-top) + 32px) !important; }
+.observatory.home-map[data-comparing='true'] > .map-comparison-secondary { top: calc(var(--compare-top) + var(--compare-half) + 32px) !important; }
 .map-comparison-ui {
   position: absolute; inset: 0; z-index: 4; pointer-events: none;
   color: var(--ui-ink); padding-top: var(--home-top); padding-bottom: var(--home-bottom);
   display: flex; flex-direction: column; box-sizing: border-box;
 }
 .map-comparison-heading {
-  display: flex; align-items: center; gap: 4px; padding: 0 4px; min-width: 0;
-  height: 36px; flex: 0 0 36px; background: var(--ui-surface); pointer-events: auto;
+  display: flex; align-items: center; gap: 4px; padding: 0 8px 0 10px; min-width: 0;
+  height: 32px; flex: 0 0 32px; background: var(--ui-surface); pointer-events: auto;
 }
-.map-comparison-heading strong { font-size: 12px; }
+.map-comparison-heading strong { font-size: 14px; }
 .map-comparison-heading > strong { flex-shrink: 0; }
 .observatory.home-map .map-comparison-heading .place-search { position: relative; inset: auto; flex: 1; width: auto; min-width: 0; max-width: none; }
-.observatory.home-map .map-comparison-heading .place-search form { width: 100%; min-width: 0; height: 36px; box-sizing: border-box; }
-.observatory.home-map .map-comparison-heading .place-search input { min-width: 0; width: 100%; height: 36px; font-size: 16px; box-sizing: border-box; }
-.observatory.home-map .map-comparison-heading .place-search button { width: 36px; height: 36px; padding: 0; }
+.observatory.home-map .map-comparison-heading .place-search form { width: 100%; min-width: 0; height: 32px; box-sizing: border-box; }
+.observatory.home-map .map-comparison-heading .place-search input { min-width: 0; width: 100%; height: 32px; font-size: 16px; box-sizing: border-box; }
+.observatory.home-map .map-comparison-heading .place-search button { width: 32px; height: 32px; min-height: 32px; padding: 0; }
 .map-comparison-heading .map-comparison-live { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
-.map-comparison-drawing { position: absolute; inset: 36px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
+.map-comparison-ui .map-comparison-heading .map-comparison-heading-icon { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+.map-comparison-drawing { position: absolute; inset: 32px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
 .map-comparison-drawing .track-drawing { inset: 0; }
 .map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
 .map-comparison-drawing-mode button { min-width: 0; padding: 0 2px; font-size: 11px; }
@@ -46,52 +50,254 @@
 .map-comparison-panes { display: grid; grid-template-rows: 1fr 1fr; flex: 1; min-height: 0; }
 .map-comparison-pane { position: relative; min-width: 0; min-height: 0; }
 .map-comparison-toolbar {
-  display: flex; height: 36px; gap: 4px; align-items: center;
-  padding: 0 4px; background: var(--ui-surface); box-sizing: border-box; pointer-events: auto;
+  display: flex; height: 32px; gap: 4px; align-items: center;
+  padding: 0 8px; background: var(--ui-surface); box-sizing: border-box; pointer-events: auto;
 }
 .map-comparison-toolbar > span { font-size: 12px; padding: 0 4px; color: var(--ui-muted); }
 .map-comparison-ui select {
-  flex: 1; min-width: 0; width: 0; height: 36px; padding: 0 6px;
+  flex: 1; min-width: 0; width: 0; height: 28px; padding: 0 6px;
   font: inherit; font-size: 16px; border: 0; border-radius: var(--ui-radius-control);
   background: var(--ui-field); color: var(--ui-ink); text-overflow: ellipsis;
 }
-.map-comparison-toolbar select { font-size: 12px; }
+.comparison-source-picker { position: relative; flex: 1; min-width: 0; }
+.map-comparison-ui .map-comparison-toolbar .comparison-source-trigger {
+  display: flex; justify-content: space-between; align-items: center; gap: 4px; width: 100%; min-width: 0;
+  height: 28px; min-height: 28px; padding: 0 6px; background: var(--ui-field); text-align: left;
+}
+.comparison-source-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comparison-source-popup {
+  position: absolute; z-index: 32; top: calc(100% + 2px); left: 0; width: min(250px, calc(100vw - 16px));
+  max-height: min(48dvh, var(--comparison-source-popup-max-height, calc(100dvh - 120px)));
+  overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 3px;
+  border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink);
+  box-shadow: var(--ui-shadow); pointer-events: auto;
+}
+.comparison-source-group { overflow: hidden; border-radius: 4px; }
+.comparison-source-group + .comparison-source-group { margin-top: 2px; }
+.comparison-source-group-0 { background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface)); }
+.comparison-source-group-1 { background: color-mix(in srgb, var(--ui-ink) 4%, var(--ui-surface)); }
+.comparison-source-group-2 { background: color-mix(in srgb, #65a9d5 9%, var(--ui-surface)); }
+.comparison-source-group-3 { background: color-mix(in srgb, #74b982 9%, var(--ui-surface)); }
+.comparison-source-group-4 { background: color-mix(in srgb, #d5a565 9%, var(--ui-surface)); }
+.map-comparison-ui .comparison-source-popup .comparison-source-group-heading {
+  display: flex; justify-content: space-between; align-items: center; width: 100%; height: 26px; min-height: 26px;
+  padding: 0 6px; background: transparent; color: var(--ui-muted); font-size: 11px; text-align: left;
+}
+.comparison-source-row { display: flex; align-items: center; min-width: 0; height: 28px; }
+.map-comparison-ui .comparison-source-row > [role='option'] {
+  display: flex; align-items: center; justify-content: space-between; flex: 1; min-width: 0; height: 28px; min-height: 28px;
+  padding: 0 6px; overflow: hidden; background: transparent; text-align: left; font-size: 12px;
+}
+.comparison-source-row > [role='option'] > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.comparison-source-row > [role='option'][aria-selected='true'] { color: var(--ui-accent); font-weight: 600; }
+.map-comparison-ui .comparison-source-row .comparison-source-favorite {
+  display: grid; place-items: center; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0;
+  background: transparent; color: var(--ui-accent);
+}
+.comparison-source-popup :is(button):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+.comparison-source-picker[data-pane='0'] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - 72px - var(--home-bottom, 0px)); }
+.comparison-source-picker[data-pane='1'] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - var(--compare-half, 40dvh) - 72px - var(--home-bottom, 0px)); }
 .map-comparison-ui button {
   min-height: 36px; min-width: 36px; flex-shrink: 0; padding: 0 8px; border: 0;
   border-radius: var(--ui-radius-control); background: var(--ui-raised); color: var(--ui-ink);
   font: inherit; font-size: 12px; cursor: pointer;
 }
-.map-comparison-ui .map-comparison-use { background: var(--ui-accent); color: var(--ui-on-accent); }
-.map-comparison-ui .map-comparison-step { padding: 0; width: 36px; font-size: 18px; }
+.map-comparison-ui .map-comparison-toolbar button { min-height: 28px; height: 28px; min-width: 28px; padding: 0 4px; }
+.map-comparison-ui .map-comparison-toolbar .map-comparison-step { width: 28px; }
+.map-comparison-ui .map-comparison-toolbar .map-comparison-use { min-width: 36px; background: var(--ui-accent); color: var(--ui-on-accent); }
+.map-comparison-ui .map-comparison-step,
+.map-comparison-ui .map-comparison-heading-icon { display: grid; place-items: center; padding: 0; width: 36px; }
+.map-comparison-ui button:disabled { opacity: .45; cursor: default; }
 .map-comparison-ui :is(button, select):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 .map-comparison-status {
-  position: absolute; top: 36px; left: 4px; right: 4px; margin: 4px 0; padding: 4px 8px;
+  position: absolute; top: 32px; left: 4px; right: 4px; margin: 4px 0; padding: 4px 8px;
   font-size: 11px; line-height: 1.4; background: var(--ui-surface); border-radius: var(--ui-radius-control);
 }
-.map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); align-items: center; gap: 2px; flex: 0 0 44px; min-width: 0; padding: 0 4px; box-sizing: border-box; background: var(--ui-surface); pointer-events: auto; }
-.map-comparison-actions button { box-sizing: border-box; min-width: 0; width: 100%; height: 44px; padding: 0 2px; white-space: nowrap; }
-.map-comparison-actions button[aria-pressed='true'] { background: var(--ui-selected); color: var(--ui-accent); }
+.map-comparison-track-selection {
+  position: absolute; z-index: 8; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: min(230px, calc(100% - 16px));
+  box-sizing: border-box; padding: 3px 4px 3px 8px; border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-ink);
+  box-shadow: var(--ui-shadow); pointer-events: auto;
+}
+.map-comparison-track-selection strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.map-comparison-ui .map-comparison-track-selection button { flex: 0 0 44px; min-width: 44px; min-height: 44px; height: 44px; padding: 0 4px; color: var(--ui-accent); }
+.map-comparison-ui .map-comparison-track-selection > button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 10px; line-height: 11px; }
+.map-comparison-track-delete-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%; padding-top: 4px; border-top: 1px solid var(--ui-line); }
+.map-comparison-track-delete-confirm span { flex: 1 0 100%; font-size: 11px; line-height: 1.35; }
+.map-comparison-ui .map-comparison-track-delete-confirm button { flex: 1 1 44px; min-width: 44px; }
+.map-comparison-ui .map-comparison-track-delete-confirm button.route-danger { color: var(--ui-danger, #c2410c); }
+.map-comparison-ui .route-surface { pointer-events: auto; }
+.map-comparison-planned-route {
+  position: absolute; z-index: 8; left: 8px; bottom: calc(44px + var(--home-bottom) + 8px);
+  width: min(280px, calc(100% - 104px)); padding: 4px 8px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 4px; border-radius: 8px;
+  background: var(--ui-surface); color: var(--ui-ink); box-shadow: var(--ui-shadow); pointer-events: auto;
+}
+.map-comparison-planned-route header, .map-comparison-planned-route p { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; }
+.map-comparison-planned-route header strong { flex: 1; }
+.map-comparison-planned-route nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.map-comparison-ui .map-comparison-planned-route button { min-width: 0; height: 28px; min-height: 28px; padding: 0 4px; }
+.map-comparison-ui .map-comparison-planned-route header button { width: 28px; padding: 0; color: var(--ui-close, #cbc37d); }
+.map-comparison-ui .map-comparison-planned-route .route-solid { background: var(--ui-accent); color: var(--ui-on-accent, #18301d); }
+.map-comparison-edit-overlay { position: absolute; z-index: 24; inset: 32px 0 0; overflow: hidden; pointer-events: none; }
+.map-comparison-actions { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(44px, 1fr); align-items: center; gap: 4px; flex: 0 0 44px; min-width: 0; padding: 0 8px; box-sizing: border-box; background: var(--ui-surface); pointer-events: auto; }
+.map-comparison-actions button { box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 44px; width: 100%; height: 44px; padding: 0 2px; white-space: nowrap; background: transparent; border-radius: var(--ui-radius-control); }
+.map-comparison-actions button small { font-size: 11px; line-height: 12px; }
+.map-comparison-actions button svg { flex-shrink: 0; }
+.map-comparison-actions .dimension-button { font-size: 17px; font-weight: 700; }
+.map-comparison-actions button[aria-pressed='true'] { color: var(--ui-accent); }
+.map-comparison-direction { position: relative; flex: 0 0 44px; width: 44px; height: 44px; }
+.map-comparison-actions .map-comparison-direction .position-direction-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0 1px; border-radius: var(--ui-radius-control); }
+.map-comparison-actions .map-comparison-direction .position-direction-button small { max-width: 42px; font-size: 8px; line-height: 9px; }
+.map-comparison-actions .map-comparison-direction .direction-menu { z-index: 8; left: 0; right: auto; bottom: 48px; width: 176px; max-width: min(176px, calc(100vw - 16px)); padding: 4px; }
+.map-comparison-actions .map-comparison-direction .direction-menu button { width: 100%; min-width: 0; min-height: 36px; height: 36px; flex-direction: row; justify-content: flex-start; padding: 4px 8px; font-size: 12px; }
+.map-comparison-direction-status { position: absolute; z-index: 9; left: 0; bottom: 48px; width: 168px; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-control); background: var(--ui-surface); color: var(--ui-ink); font-size: 10px; line-height: 1.2; white-space: normal; pointer-events: none; }
 .map-comparison-operation-error { position: absolute; bottom: 44px; left: 4px; right: 4px; padding: 4px 8px; background: var(--ui-surface); color: var(--ui-danger); font-size: 12px; margin: 0; }
+.map-comparison-marker-menu { position: absolute; z-index: 7; left: 8px; bottom: calc(44px + var(--home-bottom) + 4px); width: min(150px, calc(100vw - 16px)); box-sizing: border-box; padding: 3px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-card); background: var(--ui-surface); color: var(--ui-ink); box-shadow: var(--ui-shadow); pointer-events: auto; }
+.map-comparison-marker-menu > header { display: flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 2px 2px 4px; }
+.map-comparison-marker-menu > header strong { flex: 1; min-width: 0; font-size: 10px; }
+.map-comparison-ui .map-comparison-marker-menu > header button { min-width: 28px; width: 28px; min-height: 28px; height: 28px; padding: 0; }
+.map-comparison-marker-menu > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.map-comparison-ui .map-comparison-marker-menu > div button { min-width: 0; min-height: 28px; height: 28px; padding: 1px; gap: 1px; font-size: 8px; line-height: 9px; white-space: normal; overflow-wrap: anywhere; }
+.map-comparison-marker-menu > div button svg { width: 12px; height: 12px; }
+
+/* Keep the full annotation editor inside the comparison pane's left edge. */
+.map-comparison-ui .map-comparison-editor-slot:empty { display: none; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot {
+  --compare-editor-max-height: calc((100dvh - var(--compare-top) - var(--home-bottom) - 44px) / 2 - 48px);
+  left: 8px;
+  width: min(200px, calc(100vw - 104px));
+  max-height: var(--compare-editor-max-height);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot :is(.pin-editor, .marker-workspace) {
+  position: relative;
+  inset: auto;
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: var(--compare-editor-max-height);
+  padding: 4px;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-attribute-list {
+  min-height: 0;
+  max-height: 108px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-attribute-list:has(.pin-attribute) {
+  min-height: 36px;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-picker {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: var(--compare-editor-max-height);
+  overflow-y: auto;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor :is(input, textarea, select) {
+  font-size: 13px;
+}
+@media (orientation: landscape) {
+  .comparison-source-picker[data-pane] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - 72px - var(--home-bottom, 0px)); }
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot {
+    --compare-editor-max-height: calc(100dvh - var(--compare-top) - 32px - var(--home-bottom) - 44px - 16px);
+    width: min(200px, calc(50vw - 104px));
+    max-height: var(--compare-editor-max-height);
+  }
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor {
+    max-height: var(--compare-editor-max-height);
+  }
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-attribute-list:has(.pin-attribute) { min-height: 28px; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor { font-size: 11px; }
 .map-comparison-gizmo { position: absolute; right: max(4px, var(--home-right)); bottom: calc(44px + var(--home-bottom) + 4px); width: 88px; height: 94px; pointer-events: auto; }
 .observatory.home-map .map-comparison-gizmo .camera-gizmo { display: block; position: relative; inset: auto; width: 88px; height: 94px; margin: 0; }
 .observatory.home-map .map-comparison-gizmo .camera-gizmo > svg { width: 88px; height: 94px; }
 .map-comparison-gizmo .camera-gizmo > svg > text { display: none; }
-.map-comparison-cross { position: absolute; left: 50%; top: calc(50% + 18px); width: 14px; height: 14px; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 0 1px #000); }
+.map-comparison-cross { position: absolute; left: 50%; top: calc(50% + 16px); width: 52px; height: 52px; transform: translate(-50%, -50%); pointer-events: none; filter: drop-shadow(0 0 1px #000); opacity: .68; }
 .map-comparison-cross::before, .map-comparison-cross::after { content: ''; position: absolute; background: var(--ui-ink); }
-.map-comparison-cross::before { left: 6px; top: 0; width: 2px; height: 14px; }
-.map-comparison-cross::after { left: 0; top: 6px; width: 14px; height: 2px; }
-.map-comparison-actions .map-comparison-properties-button { min-width: 0; font-size: 11px; padding: 0 2px; }
-@media (max-width: 379px) { .map-comparison-actions .map-comparison-north { display: none; } }
+.map-comparison-cross::before { left: 25px; top: 0; width: 2px; height: 6px; box-shadow: 0 40px 0 var(--ui-ink); }
+.map-comparison-cross::after { left: 0; top: 25px; width: 6px; height: 2px; box-shadow: 40px 0 0 var(--ui-ink); }
+/* Move the same editor DOM between panes; fields and sub-page state stay mounted. */
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window {
+  --compare-window-max-height: calc((100dvh - var(--compare-top) - var(--home-bottom) - 44px) / 2 - 48px);
+  --compare-editor-max-height: var(--compare-window-max-height);
+  position: absolute; z-index: 25; left: 8px; right: auto; top: auto;
+  bottom: calc(44px + var(--home-bottom) + 8px);
+  display: flex; flex-direction: column; gap: 4px;
+  width: min(300px, calc(100% - 16px)); max-height: var(--compare-window-max-height);
+  padding: 0; border: 0; background: transparent; overflow: visible; pointer-events: auto;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-pane='0'] {
+  bottom: calc(44px + var(--home-bottom) + var(--compare-half) + 8px);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] { width: min(210px, calc(100% - 104px)); }
+.map-comparison-ui .comparison-editor-position-button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; color: var(--ui-accent); }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .route-edit-dock .route-edit-dock-heading { height: auto; min-height: 44px; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .route-edit-dock .comparison-editor-position-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor .comparison-editor-position-button { flex: 0 0 28px; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .pin-editor-header .pin-heading-label { display: none; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .marker-workspace .comparison-editor-position-button { flex: 0 0 28px; width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; }
+.map-comparison-editor-content { min-height: 0; max-height: var(--compare-editor-max-height); overflow-y: auto; overscroll-behavior: contain; }
+/* A pin owns scrolling so the fixed header cannot scroll away in a second host. */
+.map-comparison-editor-content:has(.pin-editor) { overflow: visible; flex: 0 0 auto; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-editor-main { flex: 0 0 auto; overflow: visible; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot .pin-attribute-list:has(.pin-attribute) { flex: 0 0 auto; min-height: 88px; }
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window .route-edit-dock[data-view] { position: relative; inset: auto; width: 100%; margin: 0; max-height: none; }
+/* The marker note now takes several lines. Let its editor extend across the
+   split when needed, while keeping scrolling confined to the attribute list. */
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] {
+  --compare-window-max-height: calc(100dvh - 72px - var(--safe-top) - var(--safe-bottom));
+  --compare-editor-max-height: var(--compare-window-max-height);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'][data-pane='0'] {
+  top: calc(var(--compare-top) + 36px);
+  bottom: auto;
+  --compare-window-max-height: calc(100dvh - var(--compare-top) - 88px - var(--safe-top) - var(--safe-bottom));
+  --compare-editor-max-height: var(--compare-window-max-height);
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] .pin-attribute-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 148px;
+  overflow-y: auto;
+}
+html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] .pin-attribute-list:has(.pin-attribute) {
+  min-height: 0;
+}
+/* Keep every action reachable below the seven-control phone layout. */
+@media (max-width: 347px) { .map-comparison-actions { overflow-x: auto; grid-auto-columns: 44px; justify-content: start; scrollbar-width: thin; overscroll-behavior-inline: contain; } }
 
 /* Rotate the split as well as the controls, keeping both landscape maps useful. */
 @media (orientation: landscape) {
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window {
+    --compare-window-max-height: calc(100dvh - var(--compare-top) - var(--home-bottom) - 44px - 48px);
+    --compare-editor-max-height: var(--compare-window-max-height);
+    width: min(300px, calc(50% - 16px));
+  }
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-pane='0'] { bottom: calc(44px + var(--home-bottom) + 8px); }
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-pane='1'] { left: calc(50% + 8px); }
+  html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window[data-kind='marker'] { width: min(210px, calc(50% - 16px)); }
   .observatory.home-map[data-comparing='true'] > .map-canvas {
     width: 50% !important;
-    height: calc(100% - var(--compare-top) - 36px - var(--home-bottom) - 44px) !important;
-    top: calc(var(--compare-top) + 36px) !important;
+    height: calc(100% - var(--compare-top) - 32px - var(--home-bottom) - 44px) !important;
+    top: calc(var(--compare-top) + 32px) !important;
     right: auto !important;
   }
-  .observatory.home-map[data-comparing='true'] > .map-comparison-secondary { left: 50% !important; }
+  .observatory.home-map[data-comparing='true'] > .map-comparison-secondary { left: 50% !important; top: calc(var(--compare-top) + 32px) !important; }
   .map-comparison-panes { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .map-comparison-pane + .map-comparison-pane { box-shadow: -1px 0 var(--ui-line); }
+  .map-comparison-marker-menu { bottom: calc(44px + var(--home-bottom) + 4px); }
 }

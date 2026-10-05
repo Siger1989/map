@@ -182,8 +182,9 @@ export function MarkerBasic({
     <>
       <label className="marker-inline-field">
         <span>名称</span>
-        <SmartInput
+        <input
           aria-label="标记名称"
+          autoComplete="off"
           value={item.name}
           maxLength={60}
           onChange={(e) => change({ name: e.target.value })}

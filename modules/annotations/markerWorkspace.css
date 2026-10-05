@@ -102,3 +102,58 @@
 .marker-summary-photos { min-height:0; overflow-x:auto; flex-shrink:1; max-height:90px; }
 .marker-summary-photos .marker-photos { flex-wrap:nowrap; padding:4px 0; }
 .marker-summary-photos .marker-photos button { flex-shrink:0; }
+
+/* Compact marker workspace at every level; controls remain individually usable. */
+.marker-workspace { width: min(220px, calc(100% - 74px)); max-height: min(38dvh, 300px); padding: 0 4px 4px; gap: 2px; font-size: 12px; border-radius: 8px; }
+.marker-workspace[data-view='details'] { max-height: min(58dvh, 440px); }
+.marker-workspace button { min-width: 28px; min-height: 28px; padding: 0 3px; gap: 2px; font-size: 12px; border-radius: 4px; }
+.marker-workspace :is(input, textarea, select) { min-height: 28px; padding: 3px 4px; border-radius: 4px; font-size: 13px; }
+.marker-summary-title, .marker-details-bar { gap: 2px; }
+.marker-summary-title strong { font-size: 13px; }
+.marker-summary-place { min-height: 22px; gap: 4px; }
+.marker-summary-place span:last-child { font-size: 11px; }
+.marker-summary-actions { gap: 2px; margin-top: 2px; }
+.marker-summary-actions button { padding-inline: 1px; font-size: 10px; }
+.marker-camera-status { font-size: 10px; padding: 2px 0; }
+.marker-photos { gap: 3px; }
+.marker-photos button { padding: 2px; }
+.marker-photos img { width: 48px; height: 42px; }
+.marker-photos small, .marker-photos-empty { font-size: 9px; }
+.marker-workspace .marker-photo-count { min-height: 24px; font-size: 10px; }
+.marker-editor-bar { min-height: 30px; }
+.marker-editor-bar nav button { min-height: 28px; }
+.marker-editor-bar .marker-save { min-width: 36px; }
+.marker-scroll { gap: 3px; }
+.marker-inline-field { grid-template-columns: 25px minmax(0,1fr); gap: 3px; font-size: 11px; }
+.marker-style-row { gap: 3px; }
+.marker-style-row button { padding-inline: 3px; }
+.marker-style-row small, .marker-axis-unit, .marker-axis-heading { font-size: 10px; }
+.marker-style-row i, .marker-choice-grid i { width: 14px; height: 14px; }
+.marker-choice-grid { gap: 2px; }
+.marker-choice-grid button { padding: 2px 0; }
+.marker-choice-grid small { font-size: 9px; }
+.marker-custom-color input { width: 48px; }
+.marker-axis-heading { height: 18px; }
+.marker-axis-heading > span { width: 34px; }
+.marker-axis-unit { width: 32px; }
+.marker-number input { font-size: 11px; }
+.marker-number button { min-width: 28px; width: 28px; min-height: 28px; }
+.marker-data-heading button { min-height: 28px; font-size: 11px; }
+.marker-attribute-row { grid-template-columns: minmax(0,.75fr) minmax(0,1.4fr) 28px; gap: 2px; }
+.marker-attribute-row textarea, .marker-note textarea { height: 28px; min-height: 28px; font-size: 12px; }
+.marker-model-options summary { min-height: 28px; }
+.marker-model-grid { gap: 3px; font-size: 11px; }
+.marker-check { gap: 3px; min-height: 28px; font-size: 11px; }
+.marker-check input { width: 16px; min-height: 16px; }
+.marker-coordinate-fields { gap: 3px; font-size: 11px; }
+.marker-coordinate-fields > label { grid-template-columns: 68px minmax(0,1fr); }
+.marker-details > dl { gap: 2px; font-size: 11px; }
+.marker-details > dl > div { gap: 3px; padding: 3px 0; }
+.marker-error, .marker-confirm p { font-size: 11px; }
+.marker-confirm { padding: 4px; gap: 3px; }
+.marker-confirm button { min-height: 30px; }
+.marker-summary-photos { max-height: 68px; }
+.marker-summary-photos .marker-photos { padding: 2px 0; }
+@media (orientation: landscape) and (max-height: 480px) {
+  .marker-workspace { width: min(440px, calc(100% - 128px)); max-height: calc(100dvh - 124px - var(--safe-top) - var(--safe-bottom)); }
+}

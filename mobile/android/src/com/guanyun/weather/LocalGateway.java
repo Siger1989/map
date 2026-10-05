@@ -57,8 +57,9 @@ final class LocalGateway {
             if ("/api/map-tile".equals(path)) {
                 String source = uri.getQueryParameter("url");
                 if (source == null || source.isEmpty()) return text(400, "Missing tile URL");
+                String requestId = uri.getQueryParameter("requestId");
                 try {
-                    MapTileProxy.Tile tile = MapTileProxy.fetch(source);
+                    MapTileProxy.Tile tile = MapTileProxy.fetch(source, requestId);
                     return response(200, tile.mime, new ByteArrayInputStream(tile.bytes), "private, max-age=300");
                 } catch (MapTileProxy.TileException error) {
                     return tileError(error);
@@ -67,6 +68,15 @@ final class LocalGateway {
                 }
             }
             if ("/api/satellite".equals(path)) return json(200, "{\"date\":\"" + satelliteDate() + "\"}");
+            if ("/api/location/ip".equals(path)) {
+                JSONObject estimate = new JSONObject(new String(DataTransport.get("https://ipwho.is/", 16384), StandardCharsets.UTF_8));
+                double longitude = estimate.optDouble("longitude", Double.NaN), latitude = estimate.optDouble("latitude", Double.NaN);
+                if (!estimate.optBoolean("success") || !Double.isFinite(longitude) || !Double.isFinite(latitude) || Math.abs(longitude) > 180 || Math.abs(latitude) > 90)
+                    return json(502, "{\"error\":\"IP定位结果无效，请重试\"}");
+                JSONObject fix = new JSONObject().put("coordinates", new JSONArray().put(longitude).put(latitude))
+                    .put("accuracy", 50000).put("timestamp", System.currentTimeMillis()).put("source", "network").put("provider", "ip");
+                return json(200, fix.toString());
+            }
             if ("/api/geology/geocloud".equals(path)) return json(503, "{\"message\":\"安卓测试版尚未配置地质云授权服务；可切换世界概览。\"}");
             if (path.startsWith("/api/")) return text(404, "Unknown endpoint");
             String asset = path.equals("/") ? "index.html" : path.substring(1);

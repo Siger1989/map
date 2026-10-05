@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { FREE_MAPS, freeMap } from './presets';
 import type { Bounds } from './types';
 import { getMapSourcesSessionState, updateMapSourcesSessionState } from './sessionState';
+import { FavoriteSourceStar } from './FavoriteSourceStar';
+import { publicMapSourceFavoriteKey } from './favorites';
 export function FreeMapLibrary({
   selected,
   onSelect,
@@ -14,7 +16,7 @@ export function FreeMapLibrary({
   const [category, setCategory] = useState(() => getMapSourcesSessionState().libraryCategory);
   const active = freeMap(selected);
   return (
-    <section className="free-map-library" aria-label="免费图源库">
+    <section className="free-map-library" data-group="public" aria-label="免费图源库">
       <header>
         <strong>免费图源 · {FREE_MAPS.length} 种</strong>
         <small>免密钥 · 联网</small>
@@ -32,8 +34,8 @@ export function FreeMapLibrary({
       </div>
       <div className="free-map-grid">
         {FREE_MAPS.filter((m) => m.category === category).map((m) => (
+          <div className="free-map-card" key={m.id}>
           <button
-            key={m.id}
             aria-pressed={m.id === selected}
             onClick={() => onSelect(m.id)}
           >
@@ -42,6 +44,8 @@ export function FreeMapLibrary({
               {m.id === selected ? '当前使用' : `最高 ${m.maxzoom} 级`}
             </small>
           </button>
+          <FavoriteSourceStar sourceKey={publicMapSourceFavoriteKey(m.id)} name={m.name} group="public" />
+          </div>
         ))}
       </div>
       {active && (

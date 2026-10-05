@@ -7,6 +7,8 @@ import { trackHeights } from '../modules/routeAnalysis/trackElevation.ts';
 import { DEFAULT_TRACK_STYLE } from '../modules/tracks/style.ts';
 import { startRouteEdit, selectEditNode, toggleEditBranch, appendEditBranch, undoRouteEdit } from '../modules/tracks/routeEdit.ts';
 import { composeTrackOverlay } from '../modules/workbench/trackOverlay.ts';
+import { metresBetween } from '../modules/navigation/types.ts';
+import { profilePreviewIndex, profilePreviewMoves } from '../modules/tracks/profilePreviewGeometry.ts';
 
 // Bundle the actual layer for Node (its MapLibre constructor uses TS parameter properties).
 const result = await build({
@@ -262,6 +264,94 @@ test('active-node selection patches only changed point features until projection
   layer.sync({ ...current, activeNode: { trackId: 'a', coordinate: track.segments[0][1] }, nodeSelection: { trackId: 'a', points: [track.segments[0][0]] } });
   assert.ok(counts.mainSetData > beforeLayerRestore, 'missing style layer forces a full sync');
   assert.ok(layers.has('manual-track-line'), 'full sync restores style layers after a style reset');
+});
+
+test('elevation-profile samples follow a dragged route endpoint through cancel, commit, box selection, and undo', () => {
+  const sources = new Map(), layers = new Map();
+  const map = {
+    getSource: id => sources.get(id), getLayer: id => layers.get(id), on() {},
+    addSource(id, spec) {
+      sources.set(id, { ...spec,
+        setData(data) { this.data = structuredClone(data); return Promise.resolve(); },
+        updateData(diff) {
+          for (const update of diff.update ?? []) {
+            const feature = this.data.features.find(item => item.id === update.id);
+            if (!feature) continue;
+            if (update.newGeometry) feature.geometry = structuredClone(update.newGeometry);
+            for (const { key, value } of update.addOrUpdateProperties ?? []) feature.properties[key] = value;
+          }
+          return Promise.resolve();
+        },
+      });
+    },
+    addLayer(spec) { layers.set(spec.id, spec); }, getStyle: () => ({ layers: [...layers.values()] }), moveLayer() {},
+    isMoving: () => false, project: ([x, y]) => ({ x: x * 100000, y: y * 100000 }),
+  };
+  const a = [0, 0], b = [0.01, 0], c = [0.02, 0];
+  const track = { id: 'colored-route', name: 'colored', createdAt: 0, segments: [[a, b, c]], style: { ...DEFAULT_TRACK_STYLE, colorMode: 'elevation', opacity: .45 } };
+  const profileFor = current => {
+    const first = current.segments[0][0], last = current.segments[0].at(-1);
+    const total = metresBetween(first, last);
+    return terrainProfileTrack(current, [.0, .125, .25, .375, .5, .625, .75, .875, 1].map((fraction, index) => ({
+      coordinates: [first[0] + (last[0] - first[0]) * fraction, 0],
+      distance: total * fraction, part: 0, elevation: index * 20,
+    })));
+  };
+  const analysisFor = current => {
+    const profile = profileFor(current);
+    return { trackId: current.id, parts: metricLineParts(profile, 'elevation'), sourceSegments: current.segments, profileSegments: profile.segments };
+  };
+  const layer = new TrackLayer(map);
+  const base = { saved: [track], draft: [], visible: true, style: track.style, nodes: [], selectedId: track.id, editing: true, nodeSelection: { trackId: track.id, points: [] }, analysisParts: analysisFor(track) };
+  const geometry = () => sources.get('manual-tracks').data.features.filter(feature => feature.geometry.type === 'MultiLineString').flatMap(feature => feature.geometry.coordinates).flat();
+  const endNode = () => sources.get('manual-tracks').data.features.find(feature => feature.geometry.type === 'Point' && feature.geometry.coordinates[0] === .02);
+  const assertNoBeyond = (x, label) => assert.ok(geometry().every(([lng]) => lng <= x + 1e-10), `${label}: no stale elevation sample extends past the moved endpoint`);
+
+  layer.sync(base);
+  const canonical = structuredClone(geometry());
+  assert.ok(sources.get('manual-tracks').data.features.filter(feature => feature.geometry.type === 'MultiLineString').every(feature => feature.properties.opacity === .45), 'half-opacity route style reaches each colored feature');
+  assert.ok(canonical.some(([lng]) => lng > .019), 'fixture contains display-only elevation samples beyond the editable middle vertex');
+  layer.preview({ node: { trackId: track.id, coordinate: c }, coordinate: [.018, 0] });
+  assertNoBeyond(.018, 'imperative preview');
+  assert.ok(sources.get('manual-tracks').data.features.filter(feature => feature.geometry.type === 'MultiLineString').every(feature => feature.properties.opacity === .45), 'imperative geometry updates preserve the half-opacity paint value');
+  layer.preview(null);
+  assert.deepEqual(geometry(), canonical, 'cancel restores the full colored profile geometry');
+
+  layer.preview({ node: { trackId: track.id, coordinate: c }, coordinate: [.018, 0] });
+  const committed = { ...track, segments: [[a, b, [.018, 0]]] };
+  const staleAnalysisState = { ...base, saved: [committed] };
+  layer.sync(staleAnalysisState);
+  assertNoBeyond(.018, 'commit while old profile is still pending');
+  const committedState = { ...staleAnalysisState, analysisParts: analysisFor(committed) };
+  layer.sync(committedState);
+  assertNoBeyond(.018, 'refreshed profile');
+  assert.ok(sources.get('manual-track-selection-edge').data.features.length === 0, 'box-add with zero selected nodes has no selected edge');
+
+  const boxed = { ...committedState, nodeSelection: { trackId: track.id, points: [b, [.018, 0]] } };
+  layer.sync(boxed);
+  assert.ok(sources.get('manual-track-selection-edge').data.features.length > 0, 'adjacent box-selected endpoints highlight their real edge');
+  const undone = { ...base, nodeSelection: { trackId: track.id, points: [b, c] } };
+  layer.sync(undone);
+  assert.deepEqual(geometry(), canonical, 'undo returns both original editable vertices and their original elevation samples');
+  assert.ok(sources.get('manual-track-selection-edge').data.features.length > 0, 'box selection after undo uses restored route geometry');
+});
+
+test('cached profile preview index keeps 120 dense-route frames bounded to adjacent samples', () => {
+  const points = Array.from({ length: 10000 }, (_, index) => [index * .00001, Math.sin(index / 20) * .0001]);
+  const track = { id: 'profile-dense', segments: [points], samples: undefined, style: { ...DEFAULT_TRACK_STYLE } };
+  const analysis = { trackId: track.id, parts: metricLineParts(track, 'slope'), sourceSegments: track.segments, profileSegments: track.segments };
+  const index = profilePreviewIndex(track.segments, track.segments, analysis);
+  assert.ok(index);
+  assert.ok(index.indexedCoordinates >= points.length, 'index is built once across the complete colored profile');
+  const adjacent = index.byNode.get(points[5000].join(','));
+  assert.ok(adjacent);
+  let visits = 0;
+  const originalIterator = adjacent[Symbol.iterator].bind(adjacent);
+  adjacent[Symbol.iterator] = function* () { for (const sample of originalIterator()) { visits++; yield sample; } };
+  for (let frame = 0; frame < 120; frame++)
+    profilePreviewMoves(index, points[5000], [points[5000][0] + frame * .0000001, points[5000][1] + .000001]);
+  assert.ok(visits <= adjacent.length * 120, 'each frame visits only the selected node and its incident profile samples');
+  assert.ok(visits < points.length, '120 preview frames never rescan all 10000 points');
 });
 
 test('real saved-route branch append/join/undo overlays use stable-ID diff and match a full rebuild', () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import {
   Camera,
   ChevronLeft,
@@ -15,6 +16,8 @@ import { MarkerPhotos } from './MarkerPhotos';
 import { PinEditor } from './PinEditor';
 import type { Annotation } from './data';
 import { dimensionLabel, volume } from './data';
+import type { AnnotationChoice } from './data';
+import type { Coordinate } from '../navigation/types';
 import type { AnnotationsState } from './useAnnotations';
 import { AnnotationLocation } from './AnnotationLocation';
 import {
@@ -50,6 +53,7 @@ export function AnnotationWorkspace({
   cameraBusy,
   cameraRetry,
   onCameraRetry,
+  onAddModel,
 }: {
   state: AnnotationsState;
   shownItem: Annotation;
@@ -69,6 +73,7 @@ export function AnnotationWorkspace({
   cameraBusy?: boolean;
   cameraRetry?: boolean;
   onCameraRetry?: () => void;
+  onAddModel?: (kind: Exclude<AnnotationChoice, 'pin'>, coordinates: Coordinate) => boolean;
 }) {
   const [view, setView] = useState<'summary' | 'details'>('summary');
   const [confirm, setConfirm] = useState<'delete' | null>(null);
@@ -182,7 +187,7 @@ export function AnnotationWorkspace({
   } catch {
     /* Exact coordinates remain in details if region cache is unavailable. */
   }
-  if (item.kind === 'pin') return <PinEditor state={state} item={item} photos={photos} onClose={onClose} onShare={onShare} onAdjust={onAdjust} onCapture={onCapture} onImport={onImport} onPhoto={onPhoto} cameraStatus={cameraStatus} cameraBusy={cameraBusy} cameraRetry={cameraRetry} onCameraRetry={onCameraRetry}/>;
+  if (item.kind === 'pin') return <PinEditor state={state} item={item} photos={photos} onClose={onClose} onShare={onShare} onAdjust={onAdjust} onCapture={onCapture} onImport={onImport} onPhoto={onPhoto} cameraStatus={cameraStatus} cameraBusy={cameraBusy} cameraRetry={cameraRetry} onCameraRetry={onCameraRetry} onAddModel={onAddModel}/>;
   return (
     <section
       ref={root}
@@ -237,6 +242,7 @@ export function AnnotationWorkspace({
               </button>
             ))}
           </nav>
+          <ComparisonEditorPositionButton kind="标记"/>
           <button
             className="marker-delete"
             aria-label="删除标记"

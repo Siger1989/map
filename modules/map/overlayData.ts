@@ -31,6 +31,8 @@ const overlayOrder = [
   'route-gap-points',
   'position-accuracy',
   'position-dot',
+  'position-arrow',
+  'position-ip-label',
 ];
 const ROAD_LINE_LAYERS = [
   'rivers',
@@ -71,7 +73,7 @@ export function syncPlaceLabelLayerOrder(map: Map) {
   const layers = map.getStyle().layers;
   const present = layers.map((layer) => layer.id);
   const visibleLabels = layers.filter(
-    (layer) => PLACE_LABEL_LAYERS.has(layer.id) && layer.layout?.visibility !== 'none',
+    (layer) => (PLACE_LABEL_LAYERS.has(layer.id) || layer.id.startsWith('shantu-user-map-ovmap-')) && layer.layout?.visibility !== 'none',
   );
   const anchor = visibleLabels.reduce<typeof visibleLabels[number] | undefined>(
     (first, layer) => !first || present.indexOf(layer.id) < present.indexOf(first.id) ? layer : first,

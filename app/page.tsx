@@ -4,6 +4,7 @@ import { NavigationTelemetry } from '@/modules/guidance/NavigationTelemetry';
 import { SelectedRouteInfo } from '@/modules/routeDisplay/SelectedRouteInfo';
 import { collectionPreviewPoints } from '@/modules/collections/previewBounds';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { drawingMapProjection } from '@/modules/mapComparison/drawingMapProjection';
 import { AboutPanel } from '@/modules/help/AboutPanel';
 import { PRODUCT_NAME } from '@/config/product';
 import { TextSuggestions } from '@/modules/input/SmartText';
@@ -31,13 +32,18 @@ import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
+import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
 import { comparisonChoices } from '@/modules/mapComparison/choices';
+import { FavoriteSourceSwitcher } from '@/modules/mapSources/FavoriteSourceSwitcher';
 import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
 import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerPreferences';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { WeatherPanel } from '@/modules/controls/WeatherPanel';
 import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
+import { RouteNameInput } from '@/modules/navigation/RouteNameInput';
+import { defaultRouteName } from '@/modules/navigation/routeName';
+import { samePlannedRoute } from '@/modules/navigation/routeVisibility';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { annotationSharePlace } from '@/modules/annotations/share';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
@@ -51,12 +57,12 @@ import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
-import { RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
+import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
 import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
-import { annotationViewZoom } from '@/modules/annotations/view';
+import type { DirectionMode } from '@/modules/position/types';
 import {
   sharePlanned,
   shareTrack,
@@ -87,6 +93,7 @@ import {
   toggleEditBranch,
   undoRouteEdit,
   styleRouteEdit,
+  renameEditRoute,
   editSelectionDetails,
   addEditMarker,
   setEditEnd,
@@ -94,12 +101,12 @@ import {
 import { trackAlternatives } from '@/modules/tracks/alternatives';
 import { equalCoordinate } from '@/modules/tracks/editing';
 import { moveSelectedPoints } from '@/modules/tracks/displayColors';
+import { moves as visibleNodeMoves } from '@/modules/tracks/visibleNodeMove';
 import type { ManualTrack } from '@/modules/tracks/drawing';
 
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
 import { pickTrackContinuation } from '@/modules/tracks/prepareTrackContinuation';
-import { routeGap } from '@/modules/tracks/routeInfo';
 import { useRouteJourney } from '@/modules/journey/useRouteJourney';
 import {
   RouteWeatherRail,
@@ -119,6 +126,7 @@ import {
 } from '@/modules/navigation/types';
 import { normalizeTrackStyle } from '@/modules/tracks/style';
 import { useManualTracks } from '@/modules/tracks/useManualTracks';
+import { focusLockVisibility } from '@/modules/controls/focusLockVisibility';
 import { keepsOriginalPoints } from '@/modules/tracks/provenance';
 import { DRAFT_ID } from '@/modules/tracks/editing';
 import type { FeatureMove } from '@/modules/map/FeatureDragBridge';
@@ -175,11 +183,11 @@ import { INITIAL_GEOLOGY } from '@/modules/geology/data';
 import { GeologyPanel } from '@/modules/geology/GeologyPanel';
 import { useAreas } from '@/modules/areas/useAreas';
 import { AreaTools } from '@/modules/areas/AreaTools';
-import { outlineModel } from '@/modules/areas/extrude';
 import { useWeather } from '@/modules/weather/useWeather';
 import { TemperatureLegend } from '@/modules/weather/TemperatureLegend';
 import { useMapTools } from '@/modules/controls/useMapTools';
 import type { SatelliteState } from '@/modules/satellite/satellite';
+import type { SatelliteCloudState } from '@/modules/weather/SatelliteCloudLayer';
 import {
   DEFAULT_LAYERS,
   applyLayerPatch,
@@ -270,6 +278,7 @@ export default function Home() {
   const [anchor, setAnchor] = useState<[number, number]>(INITIAL_VIEW.center);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
+  const [cloudState, setCloudState] = useState<SatelliteCloudState | null>(null);
   const [satellite, setSatellite] = useState<SatelliteState>({
     date: '',
     status: '正在获取卫星影像日期…',
@@ -292,10 +301,15 @@ export default function Home() {
   const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
   const mapSources = useMapSources();
   const [comparison, setComparison] = useState<ComparisonSession | null>(null);
+  const [favoriteSourceOpen, setFavoriteSourceOpen] = useState(false);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
   const rasterMaxLevel = mapSources.source ? mapSources.source.kind === 'image' ? 0 : mapSources.source.maxzoom
     : usesSentinel(layers) ? SENTINEL_MAXZOOM : domesticBasemap ? TIANDITU_LAYERS[tiandituBase(layers)].maxzoom : layers.satellite ? layers.imageryMode === 'detail' ? 14 : 9 : 0;
   const rasterName = mapSources.source?.name ?? (usesSentinel(layers) ? `${SENTINEL_NAME} · 约10米` : domesticBasemap ? `天地图${TIANDITU_LAYERS[tiandituBase(layers)].name}` : layers.satellite ? layers.imageryMode === 'detail' ? '地表影像' : '最新云况影像' : '开源道路地形');
+  const sourceChoices = useMemo(() => comparisonChoices(layers, mapSources.source, rasterName, mapSources.maps), [layers, mapSources.source, rasterName, mapSources.maps]);
+  const favoriteSourceId = mapSources.source
+    ? sourceChoices.find(choice => choice.id !== 'current' && choice.source?.id === mapSources.source?.id)?.id ?? 'current'
+    : domesticBasemap ? `tdt-${tiandituBase(layers)}` : !layers.satellite ? 'terrain' : layers.imageryMode === 'latest' ? 'latest' : 'sentinel';
   const rasterSelectionSignature = useRef<string | null>(null);
   useEffect(() => {
     if (!mapSources.ready) return;
@@ -339,6 +353,7 @@ export default function Home() {
   );
   const [navigationDisplayOpen, setNavigationDisplayOpen] = useState(false);
   const [unsavedExit, setUnsavedExit] = useState(false);
+  const comparisonExitGate = useRef(createComparisonExitGate()).current;
   const [routeChild, setRouteChild] = useState(false);
   const routeReturnPoint = useRef<TrackLinePoint | null>(null);
   const [featureMove, setFeatureMove] = useState<FeatureMove | null>(null);
@@ -377,7 +392,7 @@ export default function Home() {
     annotations.select(id);
     setAnnotationTab('basic');
     setPanel('annotations');
-  });
+  }, (point) => map.current?.groundElevation(point) ?? null);
   const startArea = () => {
     tracks.pause();
     setActiveTrackNode(null);
@@ -509,6 +524,8 @@ export default function Home() {
         : position.fix;
   const motionHeading = useMotionHeading(cameraFix, position.direction === 'motion');
   const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
+  const markerHeading = position.direction === 'device' || position.direction === 'motion' ? directionHeading :
+    displayedFix?.heading !== undefined && Number.isFinite(displayedFix.heading) && (displayedFix.speed ?? 0) >= 1 && (displayedFix.headingAccuracy ?? 0) <= 35 ? displayedFix.heading : null;
   const skipNextFollowKey = useRef('');
   const follow = useFollowPosition({
     fix: cameraFix,
@@ -524,7 +541,7 @@ export default function Home() {
       !!featureMove ||
       !!quickAdd ||
       sectionEditing,
-    onFollow: (coordinates, fix) => {
+    onFollow: (coordinates, fix, initial) => {
       const key = `${fix.timestamp}/${fix.coordinates.join('/')}`;
       if (skipNextFollowKey.current === key) {
         skipNextFollowKey.current = '';
@@ -533,7 +550,8 @@ export default function Home() {
       return map.current?.followPosition(
         coordinates,
         position.direction !== 'device' && position.direction !== 'motion',
-        fix.source === 'network' ? positionZoom(fix) : undefined,
+        undefined,
+        initial ? 16 : undefined,
       ) ?? false;
     },
   });
@@ -617,9 +635,10 @@ export default function Home() {
     pendingPositionFocus.current = false;
     focusLock.adoptMode(true, 'north');
     position.north();
-    skipNextFollowKey.current = `${fix.timestamp}/${fix.coordinates.join('/')}`;
+    const zoom = Math.max(16, map.current?.cameraSnapshot()?.zoom ?? view.zoom);
+    const focused = map.current?.focusPosition(fix.coordinates, zoom, layers.terrain ? 40 : 0);
+    skipNextFollowKey.current = focused ? `${fix.timestamp}/${fix.coordinates.join('/')}` : '';
     follow.resume();
-    map.current?.focusPosition(fix.coordinates, positionZoom(fix), layers.terrain ? 40 : 0);
   };
   const locateAndFocus = () => {
     cancelStartupCamera();
@@ -629,6 +648,31 @@ export default function Home() {
       pendingPositionFocus.current = true;
       position.locate();
     }
+  };
+  const changeMapDirection = (direction: DirectionMode) => {
+    cancelStartupCamera();
+    focusLock.adoptMode(direction === 'motion' || follow.following, direction);
+    if (direction === 'device') void position.device();
+    else if (direction === 'motion') {
+      position.motion(); follow.resume();
+      if (recorder.record.phase !== 'recording') position.locate();
+    } else if (direction === 'north') { position.north(); map.current?.north(); }
+    else position.free();
+  };
+  const toggleMapFollowing = () => {
+    cancelStartupCamera();
+    if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
+    focusLock.adoptMode(!follow.following, position.direction);
+    if (follow.following && !position.locationError) { follow.pause(); map.current?.stop(); }
+    else { map.current?.stop(); follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
+  };
+  const resumeNavigation = () => {
+    cancelStartupCamera();
+    map.current?.previewRoute(null);
+    position.motion();
+    follow.resume();
+    if (canFollow(cameraFix)) map.current?.followPosition(cameraFix.coordinates, false);
+    if (!position.watching || position.locationError) position.locate();
   };
   useEffect(() => {
     if (pendingPositionFocus.current && !follow.blocked && canFollow(cameraFix))
@@ -804,26 +848,9 @@ export default function Home() {
   );
   useEffect(() => {
     if (panel !== 'favorites' || boxSelecting || collectionSelectedKeys.length) return;
-    const entries = catalogEntries(
-      favorites.items,
-      tracks.saved,
-      annotations.items,
-      sections.items,
-      areas.items,
-      measurement.saved.items,
-    );
-    const selected = entries.find(
-      (e) =>
-        e.key === `annotation:${annotations.selected}` ||
-        e.key === `track:${tracks.selectedId}`,
-    );
-    const target = selected
-      ? collectionPreviewPoints(selected)
-      : entries.flatMap(collectionPreviewPoints);
     const frame = requestAnimationFrame(() => {
       position.free();
       follow.pause();
-      if (target.length) map.current?.fitCollection(target);
     });
     return () => cancelAnimationFrame(frame);
   }, [panel, boxSelecting, collectionSelectedKeys.length]);
@@ -941,24 +968,26 @@ export default function Home() {
     setActiveTrackNode(null);
     setTrackLinePoint(routeReturnPoint.current);
   };
-  const saveEditor = (asCopy = false) => {
-    if (!editor.session) return;
+  const saveEditor = (asCopy = false, name?: string) => {
+    if (name !== undefined) editor.change(value => renameEditRoute(value, name));
+    const current = editor.currentSession();
+    if (!current) return false;
     const copyId = asCopy ? crypto.randomUUID() : '';
     const result = tracks.commitEdit(asCopy ? {
-      ...editor.session,
-      original: { ...editor.session.original, id: copyId, name: `${editor.session.original.name} · 副本`, createdAt: Date.now() },
-      track: { ...editor.session.track, id: copyId },
+      ...current,
+      original: { ...current.original, id: copyId, name: `${current.track.name} · 副本`, createdAt: Date.now() },
+      track: { ...current.track, id: copyId, name: `${current.track.name} · 副本` },
       sources: [],
-    } : editor.session);
+    } : current);
     if (!result.track) {
       editor.setError(result.error);
       setUnsavedExit(false);
-      return;
+      return false;
     }
     if (result.removed) {
       closeEditor();
       setTrackLinePoint(null);
-      return;
+      return true;
     }
     if (plannedEdit.current) {
       if (navigation.route?.createdAt === plannedEdit.current.createdAt) navigation.clear();
@@ -972,11 +1001,26 @@ export default function Home() {
       coordinate: previous,
       distance: 0,
     });
+    return true;
   };
-  const backEditor = () =>
-    editor.session?.history.length ? setUnsavedExit(true) : closeEditor();
+  const requestComparisonExit = (exit: () => void = () => setComparison(null)) => {
+    const current = editor.currentSession();
+    comparisonExitGate.request({
+      editingRoute: !!current,
+      dirtyRoute: !!current?.history.length,
+      closeRouteEditor: closeEditor,
+      confirmRouteExit: () => setUnsavedExit(true),
+      exitComparison: exit,
+    });
+  };
+  const backEditor = (name?: string) => {
+    if (name !== undefined) editor.change(value => renameEditRoute(value, name));
+    if (editor.currentSession()?.history.length) setUnsavedExit(true);
+    else closeEditor();
+  };
   const beginRouteEdit = (track: ManualTrack) => {
     setSavedNavigationError('');
+    map.current?.clearRouteGap();
     map.current?.clearRouteIssue();
     routeReturnPoint.current = trackLinePoint;
     tracks.select(track.id);
@@ -998,7 +1042,7 @@ export default function Home() {
     setPanel(null);
     setRouteWindow('card');
     annotations.select(null);
-    editor.start({ id: crypto.randomUUID(), name: '规划路线 · 编辑副本', createdAt: Date.now(), source: 'manual', navigationMode: route.mode,
+    editor.start({ id: crypto.randomUUID(), name: route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }), createdAt: Date.now(), source: 'manual', navigationMode: route.mode,
       segments: [route.coordinates.map(p => [...p] as Coordinate)] }, true);
   };
   const addEditPoint = () => {
@@ -1048,7 +1092,9 @@ export default function Home() {
   }, [position.direction, directionHeading, follow.following, follow.blocked]);
   const {
     savedNavigationError,
+    savedNavigationGap,
     setSavedNavigationError,
+    setDisconnectedNavigationError,
     navigationTarget,
     setNavigationTarget,
     startGuidance,
@@ -1096,24 +1142,25 @@ export default function Home() {
   };
   const routeOverlay = useMemo(
     () => ({
-      start: navigation.start,
-      end: navigation.end,
-      route: guidance.session?.route ?? navigation.route,
-      via: navigation.via,
+      start: navigation.visible ? navigation.start : null,
+      end: navigation.visible ? navigation.end : null,
+      route: navigation.visible ? guidance.session?.route ?? navigation.route : null,
+      via: navigation.visible ? navigation.via : [],
     }),
     [
       navigation.start,
       navigation.end,
       navigation.route,
       navigation.via,
+      navigation.visible,
       guidance.session?.route,
     ],
   );
   const savedTrackOverlay = useMemo(() => [...tracks.overlaySaved,
-          ...favorites.items.filter(f => f.visible).map(f => ({ id:`favorite:${f.id}`, name:f.name, createdAt:f.savedAt, segments:f.route.segments?.map(s => s.coordinates) ?? [f.route.coordinates], style:{ color:'#337aaa', width:2 } })),
+          ...favorites.items.filter(f => f.visible && (navigation.visible || !samePlannedRoute(f.route, navigation.route))).map(f => ({ id:`favorite:${f.id}`, name:f.name, createdAt:f.savedAt, segments:f.route.segments?.map(s => s.coordinates) ?? [f.route.coordinates], style:{ color:'#337aaa', width:2 } })),
           ...measurement.saved.items.filter(m => m.visible).map(m => ({ id:`measurement:${m.id}`, name:m.name, createdAt:m.updatedAt, segments:[m.points.map(p => p.coordinates)], style:{ color:'#bc5d22', width:2 } })),
         ],
-    [tracks.overlaySaved, favorites.items, measurement.saved.items],
+    [tracks.overlaySaved, favorites.items, measurement.saved.items, navigation.visible, navigation.route],
   );
   const visibleLinePoint = panel === null ? linePoint : null;
   const trackOverlay = useMemo(
@@ -1231,8 +1278,9 @@ export default function Home() {
   };
   const drawingSnapViewport = useCallback(() => map.current?.getSnapViewport() ?? null, []);
   const drawBranchVertex = (point: Coordinate, section?: Coordinate[]) => {
-    editor.change((value) =>
-      appendEditBranch(
+    let committed: { track: ManualTrack; line: Coordinate[] } | undefined;
+    editor.change((value) => {
+      const next = appendEditBranch(
         value,
         point,
         tracks.saved.find(
@@ -1245,8 +1293,18 @@ export default function Home() {
             ),
         ),
         section,
-      ),
-    );
+      );
+      if (next !== value && value.branch !== null) {
+        const before = value.track.segments[value.branch];
+        committed = { track: next.track, line: next.track.segments[value.branch].slice(before.length - 1) };
+      }
+      return next;
+    });
+    if (committed) {
+      const receipt = { trackId: committed.track.id, segments: committed.track.segments };
+      const overlays = comparison ? comparisonDrawings : [drawing];
+      overlays.forEach(overlay => overlay.current?.retainCommit(receipt, committed!.line));
+    }
   };
   const suggestionValues = useMemo(
     () => ({
@@ -1274,17 +1332,44 @@ export default function Home() {
         !navigation.route && !guidance.active) navigation.clear();
     previousRoutePanel.current = panel;
   }, [panel]);
-  const showCenterCursor = !savedNavigationError.includes('已定位约') && (focusLock.locked || (panel === null &&
+  const canAddCenterMarker = !savedNavigationError.includes('已定位约') && (focusLock.locked || (panel === null &&
     !tracks.drawing &&
     !areas.drawing &&
+    !(areas.selected && areaEditing) &&
     !annotations.picking &&
     !navigation.picking &&
     !sectionEditing &&
-    !selectedAnnotation &&
     !selectedPhoto &&
     !featureMove &&
     !measurement.active &&
     !boxSelecting));
+  // follow.blocked also covers a paused drawing's retained editing state.
+  // It controls camera following, not whether an on-screen task is open.
+  const focusLockControl = focusLockVisibility(focusLock.locked, panel, {
+    drawing: tracks.drawing,
+    areaDrawing: areas.drawing,
+    areaEditing: !!areas.selected && areaEditing,
+    routeEditor: !!editor.session,
+    measurement: measurement.active,
+    survey: survey.active,
+    markerPicking: !!annotations.picking,
+    routePicking: navigation.picking !== null,
+    movingFeature: !!featureMove,
+    quickAdd: !!quickAdd,
+    sectionEditing,
+    navigation: guidance.active,
+    recording: recorder.record.phase === 'recording' || recorder.record.phase === 'paused',
+    comparison: !!comparison,
+    boxSelection: boxSelecting,
+    sectionList: sectionListOpen,
+    annotationDetails: panel === 'annotations' && !!selectedAnnotation,
+    photoDetails: !!selectedPhoto,
+    rally: rallyMode && !!navigation.route,
+    routeCard: routeVisible && !routeChild,
+    navigationTarget: !!navigationTarget,
+    sharing: !!shareTarget,
+    sourcePicker: favoriteSourceOpen,
+  });
   const switchFromSection = () => {
     if (survey.picking || survey.dragging || survey.markerTarget) return false;
     if (survey.active) survey.close();
@@ -1299,6 +1384,7 @@ export default function Home() {
     <PlaceSearch
       onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
       center={mapCenter}
+      position={displayedFix}
       zoom={view.zoom}
       onOpen={() => {
         setPanel(null);
@@ -1316,6 +1402,111 @@ export default function Home() {
       }}
     />
   );
+  const renderMarkerWorkspace = (onClose: () => void) => selectedAnnotation && !annotations.picking ? (
+    <AnnotationWorkspace
+      key={`annotation-workspace:${selectedAnnotation.id}`}
+      state={annotations}
+      shownItem={selectedAnnotation}
+      tab={annotationTab}
+      onTab={setAnnotationTab}
+      onAddModel={(kind, coordinates) => annotations.addAndEdit(kind, coordinates)}
+      dragging={!!featureMove || !!annotationPreview}
+      terrainStatus={modelTerrainStatus}
+      photos={photosForMarker(photos.items, selectedAnnotation.id)}
+      onCapture={markerCamera.capture}
+      onImport={markerCamera.importPhoto}
+      onAdjust={() => {
+        setAnnotationTab('position');
+        setAdjustingPinId(selectedAnnotation.id);
+        setPanel(null);
+        position.free();
+        follow.pause();
+        if (!comparison)
+          map.current?.focusPoint(selectedAnnotation.coordinates, map.current?.cameraSnapshot()?.zoom ?? view.zoom);
+      }}
+      cameraBusy={markerCamera.busy}
+      cameraStatus={markerCamera.markerId === selectedAnnotation.id ? markerCamera.status : ''}
+      cameraRetry={markerCamera.markerId === selectedAnnotation.id && markerCamera.retry}
+      onCameraRetry={markerCamera.onRetry}
+      onPhoto={(id) => {
+        setPhotoGroup(photosForMarker(photos.items, selectedAnnotation.id).map(p => p.id));
+        photos.setSelected(id);
+        setPanel(null);
+      }}
+      onClose={onClose}
+      onShare={(item) => {
+        if (item.kind === 'pin') {
+          openPlaceShareDialog({ place: annotationSharePlace(item), markerId: item.id });
+          return;
+        }
+        setCollectionOutputKey(`annotation:${item.id}`);
+        setPanel('favorites');
+      }}
+      onNavigate={(item) => {
+        navigation.clear();
+        navigation.place('end', {
+          name: item.name || '标记位置',
+          coordinates: item.coordinates,
+        });
+        setPanel('route');
+      }}
+    />
+  ) : null;
+  const routeEditorDialog = editor.session && unsavedExit ? <RouteUnsavedDialog
+    onSave={() => { if (saveEditor()) comparisonExitGate.resolve(true); }}
+    onDiscard={() => { closeEditor(); comparisonExitGate.resolve(true); }}
+    onContinue={() => { comparisonExitGate.resolve(false); setUnsavedExit(false); }}
+  /> : null;
+  const routeEditorOverlay = editor.session ? <>
+    <RouteEditToolbar
+      session={editor.session}
+      snapName={featureMove?.snappedNode ? tracks.saved.find(t => t.id === featureMove.snappedNode!.trackId)?.name : undefined}
+      snapping={tracks.snapping}
+      roadSnapping={tracks.roadSnapping}
+      riverSnapping={tracks.riverSnapping}
+      onSnapping={() => tracks.setSnapping(!tracks.snapping)}
+      onRoadSnapping={() => tracks.setRoadSnapping(!tracks.roadSnapping)}
+      onRiverSnapping={() => tracks.setRiverSnapping(!tracks.riverSnapping)}
+      error={editor.error}
+      onName={name => editor.change(value => renameEditRoute(value, name))}
+      onBack={backEditor}
+      onSave={name => saveEditor(false, name)}
+      onSaveCopy={name => saveEditor(true, name)}
+      onAdd={addEditPoint}
+      selectedPoints={routeNodeSelection}
+      boxMode={routeNodeBox ? routeNodeBoxMode : null}
+      onSelectionDetails={detail => { editor.change(session => editSelectionDetails(session, routeNodeSelection, detail)); routeDisplay.update({ mode: 'original' }); }}
+      onPointMarker={input => routeNodeSelection.length === 1 && editor.change(session => addEditMarker(session, routeNodeSelection[0], input, crypto.randomUUID(), map.current?.groundElevation(routeNodeSelection[0]) ?? null))}
+      onSetEnd={() => { if (routeNodeSelection.length === 1) editor.change(session => setEditEnd(session, routeNodeSelection[0])); }}
+      onClearSelection={() => { setRouteNodeSelection([]); editor.change(session => ({ ...session, selected: null })); }}
+      onRemove={() => {
+        if (!routeNodeSelection.length) editor.change(removeEditNode);
+        else if (editor.change(session => removeEditNodes(session, routeNodeSelection))) setRouteNodeSelection([]);
+      }}
+      onSelectionMode={mode => {
+        map.current?.stop();
+        if (mode) setRouteNodeBoxMode(mode);
+        setRouteNodeBox(mode !== null);
+      }}
+      onBranch={() => editor.change(toggleEditBranch)}
+      onUndo={() => editor.change(undoRouteEdit)}
+      onStyle={style => { editor.change(value => styleRouteEdit(value, style)); routeDisplay.update({ mode: 'original' }); }}
+    />
+    {!comparison && (routeNodeBox || !!routeNodeSelection.length) && <TrackNodeBoxSelect
+      active={routeNodeBox}
+      mode={routeNodeBoxMode}
+      pointSize={normalizeTrackStyle(editor.session.track.style).pointSize ?? 8}
+      points={editor.session.track.segments.flat()}
+      selected={routeNodeSelection}
+      project={point => map.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point, featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
+      onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
+      onTwoFingerEnd={() => map.current?.finishPanZoomGesture()}
+      onChange={points => { setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
+      onExit={() => setRouteNodeBox(false)}
+    />}
+    {!comparison && routeEditorDialog}
+  </> : null;
+
   return (
     <TextSuggestions.Provider value={suggestionValues}>
       <CurrentMapContext.Provider value={() => map.current?.shareMapStyle() ?? null}>
@@ -1326,6 +1517,7 @@ export default function Home() {
         data-rally={rallyMode && !!navigation.route}
         data-guiding={guidance.active && !rallyMode}
         data-focus-locked={focusLock.locked}
+        data-focus-lock-blockers={focusLockControl.reasons.join(' ')}
         data-measuring={measurement.active}
         data-panel={panel ?? 'map'}
         data-section={sectionEditing}
@@ -1438,22 +1630,54 @@ export default function Home() {
           }
         }}
       >
-        {(focusLock.locked || (panel === null && (!follow.blocked || (tracks.drawing && tracks.editing)) && !rallyMode && !quickAdd && !routeChild && !selectedPhoto && !navigationTarget && !shareTarget && (!routeVisible || routeWindow === 'card'))) && <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
-          disabled={!focusLock.locked && ((follow.blocked && !(tracks.drawing && tracks.editing)) || rallyMode)} onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>}
+        {focusLockControl.visible && (
+          <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
+            onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>
+        )}
         {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
         <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
+          editorOverlay={comparison ? routeEditorOverlay : null}
+          plannedRoute={panel === 'route' && navigation.route && !editor.session ? {
+            name: navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }),
+            onRename: name => !!navigation.route && favorites.rename(navigation.route, name) && navigation.rename(name),
+            visible: navigation.visible,
+            onToggleVisible: () => navigation.setVisible(!navigation.visible),
+            distance: navigation.route.distance,
+            duration: navigation.route.duration,
+            onEdit: editPlannedPoints,
+            onShow: () => map.current?.fitCollection(navigation.route!.coordinates, { top: 80, right: 32, bottom: 150, left: 24 }),
+            onDetails: () => setComparison(null),
+            onClose: () => setPanel(null),
+          } : null}
+          editorDialog={comparison ? routeEditorDialog : null}
+          editorPaneOverlay={(_, paneMap) => (routeNodeBox || !!routeNodeSelection.length) && editor.session && <div className="map-comparison-edit-overlay">
+            <TrackNodeBoxSelect
+              active={routeNodeBox}
+              mode={routeNodeBoxMode}
+              pointSize={normalizeTrackStyle(editor.session.track.style).pointSize ?? 8}
+              points={editor.session.track.segments.flat()}
+              selected={routeNodeSelection}
+              project={point => paneMap.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point, featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
+              onTwoFingerMove={(previous, next) => paneMap.current?.panZoomGesture(previous, next)}
+              onTwoFingerEnd={() => paneMap.current?.finishPanZoomGesture()}
+              onChange={points => { setRouteNodeSelection(points); editor.change(session => ({ ...session, selected: points.length === 1 ? points[0] : null })); }}
+              onExit={() => setRouteNodeBox(false)}
+            />
+          </div>}
           onDrawingInput={(index, event) => comparisonDrawings[index].current?.input(event)}
           drawingOverlay={(index, mapRef) => (
             <div className="map-comparison-drawing">
               <TrackDrawing
                 ref={comparisonDrawings[index]}
-                enabled={tracks.drawing}
-                distanceSegments={tracks.draft}
+                committedSegments={editor.session?.track.segments}
+                waitForCommit={(receipt, done) => mapRef.current?.waitForTrackRender(receipt, done) ?? (() => {})}
+                enabled={branchEditing || tracks.drawing}
+                distanceSegments={branchEditing ? [editor.session!.track.segments[editor.session!.branch!]] : tracks.draft}
                 length={tracks.rodLength}
-                style={tracks.style}
+                style={branchEditing ? normalizeTrackStyle(editor.session!.track.style) : tracks.style}
                 mode="points"
-                anchor={tracks.anchor}
-                candidates={tracks.candidates}
+                anchor={branchEditing ? branchTip : tracks.anchor}
+                candidates={branchEditing ? branchCandidates : tracks.candidates}
                 snapping={tracks.snapping}
                 roadSnapping={tracks.roadSnapping || tracks.riverSnapping}
                 riverSnapping={tracks.riverSnapping}
@@ -1464,24 +1688,30 @@ export default function Home() {
                     status: 'loading', match: null,
                   }
                 }
-                lastVertex={tracks.draft.at(-1)?.at(-1) ?? null}
-                toScreen={(point) => mapRef.current?.toScreen(point) ?? null}
+                lastVertex={branchEditing ? branchTip : tracks.draft.at(-1)?.at(-1) ?? null}
+                toScreen={drawingMapProjection(mapRef)}
                 getSnapViewport={() => mapRef.current?.getSnapViewport() ?? null}
                 magnify={(canvas, point) => mapRef.current?.magnify(canvas, point) ?? (() => {})}
-                onAnchor={tracks.setAnchor}
-                onVertex={tracks.addVertex}
+                onAnchor={branchEditing ? () => {} : tracks.setAnchor}
+                onVertex={branchEditing ? drawBranchVertex : tracks.addVertex}
                 toCoordinate={(point) => mapRef.current?.toCoordinate(point) ?? null}
-                onStroke={tracks.addStroke}
+                onStroke={branchEditing ? () => {} : tracks.addStroke}
               />
             </div>
           )}
-          onClose={() => setComparison(null)} onUse={choice => {
+          onClose={() => requestComparisonExit()} onUse={choice => requestComparisonExit(() => {
           mapSources.select(choice.source?.id ?? '');
           map.current?.setTerrainMode(choice.settings.terrain);
           setLayers(choice.settings);
           setComparison(null);
-        }} operations={{
-          onMark: coordinates => annotations.add('pin', coordinates),
+        })} markerEditor={renderMarkerWorkspace} operations={{
+          onMark: (coordinates, kind) => annotations.add(kind, coordinates),
+          onOutline: () => { setComparison(null); startArea(); },
+          direction: position.direction,
+          directionStatus: position.direction === 'motion' ? motionHeading.status : position.directionError,
+          onDirectionChange: changeMapDirection,
+          following: follow.following && !follow.waiting && !position.locationError && canFollow(cameraFix),
+          onToggleFollowing: toggleMapFollowing,
           onDraw: () => { tracks.start(); setPanel(null); },
           onUndo: tracks.undo,
           onSave: () => tracks.save('', true),
@@ -1496,12 +1726,22 @@ export default function Home() {
           riverSnapping: tracks.riverSnapping,
           onRiverSnappingChange: tracks.setRiverSnapping,
           error: tracks.error || annotations.error,
-          markerError: annotations.error,
           style: tracks.style,
           onStyle: tracks.setStyle,
-          marker: selectedAnnotation,
           onSelectMarker: id => annotations.items.some(item => item.id === id) && annotations.select(id),
-          onUpdateMarker: annotations.update,
+          selectedTrack: !editor.session && selectedTrack ? { id: selectedTrack.id, name: selectedTrack.name } : null,
+          editingTrack: !!editor.session,
+          onBackEditor: backEditor,
+          onEditSelectedTrack: () => {
+            const track = tracks.saved.find(item => item.id === tracks.selectedId);
+            if (track) beginRouteEdit(track);
+          },
+          onDeleteSelectedTrack: () => {
+            const track = tracks.saved.find(item => item.id === tracks.selectedId);
+            if (!track || !tracks.remove(track.id)) return false;
+            setTrackLinePoint(null);
+            return true;
+          },
         }}>
         <TerrainMap
           mapSource={mapSources.source}
@@ -1529,6 +1769,7 @@ export default function Home() {
           onAnchor={setAnchor}
           onCenter={setMapCenter}
           onSatellite={setSatellite}
+          onCloud={setCloudState}
           onGeology={setGeology}
           weather={weather.data}
           hourIndex={hourIndex}
@@ -1589,6 +1830,7 @@ export default function Home() {
             photos.setSelected(ids[0]);
           }}
           position={displayedFix}
+          positionHeading={markerHeading}
           onBrowse={userBrowse}
           onManualRotate={position.free}
           annotations={mapAnnotations}
@@ -1616,12 +1858,14 @@ export default function Home() {
             } else if (!editor.session) openRoute(id);
           }}
           onRouteSelect={() => {
-            if (!navigation.route || focusLock.locked || editor.session || !switchFromSection()) return;
-            tracks.select(null);
-            annotations.select(null);
-            areas.select(null);
-            setTrackLinePoint(null);
-            setPanel('route');
+            if (!navigation.route || focusLock.locked || !switchFromSection()) return;
+            requestComparisonExit(() => {
+              tracks.select(null);
+              annotations.select(null);
+              areas.select(null);
+              setTrackLinePoint(null);
+              setPanel('route');
+            });
           }}
           onTrackLineSelect={point => { if (!focusLock.locked && switchFromSection()) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
@@ -1660,6 +1904,7 @@ export default function Home() {
           onDragBegin={(target) => {
             if (!switchFromSection()) return;
             position.free();
+            follow.pause();
             tracks.finish();
             if (target.kind === 'track') {
               tracks.select(target.node.trackId);
@@ -1671,11 +1916,12 @@ export default function Home() {
               tracks.select(null);
             } else {
               if (!annotations.select(target.id)) return;
-              annotations.beginEdit(target.id);
-              setAnnotationTab('position');
+              if (annotations.edit && !annotations.saveEdit()) return;
+              setAnnotationTab('basic');
+              setAdjustingPinId(null);
               tracks.select(null);
             }
-            setPanel(target.kind === 'annotation' ? 'annotations' : null);
+            setPanel(null);
           }}
           onDragPreview={setFeatureMove}
           onDragCommit={({ target, coordinate, snappedNode }) => {
@@ -1688,9 +1934,14 @@ export default function Home() {
                   snappedNode
                     ? tracks.saved.find((t) => t.id === snappedNode.trackId)
                     : undefined,
+                  target.node.controlMove,
                 ),
               );
-              if (moved) setRouteNodeSelection(points => moveSelectedPoints(points,target.node.coordinate,coordinate));
+              if (moved) setRouteNodeSelection(points => {
+                if (!target.node.controlMove) return moveSelectedPoints(points, target.node.coordinate, coordinate);
+                const movedPoints = visibleNodeMoves(target.node.controlMove, coordinate);
+                return points.map(point => movedPoints.get(point.join(',')) ?? point);
+              });
               setFeatureMove(null);
             } else if (target.kind === 'track') {
               if (tracks.moveNode(target.node, coordinate))
@@ -1699,7 +1950,7 @@ export default function Home() {
               areas.move(target.id, target.index, coordinate);
             else {
               annotations.move(target.id, coordinate);
-              setPanel('annotations');
+              setPanel(null);
             }
           }}
           onAnnotationSelect={(id) => {
@@ -1798,10 +2049,8 @@ export default function Home() {
               return;
             }
             if (annotations.picking) {
-              const kind = annotations.picking;
-              if (annotations.place(coordinates))
-                map.current?.focusPoint(coordinates, kind === 'pin' ? 15 : 18);
-              else annotations.setPicking(null);
+              // Placing a marker does not request a new camera or detail level.
+              if (!annotations.place(coordinates)) annotations.setPicking(null);
               setPanel('annotations');
               return;
             }
@@ -1826,9 +2075,9 @@ export default function Home() {
           !navigationTarget &&
           !shareTarget && (
             <>
+              {(routeWindow === 'card' || routeWindow === 'display') && !guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={routeWindow === 'display' ? routeDisplay.target ?? railTrack : railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} point={routeProfilePoint} />}
               {routeWindow === 'card' && (
                 <>
-                {!guidance.active && !measurement.active && !sectionEditing && <SelectedRouteInfo track={railTrack} preferences={routeDisplay.preferences} reversed={routeReversed} point={routeProfilePoint} />}
                 <RouteCard
                   key={railTrack.id}
                   track={railTrack}
@@ -1836,6 +2085,10 @@ export default function Home() {
                   point={linePoint}
                   alternative={activeAlternative}
                   error={savedNavigationError || tracks.error}
+                  onLocateGap={savedNavigationGap ? () => {
+                    userBrowse();
+                    map.current?.focusRouteGap(savedNavigationGap);
+                  } : undefined}
                   onClearError={() => {
                     setSavedNavigationError('');
                     map.current?.clearRouteGap();
@@ -1865,6 +2118,7 @@ export default function Home() {
                           tracks.saved,
                           activeAlternative,
                           routeReversed,
+                          true,
                         ),
                       );
                     } catch (e) {
@@ -1875,13 +2129,9 @@ export default function Home() {
                           : '路线终点未指定，已定位末端候选节点。请进入线路编辑，点选节点并设为终点。');
                         return;
                       }
-                      if (e instanceof Error && e.message.includes('不相接的线段')) {
-                        const gap = routeGap(railTrack);
-                        if (gap) {
-                          map.current?.focusRouteGap(gap);
-                          setSavedNavigationError(`${e.message} 已定位约${Math.max(0.1, Math.round(gap.distance * 10) / 10)}米缺口，红色虚线标出两端。`);
-                          return;
-                        }
+                      if (e instanceof RouteDisconnectedError) {
+                        setDisconnectedNavigationError(e);
+                        return;
                       }
                       setSavedNavigationError(
                         e instanceof Error ? e.message : '无法导航',
@@ -1925,6 +2175,9 @@ export default function Home() {
                   markers={annotations.items}
                   photos={photos.items}
                   onBack={() => setRouteWindow('card')}
+                  onHide={() => {
+                    tracks.showTrack(railTrack.id, !!railTrack.hidden);
+                  }}
                   onShare={() => shareTrackById(railTrack.id)}
                   onPointShare={(place) => openPlaceShareDialog({ place })}
                   deleteError={tracks.error}
@@ -1974,68 +2227,7 @@ export default function Home() {
               )}
             </>
           )}
-        {editor.session && (
-          <RouteEditToolbar
-            session={editor.session}
-            snapName={
-              featureMove?.snappedNode
-                ? tracks.saved.find(
-                    (t) => t.id === featureMove.snappedNode!.trackId,
-                  )?.name
-                : undefined
-            }
-            snapping={tracks.snapping}
-            roadSnapping={tracks.roadSnapping}
-            riverSnapping={tracks.riverSnapping}
-            onSnapping={() => tracks.setSnapping(!tracks.snapping)}
-            onRoadSnapping={() => tracks.setRoadSnapping(!tracks.roadSnapping)}
-            onRiverSnapping={() => tracks.setRiverSnapping(!tracks.riverSnapping)}
-            error={editor.error}
-            onBack={backEditor}
-            onSave={() => saveEditor()}
-            onSaveCopy={() => saveEditor(true)}
-            onAdd={addEditPoint}
-            selectedPoints={routeNodeSelection}
-            boxMode={routeNodeBox ? routeNodeBoxMode : null}
-            onSelectionDetails={detail => {editor.change(session => editSelectionDetails(session, routeNodeSelection, detail)); routeDisplay.update({mode:'original'});}}
-            onPointMarker={input => routeNodeSelection.length === 1 && editor.change(session => addEditMarker(session,routeNodeSelection[0],input,crypto.randomUUID(),map.current?.groundElevation(routeNodeSelection[0]) ?? null))}
-            onSetEnd={() => {if(routeNodeSelection.length===1)editor.change(session=>setEditEnd(session,routeNodeSelection[0]));}}
-            onClearSelection={() => {setRouteNodeSelection([]);editor.change(session => ({...session, selected:null}));}}
-            onRemove={() => {
-              if (!routeNodeSelection.length) editor.change(removeEditNode);
-              else if (editor.change(session => removeEditNodes(session, routeNodeSelection))) setRouteNodeSelection([]);
-            }}
-            onSelectionMode={mode => {
-              map.current?.stop();
-              if (mode) setRouteNodeBoxMode(mode);
-              setRouteNodeBox(mode !== null);
-            }}
-            onBranch={() => editor.change(toggleEditBranch)}
-            onUndo={() => editor.change(undoRouteEdit)}
-            onStyle={(style) => { editor.change((value) => styleRouteEdit(value, style)); routeDisplay.update({ mode: 'original' }); }}
-          />
-        )}
-        {editor.session && (routeNodeBox || !!routeNodeSelection.length) && (
-          <TrackNodeBoxSelect
-            active={routeNodeBox}
-            mode={routeNodeBoxMode}
-            pointSize={normalizeTrackStyle(editor.session.track.style).pointSize ?? 8}
-            points={editor.session.track.segments.flat()}
-            selected={routeNodeSelection}
-            project={(point) => map.current?.toScreen(featureMove?.target.kind === 'track' && equalCoordinate(point,featureMove.target.node.coordinate) ? featureMove.coordinate : point) ?? null}
-            onTwoFingerMove={(previous, next) => map.current?.panZoomGesture(previous, next)}
-            onTwoFingerEnd={() => map.current?.finishPanZoomGesture()}
-            onChange={points => {setRouteNodeSelection(points);editor.change(session => ({...session,selected:points.length === 1 ? points[0] : null}));}}
-            onExit={() => setRouteNodeBox(false)}
-          />
-        )}
-        {editor.session && unsavedExit && (
-          <RouteUnsavedDialog
-            onSave={() => saveEditor()}
-            onDiscard={closeEditor}
-            onContinue={() => setUnsavedExit(false)}
-          />
-        )}
+        {!comparison && routeEditorOverlay}
         <FreeMapCredit id={mapSources.selected} />
         {quickAdd && (
           <QuickAdd
@@ -2055,9 +2247,11 @@ export default function Home() {
             }}
           />
         )}
-        {showCenterCursor && <CenterReticle />}
+        <CenterReticle />
         <TrackDrawing
           ref={drawing}
+          committedSegments={editor.session?.track.segments}
+          waitForCommit={(receipt, done) => map.current?.waitForTrackRender(receipt, done) ?? (() => {})}
           distanceSegments={branchEditing ? [editor.session!.track.segments[editor.session!.branch!]] : tracks.draft}
           enabled={
             !comparison && (branchEditing || tracks.drawing) &&
@@ -2134,20 +2328,6 @@ export default function Home() {
               key={areas.selected ?? 'draft-area'}
               state={areas}
               onHide={() => setAreaEditing(false)}
-              onExtrude={(height) => {
-                const area = areas.items.find((a) => a.id === areas.selected);
-                if (!area) return '请先闭合轮廓';
-                try {
-                  if (!annotations.addOutline(outlineModel(area, height)))
-                    return '轮廓模型保存失败，请检查标记数量和存储空间';
-                  areas.update(area.id, { visible: false });
-                  areas.select(null);
-                  setPanel('annotations');
-                  return null;
-                } catch (e) {
-                  return e instanceof Error ? e.message : '拉伸失败';
-                }
-              }}
               onFinish={() => {
                 const first = areas.draft[0],
                   last = areas.draft.at(-1),
@@ -2418,7 +2598,7 @@ export default function Home() {
                   openRouteShareDialog(
                     sharePlanned(
                       s.route,
-                      '当前导航全程',
+                      s.route.name?.trim() || '当前导航全程',
                       s.departureLength > 0,
                     ),
                   );
@@ -2426,12 +2606,7 @@ export default function Home() {
               guidance={guidance}
               following={follow.following}
               onStop={stopNavigation}
-              onFollow={() => {
-                cancelStartupCamera();
-                follow.resume();
-                if (!position.watching || position.locationError)
-                  position.locate();
-              }}
+              onFollow={resumeNavigation}
               onShow={() => {
                 if (guidance.rejoin) {
                   follow.pause();
@@ -2496,7 +2671,7 @@ export default function Home() {
               }}
             />
           )}
-        {(position.directionError ||
+        {(position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
           !panel && (
@@ -2504,7 +2679,7 @@ export default function Home() {
               <span>
                 {position.locationError ||
                   position.directionError ||
-                  (position.locating ? '正在获取当前位置…' : '')}
+                  (position.locating ? '正在获取当前位置…' : displayedFix?.provider === 'ip' ? `${position.fallbackReason || '系统定位不可用'}，已用IP估计位置；可能偏离实际地点。${position.direction === 'motion' ? 'IP定位不能提供运动朝向。' : ''}` : position.direction === 'motion' ? motionHeading.status : '')}
               </span>
               <button
                 aria-label="收起定位提示"
@@ -2539,6 +2714,7 @@ export default function Home() {
           }}
           satelliteDate={satellite.date}
           satelliteStatus={satellite.status}
+          cloudState={cloudState}
           mapStatus={mapStatus}
         />
         {boxSelecting && (
@@ -2578,22 +2754,32 @@ export default function Home() {
         )}
         <MapActions
           boxSelecting={boxSelecting}
-          markControl={showCenterCursor ? <CenterMarkButton map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
+          favoriteControl={panel === null && !comparison && !focusLock.locked && !editor.session && !featureMove && !areas.drawing && !(areas.selected && areaEditing) && !tracks.drawing && !measurement.active && !sectionEditing ? <FavoriteSourceSwitcher
+            choices={sourceChoices} currentId={favoriteSourceId} onOpenChange={setFavoriteSourceOpen}
+            onSelect={id => {
+              const choice = sourceChoices.find(item => item.id === id);
+              if (!choice) return;
+              mapSources.select(choice.source?.id ?? '');
+              map.current?.setTerrainMode(choice.settings.terrain);
+              setLayers(choice.settings);
+            }}
+            onManage={() => { setSourcesParent('layers'); setPanel('sources'); }}
+          /> : undefined}
+          markControl={canAddCenterMarker ? <CenterMarkButton map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
             if (focusLock.locked) focusLock.toggle();
             map.current?.stop();
             position.free();
             follow.pause();
-            const screen = map.current?.toScreen(coordinates);
-            if (!screen) return;
             tracks.select(null);
             areas.select(null);
             setProfileOpen(false);
-            setQuickAdd({ coordinate: coordinates, point: screen, fromCenter: true });
+            if (annotations.add('pin', coordinates)) {
+              setAnnotationTab('basic');
+              setPanel('annotations');
+            }
           }} /> : undefined}
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
           layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
-          fix={displayedFix}
-          showCoordinates={routeDisplay.preferences.coordinates && !panel && !quickAdd && !tracks.editing && !editor.session}
           viewControl={
             <CameraGizmo
               view={view}
@@ -2650,7 +2836,8 @@ export default function Home() {
           }
           networkMode={position.mode === 'network'}
           onNetwork={() => {
-            userBrowse();
+            cancelStartupCamera();
+            follow.resume();
             position.changeMode(
               position.mode === 'network' ? 'auto' : 'network',
               (fix) => {
@@ -2670,24 +2857,13 @@ export default function Home() {
             position.north();
             map.current?.north();
           }}
-          onLocate={() => {
-            cancelStartupCamera();
-            if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
-            focusLock.adoptMode(!follow.following, position.direction);
-            if (follow.following) { follow.pause(); map.current?.stop(); }
-            else { follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
-          }}
+          onLocate={toggleMapFollowing}
           onLocateAndFollow={locateAndFocus}
           directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
-          onDirection={direction => {
-            cancelStartupCamera();
-            focusLock.adoptMode(direction === 'motion' || follow.following,direction);
-            if(direction==='device') void position.device();
-            else if(direction==='motion') { position.motion(); follow.resume(); if(recorder.record.phase !== 'recording')position.locate(); }
-            else if(direction==='north') { position.north(); map.current?.north(); }
-            else position.free();
-          }}
+          onDirection={changeMapDirection}
           following={follow.following}
+          tracking={follow.following && !follow.waiting && !position.locationError && canFollow(cameraFix)}
+          locationError={position.locationError}
           followBlocked={follow.blocked}
           locating={
             (follow.following && follow.waiting) ||
@@ -2711,14 +2887,12 @@ export default function Home() {
           }}
         />
         {panel === null &&
-          !measurement.active &&
           !survey.active &&
           !sectionEditing &&
           !tracks.drawing &&
           !editor.session &&
           !quickAdd &&
           !annotations.picking &&
-          !selectedAnnotation &&
           !areas.drawing &&
           !areas.selected &&
           navigation.picking === null && (
@@ -2730,53 +2904,7 @@ export default function Home() {
         {selectedAnnotation &&
           (panel === 'annotations' || annotations.selectionRequest) &&
           !annotations.picking && (
-            <AnnotationWorkspace
-              key={`annotation-workspace:${selectedAnnotation.id}`}
-              state={annotations}
-              shownItem={selectedAnnotation}
-              tab={annotationTab}
-              onTab={(tab) => {
-                setAnnotationTab(tab);
-                if (tab === 'position')
-                  map.current?.focusPoint(
-                    selectedAnnotation.coordinates,
-                    annotationViewZoom(selectedAnnotation),
-                  );
-              }}
-              dragging={!!featureMove || !!annotationPreview}
-              terrainStatus={modelTerrainStatus}
-              photos={photosForMarker(photos.items, selectedAnnotation.id)}
-              onCapture={markerCamera.capture}
-              onImport={markerCamera.importPhoto}
-              onAdjust={() => {
-                setAnnotationTab('position');
-                setAdjustingPinId(selectedAnnotation.id);
-                setPanel(null);
-                position.free();
-                follow.pause();
-                map.current?.focusPoint(selectedAnnotation.coordinates, annotationViewZoom(selectedAnnotation));
-              }}
-              cameraBusy={markerCamera.busy}
-              cameraStatus={
-                markerCamera.markerId === selectedAnnotation.id
-                  ? markerCamera.status
-                  : ''
-              }
-              cameraRetry={
-                markerCamera.markerId === selectedAnnotation.id &&
-                markerCamera.retry
-              }
-              onCameraRetry={markerCamera.onRetry}
-              onPhoto={(id) => {
-                setPhotoGroup(
-                  photosForMarker(photos.items, selectedAnnotation.id).map(
-                    (p) => p.id,
-                  ),
-                );
-                photos.setSelected(id);
-                setPanel(null);
-              }}
-              onClose={() => {
+            renderMarkerWorkspace(() => {
                 setAdjustingPinId(null);
                 if (annotations.select(null)) {
                   setPanel(null);
@@ -2784,26 +2912,10 @@ export default function Home() {
                   setActiveTrackNode(null);
                   setTrackLinePoint(null);
                 }
-              }}
-              onShare={(item) => {
-                if (item.kind === 'pin') {
-                  openPlaceShareDialog({ place: annotationSharePlace(item), markerId: item.id });
-                  return;
-                }
-                setCollectionOutputKey(`annotation:${item.id}`);
-                setPanel('favorites');
-              }}
-              onNavigate={(item) => {
-                navigation.clear();
-                navigation.place('end', {
-                  name: item.name || '标记位置',
-                  coordinates: item.coordinates,
-                });
-                setPanel('route');
-              }}
-            />
+              })
           )}
         <ControlDock
+          onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}
           onCompare={() => {
             const camera = map.current?.cameraSnapshot();
             if (!camera) return;
@@ -2852,6 +2964,13 @@ export default function Home() {
           }
           drawingActive={panel === null && tracks.drawing}
           title={panel === 'sources' ? sourcesNavigation?.title : undefined}
+          titleContent={panel === 'route' && navigation.route ? <RouteNameInput
+            key={navigation.route.createdAt}
+            name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
+            onSave={name => !!navigation.route && favorites.rename(navigation.route, name) && navigation.rename(name)}
+          /> : undefined}
+          onHide={panel === 'route' && navigation.route ? () => navigation.setVisible(!navigation.visible) : undefined}
+          hideLabel={navigation.visible ? '隐藏' : '显示'}
           back={
             selectedAnnotation && panel === 'route'
               ? {
@@ -3071,7 +3190,7 @@ export default function Home() {
                 setPanel(null);
               }}
               onLocate={(coordinates) => {
-                map.current?.focusPoint(coordinates, 18);
+                map.current?.focusPoint(coordinates);
                 setPanel(null);
               }}
             />
@@ -3165,7 +3284,6 @@ export default function Home() {
                 setProfileOpen(false);
                 map.current?.focusPoint(
                   item.coordinates,
-                  annotationViewZoom(item),
                 );
                 setPanel('annotations');
               }}
@@ -3390,7 +3508,6 @@ export default function Home() {
               onLocate={() =>
                 map.current?.focusPoint(
                   selectedAnnotation.coordinates,
-                  annotationViewZoom(selectedAnnotation),
                 )
               }
               error={annotations.error}

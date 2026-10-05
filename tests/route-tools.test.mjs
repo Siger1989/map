@@ -207,6 +207,7 @@ test('magnifier uses actual CSS canvas dimensions even with a zero-height wrappe
 });
 test('location layer contains a closed accuracy polygon and removes location data when cleared', async () => {
   const { PositionLayer } = await compile('modules/position/PositionLayer.ts');
+  const { positionArrowImage } = await compile('modules/position/positionArrow.ts');
   const sources = {},
     layers = [];
   let data;
@@ -216,12 +217,33 @@ test('location layer contains a closed accuracy polygon and removes location dat
     addLayer: (l) => layers.push(l),
     getStyle: () => ({ layers }),
     moveLayer() {},
+    hasImage: () => false,
+    addImage() {},
   };
   const layer = new PositionLayer(map);
   layer.sync({ coordinates: a, accuracy: 20, timestamp: 1 });
   const ring = data.features[0].geometry.coordinates[0];
   assert.deepEqual(ring[0], ring.at(-1));
   assert.deepEqual(data.features[1].geometry.coordinates, a);
+  layer.sync({ coordinates: a, accuracy: 20, timestamp: 1 }, 450);
+  assert.equal(data.features[1].properties.heading, 90);
+  const arrow = layers.find(value => value.id === 'position-arrow');
+  assert.equal(arrow.layout['icon-rotation-alignment'], 'map');
+  assert.equal(arrow.layout['icon-pitch-alignment'], 'viewport');
+  const dot = layers.find(value => value.id === 'position-dot');
+  assert.equal(dot.paint['circle-color'], '#cbd2cf');
+  assert.equal(dot.paint['circle-stroke-color'], '#ffffff');
+  assert.deepEqual(dot.filter, ['all', ['==', ['geometry-type'], 'Point'], ['!', ['has', 'heading']]]);
+  assert.deepEqual(arrow.filter, ['all', ['==', ['geometry-type'], 'Point'], ['has', 'heading']]);
+  const arrowImage = positionArrowImage();
+  assert.deepEqual([...arrowImage.data.slice((20 * arrowImage.width + 18) * 4, (20 * arrowImage.width + 18) * 4 + 4)], [203, 210, 207, 255]);
+  assert.deepEqual([...arrowImage.data.slice((4 * arrowImage.width + 18) * 4, (4 * arrowImage.width + 18) * 4 + 4)], [255, 255, 255, 255]);
+  const accuracy = layers.find(value => value.id === 'position-accuracy');
+  assert.equal(accuracy.paint['fill-color'], '#cbd2cf');
+  const ipLabel = layers.find(value => value.id === 'position-ip-label');
+  assert.equal(ipLabel.paint['text-color'], '#cbd2cf');
+  layer.sync({ coordinates: a, accuracy: 20, timestamp: 1 }, null);
+  assert.equal('heading' in data.features[1].properties, false);
   const cleaned = Object.fromEntries(
     Object.entries(sources).map(([n, { setData, ...source }]) => [n, source]),
   );

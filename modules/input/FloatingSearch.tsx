@@ -11,10 +11,12 @@ import './suggestions.css';
 export function FloatingSearch({
   anchor,
   owner,
+  scrollable = false,
   children,
 }: {
   anchor: HTMLElement | null;
   owner: string;
+  scrollable?: boolean;
   children: ReactNode;
 }) {
   const [style, setStyle] = useState<CSSProperties | null>(null);
@@ -26,12 +28,16 @@ export function FloatingSearch({
     update();
     return observeSearchViewport(update);
   }, [anchor]);
+  const popupStyle = style && scrollable
+    ? { ...style, height: style.maxHeight, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }
+    : style;
   return style
     ? createPortal(
         <div
           className="floating-search suggestion-surface"
-          style={style}
+          style={popupStyle ?? undefined}
           data-search-owner={owner}
+          data-search-scroll={scrollable ? 'true' : undefined}
         >
           {children}
         </div>,

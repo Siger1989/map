@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>图源升级真实数据库检查</title>
+<button id="run">运行图源升级检查</button><pre id="result">仅在独立测试 origin 运行；已有数据库时停止</pre>
+<script type="module">
+import { ensureDefaultMaps, listMaps, removeMap } from '../modules/mapSources/storage.ts';
+import { parseDefaultSeedBundle } from '../modules/mapSources/defaultSeeds.ts';
+const source = (name) => ({name, attribution:'synthetic test',kind:'online',format:'XYZ', tiles:[`https://example.com/${name}/{z}/{x}/{y}.png`],scheme:'xyz',tileSize:256,minzoom:0,maxzoom:18,datum:'wgs84'});
+const check = (condition, message) => {if(!condition)throw Error(message);};
+document.querySelector('#run').onclick = async () => {
+  const result=document.querySelector('#result');result.textContent='运行中';
+  try {
+    check(location.port==='9181', '必须使用独立9181测试origin');
+    check(!(await indexedDB.databases()).some(db=>db.name==='shantu-map-sources'), '已有数据库，停止以保护数据');
+    const user={...source('user-preserved'),id:'fixture-user',bytes:300};
+    await new Promise((resolve,reject)=>{
+      const request=indexedDB.open('shantu-map-sources',2);
+      request.onupgradeneeded=()=>{request.result.createObjectStore('maps',{keyPath:'id'});request.result.createObjectStore('meta',{keyPath:'key'});};
+      request.onerror=()=>reject(Error('fixture open'));
+      request.onsuccess=()=>{
+        const db=request.result,tx=db.transaction(['maps','meta'],'readwrite');
+        tx.objectStore('maps').add(user);
+        tx.objectStore('meta').put({key:'default-map-sources-initialized',value:true});
+        tx.oncomplete=()=>{db.close();resolve();};tx.onabort=()=>reject(Error('fixture transaction'));
+      };
+    });
+    const bundle=parseDefaultSeedBundle({version:1,legacyMapCount:2,maps:[source('legacy-a'),source('legacy-b'),source('addition')]});
+    await Promise.all([ensureDefaultMaps(bundle),ensureDefaultMaps(bundle)]);
+    let maps=await listMaps();
+    check(maps.length===2 && maps.some(map=>map.id===user.id), '用户条目保留/新增去重失败');
+    const addition=maps.find(map=>map.name==='addition');
+    check(!!addition && !maps.some(map=>map.name.startsWith('legacy-')), '旧删除条目被恢复');
+    await removeMap(addition.id);
+    await ensureDefaultMaps(bundle);
+    maps=await listMaps();
+    check(maps.length===1 && maps[0].id===user.id, '新条目删除后被恢复');
+    result.textContent='PASS 原生 IndexedDB：旧标记升级只补新增、并发幂等、用户数据保留、已删除旧/新增图源不恢复';
+  } catch(error){result.textContent='FAIL '+error.message;}
+};
+</script></html>

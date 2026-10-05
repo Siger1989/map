@@ -23,6 +23,8 @@ import type { LayerSettings } from '../map/types';
 import { RasterDatumChoice } from './RasterDatumChoice';
 import { defaultRasterDatum } from './sourceDatum';
 import { SavedMapSources } from './SavedMapSources';
+import { FavoriteSourceStar } from './FavoriteSourceStar';
+import { builtinMapSourceFavoriteKey } from './favorites';
 import { parseOvmap } from './ovmap';
 import { existingMapIndexes } from './importReview';
 import { getMapSourcesSessionState, mapSourcesBrowseScrollToRestore, mapSourcesBrowseStepToRestore, rememberMapSourcesBrowseScroll, rememberMapSourcesBrowseStep, updateMapSourcesSessionState, type MapSourcesStep, type SourceCategory } from './sessionState';
@@ -245,9 +247,9 @@ export function MapSourcesPanel({
     <section ref={root} className="map-sources" data-step={step} data-category={category} aria-label="地图图源管理">
       {step === 'list' && <>
         <div className="map-source-tabs" role="group" aria-label="图源分类">
-          <button aria-pressed={category === 'builtin'} onClick={() => setCategory('builtin')}>内置</button>
-          <button aria-pressed={category === 'saved'} onClick={() => setCategory('saved')}>我的图源{sources.maps.length ? ` · ${sources.maps.length}` : ''}</button>
-          <button onClick={() => { setError(''); setStep('library'); }}>公共库</button>
+          <button data-group="builtin" aria-pressed={category === 'builtin'} onClick={() => setCategory('builtin')}>内置</button>
+          <button data-group="saved" aria-pressed={category === 'saved'} onClick={() => setCategory('saved')}>我的图源{sources.maps.length ? ` · ${sources.maps.length}` : ''}</button>
+          <button data-group="public" aria-pressed={category === 'library'} onClick={() => { setError(''); setCategory('library'); }}>公共库</button>
         </div>
         <p className="map-source-current">当前：{sources.source?.name ?? (settings?.satelliteProvider === 'tianditu' ? '天地图' : builtin === 'detail' ? 'Sentinel-2 2025' : builtin === 'latest' ? '最新云况' : '地形地图')}</p>
         <details className="map-source-settings"><summary>图源与地形署名</summary>
@@ -273,8 +275,8 @@ export function MapSourcesPanel({
                 ['latest', '最新云况'],
               ] as const
             ).map(([id, label]) => (
+              <div className="map-source-choice" key={id}>
               <button
-                key={id}
                 disabled={id === 'latest' && domestic}
                 title={
                   id === 'latest' && domestic
@@ -286,13 +288,15 @@ export function MapSourcesPanel({
               >
                 {label}
               </button>
+              <FavoriteSourceStar sourceKey={builtinMapSourceFavoriteKey(id)} name={label} group="builtin" />
+              </div>
             ))}
           </div>)}
           {step === 'list' && category === 'builtin' && settings && onSettings && <RasterDatumChoice settings={settings}
             selected={sources.selected} image={sources.source?.kind === 'image'} onChange={onSettings} onError={setError} />}
           {step === 'list' && category === 'builtin' && <div className="map-source-actions"><button disabled={!sources.ready} onClick={openAdd}>导入图源</button></div>}
-          {step === 'library' && <>
-          {!onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
+          {(step === 'library' || (step === 'list' && category === 'library')) && <>
+          {step === 'library' && !onNavigation && <button onClick={()=>setStep('list')}>返回图源选择</button>}
           <FreeMapLibrary
             selected={sources.selected}
             onSelect={sources.select}
@@ -380,7 +384,7 @@ export function MapSourcesPanel({
               maxLength={100000}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="https://…/{z}/{x}/{y}.png，或粘贴 JSON / 二维码内容"
+              placeholder="https://…/{z}/{x}/{y}.png，或粘贴 JSON / 奥维图源二维码内容"
             />
           </label>
           <label className="map-source-scheme">
@@ -414,7 +418,7 @@ export function MapSourcesPanel({
               MB；GeoTIFF 保存最长边 2048 像素的显示副本。
             </p>
             <p>
-              奥维 OVMAP 按可识别配置导入；不支持的条目会说明原因。加密二维码、矢量瓦片和百度专用瓦片矩阵暂不支持。文件只保存在当前设备，在线服务的覆盖与可用性由提供方决定。
+              奥维 OVMAP 文件和明文图源二维码按可识别配置导入；不支持的投影、专有历史影像或附加参数会说明原因。加密二维码、矢量瓦片和百度专用瓦片矩阵暂不支持。文件只保存在当前设备，在线服务的覆盖与可用性由提供方决定。
             </p>
           </details>
         </>

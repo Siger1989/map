@@ -2,6 +2,11 @@ import repairs from './repair-coverage.json' with { type: 'json' };
 
 /** Shared terrain URL/cache revision. Consumers still receive 256px Terrarium. */
 export const TERRAIN_URL = '/api/terrain/{z}/{x}/{y}.png?revision=repairs-v1';
+/** Version only browser transport, preserving native and offline data identities. */
+export function terrainRenderUrl(origin: string): string {
+  const browser = new URL(origin).hostname !== 'appassets.androidplatform.net';
+  return origin + TERRAIN_URL + (browser ? '&transport=same-origin-v1' : '');
+}
 const repairedTiles: Record<string, string[]> = repairs;
 
 export function terrainRepairPath(z: number, x: number, y: number): string | null {

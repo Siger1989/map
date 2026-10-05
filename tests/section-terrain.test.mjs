@@ -48,13 +48,13 @@ test('cut edges intersect a known slope at the selected altitude, without tile-f
   );
 });
 
-let SectionLayer, SectionTerrainStore;
+let SectionLayer, SectionTerrainStore, sampleSurveyTerrain;
 async function classes() {
   if (!SectionLayer) {
     const compiled = await build({
       stdin: {
         contents:
-          "export { SectionLayer } from './modules/section/SectionLayer.ts'; export { SectionTerrainStore } from './modules/section/elevation.ts';",
+          "export { SectionLayer } from './modules/section/SectionLayer.ts'; export { SectionTerrainStore } from './modules/section/elevation.ts'; export { sampleSurveyTerrain } from './modules/section/surveyTerrain.ts';",
         resolveDir: process.cwd(),
       },
       bundle: true,
@@ -62,7 +62,7 @@ async function classes() {
       platform: 'node',
       format: 'esm',
     });
-    ({ SectionLayer, SectionTerrainStore } = await import(
+    ({ SectionLayer, SectionTerrainStore, sampleSurveyTerrain } = await import(
       `data:text/javascript;base64,${Buffer.from(compiled.outputFiles[0].text).toString('base64')}`
     ));
   }
@@ -331,12 +331,16 @@ test('terrain decoding reuses original tiles across altitudes and enforces three
   await classes();
   const oldDocument = globalThis.document,
     oldBitmap = globalThis.createImageBitmap,
-    oldFetch = globalThis.fetch;
+    oldFetch = globalThis.fetch,
+    oldWindow = globalThis.window;
   t.after(() => {
     globalThis.document = oldDocument;
     globalThis.createImageBitmap = oldBitmap;
     globalThis.fetch = oldFetch;
+    if (oldWindow === undefined) delete globalThis.window;
+    else globalThis.window = oldWindow;
   });
+  globalThis.window = { location: { origin: 'https://map.example' } };
   const rgba = clippedTerrain(new Float32Array(65536).fill(2000), 9999);
   globalThis.document = {
     createElement: () => ({
@@ -350,8 +354,10 @@ test('terrain decoding reuses original tiles across altitudes and enforces three
   let calls = 0,
     active = 0,
     peak = 0;
-  const releases = [];
-  globalThis.fetch = async () => {
+  const releases = [],
+    urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(String(url));
     calls++;
     active++;
     peak = Math.max(peak, active);
@@ -376,9 +382,162 @@ test('terrain decoding reuses original tiles across altitudes and enforces three
   }
   await Promise.all(reads);
   assert.equal(peak, 3);
+  assert.equal(
+    urls[0],
+    'https://map.example/api/terrain/12/0/1000.png?revision=repairs-v1&transport=same-origin-v1',
+    'section samples use the same browser DEM transport URL as MapLibre',
+  );
+  assert.ok(
+    urls.every(
+      (url) => new URL(url).searchParams.get('transport') === 'same-origin-v1',
+    ),
+  );
   const cached = await store.read({ z: 12, x: 0, y: 1000 }, signal);
   assert.equal(calls, 7);
   assert.equal(cached[0], 2000);
   assert.equal(decodeTerrain(clippedTerrain(cached, 800))[0], 800);
   assert.equal((await store.read({ z: 12, x: 0, y: 1000 }, signal))[0], 2000);
+});
+
+test('survey sampling distinguishes unreadable DEM tiles from decoded terrain data', async (t) => {
+  await classes();
+  const oldDocument = globalThis.document,
+    oldBitmap = globalThis.createImageBitmap,
+    oldFetch = globalThis.fetch,
+    oldWindow = globalThis.window;
+  t.after(() => {
+    globalThis.document = oldDocument;
+    globalThis.createImageBitmap = oldBitmap;
+    globalThis.fetch = oldFetch;
+    if (oldWindow === undefined) delete globalThis.window;
+    else globalThis.window = oldWindow;
+  });
+  globalThis.window = { location: { origin: 'https://map.example' } };
+  const line = {
+    version: 1,
+    a: [103.8, 30.6],
+    b: [103.81, 30.61],
+    stations: [],
+    interval: 100,
+    halfWidth: 100,
+  };
+  globalThis.fetch = async () => {
+    throw new DOMException('request timed out', 'TimeoutError');
+  };
+  await assert.rejects(
+    sampleSurveyTerrain(line, new AbortController().signal),
+    /地形加载超时/,
+    'all failed tile requests must not be reported as a valid area without terrain',
+  );
+
+  const loadedOnly = await sampleSurveyTerrain(
+    line,
+    new AbortController().signal,
+    () => 1800,
+  );
+  assert.equal(
+    loadedOnly.heights.every((height) => height === 1800),
+    true,
+  );
+  assert.equal(loadedOnly.source, '当前地图已加载 DEM（网络采样无有效点）');
+
+  const transparent = new Uint8ClampedArray(65536 * 4);
+  globalThis.document = {
+    createElement: () => ({
+      getContext: () => ({
+        drawImage() {},
+        getImageData: () => ({ data: transparent }),
+      }),
+    }),
+  };
+  globalThis.createImageBitmap = async () => ({ close() {} });
+  globalThis.fetch = async () => ({ ok: true, blob: async () => ({}) });
+  let fallbackCalls = 0;
+  const partial = await sampleSurveyTerrain(
+    line,
+    new AbortController().signal,
+    () => (++fallbackCalls % 2 ? 1200 : null),
+  );
+  assert.ok(partial.heights.some((height) => height === 1200));
+  assert.ok(partial.heights.some((height) => height === null));
+  assert.match(partial.source, /当前地图已加载 DEM/);
+  await assert.rejects(
+    sampleSurveyTerrain(line, new AbortController().signal, () => null),
+    /当前范围没有可用地形/,
+    'valid-but-empty tiles and an uncovered loaded map remain an honest missing-data error',
+  );
+
+  const rgba = clippedTerrain(new Float32Array(65536).fill(2000), 9999),
+    urls = [];
+  globalThis.document = {
+    createElement: () => ({
+      getContext: () => ({
+        drawImage() {},
+        getImageData: () => ({ data: rgba }),
+      }),
+    }),
+  };
+  globalThis.createImageBitmap = async () => ({ close() {} });
+  globalThis.fetch = async (url) => {
+    urls.push(String(url));
+    return { ok: true, blob: async () => ({}) };
+  };
+  let unexpectedFallbackCalls = 0;
+  const sampled = await sampleSurveyTerrain(
+    line,
+    new AbortController().signal,
+    () => {
+      unexpectedFallbackCalls++;
+      return 1000;
+    },
+  );
+  assert.ok(urls.length > 0);
+  assert.ok(
+    urls.every(
+      (url) => new URL(url).searchParams.get('transport') === 'same-origin-v1',
+    ),
+  );
+  assert.ok(sampled.heights.some((height) => height === 2000));
+  assert.equal(
+    sampled.heights.every((height) => height === 2000),
+    true,
+  );
+  assert.equal(
+    unexpectedFallbackCalls,
+    0,
+    'valid network DEM samples retain priority',
+  );
+});
+
+test('survey sampling cancels pending DEM requests', async (t) => {
+  await classes();
+  const oldFetch = globalThis.fetch,
+    oldWindow = globalThis.window;
+  t.after(() => {
+    globalThis.fetch = oldFetch;
+    if (oldWindow === undefined) delete globalThis.window;
+    else globalThis.window = oldWindow;
+  });
+  globalThis.window = { location: { origin: 'https://map.example' } };
+  globalThis.fetch = async (_url, { signal }) =>
+    new Promise((_resolve, reject) => {
+      signal.addEventListener(
+        'abort',
+        () => reject(new DOMException('cancelled', 'AbortError')),
+        { once: true },
+      );
+    });
+  const line = {
+    version: 1,
+    a: [103.8, 30.6],
+    b: [103.81, 30.61],
+    stations: [],
+    interval: 100,
+    halfWidth: 100,
+  };
+  const controller = new AbortController(),
+    pending = sampleSurveyTerrain(line, controller.signal, () => 1800);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  controller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
 });

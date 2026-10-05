@@ -4,6 +4,7 @@ import {
   startRouteEdit,
   selectEditNode,
   moveEditNode,
+  renameEditRoute,
   toggleEditBranch,
   appendEditBranch,
   undoRouteEdit,
@@ -63,6 +64,35 @@ test('node and style edits stay in memory until a single explicit save', () => {
   assert.equal(result.track.style.width, 3);
   assert.equal(disk.writes(), 1);
   assert.deepEqual(a.segments[0][1], [103.001, 30]);
+});
+test('route rename is one undoable edit, rejects blank names, and survives save paths without renaming the source', () => {
+  const disk = archive([a]);
+  const start = startRouteEdit(a);
+  const renamed = renameEditRoute(start, '  新路线名  ');
+  assert.equal(renamed.track.name, '新路线名');
+  assert.equal(renamed.history.length, 1);
+  assert.equal(a.name, '原路');
+  assert.equal(renameEditRoute(renamed, '新路线名'), renamed, 'same name does not add an undo step');
+  assert.equal(undoRouteEdit(renamed).track.name, '原路');
+  assert.throws(() => renameEditRoute(renamed, '   '), /不能为空/);
+  assert.throws(() => renameEditRoute(renamed, '甲'.repeat(61)), /60个字符/);
+  const saved = storeRouteEdit(renamed, disk, 'unused', 2);
+  assert.equal(saved.track.name, '新路线名');
+  assert.equal(disk.read()[0].name, '新路线名');
+  assert.equal(a.name, '原路', 'the input record remains immutable');
+});
+test('custom route names survive geometry changes and measured edit copies; defaults keep existing suffixes', () => {
+  const recorded = { ...a, id: 'recorded-name', source: 'recorded', samples: [[{ time: 1, altitude: 20 }, { time: 2, altitude: 21 }, { time: 3, altitude: 22 }]] };
+  let renamed = renameEditRoute(startRouteEdit(recorded), '我的自定义副本');
+  renamed = moveEditNode(renamed, recorded.segments[0][1], [103.001, 30.001]);
+  const savedCopy = storeRouteEdit(renamed, archive([recorded]), 'copy-id', 2);
+  assert.equal(savedCopy.track.id, 'copy-id');
+  assert.equal(savedCopy.track.name, '我的自定义副本');
+  assert.equal(recorded.name, '原路');
+  assert.equal(savedCopy.records.find(track => track.id === recorded.id).name, '原路');
+
+  const defaultCopy = storeRouteEdit(moveEditNode(startRouteEdit(recorded), recorded.segments[0][1], [103.001, 30.001]), archive([recorded]), 'default-copy', 2);
+  assert.equal(defaultCopy.track.name, '原路 · 编辑副本');
 });
 test('visible false flag omitted by archive parsing is not a concurrent edit', () => {
   const visible = { ...a, hidden: false };

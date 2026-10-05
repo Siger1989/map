@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>山兔真实图源加载对照</title>
+<style>body{background:#18201f;color:#f2f5ed;font:14px system-ui;margin:12px}button{margin:4px;padding:10px}pre{white-space:pre-wrap}#map{width:390px;height:650px;max-width:100%}</style>
+<button id="baseline">原流程：邻片与回看</button><button id="candidate">新流程：邻片与回看</button>
+<pre id="result">独立测试会话，不读写用户地图存档。只输出耗时与数量。</pre>
+<div id="map"></div>
+<script type="module">
+import { RasterCoordinates } from '../modules/mapSources/RasterCoordinates.ts';
+import { SharedTileFetch } from '../modules/mapSources/sharedTileFetch.ts';
+import { renderOvmapLayerTile } from '../modules/mapSources/ovmapTiles.ts';
+import { worldPixel } from '../modules/mapSources/coordinates.ts';
+const result = document.querySelector('#result');
+async function run(baseline) {
+  for (const b of document.querySelectorAll('button')) b.disabled = true;
+  result.textContent = '运行实际下载和坐标校正…';
+  let coordinates;
+  try {
+    const bundle = await (await fetch('/native/default-map-sources.json')).json();
+    const selected = bundle.maps.find(s => s.name.includes('超强'));
+    if (!selected?.ovmap?.layers?.length) throw Error('私有预览图源未就绪');
+    const source = {id:'benchmark',type:'raster',tileSize:256,tiles:['shantu-map://benchmark/{z}/{x}/{y}'],scheme:'xyz',setTiles(t){this.tiles=t;}};
+    let networkCalls=0, networkMs=0, warpMs=0, failures=0;
+    const requested = new Set();
+    const raw = async (params, abort) => {
+      const [z,x,y] = params.url.split('/').slice(-3).map(Number);
+      networkCalls++; requested.add(`${z}/${x}/${y}`);
+      const start=performance.now();
+      try { return {data:await renderOvmapLayerTile(selected.ovmap.layers[0],z,x,y,abort.signal)}; }
+      catch(e){failures++;throw e;} finally {networkMs+=performance.now()-start;}
+    };
+    coordinates = new RasterCoordinates({getSource:id=>id===source.id?source:undefined},raw);
+    // One-variable comparison: retain in-flight sharing in both, toggle only completed-input reuse.
+    coordinates.inputTiles = new SharedTileFetch(4,96,baseline?0:16*1024*1024);
+    const warp = coordinates.warp.bind(coordinates);
+    coordinates.warp = async (...args) => {const t=performance.now();try{return await warp(...args);}finally{warpMs+=performance.now()-t;}};
+    coordinates.sync([source.id],selected.datum??'gcj02');
+    const z=16, [px,py]=worldPixel(103.674162,31.061692,256*2**z), x=Math.floor(px/256),y=Math.floor(py/256);
+    const rows=[];
+    for (const [label,offset] of [['首次',0],['向东拖动',2],['回看',0]]) {
+      const start=performance.now(), before=networkCalls, priorWarp=warpMs;
+      // Each row finishes before the next, matching requests that arrive as a viewport moves.
+      let completed=0;
+      for(let dy=0;dy<3;dy++) {
+        const values=await Promise.allSettled(Array.from({length:3},(_,dx)=>coordinates.protocol({url:source.tiles[0].replace('{z}',z).replace('{x}',x+offset+dx).replace('{y}',y+dy),type:'arrayBuffer'},new AbortController())));
+        completed+=values.filter(v=>v.status==='fulfilled').length;
+      }
+      rows.push({scene:label,elapsedMs:Math.round(performance.now()-start),completed,requested:networkCalls-before,warpMs:Math.round(warpMs-priorWarp)});
+      result.textContent=JSON.stringify({variant:baseline?'baseline':'candidate',rows,networkCalls,uniqueInputs:requested.size,duplicateDownloads:networkCalls-requested.size,failures,networkSumMs:Math.round(networkMs),inputReuse:coordinates.snapshot?.()},null,2);
+    }
+  } catch(e) { result.textContent += '\nFAIL '+e.name+': '+(e.message?.includes('http')?'请求失败（地址已隐藏）':e.message); }
+  finally {coordinates?.dispose();for(const b of document.querySelectorAll('button'))b.disabled=false;}
+}
+document.querySelector('#baseline').onclick=()=>run(true);
+document.querySelector('#candidate').onclick=()=>run(false);
+</script></html>

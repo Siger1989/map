@@ -13,7 +13,7 @@ export function useFollowPosition({
   fix: PositionFix | null;
   phase: Recording['phase'];
   blocked: boolean;
-  onFollow: (point: Coordinate, fix: PositionFix) => boolean;
+  onFollow: (point: Coordinate, fix: PositionFix, initial: boolean) => boolean;
 }) {
   const [following, setFollowing] = useState(false);
   const [waiting, setWaiting] = useState(false);
@@ -27,6 +27,7 @@ export function useFollowPosition({
     if (current.current.blocked) return;
     delivered.current = '';
     cameraFix.current = null;
+    setWaiting(true);
     setFollowing(true);
   }, []);
 
@@ -58,7 +59,7 @@ export function useFollowPosition({
         return;
       }
       // Retry after map loading; a native poll may repeat the same checkpoint.
-      if (current.current.onFollow(value.coordinates, value)) {
+      if (current.current.onFollow(value.coordinates, value, cameraFix.current === null)) {
         cameraFix.current = value;
         delivered.current = key;
         setWaiting(false);

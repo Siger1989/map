@@ -1,8 +1,9 @@
 import type { Coordinate } from '../navigation/types';
 import type { ManualTrack, ScreenPoint } from './drawing';
 import { keepsOriginalPoints } from './provenance.ts';
+import type { VisibleNodeMovePlan } from './visibleNodeMove';
 
-export type TrackNode = { trackId: string; coordinate: Coordinate };
+export type TrackNode = { trackId: string; coordinate: Coordinate; controlMove?: VisibleNodeMovePlan };
 export const DRAFT_ID = 'draft';
 export const equalCoordinate = (a: Coordinate, b: Coordinate) =>
   a[0] === b[0] && a[1] === b[1];

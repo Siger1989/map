@@ -1,8 +1,10 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef } from 'react';
-import { CloudSun, Layers, Mountain, X } from 'lucide-react';
+import { Layers, X } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
+import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { LayerPanel } from './LayerPanel';
+import { LayerPresets } from './LayerPresets';
 import './layerWindow.css';
 
 /** A map-level entry and non-modal window, independent of the bottom tool dock. */
@@ -16,6 +18,7 @@ export function LayerWindow({
   satelliteDate,
   satelliteStatus,
   mapStatus,
+  cloudState,
 }: {
   open: boolean;
   onOpen: (open: boolean) => void;
@@ -26,6 +29,7 @@ export function LayerWindow({
   satelliteDate?: string;
   satelliteStatus?: string;
   mapStatus: string;
+  cloudState?: SatelliteCloudState | null;
 }) {
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -92,44 +96,16 @@ export function LayerWindow({
           </div>
           <div className="dock-content">
             <LayerPanel
+              presets={<LayerPresets settings={settings} onChange={onChange} />}
               customSource={customSource}
               onOpenSources={onOpenSources}
               settings={settings}
               onChange={onChange}
               satelliteDate={satelliteDate}
               satelliteStatus={satelliteStatus}
+              cloudState={cloudState}
             />
-            <details className="layer-presets">
-              <summary>场景预设</summary>
-              <div className="view-presets" aria-label="观察模式">
-                <button
-                  aria-pressed={settings.rain}
-                  onClick={() =>
-                    onChange({
-                      terrain: true,
-                      rain: true,
-                      contours: false,
-                    })
-                  }
-                >
-                  <CloudSun size={18} />
-                  天气总览
-                </button>
-                <button
-                  aria-pressed={!settings.rain}
-                  onClick={() =>
-                    onChange({
-                      terrain: true,
-                      rain: false,
-                      contours: true,
-                    })
-                  }
-                >
-                  <Mountain size={18} />
-                  看清地形
-                </button>
-              </div>
-            </details>
+
             <p className="map-status" role="status">
               {mapStatus}
             </p>

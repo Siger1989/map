@@ -1,3 +1,11 @@
+# 2026-10-05 交接：0.2.105-test 私有包已核验
+
+当前本机 APK：`APK/Shantu-0.2.105-test-standalone.apk`，版本 `0.2.105-test` / code112，包 `com.guanyun.weather.shantu.preview`，66,097,968 字节，SHA-256 `d7688de0c6cb5a33b234f06c897c60858a19da20cb99f9aa386a18b28d92e851`。最终核验及测试见 `docs/release-0.2.105-local.md`；打包准备历史与最终补记见 `docs/package-prep-20261005.md`。私有临时下载整包及 Range206 已核验，证据 `.openai/apk-02105-public-verified.json`，北京时间 14:06:29 到期，电脑需在线；不要记录或公开令牌链接。
+
+84 项定向测试、tsc、网页与 APK 构建 PASS。主代理在9174源码预览复跑route/cloud/recorded/marker/position/search，390/360视口通过（recorded主复跑为390，代理另做两尺寸检查）；最终APK stage 390/360版本/主页无溢出、标记隐藏后编辑器保留、双图2-pane与零pageerror smoke PASS。资源集合 1,910 项，1,414 项逐字节一致、496 张地形 PNG 像素和非 IDAT 元数据一致；私有种子与 Key 配置一致性以安全布尔值核对并 PASS。构建后仅有两个源码文件 EOF 格式清理，无逻辑变化。Android 真机安装/触控/GPS/朝向/后台未验证；HarmonyOS 原生包未交付。该 APK 含私有图源配置，不得放公共 Release。分支 `codex/rollback-ui-0235-20260921`，构建前 HEAD `ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe`；提交/推送与 main 状态须单独核对。
+
+---
+
 # Agent快速交接 — 2026-09-30 / 0.2.89 UI收尾交付
 
 用户已明确结束快速预览、要求新APK上传GitHub及关机。详见 [本轮交接](handoff-20260930-ui.md)、[0.2.89发行记录](release-0.2.89.md)、[UI实测](ui-gate-20260930.md) 和 [项目规则](project-rules.md)。当前功能分支 codex/rollback-ui-0235-20260921，原始基线e79a90b；发布后实际提交/资产校验以CURRENT_STATE顶部为准。外8/内4、文字留白、同卡导航设置、底部图表避让、紧凑比例尺、绘制隐藏UI及地名层级为最新要求，覆盖下面旧值。880项完整测试通过，架构长度预算仍有失败，真机与鸿蒙原生未验/未交付；不清用户存储。以下为历史交接。

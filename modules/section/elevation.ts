@@ -1,4 +1,4 @@
-import { TERRAIN_URL } from '../terrain/terrain';
+import { terrainRenderUrl } from '../terrain/tiles';
 import { clippedTerrain, decodeTerrain, type TerrainTile } from './terrainMath';
 
 /** Native tile selection limits work to the camera frustum and seam neighbours. */
@@ -36,8 +36,12 @@ export class SectionTerrainStore {
     }
     this.active++;
     try {
+      // Match the URL used by MapLibre's raster-dem source. In browser builds
+      // the transport revision avoids stale cached redirects/tiles.
+      const template = terrainRenderUrl(window.location.origin);
       const response = await fetch(
-        TERRAIN_URL.replace('{z}', String(tile.z))
+        template
+          .replace('{z}', String(tile.z))
           .replace('{x}', String(tile.x))
           .replace('{y}', String(tile.y)),
         {

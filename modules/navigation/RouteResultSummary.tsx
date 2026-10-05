@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
+import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
 export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onEditPoints, onCancel, onImport }: {
@@ -10,6 +11,7 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
   onImport?: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsVisited, setDetailsVisited] = useState(false);
   return <section className="route-panel route-summary" aria-label="路线摘要">
     <div className="route-summary-metrics">
       <strong>{formatDistance(route.distance)}</strong><span>{formatDuration(route.duration)}</span>
@@ -26,22 +28,21 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
       <button className="is-primary" onClick={onStartNavigation} disabled={navigating}>{navigating ? '导航中' : '开始导航'}</button>
       <button onClick={onSave}>收藏</button>
       <button onClick={onShare}>分享</button>
-      <button aria-expanded={detailsOpen} aria-controls="route-summary-detail" onClick={() => setDetailsOpen(!detailsOpen)}>详情</button>
+      <button aria-expanded={detailsOpen} aria-controls="route-summary-detail" onClick={() => {
+        const next = !detailsOpen;
+        setDetailsOpen(next);
+        if (next) setDetailsVisited(true);
+      }}>详情</button>
     </nav>
     {guidanceError && !navigating && <p className="route-error" role="alert">{guidanceError}</p>}
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
-    {detailsOpen && <div className="route-summary-detail" id="route-summary-detail">
-      <section aria-label="路线分段与路段">
-        <strong>路段</strong>
-        {route.routingSource && <p className="route-note">离线步行 · {route.routingSource.name}</p>}
-        <p className="route-note">虚线为选点与道路的直连接入，实际通行需现场确认。</p>
-        <ol>{route.steps.map((s, i) => <li key={i}>{s.instruction} · {formatDistance(s.distance)}</li>)}</ol>
-        <RouteProviderNote />
-      </section>
+    {detailsVisited && <div className="route-summary-detail" id="route-summary-detail" hidden={!detailsOpen}>
+      <RouteElevationSummary coordinates={route.coordinates} distance={route.distance} duration={route.duration} />
       {weather && <section aria-label="沿途天气">
         <strong>沿途天气</strong>
         {weather}
       </section>}
+      <RouteProviderNote />
     </div>}
   </section>;
 }
