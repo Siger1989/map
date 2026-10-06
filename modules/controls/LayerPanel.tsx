@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
 import {
-  CloudRain,
-  Cloud,
-  Info,
   Layers,
   Mountain,
   Satellite,
@@ -11,22 +8,12 @@ import {
   MapPin,
   Palette,
   ChevronRight,
-  Thermometer,
 } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
-import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { CONTOUR_INTERVALS, contourInterval } from '../terrain/contourInterval';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 const ITEMS = [
-  { key: 'clouds', label: '卫星云图', detail: '国家卫星气象中心 · 红外观测', icon: Cloud, color: 'cyan' },
-  {
-    key: 'temperature',
-    label: '气温',
-    detail: '2 米气温预报 · 当前区域颜色分布',
-    icon: Thermometer,
-    color: 'amber',
-  },
   {
     key: 'terrain',
     label: '三维地形',
@@ -76,13 +63,6 @@ const ITEMS = [
     icon: MapPin,
     color: 'green',
   },
-  {
-    key: 'rain',
-    label: '雷达实况图',
-    detail: '全国拼图原图 · 组合反射率 · dBZ',
-    icon: CloudRain,
-    color: 'cyan',
-  },
 ] as const;
 export function LayerPanel({
   settings,
@@ -92,7 +72,6 @@ export function LayerPanel({
   onOpenSources,
   customSource,
   presets,
-  cloudState,
 }: {
   settings: LayerSettings;
   onChange: (patch: Partial<LayerSettings>) => void;
@@ -101,7 +80,6 @@ export function LayerPanel({
   onOpenSources?: () => void;
   customSource?: string;
   presets?: ReactNode;
-  cloudState?: SatelliteCloudState | null;
 }) {
   const domestic = usesTianditu(settings, basemapConfiguration().domestic);
   return (
@@ -147,9 +125,6 @@ export function LayerPanel({
                       : detail}
                   </p>
                 )}
-                {key === 'rain' && settings.rain && (
-                  <p>原始全国拼图 · 完整图例与署名 · 不与地图配准</p>
-                )}
               </div>
               <button
                 id={`${key}-toggle`}
@@ -166,23 +141,10 @@ export function LayerPanel({
           ),
         )}
       </div>
-      {settings.clouds && <p className="satellite-note" role="status" aria-label="卫星云图状态">
-        {cloudState?.error || (cloudState?.loading ? '正在加载卫星云图…' : cloudState?.ready && cloudState.frame ? `观测 ${new Date(cloudState.frame.timeUTC).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' })} · 北京时间` : '正在查询卫星云图…')}
-      </p>}
       <div className="layer-settings-actions">
         <details className="layer-display-settings">
           <summary>显示参数</summary>
           <div className="layer-display-content">
-            {settings.clouds && <div className="elevation-opacity">
-              <label className="slider-label" htmlFor="cloud-opacity">云图不透明度 <span>{Math.round((settings.cloudOpacity ?? 0.55) * 100)}%</span></label>
-              <input id="cloud-opacity" type="range" min="0" max="1" step="0.05" value={settings.cloudOpacity ?? 0.55} onChange={event => onChange({ cloudOpacity: Number(event.target.value) })} />
-              <label htmlFor="cloud-time">观测时间</label>
-              <select id="cloud-time" value={settings.cloudTime ?? ''} onChange={event => onChange({ cloudTime: event.target.value || undefined })}>
-                <option value="">最新观测</option>
-                {cloudState?.frames.slice().reverse().map(frame => <option key={frame.stamp} value={frame.stamp}>{new Date(frame.timeUTC).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' })}</option>)}
-              </select>
-              <p>北京时间 · 全球红外云图概览，适合缩小看云带。</p>
-            </div>}
             {settings.elevationColors && (
               <div className="elevation-opacity">
                 <label
@@ -319,25 +281,6 @@ export function LayerPanel({
               </>
             )}
             <div className="panel-sliders">
-              {settings.rain && (
-                <>
-                  <label className="slider-label" htmlFor="rain-opacity">
-                    降雨透明度{' '}
-                    <span>{Math.round(settings.opacity * 100)}%</span>
-                  </label>
-                  <input
-                    id="rain-opacity"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={settings.opacity}
-                    onChange={(e) =>
-                      onChange({ opacity: Number(e.target.value) })
-                    }
-                  />
-                </>
-              )}
               {settings.terrain && (
                 <>
                   <label
@@ -378,17 +321,11 @@ export function LayerPanel({
           </ul>
           <p className="satellite-note" role="status">
             {domestic
-              ? '底图与中文标注：天地图。卫星云图：国家卫星气象中心。天气、道路吸附及区域外高程仍可能需要境外连接。'
+              ? '底图与中文标注：天地图。道路吸附及区域外高程仍可能需要境外连接。'
               : settings.imageryMode === 'detail'
                 ? 'EOX / Sentinel-2 · 2025 年少云合成，约10米，非实时影像。免账号，CC BY-NC-SA 4.0非商业使用；区域下载待接入。'
                 : `${satelliteStatus || '正在查询卫星影像…'}。此观测包含真实云层，云多时会遮住地表；看山体纹理请选择高清地表。`}
           </p>
-          <div className="layer-note">
-            <Info size={15} />
-            <p>
-              雷达实况图来自国家气象数据网，显示含完整底图、图例和署名的原始拼图，不与当前地图配准叠加。最新云况来自卫星影像，不是雷达回波。
-            </p>
-          </div>
         </details>
       </div>
     </section>

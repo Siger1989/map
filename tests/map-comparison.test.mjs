@@ -113,14 +113,10 @@ function layerSettings(overrides = {}) {
     geology: false,
     geologySource: 'world',
     geologyOpacity: 0.85,
-    clouds: false,
-    rain: false,
-    temperature: false,
     roads: true,
     roadsOpacity: 1,
     rasterLevel: null,
     labels: true,
-    opacity: 0.6,
     exaggeration: 1,
     imageryMode: 'detail',
     ...overrides,
@@ -693,14 +689,14 @@ test('comparison layer menu exposes per-pane complete switches with custom-sourc
   const beforeCameraCalls = Object.fromEntries(Object.entries(counters.cameraCalls).map(([key, calls]) => [key, calls.length]));
   await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
   let switches = [...f.host.querySelectorAll('#comparison-layer-window [role="switch"]')];
-  assert.equal(switches.length, 9, 'the upper custom source hides only the inapplicable satellite toggle');
+  assert.equal(switches.length, 6, 'the upper custom source hides only the inapplicable satellite toggle');
   assert.equal(f.host.querySelector('#satellite-toggle'), null);
-  for (const key of ['clouds', 'temperature', 'terrain', 'elevationColors', 'contours', 'geology', 'roads', 'labels', 'rain'])
+  for (const key of ['terrain', 'elevationColors', 'contours', 'geology', 'roads', 'labels'])
     assert.ok(f.host.querySelector(`#${key}-toggle`), `upper pane has ${key} toggle`);
 
   await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
   switches = [...f.host.querySelectorAll('#comparison-layer-window [role="switch"]')];
-  assert.equal(switches.length, 10, 'the lower built-in choice exposes all standard layer switches');
+  assert.equal(switches.length, 7, 'the lower built-in choice exposes all standard layer switches');
   assert.ok(f.host.querySelector('#satellite-toggle'));
   assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[0].settings);
   assert.equal(counters.latest['map-comparison-secondary'].settings, f.choices[1].settings);
@@ -715,7 +711,6 @@ test('comparison layer switches keep upper and lower settings independent and pr
   await f.act(async () => f.host.querySelector('#geology-toggle').click());
   let upper = counters.latest['map-comparison-primary'].settings;
   assert.equal(upper.geology, true);
-  assert.equal(upper.temperature, false);
   assert.equal(upper.elevationColors, false);
   assert.equal(counters.latest['map-comparison-secondary'].settings.geology, false, 'upper edit does not change lower settings');
 
@@ -723,32 +718,23 @@ test('comparison layer switches keep upper and lower settings independent and pr
   upper = counters.latest['map-comparison-primary'].settings;
   assert.equal(upper.elevationColors, true);
   assert.equal(upper.geology, false);
-  assert.equal(upper.temperature, false);
-  await f.act(async () => f.host.querySelector('#temperature-toggle').click());
-  upper = counters.latest['map-comparison-primary'].settings;
-  assert.equal(upper.temperature, true);
-  assert.equal(upper.geology, false);
-  assert.equal(upper.elevationColors, false);
 
   await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
   await f.act(async () => f.host.querySelector('#geology-toggle').click());
   const lower = counters.latest['map-comparison-secondary'].settings;
   assert.equal(lower.geology, true);
-  assert.equal(lower.temperature, false);
   assert.equal(lower.elevationColors, false);
   upper = counters.latest['map-comparison-primary'].settings;
-  assert.equal(upper.temperature, true, 'lower edit leaves upper thematic choice intact');
+  assert.equal(upper.elevationColors, true, 'lower edit leaves upper thematic choice intact');
 });
 
-test('roads, rain and display parameters update only the active comparison pane', async t => {
+test('roads and display parameters update only the active comparison pane', async t => {
   const f = await mount(t);
   const cameraCallsAtStart = ['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0);
   await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
   await f.act(async () => f.host.querySelector('#roads-toggle').click());
-  await f.act(async () => f.host.querySelector('#rain-toggle').click());
   let upper = counters.latest['map-comparison-primary'].settings;
   assert.equal(upper.roads, false);
-  assert.equal(upper.rain, true);
 
   const parameters = f.host.querySelector('details.layer-display-settings');
   assert.ok(parameters);
@@ -761,10 +747,9 @@ test('roads, rain and display parameters update only the active comparison pane'
   assert.equal(counters.latest['map-comparison-secondary'].settings.roadsOpacity, f.choices[1].settings.roadsOpacity);
 
   await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
-  await f.act(async () => f.host.querySelector('#rain-toggle').click());
-  assert.equal(counters.latest['map-comparison-secondary'].settings.rain, true);
-  assert.equal(counters.latest['map-comparison-primary'].settings.rain, true, 'changing lower rain keeps upper rain choice');
-  assert.equal(counters.latest['map-comparison-secondary'].settings.roads, true);
+  await f.act(async () => f.host.querySelector('#roads-toggle').click());
+  assert.equal(counters.latest['map-comparison-primary'].settings.roads, false, 'changing lower roads keeps upper roads choice');
+  assert.equal(counters.latest['map-comparison-secondary'].settings.roads, false);
   assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer toggles do not apply a new camera');
 });
 
@@ -781,15 +766,12 @@ test('layer settings persist after close and by source choice, and Use returns o
   assert.equal(counters.latest['map-comparison-primary'].settings.roadsOpacity, 0.45);
 
   await chooseSource(f, '上', 'beta');
-  await f.act(async () => f.host.querySelector('#rain-toggle').click());
   await f.act(async () => f.host.querySelector('#roads-toggle').click());
   await changeReactControl(f, f.host.querySelector('#roads-opacity'), '0.35');
   await chooseSource(f, '上', 'sentinel');
   await chooseSource(f, '上', 'beta');
-  assert.equal(counters.latest['map-comparison-primary'].settings.rain, true, 'switching away and back restores this choice\'s edits');
   assert.equal(counters.latest['map-comparison-primary'].settings.roads, false);
   assert.equal(counters.latest['map-comparison-primary'].settings.roadsOpacity, 0.35);
-  assert.equal(counters.latest['map-comparison-secondary'].settings.rain, false, 'upper choice edits do not leak to the lower pane');
 
   await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
   await f.act(async () => f.host.querySelector('#geology-toggle').click());
@@ -803,13 +785,10 @@ test('layer settings persist after close and by source choice, and Use returns o
   assert.equal(used.id, 'beta');
   assert.equal(used.source, f.choices[3].source);
   assert.equal(used.settings.roads, false);
-  assert.equal(used.settings.rain, true);
   assert.equal(used.settings.roadsOpacity, 0.35);
-  assert.equal(used.settings.temperature, false);
   assert.equal(used.settings.geology, false, 'lower geology setting is not included in upper Use');
   assert.equal(used.settings.elevationColors, false);
-  assert.equal(f.choices[3].settings.rain, false, 'temporary pane settings do not mutate the source choice');
-  assert.equal(lowerBefore.rain, false);
+  assert.equal(lowerBefore.roads, f.choices[1].settings.roads, 'upper choice edits do not leak to the lower pane');
   assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer changes and Use do not apply a new camera');
 });
 

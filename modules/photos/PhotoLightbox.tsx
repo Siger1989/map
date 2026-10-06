@@ -266,21 +266,7 @@ export function PhotoLightbox({
               </p>
             </>
           )}
-          <button
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                await onUpdate(photo.id, {
-                  weather: undefined,
-                  weatherError: undefined,
-                });
-                setMessage('已重新排队查询拍摄天气');
-              })
-            }
-          >
-            重新查询拍摄天气
-          </button>
-          <p>
+<p>
             {photo.detail
               ? '查看副本最长边2560px，原图文件未改动。'
               : '旧照片只有960px预览，重新导入同一原图可补充更清晰的副本并保留标记。'}

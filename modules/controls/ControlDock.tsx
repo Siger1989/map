@@ -3,7 +3,6 @@ import { useDockClearance } from '../tracks/useDockClearance';
 import { FullscreenButton } from './FullscreenButton';
 import { useEffect, useRef, type ReactNode } from 'react';
 import {
-  Clock3,
   Route,
   MapPinPlus,
   X,
@@ -21,8 +20,6 @@ import { DocumentTextIcon, MapIcon as SolidMapIcon, PencilIcon, StarIcon, Briefc
 
 export type ControlPanel =
   | 'about'
-  | 'weather'
-  | 'time'
   | 'layers'
   | 'route'
   | 'track'
@@ -35,7 +32,6 @@ export type ControlPanel =
 const PANELS = [
   { id: 'outdoor', label: '记录', icon: NotebookPen },
   { id: 'tools', label: '工具', icon: Menu },
-  { id: 'time', label: '时间', icon: Clock3 },
   { id: 'sources', label: '地图图源', icon: MapIcon },
   { id: 'route', label: '路线', icon: Route },
   { id: 'annotations', label: '标记', icon: MapPinPlus },
@@ -48,9 +44,6 @@ export function ControlDock({
   active,
   onActive,
   drawingActive = false,
-  summary,
-  timeline,
-  timeLabel = '时间',
   onSection,
   sectionActive = false,
   sectionReady = true,
@@ -70,9 +63,6 @@ export function ControlDock({
   active: ControlPanel;
   onActive: (panel: ControlPanel) => void;
   drawingActive?: boolean;
-  summary: ReactNode;
-  timeline: ReactNode;
-  timeLabel?: string;
   onSection?: () => void;
   sectionActive?: boolean;
   sectionReady?: boolean;
@@ -163,9 +153,7 @@ export function ControlDock({
                   ? '关于山兔'
                   : active === 'annotations'
                     ? '标记与模型'
-                    : active === 'weather'
-                      ? '地点天气'
-                      : active === 'track'
+                    : active === 'track'
                         ? '画线与轨迹'
                         : active === 'favorites'
                           ? '全部收藏'
@@ -214,8 +202,6 @@ export function ControlDock({
                 {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
                 {onArea && <button onClick={onArea}>▱ 划区域</button>}
               </div>
-            ) : active === 'time' ? (
-              timeline
             ) : (
               children
             )}
@@ -223,7 +209,6 @@ export function ControlDock({
         </section>
       )}
       <div className="map-toolbar">
-        {summary}
         <nav className="home-bottom-nav" aria-label="地图功能">
           {[
             PANELS[0],

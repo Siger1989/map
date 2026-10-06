@@ -8,8 +8,6 @@ import { RouteNameInput } from '../navigation/RouteNameInput';
 import type { ViewState } from '../map/types';
 import { applyLayerPatch, type LayerSettings } from '../map/types';
 import type { SatelliteState } from '../satellite/satellite';
-import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
-import { CmaRadarPanel } from '../weather/CmaRadarPanel';
 import { ComparisonLayerWindow } from './ComparisonLayerWindow';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { FullscreenButton } from '../controls/FullscreenButton';
@@ -111,7 +109,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   const [layerPane, setLayerPane] = useState<0 | 1 | null>(null);
   const [paneSettings, setPaneSettings] = useState<[Record<string, LayerSettings>, Record<string, LayerSettings>]>([{}, {}]);
   const [satellite, setSatellite] = useState<[SatelliteState | null, SatelliteState | null]>([null, null]);
-  const [cloud, setCloud] = useState<[SatelliteCloudState | null, SatelliteCloudState | null]>([null, null]);
   const layerToggle = useRef<HTMLButtonElement>(null);
   const sourceControls = useRef<[HTMLButtonElement | null, HTMLButtonElement | null]>([null, null]);
   const [landscape, setLandscape] = useState(false);
@@ -139,7 +136,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     setLayerPane(null);
     setPaneSettings([{}, {}]);
     setSatellite([null, null]);
-    setCloud([null, null]);
     setEditorPane(1);
     close.current?.focus({ preventScroll: true });
   }, [session]);
@@ -189,10 +185,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
       return next;
     });
     if (patch.terrain !== undefined) (index === 0 ? primary : secondary).current?.setTerrainMode(patch.terrain);
-  };
-  const closeRadar = () => {
-    changeLayers(0, { rain: false });
-    changeLayers(1, { rain: false });
   };
   const closeLayers = () => { setLayerPane(null); layerToggle.current?.focus({ preventScroll: true }); };
   const enableTerrain = (pitch: number) => {
@@ -281,7 +273,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     onSourceStatus: message => report(index, message),
     onStatus: message => report(index, message),
     onSatellite: value => setSatellite(old => index === 0 ? [value, old[1]] : [old[0], value]),
-    onCloud: value => { setCloud(old => index === 0 ? [value, old[1]] : [old[0], value]); if (index === 0) children.props.onCloud?.(value); },
   });
   // Selection can disappear after deleting a marker; its host must disappear too.
   const markerWorkspace = properties === 'marker' ? markerEditor?.(() => setProperties(null)) : null;
@@ -297,18 +288,13 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         ref: secondary,
         persistCamera: false,
         initialCamera: session.camera,
-        onView: noop, onCenter: noop, onPoint: noop, onAnchor: noop,
+        onView: noop, onCenter: noop, onPoint: noop,
         onGeology: noop, onSectionStatus: noop,
         onSectionChange: noop, onSectionProfile: noop, onModelTerrainStatus: noop,
       } as Partial<TerrainMapProps> & { ref: RefObject<MapHandle | null> })}
       <section className="map-comparison-ui" aria-label="双图源对比" data-app-back="30" onKeyDown={event => {
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (layerPane !== null) closeLayers(); else if (properties) setProperties(null); else if (operations?.editingTrack) operations.onBackEditor?.(); else if (mode !== 'browse') pause(); else if (plannedRoute) plannedRoute.onClose(); else finish(onClose); }
       }}>
-        {choices.some(item => item?.settings.rain) && (
-          <div className="cma-radar-comparison-viewer">
-            <CmaRadarPanel open onClose={closeRadar} />
-          </div>
-        )}
         <header className="map-comparison-heading">
           <strong>对比</strong>{search}
           <span className="map-comparison-live" role="status" aria-live="polite">{mode === 'draw' ? '标准轨迹绘制已开启' : followStatus || notice || '十字定位 · 双向同步'}</span>
@@ -362,7 +348,6 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
         {layerPane !== null && <ComparisonLayerWindow pane={layerPane} onPane={setLayerPane} choice={choice(layerPane)} side={side}
           onChange={patch => changeLayers(layerPane, patch)} onClose={closeLayers} status={status[layerPane]}
           satelliteDate={satellite[layerPane]?.date} satelliteStatus={satellite[layerPane]?.status}
-          cloudState={cloud[layerPane]}
           onSource={() => { const index = layerPane; setLayerPane(null); sourceControls.current[index]?.focus({ preventScroll: true }); }} />}
         {mode === 'draw' && operations?.drawingEnabled !== false && <div className="map-comparison-drawing-mode" aria-label="画线吸附设置">
           <button type="button" title="节点吸附" aria-label="节点吸附" aria-pressed={operations?.snapping ?? false} disabled={!operations} onClick={() => operations?.onSnappingChange(!operations.snapping)}>点吸附</button>

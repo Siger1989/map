@@ -8,7 +8,7 @@ import {
   shareTrack,
   routeFileText,
 } from '../modules/routeShare/data.ts';
-test('temperature maps use selected hour, keep missing transparent and separate thematic colors', () => {
+test('retired temperature settings are ignored while temperature geometry keeps missing cells transparent', () => {
   const data = {
     cells: [
       { lng: 103, lat: 30, hours: [{ temperature: 0 }, { temperature: 28 }] },
@@ -29,12 +29,8 @@ test('temperature maps use selected hour, keep missing transparent and separate 
     { ...DEFAULT_LAYERS, geology: true },
     { temperature: true },
   );
-  assert.equal(settings.geology, false);
-  assert.equal(settings.temperature, true);
-  assert.equal(
-    applyLayerPatch(settings, { elevationColors: true }).temperature,
-    false,
-  );
+  assert.equal(settings.geology, true);
+  assert.equal('temperature' in settings, false);
 });
 test('share bounds preserve whole geometry across antimeridian and file preserves original segments/times', () => {
   const track = {

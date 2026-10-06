@@ -25,10 +25,6 @@ import {
   loadLatestSatellite,
   type SatelliteState,
 } from '../satellite/satellite';
-import { WeatherLayer } from '../weather/WeatherLayer';
-import { SatelliteCloudLayer, type SatelliteCloudState } from '../weather/SatelliteCloudLayer';
-import { TemperatureLayer } from '../weather/TemperatureLayer';
-import type { WeatherData, WeatherGridBounds } from '../weather/data';
 import {
   addCartography,
   cartographySettingsForDisplay,
@@ -182,16 +178,9 @@ export type TerrainMapProps = {
   onStatus: (status: string) => void;
   onView: (view: ViewState) => void;
   onCameraMoveStart?: () => void;
-  onAnchor: (anchor: [number, number]) => void;
   onCenter?: (center: [number, number]) => void;
-  onWeatherBounds?: (bounds: WeatherGridBounds) => void;
   onSatellite: (satellite: SatelliteState) => void;
-  onCloud?: (state: SatelliteCloudState) => void;
   onGeology: (state: GeologyState) => void;
-  weather: WeatherData | null;
-  rainWeather?: WeatherData | null;
-  hourIndex: number;
-  rainHourIndex?: number;
   routeOverlay: RouteOverlay;
   guidanceOverlay?: GuidanceOverlay;
   onMapPick: (coordinates: Coordinate) => void;
@@ -249,7 +238,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const boxGestureActive = useRef<boolean>(false);
     // Updated synchronously by the app before React propagates the new layer props.
     const terrainMode = useRef(settings.terrain);
-    const weatherAnchor = useRef<[number, number]>(INITIAL_VIEW.center);
+    const satelliteAnchor = useRef<[number, number]>(INITIAL_VIEW.center);
     const diagnostics = useRef<ReturnType<typeof observeMapRendering> | null>(
       null,
     );
@@ -258,18 +247,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
     latest.current = props;
-    const publishWeatherBounds = (map: Map) => {
-      const bounds = map.getBounds();
-      latest.current.onWeatherBounds?.([
-        bounds.getWest(),
-        bounds.getSouth(),
-        bounds.getEast(),
-        bounds.getNorth(),
-      ]);
-    };
-    const rainRef = useRef<WeatherLayer | null>(null);
-    const cloudRef = useRef<SatelliteCloudLayer | null>(null);
-    const temperatureRef = useRef<TemperatureLayer | null>(null);
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
@@ -445,21 +422,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       void sourceRef.current?.select(latest.current.mapSource ?? null).then(syncRasterLock);
       syncRasterLock();
       if (!useDomestic || s.roads) addCartography(map);
-      temperatureRef.current ??= new TemperatureLayer(map);
-      rainRef.current ??= new WeatherLayer(map);
-      cloudRef.current?.update(s);
-      temperatureRef.current.update(
-        latest.current.weather,
-        latest.current.hourIndex,
-        s.temperature,
-      );
-      rainRef.current.update(
-        latest.current.rainWeather !== undefined
-          ? latest.current.rainWeather
-          : latest.current.weather,
-        latest.current.rainHourIndex ?? latest.current.hourIndex,
-        s,
-      );
       const terrain = map.getTerrain();
       if (
         s.terrain
@@ -564,12 +526,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (latest.current.persistCamera !== false) saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
       areaRef.current?.sync(latest.current.areaOverlay);
       latest.current.onCenter?.(m.getCenter().wrap().toArray());
-      publishWeatherBounds(m);
       syncTracks(latest.current.trackOverlay);
       const p = m.getCenter();
-      if (Math.abs(p.lng - weatherAnchor.current[0]) + Math.abs(p.lat - weatherAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
-        weatherAnchor.current = [Number(p.lng.toFixed(2)), Number(p.lat.toFixed(2))];
-        latest.current.onAnchor(weatherAnchor.current);
+      if (Math.abs(p.lng - satelliteAnchor.current[0]) + Math.abs(p.lat - satelliteAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
+        satelliteAnchor.current = [Number(p.lng.toFixed(2)), Number(p.lat.toFixed(2))];
         syncSatellite();
       }
       latest.current.onView({ bearing: m.getBearing(), pitch: m.getPitch(), zoom: m.getZoom() });
@@ -896,9 +856,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             terrain: map.getTerrain(),
             elevationReady: map.isSourceLoaded('elevation'),
             renderedElevation: map.queryTerrainElevation(map.getCenter()),
-            rainLayerReady: Boolean(map.getLayer('rain-grid')),
-            satelliteCloudLayerReady: Boolean(map.getLayer('satellite-cloud-observation')),
-            satelliteCloudOpacity: map.getLayer('satellite-cloud-observation') ? map.getPaintProperty('satellite-cloud-observation', 'raster-opacity') : null,
             geologyReady: geologyRef.current?.isReady() ?? false,
             center: map.getCenter().toArray(),
             pitch: map.getPitch(),
@@ -1031,7 +988,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             latest.current.onSourceStatus?.(text), sourceProtocolScheme.current!,
           );
           maplibre.addProtocol(sourceProtocolScheme.current!, sourceRef.current.protocol);
-          cloudRef.current = new SatelliteCloudLayer(map, maplibre, state => latest.current.onCloud?.(state));
           const coordinates = new RasterCoordinates(map, sourceRef.current.protocol, sourceProtocolScheme.current!);
           coordinatesRef.current = coordinates;
           maplibre.addProtocol(coordinates.scheme, coordinates.protocol);
@@ -1215,7 +1171,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.once('style.load', async () => {
             if (disposed) return;
             loaded.current = true;
-            publishWeatherBounds(map);
             geologyRef.current = new GeologyLayer(map, (state) =>
               latest.current.onGeology(state),
             );
@@ -1295,8 +1250,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             if (latestQueuedCamera) applyCameraToMap(map, latestQueuedCamera);
             const initialCenter = map.getCenter();
             latest.current.onCenter?.(initialCenter.wrap().toArray());
-            weatherAnchor.current = initialCenter.toArray();
-            latest.current.onAnchor(weatherAnchor.current);
+            satelliteAnchor.current = initialCenter.toArray();
             publishView({
               pitch: map.getPitch(),
               bearing: map.getBearing(),
@@ -1448,7 +1402,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           });
           map.on('moveend', (event) => {
             if (boxGestureActive.current || !loaded.current) return;
-            publishWeatherBounds(map);
             publishView({ bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom() }, true);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) {
@@ -1460,16 +1413,15 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             else areaRef.current?.sync(latest.current.areaOverlay);
             const p = map.getCenter();
             if (
-              Math.abs(p.lng - weatherAnchor.current[0]) +
-                Math.abs(p.lat - weatherAnchor.current[1]) >
+              Math.abs(p.lng - satelliteAnchor.current[0]) +
+                Math.abs(p.lat - satelliteAnchor.current[1]) >
                 0.6 &&
               Math.abs(p.lat) < 75
             ) {
-              weatherAnchor.current = [
+              satelliteAnchor.current = [
                 Number(p.lng.toFixed(2)),
                 Number(p.lat.toFixed(2)),
               ];
-              latest.current.onAnchor(weatherAnchor.current);
               syncSatellite();
             }
           });
@@ -1520,8 +1472,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         refreshCameraOverlays.cancel();
         satelliteAbort.current?.abort();
         terrainAbort.current?.abort();
-        cloudRef.current?.dispose();
-        cloudRef.current = null;
         geologyRef.current?.dispose();
         geologyRef.current = null;
         routeRef.current = null;
@@ -1557,18 +1507,12 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         diagnostics.current?.dispose();
         diagnostics.current = null;
         mapRef.current = null;
-        rainRef.current = null;
-        temperatureRef.current = null;
       };
     }, [contextEpoch]);
     useEffect(() => {
       sync();
     }, [
       settings,
-      props.weather,
-      props.hourIndex,
-      props.rainWeather,
-      props.rainHourIndex,
       props.roadSnapping,
       props.riverSnapping,
       props.section.enabled,
@@ -1640,7 +1584,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const observer = new ResizeObserver(() => {
         const map = mapRef.current;
         map?.resize();
-        if (map && loaded.current) publishWeatherBounds(map);
       });
       observer.observe(container.current);
       return () => observer.disconnect();

@@ -18,8 +18,8 @@ test('share image keeps active imagery, terrain, contours and credits without ca
     {id:'temperature',type:'fill',source:'temperature-grid'}, {id:'model',type:'custom',render(){}},
   ]};
   const current = currentShareMapStyle(style);
-  assert.deepEqual(current.style.layers.map(l=>l.id),['background','imagery','contours','contour-labels','temperature']);
-  assert.deepEqual(Object.keys(current.style.sources),['imagery','dem','contours','temperature-grid']);
+  assert.deepEqual(current.style.layers.map(l=>l.id),['background','imagery','contours','contour-labels']);
+  assert.deepEqual(Object.keys(current.style.sources),['imagery','dem','contours']);
   assert.deepEqual(current.style.terrain,style.terrain);
   assert.equal(current.attribution,'Imagery & credit');
   assert.equal(current.style.layers[3].layout['symbol-spacing'],210);

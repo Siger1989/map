@@ -15,10 +15,7 @@ export function useOfflineMapMode(
       try { localStorage.setItem('shantu.offline-package.v1',trip.id); } catch {}
     }
     callbacks.current.change({
-      temperature: false,
       contours: false,
-      clouds: false,
-      rain: false,
       geology: false,
       elevationColors: false,
       ...(trip ? trip.display ?? { satellite:false,tiandituBase:'vec' as const,offlineBasemap:true,roads:true,labels:true,rasterLevel:null } : {}),

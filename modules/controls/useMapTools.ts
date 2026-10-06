@@ -11,20 +11,30 @@ type Tool = {
 };
 type ModelDocument = Document & {
   modelContext?: {
-    registerTool: (
-      tool: Tool,
-      options: { signal: AbortSignal },
-    ) => void | Promise<void>;
+    registerTool: (tool: Tool, options: { signal: AbortSignal }) => void | Promise<void>;
   };
 };
 type Actions = {
   read: () => unknown;
-  configure: (
-    patch: Partial<LayerSettings>,
-    pitch?: number,
-    bearing?: number,
-  ) => void;
+  configure: (patch: Partial<LayerSettings>, pitch?: number, bearing?: number) => void;
 };
+export const MAP_TOOL_NAMES = ['get_map_view', 'configure_map_view'] as const;
+export const MAP_TOOL_BOOLEAN_FIELDS = ['terrain', 'satellite', 'contours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
+const RETIRED_WEATHER_KEYS = ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity', 'weather', 'weatherTime', 'weatherError'];
+
+/** Keep legacy host state and persisted layer fields out of the map-only WebMCP contract. */
+export function mapViewSnapshot(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const snapshot = { ...(value as Record<string, unknown>) };
+  for (const key of RETIRED_WEATHER_KEYS) delete snapshot[key];
+  if (snapshot.layers && typeof snapshot.layers === 'object' && !Array.isArray(snapshot.layers)) {
+    const layers = { ...(snapshot.layers as Record<string, unknown>) };
+    for (const key of RETIRED_WEATHER_KEYS) delete layers[key];
+    snapshot.layers = layers;
+  }
+  return snapshot;
+}
+
 export function useMapTools(actions: Actions) {
   const latest = useRef(actions);
   latest.current = actions;
@@ -32,42 +42,24 @@ export function useMapTools(actions: Actions) {
     const context = (document as ModelDocument).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
-    const booleans = [
-      'terrain',
-      'satellite',
-      'contours',
-      'elevationColors',
-      'geology',
-      'roads',
-      'labels',
-      'rain',
-      'temperature',
-    ] as const;
+    const booleans = MAP_TOOL_BOOLEAN_FIELDS;
     const tools: Tool[] = [
       {
-        name: 'get_weather_view',
-        title: '读取地图与天气视图',
-        description:
-          "Read the visible map's layer states, camera, selected point, timestamps and terrain readiness.",
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          additionalProperties: false,
-        },
+        name: MAP_TOOL_NAMES[0],
+        title: '读取地图视图',
+        description: "Read the visible map's layer states, camera, selected point and terrain readiness.",
+        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: true },
-        execute: () => latest.current.read(),
+        execute: () => mapViewSnapshot(latest.current.read()),
       },
       {
-        name: 'configure_weather_view',
+        name: MAP_TOOL_NAMES[1],
         title: '调整地图视角和图层',
-        description:
-          'Set visible layers, satellite mode and camera pitch/bearing in the current weather map.',
+        description: 'Set visible map layers, satellite mode and camera pitch/bearing.',
         inputSchema: {
           type: 'object',
           properties: {
-            ...Object.fromEntries(
-              booleans.map((k) => [k, { type: 'boolean' }]),
-            ),
+            ...Object.fromEntries(booleans.map((k) => [k, { type: 'boolean' }])),
             imageryMode: { type: 'string', enum: ['detail', 'latest'] },
             geologySource: { type: 'string', enum: ['world', 'geocloud20w'] },
             geologyOpacity: { type: 'number', minimum: 0.15, maximum: 1 },
@@ -79,85 +71,38 @@ export function useMapTools(actions: Actions) {
         },
         annotations: { readOnlyHint: false, untrustedContentHint: false },
         execute: async (input) => {
-          if (!input || typeof input !== 'object' || Array.isArray(input))
-            throw new Error('Expected a view configuration object');
+          if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Expected a view configuration object');
           const args = input as Record<string, unknown>;
           const patch: Partial<LayerSettings> = {};
-          for (const key of Object.keys(args)) {
-            if (
-              ![
-                ...booleans,
-                'imageryMode',
-                'geologySource',
-                'geologyOpacity',
-                'elevationColorsOpacity',
-                'pitch',
-                'bearing',
-              ].includes(key)
-            )
-              throw new Error('Unknown view field: ' + key);
+          const allowed = [...booleans, 'imageryMode', 'geologySource', 'geologyOpacity', 'elevationColorsOpacity', 'pitch', 'bearing'];
+          for (const key of Object.keys(args)) if (!allowed.includes(key as typeof allowed[number])) throw new Error('Unknown view field: ' + key);
+          for (const key of booleans) if (key in args) {
+            if (typeof args[key] !== 'boolean') throw new Error(key + ' must be boolean');
+            patch[key] = args[key];
           }
-          for (const key of booleans)
-            if (key in args) {
-              if (typeof args[key] !== 'boolean')
-                throw new Error(key + ' must be boolean');
-              patch[key] = args[key];
-            }
           if ('imageryMode' in args) {
-            if (args.imageryMode !== 'detail' && args.imageryMode !== 'latest')
-              throw new Error('Invalid imagery mode');
+            if (args.imageryMode !== 'detail' && args.imageryMode !== 'latest') throw new Error('Invalid imagery mode');
             patch.imageryMode = args.imageryMode;
           }
           if ('geologySource' in args) {
-            if (
-              args.geologySource !== 'world' &&
-              args.geologySource !== 'geocloud20w'
-            )
-              throw new Error('Invalid geology source');
+            if (args.geologySource !== 'world' && args.geologySource !== 'geocloud20w') throw new Error('Invalid geology source');
             patch.geologySource = args.geologySource;
           }
           for (const [key, min, max] of [
-            ['geologyOpacity', 0.15, 1],
-            ['elevationColorsOpacity', 0, 1],
-            ['pitch', 0, 80],
-            ['bearing', -180, 180],
-          ] as const)
-            if (
-              key in args &&
-              (typeof args[key] !== 'number' ||
-                !Number.isFinite(args[key]) ||
-                args[key] < min ||
-                args[key] > max)
-            )
-              throw new Error('Invalid ' + key);
-          if (typeof args.geologyOpacity === 'number')
-            patch.geologyOpacity = args.geologyOpacity;
-          if (typeof args.elevationColorsOpacity === 'number')
-            patch.elevationColorsOpacity = args.elevationColorsOpacity;
-          if (typeof args.pitch === 'number' && args.pitch > 0)
-            patch.terrain = true;
-          flushSync(() =>
-            latest.current.configure(
-              patch,
-              args.pitch as number | undefined,
-              args.bearing as number | undefined,
-            ),
-          );
-          await new Promise<void>((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-          );
-          return latest.current.read();
+            ['geologyOpacity', 0.15, 1], ['elevationColorsOpacity', 0, 1], ['pitch', 0, 80], ['bearing', -180, 180],
+          ] as const) if (key in args && (typeof args[key] !== 'number' || !Number.isFinite(args[key]) || args[key] < min || args[key] > max)) throw new Error('Invalid ' + key);
+          if (typeof args.geologyOpacity === 'number') patch.geologyOpacity = args.geologyOpacity;
+          if (typeof args.elevationColorsOpacity === 'number') patch.elevationColorsOpacity = args.elevationColorsOpacity;
+          if (typeof args.pitch === 'number' && args.pitch > 0) patch.terrain = true;
+          flushSync(() => latest.current.configure(patch, args.pitch as number | undefined, args.bearing as number | undefined));
+          await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+          return mapViewSnapshot(latest.current.read());
         },
       },
     ];
     for (const tool of tools) {
-      try {
-        void Promise.resolve(
-          context.registerTool(tool, { signal: lifecycle.signal }),
-        ).catch(() => {});
-      } catch {
-        /* Optional browser capability. */
-      }
+      try { void Promise.resolve(context.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); }
+      catch { /* Optional browser capability. */ }
     }
     return () => lifecycle.abort();
   }, []);

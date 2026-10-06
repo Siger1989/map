@@ -16,46 +16,48 @@ test('map layer preferences round-trip actual user selections', () => {
       ...DEFAULT_LAYERS,
       terrain: false, satellite: true, satelliteProvider: 'tianditu', tiandituBase: 'ter',
       tiandituLabels: 'cta', tiandituBoundaries: false, imageryMode: 'latest',
-      clouds: true, cloudOpacity: 0.4, cloudTime: '202610030600', rain: true, temperature: false, roads: false, labels: false,
+      roads: false, labels: false,
       geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.45,
       contours: true, contourInterval: 100, elevationColors: true,
-      elevationColorsOpacity: 0.35, opacity: 0.72, exaggeration: 1.6,
+      elevationColorsOpacity: 0.35, exaggeration: 1.6,
       offlineBasemap: true, offlineMaxZoom: 13, rasterLevel: 12,
       roadsOpacity: 0.6, rasterDatums: { 'custom:abc': 'gcj02' },
     };
     saveLayerPreferences(selected);
-    const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, cloudTime: _historicCloudTime, ...expected } = selected;
+    const { rasterDatums: _datumPreferences, offlineMaxZoom: _retiredLimit, ...expected } = selected;
     assert.deepEqual(readLayerPreferences(), expected);
     const persisted = JSON.parse(values.get(LAYER_PREFERENCES_KEY));
     assert.equal(persisted.version, 1);
     assert.equal('rasterDatums' in persisted.layers, false, 'datum choices remain in their existing preference key');
-    assert.equal('cloudTime' in persisted.layers, false, 'reopening follows latest observation');
+    for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) assert.equal(key in persisted.layers, false, key + ' is retired');
   } finally {
     if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
     else delete globalThis.localStorage;
   }
 });
 
-test('rain and other thematic fills cannot be enabled together through layer patches', () => {
-  let state = applyLayerPatch({ ...DEFAULT_LAYERS, temperature: true }, { rain: true });
-  assert.equal(state.rain, true);
-  assert.equal(state.temperature, false);
-  assert.equal(state.geology, false);
-  assert.equal(state.elevationColors, false);
-
-  for (const patch of [{ temperature: true }, { geology: true }, { elevationColors: true }]) {
-    state = applyLayerPatch({ ...DEFAULT_LAYERS, rain: true }, patch);
-    assert.equal(state.rain, false);
-    assert.equal(state[Object.keys(patch)[0]], true);
+test('legacy weather preferences and patches are ignored without losing other settings', () => {
+  const legacy = { ...DEFAULT_LAYERS, terrain: false, satellite: true, roadsOpacity: 0.4,
+    clouds: true, cloudOpacity: 0.2, cloudTime: '202610030600', rain: true, temperature: true, opacity: 0.2 };
+  const parsed = parseLayerPreferences(JSON.stringify({ version: 1, layers: legacy }), legacy);
+  for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) {
+    assert.equal(key in parsed, false, key + ' is omitted from parsed legacy preferences');
   }
+  assert.equal(parsed.terrain, false);
+  assert.equal(parsed.satellite, true);
+  assert.equal(parsed.roadsOpacity, 0.4);
 
-  state = applyLayerPatch(DEFAULT_LAYERS, {
-    temperature: true, geology: true, elevationColors: true, rain: true,
-  });
-  assert.equal(state.temperature, true, 'existing thematic priority is retained');
-  assert.equal(state.geology, false);
-  assert.equal(state.elevationColors, false);
-  assert.equal(state.rain, false);
+  const patched = applyLayerPatch(legacy, { clouds: true, cloudOpacity: 1, cloudTime: '20261003', rain: true, temperature: true, opacity: 1 });
+  for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) {
+    assert.equal(key in patched, false, key + ' cannot be restored by an external patch');
+  }
+  assert.equal(patched.roadsOpacity, 0.4);
+  assert.equal(patched.satellite, true);
+});
+
+test('geology and elevation colours remain mutually exclusive', () => {
+  assert.equal(applyLayerPatch(DEFAULT_LAYERS, { geology: true }).elevationColors, false);
+  assert.equal(applyLayerPatch({ ...DEFAULT_LAYERS, geology: true }, { elevationColors: true }).geology, false);
 });
 
 test('malformed, missing and old preference formats retain current startup defaults', () => {
@@ -100,7 +102,7 @@ test('invalid stored values fall back field by field and valid choices survive',
     geologySource: 'unknown', clouds: true, rasterLevel: -1,
   } }), fallback);
   assert.equal(parsed?.satellite, false);
-  assert.equal(parsed?.clouds, true);
+  assert.equal(parsed?.clouds, undefined);
   assert.equal(parsed?.terrain, fallback.terrain);
   assert.equal(parsed?.imageryMode, fallback.imageryMode);
   assert.equal(parsed?.roadsOpacity, fallback.roadsOpacity);

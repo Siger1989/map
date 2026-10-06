@@ -2,7 +2,7 @@ import { RouteProviderNote } from './RouteProviderNote';
 import { RouteResultSummary } from './RouteResultSummary';
 import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
   MapPin,
@@ -35,7 +35,6 @@ export function RoutePanel({
   navigating,
   guidanceError,
   onShare,
-  weather,
   onEditPoints,
   onCancel,
   onImport,
@@ -53,7 +52,6 @@ export function RoutePanel({
   navigating: boolean;
   guidanceError: string;
   onShare: () => void;
-  weather?: ReactNode;
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
@@ -256,7 +254,7 @@ export function RoutePanel({
     onImport={onImport}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
-    navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} weather={weather} onEditPoints={onEditPoints} onCancel={onCancel}
+    navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
   />;
   return (
     <div className="route-panel" data-picking={n.picking !== null}>

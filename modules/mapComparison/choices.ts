@@ -1,4 +1,4 @@
-import type { LayerSettings } from '../map/types';
+import { applyLayerPatch, type LayerSettings } from '../map/types';
 import type { MapSource } from '../mapSources/types';
 import { FREE_MAPS } from '../mapSources/presets';
 import { basemapConfiguration } from '../cartography/basemaps';
@@ -19,12 +19,12 @@ export function comparisonChoices(
   maps: MapSource[],
   domestic = basemapConfiguration().domestic,
 ): ComparisonChoice[] {
-  const clean = { ...settings, rasterLevel: null, offlineMaxZoom: null, offlineBasemap: false };
+  const clean = { ...applyLayerPatch(settings, {}), rasterLevel: null, offlineMaxZoom: null, offlineBasemap: false };
   const builtin = (id: string, label: string, patch: Partial<LayerSettings>): ComparisonChoice => ({
     id, name: label, group: '内置', source: null, settings: { ...clean, ...patch },
   });
   return [
-    { id: 'current', name, group: '当前', source, settings },
+    { id: 'current', name, group: '当前', source, settings: clean },
     builtin('terrain', '开源道路地形', { satellite: false, satelliteProvider: 'sentinel', tiandituBase: 'vec', offlineBasemap: true }),
     builtin('sentinel', 'Sentinel-2 2025', { satellite: true, satelliteProvider: 'sentinel', imageryMode: 'detail' }),
     ...(!domestic ? [builtin('latest', '最新云况', { satellite: true, satelliteProvider: 'sentinel', imageryMode: 'latest' })] : []),

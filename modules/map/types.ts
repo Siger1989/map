@@ -15,16 +15,10 @@ export type LayerSettings = {
   geology: boolean;
   geologySource: 'world' | 'geocloud20w';
   geologyOpacity: number;
-  clouds: boolean;
-  cloudOpacity?: number;
-  cloudTime?: string;
-  rain: boolean;
-  temperature: boolean;
   roads: boolean;
   roadsOpacity?: number;
   rasterLevel?: number | null;
   labels: boolean;
-  opacity: number;
   exaggeration: number;
   imageryMode: 'detail' | 'latest';
 };
@@ -39,24 +33,20 @@ export const DEFAULT_LAYERS: LayerSettings = {
   geology: false,
   geologySource: 'world',
   geologyOpacity: 0.85,
-  clouds: false,
-  cloudOpacity: 0.55,
-  rain: false,
-  temperature: false,
   roads: true,
   roadsOpacity: 1,
   rasterLevel: null,
   labels: true,
-  opacity: 0.6,
   exaggeration: 1,
   imageryMode: 'detail',
 };
-/** Thematic colours must not blend into a misleading combined legend. */
+/** Apply map display changes while refusing retired weather-layer keys from old clients. */
 export function applyLayerPatch(
   current: LayerSettings,
   patch: Partial<LayerSettings>,
 ): LayerSettings {
-  const next = { ...current, ...patch };
+  const next = { ...current, ...patch } as LayerSettings & Record<string, unknown>;
+  for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete next[key];
   if (patch.tiandituBase) {
     next.satelliteProvider = patch.satelliteProvider ?? 'tianditu';
     next.satellite = patch.tiandituBase === 'img';
@@ -64,23 +54,8 @@ export function applyLayerPatch(
     next.offlineBasemap = patch.offlineBasemap ?? false;
   } else if (patch.satellite !== undefined) next.tiandituBase = patch.satellite ? 'img' : 'vec';
   if (patch.satellite === true && patch.offlineBasemap !== true) next.offlineBasemap = false;
-  if (patch.temperature === true) {
-    next.elevationColors = false;
-    next.geology = false;
-    next.rain = false;
-  } else if (patch.geology === true) {
-    next.elevationColors = false;
-    next.temperature = false;
-    next.rain = false;
-  } else if (patch.elevationColors === true) {
-    next.geology = false;
-    next.temperature = false;
-    next.rain = false;
-  } else if (patch.rain === true) {
-    next.elevationColors = false;
-    next.geology = false;
-    next.temperature = false;
-  }
+  if (patch.geology === true) next.elevationColors = false;
+  else if (patch.elevationColors === true) next.geology = false;
   return next;
 }
 export type Point = { lng: number; lat: number; elevation: number | null };

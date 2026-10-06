@@ -1,13 +1,12 @@
 import { ColorElevation } from '../tracks/ColorElevation';
 import type { ManualTrack } from '../tracks/drawing';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   formatDistance,
   formatDuration,
   type Coordinate,
   type TravelMode,
 } from '../navigation/types';
-import { describeWeather } from '../weather/data';
 import { hasLoosePoints, joinSegments } from '../tracks/snapping';
 import { routeConnectionLabel } from '../tracks/routeInfo';
 import {
@@ -18,11 +17,6 @@ import {
   type ElevationSample,
 } from './metrics';
 import { readProfile } from './elevationProvider';
-import {
-  fetchRouteWeather,
-  matchForecast,
-  type RouteForecast,
-} from './weatherProvider';
 const metres = (value: number | null) =>
   value === null ? '—' : `${Math.round(value).toLocaleString()} m`;
 const beijing = (time: number) =>
@@ -73,7 +67,7 @@ function Profile({ samples }: { samples: ElevationSample[] }) {
   );
 }
 
-/** Optional route details. Reads the shared DEM and an independent forecast adapter. */
+/** Optional route details. Reads the shared DEM and estimates the trip schedule. */
 export function JourneyPanel({
   segments,
   onLocate,
@@ -99,17 +93,13 @@ export function JourneyPanel({
   );
   const [profile, setProfile] = useState<ElevationSample[]>([]),
     [terrainLoading, setTerrainLoading] = useState(false);
-  const [terrainError, setTerrainError] = useState(''),
-    [weatherError, setWeatherError] = useState('');
-  const [forecast, setForecast] = useState<RouteForecast | null>(null),
-    [weatherLoading, setWeatherLoading] = useState(false);
+  const [terrainError, setTerrainError] = useState('');
   const [departure, setDeparture] = useState(() =>
       new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16),
     ),
     [speed, setSpeed] = useState(
       { auto: '50', bicycle: '15', pedestrian: '4' }[mode],
     );
-  const weatherRequest = useRef<AbortController | null>(null);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
     const request = new AbortController();
@@ -128,28 +118,6 @@ export function JourneyPanel({
       });
     return () => request.abort();
   }, [samples, retry]);
-  useEffect(() => {
-    setForecast(null);
-    setWeatherError('');
-    setWeatherLoading(false);
-    return () => weatherRequest.current?.abort();
-  }, [stops]);
-  const getWeather = async () => {
-    weatherRequest.current?.abort();
-    const request = new AbortController();
-    weatherRequest.current = request;
-    setWeatherLoading(true);
-    setWeatherError('');
-    try {
-      const result = await fetchRouteWeather(stops, request.signal);
-      if (!request.signal.aborted) setForecast(result);
-    } catch (e) {
-      if (!request.signal.aborted)
-        setWeatherError(e instanceof Error ? e.message : '沿途天气读取失败。');
-    } finally {
-      if (!request.signal.aborted) setWeatherLoading(false);
-    }
-  };
   const stats = elevationStats(profile),
     departureTime = new Date(departure + '+08:00').getTime(),
     kmh = Number(speed);
@@ -165,7 +133,7 @@ export function JourneyPanel({
     0,
   );
   return (
-    <section className="journey-panel" aria-label="整条线路统计与沿途天气">
+    <section className="journey-panel" aria-label="整条线路统计与行程时间">
       <div className="journey-total">
         <strong>{formatDistance(distance)}</strong>
         <span>
@@ -236,7 +204,7 @@ export function JourneyPanel({
           )}
         </>
       )}
-      <strong className="journey-subtitle">沿途天气</strong>
+      <strong className="journey-subtitle">行程时间</strong>
       {canTime ? (
         <>
           <label className="journey-input">
@@ -274,33 +242,15 @@ export function JourneyPanel({
               ? `预计 ${formatDuration(distance / (kmh / 3.6))}，未计入休息和路况。`
               : '请填有效时间和 0.5–150 km/h 的速度。'}
           </p>
-          <button
-            className="route-primary"
-            disabled={weatherLoading || !validTiming}
-            onClick={() => void getWeather()}
-          >
-            {weatherLoading
-              ? '正在读取沿途预报…'
-              : forecast
-                ? '刷新沿途天气'
-                : '获取沿途天气'}
-          </button>
-          {weatherError && (
-            <p className="route-error" role="alert">
-              {weatherError}
-            </p>
-          )}
-          {forecast && validTiming && (
+          {validTiming && (
             <>
               <p className="route-note">
-                更新 {beijing(forecast.fetchedAt)} ·
-                点按地点定位。预报为最近整点，降水为该预报时刻前一小时总量（含雨雪）。
+                行程时间按平均速度估算；点按地点可在地图定位。
               </p>
-              <ol className="journey-weather">
+              <ol className="journey-weather" aria-label="行程时间安排">
                 {stops.map((stop, i) => {
                   const arrival =
-                      departureTime + (stop.distance / (kmh / 3.6)) * 1000,
-                    hour = matchForecast(forecast.points[i], arrival);
+                    departureTime + (stop.distance / (kmh / 3.6)) * 1000;
                   return (
                     <li key={i}>
                       <button onClick={() => onLocate(stop.coordinates)}>
@@ -314,42 +264,10 @@ export function JourneyPanel({
                         </b>
                         <span>预计 {beijing(arrival)}</span>
                       </button>
-                      {hour ? (
-                        <>
-                          <strong>
-                            {describeWeather(hour.code)} ·{' '}
-                            {hour.temperature === null
-                              ? '气温缺测'
-                              : `${hour.temperature.toFixed(0)}°C`}
-                          </strong>
-                          <span>
-                            降水{' '}
-                            {hour.precipitation === null
-                              ? '—'
-                              : hour.precipitation.toFixed(1)}{' '}
-                            mm · 风{' '}
-                            {hour.wind === null ? '—' : hour.wind.toFixed(1)}{' '}
-                            m/s
-                          </span>
-                          <small>预报时刻 {beijing(hour.time)}</small>
-                        </>
-                      ) : (
-                        <span>到达时间超出预报范围或该时段缺测</span>
-                      )}
                     </li>
                   );
                 })}
               </ol>
-              <p className="route-note">
-                <a
-                  href="https://open-meteo.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open-Meteo
-                </a>{' '}
-                模型预报；稀疏采样不代表沿路每处天气，山谷局地变化可能无法分辨。
-              </p>
             </>
           )}
         </>

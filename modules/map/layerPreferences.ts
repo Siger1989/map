@@ -4,6 +4,11 @@ export const LAYER_PREFERENCES_KEY = 'shantu.map.layer-preferences.v1';
 const CURRENT_VERSION = 1;
 type PersistedLayers = Omit<LayerSettings, 'rasterDatums' | 'offlineMaxZoom'>;
 
+function withoutRetiredWeather(settings: LayerSettings): LayerSettings {
+  const result = { ...settings } as LayerSettings & Record<string, unknown>;
+  for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete result[key];
+  return result;
+}
 function bounded(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
 }
@@ -17,8 +22,8 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     const envelope = parsed as { version?: unknown; layers?: unknown };
     if (envelope.version !== 1 || !envelope.layers || typeof envelope.layers !== 'object' || Array.isArray(envelope.layers)) return null;
     const value = envelope.layers as Record<string, unknown>;
-    const result: LayerSettings = { ...fallback };
-    const booleans = ['terrain', 'satellite', 'offlineBasemap', 'tiandituBoundaries', 'contours', 'elevationColors', 'geology', 'clouds', 'rain', 'temperature', 'roads', 'labels'] as const;
+    const result = withoutRetiredWeather(fallback) as LayerSettings & Record<string, unknown>;
+    const booleans = ['terrain', 'satellite', 'offlineBasemap', 'tiandituBoundaries', 'contours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
     for (const key of booleans) if (typeof value[key] === 'boolean') Object.assign(result, { [key]: value[key] });
     if (value.satelliteProvider === 'sentinel' || value.satelliteProvider === 'tianditu') result.satelliteProvider = value.satelliteProvider;
     if (value.tiandituBase === 'vec' || value.tiandituBase === 'img' || value.tiandituBase === 'ter') result.tiandituBase = value.tiandituBase;
@@ -29,25 +34,21 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (bounded(value.elevationColorsOpacity, 0, 1)) result.elevationColorsOpacity = value.elevationColorsOpacity;
     if (bounded(value.geologyOpacity, 0, 1)) result.geologyOpacity = value.geologyOpacity;
     if (bounded(value.roadsOpacity, 0, 1)) result.roadsOpacity = value.roadsOpacity;
-    if (bounded(value.opacity, 0, 1)) result.opacity = value.opacity;
-    if (bounded(value.cloudOpacity, 0, 1)) result.cloudOpacity = value.cloudOpacity;
-    // Historic observation times are session-only; reopening follows the latest frame.
-    delete result.cloudTime;
     if (bounded(value.exaggeration, 0.1, 5)) result.exaggeration = value.exaggeration;
     if (value.rasterLevel === null || bounded(value.rasterLevel, 0, 24)) result.rasterLevel = value.rasterLevel;
-    // Retired offline packages must not cap normal online map detail.
+    // Retired weather keys and offline package caps are intentionally ignored.
     delete result.offlineMaxZoom;
     return result;
   } catch { return null; }
 }
 
 export function readLayerPreferences(fallback: LayerSettings = DEFAULT_LAYERS): LayerSettings {
-  try { return parseLayerPreferences(localStorage.getItem(LAYER_PREFERENCES_KEY), fallback) ?? fallback; }
-  catch { return fallback; }
+  try { return parseLayerPreferences(localStorage.getItem(LAYER_PREFERENCES_KEY), fallback) ?? withoutRetiredWeather(fallback); }
+  catch { return withoutRetiredWeather(fallback); }
 }
 
 export function saveLayerPreferences(settings: LayerSettings): void {
-  const { rasterDatums: _rasterDatums, offlineMaxZoom: _offlineMaxZoom, cloudTime: _cloudTime, ...layers } = settings;
+  const { rasterDatums: _rasterDatums, offlineMaxZoom: _offlineMaxZoom, ...layers } = settings;
   try {
     const current = localStorage.getItem(LAYER_PREFERENCES_KEY);
     if (current) {
@@ -59,7 +60,9 @@ export function saveLayerPreferences(settings: LayerSettings): void {
         if (typeof version === 'number' && Number.isFinite(version) && version > CURRENT_VERSION) return;
       } catch { /* Corrupt current data is safe to replace with a valid snapshot. */ }
     }
-    localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ version: CURRENT_VERSION, layers: layers satisfies PersistedLayers }));
+    const persisted = { ...layers } as PersistedLayers & Record<string, unknown>;
+    for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete persisted[key];
+    localStorage.setItem(LAYER_PREFERENCES_KEY, JSON.stringify({ version: CURRENT_VERSION, layers: persisted satisfies PersistedLayers }));
   }
   catch { /* A full or disabled store must not interrupt map controls. */ }
 }

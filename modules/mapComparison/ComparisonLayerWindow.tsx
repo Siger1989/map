@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import type { ComparisonChoice } from './choices';
 import type { LayerSettings } from '../map/types';
-import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { LayerPanel } from '../controls/LayerPanel';
 import { LayerPresets } from '../controls/LayerPresets';
 import { isLayoutInteraction } from '../uiLayout/events';
@@ -20,7 +19,6 @@ export function ComparisonLayerWindow({
   status,
   satelliteDate,
   satelliteStatus,
-  cloudState,
 }: {
   pane: 0 | 1;
   onPane: (pane: 0 | 1) => void;
@@ -32,7 +30,6 @@ export function ComparisonLayerWindow({
   status: string;
   satelliteDate?: string;
   satelliteStatus?: string;
-  cloudState?: SatelliteCloudState | null;
 }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const root = useRef<HTMLElement>(null);
@@ -105,7 +102,6 @@ export function ComparisonLayerWindow({
             onOpenSources={onSource}
             satelliteDate={satelliteDate}
             satelliteStatus={satelliteStatus}
-            cloudState={cloudState}
             presets={
               <LayerPresets settings={choice.settings} onChange={onChange} />
             }

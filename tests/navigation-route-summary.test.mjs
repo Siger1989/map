@@ -81,7 +81,6 @@ test('route details show the bounded elevation profile without turn instructions
     navigating: false,
     guidanceError: '',
     saveMessage: '',
-    weather: React.createElement('p', null, '沿途预报'),
   };
 
   await act(async () => root.render(React.createElement(RouteResultSummary, props)));
@@ -97,7 +96,7 @@ test('route details show the bounded elevation profile without turn instructions
   assert.match(host.textContent, /部分海拔缺失/);
   assert.match(host.textContent, /最高海拔.*9\d+ m/);
   assert.doesNotMatch(host.textContent, /出发|沿虚线前往道路接入点|左转/);
-  assert.equal(host.querySelector('[aria-label="沿途天气"]')?.textContent.includes('沿途预报'), true);
+  assert.equal(host.querySelector('[aria-label="沿途天气"]'), null);
   assert.equal(showCalls, 0, 'opening details does not move the map');
   assert.equal(JSON.stringify(route), originalRoute, 'the planned route stays unchanged');
 

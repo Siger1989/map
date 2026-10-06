@@ -2,7 +2,6 @@ import { isLayoutInteraction } from '../uiLayout/events';
 import { useEffect, useRef } from 'react';
 import { Layers, X } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
-import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { LayerPanel } from './LayerPanel';
 import { LayerPresets } from './LayerPresets';
 import './layerWindow.css';
@@ -18,7 +17,6 @@ export function LayerWindow({
   satelliteDate,
   satelliteStatus,
   mapStatus,
-  cloudState,
 }: {
   open: boolean;
   onOpen: (open: boolean) => void;
@@ -29,7 +27,6 @@ export function LayerWindow({
   satelliteDate?: string;
   satelliteStatus?: string;
   mapStatus: string;
-  cloudState?: SatelliteCloudState | null;
 }) {
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -103,7 +100,6 @@ export function LayerWindow({
               onChange={onChange}
               satelliteDate={satelliteDate}
               satelliteStatus={satelliteStatus}
-              cloudState={cloudState}
             />
 
             <p className="map-status" role="status">

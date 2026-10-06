@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   themeColor: '#10212b',
 };
 export const metadata: Metadata = {
-  title: `${PRODUCT_NAME} · 三维地图与沿途天气`,
+  title: `${PRODUCT_NAME} · 三维地图与户外记录`,
   description: PRODUCT_DESCRIPTION,
   icons: { icon: '/brand/shantu-logo.png', apple: '/brand/shantu-logo.png' },
 };

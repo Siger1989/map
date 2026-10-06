@@ -11,13 +11,9 @@ const settings = (overrides = {}) => ({
   geology: false,
   geologySource: 'world',
   geologyOpacity: 0.85,
-  clouds: false,
-  rain: false,
-  temperature: false,
   roads: true,
   roadsOpacity: 0.75,
   labels: true,
-  opacity: 0.6,
   exaggeration: 1.2,
   imageryMode: 'detail',
   ...overrides,
@@ -61,7 +57,7 @@ function renderedProps(element) {
   return element[propsKey];
 }
 
-test('layer window renders all ten standard switches and the roads slider callback', async (t) => {
+test('layer window renders the seven map switches and the roads slider callback', async (t) => {
   const { React, root, LayerWindow } = await renderHarness(t);
   const changes = [];
   await React.act(async () => root.render(React.createElement(LayerWindow, {
@@ -74,8 +70,8 @@ test('layer window renders all ten standard switches and the roads slider callba
   })));
 
   const switches = [...document.querySelectorAll('[role="switch"]')];
-  assert.equal(switches.length, 10);
-  for (const key of ['clouds', 'temperature', 'terrain', 'satellite', 'elevationColors', 'contours', 'geology', 'roads', 'labels', 'rain']) {
+  assert.equal(switches.length, 7);
+  for (const key of ['terrain', 'satellite', 'elevationColors', 'contours', 'geology', 'roads', 'labels']) {
     const toggle = document.getElementById(`${key}-toggle`);
     assert.ok(toggle, `missing ${key} switch`);
     assert.ok(toggle.getAttribute('aria-labelledby'));
@@ -93,7 +89,7 @@ test('layer window renders all ten standard switches and the roads slider callba
   assert.ok(changes.some(patch => patch.roadsOpacity === 0.4), 'rendered roads slider reports opacity through onChange');
 });
 
-test('custom source hides satellite but retains cloud observation and nine other switches', async (t) => {
+test('custom source hides satellite but retains the six applicable map switches', async (t) => {
   const { React, root, LayerWindow } = await renderHarness(t);
   await React.act(async () => root.render(React.createElement(LayerWindow, {
     open: true,
@@ -106,7 +102,7 @@ test('custom source hides satellite but retains cloud observation and nine other
   })));
 
   const switches = [...document.querySelectorAll('[role="switch"]')];
-  assert.equal(switches.length, 9);
+  assert.equal(switches.length, 6);
   assert.equal(document.getElementById('satellite-toggle'), null);
   assert.ok(document.getElementById('roads-toggle'));
   assert.ok(document.getElementById('labels-toggle'));
@@ -134,24 +130,20 @@ test('layer help hosts scene presets and the close button reports closed state',
   const terrainPreset = [...help.querySelectorAll('button')].find(button => button.textContent.includes('看清地形'));
   assert.ok(terrainPreset);
   await React.act(async () => terrainPreset.click());
-  assert.ok(changes.some(patch => patch.terrain === true && patch.rain === false && patch.contours === true));
+  assert.ok(changes.some(patch => patch.terrain === true && patch.contours === true));
 
   await React.act(async () => document.querySelector('[aria-label="关闭图层窗口"]').click());
   assert.deepEqual(openStates, [false]);
 });
 
-test('cloud controls expose observation time, errors and zero opacity independently of basemap', async t => {
+test('weather controls and status are absent independently of basemap choice', async t => {
   const { React, root, LayerWindow } = await renderHarness(t);
-  const changes = [];
   await React.act(async () => root.render(React.createElement(LayerWindow, {
-    open: true, onOpen() {}, settings: settings({clouds:true}), onChange: patch => changes.push(patch),
+    open: true, onOpen() {}, settings: settings(), onChange() {},
     onOpenSources() {}, customSource:'自定义地图', mapStatus:'ready',
-    cloudState:{loading:false,ready:true,error:'',frame:{stamp:'202610030600',timeUTC:Date.UTC(2026,9,3,6)},frames:[{stamp:'202610030500',timeUTC:Date.UTC(2026,9,3,5)}]},
   })));
-  assert.match(document.querySelector('[aria-label="卫星云图状态"]').textContent, /14:00.*北京时间/);
-  await React.act(async () => renderedProps(document.getElementById('cloud-opacity')).onChange({target:{value:'0'}}));
-  await React.act(async () => renderedProps(document.getElementById('cloud-time')).onChange({target:{value:'202610030500'}}));
-  assert.deepEqual(changes,[{cloudOpacity:0},{cloudTime:'202610030500'}]);
   assert.equal(document.getElementById('satellite-toggle'), null);
-  assert.ok(document.getElementById('clouds-toggle'));
+  for (const id of ['clouds-toggle', 'temperature-toggle', 'rain-toggle', 'cloud-opacity', 'cloud-time', 'rain-opacity'])
+    assert.equal(document.getElementById(id), null, `${id} is removed`);
+  assert.equal(document.querySelector('[aria-label="卫星云图状态"]'), null);
 });

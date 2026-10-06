@@ -5,7 +5,7 @@ import { altitudeLabel, weatherSource } from './details';
 import { describeWeather } from '../weather/data';
 export function weatherLabel(photo: TripPhoto) {
   const w = photo.weather;
-  if (!w) return `拍摄天气：${photo.weatherError || '正在查询'}`;
+  if (!w) return `拍摄天气：${photo.weatherError || '未记录'}`;
   const number = (v: number | null, suffix: string) =>
     v === null ? '未提供' : `${v.toFixed(1)}${suffix}`;
   return `${describeWeather(w.code)} · ${number(w.temperature, '℃')} · 风 ${number(w.wind, 'm/s')} · 小时降水 ${number(w.precipitation, 'mm')}`;

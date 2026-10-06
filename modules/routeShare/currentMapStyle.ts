@@ -8,7 +8,7 @@ export function currentShareMapStyle(input: StyleSpecification): ShareMapStyle {
     if ((layer.type as string) === 'custom' || layer.layout?.visibility === 'none') return false;
     if (!('source' in layer)) return true;
     const source = input.sources[layer.source];
-    return source && (['vector','raster','raster-dem','image'].includes(source.type) || source.type === 'geojson' && layer.source === 'temperature-grid');
+    return source && ['vector','raster','raster-dem','image'].includes(source.type);
   });
   const ids = new Set(layers.flatMap(layer => 'source' in layer ? [layer.source] : []));
   if (input.terrain) ids.add(input.terrain.source);

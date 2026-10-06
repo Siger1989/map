@@ -38,8 +38,6 @@ import { FavoriteSourceSwitcher } from '@/modules/mapSources/FavoriteSourceSwitc
 import { readLastView, saveLastView, shouldFocusStartupPosition } from '@/modules/map/lastView';
 import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerPreferences';
 import { LayerWindow } from '@/modules/controls/LayerWindow';
-import { WeatherPanel } from '@/modules/controls/WeatherPanel';
-import { WeatherSummary } from '@/modules/controls/WeatherSummary';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { RouteNameInput } from '@/modules/navigation/RouteNameInput';
 import { defaultRouteName } from '@/modules/navigation/routeName';
@@ -52,7 +50,6 @@ import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/m
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
 import { MapActions } from '@/modules/controls/MapActions';
-import { Timeline } from '@/modules/controls/Timeline';
 import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
 import { useNavigation } from '@/modules/navigation/useNavigation';
@@ -107,11 +104,6 @@ import type { ManualTrack } from '@/modules/tracks/drawing';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
 import { pickTrackContinuation } from '@/modules/tracks/prepareTrackContinuation';
-import { useRouteJourney } from '@/modules/journey/useRouteJourney';
-import {
-  RouteWeatherRail,
-  RouteWeatherSettings,
-} from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
 import { useMotionHeading } from '@/modules/position/useMotionHeading';
 import { canFollow, isPositionTracking, recordingPosition, positionZoom } from '@/modules/position/follow';
@@ -183,12 +175,8 @@ import { INITIAL_GEOLOGY } from '@/modules/geology/data';
 import { GeologyPanel } from '@/modules/geology/GeologyPanel';
 import { useAreas } from '@/modules/areas/useAreas';
 import { AreaTools } from '@/modules/areas/AreaTools';
-import { useWeather } from '@/modules/weather/useWeather';
-import { TemperatureLegend } from '@/modules/weather/TemperatureLegend';
-import { CmaRadarPanel } from '@/modules/weather/CmaRadarPanel';
 import { useMapTools } from '@/modules/controls/useMapTools';
 import type { SatelliteState } from '@/modules/satellite/satellite';
-import type { SatelliteCloudState } from '@/modules/weather/SatelliteCloudLayer';
 import {
   DEFAULT_LAYERS,
   applyLayerPatch,
@@ -276,19 +264,13 @@ export default function Home() {
   );
   const [sourcesNavigation, setSourcesNavigation] =
     useState<MapSourcesNavigation | null>(null);
-  const [anchor, setAnchor] = useState<[number, number]>(INITIAL_VIEW.center);
-  const [weatherBounds, setWeatherBounds] = useState<readonly [number, number, number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
-  const [cloudState, setCloudState] = useState<SatelliteCloudState | null>(null);
   const [satellite, setSatellite] = useState<SatelliteState>({
     date: '',
     status: '正在获取卫星影像日期…',
     ready: false,
   });
-  const [hourIndex, setHourIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const weather = useWeather(anchor);
   const navigation = useNavigation();
   const favorites = useRouteFavorites();
   const position = usePosition();
@@ -328,8 +310,6 @@ export default function Home() {
     position.locationError,
   );
   const startupFix = position.startupFix;
-  const routeJourney = useRouteJourney(guidance.session?.route ?? navigation.route);
-  const [navigationPreviewFraction, setNavigationPreviewFraction] = useState<number | null>(null);
   const [shareTarget, setShareTarget] = useState<ShareRoute | null>(null);
   const [placeShareTarget, setPlaceShareTarget] = useState<{ place: { name: string; coordinates: Coordinate; shareText?: string; shareSummary?: string }; markerId?: string } | null>(null);
   const [routeQr, setRouteQr] = useState<string | null>(null);
@@ -1226,8 +1206,6 @@ export default function Home() {
       point,
       satellite,
       geology,
-      weatherTime: weather.data?.times[hourIndex] ?? null,
-      weatherError: weather.error,
       map: map.current?.inspect(),
     }),
     configure: (patch, pitch, bearing) => {
@@ -1236,18 +1214,6 @@ export default function Home() {
         map.current?.view(pitch ?? view.pitch, bearing ?? view.bearing, false);
     },
   });
-  useEffect(() => {
-    setHourIndex(0);
-    setPlaying(false);
-  }, [weather.data?.fetchedAt]);
-  useEffect(() => {
-    if (!playing || !weather.data) return;
-    const interval = setInterval(
-      () => setHourIndex((i) => (i + 1) % weather.data!.times.length),
-      1600,
-    );
-    return () => clearInterval(interval);
-  }, [playing, weather.data]);
   const branchEditing = !!editor.session && editor.session.branch !== null;
   const branchTip = branchEditing
     ? (editor.session!.track.segments[editor.session!.branch!].at(-1) ?? null)
@@ -1773,15 +1739,9 @@ export default function Home() {
             setView(value);
           }}
           onCameraMoveStart={() => setQuickAdd(null)}
-          onAnchor={setAnchor}
           onCenter={setMapCenter}
-          onWeatherBounds={setWeatherBounds}
           onSatellite={setSatellite}
-          onCloud={setCloudState}
           onGeology={setGeology}
-          weather={weather.data}
-          rainWeather={null}
-          hourIndex={hourIndex}
           routeOverlay={plannedEdit.current && editor.session ? { ...routeDisplay.route, route: null } : routeDisplay.route}
           guidanceOverlay={guidanceOverlay}
           trackOverlay={routeDisplay.tracks}
@@ -2624,7 +2584,7 @@ export default function Home() {
               }}
             />
           )}
-        {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} previewFraction={navigationPreviewFraction} />}
+        {guidance.session && !rallyMode && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
         {rallyMode && navigation.route && <RallyNavigation
           display={routeDisplay}
           route={guidance.session?.route ?? navigation.route} guidance={guidance} fix={displayedFix}
@@ -2633,28 +2593,9 @@ export default function Home() {
           onOverview={() => { userBrowse(); map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 }); }}
         />}
         <div
-          className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}${layers.rain ? ' map-legends-rain' : ''}`}
-          hidden={
-            panel !== 'layers' &&
-            !layers.elevationColors &&
-            !layers.temperature &&
-            !layers.geology &&
-            !layers.rain
-          }
+          className="map-legends"
+          hidden={panel !== 'layers' && !layers.elevationColors && !layers.geology}
         >
-          {layers.temperature && (
-            <TemperatureLegend
-              data={weather.data}
-              index={hourIndex}
-              loading={weather.loading}
-              error={weather.error}
-            />
-          )}
-
-          {layers.rain && focusLockControl.reasons.length === 0 && (
-            !comparison && <CmaRadarPanel open onClose={() => update({ rain: false })} />
-          )}
-
           {layers.geology && (
             <GeologyPanel
               state={geology}
@@ -2664,27 +2605,6 @@ export default function Home() {
             />
           )}
         </div>
-        {guidance.active && navigation.route &&
-          (!railTrack || guidance.active) &&
-          !editor.session &&
-          !measurement.active &&
-          !sectionEditing && (
-            <RouteWeatherRail
-              route={guidance.session?.route ?? navigation.route}
-              journey={routeJourney}
-              onPreview={(coordinates, fraction) => {
-                setNavigationPreviewFraction(coordinates ? fraction ?? null : null);
-                if (coordinates) position.free();
-                map.current?.previewRoute(coordinates);
-              }}
-              fix={displayedFix}
-              following={follow.following}
-              onSettings={() => {
-                tracks.pause();
-                setPanel('route');
-              }}
-            />
-          )}
         {(position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
@@ -2728,7 +2648,6 @@ export default function Home() {
           }}
           satelliteDate={satellite.date}
           satelliteStatus={satellite.status}
-          cloudState={cloudState}
           mapStatus={mapStatus}
         />
         {boxSelecting && (
@@ -2959,9 +2878,7 @@ export default function Home() {
             survey.close();
             measurement.open();
           }}
-          keepOpenOnMapInteraction={
-            panel !== null && panel !== 'time'
-          }
+          keepOpenOnMapInteraction={panel !== null}
           mapPicking={navigation.picking !== null || !!annotations.picking}
           onScanRoute={() => {
             setPanel(null);
@@ -3054,34 +2971,6 @@ export default function Home() {
             }
             setPanel(next);
           }}
-          timeLabel={playing ? '播放中' : hourIndex ? `+${hourIndex}h` : '时间'}
-          summary={
-            <WeatherSummary
-              data={weather.data}
-              index={hourIndex}
-              point={point}
-              loading={weather.loading}
-              error={weather.error}
-              active={panel === 'weather'}
-              onOpen={() => {
-                tracks.pause();
-                navigation.setPicking(null);
-                annotations.setPicking(null);
-                setPanel(panel === 'weather' ? null : 'weather');
-              }}
-            />
-          }
-          timeline={
-            <Timeline
-              data={weather.data}
-              index={hourIndex}
-              playing={playing}
-              onIndex={setHourIndex}
-              onPlaying={setPlaying}
-              rainVisible={false}
-              expanded
-            />
-          }
         >
           {panel === 'sources' && (
             <MapSourcesPanel
@@ -3226,7 +3115,7 @@ export default function Home() {
                 }
                 setMapStatus(`已导入 ${data.tracks.length} 条轨迹、${data.annotations.length} 个标记、${data.areas?.length??0} 个区域；可在收藏查看`);
               }}
-              mapCenter={map.current?.centerCoordinate() ?? anchor}
+              mapCenter={map.current?.centerCoordinate() ?? mapCenter ?? INITIAL_VIEW.center}
               onLocate={(entry) => {
                 preserveFavoritesFocus();
                 position.free();
@@ -3376,7 +3265,6 @@ export default function Home() {
               onEditPoints={editPlannedPoints}
               onCancel={stopNavigation}
               onRally={() => { setPanel(null); setRallyMode(true); }}
-              weather={<RouteWeatherSettings journey={routeJourney} />}
               onShare={() => {
                 if (navigation.route)
                   openRouteShareDialog(sharePlanned(navigation.route));
@@ -3420,24 +3308,6 @@ export default function Home() {
                 setPanel('route');
               }}
             />
-          )}
-          {panel === 'weather' && (
-            <WeatherPanel
-              data={weather.data}
-              index={hourIndex}
-              point={point}
-              loading={weather.loading}
-              error={weather.error}
-              onRefresh={() => {
-                void weather.refresh();
-                map.current?.refreshSatellite();
-              }}
-            />
-          )}
-          {panel === 'weather' && (
-            <p className="map-status" role="status">
-              {mapStatus}
-            </p>
           )}
           {panel === 'about' && <AboutPanel />}
         </ControlDock>

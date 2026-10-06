@@ -1,12 +1,12 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { RouteProviderNote } from './RouteProviderNote';
 import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
-export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, weather, onEditPoints, onCancel, onImport }: {
+export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, onImport }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
-  navigating: boolean; guidanceError: string; saveMessage: string; weather?: ReactNode;
+  navigating: boolean; guidanceError: string; saveMessage: string;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
 }) {
@@ -38,10 +38,6 @@ export function RouteResultSummary({ route, onShow, onEdit, onSave, onShare, onS
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
     {detailsVisited && <div className="route-summary-detail" id="route-summary-detail" hidden={!detailsOpen}>
       <RouteElevationSummary coordinates={route.coordinates} distance={route.distance} duration={route.duration} />
-      {weather && <section aria-label="沿途天气">
-        <strong>沿途天气</strong>
-        {weather}
-      </section>}
       <RouteProviderNote />
     </div>}
   </section>;
