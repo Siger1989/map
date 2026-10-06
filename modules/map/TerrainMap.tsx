@@ -54,6 +54,7 @@ import {
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
+import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
 import { createSnapViewportReader } from './snapViewport';
 import type { SnapViewport } from '../tracks/snapping';
@@ -405,7 +406,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         if (source && source.maxzoom !== maxzoom) { source.maxzoom = maxzoom; map.refreshTiles(id); }
       }
     };
-    const sync = () => {
+    const sync = (syncDataOverlays = false) => {
       const map = mapRef.current;
       if (!map || !loaded.current) return;
       const useDomestic = usesTianditu(latest.current.settings, domestic);
@@ -492,10 +493,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           if (useDomestic && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       }
       geologyRef.current?.sync(s);
-      routeRef.current?.sync(latest.current.routeOverlay);
-      syncTracks(latest.current.trackOverlay);
-      areaRef.current?.sync(latest.current.areaOverlay);
-      positionRef.current?.sync(latest.current.position, latest.current.positionHeading);
+      if (syncDataOverlays) {
+        routeRef.current?.sync(latest.current.routeOverlay);
+        syncTracks(latest.current.trackOverlay);
+        areaRef.current?.sync(latest.current.areaOverlay);
+        positionRef.current?.sync(latest.current.position, latest.current.positionHeading);
+      }
+      // Annotation appearance follows map settings, while its data effect below
+      // handles annotation-only changes.
       annotationRef.current?.update(
         latest.current.annotations,
         latest.current.annotationSelected,
@@ -507,16 +512,18 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           'visibility',
           latest.current.section.enabled ? 'none' : 'visible',
         );
-      sectionRef.current?.configure(
-        latest.current.section,
-        latest.current.annotations,
-      );
-      sectionCollectionRef.current?.configure(
-        latest.current.sectionItems,
-        latest.current.selectedSectionId,
-        latest.current.annotations,
-      );
-      sectionRef.current?.setCursor(latest.current.sectionCursor);
+      if (syncDataOverlays) {
+        sectionRef.current?.configure(
+          latest.current.section,
+          latest.current.annotations,
+        );
+        sectionCollectionRef.current?.configure(
+          latest.current.sectionItems,
+          latest.current.selectedSectionId,
+          latest.current.annotations,
+        );
+        sectionRef.current?.setCursor(latest.current.sectionCursor);
+      }
     };
     const finishBoxGesture = () => {
       if (!boxGestureActive.current) return;
@@ -1245,7 +1252,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 latest.current.onStatus('标记模型暂未加载，地图仍可使用');
             }
             if (disposed) return;
-            sync();
+            sync(true);
             const latestQueuedCamera = cameraSync.current.pendingCamera();
             if (latestQueuedCamera) applyCameraToMap(map, latestQueuedCamera);
             const initialCenter = map.getCenter();
@@ -1581,12 +1588,15 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     }, [props.drawingActive, props.pickingActive, props.sectionEditing, props.readOnly]);
     useEffect(() => {
       if (!container.current) return;
-      const observer = new ResizeObserver(() => {
-        const map = mapRef.current;
-        map?.resize();
+      const resize = mapResizeScheduler(() => mapRef.current?.resize());
+      const observer = new ResizeObserver(([entry]) => {
+        resize.request(entry.contentRect.width, entry.contentRect.height);
       });
       observer.observe(container.current);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        resize.cancel();
+      };
     }, []);
     useEffect(() => {
       const map = mapRef.current;

@@ -1592,10 +1592,10 @@ export default function Home() {
             event.preventDefault();
             navigation.setPicking(null);
             setPanel('route');
-          } else if (tracks.editing) {
+          } else if (tracks.drawing) {
             event.preventDefault();
-            tracks.finish();
-            setPanel('track');
+            tracks.pause();
+            setPanel(null);
           }
         }}
       >
