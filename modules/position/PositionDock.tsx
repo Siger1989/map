@@ -47,7 +47,7 @@ export function PositionDock({
       </div>
       <button
         className="position-dock-button position-locate-button glass"
-        aria-label={following ? '关闭位置跟随' : '开启位置跟随'}
+        aria-label={error || locating || (following && !tracking) ? '重试定位' : tracking ? '关闭位置跟随' : '开启位置跟随'}
         aria-pressed={tracking && !blocked}
         title={blocked ? '编辑中暂停跟随' : error || (locating ? '等待有效定位，尚未跟随' : undefined)}
         onClick={event => {

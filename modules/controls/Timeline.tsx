@@ -1,5 +1,6 @@
 import { Pause, Play, RotateCcw } from 'lucide-react';
-import { rainColor, type WeatherData } from '../weather/data';
+import type { WeatherData } from '../weather/data';
+import { rainColorGradient } from '../weather/rain.ts';
 export const formatTime = (
   time: number,
   options: Intl.DateTimeFormatOptions = {},
@@ -11,6 +12,7 @@ export const formatTime = (
     hour12: false,
     ...options,
   }).format(time);
+const RAIN_GRADIENT = rainColorGradient();
 
 export function Timeline({
   data,
@@ -106,12 +108,10 @@ export function Timeline({
       {expanded && rainVisible && (
         <div className="rain-legend" aria-label="小时雨量颜色参考">
           <span>小时雨量</span>
-          {[0, 1, 4, 10].map((n) => (
-            <span key={n}>
-              <i style={{ background: rainColor(n + 0.1) }} />
-              {n === 10 ? '10+' : n}
-            </span>
-          ))}
+          <span>
+            <i aria-hidden="true" style={{ width: 38, background: RAIN_GRADIENT }} />
+          </span>
+          <span>0.1</span><span>0.5</span><span>2</span><span>10+</span>
           <span>mm</span>
         </div>
       )}

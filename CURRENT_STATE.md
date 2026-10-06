@@ -1,5 +1,29 @@
-# 当前状态（2026-10-05）
+> **2026-10-06 最新私有 APK：**国内 CMA 雷达已接入为完整原图查看器，支持时次、刷新、放大；地图配准叠加仍未完成，dBZ不等同毫米雨量。0.2.107-test/code114 已构建，原签名和最终资源核验PASS，见 [交付记录](docs/release-0.2.107-local.md)。旧0.2.106不含此次接入。真机网络/触控未验；删点/拖点延迟仍未定位修复，不以浏览器未复现否定用户报告。无公开APK上传、无凭据输出，真实用户存档/PDF/地质资料保留。
+# 当前状态（2026-10-06）
 
+## 2026-10-06 / 点线编辑即时刷新 QA
+
+主代理在隔离预览9175的390/360浏览器验证1000点GPX路线编辑副本：拖动、删点后线形和有效剩余线即时更新。短3/4点路线的单图2D、单图3D、双图3D也即时更新；3点线删除中点会按现行规则断开，未复现刷新故障。360端本次两项操作已撤销并退出，小视图标签已关闭；9175的390测试状态保留给接续验收，用户9174预览仍保留。截图：`artifacts/screenshots/point-line-refresh-20261006/`。
+
+用户所述需要缩放才恢复的具体视图类型尚待回答，根因尚未确认，不能称修复成功；未修改轨迹源码、未新构建。adb设备列表为空，本轮没有真机触摸/渲染验收。候选APK仍含Open-Meteo雨层，不满足国内雷达/实况降水目标，不能作满足需求交付。用户轨迹存档未动。
+
+## 2026-10-06 / 0.2.106-test 候选包已核验，目标未完成
+
+用户已明确转入最新私有 APK 交付，目标 `0.2.106-test` / versionCode `113`。源码定向检查 `npx tsc --noEmit` PASS、86/86测试通过。主代理在9174源码预览完成390×857与360×780实测：无横向溢出，雨图连续可见，折叠/展开图例尺寸和说明滚动正常，未遮挡地图工具/底栏；路线规划关闭返回与雨图隐藏/恢复通过。390尺寸另核验卫星云图加载到真实观测时次，面板248×480px、无横溢，关闭后雨图恢复且云图开关回到off；失败重试仍以逻辑测试为证。截图见 `artifacts/screenshots/apk-02106-20261006/`。定位权限被浏览器拒绝，IP估算有明确标注，不算GPS验收；手机触控/GPS/朝向/后台及HarmonyOS原生包未验/未交付。高程瓦片有部分未加载提示，网络地形加载不作PASS。APK构建与资源/签名核验PASS：`APK/Shantu-0.2.106-test-standalone.apk`，66,097,724字节，SHA256 `3a3df105a6aa667cb175b93e85950513b600403868c7afa0313f3dea3dddb077`；stage/APK 1,907项一致，签名与版本核验通过。日志 `.openai/apk-latest-20261006-build.log`、`.openai/package-02106-verify.log`。构建时HEAD与当前HEAD均为d9fa1d1；分支 `codex/rollback-ui-0235-20260921` 未变化；尚未提交或推送，未合入main。仅本机私有交付。保留用户PDF、`地质资料/`、私有配置与用户存档。详情见 [`docs/release-0.2.106-local.md`](docs/release-0.2.106-local.md)；测试日志为 `.openai/apk-latest-20261006-checks-tsc.log` 与 `.openai/apk-latest-20261006-checks-tests.log`。
+## 历史状态截至 2026-10-05
+
+# 2026-10-05 / 降雨视口与图例代码完成（视觉未验）
+
+本轮视口雨图与图例代码已完成，验证状态、日志及真实视口/手机未验边界见 [接续记录](docs/rain-layout-viewport-20261005.md)。390/360新截图和手机触摸尚未验；不出APK、不升版、不提交或推送。
+
+
+# 2026-10-05 / 云图恢复、位置跟随与降雨图接续
+
+9174/3108开发服务已恢复，HTTP检查通过。云图重试代码、NSMC最新时次影像代理与位置/双图跟随修复通过；云图18/18及并发补测8/8、位置/双图37/37通过。最新雨图完成固定绝对mm对数色阶（0.05/0.1/0.3/0.5/1/2/4/10/20）、平滑连续栅格、常驻可折叠小时雨量图例（当前域实际样本min/max）及Timeline同尺度。当前统一98/98测试、`npx tsc --noEmit`、`npm run build:android:web`（9.52秒）与`git diff --check`通过；日志：`.openai/mobile-weather-final-tests-20261005.log`、`.openai/mobile-weather-final-tsc-20261005.log`、`.openai/mobile-weather-final-web-build-20261005.log`、`.openai/mobile-weather-final-diff-check-20261005.log`。源码PNG算法检查见389个有效RGB色值，仅属算法核对。
+
+旧截图显示雨区已加载但小雨一片cyan、强度难辨；这是修改前视觉FAIL证据，不代表新版已测。新版390/360 UI、手机GPS/触摸仍未验，浏览器策略拒绝读取localhost。数据为Open-Meteo 25点模型预报连续插值，尚未取得或接入可用国内官方雷达接口。路线返回键CSS窄修通过静态审查，实际UI未验。快速预览不打APK、不改版本、不提交/推送/合并；0.2.105安装包不含本轮改动。保留旧PDF、`地质资料/`、私有配置与用户存档。
+
+---
 0.2.105-test/code112 本机私有 APK 已构建、核验并完成短时下载验证。产物 `APK/Shantu-0.2.105-test-standalone.apk`，66,097,968 字节，SHA-256 `d7688de0c6cb5a33b234f06c897c60858a19da20cb99f9aa386a18b28d92e851`；签名证书兼容、CRC/zipalign、1,910 项 stage/APK 资源集合一致（1,414 项逐字节、496 张地形 PNG 像素及非 IDAT 元数据一致）、38 个私有种子、1,365 张概览瓦片及图源 Key 一致性布尔检查 PASS。84 项定向测试、tsc、网页/APK 构建 PASS。主代理在9174源码预览复跑 route/cloud/recorded/marker/position/search：390/360视口通过（recorded主复跑为390，代理另做两尺寸检查）。最终APK stage的390/360版本/主页无溢出、标记隐藏后编辑器保留、双图2-pane与零pageerror smoke PASS。route/cloud双图最终QA本轮完成，未更改其产品逻辑。详情见 [`docs/release-0.2.105-local.md`](docs/release-0.2.105-local.md)。
 
 短时私有下载整包 SHA/长度与 Range206 核验 PASS，证据 `.openai/apk-02105-public-verified.json`，北京时间 2026-10-05 14:06:29 到期，电脑需在线；随机令牌链接不写入文档。构建后仅清理 `sharedTileFetch.ts`、`satelliteCloud.ts` 的 EOF 多余空行，无逻辑变化，未重新构建。Android 真机安装/触控/GPS/朝向/后台未验，HarmonyOS 原生包未交付。APK 含私有图源配置，不得放入公共 Release。分支 `codex/rollback-ui-0235-20260921`，构建前 HEAD `ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe`；最终提交 SHA 与远端一致性由交付摘要核对，本轮不合入 main。

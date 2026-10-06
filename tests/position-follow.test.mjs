@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recordingPosition, canFollow } from '../modules/position/follow.ts';
+import { recordingPosition, canFollow, isPositionTracking } from '../modules/position/follow.ts';
 import {
   emptyRecording,
   appendFix,
@@ -51,4 +51,15 @@ test('camera rejects missing, stale, future, invalid and low-accuracy fixes', ()
     { ...fix, coordinates: [Infinity, 30] },
   ])
     assert.equal(canFollow(rejected, now), false);
+});
+
+test('position tracking requires requested follow, no wait/error, and a fresh valid fix', () => {
+  const now = 1800000000000;
+  const fix = { coordinates: [104, 30], timestamp: now, accuracy: 5 };
+  assert.equal(isPositionTracking(true, false, '', fix, now), true);
+  assert.equal(isPositionTracking(false, false, '', fix, now), false);
+  assert.equal(isPositionTracking(true, true, '', fix, now), false);
+  assert.equal(isPositionTracking(true, false, '定位超时', fix, now), false);
+  assert.equal(isPositionTracking(true, false, '', { ...fix, timestamp: now - 20001 }, now), false);
+  assert.equal(isPositionTracking(true, false, '', { ...fix, timestamp: now - 20000 }, now), true);
 });

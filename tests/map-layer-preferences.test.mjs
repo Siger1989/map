@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_LAYERS } from '../modules/map/types.ts';
+import { DEFAULT_LAYERS, applyLayerPatch } from '../modules/map/types.ts';
 import { LAYER_PREFERENCES_KEY, parseLayerPreferences, readLayerPreferences, saveLayerPreferences } from '../modules/map/layerPreferences.ts';
 import { resolveAvailableMapSelection } from '../modules/mapSources/selection.ts';
 
@@ -34,6 +34,28 @@ test('map layer preferences round-trip actual user selections', () => {
     if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
     else delete globalThis.localStorage;
   }
+});
+
+test('rain and other thematic fills cannot be enabled together through layer patches', () => {
+  let state = applyLayerPatch({ ...DEFAULT_LAYERS, temperature: true }, { rain: true });
+  assert.equal(state.rain, true);
+  assert.equal(state.temperature, false);
+  assert.equal(state.geology, false);
+  assert.equal(state.elevationColors, false);
+
+  for (const patch of [{ temperature: true }, { geology: true }, { elevationColors: true }]) {
+    state = applyLayerPatch({ ...DEFAULT_LAYERS, rain: true }, patch);
+    assert.equal(state.rain, false);
+    assert.equal(state[Object.keys(patch)[0]], true);
+  }
+
+  state = applyLayerPatch(DEFAULT_LAYERS, {
+    temperature: true, geology: true, elevationColors: true, rain: true,
+  });
+  assert.equal(state.temperature, true, 'existing thematic priority is retained');
+  assert.equal(state.geology, false);
+  assert.equal(state.elevationColors, false);
+  assert.equal(state.rain, false);
 });
 
 test('malformed, missing and old preference formats retain current startup defaults', () => {

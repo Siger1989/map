@@ -142,12 +142,13 @@ export function usePosition() {
   const locate = (onFix?: (fix: PositionFix) => void) => {
     stopStartup();
     setShowStatus(true);
-    const reuse = active.current && healthyWatch.current && (nativeStop.current !== null || watch.current !== null || ipStop.current !== null);
+    const cached = latestFix.current;
+    const usable = canFollow(cached);
+    const reuse = active.current && healthyWatch.current && usable && !locationError &&
+      (nativeStop.current !== null || watch.current !== null || ipStop.current !== null);
     active.current = true;
     locationCallback.current = onFix ?? null;
     setWatching(true);
-    const cached = latestFix.current;
-    const usable = canFollow(cached);
     setLocating(!usable);
     setLocationError('');
     if (usable && onFix) { onFix(cached); locationCallback.current = null; }

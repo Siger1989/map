@@ -11,6 +11,7 @@ import { GET as satellite } from '../app/api/satellite/route';
 import { GET as geocloud } from '../app/api/geology/geocloud/route';
 import { GET as mapTile } from '../app/api/map-tile/route';
 import { GET as ipLocation } from '../app/api/location/ip/route';
+import { GET as radar } from '../app/api/radar/route';
 import { APP_VERSION } from '../config/product';
 
 const mime: Record<string, string> = {
@@ -75,6 +76,7 @@ export function createDesktopServer(root: string) {
           context,
         );
       } else if (pathname === '/api/satellite') result = await satellite();
+      else if (pathname === '/api/radar') result = await radar(new Request(url));
       else if (pathname === '/api/location/ip') result = await ipLocation();
       else if (pathname === '/api/geology/geocloud')
         result = await geocloud(new Request(url));

@@ -177,7 +177,7 @@ function makeFixture(React) {
   const pauses = [];
   const operationsCalls = { draw: 0, undo: 0, save: 0, locate: 0, outline: 0, follow: 0 };
   const directionState = { mode: 'free', status: '设备朝向暂不可用', calls: [] };
-  const followState = { active: false };
+  const followState = { active: false, tracking: false, locating: false, locationError: '', blocked: false };
   const operationState = { saveResult: true, error: '', selectedTrack: null, editingTrack: false, editSelectedTrackCalls: 0, deleteSelectedTrackCalls: 0, deleteResult: true };
   const drawingInputs = [];
   const snappingState = { nodes: true, roads: false, rivers: false, calls: [] };
@@ -206,7 +206,11 @@ function makeFixture(React) {
     get directionStatus() { return directionState.status; },
     onDirectionChange(mode) { directionState.mode = mode; directionState.calls.push(mode); },
     get following() { return followState.active; },
-    onToggleFollowing() { operationsCalls.follow += 1; followState.active = !followState.active; },
+    get tracking() { return followState.tracking; },
+    get locating() { return followState.locating; },
+    get locationError() { return followState.locationError; },
+    get followBlocked() { return followState.blocked; },
+    onToggleFollowing() { operationsCalls.follow += 1; },
     canUndo: true,
     get snapping() { return snappingState.nodes; },
     onSnappingChange(enabled) { snappingState.nodes = enabled; snappingState.calls.push(['nodes', enabled]); },
@@ -838,9 +842,73 @@ test('comparison follow action reflects and toggles the supplied follow state', 
     button.click();
     await new Promise(resolve => f.window.setTimeout(resolve, 300));
   });
+  f.followState.active = true;
+  f.followState.tracking = true;
   await f.render(f.session);
   assert.equal(f.operationsCalls.follow, 1);
   assert.equal(f.host.querySelector('[aria-label="关闭位置跟随"]').getAttribute('aria-pressed'), 'true');
+});
+
+test('comparison follow feedback distinguishes waiting, effective tracking, retryable errors, and pause', async t => {
+  const f = await mount(t);
+  let button = f.host.querySelector('[aria-label="开启位置跟随"]');
+  await f.act(async () => {
+    button.click();
+    await new Promise(resolve => f.window.setTimeout(resolve, 300));
+  });
+  f.followState.active = true;
+  f.followState.locating = true;
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="重试定位"]');
+  assert.equal(button.getAttribute('aria-pressed'), 'false', 'requested follow is not reported as active tracking while waiting');
+  assert.equal(button.querySelector('small').textContent, '定位中');
+  assert.match(f.host.querySelector('.map-comparison-live').textContent, /正在获取/);
+
+  f.followState.locating = false;
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="重试定位"]');
+  assert.ok(button, 'requested follow without an effective fix remains retryable');
+
+  f.followState.tracking = true;
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="关闭位置跟随"]');
+  assert.equal(button.getAttribute('aria-pressed'), 'true');
+  assert.equal(button.querySelector('small').textContent, '跟随中');
+
+  f.followState.tracking = false;
+  f.followState.locationError = '定位超时，请重试。';
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="重试定位"]');
+  assert.equal(button.getAttribute('aria-pressed'), 'false');
+  assert.equal(button.querySelector('small').textContent, '重试');
+  assert.equal(f.host.querySelector('.map-comparison-live').textContent, '定位超时，请重试。');
+  await f.act(async () => {
+    button.click();
+    await new Promise(resolve => f.window.setTimeout(resolve, 300));
+  });
+  f.followState.active = true;
+  f.followState.locating = true;
+  f.followState.locationError = '';
+  await f.render(f.session);
+  assert.equal(f.followState.active, true, 'retry keeps requested following on');
+  assert.equal(f.followState.locating, true);
+  assert.equal(f.followState.locationError, '');
+
+  f.followState.locating = false;
+  f.followState.tracking = true;
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="关闭位置跟随"]');
+  await f.act(async () => {
+    button.click();
+    await new Promise(resolve => f.window.setTimeout(resolve, 300));
+  });
+  f.followState.active = false;
+  f.followState.tracking = false;
+  await f.render(f.session);
+  button = f.host.querySelector('[aria-label="开启位置跟随"]');
+  assert.equal(f.followState.active, false);
+  assert.equal(button.getAttribute('aria-pressed'), 'false');
+  assert.equal(button.querySelector('small').textContent, '跟随');
 });
 
 test('deleting the selected marker removes the editor host and another marker can reopen it', async t => {

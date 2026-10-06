@@ -2,24 +2,25 @@
 .observatory.home-map #map-control-panel:has(.route-panel) {
   --route-button-height: var(--ui-compact-control-height,28px);
   --route-primary-height: 44px;
-  --route-padding: 3px 4px;
+  --route-padding: 8px 8px 3px;
   height: auto !important;
   max-height: calc(100dvh - var(--home-footer) - var(--home-top) - var(--home-header-height) - 16px) !important;
-  padding: var(--route-padding, 3px 5px) !important;
+  padding: var(--route-padding, 8px 8px 3px) !important;
   overflow: hidden !important;
   display: flex;
   flex-direction: column;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
   flex-shrink: 0;
-  height: var(--route-button-height) !important;
-  min-height: var(--route-button-height) !important;
+  height: 44px !important;
+  min-height: 44px !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading .icon-button {
   height: var(--route-button-height) !important;
   min-height: var(--route-button-height) !important;
+  margin-right: 0;
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-content {
   max-height: none !important;

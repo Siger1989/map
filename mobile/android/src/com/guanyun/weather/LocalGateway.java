@@ -12,6 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -20,9 +25,12 @@ final class LocalGateway {
     static final String HOST = "appassets.androidplatform.net";
     private static final Pattern TERRAIN = Pattern.compile("^/api/terrain/(\\d{1,2})/(\\d{1,6})/(\\d{1,6})\\.png$");
     private static final Pattern GEOLOGY = Pattern.compile("^/api/geology/tiles/(\\d)/(\\d{1,3})/(\\d{1,3})$");
+    private static final Pattern RADAR_DATE = Pattern.compile("^\\d{8}$");
+    private static final Pattern RADAR_ID = Pattern.compile("^[A-Za-z0-9_-]{1,80}$");
     private final Context context;
     private final JSONObject coverage;
     private final JSONObject repairs;
+    private final Map<String, RadarCache> radarDirectories = new HashMap<>();
     private String satelliteDate;
     private long satelliteCachedAt;
 
@@ -68,6 +76,7 @@ final class LocalGateway {
                 }
             }
             if ("/api/satellite".equals(path)) return json(200, "{\"date\":\"" + satelliteDate() + "\"}");
+            if ("/api/radar".equals(path)) return radar(uri);
             if ("/api/location/ip".equals(path)) {
                 JSONObject estimate = new JSONObject(new String(DataTransport.get("https://ipwho.is/", 16384), StandardCharsets.UTF_8));
                 double longitude = estimate.optDouble("longitude", Double.NaN), latitude = estimate.optDouble("latitude", Double.NaN);
@@ -109,6 +118,114 @@ final class LocalGateway {
         satelliteDate = DataTransport.parseSatelliteDate(xml);
         satelliteCachedAt = now;
         return satelliteDate;
+    }
+
+    private WebResourceResponse radar(Uri uri) {
+        try {
+            for (String key : uri.getQueryParameterNames()) {
+                if (!"date".equals(key) && !"frame".equals(key)) return json(400, "{\"error\":\"雷达请求参数无效\"}");
+                if (uri.getQueryParameters(key).size() != 1) return json(400, "{\"error\":\"雷达请求参数无效\"}");
+            }
+            String suppliedDate = uri.getQueryParameter("date"), frame = uri.getQueryParameter("frame");
+            if (suppliedDate != null && (suppliedDate.isEmpty() || !RADAR_DATE.matcher(suppliedDate).matches())) return json(400, "{\"error\":\"雷达日期格式无效\"}");
+            if (suppliedDate != null) {
+                try { LocalDate.parse(suppliedDate, DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(java.time.format.ResolverStyle.STRICT)); }
+                catch (Exception invalid) { return json(400, "{\"error\":\"雷达日期格式无效\"}"); }
+            }
+            if (frame != null && (frame.isEmpty() || !RADAR_ID.matcher(frame).matches())) return json(400, "{\"error\":\"雷达帧标识无效\"}");
+            LocalDate todayDate = LocalDate.now(ZoneId.of("Asia/Shanghai"));
+            String today = todayDate.format(DateTimeFormatter.BASIC_ISO_DATE);
+            String date = suppliedDate == null ? today : suppliedDate;
+            if (date.compareTo(today) > 0) return json(400, "{\"error\":\"不能请求未来日期的雷达数据\"}");
+            JSONArray rows = radarRows(date);
+            if (frame != null) {
+                JSONObject row = findRadarRow(rows, frame, date);
+                if (row == null) return json(404, "{\"error\":\"指定雷达时次不存在\"}");
+                String secureImageUrl = row.getString("fileURL").replaceFirst("^http:", "https:");
+                byte[] image = DataTransport.getRadarImage(secureImageUrl, 12 * 1024 * 1024);
+                byte[] signature = new byte[] {(byte)137,80,78,71,13,10,26,10};
+                if (image.length < signature.length) return json(502, "{\"error\":\"国家气象数据网返回的文件不是PNG图片\"}");
+                for (int i = 0; i < signature.length; i++) if (image[i] != signature[i]) return json(502, "{\"error\":\"国家气象数据网返回的文件不是PNG图片\"}");
+                return response(200, "image/png", new ByteArrayInputStream(image), "public, max-age=120");
+            }
+            if (suppliedDate == null && rows.length() == 0) {
+                date = todayDate.minusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
+                rows = radarRows(date);
+            }
+            java.util.List<JSONObject> sorted = new java.util.ArrayList<>();
+            for (int i = 0; i < rows.length(); i++) {
+                JSONObject row = rows.optJSONObject(i);
+                if (row != null && radarObservedAt(row, date) != null) sorted.add(row);
+            }
+            sorted.sort((a, b) -> b.optString("vshijian").compareTo(a.optString("vshijian")));
+            JSONArray frames = new JSONArray();
+            String latestAt = null;
+            for (JSONObject row : sorted) {
+                String observedAt = radarObservedAt(row, date), id = row.optString("id");
+                if (observedAt == null || !RADAR_ID.matcher(id).matches()) continue;
+                frames.put(new JSONObject().put("id", id).put("observedAt", observedAt)
+                    .put("imagePath", "/api/radar?date=" + date + "&frame=" + Uri.encode(id)));
+                if (latestAt == null) latestAt = observedAt;
+            }
+            JSONObject result = new JSONObject().put("frames", frames).put("latestAt", latestAt == null ? JSONObject.NULL : latestAt)
+                .put("source", "国家气象数据网").put("product", "全国雷达拼图 · 组合反射率").put("unit", "dBZ");
+            return response(200, "application/json", new ByteArrayInputStream(result.toString().getBytes(StandardCharsets.UTF_8)), "public, max-age=15");
+        } catch (Exception error) { return json(502, "{\"error\":\"国家气象数据网雷达数据暂不可用\"}"); }
+    }
+
+    private synchronized JSONArray radarRows(String date) throws Exception {
+        long now = System.currentTimeMillis();
+        java.util.Iterator<Map.Entry<String, RadarCache>> iterator = radarDirectories.entrySet().iterator();
+        while (iterator.hasNext()) if (now - iterator.next().getValue().cachedAt >= 30_000) iterator.remove();
+        RadarCache cached = radarDirectories.get(date);
+        if (cached != null && now - cached.cachedAt < 30_000) return new JSONArray(cached.rows.toString());
+        String endpoint = "https://data.cma.cn/api/vis/getVasData?datacode=RAD__B0_CR&dDatetime=" + date;
+        byte[] bytes = DataTransport.get(endpoint, 8 * 1024 * 1024);
+        JSONObject root = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
+        if (root.optInt("code") != 200) throw new java.io.IOException("Radar directory unavailable");
+        JSONObject data = root.optJSONObject("data");
+        JSONArray rows = data == null ? null : data.optJSONArray("data");
+        if (rows == null) throw new java.io.IOException("Radar directory invalid");
+        RadarCache entry = new RadarCache(new JSONArray(rows.toString()), now);
+        radarDirectories.put(date, entry);
+        while (radarDirectories.size() > 2) radarDirectories.remove(radarDirectories.keySet().iterator().next());
+        return new JSONArray(entry.rows.toString());
+    }
+
+    private static final class RadarCache {
+        final JSONArray rows;
+        final long cachedAt;
+        RadarCache(JSONArray rows, long cachedAt) { this.rows = rows; this.cachedAt = cachedAt; }
+    }
+
+    private JSONObject findRadarRow(JSONArray rows, String id, String date) {
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row != null && id.equals(row.optString("id")) && radarObservedAt(row, date) != null) return row;
+        }
+        return null;
+    }
+
+    private String radarObservedAt(JSONObject row, String date) {
+        String id = row.optString("id"), time = row.optString("vshijian"), code = row.optString("dataCode");
+        if (!"RAD__B0_CR".equals(code) || !RADAR_ID.matcher(id).matches() || !time.matches("\\d{14}") || !time.startsWith(date)) return null;
+        try {
+            LocalDateTime beijing = LocalDateTime.parse(time, DateTimeFormatter.ofPattern("uuuuMMddHHmmss").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+            Instant instant = beijing.atZone(ZoneId.of("Asia/Shanghai")).toInstant();
+            if (instant.isAfter(Instant.now())) return null;
+            String filename = row.optString("cfname");
+            java.net.URL url = new java.net.URL(row.optString("fileURL"));
+            Matcher path = Pattern.compile("^/vis/RAD__B0_CR/(\\d{8})/([A-Za-z0-9_.-]+\\.png)$").matcher(url.getPath());
+            boolean filenameDateMatches = false;
+            if (path.matches()) {
+                Matcher dates = Pattern.compile("(?:^|_)(\\d{8})(?:_|\\d)").matcher(filename);
+                while (dates.find()) if (path.group(1).equals(dates.group(1))) filenameDateMatches = true;
+            }
+            if (!("http".equals(url.getProtocol()) || "https".equals(url.getProtocol())) || !"image.data.cma.cn".equals(url.getHost()) || url.getPort() != -1 || url.getUserInfo() != null ||
+                    url.getQuery() != null || url.getRef() != null || filename.isEmpty() ||
+                    !path.matches() || !path.group(2).equals(filename) || !filenameDateMatches) return null;
+            return DateTimeFormatter.ISO_INSTANT.format(instant);
+        } catch (Exception ignored) { return null; }
     }
 
     private static WebResourceResponse binary(byte[] bytes, String mime) { return response(200, mime, new ByteArrayInputStream(bytes), "public, max-age=86400"); }

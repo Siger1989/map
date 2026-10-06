@@ -16,6 +16,8 @@ type ProtocolAPI = {
 };
 export const CLOUD_LAYER_ID = 'satellite-cloud-observation';
 let instance = 0;
+const RETRY_DELAY_MS = 5_000;
+const MAX_RETRIES = 2;
 
 async function mercatorCloud(blob: Blob, sourceBounds: CloudBounds, bounds: CloudBounds, signal: AbortSignal): Promise<ArrayBuffer> {
   const bitmap = await createImageBitmap(blob);
@@ -48,7 +50,17 @@ export class SatelliteCloudLayer {
   private requests = new Set<AbortController>();
   private closed = false;
   private refreshTimer: ReturnType<typeof setInterval>;
-  constructor(private map: LibreMap, private api: ProtocolAPI, private onState: (state: SatelliteCloudState) => void) {
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private retryKind: 'metadata' | 'frame' | null = null;
+  private pendingMetadataRetry = false;
+  private pendingFrameRetry: CloudFrame | null = null;
+  private metadataRetries = 0;
+  private retryFrameStamp = '';
+  private frameRetries = 0;
+  private failedFrameStamp = '';
+  private readonly retryDelayMs: number;
+  constructor(private map: LibreMap, private api: ProtocolAPI, private onState: (state: SatelliteCloudState) => void, options: { retryDelayMs?: number } = {}) {
+    this.retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
     api.addProtocol(this.scheme, this.protocol);
     this.refreshTimer = setInterval(() => {
       if (this.settings?.clouds && !document.hidden) void this.loadFrames();
@@ -70,11 +82,18 @@ export class SatelliteCloudLayer {
       const image = await fetchSatelliteCloudImage(frame, bounds, controller.signal);
       const data = await mercatorCloud(image.blob, image.bounds, bounds, controller.signal);
       controller.signal.throwIfAborted();
-      if (this.state.frame?.stamp === frame.stamp) this.publish({ ready: true, loading: false, error: '' });
+      if (this.state.frame?.stamp === frame.stamp) {
+        this.failedFrameStamp = '';
+        this.cancelRetryKind('frame');
+        this.publish({ ready: true, loading: false, error: '' });
+      }
       return { data };
     } catch (error) {
-      if (!controller.signal.aborted && !this.closed && this.settings?.clouds && this.state.frame?.stamp === frame.stamp)
+      if (!controller.signal.aborted && !this.closed && this.settings?.clouds && this.state.frame?.stamp === frame.stamp) {
+        this.failedFrameStamp = frame.stamp;
         this.publish({ loading: false, error: error instanceof Error ? error.message : '卫星云图暂不可用' });
+        this.scheduleFrameRetry(frame);
+      }
       throw error;
     } finally { this.requests.delete(controller); }
   };
@@ -83,6 +102,11 @@ export class SatelliteCloudLayer {
     const changedTime = this.settings?.cloudTime !== settings.cloudTime;
     this.settings = settings;
     if (!settings.clouds) {
+      this.cancelRetry();
+      this.metadataRetries = 0;
+      this.retryFrameStamp = '';
+      this.frameRetries = 0;
+      this.failedFrameStamp = '';
       this.metadataAbort?.abort();
       for (const request of this.requests) request.abort();
       this.clear();
@@ -90,10 +114,15 @@ export class SatelliteCloudLayer {
       return;
     }
     if (!wasEnabled) { void this.loadFrames(); return; }
-    if (changedTime) this.selectFrame();
+    if (changedTime) {
+      this.cancelRetry();
+      this.selectFrame();
+    }
     if (this.map.getLayer(CLOUD_LAYER_ID)) this.map.setPaintProperty(CLOUD_LAYER_ID, 'raster-opacity', settings.cloudOpacity ?? 0.55);
   }
-  private async loadFrames() {
+  private async loadFrames(retry = false) {
+    this.cancelRetryKind('metadata');
+    if (!retry) this.metadataRetries = 0;
     this.metadataAbort?.abort();
     const controller = new AbortController();
     this.metadataAbort = controller;
@@ -102,24 +131,45 @@ export class SatelliteCloudLayer {
       const frames = await listSatelliteCloudFrames(controller.signal);
       controller.signal.throwIfAborted();
       if (!this.settings?.clouds || this.closed) return;
+      this.metadataRetries = 0;
+      this.cancelRetryKind('metadata');
       this.publish({ frames });
       this.selectFrame();
     } catch (error) {
-      if (!controller.signal.aborted) this.publish({ loading: false, error: error instanceof Error ? error.message : '卫星云图暂不可用' });
+      if (!controller.signal.aborted) {
+        this.publish({ loading: false, error: error instanceof Error ? error.message : '卫星云图暂不可用' });
+        this.scheduleMetadataRetry();
+      }
     }
   }
   private selectFrame() {
     const frames = this.state.frames;
     const frame = this.settings?.cloudTime ? frames.find(item => item.stamp === this.settings!.cloudTime) : frames.at(-1);
     if (!frame) {
+      this.cancelRetry();
+      this.retryFrameStamp = '';
+      this.frameRetries = 0;
+      this.failedFrameStamp = '';
       this.clear();
       this.publish({ frame: null, ready: false, loading: false, error: this.settings?.cloudTime ? '该时次已过期，请切回最新' : '暂无可用卫星云图' });
       return;
     }
     if (frame.stamp === this.state.frame?.stamp && this.map.getSource(this.source)) {
-      this.publish({ loading: false });
+      if (this.failedFrameStamp === frame.stamp || (this.state.error && !this.state.ready)) {
+        this.failedFrameStamp = frame.stamp;
+        this.scheduleFrameRetry(frame);
+      } else if (this.state.ready) {
+        this.publish({ loading: false, error: '' });
+      }
       return;
     }
+    this.cancelRetry();
+    this.retryFrameStamp = frame.stamp;
+    this.frameRetries = 0;
+    this.failedFrameStamp = '';
+    this.createFrameSource(frame);
+  }
+  private createFrameSource(frame: CloudFrame) {
     for (const request of this.requests) request.abort();
     this.clear();
     this.publish({ frame, ready: false, loading: true, error: '' });
@@ -132,12 +182,68 @@ export class SatelliteCloudLayer {
     this.map.addLayer({ id: CLOUD_LAYER_ID, type: 'raster', source: this.source,
       paint: { 'raster-opacity': this.settings?.cloudOpacity ?? 0.55, 'raster-fade-duration': 0 } }, before);
   }
+  private cancelRetry() {
+    if (this.retryTimer !== null) clearTimeout(this.retryTimer);
+    this.retryTimer = null;
+    this.retryKind = null;
+    this.pendingMetadataRetry = false;
+    this.pendingFrameRetry = null;
+  }
+  private cancelRetryKind(kind: 'metadata' | 'frame') {
+    if (this.retryKind === kind) {
+      if (this.retryTimer !== null) clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+      this.retryKind = null;
+    }
+    if (kind === 'metadata') this.pendingMetadataRetry = false;
+    else this.pendingFrameRetry = null;
+    this.startRetryTimer();
+  }
+  private scheduleMetadataRetry() {
+    if (this.closed || !this.settings?.clouds || this.metadataRetries >= MAX_RETRIES ||
+        this.retryKind === 'metadata' || this.pendingMetadataRetry) return;
+    this.pendingMetadataRetry = true;
+    this.startRetryTimer();
+  }
+  private scheduleFrameRetry(frame: CloudFrame) {
+    if (this.closed || !this.settings?.clouds || this.state.frame?.stamp !== frame.stamp ||
+        this.retryFrameStamp !== frame.stamp || this.frameRetries >= MAX_RETRIES ||
+        (this.retryKind === 'frame' && this.retryFrameStamp === frame.stamp) ||
+        this.pendingFrameRetry?.stamp === frame.stamp) return;
+    this.pendingFrameRetry = frame;
+    this.startRetryTimer();
+  }
+  private startRetryTimer() {
+    if (this.retryTimer !== null || this.closed || !this.settings?.clouds) return;
+    const frame = this.pendingFrameRetry;
+    const kind: 'metadata' | 'frame' | null = frame ? 'frame' : this.pendingMetadataRetry ? 'metadata' : null;
+    if (!kind) return;
+    if (kind === 'frame') this.pendingFrameRetry = null;
+    else this.pendingMetadataRetry = false;
+    this.retryKind = kind;
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      this.retryKind = null;
+      if (kind === 'metadata') {
+        if (!this.closed && this.settings?.clouds && this.metadataRetries < MAX_RETRIES) {
+          this.metadataRetries++;
+          void this.loadFrames(true);
+        }
+      } else if (frame && !this.closed && this.settings?.clouds && this.state.frame?.stamp === frame.stamp &&
+          this.failedFrameStamp === frame.stamp && this.frameRetries < MAX_RETRIES) {
+        this.frameRetries++;
+        this.createFrameSource(frame);
+      }
+      this.startRetryTimer();
+    }, this.retryDelayMs);
+  }
   private clear() {
     if (this.map.getLayer(CLOUD_LAYER_ID)) this.map.removeLayer(CLOUD_LAYER_ID);
     if (this.map.getSource(this.source)) this.map.removeSource(this.source);
   }
   dispose() {
     this.closed = true;
+    this.cancelRetry();
     clearInterval(this.refreshTimer);
     this.metadataAbort?.abort();
     for (const request of this.requests) request.abort();

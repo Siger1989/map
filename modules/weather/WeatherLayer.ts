@@ -1,208 +1,119 @@
-import * as THREE from 'three';
-import {
-  MercatorCoordinate,
-  type CustomLayerInterface,
-  type CustomRenderMethodInput,
-  type Map,
-} from 'maplibre-gl';
+import type { Coordinates, ImageSource, Map } from 'maplibre-gl';
 import type { LayerSettings } from '../map/types';
-import { rainColor, type WeatherData } from './data';
+import { buildRainRaster, type RainRaster } from './rain.ts';
+import type { WeatherData } from './data.ts';
 
-type Drop = {
-  x: number;
-  y: number;
-  floor: number;
-  height: number;
-  phase: number;
-  speed: number;
-};
-const seeded = (n: number) => {
-  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-};
+const RAIN_ORDER_ANCHORS = new Set([
+  'rivers', 'road-outline', 'main-roads', 'local-roads', 'railways',
+  'route-outline', 'route-path', 'route-access', 'route-points',
+  'route-point-labels', 'area-fill', 'area-border', 'position-accuracy',
+  'position-dot', 'position-arrow', 'position-ip-label',
+]);
+const TRANSPARENT_PIXEL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==';
+const PLACEHOLDER_COORDINATES: Coordinates = [[0, 1], [1, 1], [1, 0], [0, 0]];
 
-/** Model-driven rain illustration only; it is not an observation. */
-export class WeatherLayer implements CustomLayerInterface {
-  id = 'cloud-rain-3d';
-  type = 'custom' as const;
-  renderingMode = '3d' as const;
-  private map?: Map;
-  private renderer?: THREE.WebGLRenderer;
-  private scene = new THREE.Scene();
-  private camera = new THREE.Camera();
-  private rainGroup = new THREE.Group();
-  private drops: Drop[] = [];
-  private dropGeometry?: THREE.BufferGeometry;
-  private rainMaterial?: THREE.LineBasicMaterial;
-  private origin = MercatorCoordinate.fromLngLat([103.55, 30.92]);
-  private data: WeatherData | null = null;
-  private index = 0;
-  private settings: LayerSettings;
-  private reducedMotion = false;
-  private start = 0;
-  private timer?: ReturnType<typeof setTimeout>;
-  constructor(settings: LayerSettings) {
-    this.settings = settings;
+type RainImage = { url: string; coordinates: Coordinates };
+
+function imageCoordinates([west, south, east, north]: RainRaster['bounds']): Coordinates {
+  return [[west, north], [east, north], [east, south], [west, south]];
+}
+
+function encodeRainRaster(raster: RainRaster): RainImage | null {
+  try {
+    if (typeof document === 'undefined') throw new Error('document is unavailable');
+    const canvas = document.createElement('canvas');
+    canvas.width = raster.width;
+    canvas.height = raster.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('2D canvas context is unavailable');
+    const image = context.createImageData(raster.width, raster.height);
+    image.data.set(raster.pixels);
+    context.putImageData(image, 0, 0);
+    return { url: canvas.toDataURL('image/png'), coordinates: imageCoordinates(raster.bounds) };
+  } catch (error) {
+    console.error('Rain raster image could not be encoded:', error);
+    return null;
   }
-  onAdd(map: Map, gl: WebGL2RenderingContext) {
+}
+
+/** Model forecast image overlay; it is static and does not simulate rain drops. */
+export class WeatherLayer {
+  private readonly map: Map;
+  private cachedData: WeatherData | null = null;
+  private cachedIndex = -1;
+  private cachedImage: RainImage | null = null;
+  private hasCache = false;
+
+  constructor(map: Map) {
     this.map = map;
-    this.renderer = new THREE.WebGLRenderer({
-      canvas: map.getCanvas(),
-      context: gl,
-      antialias: true,
+    map.addSource('rain-grid', {
+      type: 'image',
+      url: TRANSPARENT_PIXEL,
+      coordinates: PLACEHOLDER_COORDINATES,
     });
-    this.renderer.autoClear = false;
-    this.scene.add(this.rainGroup);
-    this.scene.add(new THREE.AmbientLight(0xe4f4ff, 2.2));
-    const sun = new THREE.DirectionalLight(0xffffff, 2.5);
-    sun.position.set(-10000, -20000, 30000);
-    this.scene.add(sun);
-    this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.start = performance.now();
-    this.rebuild();
+    const before = map.getStyle().layers.find((layer) =>
+      RAIN_ORDER_ANCHORS.has(layer.id) ||
+      layer.id.startsWith('domestic-labels-') ||
+      layer.type === 'symbol',
+    )?.id;
+    map.addLayer(
+      {
+        id: 'rain-grid',
+        type: 'raster',
+        source: 'rain-grid',
+        layout: { visibility: 'none' },
+        paint: {
+          'raster-opacity': 0.6,
+          'raster-fade-duration': 0,
+          'raster-resampling': 'linear',
+        },
+      },
+      before,
+    );
   }
+
   update(data: WeatherData | null, index: number, settings: LayerSettings) {
-    const changed =
-      this.data !== data ||
-      this.index !== index ||
-      this.settings.exaggeration !== settings.exaggeration ||
-      this.settings.terrain !== settings.terrain;
-    this.data = data;
-    this.index = index;
-    this.settings = settings;
-    if (changed) this.rebuild();
-    this.rainGroup.visible = settings.rain;
-    if (this.rainMaterial) this.rainMaterial.opacity = settings.opacity * 0.95;
-    this.map?.triggerRepaint();
-  }
-  private clear(group: THREE.Group) {
-    group.traverse((object) => {
-      if (
-        object instanceof THREE.Mesh ||
-        object instanceof THREE.LineSegments
-      ) {
-        object.geometry.dispose();
-        const materials = Array.isArray(object.material)
-          ? object.material
-          : [object.material];
-        materials.forEach((m) => m.dispose());
-      }
-    });
-    group.clear();
-  }
-  private rebuild() {
-    this.clear(this.rainGroup);
-    this.drops = [];
-    this.dropGeometry = undefined;
-    this.rainMaterial = undefined;
-    if (!this.data || !this.map) return;
-    this.origin = MercatorCoordinate.fromLngLat(this.data.anchor);
-    const unit = this.origin.meterInMercatorCoordinateUnits();
-    const colors: number[] = [];
-    this.data.cells.forEach((cell, cellIndex) => {
-      const hour = cell.hours[this.index];
-      if (!hour) return;
-      const pos = MercatorCoordinate.fromLngLat([cell.lng, cell.lat]);
-      const x = (pos.x - this.origin.x) / unit,
-        y = (pos.y - this.origin.y) / unit;
-      const floor = this.settings.terrain
-        ? Math.max(0, cell.elevation ?? 0) * this.settings.exaggeration
-        : 0;
-      if (hour.rain == null || hour.rain < 0.1) return;
-      const count = Math.min(130, Math.ceil(22 + hour.rain * 16));
-      const color = new THREE.Color(rainColor(hour.rain));
-      for (let j = 0; j < count; j++) {
-        const seed = cellIndex * 107 + j * 5;
-        this.drops.push({
-          x: x + (seeded(seed) - 0.5) * 28000,
-          y: y + (seeded(seed + 1) - 0.5) * 30000,
-          floor: floor + 70,
-          height: 2600,
-          phase: seeded(seed + 2),
-          speed: 0.22 + Math.min(0.4, hour.rain * 0.035),
-        });
-        for (let k = 0; k < 2; k++) colors.push(color.r, color.g, color.b);
-      }
-    });
-    if (this.drops.length) {
-      this.dropGeometry = new THREE.BufferGeometry();
-      this.dropGeometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(
-          new Float32Array(this.drops.length * 6),
-          3,
-        ),
-      );
-      this.dropGeometry.setAttribute(
-        'color',
-        new THREE.Float32BufferAttribute(colors, 3),
-      );
-      this.rainMaterial = new THREE.LineBasicMaterial({
-        vertexColors: true,
-        transparent: true,
-        opacity: this.settings.opacity * 0.95,
-        depthWrite: false,
-      });
-      const lines = new THREE.LineSegments(
-        this.dropGeometry,
-        this.rainMaterial,
-      );
-      lines.frustumCulled = false;
-      this.rainGroup.add(lines);
+    this.map.setPaintProperty('rain-grid', 'raster-opacity', settings.opacity);
+    const source = this.map.getSource('rain-grid') as ImageSource | undefined;
+    const visible = settings.rain && data !== null;
+    if (!visible || !source || typeof source.updateImage !== 'function') {
+      this.map.setLayoutProperty('rain-grid', 'visibility', 'none');
+      if (visible && !source)
+        console.error('Rain raster image source is unavailable.');
+      return;
     }
-    this.rainGroup.visible = this.settings.rain;
-  }
-  render(_gl: WebGL2RenderingContext, input: CustomRenderMethodInput) {
-    if (!this.renderer || !this.data) return;
-    if (this.dropGeometry && this.settings.rain) {
-      const elapsed = this.reducedMotion
-        ? 0
-        : (performance.now() - this.start) / 1000;
-      const positions = this.dropGeometry.getAttribute(
-        'position',
-      ) as THREE.BufferAttribute;
-      this.drops.forEach((d, i) => {
-        const z =
-          d.floor + (1 - ((d.phase + elapsed * d.speed) % 1)) * d.height;
-        positions.setXYZ(i * 2, d.x, d.y, z);
-        positions.setXYZ(i * 2 + 1, d.x + 90, d.y, Math.max(d.floor, z - 380));
-      });
-      positions.needsUpdate = true;
+
+    if (this.hasCache && this.cachedData === data && this.cachedIndex === index) {
+      this.map.setLayoutProperty('rain-grid', 'visibility', this.cachedImage ? 'visible' : 'none');
+      return;
     }
-    const unit = this.origin.meterInMercatorCoordinateUnits();
-    const local = new THREE.Matrix4()
-      .makeTranslation(this.origin.x, this.origin.y, 0)
-      .scale(new THREE.Vector3(unit, unit, unit));
-    this.camera.projectionMatrix
-      .fromArray(input.defaultProjectionData.mainMatrix)
-      .multiply(local);
-    this.renderer.resetState();
-    if (this.map)
-      this.renderer.setViewport(
-        0,
-        0,
-        this.map.getCanvas().width,
-        this.map.getCanvas().height,
-      );
-    this.renderer.render(this.scene, this.camera);
-    this.renderer.resetState();
-    if (
-      this.settings.rain &&
-      this.drops.length &&
-      !this.reducedMotion &&
-      !document.hidden &&
-      !this.timer
-    ) {
-      this.timer = setTimeout(() => {
-        this.timer = undefined;
-        this.map?.triggerRepaint();
-      }, 33);
+
+    const raster = buildRainRaster(data, index);
+    if (!raster) {
+      this.cachedData = data;
+      this.cachedIndex = index;
+      this.cachedImage = null;
+      this.hasCache = true;
+      this.map.setLayoutProperty('rain-grid', 'visibility', 'none');
+      return;
     }
-  }
-  onRemove() {
-    if (this.timer) clearTimeout(this.timer);
-    this.clear(this.rainGroup);
-    this.renderer?.dispose();
-    this.map = undefined;
+    const image = encodeRainRaster(raster);
+    if (!image) {
+      this.map.setLayoutProperty('rain-grid', 'visibility', 'none');
+      return;
+    }
+    try {
+      source.updateImage(image);
+    } catch (error) {
+      console.error('Rain raster image could not be updated:', error);
+      this.map.setLayoutProperty('rain-grid', 'visibility', 'none');
+      return;
+    }
+    this.cachedData = data;
+    this.cachedIndex = index;
+    this.cachedImage = image;
+    this.hasCache = true;
+    this.map.setLayoutProperty('rain-grid', 'visibility', 'visible');
   }
 }

@@ -9,6 +9,7 @@ import type { ViewState } from '../map/types';
 import { applyLayerPatch, type LayerSettings } from '../map/types';
 import type { SatelliteState } from '../satellite/satellite';
 import type { SatelliteCloudState } from '../weather/SatelliteCloudLayer';
+import { CmaRadarPanel } from '../weather/CmaRadarPanel';
 import { ComparisonLayerWindow } from './ComparisonLayerWindow';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { FullscreenButton } from '../controls/FullscreenButton';
@@ -61,6 +62,10 @@ type Props = {
     onPause: () => void;
     onLocate: () => void;
     following: boolean;
+    tracking?: boolean;
+    locating?: boolean;
+    locationError?: string;
+    followBlocked?: boolean;
     onToggleFollowing: () => void;
     direction: DirectionMode;
     directionStatus?: string;
@@ -112,6 +117,12 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   const [landscape, setLandscape] = useState(false);
   const [editorPane, setEditorPane] = useState<0 | 1>(1);
   const close = useRef<HTMLButtonElement>(null);
+  const followTracking = operations?.tracking ?? operations?.following ?? false;
+  const followLocating = operations?.locating ?? false;
+  const followError = operations?.locationError ?? '';
+  const followStatus = mode === 'browse'
+    ? followError || (followLocating ? '正在获取有效定位…' : '')
+    : '';
   // A new session uses the currently displayed camera/source, including wrapped worlds.
   if (previous.current !== session) {
     previous.current = session;
@@ -178,6 +189,10 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
       return next;
     });
     if (patch.terrain !== undefined) (index === 0 ? primary : secondary).current?.setTerrainMode(patch.terrain);
+  };
+  const closeRadar = () => {
+    changeLayers(0, { rain: false });
+    changeLayers(1, { rain: false });
   };
   const closeLayers = () => { setLayerPane(null); layerToggle.current?.focus({ preventScroll: true }); };
   const enableTerrain = (pitch: number) => {
@@ -289,9 +304,14 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
       <section className="map-comparison-ui" aria-label="双图源对比" data-app-back="30" onKeyDown={event => {
         if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (layerPane !== null) closeLayers(); else if (properties) setProperties(null); else if (operations?.editingTrack) operations.onBackEditor?.(); else if (mode !== 'browse') pause(); else if (plannedRoute) plannedRoute.onClose(); else finish(onClose); }
       }}>
+        {choices.some(item => item?.settings.rain) && (
+          <div className="cma-radar-comparison-viewer">
+            <CmaRadarPanel open onClose={closeRadar} />
+          </div>
+        )}
         <header className="map-comparison-heading">
           <strong>对比</strong>{search}
-          <span className="map-comparison-live" role="status" aria-live="polite">{mode === 'draw' ? '标准轨迹绘制已开启' : notice || '十字定位 · 双向同步'}</span>
+          <span className="map-comparison-live" role="status" aria-live="polite">{mode === 'draw' ? '标准轨迹绘制已开启' : followStatus || notice || '十字定位 · 双向同步'}</span>
           <FullscreenButton compact />
           <button ref={layerToggle} className="map-comparison-heading-icon" aria-label="对比图层" title="图层" aria-expanded={layerPane !== null} aria-controls={layerPane !== null ? 'comparison-layer-window' : undefined} onClick={() => { setLayerPane(layerPane === null ? 0 : null); setProperties(null); }}><Layers size={18}/></button>
           <button className="map-comparison-heading-icon" aria-label="画线属性" title="画线属性" aria-expanded={properties === 'line'} onClick={() => { setLayerPane(null); setProperties(properties === 'line' ? null : 'line'); }}><SlidersHorizontal size={18}/></button>
@@ -371,7 +391,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
             <button onClick={() => { if (operations?.onSave()) { setMode('browse'); setNotice('路线已保存'); } }}><Check size={18}/><small>保存</small></button>
             <button onClick={pause}><Pause size={18}/><small>暂停</small></button>
           </> : <>
-            <button aria-label={operations?.following ? '关闭位置跟随' : '开启位置跟随'} title="单击切换跟随，双击定位" aria-pressed={operations?.following ?? false} onClick={event => {
+            <button aria-label={followError || followLocating || (operations?.following && !followTracking) ? '重试定位' : followTracking ? '关闭位置跟随' : '开启位置跟随'} title={operations?.followBlocked ? '当前编辑操作中，跟随已暂停' : followError ? `重试定位：${followError}` : (followLocating ? '正在等待有效定位' : '单击切换跟随，双击定位')} aria-pressed={followTracking} onClick={event => {
               const now = Date.now();
               if (operations?.onLocate && (event.detail >= 2 || now - lastFollowClick.current < 350)) {
                 if (followTimer.current !== null) window.clearTimeout(followTimer.current);
@@ -387,7 +407,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
                 lastFollowClick.current = 0;
                 operations?.onToggleFollowing();
               }, operations?.onLocate ? 280 : 0);
-            }} disabled={!operations}><LocateFixed size={18}/><small>{operations?.following ? '跟随中' : '跟随'}</small></button>
+            }} disabled={!operations}><LocateFixed size={18}/><small>{followError ? '重试' : followLocating ? '定位中' : followTracking ? '跟随中' : '跟随'}</small></button>
             <span className="map-comparison-direction"><DirectionControl mode={operations?.direction ?? 'free'} status={operations?.directionStatus} onChange={mode => operations?.onDirectionChange(mode)} />{operations?.directionStatus && <small className="map-comparison-direction-status" role="status" aria-live="polite">{operations.directionStatus}</small>}</span>
             <button onClick={() => { operations?.onDraw(); setMode('draw'); setNotice(''); setProperties(null); setLayerPane(null); }} disabled={!operations}><PencilIcon width={20} height={20}/><small>画线</small></button>
           </>}

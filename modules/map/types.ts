@@ -67,10 +67,17 @@ export function applyLayerPatch(
   if (patch.temperature === true) {
     next.elevationColors = false;
     next.geology = false;
+    next.rain = false;
   } else if (patch.geology === true) {
     next.elevationColors = false;
     next.temperature = false;
+    next.rain = false;
   } else if (patch.elevationColors === true) {
+    next.geology = false;
+    next.temperature = false;
+    next.rain = false;
+  } else if (patch.rain === true) {
+    next.elevationColors = false;
     next.geology = false;
     next.temperature = false;
   }

@@ -78,8 +78,8 @@ const ITEMS = [
   },
   {
     key: 'rain',
-    label: '降雨动画',
-    detail: '降雨预报 · 动画示意',
+    label: '雷达实况图',
+    detail: '全国拼图原图 · 组合反射率 · dBZ',
     icon: CloudRain,
     color: 'cyan',
   },
@@ -146,6 +146,9 @@ export function LayerPanel({
                           : '正在获取最新可用日期'
                       : detail}
                   </p>
+                )}
+                {key === 'rain' && settings.rain && (
+                  <p>原始全国拼图 · 完整图例与署名 · 不与地图配准</p>
                 )}
               </div>
               <button
@@ -383,7 +386,7 @@ export function LayerPanel({
           <div className="layer-note">
             <Info size={15} />
             <p>
-              降雨动画依据预报数据展示，不是雷达观测；最新云况来自卫星日间影像，不是雷达回波。
+              雷达实况图来自国家气象数据网，显示含完整底图、图例和署名的原始拼图，不与当前地图配准叠加。最新云况来自卫星影像，不是雷达回波。
             </p>
           </div>
         </details>

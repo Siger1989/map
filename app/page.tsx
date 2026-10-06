@@ -114,7 +114,7 @@ import {
 } from '@/modules/journey/RouteWeatherRail';
 import { usePosition } from '@/modules/position/usePosition';
 import { useMotionHeading } from '@/modules/position/useMotionHeading';
-import { canFollow, recordingPosition, positionZoom } from '@/modules/position/follow';
+import { canFollow, isPositionTracking, recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
 import { useRouteDisplay } from '@/modules/routeDisplay/useRouteDisplay';
 import { RouteDisplaySettings } from '@/modules/routeDisplay/RouteDisplaySettings';
@@ -185,6 +185,7 @@ import { useAreas } from '@/modules/areas/useAreas';
 import { AreaTools } from '@/modules/areas/AreaTools';
 import { useWeather } from '@/modules/weather/useWeather';
 import { TemperatureLegend } from '@/modules/weather/TemperatureLegend';
+import { CmaRadarPanel } from '@/modules/weather/CmaRadarPanel';
 import { useMapTools } from '@/modules/controls/useMapTools';
 import type { SatelliteState } from '@/modules/satellite/satellite';
 import type { SatelliteCloudState } from '@/modules/weather/SatelliteCloudLayer';
@@ -276,6 +277,7 @@ export default function Home() {
   const [sourcesNavigation, setSourcesNavigation] =
     useState<MapSourcesNavigation | null>(null);
   const [anchor, setAnchor] = useState<[number, number]>(INITIAL_VIEW.center);
+  const [weatherBounds, setWeatherBounds] = useState<readonly [number, number, number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [view, setView] = useState<ViewState>(INITIAL_VIEW);
   const [cloudState, setCloudState] = useState<SatelliteCloudState | null>(null);
@@ -662,8 +664,9 @@ export default function Home() {
   const toggleMapFollowing = () => {
     cancelStartupCamera();
     if (follow.blocked) { if (recorder.record.phase !== 'recording') position.locate(); return; }
-    focusLock.adoptMode(!follow.following, position.direction);
-    if (follow.following && !position.locationError) { follow.pause(); map.current?.stop(); }
+    const tracking = isPositionTracking(follow.following, follow.waiting, position.locationError, cameraFix);
+    focusLock.adoptMode(!tracking, position.direction);
+    if (tracking) { follow.pause(); map.current?.stop(); }
     else { map.current?.stop(); follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
   };
   const resumeNavigation = () => {
@@ -1710,13 +1713,17 @@ export default function Home() {
           direction: position.direction,
           directionStatus: position.direction === 'motion' ? motionHeading.status : position.directionError,
           onDirectionChange: changeMapDirection,
-          following: follow.following && !follow.waiting && !position.locationError && canFollow(cameraFix),
+          following: follow.following,
+          tracking: isPositionTracking(follow.following, follow.waiting, position.locationError, cameraFix),
+          locating: (follow.following && follow.waiting) || (recorder.record.phase !== 'recording' && position.locating),
+          locationError: position.locationError,
+          followBlocked: follow.blocked,
           onToggleFollowing: toggleMapFollowing,
           onDraw: () => { tracks.start(); setPanel(null); },
           onUndo: tracks.undo,
           onSave: () => tracks.save('', true),
           onPause: tracks.finish,
-          onLocate: () => { if (displayedFix) map.current?.focusPoint(displayedFix.coordinates); else position.locate(fix => map.current?.focusPoint(fix.coordinates)); },
+          onLocate: locateAndFocus,
           canUndo: tracks.canUndo,
           drawingEnabled: tracks.drawing,
           snapping: tracks.snapping,
@@ -1768,10 +1775,12 @@ export default function Home() {
           onCameraMoveStart={() => setQuickAdd(null)}
           onAnchor={setAnchor}
           onCenter={setMapCenter}
+          onWeatherBounds={setWeatherBounds}
           onSatellite={setSatellite}
           onCloud={setCloudState}
           onGeology={setGeology}
           weather={weather.data}
+          rainWeather={null}
           hourIndex={hourIndex}
           routeOverlay={plannedEdit.current && editor.session ? { ...routeDisplay.route, route: null } : routeDisplay.route}
           guidanceOverlay={guidanceOverlay}
@@ -2624,12 +2633,13 @@ export default function Home() {
           onOverview={() => { userBrowse(); map.current?.fitCollection((guidance.session?.route ?? navigation.route!).coordinates, { top: 30, right: 20, bottom: 30, left: 20 }); }}
         />}
         <div
-          className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}`}
+          className={`map-legends${layers.temperature ? ' map-legends-temperature' : ''}${layers.rain ? ' map-legends-rain' : ''}`}
           hidden={
             panel !== 'layers' &&
             !layers.elevationColors &&
             !layers.temperature &&
-            !layers.geology
+            !layers.geology &&
+            !layers.rain
           }
         >
           {layers.temperature && (
@@ -2639,6 +2649,10 @@ export default function Home() {
               loading={weather.loading}
               error={weather.error}
             />
+          )}
+
+          {layers.rain && focusLockControl.reasons.length === 0 && (
+            !comparison && <CmaRadarPanel open onClose={() => update({ rain: false })} />
           )}
 
           {layers.geology && (
@@ -2862,7 +2876,7 @@ export default function Home() {
           directionStatus={position.direction === 'motion' ? motionHeading.status : position.directionError}
           onDirection={changeMapDirection}
           following={follow.following}
-          tracking={follow.following && !follow.waiting && !position.locationError && canFollow(cameraFix)}
+          tracking={isPositionTracking(follow.following, follow.waiting, position.locationError, cameraFix)}
           locationError={position.locationError}
           followBlocked={follow.blocked}
           locating={
@@ -3064,7 +3078,7 @@ export default function Home() {
               playing={playing}
               onIndex={setHourIndex}
               onPlaying={setPlaying}
-              rainVisible={layers.rain}
+              rainVisible={false}
               expanded
             />
           }

@@ -1,0 +1,97 @@
+.rain-map-legend {
+  box-sizing: border-box;
+  width: min(180px, calc(100vw - 100px));
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ui-ink, var(--ink));
+}
+.rain-map-legend summary {
+  box-sizing: border-box;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 11px;
+  line-height: 14px;
+}
+.rain-map-legend summary::-webkit-details-marker {
+  display: none;
+}
+.rain-map-legend-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.rain-map-legend-heading strong {
+  flex: 0 0 auto;
+  font-size: 12px;
+  line-height: 14px;
+}
+.rain-map-legend-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 14px;
+}
+.rain-map-legend-heading .rain-map-legend-time {
+  flex: 0 0 auto;
+}
+.rain-map-legend-heading .rain-map-legend-range {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rain-map-legend-chevron {
+  display: inline-block;
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 12px;
+  transition: transform 120ms ease;
+}
+.rain-map-legend[open] .rain-map-legend-chevron {
+  transform: rotate(180deg);
+}
+.rain-map-legend-ramp {
+  width: 100%;
+  max-width: 200px;
+  height: 6px;
+  margin-top: 2px;
+  border-radius: 4px;
+}
+.rain-map-legend-ticks {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  height: 14px;
+  font-size: 11px;
+  line-height: 14px;
+}
+.rain-map-legend-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.rain-map-legend-details {
+  box-sizing: border-box;
+  max-height: min(96px, 16dvh);
+  overflow: auto;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 12px;
+}
+.rain-map-legend-details p {
+  margin: 6px 0 0;
+}
+.observatory.home-map .map-legends.map-legends-rain {
+  max-height: none;
+  left: calc(var(--home-left) + 52px);
+  right: 80px;
+  top: auto;
+  bottom: calc(var(--home-footer) + 4px);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .rain-map-legend.glass {
+  border-radius: var(--ui-radius-card, 8px);
+}

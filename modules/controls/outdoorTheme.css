@@ -128,7 +128,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='r
   --route-mode-margin: 0px;
   --route-action-margin: 0px;
   --route-note-margin: 0px;
-  --route-padding: 4px 8px;
+  --route-padding: 8px 8px 3px;
   --route-radius: 8px;
   background: var(--ui-surface);
   border-radius:var(--ui-radius-card);

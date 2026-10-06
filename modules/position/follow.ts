@@ -32,6 +32,17 @@ export function canFollow(
   );
 }
 
+/** True only when follow has a current usable fix and is actively tracking it. */
+export function isPositionTracking(
+  following: boolean,
+  waiting: boolean,
+  locationError: string | null | undefined,
+  fix: PositionFix | null,
+  now = Date.now(),
+): boolean {
+  return following && !waiting && !locationError && canFollow(fix, now);
+}
+
 /** Keep the error circle in view; this changes only the camera, never the fix. */
 export function positionZoom(fix: PositionFix) {
   return Math.max(

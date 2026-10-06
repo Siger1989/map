@@ -25,10 +25,10 @@ import {
   loadLatestSatellite,
   type SatelliteState,
 } from '../satellite/satellite';
-import type { WeatherLayer } from '../weather/WeatherLayer';
+import { WeatherLayer } from '../weather/WeatherLayer';
 import { SatelliteCloudLayer, type SatelliteCloudState } from '../weather/SatelliteCloudLayer';
 import { TemperatureLayer } from '../weather/TemperatureLayer';
-import type { WeatherData } from '../weather/data';
+import type { WeatherData, WeatherGridBounds } from '../weather/data';
 import {
   addCartography,
   cartographySettingsForDisplay,
@@ -184,11 +184,14 @@ export type TerrainMapProps = {
   onCameraMoveStart?: () => void;
   onAnchor: (anchor: [number, number]) => void;
   onCenter?: (center: [number, number]) => void;
+  onWeatherBounds?: (bounds: WeatherGridBounds) => void;
   onSatellite: (satellite: SatelliteState) => void;
   onCloud?: (state: SatelliteCloudState) => void;
   onGeology: (state: GeologyState) => void;
   weather: WeatherData | null;
+  rainWeather?: WeatherData | null;
   hourIndex: number;
+  rainHourIndex?: number;
   routeOverlay: RouteOverlay;
   guidanceOverlay?: GuidanceOverlay;
   onMapPick: (coordinates: Coordinate) => void;
@@ -255,7 +258,16 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const previewRef = useRef<Marker | null>(null);
     const latest = useRef(props);
     latest.current = props;
-    const weatherRef = useRef<WeatherLayer | null>(null);
+    const publishWeatherBounds = (map: Map) => {
+      const bounds = map.getBounds();
+      latest.current.onWeatherBounds?.([
+        bounds.getWest(),
+        bounds.getSouth(),
+        bounds.getEast(),
+        bounds.getNorth(),
+      ]);
+    };
+    const rainRef = useRef<WeatherLayer | null>(null);
     const cloudRef = useRef<SatelliteCloudLayer | null>(null);
     const temperatureRef = useRef<TemperatureLayer | null>(null);
     const geologyRef = useRef<GeologyLayer | null>(null);
@@ -434,11 +446,19 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       syncRasterLock();
       if (!useDomestic || s.roads) addCartography(map);
       temperatureRef.current ??= new TemperatureLayer(map);
+      rainRef.current ??= new WeatherLayer(map);
       cloudRef.current?.update(s);
       temperatureRef.current.update(
         latest.current.weather,
         latest.current.hourIndex,
         s.temperature,
+      );
+      rainRef.current.update(
+        latest.current.rainWeather !== undefined
+          ? latest.current.rainWeather
+          : latest.current.weather,
+        latest.current.rainHourIndex ?? latest.current.hourIndex,
+        s,
       );
       const terrain = map.getTerrain();
       if (
@@ -493,11 +513,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               ? 'visible'
               : 'none',
           );
-      weatherRef.current?.update(
-        latest.current.weather,
-        latest.current.hourIndex,
-        s,
-      );
       syncCartography(map, cartographySettingsForDisplay(s, useDomestic));
       if (custom)
         for (const id of ['open-landcover', 'open-water', 'open-buildings'])
@@ -549,6 +564,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (latest.current.persistCamera !== false) saveLastView({ center: m.getCenter().wrap().toArray(), zoom: m.getZoom(), pitch: m.getPitch(), bearing: m.getBearing(), terrain: terrainMode.current });
       areaRef.current?.sync(latest.current.areaOverlay);
       latest.current.onCenter?.(m.getCenter().wrap().toArray());
+      publishWeatherBounds(m);
       syncTracks(latest.current.trackOverlay);
       const p = m.getCenter();
       if (Math.abs(p.lng - weatherAnchor.current[0]) + Math.abs(p.lat - weatherAnchor.current[1]) > 0.6 && Math.abs(p.lat) < 75) {
@@ -880,7 +896,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             terrain: map.getTerrain(),
             elevationReady: map.isSourceLoaded('elevation'),
             renderedElevation: map.queryTerrainElevation(map.getCenter()),
-            cloudRainLayerReady: Boolean(map.getLayer('cloud-rain-3d')),
+            rainLayerReady: Boolean(map.getLayer('rain-grid')),
             satelliteCloudLayerReady: Boolean(map.getLayer('satellite-cloud-observation')),
             satelliteCloudOpacity: map.getLayer('satellite-cloud-observation') ? map.getPaintProperty('satellite-cloud-observation', 'raster-opacity') : null,
             geologyReady: geologyRef.current?.isReady() ?? false,
@@ -1199,6 +1215,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.once('style.load', async () => {
             if (disposed) return;
             loaded.current = true;
+            publishWeatherBounds(map);
             geologyRef.current = new GeologyLayer(map, (state) =>
               latest.current.onGeology(state),
             );
@@ -1299,18 +1316,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                 latest.current.onStatus('等高线暂未加载，请稍后刷新');
             }
             if (disposed) return;
-            try {
-              const { WeatherLayer } = await import('../weather/WeatherLayer');
-              if (disposed) return;
-              const layer = new WeatherLayer(latest.current.settings);
-              weatherRef.current = layer;
-              map.addLayer(layer);
-              sync();
-            } catch (e) {
-              console.warn('Weather layer:', e);
-              if (!disposed)
-                latest.current.onStatus('三维云雨暂未加载，数值面板仍可使用');
-            }
             if (!disposed) {
               if (map.getLayer('annotation-models'))
                 map.moveLayer('annotation-models');
@@ -1443,6 +1448,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           });
           map.on('moveend', (event) => {
             if (boxGestureActive.current || !loaded.current) return;
+            publishWeatherBounds(map);
             publishView({ bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom() }, true);
             latest.current.onCenter?.(map.getCenter().wrap().toArray());
             if ('routePreview' in event && event.routePreview) {
@@ -1551,7 +1557,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         diagnostics.current?.dispose();
         diagnostics.current = null;
         mapRef.current = null;
-        weatherRef.current = null;
+        rainRef.current = null;
         temperatureRef.current = null;
       };
     }, [contextEpoch]);
@@ -1561,6 +1567,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       settings,
       props.weather,
       props.hourIndex,
+      props.rainWeather,
+      props.rainHourIndex,
       props.roadSnapping,
       props.riverSnapping,
       props.section.enabled,
@@ -1630,7 +1638,9 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     useEffect(() => {
       if (!container.current) return;
       const observer = new ResizeObserver(() => {
-        mapRef.current?.resize();
+        const map = mapRef.current;
+        map?.resize();
+        if (map && loaded.current) publishWeatherBounds(map);
       });
       observer.observe(container.current);
       return () => observer.disconnect();
