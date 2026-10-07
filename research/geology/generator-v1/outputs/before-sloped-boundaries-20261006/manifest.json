@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "input": {
+    "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+    "filename": "PM01规范输入.xlsx",
+    "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+  },
+  "settings": {
+    "axis_azimuth_deg": 83.50058502519266,
+    "axis_method": "explicit",
+    "coordinate_system": "local_relative",
+    "vertical_exaggeration": 1
+  },
+  "code": [
+    {
+      "name": "importer.py",
+      "sha256": "c92d6f57502ac9b9be05fee509ad0dac7c8418ff6af2d17533930eb0f6596343"
+    },
+    {
+      "name": "renderer.py",
+      "sha256": "97597842085dc26e44d0999799ef6b8aec553e658e7d4ff16319b795b4680327"
+    },
+    {
+      "name": "pipeline.py",
+      "sha256": "df8f5a8936c2b7d88314b9154b82d48c3c2728a531693da71f98b7bfa403b50b"
+    }
+  ],
+  "templates": [
+    {
+      "name": "materials.json",
+      "sha256": "ad864c9b223a431cd91b9a9249ee446617db6866d85510505337587bb5c66d33"
+    },
+    {
+      "name": "drawing.json",
+      "sha256": "01f3746b2e5a7d807b518053f61b8e20cbbe2f3fae903f5760796f03fcaf390a"
+    }
+  ],
+  "business_file_reads": [
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+      "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\drawing.json",
+      "sha256": "01f3746b2e5a7d807b518053f61b8e20cbbe2f3fae903f5760796f03fcaf390a"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\materials.json",
+      "sha256": "ad864c9b223a431cd91b9a9249ee446617db6866d85510505337587bb5c66d33"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "normalized.json",
+      "role": "normalized_data",
+      "bytes": 165076,
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75"
+    },
+    {
+      "name": "drawing.svg",
+      "role": "vector_master",
+      "bytes": 54599,
+      "sha256": "e1244059d08db3357489b2adcd218e17f93c48b9d883d2e1b997674b96518ba2"
+    },
+    {
+      "name": "preview.png",
+      "role": "raster_preview",
+      "bytes": 232369,
+      "sha256": "551a2e7904d01cd0f4e200db3e08882e58c04169ff43df53eece72340e6dcf02"
+    },
+    {
+      "name": "appendix.html",
+      "role": "complete_appendix",
+      "bytes": 87194,
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37"
+    },
+    {
+      "name": "layout-audit.json",
+      "role": "layout_audit",
+      "bytes": 6579,
+      "sha256": "528139b6e9bdcbcbf38ec5beea5db0e3611200681ccb1a22a4b41b047e53f05a"
+    },
+    {
+      "name": "report.html",
+      "role": "run_report",
+      "bytes": 16748,
+      "sha256": "73f54403a3c2623fac3e803c824c6d02bbc8ae40b2a8638f259c37f9e7051a51"
+    },
+    {
+      "name": "detail.svg",
+      "role": "vector_detail",
+      "bytes": 18929,
+      "sha256": "f0fbf9b11e1e2b10a28b021edcfff99f12e57c824cda643922920c57b9b25d72"
+    },
+    {
+      "name": "detail.png",
+      "role": "raster_detail",
+      "bytes": 65602,
+      "sha256": "281ae2873b2f3124b27a0df532d10261f85b16c4bde14e9c7aad4bd319e2b467"
+    },
+    {
+      "name": "manifest.json",
+      "role": "self_manifest",
+      "bytes": null,
+      "sha256": null
+    }
+  ],
+  "drawing_bounds": {
+    "x_range_m": [
+      0.0,
+      479.3394609125983
+    ],
+    "offset_range_m": [
+      -4.973799150320701e-14,
+      234.07670982328915
+    ],
+    "elevation_range_m": [
+      -127.46241495689857,
+      0.0
+    ],
+    "units_per_px": 0.35986446014459333,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true,
+    "svg_geometry_coordinate_decimals_px": 6,
+    "maximum_coordinate_serialization_error_px": 5e-07,
+    "maximum_coordinate_serialization_error_m": 1.7993223007229666e-07,
+    "data_calculation_rounded": false
+  },
+  "precision_boundary": {
+    "calculation": "unrounded IEEE-754 double precision",
+    "display_coordinates_decimals": 3,
+    "display_angles_decimals": 3,
+    "vertical_exaggeration": 1,
+    "lithology_band_width_represents_thickness": false
+  },
+  "rasterization": {
+    "preview": {
+      "svg_width_px": 1500,
+      "svg_height_px": 2332,
+      "png_width_px": 1500,
+      "png_height_px": 2332,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "detail": {
+      "svg_width_px": 1500,
+      "svg_height_px": 648,
+      "png_width_px": 1500,
+      "png_height_px": 648,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  }
+}

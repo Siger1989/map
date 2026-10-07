@@ -1,0 +1,43 @@
+两类标准文件导入出图接口（2026-10-07）
+
+用户目标：实测剖面和钻孔柱状图在统一PC本地页面，下载标准Excel、填写、导入校验、直接生成SVG与高清PNG及附表。保留旧成果和原始资料。默认本地端口9188，只监听127.0.0.1。
+
+分工所有权
+A backend：新增 drill_importer.py、drill_renderer.py、drill_pipeline.py、templates/drill-patterns.json、tests_drill.py。不改server/web/工作簿作者脚本。
+B templates：新增 make_standard_templates.mjs，outputs/standard-input-v2/ 下4份用户工作簿及校验预览；标准模板说明。不得改backend/server/web。
+C integration：server.py、web/index.html、launch.py、新启动地质绘图工具.cmd、tests_server.py。旧section pipeline不更改业务几何。
+主审：接口约定、独立几何/源数据/HTTP验收、修复协调、最终交付和接续说明。
+
+统一API
+POST /api/generate multipart：workbook文件；drawing_type=section|drill（缺省section兼容旧客户端）；axis仅section有效。错误400携带error.issues=[severity,code,message,cells]；内部异常只显示简明中文，日志保留堆栈。按图种分别显示最近成功结果，失败不能冒充本次成功。
+GET /api/status 返回 modes、templates、last_results（section/drill）并保留兼容旧字段。模板固定下载 /template?type=section|drill&example=0|1；映射 outputs/standard-input-v2/实测剖面-标准模板.xlsx、实测剖面-填写示例.xlsx、钻孔柱状图-标准模板.xlsx、钻孔柱状图-填写示例.xlsx。保留旧/template兼容。
+生成目录用图种+文件hash+设置hash+每次job标识，避免更换代码后显示旧缓存/失败留下旧成功manifest。不得删除旧成果。
+section run_pipeline保持原接口。drill_pipeline.run_drill_pipeline(input_path,output_dir)->dict；输出 normalized.json,drawing.svg,preview.png,complete-hd.png,detail.svg,detail.png,appendix.html,report.html,layout-audit.json,manifest.json。report不得声称全部行业规范已核定。
+结果JSON含 drawing_type,summary,issues,source,files；drill summary: turns,layers,samples,endpoint_m,pending_patterns；section原summary兼容。
+
+剖面标准
+沿用importer.py内PROJECT_PARAMETERS、CANONICAL_COLUMNS及“项目”/“测段”表，不改几何含义。空白模板不混示例记录，项目参数允许默认m/deg等；已填示例来自当前PM01规范数据，保持缺失/原始冲突。所有必填列明确说明。输入未知岩性提示待配置，保留原名称，不猜测映射。
+
+钻孔标准 drill-1.0
+项目表 A1/B1=参数/值。参数：模板类型=钻孔柱状图；模板版本=1.0；项目名称（可空）；钻孔编号（必填字符串）；长度单位=m；孔深基准=原始沿孔深|校正沿孔深（必填，不自动校正）；终孔深度_m（必填>0）；Au单位、Pb单位、Zn单位（分析值有填写时相应单位必填）。
+分层表必需，列：层号,顶深_m,底深_m,岩性名称,岩性描述,岩心长_m,花纹代码。层号唯一，顶/底必填；岩性名称可空但警告；描述保留原文/问号/斜杠。岩心長/花纹代码可空。各层连续覆盖0至终孔，底>顶，不允许重叠/倒序/缺段，不自动补齐。层段长=底-顶，仅沿孔长度，不能称真厚度。
+回次表可为空/可缺，列：回次号,顶深_m,底深_m,岩心长_m。填记录须四列数值有效、ID唯一，区间连续；若提供整表应覆盖0至终孔。采取率由岩心长/沿孔段长计算；芯长不得大于区间长度（容差1e-6）。无回次不虚构。
+样品表可为空/可缺，列：样品编号,顶深_m,底深_m,岩心长_m,Au,Pb,Zn。ID唯一；顶/底必填且位于孔深范围；岩心长及分析值可空，空不变0；按深度绘制，保留原ID，记录位置排序，不按编号推断。样品可相互重叠（如复样），需提示并分轨显示，不能拒绝地质合法数据。分析值非负数，有数值必须有单位；低于检出限等文本暂报明确信息而非转0。
+孔径表可为空/可缺，列：孔深_m,孔径_mm。单点记录不推断全孔孔径。编号/表头使用字符串，数值有限；不自动处理公式缓存，标准文件的数据单元格若含公式则指明单元格要求粘贴数值，防缓存误读。
+任意表可加说明/额外列但必需标题不能重复或缺失；空行忽略；缺项/坏数值/单位/层界异常在出图前校验，列出源表及单元格。
+
+钻孔规范数据兼容demo字段
+root drawing_type='drill',schema_version='drill-1.0',source(filename,sha256,adapter),project(name,hole_id,analysis_units),meta(hole_id,endpoint_m,depth_basis),turns,layers,samples,structures,issues,summary。
+turns:{id,top_m,bottom_m,advance_m,core_m,recovery_percent,source}。
+layers:{id,top_m,bottom_m,thickness_m,core_m,recovery_percent,description,lithology_name,material_code,pattern_id,source}。
+samples:{id,top_m,bottom_m,length_m,core_m,recovery_percent,assays:{Au,Pb,Zn},source}。
+structures:{depth_m,diameter_mm,source}。每条source有sheet,row,cells字段；源数据精度保留；显示两位与原数值分离。
+
+花纹与渲染
+复用已核对的三个钻孔候选SVG定义，复制为本工具模板数据，运行时不读原图、旧成图或固定ZK0003 JSON。
+固定代码D001=short-dash-double-dot，对应精确名称“泥岩夹泥质粉砂岩”；D002=dot-rows-thin-lines，对应“泥岩、泥质粉砂岩。”及明确别名“泥岩、泥质粉砂岩”；D003=point-dash-ellipse-bands，对应“砂岩夹粉砂岩”。显式花纹代码必须有效；未知代码报错；代码与明确精确名称映射冲突报错；无代码按精确名称匹配，未知留白、明确提示待配置。花纹表示岩性组合，不代表内部精确层界或矿层；不得把矿化描述转成矿层实测数据。
+孔号、深度、层数、回次数、样数全部动态；不允许ZK0003/382.79/131/23/97硬编码。比例按沿孔深严格线性；标米尺，不宣称未知打印比例。描述换行与文字避让不移动实测边界。样品标签引线不改变区间。重叠样品需分轨。回次可独立列表并清楚与深度轴分区，深度轴靠近岩性/样品，避免误读独立列表为等深度。
+全图、局部SVG无嵌入位图。大数据可扩展矢量画布，PNG从相同SVG按像素上限缩放渲染，不丢行/截断。任何详图截断处明确，不能画成真实层界。所有关键数值及计算基准进附表，缺值显示未提供。
+
+验收
+两类用户填例经HTTP真实上传→新job→SVG/高清PNG/附表可下载；ZK0003只作为样例数据。至少一个不同孔号/孔深/层数/样本数量的钻孔数据和不同剖面数据独立验收；修改源数值后图中边界随之改变；相同输入同SVG；原文件hash不变。坏单位、缺层顶底、重复编号、重叠层/断层缺段、越界样品、公式单元格拒绝；未知材质保留pending；空分析值不造0；重复样品区间分轨而不是遮挡。最后检查拥挤图及完整矢量/PNG，数值标签不重叠。

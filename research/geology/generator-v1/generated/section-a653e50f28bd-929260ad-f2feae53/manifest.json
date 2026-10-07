@@ -1,0 +1,224 @@
+{
+  "schema_version": "1.0",
+  "input": {
+    "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\uploads\\a653e50f28bdad80\\section_alt.xlsx",
+    "filename": "section_alt.xlsx",
+    "sha256": "a653e50f28bdad8026345ba17153bf82c3337deb1d307a8e4eeceb7e1a4c62c6"
+  },
+  "settings": {
+    "axis_azimuth_deg": 90.0,
+    "axis_method": "explicit",
+    "coordinate_system": "local_relative",
+    "vertical_exaggeration": 1
+  },
+  "code": [
+    {
+      "name": "importer.py",
+      "sha256": "c92d6f57502ac9b9be05fee509ad0dac7c8418ff6af2d17533930eb0f6596343"
+    },
+    {
+      "name": "renderer.py",
+      "sha256": "ea863a113f4033e5d7e78d0959a4960a01b33160d21bdf631d761a1559efab08"
+    },
+    {
+      "name": "layer_geometry.py",
+      "sha256": "03097f006bdb4696e523363cb52ec56d34015ab39e2743d1b96d3be71a16965b"
+    },
+    {
+      "name": "readability.py",
+      "sha256": "7047b100a77b2e0f4a5fe6f55f2c7701502da5bc2877cead84bef9f9c40f2006"
+    },
+    {
+      "name": "pipeline.py",
+      "sha256": "f73209a314b1c5a51b48314a262d18296ca9980809e5ae4916fdc6b610c53342"
+    }
+  ],
+  "templates": [
+    {
+      "name": "materials.json",
+      "sha256": "70ca4b6abaaf7b9f90c64c71882d1a29c20aecb4ca6146eb0f76741100be95ed"
+    },
+    {
+      "name": "drawing.json",
+      "sha256": "31614af7e1810a143226e1bd5c7b3aa19b32b7aafd6a20d4923a93fc493d372f"
+    }
+  ],
+  "business_file_reads": [
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\drawing.json",
+      "sha256": "31614af7e1810a143226e1bd5c7b3aa19b32b7aafd6a20d4923a93fc493d372f"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\materials.json",
+      "sha256": "70ca4b6abaaf7b9f90c64c71882d1a29c20aecb4ca6146eb0f76741100be95ed"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\uploads\\a653e50f28bdad80\\section_alt.xlsx",
+      "sha256": "a653e50f28bdad8026345ba17153bf82c3337deb1d307a8e4eeceb7e1a4c62c6"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "normalized.json",
+      "role": "normalized_data",
+      "bytes": 7436,
+      "sha256": "4d0c91c43a5ffc598109782d3ee52f9b0dd99ec6ec0574c351026225ded5c3ed"
+    },
+    {
+      "name": "drawing.svg",
+      "role": "vector_master",
+      "bytes": 43932,
+      "sha256": "fbbb900ba8c94403dd6cfdcb420d08872b030f7fcce91d5d64801cd2311f620e"
+    },
+    {
+      "name": "preview.png",
+      "role": "raster_preview",
+      "bytes": 123718,
+      "sha256": "fbb35d360deafebe7fc41bc0266fe39040a8347dc6476b6ad6d17009ae0bd6c5"
+    },
+    {
+      "name": "complete-hd.png",
+      "role": "complete_hd_raster",
+      "bytes": 921891,
+      "sha256": "49b43f3e187d946862e0ee3226f5590bddfe8e6719de5fc14abc79d55b712103"
+    },
+    {
+      "name": "appendix.html",
+      "role": "complete_appendix",
+      "bytes": 4727,
+      "sha256": "c741cd65e22a091c802c5543f584a765c9292a3def5f836ef5dd09a5a6676fcd"
+    },
+    {
+      "name": "layout-audit.json",
+      "role": "layout_audit",
+      "bytes": 9473,
+      "sha256": "a744cae000e6619af388f4c5a8d3215f56032cb2e99b1bd5eed304a43df8e8d0"
+    },
+    {
+      "name": "report.html",
+      "role": "run_report",
+      "bytes": 3556,
+      "sha256": "25b7ad59184e541cf9c463ef69942ce4eefee5d5dd3c16e545e838bbdab5d903"
+    },
+    {
+      "name": "detail.svg",
+      "role": "vector_detail",
+      "bytes": 17765,
+      "sha256": "7a391e53297305f4f23a305dad977b3307c777251743c707ddb8c8382969d4a0"
+    },
+    {
+      "name": "detail.png",
+      "role": "raster_detail",
+      "bytes": 48506,
+      "sha256": "62619a372ddc6cb86966d226c420b5a7e923dd1183c03d1bb9a9548dca0c438a"
+    },
+    {
+      "name": "readability.svg",
+      "role": "readability_vector",
+      "bytes": 19713,
+      "sha256": "76c34c6cb8a510b8fe17aa3b192c4dc9fb7615fc8b4a60c8f73ca4e662343d2e"
+    },
+    {
+      "name": "readability.png",
+      "role": "readability_raster",
+      "bytes": 69557,
+      "sha256": "18b520e7d31af4b3e0addbb79b351a4219a426873b2123e87053bf0a77fc317e"
+    },
+    {
+      "name": "readability-audit.json",
+      "role": "readability_audit",
+      "bytes": 4305,
+      "sha256": "ab9c7783acebbedd6cbe7ea68406426b515abbb367654f55e173df230cd5f2b2"
+    },
+    {
+      "name": "manifest.json",
+      "role": "self_manifest",
+      "bytes": null,
+      "sha256": null
+    }
+  ],
+  "drawing_bounds": {
+    "x_range_m": [
+      0.0,
+      14.330127018922195
+    ],
+    "offset_range_m": [
+      0.0,
+      0.0
+    ],
+    "measured_elevation_range_m": [
+      0.0,
+      2.4999999999999996
+    ],
+    "display_elevation_range_m": [
+      0.0,
+      2.4999999999999996
+    ],
+    "units_per_px": 0.010758353617809455,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true,
+    "svg_geometry_coordinate_decimals_px": 6,
+    "maximum_coordinate_serialization_error_px": 5e-07,
+    "maximum_coordinate_serialization_error_m": 5.379176808904727e-09,
+    "data_calculation_rounded": false
+  },
+  "precision_boundary": {
+    "calculation": "unrounded IEEE-754 double precision",
+    "display_coordinates_decimals": 3,
+    "display_angles_decimals": 3,
+    "vertical_exaggeration": 1,
+    "lithology_band_width_represents_thickness": false
+  },
+  "rasterization": {
+    "preview": {
+      "css_width_px": 1500,
+      "css_height_px": 1242,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 1500,
+      "png_height_px": 1242,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "complete_hd": {
+      "css_width_px": 1500,
+      "css_height_px": 1242,
+      "requested_scale": 4,
+      "scale": 4,
+      "png_width_px": 6000,
+      "png_height_px": 4968,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "detail": {
+      "css_width_px": 1500,
+      "css_height_px": 951,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 1500,
+      "png_height_px": 951,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "readability": {
+      "css_width_px": 1600,
+      "css_height_px": 546,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 1600,
+      "png_height_px": 546,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  }
+}

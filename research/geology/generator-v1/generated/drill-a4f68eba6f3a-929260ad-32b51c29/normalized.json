@@ -1,0 +1,270 @@
+{
+  "drawing_type": "drill",
+  "schema_version": "drill-1.0",
+  "source": {
+    "filename": "drill_alt.xlsx",
+    "sha256": "a4f68eba6f3ad5b7411b9b2b26fed494199aa32c68fd4017b39548a131771c61",
+    "adapter": "drill-1.0"
+  },
+  "project": {
+    "name": "",
+    "hole_id": "ZK-TEST-02",
+    "analysis_units": {
+      "Au": "g/t",
+      "Pb": "",
+      "Zn": ""
+    },
+    "source_cells": {
+      "模板类型": "项目!B2",
+      "模板版本": "项目!B3",
+      "项目名称": "项目!B4",
+      "钻孔编号": "项目!B5",
+      "长度单位": "项目!B6",
+      "孔深基准": "项目!B7",
+      "终孔深度_m": "项目!B8",
+      "Au单位": "项目!B9",
+      "Pb单位": "项目!B10",
+      "Zn单位": "项目!B11"
+    }
+  },
+  "meta": {
+    "hole_id": "ZK-TEST-02",
+    "endpoint_m": 7.0,
+    "depth_basis": "原始沿孔深"
+  },
+  "turns": [
+    {
+      "id": "1",
+      "top_m": 0.0,
+      "bottom_m": 2.0,
+      "advance_m": 2.0,
+      "core_m": 1.8,
+      "recovery_percent": 90.0,
+      "source": {
+        "sheet": "回次",
+        "row": 2,
+        "cells": {
+          "回次号": "回次!A2",
+          "顶深_m": "回次!B2",
+          "底深_m": "回次!C2",
+          "岩心长_m": "回次!D2"
+        }
+      }
+    },
+    {
+      "id": "2",
+      "top_m": 2.0,
+      "bottom_m": 7.0,
+      "advance_m": 5.0,
+      "core_m": 4.4,
+      "recovery_percent": 88.00000000000001,
+      "source": {
+        "sheet": "回次",
+        "row": 3,
+        "cells": {
+          "回次号": "回次!A3",
+          "顶深_m": "回次!B3",
+          "底深_m": "回次!C3",
+          "岩心长_m": "回次!D3"
+        }
+      }
+    }
+  ],
+  "layers": [
+    {
+      "id": "A",
+      "top_m": 0.0,
+      "bottom_m": 1.5,
+      "thickness_m": 1.5,
+      "core_m": 1.4,
+      "recovery_percent": 93.33333333333333,
+      "description": "泥岩夹泥质粉砂岩",
+      "lithology_name": "泥岩夹泥质粉砂岩",
+      "material_code": "D001",
+      "pattern_id": "short-dash-double-dot",
+      "source": {
+        "sheet": "分层",
+        "row": 2,
+        "cells": {
+          "层号": "分层!A2",
+          "顶深_m": "分层!B2",
+          "底深_m": "分层!C2",
+          "岩性名称": "分层!D2",
+          "岩性描述": "分层!E2",
+          "岩心长_m": "分层!F2",
+          "花纹代码": "分层!G2"
+        }
+      }
+    },
+    {
+      "id": "B",
+      "top_m": 1.5,
+      "bottom_m": 1.52,
+      "thickness_m": 0.020000000000000018,
+      "core_m": 0.015,
+      "recovery_percent": 74.99999999999993,
+      "description": "砂岩夹粉砂岩",
+      "lithology_name": "砂岩夹粉砂岩",
+      "material_code": "D003",
+      "pattern_id": "point-dash-ellipse-bands",
+      "source": {
+        "sheet": "分层",
+        "row": 3,
+        "cells": {
+          "层号": "分层!A3",
+          "顶深_m": "分层!B3",
+          "底深_m": "分层!C3",
+          "岩性名称": "分层!D3",
+          "岩性描述": "分层!E3",
+          "岩心长_m": "分层!F3",
+          "花纹代码": "分层!G3"
+        }
+      }
+    },
+    {
+      "id": "C",
+      "top_m": 1.52,
+      "bottom_m": 7.0,
+      "thickness_m": 5.48,
+      "core_m": null,
+      "recovery_percent": null,
+      "description": "新岩性名称待定义",
+      "lithology_name": "新岩性名称待定义",
+      "material_code": "",
+      "pattern_id": null,
+      "source": {
+        "sheet": "分层",
+        "row": 4,
+        "cells": {
+          "层号": "分层!A4",
+          "顶深_m": "分层!B4",
+          "底深_m": "分层!C4",
+          "岩性名称": "分层!D4",
+          "岩性描述": "分层!E4",
+          "岩心长_m": "分层!F4",
+          "花纹代码": "分层!G4"
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "id": "S1",
+      "top_m": 0.5,
+      "bottom_m": 1.0,
+      "length_m": 0.5,
+      "core_m": 0.4,
+      "recovery_percent": 80.0,
+      "assays": {
+        "Au": 0.15,
+        "Pb": null,
+        "Zn": null
+      },
+      "source": {
+        "sheet": "样品",
+        "row": 2,
+        "cells": {
+          "样品编号": "样品!A2",
+          "顶深_m": "样品!B2",
+          "底深_m": "样品!C2",
+          "岩心长_m": "样品!D2",
+          "Au": "样品!E2",
+          "Pb": "样品!F2",
+          "Zn": "样品!G2"
+        }
+      }
+    },
+    {
+      "id": "S2",
+      "top_m": 0.7,
+      "bottom_m": 1.2,
+      "length_m": 0.5,
+      "core_m": 0.4,
+      "recovery_percent": 80.0,
+      "assays": {
+        "Au": null,
+        "Pb": null,
+        "Zn": null
+      },
+      "source": {
+        "sheet": "样品",
+        "row": 3,
+        "cells": {
+          "样品编号": "样品!A3",
+          "顶深_m": "样品!B3",
+          "底深_m": "样品!C3",
+          "岩心长_m": "样品!D3",
+          "Au": "样品!E3",
+          "Pb": "样品!F3",
+          "Zn": "样品!G3"
+        }
+      }
+    },
+    {
+      "id": "S3",
+      "top_m": 6.9,
+      "bottom_m": 7.0,
+      "length_m": 0.09999999999999964,
+      "core_m": 0.1,
+      "recovery_percent": 100.00000000000036,
+      "assays": {
+        "Au": null,
+        "Pb": null,
+        "Zn": null
+      },
+      "source": {
+        "sheet": "样品",
+        "row": 4,
+        "cells": {
+          "样品编号": "样品!A4",
+          "顶深_m": "样品!B4",
+          "底深_m": "样品!C4",
+          "岩心长_m": "样品!D4",
+          "Au": "样品!E4",
+          "Pb": "样品!F4",
+          "Zn": "样品!G4"
+        }
+      }
+    }
+  ],
+  "structures": [
+    {
+      "depth_m": 7.0,
+      "diameter_mm": 91.0,
+      "source": {
+        "sheet": "孔径",
+        "row": 2,
+        "cells": {
+          "孔深_m": "孔径!A2",
+          "孔径_mm": "孔径!B2"
+        }
+      }
+    }
+  ],
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "OVERLAPPING_SAMPLES",
+      "message": "样品区间存在重叠，将分轨显示：S1 / S2",
+      "cells": [
+        "样品!B2",
+        "样品!B3"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "PENDING_PATTERN",
+      "message": "岩性“新岩性名称待定义”无精确花纹映射，保留留白待配置",
+      "cells": [
+        "分层!D4"
+      ]
+    }
+  ],
+  "summary": {
+    "turns": 2,
+    "layers": 3,
+    "samples": 3,
+    "endpoint_m": 7.0,
+    "pending_patterns": 1
+  }
+}

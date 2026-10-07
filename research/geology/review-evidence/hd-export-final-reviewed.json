@@ -1,0 +1,31 @@
+{
+  "master_geometry_identical": true,
+  "changed_texts": [
+    {
+      "before": "局部相对坐标 · 剖面方位 83.501° · 垂直夸大 1 · 共同尺度 1 px = 0.359864 m",
+      "after": "局部相对坐标 · 剖面方位 83.501° · 垂直夸大 1 · 水平与高程同尺度（见米标尺）"
+    },
+    {
+      "before": "• 本图按数据范围自适应像素尺寸，仅声明米标尺与每米像素关系；未标注纸面固定比例。",
+      "after": "• 本图按数据范围自适应版式，距离以米标尺读取；打印比例随输出尺寸变化。"
+    }
+  ],
+  "data_audits_identical": {
+    "normalized.json": true,
+    "layout-audit.json": true,
+    "readability-audit.json": true
+  },
+  "cli_ui_identical": {
+    "drawing.svg": true,
+    "normalized.json": true,
+    "layout-audit.json": true,
+    "readability-audit.json": true,
+    "complete-hd.png": true
+  },
+  "hd_size": [
+    6000,
+    9404
+  ],
+  "source_sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b",
+  "current_code_matches": true
+}

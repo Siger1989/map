@@ -1,0 +1,2567 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-08",
+  "sourceAliases": {
+    "additionalReferences": "references/chat-attachments-20261008/",
+    "sourceWorkspace": "源工作区",
+    "projectGeology": "仓库根目录/地质资料/"
+  },
+  "copyCount": 415,
+  "totalBytes": 53251975.0,
+  "files": [
+    {
+      "source": "源工作区/output/geology-drill-demo/继续工作说明.txt",
+      "target": "research/geology/drill-demo/继续工作说明.txt",
+      "sha256": "808b73061c5703e442f4b71246ee9dab222fee21768d9a8330261e07d4b15444",
+      "bytes": 1264
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/data-audit.json",
+      "target": "research/geology/drill-demo/data-audit.json",
+      "sha256": "68d5745300a134586d15445a1abe17bde3c7d2d1052675616d3ac5eb962fdb45",
+      "bytes": 1037
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/data-review.json",
+      "target": "research/geology/drill-demo/data-review.json",
+      "sha256": "ca52b22767117bd9d759eab8728c1463b8c963fed89f48ad9a43ac0ea9b2a411",
+      "bytes": 716
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/drawing-data.html",
+      "target": "research/geology/drill-demo/drawing-data.html",
+      "sha256": "0f11de82ff12d698e8ea580b20615625df41562c52ae87b2bc4879ae51cd7054",
+      "bytes": 32692
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/extract.py",
+      "target": "research/geology/drill-demo/extract.py",
+      "sha256": "70e20f210208b2e349df2cc9c1d0f7cbb8598ba79af32cc09e41dfb65613b109",
+      "bytes": 5322
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/final-review.json",
+      "target": "research/geology/drill-demo/final-review.json",
+      "sha256": "cfad562e97e8b8ea78ad5220ffdc170dc4ec21753a340ee3bf958684d58a4e9d",
+      "bytes": 2221
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/index.html",
+      "target": "research/geology/drill-demo/index.html",
+      "sha256": "5958bf18a8ab9aa6b0e9ee95d834cfe70a48f12959b5eddac85967f4812a1768",
+      "bytes": 7060
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/layout-audit.json",
+      "target": "research/geology/drill-demo/layout-audit.json",
+      "sha256": "edb22bec00f483d260fc7eb62311fda972fa13986c3fcac1ca8eb2af10e6ff88",
+      "bytes": 191894
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/main-data-review.json",
+      "target": "research/geology/drill-demo/main-data-review.json",
+      "sha256": "6408b7c31530190e4ccbda87c761ef9c9fa583742f1ded8eb0a16ddc1d756ad6",
+      "bytes": 299
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/main-layout-review.json",
+      "target": "research/geology/drill-demo/main-layout-review.json",
+      "sha256": "2cf9ee297cecdc9f29e3c295ee8a2161371e7ab829fceea9b5a3d5fb926bb232",
+      "bytes": 779
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/make_appendix.py",
+      "target": "research/geology/drill-demo/make_appendix.py",
+      "sha256": "2541d4ffa5fbb966829c2a6cc149b1c8a2bbd7ce77781a5e59d013e7383755ba",
+      "bytes": 3367
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/make_preview.py",
+      "target": "research/geology/drill-demo/make_preview.py",
+      "sha256": "217601c5d3c5d60ab30769c3960578e4c366c47ca325ee3bf0b3ce14bde084a9",
+      "bytes": 10416
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/pattern-proof.png",
+      "target": "research/geology/drill-demo/pattern-proof.png",
+      "sha256": "d47e0b9313c584fed29693feba512173131b86c681a9614e3f5df77e3282bcdc",
+      "bytes": 118140
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/pattern-proof.svg",
+      "target": "research/geology/drill-demo/pattern-proof.svg",
+      "sha256": "9568570ebc31a802b96d64829872bad2b367faa8057c335869c4386f46c27fc0",
+      "bytes": 4512
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/patterns/layer-1-crop.png",
+      "target": "research/geology/drill-demo/patterns/layer-1-crop.png",
+      "sha256": "9996ba5710922c2846ade6682ab64365ecbc918dad0dc437753a9d886b04bc6c",
+      "bytes": 2374
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/patterns/layer-4-crop.png",
+      "target": "research/geology/drill-demo/patterns/layer-4-crop.png",
+      "sha256": "4cde4caab0d2cdeec3b9dfd5ddce14a9ee513492c447dd4e86ad69a0a752697b",
+      "bytes": 10687
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/patterns/layer-5-crop.png",
+      "target": "research/geology/drill-demo/patterns/layer-5-crop.png",
+      "sha256": "02ae70139c8b11528a3bc752f20e2993304aebd82e25d9a77a2e04965a3ead97",
+      "bytes": 3985
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/patterns/README.txt",
+      "target": "research/geology/drill-demo/patterns/README.txt",
+      "sha256": "927183a9af6db7dd78af41dce40977c75091c637163d530b8dd8e7965f6a4d85",
+      "bytes": 444
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/raster-audit.json",
+      "target": "research/geology/drill-demo/raster-audit.json",
+      "sha256": "0be7d81fe136b41b614d209cd6c603c5b0be118c67721ca6576b04053fce37de",
+      "bytes": 1293
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/reference-patterns.json",
+      "target": "research/geology/drill-demo/reference-patterns.json",
+      "sha256": "b8edbb5796dd0f51b5d0e328f8ab8322859b3132a53aa47b8b1e592261c152eb",
+      "bytes": 5045
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/render_drill_demo.py",
+      "target": "research/geology/drill-demo/render_drill_demo.py",
+      "sha256": "f6e2d180cf611872ab1a91e39e7d9fc6e738230f0f87b85315a63bd8ad40596e",
+      "bytes": 24576
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/replace_index.py",
+      "target": "research/geology/drill-demo/replace_index.py",
+      "sha256": "d23076c5a09673a977d28fc3fcc580a203a5998e67666719d5ab460136346e34",
+      "bytes": 6980
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/review_data.py",
+      "target": "research/geology/drill-demo/review_data.py",
+      "sha256": "c5d47fe93de3b8eccde1ec9996398e28f51961a388c2c2a219c64d3d9cee63ef",
+      "bytes": 3594
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/ZK0003-0至45米详图-高清.png",
+      "target": "research/geology/drill-demo/ZK0003-0至45米详图-高清.png",
+      "sha256": "dd612cf78c0d7424f0ca505c49d474b3f5e0c0057fe457b3f3d5537f1ee81742",
+      "bytes": 1033288
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/ZK0003-0至45米详图.svg",
+      "target": "research/geology/drill-demo/ZK0003-0至45米详图.svg",
+      "sha256": "7a59f7caf75e446e26fe907832b28ec6e6bb4330c332fa49a71588575149c744",
+      "bytes": 29903
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/ZK0003-完整示图-高清.png",
+      "target": "research/geology/drill-demo/ZK0003-完整示图-高清.png",
+      "sha256": "b6fc6473c8fe64e201db1d79476c38efc3ca3edebacd013c8f0b9bd1af32c32a",
+      "bytes": 2638400
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/ZK0003-完整示图.svg",
+      "target": "research/geology/drill-demo/ZK0003-完整示图.svg",
+      "sha256": "d7df1d1786af7e22cd8f75d48c95923127a30100a65db8b4a9d5158326d7ed48",
+      "bytes": 140169
+    },
+    {
+      "source": "源工作区/output/geology-drill-demo/zk0003-data.json",
+      "target": "research/geology/drill-demo/zk0003-data.json",
+      "sha256": "8d5efda323c1e62a8a0d9ff5bbb7ccf6c70a80745965ef5d890d37614668cd31",
+      "bytes": 112824
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/高清矢量导出接续.txt",
+      "target": "research/geology/generator-v1/高清矢量导出接续.txt",
+      "sha256": "4908985817b9d35356eae0a0fd281c6826b096f624f6aa0a6e2935a3bdd83770",
+      "bytes": 1711
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/规范差异核对.txt",
+      "target": "research/geology/generator-v1/规范差异核对.txt",
+      "sha256": "21cb833e00a99954e3d705a0cc5e31387574f80f01c791c31fc8206d64b6030c",
+      "bytes": 4750
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/接续说明.txt",
+      "target": "research/geology/generator-v1/接续说明.txt",
+      "sha256": "10621e5281893c45d097adbb96c33db95211641c16a136e89f6b6cfc37f547db",
+      "bytes": 4718
+    },
+    {
+      "source": "源工作区/（本次归档新增）启动_系统Python.cmd",
+      "target": "research/geology/generator-v1/启动_系统Python.cmd",
+      "sha256": "778a8e9157de2fc634fffc4ae7df03878ad4da4de73f5d24687cb25bd3bb9085",
+      "bytes": 432
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/启动剖面工具.cmd",
+      "target": "research/geology/generator-v1/启动剖面工具.cmd",
+      "sha256": "b61d184aab6cd61cd414c21f09860108391ba04d74307e6133280a74908c2553",
+      "bytes": 551
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/使用说明.txt",
+      "target": "research/geology/generator-v1/使用说明.txt",
+      "sha256": "e7df7942b30129fc3b79f3b1125af7197f2df87622f1ec837642eb14114d7d44",
+      "bytes": 1574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/斜层界修正接续.txt",
+      "target": "research/geology/generator-v1/斜层界修正接续.txt",
+      "sha256": "2012522ee15772a5d0f1c589ee577b2be9ea0444051e125d9105edae8f195e86",
+      "bytes": 3055
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/新启动地质绘图工具.cmd",
+      "target": "research/geology/generator-v1/新启动地质绘图工具.cmd",
+      "sha256": "497177d883c3df42f10c6e7f49540f4ef53d19a31fe000d731e5df35d15ab8f0",
+      "bytes": 170
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/岩性识读修正接续.txt",
+      "target": "research/geology/generator-v1/岩性识读修正接续.txt",
+      "sha256": "2d60f77d0696ac505b2407fd905d068e27ef6d71f62fa8a112fe3dd3583af5b3",
+      "bytes": 3635
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/ACCEPTANCE_V2_20261007.txt",
+      "target": "research/geology/generator-v1/ACCEPTANCE_V2_20261007.txt",
+      "sha256": "c407c7cd0538dd1a3d36d69b283461a787d62d5616b786f3424acfce764419d3",
+      "bytes": 2671
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/CONTRACT.md",
+      "target": "research/geology/generator-v1/CONTRACT.md",
+      "sha256": "2ed32d3bb1a64a6768bbf1b8cff7f661879339e285acd02d93545d7d421005df",
+      "bytes": 8830
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/drill_importer.py",
+      "target": "research/geology/generator-v1/drill_importer.py",
+      "sha256": "724463b9b3fe0079f06ecd672d997a000d17e00d7ab3d38a2e54c7e32a1642fb",
+      "bytes": 16866
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/drill_pipeline.py",
+      "target": "research/geology/generator-v1/drill_pipeline.py",
+      "sha256": "f974fc75e32821a9697c561591128d7f250b3fed5f92195fd86e8313613cc7b8",
+      "bytes": 13230
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/drill_renderer.py",
+      "target": "research/geology/generator-v1/drill_renderer.py",
+      "sha256": "4a4438def669e92e6e31ea02adae5ba29f73f40d4e63b5dc918d2f565399f289",
+      "bytes": 25933
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generate.cmd",
+      "target": "research/geology/generator-v1/generate.cmd",
+      "sha256": "5023e7e2831963b2f763d06baf535f5d57e6cb556908cc72197b8de0feba0f05",
+      "bytes": 987
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/.detail-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/.detail-raster-view.svg",
+      "sha256": "73931a867067ecef2b81c636886ab3c458196cf40072db8982aa3df1a20d173f",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/.hd-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/.hd-raster-view.svg",
+      "sha256": "9a198cf812e9454547c4b28ad0a68c1a5e9a8eb3010552426ce2d73aac2d2d27",
+      "bytes": 143477
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/appendix.html",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/appendix.html",
+      "sha256": "419bd3fcb36c28d6f409d9e4517671f8c3b0b677d2af6341afd056febbed2c36",
+      "bytes": 61677
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/complete-hd.png",
+      "sha256": "ff93447878095cfc0e65904584935340848e81b2ae21950db1fbdf906c0853a2",
+      "bytes": 2523804
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/detail.png",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/detail.png",
+      "sha256": "0ffed27986b741acf7ad8cfc80b623e2568aa6f96191d603c5670a174076fd79",
+      "bytes": 216402
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/detail.svg",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/detail.svg",
+      "sha256": "73931a867067ecef2b81c636886ab3c458196cf40072db8982aa3df1a20d173f",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/drawing.svg",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/drawing.svg",
+      "sha256": "e4eb74f28b2cb03e12c12ce24da33cc9b4e713c2465ca6c34cdec47ac8280433",
+      "bytes": 143476
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/layout-audit.json",
+      "sha256": "195641f1459f09b9d1f61d7c2e6cb6c4902283dac1d6e73ad6ed192706c7a00e",
+      "bytes": 217296
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/manifest.json",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/manifest.json",
+      "sha256": "e087faa17baeff3f47dd84fe857a94f51739dd9767761d43947d2832d95e0791",
+      "bytes": 78125
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/normalized.json",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/normalized.json",
+      "sha256": "cd1c4cd9778590cdb161fa3f8326f396a4a4ebb1fd92a1269c67848b6f760609",
+      "bytes": 146074
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/preview.png",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/preview.png",
+      "sha256": "19ab0d2fda9137dff0b418c1a9451a69fc55643dcd0a2a1123f9dbad1b80e315",
+      "bytes": 892759
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-final-20261007/report.html",
+      "target": "research/geology/generator-v1/generated/drill-final-20261007/report.html",
+      "sha256": "5b23afeb8482d7bcddae127994ff42c8d1b00940536b099a1f01989c0884dce9",
+      "bytes": 6273
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-局部详图.png",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-局部详图.png",
+      "sha256": "283c5399c02f2ddbdf5f286c0e909530ee90d9c25b3ba3217631905f7b413b3a",
+      "bytes": 143694
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-局部详图.svg",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-局部详图.svg",
+      "sha256": "d7f2556626de83d67c4e1a4f9f3454e8d3a3ce3d5d094b6f2a1d5e5e6db94784",
+      "bytes": 52451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-完整高清图-6000px.png",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-完整高清图-6000px.png",
+      "sha256": "33001517c2e70477a7d1acef990501da5fc8e67261bc92a1a36a1d56f1a2557d",
+      "bytes": 1713791
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-完整识读图.png",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-完整识读图.png",
+      "sha256": "75cc5e104969be65ebc5a02ab1ab857fcdabde85d68e67d838d741470440a972",
+      "bytes": 689163
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-完整图.png",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-完整图.png",
+      "sha256": "37288adf44e5fecba04fb98478d0a14a67a4fe59bea33d6d989a91c8a4553e3c",
+      "bytes": 246212
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-参考花纹-完整图.svg",
+      "target": "research/geology/generator-v1/generated/PM01-参考花纹-完整图.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-斜层界-局部详图.png",
+      "target": "research/geology/generator-v1/generated/PM01-斜层界-局部详图.png",
+      "sha256": "92426838fea50a74907d3644d21ad565e9041c8a9e62e678bd67db7b0c28d978",
+      "bytes": 78103
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-斜层界-完整图.png",
+      "target": "research/geology/generator-v1/generated/PM01-斜层界-完整图.png",
+      "sha256": "dad28c3abf73321a7a4cfd8d6791ff4879c7308586c40bde19674dea626857fe",
+      "bytes": 215125
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-岩性修正-局部详图.png",
+      "target": "research/geology/generator-v1/generated/PM01-岩性修正-局部详图.png",
+      "sha256": "6dd6789e07177f9da15088639e4481d9c80e79ef2994099855cb6a80cbafd6db",
+      "bytes": 96381
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-岩性修正-完整图.png",
+      "target": "research/geology/generator-v1/generated/PM01-岩性修正-完整图.png",
+      "sha256": "eef1d1b67762dd1f895b7b1b9d02ad1af27781ec39ffb44cec30fe8da2e6732a",
+      "bytes": 218219
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/PM01-岩性与重点层-完整识读图.png",
+      "target": "research/geology/generator-v1/generated/PM01-岩性与重点层-完整识读图.png",
+      "sha256": "a44753e5bd8eb4f689a8b7a83a7838c1c669eb564d5f8ac218bd75d311335b1f",
+      "bytes": 483025
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/appendix.html",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/complete-hd.png",
+      "sha256": "33001517c2e70477a7d1acef990501da5fc8e67261bc92a1a36a1d56f1a2557d",
+      "bytes": 1713791
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/detail.png",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/detail.png",
+      "sha256": "e42b2b8471c45a897546604fa454f6ef201c25983d6f146ad886d6989e15bb45",
+      "bytes": 142802
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/detail.svg",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/detail.svg",
+      "sha256": "8da26496d0b10cf565de423cc4307b49a4d67449f43a0a4ea44a4ce756c9d63a",
+      "bytes": 52428
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/drawing.svg",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/drawing.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/layout-audit.json",
+      "sha256": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+      "bytes": 168241
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/manifest.json",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/manifest.json",
+      "sha256": "2b28ea939d669497f0d722b7c07fdf157fe7eec235df8374fcb8979ce5c72a82",
+      "bytes": 7187
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/normalized.json",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/normalized.json",
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+      "bytes": 165076
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/preview.png",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/preview.png",
+      "sha256": "4c8a84c06d7f0efa4bb8c1ebc40bed20c0f59001aca8c0d089cbec496758a3ca",
+      "bytes": 246449
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/readability-audit.json",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/readability-audit.json",
+      "sha256": "b55df8c4a93b24fe044ee65545d8d10ac2b5bb6669433980dc2d9d344784ee36",
+      "bytes": 112827
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/readability.png",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/readability.png",
+      "sha256": "13425122f341129cb877f73b6f4ff64f56f31f391dee789a8f64312aa5abf1d3",
+      "bytes": 688616
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/readability.svg",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/readability.svg",
+      "sha256": "288f5d6dd6507b5358ac9752f78f30d5bd15c9af4e8efcb06d1dfa20a273f709",
+      "bytes": 75974
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-canonical/report.html",
+      "target": "research/geology/generator-v1/generated/pm01-canonical/report.html",
+      "sha256": "8ddb6edc1a63920854336a3a77c6f5a6360823980d8e1c47b75525c59492e333",
+      "bytes": 18068
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/appendix.html",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/detail.png",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/detail.png",
+      "sha256": "f18e12edf7e0806e5725de94b87495aac72e37a5e3e3f42722722aa4738ec7a2",
+      "bytes": 143316
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/detail.svg",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/detail.svg",
+      "sha256": "71ec60acd35dcca2f27b23be612ed3eb0c921e36ee9216ba8f11ccb39dd5ecb4",
+      "bytes": 51860
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/drawing.svg",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/drawing.svg",
+      "sha256": "b638a8eacc2f68f0972fbc2298059bace75f893d0c26c13dab92b73552947a7d",
+      "bytes": 119982
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/layout-audit.json",
+      "sha256": "e43d8725c29e0e8c5dce09e07fcd2cccebba1d9f62520b90a03f2c6dbb90c4f2",
+      "bytes": 160129
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/manifest.json",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/manifest.json",
+      "sha256": "ac209d04f88450a60c4f2636abdf447ed74d375a83381f99b11712a6a1bf770f",
+      "bytes": 6138
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/normalized.json",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/normalized.json",
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+      "bytes": 165076
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/preview.png",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/preview.png",
+      "sha256": "96094745341717f59ff3d049d56fc9d84546b28dcec72d9551cead575a2b1ca6",
+      "bytes": 246244
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/readability-audit.json",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/readability-audit.json",
+      "sha256": "4e5b004748598c3e9deddf7c4c9ea22cfdbceaddd9728e94d9f7b7c99dda9761",
+      "bytes": 105629
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/readability.png",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/readability.png",
+      "sha256": "efcbc96323ca22b43ebc92a2bfd99e5a573ab9e0170107b8f049885844f4aa8b",
+      "bytes": 689154
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/readability.svg",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/readability.svg",
+      "sha256": "978c725c82c3ae96bb9af9908cd9a0af7ba05cf78e00c4e51098840ace72d0d8",
+      "bytes": 72461
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01-reference-patterns-review/report.html",
+      "target": "research/geology/generator-v1/generated/pm01-reference-patterns-review/report.html",
+      "sha256": "284bc8dba56544f3dfeb856a6f2df0612794fc8c232b2e6c0749bf599a02f772",
+      "bytes": 18019
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/importer.py",
+      "target": "research/geology/generator-v1/importer.py",
+      "sha256": "c92d6f57502ac9b9be05fee509ad0dac7c8418ff6af2d17533930eb0f6596343",
+      "bytes": 34214
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/integration_checks.py",
+      "target": "research/geology/generator-v1/integration_checks.py",
+      "sha256": "1ea2bf2823bbe92e3155e39d9904dcdf3d02448efcb5a05d57cfb656b9866181",
+      "bytes": 21805
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/launch.py",
+      "target": "research/geology/generator-v1/launch.py",
+      "sha256": "09d6c7d7336ab0f8f542b9d996bccda22c0631a917a41c837c89f5438caf6ee7",
+      "bytes": 1413
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/layer_geometry.py",
+      "target": "research/geology/generator-v1/layer_geometry.py",
+      "sha256": "03097f006bdb4696e523363cb52ec56d34015ab39e2743d1b96d3be71a16965b",
+      "bytes": 19039
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/make_template.mjs",
+      "target": "research/geology/generator-v1/make_template.mjs",
+      "sha256": "d741c0385273edbeaa95eb8789d4027a126de2d89d62b1aa993a5c4b4000c219",
+      "bytes": 20439
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/appendix.html",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/appendix.html",
+      "sha256": "8d3c1e3a77579e5bc20136052ad3ab91744fb58827e7d3c367f2069347e4513b",
+      "bytes": 77006
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/c13-detail-crop.png",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/c13-detail-crop.png",
+      "sha256": "4d3a0f275a1bf7cc23d064ab1f6e879c1e0b352fcd133d4cb8878caaf7fed77e",
+      "bytes": 166248
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/detail.png",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/detail.png",
+      "sha256": "283c5399c02f2ddbdf5f286c0e909530ee90d9c25b3ba3217631905f7b413b3a",
+      "bytes": 143694
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/detail.svg",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/detail.svg",
+      "sha256": "d7f2556626de83d67c4e1a4f9f3454e8d3a3ce3d5d094b6f2a1d5e5e6db94784",
+      "bytes": 52451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/drawing.svg",
+      "sha256": "e45733b3e8e2a445baae1282a56ce13240c6d44805966f69257f1da043109070",
+      "bytes": 120577
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/layout-audit.json",
+      "sha256": "3b61edb89c268a51947e38ab255d6ac23c0b70f10af4563f711566d742fa6a78",
+      "bytes": 162635
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/preview.png",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/preview.png",
+      "sha256": "37288adf44e5fecba04fb98478d0a14a67a4fe59bea33d6d989a91c8a4553e3c",
+      "bytes": 246212
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/readability-audit.json",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/readability-audit.json",
+      "sha256": "b7a47a063fb4a78e7d6cd1f93c214a97e1eb301d39dddb092193c0393ddf26a0",
+      "bytes": 106468
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/anchor-phase-review/readability.svg",
+      "target": "research/geology/generator-v1/outputs/anchor-phase-review/readability.svg",
+      "sha256": "dd33bc0d214444e76c6f8d66aa0e80b0364dfb5ca1b430ee5b37f56668f5b9b8",
+      "bytes": 75986
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/geology-template-v1/规范说明.txt",
+      "target": "research/geology/generator-v1/outputs/geology-template-v1/规范说明.txt",
+      "sha256": "ab04abdbe29405d1c6ee39a6d05f3d9ee961530b7c727519c8004bafe42010c6",
+      "bytes": 2821
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/geology-template-v1/实测剖面输入模板.xlsx",
+      "target": "research/geology/generator-v1/outputs/geology-template-v1/实测剖面输入模板.xlsx",
+      "sha256": "77274df0bfcafbba5dd9db174cbe9e59cf6979a28d23e97aca22af6dc30cc6fd",
+      "bytes": 18227
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/geology-template-v1/PM01规范输入.xlsx",
+      "target": "research/geology/generator-v1/outputs/geology-template-v1/PM01规范输入.xlsx",
+      "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b",
+      "bytes": 36551
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/appendix.html",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/appendix.html",
+      "sha256": "8d3c1e3a77579e5bc20136052ad3ab91744fb58827e7d3c367f2069347e4513b",
+      "bytes": 77006
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/detail.png",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/detail.png",
+      "sha256": "a8823483044bf6c52e02796379f6ff71ad1b8b710ada46a946f5d2a3eb5f81cb",
+      "bytes": 135722
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/detail.svg",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/detail.svg",
+      "sha256": "2e97112d11329013cd5f2abee8e0a84f85b387e5dbd4046f909f56c647116249",
+      "bytes": 51904
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/drawing.svg",
+      "sha256": "6423e0ec9a049abf9421f2aa8eba20c846944ab786ff5b51b016b3523a5be6eb",
+      "bytes": 120070
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/layout-audit.json",
+      "sha256": "1fc9fa6656434985a900364307c73dcc79f1d0ee750d74275f6757ac5c4b42a9",
+      "bytes": 154523
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/main-band-crop.png",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/main-band-crop.png",
+      "sha256": "04335b4bd7f8505f16a4b38db5e0f1c368c491c7e852dc2dd146f3a1f7120aa4",
+      "bytes": 65898
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/preview.png",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/preview.png",
+      "sha256": "a98f9a22bda94a5009b356f1687ba76acef5574f832a279fe5df5a7997179e5b",
+      "bytes": 243919
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/readability-audit.json",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/readability-audit.json",
+      "sha256": "dbffa30268f000513569f38cfd88dbe0b6b7bd28586c759c6df14ed700fa71a2",
+      "bytes": 99270
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pattern-context-review/readability.svg",
+      "target": "research/geology/generator-v1/outputs/pattern-context-review/readability.svg",
+      "sha256": "33a57cb1dfe4b8a3cd7df57a26997d5c99f92c430975b3fd7f640b4ffc29cd83",
+      "bytes": 72589
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/appendix.html",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/appendix.html",
+      "sha256": "8d3c1e3a77579e5bc20136052ad3ab91744fb58827e7d3c367f2069347e4513b",
+      "bytes": 77006
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/detail.png",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/detail.png",
+      "sha256": "6dd6789e07177f9da15088639e4481d9c80e79ef2994099855cb6a80cbafd6db",
+      "bytes": 96381
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/detail.svg",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/detail.svg",
+      "sha256": "9aa31fec595e93dc0ac396aea93c49597f81c6d62e5ad1692cdfc7c5f5f81dde",
+      "bytes": 41991
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/drawing.svg",
+      "sha256": "7f6a2693788dbff46d0285c589ca214e5c52882608c6ad2fdfb394c4fe1cf4c6",
+      "bytes": 93166
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/layout-audit.json",
+      "sha256": "11a2312ca6c67b1c75909c4f337c6298ffb310b2366b7d712fa82be50687da04",
+      "bytes": 130596
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-readability-review/preview.png",
+      "target": "research/geology/generator-v1/outputs/pm01-readability-review/preview.png",
+      "sha256": "eef1d1b67762dd1f895b7b1b9d02ad1af27781ec39ffb44cec30fe8da2e6732a",
+      "bytes": 218219
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/appendix.html",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/appendix.html",
+      "sha256": "8d3c1e3a77579e5bc20136052ad3ab91744fb58827e7d3c367f2069347e4513b",
+      "bytes": 77006
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/detail.png",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/detail.png",
+      "sha256": "92426838fea50a74907d3644d21ad565e9041c8a9e62e678bd67db7b0c28d978",
+      "bytes": 78103
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/detail.svg",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/detail.svg",
+      "sha256": "224ae4b00bde008c689a45fed368de9d0b27cf6fc93334c3e1c99718b96724ce",
+      "bytes": 38556
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/drawing.svg",
+      "sha256": "44e27a0a85a14d2763f4a50dbce33e3ef9650c1937180ca4397c3e256e319b87",
+      "bytes": 89026
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/layout-audit.json",
+      "sha256": "1da733d83ede66b0de159d3e7bf05e7ed1eab97a2c897ac9b558a0ff46f9db2f",
+      "bytes": 98378
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01-sloped-review/preview.png",
+      "target": "research/geology/generator-v1/outputs/pm01-sloped-review/preview.png",
+      "sha256": "dad28c3abf73321a7a4cfd8d6791ff4879c7308586c40bde19674dea626857fe",
+      "bytes": 215125
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/appendix.html",
+      "target": "research/geology/generator-v1/outputs/pm01/appendix.html",
+      "sha256": "8d3c1e3a77579e5bc20136052ad3ab91744fb58827e7d3c367f2069347e4513b",
+      "bytes": 77006
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/detail.png",
+      "target": "research/geology/generator-v1/outputs/pm01/detail.png",
+      "sha256": "a1b0ec74e40791e966627c46177f3a2d9d4b838f6abecb1ae05c5fe26ec62808",
+      "bytes": 63479
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/detail.svg",
+      "target": "research/geology/generator-v1/outputs/pm01/detail.svg",
+      "sha256": "b16f802126870c1605b6131aad3ed6ceac95921f255b44ad0d2efe470bc3ae6d",
+      "bytes": 18916
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/pm01/drawing.svg",
+      "sha256": "c14b576789d5a068a90a87a3bb77e531b723fa0f81314c332758a9fd0bbb9985",
+      "bytes": 54578
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/pm01/layout-audit.json",
+      "sha256": "528139b6e9bdcbcbf38ec5beea5db0e3611200681ccb1a22a4b41b047e53f05a",
+      "bytes": 6579
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/pm01/preview.png",
+      "target": "research/geology/generator-v1/outputs/pm01/preview.png",
+      "sha256": "752faab2dcf1bcf1d2b80646d5bba522ef275ea2a155eda102037b4af9380948",
+      "bytes": 227919
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/标准模板说明.txt",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/标准模板说明.txt",
+      "sha256": "5d63d3e190eb5738ac1ea8ebbeec72528363975f35be1f19d3b0d23533ee718e",
+      "bytes": 1605
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/剖面示例导入审计.json",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/剖面示例导入审计.json",
+      "sha256": "0d277890d14bc4e0b9e2bdb30fed2a86d86e3e8d766ec9f17774ce1bf4526106",
+      "bytes": 1381
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/实测剖面-标准模板.xlsx",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/实测剖面-标准模板.xlsx",
+      "sha256": "aab6e2af54f38666993d6a2e89d5095d07daa2f2f997e6d007c7058810f01017",
+      "bytes": 7321
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/实测剖面-填写示例.xlsx",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/实测剖面-填写示例.xlsx",
+      "sha256": "4aed8add59db269d8177fe1deb7a4e9d1692ed5dccf2dbb7a944dd50eaaad8c5",
+      "bytes": 14889
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/钻孔柱状图-标准模板.xlsx",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/钻孔柱状图-标准模板.xlsx",
+      "sha256": "9882be0ce198989aa74a6eabfd81302674ab5f01737ace32adbccd8ba96d7ba7",
+      "bytes": 9159
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/钻孔柱状图-填写示例.xlsx",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/钻孔柱状图-填写示例.xlsx",
+      "sha256": "6420c47d62f53bab2e25f06cc9fa729fc394bf8a0ffbedab4e0334c757b9c2d5",
+      "bytes": 16821
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-测段.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-测段.png",
+      "sha256": "4b68d924c239ce6d9c16e8c4816ef4f69203a6593dd201e509d9ef522d2c15d3",
+      "bytes": 20618
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-说明.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-说明.png",
+      "sha256": "cc001ff130a5bd2022ba007725f524e538799e40e22e97f19eae2cb2e0aced3d",
+      "bytes": 180543
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-项目.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-标准模板-项目.png",
+      "sha256": "203e63a182cda7178cf46f317c5c2c42c1f0f6c72b961df114ec2ce443d9c6f8",
+      "bytes": 11857
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-测段.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-测段.png",
+      "sha256": "37f18a31a2ea0191fda27db13f659b6ad77065e3ea7369c7102d8590ec3750c4",
+      "bytes": 896706
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-说明.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-说明.png",
+      "sha256": "cc001ff130a5bd2022ba007725f524e538799e40e22e97f19eae2cb2e0aced3d",
+      "bytes": 180543
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-项目.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/实测剖面-填写示例-项目.png",
+      "sha256": "38a4836515a5e1414ff1ee79702ab827b9bf91686334a8f74cf2182dab57144f",
+      "bytes": 15835
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-分层.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-分层.png",
+      "sha256": "f248386f498b5cb94e9034954ac2bf0f3f1acf2579061de42adb2df63b91f2e4",
+      "bytes": 7878
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-回次.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-回次.png",
+      "sha256": "9401759f965f58413a0605f1d6319503c775fcf9e30743861f0e5438472962ac",
+      "bytes": 4504
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-孔径.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-孔径.png",
+      "sha256": "84016bd010a4ebee2ed850baa11894e242082830ae61d3c54d3355510f45e313",
+      "bytes": 2586
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-说明.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-说明.png",
+      "sha256": "0bde6d8b5e1b805e728142bd8aa43dcd09641b887e53bf1d0128d42e50f11a14",
+      "bytes": 193695
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-项目.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-项目.png",
+      "sha256": "3809b8b39b7183d607bb3e4cecb925362747c5fd8f19b89dbf890f057161b275",
+      "bytes": 20497
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-样品.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-标准模板-样品.png",
+      "sha256": "56621127c072e322f50a9a4c533930c86fb7f1dd8444ee5fbefa439944ce2157",
+      "bytes": 6000
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-分层.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-分层.png",
+      "sha256": "1ca3c6d777b9eae06e2845bb9c273b15961ec54d58065b1e17d9d754ba2e3b58",
+      "bytes": 125654
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-回次.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-回次.png",
+      "sha256": "5fa49b1c76e30192e8588516ce6edd36ddd9be65fbcb93e5d11c535bb9b86ab9",
+      "bytes": 294472
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-孔径.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-孔径.png",
+      "sha256": "7e29621360efd1d52e0a7e1a8cb13f171214918e52707debf46e2b77164ef208",
+      "bytes": 4218
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-说明.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-说明.png",
+      "sha256": "0bde6d8b5e1b805e728142bd8aa43dcd09641b887e53bf1d0128d42e50f11a14",
+      "bytes": 193695
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-项目.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-项目.png",
+      "sha256": "0694fe27c3f00c4d170b8131d7aec763efcb83cd40e77ce37b6afe04123fb325",
+      "bytes": 24215
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-样品.png",
+      "target": "research/geology/generator-v1/outputs/standard-input-v2/previews/钻孔柱状图-填写示例-样品.png",
+      "sha256": "43bd7cd7b27f92f41c5253dce2cdc7a18ef9f514f325fd3acb59ed14c8102cd5",
+      "bytes": 247731
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/synthetic-render/appendix.html",
+      "target": "research/geology/generator-v1/outputs/synthetic-render/appendix.html",
+      "sha256": "fa461fa5ae46858e98e05ca15e78333974ce81d15dbb8f3e8647567e60403ad8",
+      "bytes": 3502
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/synthetic-render/detail.svg",
+      "target": "research/geology/generator-v1/outputs/synthetic-render/detail.svg",
+      "sha256": "259b21028e0993234aed5873d0857443ec93fd39c694fb5f4922ace74d4b26d1",
+      "bytes": 8881
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/synthetic-render/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/synthetic-render/drawing.svg",
+      "sha256": "bf62ba130914e12038a8961067f50f45b32d5d43b73dae6e3d1459169e4b9fc1",
+      "bytes": 20340
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/synthetic-render/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/synthetic-render/layout-audit.json",
+      "sha256": "2b6fa240274151211e2e55f6a5a3825c1f5ebe6eb8aa2a11fa24d521239cc4ea",
+      "bytes": 2252
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/synthetic-render/preview.png",
+      "target": "research/geology/generator-v1/outputs/synthetic-render/preview.png",
+      "sha256": "1b0eb4a6d87b12316c683a54d9b49e8f2cef268ebc1968addba28287d0cb4a55",
+      "bytes": 117526
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/parent_detail_review.py",
+      "target": "research/geology/generator-v1/parent_detail_review.py",
+      "sha256": "837a1699ce0514f32b3c7944c2ac91c9634bdeec23057eafa04c2f8f5c21a3d1",
+      "bytes": 4314
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/parent_reference_review.py",
+      "target": "research/geology/generator-v1/parent_reference_review.py",
+      "sha256": "fd0c5bb2588630c4445a4b07173959e037e324b1963d090e7f1ffb6c894d8ef9",
+      "bytes": 3506
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/parent_sloped_review.py",
+      "target": "research/geology/generator-v1/parent_sloped_review.py",
+      "sha256": "7a329bb42299c269f355ac8fab43905c6e92fac5fe62a9ebeb5d481e6f4ba4a5",
+      "bytes": 5603
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/patterns-contact-sheet.py",
+      "target": "research/geology/generator-v1/patterns-contact-sheet.py",
+      "sha256": "f553347ce6afbe2a353ab6152935ce669f6666d48db283ff1f41c63edb4265b3",
+      "bytes": 2727
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/pipeline.py",
+      "target": "research/geology/generator-v1/pipeline.py",
+      "sha256": "24c1cda08fa350916621b8da52675c5834de32c831bc8fbe381bfd98d8057143",
+      "bytes": 19750
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/READABILITY_CONTRACT.txt",
+      "target": "research/geology/generator-v1/READABILITY_CONTRACT.txt",
+      "sha256": "224bdd1e21760ff902adcbbc03713b42bc13b1c24c17b5081abd4734e1755ac6",
+      "bytes": 3712
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/readability.py",
+      "target": "research/geology/generator-v1/readability.py",
+      "sha256": "7047b100a77b2e0f4a5fe6f55f2c7701502da5bc2877cead84bef9f9c40f2006",
+      "bytes": 36041
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/REFERENCE_PATTERN_CONTRACT.txt",
+      "target": "research/geology/generator-v1/REFERENCE_PATTERN_CONTRACT.txt",
+      "sha256": "5bf705466503fc6659dea12155385045f8bfdf420a2961ff7ad3726763986c66",
+      "bytes": 4411
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/REFERENCE_PATTERN_REVIEW.txt",
+      "target": "research/geology/generator-v1/REFERENCE_PATTERN_REVIEW.txt",
+      "sha256": "45a9f86e730fdf3cc467a1b2e50b3e4f647410611187d194182d03df83a66626",
+      "bytes": 6417
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/renderer.py",
+      "target": "research/geology/generator-v1/renderer.py",
+      "sha256": "ea863a113f4033e5d7e78d0959a4960a01b33160d21bdf631d761a1559efab08",
+      "bytes": 56626
+    },
+    {
+      "source": "源工作区/make_standard_templates.mjs",
+      "target": "research/geology/generator-v1/scripts/make_standard_templates.mjs",
+      "sha256": "a6ce2b684de0ee89afc3882073ce74e0502945c2c7177fd5df62828348e650b4",
+      "bytes": 25820
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/server.py",
+      "target": "research/geology/generator-v1/server.py",
+      "sha256": "c3c4ec516a810c9db9e2a3d4c9df6f89d003aaff83c29a33753b2309be297f5b",
+      "bytes": 13657
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/SLOPED_BOUNDARY_CONTRACT.txt",
+      "target": "research/geology/generator-v1/SLOPED_BOUNDARY_CONTRACT.txt",
+      "sha256": "ab31fc4b6540c0f2ec32379f6da96ef80f876609c89bbaf9ecaba3ed2dd4ad37",
+      "bytes": 3523
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/STANDARD_IMPORT_V2.txt",
+      "target": "research/geology/generator-v1/STANDARD_IMPORT_V2.txt",
+      "sha256": "e1bf52fa3bd36a10d4def796e9e4ef9f10b966c9f7f6e3704fca932a2b4ecf77",
+      "bytes": 7147
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/templates/drawing.json",
+      "target": "research/geology/generator-v1/templates/drawing.json",
+      "sha256": "31614af7e1810a143226e1bd5c7b3aa19b32b7aafd6a20d4923a93fc493d372f",
+      "bytes": 959
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/templates/drill-patterns.json",
+      "target": "research/geology/generator-v1/templates/drill-patterns.json",
+      "sha256": "1a56b496d74904adb3dc77ef4516ea559fdaa66837c64c75536bc29e24103d84",
+      "bytes": 2987
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/templates/materials.json",
+      "target": "research/geology/generator-v1/templates/materials.json",
+      "sha256": "70ca4b6abaaf7b9f90c64c71882d1a29c20aecb4ca6146eb0f76741100be95ed",
+      "bytes": 36940
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_drill.py",
+      "target": "research/geology/generator-v1/tests_drill.py",
+      "sha256": "05e7092789c6cc5fd7194335c8c4d029d5691230048133a612b3789512540dd4",
+      "bytes": 8753
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_importer.py",
+      "target": "research/geology/generator-v1/tests_importer.py",
+      "sha256": "7223851df4bf2b8bc18b416f4cea57dbe74300af73248ecf16ce45679a8490d9",
+      "bytes": 9160
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_layer_geometry.py",
+      "target": "research/geology/generator-v1/tests_layer_geometry.py",
+      "sha256": "019c1da591fe52d89299e679065657cb22181d1977e31037813946119a06be08",
+      "bytes": 24211
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_pipeline_audit.py",
+      "target": "research/geology/generator-v1/tests_pipeline_audit.py",
+      "sha256": "09e77f496e0efe5da1a48fcc2ff08a44bf101f2d68d95f596676c7378d46ec19",
+      "bytes": 3044
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_readability.py",
+      "target": "research/geology/generator-v1/tests_readability.py",
+      "sha256": "63186fd921ae640b4b6956920c4a1aed194c226b54d002df4440d9af048b1bb6",
+      "bytes": 19634
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_reference_patterns.py",
+      "target": "research/geology/generator-v1/tests_reference_patterns.py",
+      "sha256": "e4ea5f424eb10dc7dd33b3edfd9a08513102f7729763404ce4ff0aa41efd0530",
+      "bytes": 12754
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/tests_server.py",
+      "target": "research/geology/generator-v1/tests_server.py",
+      "sha256": "cbf11c3d5aecb2da433f32b3de93869ce14bcf2324e848c8fd89aa9033cb9836",
+      "bytes": 8772
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/verify_standard_import_v2.py",
+      "target": "research/geology/generator-v1/verify_standard_import_v2.py",
+      "sha256": "3a7e3dee0ca0640572cdae03e1e39d0a8553a351f9da107b52731af39cc1667c",
+      "bytes": 35209
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/web/index.html",
+      "target": "research/geology/generator-v1/web/index.html",
+      "sha256": "c41232c20cc8ad50198644b04e16da111def2b247bfa208a275ad42dc5eb7e3c",
+      "bytes": 13420
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/web/vector-viewer.html",
+      "target": "research/geology/generator-v1/web/vector-viewer.html",
+      "sha256": "7cce237a79e411fbff4c7b7a9fcf2620e2d5e59f38639e55d00cc1cf9fff3de9",
+      "bytes": 4861
+    },
+    {
+      "source": "源工作区/（本次归档说明）README.txt",
+      "target": "research/geology/README.txt",
+      "sha256": "a23d201cf1f8669b0ce53e76dba90e322e2bbf575fc7d041e9f278db2b5e47ec",
+      "bytes": 4519
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/主审独立核验.json",
+      "target": "research/geology/vertical-research/主审独立核验.json",
+      "sha256": "0cb35432cb863d918124f1b27c21fe001e8bec9d594a8ceeaf08f8262cf815ef",
+      "bytes": 2389
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/钻孔数据研究说明.txt",
+      "target": "research/geology/vertical-research/钻孔数据研究说明.txt",
+      "sha256": "aea82f268ca7550309e9d645a73fc228acc7900be47283994b8d937c043e1ba6",
+      "bytes": 7359
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/钻孔图研究结论与输入规则.txt",
+      "target": "research/geology/vertical-research/钻孔图研究结论与输入规则.txt",
+      "sha256": "ac71d706a375a9635bd866a799f8ff13afc19b0a3aadef1c4bb1b505ed3ec76f",
+      "bytes": 9919
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/分析结果.json",
+      "target": "research/geology/vertical-research/data/分析结果.json",
+      "sha256": "0d23d58ceedb9a60f25ee534850deb498033ff472bfb252ccebcc39e9e0cec9e",
+      "bytes": 22019
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/回次分层采样.json",
+      "target": "research/geology/vertical-research/data/回次分层采样.json",
+      "sha256": "7e71ab4ca7160503af01fbb73c5412b71e04b1a08c77583c3d0fb34c65a9aa1e",
+      "bytes": 446706
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/柱状图模板.json",
+      "target": "research/geology/vertical-research/data/柱状图模板.json",
+      "sha256": "1f8a13a220ddff48678445da4fd9ada139f844da441d5883fdcc356e08938af2",
+      "bytes": 316292
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/all-workbooks-extract.json",
+      "target": "research/geology/vertical-research/data/all-workbooks-extract.json",
+      "sha256": "fece33ec69151f2d7e5f4876d232547895b21ac646e984ae49a518b667882954",
+      "bytes": 845112
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/check_direct.py",
+      "target": "research/geology/vertical-research/data/check_direct.py",
+      "sha256": "43a2663677a98265a0c70e156024c88dad88abbbce6270d01b6747cab9c46898",
+      "bytes": 1508
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/direct_xlrd.py",
+      "target": "research/geology/vertical-research/data/direct_xlrd.py",
+      "sha256": "711c00c40c1359c1f15e093decf2e44c4f5f6ef433b10334a8a2d65193c15dd0",
+      "bytes": 1352
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/dump_rows.py",
+      "target": "research/geology/vertical-research/data/dump_rows.py",
+      "sha256": "f1520c8bc5f28bdd359c9f91579fdb15b3db24ecc2a58fc97c530b2eb9d45264",
+      "bytes": 1062
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/extract_workbooks.py",
+      "target": "research/geology/vertical-research/data/extract_workbooks.py",
+      "sha256": "c2c746e66626e6629ad0beaf49748e68d50b7ebb4dd7a8e79fc022149b56d999",
+      "bytes": 2227
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/extract-xls.ps1",
+      "target": "research/geology/vertical-research/data/extract-xls.ps1",
+      "sha256": "a1bb21e7c3e1fc3efefaa15618d0f923908e66a5b20687a339f9547481dea528",
+      "bytes": 1298
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/formula-caches.py",
+      "target": "research/geology/vertical-research/data/formula-caches.py",
+      "sha256": "3c4f2a30408f6a0bee7493aba3e9b54b56addea1355bd6b96030b15b3b7785d5",
+      "bytes": 530
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/metrics.py",
+      "target": "research/geology/vertical-research/data/metrics.py",
+      "sha256": "1eb80b535f406f4ce7358ec1aae0bf9d948bfc658d731b7fcbe874fd7e45d8a8",
+      "bytes": 2273
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/row-dumps.txt",
+      "target": "research/geology/vertical-research/data/row-dumps.txt",
+      "sha256": "ca02bf4daac29ac86192fd05bd7758220366bae9f83067194e581ddb0d4598c3",
+      "bytes": 79817
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/sampleids.py",
+      "target": "research/geology/vertical-research/data/sampleids.py",
+      "sha256": "c7fc697d4b30944b6af2894722735a1dedb200e0bec384004f2dc296bc433bc7",
+      "bytes": 285
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/sampleids2.py",
+      "target": "research/geology/vertical-research/data/sampleids2.py",
+      "sha256": "524717c0ce3fb56559d7898bdfc7034d351f197865847c7193d43a6c6dbe8ac7",
+      "bytes": 566
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/source_xls-direct-xlrd.json",
+      "target": "research/geology/vertical-research/data/source_xls-direct-xlrd.json",
+      "sha256": "ff46dff05b32b7ef44249b6361c8297648ce53c1303234e83ec8fa363430e1eb",
+      "bytes": 415514
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/source-converted.xlsx",
+      "target": "research/geology/vertical-research/data/source-converted.xlsx",
+      "sha256": "9c0bd7842f8f028eb6e1fe6a59a6838b53778035c008e206a6502761d2f4c2c2",
+      "bytes": 232857
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/source-xls-extract.json",
+      "target": "research/geology/vertical-research/data/source-xls-extract.json",
+      "sha256": "7fee83b5bb7fa4d222c68599cb3a01def082ab5d61e47d51eb6cd3283d36126c",
+      "bytes": 467663
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/targeted.py",
+      "target": "research/geology/vertical-research/data/targeted.py",
+      "sha256": "683986056991ae524850dbb465d620c6694a5dc3853c1bda014f38a734f08b07",
+      "bytes": 827
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/template_xlt-direct-xlrd.json",
+      "target": "research/geology/vertical-research/data/template_xlt-direct-xlrd.json",
+      "sha256": "51a23c2b5f9b2bdafc40744e1354006cc21f0d87d294db2b9a77d2c55d0a66de",
+      "bytes": 318341
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/template-converted.xlsx",
+      "target": "research/geology/vertical-research/data/template-converted.xlsx",
+      "sha256": "d9d470a038fa75c9eb0d9045c3b4aaa23d220ddf46b90adc6c1ae8f42ee91b2e",
+      "bytes": 57995
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/template-gaps.py",
+      "target": "research/geology/vertical-research/data/template-gaps.py",
+      "sha256": "aff09cf93df1b81fbde42aa972d2d47f446a13dbbd7e2601520efa280feba571",
+      "bytes": 614
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/template-layout.py",
+      "target": "research/geology/vertical-research/data/template-layout.py",
+      "sha256": "25c92b6c5f7a1984df28a8604053226e785f0dd91f920cff53481dd123409aaa",
+      "bytes": 751
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/data/verify_h97.py",
+      "target": "research/geology/vertical-research/data/verify_h97.py",
+      "sha256": "356cb345801b79bfeb092bf6cb6a8436cb35778eb24150088b58f081ee890daf",
+      "bytes": 258
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/drill-source-footer.png",
+      "target": "research/geology/vertical-research/drill-source-footer.png",
+      "sha256": "50baa76113d1651527581b0d19fd8744f5def352db8ba80917da308a0439eabc",
+      "bytes": 261082
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/drill-source-header.png",
+      "target": "research/geology/vertical-research/drill-source-header.png",
+      "sha256": "0c405153387169294832144272bbe57522dda484bfd7ea4a4548dacef86e7008",
+      "bytes": 230100
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/drill-source-middle.png",
+      "target": "research/geology/vertical-research/drill-source-middle.png",
+      "sha256": "6b7202668fafc7e9e42dbe3b385623ca8c6ce4395bc4c1d3992bcab0e92289db",
+      "bytes": 134166
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/固体矿产勘查原始地质编录规程-metadata.json",
+      "target": "research/geology/vertical-research/rules/固体矿产勘查原始地质编录规程-metadata.json",
+      "sha256": "9e16c4a579088cebdaa1a1a47bdc5e444c96edfbd0c7c5212951f38152bee558",
+      "bytes": 3223
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/固体矿产勘查原始地质编录规程-selected-pages.txt",
+      "target": "research/geology/vertical-research/rules/固体矿产勘查原始地质编录规程-selected-pages.txt",
+      "sha256": "157b881feb299b8529092ef27550d0eb5ef48971b7f6044df4e6d9360746d432",
+      "bytes": 14689
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/固体矿产勘查原始地质编录规程.txt",
+      "target": "research/geology/vertical-research/rules/固体矿产勘查原始地质编录规程.txt",
+      "sha256": "801e78ad50eaf44e422ca477f335a8805382871f94b49f8dd40c8a79280bca5b",
+      "bytes": 170297
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p68.png",
+      "target": "research/geology/vertical-research/rules/规程-p68.png",
+      "sha256": "620cf0f3c18eb79e1b026ec6b2dbd09c65429a934d6e9207f7214cd1dd12f64d",
+      "bytes": 237374
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p74.png",
+      "target": "research/geology/vertical-research/rules/规程-p74.png",
+      "sha256": "2ef55b266e97505e18bebf7ae8be2e828cf48165c685202b2e052583dc47e740",
+      "bytes": 441376
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p76.png",
+      "target": "research/geology/vertical-research/rules/规程-p76.png",
+      "sha256": "8302734162e2d7d833fea17ded19258e03cab8a09eec3db2d0eb84a951979335",
+      "bytes": 94237
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p78.png",
+      "target": "research/geology/vertical-research/rules/规程-p78.png",
+      "sha256": "75bf49adac1175b6469e7cb8ec0ca4991862f85e571d53263ec5d530d9219cf7",
+      "bytes": 61948
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p79.png",
+      "target": "research/geology/vertical-research/rules/规程-p79.png",
+      "sha256": "1c06b7e216e4ef343f69025b37381c483bd4c313e9afc0cc111561c833c10be0",
+      "bytes": 46727
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p84.png",
+      "target": "research/geology/vertical-research/rules/规程-p84.png",
+      "sha256": "74a262b0fda339b0b0149a65a6d58cd237d2ffc7d90363a01dd09945ef10a32a",
+      "bytes": 53152
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/规程-p85.png",
+      "target": "research/geology/vertical-research/rules/规程-p85.png",
+      "sha256": "ebb86d91dba2b28a610b08af073893249bf70996082c5431c044280902a92301",
+      "bytes": 73883
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/研究说明.txt",
+      "target": "research/geology/vertical-research/rules/研究说明.txt",
+      "sha256": "6bd9e083d1688abe7767c7d02892d6c40ad34c9576e00c4a3c28bdd6af9ba192",
+      "bytes": 7500
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/主审-规程-p45.png",
+      "target": "research/geology/vertical-research/rules/主审-规程-p45.png",
+      "sha256": "0a7dd37402ed739c2fc608c3448c3e9ad5f61c0ac11eaa1c1b24a2c3494f1c97",
+      "bytes": 327093
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/主审-规程-p86.png",
+      "target": "research/geology/vertical-research/rules/主审-规程-p86.png",
+      "sha256": "1faae5f6b513cc7bd01103e71ee62e5f62948a514bf7c1d0181eebb7a4713831",
+      "bytes": 81317
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/最新、最好图例Gb958-99-metadata.json",
+      "target": "research/geology/vertical-research/rules/最新、最好图例Gb958-99-metadata.json",
+      "sha256": "e838cb10d4d4363f29818a6de56b4aa2a3ebe80decc9a18feca43865dd9c0d61",
+      "bytes": 463
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/最新、最好图例Gb958-99-selected-pages.txt",
+      "target": "research/geology/vertical-research/rules/最新、最好图例Gb958-99-selected-pages.txt",
+      "sha256": "a2f9b09623f5e3a0be4a6a03417bae3517b3a81469b250502ce3818518a9db75",
+      "bytes": 14298
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/最新、最好图例Gb958-99.txt",
+      "target": "research/geology/vertical-research/rules/最新、最好图例Gb958-99.txt",
+      "sha256": "6b71c19d43c572a622c402d04c37add90b6b5f3cb4a75bcac29e642de973fbb7",
+      "bytes": 202556
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/drill-forms.txt",
+      "target": "research/geology/vertical-research/rules/drill-forms.txt",
+      "sha256": "75828bb21a0d53e89a96fc1742bba7595418317d2084a26250a4818f7dcd3577",
+      "bytes": 5191
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/drill-pages.txt",
+      "target": "research/geology/vertical-research/rules/drill-pages.txt",
+      "sha256": "d303592aeca1afb8b19cf48b83c8ed8987e0df4e6e2d08a3aea902658a75b5b8",
+      "bytes": 28713
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-drill-pages.py",
+      "target": "research/geology/vertical-research/rules/extract-drill-pages.py",
+      "sha256": "75d1850e97124b6a73070f00fa27dae96984cf43e2b0e72db6aa079959efde40",
+      "bytes": 437
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-forms.py",
+      "target": "research/geology/vertical-research/rules/extract-forms.py",
+      "sha256": "be04a27cd39458072fd1273ad748a079e1066f7eb6ee7e40b3a810a87a81ddeb",
+      "bytes": 507
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-gb.py",
+      "target": "research/geology/vertical-research/rules/extract-gb.py",
+      "sha256": "adfa3528da7bb552cbe2da8b43d6c02cc6e1363870f484a3b54643cbe0161dfa",
+      "bytes": 1134
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-pdfs.py",
+      "target": "research/geology/vertical-research/rules/extract-pdfs.py",
+      "sha256": "132b6d9629da54846afb7a078e3e076e2893094e9c10cbecb7a957ae479b6114",
+      "bytes": 1529
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-relevant-pages.py",
+      "target": "research/geology/vertical-research/rules/extract-relevant-pages.py",
+      "sha256": "4c809ce5d9a8799c680965f74105eb227e44dbdc7f52a7fec30d3f3701363e05",
+      "bytes": 574
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/extract-selected.py",
+      "target": "research/geology/vertical-research/rules/extract-selected.py",
+      "sha256": "47fe2d78f9523fa87d1ac3f93fa183f330d6250e3e1a45a450ba42b343e4d9b9",
+      "bytes": 707
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/relevant-pages.txt",
+      "target": "research/geology/vertical-research/rules/relevant-pages.txt",
+      "sha256": "9eb2475dfc5a2dfd230c7b58f801ed4322db31b9e5dd78b42c4299a0d16ca003",
+      "bytes": 59043
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/render-a7.py",
+      "target": "research/geology/vertical-research/rules/render-a7.py",
+      "sha256": "73273792559cfe7cf34fb56e3ee5ae31805b87cce9c84acfdcfd903abf85a7e3",
+      "bytes": 365
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/rules/render-pages.py",
+      "target": "research/geology/vertical-research/rules/render-pages.py",
+      "sha256": "b85f6fae538f4a9b77433212660a8146b398a14abce179e541a136b64f0250ad",
+      "bytes": 436
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/source-drawings-contact-sheet.png",
+      "target": "research/geology/vertical-research/source-drawings-contact-sheet.png",
+      "sha256": "dc1717b7120bf2d04d8943dd1e9fdd72541a984ab1fbcfccbf4a25ba84602852",
+      "bytes": 249914
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/source-file-inventory.txt",
+      "target": "research/geology/vertical-research/source-file-inventory.txt",
+      "sha256": "3ef6de4c3a00e38c91239cb0fbb2be2ce5b5b0f753dc4094454acfb7566ef1d7",
+      "bytes": 973
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/source-readonly-audit.json",
+      "target": "research/geology/vertical-research/source-readonly-audit.json",
+      "sha256": "cc03ac5d759e5a11a2814087b3c9f52ab4ff8e15eec594fa0b0335b5d47628a1",
+      "bytes": 342
+    },
+    {
+      "source": "源工作区/output/geology-research-vertical/source-sha256.json",
+      "target": "research/geology/vertical-research/source-sha256.json",
+      "sha256": "893ad659205f018b544470fd040f066f4d102698e7859e48b2fcabae5e915002",
+      "bytes": 803
+    },
+    {
+      "source": "源工作区/（归档维护）.gitignore",
+      "target": "research/geology/.gitignore",
+      "sha256": "7c4a6c169794114d91adefa5092b646720a42cf6bc1b20d0a237837a0cb3acea",
+      "bytes": 254
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/appendix.html",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/complete-hd.png",
+      "sha256": "33001517c2e70477a7d1acef990501da5fc8e67261bc92a1a36a1d56f1a2557d",
+      "bytes": 1713791
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/detail.png",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/detail.png",
+      "sha256": "e42b2b8471c45a897546604fa454f6ef201c25983d6f146ad886d6989e15bb45",
+      "bytes": 142802
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/detail.svg",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/detail.svg",
+      "sha256": "8da26496d0b10cf565de423cc4307b49a4d67449f43a0a4ea44a4ce756c9d63a",
+      "bytes": 52428
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/drawing.svg",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/drawing.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/layout-audit.json",
+      "sha256": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+      "bytes": 168241
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/manifest.json",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/manifest.json",
+      "sha256": "fcc19efc76b0c7f885874343e3a481840651d37ae0ca6459644823b8f8488eac",
+      "bytes": 7181
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/normalized.json",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/normalized.json",
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+      "bytes": 165076
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/preview.png",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/preview.png",
+      "sha256": "4c8a84c06d7f0efa4bb8c1ebc40bed20c0f59001aca8c0d089cbec496758a3ca",
+      "bytes": 246449
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/readability-audit.json",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/readability-audit.json",
+      "sha256": "b55df8c4a93b24fe044ee65545d8d10ac2b5bb6669433980dc2d9d344784ee36",
+      "bytes": 112827
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/readability.png",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/readability.png",
+      "sha256": "13425122f341129cb877f73b6f4ff64f56f31f391dee789a8f64312aa5abf1d3",
+      "bytes": 688616
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/readability.svg",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/readability.svg",
+      "sha256": "288f5d6dd6507b5358ac9752f78f30d5bd15c9af4e8efcb06d1dfa20a273f709",
+      "bytes": 75974
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/1de070d10ca8c2565a88cae8/report.html",
+      "target": "research/geology/generator-v1/generated/1de070d10ca8c2565a88cae8/report.html",
+      "sha256": "8ddb6edc1a63920854336a3a77c6f5a6360823980d8e1c47b75525c59492e333",
+      "bytes": 18068
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/.detail-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/.detail-raster-view.svg",
+      "sha256": "208c950925f0d72892ce67f96a434aeec8a9f945006b8204d55d8998b9385bce",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/appendix.html",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/appendix.html",
+      "sha256": "419bd3fcb36c28d6f409d9e4517671f8c3b0b677d2af6341afd056febbed2c36",
+      "bytes": 61677
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/complete-hd.png",
+      "sha256": "da31d533a8a9aba5d13808754cc27e73c86231595cbb31463154618d62919aa4",
+      "bytes": 887528
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/detail.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/detail.png",
+      "sha256": "ef719eef10d43d4a380d72c3d56e36dce7c87f8c241a07efe2f0b47ee8778fbe",
+      "bytes": 214812
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/detail.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/detail.svg",
+      "sha256": "208c950925f0d72892ce67f96a434aeec8a9f945006b8204d55d8998b9385bce",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/drawing.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/drawing.svg",
+      "sha256": "fb59096eb3df13720ef455655209adaad13c321789728938f75e48a6488ec699",
+      "bytes": 143476
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/layout-audit.json",
+      "sha256": "9161bcc36a7063eeddc21626b647405472ca9d52a5c44d0f29d5778a914e2afc",
+      "bytes": 216338
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/manifest.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/manifest.json",
+      "sha256": "a28193638e206e07d1a09beee2bfd65dc9240558e774fffcc905ebc77f316874",
+      "bytes": 77607
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/normalized.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/normalized.json",
+      "sha256": "cd1c4cd9778590cdb161fa3f8326f396a4a4ebb1fd92a1269c67848b6f760609",
+      "bytes": 146074
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/preview.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/preview.png",
+      "sha256": "da31d533a8a9aba5d13808754cc27e73c86231595cbb31463154618d62919aa4",
+      "bytes": 887528
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/report.html",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-99ba93a3/report.html",
+      "sha256": "5b23afeb8482d7bcddae127994ff42c8d1b00940536b099a1f01989c0884dce9",
+      "bytes": 6273
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/.detail-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/.detail-raster-view.svg",
+      "sha256": "208c950925f0d72892ce67f96a434aeec8a9f945006b8204d55d8998b9385bce",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/.hd-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/.hd-raster-view.svg",
+      "sha256": "fa860118104673c8d7302c720f9390058e4b276e2ae6be017ce3caf564a92131",
+      "bytes": 143477
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/appendix.html",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/appendix.html",
+      "sha256": "419bd3fcb36c28d6f409d9e4517671f8c3b0b677d2af6341afd056febbed2c36",
+      "bytes": 61677
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/complete-hd.png",
+      "sha256": "9e34ca0de2881058d342467a14c23e487f325c46e1938fa93818f654ae4e3ca2",
+      "bytes": 2507986
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/detail.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/detail.png",
+      "sha256": "ef719eef10d43d4a380d72c3d56e36dce7c87f8c241a07efe2f0b47ee8778fbe",
+      "bytes": 214812
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/detail.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/detail.svg",
+      "sha256": "208c950925f0d72892ce67f96a434aeec8a9f945006b8204d55d8998b9385bce",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/drawing.svg",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/drawing.svg",
+      "sha256": "fb59096eb3df13720ef455655209adaad13c321789728938f75e48a6488ec699",
+      "bytes": 143476
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/layout-audit.json",
+      "sha256": "195641f1459f09b9d1f61d7c2e6cb6c4902283dac1d6e73ad6ed192706c7a00e",
+      "bytes": 217296
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/manifest.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/manifest.json",
+      "sha256": "f977cbcb69ee9375370c6f0ae62bd3a0be1d3fe078149fb60f635fbc9cf31aca",
+      "bytes": 78125
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/normalized.json",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/normalized.json",
+      "sha256": "cd1c4cd9778590cdb161fa3f8326f396a4a4ebb1fd92a1269c67848b6f760609",
+      "bytes": 146074
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/preview.png",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/preview.png",
+      "sha256": "da31d533a8a9aba5d13808754cc27e73c86231595cbb31463154618d62919aa4",
+      "bytes": 887528
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/report.html",
+      "target": "research/geology/generator-v1/generated/drill-6420c47d62f5-929260ad-d343cbef/report.html",
+      "sha256": "5b23afeb8482d7bcddae127994ff42c8d1b00940536b099a1f01989c0884dce9",
+      "bytes": 6273
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/.detail-raster-view.svg",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/.detail-raster-view.svg",
+      "sha256": "4d206152a568fe3ab35e59225feb15abaae1aaad42f4be5194905a0bc6834055",
+      "bytes": 12320
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/appendix.html",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/appendix.html",
+      "sha256": "93e711e39284f04c048b14e4378de797de2f73202cc66e0f74c68573ad60149e",
+      "bytes": 4284
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/complete-hd.png",
+      "sha256": "f63c5d31da49d2b3ba48a0a5666efa5896a8af5808bd9a39e92b6367bd0ebb6c",
+      "bytes": 563489
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/detail.png",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/detail.png",
+      "sha256": "b5b0d9fd6b61881b1ea4e8bc004ea953b6c4388f122c974eba7709a765d8c18b",
+      "bytes": 72312
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/detail.svg",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/detail.svg",
+      "sha256": "4d206152a568fe3ab35e59225feb15abaae1aaad42f4be5194905a0bc6834055",
+      "bytes": 12320
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/drawing.svg",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/drawing.svg",
+      "sha256": "9ecb0a58e8b534089828e227b42a8371b887d32ed391310eddba6920dda75a15",
+      "bytes": 12327
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/layout-audit.json",
+      "sha256": "63a39c920fef69346e707eb95a2e6fd9b2a1e5b7e742578d7c79d6a7e555bb21",
+      "bytes": 17774
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/manifest.json",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/manifest.json",
+      "sha256": "d735fa3e4437d358b1ad6a92ad6b138dc8135135cbe01c7aaed42265735ff57f",
+      "bytes": 5590
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/normalized.json",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/normalized.json",
+      "sha256": "29e427a76ac52b0b510dac6668ae711c06b974cb4dac69a91cc2c4274db35e51",
+      "bytes": 6611
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/preview.png",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/preview.png",
+      "sha256": "40e13bd861ab43e5bb4a84bba831def49731931eec7b2412322c576d1c01b92e",
+      "bytes": 73147
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/report.html",
+      "target": "research/geology/generator-v1/generated/drill-a4f68eba6f3a-929260ad-32b51c29/report.html",
+      "sha256": "4e69437b89588db12a3385f1e7e4855ab0b62f94c116a06c0f6f76b3bccdf7bf",
+      "bytes": 1359
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/layout-review/drawing.svg",
+      "target": "research/geology/generator-v1/generated/layout-review/drawing.svg",
+      "sha256": "45d4934f16316ba0d1854fff0ef832b857a8751297813542609b6ef525f575bf",
+      "bytes": 54581
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/pm01/normalized.json",
+      "target": "research/geology/generator-v1/generated/pm01/normalized.json",
+      "sha256": "557ebcbc80ca67c6d1e1231a25fba92a756c978a92a8899e702a5e2ba492da2d",
+      "bytes": 147794
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/appendix.html",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/complete-hd.png",
+      "sha256": "33001517c2e70477a7d1acef990501da5fc8e67261bc92a1a36a1d56f1a2557d",
+      "bytes": 1713791
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/detail.png",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/detail.png",
+      "sha256": "e42b2b8471c45a897546604fa454f6ef201c25983d6f146ad886d6989e15bb45",
+      "bytes": 142802
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/detail.svg",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/detail.svg",
+      "sha256": "8da26496d0b10cf565de423cc4307b49a4d67449f43a0a4ea44a4ce756c9d63a",
+      "bytes": 52428
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/drawing.svg",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/drawing.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/layout-audit.json",
+      "sha256": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+      "bytes": 168241
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/manifest.json",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/manifest.json",
+      "sha256": "d920aae30274fe3fcfd5cc93bd3d43aa0c9f5eca7bf1e69aea5323a007035ce5",
+      "bytes": 7208
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/normalized.json",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/normalized.json",
+      "sha256": "850c1cb157b7ffa4480dc9766e814ab4a0c08f5340a9b99526be463023fe10ff",
+      "bytes": 165085
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/preview.png",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/preview.png",
+      "sha256": "4c8a84c06d7f0efa4bb8c1ebc40bed20c0f59001aca8c0d089cbec496758a3ca",
+      "bytes": 246449
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability-audit.json",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability-audit.json",
+      "sha256": "b55df8c4a93b24fe044ee65545d8d10ac2b5bb6669433980dc2d9d344784ee36",
+      "bytes": 112827
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability.png",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability.png",
+      "sha256": "13425122f341129cb877f73b6f4ff64f56f31f391dee789a8f64312aa5abf1d3",
+      "bytes": 688616
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability.svg",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/readability.svg",
+      "sha256": "288f5d6dd6507b5358ac9752f78f30d5bd15c9af4e8efcb06d1dfa20a273f709",
+      "bytes": 75974
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/report.html",
+      "target": "research/geology/generator-v1/generated/section-4aed8add59db-929260ad-9119e03e/report.html",
+      "sha256": "2a595a456ab4c6b7912016437d3d84840f05bc69459669b027b0aefc1c8ee313",
+      "bytes": 18077
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/appendix.html",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/appendix.html",
+      "sha256": "c741cd65e22a091c802c5543f584a765c9292a3def5f836ef5dd09a5a6676fcd",
+      "bytes": 4727
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/complete-hd.png",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/complete-hd.png",
+      "sha256": "49b43f3e187d946862e0ee3226f5590bddfe8e6719de5fc14abc79d55b712103",
+      "bytes": 921891
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/detail.png",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/detail.png",
+      "sha256": "62619a372ddc6cb86966d226c420b5a7e923dd1183c03d1bb9a9548dca0c438a",
+      "bytes": 48506
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/detail.svg",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/detail.svg",
+      "sha256": "7a391e53297305f4f23a305dad977b3307c777251743c707ddb8c8382969d4a0",
+      "bytes": 17765
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/drawing.svg",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/drawing.svg",
+      "sha256": "fbbb900ba8c94403dd6cfdcb420d08872b030f7fcce91d5d64801cd2311f620e",
+      "bytes": 43932
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/layout-audit.json",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/layout-audit.json",
+      "sha256": "a744cae000e6619af388f4c5a8d3215f56032cb2e99b1bd5eed304a43df8e8d0",
+      "bytes": 9473
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/manifest.json",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/manifest.json",
+      "sha256": "8e91dc51c0976d117c87d7aaada3d4ee3bea52f706a0136a82ffec23bfaf0881",
+      "bytes": 7104
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/normalized.json",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/normalized.json",
+      "sha256": "4d0c91c43a5ffc598109782d3ee52f9b0dd99ec6ec0574c351026225ded5c3ed",
+      "bytes": 7436
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/preview.png",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/preview.png",
+      "sha256": "fbb35d360deafebe7fc41bc0266fe39040a8347dc6476b6ad6d17009ae0bd6c5",
+      "bytes": 123718
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability-audit.json",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability-audit.json",
+      "sha256": "ab9c7783acebbedd6cbe7ea68406426b515abbb367654f55e173df230cd5f2b2",
+      "bytes": 4305
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability.png",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability.png",
+      "sha256": "18b520e7d31af4b3e0addbb79b351a4219a426873b2123e87053bf0a77fc317e",
+      "bytes": 69557
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability.svg",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/readability.svg",
+      "sha256": "76c34c6cb8a510b8fe17aa3b192c4dc9fb7615fc8b4a60c8f73ca4e662343d2e",
+      "bytes": 19713
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/report.html",
+      "target": "research/geology/generator-v1/generated/section-a653e50f28bd-929260ad-f2feae53/report.html",
+      "sha256": "25b7ad59184e541cf9c463ef69942ce4eefee5d5dd3c16e545e838bbdab5d903",
+      "bytes": 3556
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/detail.png",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/detail.png",
+      "sha256": "92426838fea50a74907d3644d21ad565e9041c8a9e62e678bd67db7b0c28d978",
+      "bytes": 78103
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/detail.svg",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/detail.svg",
+      "sha256": "224ae4b00bde008c689a45fed368de9d0b27cf6fc93334c3e1c99718b96724ce",
+      "bytes": 38556
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/drawing.svg",
+      "sha256": "44e27a0a85a14d2763f4a50dbce33e3ef9650c1937180ca4397c3e256e319b87",
+      "bytes": 89026
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/layout-audit.json",
+      "sha256": "9fd922873875d20ad862248e501836f2b534880fca2b4cdcb9b6c7b09db435a5",
+      "bytes": 98724
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/manifest.json",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/manifest.json",
+      "sha256": "cd0706cd388622d373e0a5d3e06d31d541bfeac8ccd24ecb91c446eb68d2c87a",
+      "bytes": 5182
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/normalized.json",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/normalized.json",
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+      "bytes": 165076
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-readability-20261006/preview.png",
+      "target": "research/geology/generator-v1/outputs/before-readability-20261006/preview.png",
+      "sha256": "dad28c3abf73321a7a4cfd8d6791ff4879c7308586c40bde19674dea626857fe",
+      "bytes": 215125
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/detail.png",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/detail.png",
+      "sha256": "6dd6789e07177f9da15088639e4481d9c80e79ef2994099855cb6a80cbafd6db",
+      "bytes": 96381
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/detail.svg",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/detail.svg",
+      "sha256": "9aa31fec595e93dc0ac396aea93c49597f81c6d62e5ad1692cdfc7c5f5f81dde",
+      "bytes": 41991
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/drawing.svg",
+      "sha256": "7f6a2693788dbff46d0285c589ca214e5c52882608c6ad2fdfb394c4fe1cf4c6",
+      "bytes": 93166
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/layout-audit.json",
+      "sha256": "ff4173970083300ac0cdf2d4053dd0005d70adb2da28e1074127b1b10ecc68aa",
+      "bytes": 136202
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/manifest.json",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/manifest.json",
+      "sha256": "fc6a7cf068d058052b0d88ec2fb953d556118b722e5aeaef006be9df64ab897a",
+      "bytes": 6135
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/materials.json",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/materials.json",
+      "sha256": "4e84957314bc924f08339377b1fddf3e4b1c67c6a36278ef44fc0a456002806a",
+      "bytes": 4726
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/normalized.json",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/normalized.json",
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+      "bytes": 165076
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/preview.png",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/preview.png",
+      "sha256": "eef1d1b67762dd1f895b7b1b9d02ad1af27781ec39ffb44cec30fe8da2e6732a",
+      "bytes": 218219
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/readability.png",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/readability.png",
+      "sha256": "a44753e5bd8eb4f689a8b7a83a7838c1c669eb564d5f8ac218bd75d311335b1f",
+      "bytes": 483025
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-reference-patterns-20261006/readability.svg",
+      "target": "research/geology/generator-v1/outputs/before-reference-patterns-20261006/readability.svg",
+      "sha256": "70b8a1552e74ad96e36394058b268faa77e46360b92a8835275f4a7c0f8b69ee",
+      "bytes": 49718
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/detail.png",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/detail.png",
+      "sha256": "281ae2873b2f3124b27a0df532d10261f85b16c4bde14e9c7aad4bd319e2b467",
+      "bytes": 65602
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/detail.svg",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/detail.svg",
+      "sha256": "f0fbf9b11e1e2b10a28b021edcfff99f12e57c824cda643922920c57b9b25d72",
+      "bytes": 18929
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/drawing.svg",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/drawing.svg",
+      "sha256": "e1244059d08db3357489b2adcd218e17f93c48b9d883d2e1b997674b96518ba2",
+      "bytes": 54599
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/layout-audit.json",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/layout-audit.json",
+      "sha256": "528139b6e9bdcbcbf38ec5beea5db0e3611200681ccb1a22a4b41b047e53f05a",
+      "bytes": 6579
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/manifest.json",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/manifest.json",
+      "sha256": "b78ef499478a6aac4329dbc403796ef76cdbc48f622c3686d79bb14fe5a472bd",
+      "bytes": 4954
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/outputs/before-sloped-boundaries-20261006/preview.png",
+      "target": "research/geology/generator-v1/outputs/before-sloped-boundaries-20261006/preview.png",
+      "sha256": "551a2e7904d01cd0f4e200db3e08882e58c04169ff43df53eece72340e6dcf02",
+      "bytes": 232369
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/anchor-phase-audit.json",
+      "target": "research/geology/review-evidence/anchor-phase-audit.json",
+      "sha256": "103d2f16302745d9bb595a2ec1e83678b073fba591b0d015ff9a9688203aa873",
+      "bytes": 2382
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/final-browser-text-audit.json",
+      "target": "research/geology/review-evidence/final-browser-text-audit.json",
+      "sha256": "52d9fd7ee7d6e72cd4d0c3c5a34223629aaf1186b694382baccd5ba3949d1bf3",
+      "bytes": 119
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-export-baseline.json",
+      "target": "research/geology/review-evidence/hd-export-baseline.json",
+      "sha256": "4e259469fc776cae9accfa4c7149a7f841e783c6724e34e1acf837369dcf13ab",
+      "bytes": 552
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-export-final-reviewed.json",
+      "target": "research/geology/review-evidence/hd-export-final-reviewed.json",
+      "sha256": "790149c1ab8fc739332723e3542c57ebbe9e0321b0c39ec118989a1a1d048322",
+      "bytes": 1090
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-export-reviewed.json",
+      "target": "research/geology/review-evidence/hd-export-reviewed.json",
+      "sha256": "45e94b147f4a6a22eca4eebb195fa16f74b7494815bdcbafa1e2d8af72442c94",
+      "bytes": 587
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-helper-capped-summary.json",
+      "target": "research/geology/review-evidence/hd-helper-capped-summary.json",
+      "sha256": "031f0a56497a75ed07ebf06d4b45d1cd2bc9c75328355d13813d393c1060ca6a",
+      "bytes": 323
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-helper-test-summary.json",
+      "target": "research/geology/review-evidence/hd-helper-test-summary.json",
+      "sha256": "f44c72744b229faa87fb1df8f1e1c4b4fdc010d9b6ae61c30a80f301ab2e22ab",
+      "bytes": 325
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/importer-generation-summary.json",
+      "target": "research/geology/review-evidence/importer-generation-summary.json",
+      "sha256": "6b41e83238be78740bec9eabd381b3b02bf871c443bf5212dcb5693ca1b6d390",
+      "bytes": 845
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/independent-source-baseline.json",
+      "target": "research/geology/review-evidence/independent-source-baseline.json",
+      "sha256": "b63a433e1e381605518c771e10399854413826dc8d03dd1f092e023cad619253",
+      "bytes": 48989
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/integration-checks.json",
+      "target": "research/geology/review-evidence/integration-checks.json",
+      "sha256": "772028fad72f12c7ef0f3a2b83abcf079413054d13f79f2e58cc6d705105a838",
+      "bytes": 3596
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/layer-geometry-tests.json",
+      "target": "research/geology/review-evidence/layer-geometry-tests.json",
+      "sha256": "05aa8ccf54ee15c0220769cd0033be27510f9d6bbc81a5b106f273628ea16cc0",
+      "bytes": 296
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-canonical-roundtrip-audit.json",
+      "target": "research/geology/review-evidence/parent-canonical-roundtrip-audit.json",
+      "sha256": "4cdaaaf5b20df09ce3621282b74053e1f98ea107f49a6cdf515af187e0688840",
+      "bytes": 394
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-detail-geometry-audit.json",
+      "target": "research/geology/review-evidence/parent-detail-geometry-audit.json",
+      "sha256": "94e0fe44628610b9e068c0b03454d017f3b87667bdfd7621e232d7bd73ff62bf",
+      "bytes": 2265
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-final-acceptance.json",
+      "target": "research/geology/review-evidence/parent-final-acceptance.json",
+      "sha256": "885d52fd009d3b2631579bb11d8bae99359252c665c3e0195410ce1e7e0072a8",
+      "bytes": 823
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-import-audit.json",
+      "target": "research/geology/review-evidence/parent-import-audit.json",
+      "sha256": "57d8b2581b435db7d8447e75530153c4626eab495f84c87fe40aa8277c53d102",
+      "bytes": 378
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-readability-acceptance.json",
+      "target": "research/geology/review-evidence/parent-readability-acceptance.json",
+      "sha256": "7e48ded51ed6f5d6887d749020fe6faa96d61f51be496ceea8b0a9844539d2f8",
+      "bytes": 429
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-reference-patterns-review.json",
+      "target": "research/geology/review-evidence/parent-reference-patterns-review.json",
+      "sha256": "46b2c180be21a667355781b14578dbe79b3ab6246407dc9c98b95b08cc99aea2",
+      "bytes": 652
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-sloped-geometry-audit.json",
+      "target": "research/geology/review-evidence/parent-sloped-geometry-audit.json",
+      "sha256": "cc24c665ca6d29853aa1c47a4ef917349d991f539dfac95659db57ddc78a6412",
+      "bytes": 792
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/parent-svg-geometry-audit.json",
+      "target": "research/geology/review-evidence/parent-svg-geometry-audit.json",
+      "sha256": "88836acbfbeab368b025d28d8bc6b4b4cccc9b381093bb3e5f632c3c453b6b8c",
+      "bytes": 364
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/pattern-render-context-audit.json",
+      "target": "research/geology/review-evidence/pattern-render-context-audit.json",
+      "sha256": "8089bba8765347ac0affe0a7bf9dedd3d953a1f8443bd1b59e1b1500bcd392dc",
+      "bytes": 1954
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/pipeline-determinism.json",
+      "target": "research/geology/review-evidence/pipeline-determinism.json",
+      "sha256": "009b777d64755313c31e7e0569873bf7a5dc68cf086353fbe50241e943703daa",
+      "bytes": 1644
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/readability-browser-text-audit.json",
+      "target": "research/geology/review-evidence/readability-browser-text-audit.json",
+      "sha256": "a5a5a84b8556219c63abbe4f1218c539947eb31336f88cc31591abaea3a9d28b",
+      "bytes": 53
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/readability-cli-browser-match.json",
+      "target": "research/geology/review-evidence/readability-cli-browser-match.json",
+      "sha256": "12b6786841467797161518119776aafbcc538c738b7e2d8e9ddd1d7576293b77",
+      "bytes": 188
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/readability-tests.json",
+      "target": "research/geology/review-evidence/readability-tests.json",
+      "sha256": "d7415c05e2ed9bc6c7a7d642345e13a4c379f09797176bfe0a50b3ec359535a7",
+      "bytes": 142
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/reference-pattern-tests.json",
+      "target": "research/geology/review-evidence/reference-pattern-tests.json",
+      "sha256": "a81c8f3583b1a4e70675c6e9ed86fcc25a45bf424ba5658f682c3f9512aaa889",
+      "bytes": 151
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/reference-patterns-browser-text-audit.json",
+      "target": "research/geology/review-evidence/reference-patterns-browser-text-audit.json",
+      "sha256": "3fba9188e685ac0b41c50acee6891e7e484957e0659b52c6944304bab080fb92",
+      "bytes": 280
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/reference-patterns-cli-browser-match.json",
+      "target": "research/geology/review-evidence/reference-patterns-cli-browser-match.json",
+      "sha256": "12b6786841467797161518119776aafbcc538c738b7e2d8e9ddd1d7576293b77",
+      "bytes": 188
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/sloped-browser-text-audit.json",
+      "target": "research/geology/review-evidence/sloped-browser-text-audit.json",
+      "sha256": "52d9fd7ee7d6e72cd4d0c3c5a34223629aaf1186b694382baccd5ba3949d1bf3",
+      "bytes": 119
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/sloped-final-acceptance.json",
+      "target": "research/geology/review-evidence/sloped-final-acceptance.json",
+      "sha256": "885d52fd009d3b2631579bb11d8bae99359252c665c3e0195410ce1e7e0072a8",
+      "bytes": 823
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-input.json",
+      "target": "research/geology/review-evidence/v2-acceptance-input.json",
+      "sha256": "59a1b21d359f78f3b4cbab6bc8190fae10804bfec6701a9f6ee0ba356576ccfc",
+      "bytes": 14509
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-render.json",
+      "target": "research/geology/review-evidence/v2-acceptance-render.json",
+      "sha256": "6eedba86df67a373ba99c31ab2633a8c41cc2aa2e082dacd8e3164f74beffa86",
+      "bytes": 29776,
+      "sourceSha256": "a696e9ac62b4c1668000446a0aefd0fb0363aaeb180cc35f8a447cace145f60d",
+      "transform": "Rewrote only local absolute render paths to archive-relative paths; JSON structure and render payloads preserved."
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-http-template-check.json",
+      "target": "research/geology/review-evidence/v2-http-template-check.json",
+      "sha256": "b18c9befba3e5f6dccbbdfc964cd8309583afb8c1ec32b39764675a23a388aeb",
+      "bytes": 1085
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-parent-hd-review.json",
+      "target": "research/geology/review-evidence/v2-parent-hd-review.json",
+      "sha256": "002b7a2130483e2af5b688ebf88f80aaeed13ac2480842c1aa7c373c26dd8664",
+      "bytes": 441
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/hd-vector-400-proof.png",
+      "target": "research/geology/review-evidence/figures/hd-vector-400-proof.png",
+      "sha256": "4858c48df98e0f8d1a158461a3af6a40f5f396e798044bf7f5e780e72fa77090",
+      "bytes": 55224
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/pc-generation-success.png",
+      "target": "research/geology/review-evidence/figures/pc-generation-success.png",
+      "sha256": "d65c8463e95e6b40c3091a787288e7649266d85893f69a317b941a424b839a6a",
+      "bytes": 58393
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/readability-browser-proof.png",
+      "target": "research/geology/review-evidence/figures/readability-browser-proof.png",
+      "sha256": "96c51573b4834052ec58cd9ea159219429293d70166390b1afccaeeeab05a394",
+      "bytes": 589347
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/readability-coal-proof.png",
+      "target": "research/geology/review-evidence/figures/readability-coal-proof.png",
+      "sha256": "2968df9d1eb34cd55d9be47749b07d7e8e660f73136400b97d8e0682d5041a46",
+      "bytes": 72044
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/reference-patterns-browser-proof.png",
+      "target": "research/geology/review-evidence/figures/reference-patterns-browser-proof.png",
+      "sha256": "572b18786700762bd4857563e9c92e14b1b3533089f4e742158cc434f2960b23",
+      "bytes": 61383
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/sloped-detail-browser-proof.png",
+      "target": "research/geology/review-evidence/figures/sloped-detail-browser-proof.png",
+      "sha256": "b8dab0da3aa2bab36e59aa23350c2aabc6a330750e04ea8f86075e0e797110de",
+      "bytes": 53830
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-blank-validation-proof.png",
+      "target": "research/geology/review-evidence/figures/v2-blank-validation-proof.png",
+      "sha256": "88f2108e4d7a0edcbad6a0e6ff1641fcf57dc80e5864c49c8cbf85d2b783051b",
+      "bytes": 126571
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-drill-alt-upload-proof.png",
+      "target": "research/geology/review-evidence/figures/v2-drill-alt-upload-proof.png",
+      "sha256": "f22bfffe0854a5f3e09cf68e744c4bc55b2f61d8499e915bbe7b397f74645391",
+      "bytes": 76374
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-drill-upload-full-proof.png",
+      "target": "research/geology/review-evidence/figures/v2-drill-upload-full-proof.png",
+      "sha256": "2086cdf920d6aeeea723b8e07612cf6d0195c7c363a8fb871df8b188bab028ac",
+      "bytes": 104973
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-section-upload-full-proof.png",
+      "target": "research/geology/review-evidence/figures/v2-section-upload-full-proof.png",
+      "sha256": "2c01374f2fea949ebc820f2edaf013ccbbbcae4640e994cf5562afa7a34cabdb",
+      "bytes": 119765
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-section-upload-proof.png",
+      "target": "research/geology/review-evidence/figures/v2-section-upload-proof.png",
+      "sha256": "c8786aad8c57c29137867cd7ca279f9a00f0e6fecab56a8f4664f76fea992e36",
+      "bytes": 24012
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/drill-alt/drill_alt-detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/drill-alt/drill_alt-detail.svg",
+      "sha256": "4d206152a568fe3ab35e59225feb15abaae1aaad42f4be5194905a0bc6834055",
+      "bytes": 12320
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/drill-alt/drill_alt-full.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/drill-alt/drill_alt-full.svg",
+      "sha256": "9ecb0a58e8b534089828e227b42a8371b887d32ed391310eddba6920dda75a15",
+      "bytes": 12327
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/drill-zk0003/drill_zk0003-detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003/drill_zk0003-detail.svg",
+      "sha256": "208c950925f0d72892ce67f96a434aeec8a9f945006b8204d55d8998b9385bce",
+      "bytes": 31451
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/drill-zk0003/drill_zk0003-full.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003/drill_zk0003-full.svg",
+      "sha256": "fb59096eb3df13720ef455655209adaad13c321789728938f75e48a6488ec699",
+      "bytes": 143476
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/appendix.html",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/appendix.html",
+      "sha256": "c741cd65e22a091c802c5543f584a765c9292a3def5f836ef5dd09a5a6676fcd",
+      "bytes": 4727
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/detail.svg",
+      "sha256": "7a391e53297305f4f23a305dad977b3307c777251743c707ddb8c8382969d4a0",
+      "bytes": 17765
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/drawing.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/drawing.svg",
+      "sha256": "fbbb900ba8c94403dd6cfdcb420d08872b030f7fcce91d5d64801cd2311f620e",
+      "bytes": 43932
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/layout-audit.json",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/layout-audit.json",
+      "sha256": "a744cae000e6619af388f4c5a8d3215f56032cb2e99b1bd5eed304a43df8e8d0",
+      "bytes": 9473
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/repeat/appendix.html",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/repeat/appendix.html",
+      "sha256": "c741cd65e22a091c802c5543f584a765c9292a3def5f836ef5dd09a5a6676fcd",
+      "bytes": 4727
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/repeat/detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/repeat/detail.svg",
+      "sha256": "7a391e53297305f4f23a305dad977b3307c777251743c707ddb8c8382969d4a0",
+      "bytes": 17765
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/repeat/drawing.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/repeat/drawing.svg",
+      "sha256": "fbbb900ba8c94403dd6cfdcb420d08872b030f7fcce91d5d64801cd2311f620e",
+      "bytes": 43932
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-alt/repeat/layout-audit.json",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-alt/repeat/layout-audit.json",
+      "sha256": "a744cae000e6619af388f4c5a8d3215f56032cb2e99b1bd5eed304a43df8e8d0",
+      "bytes": 9473
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/appendix.html",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/detail.svg",
+      "sha256": "8da26496d0b10cf565de423cc4307b49a4d67449f43a0a4ea44a4ce756c9d63a",
+      "bytes": 52428
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/drawing.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/drawing.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/layout-audit.json",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/layout-audit.json",
+      "sha256": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+      "bytes": 168241
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/repeat/appendix.html",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/repeat/appendix.html",
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37",
+      "bytes": 87194
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/repeat/detail.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/repeat/detail.svg",
+      "sha256": "8da26496d0b10cf565de423cc4307b49a4d67449f43a0a4ea44a4ce756c9d63a",
+      "bytes": 52428
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/repeat/drawing.svg",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/repeat/drawing.svg",
+      "sha256": "e3deabfb542463c766403a29fd84b2aeb9e574aedf9a6b30612243d01f2b1acc",
+      "bytes": 120574
+    },
+    {
+      "source": "源工作区/output/geology-generator-v1/logs/v2-acceptance-renders/section-pm01/repeat/layout-audit.json",
+      "target": "research/geology/review-evidence/v2-acceptance-renders/section-pm01/repeat/layout-audit.json",
+      "sha256": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+      "bytes": 168241
+    }
+  ],
+  "excluded": [
+    {
+      "path": "源工作区/output/geology-generator-v1/node_modules/",
+      "reason": "依赖安装目录；README 记录运行所需 Python 包，避免复制运行时环境。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/**/__pycache__/",
+      "reason": "Python 字节码，可从源码重建。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/.verification/",
+      "reason": "临时验证产物。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/**/.raster*/",
+      "reason": "重复的中间栅格视图。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/**/logs/*.log、*.pid、*.ndjson；logs/encoding-incident/；logs/v2-fixtures/",
+      "reason": "运行日志、进程号、临时检查导出和事故原始日志；挑选的结构化审查 JSON 与稳定证明图另归档。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/logs/launcher-reuse-check.json",
+      "reason": "仅记录本机运行服务复用状态，不属于业务几何或成果审查。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/**/uploads/",
+      "reason": "用户上传暂存副本；正式原始资料与模板已在源目录/项目根目录映射，不重复归档。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/outputs/**/profile*/",
+      "reason": "浏览器用户配置目录含缓存、登录状态和潜在凭据。"
+    },
+    {
+      "path": "源工作区/output/geology-research-vertical/read-deps/",
+      "reason": "第三方运行包；使用系统 pip 依赖，不随源码归档。"
+    },
+    {
+      "path": "源工作区/tools/Start-CodexProxyAware.ps1、Restart-CodexProxyAware.ps1、Watch-CodexProxyAware.ps1",
+      "reason": "Codex 系统代理诊断脚本，与地质功能无关。"
+    },
+    {
+      "path": "源工作区/output/codex-update-20261005",
+      "reason": "912 MB Codex 安装包，与地质项目无关。"
+    },
+    {
+      "path": "源工作区/.openai/",
+      "reason": "Codex 工具 runtime 与凭据。"
+    },
+    {
+      "path": "仓库根目录/地质资料/",
+      "reason": "原始资料已保留在仓库根目录，README 提供路径映射，不重复复制。"
+    },
+    {
+      "path": "源工作区/.codex-remote-attachments/",
+      "reason": "附件已由独立归档同步到 references/chat-attachments-20261008/，不重复复制。"
+    },
+    {
+      "path": "源工作区/output/geology-generator-v1/outputs/**/*.inspect.ndjson 与 verification.log",
+      "reason": "表格结构检查/验证运行日志，模板工作簿本身已完整保留。"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "drill-patterns-1.0",
+  "patterns": {
+    "short-dash-double-dot": {"label":"短横划与少量双点","width":74,"height":84,"svg":"<g fill=\"none\" stroke=\"#111\" stroke-width=\"0.75\"><path d=\"M2 3.5h7 M20 3.5h10 M38 3.5h8 M56 3.5h7 M10 10.5h7 M29 10.5h10 M47 10.5h8 M65 10.5h7 M2 17.5h7 M20 17.5h10 M38 17.5h8 M56 17.5h7 M10 24.5h7 M29 24.5h10 M47 24.5h8 M65 24.5h7 M2 31.5h7 M20 31.5h10 M38 31.5h8 M56 31.5h7 M10 38.5h7 M29 38.5h10 M47 38.5h8 M65 38.5h7 M2 45.5h7 M20 45.5h10 M38 45.5h8 M56 45.5h7 M10 52.5h7 M29 52.5h10 M47 52.5h8 M65 52.5h7 M2 59.5h7 M20 59.5h10 M38 59.5h8 M56 59.5h7 M10 66.5h7 M29 66.5h10 M47 66.5h8 M65 66.5h7 M2 73.5h7 M20 73.5h10 M38 73.5h8 M56 73.5h7 M10 80.5h7 M29 80.5h10 M47 80.5h8 M65 80.5h7\"/><path d=\"M0 0h74 M0 7h74 M0 14h74 M0 21h74 M0 28h74 M0 35h74 M0 42h74 M0 49h74 M0 56h74 M0 63h74 M0 70h74 M0 77h74 M0 84h74\" stroke-width=\"0.45\"/></g><g fill=\"#111\"><circle cx=\"28\" cy=\"73.5\" r=\"0.95\"/><circle cx=\"31\" cy=\"73.5\" r=\"0.95\"/><circle cx=\"54\" cy=\"80.5\" r=\"0.95\"/><circle cx=\"57\" cy=\"80.5\" r=\"0.95\"/></g>"},
+    "dot-rows-thin-lines": {"label":"规则点列与横细线","width":74,"height":21,"svg":"<g fill=\"none\" stroke=\"#111\" stroke-width=\"0.65\"><path d=\"M0 0h74 M0 7h74 M0 14h74 M0 21h74\"/></g><g fill=\"#111\"><circle cx=\"7\" cy=\"3.5\" r=\"0.9\"/><circle cx=\"23\" cy=\"3.5\" r=\"0.9\"/><circle cx=\"39\" cy=\"3.5\" r=\"0.9\"/><circle cx=\"55\" cy=\"3.5\" r=\"0.9\"/><circle cx=\"69\" cy=\"3.5\" r=\"0.9\"/><circle cx=\"15\" cy=\"10.5\" r=\"0.9\"/><circle cx=\"31\" cy=\"10.5\" r=\"0.9\"/><circle cx=\"47\" cy=\"10.5\" r=\"0.9\"/><circle cx=\"63\" cy=\"10.5\" r=\"0.9\"/><circle cx=\"7\" cy=\"17.5\" r=\"0.9\"/><circle cx=\"23\" cy=\"17.5\" r=\"0.9\"/><circle cx=\"39\" cy=\"17.5\" r=\"0.9\"/><circle cx=\"55\" cy=\"17.5\" r=\"0.9\"/><circle cx=\"69\" cy=\"17.5\" r=\"0.9\"/></g>"},
+    "point-dash-ellipse-bands": {"label":"点列、短横划与椭圆符号带","width":74,"height":48,"svg":"<g fill=\"none\" stroke=\"#111\" stroke-width=\"0.7\"><path d=\"M0 0h74 M0 16h74 M0 32h74 M0 48h74 M6 23h9 M27 23h13 M55 23h8 M7 40a4.5 1.8 0 1 0 9 0a4.5 1.8 0 1 0-9 0 M32 40a5.2 2 0 1 0 10.4 0a5.2 2 0 1 0-10.4 0 M59 40a4 1.7 0 1 0 8 0a4 1.7 0 1 0-8 0\"/></g><g fill=\"#111\"><circle cx=\"8\" cy=\"5\" r=\"0.9\"/><circle cx=\"25\" cy=\"5\" r=\"0.9\"/><circle cx=\"43\" cy=\"5\" r=\"0.9\"/><circle cx=\"62\" cy=\"5\" r=\"0.9\"/><circle cx=\"17\" cy=\"11\" r=\"0.9\"/><circle cx=\"35\" cy=\"11\" r=\"0.9\"/><circle cx=\"54\" cy=\"11\" r=\"0.9\"/><circle cx=\"8\" cy=\"27\" r=\"0.9\"/><circle cx=\"21\" cy=\"27\" r=\"0.9\"/><circle cx=\"47\" cy=\"27\" r=\"0.9\"/><circle cx=\"68\" cy=\"27\" r=\"0.9\"/></g>"}
+  },
+  "materials": {
+    "泥岩夹泥质粉砂岩":"D001",
+    "泥岩、泥质粉砂岩。":"D002",
+    "泥岩、泥质粉砂岩":"D002",
+    "砂岩夹粉砂岩":"D003"
+  },
+  "codes": {"D001":"short-dash-double-dot","D002":"dot-rows-thin-lines","D003":"point-dash-ellipse-bands"}
+}

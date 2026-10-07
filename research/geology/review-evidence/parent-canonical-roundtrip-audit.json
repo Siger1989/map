@@ -1,0 +1,13 @@
+{
+  "pass": true,
+  "node_coordinates_exactly_equal": true,
+  "records_materials_attitudes_samples_equal": true,
+  "legacy_issue_count": 80,
+  "canonical_issue_count": 80,
+  "canonical_source": {
+    "filename": "PM01规范输入.xlsx",
+    "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b",
+    "adapter": "canonical_xlsx_v1",
+    "sheet": "测段"
+  }
+}

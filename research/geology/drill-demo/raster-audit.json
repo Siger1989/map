@@ -1,0 +1,44 @@
+[
+  {
+    "svg": "pattern-proof.svg",
+    "png": "pattern-proof.png",
+    "css_width_px": 900,
+    "css_height_px": 620,
+    "requested_scale": 2,
+    "scale": 2,
+    "png_width_px": 1800,
+    "png_height_px": 1240,
+    "pixel_limit": 64000000,
+    "dimension_limit": 12000,
+    "scale_reduced_for_limits": false,
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "svg": "ZK0003-完整示图.svg",
+    "png": "ZK0003-完整示图-高清.png",
+    "css_width_px": 2680,
+    "css_height_px": 3781,
+    "requested_scale": 2,
+    "scale": 2,
+    "png_width_px": 5360,
+    "png_height_px": 7562,
+    "pixel_limit": 64000000,
+    "dimension_limit": 12000,
+    "scale_reduced_for_limits": false,
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  },
+  {
+    "svg": "ZK0003-0至45米详图.svg",
+    "png": "ZK0003-0至45米详图-高清.png",
+    "css_width_px": 2680,
+    "css_height_px": 1460,
+    "requested_scale": 3,
+    "scale": 3,
+    "png_width_px": 8040,
+    "png_height_px": 4380,
+    "pixel_limit": 64000000,
+    "dimension_limit": 12000,
+    "scale_reduced_for_limits": false,
+    "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+  }
+]

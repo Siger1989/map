@@ -1,0 +1,7610 @@
+{
+  "main": {
+    "hole_id": "ZK0003",
+    "endpoint_m": 382.79,
+    "depth_basis": "原始沿孔深",
+    "scale_units_per_meter": 9.0,
+    "minimum_depth_height_units": 700.0,
+    "view_depth_m": [
+      0.0,
+      382.79
+    ],
+    "viewBox": [
+      0.0,
+      0.0,
+      2484.0,
+      6266.3
+    ],
+    "counts": {
+      "layers": 23,
+      "turns": 131,
+      "samples": 97
+    },
+    "structure_count": 1,
+    "sample_lane_count": 1,
+    "sample_lanes": {
+      "H1": 0,
+      "H2": 0,
+      "H3": 0,
+      "H4": 0,
+      "H5": 0,
+      "H6": 0,
+      "H7": 0,
+      "H8": 0,
+      "H9": 0,
+      "H10": 0,
+      "H11": 0,
+      "H12": 0,
+      "H13": 0,
+      "H14": 0,
+      "H15": 0,
+      "H16": 0,
+      "H17": 0,
+      "H18": 0,
+      "H19": 0,
+      "H20": 0,
+      "H21": 0,
+      "H22": 0,
+      "H23": 0,
+      "H24": 0,
+      "H25": 0,
+      "H26": 0,
+      "H27": 0,
+      "H28": 0,
+      "H29": 0,
+      "H30": 0,
+      "H31": 0,
+      "H32": 0,
+      "H33": 0,
+      "H34": 0,
+      "H35": 0,
+      "H36": 0,
+      "H37": 0,
+      "H38": 0,
+      "H39": 0,
+      "H40": 0,
+      "H41": 0,
+      "H42": 0,
+      "H43": 0,
+      "H44": 0,
+      "H97": 0,
+      "H45": 0,
+      "H46": 0,
+      "H47": 0,
+      "H48": 0,
+      "H49": 0,
+      "H50": 0,
+      "H51": 0,
+      "H52": 0,
+      "H53": 0,
+      "H54": 0,
+      "H55": 0,
+      "H56": 0,
+      "H57": 0,
+      "H58": 0,
+      "H59": 0,
+      "H60": 0,
+      "H61": 0,
+      "H62": 0,
+      "H63": 0,
+      "H64": 0,
+      "H65": 0,
+      "H66": 0,
+      "H67": 0,
+      "H68": 0,
+      "H69": 0,
+      "H70": 0,
+      "H71": 0,
+      "H72": 0,
+      "H73": 0,
+      "H74": 0,
+      "H75": 0,
+      "H76": 0,
+      "H77": 0,
+      "H78": 0,
+      "H79": 0,
+      "H80": 0,
+      "H81": 0,
+      "H82": 0,
+      "H83": 0,
+      "H84": 0,
+      "H85": 0,
+      "H86": 0,
+      "H87": 0,
+      "H88": 0,
+      "H89": 0,
+      "H90": 0,
+      "H91": 0,
+      "H92": 0,
+      "H93": 0,
+      "H94": 0,
+      "H95": 0,
+      "H96": 0
+    },
+    "layers": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 36.88,
+        "top_y": 126.0,
+        "bottom_y": 457.92,
+        "plotted_top_m": 0.0,
+        "plotted_bottom_m": 36.88,
+        "plotted_top_y": 126.0,
+        "plotted_bottom_y": 457.92,
+        "source": {
+          "sheet": "分层",
+          "row": 2,
+          "cells": {
+            "层号": "分层!A2",
+            "顶深_m": "分层!B2",
+            "底深_m": "分层!C2",
+            "岩性名称": "分层!D2",
+            "岩性描述": "分层!E2",
+            "岩心长_m": "分层!F2",
+            "花纹代码": "分层!G2"
+          }
+        },
+        "label_anchor_y": 291.96000000000004,
+        "label_y": 291.96000000000004,
+        "description_anchor_y": 291.96000000000004,
+        "description_label_y": 291.96000000000004,
+        "description_lines": [
+          "泥岩夹泥质粉砂岩；泥岩夹泥质粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 36.88 m　岩心长 32.95 m　采取率 89.34%　花纹 D001"
+        ],
+        "raw_description": "泥岩夹泥质粉砂岩",
+        "pattern_code": "D001"
+      },
+      {
+        "id": "2",
+        "top_m": 36.88,
+        "bottom_m": 38.85,
+        "top_y": 457.92,
+        "bottom_y": 475.65000000000003,
+        "plotted_top_m": 36.88,
+        "plotted_bottom_m": 38.85,
+        "plotted_top_y": 457.92,
+        "plotted_bottom_y": 475.65000000000003,
+        "source": {
+          "sheet": "分层",
+          "row": 3,
+          "cells": {
+            "层号": "分层!A3",
+            "顶深_m": "分层!B3",
+            "底深_m": "分层!C3",
+            "岩性名称": "分层!D3",
+            "岩性描述": "分层!E3",
+            "岩心长_m": "分层!F3",
+            "花纹代码": "分层!G3"
+          }
+        },
+        "label_anchor_y": 466.785,
+        "label_y": 466.785,
+        "description_anchor_y": 466.785,
+        "description_label_y": 466.785,
+        "description_lines": [
+          "岩性名称未提供；蚀变泥岩"
+        ],
+        "description_param_lines": [
+          "段长 1.97 m　岩心长 1.80 m　采取率 91.37%　花纹 待配置"
+        ],
+        "raw_description": "蚀变泥岩",
+        "pattern_code": null
+      },
+      {
+        "id": "3",
+        "top_m": 38.85,
+        "bottom_m": 65.4,
+        "top_y": 475.65000000000003,
+        "bottom_y": 714.6,
+        "plotted_top_m": 38.85,
+        "plotted_bottom_m": 65.4,
+        "plotted_top_y": 475.65000000000003,
+        "plotted_bottom_y": 714.6,
+        "source": {
+          "sheet": "分层",
+          "row": 4,
+          "cells": {
+            "层号": "分层!A4",
+            "顶深_m": "分层!B4",
+            "底深_m": "分层!C4",
+            "岩性名称": "分层!D4",
+            "岩性描述": "分层!E4",
+            "岩心长_m": "分层!F4",
+            "花纹代码": "分层!G4"
+          }
+        },
+        "label_anchor_y": 595.125,
+        "label_y": 595.125,
+        "description_anchor_y": 595.125,
+        "description_label_y": 595.125,
+        "description_lines": [
+          "岩性名称未提供；硅化砂岩、泥岩、粉砂岩，裂隙表面褐铁矿化。岩石",
+          "内部发育石英脉，局部见星点状、团块状黄铁矿，"
+        ],
+        "description_param_lines": [
+          "段长 26.55 m　岩心长 24.72 m　采取率 93.11%　花纹 待配置"
+        ],
+        "raw_description": "硅化砂岩、泥岩、粉砂岩，裂隙表面褐铁矿化。岩石内部发育石英脉，局部见星点状、团块状黄铁矿，",
+        "pattern_code": null
+      },
+      {
+        "id": "4",
+        "top_m": 65.4,
+        "bottom_m": 75.92,
+        "top_y": 714.6,
+        "bottom_y": 809.28,
+        "plotted_top_m": 65.4,
+        "plotted_bottom_m": 75.92,
+        "plotted_top_y": 714.6,
+        "plotted_bottom_y": 809.28,
+        "source": {
+          "sheet": "分层",
+          "row": 5,
+          "cells": {
+            "层号": "分层!A5",
+            "顶深_m": "分层!B5",
+            "底深_m": "分层!C5",
+            "岩性名称": "分层!D5",
+            "岩性描述": "分层!E5",
+            "岩心长_m": "分层!F5",
+            "花纹代码": "分层!G5"
+          }
+        },
+        "label_anchor_y": 761.9399999999999,
+        "label_y": 761.9399999999999,
+        "description_anchor_y": 761.9399999999999,
+        "description_label_y": 761.9399999999999,
+        "description_lines": [
+          "泥岩、泥质粉砂岩。；泥岩、泥质粉砂岩。"
+        ],
+        "description_param_lines": [
+          "段长 10.52 m　岩心长 9.96 m　采取率 94.68%　花纹 D002"
+        ],
+        "raw_description": "泥岩、泥质粉砂岩。",
+        "pattern_code": "D002"
+      },
+      {
+        "id": "5",
+        "top_m": 75.92,
+        "bottom_m": 95.31,
+        "top_y": 809.28,
+        "bottom_y": 983.79,
+        "plotted_top_m": 75.92,
+        "plotted_bottom_m": 95.31,
+        "plotted_top_y": 809.28,
+        "plotted_bottom_y": 983.79,
+        "source": {
+          "sheet": "分层",
+          "row": 6,
+          "cells": {
+            "层号": "分层!A6",
+            "顶深_m": "分层!B6",
+            "底深_m": "分层!C6",
+            "岩性名称": "分层!D6",
+            "岩性描述": "分层!E6",
+            "岩心长_m": "分层!F6",
+            "花纹代码": "分层!G6"
+          }
+        },
+        "label_anchor_y": 896.5350000000001,
+        "label_y": 896.5350000000001,
+        "description_anchor_y": 896.5350000000001,
+        "description_label_y": 896.5350000000001,
+        "description_lines": [
+          "砂岩夹粉砂岩；砂岩夹粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 19.39 m　岩心长 18.65 m　采取率 96.18%　花纹 D003"
+        ],
+        "raw_description": "砂岩夹粉砂岩",
+        "pattern_code": "D003"
+      },
+      {
+        "id": "6",
+        "top_m": 95.31,
+        "bottom_m": 102.72,
+        "top_y": 983.79,
+        "bottom_y": 1050.48,
+        "plotted_top_m": 95.31,
+        "plotted_bottom_m": 102.72,
+        "plotted_top_y": 983.79,
+        "plotted_bottom_y": 1050.48,
+        "source": {
+          "sheet": "分层",
+          "row": 7,
+          "cells": {
+            "层号": "分层!A7",
+            "顶深_m": "分层!B7",
+            "底深_m": "分层!C7",
+            "岩性名称": "分层!D7",
+            "岩性描述": "分层!E7",
+            "岩心长_m": "分层!F7",
+            "花纹代码": "分层!G7"
+          }
+        },
+        "label_anchor_y": 1017.135,
+        "label_y": 1017.135,
+        "description_anchor_y": 1017.135,
+        "description_label_y": 1017.135,
+        "description_lines": [
+          "岩性名称未提供；砂岩、泥岩、粉砂岩、砾岩。"
+        ],
+        "description_param_lines": [
+          "段长 7.41 m　岩心长 7.26 m　采取率 97.98%　花纹 待配置"
+        ],
+        "raw_description": "砂岩、泥岩、粉砂岩、砾岩。",
+        "pattern_code": null
+      },
+      {
+        "id": "7",
+        "top_m": 102.72,
+        "bottom_m": 136.36,
+        "top_y": 1050.48,
+        "bottom_y": 1353.2400000000002,
+        "plotted_top_m": 102.72,
+        "plotted_bottom_m": 136.36,
+        "plotted_top_y": 1050.48,
+        "plotted_bottom_y": 1353.2400000000002,
+        "source": {
+          "sheet": "分层",
+          "row": 8,
+          "cells": {
+            "层号": "分层!A8",
+            "顶深_m": "分层!B8",
+            "底深_m": "分层!C8",
+            "岩性名称": "分层!D8",
+            "岩性描述": "分层!E8",
+            "岩心长_m": "分层!F8",
+            "花纹代码": "分层!G8"
+          }
+        },
+        "label_anchor_y": 1201.8600000000001,
+        "label_y": 1201.8600000000001,
+        "description_anchor_y": 1201.8600000000001,
+        "description_label_y": 1201.8600000000001,
+        "description_lines": [
+          "岩性名称未提供；紫红、灰白色泥岩、泥质粉砂岩，局部夹砂岩。"
+        ],
+        "description_param_lines": [
+          "段长 33.64 m　岩心长 32.50 m　采取率 96.61%　花纹 待配置"
+        ],
+        "raw_description": "紫红、灰白色泥岩、泥质粉砂岩，局部夹砂岩。",
+        "pattern_code": null
+      },
+      {
+        "id": "8",
+        "top_m": 136.36,
+        "bottom_m": 146.21,
+        "top_y": 1353.2400000000002,
+        "bottom_y": 1441.89,
+        "plotted_top_m": 136.36,
+        "plotted_bottom_m": 146.21,
+        "plotted_top_y": 1353.2400000000002,
+        "plotted_bottom_y": 1441.89,
+        "source": {
+          "sheet": "分层",
+          "row": 9,
+          "cells": {
+            "层号": "分层!A9",
+            "顶深_m": "分层!B9",
+            "底深_m": "分层!C9",
+            "岩性名称": "分层!D9",
+            "岩性描述": "分层!E9",
+            "岩心长_m": "分层!F9",
+            "花纹代码": "分层!G9"
+          }
+        },
+        "label_anchor_y": 1397.5650000000003,
+        "label_y": 1397.5650000000003,
+        "description_anchor_y": 1397.5650000000003,
+        "description_label_y": 1397.5650000000003,
+        "description_lines": [
+          "岩性名称未提供；砂岩、粉砂岩、泥岩、砾岩，整体绿泥石化。"
+        ],
+        "description_param_lines": [
+          "段长 9.85 m　岩心长 9.59 m　采取率 97.36%　花纹 待配置"
+        ],
+        "raw_description": "砂岩、粉砂岩、泥岩、砾岩，整体绿泥石化。",
+        "pattern_code": null
+      },
+      {
+        "id": "9",
+        "top_m": 146.21,
+        "bottom_m": 155.62,
+        "top_y": 1441.89,
+        "bottom_y": 1526.58,
+        "plotted_top_m": 146.21,
+        "plotted_bottom_m": 155.62,
+        "plotted_top_y": 1441.89,
+        "plotted_bottom_y": 1526.58,
+        "source": {
+          "sheet": "分层",
+          "row": 10,
+          "cells": {
+            "层号": "分层!A10",
+            "顶深_m": "分层!B10",
+            "底深_m": "分层!C10",
+            "岩性名称": "分层!D10",
+            "岩性描述": "分层!E10",
+            "岩心长_m": "分层!F10",
+            "花纹代码": "分层!G10"
+          }
+        },
+        "label_anchor_y": 1484.2350000000001,
+        "label_y": 1484.2350000000001,
+        "description_anchor_y": 1484.2350000000001,
+        "description_label_y": 1484.2350000000001,
+        "description_lines": [
+          "岩性名称未提供；含石英脉"
+        ],
+        "description_param_lines": [
+          "段长 9.41 m　岩心长 9.09 m　采取率 96.60%　花纹 待配置"
+        ],
+        "raw_description": "含石英脉",
+        "pattern_code": null
+      },
+      {
+        "id": "10",
+        "top_m": 155.62,
+        "bottom_m": 169.07,
+        "top_y": 1526.58,
+        "bottom_y": 1647.6299999999999,
+        "plotted_top_m": 155.62,
+        "plotted_bottom_m": 169.07,
+        "plotted_top_y": 1526.58,
+        "plotted_bottom_y": 1647.6299999999999,
+        "source": {
+          "sheet": "分层",
+          "row": 11,
+          "cells": {
+            "层号": "分层!A11",
+            "顶深_m": "分层!B11",
+            "底深_m": "分层!C11",
+            "岩性名称": "分层!D11",
+            "岩性描述": "分层!E11",
+            "岩心长_m": "分层!F11",
+            "花纹代码": "分层!G11"
+          }
+        },
+        "label_anchor_y": 1587.105,
+        "label_y": 1587.105,
+        "description_anchor_y": 1587.105,
+        "description_label_y": 1587.105,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化砂岩粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 13.45 m　岩心长 12.82 m　采取率 95.32%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化砂岩粉砂岩",
+        "pattern_code": null
+      },
+      {
+        "id": "11",
+        "top_m": 169.07,
+        "bottom_m": 174.6,
+        "top_y": 1647.6299999999999,
+        "bottom_y": 1697.3999999999999,
+        "plotted_top_m": 169.07,
+        "plotted_bottom_m": 174.6,
+        "plotted_top_y": 1647.6299999999999,
+        "plotted_bottom_y": 1697.3999999999999,
+        "source": {
+          "sheet": "分层",
+          "row": 12,
+          "cells": {
+            "层号": "分层!A12",
+            "顶深_m": "分层!B12",
+            "底深_m": "分层!C12",
+            "岩性名称": "分层!D12",
+            "岩性描述": "分层!E12",
+            "岩心长_m": "分层!F12",
+            "花纹代码": "分层!G12"
+          }
+        },
+        "label_anchor_y": 1672.5149999999999,
+        "label_y": 1672.5149999999999,
+        "description_anchor_y": 1672.5149999999999,
+        "description_label_y": 1672.5149999999999,
+        "description_lines": [
+          "岩性名称未提供；/"
+        ],
+        "description_param_lines": [
+          "段长 5.53 m　岩心长 5.31 m　采取率 96.02%　花纹 待配置"
+        ],
+        "raw_description": "/",
+        "pattern_code": null
+      },
+      {
+        "id": "12",
+        "top_m": 174.6,
+        "bottom_m": 196.47,
+        "top_y": 1697.3999999999999,
+        "bottom_y": 1894.23,
+        "plotted_top_m": 174.6,
+        "plotted_bottom_m": 196.47,
+        "plotted_top_y": 1697.3999999999999,
+        "plotted_bottom_y": 1894.23,
+        "source": {
+          "sheet": "分层",
+          "row": 13,
+          "cells": {
+            "层号": "分层!A13",
+            "顶深_m": "分层!B13",
+            "底深_m": "分层!C13",
+            "岩性名称": "分层!D13",
+            "岩性描述": "分层!E13",
+            "岩心长_m": "分层!F13",
+            "花纹代码": "分层!G13"
+          }
+        },
+        "label_anchor_y": 1795.815,
+        "label_y": 1795.815,
+        "description_anchor_y": 1795.815,
+        "description_label_y": 1795.815,
+        "description_lines": [
+          "岩性名称未提供；/"
+        ],
+        "description_param_lines": [
+          "段长 21.87 m　岩心长 21.15 m　采取率 96.71%　花纹 待配置"
+        ],
+        "raw_description": "/",
+        "pattern_code": null
+      },
+      {
+        "id": "13",
+        "top_m": 196.47,
+        "bottom_m": 200.39,
+        "top_y": 1894.23,
+        "bottom_y": 1929.5099999999998,
+        "plotted_top_m": 196.47,
+        "plotted_bottom_m": 200.39,
+        "plotted_top_y": 1894.23,
+        "plotted_bottom_y": 1929.5099999999998,
+        "source": {
+          "sheet": "分层",
+          "row": 14,
+          "cells": {
+            "层号": "分层!A14",
+            "顶深_m": "分层!B14",
+            "底深_m": "分层!C14",
+            "岩性名称": "分层!D14",
+            "岩性描述": "分层!E14",
+            "岩心长_m": "分层!F14",
+            "花纹代码": "分层!G14"
+          }
+        },
+        "label_anchor_y": 1911.8700000000001,
+        "label_y": 1911.8700000000001,
+        "description_anchor_y": 1911.8700000000001,
+        "description_label_y": 1911.8700000000001,
+        "description_lines": [
+          "岩性名称未提供；含石英脉"
+        ],
+        "description_param_lines": [
+          "段长 3.92 m　岩心长 3.77 m　采取率 96.17%　花纹 待配置"
+        ],
+        "raw_description": "含石英脉",
+        "pattern_code": null
+      },
+      {
+        "id": "14",
+        "top_m": 200.39,
+        "bottom_m": 218.55,
+        "top_y": 1929.5099999999998,
+        "bottom_y": 2092.95,
+        "plotted_top_m": 200.39,
+        "plotted_bottom_m": 218.55,
+        "plotted_top_y": 1929.5099999999998,
+        "plotted_bottom_y": 2092.95,
+        "source": {
+          "sheet": "分层",
+          "row": 15,
+          "cells": {
+            "层号": "分层!A15",
+            "顶深_m": "分层!B15",
+            "底深_m": "分层!C15",
+            "岩性名称": "分层!D15",
+            "岩性描述": "分层!E15",
+            "岩心长_m": "分层!F15",
+            "花纹代码": "分层!G15"
+          }
+        },
+        "label_anchor_y": 2011.23,
+        "label_y": 2011.23,
+        "description_anchor_y": 2011.23,
+        "description_label_y": 2011.23,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 18.16 m　岩心长 17.39 m　采取率 95.76%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化粉砂岩",
+        "pattern_code": null
+      },
+      {
+        "id": "15",
+        "top_m": 218.55,
+        "bottom_m": 221.57,
+        "top_y": 2092.95,
+        "bottom_y": 2120.13,
+        "plotted_top_m": 218.55,
+        "plotted_bottom_m": 221.57,
+        "plotted_top_y": 2092.95,
+        "plotted_bottom_y": 2120.13,
+        "source": {
+          "sheet": "分层",
+          "row": 16,
+          "cells": {
+            "层号": "分层!A16",
+            "顶深_m": "分层!B16",
+            "底深_m": "分层!C16",
+            "岩性名称": "分层!D16",
+            "岩性描述": "分层!E16",
+            "岩心长_m": "分层!F16",
+            "花纹代码": "分层!G16"
+          }
+        },
+        "label_anchor_y": 2106.54,
+        "label_y": 2106.54,
+        "description_anchor_y": 2106.54,
+        "description_label_y": 2106.54,
+        "description_lines": [
+          "岩性名称未提供；棕红、灰绿色砾岩、角砾岩。含石英脉"
+        ],
+        "description_param_lines": [
+          "段长 3.02 m　岩心长 2.83 m　采取率 93.71%　花纹 待配置"
+        ],
+        "raw_description": "棕红、灰绿色砾岩、角砾岩。含石英脉",
+        "pattern_code": null
+      },
+      {
+        "id": "16",
+        "top_m": 221.57,
+        "bottom_m": 268.27,
+        "top_y": 2120.13,
+        "bottom_y": 2540.43,
+        "plotted_top_m": 221.57,
+        "plotted_bottom_m": 268.27,
+        "plotted_top_y": 2120.13,
+        "plotted_bottom_y": 2540.43,
+        "source": {
+          "sheet": "分层",
+          "row": 17,
+          "cells": {
+            "层号": "分层!A17",
+            "顶深_m": "分层!B17",
+            "底深_m": "分层!C17",
+            "岩性名称": "分层!D17",
+            "岩性描述": "分层!E17",
+            "岩心长_m": "分层!F17",
+            "花纹代码": "分层!G17"
+          }
+        },
+        "label_anchor_y": 2330.2799999999997,
+        "label_y": 2330.2799999999997,
+        "description_anchor_y": 2330.2799999999997,
+        "description_label_y": 2330.2799999999997,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化粉砂岩、砂岩"
+        ],
+        "description_param_lines": [
+          "段长 46.70 m　岩心长 44.00 m　采取率 94.22%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化粉砂岩、砂岩",
+        "pattern_code": null
+      },
+      {
+        "id": "17",
+        "top_m": 268.27,
+        "bottom_m": 272.64,
+        "top_y": 2540.43,
+        "bottom_y": 2579.7599999999998,
+        "plotted_top_m": 268.27,
+        "plotted_bottom_m": 272.64,
+        "plotted_top_y": 2540.43,
+        "plotted_bottom_y": 2579.7599999999998,
+        "source": {
+          "sheet": "分层",
+          "row": 18,
+          "cells": {
+            "层号": "分层!A18",
+            "顶深_m": "分层!B18",
+            "底深_m": "分层!C18",
+            "岩性名称": "分层!D18",
+            "岩性描述": "分层!E18",
+            "岩心长_m": "分层!F18",
+            "花纹代码": "分层!G18"
+          }
+        },
+        "label_anchor_y": 2560.095,
+        "label_y": 2560.095,
+        "description_anchor_y": 2560.095,
+        "description_label_y": 2560.095,
+        "description_lines": [
+          "岩性名称未提供；砾岩、粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 4.37 m　岩心长 4.11 m　采取率 94.05%　花纹 待配置"
+        ],
+        "raw_description": "砾岩、粉砂岩",
+        "pattern_code": null
+      },
+      {
+        "id": "18",
+        "top_m": 272.64,
+        "bottom_m": 301.68,
+        "top_y": 2579.7599999999998,
+        "bottom_y": 2841.12,
+        "plotted_top_m": 272.64,
+        "plotted_bottom_m": 301.68,
+        "plotted_top_y": 2579.7599999999998,
+        "plotted_bottom_y": 2841.12,
+        "source": {
+          "sheet": "分层",
+          "row": 19,
+          "cells": {
+            "层号": "分层!A19",
+            "顶深_m": "分层!B19",
+            "底深_m": "分层!C19",
+            "岩性名称": "分层!D19",
+            "岩性描述": "分层!E19",
+            "岩心长_m": "分层!F19",
+            "花纹代码": "分层!G19"
+          }
+        },
+        "label_anchor_y": 2710.4399999999996,
+        "label_y": 2710.4399999999996,
+        "description_anchor_y": 2710.4399999999996,
+        "description_label_y": 2710.4399999999996,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化泥岩、粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 29.04 m　岩心长 26.98 m　采取率 92.91%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化泥岩、粉砂岩",
+        "pattern_code": null
+      },
+      {
+        "id": "19",
+        "top_m": 301.68,
+        "bottom_m": 305.59,
+        "top_y": 2841.12,
+        "bottom_y": 2876.31,
+        "plotted_top_m": 301.68,
+        "plotted_bottom_m": 305.59,
+        "plotted_top_y": 2841.12,
+        "plotted_bottom_y": 2876.31,
+        "source": {
+          "sheet": "分层",
+          "row": 20,
+          "cells": {
+            "层号": "分层!A20",
+            "顶深_m": "分层!B20",
+            "底深_m": "分层!C20",
+            "岩性名称": "分层!D20",
+            "岩性描述": "分层!E20",
+            "岩心长_m": "分层!F20",
+            "花纹代码": "分层!G20"
+          }
+        },
+        "label_anchor_y": 2858.715,
+        "label_y": 2858.715,
+        "description_anchor_y": 2858.715,
+        "description_label_y": 2858.715,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化、绿帘石化、黄铁矿化"
+        ],
+        "description_param_lines": [
+          "段长 3.91 m　岩心长 3.60 m　采取率 92.07%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化、绿帘石化、黄铁矿化",
+        "pattern_code": null
+      },
+      {
+        "id": "20",
+        "top_m": 305.59,
+        "bottom_m": 351.08,
+        "top_y": 2876.31,
+        "bottom_y": 3285.72,
+        "plotted_top_m": 305.59,
+        "plotted_bottom_m": 351.08,
+        "plotted_top_y": 2876.31,
+        "plotted_bottom_y": 3285.72,
+        "source": {
+          "sheet": "分层",
+          "row": 21,
+          "cells": {
+            "层号": "分层!A21",
+            "顶深_m": "分层!B21",
+            "底深_m": "分层!C21",
+            "岩性名称": "分层!D21",
+            "岩性描述": "分层!E21",
+            "岩心长_m": "分层!F21",
+            "花纹代码": "分层!G21"
+          }
+        },
+        "label_anchor_y": 3081.015,
+        "label_y": 3081.015,
+        "description_anchor_y": 3081.015,
+        "description_label_y": 3081.015,
+        "description_lines": [
+          "岩性名称未提供；/"
+        ],
+        "description_param_lines": [
+          "段长 45.49 m　岩心长 43.01 m　采取率 94.55%　花纹 待配置"
+        ],
+        "raw_description": "/",
+        "pattern_code": null
+      },
+      {
+        "id": "21",
+        "top_m": 351.08,
+        "bottom_m": 358.1,
+        "top_y": 3285.72,
+        "bottom_y": 3348.9,
+        "plotted_top_m": 351.08,
+        "plotted_bottom_m": 358.1,
+        "plotted_top_y": 3285.72,
+        "plotted_bottom_y": 3348.9,
+        "source": {
+          "sheet": "分层",
+          "row": 22,
+          "cells": {
+            "层号": "分层!A22",
+            "顶深_m": "分层!B22",
+            "底深_m": "分层!C22",
+            "岩性名称": "分层!D22",
+            "岩性描述": "分层!E22",
+            "岩心长_m": "分层!F22",
+            "花纹代码": "分层!G22"
+          }
+        },
+        "label_anchor_y": 3317.3100000000004,
+        "label_y": 3317.3100000000004,
+        "description_anchor_y": 3317.3100000000004,
+        "description_label_y": 3317.3100000000004,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化粉砂岩泥岩"
+        ],
+        "description_param_lines": [
+          "段长 7.02 m　岩心长 6.74 m　采取率 96.01%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化粉砂岩泥岩",
+        "pattern_code": null
+      },
+      {
+        "id": "22",
+        "top_m": 358.1,
+        "bottom_m": 362.14,
+        "top_y": 3348.9,
+        "bottom_y": 3385.2599999999998,
+        "plotted_top_m": 358.1,
+        "plotted_bottom_m": 362.14,
+        "plotted_top_y": 3348.9,
+        "plotted_bottom_y": 3385.2599999999998,
+        "source": {
+          "sheet": "分层",
+          "row": 23,
+          "cells": {
+            "层号": "分层!A23",
+            "顶深_m": "分层!B23",
+            "底深_m": "分层!C23",
+            "岩性名称": "分层!D23",
+            "岩性描述": "分层!E23",
+            "岩心长_m": "分层!F23",
+            "花纹代码": "分层!G23"
+          }
+        },
+        "label_anchor_y": 3367.08,
+        "label_y": 3367.08,
+        "description_anchor_y": 3367.08,
+        "description_label_y": 3367.08,
+        "description_lines": [
+          "岩性名称未提供；黄铁矿化"
+        ],
+        "description_param_lines": [
+          "段长 4.04 m　岩心长 3.83 m　采取率 94.80%　花纹 待配置"
+        ],
+        "raw_description": "黄铁矿化",
+        "pattern_code": null
+      },
+      {
+        "id": "23",
+        "top_m": 362.14,
+        "bottom_m": 382.79,
+        "top_y": 3385.2599999999998,
+        "bottom_y": 3571.11,
+        "plotted_top_m": 362.14,
+        "plotted_bottom_m": 382.79,
+        "plotted_top_y": 3385.2599999999998,
+        "plotted_bottom_y": 3571.11,
+        "source": {
+          "sheet": "分层",
+          "row": 24,
+          "cells": {
+            "层号": "分层!A24",
+            "顶深_m": "分层!B24",
+            "底深_m": "分层!C24",
+            "岩性名称": "分层!D24",
+            "岩性描述": "分层!E24",
+            "岩心长_m": "分层!F24",
+            "花纹代码": "分层!G24"
+          }
+        },
+        "label_anchor_y": 3478.1850000000004,
+        "label_y": 3478.1850000000004,
+        "description_anchor_y": 3478.1850000000004,
+        "description_label_y": 3478.1850000000004,
+        "description_lines": [
+          "岩性名称未提供；绿泥石化粉砂岩泥岩？"
+        ],
+        "description_param_lines": [
+          "段长 20.65 m　岩心长 18.83 m　采取率 91.19%　花纹 待配置"
+        ],
+        "raw_description": "绿泥石化粉砂岩泥岩？",
+        "pattern_code": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "H1",
+        "top_m": 15.3,
+        "bottom_m": 17.1,
+        "top_y": 263.70000000000005,
+        "bottom_y": 279.9,
+        "plotted_top_m": 15.3,
+        "plotted_bottom_m": 17.1,
+        "plotted_top_y": 263.70000000000005,
+        "plotted_bottom_y": 279.9,
+        "source": {
+          "sheet": "样品",
+          "row": 2,
+          "cells": {
+            "样品编号": "样品!A2",
+            "顶深_m": "样品!B2",
+            "底深_m": "样品!C2",
+            "岩心长_m": "样品!D2",
+            "Au": "样品!E2",
+            "Pb": "样品!F2",
+            "Zn": "样品!G2"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 271.8,
+        "plotted_midpoint_y": 271.8,
+        "label_anchor_y": 271.8,
+        "label_y": 271.8,
+        "label_moved": false,
+        "analysis_y": 259.8
+      },
+      {
+        "id": "H2",
+        "top_m": 19.01,
+        "bottom_m": 20.02,
+        "top_y": 297.09000000000003,
+        "bottom_y": 306.18,
+        "plotted_top_m": 19.01,
+        "plotted_bottom_m": 20.02,
+        "plotted_top_y": 297.09000000000003,
+        "plotted_bottom_y": 306.18,
+        "source": {
+          "sheet": "样品",
+          "row": 3,
+          "cells": {
+            "样品编号": "样品!A3",
+            "顶深_m": "样品!B3",
+            "底深_m": "样品!C3",
+            "岩心长_m": "样品!D3",
+            "Au": "样品!E3",
+            "Pb": "样品!F3",
+            "Zn": "样品!G3"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 301.635,
+        "plotted_midpoint_y": 301.635,
+        "label_anchor_y": 301.635,
+        "label_y": 332.8,
+        "label_moved": true,
+        "analysis_y": 320.8
+      },
+      {
+        "id": "H3",
+        "top_m": 27.01,
+        "bottom_m": 28.11,
+        "top_y": 369.09000000000003,
+        "bottom_y": 378.99,
+        "plotted_top_m": 27.01,
+        "plotted_bottom_m": 28.11,
+        "plotted_top_y": 369.09000000000003,
+        "plotted_bottom_y": 378.99,
+        "source": {
+          "sheet": "样品",
+          "row": 4,
+          "cells": {
+            "样品编号": "样品!A4",
+            "顶深_m": "样品!B4",
+            "底深_m": "样品!C4",
+            "岩心长_m": "样品!D4",
+            "Au": "样品!E4",
+            "Pb": "样品!F4",
+            "Zn": "样品!G4"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 374.04,
+        "plotted_midpoint_y": 374.04,
+        "label_anchor_y": 374.04,
+        "label_y": 393.8,
+        "label_moved": true,
+        "analysis_y": 381.8
+      },
+      {
+        "id": "H4",
+        "top_m": 28.11,
+        "bottom_m": 29.16,
+        "top_y": 378.99,
+        "bottom_y": 388.44,
+        "plotted_top_m": 28.11,
+        "plotted_bottom_m": 29.16,
+        "plotted_top_y": 378.99,
+        "plotted_bottom_y": 388.44,
+        "source": {
+          "sheet": "样品",
+          "row": 5,
+          "cells": {
+            "样品编号": "样品!A5",
+            "顶深_m": "样品!B5",
+            "底深_m": "样品!C5",
+            "岩心长_m": "样品!D5",
+            "Au": "样品!E5",
+            "Pb": "样品!F5",
+            "Zn": "样品!G5"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 383.715,
+        "plotted_midpoint_y": 383.715,
+        "label_anchor_y": 383.715,
+        "label_y": 454.8,
+        "label_moved": true,
+        "analysis_y": 442.8
+      },
+      {
+        "id": "H5",
+        "top_m": 29.16,
+        "bottom_m": 30.07,
+        "top_y": 388.44,
+        "bottom_y": 396.63,
+        "plotted_top_m": 29.16,
+        "plotted_bottom_m": 30.07,
+        "plotted_top_y": 388.44,
+        "plotted_bottom_y": 396.63,
+        "source": {
+          "sheet": "样品",
+          "row": 6,
+          "cells": {
+            "样品编号": "样品!A6",
+            "顶深_m": "样品!B6",
+            "底深_m": "样品!C6",
+            "岩心长_m": "样品!D6",
+            "Au": "样品!E6",
+            "Pb": "样品!F6",
+            "Zn": "样品!G6"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 392.535,
+        "plotted_midpoint_y": 392.535,
+        "label_anchor_y": 392.535,
+        "label_y": 515.8,
+        "label_moved": true,
+        "analysis_y": 503.79999999999995
+      },
+      {
+        "id": "H6",
+        "top_m": 30.07,
+        "bottom_m": 31.15,
+        "top_y": 396.63,
+        "bottom_y": 406.34999999999997,
+        "plotted_top_m": 30.07,
+        "plotted_bottom_m": 31.15,
+        "plotted_top_y": 396.63,
+        "plotted_bottom_y": 406.34999999999997,
+        "source": {
+          "sheet": "样品",
+          "row": 7,
+          "cells": {
+            "样品编号": "样品!A7",
+            "顶深_m": "样品!B7",
+            "底深_m": "样品!C7",
+            "岩心长_m": "样品!D7",
+            "Au": "样品!E7",
+            "Pb": "样品!F7",
+            "Zn": "样品!G7"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 401.49,
+        "plotted_midpoint_y": 401.49,
+        "label_anchor_y": 401.49,
+        "label_y": 576.8,
+        "label_moved": true,
+        "analysis_y": 564.8
+      },
+      {
+        "id": "H7",
+        "top_m": 31.15,
+        "bottom_m": 32.15,
+        "top_y": 406.34999999999997,
+        "bottom_y": 415.34999999999997,
+        "plotted_top_m": 31.15,
+        "plotted_bottom_m": 32.15,
+        "plotted_top_y": 406.34999999999997,
+        "plotted_bottom_y": 415.34999999999997,
+        "source": {
+          "sheet": "样品",
+          "row": 8,
+          "cells": {
+            "样品编号": "样品!A8",
+            "顶深_m": "样品!B8",
+            "底深_m": "样品!C8",
+            "岩心长_m": "样品!D8",
+            "Au": "样品!E8",
+            "Pb": "样品!F8",
+            "Zn": "样品!G8"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 410.84999999999997,
+        "plotted_midpoint_y": 410.84999999999997,
+        "label_anchor_y": 410.84999999999997,
+        "label_y": 637.8,
+        "label_moved": true,
+        "analysis_y": 625.8
+      },
+      {
+        "id": "H8",
+        "top_m": 32.15,
+        "bottom_m": 33.04,
+        "top_y": 415.34999999999997,
+        "bottom_y": 423.36,
+        "plotted_top_m": 32.15,
+        "plotted_bottom_m": 33.04,
+        "plotted_top_y": 415.34999999999997,
+        "plotted_bottom_y": 423.36,
+        "source": {
+          "sheet": "样品",
+          "row": 9,
+          "cells": {
+            "样品编号": "样品!A9",
+            "顶深_m": "样品!B9",
+            "底深_m": "样品!C9",
+            "岩心长_m": "样品!D9",
+            "Au": "样品!E9",
+            "Pb": "样品!F9",
+            "Zn": "样品!G9"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 419.355,
+        "plotted_midpoint_y": 419.355,
+        "label_anchor_y": 419.355,
+        "label_y": 698.8,
+        "label_moved": true,
+        "analysis_y": 686.8
+      },
+      {
+        "id": "H9",
+        "top_m": 33.04,
+        "bottom_m": 33.95,
+        "top_y": 423.36,
+        "bottom_y": 431.55,
+        "plotted_top_m": 33.04,
+        "plotted_bottom_m": 33.95,
+        "plotted_top_y": 423.36,
+        "plotted_bottom_y": 431.55,
+        "source": {
+          "sheet": "样品",
+          "row": 10,
+          "cells": {
+            "样品编号": "样品!A10",
+            "顶深_m": "样品!B10",
+            "底深_m": "样品!C10",
+            "岩心长_m": "样品!D10",
+            "Au": "样品!E10",
+            "Pb": "样品!F10",
+            "Zn": "样品!G10"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 427.45500000000004,
+        "plotted_midpoint_y": 427.45500000000004,
+        "label_anchor_y": 427.45500000000004,
+        "label_y": 759.8,
+        "label_moved": true,
+        "analysis_y": 747.8
+      },
+      {
+        "id": "H10",
+        "top_m": 33.95,
+        "bottom_m": 34.95,
+        "top_y": 431.55,
+        "bottom_y": 440.55,
+        "plotted_top_m": 33.95,
+        "plotted_bottom_m": 34.95,
+        "plotted_top_y": 431.55,
+        "plotted_bottom_y": 440.55,
+        "source": {
+          "sheet": "样品",
+          "row": 11,
+          "cells": {
+            "样品编号": "样品!A11",
+            "顶深_m": "样品!B11",
+            "底深_m": "样品!C11",
+            "岩心长_m": "样品!D11",
+            "Au": "样品!E11",
+            "Pb": "样品!F11",
+            "Zn": "样品!G11"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 436.05,
+        "plotted_midpoint_y": 436.05,
+        "label_anchor_y": 436.05,
+        "label_y": 820.8,
+        "label_moved": true,
+        "analysis_y": 808.8
+      },
+      {
+        "id": "H11",
+        "top_m": 34.95,
+        "bottom_m": 35.79,
+        "top_y": 440.55,
+        "bottom_y": 448.11,
+        "plotted_top_m": 34.95,
+        "plotted_bottom_m": 35.79,
+        "plotted_top_y": 440.55,
+        "plotted_bottom_y": 448.11,
+        "source": {
+          "sheet": "样品",
+          "row": 12,
+          "cells": {
+            "样品编号": "样品!A12",
+            "顶深_m": "样品!B12",
+            "底深_m": "样品!C12",
+            "岩心长_m": "样品!D12",
+            "Au": "样品!E12",
+            "Pb": "样品!F12",
+            "Zn": "样品!G12"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 444.33000000000004,
+        "plotted_midpoint_y": 444.33000000000004,
+        "label_anchor_y": 444.33000000000004,
+        "label_y": 881.8,
+        "label_moved": true,
+        "analysis_y": 869.8
+      },
+      {
+        "id": "H12",
+        "top_m": 35.79,
+        "bottom_m": 36.88,
+        "top_y": 448.11,
+        "bottom_y": 457.92,
+        "plotted_top_m": 35.79,
+        "plotted_bottom_m": 36.88,
+        "plotted_top_y": 448.11,
+        "plotted_bottom_y": 457.92,
+        "source": {
+          "sheet": "样品",
+          "row": 13,
+          "cells": {
+            "样品编号": "样品!A13",
+            "顶深_m": "样品!B13",
+            "底深_m": "样品!C13",
+            "岩心长_m": "样品!D13",
+            "Au": "样品!E13",
+            "Pb": "样品!F13",
+            "Zn": "样品!G13"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 453.015,
+        "plotted_midpoint_y": 453.015,
+        "label_anchor_y": 453.015,
+        "label_y": 942.8,
+        "label_moved": true,
+        "analysis_y": 930.8
+      },
+      {
+        "id": "H13",
+        "top_m": 36.88,
+        "bottom_m": 37.97,
+        "top_y": 457.92,
+        "bottom_y": 467.73,
+        "plotted_top_m": 36.88,
+        "plotted_bottom_m": 37.97,
+        "plotted_top_y": 457.92,
+        "plotted_bottom_y": 467.73,
+        "source": {
+          "sheet": "样品",
+          "row": 14,
+          "cells": {
+            "样品编号": "样品!A14",
+            "顶深_m": "样品!B14",
+            "底深_m": "样品!C14",
+            "岩心长_m": "样品!D14",
+            "Au": "样品!E14",
+            "Pb": "样品!F14",
+            "Zn": "样品!G14"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 462.825,
+        "plotted_midpoint_y": 462.825,
+        "label_anchor_y": 462.825,
+        "label_y": 1003.8,
+        "label_moved": true,
+        "analysis_y": 991.8
+      },
+      {
+        "id": "H14",
+        "top_m": 37.97,
+        "bottom_m": 38.85,
+        "top_y": 467.73,
+        "bottom_y": 475.65000000000003,
+        "plotted_top_m": 37.97,
+        "plotted_bottom_m": 38.85,
+        "plotted_top_y": 467.73,
+        "plotted_bottom_y": 475.65000000000003,
+        "source": {
+          "sheet": "样品",
+          "row": 15,
+          "cells": {
+            "样品编号": "样品!A15",
+            "顶深_m": "样品!B15",
+            "底深_m": "样品!C15",
+            "岩心长_m": "样品!D15",
+            "Au": "样品!E15",
+            "Pb": "样品!F15",
+            "Zn": "样品!G15"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 471.68999999999994,
+        "plotted_midpoint_y": 471.68999999999994,
+        "label_anchor_y": 471.68999999999994,
+        "label_y": 1064.8,
+        "label_moved": true,
+        "analysis_y": 1052.8
+      },
+      {
+        "id": "H15",
+        "top_m": 38.85,
+        "bottom_m": 39.87,
+        "top_y": 475.65000000000003,
+        "bottom_y": 484.83,
+        "plotted_top_m": 38.85,
+        "plotted_bottom_m": 39.87,
+        "plotted_top_y": 475.65000000000003,
+        "plotted_bottom_y": 484.83,
+        "source": {
+          "sheet": "样品",
+          "row": 16,
+          "cells": {
+            "样品编号": "样品!A16",
+            "顶深_m": "样品!B16",
+            "底深_m": "样品!C16",
+            "岩心长_m": "样品!D16",
+            "Au": "样品!E16",
+            "Pb": "样品!F16",
+            "Zn": "样品!G16"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 480.24,
+        "plotted_midpoint_y": 480.24,
+        "label_anchor_y": 480.24,
+        "label_y": 1125.8,
+        "label_moved": true,
+        "analysis_y": 1113.8
+      },
+      {
+        "id": "H16",
+        "top_m": 39.87,
+        "bottom_m": 40.9,
+        "top_y": 484.83,
+        "bottom_y": 494.09999999999997,
+        "plotted_top_m": 39.87,
+        "plotted_bottom_m": 40.9,
+        "plotted_top_y": 484.83,
+        "plotted_bottom_y": 494.09999999999997,
+        "source": {
+          "sheet": "样品",
+          "row": 17,
+          "cells": {
+            "样品编号": "样品!A17",
+            "顶深_m": "样品!B17",
+            "底深_m": "样品!C17",
+            "岩心长_m": "样品!D17",
+            "Au": "样品!E17",
+            "Pb": "样品!F17",
+            "Zn": "样品!G17"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 489.465,
+        "plotted_midpoint_y": 489.465,
+        "label_anchor_y": 489.465,
+        "label_y": 1186.8,
+        "label_moved": true,
+        "analysis_y": 1174.8
+      },
+      {
+        "id": "H17",
+        "top_m": 40.9,
+        "bottom_m": 41.79,
+        "top_y": 494.09999999999997,
+        "bottom_y": 502.11,
+        "plotted_top_m": 40.9,
+        "plotted_bottom_m": 41.79,
+        "plotted_top_y": 494.09999999999997,
+        "plotted_bottom_y": 502.11,
+        "source": {
+          "sheet": "样品",
+          "row": 18,
+          "cells": {
+            "样品编号": "样品!A18",
+            "顶深_m": "样品!B18",
+            "底深_m": "样品!C18",
+            "岩心长_m": "样品!D18",
+            "Au": "样品!E18",
+            "Pb": "样品!F18",
+            "Zn": "样品!G18"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 498.105,
+        "plotted_midpoint_y": 498.105,
+        "label_anchor_y": 498.105,
+        "label_y": 1247.8,
+        "label_moved": true,
+        "analysis_y": 1235.8
+      },
+      {
+        "id": "H18",
+        "top_m": 41.79,
+        "bottom_m": 42.89,
+        "top_y": 502.11,
+        "bottom_y": 512.01,
+        "plotted_top_m": 41.79,
+        "plotted_bottom_m": 42.89,
+        "plotted_top_y": 502.11,
+        "plotted_bottom_y": 512.01,
+        "source": {
+          "sheet": "样品",
+          "row": 19,
+          "cells": {
+            "样品编号": "样品!A19",
+            "顶深_m": "样品!B19",
+            "底深_m": "样品!C19",
+            "岩心长_m": "样品!D19",
+            "Au": "样品!E19",
+            "Pb": "样品!F19",
+            "Zn": "样品!G19"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 507.06000000000006,
+        "plotted_midpoint_y": 507.06000000000006,
+        "label_anchor_y": 507.06000000000006,
+        "label_y": 1308.8,
+        "label_moved": true,
+        "analysis_y": 1296.8
+      },
+      {
+        "id": "H19",
+        "top_m": 42.89,
+        "bottom_m": 43.86,
+        "top_y": 512.01,
+        "bottom_y": 520.74,
+        "plotted_top_m": 42.89,
+        "plotted_bottom_m": 43.86,
+        "plotted_top_y": 512.01,
+        "plotted_bottom_y": 520.74,
+        "source": {
+          "sheet": "样品",
+          "row": 20,
+          "cells": {
+            "样品编号": "样品!A20",
+            "顶深_m": "样品!B20",
+            "底深_m": "样品!C20",
+            "岩心长_m": "样品!D20",
+            "Au": "样品!E20",
+            "Pb": "样品!F20",
+            "Zn": "样品!G20"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 516.375,
+        "plotted_midpoint_y": 516.375,
+        "label_anchor_y": 516.375,
+        "label_y": 1369.8,
+        "label_moved": true,
+        "analysis_y": 1357.8
+      },
+      {
+        "id": "H20",
+        "top_m": 43.86,
+        "bottom_m": 44.79,
+        "top_y": 520.74,
+        "bottom_y": 529.11,
+        "plotted_top_m": 43.86,
+        "plotted_bottom_m": 44.79,
+        "plotted_top_y": 520.74,
+        "plotted_bottom_y": 529.11,
+        "source": {
+          "sheet": "样品",
+          "row": 21,
+          "cells": {
+            "样品编号": "样品!A21",
+            "顶深_m": "样品!B21",
+            "底深_m": "样品!C21",
+            "岩心长_m": "样品!D21",
+            "Au": "样品!E21",
+            "Pb": "样品!F21",
+            "Zn": "样品!G21"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 524.925,
+        "plotted_midpoint_y": 524.925,
+        "label_anchor_y": 524.925,
+        "label_y": 1430.8,
+        "label_moved": true,
+        "analysis_y": 1418.8
+      },
+      {
+        "id": "H21",
+        "top_m": 44.79,
+        "bottom_m": 45.86,
+        "top_y": 529.11,
+        "bottom_y": 538.74,
+        "plotted_top_m": 44.79,
+        "plotted_bottom_m": 45.86,
+        "plotted_top_y": 529.11,
+        "plotted_bottom_y": 538.74,
+        "source": {
+          "sheet": "样品",
+          "row": 22,
+          "cells": {
+            "样品编号": "样品!A22",
+            "顶深_m": "样品!B22",
+            "底深_m": "样品!C22",
+            "岩心长_m": "样品!D22",
+            "Au": "样品!E22",
+            "Pb": "样品!F22",
+            "Zn": "样品!G22"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 533.925,
+        "plotted_midpoint_y": 533.925,
+        "label_anchor_y": 533.925,
+        "label_y": 1491.8,
+        "label_moved": true,
+        "analysis_y": 1479.8
+      },
+      {
+        "id": "H22",
+        "top_m": 45.86,
+        "bottom_m": 46.93,
+        "top_y": 538.74,
+        "bottom_y": 548.37,
+        "plotted_top_m": 45.86,
+        "plotted_bottom_m": 46.93,
+        "plotted_top_y": 538.74,
+        "plotted_bottom_y": 548.37,
+        "source": {
+          "sheet": "样品",
+          "row": 23,
+          "cells": {
+            "样品编号": "样品!A23",
+            "顶深_m": "样品!B23",
+            "底深_m": "样品!C23",
+            "岩心长_m": "样品!D23",
+            "Au": "样品!E23",
+            "Pb": "样品!F23",
+            "Zn": "样品!G23"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 543.555,
+        "plotted_midpoint_y": 543.555,
+        "label_anchor_y": 543.555,
+        "label_y": 1552.8,
+        "label_moved": true,
+        "analysis_y": 1540.8
+      },
+      {
+        "id": "H23",
+        "top_m": 46.93,
+        "bottom_m": 47.79,
+        "top_y": 548.37,
+        "bottom_y": 556.11,
+        "plotted_top_m": 46.93,
+        "plotted_bottom_m": 47.79,
+        "plotted_top_y": 548.37,
+        "plotted_bottom_y": 556.11,
+        "source": {
+          "sheet": "样品",
+          "row": 24,
+          "cells": {
+            "样品编号": "样品!A24",
+            "顶深_m": "样品!B24",
+            "底深_m": "样品!C24",
+            "岩心长_m": "样品!D24",
+            "Au": "样品!E24",
+            "Pb": "样品!F24",
+            "Zn": "样品!G24"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 552.24,
+        "plotted_midpoint_y": 552.24,
+        "label_anchor_y": 552.24,
+        "label_y": 1613.8,
+        "label_moved": true,
+        "analysis_y": 1601.8
+      },
+      {
+        "id": "H24",
+        "top_m": 47.79,
+        "bottom_m": 48.83,
+        "top_y": 556.11,
+        "bottom_y": 565.47,
+        "plotted_top_m": 47.79,
+        "plotted_bottom_m": 48.83,
+        "plotted_top_y": 556.11,
+        "plotted_bottom_y": 565.47,
+        "source": {
+          "sheet": "样品",
+          "row": 25,
+          "cells": {
+            "样品编号": "样品!A25",
+            "顶深_m": "样品!B25",
+            "底深_m": "样品!C25",
+            "岩心长_m": "样品!D25",
+            "Au": "样品!E25",
+            "Pb": "样品!F25",
+            "Zn": "样品!G25"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 560.79,
+        "plotted_midpoint_y": 560.79,
+        "label_anchor_y": 560.79,
+        "label_y": 1674.8,
+        "label_moved": true,
+        "analysis_y": 1662.8
+      },
+      {
+        "id": "H25",
+        "top_m": 48.83,
+        "bottom_m": 49.87,
+        "top_y": 565.47,
+        "bottom_y": 574.8299999999999,
+        "plotted_top_m": 48.83,
+        "plotted_bottom_m": 49.87,
+        "plotted_top_y": 565.47,
+        "plotted_bottom_y": 574.8299999999999,
+        "source": {
+          "sheet": "样品",
+          "row": 26,
+          "cells": {
+            "样品编号": "样品!A26",
+            "顶深_m": "样品!B26",
+            "底深_m": "样品!C26",
+            "岩心长_m": "样品!D26",
+            "Au": "样品!E26",
+            "Pb": "样品!F26",
+            "Zn": "样品!G26"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 570.15,
+        "plotted_midpoint_y": 570.15,
+        "label_anchor_y": 570.15,
+        "label_y": 1735.8,
+        "label_moved": true,
+        "analysis_y": 1723.8
+      },
+      {
+        "id": "H26",
+        "top_m": 49.87,
+        "bottom_m": 50.76,
+        "top_y": 574.8299999999999,
+        "bottom_y": 582.8399999999999,
+        "plotted_top_m": 49.87,
+        "plotted_bottom_m": 50.76,
+        "plotted_top_y": 574.8299999999999,
+        "plotted_bottom_y": 582.8399999999999,
+        "source": {
+          "sheet": "样品",
+          "row": 27,
+          "cells": {
+            "样品编号": "样品!A27",
+            "顶深_m": "样品!B27",
+            "底深_m": "样品!C27",
+            "岩心长_m": "样品!D27",
+            "Au": "样品!E27",
+            "Pb": "样品!F27",
+            "Zn": "样品!G27"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 578.835,
+        "plotted_midpoint_y": 578.835,
+        "label_anchor_y": 578.835,
+        "label_y": 1796.8,
+        "label_moved": true,
+        "analysis_y": 1784.8
+      },
+      {
+        "id": "H27",
+        "top_m": 50.76,
+        "bottom_m": 51.85,
+        "top_y": 582.8399999999999,
+        "bottom_y": 592.6500000000001,
+        "plotted_top_m": 50.76,
+        "plotted_bottom_m": 51.85,
+        "plotted_top_y": 582.8399999999999,
+        "plotted_bottom_y": 592.6500000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 28,
+          "cells": {
+            "样品编号": "样品!A28",
+            "顶深_m": "样品!B28",
+            "底深_m": "样品!C28",
+            "岩心长_m": "样品!D28",
+            "Au": "样品!E28",
+            "Pb": "样品!F28",
+            "Zn": "样品!G28"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 587.745,
+        "plotted_midpoint_y": 587.745,
+        "label_anchor_y": 587.745,
+        "label_y": 1857.8,
+        "label_moved": true,
+        "analysis_y": 1845.8
+      },
+      {
+        "id": "H28",
+        "top_m": 51.85,
+        "bottom_m": 52.8,
+        "top_y": 592.6500000000001,
+        "bottom_y": 601.2,
+        "plotted_top_m": 51.85,
+        "plotted_bottom_m": 52.8,
+        "plotted_top_y": 592.6500000000001,
+        "plotted_bottom_y": 601.2,
+        "source": {
+          "sheet": "样品",
+          "row": 29,
+          "cells": {
+            "样品编号": "样品!A29",
+            "顶深_m": "样品!B29",
+            "底深_m": "样品!C29",
+            "岩心长_m": "样品!D29",
+            "Au": "样品!E29",
+            "Pb": "样品!F29",
+            "Zn": "样品!G29"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 596.925,
+        "plotted_midpoint_y": 596.925,
+        "label_anchor_y": 596.925,
+        "label_y": 1918.8,
+        "label_moved": true,
+        "analysis_y": 1906.8
+      },
+      {
+        "id": "H29",
+        "top_m": 52.8,
+        "bottom_m": 53.79,
+        "top_y": 601.2,
+        "bottom_y": 610.11,
+        "plotted_top_m": 52.8,
+        "plotted_bottom_m": 53.79,
+        "plotted_top_y": 601.2,
+        "plotted_bottom_y": 610.11,
+        "source": {
+          "sheet": "样品",
+          "row": 30,
+          "cells": {
+            "样品编号": "样品!A30",
+            "顶深_m": "样品!B30",
+            "底深_m": "样品!C30",
+            "岩心长_m": "样品!D30",
+            "Au": "样品!E30",
+            "Pb": "样品!F30",
+            "Zn": "样品!G30"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 605.655,
+        "plotted_midpoint_y": 605.655,
+        "label_anchor_y": 605.655,
+        "label_y": 1979.8,
+        "label_moved": true,
+        "analysis_y": 1967.8
+      },
+      {
+        "id": "H30",
+        "top_m": 53.79,
+        "bottom_m": 54.84,
+        "top_y": 610.11,
+        "bottom_y": 619.5600000000001,
+        "plotted_top_m": 53.79,
+        "plotted_bottom_m": 54.84,
+        "plotted_top_y": 610.11,
+        "plotted_bottom_y": 619.5600000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 31,
+          "cells": {
+            "样品编号": "样品!A31",
+            "顶深_m": "样品!B31",
+            "底深_m": "样品!C31",
+            "岩心长_m": "样品!D31",
+            "Au": "样品!E31",
+            "Pb": "样品!F31",
+            "Zn": "样品!G31"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 614.835,
+        "plotted_midpoint_y": 614.835,
+        "label_anchor_y": 614.835,
+        "label_y": 2040.8,
+        "label_moved": true,
+        "analysis_y": 2028.8
+      },
+      {
+        "id": "H31",
+        "top_m": 54.84,
+        "bottom_m": 55.89,
+        "top_y": 619.5600000000001,
+        "bottom_y": 629.01,
+        "plotted_top_m": 54.84,
+        "plotted_bottom_m": 55.89,
+        "plotted_top_y": 619.5600000000001,
+        "plotted_bottom_y": 629.01,
+        "source": {
+          "sheet": "样品",
+          "row": 32,
+          "cells": {
+            "样品编号": "样品!A32",
+            "顶深_m": "样品!B32",
+            "底深_m": "样品!C32",
+            "岩心长_m": "样品!D32",
+            "Au": "样品!E32",
+            "Pb": "样品!F32",
+            "Zn": "样品!G32"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 624.2850000000001,
+        "plotted_midpoint_y": 624.2850000000001,
+        "label_anchor_y": 624.2850000000001,
+        "label_y": 2101.8,
+        "label_moved": true,
+        "analysis_y": 2089.8
+      },
+      {
+        "id": "H32",
+        "top_m": 55.89,
+        "bottom_m": 56.79,
+        "top_y": 629.01,
+        "bottom_y": 637.11,
+        "plotted_top_m": 55.89,
+        "plotted_bottom_m": 56.79,
+        "plotted_top_y": 629.01,
+        "plotted_bottom_y": 637.11,
+        "source": {
+          "sheet": "样品",
+          "row": 33,
+          "cells": {
+            "样品编号": "样品!A33",
+            "顶深_m": "样品!B33",
+            "底深_m": "样品!C33",
+            "岩心长_m": "样品!D33",
+            "Au": "样品!E33",
+            "Pb": "样品!F33",
+            "Zn": "样品!G33"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 633.0600000000001,
+        "plotted_midpoint_y": 633.0600000000001,
+        "label_anchor_y": 633.0600000000001,
+        "label_y": 2162.8,
+        "label_moved": true,
+        "analysis_y": 2150.8
+      },
+      {
+        "id": "H33",
+        "top_m": 56.79,
+        "bottom_m": 57.86,
+        "top_y": 637.11,
+        "bottom_y": 646.74,
+        "plotted_top_m": 56.79,
+        "plotted_bottom_m": 57.86,
+        "plotted_top_y": 637.11,
+        "plotted_bottom_y": 646.74,
+        "source": {
+          "sheet": "样品",
+          "row": 34,
+          "cells": {
+            "样品编号": "样品!A34",
+            "顶深_m": "样品!B34",
+            "底深_m": "样品!C34",
+            "岩心长_m": "样品!D34",
+            "Au": "样品!E34",
+            "Pb": "样品!F34",
+            "Zn": "样品!G34"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 641.9250000000001,
+        "plotted_midpoint_y": 641.9250000000001,
+        "label_anchor_y": 641.9250000000001,
+        "label_y": 2223.8,
+        "label_moved": true,
+        "analysis_y": 2211.8
+      },
+      {
+        "id": "H34",
+        "top_m": 57.86,
+        "bottom_m": 58.93,
+        "top_y": 646.74,
+        "bottom_y": 656.37,
+        "plotted_top_m": 57.86,
+        "plotted_bottom_m": 58.93,
+        "plotted_top_y": 646.74,
+        "plotted_bottom_y": 656.37,
+        "source": {
+          "sheet": "样品",
+          "row": 35,
+          "cells": {
+            "样品编号": "样品!A35",
+            "顶深_m": "样品!B35",
+            "底深_m": "样品!C35",
+            "岩心长_m": "样品!D35",
+            "Au": "样品!E35",
+            "Pb": "样品!F35",
+            "Zn": "样品!G35"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 651.555,
+        "plotted_midpoint_y": 651.555,
+        "label_anchor_y": 651.555,
+        "label_y": 2284.8,
+        "label_moved": true,
+        "analysis_y": 2272.8
+      },
+      {
+        "id": "H35",
+        "top_m": 58.93,
+        "bottom_m": 59.79,
+        "top_y": 656.37,
+        "bottom_y": 664.11,
+        "plotted_top_m": 58.93,
+        "plotted_bottom_m": 59.79,
+        "plotted_top_y": 656.37,
+        "plotted_bottom_y": 664.11,
+        "source": {
+          "sheet": "样品",
+          "row": 36,
+          "cells": {
+            "样品编号": "样品!A36",
+            "顶深_m": "样品!B36",
+            "底深_m": "样品!C36",
+            "岩心长_m": "样品!D36",
+            "Au": "样品!E36",
+            "Pb": "样品!F36",
+            "Zn": "样品!G36"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 660.24,
+        "plotted_midpoint_y": 660.24,
+        "label_anchor_y": 660.24,
+        "label_y": 2345.8,
+        "label_moved": true,
+        "analysis_y": 2333.8
+      },
+      {
+        "id": "H36",
+        "top_m": 59.79,
+        "bottom_m": 60.81,
+        "top_y": 664.11,
+        "bottom_y": 673.29,
+        "plotted_top_m": 59.79,
+        "plotted_bottom_m": 60.81,
+        "plotted_top_y": 664.11,
+        "plotted_bottom_y": 673.29,
+        "source": {
+          "sheet": "样品",
+          "row": 37,
+          "cells": {
+            "样品编号": "样品!A37",
+            "顶深_m": "样品!B37",
+            "底深_m": "样品!C37",
+            "岩心长_m": "样品!D37",
+            "Au": "样品!E37",
+            "Pb": "样品!F37",
+            "Zn": "样品!G37"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 668.6999999999999,
+        "plotted_midpoint_y": 668.6999999999999,
+        "label_anchor_y": 668.6999999999999,
+        "label_y": 2406.8,
+        "label_moved": true,
+        "analysis_y": 2394.8
+      },
+      {
+        "id": "H37",
+        "top_m": 60.81,
+        "bottom_m": 61.84,
+        "top_y": 673.29,
+        "bottom_y": 682.5600000000001,
+        "plotted_top_m": 60.81,
+        "plotted_bottom_m": 61.84,
+        "plotted_top_y": 673.29,
+        "plotted_bottom_y": 682.5600000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 38,
+          "cells": {
+            "样品编号": "样品!A38",
+            "顶深_m": "样品!B38",
+            "底深_m": "样品!C38",
+            "岩心长_m": "样品!D38",
+            "Au": "样品!E38",
+            "Pb": "样品!F38",
+            "Zn": "样品!G38"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 677.9250000000001,
+        "plotted_midpoint_y": 677.9250000000001,
+        "label_anchor_y": 677.9250000000001,
+        "label_y": 2467.8,
+        "label_moved": true,
+        "analysis_y": 2455.8
+      },
+      {
+        "id": "H38",
+        "top_m": 61.84,
+        "bottom_m": 63.02,
+        "top_y": 682.5600000000001,
+        "bottom_y": 693.1800000000001,
+        "plotted_top_m": 61.84,
+        "plotted_bottom_m": 63.02,
+        "plotted_top_y": 682.5600000000001,
+        "plotted_bottom_y": 693.1800000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 39,
+          "cells": {
+            "样品编号": "样品!A39",
+            "顶深_m": "样品!B39",
+            "底深_m": "样品!C39",
+            "岩心长_m": "样品!D39",
+            "Au": "样品!E39",
+            "Pb": "样品!F39",
+            "Zn": "样品!G39"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 687.8700000000001,
+        "plotted_midpoint_y": 687.8700000000001,
+        "label_anchor_y": 687.8700000000001,
+        "label_y": 2528.8,
+        "label_moved": true,
+        "analysis_y": 2516.8
+      },
+      {
+        "id": "H39",
+        "top_m": 63.02,
+        "bottom_m": 64.22,
+        "top_y": 693.1800000000001,
+        "bottom_y": 703.98,
+        "plotted_top_m": 63.02,
+        "plotted_bottom_m": 64.22,
+        "plotted_top_y": 693.1800000000001,
+        "plotted_bottom_y": 703.98,
+        "source": {
+          "sheet": "样品",
+          "row": 40,
+          "cells": {
+            "样品编号": "样品!A40",
+            "顶深_m": "样品!B40",
+            "底深_m": "样品!C40",
+            "岩心长_m": "样品!D40",
+            "Au": "样品!E40",
+            "Pb": "样品!F40",
+            "Zn": "样品!G40"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 698.58,
+        "plotted_midpoint_y": 698.58,
+        "label_anchor_y": 698.58,
+        "label_y": 2589.8,
+        "label_moved": true,
+        "analysis_y": 2577.8
+      },
+      {
+        "id": "H40",
+        "top_m": 64.22,
+        "bottom_m": 65.4,
+        "top_y": 703.98,
+        "bottom_y": 714.6,
+        "plotted_top_m": 64.22,
+        "plotted_bottom_m": 65.4,
+        "plotted_top_y": 703.98,
+        "plotted_bottom_y": 714.6,
+        "source": {
+          "sheet": "样品",
+          "row": 41,
+          "cells": {
+            "样品编号": "样品!A41",
+            "顶深_m": "样品!B41",
+            "底深_m": "样品!C41",
+            "岩心长_m": "样品!D41",
+            "Au": "样品!E41",
+            "Pb": "样品!F41",
+            "Zn": "样品!G41"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 709.29,
+        "plotted_midpoint_y": 709.29,
+        "label_anchor_y": 709.29,
+        "label_y": 2650.8,
+        "label_moved": true,
+        "analysis_y": 2638.8
+      },
+      {
+        "id": "H41",
+        "top_m": 65.4,
+        "bottom_m": 66.26,
+        "top_y": 714.6,
+        "bottom_y": 722.34,
+        "plotted_top_m": 65.4,
+        "plotted_bottom_m": 66.26,
+        "plotted_top_y": 714.6,
+        "plotted_bottom_y": 722.34,
+        "source": {
+          "sheet": "样品",
+          "row": 42,
+          "cells": {
+            "样品编号": "样品!A42",
+            "顶深_m": "样品!B42",
+            "底深_m": "样品!C42",
+            "岩心长_m": "样品!D42",
+            "Au": "样品!E42",
+            "Pb": "样品!F42",
+            "Zn": "样品!G42"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 718.4700000000001,
+        "plotted_midpoint_y": 718.4700000000001,
+        "label_anchor_y": 718.4700000000001,
+        "label_y": 2711.8,
+        "label_moved": true,
+        "analysis_y": 2699.8
+      },
+      {
+        "id": "H42",
+        "top_m": 113.06,
+        "bottom_m": 113.95,
+        "top_y": 1143.54,
+        "bottom_y": 1151.55,
+        "plotted_top_m": 113.06,
+        "plotted_bottom_m": 113.95,
+        "plotted_top_y": 1143.54,
+        "plotted_bottom_y": 1151.55,
+        "source": {
+          "sheet": "样品",
+          "row": 43,
+          "cells": {
+            "样品编号": "样品!A43",
+            "顶深_m": "样品!B43",
+            "底深_m": "样品!C43",
+            "岩心长_m": "样品!D43",
+            "Au": "样品!E43",
+            "Pb": "样品!F43",
+            "Zn": "样品!G43"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1147.545,
+        "plotted_midpoint_y": 1147.545,
+        "label_anchor_y": 1147.545,
+        "label_y": 2772.8,
+        "label_moved": true,
+        "analysis_y": 2760.8
+      },
+      {
+        "id": "H43",
+        "top_m": 113.95,
+        "bottom_m": 114.8,
+        "top_y": 1151.55,
+        "bottom_y": 1159.2,
+        "plotted_top_m": 113.95,
+        "plotted_bottom_m": 114.8,
+        "plotted_top_y": 1151.55,
+        "plotted_bottom_y": 1159.2,
+        "source": {
+          "sheet": "样品",
+          "row": 44,
+          "cells": {
+            "样品编号": "样品!A44",
+            "顶深_m": "样品!B44",
+            "底深_m": "样品!C44",
+            "岩心长_m": "样品!D44",
+            "Au": "样品!E44",
+            "Pb": "样品!F44",
+            "Zn": "样品!G44"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1155.375,
+        "plotted_midpoint_y": 1155.375,
+        "label_anchor_y": 1155.375,
+        "label_y": 2833.8,
+        "label_moved": true,
+        "analysis_y": 2821.8
+      },
+      {
+        "id": "H44",
+        "top_m": 114.8,
+        "bottom_m": 115.79,
+        "top_y": 1159.2,
+        "bottom_y": 1168.1100000000001,
+        "plotted_top_m": 114.8,
+        "plotted_bottom_m": 115.79,
+        "plotted_top_y": 1159.2,
+        "plotted_bottom_y": 1168.1100000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 45,
+          "cells": {
+            "样品编号": "样品!A45",
+            "顶深_m": "样品!B45",
+            "底深_m": "样品!C45",
+            "岩心长_m": "样品!D45",
+            "Au": "样品!E45",
+            "Pb": "样品!F45",
+            "Zn": "样品!G45"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1163.655,
+        "plotted_midpoint_y": 1163.655,
+        "label_anchor_y": 1163.655,
+        "label_y": 2894.8,
+        "label_moved": true,
+        "analysis_y": 2882.8
+      },
+      {
+        "id": "H97",
+        "top_m": 145.25,
+        "bottom_m": 146.21,
+        "top_y": 1433.25,
+        "bottom_y": 1441.89,
+        "plotted_top_m": 145.25,
+        "plotted_bottom_m": 146.21,
+        "plotted_top_y": 1433.25,
+        "plotted_bottom_y": 1441.89,
+        "source": {
+          "sheet": "样品",
+          "row": 46,
+          "cells": {
+            "样品编号": "样品!A46",
+            "顶深_m": "样品!B46",
+            "底深_m": "样品!C46",
+            "岩心长_m": "样品!D46",
+            "Au": "样品!E46",
+            "Pb": "样品!F46",
+            "Zn": "样品!G46"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1437.5700000000002,
+        "plotted_midpoint_y": 1437.5700000000002,
+        "label_anchor_y": 1437.5700000000002,
+        "label_y": 2955.8,
+        "label_moved": true,
+        "analysis_y": 2943.8
+      },
+      {
+        "id": "H45",
+        "top_m": 146.21,
+        "bottom_m": 147.19,
+        "top_y": 1441.89,
+        "bottom_y": 1450.71,
+        "plotted_top_m": 146.21,
+        "plotted_bottom_m": 147.19,
+        "plotted_top_y": 1441.89,
+        "plotted_bottom_y": 1450.71,
+        "source": {
+          "sheet": "样品",
+          "row": 47,
+          "cells": {
+            "样品编号": "样品!A47",
+            "顶深_m": "样品!B47",
+            "底深_m": "样品!C47",
+            "岩心长_m": "样品!D47",
+            "Au": "样品!E47",
+            "Pb": "样品!F47",
+            "Zn": "样品!G47"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1446.3,
+        "plotted_midpoint_y": 1446.3,
+        "label_anchor_y": 1446.3,
+        "label_y": 3016.8,
+        "label_moved": true,
+        "analysis_y": 3004.8
+      },
+      {
+        "id": "H46",
+        "top_m": 147.19,
+        "bottom_m": 148.23,
+        "top_y": 1450.71,
+        "bottom_y": 1460.07,
+        "plotted_top_m": 147.19,
+        "plotted_bottom_m": 148.23,
+        "plotted_top_y": 1450.71,
+        "plotted_bottom_y": 1460.07,
+        "source": {
+          "sheet": "样品",
+          "row": 48,
+          "cells": {
+            "样品编号": "样品!A48",
+            "顶深_m": "样品!B48",
+            "底深_m": "样品!C48",
+            "岩心长_m": "样品!D48",
+            "Au": "样品!E48",
+            "Pb": "样品!F48",
+            "Zn": "样品!G48"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1455.3899999999999,
+        "plotted_midpoint_y": 1455.3899999999999,
+        "label_anchor_y": 1455.3899999999999,
+        "label_y": 3077.8,
+        "label_moved": true,
+        "analysis_y": 3065.8
+      },
+      {
+        "id": "H47",
+        "top_m": 148.23,
+        "bottom_m": 149.17,
+        "top_y": 1460.07,
+        "bottom_y": 1468.53,
+        "plotted_top_m": 148.23,
+        "plotted_bottom_m": 149.17,
+        "plotted_top_y": 1460.07,
+        "plotted_bottom_y": 1468.53,
+        "source": {
+          "sheet": "样品",
+          "row": 49,
+          "cells": {
+            "样品编号": "样品!A49",
+            "顶深_m": "样品!B49",
+            "底深_m": "样品!C49",
+            "岩心长_m": "样品!D49",
+            "Au": "样品!E49",
+            "Pb": "样品!F49",
+            "Zn": "样品!G49"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1464.3,
+        "plotted_midpoint_y": 1464.3,
+        "label_anchor_y": 1464.3,
+        "label_y": 3138.8,
+        "label_moved": true,
+        "analysis_y": 3126.8
+      },
+      {
+        "id": "H48",
+        "top_m": 149.17,
+        "bottom_m": 150.02,
+        "top_y": 1468.53,
+        "bottom_y": 1476.18,
+        "plotted_top_m": 149.17,
+        "plotted_bottom_m": 150.02,
+        "plotted_top_y": 1468.53,
+        "plotted_bottom_y": 1476.18,
+        "source": {
+          "sheet": "样品",
+          "row": 50,
+          "cells": {
+            "样品编号": "样品!A50",
+            "顶深_m": "样品!B50",
+            "底深_m": "样品!C50",
+            "岩心长_m": "样品!D50",
+            "Au": "样品!E50",
+            "Pb": "样品!F50",
+            "Zn": "样品!G50"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1472.355,
+        "plotted_midpoint_y": 1472.355,
+        "label_anchor_y": 1472.355,
+        "label_y": 3199.8,
+        "label_moved": true,
+        "analysis_y": 3187.8
+      },
+      {
+        "id": "H49",
+        "top_m": 150.02,
+        "bottom_m": 150.93,
+        "top_y": 1476.18,
+        "bottom_y": 1484.3700000000001,
+        "plotted_top_m": 150.02,
+        "plotted_bottom_m": 150.93,
+        "plotted_top_y": 1476.18,
+        "plotted_bottom_y": 1484.3700000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 51,
+          "cells": {
+            "样品编号": "样品!A51",
+            "顶深_m": "样品!B51",
+            "底深_m": "样品!C51",
+            "岩心长_m": "样品!D51",
+            "Au": "样品!E51",
+            "Pb": "样品!F51",
+            "Zn": "样品!G51"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1480.275,
+        "plotted_midpoint_y": 1480.275,
+        "label_anchor_y": 1480.275,
+        "label_y": 3260.8,
+        "label_moved": true,
+        "analysis_y": 3248.8
+      },
+      {
+        "id": "H50",
+        "top_m": 150.93,
+        "bottom_m": 151.83,
+        "top_y": 1484.3700000000001,
+        "bottom_y": 1492.47,
+        "plotted_top_m": 150.93,
+        "plotted_bottom_m": 151.83,
+        "plotted_top_y": 1484.3700000000001,
+        "plotted_bottom_y": 1492.47,
+        "source": {
+          "sheet": "样品",
+          "row": 52,
+          "cells": {
+            "样品编号": "样品!A52",
+            "顶深_m": "样品!B52",
+            "底深_m": "样品!C52",
+            "岩心长_m": "样品!D52",
+            "Au": "样品!E52",
+            "Pb": "样品!F52",
+            "Zn": "样品!G52"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1488.42,
+        "plotted_midpoint_y": 1488.42,
+        "label_anchor_y": 1488.42,
+        "label_y": 3321.8,
+        "label_moved": true,
+        "analysis_y": 3309.8
+      },
+      {
+        "id": "H51",
+        "top_m": 151.83,
+        "bottom_m": 152.65,
+        "top_y": 1492.47,
+        "bottom_y": 1499.8500000000001,
+        "plotted_top_m": 151.83,
+        "plotted_bottom_m": 152.65,
+        "plotted_top_y": 1492.47,
+        "plotted_bottom_y": 1499.8500000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 53,
+          "cells": {
+            "样品编号": "样品!A53",
+            "顶深_m": "样品!B53",
+            "底深_m": "样品!C53",
+            "岩心长_m": "样品!D53",
+            "Au": "样品!E53",
+            "Pb": "样品!F53",
+            "Zn": "样品!G53"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1496.16,
+        "plotted_midpoint_y": 1496.16,
+        "label_anchor_y": 1496.16,
+        "label_y": 3382.8,
+        "label_moved": true,
+        "analysis_y": 3370.8
+      },
+      {
+        "id": "H52",
+        "top_m": 152.65,
+        "bottom_m": 153.59,
+        "top_y": 1499.8500000000001,
+        "bottom_y": 1508.31,
+        "plotted_top_m": 152.65,
+        "plotted_bottom_m": 153.59,
+        "plotted_top_y": 1499.8500000000001,
+        "plotted_bottom_y": 1508.31,
+        "source": {
+          "sheet": "样品",
+          "row": 54,
+          "cells": {
+            "样品编号": "样品!A54",
+            "顶深_m": "样品!B54",
+            "底深_m": "样品!C54",
+            "岩心长_m": "样品!D54",
+            "Au": "样品!E54",
+            "Pb": "样品!F54",
+            "Zn": "样品!G54"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1504.08,
+        "plotted_midpoint_y": 1504.08,
+        "label_anchor_y": 1504.08,
+        "label_y": 3443.8,
+        "label_moved": true,
+        "analysis_y": 3431.8
+      },
+      {
+        "id": "H53",
+        "top_m": 153.59,
+        "bottom_m": 154.64,
+        "top_y": 1508.31,
+        "bottom_y": 1517.7599999999998,
+        "plotted_top_m": 153.59,
+        "plotted_bottom_m": 154.64,
+        "plotted_top_y": 1508.31,
+        "plotted_bottom_y": 1517.7599999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 55,
+          "cells": {
+            "样品编号": "样品!A55",
+            "顶深_m": "样品!B55",
+            "底深_m": "样品!C55",
+            "岩心长_m": "样品!D55",
+            "Au": "样品!E55",
+            "Pb": "样品!F55",
+            "Zn": "样品!G55"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1513.035,
+        "plotted_midpoint_y": 1513.035,
+        "label_anchor_y": 1513.035,
+        "label_y": 3504.8,
+        "label_moved": true,
+        "analysis_y": 3492.8
+      },
+      {
+        "id": "H54",
+        "top_m": 154.64,
+        "bottom_m": 155.62,
+        "top_y": 1517.7599999999998,
+        "bottom_y": 1526.58,
+        "plotted_top_m": 154.64,
+        "plotted_bottom_m": 155.62,
+        "plotted_top_y": 1517.7599999999998,
+        "plotted_bottom_y": 1526.58,
+        "source": {
+          "sheet": "样品",
+          "row": 56,
+          "cells": {
+            "样品编号": "样品!A56",
+            "顶深_m": "样品!B56",
+            "底深_m": "样品!C56",
+            "岩心长_m": "样品!D56",
+            "Au": "样品!E56",
+            "Pb": "样品!F56",
+            "Zn": "样品!G56"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1522.17,
+        "plotted_midpoint_y": 1522.17,
+        "label_anchor_y": 1522.17,
+        "label_y": 3565.8,
+        "label_moved": true,
+        "analysis_y": 3553.8
+      },
+      {
+        "id": "H55",
+        "top_m": 155.62,
+        "bottom_m": 156.59,
+        "top_y": 1526.58,
+        "bottom_y": 1535.31,
+        "plotted_top_m": 155.62,
+        "plotted_bottom_m": 156.59,
+        "plotted_top_y": 1526.58,
+        "plotted_bottom_y": 1535.31,
+        "source": {
+          "sheet": "样品",
+          "row": 57,
+          "cells": {
+            "样品编号": "样品!A57",
+            "顶深_m": "样品!B57",
+            "底深_m": "样品!C57",
+            "岩心长_m": "样品!D57",
+            "Au": "样品!E57",
+            "Pb": "样品!F57",
+            "Zn": "样品!G57"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1530.9450000000002,
+        "plotted_midpoint_y": 1530.9450000000002,
+        "label_anchor_y": 1530.9450000000002,
+        "label_y": 3626.8,
+        "label_moved": true,
+        "analysis_y": 3614.8
+      },
+      {
+        "id": "H56",
+        "top_m": 168.01,
+        "bottom_m": 169.07,
+        "top_y": 1638.09,
+        "bottom_y": 1647.6299999999999,
+        "plotted_top_m": 168.01,
+        "plotted_bottom_m": 169.07,
+        "plotted_top_y": 1638.09,
+        "plotted_bottom_y": 1647.6299999999999,
+        "source": {
+          "sheet": "样品",
+          "row": 58,
+          "cells": {
+            "样品编号": "样品!A58",
+            "顶深_m": "样品!B58",
+            "底深_m": "样品!C58",
+            "岩心长_m": "样品!D58",
+            "Au": "样品!E58",
+            "Pb": "样品!F58",
+            "Zn": "样品!G58"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1642.86,
+        "plotted_midpoint_y": 1642.86,
+        "label_anchor_y": 1642.86,
+        "label_y": 3687.8,
+        "label_moved": true,
+        "analysis_y": 3675.8
+      },
+      {
+        "id": "H57",
+        "top_m": 169.07,
+        "bottom_m": 170.16,
+        "top_y": 1647.6299999999999,
+        "bottom_y": 1657.44,
+        "plotted_top_m": 169.07,
+        "plotted_bottom_m": 170.16,
+        "plotted_top_y": 1647.6299999999999,
+        "plotted_bottom_y": 1657.44,
+        "source": {
+          "sheet": "样品",
+          "row": 59,
+          "cells": {
+            "样品编号": "样品!A59",
+            "顶深_m": "样品!B59",
+            "底深_m": "样品!C59",
+            "岩心长_m": "样品!D59",
+            "Au": "样品!E59",
+            "Pb": "样品!F59",
+            "Zn": "样品!G59"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1652.535,
+        "plotted_midpoint_y": 1652.535,
+        "label_anchor_y": 1652.535,
+        "label_y": 3748.8,
+        "label_moved": true,
+        "analysis_y": 3736.8
+      },
+      {
+        "id": "H58",
+        "top_m": 170.16,
+        "bottom_m": 170.84,
+        "top_y": 1657.44,
+        "bottom_y": 1663.56,
+        "plotted_top_m": 170.16,
+        "plotted_bottom_m": 170.84,
+        "plotted_top_y": 1657.44,
+        "plotted_bottom_y": 1663.56,
+        "source": {
+          "sheet": "样品",
+          "row": 60,
+          "cells": {
+            "样品编号": "样品!A60",
+            "顶深_m": "样品!B60",
+            "底深_m": "样品!C60",
+            "岩心长_m": "样品!D60",
+            "Au": "样品!E60",
+            "Pb": "样品!F60",
+            "Zn": "样品!G60"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1660.5,
+        "plotted_midpoint_y": 1660.5,
+        "label_anchor_y": 1660.5,
+        "label_y": 3809.8,
+        "label_moved": true,
+        "analysis_y": 3797.8
+      },
+      {
+        "id": "H59",
+        "top_m": 170.84,
+        "bottom_m": 171.84,
+        "top_y": 1663.56,
+        "bottom_y": 1672.56,
+        "plotted_top_m": 170.84,
+        "plotted_bottom_m": 171.84,
+        "plotted_top_y": 1663.56,
+        "plotted_bottom_y": 1672.56,
+        "source": {
+          "sheet": "样品",
+          "row": 61,
+          "cells": {
+            "样品编号": "样品!A61",
+            "顶深_m": "样品!B61",
+            "底深_m": "样品!C61",
+            "岩心长_m": "样品!D61",
+            "Au": "样品!E61",
+            "Pb": "样品!F61",
+            "Zn": "样品!G61"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1668.06,
+        "plotted_midpoint_y": 1668.06,
+        "label_anchor_y": 1668.06,
+        "label_y": 3870.8,
+        "label_moved": true,
+        "analysis_y": 3858.8
+      },
+      {
+        "id": "H60",
+        "top_m": 171.84,
+        "bottom_m": 172.88,
+        "top_y": 1672.56,
+        "bottom_y": 1681.92,
+        "plotted_top_m": 171.84,
+        "plotted_bottom_m": 172.88,
+        "plotted_top_y": 1672.56,
+        "plotted_bottom_y": 1681.92,
+        "source": {
+          "sheet": "样品",
+          "row": 62,
+          "cells": {
+            "样品编号": "样品!A62",
+            "顶深_m": "样品!B62",
+            "底深_m": "样品!C62",
+            "岩心长_m": "样品!D62",
+            "Au": "样品!E62",
+            "Pb": "样品!F62",
+            "Zn": "样品!G62"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1677.2400000000002,
+        "plotted_midpoint_y": 1677.2400000000002,
+        "label_anchor_y": 1677.2400000000002,
+        "label_y": 3931.8,
+        "label_moved": true,
+        "analysis_y": 3919.8
+      },
+      {
+        "id": "H61",
+        "top_m": 172.88,
+        "bottom_m": 173.71,
+        "top_y": 1681.92,
+        "bottom_y": 1689.39,
+        "plotted_top_m": 172.88,
+        "plotted_bottom_m": 173.71,
+        "plotted_top_y": 1681.92,
+        "plotted_bottom_y": 1689.39,
+        "source": {
+          "sheet": "样品",
+          "row": 63,
+          "cells": {
+            "样品编号": "样品!A63",
+            "顶深_m": "样品!B63",
+            "底深_m": "样品!C63",
+            "岩心长_m": "样品!D63",
+            "Au": "样品!E63",
+            "Pb": "样品!F63",
+            "Zn": "样品!G63"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1685.6550000000002,
+        "plotted_midpoint_y": 1685.6550000000002,
+        "label_anchor_y": 1685.6550000000002,
+        "label_y": 3992.8,
+        "label_moved": true,
+        "analysis_y": 3980.8
+      },
+      {
+        "id": "H62",
+        "top_m": 173.71,
+        "bottom_m": 174.6,
+        "top_y": 1689.39,
+        "bottom_y": 1697.3999999999999,
+        "plotted_top_m": 173.71,
+        "plotted_bottom_m": 174.6,
+        "plotted_top_y": 1689.39,
+        "plotted_bottom_y": 1697.3999999999999,
+        "source": {
+          "sheet": "样品",
+          "row": 64,
+          "cells": {
+            "样品编号": "样品!A64",
+            "顶深_m": "样品!B64",
+            "底深_m": "样品!C64",
+            "岩心长_m": "样品!D64",
+            "Au": "样品!E64",
+            "Pb": "样品!F64",
+            "Zn": "样品!G64"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1693.395,
+        "plotted_midpoint_y": 1693.395,
+        "label_anchor_y": 1693.395,
+        "label_y": 4053.8,
+        "label_moved": true,
+        "analysis_y": 4041.8
+      },
+      {
+        "id": "H63",
+        "top_m": 174.6,
+        "bottom_m": 175.59,
+        "top_y": 1697.3999999999999,
+        "bottom_y": 1706.31,
+        "plotted_top_m": 174.6,
+        "plotted_bottom_m": 175.59,
+        "plotted_top_y": 1697.3999999999999,
+        "plotted_bottom_y": 1706.31,
+        "source": {
+          "sheet": "样品",
+          "row": 65,
+          "cells": {
+            "样品编号": "样品!A65",
+            "顶深_m": "样品!B65",
+            "底深_m": "样品!C65",
+            "岩心长_m": "样品!D65",
+            "Au": "样品!E65",
+            "Pb": "样品!F65",
+            "Zn": "样品!G65"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1701.855,
+        "plotted_midpoint_y": 1701.855,
+        "label_anchor_y": 1701.855,
+        "label_y": 4114.8,
+        "label_moved": true,
+        "analysis_y": 4102.8
+      },
+      {
+        "id": "H64",
+        "top_m": 195.46,
+        "bottom_m": 196.47,
+        "top_y": 1885.14,
+        "bottom_y": 1894.23,
+        "plotted_top_m": 195.46,
+        "plotted_bottom_m": 196.47,
+        "plotted_top_y": 1885.14,
+        "plotted_bottom_y": 1894.23,
+        "source": {
+          "sheet": "样品",
+          "row": 66,
+          "cells": {
+            "样品编号": "样品!A66",
+            "顶深_m": "样品!B66",
+            "底深_m": "样品!C66",
+            "岩心长_m": "样品!D66",
+            "Au": "样品!E66",
+            "Pb": "样品!F66",
+            "Zn": "样品!G66"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1889.685,
+        "plotted_midpoint_y": 1889.685,
+        "label_anchor_y": 1889.685,
+        "label_y": 4175.8,
+        "label_moved": true,
+        "analysis_y": 4163.8
+      },
+      {
+        "id": "H65",
+        "top_m": 196.47,
+        "bottom_m": 197.46,
+        "top_y": 1894.23,
+        "bottom_y": 1903.14,
+        "plotted_top_m": 196.47,
+        "plotted_bottom_m": 197.46,
+        "plotted_top_y": 1894.23,
+        "plotted_bottom_y": 1903.14,
+        "source": {
+          "sheet": "样品",
+          "row": 67,
+          "cells": {
+            "样品编号": "样品!A67",
+            "顶深_m": "样品!B67",
+            "底深_m": "样品!C67",
+            "岩心长_m": "样品!D67",
+            "Au": "样品!E67",
+            "Pb": "样品!F67",
+            "Zn": "样品!G67"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1898.685,
+        "plotted_midpoint_y": 1898.685,
+        "label_anchor_y": 1898.685,
+        "label_y": 4236.8,
+        "label_moved": true,
+        "analysis_y": 4224.8
+      },
+      {
+        "id": "H66",
+        "top_m": 197.46,
+        "bottom_m": 198.31,
+        "top_y": 1903.14,
+        "bottom_y": 1910.79,
+        "plotted_top_m": 197.46,
+        "plotted_bottom_m": 198.31,
+        "plotted_top_y": 1903.14,
+        "plotted_bottom_y": 1910.79,
+        "source": {
+          "sheet": "样品",
+          "row": 68,
+          "cells": {
+            "样品编号": "样品!A68",
+            "顶深_m": "样品!B68",
+            "底深_m": "样品!C68",
+            "岩心长_m": "样品!D68",
+            "Au": "样品!E68",
+            "Pb": "样品!F68",
+            "Zn": "样品!G68"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1906.965,
+        "plotted_midpoint_y": 1906.965,
+        "label_anchor_y": 1906.965,
+        "label_y": 4297.8,
+        "label_moved": true,
+        "analysis_y": 4285.8
+      },
+      {
+        "id": "H67",
+        "top_m": 198.31,
+        "bottom_m": 199.32,
+        "top_y": 1910.79,
+        "bottom_y": 1919.8799999999999,
+        "plotted_top_m": 198.31,
+        "plotted_bottom_m": 199.32,
+        "plotted_top_y": 1910.79,
+        "plotted_bottom_y": 1919.8799999999999,
+        "source": {
+          "sheet": "样品",
+          "row": 69,
+          "cells": {
+            "样品编号": "样品!A69",
+            "顶深_m": "样品!B69",
+            "底深_m": "样品!C69",
+            "岩心长_m": "样品!D69",
+            "Au": "样品!E69",
+            "Pb": "样品!F69",
+            "Zn": "样品!G69"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1915.335,
+        "plotted_midpoint_y": 1915.335,
+        "label_anchor_y": 1915.335,
+        "label_y": 4358.8,
+        "label_moved": true,
+        "analysis_y": 4346.8
+      },
+      {
+        "id": "H68",
+        "top_m": 199.32,
+        "bottom_m": 200.39,
+        "top_y": 1919.8799999999999,
+        "bottom_y": 1929.5099999999998,
+        "plotted_top_m": 199.32,
+        "plotted_bottom_m": 200.39,
+        "plotted_top_y": 1919.8799999999999,
+        "plotted_bottom_y": 1929.5099999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 70,
+          "cells": {
+            "样品编号": "样品!A70",
+            "顶深_m": "样品!B70",
+            "底深_m": "样品!C70",
+            "岩心长_m": "样品!D70",
+            "Au": "样品!E70",
+            "Pb": "样品!F70",
+            "Zn": "样品!G70"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1924.695,
+        "plotted_midpoint_y": 1924.695,
+        "label_anchor_y": 1924.695,
+        "label_y": 4419.8,
+        "label_moved": true,
+        "analysis_y": 4407.8
+      },
+      {
+        "id": "H69",
+        "top_m": 200.39,
+        "bottom_m": 201.24,
+        "top_y": 1929.5099999999998,
+        "bottom_y": 1937.16,
+        "plotted_top_m": 200.39,
+        "plotted_bottom_m": 201.24,
+        "plotted_top_y": 1929.5099999999998,
+        "plotted_bottom_y": 1937.16,
+        "source": {
+          "sheet": "样品",
+          "row": 71,
+          "cells": {
+            "样品编号": "样品!A71",
+            "顶深_m": "样品!B71",
+            "底深_m": "样品!C71",
+            "岩心长_m": "样品!D71",
+            "Au": "样品!E71",
+            "Pb": "样品!F71",
+            "Zn": "样品!G71"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1933.335,
+        "plotted_midpoint_y": 1933.335,
+        "label_anchor_y": 1933.335,
+        "label_y": 4480.8,
+        "label_moved": true,
+        "analysis_y": 4468.8
+      },
+      {
+        "id": "H70",
+        "top_m": 217.5,
+        "bottom_m": 218.55,
+        "top_y": 2083.5,
+        "bottom_y": 2092.95,
+        "plotted_top_m": 217.5,
+        "plotted_bottom_m": 218.55,
+        "plotted_top_y": 2083.5,
+        "plotted_bottom_y": 2092.95,
+        "source": {
+          "sheet": "样品",
+          "row": 72,
+          "cells": {
+            "样品编号": "样品!A72",
+            "顶深_m": "样品!B72",
+            "底深_m": "样品!C72",
+            "岩心长_m": "样品!D72",
+            "Au": "样品!E72",
+            "Pb": "样品!F72",
+            "Zn": "样品!G72"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2088.2250000000004,
+        "plotted_midpoint_y": 2088.2250000000004,
+        "label_anchor_y": 2088.2250000000004,
+        "label_y": 4541.8,
+        "label_moved": true,
+        "analysis_y": 4529.8
+      },
+      {
+        "id": "H71",
+        "top_m": 218.55,
+        "bottom_m": 219.45,
+        "top_y": 2092.95,
+        "bottom_y": 2101.05,
+        "plotted_top_m": 218.55,
+        "plotted_bottom_m": 219.45,
+        "plotted_top_y": 2092.95,
+        "plotted_bottom_y": 2101.05,
+        "source": {
+          "sheet": "样品",
+          "row": 73,
+          "cells": {
+            "样品编号": "样品!A73",
+            "顶深_m": "样品!B73",
+            "底深_m": "样品!C73",
+            "岩心长_m": "样品!D73",
+            "Au": "样品!E73",
+            "Pb": "样品!F73",
+            "Zn": "样品!G73"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2097.0,
+        "plotted_midpoint_y": 2097.0,
+        "label_anchor_y": 2097.0,
+        "label_y": 4602.8,
+        "label_moved": true,
+        "analysis_y": 4590.8
+      },
+      {
+        "id": "H72",
+        "top_m": 219.45,
+        "bottom_m": 220.37,
+        "top_y": 2101.05,
+        "bottom_y": 2109.33,
+        "plotted_top_m": 219.45,
+        "plotted_bottom_m": 220.37,
+        "plotted_top_y": 2101.05,
+        "plotted_bottom_y": 2109.33,
+        "source": {
+          "sheet": "样品",
+          "row": 74,
+          "cells": {
+            "样品编号": "样品!A74",
+            "顶深_m": "样品!B74",
+            "底深_m": "样品!C74",
+            "岩心长_m": "样品!D74",
+            "Au": "样品!E74",
+            "Pb": "样品!F74",
+            "Zn": "样品!G74"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2105.19,
+        "plotted_midpoint_y": 2105.19,
+        "label_anchor_y": 2105.19,
+        "label_y": 4663.8,
+        "label_moved": true,
+        "analysis_y": 4651.8
+      },
+      {
+        "id": "H73",
+        "top_m": 220.37,
+        "bottom_m": 221.57,
+        "top_y": 2109.33,
+        "bottom_y": 2120.13,
+        "plotted_top_m": 220.37,
+        "plotted_bottom_m": 221.57,
+        "plotted_top_y": 2109.33,
+        "plotted_bottom_y": 2120.13,
+        "source": {
+          "sheet": "样品",
+          "row": 75,
+          "cells": {
+            "样品编号": "样品!A75",
+            "顶深_m": "样品!B75",
+            "底深_m": "样品!C75",
+            "岩心长_m": "样品!D75",
+            "Au": "样品!E75",
+            "Pb": "样品!F75",
+            "Zn": "样品!G75"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2114.73,
+        "plotted_midpoint_y": 2114.73,
+        "label_anchor_y": 2114.73,
+        "label_y": 4724.8,
+        "label_moved": true,
+        "analysis_y": 4712.8
+      },
+      {
+        "id": "H74",
+        "top_m": 221.57,
+        "bottom_m": 222.43,
+        "top_y": 2120.13,
+        "bottom_y": 2127.87,
+        "plotted_top_m": 221.57,
+        "plotted_bottom_m": 222.43,
+        "plotted_top_y": 2120.13,
+        "plotted_bottom_y": 2127.87,
+        "source": {
+          "sheet": "样品",
+          "row": 76,
+          "cells": {
+            "样品编号": "样品!A76",
+            "顶深_m": "样品!B76",
+            "底深_m": "样品!C76",
+            "岩心长_m": "样品!D76",
+            "Au": "样品!E76",
+            "Pb": "样品!F76",
+            "Zn": "样品!G76"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2124.0,
+        "plotted_midpoint_y": 2124.0,
+        "label_anchor_y": 2124.0,
+        "label_y": 4785.8,
+        "label_moved": true,
+        "analysis_y": 4773.8
+      },
+      {
+        "id": "H75",
+        "top_m": 267.31,
+        "bottom_m": 268.27,
+        "top_y": 2531.79,
+        "bottom_y": 2540.43,
+        "plotted_top_m": 267.31,
+        "plotted_bottom_m": 268.27,
+        "plotted_top_y": 2531.79,
+        "plotted_bottom_y": 2540.43,
+        "source": {
+          "sheet": "样品",
+          "row": 77,
+          "cells": {
+            "样品编号": "样品!A77",
+            "顶深_m": "样品!B77",
+            "底深_m": "样品!C77",
+            "岩心长_m": "样品!D77",
+            "Au": "样品!E77",
+            "Pb": "样品!F77",
+            "Zn": "样品!G77"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2536.1099999999997,
+        "plotted_midpoint_y": 2536.1099999999997,
+        "label_anchor_y": 2536.1099999999997,
+        "label_y": 4846.8,
+        "label_moved": true,
+        "analysis_y": 4834.8
+      },
+      {
+        "id": "H76",
+        "top_m": 268.27,
+        "bottom_m": 269.39,
+        "top_y": 2540.43,
+        "bottom_y": 2550.5099999999998,
+        "plotted_top_m": 268.27,
+        "plotted_bottom_m": 269.39,
+        "plotted_top_y": 2540.43,
+        "plotted_bottom_y": 2550.5099999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 78,
+          "cells": {
+            "样品编号": "样品!A78",
+            "顶深_m": "样品!B78",
+            "底深_m": "样品!C78",
+            "岩心长_m": "样品!D78",
+            "Au": "样品!E78",
+            "Pb": "样品!F78",
+            "Zn": "样品!G78"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2545.47,
+        "plotted_midpoint_y": 2545.47,
+        "label_anchor_y": 2545.47,
+        "label_y": 4907.8,
+        "label_moved": true,
+        "analysis_y": 4895.8
+      },
+      {
+        "id": "H77",
+        "top_m": 269.39,
+        "bottom_m": 270.24,
+        "top_y": 2550.5099999999998,
+        "bottom_y": 2558.16,
+        "plotted_top_m": 269.39,
+        "plotted_bottom_m": 270.24,
+        "plotted_top_y": 2550.5099999999998,
+        "plotted_bottom_y": 2558.16,
+        "source": {
+          "sheet": "样品",
+          "row": 79,
+          "cells": {
+            "样品编号": "样品!A79",
+            "顶深_m": "样品!B79",
+            "底深_m": "样品!C79",
+            "岩心长_m": "样品!D79",
+            "Au": "样品!E79",
+            "Pb": "样品!F79",
+            "Zn": "样品!G79"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2554.335,
+        "plotted_midpoint_y": 2554.335,
+        "label_anchor_y": 2554.335,
+        "label_y": 4968.8,
+        "label_moved": true,
+        "analysis_y": 4956.8
+      },
+      {
+        "id": "H78",
+        "top_m": 270.24,
+        "bottom_m": 271.43,
+        "top_y": 2558.16,
+        "bottom_y": 2568.87,
+        "plotted_top_m": 270.24,
+        "plotted_bottom_m": 271.43,
+        "plotted_top_y": 2558.16,
+        "plotted_bottom_y": 2568.87,
+        "source": {
+          "sheet": "样品",
+          "row": 80,
+          "cells": {
+            "样品编号": "样品!A80",
+            "顶深_m": "样品!B80",
+            "底深_m": "样品!C80",
+            "岩心长_m": "样品!D80",
+            "Au": "样品!E80",
+            "Pb": "样品!F80",
+            "Zn": "样品!G80"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2563.5150000000003,
+        "plotted_midpoint_y": 2563.5150000000003,
+        "label_anchor_y": 2563.5150000000003,
+        "label_y": 5029.8,
+        "label_moved": true,
+        "analysis_y": 5017.8
+      },
+      {
+        "id": "H79",
+        "top_m": 271.43,
+        "bottom_m": 272.64,
+        "top_y": 2568.87,
+        "bottom_y": 2579.7599999999998,
+        "plotted_top_m": 271.43,
+        "plotted_bottom_m": 272.64,
+        "plotted_top_y": 2568.87,
+        "plotted_bottom_y": 2579.7599999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 81,
+          "cells": {
+            "样品编号": "样品!A81",
+            "顶深_m": "样品!B81",
+            "底深_m": "样品!C81",
+            "岩心长_m": "样品!D81",
+            "Au": "样品!E81",
+            "Pb": "样品!F81",
+            "Zn": "样品!G81"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2574.3149999999996,
+        "plotted_midpoint_y": 2574.3149999999996,
+        "label_anchor_y": 2574.3149999999996,
+        "label_y": 5090.8,
+        "label_moved": true,
+        "analysis_y": 5078.8
+      },
+      {
+        "id": "H80",
+        "top_m": 272.64,
+        "bottom_m": 273.64,
+        "top_y": 2579.7599999999998,
+        "bottom_y": 2588.7599999999998,
+        "plotted_top_m": 272.64,
+        "plotted_bottom_m": 273.64,
+        "plotted_top_y": 2579.7599999999998,
+        "plotted_bottom_y": 2588.7599999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 82,
+          "cells": {
+            "样品编号": "样品!A82",
+            "顶深_m": "样品!B82",
+            "底深_m": "样品!C82",
+            "岩心长_m": "样品!D82",
+            "Au": "样品!E82",
+            "Pb": "样品!F82",
+            "Zn": "样品!G82"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2584.2599999999998,
+        "plotted_midpoint_y": 2584.2599999999998,
+        "label_anchor_y": 2584.2599999999998,
+        "label_y": 5151.8,
+        "label_moved": true,
+        "analysis_y": 5139.8
+      },
+      {
+        "id": "H81",
+        "top_m": 300.62,
+        "bottom_m": 301.68,
+        "top_y": 2831.58,
+        "bottom_y": 2841.12,
+        "plotted_top_m": 300.62,
+        "plotted_bottom_m": 301.68,
+        "plotted_top_y": 2831.58,
+        "plotted_bottom_y": 2841.12,
+        "source": {
+          "sheet": "样品",
+          "row": 83,
+          "cells": {
+            "样品编号": "样品!A83",
+            "顶深_m": "样品!B83",
+            "底深_m": "样品!C83",
+            "岩心长_m": "样品!D83",
+            "Au": "样品!E83",
+            "Pb": "样品!F83",
+            "Zn": "样品!G83"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2836.35,
+        "plotted_midpoint_y": 2836.35,
+        "label_anchor_y": 2836.35,
+        "label_y": 5212.8,
+        "label_moved": true,
+        "analysis_y": 5200.8
+      },
+      {
+        "id": "H82",
+        "top_m": 301.68,
+        "bottom_m": 302.65,
+        "top_y": 2841.12,
+        "bottom_y": 2849.85,
+        "plotted_top_m": 301.68,
+        "plotted_bottom_m": 302.65,
+        "plotted_top_y": 2841.12,
+        "plotted_bottom_y": 2849.85,
+        "source": {
+          "sheet": "样品",
+          "row": 84,
+          "cells": {
+            "样品编号": "样品!A84",
+            "顶深_m": "样品!B84",
+            "底深_m": "样品!C84",
+            "岩心长_m": "样品!D84",
+            "Au": "样品!E84",
+            "Pb": "样品!F84",
+            "Zn": "样品!G84"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2845.4849999999997,
+        "plotted_midpoint_y": 2845.4849999999997,
+        "label_anchor_y": 2845.4849999999997,
+        "label_y": 5273.8,
+        "label_moved": true,
+        "analysis_y": 5261.8
+      },
+      {
+        "id": "H83",
+        "top_m": 302.65,
+        "bottom_m": 303.53,
+        "top_y": 2849.85,
+        "bottom_y": 2857.7699999999995,
+        "plotted_top_m": 302.65,
+        "plotted_bottom_m": 303.53,
+        "plotted_top_y": 2849.85,
+        "plotted_bottom_y": 2857.7699999999995,
+        "source": {
+          "sheet": "样品",
+          "row": 85,
+          "cells": {
+            "样品编号": "样品!A85",
+            "顶深_m": "样品!B85",
+            "底深_m": "样品!C85",
+            "岩心长_m": "样品!D85",
+            "Au": "样品!E85",
+            "Pb": "样品!F85",
+            "Zn": "样品!G85"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2853.81,
+        "plotted_midpoint_y": 2853.81,
+        "label_anchor_y": 2853.81,
+        "label_y": 5334.8,
+        "label_moved": true,
+        "analysis_y": 5322.8
+      },
+      {
+        "id": "H84",
+        "top_m": 303.53,
+        "bottom_m": 304.61,
+        "top_y": 2857.7699999999995,
+        "bottom_y": 2867.4900000000002,
+        "plotted_top_m": 303.53,
+        "plotted_bottom_m": 304.61,
+        "plotted_top_y": 2857.7699999999995,
+        "plotted_bottom_y": 2867.4900000000002,
+        "source": {
+          "sheet": "样品",
+          "row": 86,
+          "cells": {
+            "样品编号": "样品!A86",
+            "顶深_m": "样品!B86",
+            "底深_m": "样品!C86",
+            "岩心长_m": "样品!D86",
+            "Au": "样品!E86",
+            "Pb": "样品!F86",
+            "Zn": "样品!G86"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2862.63,
+        "plotted_midpoint_y": 2862.63,
+        "label_anchor_y": 2862.63,
+        "label_y": 5395.8,
+        "label_moved": true,
+        "analysis_y": 5383.8
+      },
+      {
+        "id": "H85",
+        "top_m": 304.61,
+        "bottom_m": 305.59,
+        "top_y": 2867.4900000000002,
+        "bottom_y": 2876.31,
+        "plotted_top_m": 304.61,
+        "plotted_bottom_m": 305.59,
+        "plotted_top_y": 2867.4900000000002,
+        "plotted_bottom_y": 2876.31,
+        "source": {
+          "sheet": "样品",
+          "row": 87,
+          "cells": {
+            "样品编号": "样品!A87",
+            "顶深_m": "样品!B87",
+            "底深_m": "样品!C87",
+            "岩心长_m": "样品!D87",
+            "Au": "样品!E87",
+            "Pb": "样品!F87",
+            "Zn": "样品!G87"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2871.9,
+        "plotted_midpoint_y": 2871.9,
+        "label_anchor_y": 2871.9,
+        "label_y": 5456.8,
+        "label_moved": true,
+        "analysis_y": 5444.8
+      },
+      {
+        "id": "H86",
+        "top_m": 305.59,
+        "bottom_m": 306.6,
+        "top_y": 2876.31,
+        "bottom_y": 2885.4,
+        "plotted_top_m": 305.59,
+        "plotted_bottom_m": 306.6,
+        "plotted_top_y": 2876.31,
+        "plotted_bottom_y": 2885.4,
+        "source": {
+          "sheet": "样品",
+          "row": 88,
+          "cells": {
+            "样品编号": "样品!A88",
+            "顶深_m": "样品!B88",
+            "底深_m": "样品!C88",
+            "岩心长_m": "样品!D88",
+            "Au": "样品!E88",
+            "Pb": "样品!F88",
+            "Zn": "样品!G88"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 2880.8550000000005,
+        "plotted_midpoint_y": 2880.8550000000005,
+        "label_anchor_y": 2880.8550000000005,
+        "label_y": 5517.8,
+        "label_moved": true,
+        "analysis_y": 5505.8
+      },
+      {
+        "id": "H87",
+        "top_m": 343.49,
+        "bottom_m": 344.48,
+        "top_y": 3217.41,
+        "bottom_y": 3226.32,
+        "plotted_top_m": 343.49,
+        "plotted_bottom_m": 344.48,
+        "plotted_top_y": 3217.41,
+        "plotted_bottom_y": 3226.32,
+        "source": {
+          "sheet": "样品",
+          "row": 89,
+          "cells": {
+            "样品编号": "样品!A89",
+            "顶深_m": "样品!B89",
+            "底深_m": "样品!C89",
+            "岩心长_m": "样品!D89",
+            "Au": "样品!E89",
+            "Pb": "样品!F89",
+            "Zn": "样品!G89"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3221.8650000000002,
+        "plotted_midpoint_y": 3221.8650000000002,
+        "label_anchor_y": 3221.8650000000002,
+        "label_y": 5578.8,
+        "label_moved": true,
+        "analysis_y": 5566.8
+      },
+      {
+        "id": "H88",
+        "top_m": 344.48,
+        "bottom_m": 345.35,
+        "top_y": 3226.32,
+        "bottom_y": 3234.15,
+        "plotted_top_m": 344.48,
+        "plotted_bottom_m": 345.35,
+        "plotted_top_y": 3226.32,
+        "plotted_bottom_y": 3234.15,
+        "source": {
+          "sheet": "样品",
+          "row": 90,
+          "cells": {
+            "样品编号": "样品!A90",
+            "顶深_m": "样品!B90",
+            "底深_m": "样品!C90",
+            "岩心长_m": "样品!D90",
+            "Au": "样品!E90",
+            "Pb": "样品!F90",
+            "Zn": "样品!G90"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3230.235,
+        "plotted_midpoint_y": 3230.235,
+        "label_anchor_y": 3230.235,
+        "label_y": 5639.8,
+        "label_moved": true,
+        "analysis_y": 5627.8
+      },
+      {
+        "id": "H89",
+        "top_m": 345.35,
+        "bottom_m": 346.4,
+        "top_y": 3234.15,
+        "bottom_y": 3243.6,
+        "plotted_top_m": 345.35,
+        "plotted_bottom_m": 346.4,
+        "plotted_top_y": 3234.15,
+        "plotted_bottom_y": 3243.6,
+        "source": {
+          "sheet": "样品",
+          "row": 91,
+          "cells": {
+            "样品编号": "样品!A91",
+            "顶深_m": "样品!B91",
+            "底深_m": "样品!C91",
+            "岩心长_m": "样品!D91",
+            "Au": "样品!E91",
+            "Pb": "样品!F91",
+            "Zn": "样品!G91"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3238.875,
+        "plotted_midpoint_y": 3238.875,
+        "label_anchor_y": 3238.875,
+        "label_y": 5700.8,
+        "label_moved": true,
+        "analysis_y": 5688.8
+      },
+      {
+        "id": "H90",
+        "top_m": 346.4,
+        "bottom_m": 347.41,
+        "top_y": 3243.6,
+        "bottom_y": 3252.69,
+        "plotted_top_m": 346.4,
+        "plotted_bottom_m": 347.41,
+        "plotted_top_y": 3243.6,
+        "plotted_bottom_y": 3252.69,
+        "source": {
+          "sheet": "样品",
+          "row": 92,
+          "cells": {
+            "样品编号": "样品!A92",
+            "顶深_m": "样品!B92",
+            "底深_m": "样品!C92",
+            "岩心长_m": "样品!D92",
+            "Au": "样品!E92",
+            "Pb": "样品!F92",
+            "Zn": "样品!G92"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3248.1449999999995,
+        "plotted_midpoint_y": 3248.1449999999995,
+        "label_anchor_y": 3248.1449999999995,
+        "label_y": 5761.8,
+        "label_moved": true,
+        "analysis_y": 5749.8
+      },
+      {
+        "id": "H91",
+        "top_m": 357.12,
+        "bottom_m": 358.1,
+        "top_y": 3340.08,
+        "bottom_y": 3348.9,
+        "plotted_top_m": 357.12,
+        "plotted_bottom_m": 358.1,
+        "plotted_top_y": 3340.08,
+        "plotted_bottom_y": 3348.9,
+        "source": {
+          "sheet": "样品",
+          "row": 93,
+          "cells": {
+            "样品编号": "样品!A93",
+            "顶深_m": "样品!B93",
+            "底深_m": "样品!C93",
+            "岩心长_m": "样品!D93",
+            "Au": "样品!E93",
+            "Pb": "样品!F93",
+            "Zn": "样品!G93"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3344.4900000000002,
+        "plotted_midpoint_y": 3344.4900000000002,
+        "label_anchor_y": 3344.4900000000002,
+        "label_y": 5822.8,
+        "label_moved": true,
+        "analysis_y": 5810.8
+      },
+      {
+        "id": "H92",
+        "top_m": 358.1,
+        "bottom_m": 359.22,
+        "top_y": 3348.9,
+        "bottom_y": 3358.9800000000005,
+        "plotted_top_m": 358.1,
+        "plotted_bottom_m": 359.22,
+        "plotted_top_y": 3348.9,
+        "plotted_bottom_y": 3358.9800000000005,
+        "source": {
+          "sheet": "样品",
+          "row": 94,
+          "cells": {
+            "样品编号": "样品!A94",
+            "顶深_m": "样品!B94",
+            "底深_m": "样品!C94",
+            "岩心长_m": "样品!D94",
+            "Au": "样品!E94",
+            "Pb": "样品!F94",
+            "Zn": "样品!G94"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3353.94,
+        "plotted_midpoint_y": 3353.94,
+        "label_anchor_y": 3353.94,
+        "label_y": 5883.8,
+        "label_moved": true,
+        "analysis_y": 5871.8
+      },
+      {
+        "id": "H93",
+        "top_m": 359.22,
+        "bottom_m": 360.07,
+        "top_y": 3358.9800000000005,
+        "bottom_y": 3366.63,
+        "plotted_top_m": 359.22,
+        "plotted_bottom_m": 360.07,
+        "plotted_top_y": 3358.9800000000005,
+        "plotted_bottom_y": 3366.63,
+        "source": {
+          "sheet": "样品",
+          "row": 95,
+          "cells": {
+            "样品编号": "样品!A95",
+            "顶深_m": "样品!B95",
+            "底深_m": "样品!C95",
+            "岩心长_m": "样品!D95",
+            "Au": "样品!E95",
+            "Pb": "样品!F95",
+            "Zn": "样品!G95"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3362.805,
+        "plotted_midpoint_y": 3362.805,
+        "label_anchor_y": 3362.805,
+        "label_y": 5944.8,
+        "label_moved": true,
+        "analysis_y": 5932.8
+      },
+      {
+        "id": "H94",
+        "top_m": 360.07,
+        "bottom_m": 361.1,
+        "top_y": 3366.63,
+        "bottom_y": 3375.9,
+        "plotted_top_m": 360.07,
+        "plotted_bottom_m": 361.1,
+        "plotted_top_y": 3366.63,
+        "plotted_bottom_y": 3375.9,
+        "source": {
+          "sheet": "样品",
+          "row": 96,
+          "cells": {
+            "样品编号": "样品!A96",
+            "顶深_m": "样品!B96",
+            "底深_m": "样品!C96",
+            "岩心长_m": "样品!D96",
+            "Au": "样品!E96",
+            "Pb": "样品!F96",
+            "Zn": "样品!G96"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3371.2650000000003,
+        "plotted_midpoint_y": 3371.2650000000003,
+        "label_anchor_y": 3371.2650000000003,
+        "label_y": 6005.8,
+        "label_moved": true,
+        "analysis_y": 5993.8
+      },
+      {
+        "id": "H95",
+        "top_m": 361.1,
+        "bottom_m": 362.14,
+        "top_y": 3375.9,
+        "bottom_y": 3385.2599999999998,
+        "plotted_top_m": 361.1,
+        "plotted_bottom_m": 362.14,
+        "plotted_top_y": 3375.9,
+        "plotted_bottom_y": 3385.2599999999998,
+        "source": {
+          "sheet": "样品",
+          "row": 97,
+          "cells": {
+            "样品编号": "样品!A97",
+            "顶深_m": "样品!B97",
+            "底深_m": "样品!C97",
+            "岩心长_m": "样品!D97",
+            "Au": "样品!E97",
+            "Pb": "样品!F97",
+            "Zn": "样品!G97"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3380.58,
+        "plotted_midpoint_y": 3380.58,
+        "label_anchor_y": 3380.58,
+        "label_y": 6066.8,
+        "label_moved": true,
+        "analysis_y": 6054.8
+      },
+      {
+        "id": "H96",
+        "top_m": 362.14,
+        "bottom_m": 363.09,
+        "top_y": 3385.2599999999998,
+        "bottom_y": 3393.81,
+        "plotted_top_m": 362.14,
+        "plotted_bottom_m": 363.09,
+        "plotted_top_y": 3385.2599999999998,
+        "plotted_bottom_y": 3393.81,
+        "source": {
+          "sheet": "样品",
+          "row": 98,
+          "cells": {
+            "样品编号": "样品!A98",
+            "顶深_m": "样品!B98",
+            "底深_m": "样品!C98",
+            "岩心长_m": "样品!D98",
+            "Au": "样品!E98",
+            "Pb": "样品!F98",
+            "Zn": "样品!G98"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 3389.535,
+        "plotted_midpoint_y": 3389.535,
+        "label_anchor_y": 3389.535,
+        "label_y": 6127.8,
+        "label_moved": true,
+        "analysis_y": 6115.8
+      }
+    ],
+    "structures": [
+      {
+        "depth_m": 382.79,
+        "diameter_mm": 75.0,
+        "y": 3571.11,
+        "label_anchor_y": 3571.11,
+        "label_y": 3571.11,
+        "source": {
+          "sheet": "孔径",
+          "row": 2,
+          "cells": {
+            "孔深_m": "孔径!A2",
+            "孔径_mm": "孔径!B2"
+          }
+        }
+      }
+    ],
+    "turns_independent_equal_height_ledger": true,
+    "turn_records": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 0.34,
+        "top_y": 126.0,
+        "bottom_y": 129.06,
+        "ledger_y": 137.5,
+        "source": {
+          "sheet": "回次",
+          "row": 2,
+          "cells": {
+            "回次号": "回次!A2",
+            "顶深_m": "回次!B2",
+            "底深_m": "回次!C2",
+            "岩心长_m": "回次!D2"
+          }
+        }
+      },
+      {
+        "id": "2",
+        "top_m": 0.34,
+        "bottom_m": 1.84,
+        "top_y": 129.06,
+        "bottom_y": 142.56,
+        "ledger_y": 160.5,
+        "source": {
+          "sheet": "回次",
+          "row": 3,
+          "cells": {
+            "回次号": "回次!A3",
+            "顶深_m": "回次!B3",
+            "底深_m": "回次!C3",
+            "岩心长_m": "回次!D3"
+          }
+        }
+      },
+      {
+        "id": "3",
+        "top_m": 1.84,
+        "bottom_m": 3.34,
+        "top_y": 142.56,
+        "bottom_y": 156.06,
+        "ledger_y": 183.5,
+        "source": {
+          "sheet": "回次",
+          "row": 4,
+          "cells": {
+            "回次号": "回次!A4",
+            "顶深_m": "回次!B4",
+            "底深_m": "回次!C4",
+            "岩心长_m": "回次!D4"
+          }
+        }
+      },
+      {
+        "id": "4",
+        "top_m": 3.34,
+        "bottom_m": 4.84,
+        "top_y": 156.06,
+        "bottom_y": 169.56,
+        "ledger_y": 206.5,
+        "source": {
+          "sheet": "回次",
+          "row": 5,
+          "cells": {
+            "回次号": "回次!A5",
+            "顶深_m": "回次!B5",
+            "底深_m": "回次!C5",
+            "岩心长_m": "回次!D5"
+          }
+        }
+      },
+      {
+        "id": "5",
+        "top_m": 4.84,
+        "bottom_m": 5.79,
+        "top_y": 169.56,
+        "bottom_y": 178.11,
+        "ledger_y": 229.5,
+        "source": {
+          "sheet": "回次",
+          "row": 6,
+          "cells": {
+            "回次号": "回次!A6",
+            "顶深_m": "回次!B6",
+            "底深_m": "回次!C6",
+            "岩心长_m": "回次!D6"
+          }
+        }
+      },
+      {
+        "id": "6",
+        "top_m": 5.79,
+        "bottom_m": 8.79,
+        "top_y": 178.11,
+        "bottom_y": 205.10999999999999,
+        "ledger_y": 252.5,
+        "source": {
+          "sheet": "回次",
+          "row": 7,
+          "cells": {
+            "回次号": "回次!A7",
+            "顶深_m": "回次!B7",
+            "底深_m": "回次!C7",
+            "岩心长_m": "回次!D7"
+          }
+        }
+      },
+      {
+        "id": "7",
+        "top_m": 8.79,
+        "bottom_m": 11.79,
+        "top_y": 205.10999999999999,
+        "bottom_y": 232.10999999999999,
+        "ledger_y": 275.5,
+        "source": {
+          "sheet": "回次",
+          "row": 8,
+          "cells": {
+            "回次号": "回次!A8",
+            "顶深_m": "回次!B8",
+            "底深_m": "回次!C8",
+            "岩心长_m": "回次!D8"
+          }
+        }
+      },
+      {
+        "id": "8",
+        "top_m": 11.79,
+        "bottom_m": 14.79,
+        "top_y": 232.10999999999999,
+        "bottom_y": 259.11,
+        "ledger_y": 298.5,
+        "source": {
+          "sheet": "回次",
+          "row": 9,
+          "cells": {
+            "回次号": "回次!A9",
+            "顶深_m": "回次!B9",
+            "底深_m": "回次!C9",
+            "岩心长_m": "回次!D9"
+          }
+        }
+      },
+      {
+        "id": "9",
+        "top_m": 14.79,
+        "bottom_m": 17.79,
+        "top_y": 259.11,
+        "bottom_y": 286.11,
+        "ledger_y": 321.5,
+        "source": {
+          "sheet": "回次",
+          "row": 10,
+          "cells": {
+            "回次号": "回次!A10",
+            "顶深_m": "回次!B10",
+            "底深_m": "回次!C10",
+            "岩心长_m": "回次!D10"
+          }
+        }
+      },
+      {
+        "id": "10",
+        "top_m": 17.79,
+        "bottom_m": 20.79,
+        "top_y": 286.11,
+        "bottom_y": 313.11,
+        "ledger_y": 344.5,
+        "source": {
+          "sheet": "回次",
+          "row": 11,
+          "cells": {
+            "回次号": "回次!A11",
+            "顶深_m": "回次!B11",
+            "底深_m": "回次!C11",
+            "岩心长_m": "回次!D11"
+          }
+        }
+      },
+      {
+        "id": "11",
+        "top_m": 20.79,
+        "bottom_m": 23.79,
+        "top_y": 313.11,
+        "bottom_y": 340.11,
+        "ledger_y": 367.5,
+        "source": {
+          "sheet": "回次",
+          "row": 12,
+          "cells": {
+            "回次号": "回次!A12",
+            "顶深_m": "回次!B12",
+            "底深_m": "回次!C12",
+            "岩心长_m": "回次!D12"
+          }
+        }
+      },
+      {
+        "id": "12",
+        "top_m": 23.79,
+        "bottom_m": 26.79,
+        "top_y": 340.11,
+        "bottom_y": 367.11,
+        "ledger_y": 390.5,
+        "source": {
+          "sheet": "回次",
+          "row": 13,
+          "cells": {
+            "回次号": "回次!A13",
+            "顶深_m": "回次!B13",
+            "底深_m": "回次!C13",
+            "岩心长_m": "回次!D13"
+          }
+        }
+      },
+      {
+        "id": "13",
+        "top_m": 26.79,
+        "bottom_m": 29.79,
+        "top_y": 367.11,
+        "bottom_y": 394.11,
+        "ledger_y": 413.5,
+        "source": {
+          "sheet": "回次",
+          "row": 14,
+          "cells": {
+            "回次号": "回次!A14",
+            "顶深_m": "回次!B14",
+            "底深_m": "回次!C14",
+            "岩心长_m": "回次!D14"
+          }
+        }
+      },
+      {
+        "id": "14",
+        "top_m": 29.79,
+        "bottom_m": 32.79,
+        "top_y": 394.11,
+        "bottom_y": 421.11,
+        "ledger_y": 436.5,
+        "source": {
+          "sheet": "回次",
+          "row": 15,
+          "cells": {
+            "回次号": "回次!A15",
+            "顶深_m": "回次!B15",
+            "底深_m": "回次!C15",
+            "岩心长_m": "回次!D15"
+          }
+        }
+      },
+      {
+        "id": "15",
+        "top_m": 32.79,
+        "bottom_m": 35.79,
+        "top_y": 421.11,
+        "bottom_y": 448.11,
+        "ledger_y": 459.5,
+        "source": {
+          "sheet": "回次",
+          "row": 16,
+          "cells": {
+            "回次号": "回次!A16",
+            "顶深_m": "回次!B16",
+            "底深_m": "回次!C16",
+            "岩心长_m": "回次!D16"
+          }
+        }
+      },
+      {
+        "id": "16",
+        "top_m": 35.79,
+        "bottom_m": 38.79,
+        "top_y": 448.11,
+        "bottom_y": 475.11,
+        "ledger_y": 482.5,
+        "source": {
+          "sheet": "回次",
+          "row": 17,
+          "cells": {
+            "回次号": "回次!A17",
+            "顶深_m": "回次!B17",
+            "底深_m": "回次!C17",
+            "岩心长_m": "回次!D17"
+          }
+        }
+      },
+      {
+        "id": "17",
+        "top_m": 38.79,
+        "bottom_m": 41.79,
+        "top_y": 475.11,
+        "bottom_y": 502.11,
+        "ledger_y": 505.5,
+        "source": {
+          "sheet": "回次",
+          "row": 18,
+          "cells": {
+            "回次号": "回次!A18",
+            "顶深_m": "回次!B18",
+            "底深_m": "回次!C18",
+            "岩心长_m": "回次!D18"
+          }
+        }
+      },
+      {
+        "id": "18",
+        "top_m": 41.79,
+        "bottom_m": 44.79,
+        "top_y": 502.11,
+        "bottom_y": 529.11,
+        "ledger_y": 528.5,
+        "source": {
+          "sheet": "回次",
+          "row": 19,
+          "cells": {
+            "回次号": "回次!A19",
+            "顶深_m": "回次!B19",
+            "底深_m": "回次!C19",
+            "岩心长_m": "回次!D19"
+          }
+        }
+      },
+      {
+        "id": "19",
+        "top_m": 44.79,
+        "bottom_m": 47.79,
+        "top_y": 529.11,
+        "bottom_y": 556.11,
+        "ledger_y": 551.5,
+        "source": {
+          "sheet": "回次",
+          "row": 20,
+          "cells": {
+            "回次号": "回次!A20",
+            "顶深_m": "回次!B20",
+            "底深_m": "回次!C20",
+            "岩心长_m": "回次!D20"
+          }
+        }
+      },
+      {
+        "id": "20",
+        "top_m": 47.79,
+        "bottom_m": 50.79,
+        "top_y": 556.11,
+        "bottom_y": 583.11,
+        "ledger_y": 574.5,
+        "source": {
+          "sheet": "回次",
+          "row": 21,
+          "cells": {
+            "回次号": "回次!A21",
+            "顶深_m": "回次!B21",
+            "底深_m": "回次!C21",
+            "岩心长_m": "回次!D21"
+          }
+        }
+      },
+      {
+        "id": "21",
+        "top_m": 50.79,
+        "bottom_m": 53.79,
+        "top_y": 583.11,
+        "bottom_y": 610.11,
+        "ledger_y": 597.5,
+        "source": {
+          "sheet": "回次",
+          "row": 22,
+          "cells": {
+            "回次号": "回次!A22",
+            "顶深_m": "回次!B22",
+            "底深_m": "回次!C22",
+            "岩心长_m": "回次!D22"
+          }
+        }
+      },
+      {
+        "id": "22",
+        "top_m": 53.79,
+        "bottom_m": 56.79,
+        "top_y": 610.11,
+        "bottom_y": 637.11,
+        "ledger_y": 620.5,
+        "source": {
+          "sheet": "回次",
+          "row": 23,
+          "cells": {
+            "回次号": "回次!A23",
+            "顶深_m": "回次!B23",
+            "底深_m": "回次!C23",
+            "岩心长_m": "回次!D23"
+          }
+        }
+      },
+      {
+        "id": "23",
+        "top_m": 56.79,
+        "bottom_m": 59.79,
+        "top_y": 637.11,
+        "bottom_y": 664.11,
+        "ledger_y": 643.5,
+        "source": {
+          "sheet": "回次",
+          "row": 24,
+          "cells": {
+            "回次号": "回次!A24",
+            "顶深_m": "回次!B24",
+            "底深_m": "回次!C24",
+            "岩心长_m": "回次!D24"
+          }
+        }
+      },
+      {
+        "id": "24",
+        "top_m": 59.79,
+        "bottom_m": 62.79,
+        "top_y": 664.11,
+        "bottom_y": 691.11,
+        "ledger_y": 666.5,
+        "source": {
+          "sheet": "回次",
+          "row": 25,
+          "cells": {
+            "回次号": "回次!A25",
+            "顶深_m": "回次!B25",
+            "底深_m": "回次!C25",
+            "岩心长_m": "回次!D25"
+          }
+        }
+      },
+      {
+        "id": "25",
+        "top_m": 62.79,
+        "bottom_m": 65.78999999999999,
+        "top_y": 691.11,
+        "bottom_y": 718.1099999999999,
+        "ledger_y": 689.5,
+        "source": {
+          "sheet": "回次",
+          "row": 26,
+          "cells": {
+            "回次号": "回次!A26",
+            "顶深_m": "回次!B26",
+            "底深_m": "回次!C26",
+            "岩心长_m": "回次!D26"
+          }
+        }
+      },
+      {
+        "id": "26",
+        "top_m": 65.78999999999999,
+        "bottom_m": 68.78999999999999,
+        "top_y": 718.1099999999999,
+        "bottom_y": 745.1099999999999,
+        "ledger_y": 712.5,
+        "source": {
+          "sheet": "回次",
+          "row": 27,
+          "cells": {
+            "回次号": "回次!A27",
+            "顶深_m": "回次!B27",
+            "底深_m": "回次!C27",
+            "岩心长_m": "回次!D27"
+          }
+        }
+      },
+      {
+        "id": "27",
+        "top_m": 68.78999999999999,
+        "bottom_m": 71.78999999999999,
+        "top_y": 745.1099999999999,
+        "bottom_y": 772.1099999999999,
+        "ledger_y": 735.5,
+        "source": {
+          "sheet": "回次",
+          "row": 28,
+          "cells": {
+            "回次号": "回次!A28",
+            "顶深_m": "回次!B28",
+            "底深_m": "回次!C28",
+            "岩心长_m": "回次!D28"
+          }
+        }
+      },
+      {
+        "id": "28",
+        "top_m": 71.78999999999999,
+        "bottom_m": 74.78999999999999,
+        "top_y": 772.1099999999999,
+        "bottom_y": 799.1099999999999,
+        "ledger_y": 758.5,
+        "source": {
+          "sheet": "回次",
+          "row": 29,
+          "cells": {
+            "回次号": "回次!A29",
+            "顶深_m": "回次!B29",
+            "底深_m": "回次!C29",
+            "岩心长_m": "回次!D29"
+          }
+        }
+      },
+      {
+        "id": "29",
+        "top_m": 74.78999999999999,
+        "bottom_m": 77.78999999999999,
+        "top_y": 799.1099999999999,
+        "bottom_y": 826.1099999999999,
+        "ledger_y": 781.5,
+        "source": {
+          "sheet": "回次",
+          "row": 30,
+          "cells": {
+            "回次号": "回次!A30",
+            "顶深_m": "回次!B30",
+            "底深_m": "回次!C30",
+            "岩心长_m": "回次!D30"
+          }
+        }
+      },
+      {
+        "id": "30",
+        "top_m": 77.78999999999999,
+        "bottom_m": 80.78999999999999,
+        "top_y": 826.1099999999999,
+        "bottom_y": 853.1099999999999,
+        "ledger_y": 804.5,
+        "source": {
+          "sheet": "回次",
+          "row": 31,
+          "cells": {
+            "回次号": "回次!A31",
+            "顶深_m": "回次!B31",
+            "底深_m": "回次!C31",
+            "岩心长_m": "回次!D31"
+          }
+        }
+      },
+      {
+        "id": "31",
+        "top_m": 80.78999999999999,
+        "bottom_m": 83.78999999999999,
+        "top_y": 853.1099999999999,
+        "bottom_y": 880.1099999999999,
+        "ledger_y": 827.5,
+        "source": {
+          "sheet": "回次",
+          "row": 32,
+          "cells": {
+            "回次号": "回次!A32",
+            "顶深_m": "回次!B32",
+            "底深_m": "回次!C32",
+            "岩心长_m": "回次!D32"
+          }
+        }
+      },
+      {
+        "id": "32",
+        "top_m": 83.78999999999999,
+        "bottom_m": 86.78999999999999,
+        "top_y": 880.1099999999999,
+        "bottom_y": 907.1099999999999,
+        "ledger_y": 850.5,
+        "source": {
+          "sheet": "回次",
+          "row": 33,
+          "cells": {
+            "回次号": "回次!A33",
+            "顶深_m": "回次!B33",
+            "底深_m": "回次!C33",
+            "岩心长_m": "回次!D33"
+          }
+        }
+      },
+      {
+        "id": "33",
+        "top_m": 86.78999999999999,
+        "bottom_m": 89.78999999999999,
+        "top_y": 907.1099999999999,
+        "bottom_y": 934.1099999999999,
+        "ledger_y": 873.5,
+        "source": {
+          "sheet": "回次",
+          "row": 34,
+          "cells": {
+            "回次号": "回次!A34",
+            "顶深_m": "回次!B34",
+            "底深_m": "回次!C34",
+            "岩心长_m": "回次!D34"
+          }
+        }
+      },
+      {
+        "id": "34",
+        "top_m": 89.78999999999999,
+        "bottom_m": 92.78999999999999,
+        "top_y": 934.1099999999999,
+        "bottom_y": 961.1099999999999,
+        "ledger_y": 896.5,
+        "source": {
+          "sheet": "回次",
+          "row": 35,
+          "cells": {
+            "回次号": "回次!A35",
+            "顶深_m": "回次!B35",
+            "底深_m": "回次!C35",
+            "岩心长_m": "回次!D35"
+          }
+        }
+      },
+      {
+        "id": "35",
+        "top_m": 92.78999999999999,
+        "bottom_m": 95.78999999999999,
+        "top_y": 961.1099999999999,
+        "bottom_y": 988.1099999999999,
+        "ledger_y": 919.5,
+        "source": {
+          "sheet": "回次",
+          "row": 36,
+          "cells": {
+            "回次号": "回次!A36",
+            "顶深_m": "回次!B36",
+            "底深_m": "回次!C36",
+            "岩心长_m": "回次!D36"
+          }
+        }
+      },
+      {
+        "id": "36",
+        "top_m": 95.78999999999999,
+        "bottom_m": 98.78999999999999,
+        "top_y": 988.1099999999999,
+        "bottom_y": 1015.1099999999999,
+        "ledger_y": 942.5,
+        "source": {
+          "sheet": "回次",
+          "row": 37,
+          "cells": {
+            "回次号": "回次!A37",
+            "顶深_m": "回次!B37",
+            "底深_m": "回次!C37",
+            "岩心长_m": "回次!D37"
+          }
+        }
+      },
+      {
+        "id": "37",
+        "top_m": 98.78999999999999,
+        "bottom_m": 101.78999999999999,
+        "top_y": 1015.1099999999999,
+        "bottom_y": 1042.11,
+        "ledger_y": 965.5,
+        "source": {
+          "sheet": "回次",
+          "row": 38,
+          "cells": {
+            "回次号": "回次!A38",
+            "顶深_m": "回次!B38",
+            "底深_m": "回次!C38",
+            "岩心长_m": "回次!D38"
+          }
+        }
+      },
+      {
+        "id": "38",
+        "top_m": 101.78999999999999,
+        "bottom_m": 104.78999999999999,
+        "top_y": 1042.11,
+        "bottom_y": 1069.11,
+        "ledger_y": 988.5,
+        "source": {
+          "sheet": "回次",
+          "row": 39,
+          "cells": {
+            "回次号": "回次!A39",
+            "顶深_m": "回次!B39",
+            "底深_m": "回次!C39",
+            "岩心长_m": "回次!D39"
+          }
+        }
+      },
+      {
+        "id": "39",
+        "top_m": 104.78999999999999,
+        "bottom_m": 107.78999999999999,
+        "top_y": 1069.11,
+        "bottom_y": 1096.11,
+        "ledger_y": 1011.5,
+        "source": {
+          "sheet": "回次",
+          "row": 40,
+          "cells": {
+            "回次号": "回次!A40",
+            "顶深_m": "回次!B40",
+            "底深_m": "回次!C40",
+            "岩心长_m": "回次!D40"
+          }
+        }
+      },
+      {
+        "id": "40",
+        "top_m": 107.78999999999999,
+        "bottom_m": 110.78999999999999,
+        "top_y": 1096.11,
+        "bottom_y": 1123.11,
+        "ledger_y": 1034.5,
+        "source": {
+          "sheet": "回次",
+          "row": 41,
+          "cells": {
+            "回次号": "回次!A41",
+            "顶深_m": "回次!B41",
+            "底深_m": "回次!C41",
+            "岩心长_m": "回次!D41"
+          }
+        }
+      },
+      {
+        "id": "41",
+        "top_m": 110.78999999999999,
+        "bottom_m": 113.78999999999999,
+        "top_y": 1123.11,
+        "bottom_y": 1150.11,
+        "ledger_y": 1057.5,
+        "source": {
+          "sheet": "回次",
+          "row": 42,
+          "cells": {
+            "回次号": "回次!A42",
+            "顶深_m": "回次!B42",
+            "底深_m": "回次!C42",
+            "岩心长_m": "回次!D42"
+          }
+        }
+      },
+      {
+        "id": "42",
+        "top_m": 113.78999999999999,
+        "bottom_m": 116.78999999999999,
+        "top_y": 1150.11,
+        "bottom_y": 1177.11,
+        "ledger_y": 1080.5,
+        "source": {
+          "sheet": "回次",
+          "row": 43,
+          "cells": {
+            "回次号": "回次!A43",
+            "顶深_m": "回次!B43",
+            "底深_m": "回次!C43",
+            "岩心长_m": "回次!D43"
+          }
+        }
+      },
+      {
+        "id": "43",
+        "top_m": 116.78999999999999,
+        "bottom_m": 119.78999999999999,
+        "top_y": 1177.11,
+        "bottom_y": 1204.11,
+        "ledger_y": 1103.5,
+        "source": {
+          "sheet": "回次",
+          "row": 44,
+          "cells": {
+            "回次号": "回次!A44",
+            "顶深_m": "回次!B44",
+            "底深_m": "回次!C44",
+            "岩心长_m": "回次!D44"
+          }
+        }
+      },
+      {
+        "id": "44",
+        "top_m": 119.78999999999999,
+        "bottom_m": 122.78999999999999,
+        "top_y": 1204.11,
+        "bottom_y": 1231.11,
+        "ledger_y": 1126.5,
+        "source": {
+          "sheet": "回次",
+          "row": 45,
+          "cells": {
+            "回次号": "回次!A45",
+            "顶深_m": "回次!B45",
+            "底深_m": "回次!C45",
+            "岩心长_m": "回次!D45"
+          }
+        }
+      },
+      {
+        "id": "45",
+        "top_m": 122.78999999999999,
+        "bottom_m": 125.78999999999999,
+        "top_y": 1231.11,
+        "bottom_y": 1258.11,
+        "ledger_y": 1149.5,
+        "source": {
+          "sheet": "回次",
+          "row": 46,
+          "cells": {
+            "回次号": "回次!A46",
+            "顶深_m": "回次!B46",
+            "底深_m": "回次!C46",
+            "岩心长_m": "回次!D46"
+          }
+        }
+      },
+      {
+        "id": "46",
+        "top_m": 125.78999999999999,
+        "bottom_m": 128.79,
+        "top_y": 1258.11,
+        "bottom_y": 1285.11,
+        "ledger_y": 1172.5,
+        "source": {
+          "sheet": "回次",
+          "row": 47,
+          "cells": {
+            "回次号": "回次!A47",
+            "顶深_m": "回次!B47",
+            "底深_m": "回次!C47",
+            "岩心长_m": "回次!D47"
+          }
+        }
+      },
+      {
+        "id": "47",
+        "top_m": 128.79,
+        "bottom_m": 131.79,
+        "top_y": 1285.11,
+        "bottom_y": 1312.11,
+        "ledger_y": 1195.5,
+        "source": {
+          "sheet": "回次",
+          "row": 48,
+          "cells": {
+            "回次号": "回次!A48",
+            "顶深_m": "回次!B48",
+            "底深_m": "回次!C48",
+            "岩心长_m": "回次!D48"
+          }
+        }
+      },
+      {
+        "id": "48",
+        "top_m": 131.79,
+        "bottom_m": 134.79,
+        "top_y": 1312.11,
+        "bottom_y": 1339.11,
+        "ledger_y": 1218.5,
+        "source": {
+          "sheet": "回次",
+          "row": 49,
+          "cells": {
+            "回次号": "回次!A49",
+            "顶深_m": "回次!B49",
+            "底深_m": "回次!C49",
+            "岩心长_m": "回次!D49"
+          }
+        }
+      },
+      {
+        "id": "49",
+        "top_m": 134.79,
+        "bottom_m": 137.79,
+        "top_y": 1339.11,
+        "bottom_y": 1366.11,
+        "ledger_y": 1241.5,
+        "source": {
+          "sheet": "回次",
+          "row": 50,
+          "cells": {
+            "回次号": "回次!A50",
+            "顶深_m": "回次!B50",
+            "底深_m": "回次!C50",
+            "岩心长_m": "回次!D50"
+          }
+        }
+      },
+      {
+        "id": "50",
+        "top_m": 137.79,
+        "bottom_m": 140.79,
+        "top_y": 1366.11,
+        "bottom_y": 1393.11,
+        "ledger_y": 1264.5,
+        "source": {
+          "sheet": "回次",
+          "row": 51,
+          "cells": {
+            "回次号": "回次!A51",
+            "顶深_m": "回次!B51",
+            "底深_m": "回次!C51",
+            "岩心长_m": "回次!D51"
+          }
+        }
+      },
+      {
+        "id": "51",
+        "top_m": 140.79,
+        "bottom_m": 143.79,
+        "top_y": 1393.11,
+        "bottom_y": 1420.11,
+        "ledger_y": 1287.5,
+        "source": {
+          "sheet": "回次",
+          "row": 52,
+          "cells": {
+            "回次号": "回次!A52",
+            "顶深_m": "回次!B52",
+            "底深_m": "回次!C52",
+            "岩心长_m": "回次!D52"
+          }
+        }
+      },
+      {
+        "id": "52",
+        "top_m": 143.79,
+        "bottom_m": 146.79,
+        "top_y": 1420.11,
+        "bottom_y": 1447.11,
+        "ledger_y": 1310.5,
+        "source": {
+          "sheet": "回次",
+          "row": 53,
+          "cells": {
+            "回次号": "回次!A53",
+            "顶深_m": "回次!B53",
+            "底深_m": "回次!C53",
+            "岩心长_m": "回次!D53"
+          }
+        }
+      },
+      {
+        "id": "53",
+        "top_m": 146.79,
+        "bottom_m": 149.79,
+        "top_y": 1447.11,
+        "bottom_y": 1474.11,
+        "ledger_y": 1333.5,
+        "source": {
+          "sheet": "回次",
+          "row": 54,
+          "cells": {
+            "回次号": "回次!A54",
+            "顶深_m": "回次!B54",
+            "底深_m": "回次!C54",
+            "岩心长_m": "回次!D54"
+          }
+        }
+      },
+      {
+        "id": "54",
+        "top_m": 149.79,
+        "bottom_m": 152.79,
+        "top_y": 1474.11,
+        "bottom_y": 1501.11,
+        "ledger_y": 1356.5,
+        "source": {
+          "sheet": "回次",
+          "row": 55,
+          "cells": {
+            "回次号": "回次!A55",
+            "顶深_m": "回次!B55",
+            "底深_m": "回次!C55",
+            "岩心长_m": "回次!D55"
+          }
+        }
+      },
+      {
+        "id": "55",
+        "top_m": 152.79,
+        "bottom_m": 155.79,
+        "top_y": 1501.11,
+        "bottom_y": 1528.11,
+        "ledger_y": 1379.5,
+        "source": {
+          "sheet": "回次",
+          "row": 56,
+          "cells": {
+            "回次号": "回次!A56",
+            "顶深_m": "回次!B56",
+            "底深_m": "回次!C56",
+            "岩心长_m": "回次!D56"
+          }
+        }
+      },
+      {
+        "id": "56",
+        "top_m": 155.79,
+        "bottom_m": 158.79,
+        "top_y": 1528.11,
+        "bottom_y": 1555.11,
+        "ledger_y": 1402.5,
+        "source": {
+          "sheet": "回次",
+          "row": 57,
+          "cells": {
+            "回次号": "回次!A57",
+            "顶深_m": "回次!B57",
+            "底深_m": "回次!C57",
+            "岩心长_m": "回次!D57"
+          }
+        }
+      },
+      {
+        "id": "57",
+        "top_m": 158.79,
+        "bottom_m": 161.79,
+        "top_y": 1555.11,
+        "bottom_y": 1582.11,
+        "ledger_y": 1425.5,
+        "source": {
+          "sheet": "回次",
+          "row": 58,
+          "cells": {
+            "回次号": "回次!A58",
+            "顶深_m": "回次!B58",
+            "底深_m": "回次!C58",
+            "岩心长_m": "回次!D58"
+          }
+        }
+      },
+      {
+        "id": "58",
+        "top_m": 161.79,
+        "bottom_m": 164.79,
+        "top_y": 1582.11,
+        "bottom_y": 1609.11,
+        "ledger_y": 1448.5,
+        "source": {
+          "sheet": "回次",
+          "row": 59,
+          "cells": {
+            "回次号": "回次!A59",
+            "顶深_m": "回次!B59",
+            "底深_m": "回次!C59",
+            "岩心长_m": "回次!D59"
+          }
+        }
+      },
+      {
+        "id": "59",
+        "top_m": 164.79,
+        "bottom_m": 167.79,
+        "top_y": 1609.11,
+        "bottom_y": 1636.11,
+        "ledger_y": 1471.5,
+        "source": {
+          "sheet": "回次",
+          "row": 60,
+          "cells": {
+            "回次号": "回次!A60",
+            "顶深_m": "回次!B60",
+            "底深_m": "回次!C60",
+            "岩心长_m": "回次!D60"
+          }
+        }
+      },
+      {
+        "id": "60",
+        "top_m": 167.79,
+        "bottom_m": 170.79,
+        "top_y": 1636.11,
+        "bottom_y": 1663.11,
+        "ledger_y": 1494.5,
+        "source": {
+          "sheet": "回次",
+          "row": 61,
+          "cells": {
+            "回次号": "回次!A61",
+            "顶深_m": "回次!B61",
+            "底深_m": "回次!C61",
+            "岩心长_m": "回次!D61"
+          }
+        }
+      },
+      {
+        "id": "61",
+        "top_m": 170.79,
+        "bottom_m": 173.79,
+        "top_y": 1663.11,
+        "bottom_y": 1690.11,
+        "ledger_y": 1517.5,
+        "source": {
+          "sheet": "回次",
+          "row": 62,
+          "cells": {
+            "回次号": "回次!A62",
+            "顶深_m": "回次!B62",
+            "底深_m": "回次!C62",
+            "岩心长_m": "回次!D62"
+          }
+        }
+      },
+      {
+        "id": "62",
+        "top_m": 173.79,
+        "bottom_m": 176.79,
+        "top_y": 1690.11,
+        "bottom_y": 1717.11,
+        "ledger_y": 1540.5,
+        "source": {
+          "sheet": "回次",
+          "row": 63,
+          "cells": {
+            "回次号": "回次!A63",
+            "顶深_m": "回次!B63",
+            "底深_m": "回次!C63",
+            "岩心长_m": "回次!D63"
+          }
+        }
+      },
+      {
+        "id": "63",
+        "top_m": 176.79,
+        "bottom_m": 179.79,
+        "top_y": 1717.11,
+        "bottom_y": 1744.11,
+        "ledger_y": 1563.5,
+        "source": {
+          "sheet": "回次",
+          "row": 64,
+          "cells": {
+            "回次号": "回次!A64",
+            "顶深_m": "回次!B64",
+            "底深_m": "回次!C64",
+            "岩心长_m": "回次!D64"
+          }
+        }
+      },
+      {
+        "id": "64",
+        "top_m": 179.79,
+        "bottom_m": 182.79,
+        "top_y": 1744.11,
+        "bottom_y": 1771.11,
+        "ledger_y": 1586.5,
+        "source": {
+          "sheet": "回次",
+          "row": 65,
+          "cells": {
+            "回次号": "回次!A65",
+            "顶深_m": "回次!B65",
+            "底深_m": "回次!C65",
+            "岩心长_m": "回次!D65"
+          }
+        }
+      },
+      {
+        "id": "65",
+        "top_m": 182.79,
+        "bottom_m": 185.79,
+        "top_y": 1771.11,
+        "bottom_y": 1798.11,
+        "ledger_y": 1609.5,
+        "source": {
+          "sheet": "回次",
+          "row": 66,
+          "cells": {
+            "回次号": "回次!A66",
+            "顶深_m": "回次!B66",
+            "底深_m": "回次!C66",
+            "岩心长_m": "回次!D66"
+          }
+        }
+      },
+      {
+        "id": "66",
+        "top_m": 185.79,
+        "bottom_m": 188.79,
+        "top_y": 1798.11,
+        "bottom_y": 1825.11,
+        "ledger_y": 1632.5,
+        "source": {
+          "sheet": "回次",
+          "row": 67,
+          "cells": {
+            "回次号": "回次!A67",
+            "顶深_m": "回次!B67",
+            "底深_m": "回次!C67",
+            "岩心长_m": "回次!D67"
+          }
+        }
+      },
+      {
+        "id": "67",
+        "top_m": 188.79,
+        "bottom_m": 191.79,
+        "top_y": 1825.11,
+        "bottom_y": 1852.11,
+        "ledger_y": 1655.5,
+        "source": {
+          "sheet": "回次",
+          "row": 68,
+          "cells": {
+            "回次号": "回次!A68",
+            "顶深_m": "回次!B68",
+            "底深_m": "回次!C68",
+            "岩心长_m": "回次!D68"
+          }
+        }
+      },
+      {
+        "id": "68",
+        "top_m": 191.79,
+        "bottom_m": 194.79,
+        "top_y": 1852.11,
+        "bottom_y": 1879.11,
+        "ledger_y": 1678.5,
+        "source": {
+          "sheet": "回次",
+          "row": 69,
+          "cells": {
+            "回次号": "回次!A69",
+            "顶深_m": "回次!B69",
+            "底深_m": "回次!C69",
+            "岩心长_m": "回次!D69"
+          }
+        }
+      },
+      {
+        "id": "69",
+        "top_m": 194.79,
+        "bottom_m": 197.79,
+        "top_y": 1879.11,
+        "bottom_y": 1906.11,
+        "ledger_y": 1701.5,
+        "source": {
+          "sheet": "回次",
+          "row": 70,
+          "cells": {
+            "回次号": "回次!A70",
+            "顶深_m": "回次!B70",
+            "底深_m": "回次!C70",
+            "岩心长_m": "回次!D70"
+          }
+        }
+      },
+      {
+        "id": "70",
+        "top_m": 197.79,
+        "bottom_m": 200.79,
+        "top_y": 1906.11,
+        "bottom_y": 1933.11,
+        "ledger_y": 1724.5,
+        "source": {
+          "sheet": "回次",
+          "row": 71,
+          "cells": {
+            "回次号": "回次!A71",
+            "顶深_m": "回次!B71",
+            "底深_m": "回次!C71",
+            "岩心长_m": "回次!D71"
+          }
+        }
+      },
+      {
+        "id": "71",
+        "top_m": 200.79,
+        "bottom_m": 203.79,
+        "top_y": 1933.11,
+        "bottom_y": 1960.11,
+        "ledger_y": 1747.5,
+        "source": {
+          "sheet": "回次",
+          "row": 72,
+          "cells": {
+            "回次号": "回次!A72",
+            "顶深_m": "回次!B72",
+            "底深_m": "回次!C72",
+            "岩心长_m": "回次!D72"
+          }
+        }
+      },
+      {
+        "id": "72",
+        "top_m": 203.79,
+        "bottom_m": 206.79,
+        "top_y": 1960.11,
+        "bottom_y": 1987.11,
+        "ledger_y": 1770.5,
+        "source": {
+          "sheet": "回次",
+          "row": 73,
+          "cells": {
+            "回次号": "回次!A73",
+            "顶深_m": "回次!B73",
+            "底深_m": "回次!C73",
+            "岩心长_m": "回次!D73"
+          }
+        }
+      },
+      {
+        "id": "73",
+        "top_m": 206.79,
+        "bottom_m": 209.79,
+        "top_y": 1987.11,
+        "bottom_y": 2014.11,
+        "ledger_y": 1793.5,
+        "source": {
+          "sheet": "回次",
+          "row": 74,
+          "cells": {
+            "回次号": "回次!A74",
+            "顶深_m": "回次!B74",
+            "底深_m": "回次!C74",
+            "岩心长_m": "回次!D74"
+          }
+        }
+      },
+      {
+        "id": "74",
+        "top_m": 209.79,
+        "bottom_m": 212.79,
+        "top_y": 2014.11,
+        "bottom_y": 2041.11,
+        "ledger_y": 1816.5,
+        "source": {
+          "sheet": "回次",
+          "row": 75,
+          "cells": {
+            "回次号": "回次!A75",
+            "顶深_m": "回次!B75",
+            "底深_m": "回次!C75",
+            "岩心长_m": "回次!D75"
+          }
+        }
+      },
+      {
+        "id": "75",
+        "top_m": 212.79,
+        "bottom_m": 215.79,
+        "top_y": 2041.11,
+        "bottom_y": 2068.1099999999997,
+        "ledger_y": 1839.5,
+        "source": {
+          "sheet": "回次",
+          "row": 76,
+          "cells": {
+            "回次号": "回次!A76",
+            "顶深_m": "回次!B76",
+            "底深_m": "回次!C76",
+            "岩心长_m": "回次!D76"
+          }
+        }
+      },
+      {
+        "id": "76",
+        "top_m": 215.79,
+        "bottom_m": 218.79,
+        "top_y": 2068.1099999999997,
+        "bottom_y": 2095.1099999999997,
+        "ledger_y": 1862.5,
+        "source": {
+          "sheet": "回次",
+          "row": 77,
+          "cells": {
+            "回次号": "回次!A77",
+            "顶深_m": "回次!B77",
+            "底深_m": "回次!C77",
+            "岩心长_m": "回次!D77"
+          }
+        }
+      },
+      {
+        "id": "77",
+        "top_m": 218.79,
+        "bottom_m": 221.79,
+        "top_y": 2095.1099999999997,
+        "bottom_y": 2122.1099999999997,
+        "ledger_y": 1885.5,
+        "source": {
+          "sheet": "回次",
+          "row": 78,
+          "cells": {
+            "回次号": "回次!A78",
+            "顶深_m": "回次!B78",
+            "底深_m": "回次!C78",
+            "岩心长_m": "回次!D78"
+          }
+        }
+      },
+      {
+        "id": "78",
+        "top_m": 221.79,
+        "bottom_m": 224.79,
+        "top_y": 2122.1099999999997,
+        "bottom_y": 2149.1099999999997,
+        "ledger_y": 1908.5,
+        "source": {
+          "sheet": "回次",
+          "row": 79,
+          "cells": {
+            "回次号": "回次!A79",
+            "顶深_m": "回次!B79",
+            "底深_m": "回次!C79",
+            "岩心长_m": "回次!D79"
+          }
+        }
+      },
+      {
+        "id": "79",
+        "top_m": 224.79,
+        "bottom_m": 227.79,
+        "top_y": 2149.1099999999997,
+        "bottom_y": 2176.11,
+        "ledger_y": 1931.5,
+        "source": {
+          "sheet": "回次",
+          "row": 80,
+          "cells": {
+            "回次号": "回次!A80",
+            "顶深_m": "回次!B80",
+            "底深_m": "回次!C80",
+            "岩心长_m": "回次!D80"
+          }
+        }
+      },
+      {
+        "id": "80",
+        "top_m": 227.79,
+        "bottom_m": 230.79,
+        "top_y": 2176.11,
+        "bottom_y": 2203.11,
+        "ledger_y": 1954.5,
+        "source": {
+          "sheet": "回次",
+          "row": 81,
+          "cells": {
+            "回次号": "回次!A81",
+            "顶深_m": "回次!B81",
+            "底深_m": "回次!C81",
+            "岩心长_m": "回次!D81"
+          }
+        }
+      },
+      {
+        "id": "81",
+        "top_m": 230.79,
+        "bottom_m": 233.79,
+        "top_y": 2203.11,
+        "bottom_y": 2230.11,
+        "ledger_y": 1977.5,
+        "source": {
+          "sheet": "回次",
+          "row": 82,
+          "cells": {
+            "回次号": "回次!A82",
+            "顶深_m": "回次!B82",
+            "底深_m": "回次!C82",
+            "岩心长_m": "回次!D82"
+          }
+        }
+      },
+      {
+        "id": "82",
+        "top_m": 233.79,
+        "bottom_m": 236.79,
+        "top_y": 2230.11,
+        "bottom_y": 2257.11,
+        "ledger_y": 2000.5,
+        "source": {
+          "sheet": "回次",
+          "row": 83,
+          "cells": {
+            "回次号": "回次!A83",
+            "顶深_m": "回次!B83",
+            "底深_m": "回次!C83",
+            "岩心长_m": "回次!D83"
+          }
+        }
+      },
+      {
+        "id": "83",
+        "top_m": 236.79,
+        "bottom_m": 239.79,
+        "top_y": 2257.11,
+        "bottom_y": 2284.11,
+        "ledger_y": 2023.5,
+        "source": {
+          "sheet": "回次",
+          "row": 84,
+          "cells": {
+            "回次号": "回次!A84",
+            "顶深_m": "回次!B84",
+            "底深_m": "回次!C84",
+            "岩心长_m": "回次!D84"
+          }
+        }
+      },
+      {
+        "id": "84",
+        "top_m": 239.79,
+        "bottom_m": 242.79,
+        "top_y": 2284.11,
+        "bottom_y": 2311.11,
+        "ledger_y": 2046.5,
+        "source": {
+          "sheet": "回次",
+          "row": 85,
+          "cells": {
+            "回次号": "回次!A85",
+            "顶深_m": "回次!B85",
+            "底深_m": "回次!C85",
+            "岩心长_m": "回次!D85"
+          }
+        }
+      },
+      {
+        "id": "85",
+        "top_m": 242.79,
+        "bottom_m": 245.79,
+        "top_y": 2311.11,
+        "bottom_y": 2338.11,
+        "ledger_y": 2069.5,
+        "source": {
+          "sheet": "回次",
+          "row": 86,
+          "cells": {
+            "回次号": "回次!A86",
+            "顶深_m": "回次!B86",
+            "底深_m": "回次!C86",
+            "岩心长_m": "回次!D86"
+          }
+        }
+      },
+      {
+        "id": "86",
+        "top_m": 245.79,
+        "bottom_m": 248.79,
+        "top_y": 2338.11,
+        "bottom_y": 2365.11,
+        "ledger_y": 2092.5,
+        "source": {
+          "sheet": "回次",
+          "row": 87,
+          "cells": {
+            "回次号": "回次!A87",
+            "顶深_m": "回次!B87",
+            "底深_m": "回次!C87",
+            "岩心长_m": "回次!D87"
+          }
+        }
+      },
+      {
+        "id": "87",
+        "top_m": 248.79,
+        "bottom_m": 251.79,
+        "top_y": 2365.11,
+        "bottom_y": 2392.11,
+        "ledger_y": 2115.5,
+        "source": {
+          "sheet": "回次",
+          "row": 88,
+          "cells": {
+            "回次号": "回次!A88",
+            "顶深_m": "回次!B88",
+            "底深_m": "回次!C88",
+            "岩心长_m": "回次!D88"
+          }
+        }
+      },
+      {
+        "id": "88",
+        "top_m": 251.79,
+        "bottom_m": 254.79,
+        "top_y": 2392.11,
+        "bottom_y": 2419.11,
+        "ledger_y": 2138.5,
+        "source": {
+          "sheet": "回次",
+          "row": 89,
+          "cells": {
+            "回次号": "回次!A89",
+            "顶深_m": "回次!B89",
+            "底深_m": "回次!C89",
+            "岩心长_m": "回次!D89"
+          }
+        }
+      },
+      {
+        "id": "89",
+        "top_m": 254.79,
+        "bottom_m": 257.78999999999996,
+        "top_y": 2419.11,
+        "bottom_y": 2446.1099999999997,
+        "ledger_y": 2161.5,
+        "source": {
+          "sheet": "回次",
+          "row": 90,
+          "cells": {
+            "回次号": "回次!A90",
+            "顶深_m": "回次!B90",
+            "底深_m": "回次!C90",
+            "岩心长_m": "回次!D90"
+          }
+        }
+      },
+      {
+        "id": "90",
+        "top_m": 257.78999999999996,
+        "bottom_m": 260.78999999999996,
+        "top_y": 2446.1099999999997,
+        "bottom_y": 2473.1099999999997,
+        "ledger_y": 2184.5,
+        "source": {
+          "sheet": "回次",
+          "row": 91,
+          "cells": {
+            "回次号": "回次!A91",
+            "顶深_m": "回次!B91",
+            "底深_m": "回次!C91",
+            "岩心长_m": "回次!D91"
+          }
+        }
+      },
+      {
+        "id": "91",
+        "top_m": 260.78999999999996,
+        "bottom_m": 263.78999999999996,
+        "top_y": 2473.1099999999997,
+        "bottom_y": 2500.1099999999997,
+        "ledger_y": 2207.5,
+        "source": {
+          "sheet": "回次",
+          "row": 92,
+          "cells": {
+            "回次号": "回次!A92",
+            "顶深_m": "回次!B92",
+            "底深_m": "回次!C92",
+            "岩心长_m": "回次!D92"
+          }
+        }
+      },
+      {
+        "id": "92",
+        "top_m": 263.78999999999996,
+        "bottom_m": 266.78999999999996,
+        "top_y": 2500.1099999999997,
+        "bottom_y": 2527.1099999999997,
+        "ledger_y": 2230.5,
+        "source": {
+          "sheet": "回次",
+          "row": 93,
+          "cells": {
+            "回次号": "回次!A93",
+            "顶深_m": "回次!B93",
+            "底深_m": "回次!C93",
+            "岩心长_m": "回次!D93"
+          }
+        }
+      },
+      {
+        "id": "93",
+        "top_m": 266.78999999999996,
+        "bottom_m": 269.78999999999996,
+        "top_y": 2527.1099999999997,
+        "bottom_y": 2554.1099999999997,
+        "ledger_y": 2253.5,
+        "source": {
+          "sheet": "回次",
+          "row": 94,
+          "cells": {
+            "回次号": "回次!A94",
+            "顶深_m": "回次!B94",
+            "底深_m": "回次!C94",
+            "岩心长_m": "回次!D94"
+          }
+        }
+      },
+      {
+        "id": "94",
+        "top_m": 269.78999999999996,
+        "bottom_m": 272.78999999999996,
+        "top_y": 2554.1099999999997,
+        "bottom_y": 2581.1099999999997,
+        "ledger_y": 2276.5,
+        "source": {
+          "sheet": "回次",
+          "row": 95,
+          "cells": {
+            "回次号": "回次!A95",
+            "顶深_m": "回次!B95",
+            "底深_m": "回次!C95",
+            "岩心长_m": "回次!D95"
+          }
+        }
+      },
+      {
+        "id": "95",
+        "top_m": 272.78999999999996,
+        "bottom_m": 275.78999999999996,
+        "top_y": 2581.1099999999997,
+        "bottom_y": 2608.1099999999997,
+        "ledger_y": 2299.5,
+        "source": {
+          "sheet": "回次",
+          "row": 96,
+          "cells": {
+            "回次号": "回次!A96",
+            "顶深_m": "回次!B96",
+            "底深_m": "回次!C96",
+            "岩心长_m": "回次!D96"
+          }
+        }
+      },
+      {
+        "id": "96",
+        "top_m": 275.78999999999996,
+        "bottom_m": 278.78999999999996,
+        "top_y": 2608.1099999999997,
+        "bottom_y": 2635.1099999999997,
+        "ledger_y": 2322.5,
+        "source": {
+          "sheet": "回次",
+          "row": 97,
+          "cells": {
+            "回次号": "回次!A97",
+            "顶深_m": "回次!B97",
+            "底深_m": "回次!C97",
+            "岩心长_m": "回次!D97"
+          }
+        }
+      },
+      {
+        "id": "97",
+        "top_m": 278.78999999999996,
+        "bottom_m": 281.78999999999996,
+        "top_y": 2635.1099999999997,
+        "bottom_y": 2662.1099999999997,
+        "ledger_y": 2345.5,
+        "source": {
+          "sheet": "回次",
+          "row": 98,
+          "cells": {
+            "回次号": "回次!A98",
+            "顶深_m": "回次!B98",
+            "底深_m": "回次!C98",
+            "岩心长_m": "回次!D98"
+          }
+        }
+      },
+      {
+        "id": "98",
+        "top_m": 281.78999999999996,
+        "bottom_m": 284.78999999999996,
+        "top_y": 2662.1099999999997,
+        "bottom_y": 2689.1099999999997,
+        "ledger_y": 2368.5,
+        "source": {
+          "sheet": "回次",
+          "row": 99,
+          "cells": {
+            "回次号": "回次!A99",
+            "顶深_m": "回次!B99",
+            "底深_m": "回次!C99",
+            "岩心长_m": "回次!D99"
+          }
+        }
+      },
+      {
+        "id": "99",
+        "top_m": 284.78999999999996,
+        "bottom_m": 287.78999999999996,
+        "top_y": 2689.1099999999997,
+        "bottom_y": 2716.1099999999997,
+        "ledger_y": 2391.5,
+        "source": {
+          "sheet": "回次",
+          "row": 100,
+          "cells": {
+            "回次号": "回次!A100",
+            "顶深_m": "回次!B100",
+            "底深_m": "回次!C100",
+            "岩心长_m": "回次!D100"
+          }
+        }
+      },
+      {
+        "id": "100",
+        "top_m": 287.78999999999996,
+        "bottom_m": 290.78999999999996,
+        "top_y": 2716.1099999999997,
+        "bottom_y": 2743.1099999999997,
+        "ledger_y": 2414.5,
+        "source": {
+          "sheet": "回次",
+          "row": 101,
+          "cells": {
+            "回次号": "回次!A101",
+            "顶深_m": "回次!B101",
+            "底深_m": "回次!C101",
+            "岩心长_m": "回次!D101"
+          }
+        }
+      },
+      {
+        "id": "101",
+        "top_m": 290.78999999999996,
+        "bottom_m": 293.78999999999996,
+        "top_y": 2743.1099999999997,
+        "bottom_y": 2770.1099999999997,
+        "ledger_y": 2437.5,
+        "source": {
+          "sheet": "回次",
+          "row": 102,
+          "cells": {
+            "回次号": "回次!A102",
+            "顶深_m": "回次!B102",
+            "底深_m": "回次!C102",
+            "岩心长_m": "回次!D102"
+          }
+        }
+      },
+      {
+        "id": "102",
+        "top_m": 293.78999999999996,
+        "bottom_m": 296.78999999999996,
+        "top_y": 2770.1099999999997,
+        "bottom_y": 2797.1099999999997,
+        "ledger_y": 2460.5,
+        "source": {
+          "sheet": "回次",
+          "row": 103,
+          "cells": {
+            "回次号": "回次!A103",
+            "顶深_m": "回次!B103",
+            "底深_m": "回次!C103",
+            "岩心长_m": "回次!D103"
+          }
+        }
+      },
+      {
+        "id": "103",
+        "top_m": 296.78999999999996,
+        "bottom_m": 299.78999999999996,
+        "top_y": 2797.1099999999997,
+        "bottom_y": 2824.1099999999997,
+        "ledger_y": 2483.5,
+        "source": {
+          "sheet": "回次",
+          "row": 104,
+          "cells": {
+            "回次号": "回次!A104",
+            "顶深_m": "回次!B104",
+            "底深_m": "回次!C104",
+            "岩心长_m": "回次!D104"
+          }
+        }
+      },
+      {
+        "id": "104",
+        "top_m": 299.78999999999996,
+        "bottom_m": 302.78999999999996,
+        "top_y": 2824.1099999999997,
+        "bottom_y": 2851.1099999999997,
+        "ledger_y": 2506.5,
+        "source": {
+          "sheet": "回次",
+          "row": 105,
+          "cells": {
+            "回次号": "回次!A105",
+            "顶深_m": "回次!B105",
+            "底深_m": "回次!C105",
+            "岩心长_m": "回次!D105"
+          }
+        }
+      },
+      {
+        "id": "105",
+        "top_m": 302.78999999999996,
+        "bottom_m": 305.78999999999996,
+        "top_y": 2851.1099999999997,
+        "bottom_y": 2878.1099999999997,
+        "ledger_y": 2529.5,
+        "source": {
+          "sheet": "回次",
+          "row": 106,
+          "cells": {
+            "回次号": "回次!A106",
+            "顶深_m": "回次!B106",
+            "底深_m": "回次!C106",
+            "岩心长_m": "回次!D106"
+          }
+        }
+      },
+      {
+        "id": "106",
+        "top_m": 305.78999999999996,
+        "bottom_m": 308.78999999999996,
+        "top_y": 2878.1099999999997,
+        "bottom_y": 2905.1099999999997,
+        "ledger_y": 2552.5,
+        "source": {
+          "sheet": "回次",
+          "row": 107,
+          "cells": {
+            "回次号": "回次!A107",
+            "顶深_m": "回次!B107",
+            "底深_m": "回次!C107",
+            "岩心长_m": "回次!D107"
+          }
+        }
+      },
+      {
+        "id": "107",
+        "top_m": 308.78999999999996,
+        "bottom_m": 311.78999999999996,
+        "top_y": 2905.1099999999997,
+        "bottom_y": 2932.1099999999997,
+        "ledger_y": 2575.5,
+        "source": {
+          "sheet": "回次",
+          "row": 108,
+          "cells": {
+            "回次号": "回次!A108",
+            "顶深_m": "回次!B108",
+            "底深_m": "回次!C108",
+            "岩心长_m": "回次!D108"
+          }
+        }
+      },
+      {
+        "id": "108",
+        "top_m": 311.78999999999996,
+        "bottom_m": 314.78999999999996,
+        "top_y": 2932.1099999999997,
+        "bottom_y": 2959.1099999999997,
+        "ledger_y": 2598.5,
+        "source": {
+          "sheet": "回次",
+          "row": 109,
+          "cells": {
+            "回次号": "回次!A109",
+            "顶深_m": "回次!B109",
+            "底深_m": "回次!C109",
+            "岩心长_m": "回次!D109"
+          }
+        }
+      },
+      {
+        "id": "109",
+        "top_m": 314.78999999999996,
+        "bottom_m": 317.78999999999996,
+        "top_y": 2959.1099999999997,
+        "bottom_y": 2986.1099999999997,
+        "ledger_y": 2621.5,
+        "source": {
+          "sheet": "回次",
+          "row": 110,
+          "cells": {
+            "回次号": "回次!A110",
+            "顶深_m": "回次!B110",
+            "底深_m": "回次!C110",
+            "岩心长_m": "回次!D110"
+          }
+        }
+      },
+      {
+        "id": "110",
+        "top_m": 317.78999999999996,
+        "bottom_m": 320.78999999999996,
+        "top_y": 2986.1099999999997,
+        "bottom_y": 3013.1099999999997,
+        "ledger_y": 2644.5,
+        "source": {
+          "sheet": "回次",
+          "row": 111,
+          "cells": {
+            "回次号": "回次!A111",
+            "顶深_m": "回次!B111",
+            "底深_m": "回次!C111",
+            "岩心长_m": "回次!D111"
+          }
+        }
+      },
+      {
+        "id": "111",
+        "top_m": 320.78999999999996,
+        "bottom_m": 323.78999999999996,
+        "top_y": 3013.1099999999997,
+        "bottom_y": 3040.1099999999997,
+        "ledger_y": 2667.5,
+        "source": {
+          "sheet": "回次",
+          "row": 112,
+          "cells": {
+            "回次号": "回次!A112",
+            "顶深_m": "回次!B112",
+            "底深_m": "回次!C112",
+            "岩心长_m": "回次!D112"
+          }
+        }
+      },
+      {
+        "id": "112",
+        "top_m": 323.78999999999996,
+        "bottom_m": 326.78999999999996,
+        "top_y": 3040.1099999999997,
+        "bottom_y": 3067.1099999999997,
+        "ledger_y": 2690.5,
+        "source": {
+          "sheet": "回次",
+          "row": 113,
+          "cells": {
+            "回次号": "回次!A113",
+            "顶深_m": "回次!B113",
+            "底深_m": "回次!C113",
+            "岩心长_m": "回次!D113"
+          }
+        }
+      },
+      {
+        "id": "113",
+        "top_m": 326.78999999999996,
+        "bottom_m": 329.78999999999996,
+        "top_y": 3067.1099999999997,
+        "bottom_y": 3094.1099999999997,
+        "ledger_y": 2713.5,
+        "source": {
+          "sheet": "回次",
+          "row": 114,
+          "cells": {
+            "回次号": "回次!A114",
+            "顶深_m": "回次!B114",
+            "底深_m": "回次!C114",
+            "岩心长_m": "回次!D114"
+          }
+        }
+      },
+      {
+        "id": "114",
+        "top_m": 329.78999999999996,
+        "bottom_m": 332.78999999999996,
+        "top_y": 3094.1099999999997,
+        "bottom_y": 3121.1099999999997,
+        "ledger_y": 2736.5,
+        "source": {
+          "sheet": "回次",
+          "row": 115,
+          "cells": {
+            "回次号": "回次!A115",
+            "顶深_m": "回次!B115",
+            "底深_m": "回次!C115",
+            "岩心长_m": "回次!D115"
+          }
+        }
+      },
+      {
+        "id": "115",
+        "top_m": 332.78999999999996,
+        "bottom_m": 335.78999999999996,
+        "top_y": 3121.1099999999997,
+        "bottom_y": 3148.1099999999997,
+        "ledger_y": 2759.5,
+        "source": {
+          "sheet": "回次",
+          "row": 116,
+          "cells": {
+            "回次号": "回次!A116",
+            "顶深_m": "回次!B116",
+            "底深_m": "回次!C116",
+            "岩心长_m": "回次!D116"
+          }
+        }
+      },
+      {
+        "id": "116",
+        "top_m": 335.78999999999996,
+        "bottom_m": 338.78999999999996,
+        "top_y": 3148.1099999999997,
+        "bottom_y": 3175.1099999999997,
+        "ledger_y": 2782.5,
+        "source": {
+          "sheet": "回次",
+          "row": 117,
+          "cells": {
+            "回次号": "回次!A117",
+            "顶深_m": "回次!B117",
+            "底深_m": "回次!C117",
+            "岩心长_m": "回次!D117"
+          }
+        }
+      },
+      {
+        "id": "117",
+        "top_m": 338.78999999999996,
+        "bottom_m": 341.78999999999996,
+        "top_y": 3175.1099999999997,
+        "bottom_y": 3202.1099999999997,
+        "ledger_y": 2805.5,
+        "source": {
+          "sheet": "回次",
+          "row": 118,
+          "cells": {
+            "回次号": "回次!A118",
+            "顶深_m": "回次!B118",
+            "底深_m": "回次!C118",
+            "岩心长_m": "回次!D118"
+          }
+        }
+      },
+      {
+        "id": "118",
+        "top_m": 341.78999999999996,
+        "bottom_m": 344.78999999999996,
+        "top_y": 3202.1099999999997,
+        "bottom_y": 3229.1099999999997,
+        "ledger_y": 2828.5,
+        "source": {
+          "sheet": "回次",
+          "row": 119,
+          "cells": {
+            "回次号": "回次!A119",
+            "顶深_m": "回次!B119",
+            "底深_m": "回次!C119",
+            "岩心长_m": "回次!D119"
+          }
+        }
+      },
+      {
+        "id": "119",
+        "top_m": 344.78999999999996,
+        "bottom_m": 347.78999999999996,
+        "top_y": 3229.1099999999997,
+        "bottom_y": 3256.1099999999997,
+        "ledger_y": 2851.5,
+        "source": {
+          "sheet": "回次",
+          "row": 120,
+          "cells": {
+            "回次号": "回次!A120",
+            "顶深_m": "回次!B120",
+            "底深_m": "回次!C120",
+            "岩心长_m": "回次!D120"
+          }
+        }
+      },
+      {
+        "id": "120",
+        "top_m": 347.78999999999996,
+        "bottom_m": 350.78999999999996,
+        "top_y": 3256.1099999999997,
+        "bottom_y": 3283.1099999999997,
+        "ledger_y": 2874.5,
+        "source": {
+          "sheet": "回次",
+          "row": 121,
+          "cells": {
+            "回次号": "回次!A121",
+            "顶深_m": "回次!B121",
+            "底深_m": "回次!C121",
+            "岩心长_m": "回次!D121"
+          }
+        }
+      },
+      {
+        "id": "121",
+        "top_m": 350.78999999999996,
+        "bottom_m": 353.78999999999996,
+        "top_y": 3283.1099999999997,
+        "bottom_y": 3310.1099999999997,
+        "ledger_y": 2897.5,
+        "source": {
+          "sheet": "回次",
+          "row": 122,
+          "cells": {
+            "回次号": "回次!A122",
+            "顶深_m": "回次!B122",
+            "底深_m": "回次!C122",
+            "岩心长_m": "回次!D122"
+          }
+        }
+      },
+      {
+        "id": "122",
+        "top_m": 353.78999999999996,
+        "bottom_m": 356.78999999999996,
+        "top_y": 3310.1099999999997,
+        "bottom_y": 3337.1099999999997,
+        "ledger_y": 2920.5,
+        "source": {
+          "sheet": "回次",
+          "row": 123,
+          "cells": {
+            "回次号": "回次!A123",
+            "顶深_m": "回次!B123",
+            "底深_m": "回次!C123",
+            "岩心长_m": "回次!D123"
+          }
+        }
+      },
+      {
+        "id": "123",
+        "top_m": 356.78999999999996,
+        "bottom_m": 359.78999999999996,
+        "top_y": 3337.1099999999997,
+        "bottom_y": 3364.1099999999997,
+        "ledger_y": 2943.5,
+        "source": {
+          "sheet": "回次",
+          "row": 124,
+          "cells": {
+            "回次号": "回次!A124",
+            "顶深_m": "回次!B124",
+            "底深_m": "回次!C124",
+            "岩心长_m": "回次!D124"
+          }
+        }
+      },
+      {
+        "id": "124",
+        "top_m": 359.78999999999996,
+        "bottom_m": 362.78999999999996,
+        "top_y": 3364.1099999999997,
+        "bottom_y": 3391.1099999999997,
+        "ledger_y": 2966.5,
+        "source": {
+          "sheet": "回次",
+          "row": 125,
+          "cells": {
+            "回次号": "回次!A125",
+            "顶深_m": "回次!B125",
+            "底深_m": "回次!C125",
+            "岩心长_m": "回次!D125"
+          }
+        }
+      },
+      {
+        "id": "125",
+        "top_m": 362.78999999999996,
+        "bottom_m": 365.78999999999996,
+        "top_y": 3391.1099999999997,
+        "bottom_y": 3418.1099999999997,
+        "ledger_y": 2989.5,
+        "source": {
+          "sheet": "回次",
+          "row": 126,
+          "cells": {
+            "回次号": "回次!A126",
+            "顶深_m": "回次!B126",
+            "底深_m": "回次!C126",
+            "岩心长_m": "回次!D126"
+          }
+        }
+      },
+      {
+        "id": "126",
+        "top_m": 365.78999999999996,
+        "bottom_m": 368.78999999999996,
+        "top_y": 3418.1099999999997,
+        "bottom_y": 3445.1099999999997,
+        "ledger_y": 3012.5,
+        "source": {
+          "sheet": "回次",
+          "row": 127,
+          "cells": {
+            "回次号": "回次!A127",
+            "顶深_m": "回次!B127",
+            "底深_m": "回次!C127",
+            "岩心长_m": "回次!D127"
+          }
+        }
+      },
+      {
+        "id": "127",
+        "top_m": 368.78999999999996,
+        "bottom_m": 371.78999999999996,
+        "top_y": 3445.1099999999997,
+        "bottom_y": 3472.1099999999997,
+        "ledger_y": 3035.5,
+        "source": {
+          "sheet": "回次",
+          "row": 128,
+          "cells": {
+            "回次号": "回次!A128",
+            "顶深_m": "回次!B128",
+            "底深_m": "回次!C128",
+            "岩心长_m": "回次!D128"
+          }
+        }
+      },
+      {
+        "id": "128",
+        "top_m": 371.78999999999996,
+        "bottom_m": 374.78999999999996,
+        "top_y": 3472.1099999999997,
+        "bottom_y": 3499.1099999999997,
+        "ledger_y": 3058.5,
+        "source": {
+          "sheet": "回次",
+          "row": 129,
+          "cells": {
+            "回次号": "回次!A129",
+            "顶深_m": "回次!B129",
+            "底深_m": "回次!C129",
+            "岩心长_m": "回次!D129"
+          }
+        }
+      },
+      {
+        "id": "129",
+        "top_m": 374.78999999999996,
+        "bottom_m": 377.78999999999996,
+        "top_y": 3499.1099999999997,
+        "bottom_y": 3526.1099999999997,
+        "ledger_y": 3081.5,
+        "source": {
+          "sheet": "回次",
+          "row": 130,
+          "cells": {
+            "回次号": "回次!A130",
+            "顶深_m": "回次!B130",
+            "底深_m": "回次!C130",
+            "岩心长_m": "回次!D130"
+          }
+        }
+      },
+      {
+        "id": "130",
+        "top_m": 377.78999999999996,
+        "bottom_m": 380.78999999999996,
+        "top_y": 3526.1099999999997,
+        "bottom_y": 3553.1099999999997,
+        "ledger_y": 3104.5,
+        "source": {
+          "sheet": "回次",
+          "row": 131,
+          "cells": {
+            "回次号": "回次!A131",
+            "顶深_m": "回次!B131",
+            "底深_m": "回次!C131",
+            "岩心长_m": "回次!D131"
+          }
+        }
+      },
+      {
+        "id": "131",
+        "top_m": 380.78999999999996,
+        "bottom_m": 382.78999999999996,
+        "top_y": 3553.1099999999997,
+        "bottom_y": 3571.1099999999997,
+        "ledger_y": 3127.5,
+        "source": {
+          "sheet": "回次",
+          "row": 132,
+          "cells": {
+            "回次号": "回次!A132",
+            "顶深_m": "回次!B132",
+            "底深_m": "回次!C132",
+            "岩心长_m": "回次!D132"
+          }
+        }
+      }
+    ],
+    "detail_crop_is_not_geologic_boundary": false,
+    "svg_image_elements": 0,
+    "source_values_rounded_for_display_only": true,
+    "pending_patterns": [
+      "2",
+      "3",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23"
+    ]
+  },
+  "detail": {
+    "hole_id": "ZK0003",
+    "endpoint_m": 382.79,
+    "depth_basis": "原始沿孔深",
+    "scale_units_per_meter": 25.0,
+    "minimum_depth_height_units": 700.0,
+    "view_depth_m": [
+      0.0,
+      45.0
+    ],
+    "viewBox": [
+      0.0,
+      0.0,
+      2484.0,
+      2051.5
+    ],
+    "counts": {
+      "layers": 23,
+      "turns": 131,
+      "samples": 97
+    },
+    "structure_count": 1,
+    "sample_lane_count": 1,
+    "sample_lanes": {
+      "H1": 0,
+      "H2": 0,
+      "H3": 0,
+      "H4": 0,
+      "H5": 0,
+      "H6": 0,
+      "H7": 0,
+      "H8": 0,
+      "H9": 0,
+      "H10": 0,
+      "H11": 0,
+      "H12": 0,
+      "H13": 0,
+      "H14": 0,
+      "H15": 0,
+      "H16": 0,
+      "H17": 0,
+      "H18": 0,
+      "H19": 0,
+      "H20": 0,
+      "H21": 0
+    },
+    "layers": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 36.88,
+        "top_y": 126.0,
+        "bottom_y": 1048.0,
+        "plotted_top_m": 0.0,
+        "plotted_bottom_m": 36.88,
+        "plotted_top_y": 126.0,
+        "plotted_bottom_y": 1048.0,
+        "source": {
+          "sheet": "分层",
+          "row": 2,
+          "cells": {
+            "层号": "分层!A2",
+            "顶深_m": "分层!B2",
+            "底深_m": "分层!C2",
+            "岩性名称": "分层!D2",
+            "岩性描述": "分层!E2",
+            "岩心长_m": "分层!F2",
+            "花纹代码": "分层!G2"
+          }
+        },
+        "label_anchor_y": 587.0,
+        "label_y": 587.0,
+        "description_anchor_y": 587.0,
+        "description_label_y": 587.0,
+        "description_lines": [
+          "泥岩夹泥质粉砂岩；泥岩夹泥质粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 36.88 m　岩心长 32.95 m　采取率 89.34%　花纹 D001"
+        ],
+        "raw_description": "泥岩夹泥质粉砂岩",
+        "pattern_code": "D001"
+      },
+      {
+        "id": "2",
+        "top_m": 36.88,
+        "bottom_m": 38.85,
+        "top_y": 1048.0,
+        "bottom_y": 1097.25,
+        "plotted_top_m": 36.88,
+        "plotted_bottom_m": 38.85,
+        "plotted_top_y": 1048.0,
+        "plotted_bottom_y": 1097.25,
+        "source": {
+          "sheet": "分层",
+          "row": 3,
+          "cells": {
+            "层号": "分层!A3",
+            "顶深_m": "分层!B3",
+            "底深_m": "分层!C3",
+            "岩性名称": "分层!D3",
+            "岩性描述": "分层!E3",
+            "岩心长_m": "分层!F3",
+            "花纹代码": "分层!G3"
+          }
+        },
+        "label_anchor_y": 1072.625,
+        "label_y": 1072.625,
+        "description_anchor_y": 1072.625,
+        "description_label_y": 1072.625,
+        "description_lines": [
+          "岩性名称未提供；蚀变泥岩"
+        ],
+        "description_param_lines": [
+          "段长 1.97 m　岩心长 1.80 m　采取率 91.37%　花纹 待配置"
+        ],
+        "raw_description": "蚀变泥岩",
+        "pattern_code": null
+      },
+      {
+        "id": "3",
+        "top_m": 38.85,
+        "bottom_m": 65.4,
+        "top_y": 1097.25,
+        "bottom_y": 1761.0000000000002,
+        "plotted_top_m": 38.85,
+        "plotted_bottom_m": 45.0,
+        "plotted_top_y": 1097.25,
+        "plotted_bottom_y": 1251.0,
+        "source": {
+          "sheet": "分层",
+          "row": 4,
+          "cells": {
+            "层号": "分层!A4",
+            "顶深_m": "分层!B4",
+            "底深_m": "分层!C4",
+            "岩性名称": "分层!D4",
+            "岩性描述": "分层!E4",
+            "岩心长_m": "分层!F4",
+            "花纹代码": "分层!G4"
+          }
+        },
+        "label_anchor_y": 1174.125,
+        "label_y": 1174.125,
+        "description_anchor_y": 1174.125,
+        "description_label_y": 1174.125,
+        "description_lines": [
+          "岩性名称未提供；硅化砂岩、泥岩、粉砂岩，裂隙表面褐铁矿化。岩石",
+          "内部发育石英脉，局部见星点状、团块状黄铁矿，"
+        ],
+        "description_param_lines": [
+          "段长 26.55 m　岩心长 24.72 m　采取率 93.11%　花纹 待配置"
+        ],
+        "raw_description": "硅化砂岩、泥岩、粉砂岩，裂隙表面褐铁矿化。岩石内部发育石英脉，局部见星点状、团块状黄铁矿，",
+        "pattern_code": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "H1",
+        "top_m": 15.3,
+        "bottom_m": 17.1,
+        "top_y": 508.5,
+        "bottom_y": 553.5,
+        "plotted_top_m": 15.3,
+        "plotted_bottom_m": 17.1,
+        "plotted_top_y": 508.5,
+        "plotted_bottom_y": 553.5,
+        "source": {
+          "sheet": "样品",
+          "row": 2,
+          "cells": {
+            "样品编号": "样品!A2",
+            "顶深_m": "样品!B2",
+            "底深_m": "样品!C2",
+            "岩心长_m": "样品!D2",
+            "Au": "样品!E2",
+            "Pb": "样品!F2",
+            "Zn": "样品!G2"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 531.0,
+        "plotted_midpoint_y": 531.0,
+        "label_anchor_y": 531.0,
+        "label_y": 531.0,
+        "label_moved": false,
+        "analysis_y": 519.0
+      },
+      {
+        "id": "H2",
+        "top_m": 19.01,
+        "bottom_m": 20.02,
+        "top_y": 601.25,
+        "bottom_y": 626.5,
+        "plotted_top_m": 19.01,
+        "plotted_bottom_m": 20.02,
+        "plotted_top_y": 601.25,
+        "plotted_bottom_y": 626.5,
+        "source": {
+          "sheet": "样品",
+          "row": 3,
+          "cells": {
+            "样品编号": "样品!A3",
+            "顶深_m": "样品!B3",
+            "底深_m": "样品!C3",
+            "岩心长_m": "样品!D3",
+            "Au": "样品!E3",
+            "Pb": "样品!F3",
+            "Zn": "样品!G3"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 613.875,
+        "plotted_midpoint_y": 613.875,
+        "label_anchor_y": 613.875,
+        "label_y": 613.875,
+        "label_moved": false,
+        "analysis_y": 601.875
+      },
+      {
+        "id": "H3",
+        "top_m": 27.01,
+        "bottom_m": 28.11,
+        "top_y": 801.25,
+        "bottom_y": 828.75,
+        "plotted_top_m": 27.01,
+        "plotted_bottom_m": 28.11,
+        "plotted_top_y": 801.25,
+        "plotted_bottom_y": 828.75,
+        "source": {
+          "sheet": "样品",
+          "row": 4,
+          "cells": {
+            "样品编号": "样品!A4",
+            "顶深_m": "样品!B4",
+            "底深_m": "样品!C4",
+            "岩心长_m": "样品!D4",
+            "Au": "样品!E4",
+            "Pb": "样品!F4",
+            "Zn": "样品!G4"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 815.0,
+        "plotted_midpoint_y": 815.0,
+        "label_anchor_y": 815.0,
+        "label_y": 815.0,
+        "label_moved": false,
+        "analysis_y": 803.0
+      },
+      {
+        "id": "H4",
+        "top_m": 28.11,
+        "bottom_m": 29.16,
+        "top_y": 828.75,
+        "bottom_y": 855.0,
+        "plotted_top_m": 28.11,
+        "plotted_bottom_m": 29.16,
+        "plotted_top_y": 828.75,
+        "plotted_bottom_y": 855.0,
+        "source": {
+          "sheet": "样品",
+          "row": 5,
+          "cells": {
+            "样品编号": "样品!A5",
+            "顶深_m": "样品!B5",
+            "底深_m": "样品!C5",
+            "岩心长_m": "样品!D5",
+            "Au": "样品!E5",
+            "Pb": "样品!F5",
+            "Zn": "样品!G5"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 841.875,
+        "plotted_midpoint_y": 841.875,
+        "label_anchor_y": 841.875,
+        "label_y": 876.0,
+        "label_moved": true,
+        "analysis_y": 864.0
+      },
+      {
+        "id": "H5",
+        "top_m": 29.16,
+        "bottom_m": 30.07,
+        "top_y": 855.0,
+        "bottom_y": 877.75,
+        "plotted_top_m": 29.16,
+        "plotted_bottom_m": 30.07,
+        "plotted_top_y": 855.0,
+        "plotted_bottom_y": 877.75,
+        "source": {
+          "sheet": "样品",
+          "row": 6,
+          "cells": {
+            "样品编号": "样品!A6",
+            "顶深_m": "样品!B6",
+            "底深_m": "样品!C6",
+            "岩心长_m": "样品!D6",
+            "Au": "样品!E6",
+            "Pb": "样品!F6",
+            "Zn": "样品!G6"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 866.375,
+        "plotted_midpoint_y": 866.375,
+        "label_anchor_y": 866.375,
+        "label_y": 937.0,
+        "label_moved": true,
+        "analysis_y": 925.0
+      },
+      {
+        "id": "H6",
+        "top_m": 30.07,
+        "bottom_m": 31.15,
+        "top_y": 877.75,
+        "bottom_y": 904.75,
+        "plotted_top_m": 30.07,
+        "plotted_bottom_m": 31.15,
+        "plotted_top_y": 877.75,
+        "plotted_bottom_y": 904.75,
+        "source": {
+          "sheet": "样品",
+          "row": 7,
+          "cells": {
+            "样品编号": "样品!A7",
+            "顶深_m": "样品!B7",
+            "底深_m": "样品!C7",
+            "岩心长_m": "样品!D7",
+            "Au": "样品!E7",
+            "Pb": "样品!F7",
+            "Zn": "样品!G7"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 891.25,
+        "plotted_midpoint_y": 891.25,
+        "label_anchor_y": 891.25,
+        "label_y": 998.0,
+        "label_moved": true,
+        "analysis_y": 986.0
+      },
+      {
+        "id": "H7",
+        "top_m": 31.15,
+        "bottom_m": 32.15,
+        "top_y": 904.75,
+        "bottom_y": 929.75,
+        "plotted_top_m": 31.15,
+        "plotted_bottom_m": 32.15,
+        "plotted_top_y": 904.75,
+        "plotted_bottom_y": 929.75,
+        "source": {
+          "sheet": "样品",
+          "row": 8,
+          "cells": {
+            "样品编号": "样品!A8",
+            "顶深_m": "样品!B8",
+            "底深_m": "样品!C8",
+            "岩心长_m": "样品!D8",
+            "Au": "样品!E8",
+            "Pb": "样品!F8",
+            "Zn": "样品!G8"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 917.25,
+        "plotted_midpoint_y": 917.25,
+        "label_anchor_y": 917.25,
+        "label_y": 1059.0,
+        "label_moved": true,
+        "analysis_y": 1047.0
+      },
+      {
+        "id": "H8",
+        "top_m": 32.15,
+        "bottom_m": 33.04,
+        "top_y": 929.75,
+        "bottom_y": 952.0,
+        "plotted_top_m": 32.15,
+        "plotted_bottom_m": 33.04,
+        "plotted_top_y": 929.75,
+        "plotted_bottom_y": 952.0,
+        "source": {
+          "sheet": "样品",
+          "row": 9,
+          "cells": {
+            "样品编号": "样品!A9",
+            "顶深_m": "样品!B9",
+            "底深_m": "样品!C9",
+            "岩心长_m": "样品!D9",
+            "Au": "样品!E9",
+            "Pb": "样品!F9",
+            "Zn": "样品!G9"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 940.875,
+        "plotted_midpoint_y": 940.875,
+        "label_anchor_y": 940.875,
+        "label_y": 1120.0,
+        "label_moved": true,
+        "analysis_y": 1108.0
+      },
+      {
+        "id": "H9",
+        "top_m": 33.04,
+        "bottom_m": 33.95,
+        "top_y": 952.0,
+        "bottom_y": 974.7500000000001,
+        "plotted_top_m": 33.04,
+        "plotted_bottom_m": 33.95,
+        "plotted_top_y": 952.0,
+        "plotted_bottom_y": 974.7500000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 10,
+          "cells": {
+            "样品编号": "样品!A10",
+            "顶深_m": "样品!B10",
+            "底深_m": "样品!C10",
+            "岩心长_m": "样品!D10",
+            "Au": "样品!E10",
+            "Pb": "样品!F10",
+            "Zn": "样品!G10"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 963.3750000000001,
+        "plotted_midpoint_y": 963.3750000000001,
+        "label_anchor_y": 963.3750000000001,
+        "label_y": 1181.0,
+        "label_moved": true,
+        "analysis_y": 1169.0
+      },
+      {
+        "id": "H10",
+        "top_m": 33.95,
+        "bottom_m": 34.95,
+        "top_y": 974.7500000000001,
+        "bottom_y": 999.7500000000001,
+        "plotted_top_m": 33.95,
+        "plotted_bottom_m": 34.95,
+        "plotted_top_y": 974.7500000000001,
+        "plotted_bottom_y": 999.7500000000001,
+        "source": {
+          "sheet": "样品",
+          "row": 11,
+          "cells": {
+            "样品编号": "样品!A11",
+            "顶深_m": "样品!B11",
+            "底深_m": "样品!C11",
+            "岩心长_m": "样品!D11",
+            "Au": "样品!E11",
+            "Pb": "样品!F11",
+            "Zn": "样品!G11"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 987.2500000000001,
+        "plotted_midpoint_y": 987.2500000000001,
+        "label_anchor_y": 987.2500000000001,
+        "label_y": 1242.0,
+        "label_moved": true,
+        "analysis_y": 1230.0
+      },
+      {
+        "id": "H11",
+        "top_m": 34.95,
+        "bottom_m": 35.79,
+        "top_y": 999.7500000000001,
+        "bottom_y": 1020.75,
+        "plotted_top_m": 34.95,
+        "plotted_bottom_m": 35.79,
+        "plotted_top_y": 999.7500000000001,
+        "plotted_bottom_y": 1020.75,
+        "source": {
+          "sheet": "样品",
+          "row": 12,
+          "cells": {
+            "样品编号": "样品!A12",
+            "顶深_m": "样品!B12",
+            "底深_m": "样品!C12",
+            "岩心长_m": "样品!D12",
+            "Au": "样品!E12",
+            "Pb": "样品!F12",
+            "Zn": "样品!G12"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1010.2500000000001,
+        "plotted_midpoint_y": 1010.2500000000001,
+        "label_anchor_y": 1010.2500000000001,
+        "label_y": 1303.0,
+        "label_moved": true,
+        "analysis_y": 1291.0
+      },
+      {
+        "id": "H12",
+        "top_m": 35.79,
+        "bottom_m": 36.88,
+        "top_y": 1020.75,
+        "bottom_y": 1048.0,
+        "plotted_top_m": 35.79,
+        "plotted_bottom_m": 36.88,
+        "plotted_top_y": 1020.75,
+        "plotted_bottom_y": 1048.0,
+        "source": {
+          "sheet": "样品",
+          "row": 13,
+          "cells": {
+            "样品编号": "样品!A13",
+            "顶深_m": "样品!B13",
+            "底深_m": "样品!C13",
+            "岩心长_m": "样品!D13",
+            "Au": "样品!E13",
+            "Pb": "样品!F13",
+            "Zn": "样品!G13"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1034.375,
+        "plotted_midpoint_y": 1034.375,
+        "label_anchor_y": 1034.375,
+        "label_y": 1364.0,
+        "label_moved": true,
+        "analysis_y": 1352.0
+      },
+      {
+        "id": "H13",
+        "top_m": 36.88,
+        "bottom_m": 37.97,
+        "top_y": 1048.0,
+        "bottom_y": 1075.25,
+        "plotted_top_m": 36.88,
+        "plotted_bottom_m": 37.97,
+        "plotted_top_y": 1048.0,
+        "plotted_bottom_y": 1075.25,
+        "source": {
+          "sheet": "样品",
+          "row": 14,
+          "cells": {
+            "样品编号": "样品!A14",
+            "顶深_m": "样品!B14",
+            "底深_m": "样品!C14",
+            "岩心长_m": "样品!D14",
+            "Au": "样品!E14",
+            "Pb": "样品!F14",
+            "Zn": "样品!G14"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1061.625,
+        "plotted_midpoint_y": 1061.625,
+        "label_anchor_y": 1061.625,
+        "label_y": 1425.0,
+        "label_moved": true,
+        "analysis_y": 1413.0
+      },
+      {
+        "id": "H14",
+        "top_m": 37.97,
+        "bottom_m": 38.85,
+        "top_y": 1075.25,
+        "bottom_y": 1097.25,
+        "plotted_top_m": 37.97,
+        "plotted_bottom_m": 38.85,
+        "plotted_top_y": 1075.25,
+        "plotted_bottom_y": 1097.25,
+        "source": {
+          "sheet": "样品",
+          "row": 15,
+          "cells": {
+            "样品编号": "样品!A15",
+            "顶深_m": "样品!B15",
+            "底深_m": "样品!C15",
+            "岩心长_m": "样品!D15",
+            "Au": "样品!E15",
+            "Pb": "样品!F15",
+            "Zn": "样品!G15"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1086.25,
+        "plotted_midpoint_y": 1086.25,
+        "label_anchor_y": 1086.25,
+        "label_y": 1486.0,
+        "label_moved": true,
+        "analysis_y": 1474.0
+      },
+      {
+        "id": "H15",
+        "top_m": 38.85,
+        "bottom_m": 39.87,
+        "top_y": 1097.25,
+        "bottom_y": 1122.75,
+        "plotted_top_m": 38.85,
+        "plotted_bottom_m": 39.87,
+        "plotted_top_y": 1097.25,
+        "plotted_bottom_y": 1122.75,
+        "source": {
+          "sheet": "样品",
+          "row": 16,
+          "cells": {
+            "样品编号": "样品!A16",
+            "顶深_m": "样品!B16",
+            "底深_m": "样品!C16",
+            "岩心长_m": "样品!D16",
+            "Au": "样品!E16",
+            "Pb": "样品!F16",
+            "Zn": "样品!G16"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1110.0,
+        "plotted_midpoint_y": 1110.0,
+        "label_anchor_y": 1110.0,
+        "label_y": 1547.0,
+        "label_moved": true,
+        "analysis_y": 1535.0
+      },
+      {
+        "id": "H16",
+        "top_m": 39.87,
+        "bottom_m": 40.9,
+        "top_y": 1122.75,
+        "bottom_y": 1148.5,
+        "plotted_top_m": 39.87,
+        "plotted_bottom_m": 40.9,
+        "plotted_top_y": 1122.75,
+        "plotted_bottom_y": 1148.5,
+        "source": {
+          "sheet": "样品",
+          "row": 17,
+          "cells": {
+            "样品编号": "样品!A17",
+            "顶深_m": "样品!B17",
+            "底深_m": "样品!C17",
+            "岩心长_m": "样品!D17",
+            "Au": "样品!E17",
+            "Pb": "样品!F17",
+            "Zn": "样品!G17"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1135.625,
+        "plotted_midpoint_y": 1135.625,
+        "label_anchor_y": 1135.625,
+        "label_y": 1608.0,
+        "label_moved": true,
+        "analysis_y": 1596.0
+      },
+      {
+        "id": "H17",
+        "top_m": 40.9,
+        "bottom_m": 41.79,
+        "top_y": 1148.5,
+        "bottom_y": 1170.75,
+        "plotted_top_m": 40.9,
+        "plotted_bottom_m": 41.79,
+        "plotted_top_y": 1148.5,
+        "plotted_bottom_y": 1170.75,
+        "source": {
+          "sheet": "样品",
+          "row": 18,
+          "cells": {
+            "样品编号": "样品!A18",
+            "顶深_m": "样品!B18",
+            "底深_m": "样品!C18",
+            "岩心长_m": "样品!D18",
+            "Au": "样品!E18",
+            "Pb": "样品!F18",
+            "Zn": "样品!G18"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1159.625,
+        "plotted_midpoint_y": 1159.625,
+        "label_anchor_y": 1159.625,
+        "label_y": 1669.0,
+        "label_moved": true,
+        "analysis_y": 1657.0
+      },
+      {
+        "id": "H18",
+        "top_m": 41.79,
+        "bottom_m": 42.89,
+        "top_y": 1170.75,
+        "bottom_y": 1198.25,
+        "plotted_top_m": 41.79,
+        "plotted_bottom_m": 42.89,
+        "plotted_top_y": 1170.75,
+        "plotted_bottom_y": 1198.25,
+        "source": {
+          "sheet": "样品",
+          "row": 19,
+          "cells": {
+            "样品编号": "样品!A19",
+            "顶深_m": "样品!B19",
+            "底深_m": "样品!C19",
+            "岩心长_m": "样品!D19",
+            "Au": "样品!E19",
+            "Pb": "样品!F19",
+            "Zn": "样品!G19"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1184.5,
+        "plotted_midpoint_y": 1184.5,
+        "label_anchor_y": 1184.5,
+        "label_y": 1730.0,
+        "label_moved": true,
+        "analysis_y": 1718.0
+      },
+      {
+        "id": "H19",
+        "top_m": 42.89,
+        "bottom_m": 43.86,
+        "top_y": 1198.25,
+        "bottom_y": 1222.5,
+        "plotted_top_m": 42.89,
+        "plotted_bottom_m": 43.86,
+        "plotted_top_y": 1198.25,
+        "plotted_bottom_y": 1222.5,
+        "source": {
+          "sheet": "样品",
+          "row": 20,
+          "cells": {
+            "样品编号": "样品!A20",
+            "顶深_m": "样品!B20",
+            "底深_m": "样品!C20",
+            "岩心长_m": "样品!D20",
+            "Au": "样品!E20",
+            "Pb": "样品!F20",
+            "Zn": "样品!G20"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1210.375,
+        "plotted_midpoint_y": 1210.375,
+        "label_anchor_y": 1210.375,
+        "label_y": 1791.0,
+        "label_moved": true,
+        "analysis_y": 1779.0
+      },
+      {
+        "id": "H20",
+        "top_m": 43.86,
+        "bottom_m": 44.79,
+        "top_y": 1222.5,
+        "bottom_y": 1245.75,
+        "plotted_top_m": 43.86,
+        "plotted_bottom_m": 44.79,
+        "plotted_top_y": 1222.5,
+        "plotted_bottom_y": 1245.75,
+        "source": {
+          "sheet": "样品",
+          "row": 21,
+          "cells": {
+            "样品编号": "样品!A21",
+            "顶深_m": "样品!B21",
+            "底深_m": "样品!C21",
+            "岩心长_m": "样品!D21",
+            "Au": "样品!E21",
+            "Pb": "样品!F21",
+            "Zn": "样品!G21"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1234.125,
+        "plotted_midpoint_y": 1234.125,
+        "label_anchor_y": 1234.125,
+        "label_y": 1852.0,
+        "label_moved": true,
+        "analysis_y": 1840.0
+      },
+      {
+        "id": "H21",
+        "top_m": 44.79,
+        "bottom_m": 45.86,
+        "top_y": 1245.75,
+        "bottom_y": 1272.5,
+        "plotted_top_m": 44.79,
+        "plotted_bottom_m": 45.0,
+        "plotted_top_y": 1245.75,
+        "plotted_bottom_y": 1251.0,
+        "source": {
+          "sheet": "样品",
+          "row": 22,
+          "cells": {
+            "样品编号": "样品!A22",
+            "顶深_m": "样品!B22",
+            "底深_m": "样品!C22",
+            "岩心长_m": "样品!D22",
+            "Au": "样品!E22",
+            "Pb": "样品!F22",
+            "Zn": "样品!G22"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 1259.125,
+        "plotted_midpoint_y": 1248.375,
+        "label_anchor_y": 1259.125,
+        "label_y": 1913.0,
+        "label_moved": true,
+        "analysis_y": 1901.0
+      }
+    ],
+    "structures": [],
+    "turns_independent_equal_height_ledger": true,
+    "turn_records": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 0.34,
+        "top_y": 126.0,
+        "bottom_y": 134.5,
+        "ledger_y": 137.5,
+        "source": {
+          "sheet": "回次",
+          "row": 2,
+          "cells": {
+            "回次号": "回次!A2",
+            "顶深_m": "回次!B2",
+            "底深_m": "回次!C2",
+            "岩心长_m": "回次!D2"
+          }
+        }
+      },
+      {
+        "id": "2",
+        "top_m": 0.34,
+        "bottom_m": 1.84,
+        "top_y": 134.5,
+        "bottom_y": 172.0,
+        "ledger_y": 160.5,
+        "source": {
+          "sheet": "回次",
+          "row": 3,
+          "cells": {
+            "回次号": "回次!A3",
+            "顶深_m": "回次!B3",
+            "底深_m": "回次!C3",
+            "岩心长_m": "回次!D3"
+          }
+        }
+      },
+      {
+        "id": "3",
+        "top_m": 1.84,
+        "bottom_m": 3.34,
+        "top_y": 172.0,
+        "bottom_y": 209.5,
+        "ledger_y": 183.5,
+        "source": {
+          "sheet": "回次",
+          "row": 4,
+          "cells": {
+            "回次号": "回次!A4",
+            "顶深_m": "回次!B4",
+            "底深_m": "回次!C4",
+            "岩心长_m": "回次!D4"
+          }
+        }
+      },
+      {
+        "id": "4",
+        "top_m": 3.34,
+        "bottom_m": 4.84,
+        "top_y": 209.5,
+        "bottom_y": 247.0,
+        "ledger_y": 206.5,
+        "source": {
+          "sheet": "回次",
+          "row": 5,
+          "cells": {
+            "回次号": "回次!A5",
+            "顶深_m": "回次!B5",
+            "底深_m": "回次!C5",
+            "岩心长_m": "回次!D5"
+          }
+        }
+      },
+      {
+        "id": "5",
+        "top_m": 4.84,
+        "bottom_m": 5.79,
+        "top_y": 247.0,
+        "bottom_y": 270.75,
+        "ledger_y": 229.5,
+        "source": {
+          "sheet": "回次",
+          "row": 6,
+          "cells": {
+            "回次号": "回次!A6",
+            "顶深_m": "回次!B6",
+            "底深_m": "回次!C6",
+            "岩心长_m": "回次!D6"
+          }
+        }
+      },
+      {
+        "id": "6",
+        "top_m": 5.79,
+        "bottom_m": 8.79,
+        "top_y": 270.75,
+        "bottom_y": 345.75,
+        "ledger_y": 252.5,
+        "source": {
+          "sheet": "回次",
+          "row": 7,
+          "cells": {
+            "回次号": "回次!A7",
+            "顶深_m": "回次!B7",
+            "底深_m": "回次!C7",
+            "岩心长_m": "回次!D7"
+          }
+        }
+      },
+      {
+        "id": "7",
+        "top_m": 8.79,
+        "bottom_m": 11.79,
+        "top_y": 345.75,
+        "bottom_y": 420.75,
+        "ledger_y": 275.5,
+        "source": {
+          "sheet": "回次",
+          "row": 8,
+          "cells": {
+            "回次号": "回次!A8",
+            "顶深_m": "回次!B8",
+            "底深_m": "回次!C8",
+            "岩心长_m": "回次!D8"
+          }
+        }
+      },
+      {
+        "id": "8",
+        "top_m": 11.79,
+        "bottom_m": 14.79,
+        "top_y": 420.75,
+        "bottom_y": 495.75,
+        "ledger_y": 298.5,
+        "source": {
+          "sheet": "回次",
+          "row": 9,
+          "cells": {
+            "回次号": "回次!A9",
+            "顶深_m": "回次!B9",
+            "底深_m": "回次!C9",
+            "岩心长_m": "回次!D9"
+          }
+        }
+      },
+      {
+        "id": "9",
+        "top_m": 14.79,
+        "bottom_m": 17.79,
+        "top_y": 495.75,
+        "bottom_y": 570.75,
+        "ledger_y": 321.5,
+        "source": {
+          "sheet": "回次",
+          "row": 10,
+          "cells": {
+            "回次号": "回次!A10",
+            "顶深_m": "回次!B10",
+            "底深_m": "回次!C10",
+            "岩心长_m": "回次!D10"
+          }
+        }
+      },
+      {
+        "id": "10",
+        "top_m": 17.79,
+        "bottom_m": 20.79,
+        "top_y": 570.75,
+        "bottom_y": 645.75,
+        "ledger_y": 344.5,
+        "source": {
+          "sheet": "回次",
+          "row": 11,
+          "cells": {
+            "回次号": "回次!A11",
+            "顶深_m": "回次!B11",
+            "底深_m": "回次!C11",
+            "岩心长_m": "回次!D11"
+          }
+        }
+      },
+      {
+        "id": "11",
+        "top_m": 20.79,
+        "bottom_m": 23.79,
+        "top_y": 645.75,
+        "bottom_y": 720.75,
+        "ledger_y": 367.5,
+        "source": {
+          "sheet": "回次",
+          "row": 12,
+          "cells": {
+            "回次号": "回次!A12",
+            "顶深_m": "回次!B12",
+            "底深_m": "回次!C12",
+            "岩心长_m": "回次!D12"
+          }
+        }
+      },
+      {
+        "id": "12",
+        "top_m": 23.79,
+        "bottom_m": 26.79,
+        "top_y": 720.75,
+        "bottom_y": 795.75,
+        "ledger_y": 390.5,
+        "source": {
+          "sheet": "回次",
+          "row": 13,
+          "cells": {
+            "回次号": "回次!A13",
+            "顶深_m": "回次!B13",
+            "底深_m": "回次!C13",
+            "岩心长_m": "回次!D13"
+          }
+        }
+      },
+      {
+        "id": "13",
+        "top_m": 26.79,
+        "bottom_m": 29.79,
+        "top_y": 795.75,
+        "bottom_y": 870.75,
+        "ledger_y": 413.5,
+        "source": {
+          "sheet": "回次",
+          "row": 14,
+          "cells": {
+            "回次号": "回次!A14",
+            "顶深_m": "回次!B14",
+            "底深_m": "回次!C14",
+            "岩心长_m": "回次!D14"
+          }
+        }
+      },
+      {
+        "id": "14",
+        "top_m": 29.79,
+        "bottom_m": 32.79,
+        "top_y": 870.75,
+        "bottom_y": 945.75,
+        "ledger_y": 436.5,
+        "source": {
+          "sheet": "回次",
+          "row": 15,
+          "cells": {
+            "回次号": "回次!A15",
+            "顶深_m": "回次!B15",
+            "底深_m": "回次!C15",
+            "岩心长_m": "回次!D15"
+          }
+        }
+      },
+      {
+        "id": "15",
+        "top_m": 32.79,
+        "bottom_m": 35.79,
+        "top_y": 945.75,
+        "bottom_y": 1020.75,
+        "ledger_y": 459.5,
+        "source": {
+          "sheet": "回次",
+          "row": 16,
+          "cells": {
+            "回次号": "回次!A16",
+            "顶深_m": "回次!B16",
+            "底深_m": "回次!C16",
+            "岩心长_m": "回次!D16"
+          }
+        }
+      },
+      {
+        "id": "16",
+        "top_m": 35.79,
+        "bottom_m": 38.79,
+        "top_y": 1020.75,
+        "bottom_y": 1095.75,
+        "ledger_y": 482.5,
+        "source": {
+          "sheet": "回次",
+          "row": 17,
+          "cells": {
+            "回次号": "回次!A17",
+            "顶深_m": "回次!B17",
+            "底深_m": "回次!C17",
+            "岩心长_m": "回次!D17"
+          }
+        }
+      },
+      {
+        "id": "17",
+        "top_m": 38.79,
+        "bottom_m": 41.79,
+        "top_y": 1095.75,
+        "bottom_y": 1170.75,
+        "ledger_y": 505.5,
+        "source": {
+          "sheet": "回次",
+          "row": 18,
+          "cells": {
+            "回次号": "回次!A18",
+            "顶深_m": "回次!B18",
+            "底深_m": "回次!C18",
+            "岩心长_m": "回次!D18"
+          }
+        }
+      },
+      {
+        "id": "18",
+        "top_m": 41.79,
+        "bottom_m": 44.79,
+        "top_y": 1170.75,
+        "bottom_y": 1245.75,
+        "ledger_y": 528.5,
+        "source": {
+          "sheet": "回次",
+          "row": 19,
+          "cells": {
+            "回次号": "回次!A19",
+            "顶深_m": "回次!B19",
+            "底深_m": "回次!C19",
+            "岩心长_m": "回次!D19"
+          }
+        }
+      },
+      {
+        "id": "19",
+        "top_m": 44.79,
+        "bottom_m": 47.79,
+        "top_y": 1245.75,
+        "bottom_y": 1320.75,
+        "ledger_y": 551.5,
+        "source": {
+          "sheet": "回次",
+          "row": 20,
+          "cells": {
+            "回次号": "回次!A20",
+            "顶深_m": "回次!B20",
+            "底深_m": "回次!C20",
+            "岩心长_m": "回次!D20"
+          }
+        }
+      }
+    ],
+    "detail_crop_is_not_geologic_boundary": true,
+    "svg_image_elements": 0,
+    "source_values_rounded_for_display_only": true,
+    "pending_patterns": [
+      "2",
+      "3",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23"
+    ]
+  },
+  "raster": {
+    "main": {
+      "vector_native_size": [
+        2484.0,
+        6267.0
+      ],
+      "raster_view_size": [
+        2484,
+        6267
+      ],
+      "viewBox_preserved": true
+    },
+    "detail": {
+      "vector_native_size": [
+        2484.0,
+        2052.0
+      ],
+      "raster_view_size": [
+        2484,
+        2052
+      ],
+      "viewBox_preserved": true
+    },
+    "preview": {
+      "css_width_px": 2484,
+      "css_height_px": 6267,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 2484,
+      "png_height_px": 6267,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "complete_hd": {
+      "css_width_px": 2484,
+      "css_height_px": 6267,
+      "requested_scale": 4,
+      "scale": 1,
+      "png_width_px": 2484,
+      "png_height_px": 6267,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": true,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "detail_png": {
+      "css_width_px": 2484,
+      "css_height_px": 2052,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 2484,
+      "png_height_px": 2052,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  }
+}

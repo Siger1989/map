@@ -1,0 +1,1125 @@
+{
+  "phase": "input-and-svg-acceptance",
+  "renderer_geometry_audit": "svg-xml-and-font-metrics",
+  "status": "pass",
+  "check_count": 53,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "check": "section blank exact project parameters",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "项目名称",
+          "剖面编号",
+          "剖面方位角_deg",
+          "长度单位",
+          "角度单位"
+        ],
+        "expected": [
+          "项目名称",
+          "剖面编号",
+          "剖面方位角_deg",
+          "长度单位",
+          "角度单位"
+        ]
+      }
+    },
+    {
+      "check": "section blank canonical headers",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "记录号",
+          "导线段号",
+          "层号",
+          "起读数_m",
+          "止读数_m",
+          "斜距_m",
+          "坡角_deg",
+          "方位角_deg",
+          "倾向_deg",
+          "倾角_deg",
+          "岩性名称",
+          "岩性描述",
+          "样品编号",
+          "样品距测段起点_m",
+          "原表平距_m",
+          "原表高差_m",
+          "原表累计高差_m",
+          "原表累计北_m",
+          "原表累计东_m",
+          "实测真厚度_m"
+        ],
+        "expected": [
+          "记录号",
+          "导线段号",
+          "层号",
+          "起读数_m",
+          "止读数_m",
+          "斜距_m",
+          "坡角_deg",
+          "方位角_deg",
+          "倾向_deg",
+          "倾角_deg",
+          "岩性名称",
+          "岩性描述",
+          "样品编号",
+          "样品距测段起点_m",
+          "原表平距_m",
+          "原表高差_m",
+          "原表累计高差_m",
+          "原表累计北_m",
+          "原表累计东_m",
+          "实测真厚度_m"
+        ]
+      }
+    },
+    {
+      "check": "section blank has no data rows",
+      "status": "pass",
+      "detail": 0
+    },
+    {
+      "check": "section blank default units",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "section blank has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "drill blank exact project parameters",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "模板类型",
+          "模板版本",
+          "项目名称",
+          "钻孔编号",
+          "长度单位",
+          "孔深基准",
+          "终孔深度_m",
+          "Au单位",
+          "Pb单位",
+          "Zn单位"
+        ],
+        "expected": [
+          "模板类型",
+          "模板版本",
+          "项目名称",
+          "钻孔编号",
+          "长度单位",
+          "孔深基准",
+          "终孔深度_m",
+          "Au单位",
+          "Pb单位",
+          "Zn单位"
+        ]
+      }
+    },
+    {
+      "check": "drill blank exact table headers",
+      "status": "pass",
+      "detail": {
+        "分层": [
+          "层号",
+          "顶深_m",
+          "底深_m",
+          "岩性名称",
+          "岩性描述",
+          "岩心长_m",
+          "花纹代码"
+        ],
+        "回次": [
+          "回次号",
+          "顶深_m",
+          "底深_m",
+          "岩心长_m"
+        ],
+        "样品": [
+          "样品编号",
+          "顶深_m",
+          "底深_m",
+          "岩心长_m",
+          "Au",
+          "Pb",
+          "Zn"
+        ],
+        "孔径": [
+          "孔深_m",
+          "孔径_mm"
+        ]
+      }
+    },
+    {
+      "check": "drill blank contains no data records",
+      "status": "pass",
+      "detail": {
+        "分层": 0,
+        "回次": 0,
+        "样品": 0,
+        "孔径": 0
+      }
+    },
+    {
+      "check": "drill blank fixed contract values",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "drill blank has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 canonical headers",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "PM01 source rows exact including null omissions",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 normalized field values exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 sample identifiers and locations exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 recomputed geometry matches normalized values",
+      "status": "pass",
+      "detail": 0.0
+    },
+    {
+      "check": "PM01 counts 43/26/20/14",
+      "status": "pass",
+      "detail": {
+        "records": 43,
+        "intervals": 26,
+        "stations": 20,
+        "samples": 14,
+        "located_samples": 0,
+        "total_slant_m": 797.6,
+        "total_horizontal_m": 785.7778222490363,
+        "total_vertical_m": -127.46241495689857,
+        "endpoint_east_m": 476.25875170939065,
+        "endpoint_north_m": 54.25790456876632,
+        "axis_azimuth_deg": 83.50058502519266,
+        "projected_endpoint_m": 479.3394609125983
+      }
+    },
+    {
+      "check": "PM01 no importer errors",
+      "status": "pass",
+      "detail": {
+        "errors": []
+      }
+    },
+    {
+      "check": "PM01 xlsx has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "alternate section project id and axis",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section canonical columns",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section ids and source sample",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section geometry 14.330127018922195/2.5",
+      "status": "pass",
+      "detail": {
+        "x_m": 14.330127018922195,
+        "z_m": 2.4999999999999996,
+        "summary": {
+          "records": 2,
+          "intervals": 2,
+          "stations": 3,
+          "samples": 1,
+          "located_samples": 1,
+          "total_slant_m": 15.0,
+          "total_horizontal_m": 14.330127018922195,
+          "total_vertical_m": 2.4999999999999996,
+          "endpoint_east_m": 14.330127018922195,
+          "endpoint_north_m": 8.774672092549034e-16,
+          "axis_azimuth_deg": 90.0,
+          "projected_endpoint_m": 14.330127018922195
+        }
+      }
+    },
+    {
+      "check": "alternate section optional caches and thickness remain empty",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 ids, depth basis, and version",
+      "status": "pass",
+      "detail": {
+        "模板类型": "钻孔柱状图",
+        "模板版本": "1.0",
+        "项目名称": null,
+        "钻孔编号": "ZK0003",
+        "长度单位": "m",
+        "孔深基准": "原始沿孔深",
+        "终孔深度_m": 382.79,
+        "Au单位": null,
+        "Pb单位": null,
+        "Zn单位": null
+      }
+    },
+    {
+      "check": "ZK0003 exact headers",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 endpoint 382.79",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 counts 131/23/97",
+      "status": "pass",
+      "detail": {
+        "turns": 131,
+        "layers": 23,
+        "samples": 97
+      }
+    },
+    {
+      "check": "ZK0003 source layer values, descriptions, nulls, names, and codes exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 turn ids and boundary values exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 sample ids, boundaries, cores and absent assays exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 layer coverage continuous 0 to endpoint",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 turn coverage continuous 0 to endpoint",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 exact pattern names auto-map and unknown remains pending",
+      "status": "pass",
+      "detail": {
+        "1": "short-dash-double-dot",
+        "2": null,
+        "3": null,
+        "4": "dot-rows-thin-lines",
+        "5": "point-dash-ellipse-bands",
+        "6": null,
+        "7": null,
+        "8": null,
+        "9": null,
+        "10": null,
+        "11": null,
+        "12": null,
+        "13": null,
+        "14": null,
+        "15": null,
+        "16": null,
+        "17": null,
+        "18": null,
+        "19": null,
+        "20": null,
+        "21": null,
+        "22": null,
+        "23": null
+      }
+    },
+    {
+      "check": "ZK0003 no assay units or values fabricated",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "alternate drill second hole identity, basis, endpoint, and Au unit",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill counts 2/3/3/7",
+      "status": "pass",
+      "detail": {
+        "turns": 2,
+        "layers": 3,
+        "samples": 3,
+        "endpoint_m": 7.0,
+        "pending_patterns": 1
+      }
+    },
+    {
+      "check": "alternate drill layer labels and exact material mappings",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill sample ids, assay value and nulls",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill overlapping sample pair permitted and flagged",
+      "status": "pass",
+      "detail": {
+        "overlaps": [
+          [
+            "S1",
+            "S2"
+          ]
+        ],
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "OVERLAPPING_SAMPLES",
+            "message": "样品区间存在重叠，将分轨显示：S1 / S2",
+            "cells": [
+              "样品!B2",
+              "样品!B3"
+            ]
+          },
+          {
+            "severity": "warning",
+            "code": "PENDING_PATTERN",
+            "message": "岩性“新岩性名称待定义”无精确花纹映射，保留留白待配置",
+            "cells": [
+              "分层!D4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "check": "alternate drill no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "drill_zk0003 full SVG structure and independent text geometry",
+      "status": "pass",
+      "detail": {
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003\\drill_zk0003-full.svg",
+        "sha256_repeat_equal": true,
+        "viewBox": [
+          0.0,
+          0.0,
+          2484.0,
+          6266.3
+        ],
+        "lith_rect_count": 23,
+        "expected_visible_layers": 23,
+        "sample_path_count": 97,
+        "expected_visible_samples": 97,
+        "sample_lane_x_unique": 1,
+        "sample_span_max_error_px": 4.547473508864641e-13,
+        "boundary_line_count": 24,
+        "image_count": 0,
+        "depth_axis_scale_px_per_m": 9.0,
+        "lith_rect_max_error_px": 4.547473508864641e-13,
+        "boundary_geometry_match": true,
+        "text": {
+          "text_count": 743,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            6266.3
+          ]
+        }
+      }
+    },
+    {
+      "check": "drill_zk0003 detail SVG structure and independent text geometry",
+      "status": "pass",
+      "detail": {
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003\\drill_zk0003-detail.svg",
+        "sha256_repeat_equal": true,
+        "viewBox": [
+          0.0,
+          0.0,
+          2484.0,
+          2051.5
+        ],
+        "lith_rect_count": 3,
+        "expected_visible_layers": 3,
+        "sample_path_count": 21,
+        "expected_visible_samples": 21,
+        "sample_lane_x_unique": 1,
+        "sample_span_max_error_px": 1.1368683772161603e-13,
+        "boundary_line_count": 3,
+        "image_count": 0,
+        "depth_axis_scale_px_per_m": 25.0,
+        "lith_rect_max_error_px": 1.1368683772161603e-13,
+        "boundary_geometry_match": true,
+        "text": {
+          "text_count": 157,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            2051.5
+          ]
+        }
+      }
+    },
+    {
+      "check": "drill_zk0003 SVG source identity and endpoint are data-driven",
+      "status": "pass",
+      "detail": {
+        "hole_id": "ZK0003",
+        "endpoint_m": "382.79",
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003\\drill_zk0003-full.svg"
+      }
+    },
+    {
+      "check": "drill_alt full SVG structure and independent text geometry",
+      "status": "pass",
+      "detail": {
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-alt\\drill_alt-full.svg",
+        "sha256_repeat_equal": true,
+        "viewBox": [
+          0.0,
+          0.0,
+          2484.0,
+          959.5
+        ],
+        "lith_rect_count": 3,
+        "expected_visible_layers": 3,
+        "sample_path_count": 3,
+        "expected_visible_samples": 3,
+        "sample_lane_x_unique": 2,
+        "sample_span_max_error_px": 0.0,
+        "boundary_line_count": 4,
+        "image_count": 0,
+        "depth_axis_scale_px_per_m": 100.0,
+        "lith_rect_max_error_px": 1.7763568394002505e-15,
+        "boundary_geometry_match": true,
+        "text": {
+          "text_count": 49,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            959.5
+          ]
+        }
+      }
+    },
+    {
+      "check": "drill_alt detail SVG structure and independent text geometry",
+      "status": "pass",
+      "detail": {
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-alt\\drill_alt-detail.svg",
+        "sha256_repeat_equal": true,
+        "viewBox": [
+          0.0,
+          0.0,
+          2484.0,
+          959.5
+        ],
+        "lith_rect_count": 3,
+        "expected_visible_layers": 3,
+        "sample_path_count": 3,
+        "expected_visible_samples": 3,
+        "sample_lane_x_unique": 2,
+        "sample_span_max_error_px": 0.0,
+        "boundary_line_count": 4,
+        "image_count": 0,
+        "depth_axis_scale_px_per_m": 100.0,
+        "lith_rect_max_error_px": 1.7763568394002505e-15,
+        "boundary_geometry_match": true,
+        "text": {
+          "text_count": 49,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            959.5
+          ]
+        }
+      }
+    },
+    {
+      "check": "drill_alt SVG source identity and endpoint are data-driven",
+      "status": "pass",
+      "detail": {
+        "hole_id": "ZK-TEST-02",
+        "endpoint_m": "7.0",
+        "path": "research/geology/review-evidence/v2-acceptance-renders/drill-alt\\drill_alt-full.svg"
+      }
+    },
+    {
+      "check": "drill_alt overlap samples occupy separate SVG tracks",
+      "status": "pass",
+      "detail": {
+        "sample_lane_x": [
+          1320.0,
+          1336.0,
+          1320.0
+        ],
+        "sample_paths": 3
+      }
+    },
+    {
+      "check": "drill_alt 0.02 m thin layer has proportional SVG coordinates",
+      "status": "pass",
+      "detail": {
+        "source_thickness_m": 0.020000000000000018,
+        "expected_svg_height": 2.0000000000000018,
+        "svg_height": 2.0,
+        "expected_svg_y": 276.0,
+        "svg_y": 276.0
+      }
+    },
+    {
+      "check": "section_pm01 actual SVG geometry, labels, and deterministic render",
+      "status": "pass",
+      "detail": {
+        "drawing_svg": "research/geology/review-evidence/v2-acceptance-renders/section-pm01\\drawing.svg",
+        "detail_svg": "research/geology/review-evidence/v2-acceptance-renders/section-pm01\\detail.svg",
+        "repeat_byte_equal": true,
+        "polygon_count": 82,
+        "polygon_intervals": [
+          "I0001",
+          "I0002",
+          "I0003",
+          "I0004",
+          "I0005",
+          "I0006",
+          "I0007",
+          "I0008",
+          "I0009",
+          "I0010",
+          "I0011",
+          "I0012",
+          "I0013",
+          "I0014",
+          "I0015",
+          "I0016",
+          "I0017",
+          "I0018",
+          "I0019",
+          "I0020",
+          "I0021",
+          "I0022",
+          "I0023",
+          "I0024",
+          "I0025",
+          "I0026"
+        ],
+        "sample_marker_ids": [],
+        "survey_node_counts": [
+          44,
+          44
+        ],
+        "image_count": 0,
+        "text": {
+          "text_count": 129,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            1500.0,
+            2351.0
+          ]
+        }
+      }
+    },
+    {
+      "check": "section_alt actual SVG geometry, labels, and deterministic render",
+      "status": "pass",
+      "detail": {
+        "drawing_svg": "research/geology/review-evidence/v2-acceptance-renders/section-alt\\drawing.svg",
+        "detail_svg": "research/geology/review-evidence/v2-acceptance-renders/section-alt\\detail.svg",
+        "repeat_byte_equal": true,
+        "polygon_count": 0,
+        "polygon_intervals": [],
+        "sample_marker_ids": [
+          "T1"
+        ],
+        "survey_node_counts": [
+          3,
+          3
+        ],
+        "image_count": 0,
+        "text": {
+          "text_count": 63,
+          "outside_count": 0,
+          "outside": [],
+          "overlap_count": 0,
+          "overlaps": [],
+          "viewBox": [
+            0.0,
+            0.0,
+            1500.0,
+            1242.0
+          ]
+        }
+      }
+    },
+    {
+      "check": "section_alt SVG survey vectors encode measured endpoint rise/run and T1 position",
+      "status": "pass",
+      "detail": {
+        "svg_profile_points": [
+          [
+            84.0,
+            628.377563
+          ],
+          [
+            1013.510254,
+            628.377563
+          ],
+          [
+            1416.0,
+            396.0
+          ]
+        ],
+        "second_segment_dx_px": 402.48974599999997,
+        "second_segment_dy_px": -232.377563,
+        "projected_world_ratio": 1.732050807568878,
+        "ratio_ok": true,
+        "T1_marker_center_px": [
+          269.902051,
+          628.377563
+        ],
+        "sample_position_ok": true
+      }
+    }
+  ],
+  "inputs": {
+    "pm01": {
+      "source_cell_mismatches": [],
+      "normalized_field_mismatches": [],
+      "sample_mismatches": [],
+      "counts": {
+        "records": 43,
+        "intervals": 26,
+        "stations": 20,
+        "samples": 14,
+        "located_samples": 0,
+        "total_slant_m": 797.6,
+        "total_horizontal_m": 785.7778222490363,
+        "total_vertical_m": -127.46241495689857,
+        "endpoint_east_m": 476.25875170939065,
+        "endpoint_north_m": 54.25790456876632,
+        "axis_azimuth_deg": 83.50058502519266,
+        "projected_endpoint_m": 479.3394609125983
+      },
+      "computed_geometry_max_abs_diff": 0.0,
+      "issue_counts": {
+        "error": 0,
+        "warning": 80
+      },
+      "warning_codes": {
+        "CACHE_MISMATCH": 80
+      }
+    },
+    "section_alt": {
+      "summary": {
+        "records": 2,
+        "intervals": 2,
+        "stations": 3,
+        "samples": 1,
+        "located_samples": 1,
+        "total_slant_m": 15.0,
+        "total_horizontal_m": 14.330127018922195,
+        "total_vertical_m": 2.4999999999999996,
+        "endpoint_east_m": 14.330127018922195,
+        "endpoint_north_m": 8.774672092549034e-16,
+        "axis_azimuth_deg": 90.0,
+        "projected_endpoint_m": 14.330127018922195
+      },
+      "endpoint": {
+        "x_m": 14.330127018922195,
+        "z_m": 2.4999999999999996
+      }
+    },
+    "zk0003": {
+      "summary": {
+        "turns": 131,
+        "layers": 23,
+        "samples": 97,
+        "endpoint_m": 382.79,
+        "pending_patterns": 20
+      },
+      "depth_basis": "原始沿孔深",
+      "layer_contiguous": true,
+      "turn_contiguous": true,
+      "layer_mismatches": [],
+      "turn_mismatches": [],
+      "sample_mismatches": [],
+      "pattern_ids": {
+        "1": "short-dash-double-dot",
+        "2": null,
+        "3": null,
+        "4": "dot-rows-thin-lines",
+        "5": "point-dash-ellipse-bands",
+        "6": null,
+        "7": null,
+        "8": null,
+        "9": null,
+        "10": null,
+        "11": null,
+        "12": null,
+        "13": null,
+        "14": null,
+        "15": null,
+        "16": null,
+        "17": null,
+        "18": null,
+        "19": null,
+        "20": null,
+        "21": null,
+        "22": null,
+        "23": null
+      },
+      "overlap_warning_count": 0,
+      "assays_all_null": true
+    },
+    "drill_alt": {
+      "summary": {
+        "turns": 2,
+        "layers": 3,
+        "samples": 3,
+        "endpoint_m": 7.0,
+        "pending_patterns": 1
+      },
+      "sample_overlaps": [
+        [
+          "S1",
+          "S2"
+        ]
+      ],
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "OVERLAPPING_SAMPLES",
+          "message": "样品区间存在重叠，将分轨显示：S1 / S2",
+          "cells": [
+            "样品!B2",
+            "样品!B3"
+          ]
+        },
+        {
+          "severity": "warning",
+          "code": "PENDING_PATTERN",
+          "message": "岩性“新岩性名称待定义”无精确花纹映射，保留留白待配置",
+          "cells": [
+            "分层!D4"
+          ]
+        }
+      ],
+      "sample_assays": {
+        "S1": {
+          "Au": 0.15,
+          "Pb": null,
+          "Zn": null
+        },
+        "S2": {
+          "Au": null,
+          "Pb": null,
+          "Zn": null
+        },
+        "S3": {
+          "Au": null,
+          "Pb": null,
+          "Zn": null
+        }
+      }
+    }
+  },
+  "renders": {
+    "drill_zk0003": {
+      "hole_id": "ZK0003",
+      "endpoint_m": 382.79,
+      "views": {
+        "full": {
+          "path": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003\\drill_zk0003-full.svg",
+          "sha256_repeat_equal": true,
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            6266.3
+          ],
+          "lith_rect_count": 23,
+          "expected_visible_layers": 23,
+          "sample_path_count": 97,
+          "expected_visible_samples": 97,
+          "sample_lane_x_unique": 1,
+          "sample_span_max_error_px": 4.547473508864641e-13,
+          "boundary_line_count": 24,
+          "image_count": 0,
+          "depth_axis_scale_px_per_m": 9.0,
+          "lith_rect_max_error_px": 4.547473508864641e-13,
+          "boundary_geometry_match": true,
+          "text": {
+            "text_count": 743,
+            "outside_count": 0,
+            "outside": [],
+            "overlap_count": 0,
+            "overlaps": [],
+            "viewBox": [
+              0.0,
+              0.0,
+              2484.0,
+              6266.3
+            ]
+          }
+        },
+        "detail": {
+          "path": "research/geology/review-evidence/v2-acceptance-renders/drill-zk0003\\drill_zk0003-detail.svg",
+          "sha256_repeat_equal": true,
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            2051.5
+          ],
+          "lith_rect_count": 3,
+          "expected_visible_layers": 3,
+          "sample_path_count": 21,
+          "expected_visible_samples": 21,
+          "sample_lane_x_unique": 1,
+          "sample_span_max_error_px": 1.1368683772161603e-13,
+          "boundary_line_count": 3,
+          "image_count": 0,
+          "depth_axis_scale_px_per_m": 25.0,
+          "lith_rect_max_error_px": 1.1368683772161603e-13,
+          "boundary_geometry_match": true,
+          "text": {
+            "text_count": 157,
+            "outside_count": 0,
+            "outside": [],
+            "overlap_count": 0,
+            "overlaps": [],
+            "viewBox": [
+              0.0,
+              0.0,
+              2484.0,
+              2051.5
+            ]
+          }
+        }
+      }
+    },
+    "drill_alt": {
+      "hole_id": "ZK-TEST-02",
+      "endpoint_m": 7.0,
+      "views": {
+        "full": {
+          "path": "research/geology/review-evidence/v2-acceptance-renders/drill-alt\\drill_alt-full.svg",
+          "sha256_repeat_equal": true,
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            959.5
+          ],
+          "lith_rect_count": 3,
+          "expected_visible_layers": 3,
+          "sample_path_count": 3,
+          "expected_visible_samples": 3,
+          "sample_lane_x_unique": 2,
+          "sample_span_max_error_px": 0.0,
+          "boundary_line_count": 4,
+          "image_count": 0,
+          "depth_axis_scale_px_per_m": 100.0,
+          "lith_rect_max_error_px": 1.7763568394002505e-15,
+          "boundary_geometry_match": true,
+          "text": {
+            "text_count": 49,
+            "outside_count": 0,
+            "outside": [],
+            "overlap_count": 0,
+            "overlaps": [],
+            "viewBox": [
+              0.0,
+              0.0,
+              2484.0,
+              959.5
+            ]
+          }
+        },
+        "detail": {
+          "path": "research/geology/review-evidence/v2-acceptance-renders/drill-alt\\drill_alt-detail.svg",
+          "sha256_repeat_equal": true,
+          "viewBox": [
+            0.0,
+            0.0,
+            2484.0,
+            959.5
+          ],
+          "lith_rect_count": 3,
+          "expected_visible_layers": 3,
+          "sample_path_count": 3,
+          "expected_visible_samples": 3,
+          "sample_lane_x_unique": 2,
+          "sample_span_max_error_px": 0.0,
+          "boundary_line_count": 4,
+          "image_count": 0,
+          "depth_axis_scale_px_per_m": 100.0,
+          "lith_rect_max_error_px": 1.7763568394002505e-15,
+          "boundary_geometry_match": true,
+          "text": {
+            "text_count": 49,
+            "outside_count": 0,
+            "outside": [],
+            "overlap_count": 0,
+            "overlaps": [],
+            "viewBox": [
+              0.0,
+              0.0,
+              2484.0,
+              959.5
+            ]
+          }
+        }
+      }
+    },
+    "section_pm01": {
+      "drawing_svg": "research/geology/review-evidence/v2-acceptance-renders/section-pm01\\drawing.svg",
+      "detail_svg": "research/geology/review-evidence/v2-acceptance-renders/section-pm01\\detail.svg",
+      "repeat_byte_equal": true,
+      "polygon_count": 82,
+      "polygon_intervals": [
+        "I0001",
+        "I0002",
+        "I0003",
+        "I0004",
+        "I0005",
+        "I0006",
+        "I0007",
+        "I0008",
+        "I0009",
+        "I0010",
+        "I0011",
+        "I0012",
+        "I0013",
+        "I0014",
+        "I0015",
+        "I0016",
+        "I0017",
+        "I0018",
+        "I0019",
+        "I0020",
+        "I0021",
+        "I0022",
+        "I0023",
+        "I0024",
+        "I0025",
+        "I0026"
+      ],
+      "sample_marker_ids": [],
+      "survey_node_counts": [
+        44,
+        44
+      ],
+      "image_count": 0,
+      "text": {
+        "text_count": 129,
+        "outside_count": 0,
+        "outside": [],
+        "overlap_count": 0,
+        "overlaps": [],
+        "viewBox": [
+          0.0,
+          0.0,
+          1500.0,
+          2351.0
+        ]
+      }
+    },
+    "section_alt": {
+      "drawing_svg": "research/geology/review-evidence/v2-acceptance-renders/section-alt\\drawing.svg",
+      "detail_svg": "research/geology/review-evidence/v2-acceptance-renders/section-alt\\detail.svg",
+      "repeat_byte_equal": true,
+      "polygon_count": 0,
+      "polygon_intervals": [],
+      "sample_marker_ids": [
+        "T1"
+      ],
+      "survey_node_counts": [
+        3,
+        3
+      ],
+      "image_count": 0,
+      "text": {
+        "text_count": 63,
+        "outside_count": 0,
+        "outside": [],
+        "overlap_count": 0,
+        "overlaps": [],
+        "viewBox": [
+          0.0,
+          0.0,
+          1500.0,
+          1242.0
+        ]
+      }
+    }
+  }
+}

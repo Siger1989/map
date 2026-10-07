@@ -1,0 +1,33 @@
+{
+  "a": "7e00f92c506ce6eb3a3c4b86d813c02dabe0d8f268b0fd1a04ddbe667797095a",
+  "b": "7e00f92c506ce6eb3a3c4b86d813c02dabe0d8f268b0fd1a04ddbe667797095a",
+  "same": true,
+  "business_a": [
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+      "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\drawing.json",
+      "sha256": "01f3746b2e5a7d807b518053f61b8e20cbbe2f3fae903f5760796f03fcaf390a"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\materials.json",
+      "sha256": "ad864c9b223a431cd91b9a9249ee446617db6866d85510505337587bb5c66d33"
+    }
+  ],
+  "business_b": [
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+      "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\drawing.json",
+      "sha256": "01f3746b2e5a7d807b518053f61b8e20cbbe2f3fae903f5760796f03fcaf390a"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\materials.json",
+      "sha256": "ad864c9b223a431cd91b9a9249ee446617db6866d85510505337587bb5c66d33"
+    }
+  ]
+}

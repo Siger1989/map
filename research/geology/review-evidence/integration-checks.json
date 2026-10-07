@@ -1,0 +1,127 @@
+{
+  "schema_version": "1.0",
+  "started_at_utc": "2026-10-06T10:41:56.887651+00:00",
+  "finished_at_utc": "2026-10-06T10:41:58.305939+00:00",
+  "inputs": {
+    "legacy_xls": "D:\\天气地图\\地质资料\\实测地层剖面登记表.xls",
+    "canonical_xlsx": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+    "legacy_sha256_before": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+    "canonical_sha256_before": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+  },
+  "temporary_fixtures_only": true,
+  "prior_outputs_used_as_input": false,
+  "summary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "status": "pass"
+  },
+  "checks": [
+    {
+      "name": "legacy_to_canonical_semantic_roundtrip",
+      "status": "pass",
+      "detail": {
+        "records": 43,
+        "intervals": 26,
+        "stations": 20,
+        "attitudes": 27,
+        "samples": 14,
+        "max_numeric_delta": 0.0,
+        "tolerance": 1e-12
+      }
+    },
+    {
+      "name": "length_change_recalculates_all_successor_nodes",
+      "status": "pass",
+      "detail": {
+        "record_id": "R0011",
+        "delta_length_m": 1.25,
+        "successor_nodes_checked": 33,
+        "max_delta": 1.2634338020234281e-13
+      }
+    },
+    {
+      "name": "lithology_only_changes_pattern_not_nodes",
+      "status": "pass",
+      "detail": {
+        "record_id": "R0006",
+        "interval_id": "I0003",
+        "from": "泥岩",
+        "to": "凝灰岩",
+        "old_pattern": "mat_mudstone__interval_0003",
+        "new_pattern": "mat_tuff__interval_0003"
+      }
+    },
+    {
+      "name": "unknown_lithology_remains_pending",
+      "status": "pass",
+      "detail": {
+        "unknown_name": "未配置测试岩性",
+        "interval_id": "I0003",
+        "template_pattern": "mat_pending",
+        "derived_pattern": "mat_pending__interval_0003"
+      }
+    },
+    {
+      "name": "small_dynamic_dataset_generates",
+      "status": "pass",
+      "detail": {
+        "records": 2,
+        "nodes": 3,
+        "intervals": 1
+      }
+    },
+    {
+      "name": "missing_geometry_rejected",
+      "status": "pass",
+      "detail": {
+        "issue_codes": [
+          "CACHE_MISMATCH",
+          "MISSING_GEOMETRY"
+        ]
+      }
+    },
+    {
+      "name": "wrong_unit_rejected",
+      "status": "pass",
+      "detail": {
+        "issue_codes": [
+          "CACHE_MISMATCH",
+          "INVALID_LENGTH_UNIT"
+        ]
+      }
+    },
+    {
+      "name": "same_input_svg_is_deterministic",
+      "status": "pass",
+      "detail": {
+        "svg_sha256": "f863ca29c01b9312dd18a265c71cc9a1e2dde36a8ecbadaf008c93ca6d5c0747"
+      }
+    },
+    {
+      "name": "missing_sample_positions_are_not_plotted",
+      "status": "pass",
+      "detail": {
+        "missing_samples": 14,
+        "plotted_markers": 0
+      }
+    },
+    {
+      "name": "explicit_sample_offset_interpolates_and_plots",
+      "status": "pass",
+      "detail": {
+        "sample_id": "PM01-0-b1",
+        "fraction": 0.375,
+        "max_numeric_delta": 0.0
+      }
+    },
+    {
+      "name": "source_and_final_workbook_unchanged",
+      "status": "pass",
+      "detail": {
+        "legacy_sha256": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+        "canonical_sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+      }
+    }
+  ]
+}

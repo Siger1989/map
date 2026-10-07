@@ -1,0 +1,17 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>实测剖面生成器 · 数据核验版报告</title>
+<style>body{font:14px/1.65 'Microsoft YaHei',sans-serif;margin:28px;color:#17202a;max-width:1180px}nav a{display:inline-block;margin:0 14px 8px 0}table{border-collapse:collapse;width:100%}th,td{border:1px solid #c5ccd3;padding:6px 8px;vertical-align:top}th{background:#eef3f7}code{word-break:break-all}.note{background:#fff7db;padding:10px 14px}</style>
+<body><h1>实测剖面生成器 · 数据核验版报告</h1><nav><a href="drawing.svg">矢量图</a><a href="preview.png">PNG 预览</a><a href="complete-hd.png">完整图高清 PNG</a><a href="normalized.json">规范数据</a><a href="appendix.html">完整附表</a><a href="layout-audit.json">版式审计</a><a href="manifest.json">生成清单</a><a href="readability.svg">岩性与重点层识读图（SVG）</a><a href="readability.png">岩性与重点层识读图（PNG）</a><a href="readability-audit.json">识读图审计</a><a href="detail.svg">拥挤段矢量详图</a><a href="detail.png">拥挤段 PNG</a><a href="#source">来源</a><a href="#issues">导入问题</a></nav>
+<p class="note"><strong>行业图式尚未完成核验，本报告不能据此认定为已符合正式行业制图规范。</strong>本报告用于核对导入字段、测线计算与相对高程。横纵坐标使用相同单位，垂直夸大为 1；米标尺表示图内数据尺度，不等于固定打印比例。近地表岩性区使用相邻层共享的视倾层界裁剪：层界锚定源分层节点，方向由后续层段首记录产状按剖面方向计算，属于局部平面显示假设，不是独立实测界面，不能读取真厚度或深部接触关系；缺少可用产状时受影响区域留白，不画竖直替代。层界相交时可缩短显示深度，该深度仍不代表厚度。岩性纹样按本参考图建立；未确认的纹样留白待核对，行业图式尚未完成整体核验。“岩性与重点层识读图”使用固定大小样块和独立局部放大帮助辨认，不能用来比较地层厚度，也不表示正式行业符号已经核验。本次动态读取样品 1 个，其中明确定位 1 个；缺少定位的样品只进入附表。</p>
+<h2>概要</h2><table><tbody>
+<tr><th>记录 / 层段 / 站点</th><td>2 / 2 / 3</td></tr>
+<tr><th>样品（已定位）</th><td>1（1）</td></tr>
+<tr><th>总斜距 / 总平距 / 总高差</th><td>15 m / 14.3301270189 m / 2.5 m</td></tr>
+<tr><th>剖面方位</th><td>90°（explicit）</td></tr></tbody></table>
+<h2>近地表岩性区审查</h2><table><tbody>
+<tr><th>模式</th><td>apparent_dip_outcrop</td></tr>
+<tr><th>请求 / 实际显示深度</th><td>18.0 m / 18.0 m（均不表示厚度）</td></tr>
+<tr><th>可绘制</th><td>否或待核对</td></tr></tbody></table>
+<table><thead><tr><th>级别</th><th>代码</th><th>说明</th><th>单元格</th></tr></thead><tbody><tr><td>warning</td><td>surface_tangent_or_coincident</td><td>层界 LC0001 与地形相切、重合或再次相交，受影响层区留白</td><td>测段!I3, 测段!J3</td></tr></tbody></table>
+<h2 id="source">来源</h2><p>文件：section_alt.xlsx<br>SHA-256：<code>a653e50f28bdad8026345ba17153bf82c3337deb1d307a8e4eeceb7e1a4c62c6</code><br>适配器：canonical_xlsx_v1；工作表：测段</p>
+<h2 id="issues">导入问题（0）</h2><table><thead><tr><th>级别</th><th>代码</th><th>说明</th><th>单元格</th></tr></thead><tbody><tr><td colspan="4">无</td></tr></tbody></table>
+</body></html>

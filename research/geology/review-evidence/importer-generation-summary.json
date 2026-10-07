@@ -1,0 +1,26 @@
+{
+  "source_sha_before": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+  "source_sha_after": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+  "json_sha": "557ebcbc80ca67c6d1e1231a25fba92a756c978a92a8899e702a5e2ba492da2d",
+  "json_bytes": 147794,
+  "summary": {
+    "records": 43,
+    "intervals": 26,
+    "stations": 20,
+    "samples": 14,
+    "located_samples": 0,
+    "total_slant_m": 797.6,
+    "total_horizontal_m": 785.7778222490363,
+    "total_vertical_m": -127.46241495689857,
+    "endpoint_east_m": 476.25875170939065,
+    "endpoint_north_m": 54.25790456876632,
+    "axis_azimuth_deg": 83.50058502519266,
+    "projected_endpoint_m": 479.3394609125983
+  },
+  "records_raw_nonblank": 747,
+  "attitudes": 27,
+  "issues": 80,
+  "issue_codes": [
+    "CACHE_MISMATCH"
+  ]
+}

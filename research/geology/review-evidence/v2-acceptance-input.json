@@ -1,0 +1,583 @@
+{
+  "phase": "input-workbooks",
+  "renderer_geometry_audit": "pending updated renderer availability",
+  "status": "pass",
+  "check_count": 42,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "check": "section blank exact project parameters",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "项目名称",
+          "剖面编号",
+          "剖面方位角_deg",
+          "长度单位",
+          "角度单位"
+        ],
+        "expected": [
+          "项目名称",
+          "剖面编号",
+          "剖面方位角_deg",
+          "长度单位",
+          "角度单位"
+        ]
+      }
+    },
+    {
+      "check": "section blank canonical headers",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "记录号",
+          "导线段号",
+          "层号",
+          "起读数_m",
+          "止读数_m",
+          "斜距_m",
+          "坡角_deg",
+          "方位角_deg",
+          "倾向_deg",
+          "倾角_deg",
+          "岩性名称",
+          "岩性描述",
+          "样品编号",
+          "样品距测段起点_m",
+          "原表平距_m",
+          "原表高差_m",
+          "原表累计高差_m",
+          "原表累计北_m",
+          "原表累计东_m",
+          "实测真厚度_m"
+        ],
+        "expected": [
+          "记录号",
+          "导线段号",
+          "层号",
+          "起读数_m",
+          "止读数_m",
+          "斜距_m",
+          "坡角_deg",
+          "方位角_deg",
+          "倾向_deg",
+          "倾角_deg",
+          "岩性名称",
+          "岩性描述",
+          "样品编号",
+          "样品距测段起点_m",
+          "原表平距_m",
+          "原表高差_m",
+          "原表累计高差_m",
+          "原表累计北_m",
+          "原表累计东_m",
+          "实测真厚度_m"
+        ]
+      }
+    },
+    {
+      "check": "section blank has no data rows",
+      "status": "pass",
+      "detail": 0
+    },
+    {
+      "check": "section blank default units",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "section blank has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "drill blank exact project parameters",
+      "status": "pass",
+      "detail": {
+        "actual": [
+          "模板类型",
+          "模板版本",
+          "项目名称",
+          "钻孔编号",
+          "长度单位",
+          "孔深基准",
+          "终孔深度_m",
+          "Au单位",
+          "Pb单位",
+          "Zn单位"
+        ],
+        "expected": [
+          "模板类型",
+          "模板版本",
+          "项目名称",
+          "钻孔编号",
+          "长度单位",
+          "孔深基准",
+          "终孔深度_m",
+          "Au单位",
+          "Pb单位",
+          "Zn单位"
+        ]
+      }
+    },
+    {
+      "check": "drill blank exact table headers",
+      "status": "pass",
+      "detail": {
+        "分层": [
+          "层号",
+          "顶深_m",
+          "底深_m",
+          "岩性名称",
+          "岩性描述",
+          "岩心长_m",
+          "花纹代码"
+        ],
+        "回次": [
+          "回次号",
+          "顶深_m",
+          "底深_m",
+          "岩心长_m"
+        ],
+        "样品": [
+          "样品编号",
+          "顶深_m",
+          "底深_m",
+          "岩心长_m",
+          "Au",
+          "Pb",
+          "Zn"
+        ],
+        "孔径": [
+          "孔深_m",
+          "孔径_mm"
+        ]
+      }
+    },
+    {
+      "check": "drill blank contains no data records",
+      "status": "pass",
+      "detail": {
+        "分层": 0,
+        "回次": 0,
+        "样品": 0,
+        "孔径": 0
+      }
+    },
+    {
+      "check": "drill blank fixed contract values",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "drill blank has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 canonical headers",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "PM01 source rows exact including null omissions",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 normalized field values exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 sample identifiers and locations exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "PM01 recomputed geometry matches normalized values",
+      "status": "pass",
+      "detail": 0.0
+    },
+    {
+      "check": "PM01 counts 43/26/20/14",
+      "status": "pass",
+      "detail": {
+        "records": 43,
+        "intervals": 26,
+        "stations": 20,
+        "samples": 14,
+        "located_samples": 0,
+        "total_slant_m": 797.6,
+        "total_horizontal_m": 785.7778222490363,
+        "total_vertical_m": -127.46241495689857,
+        "endpoint_east_m": 476.25875170939065,
+        "endpoint_north_m": 54.25790456876632,
+        "axis_azimuth_deg": 83.50058502519266,
+        "projected_endpoint_m": 479.3394609125983
+      }
+    },
+    {
+      "check": "PM01 no importer errors",
+      "status": "pass",
+      "detail": {
+        "errors": []
+      }
+    },
+    {
+      "check": "PM01 xlsx has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "alternate section project id and axis",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section canonical columns",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section ids and source sample",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section geometry 14.330127018922195/2.5",
+      "status": "pass",
+      "detail": {
+        "x_m": 14.330127018922195,
+        "z_m": 2.4999999999999996,
+        "summary": {
+          "records": 2,
+          "intervals": 2,
+          "stations": 3,
+          "samples": 1,
+          "located_samples": 1,
+          "total_slant_m": 15.0,
+          "total_horizontal_m": 14.330127018922195,
+          "total_vertical_m": 2.4999999999999996,
+          "endpoint_east_m": 14.330127018922195,
+          "endpoint_north_m": 8.774672092549034e-16,
+          "axis_azimuth_deg": 90.0,
+          "projected_endpoint_m": 14.330127018922195
+        }
+      }
+    },
+    {
+      "check": "alternate section optional caches and thickness remain empty",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate section has no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 ids, depth basis, and version",
+      "status": "pass",
+      "detail": {
+        "模板类型": "钻孔柱状图",
+        "模板版本": "1.0",
+        "项目名称": null,
+        "钻孔编号": "ZK0003",
+        "长度单位": "m",
+        "孔深基准": "原始沿孔深",
+        "终孔深度_m": 382.79,
+        "Au单位": null,
+        "Pb单位": null,
+        "Zn单位": null
+      }
+    },
+    {
+      "check": "ZK0003 exact headers",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 endpoint 382.79",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 counts 131/23/97",
+      "status": "pass",
+      "detail": {
+        "turns": 131,
+        "layers": 23,
+        "samples": 97
+      }
+    },
+    {
+      "check": "ZK0003 source layer values, descriptions, nulls, names, and codes exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 turn ids and boundary values exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 sample ids, boundaries, cores and absent assays exact",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "ZK0003 layer coverage continuous 0 to endpoint",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 turn coverage continuous 0 to endpoint",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 exact pattern names auto-map and unknown remains pending",
+      "status": "pass",
+      "detail": {
+        "1": "short-dash-double-dot",
+        "2": null,
+        "3": null,
+        "4": "dot-rows-thin-lines",
+        "5": "point-dash-ellipse-bands",
+        "6": null,
+        "7": null,
+        "8": null,
+        "9": null,
+        "10": null,
+        "11": null,
+        "12": null,
+        "13": null,
+        "14": null,
+        "15": null,
+        "16": null,
+        "17": null,
+        "18": null,
+        "19": null,
+        "20": null,
+        "21": null,
+        "22": null,
+        "23": null
+      }
+    },
+    {
+      "check": "ZK0003 no assay units or values fabricated",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "ZK0003 no formulas",
+      "status": "pass",
+      "detail": []
+    },
+    {
+      "check": "alternate drill second hole identity, basis, endpoint, and Au unit",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill counts 2/3/3/7",
+      "status": "pass",
+      "detail": {
+        "turns": 2,
+        "layers": 3,
+        "samples": 3,
+        "endpoint_m": 7.0,
+        "pending_patterns": 1
+      }
+    },
+    {
+      "check": "alternate drill layer labels and exact material mappings",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill sample ids, assay value and nulls",
+      "status": "pass",
+      "detail": null
+    },
+    {
+      "check": "alternate drill overlapping sample pair permitted and flagged",
+      "status": "pass",
+      "detail": {
+        "overlaps": [
+          [
+            "S1",
+            "S2"
+          ]
+        ],
+        "issues": [
+          {
+            "severity": "warning",
+            "code": "OVERLAPPING_SAMPLES",
+            "message": "样品区间存在重叠，将分轨显示：S1 / S2",
+            "cells": [
+              "样品!B2",
+              "样品!B3"
+            ]
+          },
+          {
+            "severity": "warning",
+            "code": "PENDING_PATTERN",
+            "message": "岩性“新岩性名称待定义”无精确花纹映射，保留留白待配置",
+            "cells": [
+              "分层!D4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "check": "alternate drill no formulas",
+      "status": "pass",
+      "detail": []
+    }
+  ],
+  "inputs": {
+    "pm01": {
+      "source_cell_mismatches": [],
+      "normalized_field_mismatches": [],
+      "sample_mismatches": [],
+      "counts": {
+        "records": 43,
+        "intervals": 26,
+        "stations": 20,
+        "samples": 14,
+        "located_samples": 0,
+        "total_slant_m": 797.6,
+        "total_horizontal_m": 785.7778222490363,
+        "total_vertical_m": -127.46241495689857,
+        "endpoint_east_m": 476.25875170939065,
+        "endpoint_north_m": 54.25790456876632,
+        "axis_azimuth_deg": 83.50058502519266,
+        "projected_endpoint_m": 479.3394609125983
+      },
+      "computed_geometry_max_abs_diff": 0.0,
+      "issue_counts": {
+        "error": 0,
+        "warning": 80
+      },
+      "warning_codes": {
+        "CACHE_MISMATCH": 80
+      }
+    },
+    "section_alt": {
+      "summary": {
+        "records": 2,
+        "intervals": 2,
+        "stations": 3,
+        "samples": 1,
+        "located_samples": 1,
+        "total_slant_m": 15.0,
+        "total_horizontal_m": 14.330127018922195,
+        "total_vertical_m": 2.4999999999999996,
+        "endpoint_east_m": 14.330127018922195,
+        "endpoint_north_m": 8.774672092549034e-16,
+        "axis_azimuth_deg": 90.0,
+        "projected_endpoint_m": 14.330127018922195
+      },
+      "endpoint": {
+        "x_m": 14.330127018922195,
+        "z_m": 2.4999999999999996
+      }
+    },
+    "zk0003": {
+      "summary": {
+        "turns": 131,
+        "layers": 23,
+        "samples": 97,
+        "endpoint_m": 382.79,
+        "pending_patterns": 20
+      },
+      "depth_basis": "原始沿孔深",
+      "layer_contiguous": true,
+      "turn_contiguous": true,
+      "layer_mismatches": [],
+      "turn_mismatches": [],
+      "sample_mismatches": [],
+      "pattern_ids": {
+        "1": "short-dash-double-dot",
+        "2": null,
+        "3": null,
+        "4": "dot-rows-thin-lines",
+        "5": "point-dash-ellipse-bands",
+        "6": null,
+        "7": null,
+        "8": null,
+        "9": null,
+        "10": null,
+        "11": null,
+        "12": null,
+        "13": null,
+        "14": null,
+        "15": null,
+        "16": null,
+        "17": null,
+        "18": null,
+        "19": null,
+        "20": null,
+        "21": null,
+        "22": null,
+        "23": null
+      },
+      "overlap_warning_count": 0,
+      "assays_all_null": true
+    },
+    "drill_alt": {
+      "summary": {
+        "turns": 2,
+        "layers": 3,
+        "samples": 3,
+        "endpoint_m": 7.0,
+        "pending_patterns": 1
+      },
+      "sample_overlaps": [
+        [
+          "S1",
+          "S2"
+        ]
+      ],
+      "issues": [
+        {
+          "severity": "warning",
+          "code": "OVERLAPPING_SAMPLES",
+          "message": "样品区间存在重叠，将分轨显示：S1 / S2",
+          "cells": [
+            "样品!B2",
+            "样品!B3"
+          ]
+        },
+        {
+          "severity": "warning",
+          "code": "PENDING_PATTERN",
+          "message": "岩性“新岩性名称待定义”无精确花纹映射，保留留白待配置",
+          "cells": [
+            "分层!D4"
+          ]
+        }
+      ],
+      "sample_assays": {
+        "S1": {
+          "Au": 0.15,
+          "Pb": null,
+          "Zn": null
+        },
+        "S2": {
+          "Au": null,
+          "Pb": null,
+          "Zn": null
+        },
+        "S3": {
+          "Au": null,
+          "Pb": null,
+          "Zn": null
+        }
+      }
+    }
+  }
+}

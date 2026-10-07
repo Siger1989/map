@@ -1,0 +1,11 @@
+2026-10-06 当前任务：用户指出右侧下方岩性区边缘在例图中是斜的，而当前v1竖直编码带不对。
+已确认源码renderer.py此前把每层地形点整体向下平移24px，导致竖直分隔，不是依产状的层界。已向用户明确这是实现缺口，不是单纯排版。
+方案：SLOPED_BOUNDARY_CONTRACT.txt；层界位置仍是源分层节点，方向采用关联层段首记录产状与剖面方位计算视倾角。界面产状的代表性仍属明确假设，不能声称独立实测接触面。
+实施分工：importer_v1负责layer_geometry.py、pipeline/UI说明；renderer_v1负责主详图接入；workbook_v1负责tests_layer_geometry.py及兼容集成测试。主代理审查数学和最终输出。源表/工作簿不改，原v1图保存在outputs/before-sloped-boundaries-20261006/。
+验收重点：斜边不能只旋转花纹；同一界面被左右区域共享；不能改真实锚点/源数值；主详图复用米坐标几何；层界相交时截短显示域而非交叠涂色；缺产状留白待定；岩性显示深度不代表真厚度。
+最终需：真实数据生成、独立几何/排版审查、重启本任务9187服务加载新renderer、页面导入再生成，最新版发到右侧（优先局部详图供看斜边）。旧parent_detail_review.py只验证竖直带旧实现，本轮需新增独立斜层界审查，不应沿用其pass声称新几何已验证。
+
+已实施：layer_geometry.py + renderer.py + pipeline/UI/说明；模块已冻结。新增tests_layer_geometry.py 12/12通过；原integration_checks.py 11/11仍通过且未放宽。最终CLI已生成，parent_sloped_review.py独立审查通过：25contacts、26regions、82polygons；请求显示深度18m因层界相交截短为3.3943406026757206m（不是厚度）；全部岩性区面积合计与显示域面积一致，两两交叠面积0；主图82/详图35多边形均反变换到同一世界坐标，44源节点不变。证据logs/parent-sloped-geometry-audit.json、layer-geometry-tests.json、integration-checks.json。
+当前本任务服务已重启PID6300，最终显示以logs/server.pid为准。正在收尾PC页面上传及文字排版核验。行业标准图例、界面代表性/缺失定位和源缓存冲突仍未解决，不要称正式合格成果。
+
+本轮已收尾：真实PC页面重新上传PM01规范输入.xlsx成功；来源问题80项与层界绘图提示1项分组显示且无重复。CLI/GUI的主图SVG/PNG及详图SVG/PNG四文件逐一哈希相同，manifest代码与模板哈希当前有效，原XLS及XLSX哈希不变；主图129/详图15个文字DOM包围盒互相重叠均0。日志sloped-final-acceptance.json、sloped-browser-text-audit.json、sloped-detail-browser-proof.png。最新完整图generated/PM01-斜层界-完整图.png，最新局部图generated/PM01-斜层界-局部详图.png；后者已通过open_in_codex发送到本对话右侧（工具queued，非确认界面已显示）。常规generated/pm01-canonical/和GUI目录1de070d10ca8c2565a88cae8/也都为新图。

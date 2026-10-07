@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "mode": "apparent_dip_outcrop",
+  "ui_success_visible": true,
+  "ui_job": "1de070d10ca8c2565a88cae8",
+  "main_and_detail_cli_gui_identical": true,
+  "code_and_template_hashes_current": true,
+  "data_source_unchanged": true,
+  "contact_count": 25,
+  "region_count": 26,
+  "pairwise_overlap_area_m2": 0.0,
+  "text_overlaps": {
+    "main": 0,
+    "detail": 0
+  },
+  "svg_sha256": {
+    "drawing.svg": "44e27a0a85a14d2763f4a50dbce33e3ef9650c1937180ca4397c3e256e319b87",
+    "preview.png": "dad28c3abf73321a7a4cfd8d6791ff4879c7308586c40bde19674dea626857fe",
+    "detail.svg": "224ae4b00bde008c689a45fed368de9d0b27cf6fc93334c3e1c99718b96724ce",
+    "detail.png": "92426838fea50a74907d3644d21ad565e9041c8a9e62e678bd67db7b0c28d978"
+  },
+  "formal_industry_compliance_verified": false
+}

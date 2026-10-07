@@ -1,0 +1,14 @@
+{
+  "pass": true,
+  "raw_fields_equal": 747,
+  "max_coordinate_error_m": 0.0,
+  "stations": 20,
+  "intervals": 26,
+  "attitudes": 27,
+  "samples": 14,
+  "located_samples": 0,
+  "absent_true_thickness_preserved": true,
+  "all_materials_match_exactly": true,
+  "source_sha256": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+  "issue_count": 80
+}

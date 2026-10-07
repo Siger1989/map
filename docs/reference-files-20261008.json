@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-08",
+  "repository": "Siger1989/map",
+  "fileCount": 65,
+  "totalBytes": 87516797,
+  "audit": {
+    "credentialMatches": 0,
+    "filesOver100MB": 0,
+    "ooxmlAndPdfTextScanned": true,
+    "legacyOfficeNotes": "Readable OLE stream strings and candidate compressed chunks were scanned with no credential matches. No Ole10Native or Package streams were found. A ZIP signature inside a Workbook stream was not a standalone archive. Full semantic VBA module extraction was unavailable.",
+    "attachmentVisualReview": "All 48 JPEGs were reviewed in contact sheets; they show weather-map UI references and geology section drawings, with no apparent credentials.",
+    "configuredSecretValuesCompared": 1,
+    "configuredKeySource": ".env.local (TIANDITU_KEY field present; value omitted)",
+    "environmentCredentialVariablesFound": false
+  },
+  "files": [
+    {
+      "path": "docs/reference/ui-discussion-20260916.pdf",
+      "sourcePath": "docs/reference/ui-discussion-20260916.pdf",
+      "bytes": 25240214,
+      "sha256": "1922e7b38aed57073bdeb864f372966309ecc66094c6c781574405595f3898c4",
+      "category": "reference_pdf"
+    },
+    {
+      "path": "output/pdf/Shantu-0.2.22-UI-OPPO-Find-X8-Ultra.pdf",
+      "sourcePath": "output/pdf/Shantu-0.2.22-UI-OPPO-Find-X8-Ultra.pdf",
+      "bytes": 15070870,
+      "sha256": "f833b9ac802b0bcff2cbdea6578130b30d3d92732d3e250b39a5da7e56088d36",
+      "category": "reference_pdf"
+    },
+    {
+      "path": "output/pdf/山兔-2026-09-08-版本更新.pdf",
+      "sourcePath": "output/pdf/山兔-2026-09-08-版本更新.pdf",
+      "bytes": 254573,
+      "sha256": "63417e48ab715801cc7ee9e2bdc4414ccf6904bfb0eb91c9df732ceeecd6793e",
+      "category": "reference_pdf"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a07183-47db-7771-9cbd-d31dfca3e2c6/67b386ab-8d3c-4046-bd6f-08375aa6a8ba/1-Photo-1.jpg",
+      "sourcePath": "01a07183-47db-7771-9cbd-d31dfca3e2c6/67b386ab-8d3c-4046-bd6f-08375aa6a8ba/1-Photo-1.jpg",
+      "bytes": 59192,
+      "sha256": "32ece26a08d6531388a994571fdc57bca29ed76e1b8784b4a1def1d7499fb038",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a07183-47db-7771-9cbd-d31dfca3e2c6/a6cad751-a3a8-48f5-af23-394b04cb8425/1-Photo-1.jpg",
+      "sourcePath": "01a07183-47db-7771-9cbd-d31dfca3e2c6/a6cad751-a3a8-48f5-af23-394b04cb8425/1-Photo-1.jpg",
+      "bytes": 21864,
+      "sha256": "93b71adda3a0203246bd6d027a7ec7fe9563792ff17da2996334f635bd8ba79b",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0768b-9bdd-7b83-8e95-923d694cf157/8622509d-35b2-47ee-a292-7ef7f4d94d08/1-Photo-1.jpg",
+      "sourcePath": "01a0768b-9bdd-7b83-8e95-923d694cf157/8622509d-35b2-47ee-a292-7ef7f4d94d08/1-Photo-1.jpg",
+      "bytes": 137614,
+      "sha256": "cfb57047b1067e4e669c16c1e80a4a7e3e5ca5707f2386286bf5f858dde63ac7",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/2b9df06f-888d-4ed3-a7f8-a99a4ed9e4de/1-1000052546.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/2b9df06f-888d-4ed3-a7f8-a99a4ed9e4de/1-1000052546.jpg",
+      "bytes": 91449,
+      "sha256": "ac7c6fd1f8307df8b8f3dab9c36db6949d42b0ef7f3d3d64199dd598a16ece80",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/4d033d3a-bdc5-41e7-8333-c72108565c23/1-1000052550.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/4d033d3a-bdc5-41e7-8333-c72108565c23/1-1000052550.jpg",
+      "bytes": 90470,
+      "sha256": "4cbd0d33b2eb3f4e141ae4bf59b87d5b30623edcd7e76db9b47818f917cfb764",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/67c9e434-8f15-40f1-9ce2-bd8d436928cc/1-1000052543.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/67c9e434-8f15-40f1-9ce2-bd8d436928cc/1-1000052543.jpg",
+      "bytes": 77766,
+      "sha256": "2871118ef3be736dc47cd0a40aa0db27a02e2a120d09fa97cfe8d75e2301a01d",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/692e1bdd-2e02-45d9-8582-73a5f1db2052/1-1000052544.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/692e1bdd-2e02-45d9-8582-73a5f1db2052/1-1000052544.jpg",
+      "bytes": 87978,
+      "sha256": "0ae035cc5e4cd4ac9017e786d3a575a4625c1c4b6102bfcd1d11a9a9b3051b87",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/8cacc790-fad9-4a3a-95df-6421bcf1d7df/1-1000052551.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/8cacc790-fad9-4a3a-95df-6421bcf1d7df/1-1000052551.jpg",
+      "bytes": 128659,
+      "sha256": "cdbfec4ce5d1b09cd716dd5d54b65e7e0d632afb60891d1f2b1a2a82d1f9bac1",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/98f44cad-bb47-47e1-92b7-edc518502b66/1-1000052519.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/98f44cad-bb47-47e1-92b7-edc518502b66/1-1000052519.jpg",
+      "bytes": 84394,
+      "sha256": "c208929f460d30b6eabb9b4cbfa203777d9defa15710ac09d29b6deb6d204d3b",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/9a5fd66d-0213-4b5b-a13c-54ae7524065f/1-1000052375.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/9a5fd66d-0213-4b5b-a13c-54ae7524065f/1-1000052375.jpg",
+      "bytes": 112747,
+      "sha256": "ca4c0ba968110af7043ce862ed31e60bba54e2f87a16ab1cb4cf21c8f75b9fa2",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/9a5fd66d-0213-4b5b-a13c-54ae7524065f/2-1000052346.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/9a5fd66d-0213-4b5b-a13c-54ae7524065f/2-1000052346.jpg",
+      "bytes": 134850,
+      "sha256": "4cb7e3014543ce56d8e9142b56f39783a03a3d0487f08f1f5fc2faac42256a11",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/b8c7a8ed-0a76-4548-b951-f477d39e5948/1-1000052550.jpg",
+      "sourcePath": "01a0d401-c3b3-7d23-97a7-2ac5fa0cb38b/b8c7a8ed-0a76-4548-b951-f477d39e5948/1-1000052550.jpg",
+      "bytes": 90470,
+      "sha256": "4cbd0d33b2eb3f4e141ae4bf59b87d5b30623edcd7e76db9b47818f917cfb764",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3164e690-287f-4826-980b-aee2f655beee/1-1000052822.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3164e690-287f-4826-980b-aee2f655beee/1-1000052822.jpg",
+      "bytes": 121489,
+      "sha256": "4161bc7f286ff7286eed94f0c8bc242a78f3449c64e2b00d3b2a1981b4230678",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3164e690-287f-4826-980b-aee2f655beee/2-1000052823.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3164e690-287f-4826-980b-aee2f655beee/2-1000052823.jpg",
+      "bytes": 104646,
+      "sha256": "6d1c77906465dfc5ae9fba2667d923961cc4becfb708e7229b2f2fdac5666af4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/345b2a60-cd41-49e0-8345-9957bd966a41/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/345b2a60-cd41-49e0-8345-9957bd966a41/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3f1ab4d1-c022-4200-9701-ee3296d9ee27/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/3f1ab4d1-c022-4200-9701-ee3296d9ee27/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/4c59c78d-29da-4897-b1ae-6816fdc36d06/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/4c59c78d-29da-4897-b1ae-6816fdc36d06/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/58f6b0e4-ef0a-4b00-be30-cef15e3efca4/1-1000052822.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/58f6b0e4-ef0a-4b00-be30-cef15e3efca4/1-1000052822.jpg",
+      "bytes": 121489,
+      "sha256": "4161bc7f286ff7286eed94f0c8bc242a78f3449c64e2b00d3b2a1981b4230678",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/58f6b0e4-ef0a-4b00-be30-cef15e3efca4/2-1000052823.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/58f6b0e4-ef0a-4b00-be30-cef15e3efca4/2-1000052823.jpg",
+      "bytes": 104646,
+      "sha256": "6d1c77906465dfc5ae9fba2667d923961cc4becfb708e7229b2f2fdac5666af4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/5c45b0ee-cf8d-4662-be25-5bee3d79d552/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/5c45b0ee-cf8d-4662-be25-5bee3d79d552/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/5d5171ca-31ff-4611-b1ab-b90ef200a685/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/5d5171ca-31ff-4611-b1ab-b90ef200a685/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/9272f020-c766-4320-80c6-ccc10eeff841/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/9272f020-c766-4320-80c6-ccc10eeff841/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/ab3cef89-3775-4b9e-93ae-b934a7ab6dc9/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/ab3cef89-3775-4b9e-93ae-b934a7ab6dc9/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/acc9f903-a066-403b-b926-e460efc7f740/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/acc9f903-a066-403b-b926-e460efc7f740/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f29a-bf8c-7f20-9757-6eb0326cfce3/d16b5eb5-583d-461e-88f1-da1b25992c9e/1-1000064036.jpg",
+      "sourcePath": "01a0f29a-bf8c-7f20-9757-6eb0326cfce3/d16b5eb5-583d-461e-88f1-da1b25992c9e/1-1000064036.jpg",
+      "bytes": 66804,
+      "sha256": "4f7ca0bdf87d60cfe0dd774f6ec7dfbf06ffe623f26a9ba5638968b9de517296",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f666-c3dd-7a13-8533-4368326f8f38/376288ef-4576-4195-9b10-1d33c6c07fa9/1-1000067781.jpg",
+      "sourcePath": "01a0f666-c3dd-7a13-8533-4368326f8f38/376288ef-4576-4195-9b10-1d33c6c07fa9/1-1000067781.jpg",
+      "bytes": 52947,
+      "sha256": "72f740142dcc315ef60e1f6fde92316922139aeb7bd30ce9174306ba167cf82c",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f666-c3dd-7a13-8533-4368326f8f38/376288ef-4576-4195-9b10-1d33c6c07fa9/2-1000067782.jpg",
+      "sourcePath": "01a0f666-c3dd-7a13-8533-4368326f8f38/376288ef-4576-4195-9b10-1d33c6c07fa9/2-1000067782.jpg",
+      "bytes": 119224,
+      "sha256": "73b4dadee0706170b62931dead2caf43649880ec80fd9b13505cf7702149d4d0",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/1-1000067773.jpg",
+      "sourcePath": "01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/1-1000067773.jpg",
+      "bytes": 49668,
+      "sha256": "5490044032841bb556ef474cf7c989fcc54e7bae6acf3944b43f4a7587737550",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/2-1000067774.jpg",
+      "sourcePath": "01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/2-1000067774.jpg",
+      "bytes": 67810,
+      "sha256": "5432be5382cd24e86ab15d2309d610891573d7cf2bffaab516b064fa6dbc2960",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/3-1000067775.jpg",
+      "sourcePath": "01a0f666-c3dd-7a13-8533-4368326f8f38/5fb11106-0dae-44e0-b0f2-0bd316600a20/3-1000067775.jpg",
+      "bytes": 64781,
+      "sha256": "42902b2a1faee10dd5d6eff2d0e99b6471d26890286c53a1f59bb91ed081f7ab",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0fbe9-75f5-7f71-87a4-a5b2400c25b0/b03efba6-b55f-4a66-b523-1a89ac7d7e0f/1-1000067841.jpg",
+      "sourcePath": "01a0fbe9-75f5-7f71-87a4-a5b2400c25b0/b03efba6-b55f-4a66-b523-1a89ac7d7e0f/1-1000067841.jpg",
+      "bytes": 96450,
+      "sha256": "85a67a5d0c30be98ba038ef533308c09a97bc0324e77c14fe3c6c68b5bcf5883",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a0fbe9-75f5-7f71-87a4-a5b2400c25b0/b03efba6-b55f-4a66-b523-1a89ac7d7e0f/2-1000067842.jpg",
+      "sourcePath": "01a0fbe9-75f5-7f71-87a4-a5b2400c25b0/b03efba6-b55f-4a66-b523-1a89ac7d7e0f/2-1000067842.jpg",
+      "bytes": 59374,
+      "sha256": "5638348dd5275a7f077b25c8bf330b2537bf00d60fdaf4c33b6cae552548820f",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/0c421359-415c-44ec-8888-bed47369f03f/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/0c421359-415c-44ec-8888-bed47369f03f/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/0f0306bf-7060-45dd-b018-65ed53e96b2c/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/0f0306bf-7060-45dd-b018-65ed53e96b2c/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/2e98a441-601d-45ca-bdcc-287e2e5fcdff/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/2e98a441-601d-45ca-bdcc-287e2e5fcdff/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/629d6cc9-fab4-494f-8c14-e7df5a9dc480/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/629d6cc9-fab4-494f-8c14-e7df5a9dc480/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/7c3cde2b-d2ee-4b70-88f9-b0660289c566/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/7c3cde2b-d2ee-4b70-88f9-b0660289c566/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/7cfc01fe-9a53-4e63-86af-e193241612c7/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/7cfc01fe-9a53-4e63-86af-e193241612c7/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/8f981c8d-ce1e-4192-b5e3-0242694104f3/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/8f981c8d-ce1e-4192-b5e3-0242694104f3/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/a9101303-6b1b-4cce-a347-db69d4069d33/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/a9101303-6b1b-4cce-a347-db69d4069d33/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/c59ac6eb-fa58-4c57-8a4f-20dca565f3ac/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/c59ac6eb-fa58-4c57-8a4f-20dca565f3ac/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10c09-e941-7d33-87ac-7df991ab6b51/e03cab69-64aa-479f-9bff-a87c5d052640/1-1000067964.jpg",
+      "sourcePath": "01a10c09-e941-7d33-87ac-7df991ab6b51/e03cab69-64aa-479f-9bff-a87c5d052640/1-1000067964.jpg",
+      "bytes": 38665,
+      "sha256": "c4342211d9f78e137fd661d0fe935745bdde215058c9a02232f01ae374dc54d4",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/1-1000067958.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/1-1000067958.jpg",
+      "bytes": 59653,
+      "sha256": "7739a1100ec4e69660cb0acebef452af1de2111616f5b4cf38702730e9b1899f",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/2-1000067959.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/2-1000067959.jpg",
+      "bytes": 59637,
+      "sha256": "0f24c10007504aeba58f08c976b1d5c13ee284bfe3d0fa088cdd7460f3cf78cf",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/3-1000067960.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/88f7cf69-9638-422f-a8fd-9daab311b809/3-1000067960.jpg",
+      "bytes": 64813,
+      "sha256": "391536e7b99c26f12f1c077b86bc6b157c0304f8ac78881b9eeb16aa24a05e0f",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/1-1000067958.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/1-1000067958.jpg",
+      "bytes": 59653,
+      "sha256": "7739a1100ec4e69660cb0acebef452af1de2111616f5b4cf38702730e9b1899f",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/2-1000067959.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/2-1000067959.jpg",
+      "bytes": 59637,
+      "sha256": "0f24c10007504aeba58f08c976b1d5c13ee284bfe3d0fa088cdd7460f3cf78cf",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "references/chat-attachments-20261008/01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/3-1000067960.jpg",
+      "sourcePath": "01a10ce4-7d1f-7321-9982-699e45285ac6/9385ce7c-cbec-4733-840f-603111f352a4/3-1000067960.jpg",
+      "bytes": 64813,
+      "sha256": "391536e7b99c26f12f1c077b86bc6b157c0304f8ac78881b9eeb16aa24a05e0f",
+      "category": "submitted_reference_image"
+    },
+    {
+      "path": "地质资料/1-探槽工程基点基线记录表-TC2401.docx",
+      "sourcePath": "地质资料/1-探槽工程基点基线记录表-TC2401.docx",
+      "bytes": 15552,
+      "sha256": "aca6142a1cf88189a4558230377eb6ccb2f2fbfbf01897e56c19f7e54588df27",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/2-槽探工程原始地质记录表-TC2401.docx",
+      "sourcePath": "地质资料/2-槽探工程原始地质记录表-TC2401.docx",
+      "bytes": 20702,
+      "sha256": "7a40225cd454de0a860b8b3722ba96a43be066bb1aeb730dad230ae470e4266f",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/3-槽探工程采样记录表-TC2401.docx",
+      "sourcePath": "地质资料/3-槽探工程采样记录表-TC2401.docx",
+      "bytes": 23835,
+      "sha256": "c08fe0254cb30c08881a71fec2de83e4277be4f33acae1d87b2fe8641a17994a",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/GMT钻孔柱状图模版-ZK0003.xlt",
+      "sourcePath": "地质资料/GMT钻孔柱状图模版-ZK0003.xlt",
+      "bytes": 257536,
+      "sha256": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/固体矿产勘查原始地质编录规程.pdf",
+      "sourcePath": "地质资料/固体矿产勘查原始地质编录规程.pdf",
+      "bytes": 2798532,
+      "sha256": "b422c2a58f43d3c862014a754f800b16262443bac9711c1598b3b6056aef5b64",
+      "category": "reference_pdf"
+    },
+    {
+      "path": "地质资料/实测地层剖面登记表.xls",
+      "sourcePath": "地质资料/实测地层剖面登记表.xls",
+      "bytes": 93184,
+      "sha256": "e27d49e7783f6c4414e0dd71477879f335362c9e1daec6489a529492cb2d3c6a",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/微信图片_20261005202745_91_10.jpg",
+      "sourcePath": "地质资料/微信图片_20261005202745_91_10.jpg",
+      "bytes": 5142448,
+      "sha256": "e1be0ab9453dd82dd6b91d0122500bc747f747469084203ab8831b5fda9d22eb",
+      "category": "reference_image"
+    },
+    {
+      "path": "地质资料/微信图片_20261005202745_93_10.jpg",
+      "sourcePath": "地质资料/微信图片_20261005202745_93_10.jpg",
+      "bytes": 1903631,
+      "sha256": "39c604fc20ff3fb0d1492db969f9ddae0a1ebd38755e2a42a73aeb0c26815269",
+      "category": "reference_image"
+    },
+    {
+      "path": "地质资料/微信图片_20261005205711_719_117.jpg",
+      "sourcePath": "地质资料/微信图片_20261005205711_719_117.jpg",
+      "bytes": 8810875,
+      "sha256": "d5524c29a430d9898e2c149f8e6c440b7ebf5e3ece280b589f4ecbf07dd8c3af",
+      "category": "reference_image"
+    },
+    {
+      "path": "地质资料/微信图片_20261005205814_724_117.jpg",
+      "sourcePath": "地质资料/微信图片_20261005205814_724_117.jpg",
+      "bytes": 12976896,
+      "sha256": "0a2dbb325af24bfc682c4258f1185204c8339911d160155364af0098bfd44fbf",
+      "category": "reference_image"
+    },
+    {
+      "path": "地质资料/微信图片_20261005205903_729_117.jpg",
+      "sourcePath": "地质资料/微信图片_20261005205903_729_117.jpg",
+      "bytes": 1903631,
+      "sha256": "39c604fc20ff3fb0d1492db969f9ddae0a1ebd38755e2a42a73aeb0c26815269",
+      "category": "reference_image"
+    },
+    {
+      "path": "地质资料/最新、最好图例Gb958-99.pdf",
+      "sourcePath": "地质资料/最新、最好图例Gb958-99.pdf",
+      "bytes": 9145005,
+      "sha256": "b63040fe04030545beb4949f19f76f942d0c85f5c59c8557ef460b120a94721a",
+      "category": "reference_pdf"
+    },
+    {
+      "path": "地质资料/测试/ZK2303-1回次表+分层+采样(1).xls",
+      "sourcePath": "地质资料/测试/ZK2303-1回次表+分层+采样(1).xls",
+      "bytes": 405504,
+      "sha256": "70e1811fba5d7ea11c4faa69fa12511b4d8e901c1741406d5a21df729902b490",
+      "category": "source_document"
+    },
+    {
+      "path": "地质资料/测试分析结果.xlsx",
+      "sourcePath": "地质资料/测试分析结果.xlsx",
+      "bytes": 17740,
+      "sha256": "01ab7b7c5fedf501b4a041313c16d7b69de28f079c7ed53bd8ef9fc1a6f8c76d",
+      "category": "source_document"
+    }
+  ]
+}

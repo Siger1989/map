@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0",
+  "input_counts": {
+    "nodes": 6,
+    "records": 5,
+    "intervals": 5,
+    "stations": 6,
+    "attitudes": 5,
+    "samples": 1
+  },
+  "geometry": {
+    "x_range_m": [
+      0.0,
+      55.0
+    ],
+    "offset_range_m": [
+      0.0,
+      0.0
+    ],
+    "elevation_range_m": [
+      -2.0,
+      3.0
+    ],
+    "units_per_px": 0.04129129129129129,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true
+  },
+  "projected_band": {
+    "drawn": true,
+    "reasons_if_suppressed": [],
+    "screen_width_px": 24.0,
+    "width_represents_true_thickness": false,
+    "separators_represent_subsurface_contacts": false
+  },
+  "layout": {
+    "page_width_px": 1500.0,
+    "page_height_px": 1105.090909090909,
+    "station_label_overflow": 0,
+    "attitude_label_overflow": 0,
+    "thin_interval_count": 1,
+    "thin_interval_ids": [
+      "L2"
+    ],
+    "minimum_projected_interval_px": 11.099139923159953
+  },
+  "materials": {
+    "configured_names": [
+      "凝灰岩",
+      "凝灰质泥岩",
+      "含火山碎屑粉砂质泥岩",
+      "含生物碎屑凝灰岩",
+      "含粉砂泥岩",
+      "沉凝灰岩",
+      "泥化凝灰岩",
+      "泥化沉凝灰岩",
+      "泥岩",
+      "泥晶灰岩",
+      "泥质粉砂岩",
+      "煤层",
+      "玄武质火山碎屑岩",
+      "硅化凝灰岩",
+      "碳质泥岩与煤线互层",
+      "粉砂质泥岩"
+    ],
+    "pending_names": [
+      "未知岩"
+    ],
+    "fuzzy_matching": false,
+    "legend_uses_fill_definition": true
+  },
+  "samples": {
+    "located": 0,
+    "missing_location": 1,
+    "missing_location_plotted": false
+  },
+  "detail": {
+    "generated": true,
+    "x_range_m": [
+      0.0,
+      12.1
+    ],
+    "feature_count": 11,
+    "units_per_px": 0.009084084084084084,
+    "magnification_vs_main": 4.545454545454545
+  },
+  "notes": [
+    "All dimensions are data-derived; no fixed paper scale is claimed.",
+    "Contact strike lines are fixed-length symbols derived from the first attitude in each interval.",
+    "Full imported issues and long descriptions are in appendix.html."
+  ]
+}

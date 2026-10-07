@@ -1,0 +1,9 @@
+{
+  "drawing.svg": true,
+  "preview.png": true,
+  "detail.svg": true,
+  "detail.png": true,
+  "readability.svg": true,
+  "readability.png": true,
+  "readability-audit.json": true
+}

@@ -1,0 +1,4927 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "filename": "实测剖面-填写示例.xlsx",
+    "sha256": "4aed8add59db269d8177fe1deb7a4e9d1692ed5dccf2dbb7a944dd50eaaad8c5",
+    "adapter": "canonical_xlsx_v1",
+    "sheet": "测段"
+  },
+  "project": {
+    "name": "兴仁市王家寨金矿调查区",
+    "section_id": "PM01"
+  },
+  "settings": {
+    "axis_azimuth_deg": 83.50058502519266,
+    "axis_method": "explicit",
+    "coordinate_system": "local_relative",
+    "vertical_exaggeration": 1
+  },
+  "records": [
+    {
+      "id": "R0001",
+      "leg_id": "0-1",
+      "layer_id": "C0",
+      "length_m": 43.4,
+      "slope_deg": -4.0,
+      "azimuth_deg": 72.0,
+      "dip_direction_deg": 323.0,
+      "dip_angle_deg": 22.0,
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+      "start_node": 0,
+      "end_node": 1,
+      "raw": {
+        "测段!A2": "R0001",
+        "测段!B2": "0-1",
+        "测段!C2": "C0",
+        "测段!D2": 0,
+        "测段!E2": 43.4,
+        "测段!F2": 43.4,
+        "测段!G2": -4,
+        "测段!H2": 72,
+        "测段!I2": 323,
+        "测段!J2": 22,
+        "测段!K2": "泥岩",
+        "测段!L2": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+        "测段!M2": "PM01-0-b1",
+        "测段!O2": 43.294279781276366,
+        "测段!P2": -3.027430960495038,
+        "测段!Q2": -3.027430960495038,
+        "测段!R2": 13.37866821163808,
+        "测段!S2": 41.175306904288405
+      },
+      "source_cells": {
+        "record_id": "测段!A2",
+        "leg_id": "测段!B2",
+        "layer_id": "测段!C2",
+        "start_reading_m": "测段!D2",
+        "end_reading_m": "测段!E2",
+        "length_m": "测段!F2",
+        "slope_deg": "测段!G2",
+        "azimuth_deg": "测段!H2",
+        "dip_direction_deg": "测段!I2",
+        "dip_angle_deg": "测段!J2",
+        "lithology_name": "测段!K2",
+        "description": "测段!L2",
+        "sample_id": "测段!M2",
+        "sample_offset_m": "测段!N2",
+        "true_thickness_m": "测段!T2",
+        "cache_horizontal_m": "测段!O2",
+        "cache_vertical_m": "测段!P2",
+        "cache_cumulative_z_m": "测段!Q2",
+        "cache_cumulative_north_m": "测段!R2",
+        "cache_cumulative_east_m": "测段!S2"
+      },
+      "computed": {
+        "horizontal_m": 43.294279781276366,
+        "vertical_m": -3.027430960495038,
+        "east_delta_m": 41.175306904288405,
+        "north_delta_m": 13.37866821163808
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0002",
+      "leg_id": "1-2",
+      "layer_id": "C0",
+      "length_m": 29.2,
+      "slope_deg": -3.0,
+      "azimuth_deg": 55.0,
+      "dip_direction_deg": 323.0,
+      "dip_angle_deg": 22.0,
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+      "start_node": 1,
+      "end_node": 2,
+      "raw": {
+        "测段!A3": "R0002",
+        "测段!B3": "1-2",
+        "测段!C3": "C0",
+        "测段!D3": 0,
+        "测段!E3": 29.2,
+        "测段!F3": 29.2,
+        "测段!G3": -3,
+        "测段!H3": 55,
+        "测段!I3": 323,
+        "测段!J3": 22,
+        "测段!K3": "泥岩",
+        "测段!L3": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+        "测段!O3": 29.159982414833554,
+        "测段!P3": -1.5282099222939598,
+        "测段!Q3": -4.555640882788998,
+        "测段!R3": 30.104147009197483,
+        "测段!S3": 65.06176611083036
+      },
+      "source_cells": {
+        "record_id": "测段!A3",
+        "leg_id": "测段!B3",
+        "layer_id": "测段!C3",
+        "start_reading_m": "测段!D3",
+        "end_reading_m": "测段!E3",
+        "length_m": "测段!F3",
+        "slope_deg": "测段!G3",
+        "azimuth_deg": "测段!H3",
+        "dip_direction_deg": "测段!I3",
+        "dip_angle_deg": "测段!J3",
+        "lithology_name": "测段!K3",
+        "description": "测段!L3",
+        "sample_id": "测段!M3",
+        "sample_offset_m": "测段!N3",
+        "true_thickness_m": "测段!T3",
+        "cache_horizontal_m": "测段!O3",
+        "cache_vertical_m": "测段!P3",
+        "cache_cumulative_z_m": "测段!Q3",
+        "cache_cumulative_north_m": "测段!R3",
+        "cache_cumulative_east_m": "测段!S3"
+      },
+      "computed": {
+        "horizontal_m": 29.159982414833554,
+        "vertical_m": -1.52820992229396,
+        "east_delta_m": 23.886459206541957,
+        "north_delta_m": 16.7254787975594
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0003",
+      "leg_id": "2-3",
+      "layer_id": "C0",
+      "length_m": 5.0,
+      "slope_deg": -5.0,
+      "azimuth_deg": 18.0,
+      "dip_direction_deg": 323.0,
+      "dip_angle_deg": 22.0,
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+      "start_node": 2,
+      "end_node": 3,
+      "raw": {
+        "测段!A4": "R0003",
+        "测段!B4": "2-3",
+        "测段!C4": "C0",
+        "测段!D4": 0,
+        "测段!E4": 5,
+        "测段!F4": 5,
+        "测段!G4": -5,
+        "测段!H4": 18,
+        "测段!I4": 323,
+        "测段!J4": 22,
+        "测段!K4": "泥岩",
+        "测段!L4": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+        "测段!O4": 4.9809734904587275,
+        "测段!P4": -0.4357787137382908,
+        "测段!Q4": -4.9914195965272885,
+        "测段!R4": 34.84133430479167,
+        "测段!S4": 66.6009715679132
+      },
+      "source_cells": {
+        "record_id": "测段!A4",
+        "leg_id": "测段!B4",
+        "layer_id": "测段!C4",
+        "start_reading_m": "测段!D4",
+        "end_reading_m": "测段!E4",
+        "length_m": "测段!F4",
+        "slope_deg": "测段!G4",
+        "azimuth_deg": "测段!H4",
+        "dip_direction_deg": "测段!I4",
+        "dip_angle_deg": "测段!J4",
+        "lithology_name": "测段!K4",
+        "description": "测段!L4",
+        "sample_id": "测段!M4",
+        "sample_offset_m": "测段!N4",
+        "true_thickness_m": "测段!T4",
+        "cache_horizontal_m": "测段!O4",
+        "cache_vertical_m": "测段!P4",
+        "cache_cumulative_z_m": "测段!Q4",
+        "cache_cumulative_north_m": "测段!R4",
+        "cache_cumulative_east_m": "测段!S4"
+      },
+      "computed": {
+        "horizontal_m": 4.9809734904587275,
+        "vertical_m": -0.4357787137382908,
+        "east_delta_m": 1.5392054570828466,
+        "north_delta_m": 4.737187295594189
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0004",
+      "leg_id": "2-3",
+      "layer_id": "C1",
+      "length_m": 30.0,
+      "slope_deg": -5.0,
+      "azimuth_deg": 18.0,
+      "dip_direction_deg": 286.0,
+      "dip_angle_deg": 12.0,
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "start_node": 3,
+      "end_node": 4,
+      "raw": {
+        "测段!A5": "R0004",
+        "测段!B5": "2-3",
+        "测段!C5": "C1",
+        "测段!D5": 5,
+        "测段!E5": 35,
+        "测段!F5": 30,
+        "测段!G5": -5,
+        "测段!H5": 18,
+        "测段!I5": 286,
+        "测段!J5": 12,
+        "测段!K5": "粉砂质泥岩",
+        "测段!L5": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+        "测段!O5": 29.885840942752367,
+        "测段!P5": -2.614672282429745,
+        "测段!Q5": -5,
+        "测段!R5": 63.26445807835681,
+        "测段!S5": 75.83620431041028
+      },
+      "source_cells": {
+        "record_id": "测段!A5",
+        "leg_id": "测段!B5",
+        "layer_id": "测段!C5",
+        "start_reading_m": "测段!D5",
+        "end_reading_m": "测段!E5",
+        "length_m": "测段!F5",
+        "slope_deg": "测段!G5",
+        "azimuth_deg": "测段!H5",
+        "dip_direction_deg": "测段!I5",
+        "dip_angle_deg": "测段!J5",
+        "lithology_name": "测段!K5",
+        "description": "测段!L5",
+        "sample_id": "测段!M5",
+        "sample_offset_m": "测段!N5",
+        "true_thickness_m": "测段!T5",
+        "cache_horizontal_m": "测段!O5",
+        "cache_vertical_m": "测段!P5",
+        "cache_cumulative_z_m": "测段!Q5",
+        "cache_cumulative_north_m": "测段!R5",
+        "cache_cumulative_east_m": "测段!S5"
+      },
+      "computed": {
+        "horizontal_m": 29.885840942752367,
+        "vertical_m": -2.614672282429745,
+        "east_delta_m": 9.23523274249708,
+        "north_delta_m": 28.423123773565134
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0005",
+      "leg_id": "3-4",
+      "layer_id": "C1",
+      "length_m": 3.0,
+      "slope_deg": -5.0,
+      "azimuth_deg": 46.0,
+      "dip_direction_deg": 286.0,
+      "dip_angle_deg": 12.0,
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "start_node": 4,
+      "end_node": 5,
+      "raw": {
+        "测段!A6": "R0005",
+        "测段!B6": "3-4",
+        "测段!C6": "C1",
+        "测段!D6": 0,
+        "测段!E6": 3,
+        "测段!F6": 3,
+        "测段!G6": -5,
+        "测段!H6": 46,
+        "测段!I6": 286,
+        "测段!J6": 12,
+        "测段!K6": "粉砂质泥岩",
+        "测段!L6": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+        "测段!M6": "PM01-1-b1",
+        "测段!O6": 2.988584094275237,
+        "测段!P6": -0.2614672282429745,
+        "测段!Q6": -5.261467228242974,
+        "测段!R6": 65.34050303526573,
+        "测段!S6": 77.9860117960815
+      },
+      "source_cells": {
+        "record_id": "测段!A6",
+        "leg_id": "测段!B6",
+        "layer_id": "测段!C6",
+        "start_reading_m": "测段!D6",
+        "end_reading_m": "测段!E6",
+        "length_m": "测段!F6",
+        "slope_deg": "测段!G6",
+        "azimuth_deg": "测段!H6",
+        "dip_direction_deg": "测段!I6",
+        "dip_angle_deg": "测段!J6",
+        "lithology_name": "测段!K6",
+        "description": "测段!L6",
+        "sample_id": "测段!M6",
+        "sample_offset_m": "测段!N6",
+        "true_thickness_m": "测段!T6",
+        "cache_horizontal_m": "测段!O6",
+        "cache_vertical_m": "测段!P6",
+        "cache_cumulative_z_m": "测段!Q6",
+        "cache_cumulative_north_m": "测段!R6",
+        "cache_cumulative_east_m": "测段!S6"
+      },
+      "computed": {
+        "horizontal_m": 2.988584094275237,
+        "vertical_m": -0.2614672282429745,
+        "east_delta_m": 2.1498074856712175,
+        "north_delta_m": 2.0760449569089143
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0006",
+      "leg_id": "3-4",
+      "layer_id": "C2",
+      "length_m": 23.6,
+      "slope_deg": -5.0,
+      "azimuth_deg": 46.0,
+      "dip_direction_deg": 293.0,
+      "dip_angle_deg": 15.0,
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰色，具泥质结构，薄层状构造，单层厚度约0.5-1cm。泥质含量约90-95%，其余为凝灰质。",
+      "start_node": 5,
+      "end_node": 6,
+      "raw": {
+        "测段!A7": "R0006",
+        "测段!B7": "3-4",
+        "测段!C7": "C2",
+        "测段!D7": 3,
+        "测段!E7": 26.6,
+        "测段!F7": 23.6,
+        "测段!G7": -5,
+        "测段!H7": 46,
+        "测段!I7": 293,
+        "测段!J7": 15,
+        "测段!K7": "泥岩",
+        "测段!L7": "泥岩。呈浅灰色，具泥质结构，薄层状构造，单层厚度约0.5-1cm。泥质含量约90-95%，其余为凝灰质。",
+        "测段!M7": "PM01-2-b1",
+        "测段!O7": 23.510194874965197,
+        "测段!P7": -2.0568755288447327,
+        "测段!Q7": -7.3183427570877075,
+        "测段!R7": 81.67205669628252,
+        "测段!S7": 94.89783068336175
+      },
+      "source_cells": {
+        "record_id": "测段!A7",
+        "leg_id": "测段!B7",
+        "layer_id": "测段!C7",
+        "start_reading_m": "测段!D7",
+        "end_reading_m": "测段!E7",
+        "length_m": "测段!F7",
+        "slope_deg": "测段!G7",
+        "azimuth_deg": "测段!H7",
+        "dip_direction_deg": "测段!I7",
+        "dip_angle_deg": "测段!J7",
+        "lithology_name": "测段!K7",
+        "description": "测段!L7",
+        "sample_id": "测段!M7",
+        "sample_offset_m": "测段!N7",
+        "true_thickness_m": "测段!T7",
+        "cache_horizontal_m": "测段!O7",
+        "cache_vertical_m": "测段!P7",
+        "cache_cumulative_z_m": "测段!Q7",
+        "cache_cumulative_north_m": "测段!R7",
+        "cache_cumulative_east_m": "测段!S7"
+      },
+      "computed": {
+        "horizontal_m": 23.510194874965197,
+        "vertical_m": -2.0568755288447327,
+        "east_delta_m": 16.911818887280244,
+        "north_delta_m": 16.33155366101679
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0007",
+      "leg_id": "3-4",
+      "layer_id": "C3",
+      "length_m": 9.399999999999999,
+      "slope_deg": -5.0,
+      "azimuth_deg": 46.0,
+      "dip_direction_deg": 290.0,
+      "dip_angle_deg": 12.0,
+      "lithology_name": "含粉砂泥岩",
+      "description": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+      "start_node": 6,
+      "end_node": 7,
+      "raw": {
+        "测段!A8": "R0007",
+        "测段!B8": "3-4",
+        "测段!C8": "C3",
+        "测段!D8": 26.6,
+        "测段!E8": 36,
+        "测段!F8": 9.399999999999999,
+        "测段!G8": -5,
+        "测段!H8": 46,
+        "测段!I8": 290,
+        "测段!J8": 12,
+        "测段!K8": "含粉砂泥岩",
+        "测段!L8": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+        "测段!M8": "PM01-3-b1",
+        "测段!O8": 9.364230162062407,
+        "测段!P8": -0.8192639818279867,
+        "测段!Q8": -8.137606738915695,
+        "测段!R8": 88.17699756126379,
+        "测段!S8": 101.6338941384649
+      },
+      "source_cells": {
+        "record_id": "测段!A8",
+        "leg_id": "测段!B8",
+        "layer_id": "测段!C8",
+        "start_reading_m": "测段!D8",
+        "end_reading_m": "测段!E8",
+        "length_m": "测段!F8",
+        "slope_deg": "测段!G8",
+        "azimuth_deg": "测段!H8",
+        "dip_direction_deg": "测段!I8",
+        "dip_angle_deg": "测段!J8",
+        "lithology_name": "测段!K8",
+        "description": "测段!L8",
+        "sample_id": "测段!M8",
+        "sample_offset_m": "测段!N8",
+        "true_thickness_m": "测段!T8",
+        "cache_horizontal_m": "测段!O8",
+        "cache_vertical_m": "测段!P8",
+        "cache_cumulative_z_m": "测段!Q8",
+        "cache_cumulative_north_m": "测段!R8",
+        "cache_cumulative_east_m": "测段!S8"
+      },
+      "computed": {
+        "horizontal_m": 9.364230162062407,
+        "vertical_m": -0.8192639818279867,
+        "east_delta_m": 6.736063455103147,
+        "north_delta_m": 6.504940864981264
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0008",
+      "leg_id": "4-5",
+      "layer_id": "C3",
+      "length_m": 13.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 45.0,
+      "dip_direction_deg": 285.0,
+      "dip_angle_deg": 10.0,
+      "lithology_name": "含粉砂泥岩",
+      "description": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+      "start_node": 7,
+      "end_node": 8,
+      "raw": {
+        "测段!A9": "R0008",
+        "测段!B9": "4-5",
+        "测段!C9": "C3",
+        "测段!D9": 0,
+        "测段!E9": 13,
+        "测段!F9": 13,
+        "测段!G9": -10,
+        "测段!H9": 45,
+        "测段!I9": 285,
+        "测段!J9": 10,
+        "测段!K9": "含粉砂泥岩",
+        "测段!L9": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+        "测段!O9": 12.802500789158705,
+        "测段!P9": -2.257426309670094,
+        "测段!Q9": -10.39503304858579,
+        "测段!R9": 97.22973268542404,
+        "测段!S9": 110.68662926262515
+      },
+      "source_cells": {
+        "record_id": "测段!A9",
+        "leg_id": "测段!B9",
+        "layer_id": "测段!C9",
+        "start_reading_m": "测段!D9",
+        "end_reading_m": "测段!E9",
+        "length_m": "测段!F9",
+        "slope_deg": "测段!G9",
+        "azimuth_deg": "测段!H9",
+        "dip_direction_deg": "测段!I9",
+        "dip_angle_deg": "测段!J9",
+        "lithology_name": "测段!K9",
+        "description": "测段!L9",
+        "sample_id": "测段!M9",
+        "sample_offset_m": "测段!N9",
+        "true_thickness_m": "测段!T9",
+        "cache_horizontal_m": "测段!O9",
+        "cache_vertical_m": "测段!P9",
+        "cache_cumulative_z_m": "测段!Q9",
+        "cache_cumulative_north_m": "测段!R9",
+        "cache_cumulative_east_m": "测段!S9"
+      },
+      "computed": {
+        "horizontal_m": 12.802500789158705,
+        "vertical_m": -2.257426309670094,
+        "east_delta_m": 9.052735124160247,
+        "north_delta_m": 9.052735124160247
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0009",
+      "leg_id": "4-5",
+      "layer_id": "C4",
+      "length_m": 26.200000000000003,
+      "slope_deg": -10.0,
+      "azimuth_deg": 45.0,
+      "dip_direction_deg": 285.0,
+      "dip_angle_deg": 10.0,
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈深灰色，具隐晶质结构，中-厚层状构造，单层厚度约30-120cm。方解石含量约85-90%，泥质含量约10-15%，零星见黄铁矿颗粒，粒径约0.1-0.3mm。",
+      "start_node": 8,
+      "end_node": 9,
+      "raw": {
+        "测段!A10": "R0009",
+        "测段!B10": "4-5",
+        "测段!C10": "C4",
+        "测段!D10": 13,
+        "测段!E10": 39.2,
+        "测段!F10": 26.200000000000003,
+        "测段!G10": -10,
+        "测段!H10": 45,
+        "测段!I10": 285,
+        "测段!J10": 10,
+        "测段!K10": "泥晶灰岩",
+        "测段!L10": "泥晶灰岩。呈深灰色，具隐晶质结构，中-厚层状构造，单层厚度约30-120cm。方解石含量约85-90%，泥质含量约10-15%，零星见黄铁矿颗粒，粒径约0.1-0.3mm。",
+        "测段!M10": "PM01-4-b1",
+        "测段!O10": 25.80196312891985,
+        "测段!P10": -4.549582254873576,
+        "测段!Q10": -14.944615303459365,
+        "测段!R10": 115.47447578180854,
+        "测段!S10": 128.93137235900963
+      },
+      "source_cells": {
+        "record_id": "测段!A10",
+        "leg_id": "测段!B10",
+        "layer_id": "测段!C10",
+        "start_reading_m": "测段!D10",
+        "end_reading_m": "测段!E10",
+        "length_m": "测段!F10",
+        "slope_deg": "测段!G10",
+        "azimuth_deg": "测段!H10",
+        "dip_direction_deg": "测段!I10",
+        "dip_angle_deg": "测段!J10",
+        "lithology_name": "测段!K10",
+        "description": "测段!L10",
+        "sample_id": "测段!M10",
+        "sample_offset_m": "测段!N10",
+        "true_thickness_m": "测段!T10",
+        "cache_horizontal_m": "测段!O10",
+        "cache_vertical_m": "测段!P10",
+        "cache_cumulative_z_m": "测段!Q10",
+        "cache_cumulative_north_m": "测段!R10",
+        "cache_cumulative_east_m": "测段!S10"
+      },
+      "computed": {
+        "horizontal_m": 25.80196312891985,
+        "vertical_m": -4.549582254873576,
+        "east_delta_m": 18.244743096384497,
+        "north_delta_m": 18.244743096384497
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0010",
+      "leg_id": "4-5",
+      "layer_id": "C5",
+      "length_m": 13.199999999999996,
+      "slope_deg": -10.0,
+      "azimuth_deg": 45.0,
+      "dip_direction_deg": 330.0,
+      "dip_angle_deg": 5.0,
+      "lithology_name": "含生物碎屑凝灰岩",
+      "description": "含生物碎屑凝灰岩。呈浅灰色，具凝灰结构，薄-中层状构造。层理发育，单层厚度约8-30cm，凝灰质含量约85-90%，泥质含量约8-12%，其余为菊石生物碎屑。",
+      "start_node": 9,
+      "end_node": 10,
+      "raw": {
+        "测段!A11": "R0010",
+        "测段!B11": "4-5",
+        "测段!C11": "C5",
+        "测段!D11": 39.2,
+        "测段!E11": 52.4,
+        "测段!F11": 13.199999999999996,
+        "测段!G11": -10,
+        "测段!H11": 45,
+        "测段!I11": 330,
+        "测段!J11": 5,
+        "测段!K11": "含生物碎屑凝灰岩",
+        "测段!L11": "含生物碎屑凝灰岩。呈浅灰色，具凝灰结构，薄-中层状构造。层理发育，单层厚度约8-30cm，凝灰质含量约85-90%，泥质含量约8-12%，其余为菊石生物碎屑。",
+        "测段!M11": "PM01-5-b1",
+        "测段!O11": 12.999462339761141,
+        "测段!P11": -2.2921559452034797,
+        "测段!Q11": -17.236771248662844,
+        "测段!R11": 124.66648375403278,
+        "测段!S11": 138.12338033123388
+      },
+      "source_cells": {
+        "record_id": "测段!A11",
+        "leg_id": "测段!B11",
+        "layer_id": "测段!C11",
+        "start_reading_m": "测段!D11",
+        "end_reading_m": "测段!E11",
+        "length_m": "测段!F11",
+        "slope_deg": "测段!G11",
+        "azimuth_deg": "测段!H11",
+        "dip_direction_deg": "测段!I11",
+        "dip_angle_deg": "测段!J11",
+        "lithology_name": "测段!K11",
+        "description": "测段!L11",
+        "sample_id": "测段!M11",
+        "sample_offset_m": "测段!N11",
+        "true_thickness_m": "测段!T11",
+        "cache_horizontal_m": "测段!O11",
+        "cache_vertical_m": "测段!P11",
+        "cache_cumulative_z_m": "测段!Q11",
+        "cache_cumulative_north_m": "测段!R11",
+        "cache_cumulative_east_m": "测段!S11"
+      },
+      "computed": {
+        "horizontal_m": 12.999462339761141,
+        "vertical_m": -2.2921559452034797,
+        "east_delta_m": 9.192007972224246,
+        "north_delta_m": 9.192007972224246
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0011",
+      "leg_id": "4-5",
+      "layer_id": "C6",
+      "length_m": 5.600000000000001,
+      "slope_deg": -10.0,
+      "azimuth_deg": 45.0,
+      "dip_direction_deg": 295.0,
+      "dip_angle_deg": 13.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 10,
+      "end_node": 11,
+      "raw": {
+        "测段!A12": "R0011",
+        "测段!B12": "4-5",
+        "测段!C12": "C6",
+        "测段!D12": 52.4,
+        "测段!E12": 58,
+        "测段!F12": 5.600000000000001,
+        "测段!G12": -10,
+        "测段!H12": 45,
+        "测段!I12": 295,
+        "测段!J12": 13,
+        "测段!K12": "凝灰质泥岩",
+        "测段!L12": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!M12": "PM01-6-b1",
+        "测段!O12": 5.514923416868366,
+        "测段!P12": -0.9724297949348101,
+        "测段!Q12": -18.209201043597655,
+        "测段!R12": 128.5661234998249,
+        "测段!S12": 142.023020077026
+      },
+      "source_cells": {
+        "record_id": "测段!A12",
+        "leg_id": "测段!B12",
+        "layer_id": "测段!C12",
+        "start_reading_m": "测段!D12",
+        "end_reading_m": "测段!E12",
+        "length_m": "测段!F12",
+        "slope_deg": "测段!G12",
+        "azimuth_deg": "测段!H12",
+        "dip_direction_deg": "测段!I12",
+        "dip_angle_deg": "测段!J12",
+        "lithology_name": "测段!K12",
+        "description": "测段!L12",
+        "sample_id": "测段!M12",
+        "sample_offset_m": "测段!N12",
+        "true_thickness_m": "测段!T12",
+        "cache_horizontal_m": "测段!O12",
+        "cache_vertical_m": "测段!P12",
+        "cache_cumulative_z_m": "测段!Q12",
+        "cache_cumulative_north_m": "测段!R12",
+        "cache_cumulative_east_m": "测段!S12"
+      },
+      "computed": {
+        "horizontal_m": 5.514923416868366,
+        "vertical_m": -0.9724297949348101,
+        "east_delta_m": 3.899639745792107,
+        "north_delta_m": 3.899639745792107
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0012",
+      "leg_id": "5-6",
+      "layer_id": "C6",
+      "length_m": 1.0,
+      "slope_deg": -7.0,
+      "azimuth_deg": 21.0,
+      "dip_direction_deg": 295.0,
+      "dip_angle_deg": 13.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 11,
+      "end_node": 12,
+      "raw": {
+        "测段!A13": "R0012",
+        "测段!B13": "5-6",
+        "测段!C13": "C6",
+        "测段!D13": 0,
+        "测段!E13": 1,
+        "测段!F13": 1,
+        "测段!G13": -7,
+        "测段!H13": 21,
+        "测段!I13": 295,
+        "测段!J13": 13,
+        "测段!K13": "凝灰质泥岩",
+        "测段!L13": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O13": 0.992546151641322,
+        "测段!P13": -0.12186934340514748,
+        "测段!Q13": -18.331070387002804,
+        "测段!R13": 129.49274515939237,
+        "测段!S13": 142.37871680621876
+      },
+      "source_cells": {
+        "record_id": "测段!A13",
+        "leg_id": "测段!B13",
+        "layer_id": "测段!C13",
+        "start_reading_m": "测段!D13",
+        "end_reading_m": "测段!E13",
+        "length_m": "测段!F13",
+        "slope_deg": "测段!G13",
+        "azimuth_deg": "测段!H13",
+        "dip_direction_deg": "测段!I13",
+        "dip_angle_deg": "测段!J13",
+        "lithology_name": "测段!K13",
+        "description": "测段!L13",
+        "sample_id": "测段!M13",
+        "sample_offset_m": "测段!N13",
+        "true_thickness_m": "测段!T13",
+        "cache_horizontal_m": "测段!O13",
+        "cache_vertical_m": "测段!P13",
+        "cache_cumulative_z_m": "测段!Q13",
+        "cache_cumulative_north_m": "测段!R13",
+        "cache_cumulative_east_m": "测段!S13"
+      },
+      "computed": {
+        "horizontal_m": 0.992546151641322,
+        "vertical_m": -0.12186934340514748,
+        "east_delta_m": 0.3556967291927792,
+        "north_delta_m": 0.9266216595674617
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0013",
+      "leg_id": "5-6",
+      "layer_id": "C7",
+      "length_m": 14.0,
+      "slope_deg": -7.0,
+      "azimuth_deg": 21.0,
+      "dip_direction_deg": 275.0,
+      "dip_angle_deg": 15.0,
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。",
+      "start_node": 12,
+      "end_node": 13,
+      "raw": {
+        "测段!A14": "R0013",
+        "测段!B14": "5-6",
+        "测段!C14": "C7",
+        "测段!D14": 1,
+        "测段!E14": 15,
+        "测段!F14": 14,
+        "测段!G14": -7,
+        "测段!H14": 21,
+        "测段!I14": 275,
+        "测段!J14": 15,
+        "测段!K14": "粉砂质泥岩",
+        "测段!L14": "粉砂质泥岩。粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。",
+        "测段!M14": "PM01-7-b1",
+        "测段!O14": 13.895646122978508,
+        "测段!P14": -1.7061708076720647,
+        "测段!Q14": -20.03724119467487,
+        "测段!R14": 142.46544839333683,
+        "测段!S14": 147.35847101491768
+      },
+      "source_cells": {
+        "record_id": "测段!A14",
+        "leg_id": "测段!B14",
+        "layer_id": "测段!C14",
+        "start_reading_m": "测段!D14",
+        "end_reading_m": "测段!E14",
+        "length_m": "测段!F14",
+        "slope_deg": "测段!G14",
+        "azimuth_deg": "测段!H14",
+        "dip_direction_deg": "测段!I14",
+        "dip_angle_deg": "测段!J14",
+        "lithology_name": "测段!K14",
+        "description": "测段!L14",
+        "sample_id": "测段!M14",
+        "sample_offset_m": "测段!N14",
+        "true_thickness_m": "测段!T14",
+        "cache_horizontal_m": "测段!O14",
+        "cache_vertical_m": "测段!P14",
+        "cache_cumulative_z_m": "测段!Q14",
+        "cache_cumulative_north_m": "测段!R14",
+        "cache_cumulative_east_m": "测段!S14"
+      },
+      "computed": {
+        "horizontal_m": 13.895646122978508,
+        "vertical_m": -1.7061708076720647,
+        "east_delta_m": 4.9797542086989095,
+        "north_delta_m": 12.972703233944463
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0014",
+      "leg_id": "5-6",
+      "layer_id": "C8",
+      "length_m": 16.0,
+      "slope_deg": -7.0,
+      "azimuth_deg": 21.0,
+      "dip_direction_deg": 275.0,
+      "dip_angle_deg": 15.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 13,
+      "end_node": 14,
+      "raw": {
+        "测段!A15": "R0014",
+        "测段!B15": "5-6",
+        "测段!C15": "C8",
+        "测段!D15": 15,
+        "测段!E15": 31,
+        "测段!F15": 16,
+        "测段!G15": -7,
+        "测段!H15": 21,
+        "测段!I15": 275,
+        "测段!J15": 15,
+        "测段!K15": "凝灰质泥岩",
+        "测段!L15": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!M15": "PM01-8-b1",
+        "测段!O15": 15.880738426261152,
+        "测段!P15": -1.9499094944823596,
+        "测段!Q15": -21.98715068915723,
+        "测段!R15": 157.2913949464162,
+        "测段!S15": 153.04961868200215
+      },
+      "source_cells": {
+        "record_id": "测段!A15",
+        "leg_id": "测段!B15",
+        "layer_id": "测段!C15",
+        "start_reading_m": "测段!D15",
+        "end_reading_m": "测段!E15",
+        "length_m": "测段!F15",
+        "slope_deg": "测段!G15",
+        "azimuth_deg": "测段!H15",
+        "dip_direction_deg": "测段!I15",
+        "dip_angle_deg": "测段!J15",
+        "lithology_name": "测段!K15",
+        "description": "测段!L15",
+        "sample_id": "测段!M15",
+        "sample_offset_m": "测段!N15",
+        "true_thickness_m": "测段!T15",
+        "cache_horizontal_m": "测段!O15",
+        "cache_vertical_m": "测段!P15",
+        "cache_cumulative_z_m": "测段!Q15",
+        "cache_cumulative_north_m": "测段!R15",
+        "cache_cumulative_east_m": "测段!S15"
+      },
+      "computed": {
+        "horizontal_m": 15.880738426261152,
+        "vertical_m": -1.9499094944823596,
+        "east_delta_m": 5.691147667084468,
+        "north_delta_m": 14.825946553079387
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0015",
+      "leg_id": "6-7",
+      "layer_id": "C8",
+      "length_m": 12.0,
+      "slope_deg": -6.0,
+      "azimuth_deg": 50.0,
+      "dip_direction_deg": 275.0,
+      "dip_angle_deg": 15.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 14,
+      "end_node": 15,
+      "raw": {
+        "测段!A16": "R0015",
+        "测段!B16": "6-7",
+        "测段!C16": "C8",
+        "测段!D16": 0,
+        "测段!E16": 12,
+        "测段!F16": 12,
+        "测段!G16": -6,
+        "测段!H16": 50,
+        "测段!I16": 275,
+        "测段!J16": 15,
+        "测段!K16": "凝灰质泥岩",
+        "测段!L16": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O16": 11.934262744419279,
+        "测段!P16": -1.2543415592118414,
+        "测段!Q16": -23.24149224836907,
+        "测段!R16": 164.9625911692726,
+        "测段!S16": 162.19179434008637
+      },
+      "source_cells": {
+        "record_id": "测段!A16",
+        "leg_id": "测段!B16",
+        "layer_id": "测段!C16",
+        "start_reading_m": "测段!D16",
+        "end_reading_m": "测段!E16",
+        "length_m": "测段!F16",
+        "slope_deg": "测段!G16",
+        "azimuth_deg": "测段!H16",
+        "dip_direction_deg": "测段!I16",
+        "dip_angle_deg": "测段!J16",
+        "lithology_name": "测段!K16",
+        "description": "测段!L16",
+        "sample_id": "测段!M16",
+        "sample_offset_m": "测段!N16",
+        "true_thickness_m": "测段!T16",
+        "cache_horizontal_m": "测段!O16",
+        "cache_vertical_m": "测段!P16",
+        "cache_cumulative_z_m": "测段!Q16",
+        "cache_cumulative_north_m": "测段!R16",
+        "cache_cumulative_east_m": "测段!S16"
+      },
+      "computed": {
+        "horizontal_m": 11.934262744419279,
+        "vertical_m": -1.2543415592118417,
+        "east_delta_m": 9.142175658084232,
+        "north_delta_m": 7.671196222856388
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0016",
+      "leg_id": "6-7",
+      "layer_id": "C9",
+      "length_m": 17.0,
+      "slope_deg": -6.0,
+      "azimuth_deg": 50.0,
+      "dip_direction_deg": 325.0,
+      "dip_angle_deg": 19.0,
+      "lithology_name": "煤层",
+      "description": "煤层。厚度约1.5米。",
+      "start_node": 15,
+      "end_node": 16,
+      "raw": {
+        "测段!A17": "R0016",
+        "测段!B17": "6-7",
+        "测段!C17": "C9",
+        "测段!D17": 12,
+        "测段!E17": 29,
+        "测段!F17": 17,
+        "测段!G17": -6,
+        "测段!H17": 50,
+        "测段!I17": 325,
+        "测段!J17": 19,
+        "测段!K17": "煤层",
+        "测段!L17": "煤层。厚度约1.5米。",
+        "测段!O17": 16.906872221260645,
+        "测段!P17": -1.7769838755501088,
+        "测段!Q17": -25.01847612391918,
+        "测段!R17": 175.83011915165247,
+        "测段!S17": 175.1432098557057
+      },
+      "source_cells": {
+        "record_id": "测段!A17",
+        "leg_id": "测段!B17",
+        "layer_id": "测段!C17",
+        "start_reading_m": "测段!D17",
+        "end_reading_m": "测段!E17",
+        "length_m": "测段!F17",
+        "slope_deg": "测段!G17",
+        "azimuth_deg": "测段!H17",
+        "dip_direction_deg": "测段!I17",
+        "dip_angle_deg": "测段!J17",
+        "lithology_name": "测段!K17",
+        "description": "测段!L17",
+        "sample_id": "测段!M17",
+        "sample_offset_m": "测段!N17",
+        "true_thickness_m": "测段!T17",
+        "cache_horizontal_m": "测段!O17",
+        "cache_vertical_m": "测段!P17",
+        "cache_cumulative_z_m": "测段!Q17",
+        "cache_cumulative_north_m": "测段!R17",
+        "cache_cumulative_east_m": "测段!S17"
+      },
+      "computed": {
+        "horizontal_m": 16.906872221260645,
+        "vertical_m": -1.776983875550109,
+        "east_delta_m": 12.95141551561933,
+        "north_delta_m": 10.867527982379883
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0017",
+      "leg_id": "6-7",
+      "layer_id": "C10",
+      "length_m": 20.0,
+      "slope_deg": -6.0,
+      "azimuth_deg": 50.0,
+      "dip_direction_deg": 328.0,
+      "dip_angle_deg": 19.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 16,
+      "end_node": 17,
+      "raw": {
+        "测段!A18": "R0017",
+        "测段!B18": "6-7",
+        "测段!C18": "C10",
+        "测段!D18": 29,
+        "测段!E18": 49,
+        "测段!F18": 20,
+        "测段!G18": -6,
+        "测段!H18": 50,
+        "测段!I18": 328,
+        "测段!J18": 19,
+        "测段!K18": "凝灰质泥岩",
+        "测段!L18": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O18": 19.890437907365467,
+        "测段!P18": -2.090569265353069,
+        "测段!Q18": -27.109045389272246,
+        "测段!R18": 188.61544618974645,
+        "测段!S18": 190.38016928584608
+      },
+      "source_cells": {
+        "record_id": "测段!A18",
+        "leg_id": "测段!B18",
+        "layer_id": "测段!C18",
+        "start_reading_m": "测段!D18",
+        "end_reading_m": "测段!E18",
+        "length_m": "测段!F18",
+        "slope_deg": "测段!G18",
+        "azimuth_deg": "测段!H18",
+        "dip_direction_deg": "测段!I18",
+        "dip_angle_deg": "测段!J18",
+        "lithology_name": "测段!K18",
+        "description": "测段!L18",
+        "sample_id": "测段!M18",
+        "sample_offset_m": "测段!N18",
+        "true_thickness_m": "测段!T18",
+        "cache_horizontal_m": "测段!O18",
+        "cache_vertical_m": "测段!P18",
+        "cache_cumulative_z_m": "测段!Q18",
+        "cache_cumulative_north_m": "测段!R18",
+        "cache_cumulative_east_m": "测段!S18"
+      },
+      "computed": {
+        "horizontal_m": 19.890437907365467,
+        "vertical_m": -2.0905692653530696,
+        "east_delta_m": 15.23695943014039,
+        "north_delta_m": 12.78532703809398
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0018",
+      "leg_id": "7-8",
+      "layer_id": "C10",
+      "length_m": 42.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 61.0,
+      "dip_direction_deg": 328.0,
+      "dip_angle_deg": 19.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 17,
+      "end_node": 18,
+      "raw": {
+        "测段!A19": "R0018",
+        "测段!B19": "7-8",
+        "测段!C19": "C10",
+        "测段!D19": 0,
+        "测段!E19": 42,
+        "测段!F19": 42,
+        "测段!G19": -10,
+        "测段!H19": 61,
+        "测段!I19": 328,
+        "测段!J19": 19,
+        "测段!K19": "凝灰质泥岩",
+        "测段!L19": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O19": 41.361925626512736,
+        "测段!P19": -7.293223462011074,
+        "测段!Q19": -34.402268851283324,
+        "测段!R19": 208.66810564539333,
+        "测段!S19": 226.55612456402812
+      },
+      "source_cells": {
+        "record_id": "测段!A19",
+        "leg_id": "测段!B19",
+        "layer_id": "测段!C19",
+        "start_reading_m": "测段!D19",
+        "end_reading_m": "测段!E19",
+        "length_m": "测段!F19",
+        "slope_deg": "测段!G19",
+        "azimuth_deg": "测段!H19",
+        "dip_direction_deg": "测段!I19",
+        "dip_angle_deg": "测段!J19",
+        "lithology_name": "测段!K19",
+        "description": "测段!L19",
+        "sample_id": "测段!M19",
+        "sample_offset_m": "测段!N19",
+        "true_thickness_m": "测段!T19",
+        "cache_horizontal_m": "测段!O19",
+        "cache_vertical_m": "测段!P19",
+        "cache_cumulative_z_m": "测段!Q19",
+        "cache_cumulative_north_m": "测段!R19",
+        "cache_cumulative_east_m": "测段!S19"
+      },
+      "computed": {
+        "horizontal_m": 41.361925626512736,
+        "vertical_m": -7.293223462011074,
+        "east_delta_m": 36.17595527818204,
+        "north_delta_m": 20.05265945564688
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0019",
+      "leg_id": "7-8",
+      "layer_id": "C11",
+      "length_m": 12.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 61.0,
+      "dip_direction_deg": 315.0,
+      "dip_angle_deg": 11.0,
+      "lithology_name": "碳质泥岩与煤线互层",
+      "description": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+      "start_node": 18,
+      "end_node": 19,
+      "raw": {
+        "测段!A20": "R0019",
+        "测段!B20": "7-8",
+        "测段!C20": "C11",
+        "测段!D20": 42,
+        "测段!E20": 54,
+        "测段!F20": 12,
+        "测段!G20": -10,
+        "测段!H20": 61,
+        "测段!I20": 315,
+        "测段!J20": 11,
+        "测段!K20": "碳质泥岩与煤线互层",
+        "测段!L20": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+        "测段!O20": 11.817693036146496,
+        "测段!P20": -2.083778132003164,
+        "测段!Q20": -36.486046983286485,
+        "测段!R20": 214.3974369184353,
+        "测段!S20": 236.89211178636586
+      },
+      "source_cells": {
+        "record_id": "测段!A20",
+        "leg_id": "测段!B20",
+        "layer_id": "测段!C20",
+        "start_reading_m": "测段!D20",
+        "end_reading_m": "测段!E20",
+        "length_m": "测段!F20",
+        "slope_deg": "测段!G20",
+        "azimuth_deg": "测段!H20",
+        "dip_direction_deg": "测段!I20",
+        "dip_angle_deg": "测段!J20",
+        "lithology_name": "测段!K20",
+        "description": "测段!L20",
+        "sample_id": "测段!M20",
+        "sample_offset_m": "测段!N20",
+        "true_thickness_m": "测段!T20",
+        "cache_horizontal_m": "测段!O20",
+        "cache_vertical_m": "测段!P20",
+        "cache_cumulative_z_m": "测段!Q20",
+        "cache_cumulative_north_m": "测段!R20",
+        "cache_cumulative_east_m": "测段!S20"
+      },
+      "computed": {
+        "horizontal_m": 11.817693036146496,
+        "vertical_m": -2.083778132003164,
+        "east_delta_m": 10.335987222337724,
+        "north_delta_m": 5.729331273041965
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0020",
+      "leg_id": "7-8",
+      "layer_id": "C12",
+      "length_m": 11.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 61.0,
+      "dip_direction_deg": 300.0,
+      "dip_angle_deg": 11.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 19,
+      "end_node": 20,
+      "raw": {
+        "测段!A21": "R0020",
+        "测段!B21": "7-8",
+        "测段!C21": "C12",
+        "测段!D21": 54,
+        "测段!E21": 65,
+        "测段!F21": 11,
+        "测段!G21": -10,
+        "测段!H21": 61,
+        "测段!I21": 300,
+        "测段!J21": 11,
+        "测段!K21": "凝灰质泥岩",
+        "测段!L21": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O21": 10.832885283134289,
+        "测段!P21": -1.9101299543362336,
+        "测段!Q21": -38.39617693762272,
+        "测段!R21": 219.64932391872375,
+        "测段!S21": 246.36676674017545
+      },
+      "source_cells": {
+        "record_id": "测段!A21",
+        "leg_id": "测段!B21",
+        "layer_id": "测段!C21",
+        "start_reading_m": "测段!D21",
+        "end_reading_m": "测段!E21",
+        "length_m": "测段!F21",
+        "slope_deg": "测段!G21",
+        "azimuth_deg": "测段!H21",
+        "dip_direction_deg": "测段!I21",
+        "dip_angle_deg": "测段!J21",
+        "lithology_name": "测段!K21",
+        "description": "测段!L21",
+        "sample_id": "测段!M21",
+        "sample_offset_m": "测段!N21",
+        "true_thickness_m": "测段!T21",
+        "cache_horizontal_m": "测段!O21",
+        "cache_vertical_m": "测段!P21",
+        "cache_cumulative_z_m": "测段!Q21",
+        "cache_cumulative_north_m": "测段!R21",
+        "cache_cumulative_east_m": "测段!S21"
+      },
+      "computed": {
+        "horizontal_m": 10.832885283134289,
+        "vertical_m": -1.9101299543362336,
+        "east_delta_m": 9.474654953809582,
+        "north_delta_m": 5.251887000288469
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0021",
+      "leg_id": "8-9",
+      "layer_id": "C12",
+      "length_m": 16.0,
+      "slope_deg": -14.0,
+      "azimuth_deg": 17.0,
+      "dip_direction_deg": 300.0,
+      "dip_angle_deg": 11.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 20,
+      "end_node": 21,
+      "raw": {
+        "测段!A22": "R0021",
+        "测段!B22": "8-9",
+        "测段!C22": "C12",
+        "测段!D22": 0,
+        "测段!E22": 16,
+        "测段!F22": 16,
+        "测段!G22": -14,
+        "测段!H22": 17,
+        "测段!I22": 300,
+        "测段!J22": 11,
+        "测段!K22": "凝灰质泥岩",
+        "测段!L22": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O22": 15.524731620415944,
+        "测段!P22": -3.8707503295946837,
+        "测段!Q22": -42.266927267217405,
+        "测段!R22": 234.49569860237725,
+        "测段!S22": 250.90575898939943
+      },
+      "source_cells": {
+        "record_id": "测段!A22",
+        "leg_id": "测段!B22",
+        "layer_id": "测段!C22",
+        "start_reading_m": "测段!D22",
+        "end_reading_m": "测段!E22",
+        "length_m": "测段!F22",
+        "slope_deg": "测段!G22",
+        "azimuth_deg": "测段!H22",
+        "dip_direction_deg": "测段!I22",
+        "dip_angle_deg": "测段!J22",
+        "lithology_name": "测段!K22",
+        "description": "测段!L22",
+        "sample_id": "测段!M22",
+        "sample_offset_m": "测段!N22",
+        "true_thickness_m": "测段!T22",
+        "cache_horizontal_m": "测段!O22",
+        "cache_vertical_m": "测段!P22",
+        "cache_cumulative_z_m": "测段!Q22",
+        "cache_cumulative_north_m": "测段!R22",
+        "cache_cumulative_east_m": "测段!S22"
+      },
+      "computed": {
+        "horizontal_m": 15.524731620415944,
+        "vertical_m": -3.8707503295946837,
+        "east_delta_m": 4.538992249223985,
+        "north_delta_m": 14.846374683653488
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0022",
+      "leg_id": "8-9",
+      "layer_id": "C13",
+      "length_m": 2.0,
+      "slope_deg": -14.0,
+      "azimuth_deg": 17.0,
+      "dip_direction_deg": 247.0,
+      "dip_angle_deg": 20.0,
+      "lithology_name": "碳质泥岩与煤线互层",
+      "description": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。",
+      "start_node": 21,
+      "end_node": 22,
+      "raw": {
+        "测段!A23": "R0022",
+        "测段!B23": "8-9",
+        "测段!C23": "C13",
+        "测段!D23": 16,
+        "测段!E23": 18,
+        "测段!F23": 2,
+        "测段!G23": -14,
+        "测段!H23": 17,
+        "测段!I23": 247,
+        "测段!J23": 20,
+        "测段!K23": "碳质泥岩与煤线互层",
+        "测段!L23": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。",
+        "测段!O23": 1.940591452551993,
+        "测段!P23": -0.48384379119933546,
+        "测段!Q23": -42.75077105841674,
+        "测段!R23": 236.35149543783393,
+        "测段!S23": 251.47313302055244
+      },
+      "source_cells": {
+        "record_id": "测段!A23",
+        "leg_id": "测段!B23",
+        "layer_id": "测段!C23",
+        "start_reading_m": "测段!D23",
+        "end_reading_m": "测段!E23",
+        "length_m": "测段!F23",
+        "slope_deg": "测段!G23",
+        "azimuth_deg": "测段!H23",
+        "dip_direction_deg": "测段!I23",
+        "dip_angle_deg": "测段!J23",
+        "lithology_name": "测段!K23",
+        "description": "测段!L23",
+        "sample_id": "测段!M23",
+        "sample_offset_m": "测段!N23",
+        "true_thickness_m": "测段!T23",
+        "cache_horizontal_m": "测段!O23",
+        "cache_vertical_m": "测段!P23",
+        "cache_cumulative_z_m": "测段!Q23",
+        "cache_cumulative_north_m": "测段!R23",
+        "cache_cumulative_east_m": "测段!S23"
+      },
+      "computed": {
+        "horizontal_m": 1.940591452551993,
+        "vertical_m": -0.48384379119933546,
+        "east_delta_m": 0.5673740311529981,
+        "north_delta_m": 1.855796835456686
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0023",
+      "leg_id": "8-9",
+      "layer_id": "C14",
+      "length_m": 6.0,
+      "slope_deg": -14.0,
+      "azimuth_deg": 17.0,
+      "dip_direction_deg": 215.0,
+      "dip_angle_deg": 23.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 22,
+      "end_node": 23,
+      "raw": {
+        "测段!A24": "R0023",
+        "测段!B24": "8-9",
+        "测段!C24": "C14",
+        "测段!D24": 18,
+        "测段!E24": 24,
+        "测段!F24": 6,
+        "测段!G24": -14,
+        "测段!H24": 17,
+        "测段!I24": 215,
+        "测段!J24": 23,
+        "测段!K24": "凝灰质泥岩",
+        "测段!L24": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O24": 5.821774357655979,
+        "测段!P24": -1.4515313735980064,
+        "测段!Q24": -44.20230243201475,
+        "测段!R24": 241.918885944204,
+        "测段!S24": 253.17525511401143
+      },
+      "source_cells": {
+        "record_id": "测段!A24",
+        "leg_id": "测段!B24",
+        "layer_id": "测段!C24",
+        "start_reading_m": "测段!D24",
+        "end_reading_m": "测段!E24",
+        "length_m": "测段!F24",
+        "slope_deg": "测段!G24",
+        "azimuth_deg": "测段!H24",
+        "dip_direction_deg": "测段!I24",
+        "dip_angle_deg": "测段!J24",
+        "lithology_name": "测段!K24",
+        "description": "测段!L24",
+        "sample_id": "测段!M24",
+        "sample_offset_m": "测段!N24",
+        "true_thickness_m": "测段!T24",
+        "cache_horizontal_m": "测段!O24",
+        "cache_vertical_m": "测段!P24",
+        "cache_cumulative_z_m": "测段!Q24",
+        "cache_cumulative_north_m": "测段!R24",
+        "cache_cumulative_east_m": "测段!S24"
+      },
+      "computed": {
+        "horizontal_m": 5.821774357655979,
+        "vertical_m": -1.4515313735980064,
+        "east_delta_m": 1.7021220934589945,
+        "north_delta_m": 5.567390506370058
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0024",
+      "leg_id": "9-10",
+      "layer_id": "C14",
+      "length_m": 23.0,
+      "slope_deg": -7.0,
+      "azimuth_deg": 5.0,
+      "dip_direction_deg": 215.0,
+      "dip_angle_deg": 23.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 23,
+      "end_node": 24,
+      "raw": {
+        "测段!A25": "R0024",
+        "测段!B25": "9-10",
+        "测段!C25": "C14",
+        "测段!D25": 0,
+        "测段!E25": 23,
+        "测段!F25": 23,
+        "测段!G25": -7,
+        "测段!H25": 5,
+        "测段!I25": 215,
+        "测段!J25": 23,
+        "测段!K25": "凝灰质泥岩",
+        "测段!L25": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O25": 22.828561487750406,
+        "测段!P25": -2.802994898318392,
+        "测段!Q25": -45.553765956735134,
+        "测段!R25": 259.0931873569923,
+        "测段!S25": 253.46277325287792
+      },
+      "source_cells": {
+        "record_id": "测段!A25",
+        "leg_id": "测段!B25",
+        "layer_id": "测段!C25",
+        "start_reading_m": "测段!D25",
+        "end_reading_m": "测段!E25",
+        "length_m": "测段!F25",
+        "slope_deg": "测段!G25",
+        "azimuth_deg": "测段!H25",
+        "dip_direction_deg": "测段!I25",
+        "dip_angle_deg": "测段!J25",
+        "lithology_name": "测段!K25",
+        "description": "测段!L25",
+        "sample_id": "测段!M25",
+        "sample_offset_m": "测段!N25",
+        "true_thickness_m": "测段!T25",
+        "cache_horizontal_m": "测段!O25",
+        "cache_vertical_m": "测段!P25",
+        "cache_cumulative_z_m": "测段!Q25",
+        "cache_cumulative_north_m": "测段!R25",
+        "cache_cumulative_east_m": "测段!S25"
+      },
+      "computed": {
+        "horizontal_m": 22.828561487750406,
+        "vertical_m": -2.802994898318392,
+        "east_delta_m": 1.989640232325471,
+        "north_delta_m": 22.741691919158367
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0025",
+      "leg_id": "10-11",
+      "layer_id": "C15",
+      "length_m": 3.0,
+      "slope_deg": -12.0,
+      "azimuth_deg": 118.0,
+      "dip_direction_deg": 218.0,
+      "dip_angle_deg": 13.0,
+      "lithology_name": "含火山碎屑粉砂质泥岩",
+      "description": "含火山碎屑粉砂质泥岩。呈黄绿色，具泥质结构，薄层状构造，单层厚度约3-8cm。泥质含量约60-65%，粉砂含量约25-30%，其余为玄武质火山碎屑。火山碎屑粒径约0.2-1mm，呈棱角状，磨圆度差，分选差。岩石内部充填铁锰质胶结物，宽度约0.2-0.5cm。岩石层理中多见球形风化。",
+      "start_node": 24,
+      "end_node": 25,
+      "raw": {
+        "测段!A26": "R0025",
+        "测段!B26": "10-11",
+        "测段!C26": "C15",
+        "测段!D26": 0,
+        "测段!E26": 3,
+        "测段!F26": 3,
+        "测段!G26": -12,
+        "测段!H26": 118,
+        "测段!I26": 218,
+        "测段!J26": 13,
+        "测段!K26": "含火山碎屑粉砂质泥岩",
+        "测段!L26": "含火山碎屑粉砂质泥岩。呈黄绿色，具泥质结构，薄层状构造，单层厚度约3-8cm。泥质含量约60-65%，粉砂含量约25-30%，其余为玄武质火山碎屑。火山碎屑粒径约0.2-1mm，呈棱角状，磨圆度差，分选差。岩石内部充填铁锰质胶结物，宽度约0.2-0.5cm。岩石层理中多见球形风化。",
+        "测段!M26": "PM01-15-b1",
+        "测段!O26": 2.934442802201417,
+        "测段!P26": -0.623735072453278,
+        "测段!Q26": -44.826037504468026,
+        "测段!R26": 240.54124849594868,
+        "测段!S26": 255.7662143225974
+      },
+      "source_cells": {
+        "record_id": "测段!A26",
+        "leg_id": "测段!B26",
+        "layer_id": "测段!C26",
+        "start_reading_m": "测段!D26",
+        "end_reading_m": "测段!E26",
+        "length_m": "测段!F26",
+        "slope_deg": "测段!G26",
+        "azimuth_deg": "测段!H26",
+        "dip_direction_deg": "测段!I26",
+        "dip_angle_deg": "测段!J26",
+        "lithology_name": "测段!K26",
+        "description": "测段!L26",
+        "sample_id": "测段!M26",
+        "sample_offset_m": "测段!N26",
+        "true_thickness_m": "测段!T26",
+        "cache_horizontal_m": "测段!O26",
+        "cache_vertical_m": "测段!P26",
+        "cache_cumulative_z_m": "测段!Q26",
+        "cache_cumulative_north_m": "测段!R26",
+        "cache_cumulative_east_m": "测段!S26"
+      },
+      "computed": {
+        "horizontal_m": 2.934442802201417,
+        "vertical_m": -0.623735072453278,
+        "east_delta_m": 2.590959208585945,
+        "north_delta_m": -1.3776374482553082
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0026",
+      "leg_id": "10-11",
+      "layer_id": "C16",
+      "length_m": 2.0999999999999996,
+      "slope_deg": -12.0,
+      "azimuth_deg": 118.0,
+      "dip_direction_deg": 215.0,
+      "dip_angle_deg": 13.0,
+      "lithology_name": "泥化凝灰岩",
+      "description": "泥化凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约1-3cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "start_node": 25,
+      "end_node": 26,
+      "raw": {
+        "测段!A27": "R0026",
+        "测段!B27": "10-11",
+        "测段!C27": "C16",
+        "测段!D27": 3,
+        "测段!E27": 5.1,
+        "测段!F27": 2.0999999999999996,
+        "测段!G27": -12,
+        "测段!H27": 118,
+        "测段!I27": 215,
+        "测段!J27": 13,
+        "测段!K27": "泥化凝灰岩",
+        "测段!L27": "泥化凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约1-3cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+        "测段!M27": "PM01-16-b1",
+        "测段!O27": 2.0541099615409917,
+        "测段!P27": -0.4366145507172945,
+        "测段!Q27": -45.26265205518532,
+        "测段!R27": 239.57690228216995,
+        "测段!S27": 257.57988576860754
+      },
+      "source_cells": {
+        "record_id": "测段!A27",
+        "leg_id": "测段!B27",
+        "layer_id": "测段!C27",
+        "start_reading_m": "测段!D27",
+        "end_reading_m": "测段!E27",
+        "length_m": "测段!F27",
+        "slope_deg": "测段!G27",
+        "azimuth_deg": "测段!H27",
+        "dip_direction_deg": "测段!I27",
+        "dip_angle_deg": "测段!J27",
+        "lithology_name": "测段!K27",
+        "description": "测段!L27",
+        "sample_id": "测段!M27",
+        "sample_offset_m": "测段!N27",
+        "true_thickness_m": "测段!T27",
+        "cache_horizontal_m": "测段!O27",
+        "cache_vertical_m": "测段!P27",
+        "cache_cumulative_z_m": "测段!Q27",
+        "cache_cumulative_north_m": "测段!R27",
+        "cache_cumulative_east_m": "测段!S27"
+      },
+      "computed": {
+        "horizontal_m": 2.0541099615409917,
+        "vertical_m": -0.43661455071729455,
+        "east_delta_m": 1.8136714460101615,
+        "north_delta_m": -0.9643462137787157
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0027",
+      "leg_id": "10-11",
+      "layer_id": "C17",
+      "length_m": 7.9,
+      "slope_deg": -12.0,
+      "azimuth_deg": 118.0,
+      "dip_direction_deg": 208.0,
+      "dip_angle_deg": 7.0,
+      "lithology_name": "玄武质火山碎屑岩",
+      "description": "玄武质火山碎屑岩。呈灰绿色，具火山碎屑结构，薄-中层状构造，单层厚度约3-8cm。火山碎屑含量约55-60%，其余为玄武质凝灰岩。火山碎屑岩粒径约0.1-0.5cm，呈棱角状，磨圆度差，分选差。",
+      "start_node": 26,
+      "end_node": 27,
+      "raw": {
+        "测段!A28": "R0027",
+        "测段!B28": "10-11",
+        "测段!C28": "C17",
+        "测段!D28": 5.1,
+        "测段!E28": 13,
+        "测段!F28": 7.9,
+        "测段!G28": -12,
+        "测段!H28": 118,
+        "测段!I28": 208,
+        "测段!J28": 7,
+        "测段!K28": "玄武质火山碎屑岩",
+        "测段!L28": "玄武质火山碎屑岩。呈灰绿色，具火山碎屑结构，薄-中层状构造，单层厚度约3-8cm。火山碎屑含量约55-60%，其余为玄武质凝灰岩。火山碎屑岩粒径约0.1-0.5cm，呈棱角状，磨圆度差，分选差。",
+        "测段!M28": "PM01-17-b1",
+        "测段!O28": 7.727366045797066,
+        "测段!P28": -1.6425023574602986,
+        "测段!Q28": -46.90515441264562,
+        "测段!R28": 235.94912366843099,
+        "测段!S28": 264.4027450178839
+      },
+      "source_cells": {
+        "record_id": "测段!A28",
+        "leg_id": "测段!B28",
+        "layer_id": "测段!C28",
+        "start_reading_m": "测段!D28",
+        "end_reading_m": "测段!E28",
+        "length_m": "测段!F28",
+        "slope_deg": "测段!G28",
+        "azimuth_deg": "测段!H28",
+        "dip_direction_deg": "测段!I28",
+        "dip_angle_deg": "测段!J28",
+        "lithology_name": "测段!K28",
+        "description": "测段!L28",
+        "sample_id": "测段!M28",
+        "sample_offset_m": "测段!N28",
+        "true_thickness_m": "测段!T28",
+        "cache_horizontal_m": "测段!O28",
+        "cache_vertical_m": "测段!P28",
+        "cache_cumulative_z_m": "测段!Q28",
+        "cache_cumulative_north_m": "测段!R28",
+        "cache_cumulative_east_m": "测段!S28"
+      },
+      "computed": {
+        "horizontal_m": 7.727366045797066,
+        "vertical_m": -1.6425023574602988,
+        "east_delta_m": 6.822859249276323,
+        "north_delta_m": -3.627778613738979
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0028",
+      "leg_id": "10-11",
+      "layer_id": "C18",
+      "length_m": 14.0,
+      "slope_deg": -12.0,
+      "azimuth_deg": 118.0,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 8.0,
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "start_node": 27,
+      "end_node": 28,
+      "raw": {
+        "测段!A29": "R0028",
+        "测段!B29": "10-11",
+        "测段!C29": "C18",
+        "测段!D29": 13,
+        "测段!E29": 27,
+        "测段!F29": 14,
+        "测段!G29": -12,
+        "测段!H29": 118,
+        "测段!I29": 205,
+        "测段!J29": 8,
+        "测段!K29": "粉砂质泥岩",
+        "测段!L29": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+        "测段!O29": 13.69406641027328,
+        "测段!P29": -2.9107636714486302,
+        "测段!Q29": -49.81591808409425,
+        "测段!R29": 229.52014890990623,
+        "测段!S29": 276.49388799128496
+      },
+      "source_cells": {
+        "record_id": "测段!A29",
+        "leg_id": "测段!B29",
+        "layer_id": "测段!C29",
+        "start_reading_m": "测段!D29",
+        "end_reading_m": "测段!E29",
+        "length_m": "测段!F29",
+        "slope_deg": "测段!G29",
+        "azimuth_deg": "测段!H29",
+        "dip_direction_deg": "测段!I29",
+        "dip_angle_deg": "测段!J29",
+        "lithology_name": "测段!K29",
+        "description": "测段!L29",
+        "sample_id": "测段!M29",
+        "sample_offset_m": "测段!N29",
+        "true_thickness_m": "测段!T29",
+        "cache_horizontal_m": "测段!O29",
+        "cache_vertical_m": "测段!P29",
+        "cache_cumulative_z_m": "测段!Q29",
+        "cache_cumulative_north_m": "测段!R29",
+        "cache_cumulative_east_m": "测段!S29"
+      },
+      "computed": {
+        "horizontal_m": 13.69406641027328,
+        "vertical_m": -2.9107636714486307,
+        "east_delta_m": 12.091142973401078,
+        "north_delta_m": -6.428974758524772
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0029",
+      "leg_id": "10-11",
+      "layer_id": "C19",
+      "length_m": 29.0,
+      "slope_deg": -12.0,
+      "azimuth_deg": 118.0,
+      "dip_direction_deg": 245.0,
+      "dip_angle_deg": 3.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 28,
+      "end_node": 29,
+      "raw": {
+        "测段!A30": "R0029",
+        "测段!B30": "10-11",
+        "测段!C30": "C19",
+        "测段!D30": 27,
+        "测段!E30": 56,
+        "测段!F30": 29,
+        "测段!G30": -12,
+        "测段!H30": 118,
+        "测段!I30": 245,
+        "测段!J30": 3,
+        "测段!K30": "凝灰质泥岩",
+        "测段!L30": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O30": 28.366280421280365,
+        "测段!P30": -6.02943903371502,
+        "测段!Q30": -55.84535711780927,
+        "测段!R30": 216.20298691010493,
+        "测段!S30": 301.53982700761577
+      },
+      "source_cells": {
+        "record_id": "测段!A30",
+        "leg_id": "测段!B30",
+        "layer_id": "测段!C30",
+        "start_reading_m": "测段!D30",
+        "end_reading_m": "测段!E30",
+        "length_m": "测段!F30",
+        "slope_deg": "测段!G30",
+        "azimuth_deg": "测段!H30",
+        "dip_direction_deg": "测段!I30",
+        "dip_angle_deg": "测段!J30",
+        "lithology_name": "测段!K30",
+        "description": "测段!L30",
+        "sample_id": "测段!M30",
+        "sample_offset_m": "测段!N30",
+        "true_thickness_m": "测段!T30",
+        "cache_horizontal_m": "测段!O30",
+        "cache_vertical_m": "测段!P30",
+        "cache_cumulative_z_m": "测段!Q30",
+        "cache_cumulative_north_m": "测段!R30",
+        "cache_cumulative_east_m": "测段!S30"
+      },
+      "computed": {
+        "horizontal_m": 28.366280421280365,
+        "vertical_m": -6.029439033715021,
+        "east_delta_m": 25.045939016330806,
+        "north_delta_m": -13.317161999801312
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0030",
+      "leg_id": "11-12",
+      "layer_id": "C19",
+      "length_m": 13.0,
+      "slope_deg": -6.0,
+      "azimuth_deg": 95.0,
+      "dip_direction_deg": 245.0,
+      "dip_angle_deg": 3.0,
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "start_node": 29,
+      "end_node": 30,
+      "raw": {
+        "测段!A31": "R0030",
+        "测段!B31": "11-12",
+        "测段!C31": "C19",
+        "测段!D31": 0,
+        "测段!E31": 13,
+        "测段!F31": 13,
+        "测段!G31": -6,
+        "测段!H31": 95,
+        "测段!I31": 245,
+        "测段!J31": 3,
+        "测段!K31": "凝灰质泥岩",
+        "测段!L31": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+        "测段!O31": 12.928784639787553,
+        "测段!P31": -1.358870022479495,
+        "测段!Q31": -57.204227140288765,
+        "测段!R31": 215.07616908199972,
+        "测段!S31": 314.4194137185421
+      },
+      "source_cells": {
+        "record_id": "测段!A31",
+        "leg_id": "测段!B31",
+        "layer_id": "测段!C31",
+        "start_reading_m": "测段!D31",
+        "end_reading_m": "测段!E31",
+        "length_m": "测段!F31",
+        "slope_deg": "测段!G31",
+        "azimuth_deg": "测段!H31",
+        "dip_direction_deg": "测段!I31",
+        "dip_angle_deg": "测段!J31",
+        "lithology_name": "测段!K31",
+        "description": "测段!L31",
+        "sample_id": "测段!M31",
+        "sample_offset_m": "测段!N31",
+        "true_thickness_m": "测段!T31",
+        "cache_horizontal_m": "测段!O31",
+        "cache_vertical_m": "测段!P31",
+        "cache_cumulative_z_m": "测段!Q31",
+        "cache_cumulative_north_m": "测段!R31",
+        "cache_cumulative_east_m": "测段!S31"
+      },
+      "computed": {
+        "horizontal_m": 12.928784639787553,
+        "vertical_m": -1.3588700224794952,
+        "east_delta_m": 12.87958671092636,
+        "north_delta_m": -1.1268178281051993
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0031",
+      "leg_id": "11-12",
+      "layer_id": "C20",
+      "length_m": 34.0,
+      "slope_deg": -6.0,
+      "azimuth_deg": 95.0,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 14.0,
+      "lithology_name": "泥质粉砂岩",
+      "description": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+      "start_node": 30,
+      "end_node": 31,
+      "raw": {
+        "测段!A32": "R0031",
+        "测段!B32": "11-12",
+        "测段!C32": "C20",
+        "测段!D32": 13,
+        "测段!E32": 47,
+        "测段!F32": 34,
+        "测段!G32": -6,
+        "测段!H32": 95,
+        "测段!I32": 205,
+        "测段!J32": 14,
+        "测段!K32": "泥质粉砂岩",
+        "测段!L32": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+        "测段!O32": 33.81374444252129,
+        "测段!P32": -3.5539677511002177,
+        "测段!Q32": -60.75819489138898,
+        "测段!R32": 212.1291070700323,
+        "测段!S32": 348.104486654811
+      },
+      "source_cells": {
+        "record_id": "测段!A32",
+        "leg_id": "测段!B32",
+        "layer_id": "测段!C32",
+        "start_reading_m": "测段!D32",
+        "end_reading_m": "测段!E32",
+        "length_m": "测段!F32",
+        "slope_deg": "测段!G32",
+        "azimuth_deg": "测段!H32",
+        "dip_direction_deg": "测段!I32",
+        "dip_angle_deg": "测段!J32",
+        "lithology_name": "测段!K32",
+        "description": "测段!L32",
+        "sample_id": "测段!M32",
+        "sample_offset_m": "测段!N32",
+        "true_thickness_m": "测段!T32",
+        "cache_horizontal_m": "测段!O32",
+        "cache_vertical_m": "测段!P32",
+        "cache_cumulative_z_m": "测段!Q32",
+        "cache_cumulative_north_m": "测段!R32",
+        "cache_cumulative_east_m": "测段!S32"
+      },
+      "computed": {
+        "horizontal_m": 33.81374444252129,
+        "vertical_m": -3.553967751100218,
+        "east_delta_m": 33.68507293626894,
+        "north_delta_m": -2.9470620119674438
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0032",
+      "leg_id": "12-13",
+      "layer_id": "C20",
+      "length_m": 5.0,
+      "slope_deg": -5.0,
+      "azimuth_deg": 110.0,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 14.0,
+      "lithology_name": "泥质粉砂岩",
+      "description": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+      "start_node": 31,
+      "end_node": 32,
+      "raw": {
+        "测段!A33": "R0032",
+        "测段!B33": "12-13",
+        "测段!C33": "C20",
+        "测段!D33": 0,
+        "测段!E33": 5,
+        "测段!F33": 5,
+        "测段!G33": -5,
+        "测段!H33": 110,
+        "测段!I33": 205,
+        "测段!J33": 14,
+        "测段!K33": "泥质粉砂岩",
+        "测段!L33": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+        "测段!O33": 4.9809734904587275,
+        "测段!P33": -0.4357787137382908,
+        "测段!Q33": -61.193973605127276,
+        "测段!R33": 210.42551380292423,
+        "测段!S33": 352.7850706881253
+      },
+      "source_cells": {
+        "record_id": "测段!A33",
+        "leg_id": "测段!B33",
+        "layer_id": "测段!C33",
+        "start_reading_m": "测段!D33",
+        "end_reading_m": "测段!E33",
+        "length_m": "测段!F33",
+        "slope_deg": "测段!G33",
+        "azimuth_deg": "测段!H33",
+        "dip_direction_deg": "测段!I33",
+        "dip_angle_deg": "测段!J33",
+        "lithology_name": "测段!K33",
+        "description": "测段!L33",
+        "sample_id": "测段!M33",
+        "sample_offset_m": "测段!N33",
+        "true_thickness_m": "测段!T33",
+        "cache_horizontal_m": "测段!O33",
+        "cache_vertical_m": "测段!P33",
+        "cache_cumulative_z_m": "测段!Q33",
+        "cache_cumulative_north_m": "测段!R33",
+        "cache_cumulative_east_m": "测段!S33"
+      },
+      "computed": {
+        "horizontal_m": 4.9809734904587275,
+        "vertical_m": -0.4357787137382908,
+        "east_delta_m": 4.680584033314296,
+        "north_delta_m": -1.7035932671080503
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0033",
+      "leg_id": "13-14",
+      "layer_id": "C20",
+      "length_m": 18.0,
+      "slope_deg": -12.0,
+      "azimuth_deg": 165.0,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 14.0,
+      "lithology_name": "泥质粉砂岩",
+      "description": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+      "start_node": 32,
+      "end_node": 33,
+      "raw": {
+        "测段!A34": "R0033",
+        "测段!B34": "13-14",
+        "测段!C34": "C20",
+        "测段!D34": 0,
+        "测段!E34": 18,
+        "测段!F34": 18,
+        "测段!G34": -12,
+        "测段!H34": 165,
+        "测段!I34": 205,
+        "测段!J34": 14,
+        "测段!K34": "泥质粉砂岩",
+        "测段!L34": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+        "测段!O34": 17.606656813208502,
+        "测段!P34": -3.742410434719668,
+        "测段!Q34": -64.93638403984694,
+        "测段!R34": 193.41878927243775,
+        "测段!S34": 357.3420087919677
+      },
+      "source_cells": {
+        "record_id": "测段!A34",
+        "leg_id": "测段!B34",
+        "layer_id": "测段!C34",
+        "start_reading_m": "测段!D34",
+        "end_reading_m": "测段!E34",
+        "length_m": "测段!F34",
+        "slope_deg": "测段!G34",
+        "azimuth_deg": "测段!H34",
+        "dip_direction_deg": "测段!I34",
+        "dip_angle_deg": "测段!J34",
+        "lithology_name": "测段!K34",
+        "description": "测段!L34",
+        "sample_id": "测段!M34",
+        "sample_offset_m": "测段!N34",
+        "true_thickness_m": "测段!T34",
+        "cache_horizontal_m": "测段!O34",
+        "cache_vertical_m": "测段!P34",
+        "cache_cumulative_z_m": "测段!Q34",
+        "cache_cumulative_north_m": "测段!R34",
+        "cache_cumulative_east_m": "测段!S34"
+      },
+      "computed": {
+        "horizontal_m": 17.606656813208502,
+        "vertical_m": -3.7424104347196683,
+        "east_delta_m": 4.556938103842421,
+        "north_delta_m": -17.006724530486476
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0034",
+      "leg_id": "13-14",
+      "layer_id": "C21",
+      "length_m": 48.0,
+      "slope_deg": -12.0,
+      "azimuth_deg": 165.0,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "凝灰岩",
+      "description": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+      "start_node": 33,
+      "end_node": 34,
+      "raw": {
+        "测段!A35": "R0034",
+        "测段!B35": "13-14",
+        "测段!C35": "C21",
+        "测段!D35": 18,
+        "测段!E35": 66,
+        "测段!F35": 48,
+        "测段!G35": -12,
+        "测段!H35": 165,
+        "测段!I35": 209,
+        "测段!J35": 6,
+        "测段!K35": "凝灰岩",
+        "测段!L35": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+        "测段!O35": 46.95108483522267,
+        "测段!P35": -9.979761159252448,
+        "测段!Q35": -74.91614519909939,
+        "测段!R35": 148.06752385780715,
+        "测段!S35": 369.4938437355475
+      },
+      "source_cells": {
+        "record_id": "测段!A35",
+        "leg_id": "测段!B35",
+        "layer_id": "测段!C35",
+        "start_reading_m": "测段!D35",
+        "end_reading_m": "测段!E35",
+        "length_m": "测段!F35",
+        "slope_deg": "测段!G35",
+        "azimuth_deg": "测段!H35",
+        "dip_direction_deg": "测段!I35",
+        "dip_angle_deg": "测段!J35",
+        "lithology_name": "测段!K35",
+        "description": "测段!L35",
+        "sample_id": "测段!M35",
+        "sample_offset_m": "测段!N35",
+        "true_thickness_m": "测段!T35",
+        "cache_horizontal_m": "测段!O35",
+        "cache_vertical_m": "测段!P35",
+        "cache_cumulative_z_m": "测段!Q35",
+        "cache_cumulative_north_m": "测段!R35",
+        "cache_cumulative_east_m": "测段!S35"
+      },
+      "computed": {
+        "horizontal_m": 46.95108483522267,
+        "vertical_m": -9.979761159252448,
+        "east_delta_m": 12.151834943579788,
+        "north_delta_m": -45.3512654146306
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0035",
+      "leg_id": "14-15",
+      "layer_id": "C21",
+      "length_m": 20.0,
+      "slope_deg": -16.0,
+      "azimuth_deg": 150.0,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "凝灰岩",
+      "description": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+      "start_node": 34,
+      "end_node": 35,
+      "raw": {
+        "测段!A36": "R0035",
+        "测段!B36": "14-15",
+        "测段!C36": "C21",
+        "测段!D36": 0,
+        "测段!E36": 20,
+        "测段!F36": 20,
+        "测段!G36": -16,
+        "测段!H36": 150,
+        "测段!I36": 209,
+        "测段!J36": 6,
+        "测段!K36": "凝灰岩",
+        "测段!L36": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+        "测段!O36": 19.225233918766378,
+        "测段!P36": -5.512747116339983,
+        "测段!Q36": -80.42889231543937,
+        "测段!R36": 131.4179828904572,
+        "测段!S36": 379.10646069493066
+      },
+      "source_cells": {
+        "record_id": "测段!A36",
+        "leg_id": "测段!B36",
+        "layer_id": "测段!C36",
+        "start_reading_m": "测段!D36",
+        "end_reading_m": "测段!E36",
+        "length_m": "测段!F36",
+        "slope_deg": "测段!G36",
+        "azimuth_deg": "测段!H36",
+        "dip_direction_deg": "测段!I36",
+        "dip_angle_deg": "测段!J36",
+        "lithology_name": "测段!K36",
+        "description": "测段!L36",
+        "sample_id": "测段!M36",
+        "sample_offset_m": "测段!N36",
+        "true_thickness_m": "测段!T36",
+        "cache_horizontal_m": "测段!O36",
+        "cache_vertical_m": "测段!P36",
+        "cache_cumulative_z_m": "测段!Q36",
+        "cache_cumulative_north_m": "测段!R36",
+        "cache_cumulative_east_m": "测段!S36"
+      },
+      "computed": {
+        "horizontal_m": 19.225233918766378,
+        "vertical_m": -5.512747116339983,
+        "east_delta_m": 9.612616959383187,
+        "north_delta_m": -16.64954096734994
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0036",
+      "leg_id": "14-15",
+      "layer_id": "C22",
+      "length_m": 5.0,
+      "slope_deg": -16.0,
+      "azimuth_deg": 150.0,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "硅化凝灰岩",
+      "description": "硅化凝灰岩。呈浅灰-灰色，具重结晶结构，薄-中层状构造，单层厚度约8-15cm。凝灰质含量约70-75%，其余为硅质。岩石整体发生弱硅化、黄铁矿化蚀变现象，局部见石英细脉，宽度约0.1-0.3cm。岩石整体较破碎，受残坡积覆盖严重。",
+      "start_node": 35,
+      "end_node": 36,
+      "raw": {
+        "测段!A37": "R0036",
+        "测段!B37": "14-15",
+        "测段!C37": "C22",
+        "测段!D37": 20,
+        "测段!E37": 25,
+        "测段!F37": 5,
+        "测段!G37": -16,
+        "测段!H37": 150,
+        "测段!I37": 209,
+        "测段!J37": 6,
+        "测段!K37": "硅化凝灰岩",
+        "测段!L37": "硅化凝灰岩。呈浅灰-灰色，具重结晶结构，薄-中层状构造，单层厚度约8-15cm。凝灰质含量约70-75%，其余为硅质。岩石整体发生弱硅化、黄铁矿化蚀变现象，局部见石英细脉，宽度约0.1-0.3cm。岩石整体较破碎，受残坡积覆盖严重。",
+        "测段!M37": "PM01-22-b1",
+        "测段!O37": 4.8063084796915945,
+        "测段!P37": -1.3781867790849958,
+        "测段!Q37": -81.80707909452437,
+        "测段!R37": 127.25559764861973,
+        "测段!S37": 381.50961493477644
+      },
+      "source_cells": {
+        "record_id": "测段!A37",
+        "leg_id": "测段!B37",
+        "layer_id": "测段!C37",
+        "start_reading_m": "测段!D37",
+        "end_reading_m": "测段!E37",
+        "length_m": "测段!F37",
+        "slope_deg": "测段!G37",
+        "azimuth_deg": "测段!H37",
+        "dip_direction_deg": "测段!I37",
+        "dip_angle_deg": "测段!J37",
+        "lithology_name": "测段!K37",
+        "description": "测段!L37",
+        "sample_id": "测段!M37",
+        "sample_offset_m": "测段!N37",
+        "true_thickness_m": "测段!T37",
+        "cache_horizontal_m": "测段!O37",
+        "cache_vertical_m": "测段!P37",
+        "cache_cumulative_z_m": "测段!Q37",
+        "cache_cumulative_north_m": "测段!R37",
+        "cache_cumulative_east_m": "测段!S37"
+      },
+      "computed": {
+        "horizontal_m": 4.8063084796915945,
+        "vertical_m": -1.3781867790849958,
+        "east_delta_m": 2.403154239845797,
+        "north_delta_m": -4.162385241837485
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0037",
+      "leg_id": "14-15",
+      "layer_id": "C23",
+      "length_m": 30.0,
+      "slope_deg": -16.0,
+      "azimuth_deg": 150.0,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "沉凝灰岩",
+      "description": "沉凝灰岩。呈浅紫-浅灰色，具沉凝灰结构，薄层状构造。纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。",
+      "start_node": 36,
+      "end_node": 37,
+      "raw": {
+        "测段!A38": "R0037",
+        "测段!B38": "14-15",
+        "测段!C38": "C23",
+        "测段!D38": 25,
+        "测段!E38": 55,
+        "测段!F38": 30,
+        "测段!G38": -16,
+        "测段!H38": 150,
+        "测段!I38": 209,
+        "测段!J38": 6,
+        "测段!K38": "沉凝灰岩",
+        "测段!L38": "沉凝灰岩。呈浅紫-浅灰色，具沉凝灰结构，薄层状构造。纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。",
+        "测段!O38": 28.837850878149567,
+        "测段!P38": -8.269120674509974,
+        "测段!Q38": -90.07619976903435,
+        "测段!R38": 102.28128619759482,
+        "测段!S38": 395.9285403738512
+      },
+      "source_cells": {
+        "record_id": "测段!A38",
+        "leg_id": "测段!B38",
+        "layer_id": "测段!C38",
+        "start_reading_m": "测段!D38",
+        "end_reading_m": "测段!E38",
+        "length_m": "测段!F38",
+        "slope_deg": "测段!G38",
+        "azimuth_deg": "测段!H38",
+        "dip_direction_deg": "测段!I38",
+        "dip_angle_deg": "测段!J38",
+        "lithology_name": "测段!K38",
+        "description": "测段!L38",
+        "sample_id": "测段!M38",
+        "sample_offset_m": "测段!N38",
+        "true_thickness_m": "测段!T38",
+        "cache_horizontal_m": "测段!O38",
+        "cache_vertical_m": "测段!P38",
+        "cache_cumulative_z_m": "测段!Q38",
+        "cache_cumulative_north_m": "测段!R38",
+        "cache_cumulative_east_m": "测段!S38"
+      },
+      "computed": {
+        "horizontal_m": 28.837850878149567,
+        "vertical_m": -8.269120674509974,
+        "east_delta_m": 14.418925439074782,
+        "north_delta_m": -24.97431145102491
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0038",
+      "leg_id": "14-15",
+      "layer_id": "C24",
+      "length_m": 10.0,
+      "slope_deg": -16.0,
+      "azimuth_deg": 150.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥化沉凝灰岩",
+      "description": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "start_node": 37,
+      "end_node": 38,
+      "raw": {
+        "测段!A39": "R0038",
+        "测段!B39": "14-15",
+        "测段!C39": "C24",
+        "测段!D39": 55,
+        "测段!E39": 65,
+        "测段!F39": 10,
+        "测段!G39": -16,
+        "测段!H39": 150,
+        "测段!I39": 260,
+        "测段!J39": 6,
+        "测段!K39": "泥化沉凝灰岩",
+        "测段!L39": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+        "测段!M39": "PM01-24-b1",
+        "测段!O39": 9.612616959383189,
+        "测段!P39": -2.7563735581699915,
+        "测段!Q39": -92.83257332720434,
+        "测段!R39": 93.95651571391986,
+        "测段!S39": 400.7348488535428
+      },
+      "source_cells": {
+        "record_id": "测段!A39",
+        "leg_id": "测段!B39",
+        "layer_id": "测段!C39",
+        "start_reading_m": "测段!D39",
+        "end_reading_m": "测段!E39",
+        "length_m": "测段!F39",
+        "slope_deg": "测段!G39",
+        "azimuth_deg": "测段!H39",
+        "dip_direction_deg": "测段!I39",
+        "dip_angle_deg": "测段!J39",
+        "lithology_name": "测段!K39",
+        "description": "测段!L39",
+        "sample_id": "测段!M39",
+        "sample_offset_m": "测段!N39",
+        "true_thickness_m": "测段!T39",
+        "cache_horizontal_m": "测段!O39",
+        "cache_vertical_m": "测段!P39",
+        "cache_cumulative_z_m": "测段!Q39",
+        "cache_cumulative_north_m": "测段!R39",
+        "cache_cumulative_east_m": "测段!S39"
+      },
+      "computed": {
+        "horizontal_m": 9.612616959383189,
+        "vertical_m": -2.7563735581699915,
+        "east_delta_m": 4.806308479691594,
+        "north_delta_m": -8.32477048367497
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0039",
+      "leg_id": "15-16",
+      "layer_id": "C24",
+      "length_m": 45.0,
+      "slope_deg": -13.0,
+      "azimuth_deg": 160.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥化沉凝灰岩",
+      "description": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "start_node": 38,
+      "end_node": 39,
+      "raw": {
+        "测段!A40": "R0039",
+        "测段!B40": "15-16",
+        "测段!C40": "C24",
+        "测段!D40": 0,
+        "测段!E40": 45,
+        "测段!F40": 45,
+        "测段!G40": -13,
+        "测段!H40": 160,
+        "测段!I40": 260,
+        "测段!J40": 6,
+        "测段!K40": "泥化沉凝灰岩",
+        "测段!L40": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+        "测段!O40": 43.84665291533559,
+        "测段!P40": -10.122797445473925,
+        "测段!Q40": -102.95537077267826,
+        "测段!R40": 52.75413952321807,
+        "测段!S40": 415.73128736799674
+      },
+      "source_cells": {
+        "record_id": "测段!A40",
+        "leg_id": "测段!B40",
+        "layer_id": "测段!C40",
+        "start_reading_m": "测段!D40",
+        "end_reading_m": "测段!E40",
+        "length_m": "测段!F40",
+        "slope_deg": "测段!G40",
+        "azimuth_deg": "测段!H40",
+        "dip_direction_deg": "测段!I40",
+        "dip_angle_deg": "测段!J40",
+        "lithology_name": "测段!K40",
+        "description": "测段!L40",
+        "sample_id": "测段!M40",
+        "sample_offset_m": "测段!N40",
+        "true_thickness_m": "测段!T40",
+        "cache_horizontal_m": "测段!O40",
+        "cache_vertical_m": "测段!P40",
+        "cache_cumulative_z_m": "测段!Q40",
+        "cache_cumulative_north_m": "测段!R40",
+        "cache_cumulative_east_m": "测段!S40"
+      },
+      "computed": {
+        "horizontal_m": 43.84665291533559,
+        "vertical_m": -10.122797445473925,
+        "east_delta_m": 14.996438514453935,
+        "north_delta_m": -41.202376190701784
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0040",
+      "leg_id": "16-17",
+      "layer_id": "C24",
+      "length_m": 23.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 27.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥化沉凝灰岩",
+      "description": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "start_node": 39,
+      "end_node": 40,
+      "raw": {
+        "测段!A41": "R0040",
+        "测段!B41": "16-17",
+        "测段!C41": "C24",
+        "测段!D41": 0,
+        "测段!E41": 23,
+        "测段!F41": 23,
+        "测段!G41": -10,
+        "测段!H41": 27,
+        "测段!I41": 260,
+        "测段!J41": 6,
+        "测段!K41": "泥化沉凝灰岩",
+        "测段!L41": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+        "测段!O41": 22.650578319280786,
+        "测段!P41": -3.9939080863393976,
+        "测段!Q41": -106.94927885901767,
+        "测段!R41": 72.93595258233685,
+        "测段!S41": 426.01443473855676
+      },
+      "source_cells": {
+        "record_id": "测段!A41",
+        "leg_id": "测段!B41",
+        "layer_id": "测段!C41",
+        "start_reading_m": "测段!D41",
+        "end_reading_m": "测段!E41",
+        "length_m": "测段!F41",
+        "slope_deg": "测段!G41",
+        "azimuth_deg": "测段!H41",
+        "dip_direction_deg": "测段!I41",
+        "dip_angle_deg": "测段!J41",
+        "lithology_name": "测段!K41",
+        "description": "测段!L41",
+        "sample_id": "测段!M41",
+        "sample_offset_m": "测段!N41",
+        "true_thickness_m": "测段!T41",
+        "cache_horizontal_m": "测段!O41",
+        "cache_vertical_m": "测段!P41",
+        "cache_cumulative_z_m": "测段!Q41",
+        "cache_cumulative_north_m": "测段!R41",
+        "cache_cumulative_east_m": "测段!S41"
+      },
+      "computed": {
+        "horizontal_m": 22.650578319280786,
+        "vertical_m": -3.9939080863393976,
+        "east_delta_m": 10.283147370560027,
+        "north_delta_m": 20.181813059118777
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0041",
+      "leg_id": "16-17",
+      "layer_id": "C25",
+      "length_m": 22.0,
+      "slope_deg": -10.0,
+      "azimuth_deg": 27.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+      "start_node": 40,
+      "end_node": 41,
+      "raw": {
+        "测段!A42": "R0041",
+        "测段!B42": "16-17",
+        "测段!C42": "C25",
+        "测段!D42": 23,
+        "测段!E42": 45,
+        "测段!F42": 22,
+        "测段!G42": -10,
+        "测段!H42": 27,
+        "测段!I42": 260,
+        "测段!J42": 6,
+        "测段!K42": "泥晶灰岩",
+        "测段!L42": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+        "测段!O42": 21.665770566268577,
+        "测段!P42": -3.820259908672467,
+        "测段!Q42": -78.73640510777186,
+        "测段!R42": 92.24029550845046,
+        "测段!S42": 435.8504887451794
+      },
+      "source_cells": {
+        "record_id": "测段!A42",
+        "leg_id": "测段!B42",
+        "layer_id": "测段!C42",
+        "start_reading_m": "测段!D42",
+        "end_reading_m": "测段!E42",
+        "length_m": "测段!F42",
+        "slope_deg": "测段!G42",
+        "azimuth_deg": "测段!H42",
+        "dip_direction_deg": "测段!I42",
+        "dip_angle_deg": "测段!J42",
+        "lithology_name": "测段!K42",
+        "description": "测段!L42",
+        "sample_id": "测段!M42",
+        "sample_offset_m": "测段!N42",
+        "true_thickness_m": "测段!T42",
+        "cache_horizontal_m": "测段!O42",
+        "cache_vertical_m": "测段!P42",
+        "cache_cumulative_z_m": "测段!Q42",
+        "cache_cumulative_north_m": "测段!R42",
+        "cache_cumulative_east_m": "测段!S42"
+      },
+      "computed": {
+        "horizontal_m": 21.665770566268577,
+        "vertical_m": -3.820259908672467,
+        "east_delta_m": 9.836054006622634,
+        "north_delta_m": 19.304342926113613
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0042",
+      "leg_id": "17-18",
+      "layer_id": "C25",
+      "length_m": 49.0,
+      "slope_deg": -9.0,
+      "azimuth_deg": 158.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+      "start_node": 41,
+      "end_node": 42,
+      "raw": {
+        "测段!A43": "R0042",
+        "测段!B43": "17-18",
+        "测段!C43": "C25",
+        "测段!D43": 0,
+        "测段!E43": 49,
+        "测段!F43": 49,
+        "测段!G43": -9,
+        "测段!H43": 158,
+        "测段!I43": 260,
+        "测段!J43": 6,
+        "测段!K43": "泥晶灰岩",
+        "测段!L43": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+        "测段!O43": 48.39672868916175,
+        "测段!P43": -7.665288786971312,
+        "测段!Q43": -88.09418110241069,
+        "测段!R43": 47.36763005401045,
+        "测段!S43": 453.98022241190046
+      },
+      "source_cells": {
+        "record_id": "测段!A43",
+        "leg_id": "测段!B43",
+        "layer_id": "测段!C43",
+        "start_reading_m": "测段!D43",
+        "end_reading_m": "测段!E43",
+        "length_m": "测段!F43",
+        "slope_deg": "测段!G43",
+        "azimuth_deg": "测段!H43",
+        "dip_direction_deg": "测段!I43",
+        "dip_angle_deg": "测段!J43",
+        "lithology_name": "测段!K43",
+        "description": "测段!L43",
+        "sample_id": "测段!M43",
+        "sample_offset_m": "测段!N43",
+        "true_thickness_m": "测段!T43",
+        "cache_horizontal_m": "测段!O43",
+        "cache_vertical_m": "测段!P43",
+        "cache_cumulative_z_m": "测段!Q43",
+        "cache_cumulative_north_m": "测段!R43",
+        "cache_cumulative_east_m": "测段!S43"
+      },
+      "computed": {
+        "horizontal_m": 48.39672868916175,
+        "vertical_m": -7.665288786971312,
+        "east_delta_m": 18.12973366672103,
+        "north_delta_m": -44.87266545444001
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R0043",
+      "leg_id": "18-19",
+      "layer_id": "C25",
+      "length_m": 26.0,
+      "slope_deg": -8.0,
+      "azimuth_deg": 128.0,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+      "start_node": 42,
+      "end_node": 43,
+      "raw": {
+        "测段!A44": "R0043",
+        "测段!B44": "18-19",
+        "测段!C44": "C25",
+        "测段!D44": 0,
+        "测段!E44": 26,
+        "测段!F44": 26,
+        "测段!G44": -8,
+        "测段!H44": 128,
+        "测段!I44": 260,
+        "测段!J44": 6,
+        "测段!K44": "泥晶灰岩",
+        "测段!L44": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+        "测段!O44": 25.74696978728083,
+        "测段!P44": -3.6185006249617016,
+        "测段!Q44": -85.42557971948607,
+        "测段!R44": 31.516212649607983,
+        "测段!S44": 474.2691114770651
+      },
+      "source_cells": {
+        "record_id": "测段!A44",
+        "leg_id": "测段!B44",
+        "layer_id": "测段!C44",
+        "start_reading_m": "测段!D44",
+        "end_reading_m": "测段!E44",
+        "length_m": "测段!F44",
+        "slope_deg": "测段!G44",
+        "azimuth_deg": "测段!H44",
+        "dip_direction_deg": "测段!I44",
+        "dip_angle_deg": "测段!J44",
+        "lithology_name": "测段!K44",
+        "description": "测段!L44",
+        "sample_id": "测段!M44",
+        "sample_offset_m": "测段!N44",
+        "true_thickness_m": "测段!T44",
+        "cache_horizontal_m": "测段!O44",
+        "cache_vertical_m": "测段!P44",
+        "cache_cumulative_z_m": "测段!Q44",
+        "cache_cumulative_north_m": "测段!R44",
+        "cache_cumulative_east_m": "测段!S44"
+      },
+      "computed": {
+        "horizontal_m": 25.74696978728083,
+        "vertical_m": -3.6185006249617016,
+        "east_delta_m": 20.288889065164668,
+        "north_delta_m": -15.851417404402465
+      },
+      "true_thickness_m": null
+    }
+  ],
+  "nodes": [
+    {
+      "index": 0,
+      "east_m": 0.0,
+      "north_m": 0.0,
+      "z_m": 0.0,
+      "x_m": 0.0,
+      "offset_m": 0.0,
+      "chainage_m": 0.0,
+      "slant_chainage_m": 0.0
+    },
+    {
+      "index": 1,
+      "east_m": 41.175306904288405,
+      "north_m": 13.37866821163808,
+      "z_m": -3.027430960495038,
+      "x_m": 42.42504619138735,
+      "offset_m": 8.631924318371016,
+      "chainage_m": 43.294279781276366,
+      "slant_chainage_m": 43.4
+    },
+    {
+      "index": 2,
+      "east_m": 65.06176611083036,
+      "north_m": 30.104147009197483,
+      "z_m": -4.555640882788998,
+      "x_m": 68.05119567122254,
+      "offset_m": 22.546127036117557,
+      "chainage_m": 72.45426219610992,
+      "slant_chainage_m": 72.6
+    },
+    {
+      "index": 3,
+      "east_m": 66.6009715679132,
+      "north_m": 34.84133430479167,
+      "z_m": -4.9914195965272885,
+      "x_m": 70.11672543991357,
+      "offset_m": 27.07864109426496,
+      "chainage_m": 77.43523568656865,
+      "slant_chainage_m": 77.6
+    },
+    {
+      "index": 4,
+      "east_m": 75.83620431041028,
+      "north_m": 63.26445807835681,
+      "z_m": -7.6060918789570335,
+      "x_m": 82.50990405205971,
+      "offset_m": 54.273725443149345,
+      "chainage_m": 107.32107662932101,
+      "slant_chainage_m": 107.6
+    },
+    {
+      "index": 5,
+      "east_m": 77.9860117960815,
+      "north_m": 65.34050303526573,
+      "z_m": -7.867559107200008,
+      "x_m": 84.88088864934272,
+      "offset_m": 56.09308437640075,
+      "chainage_m": 110.30966072359625,
+      "slant_chainage_m": 110.6
+    },
+    {
+      "index": 6,
+      "east_m": 94.89783068336175,
+      "north_m": 81.67205669628251,
+      "z_m": -9.92443463604474,
+      "x_m": 103.53263414796905,
+      "offset_m": 70.40537465131177,
+      "chainage_m": 133.81985559856145,
+      "slant_chainage_m": 134.2
+    },
+    {
+      "index": 7,
+      "east_m": 101.6338941384649,
+      "north_m": 88.17699756126378,
+      "z_m": -10.743698617872727,
+      "x_m": 110.9617192194558,
+      "offset_m": 76.10603264216617,
+      "chainage_m": 143.18408576062384,
+      "slant_chainage_m": 143.6
+    },
+    {
+      "index": 8,
+      "east_m": 110.68662926262515,
+      "north_m": 97.22973268542403,
+      "z_m": -13.001124927542822,
+      "x_m": 120.98097938864312,
+      "offset_m": 84.07587907221397,
+      "chainage_m": 155.98658654978254,
+      "slant_chainage_m": 156.6
+    },
+    {
+      "index": 9,
+      "east_m": 128.93137235900963,
+      "north_m": 115.47447578180852,
+      "z_m": -17.550707182416396,
+      "x_m": 141.1736421911591,
+      "offset_m": 100.1381849543103,
+      "chainage_m": 181.7885496787024,
+      "slant_chainage_m": 182.8
+    },
+    {
+      "index": 10,
+      "east_m": 138.12338033123388,
+      "north_m": 124.66648375403277,
+      "z_m": -19.842863127619875,
+      "x_m": 151.34704482448777,
+      "offset_m": 108.23064440635883,
+      "chainage_m": 194.78801201846355,
+      "slant_chainage_m": 196.0
+    },
+    {
+      "index": 11,
+      "east_m": 142.023020077026,
+      "north_m": 128.56612349982487,
+      "z_m": -20.815292922554686,
+      "x_m": 155.6630338204454,
+      "offset_m": 111.66380902237943,
+      "chainage_m": 200.3029354353319,
+      "slant_chainage_m": 201.6
+    },
+    {
+      "index": 12,
+      "east_m": 142.37871680621876,
+      "north_m": 129.49274515939234,
+      "z_m": -20.937162265959834,
+      "x_m": 156.12133164009578,
+      "offset_m": 112.54421289086349,
+      "chainage_m": 201.29548158697324,
+      "slant_chainage_m": 202.6
+    },
+    {
+      "index": 13,
+      "east_m": 147.35847101491768,
+      "north_m": 142.4654483933368,
+      "z_m": -22.6433330736319,
+      "x_m": 162.537501115201,
+      "offset_m": 124.86986704964045,
+      "chainage_m": 215.19112770995176,
+      "slant_chainage_m": 216.6
+    },
+    {
+      "index": 14,
+      "east_m": 153.04961868200215,
+      "north_m": 157.29139494641618,
+      "z_m": -24.59324256811426,
+      "x_m": 169.870266229607,
+      "offset_m": 138.95632894538554,
+      "chainage_m": 231.07186613621292,
+      "slant_chainage_m": 232.6
+    },
+    {
+      "index": 15,
+      "east_m": 162.19179434008637,
+      "north_m": 164.96259116927257,
+      "z_m": -25.8475841273261,
+      "x_m": 179.8220114715557,
+      "offset_m": 145.54339156025307,
+      "chainage_m": 243.0061288806322,
+      "slant_chainage_m": 244.6
+    },
+    {
+      "index": 16,
+      "east_m": 175.1432098557057,
+      "north_m": 175.83011915165247,
+      "z_m": -27.62456800287621,
+      "x_m": 193.92031723098296,
+      "offset_m": 154.87506359798212,
+      "chainage_m": 259.91300110189286,
+      "slant_chainage_m": 261.6
+    },
+    {
+      "index": 17,
+      "east_m": 190.38016928584608,
+      "north_m": 188.61544618974645,
+      "z_m": -29.715137268229277,
+      "x_m": 210.50655930089744,
+      "offset_m": 165.85350128942804,
+      "chainage_m": 279.80343900925834,
+      "slant_chainage_m": 281.6
+    },
+    {
+      "index": 18,
+      "east_m": 226.55612456402812,
+      "north_m": 208.66810564539333,
+      "z_m": -37.008360730240355,
+      "x_m": 248.71983419152048,
+      "offset_m": 181.68241513930573,
+      "chainage_m": 321.1653646357711,
+      "slant_chainage_m": 323.6
+    },
+    {
+      "index": 19,
+      "east_m": 236.89211178636586,
+      "north_m": 214.3974369184353,
+      "z_m": -39.092138862243516,
+      "x_m": 259.6379127316985,
+      "offset_m": 186.20496195355648,
+      "chainage_m": 332.9830576719176,
+      "slant_chainage_m": 335.6
+    },
+    {
+      "index": 20,
+      "east_m": 246.36676674017545,
+      "north_m": 219.64932391872375,
+      "z_m": -41.00226881657975,
+      "x_m": 269.6461513935284,
+      "offset_m": 190.3506298666197,
+      "chainage_m": 343.8159429550519,
+      "slant_chainage_m": 346.6
+    },
+    {
+      "index": 21,
+      "east_m": 250.90575898939943,
+      "north_m": 234.49569860237725,
+      "z_m": -44.873019146174435,
+      "x_m": 275.8364783024846,
+      "offset_m": 204.58780460903944,
+      "chainage_m": 359.34067457546786,
+      "slant_chainage_m": 362.6
+    },
+    {
+      "index": 22,
+      "east_m": 251.47313302055244,
+      "north_m": 236.35149543783393,
+      "z_m": -45.35686293737377,
+      "x_m": 276.6102691661041,
+      "offset_m": 206.36745145184193,
+      "chainage_m": 361.28126602801984,
+      "slant_chainage_m": 364.6
+    },
+    {
+      "index": 23,
+      "east_m": 253.17525511401143,
+      "north_m": 241.918885944204,
+      "z_m": -46.80839431097178,
+      "x_m": 278.93164175696273,
+      "offset_m": 211.70639198024932,
+      "chainage_m": 367.1030403856758,
+      "slant_chainage_m": 370.6
+    },
+    {
+      "index": 24,
+      "east_m": 255.16489534633692,
+      "north_m": 264.66057786336233,
+      "z_m": -49.61138920929017,
+      "x_m": 283.4826964920075,
+      "offset_m": 234.07670982328915,
+      "chainage_m": 389.9316018734262,
+      "slant_chainage_m": 393.6
+    },
+    {
+      "index": 25,
+      "east_m": 257.75585455492285,
+      "north_m": 263.282940415107,
+      "z_m": -50.235124281743445,
+      "x_m": 285.90106462511784,
+      "offset_m": 232.41464781116437,
+      "chainage_m": 392.8660446756276,
+      "slant_chainage_m": 396.6
+    },
+    {
+      "index": 26,
+      "east_m": 259.569526000933,
+      "north_m": 262.3185942013283,
+      "z_m": -50.67173883246074,
+      "x_m": 287.59392231829503,
+      "offset_m": 231.25120440267702,
+      "chainage_m": 394.9201546371686,
+      "slant_chainage_m": 398.70000000000005
+    },
+    {
+      "index": 27,
+      "east_m": 266.3923852502094,
+      "north_m": 258.6908155875893,
+      "z_m": -52.31424118992104,
+      "x_m": 293.96229173548545,
+      "offset_m": 226.87444110408174,
+      "chainage_m": 402.64752068296565,
+      "slant_chainage_m": 406.6
+    },
+    {
+      "index": 28,
+      "east_m": 278.48352822361045,
+      "north_m": 252.26184082906457,
+      "z_m": -55.22500486136967,
+      "x_m": 305.24800969000023,
+      "offset_m": 219.11815171416606,
+      "chainage_m": 416.3415870932389,
+      "slant_chainage_m": 420.6
+    },
+    {
+      "index": 29,
+      "east_m": 303.52946723994125,
+      "north_m": 238.94467882926327,
+      "z_m": -61.25444389508469,
+      "x_m": 328.62556831006646,
+      "offset_m": 203.0515522636264,
+      "chainage_m": 444.70786751451925,
+      "slant_chainage_m": 449.6
+    },
+    {
+      "index": 30,
+      "east_m": 316.4090539508676,
+      "north_m": 237.81786100115806,
+      "z_m": -62.613313917564184,
+      "x_m": 341.2948300973872,
+      "offset_m": 200.47409653629762,
+      "chainage_m": 457.63665215430683,
+      "slant_chainage_m": 462.6
+    },
+    {
+      "index": 31,
+      "east_m": 350.09412688713655,
+      "north_m": 234.87079898919063,
+      "z_m": -66.1672816686644,
+      "x_m": 374.4298224642262,
+      "offset_m": 193.733058480207,
+      "chainage_m": 491.4503965968281,
+      "slant_chainage_m": 496.6
+    },
+    {
+      "index": 32,
+      "east_m": 354.77471092045084,
+      "north_m": 233.16720572208257,
+      "z_m": -66.60306038240269,
+      "x_m": 378.8874894879225,
+      "offset_m": 191.51060451701596,
+      "chainage_m": 496.43137008728684,
+      "slant_chainage_m": 501.6
+    },
+    {
+      "index": 33,
+      "east_m": 359.33164902429326,
+      "north_m": 216.1604811915961,
+      "z_m": -70.34547081712236,
+      "x_m": 381.49009686344584,
+      "offset_m": 174.09736820129987,
+      "chainage_m": 514.0380269004953,
+      "slant_chainage_m": 519.6
+    },
+    {
+      "index": 34,
+      "east_m": 371.48348396787304,
+      "north_m": 170.8092157769655,
+      "z_m": -80.32523197637481,
+      "x_m": 388.43038319817475,
+      "offset_m": 127.66207135939037,
+      "chainage_m": 560.989111735718,
+      "slant_chainage_m": 567.6
+    },
+    {
+      "index": 35,
+      "east_m": 381.0961009272562,
+      "north_m": 154.15967480961555,
+      "z_m": -85.83797909271479,
+      "x_m": 396.09660734300087,
+      "offset_m": 110.03145518772554,
+      "chainage_m": 580.2143456544843,
+      "slant_chainage_m": 587.6
+    },
+    {
+      "index": 36,
+      "east_m": 383.499255167102,
+      "north_m": 149.99728956777807,
+      "z_m": -87.21616587179979,
+      "x_m": 398.0131633792074,
+      "offset_m": 105.62380114480933,
+      "chainage_m": 585.0206541341759,
+      "slant_chainage_m": 592.6
+    },
+    {
+      "index": 37,
+      "east_m": 397.91818060617675,
+      "north_m": 125.02297811675317,
+      "z_m": -95.48528654630977,
+      "x_m": 409.5124995964467,
+      "offset_m": 79.1778768873121,
+      "chainage_m": 613.8585050123254,
+      "slant_chainage_m": 622.6
+    },
+    {
+      "index": 38,
+      "east_m": 402.72448908586836,
+      "north_m": 116.6982076330782,
+      "z_m": -98.24166010447976,
+      "x_m": 413.3456116688597,
+      "offset_m": 70.36256880147965,
+      "chainage_m": 623.4711219717086,
+      "slant_chainage_m": 632.6
+    },
+    {
+      "index": 39,
+      "east_m": 417.7209276003223,
+      "north_m": 75.49583144237641,
+      "z_m": -108.36445754995368,
+      "x_m": 423.5818448433148,
+      "offset_m": 27.727506912512126,
+      "chainage_m": 667.3177748870442,
+      "slant_chainage_m": 677.6
+    },
+    {
+      "index": 40,
+      "east_m": 428.0040749708823,
+      "north_m": 95.6776445014952,
+      "z_m": -112.35836563629309,
+      "x_m": 436.0833438977096,
+      "offset_m": 46.61563068357098,
+      "chainage_m": 689.968353206325,
+      "slant_chainage_m": 700.6
+    },
+    {
+      "index": 41,
+      "east_m": 437.84012897750495,
+      "north_m": 114.9819874276088,
+      "z_m": -116.17862554496556,
+      "x_m": 448.04129951495685,
+      "offset_m": 64.68253168197508,
+      "chainage_m": 711.6341237725935,
+      "slant_chainage_m": 722.6
+    },
+    {
+      "index": 42,
+      "east_m": 455.969862644226,
+      "north_m": 70.10932197316879,
+      "z_m": -123.84391433193687,
+      "x_m": 460.9752388846879,
+      "offset_m": 18.046102142478226,
+      "chainage_m": 760.0308524617552,
+      "slant_chainage_m": 771.6
+    },
+    {
+      "index": 43,
+      "east_m": 476.25875170939065,
+      "north_m": 54.25790456876632,
+      "z_m": -127.46241495689857,
+      "x_m": 479.3394609125983,
+      "offset_m": -4.973799150320701e-14,
+      "chainage_m": 785.777822249036,
+      "slant_chainage_m": 797.6
+    }
+  ],
+  "intervals": [
+    {
+      "id": "I0001",
+      "layer_id": "C0",
+      "start_node": 0,
+      "end_node": 3,
+      "record_ids": [
+        "R0001",
+        "R0002",
+        "R0003"
+      ],
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C2",
+          "测段!C3",
+          "测段!C4"
+        ],
+        "lithology_name": [
+          "测段!K2"
+        ],
+        "description": [
+          "测段!L2",
+          "测段!L3",
+          "测段!L4"
+        ]
+      }
+    },
+    {
+      "id": "I0002",
+      "layer_id": "C1",
+      "start_node": 3,
+      "end_node": 5,
+      "record_ids": [
+        "R0004",
+        "R0005"
+      ],
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C5",
+          "测段!C6"
+        ],
+        "lithology_name": [
+          "测段!K5"
+        ],
+        "description": [
+          "测段!L5",
+          "测段!L6"
+        ]
+      }
+    },
+    {
+      "id": "I0003",
+      "layer_id": "C2",
+      "start_node": 5,
+      "end_node": 6,
+      "record_ids": [
+        "R0006"
+      ],
+      "lithology_name": "泥岩",
+      "description": "泥岩。呈浅灰色，具泥质结构，薄层状构造，单层厚度约0.5-1cm。泥质含量约90-95%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C7"
+        ],
+        "lithology_name": [
+          "测段!K7"
+        ],
+        "description": [
+          "测段!L7"
+        ]
+      }
+    },
+    {
+      "id": "I0004",
+      "layer_id": "C3",
+      "start_node": 6,
+      "end_node": 8,
+      "record_ids": [
+        "R0007",
+        "R0008"
+      ],
+      "lithology_name": "含粉砂泥岩",
+      "description": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C8",
+          "测段!C9"
+        ],
+        "lithology_name": [
+          "测段!K8"
+        ],
+        "description": [
+          "测段!L8",
+          "测段!L9"
+        ]
+      }
+    },
+    {
+      "id": "I0005",
+      "layer_id": "C4",
+      "start_node": 8,
+      "end_node": 9,
+      "record_ids": [
+        "R0009"
+      ],
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈深灰色，具隐晶质结构，中-厚层状构造，单层厚度约30-120cm。方解石含量约85-90%，泥质含量约10-15%，零星见黄铁矿颗粒，粒径约0.1-0.3mm。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C10"
+        ],
+        "lithology_name": [
+          "测段!K10"
+        ],
+        "description": [
+          "测段!L10"
+        ]
+      }
+    },
+    {
+      "id": "I0006",
+      "layer_id": "C5",
+      "start_node": 9,
+      "end_node": 10,
+      "record_ids": [
+        "R0010"
+      ],
+      "lithology_name": "含生物碎屑凝灰岩",
+      "description": "含生物碎屑凝灰岩。呈浅灰色，具凝灰结构，薄-中层状构造。层理发育，单层厚度约8-30cm，凝灰质含量约85-90%，泥质含量约8-12%，其余为菊石生物碎屑。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C11"
+        ],
+        "lithology_name": [
+          "测段!K11"
+        ],
+        "description": [
+          "测段!L11"
+        ]
+      }
+    },
+    {
+      "id": "I0007",
+      "layer_id": "C6",
+      "start_node": 10,
+      "end_node": 12,
+      "record_ids": [
+        "R0011",
+        "R0012"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C12",
+          "测段!C13"
+        ],
+        "lithology_name": [
+          "测段!K12"
+        ],
+        "description": [
+          "测段!L12",
+          "测段!L13"
+        ]
+      }
+    },
+    {
+      "id": "I0008",
+      "layer_id": "C7",
+      "start_node": 12,
+      "end_node": 13,
+      "record_ids": [
+        "R0013"
+      ],
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C14"
+        ],
+        "lithology_name": [
+          "测段!K14"
+        ],
+        "description": [
+          "测段!L14"
+        ]
+      }
+    },
+    {
+      "id": "I0009",
+      "layer_id": "C8",
+      "start_node": 13,
+      "end_node": 15,
+      "record_ids": [
+        "R0014",
+        "R0015"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C15",
+          "测段!C16"
+        ],
+        "lithology_name": [
+          "测段!K15"
+        ],
+        "description": [
+          "测段!L15",
+          "测段!L16"
+        ]
+      }
+    },
+    {
+      "id": "I0010",
+      "layer_id": "C9",
+      "start_node": 15,
+      "end_node": 16,
+      "record_ids": [
+        "R0016"
+      ],
+      "lithology_name": "煤层",
+      "description": "煤层。厚度约1.5米。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C17"
+        ],
+        "lithology_name": [
+          "测段!K17"
+        ],
+        "description": [
+          "测段!L17"
+        ]
+      }
+    },
+    {
+      "id": "I0011",
+      "layer_id": "C10",
+      "start_node": 16,
+      "end_node": 18,
+      "record_ids": [
+        "R0017",
+        "R0018"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C18",
+          "测段!C19"
+        ],
+        "lithology_name": [
+          "测段!K18"
+        ],
+        "description": [
+          "测段!L18",
+          "测段!L19"
+        ]
+      }
+    },
+    {
+      "id": "I0012",
+      "layer_id": "C11",
+      "start_node": 18,
+      "end_node": 19,
+      "record_ids": [
+        "R0019"
+      ],
+      "lithology_name": "碳质泥岩与煤线互层",
+      "description": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C20"
+        ],
+        "lithology_name": [
+          "测段!K20"
+        ],
+        "description": [
+          "测段!L20"
+        ]
+      }
+    },
+    {
+      "id": "I0013",
+      "layer_id": "C12",
+      "start_node": 19,
+      "end_node": 21,
+      "record_ids": [
+        "R0020",
+        "R0021"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C21",
+          "测段!C22"
+        ],
+        "lithology_name": [
+          "测段!K21"
+        ],
+        "description": [
+          "测段!L21",
+          "测段!L22"
+        ]
+      }
+    },
+    {
+      "id": "I0014",
+      "layer_id": "C13",
+      "start_node": 21,
+      "end_node": 22,
+      "record_ids": [
+        "R0022"
+      ],
+      "lithology_name": "碳质泥岩与煤线互层",
+      "description": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C23"
+        ],
+        "lithology_name": [
+          "测段!K23"
+        ],
+        "description": [
+          "测段!L23"
+        ]
+      }
+    },
+    {
+      "id": "I0015",
+      "layer_id": "C14",
+      "start_node": 22,
+      "end_node": 24,
+      "record_ids": [
+        "R0023",
+        "R0024"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C24",
+          "测段!C25"
+        ],
+        "lithology_name": [
+          "测段!K24"
+        ],
+        "description": [
+          "测段!L24",
+          "测段!L25"
+        ]
+      }
+    },
+    {
+      "id": "I0016",
+      "layer_id": "C15",
+      "start_node": 24,
+      "end_node": 25,
+      "record_ids": [
+        "R0025"
+      ],
+      "lithology_name": "含火山碎屑粉砂质泥岩",
+      "description": "含火山碎屑粉砂质泥岩。呈黄绿色，具泥质结构，薄层状构造，单层厚度约3-8cm。泥质含量约60-65%，粉砂含量约25-30%，其余为玄武质火山碎屑。火山碎屑粒径约0.2-1mm，呈棱角状，磨圆度差，分选差。岩石内部充填铁锰质胶结物，宽度约0.2-0.5cm。岩石层理中多见球形风化。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C26"
+        ],
+        "lithology_name": [
+          "测段!K26"
+        ],
+        "description": [
+          "测段!L26"
+        ]
+      }
+    },
+    {
+      "id": "I0017",
+      "layer_id": "C16",
+      "start_node": 25,
+      "end_node": 26,
+      "record_ids": [
+        "R0026"
+      ],
+      "lithology_name": "泥化凝灰岩",
+      "description": "泥化凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约1-3cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C27"
+        ],
+        "lithology_name": [
+          "测段!K27"
+        ],
+        "description": [
+          "测段!L27"
+        ]
+      }
+    },
+    {
+      "id": "I0018",
+      "layer_id": "C17",
+      "start_node": 26,
+      "end_node": 27,
+      "record_ids": [
+        "R0027"
+      ],
+      "lithology_name": "玄武质火山碎屑岩",
+      "description": "玄武质火山碎屑岩。呈灰绿色，具火山碎屑结构，薄-中层状构造，单层厚度约3-8cm。火山碎屑含量约55-60%，其余为玄武质凝灰岩。火山碎屑岩粒径约0.1-0.5cm，呈棱角状，磨圆度差，分选差。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C28"
+        ],
+        "lithology_name": [
+          "测段!K28"
+        ],
+        "description": [
+          "测段!L28"
+        ]
+      }
+    },
+    {
+      "id": "I0019",
+      "layer_id": "C18",
+      "start_node": 27,
+      "end_node": 28,
+      "record_ids": [
+        "R0028"
+      ],
+      "lithology_name": "粉砂质泥岩",
+      "description": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C29"
+        ],
+        "lithology_name": [
+          "测段!K29"
+        ],
+        "description": [
+          "测段!L29"
+        ]
+      }
+    },
+    {
+      "id": "I0020",
+      "layer_id": "C19",
+      "start_node": 28,
+      "end_node": 30,
+      "record_ids": [
+        "R0029",
+        "R0030"
+      ],
+      "lithology_name": "凝灰质泥岩",
+      "description": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C30",
+          "测段!C31"
+        ],
+        "lithology_name": [
+          "测段!K30"
+        ],
+        "description": [
+          "测段!L30",
+          "测段!L31"
+        ]
+      }
+    },
+    {
+      "id": "I0021",
+      "layer_id": "C20",
+      "start_node": 30,
+      "end_node": 33,
+      "record_ids": [
+        "R0031",
+        "R0032",
+        "R0033"
+      ],
+      "lithology_name": "泥质粉砂岩",
+      "description": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C32",
+          "测段!C33",
+          "测段!C34"
+        ],
+        "lithology_name": [
+          "测段!K32"
+        ],
+        "description": [
+          "测段!L32",
+          "测段!L33",
+          "测段!L34"
+        ]
+      }
+    },
+    {
+      "id": "I0022",
+      "layer_id": "C21",
+      "start_node": 33,
+      "end_node": 35,
+      "record_ids": [
+        "R0034",
+        "R0035"
+      ],
+      "lithology_name": "凝灰岩",
+      "description": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C35",
+          "测段!C36"
+        ],
+        "lithology_name": [
+          "测段!K35"
+        ],
+        "description": [
+          "测段!L35",
+          "测段!L36"
+        ]
+      }
+    },
+    {
+      "id": "I0023",
+      "layer_id": "C22",
+      "start_node": 35,
+      "end_node": 36,
+      "record_ids": [
+        "R0036"
+      ],
+      "lithology_name": "硅化凝灰岩",
+      "description": "硅化凝灰岩。呈浅灰-灰色，具重结晶结构，薄-中层状构造，单层厚度约8-15cm。凝灰质含量约70-75%，其余为硅质。岩石整体发生弱硅化、黄铁矿化蚀变现象，局部见石英细脉，宽度约0.1-0.3cm。岩石整体较破碎，受残坡积覆盖严重。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C37"
+        ],
+        "lithology_name": [
+          "测段!K37"
+        ],
+        "description": [
+          "测段!L37"
+        ]
+      }
+    },
+    {
+      "id": "I0024",
+      "layer_id": "C23",
+      "start_node": 36,
+      "end_node": 37,
+      "record_ids": [
+        "R0037"
+      ],
+      "lithology_name": "沉凝灰岩",
+      "description": "沉凝灰岩。呈浅紫-浅灰色，具沉凝灰结构，薄层状构造。纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C38"
+        ],
+        "lithology_name": [
+          "测段!K38"
+        ],
+        "description": [
+          "测段!L38"
+        ]
+      }
+    },
+    {
+      "id": "I0025",
+      "layer_id": "C24",
+      "start_node": 37,
+      "end_node": 40,
+      "record_ids": [
+        "R0038",
+        "R0039",
+        "R0040"
+      ],
+      "lithology_name": "泥化沉凝灰岩",
+      "description": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C39",
+          "测段!C40",
+          "测段!C41"
+        ],
+        "lithology_name": [
+          "测段!K39"
+        ],
+        "description": [
+          "测段!L39",
+          "测段!L40",
+          "测段!L41"
+        ]
+      }
+    },
+    {
+      "id": "I0026",
+      "layer_id": "C25",
+      "start_node": 40,
+      "end_node": 43,
+      "record_ids": [
+        "R0041",
+        "R0042",
+        "R0043"
+      ],
+      "lithology_name": "泥晶灰岩",
+      "description": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+      "source_cells": {
+        "layer_id": [
+          "测段!C42",
+          "测段!C43",
+          "测段!C44"
+        ],
+        "lithology_name": [
+          "测段!K42"
+        ],
+        "description": [
+          "测段!L42",
+          "测段!L43",
+          "测段!L44"
+        ]
+      }
+    }
+  ],
+  "stations": [
+    {
+      "id": "0",
+      "node": 0,
+      "source_cell": "测段!B2"
+    },
+    {
+      "id": "1",
+      "node": 1,
+      "source_cell": "测段!B3"
+    },
+    {
+      "id": "2",
+      "node": 2,
+      "source_cell": "测段!B4"
+    },
+    {
+      "id": "3",
+      "node": 4,
+      "source_cell": "测段!B6"
+    },
+    {
+      "id": "4",
+      "node": 7,
+      "source_cell": "测段!B9"
+    },
+    {
+      "id": "5",
+      "node": 11,
+      "source_cell": "测段!B13"
+    },
+    {
+      "id": "6",
+      "node": 14,
+      "source_cell": "测段!B16"
+    },
+    {
+      "id": "7",
+      "node": 17,
+      "source_cell": "测段!B19"
+    },
+    {
+      "id": "8",
+      "node": 20,
+      "source_cell": "测段!B22"
+    },
+    {
+      "id": "9",
+      "node": 23,
+      "source_cell": "测段!B25"
+    },
+    {
+      "id": "10",
+      "node": 24,
+      "source_cell": "测段!B26"
+    },
+    {
+      "id": "11",
+      "node": 29,
+      "source_cell": "测段!B31"
+    },
+    {
+      "id": "12",
+      "node": 31,
+      "source_cell": "测段!B33"
+    },
+    {
+      "id": "13",
+      "node": 32,
+      "source_cell": "测段!B34"
+    },
+    {
+      "id": "14",
+      "node": 34,
+      "source_cell": "测段!B36"
+    },
+    {
+      "id": "15",
+      "node": 38,
+      "source_cell": "测段!B40"
+    },
+    {
+      "id": "16",
+      "node": 39,
+      "source_cell": "测段!B41"
+    },
+    {
+      "id": "17",
+      "node": 41,
+      "source_cell": "测段!B43"
+    },
+    {
+      "id": "18",
+      "node": 42,
+      "source_cell": "测段!B44"
+    },
+    {
+      "id": "19",
+      "node": 43,
+      "source_cell": "测段!B44"
+    }
+  ],
+  "attitudes": [
+    {
+      "id": "A0001",
+      "record_id": "R0001",
+      "layer_id": "C0",
+      "node": 0,
+      "dip_direction_deg": 323.0,
+      "dip_angle_deg": 22.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0002",
+      "record_id": "R0004",
+      "layer_id": "C1",
+      "node": 3,
+      "dip_direction_deg": 286.0,
+      "dip_angle_deg": 12.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0003",
+      "record_id": "R0006",
+      "layer_id": "C2",
+      "node": 5,
+      "dip_direction_deg": 293.0,
+      "dip_angle_deg": 15.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0004",
+      "record_id": "R0007",
+      "layer_id": "C3",
+      "node": 6,
+      "dip_direction_deg": 290.0,
+      "dip_angle_deg": 12.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0005",
+      "record_id": "R0008",
+      "layer_id": "C3",
+      "node": 7,
+      "dip_direction_deg": 285.0,
+      "dip_angle_deg": 10.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0006",
+      "record_id": "R0009",
+      "layer_id": "C4",
+      "node": 8,
+      "dip_direction_deg": 285.0,
+      "dip_angle_deg": 10.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0007",
+      "record_id": "R0010",
+      "layer_id": "C5",
+      "node": 9,
+      "dip_direction_deg": 330.0,
+      "dip_angle_deg": 5.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0008",
+      "record_id": "R0011",
+      "layer_id": "C6",
+      "node": 10,
+      "dip_direction_deg": 295.0,
+      "dip_angle_deg": 13.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0009",
+      "record_id": "R0013",
+      "layer_id": "C7",
+      "node": 12,
+      "dip_direction_deg": 275.0,
+      "dip_angle_deg": 15.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0010",
+      "record_id": "R0014",
+      "layer_id": "C8",
+      "node": 13,
+      "dip_direction_deg": 275.0,
+      "dip_angle_deg": 15.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0011",
+      "record_id": "R0016",
+      "layer_id": "C9",
+      "node": 15,
+      "dip_direction_deg": 325.0,
+      "dip_angle_deg": 19.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0012",
+      "record_id": "R0017",
+      "layer_id": "C10",
+      "node": 16,
+      "dip_direction_deg": 328.0,
+      "dip_angle_deg": 19.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0013",
+      "record_id": "R0019",
+      "layer_id": "C11",
+      "node": 18,
+      "dip_direction_deg": 315.0,
+      "dip_angle_deg": 11.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0014",
+      "record_id": "R0020",
+      "layer_id": "C12",
+      "node": 19,
+      "dip_direction_deg": 300.0,
+      "dip_angle_deg": 11.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0015",
+      "record_id": "R0022",
+      "layer_id": "C13",
+      "node": 21,
+      "dip_direction_deg": 247.0,
+      "dip_angle_deg": 20.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0016",
+      "record_id": "R0023",
+      "layer_id": "C14",
+      "node": 22,
+      "dip_direction_deg": 215.0,
+      "dip_angle_deg": 23.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0017",
+      "record_id": "R0025",
+      "layer_id": "C15",
+      "node": 24,
+      "dip_direction_deg": 218.0,
+      "dip_angle_deg": 13.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0018",
+      "record_id": "R0026",
+      "layer_id": "C16",
+      "node": 25,
+      "dip_direction_deg": 215.0,
+      "dip_angle_deg": 13.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0019",
+      "record_id": "R0027",
+      "layer_id": "C17",
+      "node": 26,
+      "dip_direction_deg": 208.0,
+      "dip_angle_deg": 7.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0020",
+      "record_id": "R0028",
+      "layer_id": "C18",
+      "node": 27,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 8.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0021",
+      "record_id": "R0029",
+      "layer_id": "C19",
+      "node": 28,
+      "dip_direction_deg": 245.0,
+      "dip_angle_deg": 3.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0022",
+      "record_id": "R0031",
+      "layer_id": "C20",
+      "node": 30,
+      "dip_direction_deg": 205.0,
+      "dip_angle_deg": 14.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0023",
+      "record_id": "R0034",
+      "layer_id": "C21",
+      "node": 33,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0024",
+      "record_id": "R0036",
+      "layer_id": "C22",
+      "node": 35,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0025",
+      "record_id": "R0037",
+      "layer_id": "C23",
+      "node": 36,
+      "dip_direction_deg": 209.0,
+      "dip_angle_deg": 6.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0026",
+      "record_id": "R0038",
+      "layer_id": "C24",
+      "node": 37,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0027",
+      "record_id": "R0041",
+      "layer_id": "C25",
+      "node": 40,
+      "dip_direction_deg": 260.0,
+      "dip_angle_deg": 6.0,
+      "location_basis": "record_start_association"
+    }
+  ],
+  "samples": [
+    {
+      "id": "PM01-0-b1",
+      "record_id": "R0001",
+      "layer_id": "C0",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M2",
+        "sample_offset_m": "测段!N2"
+      }
+    },
+    {
+      "id": "PM01-1-b1",
+      "record_id": "R0005",
+      "layer_id": "C1",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M6",
+        "sample_offset_m": "测段!N6"
+      }
+    },
+    {
+      "id": "PM01-2-b1",
+      "record_id": "R0006",
+      "layer_id": "C2",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M7",
+        "sample_offset_m": "测段!N7"
+      }
+    },
+    {
+      "id": "PM01-3-b1",
+      "record_id": "R0007",
+      "layer_id": "C3",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M8",
+        "sample_offset_m": "测段!N8"
+      }
+    },
+    {
+      "id": "PM01-4-b1",
+      "record_id": "R0009",
+      "layer_id": "C4",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M10",
+        "sample_offset_m": "测段!N10"
+      }
+    },
+    {
+      "id": "PM01-5-b1",
+      "record_id": "R0010",
+      "layer_id": "C5",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M11",
+        "sample_offset_m": "测段!N11"
+      }
+    },
+    {
+      "id": "PM01-6-b1",
+      "record_id": "R0011",
+      "layer_id": "C6",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M12",
+        "sample_offset_m": "测段!N12"
+      }
+    },
+    {
+      "id": "PM01-7-b1",
+      "record_id": "R0013",
+      "layer_id": "C7",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M14",
+        "sample_offset_m": "测段!N14"
+      }
+    },
+    {
+      "id": "PM01-8-b1",
+      "record_id": "R0014",
+      "layer_id": "C8",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M15",
+        "sample_offset_m": "测段!N15"
+      }
+    },
+    {
+      "id": "PM01-15-b1",
+      "record_id": "R0025",
+      "layer_id": "C15",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M26",
+        "sample_offset_m": "测段!N26"
+      }
+    },
+    {
+      "id": "PM01-16-b1",
+      "record_id": "R0026",
+      "layer_id": "C16",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M27",
+        "sample_offset_m": "测段!N27"
+      }
+    },
+    {
+      "id": "PM01-17-b1",
+      "record_id": "R0027",
+      "layer_id": "C17",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M28",
+        "sample_offset_m": "测段!N28"
+      }
+    },
+    {
+      "id": "PM01-22-b1",
+      "record_id": "R0036",
+      "layer_id": "C22",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M37",
+        "sample_offset_m": "测段!N37"
+      }
+    },
+    {
+      "id": "PM01-24-b1",
+      "record_id": "R0038",
+      "layer_id": "C24",
+      "position": null,
+      "location_status": "missing",
+      "source_cells": {
+        "sample_id": "测段!M39",
+        "sample_offset_m": "测段!N39"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -5.0 与独立计算 -7.6060918789570335 的残差为 2.6060918789570335",
+      "cells": [
+        "测段!Q5"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -5.261467228242974 与独立计算 -7.867559107200008 的残差为 2.6060918789570335",
+      "cells": [
+        "测段!Q6"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -7.3183427570877075 与独立计算 -9.92443463604474 的残差为 2.6060918789570326",
+      "cells": [
+        "测段!Q7"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -8.137606738915695 与独立计算 -10.743698617872727 的残差为 2.6060918789570326",
+      "cells": [
+        "测段!Q8"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -10.39503304858579 与独立计算 -13.001124927542822 的残差为 2.6060918789570326",
+      "cells": [
+        "测段!Q9"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -14.944615303459365 与独立计算 -17.550707182416396 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q10"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -17.236771248662844 与独立计算 -19.842863127619875 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q11"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -18.209201043597655 与独立计算 -20.815292922554686 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q12"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -18.331070387002804 与独立计算 -20.937162265959834 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q13"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -20.03724119467487 与独立计算 -22.6433330736319 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q14"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -21.98715068915723 与独立计算 -24.59324256811426 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q15"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -23.24149224836907 与独立计算 -25.8475841273261 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q16"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -25.01847612391918 与独立计算 -27.62456800287621 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q17"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -27.109045389272246 与独立计算 -29.715137268229277 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q18"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -34.402268851283324 与独立计算 -37.008360730240355 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q19"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -36.486046983286485 与独立计算 -39.092138862243516 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q20"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -38.39617693762272 与独立计算 -41.00226881657975 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q21"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -42.266927267217405 与独立计算 -44.873019146174435 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q22"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -42.75077105841674 与独立计算 -45.35686293737377 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q23"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -44.20230243201475 与独立计算 -46.80839431097178 的残差为 2.606091878957031",
+      "cells": [
+        "测段!Q24"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -45.553765956735134 与独立计算 -49.61138920929017 的残差为 4.057623252555032",
+      "cells": [
+        "测段!Q25"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 259.0931873569923 与独立计算 264.66057786336233 的残差为 -5.567390506370032",
+      "cells": [
+        "测段!R25"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 253.46277325287792 与独立计算 255.16489534633692 的残差为 -1.7021220934589962",
+      "cells": [
+        "测段!S25"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -44.826037504468026 与独立计算 -50.235124281743445 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q26"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 240.54124849594868 与独立计算 263.282940415107 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R26"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 255.7662143225974 与独立计算 257.75585455492285 的残差为 -1.9896402323254563",
+      "cells": [
+        "测段!S26"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -45.26265205518532 与独立计算 -50.67173883246074 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q27"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 239.57690228216995 与独立计算 262.3185942013283 的残差为 -22.74169191915837",
+      "cells": [
+        "测段!R27"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 257.57988576860754 与独立计算 259.569526000933 的残差为 -1.9896402323254847",
+      "cells": [
+        "测段!S27"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -46.90515441264562 与独立计算 -52.31424118992104 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q28"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 235.94912366843099 与独立计算 258.6908155875893 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R28"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 264.4027450178839 与独立计算 266.3923852502094 的残差为 -1.9896402323254847",
+      "cells": [
+        "测段!S28"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -49.81591808409425 与独立计算 -55.22500486136967 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q29"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 229.52014890990623 与独立计算 252.26184082906457 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R29"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 276.49388799128496 与独立计算 278.48352822361045 的残差为 -1.9896402323254847",
+      "cells": [
+        "测段!S29"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -55.84535711780927 与独立计算 -61.25444389508469 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q30"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 216.20298691010493 与独立计算 238.94467882926327 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R30"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 301.53982700761577 与独立计算 303.52946723994125 的残差为 -1.9896402323254847",
+      "cells": [
+        "测段!S30"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -57.204227140288765 与独立计算 -62.613313917564184 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q31"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 215.07616908199972 与独立计算 237.81786100115806 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R31"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 314.4194137185421 与独立计算 316.4090539508676 的残差为 -1.9896402323254847",
+      "cells": [
+        "测段!S31"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -60.75819489138898 与独立计算 -66.1672816686644 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q32"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 212.1291070700323 与独立计算 234.87079898919063 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R32"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 348.104486654811 与独立计算 350.09412688713655 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S32"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -61.193973605127276 与独立计算 -66.60306038240269 的残差为 5.409086777275412",
+      "cells": [
+        "测段!Q33"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 210.42551380292423 与独立计算 233.16720572208257 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R33"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 352.7850706881253 与独立计算 354.77471092045084 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S33"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -64.93638403984694 与独立计算 -70.34547081712236 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q34"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 193.41878927243775 与独立计算 216.1604811915961 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R34"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 357.3420087919677 与独立计算 359.33164902429326 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S34"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -74.91614519909939 与独立计算 -80.32523197637481 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q35"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 148.06752385780715 与独立计算 170.8092157769655 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R35"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 369.4938437355475 与独立计算 371.48348396787304 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S35"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -80.42889231543937 与独立计算 -85.83797909271479 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q36"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 131.4179828904572 与独立计算 154.15967480961555 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R36"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 379.10646069493066 与独立计算 381.0961009272562 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S36"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -81.80707909452437 与独立计算 -87.21616587179979 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q37"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 127.25559764861973 与独立计算 149.99728956777807 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R37"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 381.50961493477644 与独立计算 383.499255167102 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S37"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -90.07619976903435 与独立计算 -95.48528654630977 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q38"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 102.28128619759482 与独立计算 125.02297811675317 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R38"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 395.9285403738512 与独立计算 397.91818060617675 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S38"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -92.83257332720434 与独立计算 -98.24166010447976 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q39"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 93.95651571391986 与独立计算 116.6982076330782 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R39"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 400.7348488535428 与独立计算 402.72448908586836 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S39"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -102.95537077267826 与独立计算 -108.36445754995368 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q40"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 52.75413952321807 与独立计算 75.49583144237641 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R40"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 415.73128736799674 与独立计算 417.7209276003223 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S40"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -106.94927885901767 与独立计算 -112.35836563629309 的残差为 5.409086777275419",
+      "cells": [
+        "测段!Q41"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 72.93595258233685 与独立计算 95.6776445014952 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R41"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 426.01443473855676 与独立计算 428.0040749708823 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S41"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -78.73640510777186 与独立计算 -116.17862554496556 的残差为 37.4422204371937",
+      "cells": [
+        "测段!Q42"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 92.24029550845046 与独立计算 114.9819874276088 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R42"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 435.8504887451794 与独立计算 437.84012897750495 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S42"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -88.09418110241069 与独立计算 -123.84391433193687 的残差为 35.749733229526186",
+      "cells": [
+        "测段!Q43"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 47.36763005401045 与独立计算 70.10932197316879 的残差为 -22.74169191915834",
+      "cells": [
+        "测段!R43"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 453.98022241190046 与独立计算 455.969862644226 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S43"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -85.42557971948607 与独立计算 -127.46241495689857 的残差为 42.036835237412504",
+      "cells": [
+        "测段!Q44"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计北坐标缓存 31.516212649607983 与独立计算 54.25790456876632 的残差为 -22.741691919158338",
+      "cells": [
+        "测段!R44"
+      ]
+    },
+    {
+      "severity": "warning",
+      "code": "CACHE_MISMATCH",
+      "message": "累计东坐标缓存 474.2691114770651 与独立计算 476.25875170939065 的残差为 -1.9896402323255415",
+      "cells": [
+        "测段!S44"
+      ]
+    }
+  ],
+  "summary": {
+    "records": 43,
+    "intervals": 26,
+    "stations": 20,
+    "samples": 14,
+    "located_samples": 0,
+    "total_slant_m": 797.6,
+    "total_horizontal_m": 785.7778222490363,
+    "total_vertical_m": -127.46241495689857,
+    "endpoint_east_m": 476.25875170939065,
+    "endpoint_north_m": 54.25790456876632,
+    "axis_azimuth_deg": 83.50058502519266,
+    "projected_endpoint_m": 479.3394609125983
+  }
+}

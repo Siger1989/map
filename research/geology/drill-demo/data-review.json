@@ -1,0 +1,16 @@
+{
+  "source_file": "D:\\天气地图\\地质资料\\GMT钻孔柱状图模版-ZK0003.xlt",
+  "source_sha256_json": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+  "source_sha256_review": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+  "source_hash_matches": true,
+  "checked_cell_and_formula_items": 2215,
+  "passed": 2215,
+  "failed": 0,
+  "sample_I_column_verified_as_core_length": true,
+  "notes": [
+    "所有样品芯长从I列读取；样长按H-E计算。",
+    "回次采取率由E列原始比例乘100复核。",
+    "分层厚度按D列当前层底减上一层D列复核，分层采取率由F列芯长除厚度计算。"
+  ],
+  "differences": []
+}

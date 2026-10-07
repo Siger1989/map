@@ -1,0 +1,38 @@
+{
+  "source_file": "D:\\天气地图\\地质资料\\GMT钻孔柱状图模版-ZK0003.xlt",
+  "source_sha256_before": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+  "source_sha256_after": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+  "source_hash_unchanged": true,
+  "checks": {
+    "turn_count_131": true,
+    "layer_count_23": true,
+    "sample_count_97": true,
+    "h97_between_h44_h45": [
+      [
+        "H44",
+        114.8,
+        115.79
+      ],
+      [
+        "H97",
+        145.25,
+        146.21
+      ],
+      [
+        "H45",
+        146.21,
+        147.19
+      ]
+    ],
+    "advance_sum_m": 382.78999999999996,
+    "advance_sum_matches_endpoint": true,
+    "turn_ids_unique": true,
+    "layer_ids_unique": true,
+    "sample_ids_unique": true,
+    "turn_depth_order_monotonic": true,
+    "layer_depth_order_monotonic": true,
+    "sample_depth_order_monotonic": true,
+    "material_codes_all_empty": true,
+    "assays_all_blank": true
+  }
+}

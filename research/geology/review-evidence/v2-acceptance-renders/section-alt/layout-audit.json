@@ -1,0 +1,326 @@
+{
+  "schema_version": "1.0",
+  "input_counts": {
+    "nodes": 3,
+    "records": 2,
+    "intervals": 2,
+    "stations": 3,
+    "attitudes": 2,
+    "samples": 1
+  },
+  "geometry": {
+    "x_range_m": [
+      0.0,
+      14.330127018922195
+    ],
+    "offset_range_m": [
+      0.0,
+      0.0
+    ],
+    "measured_elevation_range_m": [
+      0.0,
+      2.4999999999999996
+    ],
+    "display_elevation_range_m": [
+      0.0,
+      2.4999999999999996
+    ],
+    "units_per_px": 0.010758353617809455,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true,
+    "svg_geometry_coordinate_decimals_px": 6,
+    "maximum_coordinate_serialization_error_px": 5e-07,
+    "maximum_coordinate_serialization_error_m": 5.379176808904727e-09,
+    "data_calculation_rounded": false
+  },
+  "projected_band": {
+    "legacy_key": true,
+    "meaning": "near_surface_apparent_dip_display_domain",
+    "drawn_region_count": 0,
+    "requested_depth_m": 18.0,
+    "effective_depth_m": 18.0,
+    "depth_represents_true_thickness": false,
+    "contacts_are_derived_interpretation_lines": true,
+    "vertical_separators_drawn": false,
+    "legacy_projection_precheck": {
+      "safe": true,
+      "reasons": []
+    }
+  },
+  "layer_geometry": {
+    "mode": "apparent_dip_outcrop",
+    "requested_depth_m": 18.0,
+    "effective_depth_m": 18.0,
+    "contacts": [
+      {
+        "id": "LC0001",
+        "node": 1,
+        "anchor_x_m": 10.0,
+        "anchor_z_m": 0.0,
+        "record_id": "R2",
+        "dip_direction_deg": 270.0,
+        "dip_angle_deg": 30.0,
+        "apparent_dip_deg_signed": 29.999999999999996,
+        "a": 0.49999999999999994,
+        "b": -0.8660254037844387,
+        "c": -4.999999999999999,
+        "basis": "following_interval_first_record_attitude",
+        "source_cells": {
+          "dip_direction_deg": "测段!I3",
+          "dip_angle_deg": "测段!J3"
+        },
+        "segments": [],
+        "status": "pending",
+        "reason": "surface_tangent_or_coincident"
+      }
+    ],
+    "regions": [
+      {
+        "interval_id": "I0001",
+        "layer_id": "L1",
+        "source_node_indices": [
+          0,
+          1
+        ],
+        "polygons": [],
+        "status": "pending",
+        "reason": "adjacent_contact_pending"
+      },
+      {
+        "interval_id": "I0002",
+        "layer_id": "L2",
+        "source_node_indices": [
+          1,
+          2
+        ],
+        "polygons": [],
+        "status": "pending",
+        "reason": "adjacent_contact_pending"
+      }
+    ],
+    "issues": [
+      {
+        "severity": "warning",
+        "code": "surface_tangent_or_coincident",
+        "message": "层界 LC0001 与地形相切、重合或再次相交，受影响层区留白",
+        "cells": [
+          "测段!I3",
+          "测段!J3"
+        ]
+      }
+    ],
+    "eligible": false
+  },
+  "pattern_audit": [
+    {
+      "interval_id": "I0001",
+      "layer_id": "L1",
+      "material_name": "泥岩夹泥质粉砂岩",
+      "template_pattern_id": "mat_pending",
+      "derived_pattern_id": "mat_pending__interval_0001",
+      "orientation": "none",
+      "first_record_id": "R1",
+      "axis_azimuth_deg": 90.0,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 20.0,
+      "apparent_dip_deg_signed_z_up": null,
+      "pattern_rotation_deg_svg_y_down": null,
+      "rotation_status": "template_orientation_none",
+      "source_cells": {
+        "record_id": "测段!A2",
+        "leg_id": "测段!B2",
+        "layer_id": "测段!C2",
+        "start_reading_m": "测段!D2",
+        "end_reading_m": "测段!E2",
+        "length_m": "测段!F2",
+        "slope_deg": "测段!G2",
+        "azimuth_deg": "测段!H2",
+        "dip_direction_deg": "测段!I2",
+        "dip_angle_deg": "测段!J2",
+        "lithology_name": "测段!K2",
+        "description": "测段!L2",
+        "sample_id": "测段!M2",
+        "sample_offset_m": "测段!N2",
+        "true_thickness_m": "测段!T2",
+        "cache_horizontal_m": "测段!O2",
+        "cache_vertical_m": "测段!P2",
+        "cache_cumulative_z_m": "测段!Q2",
+        "cache_cumulative_north_m": "测段!R2",
+        "cache_cumulative_east_m": "测段!S2"
+      },
+      "reference_status": null,
+      "reference_evidence": null,
+      "tile_width": null,
+      "tile_height": null,
+      "render_scales": {
+        "main": 0.5,
+        "detail": 0.85,
+        "legend": 0.7,
+        "readability": 1.0,
+        "focus": 1.0
+      },
+      "phase_anchor": {
+        "status": "not_configured",
+        "feature_tile": null,
+        "world": null,
+        "polygon_index": null,
+        "polygon_area_m2": null,
+        "contexts": {}
+      }
+    },
+    {
+      "interval_id": "I0002",
+      "layer_id": "L2",
+      "material_name": "砂岩夹粉砂岩",
+      "template_pattern_id": "mat_pending",
+      "derived_pattern_id": "mat_pending__interval_0002",
+      "orientation": "none",
+      "first_record_id": "R2",
+      "axis_azimuth_deg": 90.0,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 30.0,
+      "apparent_dip_deg_signed_z_up": null,
+      "pattern_rotation_deg_svg_y_down": null,
+      "rotation_status": "template_orientation_none",
+      "source_cells": {
+        "record_id": "测段!A3",
+        "leg_id": "测段!B3",
+        "layer_id": "测段!C3",
+        "start_reading_m": "测段!D3",
+        "end_reading_m": "测段!E3",
+        "length_m": "测段!F3",
+        "slope_deg": "测段!G3",
+        "azimuth_deg": "测段!H3",
+        "dip_direction_deg": "测段!I3",
+        "dip_angle_deg": "测段!J3",
+        "lithology_name": "测段!K3",
+        "description": "测段!L3",
+        "sample_id": "测段!M3",
+        "sample_offset_m": "测段!N3",
+        "true_thickness_m": "测段!T3",
+        "cache_horizontal_m": "测段!O3",
+        "cache_vertical_m": "测段!P3",
+        "cache_cumulative_z_m": "测段!Q3",
+        "cache_cumulative_north_m": "测段!R3",
+        "cache_cumulative_east_m": "测段!S3"
+      },
+      "reference_status": null,
+      "reference_evidence": null,
+      "tile_width": null,
+      "tile_height": null,
+      "render_scales": {
+        "main": 0.5,
+        "detail": 0.85,
+        "legend": 0.7,
+        "readability": 1.0,
+        "focus": 1.0
+      },
+      "phase_anchor": {
+        "status": "not_configured",
+        "feature_tile": null,
+        "world": null,
+        "polygon_index": null,
+        "polygon_area_m2": null,
+        "contexts": {}
+      }
+    }
+  ],
+  "layout": {
+    "page_width_px": 1500.0,
+    "page_height_px": 1242.3775634090966,
+    "station_label_dynamic_lanes_added": 0,
+    "attitude_label_dynamic_lanes_added": 0,
+    "layer_label_dynamic_lanes_added": 0,
+    "label_forced_overlap_count": 0,
+    "labelled_interval_count": 2,
+    "thin_interval_count": 0,
+    "thin_interval_ids": [],
+    "minimum_projected_interval_px": 402.4897463636137
+  },
+  "materials": {
+    "configured_names": [
+      "凝灰岩",
+      "凝灰质泥岩",
+      "含火山碎屑粉砂质泥岩",
+      "含生物碎屑凝灰岩",
+      "含粉砂泥岩",
+      "沉凝灰岩",
+      "泥化凝灰岩",
+      "泥化沉凝灰岩",
+      "泥岩",
+      "泥晶灰岩",
+      "泥质粉砂岩",
+      "煤层",
+      "玄武质火山碎屑岩",
+      "硅化凝灰岩",
+      "碳质泥岩与煤线互层",
+      "粉砂质泥岩"
+    ],
+    "pending_names": [
+      "泥岩夹泥质粉砂岩",
+      "砂岩夹粉砂岩"
+    ],
+    "unverified_pattern_names": [
+      "含火山碎屑粉砂质泥岩",
+      "泥化凝灰岩",
+      "硅化凝灰岩"
+    ],
+    "render_scales": {
+      "main": 0.5,
+      "detail": 0.85,
+      "legend": 0.7,
+      "focus": 1.0,
+      "readability": 1.0
+    },
+    "fuzzy_matching": false,
+    "legend_uses_same_template_content_at_legend_scale": true
+  },
+  "samples": {
+    "located": 1,
+    "missing_location": 0,
+    "missing_location_plotted": false
+  },
+  "detail": {
+    "generated": true,
+    "x_range_m": [
+      9.747789764466969,
+      12.900417708629853
+    ],
+    "feature_count": 4,
+    "units_per_px": 0.0023668377959180807,
+    "magnification_vs_main": 4.545454545454544,
+    "layer_geometry_world_source_shared_with_main": true,
+    "profile_uses_full_node_path_before_clipping": true,
+    "profile_source_node_indices": [
+      0,
+      1,
+      2
+    ],
+    "boundary_crossing_segment_count": 2,
+    "boundary_crossing_segments_preserved_by_clip_path": true,
+    "region_consistency": [
+      {
+        "interval_id": "I0001",
+        "layer_id": "L1",
+        "main_world_polygons": [],
+        "detail_world_polygons": [],
+        "matches": true
+      },
+      {
+        "interval_id": "I0002",
+        "layer_id": "L2",
+        "main_world_polygons": [],
+        "detail_world_polygons": [],
+        "matches": true
+      }
+    ],
+    "all_region_world_polygons_match_main": true
+  },
+  "notes": [
+    "All dimensions are data-derived; no fixed paper scale is claimed.",
+    "Contact strike lines are fixed-length symbols derived from the first attitude in each interval.",
+    "Full imported issues and long descriptions are in appendix.html."
+  ]
+}

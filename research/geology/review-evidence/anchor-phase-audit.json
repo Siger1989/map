@@ -1,0 +1,97 @@
+{
+  "fixture": {
+    "layer_id": "C13",
+    "interval_id": "I0014",
+    "material_id": "mat_carbonaceous_mudstone_coal_laminae",
+    "anchor_feature": [
+      15.0,
+      11.0
+    ],
+    "world_anchor_m": [
+      274.3173456057168,
+      -45.69726192836876
+    ],
+    "polygon_index": 0,
+    "coarse_anchor_lines": [
+      {
+        "type": "line",
+        "x1": 0,
+        "y1": 11,
+        "x2": 30,
+        "y2": 11,
+        "width": 2.5
+      }
+    ]
+  },
+  "contexts": {
+    "drawing.svg": {
+      "svg_anchor_px": [
+        846.279625,
+        1271.442628
+      ],
+      "inverse_world_m_independent": [
+        274.3173457148043,
+        -45.697261677213795
+      ],
+      "error_m": 2.738227380171495e-07,
+      "pattern_referenced": true,
+      "transform": "translate(846.279625 1271.442628) rotate(-19.238006) scale(0.500000) translate(-15.000000 -11.000000)"
+    },
+    "detail.svg": {
+      "svg_anchor_px": [
+        513.882633,
+        340.276526
+      ],
+      "inverse_world_m_independent": [
+        274.31734566156416,
+        -45.69726191940254
+      ],
+      "error_m": 5.656252955243407e-08,
+      "pattern_referenced": true,
+      "transform": "translate(513.882633 340.276526) rotate(-19.238006) scale(0.850000) translate(-15.000000 -11.000000)"
+    }
+  },
+  "focus": {
+    "visible_pattern_ids": [
+      "read_panel_003_read_interval_0014"
+    ],
+    "contexts": [
+      {
+        "context": "focus",
+        "panel_index": 3,
+        "svg_anchor_px": [
+          283.31999457585005,
+          1564.5965034677738
+        ],
+        "inverse_world_m": [
+          274.3173456057168,
+          -45.69726192836876
+        ],
+        "inverse_error_m": 0.0,
+        "render_scale": 1.0
+      }
+    ],
+    "max_inverse_error_m": 0.0
+  },
+  "geometry": {
+    "drawing.svg": {
+      "strict_equal": true,
+      "count": 82
+    },
+    "detail.svg": {
+      "strict_equal": true,
+      "count": 35
+    }
+  },
+  "checks": {
+    "anchor_hits_existing_coarse_line": true,
+    "main_inverse_error_lt_1e-6": true,
+    "detail_inverse_error_lt_1e-6": true,
+    "main_detail_pattern_used": true,
+    "focus_visible_patterns_used": true,
+    "focus_inverse_error_lt_1e-9": true,
+    "world_polygons_strict_equal": true,
+    "c13_detail_png_reviewed": true,
+    "all": true
+  }
+}

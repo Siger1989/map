@@ -1,0 +1,11 @@
+本轮：用户质疑表达与规范一致性，并反馈煤层等图案太少看不出岩性。
+已确认：自动统一截短显示深度虽然避免推算面相交，但造成主图纹样小；花纹没有随层段视倾角转向；原始描述的煤层约1.5米、煤线约5-10cm未显示在图上。不能再把数学无重叠当作行业规范合格。
+
+固定：importer.py和所有源Excel不改；layer_geometry.py的真实锚点、world polygons/contacts不改。不得为可读性挪动层界、扩大真实投影宽或重写真实厚度字段。仍为数据核验图，未完成行业标准逐项核验。
+
+分工接口
+renderer_v1：只修改renderer.py、templates/materials.json。岩性模板添加明确orientation='bedding'或'none'；含层理线的花纹按对应interval首记录产状与axis计算视倾角旋转，源D/δ仍显示原值。每interval派生pattern ID，图例样块仍显示模板规范朝向；世界几何不变。煤层模板用纯黑，碳质泥岩与煤线互层用白/浅底黑色细层理+粗黑煤线，二者视觉可区分，声明本项目符号，不冒称已核准标准符号。该样块条数和粗细不是实际煤线条数/厚度。新增 pattern_audit 到layout-audit.json，记录interval/id/material/angle/record/source cells；不要改geobody几何。保持原图/详图均使用派生pattern，并验证旋转角正负。
+importer_v1：新增readability.py，负责生成readability.svg和readability-audit.json（不改renderer.py）。函数 render_readability(data, geometry, materials_doc, output_dir, config=None)->dict，返回readability_svg/readability_audit_json。几何传入最终layer_geometry；只用data来源。图片分为：重点层局部放大（根据材料focus_priority配置，而非写死C9/C11/C13）、全部连续层段的岩性识读卡（26仅此数据，数量必须动态）。每卡含源C层号、完整岩性名、足够大的重复图案样块（不表示厚度）、斜距与剖面投影宽度分开命名；重点层引用完整或准确节选原始描述，保留“约”，不解析替代true_thickness_m。源细节必须保留在审计中。缩略局部图使用同一world polygons及带独立标尺的同尺度投影；每重点层可采用自己的放大倍率，明确不用于比较厚度。说明固定样块大小仅便于识别、不是地层厚度。不能硬编码层数、名称之外的业务数值。名为煤层与碳质泥岩与煤线互层的模板分别focus_priority=100/90，通过模板显式配置选择。source_cells可放audit/附表，图面不要塞调试键。
+workbook_v1：负责pipeline.py新模块集成、server.py白名单与web/index.html入口支持新文件（按实际必要范围），及新增tests_readability.py；不要改任何Excel。pipeline从data及renderer产物layout-audit读取geometry并调用readability函数、使用已有Edge光栅函数生成readability.png，manifest纳入readability.py和新输出。网页提供“岩性与重点层识读图”PNG/SVG链接并可预览，明确是辅助识读图、主图不是行业核验已通过。报告同步。
+
+验收：所有源记录/节点/层段/产状不变；主详world polygons/contacts与斜层界上一版完全一致；所有interval都有完整名称和共享模板样块，未配置名字pending；重点层不凭描述猜测金矿层，只有显式模板focus_priority触发；原文约数保留在说明、结构化真厚度仍null；母图花纹朝向按数据计算，图例样块与其使用同一模板内容；主详与识读图窗口同米几何；布局无数字/卡片重叠。标准状态与符号的规范性核验仍未完成，不用“规范合格”包装可读性修正。

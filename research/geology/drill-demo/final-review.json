@@ -1,0 +1,69 @@
+{
+  "source": "GMT钻孔柱状图模版-ZK0003.xlt",
+  "source_sha256": "d1b1d69d9727155d56c9d10029fa746d3b786272ea3cc6e5da22dc4604b95513",
+  "basis": "未校正沿孔深，终孔382.79m",
+  "counts": {
+    "turns": 131,
+    "layers": 23,
+    "samples": 97
+  },
+  "repeat_render_byte_identical": true,
+  "numeric_geometry_and_font_review": true,
+  "pattern_review": {
+    "reference_matched_layers": [
+      1,
+      4,
+      5
+    ],
+    "pending_layers_count": 20,
+    "not_a_confirmed_material_code_or_industry_standard": true
+  },
+  "browser_preview": {
+    "url": "http://127.0.0.1:9188/",
+    "http_200": true,
+    "interactive_ui_verified": false,
+    "codex_open_status": "queued"
+  },
+  "outputs": {
+    "ZK0003-完整示图.svg": {
+      "sha256": "d7df1d1786af7e22cd8f75d48c95923127a30100a65db8b4a9d5158326d7ed48",
+      "bytes": 140169
+    },
+    "ZK0003-0至45米详图.svg": {
+      "sha256": "7a59f7caf75e446e26fe907832b28ec6e6bb4330c332fa49a71588575149c744",
+      "bytes": 29903
+    },
+    "drawing-data.html": {
+      "sha256": "0f11de82ff12d698e8ea580b20615625df41562c52ae87b2bc4879ae51cd7054",
+      "bytes": 32692
+    },
+    "layout-audit.json": {
+      "sha256": "edb22bec00f483d260fc7eb62311fda972fa13986c3fcac1ca8eb2af10e6ff88",
+      "bytes": 191894
+    },
+    "zk0003-data.json": {
+      "sha256": "8d5efda323c1e62a8a0d9ff5bbb7ccf6c70a80745965ef5d890d37614668cd31",
+      "bytes": 112824
+    },
+    "reference-patterns.json": {
+      "sha256": "b8edbb5796dd0f51b5d0e328f8ab8322859b3132a53aa47b8b1e592261c152eb",
+      "bytes": 5045
+    },
+    "render_drill_demo.py": {
+      "sha256": "f6e2d180cf611872ab1a91e39e7d9fc6e738230f0f87b85315a63bd8ad40596e",
+      "bytes": 24576
+    },
+    "ZK0003-完整示图-高清.png": {
+      "sha256": "b6fc6473c8fe64e201db1d79476c38efc3ca3edebacd013c8f0b9bd1af32c32a",
+      "bytes": 2638400
+    },
+    "ZK0003-0至45米详图-高清.png": {
+      "sha256": "dd612cf78c0d7424f0ca505c49d474b3f5e0c0057fe457b3f3d5537f1ee81742",
+      "bytes": 1033288
+    },
+    "index.html": {
+      "sha256": "5958bf18a8ab9aa6b0e9ee95d834cfe70a48f12959b5eddac85967f4812a1768",
+      "bytes": 7060
+    }
+  }
+}

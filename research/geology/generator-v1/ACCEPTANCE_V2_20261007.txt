@@ -1,0 +1,14 @@
+2026-10-07 标准导入接续
+
+现已提供实测剖面、钻孔柱状图两种标准Excel空白模板和填写示例；位置 outputs/standard-input-v2。统一APP http://127.0.0.1:9188/，本机处理。
+53项输入与实际SVG验收通过，日志 logs/v2-acceptance-render.json；钻孔/审计9项、服务8项通过。
+主审实际浏览器文件选择→提交：PM01标准示例43记录26层段20测站14样品成功；section_alt 2记录/2层段，投影终点14.330127018922195m、高差2.5m；ZK0003标准示例终孔382.79m、23层131回次97样品成功；drill_alt 7m、3层2回次3样品（0.02m薄层、重叠样品分两轨）成功。
+空白钻孔模板实际提交被拒绝，显示4项具体单元格错误，旧成功结果明确标记“旧结果，仅供查看”。原始文件未改。
+主审已实际查看新钻孔detail.png及7m短孔preview.png：无文字重叠，实际层界保留，无数据处留白；详图截断有说明，样品引线指向真实区间。
+证据截图 logs/v2-section-upload-full-proof.png、v2-drill-upload-full-proof.png、v2-drill-alt-upload-proof.png、v2-blank-validation-proof.png。
+PC两项源码与产物收尾已完成：高清PNG使用小数倍率重栅格化，实际4756×12000，preview2484×6267；百分数作为完整token换行，不再拆开。最终CLI产物 generated/drill-final-20261007，主审核对normalized与前版完全一致，实际看图无新增重叠。drill测试10/10、pipeline审计2/2；Chromium日志改为UTF-8容错读取，最终生成无解码异常。
+运行中的9188服务仍未加载最后百分数和日志补丁。自动审批拒绝重启与另开服务（仅返回blocked by policy），未绕过；最终源码用CLI独立生成并验证，旧服务保留可用。详情 D:/天气地图/docs/industry-tools-acceptance-20261007.txt。
+当前服务由本任务启动，PID以logs/server.pid为准。只维护本任务服务器，不关闭其他用户进程。
+
+手机APP“工具→行业工具”源码与预览集成已完成，独立开关支持普通版隐藏；本地标准xlsx导入、离线SVG绘图、PNG和完整ZIP附表。主审390×857与360×780实际导入/切换/退出/锁定恢复通过，32项定向测试、tsc、Web构建通过；手机实际导出钻孔PNG3875×6193。未打包或安装新APK；原生选择/保存及真机离线未验收。手机交接见 D:/天气地图/docs/industry-tools-acceptance-20261007.txt。
+图式为源资料对应项目模板，仍有未知岩性/缺少标准化岩性名的层段待配置，不能声称全部行业标准已认证。源描述、缺失值、缓存差异保留；不从矿化字样推断矿体。

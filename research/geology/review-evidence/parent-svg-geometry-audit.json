@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "common_x_exact_match": true,
+  "source_nodes_per_line": 44,
+  "max_svg_coordinate_residual_px": 5.004040701805934e-07,
+  "max_svg_coordinate_residual_m": 1.8007764056969644e-07,
+  "material_intervals": 26,
+  "material_boundary_x_error_px": 0,
+  "internal_strike_symbols": 25,
+  "max_strike_angle_error_deg": 1.544485826343589e-06
+}

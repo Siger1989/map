@@ -1,0 +1,16 @@
+{
+  "job": "drill-6420c47d62f5-929260ad-d343cbef",
+  "input_sha256": "6420c47d62f53bab2e25f06cc9fa729fc394bf8a0ffbedab4e0334c757b9c2d5",
+  "preview": [
+    2484,
+    6267
+  ],
+  "hd": [
+    4756,
+    12000
+  ],
+  "hd_pixels": 57072000,
+  "svg_images": false,
+  "preview_sha": "DA31D533A8A9ABA5D13808754CC27E73C86231595CBB31463154618D62919AA4",
+  "hd_sha": "9E34CA0DE2881058D342467A14C23E487F325C46E1938FA93818F654AE4E3CA2"
+}

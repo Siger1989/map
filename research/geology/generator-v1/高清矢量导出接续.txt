@@ -1,0 +1,14 @@
+2026-10-06 高清与矢量导出接续
+本轮请求：完整图放大模糊，希望更大图或矢量图。
+当前输出：generated/pm01-canonical 和真实网页上传 generated/1de070d10ca8c2565a88cae8。
+新增 complete-hd.png：同一 drawing.svg 由 Edge 4倍直接重绘，当前6000×9404（不是放大旧PNG）。
+默认上限6400万像素、单边12000px；输入过大时按整数倍降档，并在manifest记录请求与实际倍率。
+网页主图预览现在使用SVG；/vector-viewer.html?src=/generated/<job>/drawing.svg 支持适合宽度、100/200/400/800%。
+已实际测试400%放大、滚动与保持中心，效果证据 logs/hd-vector-400-proof.png。
+主图与详图、识读图删除会被高清像素误读的1px换算文案，保留米标尺；未修改JSON的SVG逻辑单位/坐标算法。
+独立核验 logs/hd-export-final-reviewed.json：非文字SVG元素完全相同；normalized/layout/readability审计哈希不变；CLI与UI的SVG/HD等5文件哈希一致；原输入XLSX哈希不变；manifest代码为当前版本。
+相关integration、server及图案/识读单项通过，日志 logs/test-hd-integration.log、test-server.log、test-renderer-label-update.log、test-readability-label-update.log。
+对外交付：generated/PM01-参考花纹-完整图.svg 与 PM01-参考花纹-完整高清图-6000px.png。
+矢量查看器tab2已markDeliverable并发送右侧，open_in_codex返回queued，未声称实际展示已完成。
+本任务服务PID见logs/server.pid，目前32452，127.0.0.1:9187；后续先核实PID真实命令行身份。
+其余数据精度、80项源表冲突、3种纹样待核对、行业图式未整体核验的既有边界均保留。

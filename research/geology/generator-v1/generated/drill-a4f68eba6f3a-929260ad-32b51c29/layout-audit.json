@@ -1,0 +1,654 @@
+{
+  "main": {
+    "hole_id": "ZK-TEST-02",
+    "endpoint_m": 7.0,
+    "depth_basis": "原始沿孔深",
+    "scale_units_per_meter": 100.0,
+    "minimum_depth_height_units": 700.0,
+    "view_depth_m": [
+      0.0,
+      7.0
+    ],
+    "viewBox": [
+      0.0,
+      0.0,
+      2484.0,
+      959.5
+    ],
+    "counts": {
+      "layers": 3,
+      "turns": 2,
+      "samples": 3
+    },
+    "structure_count": 1,
+    "sample_lane_count": 2,
+    "sample_lanes": {
+      "S1": 0,
+      "S2": 1,
+      "S3": 0
+    },
+    "layers": [
+      {
+        "id": "A",
+        "top_m": 0.0,
+        "bottom_m": 1.5,
+        "top_y": 126.0,
+        "bottom_y": 276.0,
+        "plotted_top_m": 0.0,
+        "plotted_bottom_m": 1.5,
+        "plotted_top_y": 126.0,
+        "plotted_bottom_y": 276.0,
+        "source": {
+          "sheet": "分层",
+          "row": 2,
+          "cells": {
+            "层号": "分层!A2",
+            "顶深_m": "分层!B2",
+            "底深_m": "分层!C2",
+            "岩性名称": "分层!D2",
+            "岩性描述": "分层!E2",
+            "岩心长_m": "分层!F2",
+            "花纹代码": "分层!G2"
+          }
+        },
+        "label_anchor_y": 201.0,
+        "label_y": 201.0,
+        "description_anchor_y": 201.0,
+        "description_label_y": 201.0,
+        "description_lines": [
+          "泥岩夹泥质粉砂岩；泥岩夹泥质粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 1.50 m　岩心长 1.40 m　采取率 93.33%　花纹 D001"
+        ],
+        "raw_description": "泥岩夹泥质粉砂岩",
+        "pattern_code": "D001"
+      },
+      {
+        "id": "B",
+        "top_m": 1.5,
+        "bottom_m": 1.52,
+        "top_y": 276.0,
+        "bottom_y": 278.0,
+        "plotted_top_m": 1.5,
+        "plotted_bottom_m": 1.52,
+        "plotted_top_y": 276.0,
+        "plotted_bottom_y": 278.0,
+        "source": {
+          "sheet": "分层",
+          "row": 3,
+          "cells": {
+            "层号": "分层!A3",
+            "顶深_m": "分层!B3",
+            "底深_m": "分层!C3",
+            "岩性名称": "分层!D3",
+            "岩性描述": "分层!E3",
+            "岩心长_m": "分层!F3",
+            "花纹代码": "分层!G3"
+          }
+        },
+        "label_anchor_y": 277.0,
+        "label_y": 277.0,
+        "description_anchor_y": 277.0,
+        "description_label_y": 277.0,
+        "description_lines": [
+          "砂岩夹粉砂岩；砂岩夹粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 0.02 m　岩心长 0.01 m　采取率 75.00%　花纹 D003"
+        ],
+        "raw_description": "砂岩夹粉砂岩",
+        "pattern_code": "D003"
+      },
+      {
+        "id": "C",
+        "top_m": 1.52,
+        "bottom_m": 7.0,
+        "top_y": 278.0,
+        "bottom_y": 826.0,
+        "plotted_top_m": 1.52,
+        "plotted_bottom_m": 7.0,
+        "plotted_top_y": 278.0,
+        "plotted_bottom_y": 826.0,
+        "source": {
+          "sheet": "分层",
+          "row": 4,
+          "cells": {
+            "层号": "分层!A4",
+            "顶深_m": "分层!B4",
+            "底深_m": "分层!C4",
+            "岩性名称": "分层!D4",
+            "岩性描述": "分层!E4",
+            "岩心长_m": "分层!F4",
+            "花纹代码": "分层!G4"
+          }
+        },
+        "label_anchor_y": 552.0,
+        "label_y": 552.0,
+        "description_anchor_y": 552.0,
+        "description_label_y": 552.0,
+        "description_lines": [
+          "新岩性名称待定义；新岩性名称待定义"
+        ],
+        "description_param_lines": [
+          "段长 5.48 m　岩心长 未提供 m　采取率 未提供%　花纹 待配置"
+        ],
+        "raw_description": "新岩性名称待定义",
+        "pattern_code": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "S1",
+        "top_m": 0.5,
+        "bottom_m": 1.0,
+        "top_y": 176.0,
+        "bottom_y": 226.0,
+        "plotted_top_m": 0.5,
+        "plotted_bottom_m": 1.0,
+        "plotted_top_y": 176.0,
+        "plotted_bottom_y": 226.0,
+        "source": {
+          "sheet": "样品",
+          "row": 2,
+          "cells": {
+            "样品编号": "样品!A2",
+            "顶深_m": "样品!B2",
+            "底深_m": "样品!C2",
+            "岩心长_m": "样品!D2",
+            "Au": "样品!E2",
+            "Pb": "样品!F2",
+            "Zn": "样品!G2"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 201.0,
+        "plotted_midpoint_y": 201.0,
+        "label_anchor_y": 201.0,
+        "label_y": 201.0,
+        "label_moved": false,
+        "analysis_y": 189.0
+      },
+      {
+        "id": "S2",
+        "top_m": 0.7,
+        "bottom_m": 1.2,
+        "top_y": 196.0,
+        "bottom_y": 246.0,
+        "plotted_top_m": 0.7,
+        "plotted_bottom_m": 1.2,
+        "plotted_top_y": 196.0,
+        "plotted_bottom_y": 246.0,
+        "source": {
+          "sheet": "样品",
+          "row": 3,
+          "cells": {
+            "样品编号": "样品!A3",
+            "顶深_m": "样品!B3",
+            "底深_m": "样品!C3",
+            "岩心长_m": "样品!D3",
+            "Au": "样品!E3",
+            "Pb": "样品!F3",
+            "Zn": "样品!G3"
+          }
+        },
+        "lane": 1,
+        "midpoint_y": 221.0,
+        "plotted_midpoint_y": 221.0,
+        "label_anchor_y": 221.0,
+        "label_y": 262.0,
+        "label_moved": true,
+        "analysis_y": 250.0
+      },
+      {
+        "id": "S3",
+        "top_m": 6.9,
+        "bottom_m": 7.0,
+        "top_y": 816.0,
+        "bottom_y": 826.0,
+        "plotted_top_m": 6.9,
+        "plotted_bottom_m": 7.0,
+        "plotted_top_y": 816.0,
+        "plotted_bottom_y": 826.0,
+        "source": {
+          "sheet": "样品",
+          "row": 4,
+          "cells": {
+            "样品编号": "样品!A4",
+            "顶深_m": "样品!B4",
+            "底深_m": "样品!C4",
+            "岩心长_m": "样品!D4",
+            "Au": "样品!E4",
+            "Pb": "样品!F4",
+            "Zn": "样品!G4"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 821.0,
+        "plotted_midpoint_y": 821.0,
+        "label_anchor_y": 821.0,
+        "label_y": 821.0,
+        "label_moved": false,
+        "analysis_y": 809.0
+      }
+    ],
+    "structures": [
+      {
+        "depth_m": 7.0,
+        "diameter_mm": 91.0,
+        "y": 826.0,
+        "label_anchor_y": 826.0,
+        "label_y": 826.0,
+        "source": {
+          "sheet": "孔径",
+          "row": 2,
+          "cells": {
+            "孔深_m": "孔径!A2",
+            "孔径_mm": "孔径!B2"
+          }
+        }
+      }
+    ],
+    "turns_independent_equal_height_ledger": true,
+    "turn_records": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 2.0,
+        "top_y": 126.0,
+        "bottom_y": 326.0,
+        "ledger_y": 137.5,
+        "source": {
+          "sheet": "回次",
+          "row": 2,
+          "cells": {
+            "回次号": "回次!A2",
+            "顶深_m": "回次!B2",
+            "底深_m": "回次!C2",
+            "岩心长_m": "回次!D2"
+          }
+        }
+      },
+      {
+        "id": "2",
+        "top_m": 2.0,
+        "bottom_m": 7.0,
+        "top_y": 326.0,
+        "bottom_y": 826.0,
+        "ledger_y": 160.5,
+        "source": {
+          "sheet": "回次",
+          "row": 3,
+          "cells": {
+            "回次号": "回次!A3",
+            "顶深_m": "回次!B3",
+            "底深_m": "回次!C3",
+            "岩心长_m": "回次!D3"
+          }
+        }
+      }
+    ],
+    "detail_crop_is_not_geologic_boundary": false,
+    "svg_image_elements": 0,
+    "source_values_rounded_for_display_only": true,
+    "pending_patterns": [
+      "C"
+    ]
+  },
+  "detail": {
+    "hole_id": "ZK-TEST-02",
+    "endpoint_m": 7.0,
+    "depth_basis": "原始沿孔深",
+    "scale_units_per_meter": 100.0,
+    "minimum_depth_height_units": 700.0,
+    "view_depth_m": [
+      0.0,
+      7.0
+    ],
+    "viewBox": [
+      0.0,
+      0.0,
+      2484.0,
+      959.5
+    ],
+    "counts": {
+      "layers": 3,
+      "turns": 2,
+      "samples": 3
+    },
+    "structure_count": 1,
+    "sample_lane_count": 2,
+    "sample_lanes": {
+      "S1": 0,
+      "S2": 1,
+      "S3": 0
+    },
+    "layers": [
+      {
+        "id": "A",
+        "top_m": 0.0,
+        "bottom_m": 1.5,
+        "top_y": 126.0,
+        "bottom_y": 276.0,
+        "plotted_top_m": 0.0,
+        "plotted_bottom_m": 1.5,
+        "plotted_top_y": 126.0,
+        "plotted_bottom_y": 276.0,
+        "source": {
+          "sheet": "分层",
+          "row": 2,
+          "cells": {
+            "层号": "分层!A2",
+            "顶深_m": "分层!B2",
+            "底深_m": "分层!C2",
+            "岩性名称": "分层!D2",
+            "岩性描述": "分层!E2",
+            "岩心长_m": "分层!F2",
+            "花纹代码": "分层!G2"
+          }
+        },
+        "label_anchor_y": 201.0,
+        "label_y": 201.0,
+        "description_anchor_y": 201.0,
+        "description_label_y": 201.0,
+        "description_lines": [
+          "泥岩夹泥质粉砂岩；泥岩夹泥质粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 1.50 m　岩心长 1.40 m　采取率 93.33%　花纹 D001"
+        ],
+        "raw_description": "泥岩夹泥质粉砂岩",
+        "pattern_code": "D001"
+      },
+      {
+        "id": "B",
+        "top_m": 1.5,
+        "bottom_m": 1.52,
+        "top_y": 276.0,
+        "bottom_y": 278.0,
+        "plotted_top_m": 1.5,
+        "plotted_bottom_m": 1.52,
+        "plotted_top_y": 276.0,
+        "plotted_bottom_y": 278.0,
+        "source": {
+          "sheet": "分层",
+          "row": 3,
+          "cells": {
+            "层号": "分层!A3",
+            "顶深_m": "分层!B3",
+            "底深_m": "分层!C3",
+            "岩性名称": "分层!D3",
+            "岩性描述": "分层!E3",
+            "岩心长_m": "分层!F3",
+            "花纹代码": "分层!G3"
+          }
+        },
+        "label_anchor_y": 277.0,
+        "label_y": 277.0,
+        "description_anchor_y": 277.0,
+        "description_label_y": 277.0,
+        "description_lines": [
+          "砂岩夹粉砂岩；砂岩夹粉砂岩"
+        ],
+        "description_param_lines": [
+          "段长 0.02 m　岩心长 0.01 m　采取率 75.00%　花纹 D003"
+        ],
+        "raw_description": "砂岩夹粉砂岩",
+        "pattern_code": "D003"
+      },
+      {
+        "id": "C",
+        "top_m": 1.52,
+        "bottom_m": 7.0,
+        "top_y": 278.0,
+        "bottom_y": 826.0,
+        "plotted_top_m": 1.52,
+        "plotted_bottom_m": 7.0,
+        "plotted_top_y": 278.0,
+        "plotted_bottom_y": 826.0,
+        "source": {
+          "sheet": "分层",
+          "row": 4,
+          "cells": {
+            "层号": "分层!A4",
+            "顶深_m": "分层!B4",
+            "底深_m": "分层!C4",
+            "岩性名称": "分层!D4",
+            "岩性描述": "分层!E4",
+            "岩心长_m": "分层!F4",
+            "花纹代码": "分层!G4"
+          }
+        },
+        "label_anchor_y": 552.0,
+        "label_y": 552.0,
+        "description_anchor_y": 552.0,
+        "description_label_y": 552.0,
+        "description_lines": [
+          "新岩性名称待定义；新岩性名称待定义"
+        ],
+        "description_param_lines": [
+          "段长 5.48 m　岩心长 未提供 m　采取率 未提供%　花纹 待配置"
+        ],
+        "raw_description": "新岩性名称待定义",
+        "pattern_code": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "S1",
+        "top_m": 0.5,
+        "bottom_m": 1.0,
+        "top_y": 176.0,
+        "bottom_y": 226.0,
+        "plotted_top_m": 0.5,
+        "plotted_bottom_m": 1.0,
+        "plotted_top_y": 176.0,
+        "plotted_bottom_y": 226.0,
+        "source": {
+          "sheet": "样品",
+          "row": 2,
+          "cells": {
+            "样品编号": "样品!A2",
+            "顶深_m": "样品!B2",
+            "底深_m": "样品!C2",
+            "岩心长_m": "样品!D2",
+            "Au": "样品!E2",
+            "Pb": "样品!F2",
+            "Zn": "样品!G2"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 201.0,
+        "plotted_midpoint_y": 201.0,
+        "label_anchor_y": 201.0,
+        "label_y": 201.0,
+        "label_moved": false,
+        "analysis_y": 189.0
+      },
+      {
+        "id": "S2",
+        "top_m": 0.7,
+        "bottom_m": 1.2,
+        "top_y": 196.0,
+        "bottom_y": 246.0,
+        "plotted_top_m": 0.7,
+        "plotted_bottom_m": 1.2,
+        "plotted_top_y": 196.0,
+        "plotted_bottom_y": 246.0,
+        "source": {
+          "sheet": "样品",
+          "row": 3,
+          "cells": {
+            "样品编号": "样品!A3",
+            "顶深_m": "样品!B3",
+            "底深_m": "样品!C3",
+            "岩心长_m": "样品!D3",
+            "Au": "样品!E3",
+            "Pb": "样品!F3",
+            "Zn": "样品!G3"
+          }
+        },
+        "lane": 1,
+        "midpoint_y": 221.0,
+        "plotted_midpoint_y": 221.0,
+        "label_anchor_y": 221.0,
+        "label_y": 262.0,
+        "label_moved": true,
+        "analysis_y": 250.0
+      },
+      {
+        "id": "S3",
+        "top_m": 6.9,
+        "bottom_m": 7.0,
+        "top_y": 816.0,
+        "bottom_y": 826.0,
+        "plotted_top_m": 6.9,
+        "plotted_bottom_m": 7.0,
+        "plotted_top_y": 816.0,
+        "plotted_bottom_y": 826.0,
+        "source": {
+          "sheet": "样品",
+          "row": 4,
+          "cells": {
+            "样品编号": "样品!A4",
+            "顶深_m": "样品!B4",
+            "底深_m": "样品!C4",
+            "岩心长_m": "样品!D4",
+            "Au": "样品!E4",
+            "Pb": "样品!F4",
+            "Zn": "样品!G4"
+          }
+        },
+        "lane": 0,
+        "midpoint_y": 821.0,
+        "plotted_midpoint_y": 821.0,
+        "label_anchor_y": 821.0,
+        "label_y": 821.0,
+        "label_moved": false,
+        "analysis_y": 809.0
+      }
+    ],
+    "structures": [
+      {
+        "depth_m": 7.0,
+        "diameter_mm": 91.0,
+        "y": 826.0,
+        "label_anchor_y": 826.0,
+        "label_y": 826.0,
+        "source": {
+          "sheet": "孔径",
+          "row": 2,
+          "cells": {
+            "孔深_m": "孔径!A2",
+            "孔径_mm": "孔径!B2"
+          }
+        }
+      }
+    ],
+    "turns_independent_equal_height_ledger": true,
+    "turn_records": [
+      {
+        "id": "1",
+        "top_m": 0.0,
+        "bottom_m": 2.0,
+        "top_y": 126.0,
+        "bottom_y": 326.0,
+        "ledger_y": 137.5,
+        "source": {
+          "sheet": "回次",
+          "row": 2,
+          "cells": {
+            "回次号": "回次!A2",
+            "顶深_m": "回次!B2",
+            "底深_m": "回次!C2",
+            "岩心长_m": "回次!D2"
+          }
+        }
+      },
+      {
+        "id": "2",
+        "top_m": 2.0,
+        "bottom_m": 7.0,
+        "top_y": 326.0,
+        "bottom_y": 826.0,
+        "ledger_y": 160.5,
+        "source": {
+          "sheet": "回次",
+          "row": 3,
+          "cells": {
+            "回次号": "回次!A3",
+            "顶深_m": "回次!B3",
+            "底深_m": "回次!C3",
+            "岩心长_m": "回次!D3"
+          }
+        }
+      }
+    ],
+    "detail_crop_is_not_geologic_boundary": false,
+    "svg_image_elements": 0,
+    "source_values_rounded_for_display_only": true,
+    "pending_patterns": [
+      "C"
+    ]
+  },
+  "raster": {
+    "main": {
+      "vector_native_size": [
+        2484.0,
+        960.0
+      ],
+      "raster_view_size": [
+        2484,
+        960
+      ],
+      "viewBox_preserved": true
+    },
+    "detail": {
+      "vector_native_size": [
+        2484.0,
+        960.0
+      ],
+      "raster_view_size": [
+        2484,
+        960
+      ],
+      "viewBox_preserved": true
+    },
+    "preview": {
+      "css_width_px": 2484,
+      "css_height_px": 960,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 2484,
+      "png_height_px": 960,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "complete_hd": {
+      "css_width_px": 2484,
+      "css_height_px": 960,
+      "requested_scale": 4,
+      "scale": 4,
+      "png_width_px": 9936,
+      "png_height_px": 3840,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "detail_png": {
+      "css_width_px": 2484,
+      "css_height_px": 960,
+      "requested_scale": 1,
+      "scale": 1,
+      "png_width_px": 2484,
+      "png_height_px": 960,
+      "pixel_limit": 64000000,
+      "dimension_limit": 12000,
+      "scale_reduced_for_limits": false,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  }
+}

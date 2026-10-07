@@ -1,0 +1,313 @@
+{
+  "schema_version": "1.0",
+  "input_counts": {
+    "nodes": 44,
+    "records": 43,
+    "intervals": 26,
+    "stations": 20,
+    "attitudes": 27,
+    "samples": 14
+  },
+  "geometry": {
+    "x_range_m": [
+      0.0,
+      479.3394609125983
+    ],
+    "offset_range_m": [
+      -4.973799150320701e-14,
+      234.07670982328915
+    ],
+    "elevation_range_m": [
+      -127.46241495689857,
+      0.0
+    ],
+    "units_per_px": 0.35986446014459333,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true,
+    "svg_geometry_coordinate_decimals_px": 6,
+    "maximum_coordinate_serialization_error_px": 5e-07,
+    "maximum_coordinate_serialization_error_m": 1.7993223007229666e-07,
+    "data_calculation_rounded": false
+  },
+  "projected_band": {
+    "drawn": true,
+    "reasons_if_suppressed": [],
+    "screen_width_px": 24.0,
+    "width_represents_true_thickness": false,
+    "separators_represent_subsurface_contacts": false
+  },
+  "layout": {
+    "page_width_px": 1500.0,
+    "page_height_px": 2331.653598287871,
+    "station_label_dynamic_lanes_added": 0,
+    "attitude_label_dynamic_lanes_added": 0,
+    "layer_label_dynamic_lanes_added": 0,
+    "label_forced_overlap_count": 0,
+    "labelled_interval_count": 26,
+    "thin_interval_count": 7,
+    "thin_interval_ids": [
+      "L7",
+      "L8",
+      "L14",
+      "L16",
+      "L17",
+      "L18",
+      "L23"
+    ],
+    "minimum_projected_interval_px": 2.150228625823729
+  },
+  "materials": {
+    "configured_names": [
+      "凝灰岩",
+      "凝灰质泥岩",
+      "含火山碎屑粉砂质泥岩",
+      "含生物碎屑凝灰岩",
+      "含粉砂泥岩",
+      "沉凝灰岩",
+      "泥化凝灰岩",
+      "泥化沉凝灰岩",
+      "泥岩",
+      "泥晶灰岩",
+      "泥质粉砂岩",
+      "煤层",
+      "玄武质火山碎屑岩",
+      "硅化凝灰岩",
+      "碳质泥岩与煤线互层",
+      "粉砂质泥岩"
+    ],
+    "pending_names": [],
+    "fuzzy_matching": false,
+    "legend_uses_fill_definition": true
+  },
+  "samples": {
+    "located": 0,
+    "missing_location": 14,
+    "missing_location_plotted": false
+  },
+  "detail": {
+    "generated": true,
+    "x_range_m": [
+      240.28345967945876,
+      345.7381410802304
+    ],
+    "feature_count": 43,
+    "units_per_px": 0.07917018123181052,
+    "magnification_vs_main": 4.545454545454546,
+    "projected_band_drawn": true,
+    "projected_band_safety_matches_main": true,
+    "profile_uses_full_node_path_before_clipping": true,
+    "profile_source_node_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43
+    ],
+    "boundary_crossing_segment_count": 2,
+    "boundary_crossing_segments_preserved_by_clip_path": true,
+    "interval_path_consistency": [
+      {
+        "interval_id": "I0011",
+        "layer_id": "C10",
+        "main_node_indices": [
+          16,
+          17,
+          18
+        ],
+        "detail_node_indices": [
+          16,
+          17,
+          18
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0012",
+        "layer_id": "C11",
+        "main_node_indices": [
+          18,
+          19
+        ],
+        "detail_node_indices": [
+          18,
+          19
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0013",
+        "layer_id": "C12",
+        "main_node_indices": [
+          19,
+          20,
+          21
+        ],
+        "detail_node_indices": [
+          19,
+          20,
+          21
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0014",
+        "layer_id": "C13",
+        "main_node_indices": [
+          21,
+          22
+        ],
+        "detail_node_indices": [
+          21,
+          22
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0015",
+        "layer_id": "C14",
+        "main_node_indices": [
+          22,
+          23,
+          24
+        ],
+        "detail_node_indices": [
+          22,
+          23,
+          24
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0016",
+        "layer_id": "C15",
+        "main_node_indices": [
+          24,
+          25
+        ],
+        "detail_node_indices": [
+          24,
+          25
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0017",
+        "layer_id": "C16",
+        "main_node_indices": [
+          25,
+          26
+        ],
+        "detail_node_indices": [
+          25,
+          26
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0018",
+        "layer_id": "C17",
+        "main_node_indices": [
+          26,
+          27
+        ],
+        "detail_node_indices": [
+          26,
+          27
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0019",
+        "layer_id": "C18",
+        "main_node_indices": [
+          27,
+          28
+        ],
+        "detail_node_indices": [
+          27,
+          28
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0020",
+        "layer_id": "C19",
+        "main_node_indices": [
+          28,
+          29,
+          30
+        ],
+        "detail_node_indices": [
+          28,
+          29,
+          30
+        ],
+        "matches": true
+      },
+      {
+        "interval_id": "I0021",
+        "layer_id": "C20",
+        "main_node_indices": [
+          30,
+          31,
+          32,
+          33
+        ],
+        "detail_node_indices": [
+          30,
+          31,
+          32,
+          33
+        ],
+        "matches": true
+      }
+    ],
+    "all_interval_paths_match_main": true
+  },
+  "notes": [
+    "All dimensions are data-derived; no fixed paper scale is claimed.",
+    "Contact strike lines are fixed-length symbols derived from the first attitude in each interval.",
+    "Full imported issues and long descriptions are in appendix.html."
+  ]
+}

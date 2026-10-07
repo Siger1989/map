@@ -1,0 +1,3043 @@
+{
+  "schema_version": "1.0",
+  "artifact": "geology_readability_aid",
+  "status": "data_review_only_industry_conventions_not_fully_verified",
+  "page": {
+    "width_px": 1600.0,
+    "height_px": 4776.0
+  },
+  "counts": {
+    "intervals": 26,
+    "focus_intervals": 3,
+    "regions": 26,
+    "contacts": 25
+  },
+  "geometry_reference": {
+    "mode": "apparent_dip_outcrop",
+    "requested_depth_m": 18.0,
+    "effective_depth_m": 3.3943406026757206,
+    "eligible": true,
+    "sha256_canonical_json": "13ed50aa6798316e0b49e676427c84892b9f8963403e36bd86cb08c9d13b34ec",
+    "world_coordinates_reused": true,
+    "boundary_positions_modified": false
+  },
+  "focus_panels": [
+    {
+      "interval_id": "I0010",
+      "layer_id": "C9",
+      "material_name": "煤层",
+      "focus_priority": 100.0,
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": "煤线",
+        "layer_ids": [
+          "C9"
+        ],
+        "motif": "白底；三条连续平行粗黑煤线，线间保留白缝；线条条数不表示厚度。",
+        "match_type": "layer_pairing"
+      },
+      "source_node_indices": [
+        15,
+        16
+      ],
+      "record_ids": [
+        "R0016"
+      ],
+      "description_full": "煤层。厚度约1.5米。",
+      "description_excerpt": "煤层。厚度约1.5米。",
+      "description_source_cells": [
+        "P21"
+      ],
+      "true_thickness_values": [
+        null
+      ],
+      "x_window_m": [
+        176.29743503169888,
+        197.44489367083978
+      ],
+      "z_window_m": [
+        -31.963154574439457,
+        -24.903338158438576
+      ],
+      "units_per_px": 0.0185784642526339,
+      "magnification_vs_full_width": 19.28311798538789,
+      "draw_size_px": [
+        1138.278081092886,
+        380.0
+      ],
+      "target_boundary_nodes": [
+        15,
+        16
+      ],
+      "target_contact_ids": [
+        "LC0009",
+        "LC0010"
+      ]
+    },
+    {
+      "interval_id": "I0012",
+      "layer_id": "C11",
+      "material_name": "碳质泥岩与煤线互层",
+      "focus_priority": 90.0,
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "source_node_indices": [
+        18,
+        19
+      ],
+      "record_ids": [
+        "R0019"
+      ],
+      "description_full": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+      "description_excerpt": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+      "description_source_cells": [
+        "P24"
+      ],
+      "true_thickness_values": [
+        null
+      ],
+      "x_window_m": [
+        245.99031455647597,
+        262.36743236674306
+      ],
+      "z_window_m": [
+        -43.50742399792003,
+        -35.98741619723956
+      ],
+      "units_per_px": 0.01978949421231702,
+      "magnification_vs_full_width": 18.103076022421774,
+      "draw_size_px": [
+        827.5662649363694,
+        380.0
+      ],
+      "target_boundary_nodes": [
+        18,
+        19
+      ],
+      "target_contact_ids": [
+        "LC0011",
+        "LC0012"
+      ]
+    },
+    {
+      "interval_id": "I0014",
+      "layer_id": "C13",
+      "material_name": "碳质泥岩与煤线互层",
+      "focus_priority": 90.0,
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "source_node_indices": [
+        21,
+        22
+      ],
+      "record_ids": [
+        "R0022"
+      ],
+      "description_full": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。",
+      "description_excerpt": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。煤线平均单层厚度约5-10cm。",
+      "description_source_cells": [
+        "P27"
+      ],
+      "true_thickness_values": [
+        null
+      ],
+      "x_window_m": [
+        269.09525846867535,
+        283.35148899991333
+      ],
+      "z_window_m": [
+        -53.424919109310714,
+        -40.397127731025215
+      ],
+      "units_per_px": 0.03428366152180395,
+      "magnification_vs_full_width": 10.449604921662411,
+      "draw_size_px": [
+        415.83162061529526,
+        380.0
+      ],
+      "target_boundary_nodes": [
+        21,
+        22
+      ],
+      "target_contact_ids": [
+        "LC0013",
+        "LC0014"
+      ]
+    }
+  ],
+  "interval_cards": [
+    {
+      "row_index": 0,
+      "y_px": 2024.0,
+      "interval_id": "I0001",
+      "layer_id": "C0",
+      "material_name": "泥岩",
+      "material_configured": true,
+      "material_id": "mat_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": "泥岩",
+        "layer_ids": [
+          "C0",
+          "C2"
+        ],
+        "motif": "白底；四行错列细短横线，行间与横向均留白。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0001",
+        "R0002",
+        "R0003"
+      ],
+      "source_node_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "slant_length_m": 77.6,
+      "projected_width_m": 70.11672543991357,
+      "true_thickness_values": [
+        null,
+        null,
+        null
+      ],
+      "description_full": "泥岩。呈浅灰-土黄色，具泥质结构，薄层状构造。层理发育，单层厚度约0.5-1cm。泥质含量约85-90%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "B6",
+          "B7",
+          "B8"
+        ],
+        "lithology_name": [
+          "P6"
+        ],
+        "description": [
+          "P6"
+        ]
+      }
+    },
+    {
+      "row_index": 1,
+      "y_px": 2126.0,
+      "interval_id": "I0002",
+      "layer_id": "C1",
+      "material_name": "粉砂质泥岩",
+      "material_configured": true,
+      "material_id": "mat_silty_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 14,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0004",
+        "R0005"
+      ],
+      "source_node_indices": [
+        3,
+        4,
+        5
+      ],
+      "slant_length_m": 33.0,
+      "projected_width_m": 14.764163209429157,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "source_cells": {
+        "layer_id": [
+          "B9",
+          "B10"
+        ],
+        "lithology_name": [
+          "P9"
+        ],
+        "description": [
+          "P9"
+        ]
+      }
+    },
+    {
+      "row_index": 2,
+      "y_px": 2228.0,
+      "interval_id": "I0003",
+      "layer_id": "C2",
+      "material_name": "泥岩",
+      "material_configured": true,
+      "material_id": "mat_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": "泥岩",
+        "layer_ids": [
+          "C0",
+          "C2"
+        ],
+        "motif": "白底；四行错列细短横线，行间与横向均留白。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0006"
+      ],
+      "source_node_indices": [
+        5,
+        6
+      ],
+      "slant_length_m": 23.6,
+      "projected_width_m": 18.651745498626326,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "泥岩。呈浅灰色，具泥质结构，薄层状构造，单层厚度约0.5-1cm。泥质含量约90-95%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B11"
+        ],
+        "lithology_name": [
+          "P11"
+        ],
+        "description": [
+          "P11"
+        ]
+      }
+    },
+    {
+      "row_index": 3,
+      "y_px": 2330.0,
+      "interval_id": "I0004",
+      "layer_id": "C3",
+      "material_name": "含粉砂泥岩",
+      "material_configured": true,
+      "material_id": "mat_silty_mudstone_bearing",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C3"
+        ],
+        "motif": "密集细短横划分行错列；密度高于泥岩。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 12,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0007",
+        "R0008"
+      ],
+      "source_node_indices": [
+        6,
+        7,
+        8
+      ],
+      "slant_length_m": 22.4,
+      "projected_width_m": 17.448345240674072,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "含粉砂泥岩。呈土黄色，具泥质结构，薄层状构造。纹层发育，单层厚度0.5-2cm。泥质含量约80-85%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "B12",
+          "B13"
+        ],
+        "lithology_name": [
+          "P12"
+        ],
+        "description": [
+          "P12"
+        ]
+      }
+    },
+    {
+      "row_index": 4,
+      "y_px": 2432.0,
+      "interval_id": "I0005",
+      "layer_id": "C4",
+      "material_name": "泥晶灰岩",
+      "material_configured": true,
+      "material_id": "mat_micritic_limestone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "泥晶灰岩",
+        "layer_ids": [
+          "C4",
+          "C25"
+        ],
+        "motif": "白底；水平细层理间配置错列小工字与沙漏节点。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0009"
+      ],
+      "source_node_indices": [
+        8,
+        9
+      ],
+      "slant_length_m": 26.200000000000003,
+      "projected_width_m": 20.192662802515983,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "泥晶灰岩。呈深灰色，具隐晶质结构，中-厚层状构造，单层厚度约30-120cm。方解石含量约85-90%，泥质含量约10-15%，零星见黄铁矿颗粒，粒径约0.1-0.3mm。",
+      "source_cells": {
+        "layer_id": [
+          "B14"
+        ],
+        "lithology_name": [
+          "P14"
+        ],
+        "description": [
+          "P14"
+        ]
+      }
+    },
+    {
+      "row_index": 5,
+      "y_px": 2534.0,
+      "interval_id": "I0006",
+      "layer_id": "C5",
+      "material_name": "含生物碎屑凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_bioclastic_tuff",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c5-c6.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C5"
+        ],
+        "motif": "细短横划、小开口c/弧圈与竖向双点共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0010"
+      ],
+      "source_node_indices": [
+        9,
+        10
+      ],
+      "slant_length_m": 13.199999999999996,
+      "projected_width_m": 10.173402633328664,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "含生物碎屑凝灰岩。呈浅灰色，具凝灰结构，薄-中层状构造。层理发育，单层厚度约8-30cm，凝灰质含量约85-90%，泥质含量约8-12%，其余为菊石生物碎屑。",
+      "source_cells": {
+        "layer_id": [
+          "B15"
+        ],
+        "lithology_name": [
+          "P15"
+        ],
+        "description": [
+          "P15"
+        ]
+      }
+    },
+    {
+      "row_index": 6,
+      "y_px": 2636.0,
+      "interval_id": "I0007",
+      "layer_id": "C6",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0011",
+        "R0012"
+      ],
+      "source_node_indices": [
+        10,
+        11,
+        12
+      ],
+      "slant_length_m": 6.600000000000001,
+      "projected_width_m": 4.774286815608008,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B16",
+          "B17"
+        ],
+        "lithology_name": [
+          "P16"
+        ],
+        "description": [
+          "P16"
+        ]
+      }
+    },
+    {
+      "row_index": 7,
+      "y_px": 2738.0,
+      "interval_id": "I0008",
+      "layer_id": "C7",
+      "material_name": "粉砂质泥岩",
+      "material_configured": true,
+      "material_id": "mat_silty_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 14,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0013"
+      ],
+      "source_node_indices": [
+        12,
+        13
+      ],
+      "slant_length_m": 14.0,
+      "projected_width_m": 6.416169475105221,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "粉砂质泥岩。粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。",
+      "source_cells": {
+        "layer_id": [
+          "B18"
+        ],
+        "lithology_name": [
+          "P18"
+        ],
+        "description": [
+          "P18"
+        ]
+      }
+    },
+    {
+      "row_index": 8,
+      "y_px": 2840.0,
+      "interval_id": "I0009",
+      "layer_id": "C8",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0014",
+        "R0015"
+      ],
+      "source_node_indices": [
+        13,
+        14,
+        15
+      ],
+      "slant_length_m": 28.0,
+      "projected_width_m": 17.2845103563547,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B19",
+          "B20"
+        ],
+        "lithology_name": [
+          "P19"
+        ],
+        "description": [
+          "P19"
+        ]
+      }
+    },
+    {
+      "row_index": 9,
+      "y_px": 2942.0,
+      "interval_id": "I0010",
+      "layer_id": "C9",
+      "material_name": "煤层",
+      "material_configured": true,
+      "material_id": "mat_coal",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": "煤线",
+        "layer_ids": [
+          "C9"
+        ],
+        "motif": "白底；三条连续平行粗黑煤线，线间保留白缝；线条条数不表示厚度。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0016"
+      ],
+      "source_node_indices": [
+        15,
+        16
+      ],
+      "slant_length_m": 17.0,
+      "projected_width_m": 14.098305759427262,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "煤层。厚度约1.5米。",
+      "source_cells": {
+        "layer_id": [
+          "B21"
+        ],
+        "lithology_name": [
+          "P21"
+        ],
+        "description": [
+          "P21"
+        ]
+      }
+    },
+    {
+      "row_index": 10,
+      "y_px": 3044.0,
+      "interval_id": "I0011",
+      "layer_id": "C10",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0017",
+        "R0018"
+      ],
+      "source_node_indices": [
+        16,
+        17,
+        18
+      ],
+      "slant_length_m": 62.0,
+      "projected_width_m": 54.79951696053752,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B22",
+          "B23"
+        ],
+        "lithology_name": [
+          "P22"
+        ],
+        "description": [
+          "P22"
+        ]
+      }
+    },
+    {
+      "row_index": 11,
+      "y_px": 3146.0,
+      "interval_id": "I0012",
+      "layer_id": "C11",
+      "material_name": "碳质泥岩与煤线互层",
+      "material_configured": true,
+      "material_id": "mat_carbonaceous_mudstone_coal_laminae",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 30,
+      "tile_height": 18,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0019"
+      ],
+      "source_node_indices": [
+        18,
+        19
+      ],
+      "slant_length_m": 12.0,
+      "projected_width_m": 10.918078540178044,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。7-8导线26.5-31m处见厚度约1m得土黄色粉砂质泥岩。",
+      "source_cells": {
+        "layer_id": [
+          "B24"
+        ],
+        "lithology_name": [
+          "P24"
+        ],
+        "description": [
+          "P24"
+        ]
+      }
+    },
+    {
+      "row_index": 12,
+      "y_px": 3248.0,
+      "interval_id": "I0013",
+      "layer_id": "C12",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0020",
+        "R0021"
+      ],
+      "source_node_indices": [
+        19,
+        20,
+        21
+      ],
+      "slant_length_m": 27.0,
+      "projected_width_m": 16.19856557078606,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B25",
+          "B26"
+        ],
+        "lithology_name": [
+          "P25"
+        ],
+        "description": [
+          "P25"
+        ]
+      }
+    },
+    {
+      "row_index": 13,
+      "y_px": 3350.0,
+      "interval_id": "I0014",
+      "layer_id": "C13",
+      "material_name": "碳质泥岩与煤线互层",
+      "material_configured": true,
+      "material_id": "mat_carbonaceous_mudstone_coal_laminae",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 30,
+      "tile_height": 18,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0022"
+      ],
+      "source_node_indices": [
+        21,
+        22
+      ],
+      "slant_length_m": 2.0,
+      "projected_width_m": 0.7737908636195243,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "碳质泥岩与煤线互层。碳质泥岩呈灰黑色，具泥质结构，薄层状构造，单层厚度约1-3cm。泥质含量约55-60%，其余为碳质。煤线平均单层厚度约5-10cm。",
+      "source_cells": {
+        "layer_id": [
+          "B27"
+        ],
+        "lithology_name": [
+          "P27"
+        ],
+        "description": [
+          "P27"
+        ]
+      }
+    },
+    {
+      "row_index": 14,
+      "y_px": 3452.0,
+      "interval_id": "I0015",
+      "layer_id": "C14",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0023",
+        "R0024"
+      ],
+      "source_node_indices": [
+        22,
+        23,
+        24
+      ],
+      "slant_length_m": 29.0,
+      "projected_width_m": 6.872427325903402,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B28",
+          "B29"
+        ],
+        "lithology_name": [
+          "P28"
+        ],
+        "description": [
+          "P28"
+        ]
+      }
+    },
+    {
+      "row_index": 15,
+      "y_px": 3554.0,
+      "interval_id": "I0016",
+      "layer_id": "C15",
+      "material_name": "含火山碎屑粉砂质泥岩",
+      "material_configured": true,
+      "material_id": "mat_volcaniclastic_silty_mudstone",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C15"
+        ],
+        "motif": "C15层带过窄且接触线、标注干扰，无法恢复完整重复单元。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24,
+      "tile_height": 24,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0025"
+      ],
+      "source_node_indices": [
+        24,
+        25
+      ],
+      "slant_length_m": 3.0,
+      "projected_width_m": 2.4183681331103344,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "含火山碎屑粉砂质泥岩。呈黄绿色，具泥质结构，薄层状构造，单层厚度约3-8cm。泥质含量约60-65%，粉砂含量约25-30%，其余为玄武质火山碎屑。火山碎屑粒径约0.2-1mm，呈棱角状，磨圆度差，分选差。岩石内部充填铁锰质胶结物，宽度约0.2-0.5cm。岩石层理中多见球形风化。",
+      "source_cells": {
+        "layer_id": [
+          "B30"
+        ],
+        "lithology_name": [
+          "P30"
+        ],
+        "description": [
+          "P30"
+        ]
+      }
+    },
+    {
+      "row_index": 16,
+      "y_px": 3656.0,
+      "interval_id": "I0017",
+      "layer_id": "C16",
+      "material_name": "泥化凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_argillized_tuff",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C16"
+        ],
+        "motif": "C16层带过窄，无法区分独立纹样与相邻线。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24,
+      "tile_height": 24,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0026"
+      ],
+      "source_node_indices": [
+        25,
+        26
+      ],
+      "slant_length_m": 2.0999999999999996,
+      "projected_width_m": 1.6928576931771886,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "泥化凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约1-3cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "source_cells": {
+        "layer_id": [
+          "B31"
+        ],
+        "lithology_name": [
+          "P31"
+        ],
+        "description": [
+          "P31"
+        ]
+      }
+    },
+    {
+      "row_index": 17,
+      "y_px": 3758.0,
+      "interval_id": "I0018",
+      "layer_id": "C17",
+      "material_name": "玄武质火山碎屑岩",
+      "material_configured": true,
+      "material_id": "mat_basaltic_volcaniclastic",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C17"
+        ],
+        "motif": "直角角符与2×2四点簇规则交替。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 20,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0027"
+      ],
+      "source_node_indices": [
+        26,
+        27
+      ],
+      "slant_length_m": 7.9,
+      "projected_width_m": 6.368369417190422,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "玄武质火山碎屑岩。呈灰绿色，具火山碎屑结构，薄-中层状构造，单层厚度约3-8cm。火山碎屑含量约55-60%，其余为玄武质凝灰岩。火山碎屑岩粒径约0.1-0.5cm，呈棱角状，磨圆度差，分选差。",
+      "source_cells": {
+        "layer_id": [
+          "B32"
+        ],
+        "lithology_name": [
+          "P32"
+        ],
+        "description": [
+          "P32"
+        ]
+      }
+    },
+    {
+      "row_index": 18,
+      "y_px": 3860.0,
+      "interval_id": "I0019",
+      "layer_id": "C18",
+      "material_name": "粉砂质泥岩",
+      "material_configured": true,
+      "material_id": "mat_silty_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 14,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0028"
+      ],
+      "source_node_indices": [
+        27,
+        28
+      ],
+      "slant_length_m": 14.0,
+      "projected_width_m": 11.28571795451478,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "粉砂质泥岩。呈土黄色，具泥质结构，薄-中层状构造。泥质含量约60-65%，其余为粉砂。局部沿层理裂隙发育铁锰质氧化物薄膜。",
+      "source_cells": {
+        "layer_id": [
+          "B33"
+        ],
+        "lithology_name": [
+          "P33"
+        ],
+        "description": [
+          "P33"
+        ]
+      }
+    },
+    {
+      "row_index": 19,
+      "y_px": 3962.0,
+      "interval_id": "I0020",
+      "layer_id": "C19",
+      "material_name": "凝灰质泥岩",
+      "material_configured": true,
+      "material_id": "mat_tuffaceous_mudstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0029",
+        "R0030"
+      ],
+      "source_node_indices": [
+        28,
+        29,
+        30
+      ],
+      "slant_length_m": 42.0,
+      "projected_width_m": 36.046820407386974,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰质泥岩。呈浅灰色，具泥质结构，薄层状构造。纹层发育，单层厚度约0.1-0.5cm。泥质含量约70-75%，其余为凝灰质。",
+      "source_cells": {
+        "layer_id": [
+          "B34",
+          "B35"
+        ],
+        "lithology_name": [
+          "P34"
+        ],
+        "description": [
+          "P34"
+        ]
+      }
+    },
+    {
+      "row_index": 20,
+      "y_px": 4064.0,
+      "interval_id": "I0021",
+      "layer_id": "C20",
+      "material_name": "泥质粉砂岩",
+      "material_configured": true,
+      "material_id": "mat_argillaceous_siltstone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C20"
+        ],
+        "motif": "非常密集的细短横划，按细密平行行错列。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 10,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0031",
+        "R0032",
+        "R0033"
+      ],
+      "source_node_indices": [
+        30,
+        31,
+        32,
+        33
+      ],
+      "slant_length_m": 57.0,
+      "projected_width_m": 40.19526676605864,
+      "true_thickness_values": [
+        null,
+        null,
+        null
+      ],
+      "description_full": "泥质粉砂岩。呈土黄色，具粉砂结构，中-薄层状构造，单层厚度约5-25cm。粉砂含量约60-65%，其余为泥质。",
+      "source_cells": {
+        "layer_id": [
+          "B36",
+          "B37",
+          "B38"
+        ],
+        "lithology_name": [
+          "P36"
+        ],
+        "description": [
+          "P36"
+        ]
+      }
+    },
+    {
+      "row_index": 21,
+      "y_px": 4166.0,
+      "interval_id": "I0022",
+      "layer_id": "C21",
+      "material_name": "凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_tuff",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C21"
+        ],
+        "motif": "高密度竖向双点，点对之间夹很短横划。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 18,
+      "tile_height": 14,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0034",
+        "R0035"
+      ],
+      "source_node_indices": [
+        33,
+        34,
+        35
+      ],
+      "slant_length_m": 68.0,
+      "projected_width_m": 14.606510479555027,
+      "true_thickness_values": [
+        null,
+        null
+      ],
+      "description_full": "凝灰岩。呈灰白色，具凝灰结构，薄层状构造，单层厚度约3-5cm。凝灰质含量＞90%。岩石内部见气孔状构造，气孔直径约0.05-0.1mm。",
+      "source_cells": {
+        "layer_id": [
+          "B39",
+          "B40"
+        ],
+        "lithology_name": [
+          "P39"
+        ],
+        "description": [
+          "P39"
+        ]
+      }
+    },
+    {
+      "row_index": 22,
+      "y_px": 4268.0,
+      "interval_id": "I0023",
+      "layer_id": "C22",
+      "material_name": "硅化凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_silicified_tuff",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C22"
+        ],
+        "motif": "C22极薄且被粗接触线遮挡；图例名称含额外黄铁矿化语义，不能套用。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24,
+      "tile_height": 24,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0036"
+      ],
+      "source_node_indices": [
+        35,
+        36
+      ],
+      "slant_length_m": 5.0,
+      "projected_width_m": 1.9165560362065435,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "硅化凝灰岩。呈浅灰-灰色，具重结晶结构，薄-中层状构造，单层厚度约8-15cm。凝灰质含量约70-75%，其余为硅质。岩石整体发生弱硅化、黄铁矿化蚀变现象，局部见石英细脉，宽度约0.1-0.3cm。岩石整体较破碎，受残坡积覆盖严重。",
+      "source_cells": {
+        "layer_id": [
+          "B41"
+        ],
+        "lithology_name": [
+          "P41"
+        ],
+        "description": [
+          "P41"
+        ]
+      }
+    },
+    {
+      "row_index": 23,
+      "y_px": 4370.0,
+      "interval_id": "I0024",
+      "layer_id": "C23",
+      "material_name": "沉凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_sedimentary_tuff",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C23"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 18,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0037"
+      ],
+      "source_node_indices": [
+        36,
+        37
+      ],
+      "slant_length_m": 30.0,
+      "projected_width_m": 11.49933621723926,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "沉凝灰岩。呈浅紫-浅灰色，具沉凝灰结构，薄层状构造。纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。",
+      "source_cells": {
+        "layer_id": [
+          "B42"
+        ],
+        "lithology_name": [
+          "P42"
+        ],
+        "description": [
+          "P42"
+        ]
+      }
+    },
+    {
+      "row_index": 24,
+      "y_px": 4472.0,
+      "interval_id": "I0025",
+      "layer_id": "C24",
+      "material_name": "泥化沉凝灰岩",
+      "material_configured": true,
+      "material_id": "mat_argillized_sedimentary_tuff",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C24"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 18,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0038",
+        "R0039",
+        "R0040"
+      ],
+      "source_node_indices": [
+        37,
+        38,
+        39,
+        40
+      ],
+      "slant_length_m": 78.0,
+      "projected_width_m": 26.570844301262923,
+      "true_thickness_values": [
+        null,
+        null,
+        null
+      ],
+      "description_full": "泥化沉凝灰岩。呈浅灰-灰白色，具沉凝灰结构，薄层状构造，纹层发育，单层厚度约0.5-1cm。凝灰含量＞90%。岩石整体发生高岭土化。",
+      "source_cells": {
+        "layer_id": [
+          "B43",
+          "B44",
+          "B45"
+        ],
+        "lithology_name": [
+          "P43"
+        ],
+        "description": [
+          "P43"
+        ]
+      }
+    },
+    {
+      "row_index": 25,
+      "y_px": 4574.0,
+      "interval_id": "I0026",
+      "layer_id": "C25",
+      "material_name": "泥晶灰岩",
+      "material_configured": true,
+      "material_id": "mat_micritic_limestone",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "泥晶灰岩",
+        "layer_ids": [
+          "C4",
+          "C25"
+        ],
+        "motif": "白底；水平细层理间配置错列小工字与沙漏节点。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R0041",
+        "R0042",
+        "R0043"
+      ],
+      "source_node_indices": [
+        40,
+        41,
+        42,
+        43
+      ],
+      "slant_length_m": 97.0,
+      "projected_width_m": 43.25611701488873,
+      "true_thickness_values": [
+        null,
+        null,
+        null
+      ],
+      "description_full": "泥晶灰岩。呈灰色，具隐晶质结构，块状构造。方解石含量约80-85%，其余为泥质。局部发育方解石细脉，宽度约0.3-1cm。",
+      "source_cells": {
+        "layer_id": [
+          "B46",
+          "B47",
+          "B48"
+        ],
+        "lithology_name": [
+          "P46"
+        ],
+        "description": [
+          "P46"
+        ]
+      }
+    }
+  ],
+  "pattern_audit": [
+    {
+      "interval_id": "I0001",
+      "layer_id": "C0",
+      "material_name": "泥岩",
+      "pattern_id": "read_interval_0001",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": "泥岩",
+        "layer_ids": [
+          "C0",
+          "C2"
+        ],
+        "motif": "白底；四行错列细短横线，行间与横向均留白。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 11.58855525678362,
+      "svg_rotation_deg_y_down": -11.58855525678362,
+      "record_id": "R0001",
+      "source_cells": {
+        "leg_id": "A6",
+        "layer_id": "B6",
+        "start_reading_m": "C6",
+        "end_reading_m": "D6",
+        "length_m": "E6",
+        "slope_deg": "F6",
+        "azimuth_deg": "J6",
+        "dip_direction_deg": "M6",
+        "dip_angle_deg": "N6",
+        "description": "P6",
+        "sample_id": "U6",
+        "true_thickness_m": "R6",
+        "cache_horizontal_m": "G6",
+        "cache_vertical_m": "H6",
+        "cache_cumulative_z_m": "I6",
+        "cache_cumulative_north_m": "K6",
+        "cache_cumulative_east_m": "L6",
+        "lithology_name": "P6"
+      }
+    },
+    {
+      "interval_id": "I0002",
+      "layer_id": "C1",
+      "material_name": "粉砂质泥岩",
+      "pattern_id": "read_interval_0002",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 14.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 11.110222344244344,
+      "svg_rotation_deg_y_down": -11.110222344244344,
+      "record_id": "R0004",
+      "source_cells": {
+        "leg_id": "A8",
+        "layer_id": "B9",
+        "start_reading_m": "C9",
+        "end_reading_m": "D9",
+        "length_m": "E9",
+        "slope_deg": "F9",
+        "azimuth_deg": "J9",
+        "dip_direction_deg": "M9",
+        "dip_angle_deg": "N9",
+        "description": "P9",
+        "sample_id": "U9",
+        "true_thickness_m": "R9",
+        "cache_horizontal_m": "G9",
+        "cache_vertical_m": "H9",
+        "cache_cumulative_z_m": "I9",
+        "cache_cumulative_north_m": "K9",
+        "cache_cumulative_east_m": "L9",
+        "lithology_name": "P9"
+      }
+    },
+    {
+      "interval_id": "I0003",
+      "layer_id": "C2",
+      "material_name": "泥岩",
+      "pattern_id": "read_interval_0003",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": "泥岩",
+        "layer_ids": [
+          "C0",
+          "C2"
+        ],
+        "motif": "白底；四行错列细短横线，行间与横向均留白。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 13.127453810759294,
+      "svg_rotation_deg_y_down": -13.127453810759294,
+      "record_id": "R0006",
+      "source_cells": {
+        "leg_id": "A10",
+        "layer_id": "B11",
+        "start_reading_m": "C11",
+        "end_reading_m": "D11",
+        "length_m": "E11",
+        "slope_deg": "F11",
+        "azimuth_deg": "J11",
+        "dip_direction_deg": "M11",
+        "dip_angle_deg": "N11",
+        "description": "P11",
+        "sample_id": "U11",
+        "true_thickness_m": "R11",
+        "cache_horizontal_m": "G11",
+        "cache_vertical_m": "H11",
+        "cache_cumulative_z_m": "I11",
+        "cache_cumulative_north_m": "K11",
+        "cache_cumulative_east_m": "L11",
+        "lithology_name": "P11"
+      }
+    },
+    {
+      "interval_id": "I0004",
+      "layer_id": "C3",
+      "material_name": "含粉砂泥岩",
+      "pattern_id": "read_interval_0004",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C3"
+        ],
+        "motif": "密集细短横划分行错列；密度高于泥岩。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 12.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 10.770416652928105,
+      "svg_rotation_deg_y_down": -10.770416652928105,
+      "record_id": "R0007",
+      "source_cells": {
+        "leg_id": "A10",
+        "layer_id": "B12",
+        "start_reading_m": "C12",
+        "end_reading_m": "D12",
+        "length_m": "E12",
+        "slope_deg": "F12",
+        "azimuth_deg": "J12",
+        "dip_direction_deg": "M12",
+        "dip_angle_deg": "N12",
+        "description": "P12",
+        "sample_id": "U12",
+        "true_thickness_m": "R12",
+        "cache_horizontal_m": "G12",
+        "cache_vertical_m": "H12",
+        "cache_cumulative_z_m": "I12",
+        "cache_cumulative_north_m": "K12",
+        "cache_cumulative_east_m": "L12",
+        "lithology_name": "P12"
+      }
+    },
+    {
+      "interval_id": "I0005",
+      "layer_id": "C4",
+      "material_name": "泥晶灰岩",
+      "pattern_id": "read_interval_0005",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "泥晶灰岩",
+        "layer_ids": [
+          "C4",
+          "C25"
+        ],
+        "motif": "白底；水平细层理间配置错列小工字与沙漏节点。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 9.316856220192207,
+      "svg_rotation_deg_y_down": -9.316856220192207,
+      "record_id": "R0009",
+      "source_cells": {
+        "leg_id": "A13",
+        "layer_id": "B14",
+        "start_reading_m": "C14",
+        "end_reading_m": "D14",
+        "length_m": "E14",
+        "slope_deg": "F14",
+        "azimuth_deg": "J14",
+        "dip_direction_deg": "M14",
+        "dip_angle_deg": "N14",
+        "description": "P14",
+        "sample_id": "U14",
+        "true_thickness_m": "R14",
+        "cache_horizontal_m": "G14",
+        "cache_vertical_m": "H14",
+        "cache_cumulative_z_m": "I14",
+        "cache_cumulative_north_m": "K14",
+        "cache_cumulative_east_m": "L14",
+        "lithology_name": "P14"
+      }
+    },
+    {
+      "interval_id": "I0006",
+      "layer_id": "C5",
+      "material_name": "含生物碎屑凝灰岩",
+      "pattern_id": "read_interval_0006",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c5-c6.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C5"
+        ],
+        "motif": "细短横划、小开口c/弧圈与竖向双点共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 1.9980584828384826,
+      "svg_rotation_deg_y_down": -1.9980584828384826,
+      "record_id": "R0010",
+      "source_cells": {
+        "leg_id": "A13",
+        "layer_id": "B15",
+        "start_reading_m": "C15",
+        "end_reading_m": "D15",
+        "length_m": "E15",
+        "slope_deg": "F15",
+        "azimuth_deg": "J15",
+        "dip_direction_deg": "M15",
+        "dip_angle_deg": "N15",
+        "description": "P15",
+        "sample_id": "U15",
+        "true_thickness_m": "R15",
+        "cache_horizontal_m": "G15",
+        "cache_vertical_m": "H15",
+        "cache_cumulative_z_m": "I15",
+        "cache_cumulative_north_m": "K15",
+        "cache_cumulative_east_m": "L15",
+        "lithology_name": "P15"
+      }
+    },
+    {
+      "interval_id": "I0007",
+      "layer_id": "C6",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0007",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 11.136217338906826,
+      "svg_rotation_deg_y_down": -11.136217338906826,
+      "record_id": "R0011",
+      "source_cells": {
+        "leg_id": "A13",
+        "layer_id": "B16",
+        "start_reading_m": "C16",
+        "end_reading_m": "D16",
+        "length_m": "E16",
+        "slope_deg": "F16",
+        "azimuth_deg": "J16",
+        "dip_direction_deg": "M16",
+        "dip_angle_deg": "N16",
+        "description": "P16",
+        "sample_id": "U16",
+        "true_thickness_m": "R16",
+        "cache_horizontal_m": "G16",
+        "cache_vertical_m": "H16",
+        "cache_cumulative_z_m": "I16",
+        "cache_cumulative_north_m": "K16",
+        "cache_cumulative_east_m": "L16",
+        "lithology_name": "P16"
+      }
+    },
+    {
+      "interval_id": "I0008",
+      "layer_id": "C7",
+      "material_name": "粉砂质泥岩",
+      "pattern_id": "read_interval_0008",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 14.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 14.712087010589851,
+      "svg_rotation_deg_y_down": -14.712087010589851,
+      "record_id": "R0013",
+      "source_cells": {
+        "leg_id": "A17",
+        "layer_id": "B18",
+        "start_reading_m": "C18",
+        "end_reading_m": "D18",
+        "length_m": "E18",
+        "slope_deg": "F18",
+        "azimuth_deg": "J18",
+        "dip_direction_deg": "M18",
+        "dip_angle_deg": "N18",
+        "description": "P18",
+        "sample_id": "U18",
+        "true_thickness_m": "R18",
+        "cache_horizontal_m": "G18",
+        "cache_vertical_m": "H18",
+        "cache_cumulative_z_m": "I18",
+        "cache_cumulative_north_m": "K18",
+        "cache_cumulative_east_m": "L18",
+        "lithology_name": "P18"
+      }
+    },
+    {
+      "interval_id": "I0009",
+      "layer_id": "C8",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0009",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 14.712087010589851,
+      "svg_rotation_deg_y_down": -14.712087010589851,
+      "record_id": "R0014",
+      "source_cells": {
+        "leg_id": "A17",
+        "layer_id": "B19",
+        "start_reading_m": "C19",
+        "end_reading_m": "D19",
+        "length_m": "E19",
+        "slope_deg": "F19",
+        "azimuth_deg": "J19",
+        "dip_direction_deg": "M19",
+        "dip_angle_deg": "N19",
+        "description": "P19",
+        "sample_id": "U19",
+        "true_thickness_m": "R19",
+        "cache_horizontal_m": "G19",
+        "cache_vertical_m": "H19",
+        "cache_cumulative_z_m": "I19",
+        "cache_cumulative_north_m": "K19",
+        "cache_cumulative_east_m": "L19",
+        "lithology_name": "P19"
+      }
+    },
+    {
+      "interval_id": "I0010",
+      "layer_id": "C9",
+      "material_name": "煤层",
+      "pattern_id": "read_interval_0010",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": "煤线",
+        "layer_ids": [
+          "C9"
+        ],
+        "motif": "白底；三条连续平行粗黑煤线，线间保留白缝；线条条数不表示厚度。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 9.330449716598745,
+      "svg_rotation_deg_y_down": -9.330449716598745,
+      "record_id": "R0016",
+      "source_cells": {
+        "leg_id": "A20",
+        "layer_id": "B21",
+        "start_reading_m": "C21",
+        "end_reading_m": "D21",
+        "length_m": "E21",
+        "slope_deg": "F21",
+        "azimuth_deg": "J21",
+        "dip_direction_deg": "M21",
+        "dip_angle_deg": "N21",
+        "description": "P21",
+        "sample_id": "U21",
+        "true_thickness_m": "R21",
+        "cache_horizontal_m": "G21",
+        "cache_vertical_m": "H21",
+        "cache_cumulative_z_m": "I21",
+        "cache_cumulative_north_m": "K21",
+        "cache_cumulative_east_m": "L21",
+        "lithology_name": "P21"
+      }
+    },
+    {
+      "interval_id": "I0011",
+      "layer_id": "C10",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0011",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 8.432120431866569,
+      "svg_rotation_deg_y_down": -8.432120431866569,
+      "record_id": "R0017",
+      "source_cells": {
+        "leg_id": "A20",
+        "layer_id": "B22",
+        "start_reading_m": "C22",
+        "end_reading_m": "D22",
+        "length_m": "E22",
+        "slope_deg": "F22",
+        "azimuth_deg": "J22",
+        "dip_direction_deg": "M22",
+        "dip_angle_deg": "N22",
+        "description": "P22",
+        "sample_id": "U22",
+        "true_thickness_m": "R22",
+        "cache_horizontal_m": "G22",
+        "cache_vertical_m": "H22",
+        "cache_cumulative_z_m": "I22",
+        "cache_cumulative_north_m": "K22",
+        "cache_cumulative_east_m": "L22",
+        "lithology_name": "P22"
+      }
+    },
+    {
+      "interval_id": "I0012",
+      "layer_id": "C11",
+      "material_name": "碳质泥岩与煤线互层",
+      "pattern_id": "read_interval_0012",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 30.0,
+      "tile_height": 18.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 6.899595909599745,
+      "svg_rotation_deg_y_down": -6.899595909599745,
+      "record_id": "R0019",
+      "source_cells": {
+        "leg_id": "A23",
+        "layer_id": "B24",
+        "start_reading_m": "C24",
+        "end_reading_m": "D24",
+        "length_m": "E24",
+        "slope_deg": "F24",
+        "azimuth_deg": "J24",
+        "dip_direction_deg": "M24",
+        "dip_angle_deg": "N24",
+        "description": "P24",
+        "sample_id": "U24",
+        "true_thickness_m": "R24",
+        "cache_horizontal_m": "G24",
+        "cache_vertical_m": "H24",
+        "cache_cumulative_z_m": "I24",
+        "cache_cumulative_north_m": "K24",
+        "cache_cumulative_east_m": "L24",
+        "lithology_name": "P24"
+      }
+    },
+    {
+      "interval_id": "I0013",
+      "layer_id": "C12",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0013",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 8.880945828358804,
+      "svg_rotation_deg_y_down": -8.880945828358804,
+      "record_id": "R0020",
+      "source_cells": {
+        "leg_id": "A23",
+        "layer_id": "B25",
+        "start_reading_m": "C25",
+        "end_reading_m": "D25",
+        "length_m": "E25",
+        "slope_deg": "F25",
+        "azimuth_deg": "J25",
+        "dip_direction_deg": "M25",
+        "dip_angle_deg": "N25",
+        "description": "P25",
+        "sample_id": "U25",
+        "true_thickness_m": "R25",
+        "cache_horizontal_m": "G25",
+        "cache_vertical_m": "H25",
+        "cache_cumulative_z_m": "I25",
+        "cache_cumulative_north_m": "K25",
+        "cache_cumulative_east_m": "L25",
+        "lithology_name": "P25"
+      }
+    },
+    {
+      "interval_id": "I0014",
+      "layer_id": "C13",
+      "material_name": "碳质泥岩与煤线互层",
+      "pattern_id": "read_interval_0014",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 30.0,
+      "tile_height": 18.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 19.238006046268826,
+      "svg_rotation_deg_y_down": -19.238006046268826,
+      "record_id": "R0022",
+      "source_cells": {
+        "leg_id": "A26",
+        "layer_id": "B27",
+        "start_reading_m": "C27",
+        "end_reading_m": "D27",
+        "length_m": "E27",
+        "slope_deg": "F27",
+        "azimuth_deg": "J27",
+        "dip_direction_deg": "M27",
+        "dip_angle_deg": "N27",
+        "description": "P27",
+        "sample_id": "U27",
+        "true_thickness_m": "R27",
+        "cache_horizontal_m": "G27",
+        "cache_vertical_m": "H27",
+        "cache_cumulative_z_m": "I27",
+        "cache_cumulative_north_m": "K27",
+        "cache_cumulative_east_m": "L27",
+        "lithology_name": "P27"
+      }
+    },
+    {
+      "interval_id": "I0015",
+      "layer_id": "C14",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0015",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 15.709289688666813,
+      "svg_rotation_deg_y_down": -15.709289688666813,
+      "record_id": "R0023",
+      "source_cells": {
+        "leg_id": "A26",
+        "layer_id": "B28",
+        "start_reading_m": "C28",
+        "end_reading_m": "D28",
+        "length_m": "E28",
+        "slope_deg": "F28",
+        "azimuth_deg": "J28",
+        "dip_direction_deg": "M28",
+        "dip_angle_deg": "N28",
+        "description": "P28",
+        "sample_id": "U28",
+        "true_thickness_m": "R28",
+        "cache_horizontal_m": "G28",
+        "cache_vertical_m": "H28",
+        "cache_cumulative_z_m": "I28",
+        "cache_cumulative_north_m": "K28",
+        "cache_cumulative_east_m": "L28",
+        "lithology_name": "P28"
+      }
+    },
+    {
+      "interval_id": "I0016",
+      "layer_id": "C15",
+      "material_name": "含火山碎屑粉砂质泥岩",
+      "pattern_id": "read_interval_0016",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C15"
+        ],
+        "motif": "C15层带过窄且接触线、标注干扰，无法恢复完整重复单元。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24.0,
+      "tile_height": 24.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 9.191698518264555,
+      "svg_rotation_deg_y_down": -9.191698518264555,
+      "record_id": "R0025",
+      "source_cells": {
+        "leg_id": "A30",
+        "layer_id": "B30",
+        "start_reading_m": "C30",
+        "end_reading_m": "D30",
+        "length_m": "E30",
+        "slope_deg": "F30",
+        "azimuth_deg": "J30",
+        "dip_direction_deg": "M30",
+        "dip_angle_deg": "N30",
+        "description": "P30",
+        "sample_id": "U30",
+        "true_thickness_m": "R30",
+        "cache_horizontal_m": "G30",
+        "cache_vertical_m": "H30",
+        "cache_cumulative_z_m": "I30",
+        "cache_cumulative_north_m": "K30",
+        "cache_cumulative_east_m": "L30",
+        "lithology_name": "P30"
+      }
+    },
+    {
+      "interval_id": "I0017",
+      "layer_id": "C16",
+      "material_name": "泥化凝灰岩",
+      "pattern_id": "read_interval_0017",
+      "configured": true,
+      "orientation": "none",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C16"
+        ],
+        "motif": "C16层带过窄，无法区分独立纹样与相邻线。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24.0,
+      "tile_height": 24.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": null,
+      "svg_rotation_deg_y_down": null,
+      "record_id": "R0026",
+      "source_cells": {
+        "leg_id": "A30",
+        "layer_id": "B31",
+        "start_reading_m": "C31",
+        "end_reading_m": "D31",
+        "length_m": "E31",
+        "slope_deg": "F31",
+        "azimuth_deg": "J31",
+        "dip_direction_deg": "M31",
+        "dip_angle_deg": "N31",
+        "description": "P31",
+        "sample_id": "U31",
+        "true_thickness_m": "R31",
+        "cache_horizontal_m": "G31",
+        "cache_vertical_m": "H31",
+        "cache_cumulative_z_m": "I31",
+        "cache_cumulative_north_m": "K31",
+        "cache_cumulative_east_m": "L31",
+        "lithology_name": "P31"
+      }
+    },
+    {
+      "interval_id": "I0018",
+      "layer_id": "C17",
+      "material_name": "玄武质火山碎屑岩",
+      "pattern_id": "read_interval_0018",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C17"
+        ],
+        "motif": "直角角符与2×2四点簇规则交替。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 20.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 3.9782244058004905,
+      "svg_rotation_deg_y_down": -3.9782244058004905,
+      "record_id": "R0027",
+      "source_cells": {
+        "leg_id": "A30",
+        "layer_id": "B32",
+        "start_reading_m": "C32",
+        "end_reading_m": "D32",
+        "length_m": "E32",
+        "slope_deg": "F32",
+        "azimuth_deg": "J32",
+        "dip_direction_deg": "M32",
+        "dip_angle_deg": "N32",
+        "description": "P32",
+        "sample_id": "U32",
+        "true_thickness_m": "R32",
+        "cache_horizontal_m": "G32",
+        "cache_vertical_m": "H32",
+        "cache_cumulative_z_m": "I32",
+        "cache_cumulative_north_m": "K32",
+        "cache_cumulative_east_m": "L32",
+        "lithology_name": "P32"
+      }
+    },
+    {
+      "interval_id": "I0019",
+      "layer_id": "C18",
+      "material_name": "粉砂质泥岩",
+      "pattern_id": "read_interval_0019",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 14.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 4.199757871577839,
+      "svg_rotation_deg_y_down": -4.199757871577839,
+      "record_id": "R0028",
+      "source_cells": {
+        "leg_id": "A30",
+        "layer_id": "B33",
+        "start_reading_m": "C33",
+        "end_reading_m": "D33",
+        "length_m": "E33",
+        "slope_deg": "F33",
+        "azimuth_deg": "J33",
+        "dip_direction_deg": "M33",
+        "dip_angle_deg": "N33",
+        "description": "P33",
+        "sample_id": "U33",
+        "true_thickness_m": "R33",
+        "cache_horizontal_m": "G33",
+        "cache_vertical_m": "H33",
+        "cache_cumulative_z_m": "I33",
+        "cache_cumulative_north_m": "K33",
+        "cache_cumulative_east_m": "L33",
+        "lithology_name": "P33"
+      }
+    },
+    {
+      "interval_id": "I0020",
+      "layer_id": "C19",
+      "material_name": "凝灰质泥岩",
+      "pattern_id": "read_interval_0020",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 2.8452229228071286,
+      "svg_rotation_deg_y_down": -2.8452229228071286,
+      "record_id": "R0029",
+      "source_cells": {
+        "leg_id": "A30",
+        "layer_id": "B34",
+        "start_reading_m": "C34",
+        "end_reading_m": "D34",
+        "length_m": "E34",
+        "slope_deg": "F34",
+        "azimuth_deg": "J34",
+        "dip_direction_deg": "M34",
+        "dip_angle_deg": "N34",
+        "description": "P34",
+        "sample_id": "U34",
+        "true_thickness_m": "R34",
+        "cache_horizontal_m": "G34",
+        "cache_vertical_m": "H34",
+        "cache_cumulative_z_m": "I34",
+        "cache_cumulative_north_m": "K34",
+        "cache_cumulative_east_m": "L34",
+        "lithology_name": "P34"
+      }
+    },
+    {
+      "interval_id": "I0021",
+      "layer_id": "C20",
+      "material_name": "泥质粉砂岩",
+      "pattern_id": "read_interval_0021",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C20"
+        ],
+        "motif": "非常密集的细短横划，按细密平行行错列。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 10.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 7.422200594104972,
+      "svg_rotation_deg_y_down": -7.422200594104972,
+      "record_id": "R0031",
+      "source_cells": {
+        "leg_id": "A35",
+        "layer_id": "B36",
+        "start_reading_m": "C36",
+        "end_reading_m": "D36",
+        "length_m": "E36",
+        "slope_deg": "F36",
+        "azimuth_deg": "J36",
+        "dip_direction_deg": "M36",
+        "dip_angle_deg": "N36",
+        "description": "P36",
+        "sample_id": "U36",
+        "true_thickness_m": "R36",
+        "cache_horizontal_m": "G36",
+        "cache_vertical_m": "H36",
+        "cache_cumulative_z_m": "I36",
+        "cache_cumulative_north_m": "K36",
+        "cache_cumulative_east_m": "L36",
+        "lithology_name": "P36"
+      }
+    },
+    {
+      "interval_id": "I0022",
+      "layer_id": "C21",
+      "material_name": "凝灰岩",
+      "pattern_id": "read_interval_0022",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C21"
+        ],
+        "motif": "高密度竖向双点，点对之间夹很短横划。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 18.0,
+      "tile_height": 14.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 3.4926275552711687,
+      "svg_rotation_deg_y_down": -3.4926275552711687,
+      "record_id": "R0034",
+      "source_cells": {
+        "leg_id": "A38",
+        "layer_id": "B39",
+        "start_reading_m": "C39",
+        "end_reading_m": "D39",
+        "length_m": "E39",
+        "slope_deg": "F39",
+        "azimuth_deg": "J39",
+        "dip_direction_deg": "M39",
+        "dip_angle_deg": "N39",
+        "description": "P39",
+        "sample_id": "U39",
+        "true_thickness_m": "R39",
+        "cache_horizontal_m": "G39",
+        "cache_vertical_m": "H39",
+        "cache_cumulative_z_m": "I39",
+        "cache_cumulative_north_m": "K39",
+        "cache_cumulative_east_m": "L39",
+        "lithology_name": "P39"
+      }
+    },
+    {
+      "interval_id": "I0023",
+      "layer_id": "C22",
+      "material_name": "硅化凝灰岩",
+      "pattern_id": "read_interval_0023",
+      "configured": true,
+      "orientation": "none",
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C22"
+        ],
+        "motif": "C22极薄且被粗接触线遮挡；图例名称含额外黄铁矿化语义，不能套用。",
+        "match_type": "unverified"
+      },
+      "tile_width": 24.0,
+      "tile_height": 24.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": null,
+      "svg_rotation_deg_y_down": null,
+      "record_id": "R0036",
+      "source_cells": {
+        "leg_id": "A40",
+        "layer_id": "B41",
+        "start_reading_m": "C41",
+        "end_reading_m": "D41",
+        "length_m": "E41",
+        "slope_deg": "F41",
+        "azimuth_deg": "J41",
+        "dip_direction_deg": "M41",
+        "dip_angle_deg": "N41",
+        "description": "P41",
+        "sample_id": "U41",
+        "true_thickness_m": "R41",
+        "cache_horizontal_m": "G41",
+        "cache_vertical_m": "H41",
+        "cache_cumulative_z_m": "I41",
+        "cache_cumulative_north_m": "K41",
+        "cache_cumulative_east_m": "L41",
+        "lithology_name": "P41"
+      }
+    },
+    {
+      "interval_id": "I0024",
+      "layer_id": "C23",
+      "material_name": "沉凝灰岩",
+      "pattern_id": "read_interval_0024",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C23"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 18.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 3.4926275552711687,
+      "svg_rotation_deg_y_down": -3.4926275552711687,
+      "record_id": "R0037",
+      "source_cells": {
+        "leg_id": "A40",
+        "layer_id": "B42",
+        "start_reading_m": "C42",
+        "end_reading_m": "D42",
+        "length_m": "E42",
+        "slope_deg": "F42",
+        "azimuth_deg": "J42",
+        "dip_direction_deg": "M42",
+        "dip_angle_deg": "N42",
+        "description": "P42",
+        "sample_id": "U42",
+        "true_thickness_m": "R42",
+        "cache_horizontal_m": "G42",
+        "cache_vertical_m": "H42",
+        "cache_cumulative_z_m": "I42",
+        "cache_cumulative_north_m": "K42",
+        "cache_cumulative_east_m": "L42",
+        "lithology_name": "P42"
+      }
+    },
+    {
+      "interval_id": "I0025",
+      "layer_id": "C24",
+      "material_name": "泥化沉凝灰岩",
+      "pattern_id": "read_interval_0025",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C24"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24.0,
+      "tile_height": 18.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 5.988886488659556,
+      "svg_rotation_deg_y_down": -5.988886488659556,
+      "record_id": "R0038",
+      "source_cells": {
+        "leg_id": "A40",
+        "layer_id": "B43",
+        "start_reading_m": "C43",
+        "end_reading_m": "D43",
+        "length_m": "E43",
+        "slope_deg": "F43",
+        "azimuth_deg": "J43",
+        "dip_direction_deg": "M43",
+        "dip_angle_deg": "N43",
+        "description": "P43",
+        "sample_id": "U43",
+        "true_thickness_m": "R43",
+        "cache_horizontal_m": "G43",
+        "cache_vertical_m": "H43",
+        "cache_cumulative_z_m": "I43",
+        "cache_cumulative_north_m": "K43",
+        "cache_cumulative_east_m": "L43",
+        "lithology_name": "P43"
+      }
+    },
+    {
+      "interval_id": "I0026",
+      "layer_id": "C25",
+      "material_name": "泥晶灰岩",
+      "pattern_id": "read_interval_0026",
+      "configured": true,
+      "orientation": "bedding",
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "泥晶灰岩",
+        "layer_ids": [
+          "C4",
+          "C25"
+        ],
+        "motif": "白底；水平细层理间配置错列小工字与沙漏节点。",
+        "match_type": "exact_legend"
+      },
+      "tile_width": 24.0,
+      "tile_height": 16.0,
+      "render_scale": 1.0,
+      "apparent_angle_deg_world_z_up": 5.988886488659556,
+      "svg_rotation_deg_y_down": -5.988886488659556,
+      "record_id": "R0041",
+      "source_cells": {
+        "leg_id": "A45",
+        "layer_id": "B46",
+        "start_reading_m": "C46",
+        "end_reading_m": "D46",
+        "length_m": "E46",
+        "slope_deg": "F46",
+        "azimuth_deg": "J46",
+        "dip_direction_deg": "M46",
+        "dip_angle_deg": "N46",
+        "description": "P46",
+        "sample_id": "U46",
+        "true_thickness_m": "R46",
+        "cache_horizontal_m": "G46",
+        "cache_vertical_m": "H46",
+        "cache_cumulative_z_m": "I46",
+        "cache_cumulative_north_m": "K46",
+        "cache_cumulative_east_m": "L46",
+        "lithology_name": "P46"
+      }
+    }
+  ],
+  "pattern_contexts": {
+    "readability": 1.0,
+    "focus": 1.0
+  },
+  "issues": [],
+  "statements": [
+    "Focus selection is driven only by materials.focus_priority.",
+    "Each focus window uses one equal x/z scale and its own metre scale; magnifications may differ.",
+    "Pattern samples have fixed screen size and do not represent thickness.",
+    "Approximate values remain source description text and are not copied into true_thickness_m."
+  ]
+}

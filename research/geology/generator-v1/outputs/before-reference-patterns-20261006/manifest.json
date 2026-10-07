@@ -1,0 +1,191 @@
+{
+  "schema_version": "1.0",
+  "input": {
+    "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+    "filename": "PM01规范输入.xlsx",
+    "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+  },
+  "settings": {
+    "axis_azimuth_deg": 83.50058502519266,
+    "axis_method": "explicit",
+    "coordinate_system": "local_relative",
+    "vertical_exaggeration": 1
+  },
+  "code": [
+    {
+      "name": "importer.py",
+      "sha256": "c92d6f57502ac9b9be05fee509ad0dac7c8418ff6af2d17533930eb0f6596343"
+    },
+    {
+      "name": "renderer.py",
+      "sha256": "2dde70a09c7d0aed995fa2b0b8bd313b8302fcf9cf1f5bf896b565ef1ba229e6"
+    },
+    {
+      "name": "layer_geometry.py",
+      "sha256": "03097f006bdb4696e523363cb52ec56d34015ab39e2743d1b96d3be71a16965b"
+    },
+    {
+      "name": "readability.py",
+      "sha256": "adedcc1e7f20904dc8a98622aa66f1569934347b441b28f4ae933034b5404d58"
+    },
+    {
+      "name": "pipeline.py",
+      "sha256": "171fae1a9a1c616deb326c9b31d81d379aad2f59bed66447bdeb41f2ca596aa9"
+    }
+  ],
+  "templates": [
+    {
+      "name": "materials.json",
+      "sha256": "4e84957314bc924f08339377b1fddf3e4b1c67c6a36278ef44fc0a456002806a"
+    },
+    {
+      "name": "drawing.json",
+      "sha256": "31614af7e1810a143226e1bd5c7b3aa19b32b7aafd6a20d4923a93fc493d372f"
+    }
+  ],
+  "business_file_reads": [
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\outputs\\geology-template-v1\\PM01规范输入.xlsx",
+      "sha256": "07acff1d8ea193db09af240431c5c3a52ca100398b289adfb0122d134fdd698b"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\drawing.json",
+      "sha256": "31614af7e1810a143226e1bd5c7b3aa19b32b7aafd6a20d4923a93fc493d372f"
+    },
+    {
+      "path": "C:\\Users\\sigeryang\\Documents\\ChatGPT\\天气项目\\output\\geology-generator-v1\\templates\\materials.json",
+      "sha256": "4e84957314bc924f08339377b1fddf3e4b1c67c6a36278ef44fc0a456002806a"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "normalized.json",
+      "role": "normalized_data",
+      "bytes": 165076,
+      "sha256": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75"
+    },
+    {
+      "name": "drawing.svg",
+      "role": "vector_master",
+      "bytes": 93166,
+      "sha256": "7f6a2693788dbff46d0285c589ca214e5c52882608c6ad2fdfb394c4fe1cf4c6"
+    },
+    {
+      "name": "preview.png",
+      "role": "raster_preview",
+      "bytes": 218219,
+      "sha256": "eef1d1b67762dd1f895b7b1b9d02ad1af27781ec39ffb44cec30fe8da2e6732a"
+    },
+    {
+      "name": "appendix.html",
+      "role": "complete_appendix",
+      "bytes": 87194,
+      "sha256": "dbd04e1842c17cb337695bab4ef892ae8aae74f2f2f72671551a38e082376e37"
+    },
+    {
+      "name": "layout-audit.json",
+      "role": "layout_audit",
+      "bytes": 136202,
+      "sha256": "ff4173970083300ac0cdf2d4053dd0005d70adb2da28e1074127b1b10ecc68aa"
+    },
+    {
+      "name": "report.html",
+      "role": "run_report",
+      "bytes": 17950,
+      "sha256": "00a09505d53d1af769478e1fc15c0b5f43ac2585967ada06858327f105bafd5d"
+    },
+    {
+      "name": "detail.svg",
+      "role": "vector_detail",
+      "bytes": 41991,
+      "sha256": "9aa31fec595e93dc0ac396aea93c49597f81c6d62e5ad1692cdfc7c5f5f81dde"
+    },
+    {
+      "name": "detail.png",
+      "role": "raster_detail",
+      "bytes": 96381,
+      "sha256": "6dd6789e07177f9da15088639e4481d9c80e79ef2994099855cb6a80cbafd6db"
+    },
+    {
+      "name": "readability.svg",
+      "role": "readability_vector",
+      "bytes": 49718,
+      "sha256": "70b8a1552e74ad96e36394058b268faa77e46360b92a8835275f4a7c0f8b69ee"
+    },
+    {
+      "name": "readability.png",
+      "role": "readability_raster",
+      "bytes": 483025,
+      "sha256": "a44753e5bd8eb4f689a8b7a83a7838c1c669eb564d5f8ac218bd75d311335b1f"
+    },
+    {
+      "name": "readability-audit.json",
+      "role": "readability_audit",
+      "bytes": 63677,
+      "sha256": "adb0da331ab170c258986e0e321b914aa2d8f822f866f5faefddc34fbd8b5314"
+    },
+    {
+      "name": "manifest.json",
+      "role": "self_manifest",
+      "bytes": null,
+      "sha256": null
+    }
+  ],
+  "drawing_bounds": {
+    "x_range_m": [
+      0.0,
+      479.3394609125983
+    ],
+    "offset_range_m": [
+      -4.973799150320701e-14,
+      234.07670982328915
+    ],
+    "measured_elevation_range_m": [
+      -127.46241495689857,
+      0.0
+    ],
+    "display_elevation_range_m": [
+      -130.85675555957428,
+      0.0
+    ],
+    "units_per_px": 0.35986446014459333,
+    "vertical_exaggeration": 1,
+    "common_x_scale": true,
+    "equal_plan_scale": true,
+    "equal_profile_scale": true,
+    "svg_geometry_coordinate_decimals_px": 6,
+    "maximum_coordinate_serialization_error_px": 5e-07,
+    "maximum_coordinate_serialization_error_m": 1.7993223007229666e-07,
+    "data_calculation_rounded": false
+  },
+  "precision_boundary": {
+    "calculation": "unrounded IEEE-754 double precision",
+    "display_coordinates_decimals": 3,
+    "display_angles_decimals": 3,
+    "vertical_exaggeration": 1,
+    "lithology_band_width_represents_thickness": false
+  },
+  "rasterization": {
+    "preview": {
+      "svg_width_px": 1500,
+      "svg_height_px": 2351,
+      "png_width_px": 1500,
+      "png_height_px": 2351,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "detail": {
+      "svg_width_px": 1500,
+      "svg_height_px": 805,
+      "png_width_px": 1500,
+      "png_height_px": 805,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    },
+    "readability": {
+      "svg_width_px": 1600,
+      "svg_height_px": 4776,
+      "png_width_px": 1600,
+      "png_height_px": 4776,
+      "browser": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    }
+  }
+}

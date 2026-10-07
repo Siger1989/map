@@ -1,0 +1,61 @@
+{
+  "scales": {
+    "main": 0.5,
+    "detail": 0.85,
+    "legend": 0.7,
+    "readability": 1.0,
+    "focus": 1.0
+  },
+  "unverified_ids": [
+    "mat_argillized_tuff",
+    "mat_silicified_tuff",
+    "mat_volcaniclastic_silty_mudstone"
+  ],
+  "pattern_counts": {
+    "main": 34,
+    "detail": 17,
+    "readability": 44
+  },
+  "checks": {
+    "no_vector_effect": true,
+    "main_scale": true,
+    "legend_scale": true,
+    "detail_scale": true,
+    "readability_scale": true,
+    "focus_scale": true,
+    "unverified_blank_main": true,
+    "unverified_blank_detail": true,
+    "unverified_blank_readability": true,
+    "pending_blank_main": true,
+    "pending_blank_detail": true,
+    "pending_blank_readability": true,
+    "main_unverified_polygons_no_stroke": true,
+    "detail_unverified_polygons_no_stroke": true,
+    "focus_no_half_opacity": true,
+    "wording_updated": true,
+    "geometry_unchanged": true,
+    "all": true
+  },
+  "geometry_comparison": {
+    "drawing.svg": {
+      "old_count": 82,
+      "new_count": 82,
+      "world_polygons_equal": true
+    },
+    "detail.svg": {
+      "old_count": 35,
+      "new_count": 35,
+      "world_polygons_equal": true
+    }
+  },
+  "visual_review": {
+    "main": "at native 1500 px, 3.394 m display depth is about 9.4 px; patterns are present but fine strokes are pale at main scale 0.5",
+    "detail": "at 1500x805, rotated short-line/dot textures are visibly repeated and black-white; no colored fill observed",
+    "risk": "main remains at risk of appearing too light when the full page is downscaled; geometry depth was not changed"
+  },
+  "source_sha256": {
+    "renderer.py": "02204419f41468a721c66f5662996b0eaa3a417537c382cf3f7bc9cb05560886",
+    "readability.py": "9dc5a5a8b5dad3ad79d273455a2b037d258bd0a1b456a6b502e30bb63fd2f6f7",
+    "templates/materials.json": "f251eb6ba7ac987759b91f36cf693a4b07f2588a2c9be863cdb79cf6b134312e"
+  }
+}

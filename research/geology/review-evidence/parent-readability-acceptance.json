@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "source_xls_unchanged": true,
+  "canonical_xlsx_unchanged": true,
+  "business_data_exactly_unchanged": true,
+  "all_world_polygons_and_contacts_unchanged": true,
+  "cards": 26,
+  "focus_layers": [
+    "C9",
+    "C11",
+    "C13"
+  ],
+  "independently_verified_bedding_angles": 20,
+  "thickness_fields_remain_empty": true,
+  "focus_xy_equal_scale": true,
+  "formal_standards_verified": false
+}

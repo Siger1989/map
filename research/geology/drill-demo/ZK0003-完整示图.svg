@@ -1,0 +1,1165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2680" height="3781" viewBox="0 0 2680.0 3780.11" role="img" aria-labelledby="ttl">
+<title id="ttl">ZK0003钻孔柱状示图·底稿数据</title><defs><style>
+text{font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;fill:#111} .rule{stroke:#444;stroke-width:.7} .major{stroke:#111;stroke-width:1.2} .fine{stroke:#999;stroke-width:.55} .leader{stroke:#555;stroke-width:.65;fill:none} .sample-range{stroke:#111;stroke-width:2;fill:none} .boundary{stroke:#222;stroke-width:1}
+</style><pattern id="confirmed-layer-1" width="74" height="84" patternUnits="userSpaceOnUse"><g fill="none" stroke="#111" stroke-width="0.75"><path d="M2 3.5h7 M20 3.5h10 M38 3.5h8 M56 3.5h7 M10 10.5h7 M29 10.5h10 M47 10.5h8 M65 10.5h7 M2 17.5h7 M20 17.5h10 M38 17.5h8 M56 17.5h7 M10 24.5h7 M29 24.5h10 M47 24.5h8 M65 24.5h7 M2 31.5h7 M20 31.5h10 M38 31.5h8 M56 31.5h7 M10 38.5h7 M29 38.5h10 M47 38.5h8 M65 38.5h7 M2 45.5h7 M20 45.5h10 M38 45.5h8 M56 45.5h7 M10 52.5h7 M29 52.5h10 M47 52.5h8 M65 52.5h7 M2 59.5h7 M20 59.5h10 M38 59.5h8 M56 59.5h7 M10 66.5h7 M29 66.5h10 M47 66.5h8 M65 66.5h7 M2 73.5h7 M20 73.5h10 M38 73.5h8 M56 73.5h7 M10 80.5h7 M29 80.5h10 M47 80.5h8 M65 80.5h7" /><path d="M0 0h74 M0 7h74 M0 14h74 M0 21h74 M0 28h74 M0 35h74 M0 42h74 M0 49h74 M0 56h74 M0 63h74 M0 70h74 M0 77h74 M0 84h74" stroke-width="0.45" /></g><g fill="#111"><circle cx="28" cy="73.5" r="0.95" /><circle cx="31" cy="73.5" r="0.95" /><circle cx="54" cy="80.5" r="0.95" /><circle cx="57" cy="80.5" r="0.95" /></g></pattern><pattern id="confirmed-layer-4" width="74" height="21" patternUnits="userSpaceOnUse"><g fill="none" stroke="#111" stroke-width="0.65"><path d="M0 0h74 M0 7h74 M0 14h74 M0 21h74" /></g><g fill="#111"><circle cx="7" cy="3.5" r="0.9" /><circle cx="23" cy="3.5" r="0.9" /><circle cx="39" cy="3.5" r="0.9" /><circle cx="55" cy="3.5" r="0.9" /><circle cx="69" cy="3.5" r="0.9" /><circle cx="15" cy="10.5" r="0.9" /><circle cx="31" cy="10.5" r="0.9" /><circle cx="47" cy="10.5" r="0.9" /><circle cx="63" cy="10.5" r="0.9" /><circle cx="7" cy="17.5" r="0.9" /><circle cx="23" cy="17.5" r="0.9" /><circle cx="39" cy="17.5" r="0.9" /><circle cx="55" cy="17.5" r="0.9" /><circle cx="69" cy="17.5" r="0.9" /></g></pattern><pattern id="confirmed-layer-5" width="74" height="48" patternUnits="userSpaceOnUse"><g fill="none" stroke="#111" stroke-width="0.7"><path d="M0 0h74 M0 16h74 M0 32h74 M0 48h74 M6 23h9 M27 23h13 M55 23h8 M7 40a4.5 1.8 0 1 0 9 0a4.5 1.8 0 1 0-9 0 M32 40a5.2 2 0 1 0 10.4 0a5.2 2 0 1 0-10.4 0 M59 40a4 1.7 0 1 0 8 0a4 1.7 0 1 0-8 0" /></g><g fill="#111"><circle cx="8" cy="5" r="0.9" /><circle cx="25" cy="5" r="0.9" /><circle cx="43" cy="5" r="0.9" /><circle cx="62" cy="5" r="0.9" /><circle cx="17" cy="11" r="0.9" /><circle cx="35" cy="11" r="0.9" /><circle cx="54" cy="11" r="0.9" /><circle cx="8" cy="27" r="0.9" /><circle cx="21" cy="27" r="0.9" /><circle cx="47" cy="27" r="0.9" /><circle cx="68" cy="27" r="0.9" /></g></pattern></defs><rect x="0" y="0" width="2680.0" height="3780.11" fill="white"/>
+<text x="35" y="35.00" font-size="25" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="35.00,10.00,343.00,31.25">ZK0003钻孔柱状示图·底稿数据</text>
+<text x="35" y="59.00" font-size="14" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,45.00,456.68,17.50">未校正孔深 382.79 m　·　本图 131 回次 / 全孔131回次、23层、97样</text>
+<text x="35" y="80.00" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,68.00,467.04,15.00">纵轴为沿孔测量深度；回次独立排列。原图1:100与图签1:500冲突，图中不标打印比例。</text>
+<text x="55" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="55.00,135.00,47.32,16.25">孔深(m)</text>
+<text x="135" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="135.00,135.00,127.40,16.25">回次记录（独立列表）</text>
+<text x="625" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="625.00,135.00,38.22,16.25">分层段</text>
+<text x="840" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="840.00,135.00,38.22,16.25">岩性柱</text>
+<text x="950" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="950.00,135.00,50.96,16.25">岩性描述</text>
+<text x="1480" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="1480.00,135.00,50.96,16.25">样品区间</text>
+<text x="1545" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="1545.00,135.00,152.88,16.25">样品明细（引线对应区间）</text>
+<text x="2200" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="2200.00,135.00,87.36,16.25">Au / Pb / Zn</text>
+<text x="2420" y="148.00" font-size="13" text-anchor="start" font-weight="bold" class="" data-layout-kind="text" data-bbox="2420.00,135.00,50.96,16.25">孔径结构</text>
+<line x1="90" y1="170.00" x2="90" y2="3615.11" class="major"/>
+<line x1="82" y1="170.00" x2="95" y2="170.00" class="major"/>
+<text x="78" y="174.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="71.84,163.00,6.16,13.75">0</text>
+<line x1="86" y1="215.00" x2="95" y2="215.00" class="fine"/>
+<text x="78" y="219.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="71.84,208.00,6.16,13.75">5</text>
+<line x1="82" y1="260.00" x2="95" y2="260.00" class="major"/>
+<text x="78" y="264.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,253.00,12.32,13.75">10</text>
+<line x1="86" y1="305.00" x2="95" y2="305.00" class="fine"/>
+<text x="78" y="309.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,298.00,12.32,13.75">15</text>
+<line x1="82" y1="350.00" x2="95" y2="350.00" class="major"/>
+<text x="78" y="354.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,343.00,12.32,13.75">20</text>
+<line x1="86" y1="395.00" x2="95" y2="395.00" class="fine"/>
+<text x="78" y="399.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,388.00,12.32,13.75">25</text>
+<line x1="82" y1="440.00" x2="95" y2="440.00" class="major"/>
+<text x="78" y="444.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,433.00,12.32,13.75">30</text>
+<line x1="86" y1="485.00" x2="95" y2="485.00" class="fine"/>
+<text x="78" y="489.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,478.00,12.32,13.75">35</text>
+<line x1="82" y1="530.00" x2="95" y2="530.00" class="major"/>
+<text x="78" y="534.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,523.00,12.32,13.75">40</text>
+<line x1="86" y1="575.00" x2="95" y2="575.00" class="fine"/>
+<text x="78" y="579.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,568.00,12.32,13.75">45</text>
+<line x1="82" y1="620.00" x2="95" y2="620.00" class="major"/>
+<text x="78" y="624.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,613.00,12.32,13.75">50</text>
+<line x1="86" y1="665.00" x2="95" y2="665.00" class="fine"/>
+<text x="78" y="669.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,658.00,12.32,13.75">55</text>
+<line x1="82" y1="710.00" x2="95" y2="710.00" class="major"/>
+<text x="78" y="714.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,703.00,12.32,13.75">60</text>
+<line x1="86" y1="755.00" x2="95" y2="755.00" class="fine"/>
+<text x="78" y="759.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,748.00,12.32,13.75">65</text>
+<line x1="82" y1="800.00" x2="95" y2="800.00" class="major"/>
+<text x="78" y="804.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,793.00,12.32,13.75">70</text>
+<line x1="86" y1="845.00" x2="95" y2="845.00" class="fine"/>
+<text x="78" y="849.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,838.00,12.32,13.75">75</text>
+<line x1="82" y1="890.00" x2="95" y2="890.00" class="major"/>
+<text x="78" y="894.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,883.00,12.32,13.75">80</text>
+<line x1="86" y1="935.00" x2="95" y2="935.00" class="fine"/>
+<text x="78" y="939.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,928.00,12.32,13.75">85</text>
+<line x1="82" y1="980.00" x2="95" y2="980.00" class="major"/>
+<text x="78" y="984.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,973.00,12.32,13.75">90</text>
+<line x1="86" y1="1025.00" x2="95" y2="1025.00" class="fine"/>
+<text x="78" y="1029.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="65.68,1018.00,12.32,13.75">95</text>
+<line x1="82" y1="1070.00" x2="95" y2="1070.00" class="major"/>
+<text x="78" y="1074.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1063.00,18.48,13.75">100</text>
+<line x1="86" y1="1115.00" x2="95" y2="1115.00" class="fine"/>
+<text x="78" y="1119.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1108.00,18.48,13.75">105</text>
+<line x1="82" y1="1160.00" x2="95" y2="1160.00" class="major"/>
+<text x="78" y="1164.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1153.00,18.48,13.75">110</text>
+<line x1="86" y1="1205.00" x2="95" y2="1205.00" class="fine"/>
+<text x="78" y="1209.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1198.00,18.48,13.75">115</text>
+<line x1="82" y1="1250.00" x2="95" y2="1250.00" class="major"/>
+<text x="78" y="1254.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1243.00,18.48,13.75">120</text>
+<line x1="86" y1="1295.00" x2="95" y2="1295.00" class="fine"/>
+<text x="78" y="1299.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1288.00,18.48,13.75">125</text>
+<line x1="82" y1="1340.00" x2="95" y2="1340.00" class="major"/>
+<text x="78" y="1344.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1333.00,18.48,13.75">130</text>
+<line x1="86" y1="1385.00" x2="95" y2="1385.00" class="fine"/>
+<text x="78" y="1389.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1378.00,18.48,13.75">135</text>
+<line x1="82" y1="1430.00" x2="95" y2="1430.00" class="major"/>
+<text x="78" y="1434.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1423.00,18.48,13.75">140</text>
+<line x1="86" y1="1475.00" x2="95" y2="1475.00" class="fine"/>
+<text x="78" y="1479.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1468.00,18.48,13.75">145</text>
+<line x1="82" y1="1520.00" x2="95" y2="1520.00" class="major"/>
+<text x="78" y="1524.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1513.00,18.48,13.75">150</text>
+<line x1="86" y1="1565.00" x2="95" y2="1565.00" class="fine"/>
+<text x="78" y="1569.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1558.00,18.48,13.75">155</text>
+<line x1="82" y1="1610.00" x2="95" y2="1610.00" class="major"/>
+<text x="78" y="1614.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1603.00,18.48,13.75">160</text>
+<line x1="86" y1="1655.00" x2="95" y2="1655.00" class="fine"/>
+<text x="78" y="1659.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1648.00,18.48,13.75">165</text>
+<line x1="82" y1="1700.00" x2="95" y2="1700.00" class="major"/>
+<text x="78" y="1704.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1693.00,18.48,13.75">170</text>
+<line x1="86" y1="1745.00" x2="95" y2="1745.00" class="fine"/>
+<text x="78" y="1749.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1738.00,18.48,13.75">175</text>
+<line x1="82" y1="1790.00" x2="95" y2="1790.00" class="major"/>
+<text x="78" y="1794.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1783.00,18.48,13.75">180</text>
+<line x1="86" y1="1835.00" x2="95" y2="1835.00" class="fine"/>
+<text x="78" y="1839.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1828.00,18.48,13.75">185</text>
+<line x1="82" y1="1880.00" x2="95" y2="1880.00" class="major"/>
+<text x="78" y="1884.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1873.00,18.48,13.75">190</text>
+<line x1="86" y1="1925.00" x2="95" y2="1925.00" class="fine"/>
+<text x="78" y="1929.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1918.00,18.48,13.75">195</text>
+<line x1="82" y1="1970.00" x2="95" y2="1970.00" class="major"/>
+<text x="78" y="1974.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,1963.00,18.48,13.75">200</text>
+<line x1="86" y1="2015.00" x2="95" y2="2015.00" class="fine"/>
+<text x="78" y="2019.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2008.00,18.48,13.75">205</text>
+<line x1="82" y1="2060.00" x2="95" y2="2060.00" class="major"/>
+<text x="78" y="2064.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2053.00,18.48,13.75">210</text>
+<line x1="86" y1="2105.00" x2="95" y2="2105.00" class="fine"/>
+<text x="78" y="2109.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2098.00,18.48,13.75">215</text>
+<line x1="82" y1="2150.00" x2="95" y2="2150.00" class="major"/>
+<text x="78" y="2154.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2143.00,18.48,13.75">220</text>
+<line x1="86" y1="2195.00" x2="95" y2="2195.00" class="fine"/>
+<text x="78" y="2199.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2188.00,18.48,13.75">225</text>
+<line x1="82" y1="2240.00" x2="95" y2="2240.00" class="major"/>
+<text x="78" y="2244.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2233.00,18.48,13.75">230</text>
+<line x1="86" y1="2285.00" x2="95" y2="2285.00" class="fine"/>
+<text x="78" y="2289.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2278.00,18.48,13.75">235</text>
+<line x1="82" y1="2330.00" x2="95" y2="2330.00" class="major"/>
+<text x="78" y="2334.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2323.00,18.48,13.75">240</text>
+<line x1="86" y1="2375.00" x2="95" y2="2375.00" class="fine"/>
+<text x="78" y="2379.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2368.00,18.48,13.75">245</text>
+<line x1="82" y1="2420.00" x2="95" y2="2420.00" class="major"/>
+<text x="78" y="2424.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2413.00,18.48,13.75">250</text>
+<line x1="86" y1="2465.00" x2="95" y2="2465.00" class="fine"/>
+<text x="78" y="2469.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2458.00,18.48,13.75">255</text>
+<line x1="82" y1="2510.00" x2="95" y2="2510.00" class="major"/>
+<text x="78" y="2514.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2503.00,18.48,13.75">260</text>
+<line x1="86" y1="2555.00" x2="95" y2="2555.00" class="fine"/>
+<text x="78" y="2559.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2548.00,18.48,13.75">265</text>
+<line x1="82" y1="2600.00" x2="95" y2="2600.00" class="major"/>
+<text x="78" y="2604.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2593.00,18.48,13.75">270</text>
+<line x1="86" y1="2645.00" x2="95" y2="2645.00" class="fine"/>
+<text x="78" y="2649.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2638.00,18.48,13.75">275</text>
+<line x1="82" y1="2690.00" x2="95" y2="2690.00" class="major"/>
+<text x="78" y="2694.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2683.00,18.48,13.75">280</text>
+<line x1="86" y1="2735.00" x2="95" y2="2735.00" class="fine"/>
+<text x="78" y="2739.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2728.00,18.48,13.75">285</text>
+<line x1="82" y1="2780.00" x2="95" y2="2780.00" class="major"/>
+<text x="78" y="2784.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2773.00,18.48,13.75">290</text>
+<line x1="86" y1="2825.00" x2="95" y2="2825.00" class="fine"/>
+<text x="78" y="2829.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2818.00,18.48,13.75">295</text>
+<line x1="82" y1="2870.00" x2="95" y2="2870.00" class="major"/>
+<text x="78" y="2874.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2863.00,18.48,13.75">300</text>
+<line x1="86" y1="2915.00" x2="95" y2="2915.00" class="fine"/>
+<text x="78" y="2919.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2908.00,18.48,13.75">305</text>
+<line x1="82" y1="2960.00" x2="95" y2="2960.00" class="major"/>
+<text x="78" y="2964.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2953.00,18.48,13.75">310</text>
+<line x1="86" y1="3005.00" x2="95" y2="3005.00" class="fine"/>
+<text x="78" y="3009.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,2998.00,18.48,13.75">315</text>
+<line x1="82" y1="3050.00" x2="95" y2="3050.00" class="major"/>
+<text x="78" y="3054.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3043.00,18.48,13.75">320</text>
+<line x1="86" y1="3095.00" x2="95" y2="3095.00" class="fine"/>
+<text x="78" y="3099.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3088.00,18.48,13.75">325</text>
+<line x1="82" y1="3140.00" x2="95" y2="3140.00" class="major"/>
+<text x="78" y="3144.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3133.00,18.48,13.75">330</text>
+<line x1="86" y1="3185.00" x2="95" y2="3185.00" class="fine"/>
+<text x="78" y="3189.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3178.00,18.48,13.75">335</text>
+<line x1="82" y1="3230.00" x2="95" y2="3230.00" class="major"/>
+<text x="78" y="3234.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3223.00,18.48,13.75">340</text>
+<line x1="86" y1="3275.00" x2="95" y2="3275.00" class="fine"/>
+<text x="78" y="3279.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3268.00,18.48,13.75">345</text>
+<line x1="82" y1="3320.00" x2="95" y2="3320.00" class="major"/>
+<text x="78" y="3324.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3313.00,18.48,13.75">350</text>
+<line x1="86" y1="3365.00" x2="95" y2="3365.00" class="fine"/>
+<text x="78" y="3369.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3358.00,18.48,13.75">355</text>
+<line x1="82" y1="3410.00" x2="95" y2="3410.00" class="major"/>
+<text x="78" y="3414.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3403.00,18.48,13.75">360</text>
+<line x1="86" y1="3455.00" x2="95" y2="3455.00" class="fine"/>
+<text x="78" y="3459.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3448.00,18.48,13.75">365</text>
+<line x1="82" y1="3500.00" x2="95" y2="3500.00" class="major"/>
+<text x="78" y="3504.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3493.00,18.48,13.75">370</text>
+<line x1="86" y1="3545.00" x2="95" y2="3545.00" class="fine"/>
+<text x="78" y="3549.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3538.00,18.48,13.75">375</text>
+<line x1="82" y1="3590.00" x2="95" y2="3590.00" class="major"/>
+<text x="78" y="3594.00" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="59.52,3583.00,18.48,13.75">380</text>
+<line x1="82" y1="3615.11" x2="95" y2="3615.11" class="major"/>
+<text x="78" y="3619.11" font-size="11" text-anchor="end" font-weight="normal" class="" data-layout-kind="text" data-bbox="41.04,3608.11,36.96,13.75">382.79</text>
+<text x="135" y="187.15" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,175.15,304.08,15.00">001  0.00–0.34  进尺0.34  芯0.30  采取率88.24%</text>
+<line x1="128" y1="196.30" x2="590" y2="196.30" class="fine"/>
+<text x="135" y="213.45" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,201.45,304.08,15.00">002  0.34–1.84  进尺1.50  芯1.40  采取率93.33%</text>
+<line x1="128" y1="222.60" x2="590" y2="222.60" class="fine"/>
+<text x="135" y="239.75" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,227.75,304.08,15.00">003  1.84–3.34  进尺1.50  芯1.32  采取率88.00%</text>
+<line x1="128" y1="248.90" x2="590" y2="248.90" class="fine"/>
+<text x="135" y="266.04" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,254.04,304.08,15.00">004  3.34–4.84  进尺1.50  芯1.35  采取率90.00%</text>
+<line x1="128" y1="275.19" x2="590" y2="275.19" class="fine"/>
+<text x="135" y="292.34" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,280.34,304.08,15.00">005  4.84–5.79  进尺0.95  芯0.86  采取率90.53%</text>
+<line x1="128" y1="301.49" x2="590" y2="301.49" class="fine"/>
+<text x="135" y="318.64" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,306.64,304.08,15.00">006  5.79–8.79  进尺3.00  芯2.64  采取率88.00%</text>
+<line x1="128" y1="327.79" x2="590" y2="327.79" class="fine"/>
+<text x="135" y="344.94" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,332.94,310.80,15.00">007  8.79–11.79  进尺3.00  芯2.62  采取率87.33%</text>
+<line x1="128" y1="354.09" x2="590" y2="354.09" class="fine"/>
+<text x="135" y="371.24" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,359.24,317.52,15.00">008  11.79–14.79  进尺3.00  芯2.66  采取率88.67%</text>
+<line x1="128" y1="380.39" x2="590" y2="380.39" class="fine"/>
+<text x="135" y="397.54" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,385.54,317.52,15.00">009  14.79–17.79  进尺3.00  芯2.71  采取率90.33%</text>
+<line x1="128" y1="406.69" x2="590" y2="406.69" class="fine"/>
+<text x="135" y="423.84" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,411.84,317.52,15.00">010  17.79–20.79  进尺3.00  芯2.69  采取率89.67%</text>
+<line x1="128" y1="432.99" x2="590" y2="432.99" class="fine"/>
+<text x="135" y="450.13" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,438.13,317.52,15.00">011  20.79–23.79  进尺3.00  芯2.61  采取率87.00%</text>
+<line x1="128" y1="459.28" x2="590" y2="459.28" class="fine"/>
+<text x="135" y="476.43" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,464.43,317.52,15.00">012  23.79–26.79  进尺3.00  芯2.76  采取率92.00%</text>
+<line x1="128" y1="485.58" x2="590" y2="485.58" class="fine"/>
+<text x="135" y="502.73" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,490.73,317.52,15.00">013  26.79–29.79  进尺3.00  芯2.72  采取率90.67%</text>
+<line x1="128" y1="511.88" x2="590" y2="511.88" class="fine"/>
+<text x="135" y="529.03" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,517.03,317.52,15.00">014  29.79–32.79  进尺3.00  芯2.67  采取率89.00%</text>
+<line x1="128" y1="538.18" x2="590" y2="538.18" class="fine"/>
+<text x="135" y="555.33" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,543.33,317.52,15.00">015  32.79–35.79  进尺3.00  芯2.64  采取率88.00%</text>
+<line x1="128" y1="564.48" x2="590" y2="564.48" class="fine"/>
+<text x="135" y="581.63" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,569.63,317.52,15.00">016  35.79–38.79  进尺3.00  芯2.75  采取率91.67%</text>
+<line x1="128" y1="590.78" x2="590" y2="590.78" class="fine"/>
+<text x="135" y="607.93" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,595.93,317.52,15.00">017  38.79–41.79  进尺3.00  芯2.63  采取率87.67%</text>
+<line x1="128" y1="617.08" x2="590" y2="617.08" class="fine"/>
+<text x="135" y="634.22" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,622.22,317.52,15.00">018  41.79–44.79  进尺3.00  芯2.72  采取率90.67%</text>
+<line x1="128" y1="643.37" x2="590" y2="643.37" class="fine"/>
+<text x="135" y="660.52" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,648.52,317.52,15.00">019  44.79–47.79  进尺3.00  芯2.80  采取率93.33%</text>
+<line x1="128" y1="669.67" x2="590" y2="669.67" class="fine"/>
+<text x="135" y="686.82" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,674.82,317.52,15.00">020  47.79–50.79  进尺3.00  芯2.89  采取率96.33%</text>
+<line x1="128" y1="695.97" x2="590" y2="695.97" class="fine"/>
+<text x="135" y="713.12" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,701.12,317.52,15.00">021  50.79–53.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="722.27" x2="590" y2="722.27" class="fine"/>
+<text x="135" y="739.42" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,727.42,317.52,15.00">022  53.79–56.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="748.57" x2="590" y2="748.57" class="fine"/>
+<text x="135" y="765.72" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,753.72,317.52,15.00">023  56.79–59.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="774.87" x2="590" y2="774.87" class="fine"/>
+<text x="135" y="792.02" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,780.02,317.52,15.00">024  59.79–62.79  进尺3.00  芯2.93  采取率97.67%</text>
+<line x1="128" y1="801.17" x2="590" y2="801.17" class="fine"/>
+<text x="135" y="818.31" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,806.31,317.52,15.00">025  62.79–65.79  进尺3.00  芯2.64  采取率88.00%</text>
+<line x1="128" y1="827.46" x2="590" y2="827.46" class="fine"/>
+<text x="135" y="844.61" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,832.61,317.52,15.00">026  65.79–68.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="853.76" x2="590" y2="853.76" class="fine"/>
+<text x="135" y="870.91" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,858.91,317.52,15.00">027  68.79–71.79  进尺3.00  芯2.73  采取率91.00%</text>
+<line x1="128" y1="880.06" x2="590" y2="880.06" class="fine"/>
+<text x="135" y="897.21" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,885.21,317.52,15.00">028  71.79–74.79  进尺3.00  芯2.95  采取率98.33%</text>
+<line x1="128" y1="906.36" x2="590" y2="906.36" class="fine"/>
+<text x="135" y="923.51" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,911.51,317.52,15.00">029  74.79–77.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="932.66" x2="590" y2="932.66" class="fine"/>
+<text x="135" y="949.81" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,937.81,317.52,15.00">030  77.79–80.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="958.96" x2="590" y2="958.96" class="fine"/>
+<text x="135" y="976.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,964.11,317.52,15.00">031  80.79–83.79  进尺3.00  芯2.93  采取率97.67%</text>
+<line x1="128" y1="985.26" x2="590" y2="985.26" class="fine"/>
+<text x="135" y="1002.40" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,990.40,317.52,15.00">032  83.79–86.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="1011.55" x2="590" y2="1011.55" class="fine"/>
+<text x="135" y="1028.70" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1016.70,317.52,15.00">033  86.79–89.79  进尺3.00  芯2.89  采取率96.33%</text>
+<line x1="128" y1="1037.85" x2="590" y2="1037.85" class="fine"/>
+<text x="135" y="1055.00" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1043.00,317.52,15.00">034  89.79–92.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="1064.15" x2="590" y2="1064.15" class="fine"/>
+<text x="135" y="1081.30" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1069.30,317.52,15.00">035  92.79–95.79  进尺3.00  芯2.82  采取率94.00%</text>
+<line x1="128" y1="1090.45" x2="590" y2="1090.45" class="fine"/>
+<text x="135" y="1107.60" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1095.60,317.52,15.00">036  95.79–98.79  进尺3.00  芯2.93  采取率97.67%</text>
+<line x1="128" y1="1116.75" x2="590" y2="1116.75" class="fine"/>
+<text x="135" y="1133.90" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1121.90,324.24,15.00">037  98.79–101.79  进尺3.00  芯2.97  采取率99.00%</text>
+<line x1="128" y1="1143.05" x2="590" y2="1143.05" class="fine"/>
+<text x="135" y="1160.20" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1148.20,330.96,15.00">038  101.79–104.79  进尺3.00  芯2.93  采取率97.67%</text>
+<line x1="128" y1="1169.34" x2="590" y2="1169.34" class="fine"/>
+<text x="135" y="1186.49" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1174.49,330.96,15.00">039  104.79–107.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="1195.64" x2="590" y2="1195.64" class="fine"/>
+<text x="135" y="1212.79" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1200.79,330.96,15.00">040  107.79–110.79  进尺3.00  芯2.89  采取率96.33%</text>
+<line x1="128" y1="1221.94" x2="590" y2="1221.94" class="fine"/>
+<text x="135" y="1239.09" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1227.09,330.96,15.00">041  110.79–113.79  进尺3.00  芯2.85  采取率95.00%</text>
+<line x1="128" y1="1248.24" x2="590" y2="1248.24" class="fine"/>
+<text x="135" y="1265.39" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1253.39,330.96,15.00">042  113.79–116.79  进尺3.00  芯2.92  采取率97.33%</text>
+<line x1="128" y1="1274.54" x2="590" y2="1274.54" class="fine"/>
+<text x="135" y="1291.69" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1279.69,330.96,15.00">043  116.79–119.79  进尺3.00  芯2.95  采取率98.33%</text>
+<line x1="128" y1="1300.84" x2="590" y2="1300.84" class="fine"/>
+<text x="135" y="1317.99" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1305.99,330.96,15.00">044  119.79–122.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="1327.14" x2="590" y2="1327.14" class="fine"/>
+<text x="135" y="1344.29" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1332.29,330.96,15.00">045  122.79–125.79  进尺3.00  芯2.98  采取率99.33%</text>
+<line x1="128" y1="1353.43" x2="590" y2="1353.43" class="fine"/>
+<text x="135" y="1370.58" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1358.58,330.96,15.00">046  125.79–128.79  进尺3.00  芯2.85  采取率95.00%</text>
+<line x1="128" y1="1379.73" x2="590" y2="1379.73" class="fine"/>
+<text x="135" y="1396.88" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1384.88,330.96,15.00">047  128.79–131.79  进尺3.00  芯2.84  采取率94.67%</text>
+<line x1="128" y1="1406.03" x2="590" y2="1406.03" class="fine"/>
+<text x="135" y="1423.18" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1411.18,330.96,15.00">048  131.79–134.79  进尺3.00  芯2.89  采取率96.33%</text>
+<line x1="128" y1="1432.33" x2="590" y2="1432.33" class="fine"/>
+<text x="135" y="1449.48" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1437.48,330.96,15.00">049  134.79–137.79  进尺3.00  芯2.95  采取率98.33%</text>
+<line x1="128" y1="1458.63" x2="590" y2="1458.63" class="fine"/>
+<text x="135" y="1475.78" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1463.78,330.96,15.00">050  137.79–140.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="1484.93" x2="590" y2="1484.93" class="fine"/>
+<text x="135" y="1502.08" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1490.08,330.96,15.00">051  140.79–143.79  进尺3.00  芯2.97  采取率99.00%</text>
+<line x1="128" y1="1511.23" x2="590" y2="1511.23" class="fine"/>
+<text x="135" y="1528.38" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1516.38,330.96,15.00">052  143.79–146.79  进尺3.00  芯2.97  采取率99.00%</text>
+<line x1="128" y1="1537.52" x2="590" y2="1537.52" class="fine"/>
+<text x="135" y="1554.67" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1542.67,330.96,15.00">053  146.79–149.79  进尺3.00  芯2.88  采取率96.00%</text>
+<line x1="128" y1="1563.82" x2="590" y2="1563.82" class="fine"/>
+<text x="135" y="1580.97" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1568.97,330.96,15.00">054  149.79–152.79  进尺3.00  芯2.94  采取率98.00%</text>
+<line x1="128" y1="1590.12" x2="590" y2="1590.12" class="fine"/>
+<text x="135" y="1607.27" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1595.27,330.96,15.00">055  152.79–155.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="1616.42" x2="590" y2="1616.42" class="fine"/>
+<text x="135" y="1633.57" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1621.57,330.96,15.00">056  155.79–158.79  进尺3.00  芯2.95  采取率98.33%</text>
+<line x1="128" y1="1642.72" x2="590" y2="1642.72" class="fine"/>
+<text x="135" y="1659.87" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1647.87,330.96,15.00">057  158.79–161.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="1669.02" x2="590" y2="1669.02" class="fine"/>
+<text x="135" y="1686.17" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1674.17,330.96,15.00">058  161.79–164.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="1695.32" x2="590" y2="1695.32" class="fine"/>
+<text x="135" y="1712.47" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1700.47,330.96,15.00">059  164.79–167.79  进尺3.00  芯2.82  采取率94.00%</text>
+<line x1="128" y1="1721.61" x2="590" y2="1721.61" class="fine"/>
+<text x="135" y="1738.76" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1726.76,330.96,15.00">060  167.79–170.79  进尺3.00  芯2.75  采取率91.67%</text>
+<line x1="128" y1="1747.91" x2="590" y2="1747.91" class="fine"/>
+<text x="135" y="1765.06" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1753.06,330.96,15.00">061  170.79–173.79  进尺3.00  芯2.94  采取率98.00%</text>
+<line x1="128" y1="1774.21" x2="590" y2="1774.21" class="fine"/>
+<text x="135" y="1791.36" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1779.36,330.96,15.00">062  173.79–176.79  进尺3.00  芯2.92  采取率97.33%</text>
+<line x1="128" y1="1800.51" x2="590" y2="1800.51" class="fine"/>
+<text x="135" y="1817.66" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1805.66,330.96,15.00">063  176.79–179.79  进尺3.00  芯2.96  采取率98.67%</text>
+<line x1="128" y1="1826.81" x2="590" y2="1826.81" class="fine"/>
+<text x="135" y="1843.96" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1831.96,330.96,15.00">064  179.79–182.79  进尺3.00  芯2.89  采取率96.33%</text>
+<line x1="128" y1="1853.11" x2="590" y2="1853.11" class="fine"/>
+<text x="135" y="1870.26" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1858.26,330.96,15.00">065  182.79–185.79  进尺3.00  芯2.85  采取率95.00%</text>
+<line x1="128" y1="1879.41" x2="590" y2="1879.41" class="fine"/>
+<text x="135" y="1896.55" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1884.55,330.96,15.00">066  185.79–188.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="1905.70" x2="590" y2="1905.70" class="fine"/>
+<text x="135" y="1922.85" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1910.85,330.96,15.00">067  188.79–191.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="1932.00" x2="590" y2="1932.00" class="fine"/>
+<text x="135" y="1949.15" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1937.15,330.96,15.00">068  191.79–194.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="1958.30" x2="590" y2="1958.30" class="fine"/>
+<text x="135" y="1975.45" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1963.45,330.96,15.00">069  194.79–197.79  进尺3.00  芯2.94  采取率98.00%</text>
+<line x1="128" y1="1984.60" x2="590" y2="1984.60" class="fine"/>
+<text x="135" y="2001.75" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,1989.75,330.96,15.00">070  197.79–200.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="2010.90" x2="590" y2="2010.90" class="fine"/>
+<text x="135" y="2028.05" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2016.05,330.96,15.00">071  200.79–203.79  进尺3.00  芯2.84  采取率94.67%</text>
+<line x1="128" y1="2037.20" x2="590" y2="2037.20" class="fine"/>
+<text x="135" y="2054.35" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2042.35,330.96,15.00">072  203.79–206.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="2063.50" x2="590" y2="2063.50" class="fine"/>
+<text x="135" y="2080.64" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2068.64,330.96,15.00">073  206.79–209.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="2089.79" x2="590" y2="2089.79" class="fine"/>
+<text x="135" y="2106.94" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2094.94,330.96,15.00">074  209.79–212.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="2116.09" x2="590" y2="2116.09" class="fine"/>
+<text x="135" y="2133.24" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2121.24,330.96,15.00">075  212.79–215.79  进尺3.00  芯2.92  采取率97.33%</text>
+<line x1="128" y1="2142.39" x2="590" y2="2142.39" class="fine"/>
+<text x="135" y="2159.54" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2147.54,330.96,15.00">076  215.79–218.79  进尺3.00  芯2.88  采取率96.00%</text>
+<line x1="128" y1="2168.69" x2="590" y2="2168.69" class="fine"/>
+<text x="135" y="2185.84" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2173.84,330.96,15.00">077  218.79–221.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="2194.99" x2="590" y2="2194.99" class="fine"/>
+<text x="135" y="2212.14" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2200.14,330.96,15.00">078  221.79–224.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="2221.29" x2="590" y2="2221.29" class="fine"/>
+<text x="135" y="2238.44" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2226.44,330.96,15.00">079  224.79–227.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="2247.59" x2="590" y2="2247.59" class="fine"/>
+<text x="135" y="2264.73" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2252.73,330.96,15.00">080  227.79–230.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="2273.88" x2="590" y2="2273.88" class="fine"/>
+<text x="135" y="2291.03" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2279.03,330.96,15.00">081  230.79–233.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="2300.18" x2="590" y2="2300.18" class="fine"/>
+<text x="135" y="2317.33" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2305.33,330.96,15.00">082  233.79–236.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="2326.48" x2="590" y2="2326.48" class="fine"/>
+<text x="135" y="2343.63" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2331.63,330.96,15.00">083  236.79–239.79  进尺3.00  芯2.88  采取率96.00%</text>
+<line x1="128" y1="2352.78" x2="590" y2="2352.78" class="fine"/>
+<text x="135" y="2369.93" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2357.93,330.96,15.00">084  239.79–242.79  进尺3.00  芯2.84  采取率94.67%</text>
+<line x1="128" y1="2379.08" x2="590" y2="2379.08" class="fine"/>
+<text x="135" y="2396.23" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2384.23,330.96,15.00">085  242.79–245.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="2405.38" x2="590" y2="2405.38" class="fine"/>
+<text x="135" y="2422.53" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2410.53,330.96,15.00">086  245.79–248.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="2431.68" x2="590" y2="2431.68" class="fine"/>
+<text x="135" y="2448.82" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2436.82,330.96,15.00">087  248.79–251.79  进尺3.00  芯2.77  采取率92.33%</text>
+<line x1="128" y1="2457.97" x2="590" y2="2457.97" class="fine"/>
+<text x="135" y="2475.12" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2463.12,330.96,15.00">088  251.79–254.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="2484.27" x2="590" y2="2484.27" class="fine"/>
+<text x="135" y="2501.42" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2489.42,330.96,15.00">089  254.79–257.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="2510.57" x2="590" y2="2510.57" class="fine"/>
+<text x="135" y="2527.72" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2515.72,330.96,15.00">090  257.79–260.79  进尺3.00  芯2.79  采取率93.00%</text>
+<line x1="128" y1="2536.87" x2="590" y2="2536.87" class="fine"/>
+<text x="135" y="2554.02" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2542.02,330.96,15.00">091  260.79–263.79  进尺3.00  芯2.73  采取率91.00%</text>
+<line x1="128" y1="2563.17" x2="590" y2="2563.17" class="fine"/>
+<text x="135" y="2580.32" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2568.32,330.96,15.00">092  263.79–266.79  进尺3.00  芯2.69  采取率89.67%</text>
+<line x1="128" y1="2589.47" x2="590" y2="2589.47" class="fine"/>
+<text x="135" y="2606.62" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2594.62,330.96,15.00">093  266.79–269.79  进尺3.00  芯2.72  采取率90.67%</text>
+<line x1="128" y1="2615.77" x2="590" y2="2615.77" class="fine"/>
+<text x="135" y="2632.91" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2620.91,330.96,15.00">094  269.79–272.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="2642.06" x2="590" y2="2642.06" class="fine"/>
+<text x="135" y="2659.21" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2647.21,330.96,15.00">095  272.79–275.79  进尺3.00  芯2.76  采取率92.00%</text>
+<line x1="128" y1="2668.36" x2="590" y2="2668.36" class="fine"/>
+<text x="135" y="2685.51" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2673.51,330.96,15.00">096  275.79–278.79  进尺3.00  芯2.82  采取率94.00%</text>
+<line x1="128" y1="2694.66" x2="590" y2="2694.66" class="fine"/>
+<text x="135" y="2711.81" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2699.81,330.96,15.00">097  278.79–281.79  进尺3.00  芯2.88  采取率96.00%</text>
+<line x1="128" y1="2720.96" x2="590" y2="2720.96" class="fine"/>
+<text x="135" y="2738.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2726.11,330.96,15.00">098  281.79–284.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="2747.26" x2="590" y2="2747.26" class="fine"/>
+<text x="135" y="2764.41" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2752.41,330.96,15.00">099  284.79–287.79  进尺3.00  芯2.74  采取率91.33%</text>
+<line x1="128" y1="2773.56" x2="590" y2="2773.56" class="fine"/>
+<text x="135" y="2790.71" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2778.71,330.96,15.00">100  287.79–290.79  进尺3.00  芯2.63  采取率87.67%</text>
+<line x1="128" y1="2799.85" x2="590" y2="2799.85" class="fine"/>
+<text x="135" y="2817.00" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2805.00,330.96,15.00">101  290.79–293.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="2826.15" x2="590" y2="2826.15" class="fine"/>
+<text x="135" y="2843.30" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2831.30,330.96,15.00">102  293.79–296.79  进尺3.00  芯2.80  采取率93.33%</text>
+<line x1="128" y1="2852.45" x2="590" y2="2852.45" class="fine"/>
+<text x="135" y="2869.60" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2857.60,330.96,15.00">103  296.79–299.79  进尺3.00  芯2.69  采取率89.67%</text>
+<line x1="128" y1="2878.75" x2="590" y2="2878.75" class="fine"/>
+<text x="135" y="2895.90" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2883.90,330.96,15.00">104  299.79–302.79  进尺3.00  芯2.71  采取率90.33%</text>
+<line x1="128" y1="2905.05" x2="590" y2="2905.05" class="fine"/>
+<text x="135" y="2922.20" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2910.20,330.96,15.00">105  302.79–305.79  进尺3.00  芯2.79  采取率93.00%</text>
+<line x1="128" y1="2931.35" x2="590" y2="2931.35" class="fine"/>
+<text x="135" y="2948.50" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2936.50,330.96,15.00">106  305.79–308.79  进尺3.00  芯2.73  采取率91.00%</text>
+<line x1="128" y1="2957.65" x2="590" y2="2957.65" class="fine"/>
+<text x="135" y="2974.80" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2962.80,330.96,15.00">107  308.79–311.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="2983.94" x2="590" y2="2983.94" class="fine"/>
+<text x="135" y="3001.09" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,2989.09,330.96,15.00">108  311.79–314.79  进尺3.00  芯2.78  采取率92.67%</text>
+<line x1="128" y1="3010.24" x2="590" y2="3010.24" class="fine"/>
+<text x="135" y="3027.39" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3015.39,330.96,15.00">109  314.79–317.79  进尺3.00  芯2.91  采取率97.00%</text>
+<line x1="128" y1="3036.54" x2="590" y2="3036.54" class="fine"/>
+<text x="135" y="3053.69" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3041.69,330.96,15.00">110  317.79–320.79  进尺3.00  芯2.90  采取率96.67%</text>
+<line x1="128" y1="3062.84" x2="590" y2="3062.84" class="fine"/>
+<text x="135" y="3079.99" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3067.99,330.96,15.00">111  320.79–323.79  进尺3.00  芯2.96  采取率98.67%</text>
+<line x1="128" y1="3089.14" x2="590" y2="3089.14" class="fine"/>
+<text x="135" y="3106.29" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3094.29,330.96,15.00">112  323.79–326.79  进尺3.00  芯2.82  采取率94.00%</text>
+<line x1="128" y1="3115.44" x2="590" y2="3115.44" class="fine"/>
+<text x="135" y="3132.59" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3120.59,330.96,15.00">113  326.79–329.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="3141.74" x2="590" y2="3141.74" class="fine"/>
+<text x="135" y="3158.89" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3146.89,330.96,15.00">114  329.79–332.79  进尺3.00  芯2.79  采取率93.00%</text>
+<line x1="128" y1="3168.03" x2="590" y2="3168.03" class="fine"/>
+<text x="135" y="3185.18" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3173.18,330.96,15.00">115  332.79–335.79  进尺3.00  芯2.86  采取率95.33%</text>
+<line x1="128" y1="3194.33" x2="590" y2="3194.33" class="fine"/>
+<text x="135" y="3211.48" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3199.48,330.96,15.00">116  335.79–338.79  进尺3.00  芯2.76  采取率92.00%</text>
+<line x1="128" y1="3220.63" x2="590" y2="3220.63" class="fine"/>
+<text x="135" y="3237.78" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3225.78,330.96,15.00">117  338.79–341.79  进尺3.00  芯2.79  采取率93.00%</text>
+<line x1="128" y1="3246.93" x2="590" y2="3246.93" class="fine"/>
+<text x="135" y="3264.08" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3252.08,330.96,15.00">118  341.79–344.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="3273.23" x2="590" y2="3273.23" class="fine"/>
+<text x="135" y="3290.38" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3278.38,330.96,15.00">119  344.79–347.79  进尺3.00  芯2.83  采取率94.33%</text>
+<line x1="128" y1="3299.53" x2="590" y2="3299.53" class="fine"/>
+<text x="135" y="3316.68" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3304.68,330.96,15.00">120  347.79–350.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="3325.83" x2="590" y2="3325.83" class="fine"/>
+<text x="135" y="3342.98" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3330.98,330.96,15.00">121  350.79–353.79  进尺3.00  芯2.92  采取率97.33%</text>
+<line x1="128" y1="3352.12" x2="590" y2="3352.12" class="fine"/>
+<text x="135" y="3369.27" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3357.27,330.96,15.00">122  353.79–356.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="3378.42" x2="590" y2="3378.42" class="fine"/>
+<text x="135" y="3395.57" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3383.57,330.96,15.00">123  356.79–359.79  进尺3.00  芯2.81  采取率93.67%</text>
+<line x1="128" y1="3404.72" x2="590" y2="3404.72" class="fine"/>
+<text x="135" y="3421.87" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3409.87,330.96,15.00">124  359.79–362.79  进尺3.00  芯2.87  采取率95.67%</text>
+<line x1="128" y1="3431.02" x2="590" y2="3431.02" class="fine"/>
+<text x="135" y="3448.17" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3436.17,330.96,15.00">125  362.79–365.79  进尺3.00  芯2.78  采取率92.67%</text>
+<line x1="128" y1="3457.32" x2="590" y2="3457.32" class="fine"/>
+<text x="135" y="3474.47" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3462.47,330.96,15.00">126  365.79–368.79  进尺3.00  芯2.71  采取率90.33%</text>
+<line x1="128" y1="3483.62" x2="590" y2="3483.62" class="fine"/>
+<text x="135" y="3500.77" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3488.77,330.96,15.00">127  368.79–371.79  进尺3.00  芯2.76  采取率92.00%</text>
+<line x1="128" y1="3509.92" x2="590" y2="3509.92" class="fine"/>
+<text x="135" y="3527.07" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3515.07,330.96,15.00">128  371.79–374.79  进尺3.00  芯2.80  采取率93.33%</text>
+<line x1="128" y1="3536.21" x2="590" y2="3536.21" class="fine"/>
+<text x="135" y="3553.36" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3541.36,330.96,15.00">129  374.79–377.79  进尺3.00  芯2.70  采取率90.00%</text>
+<line x1="128" y1="3562.51" x2="590" y2="3562.51" class="fine"/>
+<text x="135" y="3579.66" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3567.66,330.96,15.00">130  377.79–380.79  进尺3.00  芯2.78  采取率92.67%</text>
+<line x1="128" y1="3588.81" x2="590" y2="3588.81" class="fine"/>
+<text x="135" y="3605.96" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="135.00,3593.96,330.96,15.00">131  380.79–382.79  进尺2.00  芯1.68  采取率84.00%</text>
+<line x1="128" y1="3615.11" x2="590" y2="3615.11" class="fine"/>
+<rect x="840" y="170.00" width="74" height="331.92" fill="url(#confirmed-layer-1)"/>
+<line x1="840" y1="170.00" x2="840" y2="501.92" class="boundary"/>
+<line x1="914" y1="170.00" x2="914" y2="501.92" class="boundary"/>
+<line x1="625" y1="170.00" x2="918" y2="170.00" class="boundary"/>
+<line x1="625" y1="501.92" x2="918" y2="501.92" class="boundary"/>
+<line x1="630" y1="335.96" x2="832" y2="335.96" class="leader"/>
+<text x="625" y="332.96" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,321.46,101.43,14.38">L1 0.00–36.88 m</text>
+<path d="M 916 335.96 L 936 335.96 L 936 335.96" class="leader"/>
+<text x="950" y="329.96" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,318.46,109.48,14.38">L1 泥岩夹泥质粉砂岩</text>
+<text x="950" y="345.96" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,335.46,201.39,13.12">段长36.88m  芯长32.95m  采取率89.34%</text>
+<rect x="840" y="501.92" width="74" height="17.73" fill="white"/>
+<line x1="840" y1="501.92" x2="840" y2="519.65" class="boundary"/>
+<line x1="914" y1="501.92" x2="914" y2="519.65" class="boundary"/>
+<line x1="625" y1="501.92" x2="918" y2="501.92" class="boundary"/>
+<line x1="625" y1="519.65" x2="918" y2="519.65" class="boundary"/>
+<line x1="630" y1="510.79" x2="832" y2="510.79" class="leader"/>
+<text x="625" y="507.79" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,496.29,107.87,14.38">L2 36.88–38.85 m</text>
+<path d="M 916 510.79 L 936 510.79 L 936 510.79" class="leader"/>
+<text x="950" y="504.79" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,493.29,64.40,14.38">L2 蚀变泥岩</text>
+<text x="950" y="520.79" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,510.29,189.63,13.12">段长1.97m  芯长1.80m  采取率91.37%</text>
+<rect x="840" y="519.65" width="74" height="238.95" fill="white"/>
+<line x1="840" y1="519.65" x2="840" y2="758.60" class="boundary"/>
+<line x1="914" y1="519.65" x2="914" y2="758.60" class="boundary"/>
+<line x1="625" y1="519.65" x2="918" y2="519.65" class="boundary"/>
+<line x1="625" y1="758.60" x2="918" y2="758.60" class="boundary"/>
+<line x1="630" y1="639.12" x2="832" y2="639.12" class="leader"/>
+<text x="625" y="636.12" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,624.62,107.87,14.38">L3 38.85–65.40 m</text>
+<path d="M 916 639.12 L 936 639.12 L 936 639.12" class="leader"/>
+<text x="950" y="625.12" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,613.62,425.04,14.38">L3 硅化砂岩、泥岩、粉砂岩，裂隙表面褐铁矿化。岩石内部发育石英脉，局部见星点</text>
+<text x="950" y="641.12" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,629.62,101.43,14.38">状、团块状黄铁矿，</text>
+<text x="950" y="657.12" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,646.62,201.39,13.12">段长26.55m  芯长24.72m  采取率93.11%</text>
+<rect x="840" y="758.60" width="74" height="94.68" fill="url(#confirmed-layer-4)"/>
+<line x1="840" y1="758.60" x2="840" y2="853.28" class="boundary"/>
+<line x1="914" y1="758.60" x2="914" y2="853.28" class="boundary"/>
+<line x1="625" y1="758.60" x2="918" y2="758.60" class="boundary"/>
+<line x1="625" y1="853.28" x2="918" y2="853.28" class="boundary"/>
+<line x1="630" y1="805.94" x2="832" y2="805.94" class="leader"/>
+<text x="625" y="802.94" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,791.44,107.87,14.38">L4 65.40–75.92 m</text>
+<path d="M 916 805.94 L 936 805.94 L 936 805.94" class="leader"/>
+<text x="950" y="799.94" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,788.44,120.75,14.38">L4 泥岩、泥质粉砂岩。</text>
+<text x="950" y="815.94" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,805.44,195.51,13.12">段长10.52m  芯长9.96m  采取率94.68%</text>
+<rect x="840" y="853.28" width="74" height="174.51" fill="url(#confirmed-layer-5)"/>
+<line x1="840" y1="853.28" x2="840" y2="1027.79" class="boundary"/>
+<line x1="914" y1="853.28" x2="914" y2="1027.79" class="boundary"/>
+<line x1="625" y1="853.28" x2="918" y2="853.28" class="boundary"/>
+<line x1="625" y1="1027.79" x2="918" y2="1027.79" class="boundary"/>
+<line x1="630" y1="940.54" x2="832" y2="940.54" class="leader"/>
+<text x="625" y="937.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,926.04,107.87,14.38">L5 75.92–95.31 m</text>
+<path d="M 916 940.54 L 936 940.54 L 936 940.54" class="leader"/>
+<text x="950" y="934.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,923.04,86.94,14.38">L5 砂岩夹粉砂岩</text>
+<text x="950" y="950.54" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,940.04,201.39,13.12">段长19.39m  芯长18.65m  采取率96.18%</text>
+<rect x="840" y="1027.79" width="74" height="66.69" fill="white"/>
+<line x1="840" y1="1027.79" x2="840" y2="1094.48" class="boundary"/>
+<line x1="914" y1="1027.79" x2="914" y2="1094.48" class="boundary"/>
+<line x1="625" y1="1027.79" x2="918" y2="1027.79" class="boundary"/>
+<line x1="625" y1="1094.48" x2="918" y2="1094.48" class="boundary"/>
+<line x1="630" y1="1061.13" x2="832" y2="1061.13" class="leader"/>
+<text x="625" y="1058.13" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1046.63,114.31,14.38">L6 95.31–102.72 m</text>
+<path d="M 916 1061.13 L 936 1061.13 L 936 1061.13" class="leader"/>
+<text x="950" y="1055.13" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1043.63,165.83,14.38">L6 砂岩、泥岩、粉砂岩、砾岩。</text>
+<text x="950" y="1071.13" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1060.63,189.63,13.12">段长7.41m  芯长7.26m  采取率97.98%</text>
+<rect x="840" y="1094.48" width="74" height="302.76" fill="white"/>
+<line x1="840" y1="1094.48" x2="840" y2="1397.24" class="boundary"/>
+<line x1="914" y1="1094.48" x2="914" y2="1397.24" class="boundary"/>
+<line x1="625" y1="1094.48" x2="918" y2="1094.48" class="boundary"/>
+<line x1="625" y1="1397.24" x2="918" y2="1397.24" class="boundary"/>
+<line x1="630" y1="1245.86" x2="832" y2="1245.86" class="leader"/>
+<text x="625" y="1242.86" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1231.36,120.75,14.38">L7 102.72–136.36 m</text>
+<path d="M 916 1245.86 L 936 1245.86 L 936 1245.86" class="leader"/>
+<text x="950" y="1239.86" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1228.36,255.99,14.38">L7 紫红、灰白色泥岩、泥质粉砂岩，局部夹砂岩。</text>
+<text x="950" y="1255.86" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1245.36,201.39,13.12">段长33.64m  芯长32.50m  采取率96.61%</text>
+<rect x="840" y="1397.24" width="74" height="88.65" fill="white"/>
+<line x1="840" y1="1397.24" x2="840" y2="1485.89" class="boundary"/>
+<line x1="914" y1="1397.24" x2="914" y2="1485.89" class="boundary"/>
+<line x1="625" y1="1397.24" x2="918" y2="1397.24" class="boundary"/>
+<line x1="625" y1="1485.89" x2="918" y2="1485.89" class="boundary"/>
+<line x1="630" y1="1441.57" x2="832" y2="1441.57" class="leader"/>
+<text x="625" y="1438.57" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1427.07,120.75,14.38">L8 136.36–146.21 m</text>
+<path d="M 916 1441.57 L 936 1441.57 L 936 1441.57" class="leader"/>
+<text x="950" y="1435.57" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1424.07,244.72,14.38">L8 砂岩、粉砂岩、泥岩、砾岩，整体绿泥石化。</text>
+<text x="950" y="1451.57" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1441.07,189.63,13.12">段长9.85m  芯长9.59m  采取率97.36%</text>
+<rect x="840" y="1485.89" width="74" height="84.69" fill="white"/>
+<line x1="840" y1="1485.89" x2="840" y2="1570.58" class="boundary"/>
+<line x1="914" y1="1485.89" x2="914" y2="1570.58" class="boundary"/>
+<line x1="625" y1="1485.89" x2="918" y2="1485.89" class="boundary"/>
+<line x1="625" y1="1570.58" x2="918" y2="1570.58" class="boundary"/>
+<line x1="630" y1="1528.24" x2="832" y2="1528.24" class="leader"/>
+<text x="625" y="1525.24" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1513.74,120.75,14.38">L9 146.21–155.62 m</text>
+<path d="M 916 1528.24 L 936 1528.24 L 936 1528.24" class="leader"/>
+<text x="950" y="1522.24" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1510.74,64.40,14.38">L9 含石英脉</text>
+<text x="950" y="1538.24" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1527.74,189.63,13.12">段长9.41m  芯长9.09m  采取率96.60%</text>
+<rect x="840" y="1570.58" width="74" height="121.05" fill="white"/>
+<line x1="840" y1="1570.58" x2="840" y2="1691.63" class="boundary"/>
+<line x1="914" y1="1570.58" x2="914" y2="1691.63" class="boundary"/>
+<line x1="625" y1="1570.58" x2="918" y2="1570.58" class="boundary"/>
+<line x1="625" y1="1691.63" x2="918" y2="1691.63" class="boundary"/>
+<line x1="630" y1="1631.11" x2="832" y2="1631.11" class="leader"/>
+<text x="625" y="1628.11" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1616.61,127.19,14.38">L10 155.62–169.07 m</text>
+<path d="M 916 1631.11 L 936 1631.11 L 936 1631.11" class="leader"/>
+<text x="950" y="1625.11" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1613.61,127.19,14.38">L10 绿泥石化砂岩粉砂岩</text>
+<text x="950" y="1641.11" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1630.61,201.39,13.12">段长13.45m  芯长12.82m  采取率95.32%</text>
+<rect x="840" y="1691.63" width="74" height="49.77" fill="white"/>
+<line x1="840" y1="1691.63" x2="840" y2="1741.40" class="boundary"/>
+<line x1="914" y1="1691.63" x2="914" y2="1741.40" class="boundary"/>
+<line x1="625" y1="1691.63" x2="918" y2="1691.63" class="boundary"/>
+<line x1="625" y1="1741.40" x2="918" y2="1741.40" class="boundary"/>
+<line x1="630" y1="1716.51" x2="832" y2="1716.51" class="leader"/>
+<text x="625" y="1713.51" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1702.01,127.19,14.38">L11 169.07–174.60 m</text>
+<path d="M 916 1716.51 L 936 1716.51 L 936 1716.51" class="leader"/>
+<text x="950" y="1710.51" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1699.01,32.20,14.38">L11 /</text>
+<text x="950" y="1726.51" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1716.01,189.63,13.12">段长5.53m  芯长5.31m  采取率96.02%</text>
+<rect x="840" y="1741.40" width="74" height="196.83" fill="white"/>
+<line x1="840" y1="1741.40" x2="840" y2="1938.23" class="boundary"/>
+<line x1="914" y1="1741.40" x2="914" y2="1938.23" class="boundary"/>
+<line x1="625" y1="1741.40" x2="918" y2="1741.40" class="boundary"/>
+<line x1="625" y1="1938.23" x2="918" y2="1938.23" class="boundary"/>
+<line x1="630" y1="1839.82" x2="832" y2="1839.82" class="leader"/>
+<text x="625" y="1836.82" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1825.32,127.19,14.38">L12 174.60–196.47 m</text>
+<path d="M 916 1839.82 L 936 1839.82 L 936 1839.82" class="leader"/>
+<text x="950" y="1833.82" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1822.32,32.20,14.38">L12 /</text>
+<text x="950" y="1849.82" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1839.32,201.39,13.12">段长21.87m  芯长21.15m  采取率96.71%</text>
+<rect x="840" y="1938.23" width="74" height="35.28" fill="white"/>
+<line x1="840" y1="1938.23" x2="840" y2="1973.51" class="boundary"/>
+<line x1="914" y1="1938.23" x2="914" y2="1973.51" class="boundary"/>
+<line x1="625" y1="1938.23" x2="918" y2="1938.23" class="boundary"/>
+<line x1="625" y1="1973.51" x2="918" y2="1973.51" class="boundary"/>
+<line x1="630" y1="1955.87" x2="832" y2="1955.87" class="leader"/>
+<text x="625" y="1952.87" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,1941.37,127.19,14.38">L13 196.47–200.39 m</text>
+<path d="M 916 1955.87 L 936 1955.87 L 936 1955.87" class="leader"/>
+<text x="950" y="1949.87" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1938.37,70.84,14.38">L13 含石英脉</text>
+<text x="950" y="1965.87" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,1955.37,189.63,13.12">段长3.92m  芯长3.77m  采取率96.17%</text>
+<rect x="840" y="1973.51" width="74" height="163.44" fill="white"/>
+<line x1="840" y1="1973.51" x2="840" y2="2136.95" class="boundary"/>
+<line x1="914" y1="1973.51" x2="914" y2="2136.95" class="boundary"/>
+<line x1="625" y1="1973.51" x2="918" y2="1973.51" class="boundary"/>
+<line x1="625" y1="2136.95" x2="918" y2="2136.95" class="boundary"/>
+<line x1="630" y1="2055.23" x2="832" y2="2055.23" class="leader"/>
+<text x="625" y="2052.23" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2040.73,127.19,14.38">L14 200.39–218.55 m</text>
+<path d="M 916 2055.23 L 936 2055.23 L 936 2055.23" class="leader"/>
+<text x="950" y="2049.23" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2037.73,104.65,14.38">L14 绿泥石化粉砂岩</text>
+<text x="950" y="2065.23" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2054.73,201.39,13.12">段长18.16m  芯长17.39m  采取率95.76%</text>
+<rect x="840" y="2136.95" width="74" height="27.18" fill="white"/>
+<line x1="840" y1="2136.95" x2="840" y2="2164.13" class="boundary"/>
+<line x1="914" y1="2136.95" x2="914" y2="2164.13" class="boundary"/>
+<line x1="625" y1="2136.95" x2="918" y2="2136.95" class="boundary"/>
+<line x1="625" y1="2164.13" x2="918" y2="2164.13" class="boundary"/>
+<line x1="630" y1="2150.54" x2="832" y2="2150.54" class="leader"/>
+<text x="625" y="2147.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2136.04,127.19,14.38">L15 218.55–221.57 m</text>
+<path d="M 916 2150.54 L 936 2150.54 L 936 2150.54" class="leader"/>
+<text x="950" y="2144.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2133.04,217.35,14.38">L15 棕红、灰绿色砾岩、角砾岩。含石英脉</text>
+<text x="950" y="2160.54" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2150.04,189.63,13.12">段长3.02m  芯长2.83m  采取率93.71%</text>
+<rect x="840" y="2164.13" width="74" height="420.30" fill="white"/>
+<line x1="840" y1="2164.13" x2="840" y2="2584.43" class="boundary"/>
+<line x1="914" y1="2164.13" x2="914" y2="2584.43" class="boundary"/>
+<line x1="625" y1="2164.13" x2="918" y2="2164.13" class="boundary"/>
+<line x1="625" y1="2584.43" x2="918" y2="2584.43" class="boundary"/>
+<line x1="630" y1="2374.28" x2="832" y2="2374.28" class="leader"/>
+<text x="625" y="2371.28" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2359.78,127.19,14.38">L16 221.57–268.27 m</text>
+<path d="M 916 2374.28 L 936 2374.28 L 936 2374.28" class="leader"/>
+<text x="950" y="2368.28" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2356.78,138.46,14.38">L16 绿泥石化粉砂岩、砂岩</text>
+<text x="950" y="2384.28" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2373.78,201.39,13.12">段长46.70m  芯长44.00m  采取率94.22%</text>
+<rect x="840" y="2584.43" width="74" height="39.33" fill="white"/>
+<line x1="840" y1="2584.43" x2="840" y2="2623.76" class="boundary"/>
+<line x1="914" y1="2584.43" x2="914" y2="2623.76" class="boundary"/>
+<line x1="625" y1="2584.43" x2="918" y2="2584.43" class="boundary"/>
+<line x1="625" y1="2623.76" x2="918" y2="2623.76" class="boundary"/>
+<line x1="630" y1="2604.09" x2="832" y2="2604.09" class="leader"/>
+<text x="625" y="2601.09" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2589.59,127.19,14.38">L17 268.27–272.64 m</text>
+<path d="M 916 2604.09 L 936 2604.09 L 936 2604.09" class="leader"/>
+<text x="950" y="2598.09" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2586.59,93.38,14.38">L17 砾岩、粉砂岩</text>
+<text x="950" y="2614.09" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2603.59,189.63,13.12">段长4.37m  芯长4.11m  采取率94.05%</text>
+<rect x="840" y="2623.76" width="74" height="261.36" fill="white"/>
+<line x1="840" y1="2623.76" x2="840" y2="2885.12" class="boundary"/>
+<line x1="914" y1="2623.76" x2="914" y2="2885.12" class="boundary"/>
+<line x1="625" y1="2623.76" x2="918" y2="2623.76" class="boundary"/>
+<line x1="625" y1="2885.12" x2="918" y2="2885.12" class="boundary"/>
+<line x1="630" y1="2754.44" x2="832" y2="2754.44" class="leader"/>
+<text x="625" y="2751.44" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2739.94,127.19,14.38">L18 272.64–301.68 m</text>
+<path d="M 916 2754.44 L 936 2754.44 L 936 2754.44" class="leader"/>
+<text x="950" y="2748.44" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2736.94,138.46,14.38">L18 绿泥石化泥岩、粉砂岩</text>
+<text x="950" y="2764.44" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2753.94,201.39,13.12">段长29.04m  芯长26.98m  采取率92.91%</text>
+<rect x="840" y="2885.12" width="74" height="35.19" fill="white"/>
+<line x1="840" y1="2885.12" x2="840" y2="2920.31" class="boundary"/>
+<line x1="914" y1="2885.12" x2="914" y2="2920.31" class="boundary"/>
+<line x1="625" y1="2885.12" x2="918" y2="2885.12" class="boundary"/>
+<line x1="625" y1="2920.31" x2="918" y2="2920.31" class="boundary"/>
+<line x1="630" y1="2902.72" x2="832" y2="2902.72" class="leader"/>
+<text x="625" y="2899.72" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,2888.22,127.19,14.38">L19 301.68–305.59 m</text>
+<path d="M 916 2902.72 L 936 2902.72 L 936 2902.72" class="leader"/>
+<text x="950" y="2896.72" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2885.22,183.54,14.38">L19 绿泥石化、绿帘石化、黄铁矿化</text>
+<text x="950" y="2912.72" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,2902.22,189.63,13.12">段长3.91m  芯长3.60m  采取率92.07%</text>
+<rect x="840" y="2920.31" width="74" height="409.41" fill="white"/>
+<line x1="840" y1="2920.31" x2="840" y2="3329.72" class="boundary"/>
+<line x1="914" y1="2920.31" x2="914" y2="3329.72" class="boundary"/>
+<line x1="625" y1="2920.31" x2="918" y2="2920.31" class="boundary"/>
+<line x1="625" y1="3329.72" x2="918" y2="3329.72" class="boundary"/>
+<line x1="630" y1="3125.01" x2="832" y2="3125.01" class="leader"/>
+<text x="625" y="3122.01" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,3110.51,127.19,14.38">L20 305.59–351.08 m</text>
+<path d="M 916 3125.01 L 936 3125.01 L 936 3125.01" class="leader"/>
+<text x="950" y="3119.01" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3107.51,32.20,14.38">L20 /</text>
+<text x="950" y="3135.01" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3124.51,201.39,13.12">段长45.49m  芯长43.01m  采取率94.55%</text>
+<rect x="840" y="3329.72" width="74" height="63.18" fill="white"/>
+<line x1="840" y1="3329.72" x2="840" y2="3392.90" class="boundary"/>
+<line x1="914" y1="3329.72" x2="914" y2="3392.90" class="boundary"/>
+<line x1="625" y1="3329.72" x2="918" y2="3329.72" class="boundary"/>
+<line x1="625" y1="3392.90" x2="918" y2="3392.90" class="boundary"/>
+<line x1="630" y1="3361.31" x2="832" y2="3361.31" class="leader"/>
+<text x="625" y="3358.31" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,3346.81,127.19,14.38">L21 351.08–358.10 m</text>
+<path d="M 916 3361.31 L 936 3361.31 L 936 3361.31" class="leader"/>
+<text x="950" y="3355.31" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3343.81,127.19,14.38">L21 绿泥石化粉砂岩泥岩</text>
+<text x="950" y="3371.31" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3360.81,189.63,13.12">段长7.02m  芯长6.74m  采取率96.01%</text>
+<rect x="840" y="3392.90" width="74" height="36.36" fill="white"/>
+<line x1="840" y1="3392.90" x2="840" y2="3429.26" class="boundary"/>
+<line x1="914" y1="3392.90" x2="914" y2="3429.26" class="boundary"/>
+<line x1="625" y1="3392.90" x2="918" y2="3392.90" class="boundary"/>
+<line x1="625" y1="3429.26" x2="918" y2="3429.26" class="boundary"/>
+<line x1="630" y1="3411.08" x2="832" y2="3411.08" class="leader"/>
+<text x="625" y="3408.08" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,3396.58,127.19,14.38">L22 358.10–362.14 m</text>
+<path d="M 916 3411.08 L 936 3411.08 L 936 3411.08" class="leader"/>
+<text x="950" y="3405.08" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3393.58,70.84,14.38">L22 黄铁矿化</text>
+<text x="950" y="3421.08" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3410.58,189.63,13.12">段长4.04m  芯长3.83m  采取率94.80%</text>
+<rect x="840" y="3429.26" width="74" height="185.85" fill="white"/>
+<line x1="840" y1="3429.26" x2="840" y2="3615.11" class="boundary"/>
+<line x1="914" y1="3429.26" x2="914" y2="3615.11" class="boundary"/>
+<line x1="625" y1="3429.26" x2="918" y2="3429.26" class="boundary"/>
+<line x1="625" y1="3615.11" x2="918" y2="3615.11" class="boundary"/>
+<line x1="630" y1="3522.19" x2="832" y2="3522.19" class="leader"/>
+<text x="625" y="3519.19" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="625.00,3507.69,127.19,14.38">L23 362.14–382.79 m</text>
+<path d="M 916 3522.19 L 936 3522.19 L 936 3522.19" class="leader"/>
+<text x="950" y="3516.19" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3504.69,138.46,14.38">L23 绿泥石化粉砂岩泥岩？</text>
+<text x="950" y="3532.19" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="950.00,3521.69,201.39,13.12">段长20.65m  芯长18.83m  采取率91.19%</text>
+<line x1="1504" y1="307.70" x2="1504" y2="323.90" class="sample-range"/>
+<line x1="1498" y1="307.70" x2="1510" y2="307.70" class="sample-range"/>
+<line x1="1498" y1="323.90" x2="1510" y2="323.90" class="sample-range"/>
+<path d="M 1510 315.80 L 1525 315.80 L 1525 315.80 L 1537 315.80" class="leader"/>
+<text x="1545" y="319.80" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,308.30,322.00,14.38">H1  15.30–17.10 m  样长1.80  芯长1.63  采取率90.56%</text>
+<line x1="1504" y1="341.09" x2="1504" y2="350.18" class="sample-range"/>
+<line x1="1498" y1="341.09" x2="1510" y2="341.09" class="sample-range"/>
+<line x1="1498" y1="350.18" x2="1510" y2="350.18" class="sample-range"/>
+<path d="M 1510 345.63 L 1525 345.63 L 1525 345.63 L 1537 345.63" class="leader"/>
+<text x="1545" y="349.63" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,338.13,322.00,14.38">H2  19.01–20.02 m  样长1.01  芯长0.91  采取率90.10%</text>
+<line x1="1504" y1="413.09" x2="1504" y2="422.99" class="sample-range"/>
+<line x1="1498" y1="413.09" x2="1510" y2="413.09" class="sample-range"/>
+<line x1="1498" y1="422.99" x2="1510" y2="422.99" class="sample-range"/>
+<path d="M 1510 418.04 L 1525 418.04 L 1525 418.04 L 1537 418.04" class="leader"/>
+<text x="1545" y="422.04" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,410.54,322.00,14.38">H3  27.01–28.11 m  样长1.10  芯长1.00  采取率90.91%</text>
+<line x1="1504" y1="422.99" x2="1504" y2="432.44" class="sample-range"/>
+<line x1="1498" y1="422.99" x2="1510" y2="422.99" class="sample-range"/>
+<line x1="1498" y1="432.44" x2="1510" y2="432.44" class="sample-range"/>
+<path d="M 1510 427.71 L 1525 427.71 L 1525 440.09 L 1537 440.09" class="leader"/>
+<text x="1545" y="444.09" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,432.59,322.00,14.38">H4  28.11–29.16 m  样长1.05  芯长0.95  采取率90.48%</text>
+<line x1="1504" y1="432.44" x2="1504" y2="440.63" class="sample-range"/>
+<line x1="1498" y1="432.44" x2="1510" y2="432.44" class="sample-range"/>
+<line x1="1498" y1="440.63" x2="1510" y2="440.63" class="sample-range"/>
+<path d="M 1510 436.54 L 1525 436.54 L 1525 462.14 L 1537 462.14" class="leader"/>
+<text x="1545" y="466.14" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,454.64,322.00,14.38">H5  29.16–30.07 m  样长0.91  芯长0.82  采取率90.11%</text>
+<line x1="1504" y1="440.63" x2="1504" y2="450.35" class="sample-range"/>
+<line x1="1498" y1="440.63" x2="1510" y2="440.63" class="sample-range"/>
+<line x1="1498" y1="450.35" x2="1510" y2="450.35" class="sample-range"/>
+<path d="M 1510 445.49 L 1525 445.49 L 1525 484.19 L 1537 484.19" class="leader"/>
+<text x="1545" y="488.19" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,476.69,322.00,14.38">H6  30.07–31.15 m  样长1.08  芯长0.96  采取率88.89%</text>
+<line x1="1504" y1="450.35" x2="1504" y2="459.35" class="sample-range"/>
+<line x1="1498" y1="450.35" x2="1510" y2="450.35" class="sample-range"/>
+<line x1="1498" y1="459.35" x2="1510" y2="459.35" class="sample-range"/>
+<path d="M 1510 454.85 L 1525 454.85 L 1525 506.24 L 1537 506.24" class="leader"/>
+<text x="1545" y="510.24" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,498.74,322.00,14.38">H7  31.15–32.15 m  样长1.00  芯长0.89  采取率89.00%</text>
+<line x1="1504" y1="459.35" x2="1504" y2="467.36" class="sample-range"/>
+<line x1="1498" y1="459.35" x2="1510" y2="459.35" class="sample-range"/>
+<line x1="1498" y1="467.36" x2="1510" y2="467.36" class="sample-range"/>
+<path d="M 1510 463.36 L 1525 463.36 L 1525 528.29 L 1537 528.29" class="leader"/>
+<text x="1545" y="532.29" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,520.79,322.00,14.38">H8  32.15–33.04 m  样长0.89  芯长0.79  采取率88.76%</text>
+<line x1="1504" y1="467.36" x2="1504" y2="475.55" class="sample-range"/>
+<line x1="1498" y1="467.36" x2="1510" y2="467.36" class="sample-range"/>
+<line x1="1498" y1="475.55" x2="1510" y2="475.55" class="sample-range"/>
+<path d="M 1510 471.46 L 1525 471.46 L 1525 550.34 L 1537 550.34" class="leader"/>
+<text x="1545" y="554.34" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,542.84,322.00,14.38">H9  33.04–33.95 m  样长0.91  芯长0.80  采取率87.91%</text>
+<line x1="1504" y1="475.55" x2="1504" y2="484.55" class="sample-range"/>
+<line x1="1498" y1="475.55" x2="1510" y2="475.55" class="sample-range"/>
+<line x1="1498" y1="484.55" x2="1510" y2="484.55" class="sample-range"/>
+<path d="M 1510 480.05 L 1525 480.05 L 1525 572.39 L 1537 572.39" class="leader"/>
+<text x="1545" y="576.39" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,564.89,328.44,14.38">H10  33.95–34.95 m  样长1.00  芯长0.88  采取率88.00%</text>
+<line x1="1504" y1="484.55" x2="1504" y2="492.11" class="sample-range"/>
+<line x1="1498" y1="484.55" x2="1510" y2="484.55" class="sample-range"/>
+<line x1="1498" y1="492.11" x2="1510" y2="492.11" class="sample-range"/>
+<path d="M 1510 488.33 L 1525 488.33 L 1525 594.44 L 1537 594.44" class="leader"/>
+<text x="1545" y="598.44" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,586.94,328.44,14.38">H11  34.95–35.79 m  样长0.84  芯长0.74  采取率88.10%</text>
+<line x1="1504" y1="492.11" x2="1504" y2="501.92" class="sample-range"/>
+<line x1="1498" y1="492.11" x2="1510" y2="492.11" class="sample-range"/>
+<line x1="1498" y1="501.92" x2="1510" y2="501.92" class="sample-range"/>
+<path d="M 1510 497.01 L 1525 497.01 L 1525 616.49 L 1537 616.49" class="leader"/>
+<text x="1545" y="620.49" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,608.99,328.44,14.38">H12  35.79–36.88 m  样长1.09  芯长1.00  采取率91.74%</text>
+<line x1="1504" y1="501.92" x2="1504" y2="511.73" class="sample-range"/>
+<line x1="1498" y1="501.92" x2="1510" y2="501.92" class="sample-range"/>
+<line x1="1498" y1="511.73" x2="1510" y2="511.73" class="sample-range"/>
+<path d="M 1510 506.82 L 1525 506.82 L 1525 638.54 L 1537 638.54" class="leader"/>
+<text x="1545" y="642.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,631.04,328.44,14.38">H13  36.88–37.97 m  样长1.09  芯长1.00  采取率91.74%</text>
+<line x1="1504" y1="511.73" x2="1504" y2="519.65" class="sample-range"/>
+<line x1="1498" y1="511.73" x2="1510" y2="511.73" class="sample-range"/>
+<line x1="1498" y1="519.65" x2="1510" y2="519.65" class="sample-range"/>
+<path d="M 1510 515.69 L 1525 515.69 L 1525 660.59 L 1537 660.59" class="leader"/>
+<text x="1545" y="664.59" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,653.09,328.44,14.38">H14  37.97–38.85 m  样长0.88  芯长0.80  采取率90.91%</text>
+<line x1="1504" y1="519.65" x2="1504" y2="528.83" class="sample-range"/>
+<line x1="1498" y1="519.65" x2="1510" y2="519.65" class="sample-range"/>
+<line x1="1498" y1="528.83" x2="1510" y2="528.83" class="sample-range"/>
+<path d="M 1510 524.24 L 1525 524.24 L 1525 682.64 L 1537 682.64" class="leader"/>
+<text x="1545" y="686.64" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,675.14,328.44,14.38">H15  38.85–39.87 m  样长1.02  芯长0.90  采取率88.24%</text>
+<line x1="1504" y1="528.83" x2="1504" y2="538.10" class="sample-range"/>
+<line x1="1498" y1="528.83" x2="1510" y2="528.83" class="sample-range"/>
+<line x1="1498" y1="538.10" x2="1510" y2="538.10" class="sample-range"/>
+<path d="M 1510 533.46 L 1525 533.46 L 1525 704.69 L 1537 704.69" class="leader"/>
+<text x="1545" y="708.69" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,697.19,328.44,14.38">H16  39.87–40.90 m  样长1.03  芯长0.90  采取率87.38%</text>
+<line x1="1504" y1="538.10" x2="1504" y2="546.11" class="sample-range"/>
+<line x1="1498" y1="538.10" x2="1510" y2="538.10" class="sample-range"/>
+<line x1="1498" y1="546.11" x2="1510" y2="546.11" class="sample-range"/>
+<path d="M 1510 542.11 L 1525 542.11 L 1525 726.74 L 1537 726.74" class="leader"/>
+<text x="1545" y="730.74" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,719.24,328.44,14.38">H17  40.90–41.79 m  样长0.89  芯长0.78  采取率87.64%</text>
+<line x1="1504" y1="546.11" x2="1504" y2="556.01" class="sample-range"/>
+<line x1="1498" y1="546.11" x2="1510" y2="546.11" class="sample-range"/>
+<line x1="1498" y1="556.01" x2="1510" y2="556.01" class="sample-range"/>
+<path d="M 1510 551.06 L 1525 551.06 L 1525 748.79 L 1537 748.79" class="leader"/>
+<text x="1545" y="752.79" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,741.29,328.44,14.38">H18  41.79–42.89 m  样长1.10  芯长1.00  采取率90.91%</text>
+<line x1="1504" y1="556.01" x2="1504" y2="564.74" class="sample-range"/>
+<line x1="1498" y1="556.01" x2="1510" y2="556.01" class="sample-range"/>
+<line x1="1498" y1="564.74" x2="1510" y2="564.74" class="sample-range"/>
+<path d="M 1510 560.38 L 1525 560.38 L 1525 770.84 L 1537 770.84" class="leader"/>
+<text x="1545" y="774.84" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,763.34,328.44,14.38">H19  42.89–43.86 m  样长0.97  芯长0.88  采取率90.72%</text>
+<line x1="1504" y1="564.74" x2="1504" y2="573.11" class="sample-range"/>
+<line x1="1498" y1="564.74" x2="1510" y2="564.74" class="sample-range"/>
+<line x1="1498" y1="573.11" x2="1510" y2="573.11" class="sample-range"/>
+<path d="M 1510 568.92 L 1525 568.92 L 1525 792.89 L 1537 792.89" class="leader"/>
+<text x="1545" y="796.89" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,785.39,328.44,14.38">H20  43.86–44.79 m  样长0.93  芯长0.84  采取率90.32%</text>
+<line x1="1504" y1="573.11" x2="1504" y2="582.74" class="sample-range"/>
+<line x1="1498" y1="573.11" x2="1510" y2="573.11" class="sample-range"/>
+<line x1="1498" y1="582.74" x2="1510" y2="582.74" class="sample-range"/>
+<path d="M 1510 577.92 L 1525 577.92 L 1525 814.94 L 1537 814.94" class="leader"/>
+<text x="1545" y="818.94" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,807.44,328.44,14.38">H21  44.79–45.86 m  样长1.07  芯长1.00  采取率93.46%</text>
+<line x1="1504" y1="582.74" x2="1504" y2="592.37" class="sample-range"/>
+<line x1="1498" y1="582.74" x2="1510" y2="582.74" class="sample-range"/>
+<line x1="1498" y1="592.37" x2="1510" y2="592.37" class="sample-range"/>
+<path d="M 1510 587.55 L 1525 587.55 L 1525 836.99 L 1537 836.99" class="leader"/>
+<text x="1545" y="840.99" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,829.49,328.44,14.38">H22  45.86–46.93 m  样长1.07  芯长1.00  采取率93.46%</text>
+<line x1="1504" y1="592.37" x2="1504" y2="600.11" class="sample-range"/>
+<line x1="1498" y1="592.37" x2="1510" y2="592.37" class="sample-range"/>
+<line x1="1498" y1="600.11" x2="1510" y2="600.11" class="sample-range"/>
+<path d="M 1510 596.24 L 1525 596.24 L 1525 859.04 L 1537 859.04" class="leader"/>
+<text x="1545" y="863.04" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,851.54,328.44,14.38">H23  46.93–47.79 m  样长0.86  芯长0.80  采取率93.02%</text>
+<line x1="1504" y1="600.11" x2="1504" y2="609.47" class="sample-range"/>
+<line x1="1498" y1="600.11" x2="1510" y2="600.11" class="sample-range"/>
+<line x1="1498" y1="609.47" x2="1510" y2="609.47" class="sample-range"/>
+<path d="M 1510 604.79 L 1525 604.79 L 1525 881.09 L 1537 881.09" class="leader"/>
+<text x="1545" y="885.09" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,873.59,328.44,14.38">H24  47.79–48.83 m  样长1.04  芯长1.00  采取率96.15%</text>
+<line x1="1504" y1="609.47" x2="1504" y2="618.83" class="sample-range"/>
+<line x1="1498" y1="609.47" x2="1510" y2="609.47" class="sample-range"/>
+<line x1="1498" y1="618.83" x2="1510" y2="618.83" class="sample-range"/>
+<path d="M 1510 614.15 L 1525 614.15 L 1525 903.14 L 1537 903.14" class="leader"/>
+<text x="1545" y="907.14" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,895.64,328.44,14.38">H25  48.83–49.87 m  样长1.04  芯长1.00  采取率96.15%</text>
+<line x1="1504" y1="618.83" x2="1504" y2="626.84" class="sample-range"/>
+<line x1="1498" y1="618.83" x2="1510" y2="618.83" class="sample-range"/>
+<line x1="1498" y1="626.84" x2="1510" y2="626.84" class="sample-range"/>
+<path d="M 1510 622.84 L 1525 622.84 L 1525 925.19 L 1537 925.19" class="leader"/>
+<text x="1545" y="929.19" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,917.69,328.44,14.38">H26  49.87–50.76 m  样长0.89  芯长0.86  采取率96.63%</text>
+<line x1="1504" y1="626.84" x2="1504" y2="636.65" class="sample-range"/>
+<line x1="1498" y1="626.84" x2="1510" y2="626.84" class="sample-range"/>
+<line x1="1498" y1="636.65" x2="1510" y2="636.65" class="sample-range"/>
+<path d="M 1510 631.75 L 1525 631.75 L 1525 947.24 L 1537 947.24" class="leader"/>
+<text x="1545" y="951.24" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,939.74,328.44,14.38">H27  50.76–51.85 m  样长1.09  芯长1.03  采取率94.50%</text>
+<line x1="1504" y1="636.65" x2="1504" y2="645.20" class="sample-range"/>
+<line x1="1498" y1="636.65" x2="1510" y2="636.65" class="sample-range"/>
+<line x1="1498" y1="645.20" x2="1510" y2="645.20" class="sample-range"/>
+<path d="M 1510 640.92 L 1525 640.92 L 1525 969.29 L 1537 969.29" class="leader"/>
+<text x="1545" y="973.29" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,961.79,328.44,14.38">H28  51.85–52.80 m  样长0.95  芯长0.90  采取率94.74%</text>
+<line x1="1504" y1="645.20" x2="1504" y2="654.11" class="sample-range"/>
+<line x1="1498" y1="645.20" x2="1510" y2="645.20" class="sample-range"/>
+<line x1="1498" y1="654.11" x2="1510" y2="654.11" class="sample-range"/>
+<path d="M 1510 649.65 L 1525 649.65 L 1525 991.34 L 1537 991.34" class="leader"/>
+<text x="1545" y="995.34" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,983.84,328.44,14.38">H29  52.80–53.79 m  样长0.99  芯长0.93  采取率93.94%</text>
+<line x1="1504" y1="654.11" x2="1504" y2="663.56" class="sample-range"/>
+<line x1="1498" y1="654.11" x2="1510" y2="654.11" class="sample-range"/>
+<line x1="1498" y1="663.56" x2="1510" y2="663.56" class="sample-range"/>
+<path d="M 1510 658.84 L 1525 658.84 L 1525 1013.39 L 1537 1013.39" class="leader"/>
+<text x="1545" y="1017.39" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1005.89,328.44,14.38">H30  53.79–54.84 m  样长1.05  芯长1.00  采取率95.24%</text>
+<line x1="1504" y1="663.56" x2="1504" y2="673.01" class="sample-range"/>
+<line x1="1498" y1="663.56" x2="1510" y2="663.56" class="sample-range"/>
+<line x1="1498" y1="673.01" x2="1510" y2="673.01" class="sample-range"/>
+<path d="M 1510 668.29 L 1525 668.29 L 1525 1035.44 L 1537 1035.44" class="leader"/>
+<text x="1545" y="1039.44" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1027.94,328.44,14.38">H31  54.84–55.89 m  样长1.05  芯长1.00  采取率95.24%</text>
+<line x1="1504" y1="673.01" x2="1504" y2="681.11" class="sample-range"/>
+<line x1="1498" y1="673.01" x2="1510" y2="673.01" class="sample-range"/>
+<line x1="1498" y1="681.11" x2="1510" y2="681.11" class="sample-range"/>
+<path d="M 1510 677.06 L 1525 677.06 L 1525 1057.49 L 1537 1057.49" class="leader"/>
+<text x="1545" y="1061.49" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1049.99,328.44,14.38">H32  55.89–56.79 m  样长0.90  芯长0.86  采取率95.56%</text>
+<line x1="1504" y1="681.11" x2="1504" y2="690.74" class="sample-range"/>
+<line x1="1498" y1="681.11" x2="1510" y2="681.11" class="sample-range"/>
+<line x1="1498" y1="690.74" x2="1510" y2="690.74" class="sample-range"/>
+<path d="M 1510 685.93 L 1525 685.93 L 1525 1079.54 L 1537 1079.54" class="leader"/>
+<text x="1545" y="1083.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1072.04,328.44,14.38">H33  56.79–57.86 m  样长1.07  芯长1.00  采取率93.46%</text>
+<line x1="1504" y1="690.74" x2="1504" y2="700.37" class="sample-range"/>
+<line x1="1498" y1="690.74" x2="1510" y2="690.74" class="sample-range"/>
+<line x1="1498" y1="700.37" x2="1510" y2="700.37" class="sample-range"/>
+<path d="M 1510 695.55 L 1525 695.55 L 1525 1101.59 L 1537 1101.59" class="leader"/>
+<text x="1545" y="1105.59" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1094.09,328.44,14.38">H34  57.86–58.93 m  样长1.07  芯长1.00  采取率93.46%</text>
+<line x1="1504" y1="700.37" x2="1504" y2="708.11" class="sample-range"/>
+<line x1="1498" y1="700.37" x2="1510" y2="700.37" class="sample-range"/>
+<line x1="1498" y1="708.11" x2="1510" y2="708.11" class="sample-range"/>
+<path d="M 1510 704.24 L 1525 704.24 L 1525 1123.64 L 1537 1123.64" class="leader"/>
+<text x="1545" y="1127.64" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1116.14,328.44,14.38">H35  58.93–59.79 m  样长0.86  芯长0.81  采取率94.19%</text>
+<line x1="1504" y1="708.11" x2="1504" y2="717.29" class="sample-range"/>
+<line x1="1498" y1="708.11" x2="1510" y2="708.11" class="sample-range"/>
+<line x1="1498" y1="717.29" x2="1510" y2="717.29" class="sample-range"/>
+<path d="M 1510 712.70 L 1525 712.70 L 1525 1145.69 L 1537 1145.69" class="leader"/>
+<text x="1545" y="1149.69" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1138.19,328.44,14.38">H36  59.79–60.81 m  样长1.02  芯长1.00  采取率98.04%</text>
+<line x1="1504" y1="717.29" x2="1504" y2="726.56" class="sample-range"/>
+<line x1="1498" y1="717.29" x2="1510" y2="717.29" class="sample-range"/>
+<line x1="1498" y1="726.56" x2="1510" y2="726.56" class="sample-range"/>
+<path d="M 1510 721.93 L 1525 721.93 L 1525 1167.74 L 1537 1167.74" class="leader"/>
+<text x="1545" y="1171.74" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1160.24,328.44,14.38">H37  60.81–61.84 m  样长1.03  芯长1.00  采取率97.09%</text>
+<line x1="1504" y1="726.56" x2="1504" y2="737.18" class="sample-range"/>
+<line x1="1498" y1="726.56" x2="1510" y2="726.56" class="sample-range"/>
+<line x1="1498" y1="737.18" x2="1510" y2="737.18" class="sample-range"/>
+<path d="M 1510 731.87 L 1525 731.87 L 1525 1189.79 L 1537 1189.79" class="leader"/>
+<text x="1545" y="1193.79" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1182.29,328.44,14.38">H38  61.84–63.02 m  样长1.18  芯长1.13  采取率95.76%</text>
+<line x1="1504" y1="737.18" x2="1504" y2="747.98" class="sample-range"/>
+<line x1="1498" y1="737.18" x2="1510" y2="737.18" class="sample-range"/>
+<line x1="1498" y1="747.98" x2="1510" y2="747.98" class="sample-range"/>
+<path d="M 1510 742.58 L 1525 742.58 L 1525 1211.84 L 1537 1211.84" class="leader"/>
+<text x="1545" y="1215.84" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1204.34,328.44,14.38">H39  63.02–64.22 m  样长1.20  芯长1.06  采取率88.33%</text>
+<line x1="1504" y1="747.98" x2="1504" y2="758.60" class="sample-range"/>
+<line x1="1498" y1="747.98" x2="1510" y2="747.98" class="sample-range"/>
+<line x1="1498" y1="758.60" x2="1510" y2="758.60" class="sample-range"/>
+<path d="M 1510 753.29 L 1525 753.29 L 1525 1233.89 L 1537 1233.89" class="leader"/>
+<text x="1545" y="1237.89" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1226.39,328.44,14.38">H40  64.22–65.40 m  样长1.18  芯长1.04  采取率88.14%</text>
+<line x1="1504" y1="758.60" x2="1504" y2="766.34" class="sample-range"/>
+<line x1="1498" y1="758.60" x2="1510" y2="758.60" class="sample-range"/>
+<line x1="1498" y1="766.34" x2="1510" y2="766.34" class="sample-range"/>
+<path d="M 1510 762.47 L 1525 762.47 L 1525 1255.94 L 1537 1255.94" class="leader"/>
+<text x="1545" y="1259.94" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1248.44,328.44,14.38">H41  65.40–66.26 m  样长0.86  芯长0.79  采取率91.86%</text>
+<line x1="1504" y1="1187.54" x2="1504" y2="1195.55" class="sample-range"/>
+<line x1="1498" y1="1187.54" x2="1510" y2="1187.54" class="sample-range"/>
+<line x1="1498" y1="1195.55" x2="1510" y2="1195.55" class="sample-range"/>
+<path d="M 1510 1191.55 L 1525 1191.55 L 1525 1277.99 L 1537 1277.99" class="leader"/>
+<text x="1545" y="1281.99" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1270.49,341.32,14.38">H42  113.06–113.95 m  样长0.89  芯长0.85  采取率95.51%</text>
+<line x1="1504" y1="1195.55" x2="1504" y2="1203.20" class="sample-range"/>
+<line x1="1498" y1="1195.55" x2="1510" y2="1195.55" class="sample-range"/>
+<line x1="1498" y1="1203.20" x2="1510" y2="1203.20" class="sample-range"/>
+<path d="M 1510 1199.38 L 1525 1199.38 L 1525 1300.04 L 1537 1300.04" class="leader"/>
+<text x="1545" y="1304.04" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1292.54,341.32,14.38">H43  113.95–114.80 m  样长0.85  芯长0.82  采取率96.47%</text>
+<line x1="1504" y1="1203.20" x2="1504" y2="1212.11" class="sample-range"/>
+<line x1="1498" y1="1203.20" x2="1510" y2="1203.20" class="sample-range"/>
+<line x1="1498" y1="1212.11" x2="1510" y2="1212.11" class="sample-range"/>
+<path d="M 1510 1207.65 L 1525 1207.65 L 1525 1322.09 L 1537 1322.09" class="leader"/>
+<text x="1545" y="1326.09" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1314.59,341.32,14.38">H44  114.80–115.79 m  样长0.99  芯长0.97  采取率97.98%</text>
+<line x1="1504" y1="1477.25" x2="1504" y2="1485.89" class="sample-range"/>
+<line x1="1498" y1="1477.25" x2="1510" y2="1477.25" class="sample-range"/>
+<line x1="1498" y1="1485.89" x2="1510" y2="1485.89" class="sample-range"/>
+<path d="M 1510 1481.57 L 1525 1481.57 L 1525 1481.57 L 1537 1481.57" class="leader"/>
+<text x="1545" y="1485.57" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1474.07,341.32,14.38">H97  145.25–146.21 m  样长0.96  芯长0.95  采取率98.96%</text>
+<line x1="1504" y1="1485.89" x2="1504" y2="1494.71" class="sample-range"/>
+<line x1="1498" y1="1485.89" x2="1510" y2="1485.89" class="sample-range"/>
+<line x1="1498" y1="1494.71" x2="1510" y2="1494.71" class="sample-range"/>
+<path d="M 1510 1490.30 L 1525 1490.30 L 1525 1503.62 L 1537 1503.62" class="leader"/>
+<text x="1545" y="1507.62" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1496.12,341.32,14.38">H45  146.21–147.19 m  样长0.98  芯长0.95  采取率96.94%</text>
+<line x1="1504" y1="1494.71" x2="1504" y2="1504.07" class="sample-range"/>
+<line x1="1498" y1="1494.71" x2="1510" y2="1494.71" class="sample-range"/>
+<line x1="1498" y1="1504.07" x2="1510" y2="1504.07" class="sample-range"/>
+<path d="M 1510 1499.39 L 1525 1499.39 L 1525 1525.67 L 1537 1525.67" class="leader"/>
+<text x="1545" y="1529.67" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1518.17,341.32,14.38">H46  147.19–148.23 m  样长1.04  芯长1.00  采取率96.15%</text>
+<line x1="1504" y1="1504.07" x2="1504" y2="1512.53" class="sample-range"/>
+<line x1="1498" y1="1504.07" x2="1510" y2="1504.07" class="sample-range"/>
+<line x1="1498" y1="1512.53" x2="1510" y2="1512.53" class="sample-range"/>
+<path d="M 1510 1508.30 L 1525 1508.30 L 1525 1547.72 L 1537 1547.72" class="leader"/>
+<text x="1545" y="1551.72" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1540.22,341.32,14.38">H47  148.23–149.17 m  样长0.94  芯长0.90  采取率95.74%</text>
+<line x1="1504" y1="1512.53" x2="1504" y2="1520.18" class="sample-range"/>
+<line x1="1498" y1="1512.53" x2="1510" y2="1512.53" class="sample-range"/>
+<line x1="1498" y1="1520.18" x2="1510" y2="1520.18" class="sample-range"/>
+<path d="M 1510 1516.36 L 1525 1516.36 L 1525 1569.77 L 1537 1569.77" class="leader"/>
+<text x="1545" y="1573.77" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1562.27,341.32,14.38">H48  149.17–150.02 m  样长0.85  芯长0.83  采取率97.65%</text>
+<line x1="1504" y1="1520.18" x2="1504" y2="1528.37" class="sample-range"/>
+<line x1="1498" y1="1520.18" x2="1510" y2="1520.18" class="sample-range"/>
+<line x1="1498" y1="1528.37" x2="1510" y2="1528.37" class="sample-range"/>
+<path d="M 1510 1524.28 L 1525 1524.28 L 1525 1591.82 L 1537 1591.82" class="leader"/>
+<text x="1545" y="1595.82" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1584.32,341.32,14.38">H49  150.02–150.93 m  样长0.91  芯长0.89  采取率97.80%</text>
+<line x1="1504" y1="1528.37" x2="1504" y2="1536.47" class="sample-range"/>
+<line x1="1498" y1="1528.37" x2="1510" y2="1528.37" class="sample-range"/>
+<line x1="1498" y1="1536.47" x2="1510" y2="1536.47" class="sample-range"/>
+<path d="M 1510 1532.42 L 1525 1532.42 L 1525 1613.87 L 1537 1613.87" class="leader"/>
+<text x="1545" y="1617.87" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1606.37,341.32,14.38">H50  150.93–151.83 m  样长0.90  芯长0.88  采取率97.78%</text>
+<line x1="1504" y1="1536.47" x2="1504" y2="1543.85" class="sample-range"/>
+<line x1="1498" y1="1536.47" x2="1510" y2="1536.47" class="sample-range"/>
+<line x1="1498" y1="1543.85" x2="1510" y2="1543.85" class="sample-range"/>
+<path d="M 1510 1540.16 L 1525 1540.16 L 1525 1635.92 L 1537 1635.92" class="leader"/>
+<text x="1545" y="1639.92" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1628.42,341.32,14.38">H51  151.83–152.65 m  样长0.82  芯长0.80  采取率97.56%</text>
+<line x1="1504" y1="1543.85" x2="1504" y2="1552.31" class="sample-range"/>
+<line x1="1498" y1="1543.85" x2="1510" y2="1543.85" class="sample-range"/>
+<line x1="1498" y1="1552.31" x2="1510" y2="1552.31" class="sample-range"/>
+<path d="M 1510 1548.08 L 1525 1548.08 L 1525 1657.97 L 1537 1657.97" class="leader"/>
+<text x="1545" y="1661.97" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1650.47,341.32,14.38">H52  152.65–153.59 m  样长0.94  芯长0.90  采取率95.74%</text>
+<line x1="1504" y1="1552.31" x2="1504" y2="1561.76" class="sample-range"/>
+<line x1="1498" y1="1552.31" x2="1510" y2="1552.31" class="sample-range"/>
+<line x1="1498" y1="1561.76" x2="1510" y2="1561.76" class="sample-range"/>
+<path d="M 1510 1557.04 L 1525 1557.04 L 1525 1680.02 L 1537 1680.02" class="leader"/>
+<text x="1545" y="1684.02" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1672.52,341.32,14.38">H53  153.59–154.64 m  样长1.05  芯长1.00  采取率95.24%</text>
+<line x1="1504" y1="1561.76" x2="1504" y2="1570.58" class="sample-range"/>
+<line x1="1498" y1="1561.76" x2="1510" y2="1561.76" class="sample-range"/>
+<line x1="1498" y1="1570.58" x2="1510" y2="1570.58" class="sample-range"/>
+<path d="M 1510 1566.17 L 1525 1566.17 L 1525 1702.07 L 1537 1702.07" class="leader"/>
+<text x="1545" y="1706.07" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1694.57,341.32,14.38">H54  154.64–155.62 m  样长0.98  芯长0.94  采取率95.92%</text>
+<line x1="1504" y1="1570.58" x2="1504" y2="1579.31" class="sample-range"/>
+<line x1="1498" y1="1570.58" x2="1510" y2="1570.58" class="sample-range"/>
+<line x1="1498" y1="1579.31" x2="1510" y2="1579.31" class="sample-range"/>
+<path d="M 1510 1574.95 L 1525 1574.95 L 1525 1724.12 L 1537 1724.12" class="leader"/>
+<text x="1545" y="1728.12" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1716.62,341.32,14.38">H55  155.62–156.59 m  样长0.97  芯长0.95  采取率97.94%</text>
+<line x1="1504" y1="1682.09" x2="1504" y2="1691.63" class="sample-range"/>
+<line x1="1498" y1="1682.09" x2="1510" y2="1682.09" class="sample-range"/>
+<line x1="1498" y1="1691.63" x2="1510" y2="1691.63" class="sample-range"/>
+<path d="M 1510 1686.86 L 1525 1686.86 L 1525 1746.17 L 1537 1746.17" class="leader"/>
+<text x="1545" y="1750.17" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1738.67,341.32,14.38">H56  168.01–169.07 m  样长1.06  芯长0.97  采取率91.51%</text>
+<line x1="1504" y1="1691.63" x2="1504" y2="1701.44" class="sample-range"/>
+<line x1="1498" y1="1691.63" x2="1510" y2="1691.63" class="sample-range"/>
+<line x1="1498" y1="1701.44" x2="1510" y2="1701.44" class="sample-range"/>
+<path d="M 1510 1696.54 L 1525 1696.54 L 1525 1768.22 L 1537 1768.22" class="leader"/>
+<text x="1545" y="1772.22" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1760.72,341.32,14.38">H57  169.07–170.16 m  样长1.09  芯长1.00  采取率91.74%</text>
+<line x1="1504" y1="1701.44" x2="1504" y2="1707.56" class="sample-range"/>
+<line x1="1498" y1="1701.44" x2="1510" y2="1701.44" class="sample-range"/>
+<line x1="1498" y1="1707.56" x2="1510" y2="1707.56" class="sample-range"/>
+<path d="M 1510 1704.50 L 1525 1704.50 L 1525 1790.27 L 1537 1790.27" class="leader"/>
+<text x="1545" y="1794.27" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1782.77,341.32,14.38">H58  170.16–170.84 m  样长0.68  芯长0.63  采取率92.65%</text>
+<line x1="1504" y1="1707.56" x2="1504" y2="1716.56" class="sample-range"/>
+<line x1="1498" y1="1707.56" x2="1510" y2="1707.56" class="sample-range"/>
+<line x1="1498" y1="1716.56" x2="1510" y2="1716.56" class="sample-range"/>
+<path d="M 1510 1712.06 L 1525 1712.06 L 1525 1812.32 L 1537 1812.32" class="leader"/>
+<text x="1545" y="1816.32" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1804.82,341.32,14.38">H59  170.84–171.84 m  样长1.00  芯长0.98  采取率98.00%</text>
+<line x1="1504" y1="1716.56" x2="1504" y2="1725.92" class="sample-range"/>
+<line x1="1498" y1="1716.56" x2="1510" y2="1716.56" class="sample-range"/>
+<line x1="1498" y1="1725.92" x2="1510" y2="1725.92" class="sample-range"/>
+<path d="M 1510 1721.24 L 1525 1721.24 L 1525 1834.37 L 1537 1834.37" class="leader"/>
+<text x="1545" y="1838.37" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1826.87,341.32,14.38">H60  171.84–172.88 m  样长1.04  芯长1.02  采取率98.08%</text>
+<line x1="1504" y1="1725.92" x2="1504" y2="1733.39" class="sample-range"/>
+<line x1="1498" y1="1725.92" x2="1510" y2="1725.92" class="sample-range"/>
+<line x1="1498" y1="1733.39" x2="1510" y2="1733.39" class="sample-range"/>
+<path d="M 1510 1729.66 L 1525 1729.66 L 1525 1856.42 L 1537 1856.42" class="leader"/>
+<text x="1545" y="1860.42" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1848.92,341.32,14.38">H61  172.88–173.71 m  样长0.83  芯长0.81  采取率97.59%</text>
+<line x1="1504" y1="1733.39" x2="1504" y2="1741.40" class="sample-range"/>
+<line x1="1498" y1="1733.39" x2="1510" y2="1733.39" class="sample-range"/>
+<line x1="1498" y1="1741.40" x2="1510" y2="1741.40" class="sample-range"/>
+<path d="M 1510 1737.39 L 1525 1737.39 L 1525 1878.47 L 1537 1878.47" class="leader"/>
+<text x="1545" y="1882.47" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1870.97,341.32,14.38">H62  173.71–174.60 m  样长0.89  芯长0.87  采取率97.75%</text>
+<line x1="1504" y1="1741.40" x2="1504" y2="1750.31" class="sample-range"/>
+<line x1="1498" y1="1741.40" x2="1510" y2="1741.40" class="sample-range"/>
+<line x1="1498" y1="1750.31" x2="1510" y2="1750.31" class="sample-range"/>
+<path d="M 1510 1745.86 L 1525 1745.86 L 1525 1900.52 L 1537 1900.52" class="leader"/>
+<text x="1545" y="1904.52" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1893.02,341.32,14.38">H63  174.60–175.59 m  样长0.99  芯长0.96  采取率96.97%</text>
+<line x1="1504" y1="1929.14" x2="1504" y2="1938.23" class="sample-range"/>
+<line x1="1498" y1="1929.14" x2="1510" y2="1929.14" class="sample-range"/>
+<line x1="1498" y1="1938.23" x2="1510" y2="1938.23" class="sample-range"/>
+<path d="M 1510 1933.68 L 1525 1933.68 L 1525 1933.68 L 1537 1933.68" class="leader"/>
+<text x="1545" y="1937.68" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1926.18,341.32,14.38">H64  195.46–196.47 m  样长1.01  芯长0.99  采取率98.02%</text>
+<line x1="1504" y1="1938.23" x2="1504" y2="1947.14" class="sample-range"/>
+<line x1="1498" y1="1938.23" x2="1510" y2="1938.23" class="sample-range"/>
+<line x1="1498" y1="1947.14" x2="1510" y2="1947.14" class="sample-range"/>
+<path d="M 1510 1942.68 L 1525 1942.68 L 1525 1955.73 L 1537 1955.73" class="leader"/>
+<text x="1545" y="1959.73" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1948.23,341.32,14.38">H65  196.47–197.46 m  样长0.99  芯长0.97  采取率97.98%</text>
+<line x1="1504" y1="1947.14" x2="1504" y2="1954.79" class="sample-range"/>
+<line x1="1498" y1="1947.14" x2="1510" y2="1947.14" class="sample-range"/>
+<line x1="1498" y1="1954.79" x2="1510" y2="1954.79" class="sample-range"/>
+<path d="M 1510 1950.96 L 1525 1950.96 L 1525 1977.78 L 1537 1977.78" class="leader"/>
+<text x="1545" y="1981.78" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1970.28,341.32,14.38">H66  197.46–198.31 m  样长0.85  芯长0.82  采取率96.47%</text>
+<line x1="1504" y1="1954.79" x2="1504" y2="1963.88" class="sample-range"/>
+<line x1="1498" y1="1954.79" x2="1510" y2="1954.79" class="sample-range"/>
+<line x1="1498" y1="1963.88" x2="1510" y2="1963.88" class="sample-range"/>
+<path d="M 1510 1959.34 L 1525 1959.34 L 1525 1999.83 L 1537 1999.83" class="leader"/>
+<text x="1545" y="2003.83" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,1992.33,341.32,14.38">H67  198.31–199.32 m  样长1.01  芯长0.96  采取率95.05%</text>
+<line x1="1504" y1="1963.88" x2="1504" y2="1973.51" class="sample-range"/>
+<line x1="1498" y1="1963.88" x2="1510" y2="1963.88" class="sample-range"/>
+<line x1="1498" y1="1973.51" x2="1510" y2="1973.51" class="sample-range"/>
+<path d="M 1510 1968.69 L 1525 1968.69 L 1525 2021.88 L 1537 2021.88" class="leader"/>
+<text x="1545" y="2025.88" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2014.38,341.32,14.38">H68  199.32–200.39 m  样长1.07  芯长1.02  采取率95.33%</text>
+<line x1="1504" y1="1973.51" x2="1504" y2="1981.16" class="sample-range"/>
+<line x1="1498" y1="1973.51" x2="1510" y2="1973.51" class="sample-range"/>
+<line x1="1498" y1="1981.16" x2="1510" y2="1981.16" class="sample-range"/>
+<path d="M 1510 1977.34 L 1525 1977.34 L 1525 2043.93 L 1537 2043.93" class="leader"/>
+<text x="1545" y="2047.93" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2036.43,341.32,14.38">H69  200.39–201.24 m  样长0.85  芯长0.81  采取率95.29%</text>
+<line x1="1504" y1="2127.50" x2="1504" y2="2136.95" class="sample-range"/>
+<line x1="1498" y1="2127.50" x2="1510" y2="2127.50" class="sample-range"/>
+<line x1="1498" y1="2136.95" x2="1510" y2="2136.95" class="sample-range"/>
+<path d="M 1510 2132.23 L 1525 2132.23 L 1525 2132.23 L 1537 2132.23" class="leader"/>
+<text x="1545" y="2136.23" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2124.73,341.32,14.38">H70  217.50–218.55 m  样长1.05  芯长1.01  采取率96.19%</text>
+<line x1="1504" y1="2136.95" x2="1504" y2="2145.05" class="sample-range"/>
+<line x1="1498" y1="2136.95" x2="1510" y2="2136.95" class="sample-range"/>
+<line x1="1498" y1="2145.05" x2="1510" y2="2145.05" class="sample-range"/>
+<path d="M 1510 2141.00 L 1525 2141.00 L 1525 2154.28 L 1537 2154.28" class="leader"/>
+<text x="1545" y="2158.28" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2146.78,341.32,14.38">H71  218.55–219.45 m  样长0.90  芯长0.85  采取率94.44%</text>
+<line x1="1504" y1="2145.05" x2="1504" y2="2153.33" class="sample-range"/>
+<line x1="1498" y1="2145.05" x2="1510" y2="2145.05" class="sample-range"/>
+<line x1="1498" y1="2153.33" x2="1510" y2="2153.33" class="sample-range"/>
+<path d="M 1510 2149.19 L 1525 2149.19 L 1525 2176.33 L 1537 2176.33" class="leader"/>
+<text x="1545" y="2180.33" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2168.83,341.32,14.38">H72  219.45–220.37 m  样长0.92  芯长0.86  采取率93.48%</text>
+<line x1="1504" y1="2153.33" x2="1504" y2="2164.13" class="sample-range"/>
+<line x1="1498" y1="2153.33" x2="1510" y2="2153.33" class="sample-range"/>
+<line x1="1498" y1="2164.13" x2="1510" y2="2164.13" class="sample-range"/>
+<path d="M 1510 2158.73 L 1525 2158.73 L 1525 2198.38 L 1537 2198.38" class="leader"/>
+<text x="1545" y="2202.38" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2190.88,341.32,14.38">H73  220.37–221.57 m  样长1.20  芯长1.12  采取率93.33%</text>
+<line x1="1504" y1="2164.13" x2="1504" y2="2171.87" class="sample-range"/>
+<line x1="1498" y1="2164.13" x2="1510" y2="2164.13" class="sample-range"/>
+<line x1="1498" y1="2171.87" x2="1510" y2="2171.87" class="sample-range"/>
+<path d="M 1510 2168.00 L 1525 2168.00 L 1525 2220.43 L 1537 2220.43" class="leader"/>
+<text x="1545" y="2224.43" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2212.93,341.32,14.38">H74  221.57–222.43 m  样长0.86  芯长0.81  采取率94.19%</text>
+<line x1="1504" y1="2575.79" x2="1504" y2="2584.43" class="sample-range"/>
+<line x1="1498" y1="2575.79" x2="1510" y2="2575.79" class="sample-range"/>
+<line x1="1498" y1="2584.43" x2="1510" y2="2584.43" class="sample-range"/>
+<path d="M 1510 2580.11 L 1525 2580.11 L 1525 2580.11 L 1537 2580.11" class="leader"/>
+<text x="1545" y="2584.11" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2572.61,341.32,14.38">H75  267.31–268.27 m  样长0.96  芯长0.87  采取率90.63%</text>
+<line x1="1504" y1="2584.43" x2="1504" y2="2594.51" class="sample-range"/>
+<line x1="1498" y1="2584.43" x2="1510" y2="2584.43" class="sample-range"/>
+<line x1="1498" y1="2594.51" x2="1510" y2="2594.51" class="sample-range"/>
+<path d="M 1510 2589.47 L 1525 2589.47 L 1525 2602.16 L 1537 2602.16" class="leader"/>
+<text x="1545" y="2606.16" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2594.66,341.32,14.38">H76  268.27–269.39 m  样长1.12  芯长1.02  采取率91.07%</text>
+<line x1="1504" y1="2594.51" x2="1504" y2="2602.16" class="sample-range"/>
+<line x1="1498" y1="2594.51" x2="1510" y2="2594.51" class="sample-range"/>
+<line x1="1498" y1="2602.16" x2="1510" y2="2602.16" class="sample-range"/>
+<path d="M 1510 2598.34 L 1525 2598.34 L 1525 2624.21 L 1537 2624.21" class="leader"/>
+<text x="1545" y="2628.21" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2616.71,341.32,14.38">H77  269.39–270.24 m  样长0.85  芯长0.79  采取率92.94%</text>
+<line x1="1504" y1="2602.16" x2="1504" y2="2612.87" class="sample-range"/>
+<line x1="1498" y1="2602.16" x2="1510" y2="2602.16" class="sample-range"/>
+<line x1="1498" y1="2612.87" x2="1510" y2="2612.87" class="sample-range"/>
+<path d="M 1510 2607.52 L 1525 2607.52 L 1525 2646.26 L 1537 2646.26" class="leader"/>
+<text x="1545" y="2650.26" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2638.76,341.32,14.38">H78  270.24–271.43 m  样长1.19  芯长1.14  采取率95.80%</text>
+<line x1="1504" y1="2612.87" x2="1504" y2="2623.76" class="sample-range"/>
+<line x1="1498" y1="2612.87" x2="1510" y2="2612.87" class="sample-range"/>
+<line x1="1498" y1="2623.76" x2="1510" y2="2623.76" class="sample-range"/>
+<path d="M 1510 2618.31 L 1525 2618.31 L 1525 2668.31 L 1537 2668.31" class="leader"/>
+<text x="1545" y="2672.31" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2660.81,341.32,14.38">H79  271.43–272.64 m  样长1.21  芯长1.16  采取率95.87%</text>
+<line x1="1504" y1="2623.76" x2="1504" y2="2632.76" class="sample-range"/>
+<line x1="1498" y1="2623.76" x2="1510" y2="2623.76" class="sample-range"/>
+<line x1="1498" y1="2632.76" x2="1510" y2="2632.76" class="sample-range"/>
+<path d="M 1510 2628.26 L 1525 2628.26 L 1525 2690.36 L 1537 2690.36" class="leader"/>
+<text x="1545" y="2694.36" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2682.86,341.32,14.38">H80  272.64–273.64 m  样长1.00  芯长0.92  采取率92.00%</text>
+<line x1="1504" y1="2875.58" x2="1504" y2="2885.12" class="sample-range"/>
+<line x1="1498" y1="2875.58" x2="1510" y2="2875.58" class="sample-range"/>
+<line x1="1498" y1="2885.12" x2="1510" y2="2885.12" class="sample-range"/>
+<path d="M 1510 2880.35 L 1525 2880.35 L 1525 2880.35 L 1537 2880.35" class="leader"/>
+<text x="1545" y="2884.35" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2872.85,341.32,14.38">H81  300.62–301.68 m  样长1.06  芯长0.96  采取率90.57%</text>
+<line x1="1504" y1="2885.12" x2="1504" y2="2893.85" class="sample-range"/>
+<line x1="1498" y1="2885.12" x2="1510" y2="2885.12" class="sample-range"/>
+<line x1="1498" y1="2893.85" x2="1510" y2="2893.85" class="sample-range"/>
+<path d="M 1510 2889.48 L 1525 2889.48 L 1525 2902.40 L 1537 2902.40" class="leader"/>
+<text x="1545" y="2906.40" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2894.90,341.32,14.38">H82  301.68–302.65 m  样长0.97  芯长0.87  采取率89.69%</text>
+<line x1="1504" y1="2893.85" x2="1504" y2="2901.77" class="sample-range"/>
+<line x1="1498" y1="2893.85" x2="1510" y2="2893.85" class="sample-range"/>
+<line x1="1498" y1="2901.77" x2="1510" y2="2901.77" class="sample-range"/>
+<path d="M 1510 2897.81 L 1525 2897.81 L 1525 2924.45 L 1537 2924.45" class="leader"/>
+<text x="1545" y="2928.45" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2916.95,341.32,14.38">H83  302.65–303.53 m  样长0.88  芯长0.82  采取率93.18%</text>
+<line x1="1504" y1="2901.77" x2="1504" y2="2911.49" class="sample-range"/>
+<line x1="1498" y1="2901.77" x2="1510" y2="2901.77" class="sample-range"/>
+<line x1="1498" y1="2911.49" x2="1510" y2="2911.49" class="sample-range"/>
+<path d="M 1510 2906.63 L 1525 2906.63 L 1525 2946.50 L 1537 2946.50" class="leader"/>
+<text x="1545" y="2950.50" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2939.00,341.32,14.38">H84  303.53–304.61 m  样长1.08  芯长1.00  采取率92.59%</text>
+<line x1="1504" y1="2911.49" x2="1504" y2="2920.31" class="sample-range"/>
+<line x1="1498" y1="2911.49" x2="1510" y2="2911.49" class="sample-range"/>
+<line x1="1498" y1="2920.31" x2="1510" y2="2920.31" class="sample-range"/>
+<path d="M 1510 2915.90 L 1525 2915.90 L 1525 2968.55 L 1537 2968.55" class="leader"/>
+<text x="1545" y="2972.55" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2961.05,341.32,14.38">H85  304.61–305.59 m  样长0.98  芯长0.91  采取率92.86%</text>
+<line x1="1504" y1="2920.31" x2="1504" y2="2929.40" class="sample-range"/>
+<line x1="1498" y1="2920.31" x2="1510" y2="2920.31" class="sample-range"/>
+<line x1="1498" y1="2929.40" x2="1510" y2="2929.40" class="sample-range"/>
+<path d="M 1510 2924.86 L 1525 2924.86 L 1525 2990.60 L 1537 2990.60" class="leader"/>
+<text x="1545" y="2994.60" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,2983.10,341.32,14.38">H86  305.59–306.60 m  样长1.01  芯长0.93  采取率92.08%</text>
+<line x1="1504" y1="3261.41" x2="1504" y2="3270.32" class="sample-range"/>
+<line x1="1498" y1="3261.41" x2="1510" y2="3261.41" class="sample-range"/>
+<line x1="1498" y1="3270.32" x2="1510" y2="3270.32" class="sample-range"/>
+<path d="M 1510 3265.87 L 1525 3265.87 L 1525 3265.87 L 1537 3265.87" class="leader"/>
+<text x="1545" y="3269.87" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3258.37,341.32,14.38">H87  343.49–344.48 m  样长0.99  芯长0.93  采取率93.94%</text>
+<line x1="1504" y1="3270.32" x2="1504" y2="3278.15" class="sample-range"/>
+<line x1="1498" y1="3270.32" x2="1510" y2="3270.32" class="sample-range"/>
+<line x1="1498" y1="3278.15" x2="1510" y2="3278.15" class="sample-range"/>
+<path d="M 1510 3274.24 L 1525 3274.24 L 1525 3287.92 L 1537 3287.92" class="leader"/>
+<text x="1545" y="3291.92" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3280.42,341.32,14.38">H88  344.48–345.35 m  样长0.87  芯长0.82  采取率94.25%</text>
+<line x1="1504" y1="3278.15" x2="1504" y2="3287.60" class="sample-range"/>
+<line x1="1498" y1="3278.15" x2="1510" y2="3278.15" class="sample-range"/>
+<line x1="1498" y1="3287.60" x2="1510" y2="3287.60" class="sample-range"/>
+<path d="M 1510 3282.88 L 1525 3282.88 L 1525 3309.97 L 1537 3309.97" class="leader"/>
+<text x="1545" y="3313.97" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3302.47,341.32,14.38">H89  345.35–346.40 m  样长1.05  芯长0.99  采取率94.29%</text>
+<line x1="1504" y1="3287.60" x2="1504" y2="3296.69" class="sample-range"/>
+<line x1="1498" y1="3287.60" x2="1510" y2="3287.60" class="sample-range"/>
+<line x1="1498" y1="3296.69" x2="1510" y2="3296.69" class="sample-range"/>
+<path d="M 1510 3292.14 L 1525 3292.14 L 1525 3332.02 L 1537 3332.02" class="leader"/>
+<text x="1545" y="3336.02" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3324.52,341.32,14.38">H90  346.40–347.41 m  样长1.01  芯长0.95  采取率94.06%</text>
+<line x1="1504" y1="3384.08" x2="1504" y2="3392.90" class="sample-range"/>
+<line x1="1498" y1="3384.08" x2="1510" y2="3384.08" class="sample-range"/>
+<line x1="1498" y1="3392.90" x2="1510" y2="3392.90" class="sample-range"/>
+<path d="M 1510 3388.49 L 1525 3388.49 L 1525 3388.49 L 1537 3388.49" class="leader"/>
+<text x="1545" y="3392.49" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3380.99,341.32,14.38">H91  357.12–358.10 m  样长0.98  芯长0.92  采取率93.88%</text>
+<line x1="1504" y1="3392.90" x2="1504" y2="3402.98" class="sample-range"/>
+<line x1="1498" y1="3392.90" x2="1510" y2="3392.90" class="sample-range"/>
+<line x1="1498" y1="3402.98" x2="1510" y2="3402.98" class="sample-range"/>
+<path d="M 1510 3397.94 L 1525 3397.94 L 1525 3410.54 L 1537 3410.54" class="leader"/>
+<text x="1545" y="3414.54" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3403.04,341.32,14.38">H92  358.10–359.22 m  样长1.12  芯长1.05  采取率93.75%</text>
+<line x1="1504" y1="3402.98" x2="1504" y2="3410.63" class="sample-range"/>
+<line x1="1498" y1="3402.98" x2="1510" y2="3402.98" class="sample-range"/>
+<line x1="1498" y1="3410.63" x2="1510" y2="3410.63" class="sample-range"/>
+<path d="M 1510 3406.80 L 1525 3406.80 L 1525 3432.59 L 1537 3432.59" class="leader"/>
+<text x="1545" y="3436.59" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3425.09,341.32,14.38">H93  359.22–360.07 m  样长0.85  芯长0.80  采取率94.12%</text>
+<line x1="1504" y1="3410.63" x2="1504" y2="3419.90" class="sample-range"/>
+<line x1="1498" y1="3410.63" x2="1510" y2="3410.63" class="sample-range"/>
+<line x1="1498" y1="3419.90" x2="1510" y2="3419.90" class="sample-range"/>
+<path d="M 1510 3415.27 L 1525 3415.27 L 1525 3454.64 L 1537 3454.64" class="leader"/>
+<text x="1545" y="3458.64" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3447.14,341.32,14.38">H94  360.07–361.10 m  样长1.03  芯长0.98  采取率95.15%</text>
+<line x1="1504" y1="3419.90" x2="1504" y2="3429.26" class="sample-range"/>
+<line x1="1498" y1="3419.90" x2="1510" y2="3419.90" class="sample-range"/>
+<line x1="1498" y1="3429.26" x2="1510" y2="3429.26" class="sample-range"/>
+<path d="M 1510 3424.58 L 1525 3424.58 L 1525 3476.69 L 1537 3476.69" class="leader"/>
+<text x="1545" y="3480.69" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3469.19,341.32,14.38">H95  361.10–362.14 m  样长1.04  芯长1.00  采取率96.15%</text>
+<line x1="1504" y1="3429.26" x2="1504" y2="3437.81" class="sample-range"/>
+<line x1="1498" y1="3429.26" x2="1510" y2="3429.26" class="sample-range"/>
+<line x1="1498" y1="3437.81" x2="1510" y2="3437.81" class="sample-range"/>
+<path d="M 1510 3433.53 L 1525 3433.53 L 1525 3498.74 L 1537 3498.74" class="leader"/>
+<text x="1545" y="3502.74" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="1545.00,3491.24,341.32,14.38">H96  362.14–363.09 m  样长0.95  芯长0.90  采取率94.74%</text>
+<text x="2200" y="188.00" font-size="10.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="2200.00,177.50,72.03,13.12">分析数据未提供</text>
+<circle cx="2420" cy="3615.11" r="4" fill="white" stroke="#111" stroke-width="1.2" data-bbox="2416.00,3611.11,8,8"/>
+<line x1="2425" y1="3615.11" x2="2442" y2="3615.11" class="major"/>
+<text x="2448" y="3619.11" font-size="11.5" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="2448.00,3607.61,94.99,14.38">382.79m  φ75mm</text>
+<line x1="35" y1="3671.11" x2="2645.0" y2="3671.11" class="major"/>
+<text x="35" y="3695.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,3683.11,441.84,15.00">孔深基准：未校正底稿382.79m；原图383.01m、精细校正表383.011m，差异保留。</text>
+<text x="35" y="3715.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,3703.11,453.60,15.00">第1/4/5层为参考图花纹候选匹配；其余20层待确认并留白。Au/Pb/Zn分析值未提供。</text>
+<text x="35" y="3735.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,3723.11,638.40,15.00">样品空心区间表示采样位置，不表示矿层；纹样中的线条、点和椭圆仅为图案，不表示实测层界。孔径仅标示终孔φ75mm。</text>
+<text x="35" y="3755.11" font-size="12" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="35.00,3743.11,606.48,15.00">回次采取率为底稿记录值；分层段长=底深−顶深，分层和样品采取率=芯长/区间长度×100%，计算值显示两位小数。</text>
+<line x1="2540.0" y1="3725.11" x2="2630.0" y2="3725.11" class="major"/>
+<line x1="2540.0" y1="3720.11" x2="2540.0" y2="3730.11" class="major"/>
+<line x1="2630.0" y1="3720.11" x2="2630.0" y2="3730.11" class="major"/>
+<text x="2540.0" y="3743.11" font-size="11" text-anchor="start" font-weight="normal" class="" data-layout-kind="text" data-bbox="2540.00,3732.11,56.98,13.75">10 m沿孔距</text>
+</svg>

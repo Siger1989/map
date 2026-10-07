@@ -1,0 +1,16 @@
+{
+  "drawing.svg": "e45733b3e8e2a445baae1282a56ce13240c6d44805966f69257f1da043109070",
+  "normalized.json": "7af3800d18d7ec215d854da4b99837e5af101e1f980d8631b9020306635f0a75",
+  "layout-audit.json": "407e9bc6443fbbaea9d3655e6b96fb04a4e428ff5dc616a66587a4690253966c",
+  "readability-audit.json": "b55df8c4a93b24fe044ee65545d8d10ac2b5bb6669433980dc2d9d344784ee36",
+  "svg": {
+    "attributes": {
+      "width": "1500",
+      "height": "2351",
+      "viewBox": "0 0 1500 2351"
+    },
+    "images": 0,
+    "paths": 107,
+    "text": 129
+  }
+}

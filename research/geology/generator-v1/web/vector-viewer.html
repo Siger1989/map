@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>地质图矢量查看</title>
+  <style>
+    :root{color-scheme:light;--ink:#182431;--muted:#667483;--line:#d6dde5;--blue:#155eef}
+    *{box-sizing:border-box}body{height:100dvh;display:flex;flex-direction:column;margin:0;color:var(--ink);font:14px/1.5 "Microsoft YaHei",system-ui,sans-serif;background:#edf2f6}
+    [hidden]{display:none!important}
+    header{flex-shrink:0;background:#fff;border-bottom:1px solid var(--line);padding:10px 14px;box-shadow:0 2px 8px #20354b12}
+    .bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;max-width:1500px;margin:auto}h1{font-size:16px;margin:0 12px 0 0}
+    button,.download{border:1px solid #bdc9d5;border-radius:5px;background:#fff;color:#17324d;padding:7px 10px;font:inherit;cursor:pointer;text-decoration:none}
+    button[aria-pressed="true"]{background:#e5efff;border-color:#8cb4ff;color:#124f9c}.download{margin-left:auto;color:#124f88}
+    #status{color:var(--muted);padding:0 8px}.stage{flex:1;min-height:0;overflow:auto;padding:14px;background:#dfe6ed}
+    #drawing{display:block;width:100%;height:auto;margin:0 auto;background:#fff;box-shadow:0 2px 12px #172b4033}
+    .error{max-width:760px;margin:48px auto;padding:18px;background:#fff;border:1px solid var(--line);border-radius:8px;color:#8c2632}
+    @media(max-width:560px){header{padding:8px}.bar{gap:5px}h1{width:100%}button,.download{padding:6px 8px;font-size:13px}.download{margin-left:0}#status{width:100%;padding:3px}}
+  </style>
+</head>
+<body>
+<header><div class="bar" id="toolbar" hidden>
+  <h1>地质图矢量查看</h1>
+  <button type="button" data-zoom="fit" aria-pressed="true">适合宽度</button>
+  <button type="button" data-zoom="1">100%</button>
+  <button type="button" data-zoom="2">200%</button>
+  <button type="button" data-zoom="4">400%</button>
+  <button type="button" data-zoom="8">800%</button>
+  <span id="status" aria-live="polite"></span>
+  <a id="download" class="download" download>下载 SVG</a>
+</div></header>
+<main class="stage" id="stage"><div class="error" id="error" hidden></div><img id="drawing" alt="地质图矢量主图" hidden></main>
+<script>
+const image=document.querySelector('#drawing'),stage=document.querySelector('#stage'),errorBox=document.querySelector('#error');
+const allowedSvgNames=new Set(['drawing.svg','detail.svg','readability.svg']);
+let zoom='fit',nativeWidth=0;
+function showError(message){errorBox.textContent=message;errorBox.hidden=false}
+function resize(){if(!nativeWidth)return;const before=image.getBoundingClientRect(),stageRect=stage.getBoundingClientRect();const centerX=stageRect.left+stage.clientLeft+stage.clientWidth/2;const centerY=stageRect.top+stage.clientTop+stage.clientHeight/2;const pointX=(centerX-before.left)/Math.max(1,before.width);const pointY=(centerY-before.top)/Math.max(1,before.height);const fitWidth=Math.max(1,stage.clientWidth-28);const width=zoom==='fit'?Math.min(fitWidth,nativeWidth):nativeWidth*Number(zoom);image.style.width=`${width}px`;document.querySelectorAll('[data-zoom]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.zoom===String(zoom))));document.querySelector('#status').textContent=zoom==='fit'?'适合宽度':`${Number(zoom)*100}%`;if(zoom==='fit'){stage.scrollTo(0,0)}else{const after=image.getBoundingClientRect();stage.scrollTo(stage.scrollLeft+after.left+pointX*after.width-centerX,stage.scrollTop+after.top+pointY*after.height-centerY)}}
+const requested=new URLSearchParams(location.search).get('src');
+if(!requested){showError('未提供可查看的矢量图。请从生成结果中打开矢量放大查看。')}
+else{
+  try{
+    const source=new URL(requested,location.origin);
+    const parts=source.pathname.split('/').filter(Boolean);
+    if(source.origin!==location.origin||source.username||source.password||parts.length!==3||parts[0]!=='generated'||!allowedSvgNames.has(parts[2])||!/^[-\w]+$/.test(parts[1]))throw new Error();
+    source.search='';source.hash='';image.src=source.href;document.querySelector('#download').href=source.href;
+    image.addEventListener('load',()=>{nativeWidth=image.naturalWidth||image.width;if(!nativeWidth){showError('无法读取这张矢量图的尺寸。');return}image.hidden=false;document.querySelector('#toolbar').hidden=false;resize()},{once:true});
+    image.addEventListener('error',()=>showError('矢量图无法读取，请返回生成结果重新打开。'),{once:true});
+  }catch(e){showError('图件地址无效。请从生成结果中打开当前生成的矢量图。')}
+}
+document.querySelectorAll('[data-zoom]').forEach(button=>button.addEventListener('click',()=>{zoom=button.dataset.zoom;resize()}));
+window.addEventListener('resize',()=>{if(zoom==='fit')resize()});
+</script>
+</body>
+</html>

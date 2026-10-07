@@ -1,0 +1,68 @@
+山兔 / 地质行业工具：完整源码、参考资料与跨电脑交接
+日期：2026-10-08
+
+1. 从哪里继续
+仓库：https://github.com/Siger1989/map
+实际开发分支：codex/rollback-ui-0235-20260921，未合入main。
+本次同步前基线：be39fa74dd6fef6dd38d4f03b3b989ab5ace2a0f；本文件所在提交是含参考文件和PC成果的最新接续点。最终推送SHA由主代理核对并回报。
+本机主仓库：D:/天气地图。原PC研究工作区：C:/Users/sigeryang/Documents/ChatGPT/天气项目；本轮将地质相关源码与成果复制归档到research/geology，原文件和运行进程保留。
+先读AGENTS.md顶部、CURRENT_STATE.md、本文件、docs/agent-handoff.md；不要从main或历史UI试改分支续做。
+
+2. 本次用户授权与同步范围
+用户已明确允许真实地质填写示例/测试数据公开，并追加要求现在所有项目内容及后来添加的参考文件夹上传Git。
+手机地图和行业工具代码、标准Excel模板/示例、测试与fixtures已在仓库；本次补原始地质资料、后加截图/图纸、参考PDF、PC地质绘图程序/规范合同/图案库/数据/生成成果和交接。
+参考清单：docs/reference-files-20261008.json，共65项、87,516,797字节，包含相对路径、字节数、SHA-256；说明见同名txt。其中48张后来添加的参考附件保存在references/chat-attachments-20261008/。
+PC归档清单：docs/geology-archive-manifest-20261008.json，共415项、53,251,975字节；包括全部保留的generated/outputs历史轮次和before-*快照，结构及启动方法见research/geology/README.txt。归档审查JSON有一项仅改写本机绝对渲染路径，清单同时记录源/目标哈希，其他原样复制文件按源哈希核验。
+原始输入文件/图纸按字节保留，不修内容或猜填字段；生成图件另存，不覆盖参考图。.gitattributes对资料和PC归档禁用Git换行转换，保留原有空白，确保换电脑克隆后的字节哈希仍可核验。
+本次不新增上传私有APK、私有图源配置、签名私钥、日志、PID、下载令牌、node_modules、Python缓存、浏览器profiles、上传暂存副本和无关Codex安装/诊断工具。必要依赖通过安装恢复。现有历史跟踪文件不擅自删除或改写历史。
+
+3. 手机功能当前状态
+最新已生成APK：0.2.110-test / versionCode117，包com.guanyun.weather.shantu.preview，沿用standalone签名。APK本机位置APK/Shantu-0.2.110-test-standalone.apk，66,163,586字节。
+SHA-256：61e12c078a50152b538b2404e8557ee42967ea1911e6c5a447e0db09010cf117。
+私有交付记录docs/release-0.2.110-local.txt。含用户图源配置的包不可公开Release；临时手机链接会过期，不是跨电脑持久依赖。不得用旧APK代表新代码。
+手机入口：工具→行业工具。两种类型为实测剖面、钻孔柱状图。选择标准.xlsx后本机解析/校验/计算/生成，绘图模块不依赖PC Python、API服务或外网；模板随包打入public/industry。
+核心：modules/industry/xlsx.ts、importSection.ts、importDrill.ts、engine.ts；renderSection.ts及helper负责剖面，renderDrill.ts负责钻孔；templates/materials.json和drill-patterns.json为固定岩性图案；IndustryTools.tsx/industry.css为手机界面，export.ts/dataTable.ts负责图件包和附表。
+config/features.ts 的 INDUSTRY_TOOLS_ENABLED 同时控制入口和面板挂载，后续普通版false即可隐藏。这不是付费账户权限系统。
+SVG为矢量主图，支持适宽、100/200/400/800%及双向滚动。PNG由SVG重新栅格化，手机上限24MP/12000边长，不能放大已有小PNG冒充高清。ZIP含主图SVG、详图SVG、PNG、中文附表HTML、原始规范数据/追溯JSON及说明。
+结果在当前App会话内关闭/返回/切换后保留；刷新或重启后的工程持久化不在已完成范围。
+
+4. PC程序与成果
+新版归档入口：research/geology/README.txt，程序位于research/geology/generator-v1；另保留drill-demo和vertical-research研究成果。
+旧PC实时工具http://127.0.0.1:9188/，进程仍保留。代码的最后百分数断行及UTF-8日志补丁已通过独立CLI生成；旧服务尚未加载这两项，先前服务重启/另开被自动审批拦截，未强行绕过。
+在新电脑按归档README安装Python依赖及Edge/Chrome后启动，可避免旧进程缓存；原始资料对应仓库地质资料，标准模板在程序outputs/standard-input-v2及手机public/industry。
+最终PC钻孔目录generated/drill-final-20261007：完整PNG4756×12000，preview2484×6267，SVG全深度完整，规范化数据与修排版前完全相同。SVG、PNG、附表、manifest均归档用于复核。
+研究期旧示意/视觉校准成果仅供追溯，不能覆盖标准输入驱动的当前pipeline。完整生成审计/来源合同与新标准说明随程序归档。
+
+5. 数据精度与表达边界
+必须区分原始观察、几何计算、显示格式和估算/推断。源观测不可按参考图反推或补齐；缺值保持null/未提供，不能填0。源冲突保留并提示。
+实测剖面的斜距、水平距、平面东/北增量、展开里程、剖面投影宽度、高差、真厚度为不同字段。近地表花纹区深度不代表真实层厚；不得从图宽推出真厚度或矿体。坐标轴以m标示，平面E/N和剖面X/Z分别等比例。
+钻孔按输入明确的沿孔深绘制。ZK0003使用原始沿孔终孔382.79m，23层/131回次/97样品；不能把它改成校正383.01m或垂直深度。采样位置、边界和回次数据有独立源单元格追溯，图案不改变几何。
+岩性只能按明确名字、批准别名或图案代码匹配。相似词不能默合并；未知和未核定图案保持白框/待配置。ZK0003仍有20个层段岩性模板待配置；不能凭矿化描述推断矿层。
+PM01标准数据为43记录、44节点、26层段、20测站、14样品；14个样品缺独立定位，列未定位而不是画到猜测点。80条缓存差异提示保留。不能把图纸与源表的数值冲突静默消掉。
+图案按用户参考图的已核定模板，未确认项留白；当前是项目资料图式，尚未全面行业标准认证。详见docs/industry-tools-acceptance-20261007.txt。
+
+6. 已验证及复现命令
+手机主审曾在390×857和360×780实际导入真实示例/不同短样例，切换、返回、关闭、重开保留结果，SVG/PNG/ZIP导出，空模板拒绝与旧结果标识；绘图暂停→工具关闭→显隐恢复→锁定解锁通过。无页面横溢。
+0.2.110交付时32项定向检查、全仓tsc、完整Web/Android构建通过；签名v2/v3及配置证书、zipalign、CRC、1911项assets（1415逐字节+496地形PNG像素/非IDAT）、4个行业xlsx、原生ArchiveTransfer及Key一致性布尔核验通过。
+手机逻辑检查：node --experimental-strip-types --test tests/industry-import.test.mjs tests/industry-render.test.mjs tests/industry-drill-render.test.mjs tests/industry-tools.test.mjs tests/map-tools.test.mjs tests/focus-lock-visibility.test.mjs
+类型检查：npx tsc --noEmit
+Web构建：npm run build:android:web
+PC复制后25项importer/drill/pipeline定向检查通过；逐文件源/副本SHA匹配，归档README列出命令和fixture重定位方法。无需把浏览器成功称作真机通过。
+全仓architecture仍有10项历史超行数，行业模块未新增超限。不要重复全量测试或无关重构，只因新改动/失败补相应验证。
+
+7. 换电脑操作
+git clone --branch codex/rollback-ui-0235-20260921 https://github.com/Siger1989/map.git
+cd map
+npm ci
+手机源码预览：npm run dev:apk-preview（9174/phone-preview.html），另启 npx vinext dev --port 3108 --hostname 127.0.0.1 支持地图其它API。行业绘图本身可离线，地图瓦片等仍按各自来源联网。
+PC：按research/geology/README.txt进入归档程序，安装依赖，使用新portable入口或Python server.py；没有安装Codex也应能运行。
+打包须先保持config/product.ts与mobile/android/AndroidManifest.xml一致，恢复合法私有配置与原standalone签名，禁止新生成替代证书导致不能覆盖安装。
+本机实际工具链为D:/GodotAndroid/android-sdk、D:/GodotAndroid/jdk-17；在新电脑可用build-android.ps1参数指定路径。
+私有打包命令示例：powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-android.ps1 -SdkRoot D:/GodotAndroid/android-sdk -JdkRoot D:/GodotAndroid/jdk-17 -StandaloneTest -DefaultMapSources .openai/default-map-sources-private.json
+私有配置路径为本机恢复位置，不是仓库提供的公开配置。普通无私有配置构建与私有APK图源能力可能不同，不能伪称完全对齐。
+
+8. 下一步及未验收
+目前无ADB设备；Android真实安装/离线大Excel/内存/系统文件选择器保存与取消/触控、GPS、后台均未完成本轮真机验收。HarmonyOS原生包未交付。
+继续核定未知岩性模板、地层局部几何冲突与图纸/源表差异，不能为了参考外观补造原始字段。
+手机长图/附表性能、持久工程保存和产品行业版权限可继续做；标准输入当前仅支持既定schema，任意其他Excel需先明确适配合同。
+不要清用户图源、标记、轨迹、草稿、照片、资料目录或原工作区；不要关闭或重启现有运行服务来完成纯Git同步。

@@ -1,0 +1,6 @@
+参考资料同步审计（2026-10-08）
+文件数：65；总大小：87,516,797 bytes。
+范围：地质资料、docs/reference、output/pdf，以及本次提交的 48 张 JPG；JPG 已原样复制到 references/chat-attachments-20261008 并逐文件校验 SHA-256。
+检查：OOXML/PDF 文本、所有参考文件中可提取的凭据模式、当前配置 Key 精确匹配、OLE 可读字符串及图片目视复核。凭据命中：0；超过 100MB 的参考文件：0。配置字段仅记录来源和是否设置，不记录值。
+限制：旧式 XLS/XLT 的可读 OLE 字符串及压缩块候选已扫描，未发现凭据；未发现 Ole10Native/Package 嵌入流，完整 VBA 源码语义提取受限。
+完整逐文件路径、字节数、SHA-256、类别见 reference-files-20261008.json。

@@ -1,0 +1,12 @@
+# Geology archive runtime exclusions only; reviewed generated deliverables remain tracked.
+**/node_modules/
+**/__pycache__/
+**/logs/
+**/uploads/
+**/.verification/
+**/.raster*/
+**/edge-profile*/
+**/chrome-profile*/
+**/*browser-profile*/
+
+**/*profile*/

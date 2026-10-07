@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>地质绘图工具</title>
+  <style>
+    :root{color-scheme:light;--ink:#182431;--muted:#667483;--line:#d6dde5;--blue:#155eef;--soft:#f3f6f9;--warn:#fff4ce;--bad:#a51d2d}
+    *{box-sizing:border-box}body{margin:0;background:#eaf0f5;color:var(--ink);font:14px/1.55 "Microsoft YaHei",system-ui,sans-serif}
+    header{background:#17324d;color:#fff;padding:22px max(20px,calc((100% - 1160px)/2))}header h1{margin:0 0 5px;font-size:25px}header p{margin:0;color:#d8e4ee}
+    main{max-width:1160px;margin:20px auto;padding:0 18px 40px}.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:19px;margin-bottom:16px;box-shadow:0 3px 12px #20354b10}
+    h2{font-size:18px;margin:0 0 13px}.grid{display:grid;grid-template-columns:minmax(200px,.7fr) minmax(260px,1fr) auto;gap:13px;align-items:end}label{display:block;font-weight:650;margin-bottom:5px}
+    select,input[type=file]{width:100%;padding:10px;border:1px solid #aeb8c3;border-radius:6px;background:#fff;color:var(--ink)}button,.button{border:0;border-radius:6px;padding:10px 16px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}button:disabled{opacity:.55;cursor:wait}.secondary{background:#e6edf5;color:#17324d}
+    .help{color:var(--muted);font-size:13px;margin:6px 0 0}.status{padding:10px 12px;border-radius:6px;background:var(--soft);margin:10px 0}.status.warn{background:var(--warn)}.status.bad{background:#fde8eb;color:var(--bad)}
+    .links{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.links a{padding:7px 10px;border:1px solid #aac0d5;border-radius:5px;color:#124f88;text-decoration:none;background:#f8fbfd}.links .button{border:0}
+    .summary{display:grid;grid-template-columns:repeat(4,minmax(115px,1fr));gap:9px;margin:12px 0}.metric{background:var(--soft);border-radius:7px;padding:10px}.metric b{display:block;font-size:19px;overflow-wrap:anywhere}.metric span{color:var(--muted)}
+    .preview{border:1px solid var(--line);border-radius:7px;background:#eef2f6;overflow:auto;max-height:720px}.preview img{display:block;width:100%;height:auto;background:#fff}.preview-note{color:var(--muted);margin:-4px 0 8px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}th{background:var(--soft)}details{margin-top:10px}.previous{border-left:5px solid #96a9bb}.tag{font-size:12px;padding:2px 7px;border-radius:10px;background:#dfe8f0;color:#41576a;margin-left:7px}[hidden]{display:none!important}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}header{padding:18px 20px}}
+  </style>
+</head>
+<body>
+<header><h1>地质绘图工具</h1><p>选择图种，下载对应工作簿，填写后导入生成矢量主图、高清图片和附表。</p></header>
+<main>
+  <section class="card">
+    <h2>选择图种并生成</h2>
+    <div class="grid">
+      <div><label for="drawing-type">图种</label><select id="drawing-type"><option value="section">实测剖面</option><option value="drill">钻孔柱状图</option></select></div>
+      <div><label for="workbook">填写后的 Excel 工作簿</label><input id="workbook" type="file" accept=".xlsx,.xls"><p class="help" id="file-help">选择对应图种的标准模板或示例填写；导入前会检查表名、字段和单元格数据。</p></div>
+      <button id="submit" type="button">生成图件</button>
+    </div>
+    <div class="links"><a class="button secondary" id="blank-template">下载空白标准模板</a><a class="button secondary" id="example-template">下载填写示例</a></div>
+    <p class="help">文件在本机处理。模板与填写示例分开提供；示例仅用于演示字段，不代表行业图式已全部核定。</p>
+    <div id="progress" class="status" aria-live="polite" hidden></div>
+  </section>
+  <section id="failure" class="card" hidden><h2>本次生成未完成</h2><div class="status bad" id="failure-message"></div><div id="failure-issues"></div></section>
+  <section id="previous" class="card previous" hidden><h2>该图种最近一次成功结果 <span class="tag">旧结果，仅供查看</span></h2><div class="result"></div></section>
+  <section id="current" class="card" hidden><h2>本次生成结果</h2><div class="result"></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s), typeSelect=$('#drawing-type');
+const names={section:'实测剖面',drill:'钻孔柱状图'};let lastResults={};let busy=false,currentJob=null;
+const fmt=v=>v===undefined||v===null||v===''?'—':(Number.isFinite(Number(v))?Number(v).toLocaleString('zh-CN',{maximumFractionDigits:6}):String(v));
+function updateTemplates(){const kind=typeSelect.value;$('#blank-template').href=`/template?type=${kind}&example=0`;$('#example-template').href=`/template?type=${kind}&example=1`;$('#file-help').textContent=kind==='drill'?'请选择钻孔柱状图模板填写的 .xlsx 文件；必需层段与可选回次、样品等按工作簿提示核验。':'请选择实测剖面模板填写的 Excel 文件；导入前会检查表名、字段和单元格数据。';$('#workbook').accept=kind==='drill'?'.xlsx':'.xlsx,.xls';renderPrevious()}
+function issueTable(issues,title='导入问题与提示'){
+  if(!issues?.length){const p=document.createElement('p');p.textContent=`${title}：无。`;return p}
+  const wrap=document.createElement('details');wrap.open=issues.some(x=>x.severity==='error');const sum=document.createElement('summary');sum.textContent=`${title}（${issues.length}）`;wrap.append(sum);
+  const table=document.createElement('table'),head=document.createElement('tr');['级别','代码','说明','源表与单元格'].forEach(x=>{const th=document.createElement('th');th.textContent=x;head.append(th)});const thead=document.createElement('thead');thead.append(head);table.append(thead);const body=document.createElement('tbody');
+  for(const item of issues){const tr=document.createElement('tr');[item.severity==='error'?'错误':'提示',item.code||'',item.message||'',(item.cells||[]).join('、 ')].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.append(td)});body.append(tr)}table.append(body);wrap.append(table);return wrap;
+}
+function summaryFields(kind,s){return kind==='drill'?[['终孔深度 m',s.endpoint_m],['分层',s.layers],['回次',s.turns],['样品',s.samples],['待配置花纹层段',s.pending_patterns]]:[['记录',s.records],['测段',s.intervals],['测站',s.stations],['样品',s.samples],['总斜距 m',s.total_slant_m],['总高差 m',s.total_vertical_m],['剖面方位 °',s.axis_azimuth_deg],['投影终点 m',s.projected_endpoint_m]]}
+function renderResult(container,data,old=false){
+  const target=container.querySelector('.result');target.replaceChildren();const kind=data.drawing_type||'section',s=data.summary||{};const source=document.createElement('div');source.className='status';source.textContent=`${names[kind]} · 来源文件：${data.source?.filename||'工作簿'}${old?' · 当前显示的是该图种之前成功的成果。':''}`;target.append(source);
+  const files=data.files||{},trace=document.createElement('details'),traceTitle=document.createElement('summary');traceTitle.textContent='来源与追溯';trace.append(traceTitle);const hash=document.createElement('p');hash.textContent=`SHA-256：${data.source?.sha256||'未知'}`;trace.append(hash);for(const name of ['manifest.json','normalized.json','report.html'])if(files[name]){const a=document.createElement('a');a.href=files[name].url;a.textContent=files[name].label||({ 'manifest.json':'下载生成清单','normalized.json':'下载规范数据','report.html':'打开生成报告'}[name]);if(name==='report.html'){a.target='_blank';a.rel='noopener'}else a.download=name;const p=document.createElement('p');p.append(a);trace.append(p)}target.append(trace);
+  const metrics=document.createElement('div');metrics.className='summary';for(const [label,value] of summaryFields(kind,s)){const d=document.createElement('div');d.className='metric';const b=document.createElement('b');b.textContent=fmt(value);const span=document.createElement('span');span.textContent=label;d.append(b,span);metrics.append(d)}target.append(metrics);
+  if(kind==='drill'&&Number(s.pending_patterns)>0){const msg=document.createElement('div');msg.className='status warn';msg.textContent=`有 ${s.pending_patterns} 个层段尚无已确认花纹。图中原始岩性名称保留，未匹配花纹处留白；请核对导入提示。`;target.append(msg)}
+  const links=document.createElement('div');links.className='links';for(const name of ['complete-hd.png','drawing.svg','appendix.html','detail.svg','preview.png'])if(files[name]){const a=document.createElement('a');a.href=files[name].url;a.textContent=files[name].label;if(name==='appendix.html'){a.target='_blank';a.rel='noopener'}else if(name.endsWith('.png')||name.endsWith('.svg'))a.download=name;links.append(a)}for(const [name,file] of Object.entries(files))if(!['complete-hd.png','drawing.svg','appendix.html','detail.svg','preview.png','manifest.json','normalized.json','report.html'].includes(name)){const a=document.createElement('a');a.href=file.url;a.textContent=file.label;if(name.endsWith('.png')||name.endsWith('.svg'))a.download=name;links.append(a)}target.append(links);
+  if(files['drawing.svg']){const title=document.createElement('h3');title.textContent=kind==='drill'?'钻孔柱状图矢量主图':'实测剖面矢量主图';target.append(title);const note=document.createElement('p');note.className='preview-note';const open=document.createElement('a');open.href=`/vector-viewer.html?src=${encodeURIComponent(files['drawing.svg'].url)}`;open.target='_blank';open.rel='noopener';open.textContent='打开矢量图放大查看';note.append(open);target.append(note);const box=document.createElement('div');box.className='preview';const img=document.createElement('img');img.src=files['drawing.svg'].url;img.alt=`本次生成的${names[kind]} SVG 主图`;box.append(img);target.append(box)}
+  target.append(issueTable(data.issues||[],'源数据导入提示'));container.hidden=false;
+}
+function renderPrevious(){const type=typeSelect.value;$('#previous').hidden=true;$('#previous .result').replaceChildren();const result=lastResults[type];if(result&&result.job!==currentJob)renderResult($('#previous'),result,true)}
+function renderFailure(error){$('#failure-message').textContent=error.message||'生成失败，请按提示修正后重试。';const area=$('#failure-issues');area.replaceChildren(issueTable(error.issues||[],'表名、字段与单元格校验'));$('#failure').hidden=false}
+async function loadStatus(){try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw new Error();const d=await r.json();lastResults=d.last_results||{};renderPrevious()}catch(e){const p=$('#progress');p.hidden=false;p.className='status warn';p.textContent='无法读取本地服务状态，请确认工具已启动后刷新页面。'}}
+typeSelect.addEventListener('change',()=>{if(busy)return;currentJob=null;$('#current').hidden=true;$('#failure').hidden=true;updateTemplates()});updateTemplates();
+$('#submit').addEventListener('click',async()=>{
+  const file=$('#workbook').files[0],kind=typeSelect.value;if(busy)return;currentJob=null;$('#failure').hidden=true;$('#current').hidden=true;renderPrevious();
+  if(!file){renderFailure({message:'请先选择当前图种对应的 Excel 工作簿。'});return}
+  if(kind==='drill'&&!file.name.toLowerCase().endsWith('.xlsx')){renderFailure({message:'钻孔柱状图标准导入目前要求 .xlsx 工作簿，请下载当前图种模板后填写。'});return}
+  busy=true;$('#submit').disabled=true;typeSelect.disabled=true;$('#blank-template').setAttribute('aria-disabled','true');$('#example-template').setAttribute('aria-disabled','true');const progress=$('#progress');progress.hidden=false;progress.className='status';progress.textContent=`正在核验${names[kind]}数据并生成 SVG、高清图片与附表…`;
+  const body=new FormData();body.append('drawing_type',kind);body.append('workbook',file);try{const response=await fetch('/api/generate',{method:'POST',body});let data;try{data=await response.json()}catch(e){throw {message:'服务返回了无法读取的结果，请查看 logs/server.log'}}if(!response.ok||!data.ok){renderFailure(data.error||{message:'生成失败'});renderPrevious();progress.className='status bad';progress.textContent=lastResults[kind]?'本次生成失败；下方保留该图种最近一次成功结果。':'本次生成失败，请修正输入后重试。';return}data.drawing_type=kind;lastResults[kind]=data;currentJob=data.job;renderResult($('#current'),data);renderPrevious();progress.className='status';progress.textContent='图件已生成，可查看或下载。'}catch(error){renderFailure(error);renderPrevious();progress.className='status bad';progress.textContent=lastResults[kind]?'本次请求未完成；下方结果为该图种之前的成功成果。':'本次请求未完成。'}finally{busy=false;$('#submit').disabled=false;typeSelect.disabled=false;$('#blank-template').removeAttribute('aria-disabled');$('#example-template').removeAttribute('aria-disabled')}});
+loadStatus();
+</script>
+</body>
+</html>

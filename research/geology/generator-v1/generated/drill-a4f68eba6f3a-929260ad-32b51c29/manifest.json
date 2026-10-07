@@ -1,0 +1,199 @@
+{
+  "drawing_type": "drill",
+  "input": {
+    "filename": "drill_alt.xlsx",
+    "sha256": "a4f68eba6f3ad5b7411b9b2b26fed494199aa32c68fd4017b39548a131771c61",
+    "adapter": "drill-1.0"
+  },
+  "schema_version": "drill-1.0",
+  "code_sha256": {
+    "drill_importer.py": "724463b9b3fe0079f06ecd672d997a000d17e00d7ab3d38a2e54c7e32a1642fb",
+    "drill_renderer.py": "3d5d36b81706db8d9be466ae355ea977c538207cb199107b06190151ed88ad4b",
+    "drill_pipeline.py": "ca8d6c7dfe02d9a9d7877c36b279721f327500d0840af9e1cd38dede66d70743"
+  },
+  "template_sha256": "1a56b496d74904adb3dc77ef4516ea559fdaa66837c64c75536bc29e24103d84",
+  "business_inputs": {
+    "project": {
+      "name": "",
+      "hole_id": "ZK-TEST-02",
+      "analysis_units": {
+        "Au": "g/t",
+        "Pb": "",
+        "Zn": ""
+      },
+      "source_cells": {
+        "模板类型": "项目!B2",
+        "模板版本": "项目!B3",
+        "项目名称": "项目!B4",
+        "钻孔编号": "项目!B5",
+        "长度单位": "项目!B6",
+        "孔深基准": "项目!B7",
+        "终孔深度_m": "项目!B8",
+        "Au单位": "项目!B9",
+        "Pb单位": "项目!B10",
+        "Zn单位": "项目!B11"
+      }
+    },
+    "sheets": {
+      "分层": 3,
+      "回次": 2,
+      "样品": 3,
+      "孔径": 1
+    },
+    "source_records": [
+      {
+        "sheet": "分层",
+        "row": 2,
+        "cells": {
+          "层号": "分层!A2",
+          "顶深_m": "分层!B2",
+          "底深_m": "分层!C2",
+          "岩性名称": "分层!D2",
+          "岩性描述": "分层!E2",
+          "岩心长_m": "分层!F2",
+          "花纹代码": "分层!G2"
+        }
+      },
+      {
+        "sheet": "分层",
+        "row": 3,
+        "cells": {
+          "层号": "分层!A3",
+          "顶深_m": "分层!B3",
+          "底深_m": "分层!C3",
+          "岩性名称": "分层!D3",
+          "岩性描述": "分层!E3",
+          "岩心长_m": "分层!F3",
+          "花纹代码": "分层!G3"
+        }
+      },
+      {
+        "sheet": "分层",
+        "row": 4,
+        "cells": {
+          "层号": "分层!A4",
+          "顶深_m": "分层!B4",
+          "底深_m": "分层!C4",
+          "岩性名称": "分层!D4",
+          "岩性描述": "分层!E4",
+          "岩心长_m": "分层!F4",
+          "花纹代码": "分层!G4"
+        }
+      },
+      {
+        "sheet": "回次",
+        "row": 2,
+        "cells": {
+          "回次号": "回次!A2",
+          "顶深_m": "回次!B2",
+          "底深_m": "回次!C2",
+          "岩心长_m": "回次!D2"
+        }
+      },
+      {
+        "sheet": "回次",
+        "row": 3,
+        "cells": {
+          "回次号": "回次!A3",
+          "顶深_m": "回次!B3",
+          "底深_m": "回次!C3",
+          "岩心长_m": "回次!D3"
+        }
+      },
+      {
+        "sheet": "样品",
+        "row": 2,
+        "cells": {
+          "样品编号": "样品!A2",
+          "顶深_m": "样品!B2",
+          "底深_m": "样品!C2",
+          "岩心长_m": "样品!D2",
+          "Au": "样品!E2",
+          "Pb": "样品!F2",
+          "Zn": "样品!G2"
+        }
+      },
+      {
+        "sheet": "样品",
+        "row": 3,
+        "cells": {
+          "样品编号": "样品!A3",
+          "顶深_m": "样品!B3",
+          "底深_m": "样品!C3",
+          "岩心长_m": "样品!D3",
+          "Au": "样品!E3",
+          "Pb": "样品!F3",
+          "Zn": "样品!G3"
+        }
+      },
+      {
+        "sheet": "样品",
+        "row": 4,
+        "cells": {
+          "样品编号": "样品!A4",
+          "顶深_m": "样品!B4",
+          "底深_m": "样品!C4",
+          "岩心长_m": "样品!D4",
+          "Au": "样品!E4",
+          "Pb": "样品!F4",
+          "Zn": "样品!G4"
+        }
+      },
+      {
+        "sheet": "孔径",
+        "row": 2,
+        "cells": {
+          "孔深_m": "孔径!A2",
+          "孔径_mm": "孔径!B2"
+        }
+      }
+    ]
+  },
+  "files": {
+    "normalized.json": {
+      "bytes": 6611,
+      "sha256": "29e427a76ac52b0b510dac6668ae711c06b974cb4dac69a91cc2c4274db35e51"
+    },
+    "drawing.svg": {
+      "bytes": 12327,
+      "sha256": "9ecb0a58e8b534089828e227b42a8371b887d32ed391310eddba6920dda75a15"
+    },
+    "preview.png": {
+      "bytes": 73147,
+      "sha256": "40e13bd861ab43e5bb4a84bba831def49731931eec7b2412322c576d1c01b92e"
+    },
+    "complete-hd.png": {
+      "bytes": 563489,
+      "sha256": "f63c5d31da49d2b3ba48a0a5666efa5896a8af5808bd9a39e92b6367bd0ebb6c"
+    },
+    "detail.svg": {
+      "bytes": 12320,
+      "sha256": "4d206152a568fe3ab35e59225feb15abaae1aaad42f4be5194905a0bc6834055"
+    },
+    "detail.png": {
+      "bytes": 72312,
+      "sha256": "b5b0d9fd6b61881b1ea4e8bc004ea953b6c4388f122c974eba7709a765d8c18b"
+    },
+    "appendix.html": {
+      "bytes": 4284,
+      "sha256": "93e711e39284f04c048b14e4378de797de2f73202cc66e0f74c68573ad60149e"
+    },
+    "report.html": {
+      "bytes": 1359,
+      "sha256": "4e69437b89588db12a3385f1e7e4855ab0b62f94c116a06c0f6f76b3bccdf7bf"
+    },
+    "layout-audit.json": {
+      "bytes": 17774,
+      "sha256": "63a39c920fef69346e707eb95a2e6fd9b2a1e5b7e742578d7c79d6a7e555bb21"
+    }
+  },
+  "counts": {
+    "turns": 2,
+    "layers": 3,
+    "samples": 3,
+    "endpoint_m": 7.0,
+    "pending_patterns": 1
+  },
+  "complete_vector_preserved": true,
+  "raster_full_depth_preserved": true
+}

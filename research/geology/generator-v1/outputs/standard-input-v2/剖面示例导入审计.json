@@ -1,0 +1,53 @@
+{
+  "source_original": "generated/pm01-canonical/normalized.json",
+  "source_workbook": "实测剖面-填写示例.xlsx",
+  "importer": "load_workbook_data",
+  "counts": {
+    "records": 43,
+    "intervals": 26,
+    "stations": 20,
+    "samples": 14
+  },
+  "expected_counts": {
+    "records": 43,
+    "intervals": 26,
+    "stations": 20,
+    "samples": 14
+  },
+  "record_field_mismatches": [],
+  "raw_source_row_mismatches": [],
+  "sample_mismatches": [],
+  "source_blank_cells_preserved": true,
+  "computed_geometry_max_abs_diff": 0.0,
+  "issue_counts": {
+    "error": 0,
+    "warning": 80
+  },
+  "warning_codes": {
+    "CACHE_MISMATCH": 80
+  },
+  "warning_examples": [
+    {
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -5.0 与独立计算 -7.6060918789570335 的残差为 2.6060918789570335",
+      "cells": [
+        "测段!Q5"
+      ]
+    },
+    {
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -5.261467228242974 与独立计算 -7.867559107200008 的残差为 2.6060918789570335",
+      "cells": [
+        "测段!Q6"
+      ]
+    },
+    {
+      "code": "CACHE_MISMATCH",
+      "message": "累计高差缓存 -7.3183427570877075 与独立计算 -9.92443463604474 的残差为 2.6060918789570326",
+      "cells": [
+        "测段!Q7"
+      ]
+    }
+  ],
+  "status": "pass"
+}

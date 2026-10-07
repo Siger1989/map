@@ -1,0 +1,38 @@
+[
+  {
+    "mode": "section",
+    "example": 0,
+    "status": 200,
+    "filename": "实测剖面-标准模板.xlsx",
+    "same_bytes": true,
+    "sha256": "aab6e2af54f38666993d6a2e89d5095d07daa2f2f997e6d007c7058810f01017",
+    "unicode_filename_header": true
+  },
+  {
+    "mode": "section",
+    "example": 1,
+    "status": 200,
+    "filename": "实测剖面-填写示例.xlsx",
+    "same_bytes": true,
+    "sha256": "4aed8add59db269d8177fe1deb7a4e9d1692ed5dccf2dbb7a944dd50eaaad8c5",
+    "unicode_filename_header": true
+  },
+  {
+    "mode": "drill",
+    "example": 0,
+    "status": 200,
+    "filename": "钻孔柱状图-标准模板.xlsx",
+    "same_bytes": true,
+    "sha256": "9882be0ce198989aa74a6eabfd81302674ab5f01737ace32adbccd8ba96d7ba7",
+    "unicode_filename_header": true
+  },
+  {
+    "mode": "drill",
+    "example": 1,
+    "status": 200,
+    "filename": "钻孔柱状图-填写示例.xlsx",
+    "same_bytes": true,
+    "sha256": "6420c47d62f53bab2e25f06cc9fa729fc394bf8a0ffbedab4e0334c757b9c2d5",
+    "unicode_filename_header": true
+  }
+]

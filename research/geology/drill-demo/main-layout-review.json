@@ -1,0 +1,30 @@
+[
+  {
+    "svg": "ZK0003-完整示图.svg",
+    "font": "Microsoft YaHei from msyh/8x metrics",
+    "text_count": 395,
+    "text_outside": [],
+    "text_overlaps": [],
+    "checks": {
+      "layer_rect_count": true,
+      "no_embedded_images": true,
+      "layer_rect_depth_geometry": true,
+      "sample_interval_count": true,
+      "sample_depth_geometry": true
+    }
+  },
+  {
+    "svg": "ZK0003-0至45米详图.svg",
+    "font": "Microsoft YaHei from msyh/8x metrics",
+    "text_count": 79,
+    "text_outside": [],
+    "text_overlaps": [],
+    "checks": {
+      "layer_rect_count": true,
+      "no_embedded_images": true,
+      "layer_rect_depth_geometry": true,
+      "sample_interval_count": true,
+      "sample_depth_geometry": true
+    }
+  }
+]

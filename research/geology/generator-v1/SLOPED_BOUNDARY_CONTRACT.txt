@@ -1,0 +1,18 @@
+本轮修正：下方岩性区的竖直边界应改为依产状计算的剖面层面线，不能仅旋转花纹。
+保持原源数据、测线44节点（数量不可写死）、所有源层界锚点、原产状文字不变。近地表填充按明确的局部平面假设绘图，不把推算延伸声称为实测接触面或真厚度；仍为数据核验版。
+
+layer_geometry.py：独立纯Python数学模块，不依赖第三方几何库，不读取图纸。
+build_layer_geometry(data, requested_depth_m) -> dict
+返回：mode='apparent_dip_outcrop', requested_depth_m,effective_depth_m,contacts,regions,issues,eligible。
+contacts（内部层界，每相邻两区共享同一条线）：id,node,anchor_x_m,anchor_z_m,record_id,dip_direction_deg,dip_angle_deg,apparent_dip_deg_signed（z向上），a,b,c（a*x+b*z+c=0，a²+b²=1），basis='following_interval_first_record_attitude',source_cells,segments（裁剪后线段，每项[[x,z],[x,z]]）。
+采用剖面方向A与倾向D、真倾角δ，dz/dx=-tan(δ)*cos(A-D)。以稳定单位方向(cosδ,-sinδ*cos(A-D))构建法向量；垂直层稳定处理，真倾角90且剖面平行走向时退化，不能瞎画。标注仍显示原实测D/δ，绝不把视倾角写成真倾角。
+每个连续层段以自己的start_node作为内部层界锚点；层界方向取该层段首条记录产状，明确是假设该产状代表该界面，不能无条件当成独立界面观测。缺失不能从别的层复制：受影响区留白待定，不回落竖边填充。首尾外边缘为绘图裁切，不声称地质界线。
+regions：每源interval一个对象，interval_id,layer_id,source_node_indices,polygons（若干(x,z)数组组成的凸多边形）,status='drawn'或'pending'等，reason。
+下方填充域为真实地形线到z-depth的显示条带，顶端直接贴实测地形线，不保留旧10px空隙。对各测段梯形，用左右两条共享层界的半平面裁剪生成岩性多边形（纯Sutherland-Hodgman）。半平面保留含本层地表区间中点的一侧；边界恰好相切/与本层表面重交叉则明确pending，不能偷偷改变数据。
+所有层界若在所请求的近地表显示域内相交，深度缩短至第一次正深度交点的0.8倍（显示参数，不代表厚度），记录实际深度与缩短原因。非单调投影/重叠或零深度拓扑冲突不填充并给issue。不要用浮点钳位或像素最小宽度改变源层界位置。
+
+renderer.py：主图和详图都复用同一份米单位regions/contacts，通过各自相同比例映射和裁剪；详图不能再按自身px生成一套边缘。去掉旧竖直隔断与多余上下红边，保留实测地形黑线；短层界用派生解释线型并注记。材质模板和源数值不动。层号统一移到填充下方的避让索引，避免薄显示域中文字盖住线。详图可自动包含最密集区；要求主详图完整保留所有源测段折点。
+layout-audit.json增加layer_geometry完整审查对象，保留原统计但明确旧band含义已变为近地表显示深度，不是真厚度。
+pipeline.py将layer_geometry.py加入代码哈希。同步UI/report/使用说明及本轮审查边界。不可声称已完成行业图式验收。
+
+测试：水平/正反剖面/沿倾向/沿走向/90度退化、共享边界、固定锚点、未知产状留白、相交自动截短、纯图案变化不动几何、主图和详图世界坐标同源。真实数据只从当前canonical工作簿导入，禁止用旧参考图坐标校准。

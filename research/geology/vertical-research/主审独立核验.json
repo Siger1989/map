@@ -1,0 +1,86 @@
+{
+  "template": {
+    "file": "D:\\天气地图\\地质资料\\GMT钻孔柱状图模版-ZK0003.xlt",
+    "sheets": [
+      "回次",
+      "分层",
+      "样品",
+      "标志面夹角",
+      "钻孔结构",
+      "简易水文",
+      "基本数据"
+    ],
+    "turn_count": 131,
+    "last_turn_original": {
+      "number": 131.0,
+      "advance_m": 2.0,
+      "core_m": 1.68,
+      "bottom_m": 382.78999999999996,
+      "recovery_fraction": 0.84
+    },
+    "layer_count": 23,
+    "summary_layer_count": 51.0,
+    "empty_codes": 23,
+    "sample_count": 97,
+    "unique_sample_count": 97,
+    "all_assays_blank": true,
+    "sample_depth_order_monotonic": true,
+    "h97": {
+      "row": 47,
+      "id": "H97",
+      "top_m": 145.25,
+      "bottom_m": 146.21,
+      "core_m": 0.95
+    }
+  },
+  "reference_image_observations": {
+    "hole": "ZK0003",
+    "hole_depth_display_m": 383.01,
+    "fine_correction_endpoint_m": 383.011,
+    "scales_conflict": [
+      100,
+      500
+    ],
+    "collar_inclination_display_deg": 90,
+    "survey_inclinations_deg": [
+      75,
+      75.2,
+      75.4,
+      75.7,
+      76
+    ],
+    "last_turn_display_advance_m": 2.22,
+    "last_turn_display_core_m": 1.68,
+    "last_turn_display_recovery_percent": 84,
+    "last_layer_top_display_m": 362.14,
+    "last_layer_bottom_display_m": 383.01,
+    "last_layer_display_length_m": 20.65,
+    "origin": "read from original JPEG header/body/footer, not auto-generated measurements"
+  },
+  "conditional_checks": {
+    "display_endpoints_difference_m": 2.2199999999999704,
+    "ratio_if_displayed_endpoints_and_core_share_basis_percent": 75.67567567567667,
+    "fine_endpoint_difference_m": 2.2210000000000036,
+    "ratio_if_fine_endpoint_and_core_share_basis_percent": 75.64160288158475,
+    "display_last_layer_endpoint_difference_m": 20.870000000000005,
+    "raw_template_last_layer_endpoint_difference_m": 20.650000000000034
+  },
+  "source_hashes_unchanged": [
+    {
+      "file": "微信图片_20261005205814_724_117.jpg",
+      "unchanged": true
+    },
+    {
+      "file": "GMT钻孔柱状图模版-ZK0003.xlt",
+      "unchanged": true
+    },
+    {
+      "file": "ZK2303-1回次表+分层+采样(1).xls",
+      "unchanged": true
+    },
+    {
+      "file": "测试分析结果.xlsx",
+      "unchanged": true
+    }
+  ]
+}

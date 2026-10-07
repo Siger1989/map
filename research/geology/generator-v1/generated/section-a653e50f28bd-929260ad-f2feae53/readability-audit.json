@@ -1,0 +1,163 @@
+{
+  "schema_version": "1.0",
+  "artifact": "geology_readability_aid",
+  "status": "data_review_only_industry_conventions_not_fully_verified",
+  "page": {
+    "width_px": 1600.0,
+    "height_px": 546.0
+  },
+  "counts": {
+    "intervals": 2,
+    "focus_intervals": 0,
+    "regions": 2,
+    "contacts": 1
+  },
+  "geometry_reference": {
+    "mode": "apparent_dip_outcrop",
+    "requested_depth_m": 18.0,
+    "effective_depth_m": 18.0,
+    "eligible": false,
+    "sha256_canonical_json": "16d568e4641ee6d06917fefb05da8471db2f00adac61367e4d28af97124be7f4",
+    "world_coordinates_reused": true,
+    "boundary_positions_modified": false
+  },
+  "focus_panels": [],
+  "interval_cards": [
+    {
+      "row_index": 0,
+      "y_px": 242.0,
+      "interval_id": "I0001",
+      "layer_id": "L1",
+      "material_name": "泥岩夹泥质粉砂岩",
+      "material_configured": false,
+      "material_id": null,
+      "reference_status": null,
+      "reference_evidence": null,
+      "tile_width": null,
+      "tile_height": null,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R1"
+      ],
+      "source_node_indices": [
+        0,
+        1
+      ],
+      "slant_length_m": 10.0,
+      "projected_width_m": 10.0,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "泥岩夹泥质粉砂岩",
+      "source_cells": {
+        "layer_id": [
+          "测段!C2"
+        ],
+        "lithology_name": [
+          "测段!K2"
+        ],
+        "description": [
+          "测段!L2"
+        ]
+      }
+    },
+    {
+      "row_index": 1,
+      "y_px": 344.0,
+      "interval_id": "I0002",
+      "layer_id": "L2",
+      "material_name": "砂岩夹粉砂岩",
+      "material_configured": false,
+      "material_id": null,
+      "reference_status": null,
+      "reference_evidence": null,
+      "tile_width": null,
+      "tile_height": null,
+      "render_scale": 1.0,
+      "pattern_sample_size_px": [
+        360,
+        74.0
+      ],
+      "record_ids": [
+        "R2"
+      ],
+      "source_node_indices": [
+        1,
+        2
+      ],
+      "slant_length_m": 5.0,
+      "projected_width_m": 4.3301270189221945,
+      "true_thickness_values": [
+        null
+      ],
+      "description_full": "砂岩夹粉砂岩",
+      "source_cells": {
+        "layer_id": [
+          "测段!C3"
+        ],
+        "lithology_name": [
+          "测段!K3"
+        ],
+        "description": [
+          "测段!L3"
+        ]
+      }
+    }
+  ],
+  "pattern_audit": [
+    {
+      "interval_id": "I0001",
+      "layer_id": "L1",
+      "material_name": "泥岩夹泥质粉砂岩",
+      "pattern_id": "read_pending_focus",
+      "configured": false,
+      "orientation": null,
+      "apparent_angle_deg_world_z_up": null,
+      "svg_rotation_deg_y_down": null,
+      "reference_status": null,
+      "reference_evidence": null,
+      "render_scale": 1.0
+    },
+    {
+      "interval_id": "I0002",
+      "layer_id": "L2",
+      "material_name": "砂岩夹粉砂岩",
+      "pattern_id": "read_pending_focus",
+      "configured": false,
+      "orientation": null,
+      "apparent_angle_deg_world_z_up": null,
+      "svg_rotation_deg_y_down": null,
+      "reference_status": null,
+      "reference_evidence": null,
+      "render_scale": 1.0
+    }
+  ],
+  "pattern_contexts": {
+    "readability": 1.0,
+    "focus": 1.0
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "code": "material_pending",
+      "message": "岩性“泥岩夹泥质粉砂岩”未配置参考纹样",
+      "interval_id": "I0001"
+    },
+    {
+      "severity": "warning",
+      "code": "material_pending",
+      "message": "岩性“砂岩夹粉砂岩”未配置参考纹样",
+      "interval_id": "I0002"
+    }
+  ],
+  "statements": [
+    "Focus selection is driven only by materials.focus_priority.",
+    "Each focus window uses one equal x/z scale and its own metre scale; magnifications may differ.",
+    "Pattern samples have fixed screen size and do not represent thickness.",
+    "Approximate values remain source description text and are not copied into true_thickness_m."
+  ]
+}

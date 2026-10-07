@@ -1,2 +1,7 @@
 # Preserve generated document bytes and avoid treating PDF streams as text.
 *.pdf binary
+
+# Preserve source/reference archive bytes and original whitespace for hash verification.
+research/geology/** -text -whitespace
+references/chat-attachments-20261008/** -text -whitespace
+地质资料/** -text -whitespace

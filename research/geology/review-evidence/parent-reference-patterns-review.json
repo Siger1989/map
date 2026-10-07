@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "source_files_unchanged": true,
+  "business_data_unchanged": true,
+  "world_geometry_unchanged": true,
+  "source_material_names_preserved": true,
+  "verified_materials": 13,
+  "unverified_materials": [
+    "含火山碎屑粉砂质泥岩",
+    "泥化凝灰岩",
+    "硅化凝灰岩"
+  ],
+  "svg_checks": {
+    "drawing.svg": {
+      "world_polygons_unchanged": 82,
+      "no_fragment_borders": true
+    },
+    "detail.svg": {
+      "world_polygons_unchanged": 35,
+      "no_fragment_borders": true
+    }
+  },
+  "scope": "Reference motif and data invariants reviewed; not formal standards certification."
+}

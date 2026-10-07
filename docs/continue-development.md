@@ -1,5 +1,7 @@
 # 换电脑继续开发
 
+> 2026-10-08：最新完整接续以 `docs/HANDOFF-20261008.txt` 和根 `CURRENT_STATE.md` 为准。手机行业工具已打入0.2.110-test/code117；原始地质资料、后加图纸/截图、PC绘图源码及成果随本次同步。PC程序从 `research/geology/README.txt` 启动，参考文件与归档哈希清单在docs。继续使用 `codex/rollback-ui-0235-20260921`，未合入main；不要把下方早期版本和历史私密配置同步记录当作当前公开APK发布许可。
+
 > 2026-09-24最新接续见[本次进度与回家操作](progress-handoff-20260924.md)，包含当前源码与0.2.71 APK的差异、移动预览双进程启动。用户本轮明确要求直接上传地图配置与原签名，因此`.env.local`和`mobile/.build/guanyun-test.jks`已经纳入同步范围，覆盖下文旧的私密迁移要求。其余早期版本记录仅供追溯。
 
 > 2026-09-21：用户选择回退0.2.35。先读 [Agent交接](agent-handoff.md)，当前分支 `codex/rollback-ui-0235-20260921`，不要从main或旧UI试改分支继续。安装包最新状态以根CURRENT_STATE.md为准，下文早期版本链接仅供历史兼容查询。

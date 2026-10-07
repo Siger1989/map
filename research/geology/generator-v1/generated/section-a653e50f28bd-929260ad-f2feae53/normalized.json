@@ -1,0 +1,286 @@
+{
+  "schema_version": "1.0",
+  "source": {
+    "filename": "section_alt.xlsx",
+    "sha256": "a653e50f28bdad8026345ba17153bf82c3337deb1d307a8e4eeceb7e1a4c62c6",
+    "adapter": "canonical_xlsx_v1",
+    "sheet": "测段"
+  },
+  "project": {
+    "name": "",
+    "section_id": "TEST-SECTION-02"
+  },
+  "settings": {
+    "axis_azimuth_deg": 90.0,
+    "axis_method": "explicit",
+    "coordinate_system": "local_relative",
+    "vertical_exaggeration": 1
+  },
+  "records": [
+    {
+      "id": "R1",
+      "leg_id": "0-1",
+      "layer_id": "L1",
+      "length_m": 10.0,
+      "slope_deg": 0.0,
+      "azimuth_deg": 90.0,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 20.0,
+      "lithology_name": "泥岩夹泥质粉砂岩",
+      "description": "泥岩夹泥质粉砂岩",
+      "start_node": 0,
+      "end_node": 1,
+      "raw": {
+        "测段!A2": "R1",
+        "测段!B2": "0-1",
+        "测段!C2": "L1",
+        "测段!D2": 0,
+        "测段!E2": 10,
+        "测段!F2": 10,
+        "测段!G2": 0,
+        "测段!H2": 90,
+        "测段!I2": 270,
+        "测段!J2": 20,
+        "测段!K2": "泥岩夹泥质粉砂岩",
+        "测段!L2": "泥岩夹泥质粉砂岩",
+        "测段!M2": "T1",
+        "测段!N2": 2
+      },
+      "source_cells": {
+        "record_id": "测段!A2",
+        "leg_id": "测段!B2",
+        "layer_id": "测段!C2",
+        "start_reading_m": "测段!D2",
+        "end_reading_m": "测段!E2",
+        "length_m": "测段!F2",
+        "slope_deg": "测段!G2",
+        "azimuth_deg": "测段!H2",
+        "dip_direction_deg": "测段!I2",
+        "dip_angle_deg": "测段!J2",
+        "lithology_name": "测段!K2",
+        "description": "测段!L2",
+        "sample_id": "测段!M2",
+        "sample_offset_m": "测段!N2",
+        "true_thickness_m": "测段!T2",
+        "cache_horizontal_m": "测段!O2",
+        "cache_vertical_m": "测段!P2",
+        "cache_cumulative_z_m": "测段!Q2",
+        "cache_cumulative_north_m": "测段!R2",
+        "cache_cumulative_east_m": "测段!S2"
+      },
+      "computed": {
+        "horizontal_m": 10.0,
+        "vertical_m": 0.0,
+        "east_delta_m": 10.0,
+        "north_delta_m": 6.123233995736766e-16
+      },
+      "true_thickness_m": null
+    },
+    {
+      "id": "R2",
+      "leg_id": "1-2",
+      "layer_id": "L2",
+      "length_m": 5.0,
+      "slope_deg": 30.0,
+      "azimuth_deg": 90.0,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 30.0,
+      "lithology_name": "砂岩夹粉砂岩",
+      "description": "砂岩夹粉砂岩",
+      "start_node": 1,
+      "end_node": 2,
+      "raw": {
+        "测段!A3": "R2",
+        "测段!B3": "1-2",
+        "测段!C3": "L2",
+        "测段!D3": 0,
+        "测段!E3": 5,
+        "测段!F3": 5,
+        "测段!G3": 30,
+        "测段!H3": 90,
+        "测段!I3": 270,
+        "测段!J3": 30,
+        "测段!K3": "砂岩夹粉砂岩",
+        "测段!L3": "砂岩夹粉砂岩"
+      },
+      "source_cells": {
+        "record_id": "测段!A3",
+        "leg_id": "测段!B3",
+        "layer_id": "测段!C3",
+        "start_reading_m": "测段!D3",
+        "end_reading_m": "测段!E3",
+        "length_m": "测段!F3",
+        "slope_deg": "测段!G3",
+        "azimuth_deg": "测段!H3",
+        "dip_direction_deg": "测段!I3",
+        "dip_angle_deg": "测段!J3",
+        "lithology_name": "测段!K3",
+        "description": "测段!L3",
+        "sample_id": "测段!M3",
+        "sample_offset_m": "测段!N3",
+        "true_thickness_m": "测段!T3",
+        "cache_horizontal_m": "测段!O3",
+        "cache_vertical_m": "测段!P3",
+        "cache_cumulative_z_m": "测段!Q3",
+        "cache_cumulative_north_m": "测段!R3",
+        "cache_cumulative_east_m": "测段!S3"
+      },
+      "computed": {
+        "horizontal_m": 4.330127018922194,
+        "vertical_m": 2.4999999999999996,
+        "east_delta_m": 4.330127018922194,
+        "north_delta_m": 2.6514380968122674e-16
+      },
+      "true_thickness_m": null
+    }
+  ],
+  "nodes": [
+    {
+      "index": 0,
+      "east_m": 0.0,
+      "north_m": 0.0,
+      "z_m": 0.0,
+      "x_m": 0.0,
+      "offset_m": 0.0,
+      "chainage_m": 0.0,
+      "slant_chainage_m": 0.0
+    },
+    {
+      "index": 1,
+      "east_m": 10.0,
+      "north_m": 6.123233995736766e-16,
+      "z_m": 0.0,
+      "x_m": 10.0,
+      "offset_m": 0.0,
+      "chainage_m": 10.0,
+      "slant_chainage_m": 10.0
+    },
+    {
+      "index": 2,
+      "east_m": 14.330127018922195,
+      "north_m": 8.774672092549034e-16,
+      "z_m": 2.4999999999999996,
+      "x_m": 14.330127018922195,
+      "offset_m": 0.0,
+      "chainage_m": 14.330127018922195,
+      "slant_chainage_m": 15.0
+    }
+  ],
+  "intervals": [
+    {
+      "id": "I0001",
+      "layer_id": "L1",
+      "start_node": 0,
+      "end_node": 1,
+      "record_ids": [
+        "R1"
+      ],
+      "lithology_name": "泥岩夹泥质粉砂岩",
+      "description": "泥岩夹泥质粉砂岩",
+      "source_cells": {
+        "layer_id": [
+          "测段!C2"
+        ],
+        "lithology_name": [
+          "测段!K2"
+        ],
+        "description": [
+          "测段!L2"
+        ]
+      }
+    },
+    {
+      "id": "I0002",
+      "layer_id": "L2",
+      "start_node": 1,
+      "end_node": 2,
+      "record_ids": [
+        "R2"
+      ],
+      "lithology_name": "砂岩夹粉砂岩",
+      "description": "砂岩夹粉砂岩",
+      "source_cells": {
+        "layer_id": [
+          "测段!C3"
+        ],
+        "lithology_name": [
+          "测段!K3"
+        ],
+        "description": [
+          "测段!L3"
+        ]
+      }
+    }
+  ],
+  "stations": [
+    {
+      "id": "0",
+      "node": 0,
+      "source_cell": "测段!B2"
+    },
+    {
+      "id": "1",
+      "node": 1,
+      "source_cell": "测段!B3"
+    },
+    {
+      "id": "2",
+      "node": 2,
+      "source_cell": "测段!B3"
+    }
+  ],
+  "attitudes": [
+    {
+      "id": "A0001",
+      "record_id": "R1",
+      "layer_id": "L1",
+      "node": 0,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 20.0,
+      "location_basis": "record_start_association"
+    },
+    {
+      "id": "A0002",
+      "record_id": "R2",
+      "layer_id": "L2",
+      "node": 1,
+      "dip_direction_deg": 270.0,
+      "dip_angle_deg": 30.0,
+      "location_basis": "record_start_association"
+    }
+  ],
+  "samples": [
+    {
+      "id": "T1",
+      "record_id": "R1",
+      "layer_id": "L1",
+      "position": {
+        "east_m": 2.0,
+        "north_m": 1.2246467991473532e-16,
+        "z_m": 0.0,
+        "x_m": 2.0,
+        "offset_m": 0.0
+      },
+      "location_status": "explicit_offset",
+      "source_cells": {
+        "sample_id": "测段!M2",
+        "sample_offset_m": "测段!N2"
+      }
+    }
+  ],
+  "issues": [],
+  "summary": {
+    "records": 2,
+    "intervals": 2,
+    "stations": 3,
+    "samples": 1,
+    "located_samples": 1,
+    "total_slant_m": 15.0,
+    "total_horizontal_m": 14.330127018922195,
+    "total_vertical_m": 2.4999999999999996,
+    "endpoint_east_m": 14.330127018922195,
+    "endpoint_north_m": 8.774672092549034e-16,
+    "axis_azimuth_deg": 90.0,
+    "projected_endpoint_m": 14.330127018922195
+  }
+}
