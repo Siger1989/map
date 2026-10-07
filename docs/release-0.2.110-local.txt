@@ -1,0 +1,20 @@
+0.2.110-test 私有APK / 2026-10-08
+
+用户明确要求“发apk给我手机”，本轮从行业工具源码预览转为私有APK交付。
+
+APK：APK/Shantu-0.2.110-test-standalone.apk
+版本：0.2.110-test / versionCode117
+包名：com.guanyun.weather.shantu.preview；沿用既有standalone签名证书。
+大小：66,163,586字节
+SHA-256：61e12c078a50152b538b2404e8557ee42967ea1911e6c5a447e0db09010cf117
+最终stage：mobile/.build/apk-20261008-002753
+
+本版包含“工具→行业工具”，标准Excel本机导入实测剖面和钻孔柱状图；本地SVG绘图、PNG和包含附表/来源追溯的ZIP图件包；四份模板/示例内置于APK。产品开关同时控制入口和面板，后续普通版可隐藏。数据精度、未知岩性及几何留白说明沿用docs/industry-tools-acceptance-20261007.txt。
+
+验证：32项行业导入/渲染/工具/显隐定向检查通过，tsc通过，完整Web和Android构建通过。主审已读取验包JSON并核对文件大小、版本源、签名证书匹配；v2/v3、zipalign、ZIP CRC通过；1911项assets集合一致，其中1415项逐字节、496张地形PNG像素与非IDAT元数据一致。四个行业xlsx、入口与工作流标记、DEX ArchiveTransfer和archive-pending存在。38私有图源、1365概览瓦片以及配置/包内Key一致性只记录布尔值；不输出凭据。
+UI沿用上一轮主审390×857及360×780实测：导入两类真实数据、不同短样例、非法文件拒绝、SVG/PNG/ZIP导出、返回关闭保留结果及锁定恢复。打包本轮产品逻辑无新更改，仅版本升为110/code117。
+日志：.openai/apk-industry-02110-build.log；验包：.openai/package-02110-verify.json / .log。
+当前ADB无已连接设备；未安装到手机，原生离线/触控/系统文件选择与保存仍待真机验收。不是HarmonyOS原生包。
+
+私有交付：短时随机令牌单APK链接已完成线上整包下载，长度及SHA与本地完全一致；Range206通过，错误令牌404拒绝。到期时间北京时间2026-10-08 02:30:25，电脑需保持在线。只允许该APK下载，无目录浏览，不上传公共Release；到期自动停止。证据.openai/apk-02110-public-verified.json，令牌链接不得写入本文或公开仓库。
+源码：基准2becd300818ea535191538e68e6365e66ec87a45，分支codex/rollback-ui-0235-20260921，未合main。用户已明确允许真实地质填写示例及测试数据随源码同步到公开仓库；只提交本轮代码、测试、标准模板/填写示例和交接文档，不提交原资料目录/PDF、私有配置、签名、APK、日志或下载令牌。最终提交/远程状态由主代理核对后回报。原文件、存档及旧APK保留。

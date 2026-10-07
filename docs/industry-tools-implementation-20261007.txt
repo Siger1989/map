@@ -1,0 +1,14 @@
+行业工具接续 / 2026-10-07
+
+用户范围：PC标准Excel导入出实测剖面图、钻孔柱状图；追加集成山兔手机APP工具菜单“行业工具”，以后普通版本可隐藏。用户已选择手机本地导入、离线出图。
+当前源码基准：codex/rollback-ui-0235-20260921 / 2becd300818ea535191538e68e6365e66ec87a45，开工pull--ff-only Already up to date。用户未跟踪PDF及地质资料保留。快速预览不出APK、不升版本、不提交/push。
+
+接口合同：modules/industry/engine.ts 导出 generateGeology(buffer:ArrayBuffer,filename:string,kind:'section'|'drill'):Promise<GeologyResult>。
+GeologyResult={kind,title,svg,detailSvg,normalized:Record<string,unknown>,audit:Record<string,unknown>,issues:Array<{severity:string,code:string,message:string,cells?:string[]}>}。
+engine负责解析校验→normalized→renderer，非法文件抛出带中文位置的Error；不联网，不根据原图反推数据，保留源字段/未知/冲突。计算值使用原始精度；显示格式不得改几何值。
+renderSection/renderDrill(data:Record<string,any>)返回{svg,detailSvg,audit}，对应PC同schema字段。模板图案只移植已定义符号/明确别名，不猜岩性。所有SVG文本转义。未知岩性白框待配置。
+UI只调用engine；本地标准xlsx资产路径 /industry/section-template.xlsx、section-example.xlsx、drill-template.xlsx、drill-example.xlsx。引用既有delivery.ts导出、原生文件选择器，SVG主文件及按SVG重新栅格化PNG。独立INDUSTRY_TOOLS_ENABLED同时控制入口和挂载，当前开启。
+
+施工分工已收尾：A负责UI/入口/flag/export及钻孔SVG；B负责XLSX parser/两个importer/engine及数值验证、静态模板资产；C负责剖面SVG/岩性库/倾斜层几何。主审已完成实际验收，最新完整状态见 docs/industry-tools-acceptance-20261007.txt。
+验收：真实标准示例+不同短孔/薄层/重叠样品与简短剖面，和PC数字对照；拒绝公式/错误单位/区间冲突；390x857与360x780截图、导入、缩放、导出、返回工具/关闭、锁定显隐回归；查构建产物包含离线模板和无服务依赖。Android真机文件/分享单列未验证，不以浏览器冒充。
+PC原根 C:/Users/sigeryang/Documents/ChatGPT/天气项目/output/geology-generator-v1，9188为本地工具。PC标准模板在其outputs/standard-input-v2。两种标准导入及产物已验，最终钻孔generated/drill-final-20261007；服务重启被自动审批拦截，运行进程保留。手机32项+tsc+Web构建及390/360浏览器路径已验，本轮未打包、不升版、不提交/push，真机单列待验。

@@ -26,6 +26,7 @@ export type ControlPanel =
   | 'favorites'
   | 'annotations'
   | 'tools'
+  | 'industry'
   | 'outdoor'
   | 'sources'
   | null;
@@ -57,6 +58,7 @@ export function ControlDock({
   onMeasure,
   onCompare,
   onArea,
+  industryEnabled = false,
   keepOpenOnMapInteraction = false,
   mapPicking = false,
 }: {
@@ -76,6 +78,7 @@ export function ControlDock({
   onMeasure?: () => void;
   onCompare?: () => void;
   onArea?: () => void;
+  industryEnabled?: boolean;
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
 }) {
@@ -90,7 +93,7 @@ export function ControlDock({
     onActive(null);
     root.current
       ?.querySelector<HTMLButtonElement>(
-        `[data-panel-toggle="${active === 'sources' ? 'tools' : active}"]`,
+        `[data-panel-toggle="${active === 'sources' || active === 'industry' ? 'tools' : active}"]`,
       )
       ?.focus({ preventScroll: true });
   };
@@ -201,6 +204,7 @@ export function ControlDock({
                 )}
                 {onCompare && <button onClick={onCompare}><PanelsTopLeft size={18} />双图源对比</button>}
                 {onArea && <button onClick={onArea}>▱ 划区域</button>}
+                {industryEnabled && <button onClick={() => onActive('industry')} aria-label="行业工具">行业工具</button>}
               </div>
             ) : (
               children

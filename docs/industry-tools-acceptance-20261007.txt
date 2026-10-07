@@ -1,0 +1,35 @@
+行业工具本地集成验收 / 2026-10-07
+
+交付范围
+手机源码已接入“工具 → 行业工具”，含实测剖面、钻孔柱状图两种本地标准 Excel 导入；选文件后自动校验并出图。源数据和几何计算保留原精度。SVG为矢量主图；PNG从SVG重栅格化；完整ZIP包含主图SVG、详图SVG、PNG、中文附表HTML、规范数据JSON、来源追溯JSON和说明。手机PNG受24MP/12000边长保护，矢量文件保留全图。
+当前预览 http://127.0.0.1:9174/phone-preview.html；独立API为3108（地图其它功能需要），行业解析/绘图本身不依赖该API、PC服务、Python、CDN或外网。模板为打包静态资源。
+config/features.ts 的 INDUSTRY_TOOLS_ENABLED 同时控制菜单入口和面板挂载；后续普通版设为false即可隐藏。此为产品功能开关，不是账号付费权限系统。
+
+数据与表达边界
+仅接受所提供schema的标准.xlsx，不把任意旧Excel自动猜成对应字段。公式、错误单位、关键几何缺失/冲突会阻止导入并提示单元格。标准空白模板需填写后导入。
+剖面实测距离/方向/高差、层界、测站、样品、产状保持源依据；附表列出完整原值和来源。平面E/N和剖面X/Z各自等比例，坐标轴以m标示。层界按已配置规则画近地表表达区，不表示真实厚度；未知或几何关系不明确的区域留白并提示，不虚构地下边界。
+岩性只匹配已明确名字/别名或代码，不模糊合并。ZK0003仍有20个岩性未配置的层段，保持白框、原始描述及待配置提示，不随意补图案。PM01保留80条源缓存差异提示；14个缺少独立位置的样品列为未定位。模板为项目资料图式，未作完整行业标准认证。
+结果在本次App会话内切换/返回/关闭后保留；刷新或重启的持久化工程管理不在本次范围。
+
+主审实际验证
+1. 手机390×857和360×780均实际点击工具入口、导入、切换类型、返回工具、关闭面板、重新打开保留结果。两尺寸实际走“画线→工具暂停→关闭→隐藏UI恢复→锁定→解锁”；没有添加或删除用户地图对象。
+2. 390无横溢：root/scrollWidth=390，行业面板x=6 y≈56 w≈378 h≈737；360为360/360，x=6 y≈56 w≈348 h≈660。两尺寸返回/关闭36px并可点击；导入44px。标题和底部工具栏保持可达。
+3. 实际文件选择导入真实PM01：43记录、44节点、26层段、20测站、14样品；ZK0003：终孔382.79m、23分层、131回次、97样品。另导入不同section_alt和drill_alt，验证几何依数据变化、0.02m薄层和重叠样品轨道。alt剖面LC0001关系不确定，图中留白并明确提示。
+4. 空钻孔模板被拒绝，指出项目!B5/B7/B8及分层!2:2；旧成功图件明确标为上次结果，未冒充新文件生成。
+5. 浏览器实际保存SVG、PNG和完整ZIP。最终手机钻孔ZIP内7项齐全，PNG3875×6193；53项PC输入/实际SVG断言及手机归一化字段对照确保数字一致。手机100%显示宽度等于SVG原生宽度，可双向滚动；支持至800%。主审打开实际PNG复核标注、图案、层界、原号、页脚。
+6. 最终行业/地图工具/显隐32项定向测试PASS，全仓TypeScript PASS，Android Web构建PASS。四份模板在PC输出/public/mobile dist三处SHA-256一致。离线engine的fetch禁止测试通过。architecture仍10项既有文件超行数，行业文件未新增超限；没有把全量测试历史失败称为通过。
+
+证据
+.openai/industry-final-tests.log / industry-final-tsc.log / industry-final-build.log / industry-final-check-status.json
+.openai/industry-final-ui-layout.json / industry-final-artifact-review.json / industry-bundle-final-review.json
+artifacts/screenshots/industry-20261007/drill-final-390.png / section-final-390.png / drill-alt-final-360.png / entry-final-360.png / blank-error-retained-360.png / section-pending-final-360.png
+artifacts/screenshots/industry-20261007/final-drill-bundle/ 为浏览器实际下载ZIP解出的图件及附表。
+
+PC收尾
+工具入口仍为 http://127.0.0.1:9188/。两类导入、四份模板和示例、SVG/高清PNG/附表已完成。最终PC钻孔独立重生成在 C:/Users/sigeryang/Documents/ChatGPT/天气项目/output/geology-generator-v1/generated/drill-final-20261007，完整PNG4756×12000，preview2484×6267，源规范数据与前次完全相同。
+最后百分数断行与Chromium日志UTF-8解码已修，drill测试10/10，pipeline audit2/2。运行中的旧9188服务尚未载入这两项细节；自动审批拒绝服务重启和另开服务，返回blocked by policy且未提供详细理由。未强行绕过或关闭其它进程。独立CLI实际生成和最终文件核验成功，原服务仍可用；下次获准重启才更新进程。
+
+安装/发布状态
+本轮仅本地源码与预览，遵照AGENTS快速预览约定没有升版、打包APK、提交或推送。分支codex/rollback-ui-0235-20260921，HEAD 2becd300818ea535191538e68e6365e66ec87a45，未合入main。
+已安装的0.2.109-test/code116不含本轮行业工具。原生导入复用系统文件选择器，保存复用既有ArchiveTransfer ZIP接口；Android真机离线、内存、文件管理器和系统保存/取消尚未验收，不能用浏览器成功替代。HarmonyOS原生未新增交付。
+保留私有配置/Key、用户地质资料、已有PDF、地图存档、旧服务和其它会话。

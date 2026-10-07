@@ -1,0 +1,1533 @@
+{
+  "schema_version": "1.0",
+  "scope": "本版项目符号，未宣称国家标准批准",
+  "tile": {
+    "width": 24,
+    "height": 24
+  },
+  "materials": {
+    "凝灰岩": {
+      "id": "mat_tuff",
+      "name": "凝灰岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "circle",
+          "cx": 2,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 2,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 5,
+          "y1": 3,
+          "x2": 8,
+          "y2": 3,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 14,
+          "y1": 3,
+          "x2": 17,
+          "y2": 3,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 8,
+          "x2": 3,
+          "y2": 8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 7,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 8,
+          "x2": 12,
+          "y2": 8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 15,
+          "cy": 7,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 15,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 2,
+          "cy": 12,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 2,
+          "cy": 14,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 5,
+          "y1": 13,
+          "x2": 8,
+          "y2": 13,
+          "width": 0.4
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C21"
+        ],
+        "motif": "高密度竖向双点，点对之间夹很短横划。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 18,
+      "tile_height": 14
+    },
+    "凝灰质泥岩": {
+      "id": "mat_tuffaceous_mudstone",
+      "name": "凝灰质泥岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 3,
+          "x2": 6,
+          "y2": 3,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 14,
+          "y1": 3,
+          "x2": 21,
+          "y2": 3,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 4,
+          "cy": 7,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 4,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 8,
+          "y1": 8,
+          "x2": 14,
+          "y2": 8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 19,
+          "cy": 7,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 19,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 13,
+          "x2": 6,
+          "y2": 13,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 12,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 10,
+          "cy": 14,
+          "r": 0.8,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 14,
+          "y1": 13,
+          "x2": 21,
+          "y2": 13,
+          "width": 0.42
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "凝灰质泥岩",
+        "layer_ids": [
+          "C6",
+          "C8",
+          "C10",
+          "C12",
+          "C14",
+          "C19"
+        ],
+        "motif": "白底；细短横线与竖向双点按行交替。",
+        "match_type": "exact_legend"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 16
+    },
+    "含火山碎屑粉砂质泥岩": {
+      "id": "mat_volcaniclastic_silty_mudstone",
+      "name": "含火山碎屑粉砂质泥岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [],
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C15"
+        ],
+        "motif": "C15层带过窄且接触线、标注干扰，无法恢复完整重复单元。",
+        "match_type": "unverified"
+      },
+      "stroke": "#111111"
+    },
+    "含生物碎屑凝灰岩": {
+      "id": "mat_bioclastic_tuff",
+      "name": "含生物碎屑凝灰岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 3,
+          "x2": 6,
+          "y2": 3,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 9,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 9,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 13,
+          "y1": 3,
+          "x2": 20,
+          "y2": 3,
+          "width": 0.42
+        },
+        {
+          "type": "path",
+          "d": "M22 2 q-2.5 -1.8 -2.5 1 q0 2.8 2.5 1",
+          "width": 0.48
+        },
+        {
+          "type": "path",
+          "d": "M3 7 q-2.5 -1.8 -2.5 1 q0 2.8 2.5 1",
+          "width": 0.48
+        },
+        {
+          "type": "line",
+          "x1": 6,
+          "y1": 8,
+          "x2": 12,
+          "y2": 8,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 7,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 16,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 19,
+          "y1": 8,
+          "x2": 24,
+          "y2": 8,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 13,
+          "x2": 6,
+          "y2": 13,
+          "width": 0.42
+        },
+        {
+          "type": "circle",
+          "cx": 9,
+          "cy": 12,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 9,
+          "cy": 14,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "path",
+          "d": "M15 12 q-2.5 -1.8 -2.5 1 q0 2.8 2.5 1",
+          "width": 0.48
+        },
+        {
+          "type": "line",
+          "x1": 18,
+          "y1": 13,
+          "x2": 24,
+          "y2": 13,
+          "width": 0.42
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c5-c6.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C5"
+        ],
+        "motif": "细短横划、小开口c/弧圈与竖向双点共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 16
+    },
+    "含粉砂泥岩": {
+      "id": "mat_silty_mudstone_bearing",
+      "name": "含粉砂泥岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 1,
+          "x2": 6,
+          "y2": 1,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 1,
+          "x2": 16,
+          "y2": 1,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 19,
+          "y1": 1,
+          "x2": 24,
+          "y2": 1,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 3,
+          "y1": 3.5,
+          "x2": 10,
+          "y2": 3.5,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 13,
+          "y1": 3.5,
+          "x2": 21,
+          "y2": 3.5,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 6,
+          "x2": 6,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 6,
+          "x2": 16,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 19,
+          "y1": 6,
+          "x2": 24,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 3,
+          "y1": 8.5,
+          "x2": 10,
+          "y2": 8.5,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 13,
+          "y1": 8.5,
+          "x2": 21,
+          "y2": 8.5,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 11,
+          "x2": 6,
+          "y2": 11,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 11,
+          "x2": 16,
+          "y2": 11,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 19,
+          "y1": 11,
+          "x2": 24,
+          "y2": 11,
+          "width": 0.38
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C3"
+        ],
+        "motif": "密集细短横划分行错列；密度高于泥岩。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 12
+    },
+    "沉凝灰岩": {
+      "id": "mat_sedimentary_tuff",
+      "name": "沉凝灰岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "path",
+          "d": "M1 1 h4 M1 1 v4 M12 1 h4 M12 1 v4 M6 9 h4 M6 9 v4",
+          "width": 0.44
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 18,
+          "y1": 3,
+          "x2": 22,
+          "y2": 3,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 10,
+          "x2": 4,
+          "y2": 10,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 13,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 13,
+          "cy": 11,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "path",
+          "d": "M18 8 h4 M18 8 v4",
+          "width": 0.44
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 14,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 16,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 7,
+          "y1": 15,
+          "x2": 11,
+          "y2": 15,
+          "width": 0.4
+        },
+        {
+          "type": "path",
+          "d": "M15 13 h4 M15 13 v4",
+          "width": 0.44
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C23"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 18
+    },
+    "泥化凝灰岩": {
+      "id": "mat_argillized_tuff",
+      "name": "泥化凝灰岩",
+      "orientation": "none",
+      "background": "#ffffff",
+      "svg": [],
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C16"
+        ],
+        "motif": "C16层带过窄，无法区分独立纹样与相邻线。",
+        "match_type": "unverified"
+      },
+      "stroke": "#111111"
+    },
+    "泥化沉凝灰岩": {
+      "id": "mat_argillized_sedimentary_tuff",
+      "name": "泥化沉凝灰岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "path",
+          "d": "M1 1 h4 M1 1 v4 M12 1 h4 M12 1 v4 M6 9 h4 M6 9 v4",
+          "width": 0.44
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 8,
+          "cy": 4,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 18,
+          "y1": 3,
+          "x2": 22,
+          "y2": 3,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 10,
+          "x2": 4,
+          "y2": 10,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 13,
+          "cy": 9,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 13,
+          "cy": 11,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "path",
+          "d": "M18 8 h4 M18 8 v4",
+          "width": 0.44
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 14,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 16,
+          "r": 0.8,
+          "width": 0.4
+        },
+        {
+          "type": "line",
+          "x1": 7,
+          "y1": 15,
+          "x2": 11,
+          "y2": 15,
+          "width": 0.4
+        },
+        {
+          "type": "path",
+          "d": "M15 13 h4 M15 13 v4",
+          "width": 0.44
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C24"
+        ],
+        "motif": "同朝向Γ形小角符、竖向双点与细短横线按规则重复；未据源图添加方向或密度差异。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 18
+    },
+    "泥岩": {
+      "id": "mat_mudstone",
+      "name": "泥岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 1,
+          "y1": 2,
+          "x2": 6,
+          "y2": 2,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 12,
+          "y1": 2,
+          "x2": 17,
+          "y2": 2,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 6,
+          "y1": 6,
+          "x2": 11,
+          "y2": 6,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 18,
+          "y1": 6,
+          "x2": 23,
+          "y2": 6,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 1,
+          "y1": 10,
+          "x2": 6,
+          "y2": 10,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 12,
+          "y1": 10,
+          "x2": 17,
+          "y2": 10,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 6,
+          "y1": 14,
+          "x2": 11,
+          "y2": 14,
+          "width": 0.45
+        },
+        {
+          "type": "line",
+          "x1": 18,
+          "y1": 14,
+          "x2": 23,
+          "y2": 14,
+          "width": 0.45
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": "泥岩",
+        "layer_ids": [
+          "C0",
+          "C2"
+        ],
+        "motif": "白底；四行错列细短横线，行间与横向均留白。",
+        "match_type": "exact_legend"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 16
+    },
+    "泥晶灰岩": {
+      "id": "mat_micritic_limestone",
+      "name": "泥晶灰岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 2,
+          "x2": 8,
+          "y2": 2,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 12,
+          "y1": 2,
+          "x2": 24,
+          "y2": 2,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 6,
+          "x2": 5,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 6,
+          "x2": 18,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 21,
+          "y1": 6,
+          "x2": 24,
+          "y2": 6,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 10,
+          "x2": 9,
+          "y2": 10,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 13,
+          "y1": 10,
+          "x2": 24,
+          "y2": 10,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 14,
+          "x2": 5,
+          "y2": 14,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 9,
+          "y1": 14,
+          "x2": 18,
+          "y2": 14,
+          "width": 0.38
+        },
+        {
+          "type": "line",
+          "x1": 21,
+          "y1": 14,
+          "x2": 24,
+          "y2": 14,
+          "width": 0.38
+        },
+        {
+          "type": "path",
+          "d": "M10 0.8 v2.4 M8.8 0.8 h2.4 M8.8 3.2 h2.4",
+          "width": 0.38
+        },
+        {
+          "type": "path",
+          "d": "M6 4.8 l2 2.4 M8 4.8 l-2 2.4",
+          "width": 0.38
+        },
+        {
+          "type": "path",
+          "d": "M11 8.8 v2.4 M9.8 8.8 h2.4 M9.8 11.2 h2.4",
+          "width": 0.38
+        },
+        {
+          "type": "path",
+          "d": "M19 12.8 l2 2.4 M21 12.8 l-2 2.4",
+          "width": 0.38
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "泥晶灰岩",
+        "layer_ids": [
+          "C4",
+          "C25"
+        ],
+        "motif": "白底；水平细层理间配置错列小工字与沙漏节点。",
+        "match_type": "exact_legend"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 16
+    },
+    "泥质粉砂岩": {
+      "id": "mat_argillaceous_siltstone",
+      "name": "泥质粉砂岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 1,
+          "x2": 6,
+          "y2": 1,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 8,
+          "y1": 1,
+          "x2": 14,
+          "y2": 1,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 16,
+          "y1": 1,
+          "x2": 23,
+          "y2": 1,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 3,
+          "y1": 3,
+          "x2": 10,
+          "y2": 3,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 12,
+          "y1": 3,
+          "x2": 19,
+          "y2": 3,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 21,
+          "y1": 3,
+          "x2": 24,
+          "y2": 3,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 5,
+          "x2": 6,
+          "y2": 5,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 8,
+          "y1": 5,
+          "x2": 14,
+          "y2": 5,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 16,
+          "y1": 5,
+          "x2": 23,
+          "y2": 5,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 3,
+          "y1": 7,
+          "x2": 10,
+          "y2": 7,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 12,
+          "y1": 7,
+          "x2": 19,
+          "y2": 7,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 21,
+          "y1": 7,
+          "x2": 24,
+          "y2": 7,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 9,
+          "x2": 6,
+          "y2": 9,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 8,
+          "y1": 9,
+          "x2": 14,
+          "y2": 9,
+          "width": 0.34
+        },
+        {
+          "type": "line",
+          "x1": 16,
+          "y1": 9,
+          "x2": 23,
+          "y2": 9,
+          "width": 0.34
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C20"
+        ],
+        "motif": "非常密集的细短横划，按细密平行行错列。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 10
+    },
+    "煤层": {
+      "id": "mat_coal",
+      "name": "煤层",
+      "orientation": "bedding",
+      "focus_priority": 100,
+      "background": "#ffffff",
+      "stroke": "#111111",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 2,
+          "x2": 24,
+          "y2": 2,
+          "width": 2.4
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 7,
+          "x2": 24,
+          "y2": 7,
+          "width": 2.4
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 12,
+          "x2": 24,
+          "y2": 12,
+          "width": 2.4
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png"
+        ],
+        "legend_name": "煤线",
+        "layer_ids": [
+          "C9"
+        ],
+        "motif": "白底；三条连续平行粗黑煤线，线间保留白缝；线条条数不表示厚度。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 24,
+      "tile_height": 16,
+      "anchor_feature": [
+        12,
+        7
+      ]
+    },
+    "玄武质火山碎屑岩": {
+      "id": "mat_basaltic_volcaniclastic",
+      "name": "玄武质火山碎屑岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "path",
+          "d": "M1 1 h4 M1 1 v4 M12 9 h4 M16 9 v4",
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 2,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 11,
+          "cy": 5,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 14,
+          "cy": 5,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 10,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 10,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 3,
+          "cy": 13,
+          "r": 0.8,
+          "width": 0.48
+        },
+        {
+          "type": "circle",
+          "cx": 6,
+          "cy": 13,
+          "r": 0.8,
+          "width": 0.48
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C17"
+        ],
+        "motif": "直角角符与2×2四点簇规则交替。",
+        "match_type": "layer_pairing"
+      },
+      "stroke": "#111111",
+      "tile_width": 20,
+      "tile_height": 16
+    },
+    "硅化凝灰岩": {
+      "id": "mat_silicified_tuff",
+      "name": "硅化凝灰岩",
+      "orientation": "none",
+      "background": "#ffffff",
+      "svg": [],
+      "reference_status": "unverified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          ".verification/reference-pattern-evidence/source-c20-c25.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C22"
+        ],
+        "motif": "C22极薄且被粗接触线遮挡；图例名称含额外黄铁矿化语义，不能套用。",
+        "match_type": "unverified"
+      },
+      "stroke": "#111111"
+    },
+    "碳质泥岩与煤线互层": {
+      "id": "mat_carbonaceous_mudstone_coal_laminae",
+      "name": "碳质泥岩与煤线互层",
+      "orientation": "bedding",
+      "focus_priority": 90,
+      "background": "#ffffff",
+      "stroke": "#111111",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 2,
+          "x2": 7,
+          "y2": 2,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 11,
+          "y1": 2,
+          "x2": 18,
+          "y2": 2,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 23,
+          "y1": 2,
+          "x2": 30,
+          "y2": 2,
+          "width": 0.42
+        },
+        {
+          "type": "path",
+          "d": "M4 5.5 q-3 -2.2 -3 1.2 q0 3.2 3 1.1",
+          "width": 0.55
+        },
+        {
+          "type": "path",
+          "d": "M18 5.5 q-3 -2.2 -3 1.2 q0 3.2 3 1.1",
+          "width": 0.55
+        },
+        {
+          "type": "line",
+          "x1": 7,
+          "y1": 7,
+          "x2": 13,
+          "y2": 7,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 22,
+          "y1": 7,
+          "x2": 29,
+          "y2": 7,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 2,
+          "y1": 16,
+          "x2": 9,
+          "y2": 16,
+          "width": 0.42
+        },
+        {
+          "type": "path",
+          "d": "M15 14.5 q-3 -2.2 -3 1.2 q0 3.2 3 1.1",
+          "width": 0.55
+        },
+        {
+          "type": "line",
+          "x1": 20,
+          "y1": 16,
+          "x2": 28,
+          "y2": 16,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 11,
+          "x2": 30,
+          "y2": 11,
+          "width": 2.5
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png"
+        ],
+        "legend_name": null,
+        "layer_ids": [
+          "C11",
+          "C13"
+        ],
+        "motif": "白底；细短横划、小写c状碳质符号与连续粗黑煤线共同重复。",
+        "match_type": "layer_pairing"
+      },
+      "tile_width": 30,
+      "tile_height": 18,
+      "anchor_feature": [
+        15,
+        11
+      ]
+    },
+    "粉砂质泥岩": {
+      "id": "mat_silty_mudstone",
+      "name": "粉砂质泥岩",
+      "orientation": "bedding",
+      "background": "#ffffff",
+      "svg": [
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 1.5,
+          "x2": 7,
+          "y2": 1.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 11,
+          "y1": 1.5,
+          "x2": 19,
+          "y2": 1.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 4,
+          "y1": 4.5,
+          "x2": 12,
+          "y2": 4.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 16,
+          "y1": 4.5,
+          "x2": 24,
+          "y2": 4.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 7.5,
+          "x2": 7,
+          "y2": 7.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 11,
+          "y1": 7.5,
+          "x2": 19,
+          "y2": 7.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 4,
+          "y1": 10.5,
+          "x2": 12,
+          "y2": 10.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 16,
+          "y1": 10.5,
+          "x2": 24,
+          "y2": 10.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 0,
+          "y1": 13.5,
+          "x2": 7,
+          "y2": 13.5,
+          "width": 0.42
+        },
+        {
+          "type": "line",
+          "x1": 11,
+          "y1": 13.5,
+          "x2": 19,
+          "y2": 13.5,
+          "width": 0.42
+        }
+      ],
+      "reference_status": "verified",
+      "reference_evidence": {
+        "path": [
+          "../.openai/geology-review-20261005/section-reproduction/reference/legend.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_left.png",
+          "../.openai/geology-review-20261005/section-reproduction/reference/section_right.png",
+          "../.openai/geology-review-20261005/section-reproduction/render/reference-source-c11-c19-original.png",
+          ".verification/reference-pattern-evidence/source-c3-c8.png"
+        ],
+        "legend_name": "粉砂质泥岩",
+        "layer_ids": [
+          "C1",
+          "C7",
+          "C18"
+        ],
+        "motif": "白底；较泥岩更密的细长短横线，逐行错列。",
+        "match_type": "exact_legend"
+      },
+      "stroke": "#111111",
+      "tile_width": 24,
+      "tile_height": 14
+    }
+  },
+  "render_scales": {
+    "main": 0.5,
+    "detail": 0.85,
+    "legend": 0.7,
+    "focus": 1.0,
+    "readability": 1.0
+  }
+}

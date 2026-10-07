@@ -49,6 +49,8 @@ import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
 import { tiandituBase, TIANDITU_LAYERS } from '@/modules/cartography/tianditu';
 import { ControlDock, type ControlPanel } from '@/modules/controls/ControlDock';
+import { INDUSTRY_TOOLS_ENABLED, mountIndustryToolsPanel, showIndustryToolsEntry } from '@/config/features';
+import { createIndustryToolsState, IndustryTools, type IndustryToolsState } from '@/modules/industry/IndustryTools';
 import { MapActions } from '@/modules/controls/MapActions';
 import { CameraGizmo } from '@/modules/controls/CameraGizmo';
 import { RoutePanel } from '@/modules/navigation/RoutePanel';
@@ -230,6 +232,7 @@ export default function Home() {
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanel] = useState<ControlPanel>(null);
+  const [industryToolsState, setIndustryToolsState] = useState<IndustryToolsState>(() => createIndustryToolsState());
   const previousPanel = useRef<ControlPanel>(panel);
   const favoritesCamera = useRef<ReturnType<MapHandle['cameraSnapshot']>>(null);
   const preserveFavoritesCamera = useRef(false);
@@ -2848,6 +2851,7 @@ export default function Home() {
               })
           )}
         <ControlDock
+          industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
           onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}
           onCompare={() => {
             const camera = map.current?.cameraSnapshot();
@@ -2894,7 +2898,7 @@ export default function Home() {
               : panel
           }
           drawingActive={panel === null && tracks.drawing}
-          title={panel === 'sources' ? sourcesNavigation?.title : undefined}
+          title={panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
           titleContent={panel === 'route' && navigation.route ? <RouteNameInput
             key={navigation.route.createdAt}
             name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
@@ -2911,7 +2915,9 @@ export default function Home() {
                     setPanel('annotations');
                   },
                 }
-              : routeChild
+              : panel === 'industry'
+                ? { label: '返回工具', onClick: () => setPanel('tools') }
+                : routeChild
                 ? {
                     label: '返回路线',
                     onClick: () => {
@@ -2972,6 +2978,7 @@ export default function Home() {
             setPanel(next);
           }}
         >
+          {mountIndustryToolsPanel(INDUSTRY_TOOLS_ENABLED, panel) && <IndustryTools state={industryToolsState} onStateChange={setIndustryToolsState} />}
           {panel === 'sources' && (
             <MapSourcesPanel
               incomingFile={incomingRoute.mapSource}
