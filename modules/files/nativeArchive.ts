@@ -6,7 +6,7 @@ export type ArchiveBridge = {
   archiveFinish(token: string, share: boolean): string;
   archiveCancel(token: string): void;
 };
-/** One small base64 message per chunk, including for archives larger than 8 MB. */
+/** One small base64 message per chunk, including large ZIP and workspace JSON/CSV. */
 export async function sendArchive(
   file: File,
   share: boolean,

@@ -1,9 +1,10 @@
 import { sendArchive, type ArchiveBridge } from './nativeArchive.ts';
+const streamedText = (name: string) => /^(Shantu-workspace\.json|Shantu-(route-coordinates-\d{1,16}|coordinates-\d{4}-\d{2}-\d{2})\.(json|csv))$/.test(name);
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
 export function canShareGeneratedFile(name: string, mime: string) {
   if (typeof window !== 'undefined' && window.GuanyunNative) {
     const native = window.GuanyunNative;
-    return name.endsWith('.zip')
+    return name.endsWith('.zip') || streamedText(name)
       ? !!(native.archiveBegin && native.archiveAppend && native.archiveFinish && native.archiveCancel)
       : !!native.routeOutput;
   }
@@ -23,7 +24,7 @@ export async function deliverFile(
 ) {
   signal?.throwIfAborted();
   if (window.GuanyunNative) {
-    if (file.name.endsWith('.zip')) {
+    if (file.name.endsWith('.zip') || streamedText(file.name)) {
       const native = window.GuanyunNative;
       if (
         !native.archiveBegin ||
@@ -31,7 +32,9 @@ export async function deliverFile(
         !native.archiveFinish ||
         !native.archiveCancel
       )
-        throw new Error('此 APK 尚不支持 ZIP 输出，请安装新版');
+        throw new Error('此 APK 尚不支持完整文件输出，请安装新版');
+      if (streamedText(file.name) && file.size > 100 * 1024 * 1024)
+        throw new Error('工程文件超过 100 MB');
       return sendArchive(file, share, native as ArchiveBridge, signal);
     }
     if (file.size > 8 * 1024 * 1024)

@@ -56,6 +56,7 @@ import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
 import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
+import { installDesktopPanReceiver } from './desktopPan';
 import { createSnapViewportReader } from './snapViewport';
 import type { SnapViewport } from '../tracks/snapping';
 import { featurePreviewUiPublisher } from './featurePreviewUi';
@@ -87,6 +88,7 @@ import { imageryDateLabel, imageryDateSourceKey } from './imageryDateLabel';
 import './imageryDateLabel.css';
 import { PhotoLayer } from '../photos/PhotoLayer';
 import type { VisiblePhoto } from '../photos/storage';
+import { CadLayer } from '../cad/CadLayer';
 import { PositionLayer } from '../position/PositionLayer';
 import type { PositionFix } from '../position/types';
 import type { CameraSnapshot } from '../controls/useMapFocusLock';
@@ -279,6 +281,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const longPressRef = useRef<MapLongPress | null>(null);
     const positionRef = useRef<PositionLayer | null>(null);
     const photosRef = useRef<PhotoLayer | null>(null);
+    const cadRef = useRef<CadLayer | null>(null);
     const annotationRef = useRef<AnnotationLayer | null>(null);
     const sectionRef = useRef<SectionSurfaceLayer | null>(null);
     const sectionCollectionRef = useRef<SectionCollectionLayer | null>(null);
@@ -889,6 +892,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       });
       let releaseLastView: (() => void) | undefined;
       let releaseUserZoom: (() => void) | undefined;
+      let releaseDesktopPan: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
@@ -920,6 +924,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             canvasContextAttributes: { antialias: false },
           });
           mapRef.current = map;
+          releaseDesktopPan = installDesktopPanReceiver(map, container.current);
           const queuedCamera = cameraSync.current.pendingCamera();
           if (queuedCamera) applyCameraToMap(map, queuedCamera);
           const snapViewport = createSnapViewportReader(map);
@@ -1195,6 +1200,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               if (!latest.current.readOnly) latest.current.onPhotoSelect(ids);
             });
             photosRef.current.sync(latest.current.photos);
+            cadRef.current = new CadLayer(map, (message) => latest.current.onStatus(message));
             try {
               const { AnnotationLayer } =
                 await import('../annotations/AnnotationLayer');
@@ -1471,6 +1477,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       return () => {
         releaseLastView?.();
         releaseUserZoom?.();
+        releaseDesktopPan?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;
@@ -1485,6 +1492,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         trackRef.current = null;
         photosRef.current?.dispose();
         photosRef.current = null;
+        cadRef.current?.dispose();
+        cadRef.current = null;
         positionRef.current = null;
         annotationRef.current = null;
         sectionRef.current?.dispose();

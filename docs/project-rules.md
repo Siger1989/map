@@ -20,6 +20,10 @@
 | 绘制与编辑 | `modules/tracks/`、`modules/areas/`、`modules/geometry/` | 有手绘、逐点编辑、吸附/续画及区域几何处理。浏览器交互验证不能代表手机触控手感；对应真机操作仍待确认。 |
 | 收藏、标记、区域与照片 | `modules/collections/`、`modules/annotations/`、`modules/areas/`、`modules/photos/` | 有本地对象收藏、标记/区域、照片关联与详情模块。应保护既有用户记录；实际相机、系统照片选择器和不同设备的文件权限需真机确认。 |
 | 导入与分享 | `modules/files/`、`modules/photos/`、`modules/collections/`，Android适配位于 `mobile/android/` | 有存档/文件转换、导入及交付适配代码。具体格式的平台读写、系统分享调起和照片附件须按设备实测；代码存在或浏览器预览不等于系统交付验收。 |
+| 桌面版 | `desktop/`、`EXE/README.txt` | Windows桌面单EXE可复制启动，依赖WebView2 Runtime；PNG渲染依赖系统Edge或Chrome。真实Windows WebView窗口权限仍待设备验证；具体版本与产物以当期交接/发布记录为准。 |
+| 完整工程JSON | `modules/dataTransfer/`、`modules/cad/`、`docs/desktop-json-pan-20261008.md` | 手机与桌面完整工程JSON可往返迁移，覆盖支持范围内照片、图源、CAD原文件、行业Excel/项目及设置；按稳定ID合并，同ID由导入侧覆盖、接收端独有数据保留。旧v1备份兼容入口为单独格式。真实UI往返已验证；Android系统保存/分享及真机文件权限仍待设备验证。 |
+| CAD参考层 | `modules/cad/`、`public/cad-runtime/` | 支持范围内DWG/ASCII DXF图元作为地图参考层，保留原文件与工程资料；未知CRS需人工确认，缺乏经核实参数的北京54/西安80跨datum转换会拒绝。20 MiB文件、20,000图元、100,000顶点等上限及GPL v3运行时说明见 `modules/cad/README.md`。不是完整CAD往返编辑器；设备文件权限仍待真机验证。 |
+| 工程坐标系与导出 | `modules/coordinates/`、`modules/dataTransfer/`、`modules/cad/` | 工程CRS用于坐标输入、转换及工程JSON/CSV交换；地图标准GeoJSON仍为WGS84。明确源CRS/参数后执行转换，BJ54/Xian80未知datum不猜；2D投影保留Z且不做垂直基准矫正，不代表测绘精度。涉及原生文件选择/保存/分享的手机流程仍待真机验收。 |
 | 离线工具 | `modules/offlineRouting/`、`modules/outdoor/`、`modules/mapSources/` | 有离线路网、地图缓存/下载相关能力。离线包完整性、断网读取、空间占用、清理边界和真机持久性需分别核验；不可误删用户轨迹、照片或共享瓦片。 |
 | Android平台 | `mobile/android/`、`mobile/main.tsx` | 仓库含 Android 原生外壳与桥接实现；具体发行包及当前设备验收状态以 `CURRENT_STATE.md` 最新记录为准。构建成功不等于手机功能验收。 |
 | HarmonyOS 6.1 | `docs/harmonyos-6.1-install.md` | **原生鸿蒙包未交付。** 当前仓库没有原生 HarmonyOS 构建工程；容器/兼容试装方向不代表原生支持。须先完成平台适配、合法签名、安装与设备功能验证，方可报告交付。 |

@@ -2,7 +2,7 @@ export type FocusLockActivity =
   | 'drawing' | 'areaDrawing' | 'areaEditing' | 'routeEditor'
   | 'measurement' | 'survey' | 'markerPicking' | 'routePicking'
   | 'movingFeature' | 'quickAdd' | 'sectionEditing' | 'navigation'
-  | 'recording' | 'comparison' | 'boxSelection' | 'sectionList'
+  | 'comparison' | 'boxSelection' | 'sectionList'
   | 'annotationDetails' | 'photoDetails' | 'rally' | 'routeCard'
   | 'navigationTarget' | 'sharing' | 'sourcePicker';
 

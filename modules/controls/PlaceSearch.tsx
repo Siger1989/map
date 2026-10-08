@@ -3,22 +3,19 @@ import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState } from 'react';
 import { Search, X, MapPin, Share2 } from 'lucide-react';
 import { defaultPlaceSearchSource, searchPlaces, sortPlacesByDistance, type PlaceSearchSource } from '../navigation/provider';
-import type { Coordinate, RoutePlace } from '../navigation/types';
-import { canFollow } from '../position/follow';
-import type { PositionFix } from '../position/types';
+import { formatDistance, metresBetween, type Coordinate, type RoutePlace } from '../navigation/types';
+import { isDesktopShell } from '../platform/desktop';
 import { useMapPlaceLabel } from './PlaceName';
 import { routingMode } from '../offlineRouting/preferences';
 
 export function PlaceSearch({
   center,
-  position,
   zoom,
   onOpen,
   onSelect,
   onShare,
 }: {
   center: Coordinate | null;
-  position?: PositionFix | null;
   zoom: number;
   onOpen: () => void;
   onSelect: (place: RoutePlace) => void;
@@ -34,24 +31,12 @@ export function PlaceSearch({
   const [message, setMessage] = useState('');
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const devicePosition = position && position.provider !== 'ip' && canFollow(position)
-    ? position
-    : null;
-  const near = useRef<Coordinate | null>(null);
-  near.current = devicePosition?.coordinates ?? center;
+  const desktopShell = isDesktopShell();
+  const near = useRef<Coordinate | null>(center);
+  near.current = center;
   const orderedResults = sortPlacesByDistance(results, near.current);
-  const sortLabel = devicePosition
-    ? devicePosition.source === 'network'
-      ? `设备位置 · ±${Math.round(devicePosition.accuracy)}米`
-      : '当前定位'
-    : center
-      ? '地图中心参考'
-      : '无位置参考';
-  const sortDescription = devicePosition
-    ? `按当前设备位置排序${devicePosition.source === 'network' ? `，估计误差±${Math.round(devicePosition.accuracy)}米` : ''}`
-    : center
-      ? '按地图中心排序，仅作地图参考，不代表GPS位置'
-      : '没有可用的位置参考，按搜索服务原顺序显示';
+  const sortLabel = '距地图中心 · 由近到远';
+  const sortDescription = '按当前地图中心的直线距离排序；地图移动后会重新排序，不会重复搜索';
   const { title } = useMapPlaceLabel(center, zoom);
   const offline = routingMode() === 'offline';
 
@@ -191,7 +176,13 @@ export function PlaceSearch({
         </button>
       </form>
       {open && (
-        <FloatingSearch anchor={input.current} owner="place" scrollable={results.length > 3}>
+        <FloatingSearch
+          anchor={input.current}
+          owner="place"
+          scrollable={results.length > (desktopShell ? 6 : 3)}
+          desktop={desktopShell}
+          maxHeight={desktopShell ? 360 : 200}
+        >
           <section
             id="place-search-results"
             className="place-search-results glass suggestion-surface"
@@ -243,6 +234,11 @@ export function PlaceSearch({
                       {place.detail ||
                         `${place.coordinates[1].toFixed(4)}, ${place.coordinates[0].toFixed(4)}`}
                     </small>
+                    {center && (
+                      <small className="place-result-distance">
+                        距中心 {formatDistance(metresBetween(center, place.coordinates))}
+                      </small>
+                    )}
                   </span>
                 </button>
                 <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => { setOpen(false); input.current?.blur(); onShare(place); }}><Share2 size={17}/></button>

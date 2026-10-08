@@ -30,6 +30,7 @@ import { useRecording } from '@/modules/outdoor/useRecording';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
+import { isDesktopShell } from '@/modules/platform/desktop';
 import { TerrainMap, type MapHandle } from '@/modules/map/TerrainMap';
 import { MapComparisonHost, type ComparisonSession } from '@/modules/mapComparison/MapComparisonHost';
 import { createComparisonExitGate } from '@/modules/mapComparison/comparisonExitGate';
@@ -102,6 +103,7 @@ import { equalCoordinate } from '@/modules/tracks/editing';
 import { moveSelectedPoints } from '@/modules/tracks/displayColors';
 import { moves as visibleNodeMoves } from '@/modules/tracks/visibleNodeMove';
 import type { ManualTrack } from '@/modules/tracks/drawing';
+import { shareDraftTrack } from '@/modules/tracks/shareDraft';
 
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
@@ -189,6 +191,7 @@ import {
 } from '@/modules/map/types';
 
 export default function Home() {
+  const desktopShell = isDesktopShell();
   useEffect(() => {
     const back = (event: Event) => {
       if (!event.defaultPrevented && requestAppBack(document)) event.preventDefault();
@@ -197,6 +200,15 @@ export default function Home() {
     return () => window.removeEventListener('shantu-app-back', back);
   }, []);
   const map = useRef<MapHandle>(null);
+  useEffect(() => {
+    const focusCad = (event: Event) => {
+      const points = (event as CustomEvent<Coordinate[]>).detail;
+      if (Array.isArray(points) && points.length && points.every(p=>Array.isArray(p) && p.length===2 && p.every(Number.isFinite)))
+        map.current?.fitCollection(points);
+    };
+    window.addEventListener('shantu-cad-focus', focusCad);
+    return () => window.removeEventListener('shantu-cad-focus', focusCad);
+  }, []);
   const watchObjectProjection = useCallback<WatchProjection>(
     (listener) => map.current?.watchObjectProjection(listener) ?? (() => {}),
     [],
@@ -448,11 +460,34 @@ export default function Home() {
     suspendPanelForDialog();
     setPlaceShareTarget(target);
   };
-  const shareTrackById = (id: string) => {
+  const shareTrackById = (id: string, exportTrack?: ManualTrack) => {
+    if (id === DRAFT_ID) {
+      const draft = shareDraftTrack({
+        segments: tracks.draft,
+        name: tracks.draftName,
+        style: tracks.style,
+        edgeColors: tracks.edgeColors,
+        colorConditions: tracks.colorConditions,
+      });
+      if (!draft) {
+        setSavedNavigationError('至少需要两个路线点才能分享。');
+        return;
+      }
+      try {
+        const matches = exportTrack?.id === id && JSON.stringify(exportTrack.segments) === JSON.stringify(tracks.draft);
+        const shareable = matches && exportTrack?.samples ? { ...draft, samples: exportTrack.samples } : draft;
+        openRouteShareDialog(shareTrack(shareable, annotations.items, tracks.saved));
+      } catch (e) {
+        setSavedNavigationError(e instanceof Error ? e.message : '无法分享轨迹');
+      }
+      return;
+    }
     const track = tracks.saved.find((t) => t.id === id);
     if (track) {
       try {
-        openRouteShareDialog(shareTrack(track, annotations.items, tracks.saved));
+        const matches = exportTrack?.id === id && JSON.stringify(exportTrack.segments) === JSON.stringify(track.segments);
+        const shareable = matches && exportTrack?.samples ? { ...track, samples: exportTrack.samples } : track;
+        openRouteShareDialog(shareTrack(shareable, annotations.items, tracks.saved));
       } catch (e) {
         setSavedNavigationError(
           e instanceof Error ? e.message : '无法分享轨迹',
@@ -1330,7 +1365,6 @@ export default function Home() {
     quickAdd: !!quickAdd,
     sectionEditing,
     navigation: guidance.active,
-    recording: recorder.record.phase === 'recording' || recorder.record.phase === 'paused',
     comparison: !!comparison,
     boxSelection: boxSelecting,
     sectionList: sectionListOpen,
@@ -1356,7 +1390,6 @@ export default function Home() {
     <PlaceSearch
       onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
       center={mapCenter}
-      position={displayedFix}
       zoom={view.zoom}
       onOpen={() => {
         setPanel(null);
@@ -2150,7 +2183,7 @@ export default function Home() {
                   onHide={() => {
                     tracks.showTrack(railTrack.id, !!railTrack.hidden);
                   }}
-                  onShare={() => shareTrackById(railTrack.id)}
+                  onShare={(routeForShare) => shareTrackById(railTrack.id, routeForShare)}
                   onPointShare={(place) => openPlaceShareDialog({ place })}
                   deleteError={tracks.error}
                   onDelete={() => {
@@ -2822,7 +2855,7 @@ export default function Home() {
             map.current?.syncCameraHash();
           }}
         />
-        {panel === null &&
+        {!desktopShell && panel === null &&
           !survey.active &&
           !sectionEditing &&
           !tracks.drawing &&
@@ -2852,6 +2885,7 @@ export default function Home() {
           )}
         <ControlDock
           industryEnabled={showIndustryToolsEntry(INDUSTRY_TOOLS_ENABLED)}
+          showRecordingEntry={!desktopShell}
           onArea={TERRAIN_SECTION_ENABLED ? startArea : undefined}
           onCompare={() => {
             const camera = map.current?.cameraSnapshot();
@@ -3013,7 +3047,8 @@ export default function Home() {
             <OutdoorPanel
               onImport={openRouteImportDialog}
               key={outdoorPhotos?'photos':'record'}
-              initialTab={outdoorPhotos ? 'photos' : 'record'}
+              initialTab={desktopShell || outdoorPhotos ? 'photos' : 'record'}
+              recordingEnabled={!desktopShell}
               locationStatus={position.locationError || (position.locating ? '正在定位…' : displayedFix && Date.now() - displayedFix.timestamp < 30000 ? `定位估计误差 ±${Math.round(displayedFix.accuracy)} 米` : '当前位置尚未定位，点标记可获取位置')}
               onMarkCurrent={() => {
                 if (!displayedFix || Date.now() - displayedFix.timestamp >= 30000) {
@@ -3280,7 +3315,7 @@ export default function Home() {
               onStartNavigation={startGuidance}
               navigating={guidance.active}
               guidanceError={guidance.error}
-              near={[point.lng, point.lat]}
+              near={mapCenter ?? [point.lng, point.lat]}
               onSave={() => {
                 if (navigation.start && navigation.end && navigation.route)
                   favorites.save(

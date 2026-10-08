@@ -27,11 +27,12 @@ export const NAVIGATION_SERVICES = {
   search: 'https://photon.komoot.io/api/',
   reverse: 'https://photon.komoot.io/reverse',
 };
+const MAX_PHOTON_SEARCH_RESULTS = 20;
 export function buildPhotonSearchURL(query: string, near?: Coordinate | null): string {
   const params = new URLSearchParams({
     q: query.trim().slice(0, 120),
     lang: 'default',
-    limit: '5',
+    limit: String(MAX_PHOTON_SEARCH_RESULTS),
   });
   if (near) {
     params.set('lat', String(near[1]));
@@ -386,7 +387,7 @@ export function normalizePlaces(input: unknown): RoutePlace[] {
         },
       ];
     })
-    .slice(0, 5);
+    .slice(0, MAX_PHOTON_SEARCH_RESULTS);
 }
 export async function searchPlaces(
   query: string,

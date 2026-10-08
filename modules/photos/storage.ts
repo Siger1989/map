@@ -87,6 +87,77 @@ export async function readPhotos(): Promise<TripPhoto[]> {
     r.onerror = () => reject(r.error);
   });
 }
+/** Read every stored row verbatim for rollback; unlike the UI reader this does not filter or truncate. */
+export async function snapshotPhotos(): Promise<unknown[]> {
+  const db=await open();
+  return new Promise((resolve,reject)=>{
+    const request=db.transaction('photos').objectStore('photos').getAll();
+    request.onsuccess=()=>resolve(request.result as unknown[]);
+    request.onerror=()=>reject(new Error('读取照片回滚快照失败'));
+  });
+}
+/** Exact rollback restore. Values came from this database and are not revalidated or truncated. */
+export async function restorePhotoSnapshot(records: unknown[]): Promise<void> {
+  const db=await open();
+  await new Promise<void>((resolve,reject)=>{
+    const tx=db.transaction('photos','readwrite'),table=tx.objectStore('photos');
+    let reason='照片回滚恢复失败';
+    const request=table.clear();
+    request.onsuccess=()=>{for(const record of records)table.put(record);};
+    request.onerror=()=>{reason='清理照片回滚目标失败';tx.abort();};
+    tx.oncomplete=()=>resolve();
+    tx.onabort=tx.onerror=()=>reject(new Error(reason));
+  });
+}
+/** Replace matching photo IDs exactly while keeping receiver-only photos. */
+export async function syncPhotos(incoming: TripPhoto[]): Promise<TripPhoto[]> {
+  if (!Array.isArray(incoming) || incoming.some((p) => !validPhoto(p)))
+    throw new Error('照片预览数据无效');
+  if (new Set(incoming.map((p) => p.id)).size !== incoming.length)
+    throw new Error('照片备份含重复编号');
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('photos', 'readwrite');
+    const table = tx.objectStore('photos');
+    let committed: TripPhoto[] = [];
+    let reason = '照片同步失败，请检查可用存储';
+    const request = table.getAll();
+    request.onsuccess = () => {
+      const current = request.result as TripPhoto[];
+      const merged = new Map(current.map((p) => [p.id, p]));
+      for (const photo of incoming) merged.set(photo.id, photo);
+      const all = [...merged.values()];
+      if (all.length > MAX_PHOTOS || all.reduce((n, p) => n + p.preview.size, 0) > MAX_BYTES ||
+          all.reduce((n, p) => n + p.preview.size + (p.detail?.size ?? 0), 0) > 200 * 1024 * 1024) {
+        reason = '照片最多200张，预览40MB / 含清晰副本200MB，请先移除部分照片';
+        tx.abort();
+        return;
+      }
+      committed = all;
+      for (const photo of incoming) table.put(photo);
+    };
+    request.onerror = () => { reason = '读取本机照片失败'; tx.abort(); };
+    tx.oncomplete = () => resolve(committed);
+    tx.onabort = tx.onerror = () => reject(new Error(reason));
+  });
+}
+/** Exact replacement used only for compensating rollback after a multi-store import failure. */
+export async function replacePhotos(records: TripPhoto[]): Promise<TripPhoto[]> {
+  if (!Array.isArray(records) || records.some((p) => !validPhoto(p)) || new Set(records.map((p)=>p.id)).size !== records.length)
+    throw new Error('照片恢复数据无效');
+  if (records.length > MAX_PHOTOS || records.reduce((n,p)=>n+p.preview.size,0)>MAX_BYTES || records.reduce((n,p)=>n+p.preview.size+(p.detail?.size??0),0)>200*1024*1024)
+    throw new Error('照片最多200张，预览40MB / 含清晰副本200MB');
+  const db = await open();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('photos','readwrite'), table=tx.objectStore('photos');
+    let reason='照片恢复失败';
+    const request=table.clear();
+    request.onsuccess=()=>{ for(const photo of records) table.put(photo); };
+    request.onerror=()=>{ reason='清空照片恢复目标失败'; tx.abort(); };
+    tx.oncomplete=()=>resolve(records);
+    tx.onabort=tx.onerror=()=>reject(new Error(reason));
+  });
+}
 export async function writePhotos(add: TripPhoto[], remove?: string) {
   if (add.some((p) => !validPhoto(p))) throw new Error('照片预览数据无效');
   const db = await open();

@@ -1,19 +1,47 @@
 param(
   [string]$Python = "",
   [string]$Node = "",
+  [string]$OutputDirectory = "EXE\山兔桌面",
+  [switch]$OneFile,
+  [string]$OneFileOutput = "",
+  [string]$MapRuntimeDirectory = "",
   [switch]$SkipMapBuild
 )
 
 $ErrorActionPreference = "Stop"
 $project = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$productSource = Get-Content -LiteralPath (Join-Path $project "config\product.ts") -Raw
+if ($productSource -notmatch "APP_VERSION\s*=\s*'([^']+)'") { throw "无法从 config/product.ts 读取 APP_VERSION。" }
+$oneFileVersion = $Matches[1] -replace '-test$', ''
+if ([string]::IsNullOrWhiteSpace($OneFileOutput)) { $OneFileOutput = "EXE\山兔桌面-$oneFileVersion.exe" }
+if ([string]::IsNullOrWhiteSpace($MapRuntimeDirectory)) { $MapRuntimeDirectory = "EXE\山兔桌面-$oneFileVersion\resources\map-runtime" }
 $buildRoot = Join-Path $project ".openai\build\desktop-app"
 $venv = Join-Path $buildRoot "venv"
 $venvPython = Join-Path $venv "Scripts\python.exe"
 $pyInstallerDist = Join-Path $buildRoot "dist"
 $pyInstallerWork = Join-Path $buildRoot "pyinstaller"
 $mapBuilder = Join-Path $project "scripts\build-desktop-map.mjs"
-$mapRuntime = Join-Path $project "EXE\山兔桌面\resources\map-runtime"
-$finalApp = Join-Path $project "EXE\山兔桌面"
+$finalApp = [System.IO.Path]::GetFullPath((Join-Path $project $OutputDirectory))
+$oneFileTarget = [System.IO.Path]::GetFullPath((Join-Path $project $OneFileOutput))
+$mapRuntimeCandidate = if ($OneFile) {
+  [System.IO.Path]::GetFullPath((Join-Path $project $MapRuntimeDirectory))
+} else {
+  Join-Path $finalApp "resources\map-runtime"
+}
+$exeRootFull = [System.IO.Path]::GetFullPath((Join-Path $project 'EXE')).TrimEnd('\') + '\'
+if (-not ($finalApp.TrimEnd('\') + '\').StartsWith($exeRootFull, [System.StringComparison]::OrdinalIgnoreCase) -or $finalApp.TrimEnd('\') -eq $exeRootFull.TrimEnd('\')) {
+  throw "桌面输出目录必须是本项目EXE目录中的子目录。"
+}
+$mapRuntime = $mapRuntimeCandidate
+if ($OneFile) {
+  if (-not ($oneFileTarget.TrimEnd('\') + '\').StartsWith($exeRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "单文件EXE输出路径必须在本项目EXE目录内。"
+  }
+  if ([System.IO.Path]::GetExtension($oneFileTarget) -ne '.exe') { throw "单文件输出必须使用 .exe 扩展名。" }
+  if (-not ($mapRuntime.TrimEnd('\') + '\').StartsWith($exeRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "单文件嵌入的地图资源路径必须在本项目EXE目录内。"
+  }
+}
 
 if ([string]::IsNullOrWhiteSpace($Python)) {
   $launcher = Get-Command py.exe -ErrorAction SilentlyContinue
@@ -84,7 +112,7 @@ if (-not $SkipMapBuild) {
   if (-not (Test-Path -LiteralPath $mapBuilder -PathType Leaf)) {
     throw "尚未找到地图构建脚本：$mapBuilder。若要复用已有运行资源，请传入 -SkipMapBuild。"
   }
-  & $Node $mapBuilder
+  & $Node $mapBuilder --out-dir $mapRuntime
   if ($LASTEXITCODE -ne 0) { throw "构建地图运行资源失败 ($LASTEXITCODE)。" }
 }
 foreach ($required in @("node.exe", "server.mjs", "web\index.html")) {
@@ -95,14 +123,42 @@ foreach ($required in @("node.exe", "server.mjs", "web\index.html")) {
 
 # PyInstaller writes into .openai first so its collector never touches the Node runtime.
 $stagedApp = Join-Path $pyInstallerDist "山兔桌面"
+$stagedExe = Join-Path $pyInstallerDist "山兔桌面.exe"
 $buildRootFull = [System.IO.Path]::GetFullPath($buildRoot).TrimEnd('\') + '\'
 $stagedFull = [System.IO.Path]::GetFullPath($stagedApp)
 if (-not $stagedFull.StartsWith($buildRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
   throw "构建暂存路径越界：$stagedFull"
 }
-if (Test-Path -LiteralPath $stagedApp) { Remove-Item -LiteralPath $stagedApp -Recurse -Force }
-& $venvPython -m PyInstaller --clean --noconfirm --distpath $pyInstallerDist --workpath $pyInstallerWork (Join-Path $project "desktop-app\desktop.spec")
+$stageToValidate = if ($OneFile) { $stagedExe } else { $stagedApp }
+$stageFull = [System.IO.Path]::GetFullPath($stageToValidate)
+if (-not $stageFull.StartsWith($buildRootFull, [System.StringComparison]::OrdinalIgnoreCase)) {
+  throw "PyInstaller暂存目标越界：$stageFull"
+}
+if ($OneFile) {
+  if (Test-Path -LiteralPath $stagedExe) { Remove-Item -LiteralPath $stagedExe -Force }
+} elseif (Test-Path -LiteralPath $stagedApp) {
+  Remove-Item -LiteralPath $stagedApp -Recurse -Force
+}
+$previousOneFile = $env:SHANTU_DESKTOP_ONEFILE
+$previousMapRuntime = $env:SHANTU_MAP_RUNTIME
+try {
+  $env:SHANTU_DESKTOP_ONEFILE = if ($OneFile) { "1" } else { "0" }
+  $env:SHANTU_MAP_RUNTIME = $mapRuntime
+  & $venvPython -m PyInstaller --clean --noconfirm --distpath $pyInstallerDist --workpath $pyInstallerWork (Join-Path $project "desktop-app\desktop.spec")
+} finally {
+  $env:SHANTU_DESKTOP_ONEFILE = $previousOneFile
+  $env:SHANTU_MAP_RUNTIME = $previousMapRuntime
+}
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller构建失败 ($LASTEXITCODE)。" }
+
+if ($OneFile) {
+  if (-not (Test-Path -LiteralPath $stagedExe -PathType Leaf)) { throw "PyInstaller未生成单文件EXE：$stagedExe" }
+  New-Item -ItemType Directory -Path (Split-Path -Parent $oneFileTarget) -Force | Out-Null
+  Copy-Item -LiteralPath $stagedExe -Destination $oneFileTarget -Force
+  & $venvPython -m pip freeze | Set-Content -LiteralPath (Join-Path $buildRoot "build-dependencies.txt") -Encoding utf8
+  Write-Output $oneFileTarget
+  return
+}
 
 New-Item -ItemType Directory -Path $finalApp -Force | Out-Null
 $internalSource = Join-Path $stagedApp "_internal"

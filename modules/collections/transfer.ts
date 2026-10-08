@@ -71,3 +71,38 @@ export function mergeCollections(
     ...(treeOrder.length && { treeOrder }),
   });
 }
+
+/** Synchronize directory metadata and ordering by stable IDs, preserving receiver-only entries. */
+export function syncCollections(
+  before: CollectionLayout | undefined,
+  incoming: CollectionLayout | undefined,
+  incomingKeys: Set<string>,
+): CollectionLayout | undefined {
+  if (!incoming) return before;
+  validateLayout(incoming);
+  const local = before ?? defaultLayout();
+  const groups = new Map(local.groups.map((group) => [group.id, group]));
+  for (const group of incoming.groups) groups.set(group.id, group);
+  const assignments = { ...local.assignments };
+  for (const key of incomingKeys) delete assignments[key];
+  for (const [key, group] of Object.entries(incoming.assignments))
+    if (incomingKeys.has(key)) assignments[key] = group;
+  const order = [...local.order.filter((key) => !incomingKeys.has(key))];
+  for (const key of incoming.order)
+    if (incomingKeys.has(key) && !order.includes(key)) order.push(key);
+  const treeOrder = [...(local.treeOrder ?? []).filter((key) =>
+    key.startsWith('folder:') ? !incoming.groups.some((g) => `folder:${g.id}` === key) : !incomingKeys.has(key),
+  )];
+  for (const key of incoming.treeOrder ?? [])
+    if (!treeOrder.includes(key)) treeOrder.push(key);
+  return validateLayout({
+    version: 1,
+    groups: [...groups.values()],
+    assignments,
+    order,
+    ...(incoming.tabOrder ?? local.tabOrder
+      ? { tabOrder: [...(incoming.tabOrder ?? local.tabOrder)!] }
+      : {}),
+    ...(treeOrder.length ? { treeOrder } : {}),
+  });
+}

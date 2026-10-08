@@ -1,0 +1,69 @@
+.transfer-sync {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.transfer-sync > summary {
+  min-height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.transfer-sync-actions {
+  display: flex;
+  gap: 4px;
+}
+.transfer-sync-actions > button,
+.transfer-sync-file {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 5px;
+  border: 1px solid var(--ui-line, currentColor);
+  border-radius: 4px;
+  background: var(--ui-field, transparent);
+  color: var(--ui-ink, inherit);
+  font: inherit;
+  font-size: 11px;
+  text-align: center;
+}
+.transfer-sync-file {
+  position: relative;
+  cursor: pointer;
+}
+.transfer-sync-file input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.transfer-sync-file:focus-within,
+.transfer-sync-actions > button:focus-visible {
+  outline: 2px solid var(--ui-accent, currentColor);
+  outline-offset: -2px;
+}
+.transfer-sync-preview {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--ui-line, #69736e);
+  border-radius: 4px;
+  background: var(--ui-surface, #18201f);
+  font-size: 11px;
+}
+.observatory .transfer-sync .transfer-sync-preview small {
+  overflow-wrap: anywhere;
+  color: var(--ui-muted, inherit);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.observatory .transfer-sync .route-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+}

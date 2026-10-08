@@ -29,10 +29,15 @@ const overlayOrder = [
   'track-line-selection',
   'route-gap-line',
   'route-gap-points',
+  'cad-fill',
+  'cad-outline',
+  'cad-line',
+  'cad-point',
   'position-accuracy',
   'position-dot',
   'position-arrow',
   'position-ip-label',
+  'cad-labels',
 ];
 const ROAD_LINE_LAYERS = [
   'rivers',
@@ -53,6 +58,10 @@ const LINE_BELOW_PLACE_LABELS = new Set([
   'guidance-path',
   'guidance-access',
   'route-gap-line',
+  'cad-fill',
+  'cad-outline',
+  'cad-line',
+  'cad-point',
 ]);
 const PLACE_LABEL_LAYERS = new Set([
   'domestic-labels-map',

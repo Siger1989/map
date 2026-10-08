@@ -82,3 +82,25 @@ test('track ID remap updates only photos attached to the finished recording', as
   await storage.remapPhotoTrack('record-live', 'deduplicated-track');
   assert.deepEqual(puts, [{ ...photos[0], trackId: 'deduplicated-track' }]);
 });
+
+test('workspace photo sync overwrites matching IDs and keeps receiver-only photos', async (t) => {
+  const photo = (id, title) => ({ id, name: `${id}.jpg`, trackId: 'track', trackName: 'Track', time: 1, coordinates: [104,30], kind: 'point', preview: new Blob([title], { type: 'image/jpeg' }), title });
+  const initial = [photo('same', 'old'), photo('local-only', 'keep')];
+  let stored = initial;
+  const tx = {};
+  const db = { objectStoreNames: { contains: () => true }, transaction: () => ({
+    objectStore: () => ({ getAll() { const request = { result: stored }; queueMicrotask(() => { request.onsuccess(); queueMicrotask(() => tx.oncomplete()); }); return request; }, put(item) { stored = [...stored.filter((p)=>p.id!==item.id), item]; } }),
+    get oncomplete() { return tx.oncomplete; }, set oncomplete(value) { tx.oncomplete=value; },
+    get onabort() { return tx.onabort; }, set onabort(value) { tx.onabort=value; },
+    get onerror() { return tx.onerror; }, set onerror(value) { tx.onerror=value; },
+    abort() { queueMicrotask(()=>tx.onabort?.()); },
+  }), close() {} };
+  const previous = globalThis.indexedDB;
+  globalThis.indexedDB = { open: () => { const request = { result: db }; queueMicrotask(() => request.onsuccess()); return request; } };
+  t.after(() => { if (previous === undefined) delete globalThis.indexedDB; else globalThis.indexedDB = previous; });
+  const storage = await import('../modules/photos/storage.ts?workspace-sync');
+  const result = await storage.syncPhotos([photo('same','sender'), photo('new','added')]);
+  assert.equal(result.find((p)=>p.id==='same').title, 'sender');
+  assert.ok(result.some((p)=>p.id==='local-only'));
+  assert.ok(result.some((p)=>p.id==='new'));
+});

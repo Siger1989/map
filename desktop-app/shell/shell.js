@@ -5,12 +5,51 @@
   const helpButton = document.getElementById('help-toggle');
   const help = document.getElementById('mouse-help');
   const message = document.getElementById('desktop-message');
+  const panButton = document.getElementById('map-pan');
+  const panThumb = document.getElementById('pan-thumb');
+  let panPointer = null;
+  let panFrame = 0;
+  let panVector = { x: 0, y: 0 };
+  let panTime = 0;
+  function stopPan() {
+    cancelAnimationFrame(panFrame);
+    panFrame = 0;
+    panTime = 0;
+    const pointer = panPointer;
+    panPointer = null;
+    if (pointer !== null && panButton.hasPointerCapture(pointer)) panButton.releasePointerCapture(pointer);
+    panThumb.style.transform = '';
+  }
+  function updatePan(event) {
+    const rect = panButton.getBoundingClientRect();
+    const x = event.clientX - rect.left - rect.width / 2;
+    const y = event.clientY - rect.top - rect.height / 2;
+    const length = Math.hypot(x, y);
+    const scale = length > 16 ? 16 / length : 1;
+    panVector = { x: x * scale, y: y * scale };
+    panThumb.style.transform = `translate(${panVector.x}px, ${panVector.y}px)`;
+  }
+  function panTick(time) {
+    if (panPointer === null || panButton.disabled) return stopPan();
+    const elapsed = panTime ? Math.min(time - panTime, 50) : 16;
+    panTime = time;
+    const frame = document.getElementById('map-frame');
+    const detail = { dx: panVector.x * elapsed / 20, dy: panVector.y * elapsed / 20, handled: false };
+    try {
+      if (Math.hypot(panVector.x, panVector.y) > 2) {
+        frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('shantu-desktop-pan', { detail }));
+      }
+    } catch { return stopPan(); }
+    panFrame = requestAnimationFrame(panTick);
+  }
   let toggling = false;
   function setHelp(open) {
     help.hidden = !open;
     helpButton.setAttribute('aria-expanded', String(open));
   }
   function selectWorkspace(name) {
+    stopPan();
+    panButton.disabled = name !== 'map';
     if (name === 'industry' && !document.getElementById('industry-frame').getAttribute('src')) {
       document.getElementById('industry-frame').src = '/industry/';
     }
@@ -73,10 +112,12 @@
         const doc = frame.contentDocument;
         doc.addEventListener('keydown', handleKey, true);
         if (frame.id === 'map-frame') {
+          doc.documentElement.dataset.shantuDesktop = 'true';
           // The selection surface owns map gestures. Keep the existing desktop controls clickable above it.
           const style = doc.createElement('style');
           style.dataset.desktopMapControls = 'true';
-          style.textContent = `.observatory.home-map:has(.map-box-selection[data-active='true']) .home-position-dock:not(:has(.route-display-settings)),
+          style.textContent = `html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control, .map-comparison-ui .map-comparison-gizmo) { left: 50%; right: auto; transform: translateX(-50%); }
+            .observatory.home-map:has(.map-box-selection[data-active='true']) .home-position-dock:not(:has(.route-display-settings)),
             .observatory.home-map:has(.map-box-selection[data-active='true']) .home-camera-control { z-index: 25; }`;
           doc.head.append(style);
         }
@@ -84,6 +125,18 @@
     });
   }
   helpButton.addEventListener('click', () => setHelp(help.hidden));
+  panButton.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || panButton.disabled || panPointer !== null) return;
+    event.preventDefault();
+    panPointer = event.pointerId;
+    panButton.setPointerCapture(event.pointerId);
+    updatePan(event);
+    panFrame = requestAnimationFrame(panTick);
+  });
+  panButton.addEventListener('pointermove', event => { if (event.pointerId === panPointer) updatePan(event); });
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) panButton.addEventListener(type, stopPan);
+  window.addEventListener('blur', stopPan);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopPan(); });
   document.getElementById('help-close').addEventListener('click', () => { setHelp(false); helpButton.focus(); });
   fullscreenButton.addEventListener('click', () => void toggleFullscreen());
   document.addEventListener('keydown', handleKey, true);

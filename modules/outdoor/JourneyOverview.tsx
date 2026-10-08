@@ -9,9 +9,10 @@ import { ColorElevation } from '../tracks/ColorElevation';
 import { RouteAnalysisSummary } from '../routeAnalysis/RouteAnalysisSummary';
 
 /** First journey layer. Read existing tracks; deeper tools retain their own screens. */
-export function JourneyOverview({ tracks, selectedId, recordingStarted, onSelect, onShow, onRecord, onPhotos, onTool }: {
+export function JourneyOverview({ tracks, selectedId, recordingStarted, recordingEnabled = true, onSelect, onShow, onRecord, onPhotos, onTool }: {
   tracks: ManualTrack[]; selectedId: string | null;
   recordingStarted: boolean;
+  recordingEnabled?: boolean;
   onSelect: (id: string) => void; onShow: (points: Coordinate[]) => void;
   onRecord: () => void; onPhotos: () => void;
   onTool: (tool: 'files' | 'routing' | 'return') => void;
@@ -33,10 +34,10 @@ export function JourneyOverview({ tracks, selectedId, recordingStarted, onSelect
       </select> : <strong>我的行程</strong>}
       <button aria-label="行程更多操作" aria-expanded={more} onClick={() => setMore(!more)}><MoreHorizontal size={20} /></button>
     </header>
-    {!more && <button className="journey-record-entry" onClick={onRecord}><Footprints size={16} />{recordingStarted ? '当前实走记录' : '新建实走记录'}</button>}
+    {recordingEnabled && !more && <button className="journey-record-entry" onClick={onRecord}><Footprints size={16} />{recordingStarted ? '当前实走记录' : '新建实走记录'}</button>}
     {more ? <nav className="journey-more" aria-label="行程更多">
       <button onClick={() => setMore(false)}><ChevronLeft size={16} />返回行程</button>
-      <button onClick={onRecord}><Settings2 size={16} />实走记录与设置</button>
+      {recordingEnabled && <button onClick={onRecord}><Settings2 size={16} />实走记录与设置</button>}
       <button onClick={() => onTool('files')}>导入 / 导出数据</button>
       <button onClick={() => onTool('routing')}>离线路网管理</button>
     </nav> : <>

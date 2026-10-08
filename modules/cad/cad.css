@@ -1,0 +1,16 @@
+.cad-panel { display:grid; gap:4px; }
+.cad-panel[open] > * { margin-top:4px; }
+.cad-panel :is(select,input[type=number],button,.cad-file) { box-sizing:border-box; min-height:36px; border-radius:4px; max-width:100%; }
+.cad-panel :is(select,input[type=number]) { width:100%; font-size:16px; }
+.cad-panel label { display:grid; gap:4px; }
+.cad-panel :is(.cad-import-options,.cad-entities) { border:1px solid var(--ui-border); padding:6px; border-radius:8px; }
+.cad-panel :is(strong,small) { overflow-wrap:anywhere; }
+.cad-panel small { display:block; font-size:11px; }
+.cad-file { position:relative;display:flex!important;align-items:center;justify-content:center;background:var(--ui-field);border:1px solid var(--ui-border);overflow:hidden; }
+.cad-file input { position:absolute;inset:0;opacity:0;width:100%;cursor:pointer; }
+.cad-actions { display:flex;flex-wrap:wrap;gap:4px;margin-top:4px; }
+.cad-actions button { flex:1 1 100px; }
+.cad-entities { max-height:150px;overflow:auto; }
+.cad-entities label { display:flex;align-items:center;min-height:36px;border-bottom:1px solid var(--ui-border); }
+.cad-entities input { flex:0 0 20px; }
+.cad-entities span { min-width:0;overflow-wrap:anywhere; }

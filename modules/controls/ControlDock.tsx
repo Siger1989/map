@@ -59,6 +59,7 @@ export function ControlDock({
   onCompare,
   onArea,
   industryEnabled = false,
+  showRecordingEntry = true,
   keepOpenOnMapInteraction = false,
   mapPicking = false,
 }: {
@@ -79,6 +80,7 @@ export function ControlDock({
   onCompare?: () => void;
   onArea?: () => void;
   industryEnabled?: boolean;
+  showRecordingEntry?: boolean;
   keepOpenOnMapInteraction?: boolean;
   mapPicking?: boolean;
 }) {
@@ -215,7 +217,7 @@ export function ControlDock({
       <div className="map-toolbar">
         <nav className="home-bottom-nav" aria-label="地图功能">
           {[
-            PANELS[0],
+            ...(showRecordingEntry ? [PANELS[0]] : []),
             PANELS.find((p) => p.id === 'route')!,
             PANELS.find((p) => p.id === 'track')!,
             PANELS.find((p) => p.id === 'favorites')!,

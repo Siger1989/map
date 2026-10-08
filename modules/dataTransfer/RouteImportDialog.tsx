@@ -13,7 +13,7 @@ export function RouteImportDialog({ files, error, status, onClose, onImported }:
       <header><strong>导入路线与收藏</strong><button onClick={onClose}>关闭</button></header>
       {error && <p role="alert">{error}</p>}
       {status ? <p role="status">{status}</p> : <TransferPanel importOnly initialFiles={files} onImported={onImported} />}
-      <small>文件最多 8 MB / 个；导入前预览，保留已有收藏。</small>
+      <small>普通路线≤8MB，CAD≤20MB，完整JSON≤100MB；先校验预览，再确认载入。</small>
     </section>
   </div>;
 }

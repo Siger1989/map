@@ -2,8 +2,9 @@ import { coordinate, type RoutePlace } from './types.ts';
 
 const SEARCH_ENDPOINT = 'https://api.tianditu.gov.cn/v2/search';
 const NATIONAL_MAP_BOUND = '73,3,136,54';
+const MAX_TDT_SEARCH_RESULTS = 300;
 
-/** Build the documented nationwide ordinary-search request (queryType 1). */
+/** Build a nationwide place-name request with detailed locality fields. */
 export function buildTiandituSearchURL(query: string, key: string): string {
   const keyword = typeof query === 'string' ? query.trim().slice(0, 120) : '';
   if (!keyword) throw new Error('请输入搜索内容。');
@@ -17,9 +18,10 @@ export function buildTiandituSearchURL(query: string, key: string): string {
       keyWord: keyword,
       level: 12,
       mapBound: NATIONAL_MAP_BOUND,
-      queryType: 1,
+      queryType: 7,
       start: 0,
-      count: 10,
+      count: MAX_TDT_SEARCH_RESULTS,
+      show: 2,
     }),
   );
   url.searchParams.set('type', 'query');
@@ -31,6 +33,9 @@ type TiandituPoi = {
   name?: unknown;
   lonlat?: unknown;
   address?: unknown;
+  province?: unknown;
+  city?: unknown;
+  county?: unknown;
 };
 
 function statusCode(status: unknown): number | undefined {
@@ -92,13 +97,23 @@ export function normalizeTiandituPlaces(data: unknown): RoutePlace[] {
     const signature = `${name.toLocaleLowerCase()}|${coordinates[0]}|${coordinates[1]}`;
     if (seen.has(signature)) continue;
     seen.add(signature);
-    const address = typeof item.address === 'string' ? item.address.trim() : '';
+    const locality = [...new Set([item.province, item.city, item.county]
+      .filter((value): value is string => typeof value === 'string')
+      .map((value) => value.trim())
+      .filter(Boolean))];
+    let address = typeof item.address === 'string' ? item.address.trim() : '';
+    // Detailed TDT addresses often repeat the province/city/county fields.
+    // Remove those literal locality labels from the address, retaining the
+    // street, attraction, or other more specific suffix.
+    for (const part of locality) address = address.split(part).join('');
+    address = address.replace(/[\s·,，、;；|/\\-]+/g, ' ').trim();
+    const detail = [locality.join(' · '), address].filter(Boolean).join(' · ');
     places.push({
       name: name.slice(0, 160),
       coordinates,
-      ...(address ? { detail: address.slice(0, 240) } : {}),
+      ...(detail ? { detail: detail.slice(0, 240) } : {}),
     });
-    if (places.length === 10) break;
+    if (places.length === MAX_TDT_SEARCH_RESULTS) break;
   }
   return places;
 }

@@ -9,6 +9,7 @@ import { routeNameOrDefault } from '../navigation/routeName.ts';
 import { trackDistance, resolvedRouteTerminals } from '../tracks/drawing.ts';
 import { exportGPX, exportKML } from '../outdoor/exchange.ts';
 import type { Annotation } from '../annotations/data';
+import type { Transfer } from '../dataTransfer/types.ts';
 export type ShareRoute = {
   routingSource?: PlannedRoute['routingSource'];
   name: string;
@@ -98,7 +99,7 @@ export function shareImageTerminals(data: ShareRoute) {
     ...(last ? [{ name: last.name, point: last.coordinates, label: '终点', color: '#ce3c45' }] : []),
   ];
 }
-export function routeFileText(data: ShareRoute, format: 'gpx' | 'kml') {
+export function routeTransfer(data: ShareRoute): Transfer {
   const track: ManualTrack = data.track ?? {
     id: 'share',
     name: data.name,
@@ -112,6 +113,10 @@ export function routeFileText(data: ShareRoute, format: 'gpx' | 'kml') {
     annotations: data.markers ?? [],
     favorites: [],
   };
+  return transfer;
+}
+export function routeFileText(data: ShareRoute, format: 'gpx' | 'kml') {
+  const transfer = routeTransfer(data);
   return (format === 'gpx' ? exportGPX : exportKML)(transfer);
 }
 /** Minimal longitude arc: a route crossing 180 degrees must not shrink to a world map. */

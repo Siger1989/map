@@ -113,7 +113,13 @@ async function main() {
     logLevel: 'silent',
   });
   await writeFile(privateConfigPath, `${JSON.stringify(privateConfig)}\n`, { encoding: 'utf8', mode: 0o600 });
-  await copyFile(process.execPath, nodePath);
+  // An unchanged runtime may already serve an isolated preview on Windows.
+  // Avoid attempting to overwrite its locked executable.
+  const nodeSource = await readFile(process.execPath);
+  let nodeAlreadyMatches = false;
+  try { nodeAlreadyMatches = nodeSource.equals(await readFile(nodePath)); }
+  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  if (!nodeAlreadyMatches) await copyFile(process.execPath, nodePath);
 
   const webSeed = JSON.parse(await readFile(seedTarget, 'utf8'));
   const webFiles = await walkFiles(webRoot);

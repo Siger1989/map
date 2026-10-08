@@ -19,6 +19,7 @@ import type { RoadSnapper } from './roadSnapping';
 import { riverHint } from './riverSnapping';
 import type { SnapViewport } from './snapping';
 import type { TrackRenderReceipt } from './trackRenderHandoff';
+import { isDesktopShell } from '../platform/desktop';
 export type TrackDrawingHandle = {
   input: (event: DrawingInput) => void;
   retainCommit: (receipt: TrackRenderReceipt, line: Coordinate[]) => void;
@@ -142,12 +143,15 @@ export const TrackDrawing = forwardRef<
   const distanceText = `累计 ${formatDistance(committedDistance + (preview?.distanceMetres ?? 0))}`;
   const labelWidth = Math.max(88, distanceText.length * 8 + 16);
   const labelBelow = preview?.kind === 'aim' && distanceTip && distanceTip.y > 125;
+  const desktopShell = isDesktopShell();
   const instruction =
     hint ||
     (p.mode === 'points'
       ? p.riverSnapping
-        ? '河流吸附 · 准星沿河定点 · 双指控图'
-        : '准星定点 · 松手连接 · 双指控图'
+        ? `河流吸附 · 准星沿河定点 · ${desktopShell ? '顶部控制器平移' : '双指控图'}`
+        : desktopShell
+          ? '准星定点 · 松开鼠标连接 · 顶部控制器平移'
+          : '准星定点 · 松手连接 · 双指控图'
       : p.anchor
         ? '② 起点已定：按住绿色环拖动即可画线'
         : '① 按住地图移动准星，松手只确认起点');

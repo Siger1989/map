@@ -1,8 +1,12 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { CurrentMapContext } from './CurrentMapContext';
 import { TRAVEL_MODES } from '../navigation/types';
-import { externalLegs, routeFileText, type ShareRoute } from './data';
+import { externalLegs, routeFileText, routeTransfer, type ShareRoute } from './data';
 import { deliverRouteFile } from './delivery';
+import { canShareGeneratedFile } from '../files/delivery.ts';
+import { readActiveProjectCrs, type ProjectCrs } from '../coordinates/index.ts';
+import { CrsSelector } from '../coordinates/CrsSelector.tsx';
+import { exportCoordinateExchangeCsv, exportCoordinateExchangeJson } from '../coordinates/exchange.ts';
 import { renderRouteImage } from './image';
 import '../guidance/navigationStart.css';
 import './routeShare.css';
@@ -37,6 +41,7 @@ export function RouteShare({
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(''),
     [mode, setMode] = useState(data.mode);
+  const [targetCrs, setTargetCrs] = useState<ProjectCrs>(() => readActiveProjectCrs());
   const abort = useRef<AbortController | null>(null),
     url = useRef('');
   useEffect(
@@ -97,6 +102,19 @@ export function RouteShare({
         share,
       ),
     );
+  const coordinateFile = (format: 'json' | 'csv', share: boolean) =>
+    run(() => {
+      const transfer = routeTransfer(data);
+      const text = format === 'json'
+        ? exportCoordinateExchangeJson(transfer, targetCrs)
+        : exportCoordinateExchangeCsv(transfer, targetCrs);
+      const mime = format === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8';
+      return deliverFile(new File([text], `Shantu-route-coordinates-${Date.now()}.${format}`, { type: mime }), share);
+    });
+  const canShareGpx = canShareGeneratedFile('Shantu-route.gpx', 'application/gpx+xml');
+  const canShareKml = canShareGeneratedFile('Shantu-route.kml', 'application/vnd.google-earth.kml+xml');
+  const canShareCoordinateJson = canShareGeneratedFile('Shantu-route-coordinates-1.json', 'application/json;charset=utf-8');
+  const canShareCoordinateCsv = canShareGeneratedFile('Shantu-route-coordinates-1.csv', 'text/csv;charset=utf-8');
   const links = externalLegs({ ...data, mode });
   const photoCount = photosForTrack(data.track, photos).length;
   const bundle = (share: boolean) =>
@@ -217,20 +235,35 @@ export function RouteShare({
           </a>
         )}
         <p role="status">{message}</p>
-        <details>
+        <details open>
+          <summary>工程坐标交换 · JSON / CSV</summary>
+          <p>选择目标工程坐标系后保存或分享，文件内包含 CRS 元数据与路线点位/已有海拔。此格式用于山兔工程坐标交换，不替代 GPX/KML。</p>
+          <CrsSelector id="route-share-target-crs" value={targetCrs} onChange={setTargetCrs} label="导出坐标系" />
+          <div className="route-share-actions">
+            <div>
+              <button disabled={busy} onClick={() => void coordinateFile('json', false)}>保存工程 JSON</button>
+              <button disabled={busy || !canShareCoordinateJson} onClick={() => void coordinateFile('json', true)}>分享工程 JSON</button>
+            </div>
+            <div>
+              <button disabled={busy} onClick={() => void coordinateFile('csv', false)}>保存工程 CSV</button>
+              <button disabled={busy || !canShareCoordinateCsv} onClick={() => void coordinateFile('csv', true)}>分享工程 CSV</button>
+            </div>
+          </div>
+          <p>桌面环境优先保存；不支持系统分享时仍可保存文件后手动发送。</p>
+        </details>
+        <details open>
           <summary>通用路线文件 · GPX / KML</summary>
           <p>
-            两种文件保留完整线形；GPX 另保留已有拍摄时间轴和海拔，KML
-            用于通用点线交换。
+            GPX/KML 坐标固定为 WGS 84 并保留完整线形；GPX 保留已有时间和海拔，KML 保留已有海拔。未知时间不会补造。
           </p>
           <div className="route-share-actions">
             {(['gpx', 'kml'] as const).map((f) => (
               <div key={f}>
-                <button disabled={busy} onClick={() => void file(f, true)}>
-                  分享 {f.toUpperCase()}
-                </button>
                 <button disabled={busy} onClick={() => void file(f, false)}>
                   保存 {f.toUpperCase()}
+                </button>
+                <button disabled={busy || (f === 'gpx' ? !canShareGpx : !canShareKml)} onClick={() => void file(f, true)}>
+                  分享 {f.toUpperCase()}
                 </button>
               </div>
             ))}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ManualTrack } from './drawing';
 import type { Coordinate } from '../navigation/types';
 import { sampleTerrain, type ElevationSample } from '../journey/metrics';
@@ -9,13 +9,18 @@ export function TrackColorProfile({
   track,
   lines,
   onCondition,
+  onSamples,
 }: {
   track: ManualTrack;
   lines: Coordinate[][];
   onCondition?: (color: string, value: string) => boolean;
+  onSamples?: (samples: ElevationSample[], lines: Coordinate[][]) => void;
 }) {
   const key = JSON.stringify(lines);
-  const points = useMemo(() => sampleTerrain(JSON.parse(key)), [key]);
+  const profileLines = useMemo(() => JSON.parse(key) as Coordinate[][], [key]);
+  const points = useMemo(() => sampleTerrain(profileLines), [profileLines]);
+  const onSamplesRef = useRef(onSamples);
+  onSamplesRef.current = onSamples;
   const [result, setResult] = useState<{
       points: typeof points;
       samples: ElevationSample[];
@@ -25,18 +30,25 @@ export function TrackColorProfile({
   useEffect(() => {
     const request = new AbortController();
     setLoading(true);
+    onSamplesRef.current?.([], profileLines);
     void readProfile(points, request.signal)
       .then((samples) => {
-        if (!request.signal.aborted) setResult({ points, samples });
+        if (!request.signal.aborted) {
+          setResult({ points, samples });
+          onSamplesRef.current?.(samples, profileLines);
+        }
       })
       .catch(() => {
-        if (!request.signal.aborted) setResult({ points, samples: [] });
+        if (!request.signal.aborted) {
+          setResult({ points, samples: [] });
+          onSamplesRef.current?.([], profileLines);
+        }
       })
       .finally(() => {
         if (!request.signal.aborted) setLoading(false);
       });
     return () => request.abort();
-  }, [points, retry]);
+  }, [points, profileLines, retry]);
   return (
     <>
       <ColorElevation

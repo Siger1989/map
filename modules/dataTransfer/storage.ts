@@ -20,12 +20,14 @@ import {
   entriesFor,
   parseLayout,
 } from '../collections/data.ts';
-import { mergeCollections } from '../collections/transfer.ts';
+import { mergeCollections, syncCollections } from '../collections/transfer.ts';
 import { TRACK_STORAGE } from '../tracks/drawing.ts';
 import { ANNOTATION_STORAGE } from '../annotations/data.ts';
 import { FAVORITES_STORAGE } from '../navigation/favorites.ts';
 import { DATA_CHANGED, type Transfer } from './types.ts';
 import { validateTransfer } from './validation.ts';
+import { mergeById, mergeSectionNotes } from './syncMerge.ts';
+export { summarizeSync } from './syncMerge.ts';
 
 const COLLECT_DATA_KEYS = [
   TRACK_STORAGE,
@@ -104,6 +106,34 @@ export function collectData(
   });
   lastCollected = { storage, raw, data: clonePlain(data) };
   return data;
+}
+function writeTransfer(
+  next: Transfer,
+  storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>,
+  notify: boolean,
+) {
+  const values: [string, unknown][] = [
+    [TRACK_STORAGE, next.tracks],
+    [ANNOTATION_STORAGE, next.annotations],
+    [FAVORITES_STORAGE, next.favorites],
+  ];
+  if (next.collections) values.push([COLLECTION_STORAGE, next.collections]);
+  if (next.sections) values.push([SECTION_OBJECTS_KEY, next.sections]);
+  if (next.sectionNotes) values.push([PROFILE_NOTES_KEY, next.sectionNotes]);
+  if (next.regions) values.push([REGION_STORAGE, next.regions]);
+  if (next.areas) values.push([AREA_STORAGE, next.areas]);
+  if (next.measurements)
+    values.push([SAVED_MEASUREMENTS_KEY, { version: 1, items: next.measurements }]);
+  const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
+  try {
+    for (const [key, data] of values) storage.setItem(key, JSON.stringify(data));
+  } catch {
+    for (const [key, raw] of originals) {
+      try { raw === null ? storage.removeItem(key) : storage.setItem(key, raw); } catch {}
+    }
+    throw new Error('存储不足，导入未完成；请检查原存档并释放空间');
+  }
+  if (notify && typeof window !== 'undefined') window.dispatchEvent(new Event(DATA_CHANGED));
 }
 /** Validate the entire merge before any write, roll back if a quota write fails. */
 export function mergeData(
@@ -333,34 +363,45 @@ export function mergeData(
     }
   }
   validateTransfer(next);
-  const values: [string, unknown][] = [
-    [TRACK_STORAGE, next.tracks],
-    [ANNOTATION_STORAGE, next.annotations],
-    [FAVORITES_STORAGE, next.favorites],
-  ];
-  if (next.collections) values.push([COLLECTION_STORAGE, next.collections]);
-  if (next.sections) values.push([SECTION_OBJECTS_KEY, next.sections]);
-  if (next.sectionNotes) values.push([PROFILE_NOTES_KEY, next.sectionNotes]);
-  if (next.regions) values.push([REGION_STORAGE, next.regions]);
-  if (next.areas) values.push([AREA_STORAGE, next.areas]);
-  if (next.measurements)
-    values.push([
-      SAVED_MEASUREMENTS_KEY,
-      { version: 1, items: next.measurements },
-    ]);
-  const originals = values.map(([key]) => [key, storage.getItem(key)] as const);
-  try {
-    for (const [key, data] of values)
-      storage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    for (const [key, raw] of originals) {
-      try {
-        raw === null ? storage.removeItem(key) : storage.setItem(key, raw);
-      } catch {}
-    }
-    throw new Error('存储不足，导入未完成；请检查原存档并释放空间');
-  }
-  if (notify && typeof window !== 'undefined')
-    window.dispatchEvent(new Event(DATA_CHANGED));
+  writeTransfer(next, storage, notify);
+  return next;
+}
+
+/** Synchronize by stable identity: incoming records replace matching IDs; receiver-only records survive. */
+export function syncData(
+  incoming: Transfer,
+  storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = localStorage,
+  notify = true,
+) {
+  validateTransfer(incoming);
+  const before = collectData(storage);
+  const next: Transfer = {
+    ...before,
+    tracks: mergeById(before.tracks, incoming.tracks),
+    annotations: mergeById(before.annotations, incoming.annotations),
+    favorites: mergeById(before.favorites, incoming.favorites),
+    ...((before.areas || incoming.areas)
+      ? { areas: mergeById(before.areas ?? [], incoming.areas ?? []) }
+      : {}),
+    ...((before.measurements || incoming.measurements)
+      ? { measurements: mergeById(before.measurements ?? [], incoming.measurements ?? []) }
+      : {}),
+    ...((before.sections || incoming.sections)
+      ? { sections: mergeById(before.sections ?? [], incoming.sections ?? []) }
+      : {}),
+  };
+  const incomingKeys = new Set<string>();
+  for (const entry of entriesFor(incoming.favorites, incoming.tracks)) incomingKeys.add(entry.key);
+  for (const item of incoming.annotations) incomingKeys.add(`annotation:${item.id}`);
+  for (const item of incoming.areas ?? []) incomingKeys.add(`area:${item.id}`);
+  for (const item of incoming.measurements ?? []) incomingKeys.add(`measurement:${item.id}`);
+  for (const item of incoming.sections ?? []) incomingKeys.add(`section:${item.id}`);
+  next.collections = syncCollections(before.collections, incoming.collections, incomingKeys);
+  if (before.regions || incoming.regions)
+    next.regions = { ...(before.regions ?? {}), ...(incoming.regions ?? {}) };
+  if (before.sectionNotes || incoming.sectionNotes)
+    next.sectionNotes = mergeSectionNotes(before.sectionNotes ?? [], incoming.sectionNotes ?? []);
+  validateTransfer(next);
+  writeTransfer(next, storage, notify);
   return next;
 }

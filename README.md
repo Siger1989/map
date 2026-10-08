@@ -1,5 +1,7 @@
 # 山兔
 
+2026-10-08：本机私有交付 **0.2.114-test/code121**，一个手机APK与一个PC单文件EXE；加入完整JSON双向迁移、DWG/DXF、工程坐标转换/导出选择、无GPS草稿分享和记录中隐藏UI修复。见[综合交接](docs/desktop-json-pan-20261008.md)、[产物与SHA](docs/release-0.2.114-local.txt)、[UI证据](docs/ui-quality-gate.md)。含用户私有图源配置的包只在本机交付；下方公开旧版Release不代表本次114版本。源码在`codex/rollback-ui-0235-20260921`，未合main；Android/Windows原生设备验收仍待完成。
+
 2026-09-30：0.2.88-test（versionCode95）根据使用反馈移除地图自动缓存、沿线下载和仅缓存入口，恢复正常联网请求，保留轨迹和导入图源。旧缓存数据不自动删除。860项测试、类型检查、APK资源与签名验证通过；手机速度待实测。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.88-test-standalone/Shantu-0.2.88-test-standalone-public.apk) · [发行说明](docs/release-0.2.88.md)。
 
 2026-09-30：0.2.87-test（versionCode94）将自动缓存限定为路线附近实际浏览的瓦片，取消预取；删路线清理独占自动缓存。主动下载仅支持自行导入的在线图源和沿线区域，按图源声明开放19等整数级别。857项测试、类型检查和APK资源/签名核验通过，真机待验。[下载APK](https://github.com/Siger1989/map/releases/download/v0.2.87-test-standalone/Shantu-0.2.87-test-standalone-public.apk) · [发行说明](docs/release-0.2.87.md) · [使用说明](docs/automatic-map-cache.md)。
@@ -64,6 +66,8 @@ Android：`npm run build:apk -- -StandaloneTest`，SDK/JDK与原签名要求见 
 - 画线、节点编辑、记录、导航、收藏、照片与文件交换。
 - 标记与模型精确调整、测量/勘探/剖面。
 - 0.2.35 的自定义布局、行程点数据和全线陡坡提示修复。
+
+工程坐标转换支持显式 CRS 元数据、CGCS2000 常用高斯克吕格分带及 WGS 84 UTM。CGCS2000 与 WGS 84 间按零平移参数作近似转换，适用于一般工程数据交换；这不代表已完成测绘级基准转换。北京54/西安80没有经核实的本地三参数或七参数时，跨基准转换会拒绝执行。
 
 以上是代码能力概览，不等于真机验收。HarmonyOS 6.1 原生 HAP/APP 尚未交付。
 

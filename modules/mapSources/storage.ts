@@ -4,6 +4,7 @@ import {
   type MapDraft,
   type StoredMap,
   type MapSource,
+  validateStoredMap,
 } from './types.ts';
 import { existingMapIndexes, sameOnlineMap } from './importReview.ts';
 import type { DefaultSeedBundle } from './defaultSeeds.ts';
@@ -73,6 +74,15 @@ export async function listMaps(): Promise<MapSource[]> {
     request.onerror = () => reject(new Error('读取地图库失败'));
   });
 }
+/** Read full persisted rows verbatim for an exact multi-store rollback snapshot. */
+export async function snapshotMapSources(): Promise<StoredMap[]> {
+  const db=await database();
+  return new Promise((resolve,reject)=>{
+    const request=db.transaction('maps').objectStore('maps').getAll();
+    request.onsuccess=()=>resolve(request.result as StoredMap[]);
+    request.onerror=()=>reject(new Error('读取图源回滚快照失败'));
+  });
+}
 export async function readMap(id: string): Promise<StoredMap | undefined> {
   const db = await database();
   return new Promise((resolve, reject) => {
@@ -108,6 +118,60 @@ export async function addMaps(records: StoredMap[]): Promise<void> {
     tx.oncomplete = () => resolve();
     tx.onabort = () => reject(new Error(reason));
     tx.onerror = () => {};
+  });
+}
+
+/** Exact-ID sync in one IndexedDB transaction; receiver-only maps remain untouched. */
+export async function syncMapSources(incoming: StoredMap[]): Promise<StoredMap[]> {
+  const validated = incoming.map(validateStoredMap);
+  if (new Set(validated.map((map)=>map.id)).size !== validated.length) throw new Error('图源同步清单含重复编号');
+  const db=await database();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('maps','readwrite'), store=tx.objectStore('maps');
+    let output: StoredMap[]=[], reason='图源同步失败，可能本机空间不足';
+    const request=store.getAll();
+    request.onsuccess=()=>{
+      const merged=new Map<string,StoredMap>((request.result as StoredMap[]).map((map)=>[map.id,map]));
+      for(const map of validated) merged.set(map.id,map);
+      output=[...merged.values()];
+      const bytes=output.reduce((n,map)=>n+map.bytes,0);
+      if(output.length>MAX_MAPS||bytes>MAX_STORAGE_BYTES){reason=`地图库最多 ${MAX_MAPS} 项 / 256 MB`;tx.abort();return;}
+      for(const map of validated) store.put(map);
+    };
+    request.onerror=()=>{reason='读取本机地图库失败';tx.abort();};
+    tx.oncomplete=()=>resolve(output);
+    tx.onabort=tx.onerror=()=>reject(new Error(reason));
+  });
+}
+
+/** Exact snapshot restoration in one transaction; it intentionally removes later additions. */
+export async function replaceMapSources(records: StoredMap[]): Promise<void> {
+  const validated=records.map(validateStoredMap);
+  if(new Set(validated.map((map)=>map.id)).size!==validated.length) throw new Error('图源恢复清单含重复编号');
+  const bytes=validated.reduce((n,map)=>n+map.bytes,0);
+  if(validated.length>MAX_MAPS||bytes>MAX_STORAGE_BYTES) throw new Error('图源恢复清单超过100项 / 256MB');
+  const db=await database();
+  await new Promise<void>((resolve,reject)=>{
+    const tx=db.transaction('maps','readwrite'),store=tx.objectStore('maps');
+    let reason='图源恢复失败';
+    const request=store.clear();
+    request.onsuccess=()=>{for(const map of validated) store.put(map);};
+    request.onerror=()=>{reason='清空图源恢复目标失败';tx.abort();};
+    tx.oncomplete=()=>resolve();
+    tx.onabort=tx.onerror=()=>reject(new Error(reason));
+  });
+}
+/** Exact restore for rows read from this database, even if an older row fails current validation. */
+export async function restoreMapSourceSnapshot(records: StoredMap[]): Promise<void> {
+  const db=await database();
+  await new Promise<void>((resolve,reject)=>{
+    const tx=db.transaction('maps','readwrite'),store=tx.objectStore('maps');
+    let reason='图源回滚恢复失败';
+    const request=store.clear();
+    request.onsuccess=()=>{for(const record of records)store.put(record);};
+    request.onerror=()=>{reason='清理图源回滚目标失败';tx.abort();};
+    tx.oncomplete=()=>resolve();
+    tx.onabort=tx.onerror=()=>reject(new Error(reason));
   });
 }
 

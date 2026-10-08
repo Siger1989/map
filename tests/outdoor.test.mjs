@@ -11,6 +11,7 @@ import {
   mergeData,
   validateTransfer,
   exportGPX,
+  exportKML,
 } from '../modules/outdoor/exchange.ts';
 import { planBounds, regionTiles } from '../modules/outdoor/offline.ts';
 const fix = (time, x = 103, accuracy = 5) => ({
@@ -152,4 +153,19 @@ test('GPS timestamps and elevation survive backup and GPX export', () => {
   assert.throws(() =>
     validateTransfer({ ...blank(), tracks: [{ ...tracked, samples: [[]] }] }),
   );
+});
+test('hand-drawn sampled elevations export to GPX/KML without inventing GPS time', () => {
+  const manual = {
+    ...track,
+    source: 'manual',
+    samples: [[{ time: null, altitude: 1142 }, { time: null, altitude: 2386 }], [{ time: null, altitude: 1600 }, { time: null, altitude: null }]],
+  };
+  const data = validateTransfer({ ...blank(), tracks: [manual] });
+  const gpx = exportGPX(data), kml = exportKML(data);
+  assert.match(gpx, /<ele>1142<\/ele>/);
+  assert.match(gpx, /<ele>2386<\/ele>/);
+  assert.doesNotMatch(gpx, /<time>/);
+  assert.match(kml, /103,31,1142 103\.1,31,2386/);
+  assert.match(kml, /<altitudeMode>clampToGround<\/altitudeMode><tessellate>1<\/tessellate><coordinates>104,31 104\.1,31<\/coordinates>/);
+  assert.match(kml, /<Point><altitudeMode>absolute<\/altitudeMode><coordinates>104,31,1600<\/coordinates><\/Point>/);
 });

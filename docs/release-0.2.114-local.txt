@@ -1,0 +1,39 @@
+山兔 0.2.114-test / Android versionCode121
+日期：2026-10-08；源码分支 codex/rollback-ui-0235-20260921（未合main）
+源码构建基准 c9bf2d30b24a70cfaf00968daabca72da7e611ce + 本轮已审核工作区；包含本记录的提交为最终源码同步点。
+
+交付：
+手机固定入口 APK/山兔手机.apk
+版本留档 APK/Shantu-0.2.114-test-standalone.apk
+69887604 bytes
+SHA256 673fdafa08ce1690c0285a67c48365dd46bace1bbf849b89dcc8c2c683488bb2
+实际 standalone applicationId com.guanyun.weather.shantu.preview；保留原standalone签名身份。
+
+PC固定入口 EXE/山兔桌面.exe（单文件；复制这一文件即可）
+版本留档 EXE/山兔桌面-0.2.114.exe
+123259404 bytes
+SHA256 81081586426cef97819376d89a02ce7bcc8af7ffa45027d8f9e5fa8c9400d58e
+Windows仍需WebView2；行业PNG渲染使用已安装Edge/Chrome。原用户文档目录/固定9190地图来源继续沿用。
+
+构建与定向验证 PASS：
+- tsc、88/88定向测试；Java17 ArchiveTransferCheck及9MiB有界分块跨8MiB旧限制通过。
+- 最终APK stage mobile/.build/apk-20261008-195909/web：1920资源集合一致，1450逐字节一致、470优化PNG逐像素一致，CRC、zipalign、v2/v3签名与原证书检查通过。
+- 39图源种子与本机私有配置一致，天地图Key存在且一致（只记录布尔，不输出凭据）。
+- 最终EXE相同SHA的中文空格路径隔离副本：隐藏self-test两类SVG/PNG成功，隐藏serve地图/行业/WASM/图源HTTP200；stop退出0，Node退出，无本轮临时解包残留。
+- 主审最终APK资源记录中390/360隐藏→解锁且记录阶段不变；实际DWG worker解码5对象。
+- 主审完整JSON手机→PC→手机，同ID覆盖、双方独有保留、照片/CAD/Excel/图源/工程CRS保留。
+- 无GPS手绘草稿分享：可进入分享并选GK105，工程JSON与GPX均有5个真实地图顶点及已有DEM高程，未伪造GPS时间。GPX/KML固定WGS84，工程JSON/CSV可选目标CRS。
+
+设备与限制：
+Android覆盖安装、系统选择器/分享、100MiB实机内存、GPS/锁屏/后台和Windows原生窗口持久化/权限尚未验收。原生HarmonyOS包未交付。
+DWG/DXF为常用实体导入，不是完整CAD编辑器；未知CRS需人工选择，BJ54/Xian80无验证datum参数拒绝猜转换。坐标转换不做垂直基准/独立球差折光修正。
+PC原生空白/道路吸附具体失败环境尚未完整定位；默认海面低缩放及定位超时的解释不能充当原生渲染根因结论。
+完整JSON是文件迁移，接收端同ID覆盖且独有保留；不含可再生瓦片缓存、瞬态GPS、未完成草稿或未保存照片原文件。超出大小限制会提示，不能承诺无限数据。
+产物含用户授权本机私有图源配置，不公开GitHub Release；本轮仅同步源码、测试、构建脚本及交接。临时公网下载隧道被自动审批以 blocked by policy 拒绝，没有公网下载URL。
+
+入口及恢复/后续：
+收藏→导入→完整JSON：一键导出/载入完整JSON。导入确认摘要后执行覆盖/保留。
+工具→坐标系/坐标转换；CAD导入见CAD工具，坐标预览确认后存入图层；已导入原件可随完整JSON互载。
+详细文件接口与根因/复测条件：docs/desktop-json-pan-20261008.md，modules/cad/README.md。
+本机日志 .openai/final114-apk-build.log、final114-tsc.log、final114-targeted-tests.log、desktop-update-02114-verify.json；不入Git。
+保留9174手机预览/3108 API和用户旧EXE；不得清缓存或用户数据来伪造一致。

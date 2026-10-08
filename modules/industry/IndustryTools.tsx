@@ -3,15 +3,27 @@ import { generateGeology } from './engine.ts';
 import type { IndustryKind, IndustryResult } from './export';
 import { downloadIndustryBundle, downloadIndustryTemplate, downloadPng, downloadSvg, rasterizeIndustrySvg } from './export';
 import { IndustryDataTable } from './IndustryDataTable';
+import { readIndustryProjects, syncIndustryProjects, type IndustryProject } from './projectStorage.ts';
 import './industry.css';
 
-type KindState = { selectedFile?: File; successfulFile?: File; result?: IndustryResult; resultFilename?: string; png?: File; error?: string; notice?: string };
+type KindState = { selectedFile?: File; successfulFile?: File; result?: IndustryResult; resultFilename?: string; savedProjectId?: string; png?: File; error?: string; notice?: string };
 export type IndustryToolsState = { selectedKind: IndustryKind; byKind: Partial<Record<IndustryKind, KindState>> };
 type StateUpdate = IndustryToolsState | ((current: IndustryToolsState) => IndustryToolsState);
 
 export function createIndustryToolsState(): IndustryToolsState { return { selectedKind: 'section', byKind: {} }; }
 
 const MODE_LABEL: Record<IndustryKind, string> = { section: '实测剖面', drill: '钻孔柱状图' };
+function toBase64(buffer: ArrayBuffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let start = 0; start < bytes.length; start += 0x8000) binary += String.fromCharCode(...bytes.subarray(start, start + 0x8000));
+  return btoa(binary);
+}
+function projectFile(project: IndustryProject): File {
+  const binary = atob(project.sourceBase64), bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], project.name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
 type ZoomLevel = 'fit' | 100 | 200 | 400 | 800;
 function svgOriginalWidth(svg: string) {
   const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
@@ -32,6 +44,8 @@ export function IndustryTools({ state, onStateChange }: { state: IndustryToolsSt
   const [actionBusy, setActionBusy] = useState(false);
   const [actionError, setActionError] = useState('');
   const [previewUrls, setPreviewUrls] = useState<{ main: string; detail: string }>({ main: '', detail: '' });
+  const [savedProjects, setSavedProjects] = useState<IndustryProject[]>([]);
+  const [projectLoadError, setProjectLoadError] = useState('');
   const mainViewport = useRef<HTMLDivElement>(null);
   const detailViewport = useRef<HTMLDivElement>(null);
   const scrollAnchors = useRef({ mainX: 0, mainY: 0, detailX: 0, detailY: 0 });
@@ -39,6 +53,7 @@ export function IndustryTools({ state, onStateChange }: { state: IndustryToolsSt
   const staleResult = !!result && !!data.selectedFile && data.successfulFile !== data.selectedFile;
 
   useEffect(() => () => { requestId.current++; }, []);
+  useEffect(() => { void readIndustryProjects().then(setSavedProjects).catch(error => setProjectLoadError(error instanceof Error ? error.message : String(error))); }, []);
   useEffect(() => {
     if (!result) { setPreviewUrls({ main: '', detail: '' }); return; }
     const main = URL.createObjectURL(new Blob([result.svg], { type: 'image/svg+xml;charset=utf-8' }));
@@ -66,7 +81,7 @@ export function IndustryTools({ state, onStateChange }: { state: IndustryToolsSt
     onStateChange(current => ({ ...current, selectedKind: next }));
   };
 
-  const runFile = async (file: File) => {
+  const runFile = async (file: File, savedProjectId?: string) => {
     const id = ++requestId.current;
     update({ selectedFile: file, error: '', notice: '' }, kind);
     setBusy(true);
@@ -76,7 +91,19 @@ export function IndustryTools({ state, onStateChange }: { state: IndustryToolsSt
       if (requestId.current !== id) return;
       setZoom('fit');
       scrollAnchors.current = { mainX: 0, mainY: 0, detailX: 0, detailY: 0 };
-      update({ selectedFile: file, successfulFile: file, result: output, resultFilename: file.name, png: undefined, error: '', notice: '校验完成，图件已生成。' }, kind);
+      let notice = '校验完成，图件已生成。';
+      let projectId = savedProjectId;
+      try {
+        const previous = savedProjects.find(project => project.id === savedProjectId);
+        projectId ??= globalThis.crypto?.randomUUID?.() ?? ('industry-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+        const stored: IndustryProject = { id: projectId, name: file.name, kind, sourceBase64: toBase64(await file.arrayBuffer()), createdAt: previous?.createdAt ?? Date.now() };
+        setSavedProjects(await syncIndustryProjects([stored]));
+        setProjectLoadError('');
+        notice += ' 原始工作簿已保存到本机行业项目。';
+      } catch (error) {
+        notice += ' 图件已生成，但本机原文件保存失败：' + (error instanceof Error ? error.message : String(error));
+      }
+      update({ selectedFile: file, successfulFile: file, result: output, resultFilename: file.name, savedProjectId: projectId, png: undefined, error: '', notice }, kind);
     } catch (error) {
       if (requestId.current !== id) return;
       update({ selectedFile: file, error: error instanceof Error ? error.message : String(error), notice: '' }, kind);
@@ -143,6 +170,13 @@ export function IndustryTools({ state, onStateChange }: { state: IndustryToolsSt
         <button type="button" disabled={actionBusy} onClick={() => void action(() => downloadIndustryTemplate(kind))}>下载标准模板</button>
         <button type="button" disabled={actionBusy} onClick={() => void action(() => downloadIndustryTemplate(kind, true))}>下载示例工作簿</button>
       </div>
+      <section className="industry-saved-projects" aria-label="已保存的行业原始工作簿">
+        <strong>本机已保存工作簿</strong>
+        {projectLoadError && <p className="industry-error" role="alert">{projectLoadError}</p>}
+        {savedProjects.filter(project => project.kind === kind).length === 0 ? <p>暂无此图种的已保存项目。</p> : <ul>{savedProjects.filter(project => project.kind === kind).map(project => <li key={project.id}>
+          <span>{project.name}</span><button type="button" disabled={busy} onClick={() => void runFile(projectFile(project), project.id)}>加载原文件并重新生成</button>
+        </li>)}</ul>}
+      </section>
       {data.selectedFile && <p className="industry-file-name">当前文件：{data.selectedFile.name}</p>}
       {data.error && <p className="industry-error" role="alert">本次导入未通过：{data.error}{result && <span>；仍显示上次成功图件（来源：{data.resultFilename}）。</span>}</p>}
       {data.notice && <p className="industry-notice" role="status">{data.notice}</p>}

@@ -63,6 +63,13 @@
 .industry-file-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .industry-asset-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; margin-top: 5px; }
 .industry-asset-actions button { font-size: 12px; }
+.industry-saved-projects { margin-top: 6px; padding: 6px; border: 1px solid var(--ui-line, #cbd5cf); border-radius: var(--ui-radius-control, 4px); background: var(--ui-raised, #f7f9f7); }
+.industry-saved-projects > strong { display: block; margin-bottom: 4px; }
+.industry-saved-projects p { margin: 3px 0 !important; color: var(--ui-muted, #47564d); }
+.industry-saved-projects ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.industry-saved-projects li { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 5px; }
+.industry-saved-projects li span { min-width: 0; overflow-wrap: anywhere; }
+.industry-saved-projects li button { min-height: 36px; flex: 0 0 auto; padding: 4px 7px; font-size: 11px; }
 .industry-file-name,.industry-result-heading p { overflow-wrap: anywhere; color: var(--ui-muted, #47564d); font-size: 12px; }
 .industry-error,.industry-stale { padding: 7px; border: 1px solid #9c312b; border-radius: var(--ui-radius-control, 4px); background: #fff3f1; color: #7a211c; overflow-wrap: anywhere; }
 .industry-notice { color: var(--ui-accent, #15572b); overflow-wrap: anywhere; }

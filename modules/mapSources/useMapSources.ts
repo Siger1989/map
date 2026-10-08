@@ -15,6 +15,17 @@ export function useMapSources(restoreSelection = true) {
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let alive = true;
+    const changed = () => { void listMaps().then(items => {
+      if (!alive) return;
+      setMaps(items);
+      if (restoreSelection) setSelected(resolveAvailableMapSelection(localStorage.getItem(SELECTED), items));
+      setRevision(n=>n+1);
+    }).catch(()=>{ if(alive)setStatus('工作区图源刷新失败，请重新打开'); }); };
+    window.addEventListener('guanyun-data-changed', changed);
+    return () => { alive=false; window.removeEventListener('guanyun-data-changed', changed); };
+  }, [restoreSelection]);
+  useEffect(() => {
+    let alive = true;
     try {
       const id = localStorage.getItem(SELECTED);
       if (restoreSelection && freeMap(id)) setSelected(id!);

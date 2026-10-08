@@ -17,12 +17,14 @@ final class ArchiveOutput {
         final File file;
         try { file = transfer.finish(token); }
         catch (Exception e) { return e.getMessage() == null ? "压缩包校验失败" : e.getMessage(); }
+        final String extension = name.substring(name.lastIndexOf('.') + 1);
+        final String mime = RouteShareProvider.mime(name);
         activity.runOnUiThread(() -> {
             if (!activity.trustedForeground()) { file.delete(); return; }
-            if (!share) { files.saveGenerated(name, "application/zip", file); return; }
+            if (!share) { files.saveGenerated(name, mime, file); return; }
             try {
-                Uri uri = RouteShareProvider.prepareFile(activity, file, "zip");
-                Intent intent = new Intent(Intent.ACTION_SEND).setType("application/zip").putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                Uri uri = RouteShareProvider.prepareFile(activity, file, extension);
+                Intent intent = new Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 intent.setClipData(android.content.ClipData.newRawUri("山兔压缩包", uri));
                 activity.startActivity(Intent.createChooser(intent, "分享压缩包"));
             } catch (Exception e) { file.delete(); android.widget.Toast.makeText(activity, "无法打开分享，请保存压缩包后分享", 0).show(); }

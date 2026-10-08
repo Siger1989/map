@@ -20,6 +20,7 @@ export function OutdoorPanel({
   tracks, selectedId,
   onMarkCurrent, locationStatus,
   initialTab = 'record',
+  recordingEnabled = true,
   onImport,
 }: {
   recorder: ReturnType<typeof useRecording>;
@@ -35,27 +36,29 @@ export function OutdoorPanel({
   onMarkCurrent: () => string;
   locationStatus: string;
   initialTab?: 'journey' | 'record' | 'photos';
+  recordingEnabled?: boolean;
   onImport?: () => void;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab);
+  const activeTab = !recordingEnabled && tab === 'record' ? 'photos' : tab;
   return (
-    <div className="outdoor-panel" data-tab={tab}>
-      {tab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={id=>id==='files'?onImport?.():setTab('routing')} /> : <>
-      {tab !== 'record' && tab !== 'routing' && <nav className="route-tabs" aria-label="记录工具">
-        {(['record', 'photos'] as const).map(
+    <div className="outdoor-panel" data-tab={activeTab}>
+      {activeTab === 'journey' ? <JourneyOverview tracks={tracks} selectedId={selectedId} recordingStarted={recorder.record.phase !== 'idle'} recordingEnabled={recordingEnabled} onSelect={onSavedTrack} onShow={onShow} onRecord={() => setTab('record')} onPhotos={() => setTab('photos')} onTool={id=>id==='files'?onImport?.():setTab('routing')} /> : <>
+      {activeTab !== 'record' && activeTab !== 'routing' && <nav className="route-tabs" aria-label="行程工具">
+        {([...(!recordingEnabled ? [] : ['record'] as const), 'photos'] as const).map(
           (id, i) => (
             <button
               key={id}
-              aria-pressed={tab === id}
+              aria-pressed={activeTab === id}
               onClick={() => setTab(id)}
             >
-              {['记录', '照片'][i]}
+              {id === 'record' ? '记录' : '照片'}
             </button>
           ),
         )}
       </nav>}
-      {tab === 'routing' && <nav className="route-tabs" aria-label="离线路网工具"><button onClick={() => setTab('journey')}>返回行程</button></nav>}
-      {tab === 'record' && (
+      {activeTab === 'routing' && <nav className="route-tabs" aria-label="离线路网工具"><button onClick={() => setTab('journey')}>返回行程</button></nav>}
+      {recordingEnabled && activeTab === 'record' && (
         <RecordingPanel
           recorder={recorder}
           points={points}
@@ -67,9 +70,9 @@ export function OutdoorPanel({
           locationStatus={locationStatus}
         />
       )}
-      {tab === 'routing' && <OfflineRoutingPanel points={points} name={name} onShow={onShow} />}
-      {tab === 'photos' && photos}
-      {tab === 'return' && returnPanel}
+      {activeTab === 'routing' && <OfflineRoutingPanel points={points} name={name} onShow={onShow} />}
+      {activeTab === 'photos' && photos}
+      {activeTab === 'return' && returnPanel}
       </>}
     </div>
   );

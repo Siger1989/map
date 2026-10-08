@@ -220,3 +220,6 @@
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
+.floating-search[data-search-owner='place'][data-search-desktop='true'] .place-search-options {
+  max-height: none;
+}

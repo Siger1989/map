@@ -20,13 +20,15 @@ final class ArchiveTransfer {
     synchronized String begin(String name, int size) {
         if (token != null && System.currentTimeMillis() - touched > 600000L) close();
         if (token != null) return "已有压缩包正在输出";
-        if (name == null || !name.matches("Shantu-(route|collection)-[0-9]{1,16}\\.zip") || size < 22 || size > LIMIT) return "压缩包名称或大小无效";
+        boolean zip = name != null && name.matches("Shantu-(route|collection)-[0-9]{1,16}\\.zip");
+        boolean text = name != null && name.matches("(Shantu-workspace\\.json|Shantu-(route-coordinates-[0-9]{1,16}|coordinates-[0-9]{4}-[0-9]{2}-[0-9]{2})\\.(json|csv))");
+        if ((!zip && !text) || size < (zip ? 22 : 2) || size > (zip ? LIMIT : 100 * 1024 * 1024)) return "文件名称或大小无效";
         try {
             if (!directory.isDirectory() && !directory.mkdirs()) throw new Exception();
-            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.zip") && System.currentTimeMillis() - f.lastModified() > 86400000L);
+            File[] old = directory.listFiles(f -> f.getName().matches("[a-f0-9-]{36}\\.(zip|json|csv)") && System.currentTimeMillis() - f.lastModified() > 86400000L);
             if (old != null) for (File f : old) f.delete();
             token = UUID.randomUUID().toString(); this.name = name; expected = size; written = 0;
-            file = new File(directory, token + ".zip"); stream = new FileOutputStream(file); touched = System.currentTimeMillis();
+            file = new File(directory, token + name.substring(name.lastIndexOf('.'))); stream = new FileOutputStream(file); touched = System.currentTimeMillis();
             return "ok:" + token;
         } catch (Exception e) { close(); return "无法创建压缩包，请检查存储空间"; }
     }
@@ -45,13 +47,13 @@ final class ArchiveTransfer {
         try {
             if (written != expected) throw new Exception("压缩包尚未传输完整");
             stream.close(); stream = null;
-            try (ZipFile zip = new ZipFile(file)) {
+            if (name.endsWith(".zip")) try (ZipFile zip = new ZipFile(file)) {
                 if (zip.size() == 0 || zip.size() > 4000) throw new Exception("压缩包条目数量无效");
                 java.util.Enumeration<? extends java.util.zip.ZipEntry> entries = zip.entries();
                 HashSet<String> names = new HashSet<>(); long total = 0;
                 while (entries.hasMoreElements()) {
                     java.util.zip.ZipEntry entry = entries.nextElement(); String path = entry.getName();
-                    if (path.startsWith("/") || path.contains("\\") || path.indexOf('\0') >= 0 || !names.add(path)) throw new Exception("压缩包文件名无效");
+                    if (path.startsWith("/") || path.contains("\\") || path.indexOf(':') >= 0 || path.indexOf('\0') >= 0 || !names.add(path)) throw new Exception("压缩包文件名无效");
                     for (String part : path.split("/", -1)) if (part.isEmpty() || part.equals(".") || part.equals("..")) throw new Exception("压缩包路径无效");
                     if (entry.getSize() < 0 || (total += entry.getSize()) > LIMIT) throw new Exception("压缩包内容超过限制");
                 }

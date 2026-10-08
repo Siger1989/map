@@ -12,22 +12,26 @@ export function FloatingSearch({
   anchor,
   owner,
   scrollable = false,
+  desktop = false,
+  maxHeight = 200,
   children,
 }: {
   anchor: HTMLElement | null;
   owner: string;
   scrollable?: boolean;
+  desktop?: boolean;
+  maxHeight?: number;
   children: ReactNode;
 }) {
   const [style, setStyle] = useState<CSSProperties | null>(null);
   useLayoutEffect(() => {
     if (!anchor) return;
     const update = () => {
-      setStyle(floatingGeometry(anchor.getBoundingClientRect(), searchViewport()));
+      setStyle(floatingGeometry(anchor.getBoundingClientRect(), searchViewport(), maxHeight));
     };
     update();
     return observeSearchViewport(update);
-  }, [anchor]);
+  }, [anchor, maxHeight]);
   const popupStyle = style && scrollable
     ? { ...style, height: style.maxHeight, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }
     : style;
@@ -38,6 +42,7 @@ export function FloatingSearch({
           style={popupStyle ?? undefined}
           data-search-owner={owner}
           data-search-scroll={scrollable ? 'true' : undefined}
+          data-search-desktop={desktop && owner === 'place' ? 'true' : undefined}
         >
           {children}
         </div>,

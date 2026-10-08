@@ -4,7 +4,14 @@ html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background:
 button { border: 0; border-radius: 4px; font: inherit; font-size: 13px; color: var(--ui-button-ink); background: var(--ui-button); padding: 0 12px; min-height: 32px; cursor: pointer; }
 button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 button:hover { background: var(--ui-active); }
-.desktop-bar { height: 44px; display: flex; align-items: center; gap: 16px; padding: 4px 10px; background: var(--ui-surface); border-bottom: 1px solid var(--ui-line); }
+.desktop-bar { position: relative; height: 44px; display: flex; align-items: center; gap: 16px; padding: 0 10px; background: var(--ui-surface); box-shadow: inset 0 -1px var(--ui-line); }
+.desktop-pan-control { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); font-size: 12px; color: var(--ui-muted); }
+.desktop-pan-control > span:last-child { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); white-space: nowrap; pointer-events: none; }
+#map-pan { position: absolute; inset: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; touch-action: none; user-select: none; cursor: grab; overflow: hidden; }
+#map-pan:active { cursor: grabbing; }
+#map-pan:disabled { opacity: .4; cursor: default; }
+.pan-arrows { font-size: 32px; line-height: 44px; color: var(--ui-muted); }
+#pan-thumb { position: absolute; width: 10px; height: 10px; border-radius: 4px; background: var(--ui-accent); top: 17px; left: 17px; pointer-events: none; }
 .desktop-brand { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; }
 .desktop-brand img { width: 28px; height: 28px; object-fit: contain; border-radius: 4px; }
 [role="tablist"], .desktop-actions { display: flex; align-items: center; gap: 4px; }

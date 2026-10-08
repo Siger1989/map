@@ -16,6 +16,7 @@ import { RoutePointMarkerFields, type PointMarkerInput } from './RoutePointMarke
 import { displayedPointColor } from './displayColors';
 import { resolvedRouteTerminals } from './routeTerminals';
 import { RouteEndpointActions } from './RouteEndpointActions';
+import { isDesktopShell } from '../platform/desktop';
 import {
   ArrowLeft,
   Plus,
@@ -50,6 +51,8 @@ import { markerChainage } from './linePoint';
 import type { RouteEditSession } from './routeEdit';
 import { linkedRouteMarkers, routeConnectionLabel } from './routeInfo';
 import { useRouteDialogFocus } from './useRouteDialogFocus';
+import type { ElevationSample } from '../journey/metrics.ts';
+import { withTerrainProfileSamples } from './terrainProfileSamples.ts';
 import './routeWindows.css';
 
 export function RouteBack({ onBack }: { onBack: () => void }) {
@@ -91,7 +94,7 @@ export function RouteDetails({
   photos: VisiblePhoto[];
   onBack: () => void;
   onHide?: () => void;
-  onShare: () => void;
+  onShare: (track: ManualTrack) => void;
   onPointShare?: (place: RoutePlace) => void;
   onMarker: (id: string) => void;
   onPhoto: (id: string) => void;
@@ -109,6 +112,23 @@ export function RouteDetails({
   const [nameSaved, setNameSaved] = useState(false);
   const [appearanceMessage, setAppearanceMessage] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const trackGeometryKey = JSON.stringify(track.segments);
+  const [profileSnapshot, setProfileSnapshot] = useState<{
+    trackId: string;
+    geometryKey: string;
+    lines: Coordinate[][];
+    samples: ElevationSample[];
+  } | null>(null);
+  useEffect(() => setProfileSnapshot(null), [track.id, trackGeometryKey]);
+  const onProfileSamples = (samples: ElevationSample[], profileLines: Coordinate[][]) => {
+    setProfileSnapshot({ trackId: track.id, geometryKey: trackGeometryKey, lines: profileLines, samples });
+  };
+  const shareWithProfile = () => {
+    const snapshot = profileSnapshot?.trackId === track.id && profileSnapshot.geometryKey === trackGeometryKey
+      ? profileSnapshot
+      : null;
+    onShare(snapshot ? withTerrainProfileSamples(track, snapshot.lines, snapshot.samples) : track);
+  };
   const root = useRouteDialogFocus(() =>
     confirmDelete ? setConfirmDelete(false) : onBack(),
   );
@@ -145,8 +165,8 @@ export function RouteDetails({
           <strong>路线详情</strong>
           <button
             className="route-solid"
-            disabled={track.id === DRAFT_ID}
-            onClick={onShare}
+            disabled={track.segments.reduce((count, line) => count + line.length, 0) < 2}
+            onClick={shareWithProfile}
           >
             <Share2 size={16} />
             分享
@@ -180,6 +200,7 @@ export function RouteDetails({
             track={track}
             lines={lines}
             onCondition={onCondition}
+            onSamples={onProfileSamples}
           />}
           </section>
           <section className="route-detail-group route-detail-stats-group" aria-label="路线统计">
@@ -471,7 +492,9 @@ export function RouteEditToolbar({
             : session.sources.some((s) => s.id !== session.original.id)
               ? '已拼合 · 保存后成为一条路线，可撤销'
               : branch
-                ? '分叉中 · 准星定点，松手连线，双指控图'
+              ? isDesktopShell()
+                ? '分叉中 · 准星定点，松开鼠标连线，顶部控制器平移'
+                : '分叉中 · 准星定点，松手连线，双指控图'
                 : session.selected
                   ? '已选节点 · 直接拖动调整位置'
                   : '点选节点调整，或点线段后添加节点'}

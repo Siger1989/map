@@ -97,6 +97,16 @@ test('地点搜索只取有效坐标并保留中文名字', () => {
   assert.equal(r[0].name, '都江堰');
   assert.equal(r[0].detail, '成都');
 });
+test('全球地名归一化最多保留 Photon 的 20 条结果', () => {
+  const r = normalizePlaces({
+    features: Array.from({ length: 30 }, (_, i) => ({
+      geometry: { coordinates: [104 + i / 100, 30] },
+      properties: { name: `地名${i}` },
+    })),
+  });
+  assert.equal(r.length, 20);
+  assert.equal(r.at(-1).name, '地名19');
+});
 test('距离计算和耗时显示采用米与分钟，跨经线亦有效', () => {
   assert.ok(metresBetween([179.99, 0], [-179.99, 0]) < 2300);
   assert.equal(formatDuration(3600), '1 小时 0 分');

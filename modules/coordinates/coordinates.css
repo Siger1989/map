@@ -1,0 +1,90 @@
+.crs-selector {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--text-primary, #edf2dc);
+  font-size: 13px;
+}
+
+.crs-selector .crs-label,
+.crs-selector .crs-param {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text-secondary, #bec8a8);
+}
+
+.crs-selector select,
+.crs-selector input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--border, #536348);
+  border-radius: 4px;
+  background: var(--surface, #18231d);
+  color: var(--text-primary, #edf2dc);
+  font: inherit;
+}
+
+.crs-selector input { font-size: 16px; }
+
+.crs-selector .crs-hint,
+.crs-selector .crs-error {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.crs-selector .crs-hint { color: var(--text-secondary, #bec8a8); }
+.crs-selector .crs-error { color: var(--danger, #ffb29f); }
+
+.coordinate-transfer {
+  min-width: 0;
+  border: 1px solid var(--border, #536348);
+  border-radius: 8px;
+  background: var(--surface, #18231d);
+  color: var(--text-primary, #edf2dc);
+  font-size: 13px;
+}
+
+.coordinate-transfer > summary {
+  min-height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.coordinate-transfer-body {
+  display: grid;
+  gap: 10px;
+  padding: 8px;
+  border-top: 1px solid var(--border, #536348);
+}
+
+.coordinate-transfer h3,
+.coordinate-transfer p { margin: 0; }
+.coordinate-transfer h3 { font-size: 13px; }
+.coordinate-transfer p { line-height: 1.4; color: var(--text-secondary, #bec8a8); }
+
+.coordinate-transfer button,
+.coordinate-transfer input[type="file"]::file-selector-button {
+  box-sizing: border-box;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border, #536348);
+  border-radius: 4px;
+  background: var(--button, #26372d);
+  color: var(--text-primary, #edf2dc);
+  font: inherit;
+  cursor: pointer;
+}
+
+.coordinate-transfer input[type="file"] { min-width: 0; max-width: 100%; font-size: 13px; }
+.coordinate-transfer .coordinate-error { color: var(--danger, #ffb29f); }
+.coordinate-transfer .coordinate-success { color: var(--accent, #c4dc78); }
+.coordinate-transfer .coordinate-preview { overflow-wrap: anywhere; }
+.coordinate-transfer-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.coordinate-transfer section { display: grid; gap: 6px; }

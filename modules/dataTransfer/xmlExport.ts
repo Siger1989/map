@@ -52,5 +52,54 @@ export function exportKML(data: Transfer) {
       segments: [f.route.coordinates],
     })),
   ];
-  return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${data.annotations.map((p) => `<Placemark><name>${escapeXML(p.name)}</name><Point><coordinates>${p.coordinates.join(',')}</coordinates></Point></Placemark>`).join('')}${tracks.map((t) => `<Placemark><name>${escapeXML(t.name)}</name><ExtendedData><Data name="shantu-route-style"><value>${escapeXML(trackStyleText(t))}</value></Data></ExtendedData><MultiGeometry>${t.segments.map((s) => `<LineString><tessellate>1</tessellate><coordinates>${s.map((p) => p.join(',')).join(' ')}</coordinates></LineString>`).join('')}</MultiGeometry></Placemark>`).join('')}</Document></kml>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document>${data.annotations.map((p) => `<Placemark><name>${escapeXML(p.name)}</name><Point><coordinates>${p.coordinates.join(',')}</coordinates></Point></Placemark>`).join('')}${tracks.map((t) => `<Placemark><name>${escapeXML(t.name)}</name><ExtendedData><Data name="shantu-route-style"><value>${escapeXML(trackStyleText(t))}</value></Data></ExtendedData><MultiGeometry>${t.segments.map((s, i) => kmlSegmentGeometries(s, t.samples?.[i])).join('')}</MultiGeometry></Placemark>`).join('')}</Document></kml>`;
+}
+
+function kmlSegmentGeometries(
+  line: readonly (readonly [number, number])[],
+  samples?: { altitude: number | null }[],
+): string {
+  if (!line.length) return '';
+  const altitudes = line.map((_, index) => {
+    const value = samples?.[index]?.altitude;
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  });
+  const hasAltitude = altitudes.some((value) => value !== null);
+  if (line.length < 2) {
+    if (hasAltitude) return `<Point><altitudeMode>absolute</altitudeMode><coordinates>${line[0].join(',')},${altitudes[0]}</coordinates></Point>`;
+    return `<LineString><tessellate>1</tessellate><coordinates>${line.map((point) => point.join(',')).join(' ')}</coordinates></LineString>`;
+  }
+  if (!hasAltitude)
+    return `<LineString><altitudeMode>clampToGround</altitudeMode><tessellate>1</tessellate><coordinates>${line.map((point) => point.join(',')).join(' ')}</coordinates></LineString>`;
+
+  const geometries: string[] = [];
+  const altitudeVertices = new Set<number>();
+  let mode: 'absolute' | 'clampToGround' | null = null;
+  let coordinates: string[] = [];
+  const flush = () => {
+    if (!mode || coordinates.length < 2) return;
+    geometries.push(`<LineString><altitudeMode>${mode}</altitudeMode><tessellate>1</tessellate><coordinates>${coordinates.join(' ')}</coordinates></LineString>`);
+  };
+  for (let index = 0; index < line.length - 1; index++) {
+    const absolute = altitudes[index] !== null && altitudes[index + 1] !== null;
+    const nextMode = absolute ? 'absolute' : 'clampToGround';
+    if (nextMode !== mode) {
+      flush();
+      mode = nextMode;
+      coordinates = [];
+    }
+    const coordinateText = (pointIndex: number) => absolute
+      ? `${line[pointIndex].join(',')},${altitudes[pointIndex]}`
+      : line[pointIndex].join(',');
+    if (!coordinates.length) coordinates.push(coordinateText(index));
+    coordinates.push(coordinateText(index + 1));
+    if (absolute) { altitudeVertices.add(index); altitudeVertices.add(index + 1); }
+  }
+  flush();
+  for (let index = 0; index < line.length; index++) {
+    const altitude = altitudes[index];
+    if (altitude !== null && !altitudeVertices.has(index))
+      geometries.push(`<Point><altitudeMode>absolute</altitudeMode><coordinates>${line[index].join(',')},${altitude}</coordinates></Point>`);
+  }
+  return geometries.join('');
 }

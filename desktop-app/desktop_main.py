@@ -35,7 +35,12 @@ REPO_ROOT = APP_SOURCE.parent
 RESOURCE_ROOT = Path(sys._MEIPASS).resolve() if IS_FROZEN else (REPO_ROOT / "research" / "geology" / "generator-v1").resolve()
 INSTALL_ROOT = Path(sys.executable).resolve().parent if IS_FROZEN else (REPO_ROOT / "EXE" / "山兔桌面").resolve()
 SHELL_ROOT = RESOURCE_ROOT / "desktop-shell" if IS_FROZEN else APP_SOURCE / "shell"
-MAP_RUNTIME = INSTALL_ROOT / "resources" / "map-runtime"
+_embedded_map_runtime = RESOURCE_ROOT / "map-runtime"
+MAP_RUNTIME = (
+    _embedded_map_runtime
+    if IS_FROZEN and (_embedded_map_runtime / "node.exe").is_file()
+    else INSTALL_ROOT / "resources" / "map-runtime"
+)
 ICON_PATH = RESOURCE_ROOT / "shantu.ico" if IS_FROZEN else REPO_ROOT / ".openai" / "build" / "desktop-app" / "shantu.ico"
 DEFAULT_PORT = 9190
 READY_TIMEOUT_SECONDS = 25
@@ -490,7 +495,14 @@ def _self_test(data_dir: Path, node: NodeRuntime) -> dict:
     from drill_pipeline import run_drill_pipeline
 
     report: dict = {"ok": False, "app": APP_TITLE, "python": sys.version.split()[0],
-                    "data_root": str(data_dir), "checks": {}}
+                    "data_root": str(data_dir),
+                    "bundle": {
+                        "frozen": IS_FROZEN,
+                        "resource_root": str(RESOURCE_ROOT),
+                        "map_runtime": str(MAP_RUNTIME),
+                        "map_runtime_embedded": IS_FROZEN and MAP_RUNTIME == RESOURCE_ROOT / "map-runtime",
+                    },
+                    "checks": {}}
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     outputs = data_dir / "self-test" / timestamp
     checks = report["checks"]
@@ -615,7 +627,10 @@ def main() -> int:
     parser.add_argument("--self-test", action="store_true", help="检查Node地图服务、统一网关、模板导入与SVG/PNG生成")
     parser.add_argument("--serve", action="store_true", help="隐藏GUI启动统一loopback服务，供本机浏览器验收")
     parser.add_argument("--ready-file", type=Path, help="启动完成后写入URL和进程信息JSON")
+    parser.add_argument("--stop-file", type=Path, help="--serve模式下检测到此文件后优雅退出，供本机隐藏验收清理")
     args = parser.parse_args()
+    if args.stop_file and not args.serve:
+        parser.error("--stop-file只能与--serve一起使用")
     data_dir = _configure_data(args.data_dir or _default_data_dir())
     (data_dir / "logs").mkdir(parents=True, exist_ok=True)
     logging.basicConfig(filename=data_dir / "logs" / "desktop.log", level=logging.INFO,
@@ -623,7 +638,11 @@ def main() -> int:
     mutex_handle, already_running = _acquire_instance(data_dir)
     if already_running:
         _release_instance(mutex_handle)
-        _message("山兔桌面已在运行；请使用现有窗口，未启动第二个后台服务。", error=True)
+        duplicate_message = "山兔桌面已在运行；请使用现有窗口，未启动第二个后台服务。"
+        if args.serve or args.self_test:
+            logging.warning(duplicate_message)
+        else:
+            _message(duplicate_message, error=True)
         return 2
     node = NodeRuntime(data_dir)
     httpd = None
@@ -640,8 +659,10 @@ def main() -> int:
                                        "map_port": map_port, "map_pid": node.pid,
                                        "mode": "serve" if args.serve else "webview"})
         if args.serve:
-            while True:
-                time.sleep(1)
+            stop_file = args.stop_file.expanduser().resolve() if args.stop_file else None
+            while stop_file is None or not stop_file.is_file():
+                time.sleep(0.25)
+            return 0
         _show_window(url, data_dir, ICON_PATH)
         return 0
     except KeyboardInterrupt:

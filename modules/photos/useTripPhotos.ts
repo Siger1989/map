@@ -55,7 +55,10 @@ export function useTripPhotos() {
   useEffect(() => {
     mounted.current = true;
     void refresh();
+    const changed = () => { visibleCache.current.clear(); void refresh(); };
+    window.addEventListener('guanyun-data-changed', changed);
     return () => {
+      window.removeEventListener('guanyun-data-changed', changed);
       mounted.current = false;
 
 

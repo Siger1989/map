@@ -8,7 +8,7 @@
   "scripts": {
     "check:architecture": "node scripts/check-architecture.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "postinstall": "node scripts/sync-map-worker.mjs",
+    "postinstall": "node scripts/sync-map-worker.mjs && node scripts/copy-cad-runtime.mjs",
     "dev": "vinext dev",
     "dev:apk-preview": "vite --config mobile/vite.config.ts --mode apk-preview --host 127.0.0.1 --port 9174 --strictPort",
     "dev:layout": "vite --config mobile/vite.config.ts --host 127.0.0.1 --port 9241 --strictPort",
@@ -23,6 +23,7 @@
   "dependencies": {
     "@base-ui/react": "1.7.0",
     "@heroicons/react": "2.2.0",
+    "@mlightcad/libredwg-web": "0.7.4",
     "@shadcn/react": "0.3.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
@@ -69,6 +70,7 @@
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
     "esbuild": "0.27.3",
+    "fake-indexeddb": "^6.2.5",
     "lightningcss": "1.31.1",
     "linkedom": "0.18.12",
     "oxfmt": "0.61.0",

@@ -1,0 +1,5 @@
+CAD runtime notices
+
+@mlightcad/libredwg-web 0.7.4 and its bundled LibreDWG WebAssembly decoder are licensed under GNU GPL version 3. The full GPL-3.0 text is in LICENSE-GPL-3.0.txt.
+
+Corresponding source: https://github.com/mlightcad/libredwg-web/tree/v0.7.4 (tag commit 3799e93668e252a4f0742d485f1e813250e0599f) and the LibreDWG source mirror https://github.com/LibreDWG/libredwg. The npm dependency is pinned in package.json/package-lock.json.
