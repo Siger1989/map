@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>山兔桌面</title>
+  <link rel="icon" href="/brand/shantu-logo.png">
+  <script type="module" src="/desktop-theme.js"></script>
+  <link rel="stylesheet" href="/desktop/shell.css">
+  <script defer src="/desktop/shell.js"></script>
+</head>
+<body>
+  <header class="desktop-bar">
+    <div class="desktop-brand"><img src="/brand/shantu-logo.png" alt=""><strong>山兔桌面</strong></div>
+    <nav role="tablist" aria-label="工作区">
+      <button id="map-tab" role="tab" aria-controls="map-frame" aria-selected="true" data-workspace="map">地图</button>
+      <button id="industry-tab" role="tab" aria-controls="industry-frame" aria-selected="false" data-workspace="industry" tabindex="-1">行业生图</button>
+    </nav>
+    <div class="desktop-actions">
+      <button id="help-toggle" aria-expanded="false" aria-controls="mouse-help">操作说明</button>
+      <button id="fullscreen-toggle" title="F11 切换全屏">全屏 · F11</button>
+    </div>
+  </header>
+  <main class="desktop-content">
+    <iframe id="map-frame" class="workspace" role="tabpanel" aria-labelledby="map-tab" title="山兔地图" src="/map/" allow="fullscreen; geolocation; camera"></iframe>
+    <iframe id="industry-frame" class="workspace is-inactive" role="tabpanel" aria-labelledby="industry-tab" title="行业生图" aria-hidden="true" inert></iframe>
+  </main>
+  <aside id="mouse-help" class="desktop-help" hidden>
+    <div class="help-heading"><strong>电脑操作</strong><button id="help-close" aria-label="关闭操作说明">×</button></div>
+    <dl>
+      <dt>平移地图</dt><dd>按住鼠标左键拖动</dd>
+      <dt>缩放</dt><dd>滚动鼠标滚轮；也可用地图缩放按钮</dd>
+      <dt>旋转与俯仰</dt><dd>按住右键拖动，或 Ctrl + 左键拖动</dd>
+      <dt>绘制与框选</dt><dd>左键拖动执行当前任务；缩放和视角按钮仍可操作。需平移时先暂停绘制或退出框选</dd>
+      <dt>全屏</dt><dd>F11 或顶部全屏按钮；再次操作退出</dd>
+    </dl>
+    <p>手机使用单指平移、双指缩放和转动。电脑的定位、相机、后台记录和系统分享取决于桌面系统能力。</p>
+    <p>切换地图与生图会保留当前页面。关闭应用前请保存正在编辑的内容。</p>
+  </aside>
+  <p id="desktop-message" class="desktop-message" role="status" hidden></p>
+</body>
+</html>

@@ -30,6 +30,7 @@ WEB_ROOT = ROOT / "web"
 UPLOAD_ROOT = ROOT / "uploads"
 GENERATED_ROOT = ROOT / "generated"
 TEMPLATE_ROOT = ROOT / "outputs" / "standard-input-v2"
+LOG_ROOT = ROOT / "logs"
 DRAWING_TYPES = {"section", "drill"}
 TEMPLATE_FILES = {
     ("section", False): "实测剖面-标准模板.xlsx",
@@ -49,9 +50,21 @@ GENERATED_FILE_LABELS = {
 
 
 def _setup_logging() -> None:
-    (ROOT / "logs").mkdir(parents=True, exist_ok=True)
-    logging.basicConfig(filename=ROOT / "logs" / "server.log", level=logging.INFO,
+    LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=LOG_ROOT / "server.log", level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s", encoding="utf-8")
+
+
+def configure_runtime(data_root: Path, *, resource_root: Path | None = None) -> None:
+    """Route writable state to a user folder while keeping app resources bundled."""
+    global WEB_ROOT, UPLOAD_ROOT, GENERATED_ROOT, TEMPLATE_ROOT, LOG_ROOT
+    data_root = Path(data_root).expanduser().resolve()
+    resource_root = Path(resource_root).resolve() if resource_root else ROOT
+    WEB_ROOT = resource_root / "web"
+    TEMPLATE_ROOT = resource_root / "outputs" / "standard-input-v2"
+    UPLOAD_ROOT = data_root / "uploads"
+    GENERATED_ROOT = data_root / "generated"
+    LOG_ROOT = data_root / "logs"
 
 
 def _safe_filename(name: str) -> str:

@@ -171,7 +171,7 @@ async function hasSpatialPixelVariation(blob: Blob): Promise<boolean> {
     } else {
       throw new Error('当前设备无法检查卫星云图图像内容');
     }
-    const context = canvas.getContext('2d', { willReadFrequently: true });
+    const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
     if (!context) throw new Error('卫星云图像素检查不可用');
     context.drawImage(bitmap, 0, 0);
     const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;

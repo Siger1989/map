@@ -315,7 +315,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
             {((mode === 'draw' && operations?.drawingEnabled !== false) ||
               (!!operations?.editingTrack && children.props.drawingActive === true)) &&
               drawingOverlay?.(index, index === 0 ? primary : secondary)}
-            <span className="map-comparison-cross" aria-label={`${side(index)}图中心十字`} role="img" />
+            <span className="map-comparison-cross" aria-label={`${side(index)}图中心十字`} role="img"><span className="map-comparison-center-dot" /></span>
             {status[index] && /失败|未能|暂未|拒绝|中断/.test(status[index]) && <p className="map-comparison-status" role="status">{status[index]}</p>}
             {operations?.editingTrack && editorPaneOverlay?.(index, index === 0 ? primary : secondary)}
           </section>)}

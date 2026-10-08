@@ -43,6 +43,18 @@
 .map-center-cursor b::after { width: 2px; height: 6px; left: 0; }
 .map-center-cursor b::before { top: 0; }
 .map-center-cursor b::after { bottom: 0; }
+.map-center-cursor-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  border: 1px solid #173833;
+  border-radius: 50%;
+  background: #fff;
+}
 .center-add {
   width: 44px;
   min-height: 44px;

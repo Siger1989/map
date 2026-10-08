@@ -53,6 +53,11 @@ next-env.d.ts
 /mobile/dist/
 /mobile/.build/
 /APK/
+/output/pc-industry/
+/EXE/*
+!/EXE/README.txt
+/desktop-app/__pycache__/
+/.playwright-cli/
 *.jks
 *.keystore
 *.p12

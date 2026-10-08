@@ -1,0 +1,23 @@
+:root { color-scheme: dark; font-family: "Microsoft YaHei", system-ui, sans-serif; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--ui-surface); color: var(--ui-ink); }
+button { border: 0; border-radius: 4px; font: inherit; font-size: 13px; color: var(--ui-button-ink); background: var(--ui-button); padding: 0 12px; min-height: 32px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
+button:hover { background: var(--ui-active); }
+.desktop-bar { height: 44px; display: flex; align-items: center; gap: 16px; padding: 4px 10px; background: var(--ui-surface); border-bottom: 1px solid var(--ui-line); }
+.desktop-brand { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; }
+.desktop-brand img { width: 28px; height: 28px; object-fit: contain; border-radius: 4px; }
+[role="tablist"], .desktop-actions { display: flex; align-items: center; gap: 4px; }
+[role="tab"][aria-selected="true"] { color: var(--ui-accent); background: var(--ui-selected); }
+.desktop-actions { margin-left: auto; }
+.desktop-content { position: absolute; inset: 44px 0 0; }
+.workspace { position: absolute; width: 100%; height: 100%; inset: 0; border: 0; background: var(--ui-surface); }
+.workspace.is-inactive { visibility: hidden; pointer-events: none; }
+.desktop-help { position: absolute; z-index: 10; top: 52px; right: 10px; width: min(300px, calc(100% - 20px)); max-height: min(200px, calc(100% - 64px)); overflow: auto; padding: 10px; border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-surface); box-shadow: var(--ui-glass-shadow); font-size: 13px; }
+.help-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.help-heading button { min-width: 32px; padding: 0 8px; color: var(--ui-close); }
+dl { display: grid; grid-template-columns: 90px 1fr; gap: 8px; line-height: 1.6; margin: 10px 0; }
+dt { color: var(--ui-muted); } dd { margin: 0; }
+.desktop-help p { line-height: 1.6; margin: 10px 0 0; color: var(--ui-muted); }
+.desktop-message { position: absolute; z-index: 20; left: 50%; bottom: 12px; transform: translateX(-50%); margin: 0; padding: 8px 12px; max-width: calc(100% - 24px); border-radius: 8px; background: var(--ui-surface); color: var(--ui-danger); border: 1px solid var(--ui-line); }
+@media (max-width: 620px) { .desktop-bar { gap: 6px; } .desktop-brand strong { display: none; } button { padding: 0 8px; } }

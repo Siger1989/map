@@ -6,7 +6,7 @@ import './centerCursor.css';
 
 /** The public map projection, not GPS, supplies the location under the reticle. */
 export function CenterReticle() {
-  return <div className="map-center-cursor" aria-hidden="true"><i /><b /></div>;
+  return <div className="map-center-cursor" aria-hidden="true"><i /><b /><span className="map-center-cursor-dot" /></div>;
 }
 
 export function CenterMarkButton({

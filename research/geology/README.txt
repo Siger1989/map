@@ -13,12 +13,22 @@
 - 研究成果清单和 SHA-256 对照见仓库 docs/geology-archive-manifest-20261008.json。清单用“源工作区/…”代称原来源路径，避免记录个人工作区绝对路径。
 
 在 Windows PC 启动
+
+方式一：单文件桌面程序（推荐）
+1. 运行 output/pc-industry/山兔地质行业工具.exe。程序自带 Python、openpyxl、xlrd、网页界面和四份标准/示例工作簿，不需要先安装 Python。
+2. 优先打开独立桌面窗口（pywebview + Microsoft WebView2）；当前电脑没有可用 WebView2 时，会尝试用 Edge/Chrome 应用窗口打开。电脑至少需要 WebView2 Runtime、Edge 或 Chrome 中一项；都不可用时程序会报错退出。
+3. 生成成果、上传副本及运行日志写到“文档/山兔行业工具”，不写入 EXE 的临时解包目录。可用 --data-dir 指定其他可写目录。
+4. 用“山兔地质行业工具.exe --self-test”检查实测剖面和钻孔示例的导入及 SVG/PNG 输出；诊断记录与检查图件写入当前数据目录。
+
+如需从源码构建：在 PowerShell 运行 research/geology/generator-v1/build_pc_exe.ps1。脚本自动探测 py -3.12 或 python.exe；也可用 -Python 指定 Python 3.10+ x64 解释器。依赖和 PyInstaller 虚拟环境放在 .openai/build/pc-industry，产物输出到 output/pc-industry。当前 PNG 栅格化使用已安装的 Microsoft Edge 或 Google Chrome；WebView2 使用系统运行时。程序本身监听随机本机端口 127.0.0.1；不会占用、连接或关闭旧的 9188 服务。
+
+方式二：系统 Python 源码运行
 1. 安装 Python 3.10 或更新的系统 Python，并确保 `py -3` 或 `python` 命令可用。
 2. 安装 XLSX/XLS 读取依赖：`py -3 -m pip install openpyxl xlrd`（若使用 python 命令则替换前缀）。
 3. 双击 generator-v1/启动_系统Python.cmd。它在当前归档目录启动本地服务，默认地址为 http://127.0.0.1:9188/。
 4. PNG 导出需系统安装 Microsoft Edge 或 Google Chrome；矢量 SVG 和数据导入不依赖浏览器。
 
-此启动脚本调用归档内 launch.py/server.py 并使用系统 Python，不依赖原工作区的 bundled Python、临时上传目录或 Codex 私有 runtime。原业务源码、几何计算和已有 SVG/PNG 均按字节保留。
+此启动脚本调用归档内 launch.py/server.py 并使用系统 Python，不依赖原工作区的 bundled Python、临时上传目录或 Codex 私有 runtime。归档的历史源码与图件作为历史记录保留；当前 EXE 适配只新增运行目录路由，未改输入校验与几何计算，也未重写历史图件。
 
 路径与排除说明
 - 绘图源码按 __file__ 定位模板、生成目录和 Web 文件，不依赖原工作区图片的绝对路径。原始 XLS/XLSX 与照片由仓库根目录“地质资料/”提供。

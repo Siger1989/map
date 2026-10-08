@@ -9,6 +9,7 @@ from drill_renderer import render_drill_svg
 from importer import GeometryInputError
 
 ROOT=Path(__file__).resolve().parent
+LOG_ROOT=ROOT/'logs'
 
 def _sha(path:Path):
     h=hashlib.sha256()
@@ -130,7 +131,7 @@ def run_drill_pipeline(input_path:str|Path,output_dir:str|Path)->dict[str,Any]:
     raster_meta=_raster_view(out/'drawing.svg',out/'.raster-view.svg')
     hd_meta=_hd_raster_view(out/'drawing.svg',out/'.hd-raster-view.svg')
     from pipeline import _find_browser,_rasterize
-    browser=_find_browser(); logs=ROOT/'logs'; logs.mkdir(exist_ok=True)
+    browser=_find_browser(); logs=LOG_ROOT; logs.mkdir(parents=True,exist_ok=True)
     preview=_rasterize(out/'.raster-view.svg',out/'preview.png',browser,logs/f'drill-{out.name}-preview.log',scale=1)
     hd=_rasterize(out/'.hd-raster-view.svg',out/'complete-hd.png',browser,logs/f'drill-{out.name}-complete-hd.log',scale=1)
     hd_dimensions=_hd_dimension_check(hd_meta,hd,preview)

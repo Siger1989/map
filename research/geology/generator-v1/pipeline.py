@@ -30,6 +30,7 @@ from renderer import RenderInputError, render
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
+LOG_ROOT = ROOT / "logs"
 FORBIDDEN_COMPONENTS = {"section-reproduction"}
 FORBIDDEN_FILENAMES = {"section-data.json"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".webp"}
@@ -254,14 +255,14 @@ def _run_pipeline_impl(input_path: os.PathLike[str] | str, output_dir: os.PathLi
     browser = _find_browser()
     raster: Dict[str, Any] = {}
     raster["preview"] = _rasterize(Path(rendered["drawing_svg"]), out / "preview.png", browser,
-                                    ROOT / "logs" / f"raster-{out.name}-preview.log")
+                                    LOG_ROOT / f"raster-{out.name}-preview.log")
     raster["complete_hd"] = _rasterize(Path(rendered["drawing_svg"]), out / "complete-hd.png", browser,
-                                         ROOT / "logs" / f"raster-{out.name}-complete-hd.log", scale=4)
+                                         LOG_ROOT / f"raster-{out.name}-complete-hd.log", scale=4)
     if rendered.get("detail_svg"):
         raster["detail"] = _rasterize(Path(rendered["detail_svg"]), out / "detail.png", browser,
-                                       ROOT / "logs" / f"raster-{out.name}-detail.log")
+                                       LOG_ROOT / f"raster-{out.name}-detail.log")
     raster["readability"] = _rasterize(Path(readability["readability_svg"]), out / "readability.png", browser,
-                                        ROOT / "logs" / f"raster-{out.name}-readability.log")
+                                        LOG_ROOT / f"raster-{out.name}-readability.log")
     report = _report(data, out, all_outputs, layer_geometry)
 
     roles = {

@@ -230,6 +230,7 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
 .map-comparison-cross::before, .map-comparison-cross::after { content: ''; position: absolute; background: var(--ui-ink); }
 .map-comparison-cross::before { left: 25px; top: 0; width: 2px; height: 6px; box-shadow: 0 40px 0 var(--ui-ink); }
 .map-comparison-cross::after { left: 0; top: 25px; width: 6px; height: 2px; box-shadow: 40px 0 0 var(--ui-ink); }
+.map-comparison-center-dot { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; box-sizing: border-box; transform: translate(-50%, -50%); border: 1px solid var(--ui-surface); border-radius: 50%; background: var(--ui-ink); }
 /* Move the same editor DOM between panes; fields and sub-page state stay mounted. */
 html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-edit-window {
   --compare-window-max-height: calc((100dvh - var(--compare-top) - var(--home-bottom) - 44px) / 2 - 48px);
