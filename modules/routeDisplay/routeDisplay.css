@@ -203,6 +203,54 @@
 
 .navigation-color-key { flex-wrap:wrap; }
 
+/* Drawing reuses its own tool card for a compact route-display subview. */
+html[data-ui-theme] .observatory.home-map .track-tools .route-display-settings--drawing {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  position: static;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+.route-display-settings--drawing .route-display-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.route-display-settings--drawing .route-display-scroll > label { font-size: 12px; }
+.route-display-settings--drawing .route-display-scroll > label select { font-size: 16px; }
+.route-display-settings--drawing .route-display-scroll > .route-display-scope { font-size: 12px; }
+.route-display-settings--drawing .route-display-options label { font-size: 12px; }
+html[data-ui-theme] .observatory.home-map .track-tools[data-view='display'] .route-display-settings--drawing :is(button, select) {
+  min-height: 28px;
+  height: 28px;
+  border-radius: var(--ui-radius-control,4px);
+}
+
+/* On short phones, keep the drawing return bar below the top camera controls
+   and scroll only the settings body inside the existing tool card. */
+@media (max-height: 600px) {
+  html[data-ui-theme] .observatory.home-map .track-tools[aria-label='绘制工具'][data-view='display'] {
+    max-height: max(56px, calc(100dvh - var(--home-header-height,50px) - var(--home-top,0px) - 68px - 16px - var(--home-footer,56px) - var(--selected-info-clearance,0px) - 8px));
+    min-height: 0;
+  }
+}
+
 /* In navigation, settings replace the card body rather than opening another overlay. */
 html[data-ui-theme] .observatory.home-map .guidance-card .route-display-settings[data-embedded='true'] {
   position:static; inset:auto; z-index:auto; width:100%; max-width:none;

@@ -6,10 +6,11 @@ import { parseHTML } from 'linkedom';
 import { RouteGapLayer } from '../modules/tracks/RouteGapLayer.ts';
 import { composeTrackOverlay } from '../modules/workbench/trackOverlay.ts';
 import { startRouteEdit, selectEditNode, setEditEnd, toggleEditBranch, undoRouteEdit, renameEditRoute } from '../modules/tracks/routeEdit.ts';
+import { DRAFT_ID } from '../modules/tracks/editing.ts';
 
-const bundle = await build({stdin:{contents:`export {useRouteDisplay} from './modules/routeDisplay/useRouteDisplay'; export {RouteEditToolbar} from './modules/tracks/RouteViews'; export {TrackLayer} from './modules/tracks/TrackLayer';`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,platform:'node',format:'esm',packages:'external',jsx:'automatic',loader:{'.css':'empty'},write:false,logLevel:'silent'});
+const bundle = await build({stdin:{contents:`export {useRouteDisplay} from './modules/routeDisplay/useRouteDisplay'; export {RouteEditToolbar} from './modules/tracks/RouteViews'; export {TrackLayer} from './modules/tracks/TrackLayer'; export {TrackTools} from './modules/tracks/TrackPanel'; export {draftTrackRenderItem,trackLineFeatures} from './modules/tracks/trackFeatures'; export {ANALYSIS_POLICY} from './modules/routeAnalysis/config';`,resolveDir:process.cwd(),loader:'tsx'},bundle:true,platform:'node',format:'esm',packages:'external',jsx:'automatic',loader:{'.css':'empty'},write:false,logLevel:'silent'});
 await writeFile('.openai/route-edit-feedback-bundle.mjs',bundle.outputFiles[0].text);
-const {useRouteDisplay,RouteEditToolbar,TrackLayer}=await import('../.openai/route-edit-feedback-bundle.mjs');
+const {useRouteDisplay,RouteEditToolbar,TrackLayer,TrackTools,draftTrackRenderItem,trackLineFeatures,ANALYSIS_POLICY}=await import('../.openai/route-edit-feedback-bundle.mjs');
 const React=await import('react'),{act}=React,{createRoot}=await import('react-dom/client');
 const style={color:'#ff4400',width:3};
 function dom(){ const {window}=parseHTML('<html><body><div id="root"></div></body></html>'); Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true}); globalThis.localStorage={getItem:()=>JSON.stringify({mode:'slope'}),setItem(){}}; return window; }
@@ -128,4 +129,54 @@ test('real slope display hook and map layer reuse geometry while repeatedly chan
   assert.equal(map.stats.writes,writes,'selection never rewrites the full route source');
   assert.equal(map.stats.projects,projects,'selection never reprojects all route handles');
   assert.ok(map.stats.updates>=20);
+});
+
+test('drawing display settings target the active draft and return without ending the drawing session',async t=>{
+  const window=dom();
+  globalThis.HTMLElement=window.HTMLElement;
+  globalThis.Node=window.Node;
+  globalThis.ResizeObserver=class{observe(){} disconnect(){}};
+  globalThis.localStorage={getItem:()=>JSON.stringify({mode:'speed'}),setItem(){}};
+  const line=[[20,10],[20.001,10],[20.002,10]];
+  const draft=[line],saved={id:'saved',name:'saved',createdAt:1,style:{...style,colorMode:'solid'},segments:[[[30,10],[30.001,10]]],samples:[[{time:1,altitude:12},{time:2,altitude:14}]]};
+  const originalSaved=JSON.stringify(saved),originalDraft=JSON.stringify(draft);
+  const overlay=composeTrackOverlay({saved:[saved],draft,recording:null,session:null,style:{...style,colorMode:'solid'},nodes:line,selectedId:DRAFT_ID,drawing:true,visible:true});
+  let shown,finishCount=0,pageEscapeCount=0;
+  const tools={style:{...style,colorMode:'solid'},colorConditions:{},roadSnapping:false,riverSnapping:false,snapping:true,anchor:null,canUndo:true,error:'',setStyle(){},setDraftCondition(){},setRoadSnapping(){},setRiverSnapping(){},setSnapping(){},undo(){}};
+  function Probe(){shown=useRouteDisplay(overlay,{start:null,end:null,route:null,via:[]},'saved',true);return React.createElement('div',{onKeyDown:event=>{if(event.key==='Escape')pageEscapeCount++;}},React.createElement(TrackTools,{tracks:tools,display:shown,onFinish(){finishCount++;},onLocate(){}}));}
+  const root=createRoot(document.getElementById('root'));t.after(async()=>act(async()=>root.unmount()));
+  await act(async()=>root.render(React.createElement(Probe)));
+  await act(async()=>document.querySelector('[aria-label="打开绘制路线显示设置"]').click());
+  assert.equal(shown.target.id,DRAFT_ID,'opening display settings explicitly selects the active draft');
+  assert.equal(document.querySelector('[data-scope="drawing"] .route-display-scope')?.textContent,'当前绘制路线');
+  assert.equal(shown.tracks.analysisParts.trackId,DRAFT_ID);
+  const draftFeatures=trackLineFeatures(draftTrackRenderItem(shown.tracks),shown.tracks);
+  assert.ok(draftFeatures.length>0);
+  assert.ok(draftFeatures.every(feature=>feature.properties.draft&&feature.properties.trackId===DRAFT_ID));
+  assert.ok(draftFeatures.every(feature=>feature.properties.color===ANALYSIS_POLICY.missingColor),'missing drawing speed stays gray instead of inventing timestamps');
+  assert.equal(JSON.stringify(saved),originalSaved,'the stored route is not restyled or mutated');
+  assert.equal(JSON.stringify(draft),originalDraft,'the drawing geometry remains untouched');
+  const escape=new window.Event('keydown',{bubbles:true,cancelable:true});
+  Object.defineProperty(escape,'key',{value:'Escape'});
+  await act(async()=>document.querySelector('[data-scope="drawing"] select').dispatchEvent(escape));
+  assert.equal(pageEscapeCount,0,'the settings subview consumes Escape before the page-level handler can pause or exit drawing');
+  assert.ok(document.querySelector('.track-drawing-style'),'Escape returns to drawing tools without ending the session');
+  assert.equal(finishCount,0);
+  await act(async()=>document.querySelector('[aria-label="打开绘制路线显示设置"]').click());
+  await act(async()=>document.querySelector('[aria-label="返回绘制工具"]').click());
+  assert.ok(document.querySelector('.track-drawing-style'),'return restores the drawing tools in the same card');
+  assert.equal(finishCount,0,'opening and closing display settings never completes the route');
+  assert.equal(shown.target.id,DRAFT_ID,'the active draft remains the display target on return');
+  let shortDraftDisplay,setShortDrawing;
+  const shortDraft=composeTrackOverlay({saved:[saved],draft:[[[20,10]]],recording:null,session:null,style:{...style,colorMode:'solid'},nodes:[],selectedId:DRAFT_ID,drawing:true,visible:true});
+  function ShortDraftProbe(){const [drawing,setDrawing]=React.useState(true);setShortDrawing=setDrawing;const current=React.useMemo(()=>({...shortDraft,drawing}),[drawing]);shortDraftDisplay=useRouteDisplay(current,{start:null,end:null,route:null,via:[]},'saved',true);return null;}
+  await act(async()=>root.render(React.createElement(ShortDraftProbe)));
+  await act(async()=>shortDraftDisplay.choose(DRAFT_ID));
+  assert.equal(shortDraftDisplay.target.id,DRAFT_ID,'a one-point active drawing remains selectable instead of falling back to a saved route');
+  await act(async()=>setShortDrawing(false));
+  assert.equal(shortDraftDisplay.target.id,'saved','a paused one-point draft falls back safely to the preferred saved route');
+  assert.ok(shortDraftDisplay.candidates.every(candidate=>candidate.id!==DRAFT_ID),'the active-draft candidate is removed when the same hook pauses');
+  await act(async()=>setShortDrawing(true));
+  assert.ok(shortDraftDisplay.candidates.some(candidate=>candidate.id===DRAFT_ID),'the same hook restores the draft candidate when drawing resumes');
+  assert.equal(shortDraftDisplay.target.id,DRAFT_ID,'the still-selected active draft resumes as the target');
 });

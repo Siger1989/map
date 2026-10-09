@@ -35,7 +35,7 @@
     const elapsed = panTime ? Math.min(time - panTime, 50) : 16;
     panTime = time;
     const frame = document.getElementById('map-frame');
-    const detail = { dx: panVector.x * elapsed / 20, dy: panVector.y * elapsed / 20, handled: false };
+    const detail = { dx: panVector.x * elapsed / 40, dy: panVector.y * elapsed / 40, handled: false };
     try {
       if (Math.hypot(panVector.x, panVector.y) > 2) {
         frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('shantu-desktop-pan', { detail }));

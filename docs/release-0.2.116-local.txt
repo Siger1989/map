@@ -1,0 +1,38 @@
+山兔 0.2.116-test / versionCode 123 本机交付（2026-10-09）
+
+来源与范围
+当前分支 codex/rollback-ui-0235-20260921；本轮先安全拉取到基线 3cc99a20dc67a45712d54f166c24e450ec989868，再由本机最终修改源码重新构建116。原115私有安装包没有远程来源，本机重建不冒充另一台电脑原包。源码同步提交以本文件所在提交为准，未合main。
+完整拉取核对：65项参考资料清单哈希通过；415项研究文件无缺失，其中5项哈希因已提交的后续修改改变。用户要求后续默认完整同步源码、文档、资料及可访问的安装产物。旧114/115版本化产物、本地PDF及真实用户数据保留。
+
+修改
+1. PC平移命中区域72→96px，细环直径50→72px；同等偏移的平移速度减半（除数20→40），松手停止逻辑保持。
+2. 手机和PC共用画线“显示设置”：原有样式、单色、海拔、速度、坡度；色标、海拔数据、海拔曲线、陡坡标记。作用于当前绘制草稿，返回继续绘制，不结束草稿。无速度数据保持缺测语义。绘制底部信息按实际高度给工具卡留空间。
+3. 顶部图层按钮去除已删除天气入口的52/54px保留位，靠右侧安全边；搜索与按钮保留4px间隔。
+文件范围：app/page.tsx、modules/tracks、modules/routeDisplay、modules/controls样式、desktop-app/shell、版本声明和定向测试。未改GPS、照片、记录存储、签名及数据格式。
+
+本机产物（含用户授权的私有图源配置，不公开上传）
+APK/Shantu-0.2.116-test-standalone.apk
+69,887,604 bytes
+SHA256 eed350e88ceebfc5d27e8dbc1bff32e0bd68c214da5f7ac103fe9c7e5ac24e18
+固定入口 APK/山兔手机.apk，与版本包哈希一致。
+包名 com.guanyun.weather.shantu.preview，versionName 0.2.116-test，versionCode123；签名与115一致。
+
+EXE/山兔桌面-0.2.116.exe
+123,261,429 bytes
+SHA256 8a2ac915690d4a858a24a53bda3de791a28ac85c5b3fa043b9195756a9315f73
+固定入口 EXE/山兔桌面.exe，与版本包哈希一致。运行需要WebView2或Edge/Chrome环境。
+上述四个文件旁均有.sha256文件。未创建公共安装包Release；私有Key不进入源码、日志或聊天。
+
+已验证
+35项定向测试通过；TypeScript、shell node语法、git diff检查通过。
+主审独立核对APK1920项资源：1424逐字节一致，496项地形PNG与构建器无损优化结果一致；无缺失/不匹配。签名、zipalign、ZIP CRC通过；39个图源配置字节一致，生产与apk-preview Key一致性仅作布尔验证。
+最终EXE隔离self-test通过，4类行业模板及剖面/钻探SVG、PNG产出通过；隐藏serve的页面/脚本/CSS请求200，shell源与产物逐字节一致。
+手机390×857、360×780显示设置完整可见；390×480仅正文真实滚动，标题/返回固定，返回后累计151.6公里与撤销可用状态保持。五种着色可切换。根因复验：限高column继承flex-wrap造成横向换列；已强制nowrap，header不压缩。短屏card x8/y132/w276/h134，body w254/h80、scrollHeight150，未截掉选项。
+顶部图层390宽right382、360宽right352，符合8px安全边；入口可打开关闭且缩放hash保持。
+PC1366×900最终EXE实际打开显示设置、切换坡度及曲线、返回继续绘制、拖动平移通过；pan96×96，设置卡276×212且正文不滚动。此前纯控制器尺寸矩阵360×480、390×480、508×480、390×780、1366×900两个控制器及右侧dock互不重叠。
+截图 artifacts/screenshots/drawing-display-20261009/accepted-*；上述源预览截图结合APK资源一致性核对，不冒充Android真机截图。主审证据 .openai/rebuild116-apk-main-proof.json、release116-fixed-entries.json、release116-targeted-tests.log；EXE证据 .openai/rebuild116-exe-final-evidence.json。
+
+限制 / 待验证
+额外扩展的360×480极矮PC窗口并非手机预览：底部相机与路线曲线仍重叠，定位提示也可能盖设置标题，整体视觉FAIL；不将该窗口列为验收通过。常规PC目标1366×900已通过。手机390×480已通过的是手机布局，不等价于极矮PC外壳。
+Android覆盖安装、触控手感、真实GPS/后台记录和Windows原生窗口/权限仍待设备验证；不以浏览器或构建通过代替。高程请求受网络影响，可短暂显示读取中/缺测，不伪造成功。HarmonyOS6.1原生包未交付。
+保留9174手机预览及3108 API用户服务、真实存档和现有用户进程；只停止本轮隔离QA服务。115自检曾在默认桌面数据目录留下runtime/map-ready.json及logs/map-node.stdout.log，未删除或移动用户目录内容，此后验证全部用.openai隔离目录。

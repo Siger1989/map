@@ -7,6 +7,7 @@
   --home-surface: #ffffff;
   --home-edge: 8px;
   --home-right: max(8px, env(safe-area-inset-right, 0px));
+  --home-layer-control-width: 58px;
   --home-left: max(8px, env(safe-area-inset-left, 0px));
   --home-top: env(safe-area-inset-top, 0px);
   --home-header-height: 50px;
@@ -30,7 +31,7 @@
 .observatory.home-map button:focus-visible { outline: 2px solid #167045; outline-offset: 2px; }
 .observatory.home-map button:disabled { opacity: .42; cursor: default; }
 .observatory.home-map .home-topbar {
-  position: absolute; z-index: 12; top: calc(var(--home-header-inset) + var(--home-top)); left: var(--home-left); right: calc(var(--home-right) + 116px);
+  position: absolute; z-index: 12; top: calc(var(--home-header-inset) + var(--home-top)); left: var(--home-left); right: calc(var(--home-right) + var(--home-layer-control-width) + 4px);
   height: 38px; display: grid; grid-template-columns: 50px minmax(0, 1fr); gap: 4px;
   color: var(--home-ink);
 }
@@ -44,7 +45,7 @@
 .observatory.home-map .home-topbar form > button { width: 36px; min-width: 36px; height: 36px; padding: 0; color: #778e99; }
 .observatory.home-map .home-topbar form > button[type='submit'] { order: -1; }
 .observatory.home-map .map-load-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-.observatory.home-map .map-layer-toggle { top: calc(6px + var(--home-top)); right: calc(var(--home-right) + 54px); width: 58px; height: 38px; flex-direction: row; gap: 4px; padding: 0; border: 1px solid var(--home-line); border-radius: 5px; color: var(--home-ink); background: white; }
+.observatory.home-map .map-layer-toggle { top: calc(6px + var(--home-top)); right: var(--home-right); width: var(--home-layer-control-width); height: 38px; flex-direction: row; gap: 4px; padding: 0; border: 1px solid var(--home-line); border-radius: 5px; color: var(--home-ink); background: white; }
 .observatory.home-map .map-layer-toggle span { font-size: 13px; }
 .observatory.home-map .map-layer-toggle svg { width: 22px; height: 22px; }
 .observatory.home-map .weather-summary { position: fixed; z-index: 12; top: calc(6px + var(--home-top)); right: var(--home-right); bottom: auto; left: auto; display: flex; align-items: center; justify-content: center; width: 50px; min-width: 0; height: 38px; gap: 3px; padding: 0; background: white; border: 1px solid var(--home-line); border-radius: 5px; box-shadow: none; color: var(--home-ink); }
@@ -139,8 +140,9 @@
 .observatory.home-map[data-route-edit='true'] .home-topbar { display: none; }
 /* Small widths preserve navigation/zoom targets and allow metadata to wrap. */
 @media (max-width:359px) {
-  .observatory.home-map .home-topbar { grid-template-columns: 42px minmax(0,1fr); right: calc(var(--home-right) + 106px); }
-  .observatory.home-map .map-layer-toggle { width: 48px; gap: 2px; white-space: nowrap; }
+  .observatory.home-map { --home-layer-control-width: 48px; }
+  .observatory.home-map .home-topbar { grid-template-columns: 42px minmax(0,1fr); }
+  .observatory.home-map .map-layer-toggle { gap: 2px; white-space: nowrap; }
   .observatory.home-map .map-layer-toggle svg { width: 18px; height: 18px; }
   .observatory.home-map .map-layer-toggle span { font-size: 12px; }
   .observatory.home-map .home-route-symbol { display: none; }
@@ -273,11 +275,11 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 /* Bottom task cards own the lower-left area. Measure their real height and put
    map metadata above them, while the camera keeps its reserved right column. */
 .observatory.home-map { --map-bottom-clearance:0px; }
-.observatory.home-map:not([data-rally='true']):has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']) {
-  --map-bottom-clearance:max(var(--selected-info-clearance,0px),var(--nav-info-clearance,0px));
+.observatory.home-map:not([data-rally='true']):has(.selected-route-info,.rally-elevation[data-body='true']) {
+  --map-bottom-clearance:max(calc(var(--selected-info-clearance,0px) + var(--drawing-info-clearance,0px)),var(--nav-info-clearance,0px));
 }
 .observatory.home-map:is([data-panel='tools'],[data-panel='outdoor']) {
-  --map-bottom-clearance:max(var(--selected-info-clearance,0px),var(--nav-info-clearance,0px),var(--operation-info-clearance,0px));
+  --map-bottom-clearance:max(calc(var(--selected-info-clearance,0px) + var(--drawing-info-clearance,0px)),var(--nav-info-clearance,0px),var(--operation-info-clearance,0px));
 }
 .observatory.home-map:has(.track-tools[aria-label='绘制工具']) { --map-bottom-clearance:var(--drawing-info-clearance,0px); }
 .observatory.home-map .map-canvas .maplibregl-ctrl-bottom-left {

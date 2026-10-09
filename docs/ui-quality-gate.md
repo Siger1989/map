@@ -284,3 +284,17 @@
 | 双图路线最终QA与APK | 未验证 / 未打包 | 主图路线/记录对象路径已PASS，双图路线行为仍待补验（比较会话关闭面板后当前入口不承载路线编辑）。源码类型检查、18项定位/搜索定向测试与 Android 网页资源构建通过；这不代表双图行为或APK验收。当前 `0.2.104-test` 不含这些改动。本轮未升版本、打包、commit或push。 |
 
 搜索截图：`artifacts/screenshots/place-search-ip-fallback-{390,360}.png`、`place-search-device-{390,360}.png`、`place-search-scroll-{390,360}.png`。标签字号11px并对所有结果数使用完整第二行；390×857与360×780实测无横溢出，最多3条时列表可在内部滚动。当前TypeScript、定位/搜索/规划路线收藏副本定向测试19/19及`npm run build:android:web`均通过（3328模块，存在大chunk提示）；未生成APK。定位模拟汇总 `.openai/position-20261004-browser.json`；标记拖动/隐藏测试汇总 `.openai/marker-hide-drag-20261004.json`。运行环境为本机9174预览和3108 API；所有浏览器证据均为隔离Playwright，不宣称真机GPS、系统航向或Android触控已验收。
+
+## 2026-10-09 / 0.2.116 画线显示、PC平移及顶部图层
+
+| 验收项 | 结果 | 证据与边界 |
+| --- | --- | --- |
+| 手机绘制显示设置 390×857、360×780 | PASS 浏览器 | 五种着色、四开关；完整内容；返回继续绘制。accepted-390x857、accepted-360x780截图。 |
+| 手机390×480短屏 | PASS 浏览器 | 限高时flex-wrap继承wrap导致换列，修为nowrap并固定header；card y132/h134，正文h80/scroll150，真实滚动与返回点击通过。accepted-final-390x480、accepted-final-short-scroll截图。 |
+| 图层入口与搜索 | PASS 浏览器 | 去掉天气保留位，390/360右安全边8px，搜索间隔4px；打开关闭保留缩放。 |
+| PC移动圈 | PASS 浏览器 | 命中96px/细环直径72px，代码平移倍率减半；五种控制器尺寸布局无互遮；最终EXE实际拖动成功。手感待用户设备确认。 |
+| PC最终EXE绘制设置1366×900 | PASS 浏览器宿主 | 卡276×212，正文完整；坡度/曲线切换、返回、撤销继续可用。accepted-exe-1366x900截图。 |
+| 额外极矮PC360×480 | FAIL，未作为整体通过 | 相机/曲线重叠及定位提示遮标题；accepted-exe-360x480。手机短屏PASS不替代PC外壳此状态。 |
+| 安装包、原生设备 | 构建/资源PASS；设备未验证 | APK1920资源匹配，签名/CRC/zipalign；EXE隔离自检与静态源一致。Android覆盖安装、原生Windows和Harmony原生交付仍待验证/未交付。 |
+
+截图目录 `artifacts/screenshots/drawing-display-20261009/`；精确产物SHA、来源、修改范围和限制见 `docs/release-0.2.116-local.txt`。本轮没有改记录/GPS/照片/存储格式，无清理用户存档，私有Key只在本机产物中布尔核验。

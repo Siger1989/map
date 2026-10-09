@@ -57,7 +57,10 @@ export function useRouteDisplay(
     const values: ManualTrack[] = tracks.visible
       ? tracks.saved.filter((t) => !t.hidden)
       : [];
-    if (tracks.visible && tracks.draft.some((line) => line.length >= 2))
+    if (
+      tracks.visible &&
+      (tracks.drawing || tracks.draft.some((line) => line.length >= 2))
+    )
       values.push({
         id: DRAFT_ID,
         name: '当前绘制路线',
@@ -80,7 +83,7 @@ export function useRouteDisplay(
         style: { ...DEFAULT_TRACK_STYLE, color: '#59dcff', width: 4, opacity: route.route.displayOpacity ?? 1 },
       });
     return values;
-  }, [tracks.saved, tracks.visible, tracks.draft, tracks.style, route.route]);
+  }, [tracks.saved, tracks.visible, tracks.draft, tracks.style, tracks.drawing, route.route]);
   const target =
     candidates.find((t) => t.id === chosenId) ??
     candidates.find((t) => t.id === preferredId) ??

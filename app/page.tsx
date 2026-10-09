@@ -2363,10 +2363,26 @@ export default function Home() {
           panel === null && (
             <TrackTools
               tracks={tracks}
+              display={routeDisplay}
               onLocate={(point) => map.current?.focusPoint(point)}
               onFinish={() => {
                 if (tracks.complete()) setRouteWindow('card');
               }}
+            />
+          )}
+        {tracks.drawing &&
+          !areas.drawing &&
+          panel === null &&
+          !guidance.active &&
+          !measurement.active &&
+          !survey.active &&
+          !sectionEditing &&
+          routeDisplay.target?.id === DRAFT_ID &&
+          routeDisplay.target.segments.some((line) => line.length >= 2) && (
+            <SelectedRouteInfo
+              track={routeDisplay.target}
+              preferences={routeDisplay.preferences}
+              reversed={false}
             />
           )}
         {selectedAnnotation &&

@@ -15,9 +15,12 @@ import { TrackStyleControls } from './TrackStyleControls';
 import { TrackDrawingStyle } from './TrackDrawingStyle';
 import { normalizeTrackStyle } from './style';
 import type { ManualTracksState } from './useManualTracks';
+import { DRAFT_ID } from './editing';
 import { drawingArea, drawingTime } from './archive';
 import type { VisiblePhoto } from '../photos/storage';
 import { TrackPhotoGallery } from '../photos/TrackPhotoGallery';
+import { RouteDisplaySettings } from '../routeDisplay/RouteDisplaySettings';
+import type { useRouteDisplay } from '../routeDisplay/useRouteDisplay';
 export function TrackPanel({
   tracks: t,
   onDraw,
@@ -459,16 +462,31 @@ export function TrackPanel({
 }
 export function TrackTools({
   tracks: t,
+  display,
   onFinish,
   onLocate,
 }: {
   tracks: ManualTracksState;
+  display: ReturnType<typeof useRouteDisplay>;
   onFinish: () => void;
   onLocate: (point: Coordinate) => void;
 }) {
   const dock = useDockClearance<HTMLDivElement>('--drawing-info-clearance');
+  const [displayOpen, setDisplayOpen] = useState(false);
   return (
-    <div ref={dock} className="track-tools glass" aria-label="绘制工具">
+    <div ref={dock} className="track-tools glass" aria-label="绘制工具" data-view={displayOpen ? 'display' : 'tools'}>
+      {displayOpen ? <>
+        <div className="track-tools-display-header">
+          <strong>路线显示</strong>
+          <button aria-label="返回绘制工具" onClick={() => setDisplayOpen(false)}>返回</button>
+        </div>
+        <RouteDisplaySettings
+          display={display}
+          onClose={() => setDisplayOpen(false)}
+          embedded
+          compact="drawing"
+        />
+      </> : <>
       <TrackDrawingStyle
         style={t.style}
         onChange={(style) => t.setStyle(style, true)}
@@ -496,15 +514,25 @@ export function TrackTools({
       {t.anchor && (
         <button onClick={() => onLocate(t.anchor!)}>定位端点</button>
       )}
-      <button disabled={!t.canUndo} onClick={t.undo}>
-        撤销
-      </button>
-      <button onClick={onFinish}>完成</button>
+      <div className="track-tools-actions">
+        <button
+          aria-label="打开绘制路线显示设置"
+          onClick={() => {
+            display.choose(DRAFT_ID);
+            setDisplayOpen(true);
+          }}
+        >
+          显示设置
+        </button>
+        <button disabled={!t.canUndo} onClick={t.undo}>撤销</button>
+        <button onClick={onFinish}>完成</button>
+      </div>
       {t.error && (
         <p className="track-save-error" role="alert">
           {t.error}
         </p>
       )}
+      </>}
     </div>
   );
 }

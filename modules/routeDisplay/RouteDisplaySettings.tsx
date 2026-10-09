@@ -15,15 +15,19 @@ export function RouteDisplaySettings({
   onClose,
   navigating = false,
   embedded = false,
+  compact,
 }: {
   display: Display;
   onClose: () => void;
   navigating?: boolean;
   embedded?: boolean;
+  compact?: 'drawing';
 }) {
-  const root = useRouteDialogFocus(onClose, embedded ? '.guidance-card' : undefined);
+  const drawing = compact === 'drawing';
+  const isEmbedded = embedded || drawing;
+  const root = useRouteDialogFocus(onClose, embedded && !drawing ? '.guidance-card' : undefined);
   useEffect(() => {
-    if (embedded) return;
+    if (isEmbedded) return;
     const dismiss = (event: PointerEvent) => {
       if (isLayoutInteraction(event)) return;
       if (event.target instanceof Node && !root.current?.contains(event.target))
@@ -31,14 +35,15 @@ export function RouteDisplaySettings({
     };
     document.addEventListener('pointerdown', dismiss, true);
     return () => document.removeEventListener('pointerdown', dismiss, true);
-  }, [onClose, root, embedded]);
+  }, [onClose, root, isEmbedded]);
   const { preferences, target } = display;
   return (
         <section
           ref={root}
-          className={`route-display-settings glass${navigating ? ' route-display-settings--navigation' : ''}`}
+          className={`route-display-settings glass${navigating ? ' route-display-settings--navigation' : ''}${drawing ? ' route-display-settings--drawing' : ''}`}
           aria-label="路线显示设置面板"
-          data-embedded={embedded}
+          data-embedded={isEmbedded}
+          data-scope={compact ?? 'default'}
         >
           {!embedded && <header>
             <strong>路线显示</strong>
@@ -47,7 +52,7 @@ export function RouteDisplaySettings({
             </button>
           </header>}
           <div className="route-display-scroll">
-            {navigating ? <p className="route-display-scope">当前导航路线</p> : <label>
+            {navigating || drawing ? <p className="route-display-scope">{drawing ? '当前绘制路线' : '当前导航路线'}</p> : <label>
               路线
               <select
                 aria-label="显示设置作用路线"
@@ -101,7 +106,7 @@ export function RouteDisplaySettings({
                 </label>
               ))}
             </div>
-            <details className="route-display-explanation">
+            {!drawing && <details className="route-display-explanation">
               <summary>显示说明</summary>
               <div>
                 <p>前三项在选中路线或导航时显示于底部；全部关闭可隐藏底栏。</p>
@@ -116,7 +121,7 @@ export function RouteDisplaySettings({
                 </p>
                 <p>海拔按本路线最低至最高渐变；坡角按约5.7°和11.3°分档，同档同色。</p>
               </div>
-            </details>
+            </details>}
             <button
               onClick={display.refresh}
               disabled={display.loading || !target}

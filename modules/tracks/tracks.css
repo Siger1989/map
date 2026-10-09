@@ -87,6 +87,13 @@
   line-height: 18px;
   overflow-wrap: anywhere;
 }
+.track-tools-actions {
+  display: flex;
+  flex: 0 0 100%;
+  align-items: center;
+  gap: 4px;
+}
+.track-tools-actions button:last-child { flex: 1 1 auto; }
 .track-tools button {
   background: #ffffff0b;
   color: var(--accent);
@@ -308,6 +315,36 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   width: 80px;
   padding: 2px 8px;
   font-size: 16px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'][data-view='display'] {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor']:has(.selected-route-info) .track-tools[aria-label='绘制工具'] {
+  bottom: calc(var(--home-footer,64px) + var(--selected-info-clearance,0px) + 8px);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools-display-header {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools-display-header strong { font-size: 12px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools-display-header button {
+  flex: 0 0 auto;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-tools-actions button {
+  min-height: 36px;
 }
 .point-magnifier {
   position: absolute;
