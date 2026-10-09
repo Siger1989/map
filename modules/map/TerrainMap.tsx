@@ -3,7 +3,8 @@ import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentM
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
 import { readLastView, saveLastView } from './lastView';
-import { CameraSync, focusPointCamera } from './cameraSync';
+import { CameraSync, focusPointCamera, followPositionCamera } from './cameraSync';
+import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import type { TripPackage } from '../outdoor/offline';
@@ -130,6 +131,7 @@ export type MapHandle = {
   refreshGeology: () => void;
   inspect: () => unknown;
   focusPoint: (coordinates: Coordinate, zoom?: number) => void;
+  focusCenter: (coordinates: Coordinate) => void;
   focusRouteGap: (gap: RouteGap) => void;
   clearRouteGap: () => void;
   focusRouteIssue: (point: Coordinate, kind: 'fork' | 'candidate') => void;
@@ -141,12 +143,7 @@ export type MapHandle = {
     padding?: { top: number; right: number; bottom: number; left: number },
   ) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
-  followPosition: (
-    coordinates: Coordinate,
-    animate?: boolean,
-    maximumZoom?: number,
-    preferredZoom?: number,
-  ) => boolean;
+  followPosition: (coordinates: Coordinate, animate?: boolean) => boolean;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
@@ -711,21 +708,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             ? p
             : null;
         },
-        followPosition: (center, animate = true, maximumZoom?: number, preferredZoom?: number) => {
+        followPosition: (center, animate = true) => {
           const m = mapRef.current;
           if (!m || !loaded.current) return false;
-          // Zoom in once when following starts; subsequent fixes retain the user's view.
-          m.easeTo(
-            {
-              center,
-              ...(maximumZoom === undefined
-                ? {}
-                : { zoom: Math.min(m.getZoom(), maximumZoom) }),
-              ...(preferredZoom === undefined ? {} : { zoom: Math.max(m.getZoom(), Math.min(m.getMaxZoom(), preferredZoom)) }),
-              duration: animate ? 650 : 0,
-            },
-            { positionFollow: true },
-          );
+          followPositionCamera(m, center, animate);
           return true;
         },
         highlightOffline: (trip) => {
@@ -749,6 +735,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           latest.current.onBrowse();
           const map = mapRef.current;
           if (map) focusPointCamera(map, center, zoom);
+        },
+        focusCenter: (center) => {
+          const map = mapRef.current;
+          if (map) focusPointCamera(map, center);
         },
         focusRouteGap: (gap) => {
           const map = mapRef.current;
@@ -891,7 +881,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         syncTracks(latest.current.trackOverlay);
       });
       let releaseLastView: (() => void) | undefined;
-      let releaseUserZoom: (() => void) | undefined;
+      let releaseFollowPan: (() => void) | undefined;
       let releaseDesktopPan: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
@@ -939,17 +929,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.on('movestart', (event) => {
             if (event.originalEvent || !cameraSync.current.hasTarget()) latest.current.onCameraMoveStart?.();
           });
-          const mapElement = map.getContainer();
-          const onWheel = () => latest.current.onBrowse();
-          const onPinch = (event: TouchEvent) => {
-            if (event.touches.length >= 2) latest.current.onBrowse();
-          };
-          mapElement.addEventListener('wheel', onWheel, { passive: true });
-          mapElement.addEventListener('touchstart', onPinch, { passive: true });
-          releaseUserZoom = () => {
-            mapElement.removeEventListener('wheel', onWheel);
-            mapElement.removeEventListener('touchstart', onPinch);
-          };
+          releaseFollowPan = installFollowPanHandler(map, () => latest.current.onBrowse());
           rasterLockRef.current = new RasterLevelLock(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () => {
@@ -1407,11 +1387,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               }
             });
           });
-          map.on('dragstart', (event) => {
-            if (event.originalEvent) latest.current.onBrowse();
-          });
           map.on('rotatestart', (event) => {
-            if (event.originalEvent) latest.current.onManualRotate();
+            if (event.originalEvent) {
+              latest.current.onBrowse();
+              latest.current.onManualRotate();
+            }
+          });
+          map.on('pitchstart', (event) => {
+            if (event.originalEvent) latest.current.onBrowse();
           });
           map.on('moveend', (event) => {
             if (boxGestureActive.current || !loaded.current) return;
@@ -1476,7 +1459,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       });
       return () => {
         releaseLastView?.();
-        releaseUserZoom?.();
+        releaseFollowPan?.();
         releaseDesktopPan?.();
         previewRef.current?.remove();
         previewRef.current = null;

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { PlannedRoute } from '../navigation/types';
 import type { PositionFix } from '../position/types';
 import {
+  advance,
   createSession,
   deviationLimit,
   freshFix,
@@ -13,7 +14,7 @@ import { nextInstruction, project, pathOf } from './geometry';
 import { planRoute } from '../navigation/provider';
 import { atStart, connectDeparture, isNoPassableRoute, referenceDeparture } from './departure';
 import { advanceNetwork } from './networkSession';
-import { remainingRoutePlaces } from './reroute';
+import { calculateReroute, replacementSession, shouldAutoReroute, shouldReplaceTrackOnDeviation } from './reroute';
 
 export function useGuidance(
   route: PlannedRoute | null,
@@ -188,96 +189,140 @@ export function useGuidance(
     };
   }, [!!session, fix, locationError]);
   useEffect(() => {
-    if (
-      !session ||
-      session.originalRoute !== route ||
-      session.departurePending ||
-      session.arrived ||
-      !session.offRoute ||
-      session.quality ||
-      !online ||
-      document.hidden
-    ) {
+    const eligible = shouldAutoReroute(session, current.current.fix, {
+      locationError,
+      online,
+      hidden: document.hidden,
+      pending: !!request.current || !!rerouteRequest.current,
+      nextRequestAt: nextRequest.current,
+    });
+    if (!session || session.originalRoute !== route || !session.offRoute || session.arrived) {
       generation.current++;
       request.current?.abort();
       request.current = null;
+      rerouteRequest.current?.abort();
+      rerouteRequest.current = null;
+      setReplanning(false);
       if (!session?.departurePending) setLoading(false);
-      if (
-        (!session?.offRoute || session?.arrived) &&
-        !session?.departurePending
-      ) {
+      if ((!session?.offRoute || session?.arrived) && !session?.departurePending) {
         setRejoin(null);
         setError('');
         detourSince.current = null;
       }
       return;
     }
-    if (
-      request.current ||
-      !session.last ||
-      rerouteRequest.current ||
-      !freshFix(session.last) ||
-      Date.now() < nextRequest.current
-    )
+    if (session.originalRoute !== route || session.departurePending || session.quality || locationError || !online || document.hidden) {
+      generation.current++;
+      request.current?.abort();
+      request.current = null;
+      rerouteRequest.current?.abort();
+      rerouteRequest.current = null;
+      setReplanning(false);
+      setLoading(false);
       return;
-    if (rejoin) {
-      const hit = project(rejoin.path, session.last.coordinates);
-      if (hit.offset <= deviationLimit(session.last)) {
-        detourSince.current = null;
-        return;
-      }
-      detourSince.current ??= session.last.timestamp;
-      if (session.last.timestamp - detourSince.current < 3000) return;
     }
-    const target = rejoinTarget(session);
-    if (!target) return;
-    const abort = new AbortController(),
-      token = ++generation.current;
-    request.current = abort;
+    if (!shouldReplaceTrackOnDeviation(session)) {
+      if (!eligible || request.current || !session.last) return;
+      if (rejoin) {
+        const hit = project(rejoin.path, session.last.coordinates);
+        if (hit.offset <= deviationLimit(session.last)) {
+          detourSince.current = null;
+          return;
+        }
+        detourSince.current ??= session.last.timestamp;
+        if (session.last.timestamp - detourSince.current < 3000) return;
+      }
+      const target = rejoinTarget(session);
+      if (!target) return;
+      const abort = new AbortController(), token = ++generation.current;
+      request.current = abort;
+      nextRequest.current = Date.now() + 30000;
+      setLoading(true);
+      setError('');
+      setRejoin(null);
+      void calculateRejoin(session.route, session.last, target, abort.signal)
+        .then((value) => {
+          const live = current.current.session;
+          if (token === generation.current && !abort.signal.aborted && live?.offRoute && !live.quality && !live.arrived && live.route === session.route) {
+            if (!live.last || project(value.path, live.last.coordinates).offset > deviationLimit(live.last)) {
+              setError('位置已变化，等待重新计算接回路线。');
+              return;
+            }
+            setRejoin(value);
+          }
+        })
+        .catch((e) => {
+          if (token === generation.current && !abort.signal.aborted) {
+            nextRequest.current = Date.now() + 60000;
+            setError(e instanceof Error && !['TypeError', 'TimeoutError'].includes(e.name) ? e.message : '接回路线计算失败，请检查网络后重试。');
+          }
+        })
+        .finally(() => {
+          if (token === generation.current) {
+            request.current = null;
+            setLoading(false);
+          }
+        });
+      return;
+    }
+    if (!eligible || !session.last || rerouteRequest.current) return;
+    generation.current++;
+    request.current?.abort();
+    request.current = null;
+    departureRequest.current?.abort();
+    departureRequest.current = null;
+    const abort = new AbortController(), token = generation.current;
+    rerouteRequest.current = abort;
     nextRequest.current = Date.now() + 30000;
+    setReplanning(true);
     setLoading(true);
     setError('');
-    setRejoin(null);
-    void calculateRejoin(session.route, session.last, target, abort.signal)
-      .then((value) => {
+    void calculateReroute(session, current.current.fix!, abort.signal, () => current.current.fix, planRoute)
+      .then(({ route: result, fix: latestFix }) => {
         const live = current.current.session;
-        if (
-          token === generation.current &&
-          !abort.signal.aborted &&
-          live?.offRoute &&
-          !live.quality &&
-          !live.arrived
-        ) {
-          if (
-            !live.last ||
-            project(value.path, live.last.coordinates).offset >
-              deviationLimit(live.last)
-          ) {
-            setError('位置已变化，等待重新计算接回路线。');
-            return;
-          }
-          setRejoin(value);
-        }
+        if (token !== generation.current || abort.signal.aborted || !live?.offRoute || live.quality || live.arrived || live.route !== session.route || live.originalRoute !== session.originalRoute) return;
+        setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: session.originalRoute, startedAt: session.startedAt, travelled: live.travelled, last: latestFix, anchor: latestFix });
+        setRejoin(null);
       })
       .catch((e) => {
         if (token === generation.current && !abort.signal.aborted) {
           nextRequest.current = Date.now() + 60000;
-          setError(
-            e instanceof Error &&
-              !['TypeError', 'TimeoutError'].includes(e.name)
-              ? e.message
-              : '接回路线计算失败，请检查网络后重试。',
-          );
+          setError(e instanceof Error ? e.message : '自动重规划失败，原导航已保留。');
         }
       })
       .finally(() => {
-        if (token === generation.current) {
-          request.current = null;
+        if (token === generation.current && rerouteRequest.current === abort) {
+          rerouteRequest.current = null;
+          setReplanning(false);
           setLoading(false);
         }
       });
-  }, [session, route, rejoin, online, retry]);
+    return;
+  }, [session, route, rejoin, online, retry, locationError, fix]);
   const active = !!session && session.originalRoute === route;
+  const replaceRoute = (target: PlannedRoute): boolean => {
+    const previous = current.current.session;
+    if (!previous || previous.originalRoute !== current.current.route) return false;
+    let next: GuidanceSession;
+    try {
+      next = replacementSession(previous, target, current.current.locationError ? null : current.current.fix);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '新路线无效，原导航已保留。');
+      return false;
+    }
+    generation.current++;
+    request.current?.abort(); request.current = null;
+    departureRequest.current?.abort(); departureRequest.current = null;
+    rerouteRequest.current?.abort(); rerouteRequest.current = null;
+    nextRequest.current = 0;
+    detourSince.current = null;
+    setReplanning(false);
+    setLoading(false);
+    setRejoin(null);
+    setError('');
+    setSession(next);
+    return true;
+  };
   let remaining = session
     ? Math.max(0, session.path.length - session.progress)
     : 0;
@@ -327,18 +372,16 @@ export function useGuidance(
       departureRequest.current?.abort(); departureRequest.current = null;
       const abort = new AbortController();
       rerouteRequest.current = abort;
+      nextRequest.current = Date.now() + 30000;
       setReplanning(true); setLoading(true); setError('');
       try {
-        const { end, via } = remainingRoutePlaces(s);
-        const result = await planRoute({ name: '当前位置', coordinates: origin.coordinates }, end, s.route.mode, abort.signal, via);
-        abort.signal.throwIfAborted();
+        const { route: result, fix: latestFix } = await calculateReroute(s, origin, abort.signal, () => current.current.fix, planRoute);
         const live = current.current;
-        if (!live.session || live.session.originalRoute !== s.originalRoute) return;
-        if (!live.fix || !freshFix(live.fix) || project(pathOf(result.coordinates), live.fix.coordinates).offset > deviationLimit(live.fix)) throw new Error('位置已变化，请重新规划');
-        setSession({ ...createSession(result), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled, last: live.fix, anchor: live.fix });
+        if (!live.session || live.session.originalRoute !== s.originalRoute || live.session.route !== s.route) return;
+        setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled, last: latestFix, anchor: latestFix });
         setRejoin(null);
       } catch (e) {
-        if (!abort.signal.aborted) setError(e instanceof Error ? e.message : '重新规划失败，原导航已保留');
+        if (!abort.signal.aborted) { nextRequest.current = Date.now() + 60000; setError(e instanceof Error ? e.message : '重新规划失败，原导航已保留'); }
       } finally {
         if (rerouteRequest.current === abort) { rerouteRequest.current = null; setReplanning(false); setLoading(false); }
       }
@@ -374,6 +417,7 @@ export function useGuidance(
         return false;
       }
     },
+    replaceRoute,
     stop,
     retry: () => {
       if (request.current || departureRequest.current) return;

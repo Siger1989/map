@@ -38,6 +38,7 @@ export function RoutePanel({
   onEditPoints,
   onCancel,
   onImport,
+  onRouteApplied,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -55,6 +56,7 @@ export function RoutePanel({
   onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
+  onRouteApplied?: (route: PlannedRoute) => void;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
@@ -251,7 +253,9 @@ export function RoutePanel({
     }
   };
   if (n.route && !editing && n.picking === null) return <RouteResultSummary
-    onImport={onImport}
+    start={n.start} end={n.end} mode={n.mode} loading={n.loading}
+    planningError={n.error}
+    onModeChange={(mode) => n.setMode(mode, onRouteApplied)} onSwap={() => n.swap(onRouteApplied)}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
@@ -496,7 +500,7 @@ export function RoutePanel({
         <button
           onClick={() => {
             setActive(null);
-            n.swap();
+            n.swap(onRouteApplied);
           }}
         >
           <ArrowDownUp size={13} />
@@ -517,7 +521,7 @@ export function RoutePanel({
         onClick={async () => {
           const missing = n.stops.find((s) => !s.place);
           setActive(missing?.id ?? null);
-          const route = await n.calculate();
+          const route = await n.calculate(onRouteApplied);
           if (missing) {
             rows.current
               ?.querySelector<HTMLInputElement>(

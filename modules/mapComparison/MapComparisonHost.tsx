@@ -2,6 +2,7 @@ import { cloneElement, useEffect, useMemo, useRef, useState, type ReactElement, 
 import type { MapHandle, TerrainMapProps } from '../map/TerrainMap';
 import type { CameraSnapshot } from '../controls/useMapFocusLock';
 import type { ComparisonChoice } from './choices';
+import { settingsForBasemapSource } from '../mapSources/selection';
 import type { Coordinate } from '../navigation/types';
 import { formatDistance, formatDuration } from '../navigation/types';
 import { RouteNameInput } from '../navigation/RouteNameInput';
@@ -194,6 +195,17 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   };
   const report = (index: 0 | 1, message: string) => setStatus(old => old[index] === message ? old : index === 0 ? [message, old[1]] : [old[0], message]);
   const select = (index: 0 | 1, id: string) => {
+    const target = session?.choices.find(item => item.id === id);
+    if (target) {
+      const current = choice(index);
+      const targetSettings = paneSettings[index][id] ?? target.settings;
+      const settings = settingsForBasemapSource(targetSettings, current.settings);
+      setPaneSettings(old => {
+        const next: typeof old = [...old];
+        next[index] = { ...old[index], [id]: settings };
+        return next;
+      });
+    }
     setSelected(old => index === 0 ? [id, old[1]] : [old[0], id]);
     setSatellite(old => index === 0 ? [null, old[1]] : [old[0], null]);
     report(index, '正在加载地图…');

@@ -11,6 +11,7 @@ import { TextSuggestions } from '@/modules/input/SmartText';
 import { requestAppBack } from '@/modules/input/appBack';
 import { CurrentMapContext } from '@/modules/routeShare/CurrentMapContext';
 import { useMapSources } from '@/modules/mapSources/useMapSources';
+import { settingsForBasemapSource, sourcePanelSettings } from '@/modules/mapSources/selection';
 import { readRasterDatums } from '@/modules/mapSources/coordinates';
 import { readContourInterval, saveContourInterval } from '@/modules/terrain/contourInterval';
 import { RouteImportDialog } from '@/modules/dataTransfer/RouteImportDialog';
@@ -59,7 +60,6 @@ import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useGuidance } from '@/modules/guidance/useGuidance';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
-import { NavigationStart } from '@/modules/guidance/NavigationStart';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
 import { RouteQrReader } from '@/modules/routeShare/RouteQrReader';
 import type { DirectionMode } from '@/modules/position/types';
@@ -570,8 +570,6 @@ export default function Home() {
       return map.current?.followPosition(
         coordinates,
         position.direction !== 'device' && position.direction !== 'motion',
-        undefined,
-        initial ? 16 : undefined,
       ) ?? false;
     },
   });
@@ -1119,9 +1117,9 @@ export default function Home() {
     navigationTarget,
     setNavigationTarget,
     startGuidance,
-    beginFavorite,
     navigateFavorite,
     navigateTrack,
+    onRouteApplied,
   } = useGuidanceWorkflow({
     guidance,
     position,
@@ -1133,6 +1131,10 @@ export default function Home() {
     map,
     activeAlternative,
     onOpenRoute: openRoute,
+    onOpenRouteCard: () => {
+      setNavigationDisplayOpen(false);
+      setPanel('route');
+    },
     onInvalidRoute: () => setPanel('route'),
     onActivateUi: () => {
       setNavigationDisplayOpen(false);
@@ -1162,18 +1164,28 @@ export default function Home() {
     setPanel(null);
   };
   const routeOverlay = useMemo(
-    () => ({
-      start: navigation.visible ? navigation.start : null,
-      end: navigation.visible ? navigation.end : null,
-      route: navigation.visible ? guidance.session?.route ?? navigation.route : null,
-      via: navigation.visible ? navigation.via : [],
-    }),
+    () => {
+      const activeRoute = guidance.active ? guidance.session?.route : null;
+      const start = activeRoute
+        ? activeRoute.stops?.[0] ?? { name: '当前位置', coordinates: activeRoute.coordinates[0] }
+        : navigation.start;
+      const end = activeRoute
+        ? activeRoute.stops?.at(-1) ?? { name: '终点', coordinates: activeRoute.coordinates.at(-1)! }
+        : navigation.end;
+      return {
+        start: navigation.visible ? start : null,
+        end: navigation.visible ? end : null,
+        route: navigation.visible ? activeRoute ?? navigation.route : null,
+        via: navigation.visible ? activeRoute?.stops?.slice(1, -1) ?? navigation.via : [],
+      };
+    },
     [
       navigation.start,
       navigation.end,
       navigation.route,
       navigation.via,
       navigation.visible,
+      guidance.active,
       guidance.session?.route,
     ],
   );
@@ -1236,6 +1248,10 @@ export default function Home() {
     if (patch.contourInterval !== undefined) saveContourInterval(patch.contourInterval);
     if (patch.terrain !== undefined) map.current?.setTerrainMode(patch.terrain);
     setLayers((current) => applyLayerPatch(current, patch));
+  };
+  const selectBasemapSource = (settings: LayerSettings, sourceId: string) => {
+    mapSources.select(sourceId);
+    update(settingsForBasemapSource(settings, layers));
   };
   useMapTools({
     read: () => ({
@@ -1705,9 +1721,7 @@ export default function Home() {
             </div>
           )}
           onClose={() => requestComparisonExit()} onUse={choice => requestComparisonExit(() => {
-          mapSources.select(choice.source?.id ?? '');
-          map.current?.setTerrainMode(choice.settings.terrain);
-          setLayers(choice.settings);
+          selectBasemapSource(choice.settings, choice.source?.id ?? '');
           setComparison(null);
         })} markerEditor={renderMarkerWorkspace} operations={{
           onMark: (coordinates, kind) => annotations.add(kind, coordinates),
@@ -2115,7 +2129,7 @@ export default function Home() {
                     const id = tracks.saveForMarker();
                     if (!id) return;
                     try {
-                      setNavigationTarget(
+                      navigateFavorite(
                         trackNavigation(
                           { ...railTrack, id },
                           Date.now(),
@@ -2744,9 +2758,7 @@ export default function Home() {
             onSelect={id => {
               const choice = sourceChoices.find(item => item.id === id);
               if (!choice) return;
-              mapSources.select(choice.source?.id ?? '');
-              map.current?.setTerrainMode(choice.settings.terrain);
-              setLayers(choice.settings);
+              selectBasemapSource(choice.settings, choice.source?.id ?? '');
             }}
             onManage={() => { setSourcesParent('layers'); setPanel('sources'); }}
           /> : undefined}
@@ -2834,7 +2846,7 @@ export default function Home() {
           terrain={layers.terrain}
           bearing={view.bearing}
           onZoom={(amount) => {
-            userBrowse();
+            cancelStartupCamera();
             map.current?.zoom(amount);
           }}
           onNorth={() => {
@@ -3034,7 +3046,11 @@ export default function Home() {
               incomingFile={incomingRoute.mapSource}
               onIncomingConsumed={incomingRoute.dismissMapSource}
               settings={layers}
-              onSettings={patch=>{if (!patch.rasterDatums) mapSources.select('');update(patch);}}
+              onSettings={patch=>{
+                const result = sourcePanelSettings(patch, layers);
+                if (result.sourceChanged) mapSources.select('');
+                update(result.settings);
+              }}
               onRouteQr={(text) => {
                 setPanel(null);
                 setRouteQr(text);
@@ -3044,12 +3060,13 @@ export default function Home() {
               builtin={!layers.satellite ? 'terrain' : layers.imageryMode}
               onBuiltin={(id) => {
                 mapSources.select('');
-                update({
+                const target = applyLayerPatch(layers, {
                   offlineBasemap: false,
                   satellite: id !== 'terrain',
                   satelliteProvider: 'sentinel',
                   ...(id !== 'terrain' ? { imageryMode: id } : {}),
                 });
+                update(settingsForBasemapSource(target, layers));
               }}
               onFocus={(bounds) =>
                 map.current?.fitRoute([
@@ -3328,6 +3345,7 @@ export default function Home() {
                   openRouteShareDialog(sharePlanned(navigation.route));
               }}
               navigation={navigation}
+              onRouteApplied={onRouteApplied}
               onStartNavigation={startGuidance}
               navigating={guidance.active}
               guidanceError={guidance.error}
@@ -3520,23 +3538,6 @@ export default function Home() {
               }}
             />
           ) : null)}
-        {navigationTarget && (
-          <NavigationStart
-            mapSettings={layers}
-            key={navigationTarget.id}
-            target={navigationTarget}
-            alternatives={
-              selectedTrack && selectedTrack.id === navigationTarget.id
-                ? selectedAlternatives
-                : []
-            }
-            alternativeId={activeAlternative}
-            onAlternative={setActiveAlternative}
-            startError={savedNavigationError}
-            onStart={beginFavorite}
-            onClose={() => setNavigationTarget(null)}
-          />
-        )}
         {placeShareTarget && <PlaceShare place={placeShareTarget.place} onClose={() => setPlaceShareTarget(null)} onExport={placeShareTarget.markerId ? () => { setCollectionOutputKey(`annotation:${placeShareTarget.markerId}`); setPlaceShareTarget(null); setPanel('favorites'); } : undefined} />}
         {shareTarget && (
           <RouteShare

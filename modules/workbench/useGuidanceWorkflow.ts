@@ -8,10 +8,11 @@ import type { useManualTracks } from '../tracks/useManualTracks';
 import type { MapHandle } from '../map/TerrainMap';
 import { validFavorite, type RouteFavorite } from '../navigation/favorites';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '../guidance/savedRoute';
-import { createSession } from '../guidance/session';
 import type { RouteGap } from '../tracks/routeInfo';
 import { freshFix } from '../guidance/session';
 import type { PositionFix } from '../position/types';
+import { resolveTrackConnections } from '../guidance/trackConnections';
+import { planRoute } from '../navigation/provider';
 
 /** Navigation workflow owns its UI session and location lifecycle; other tools close through one callback. */
 export function useGuidanceWorkflow({
@@ -24,6 +25,7 @@ export function useGuidanceWorkflow({
   map,
   activeAlternative,
   onOpenRoute,
+  onOpenRouteCard,
   onActivateUi,
   onInvalidRoute,
   initialFix,
@@ -40,12 +42,13 @@ export function useGuidanceWorkflow({
   >;
   navigation: Pick<
     ReturnType<typeof useNavigation>,
-    'route' | 'start' | 'end' | 'restore'
+    'route' | 'start' | 'end' | 'restore' | 'adoptRoute'
   >;
   tracks: Pick<ReturnType<typeof useManualTracks>, 'saved' | 'selectedId'>;
   map: RefObject<MapHandle | null>;
   activeAlternative: string;
   onOpenRoute: (id: string) => void;
+  onOpenRouteCard?: () => void;
   onActivateUi: () => void;
   onInvalidRoute: () => void;
   /** Last real fix known by the page; absent/stale fixes never become a user origin. */
@@ -74,7 +77,7 @@ export function useGuidanceWorkflow({
     const s = guidance.session;
     if (s?.last && !s.quality && !guidanceFocused.current) {
       guidanceFocused.current = true;
-      map.current?.focusPoint(s.last.coordinates);
+      map.current?.focusCenter(s.last.coordinates);
       follow.resume();
     }
   }, [
@@ -98,7 +101,7 @@ export function useGuidanceWorkflow({
     const cameraTarget = initialFix && freshFix(initialFix)
       ? initialFix.coordinates
       : route?.coordinates[0];
-    if (cameraTarget) map.current?.focusPoint(cameraTarget);
+    if (cameraTarget) map.current?.focusCenter(cameraTarget);
     onActivateUi();
     position.free();
     map.current?.previewRoute(null);
@@ -107,34 +110,52 @@ export function useGuidanceWorkflow({
     if (position.mode === 'network') position.changeMode('auto');
     else position.locate();
   };
+  const startRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => startRequest.current?.abort(), []);
   const startGuidance = () => {
     const route = navigation.route;
-    if (route && navigation.start && navigation.end)
-      setNavigationTarget({
-        id: 'current-route',
-        name: `${navigation.start.name} → ${navigation.end.name}`,
-        savedAt: Date.now(),
-        start: navigation.start,
-        end: navigation.end,
-        route,
+    if (!route || !navigation.start || !navigation.end) {
+      onInvalidRoute();
+      return;
+    }
+    setSavedNavigationError('');
+    if (route.geometryKind !== 'track') {
+      activateGuidance(route);
+      return;
+    }
+    startRequest.current?.abort();
+    const abort = new AbortController();
+    startRequest.current = abort;
+    void resolveTrackConnections(route, planRoute, abort.signal)
+      .then((resolved) => {
+        if (abort.signal.aborted || startRequest.current !== abort) return;
+        navigation.adoptRoute(resolved);
+        activateGuidance(resolved);
+      })
+      .catch((error) => {
+        if (!abort.signal.aborted && startRequest.current === abort)
+          setSavedNavigationError(error instanceof Error ? error.message : '轨迹接入路线计算失败，请重试。');
+      })
+      .finally(() => {
+        if (startRequest.current === abort) startRequest.current = null;
       });
   };
-  const navigateFavorite = (favorite: RouteFavorite) =>
-    setNavigationTarget(favorite);
-  const beginFavorite = (favorite: RouteFavorite) => {
+  const navigateFavorite = (favorite: RouteFavorite) => {
     setSavedNavigationError('');
-    try {
-      if (!validFavorite(favorite))
-        throw new Error('收藏路线数据无效，无法导航。');
-      createSession(favorite.route);
-      if (!navigation.restore(favorite)) return;
-      activateGuidance(favorite.route);
-      setNavigationTarget(null);
-    } catch (error) {
-      setSavedNavigationError(
-        error instanceof Error ? error.message : '无法开始导航。',
-      );
+    if (!validFavorite(favorite)) {
+      setSavedNavigationError('收藏路线数据无效，无法导航。');
+      return;
     }
+    if (!navigation.restore(favorite)) return;
+    setNavigationTarget(null);
+    onActivateUi();
+    onOpenRouteCard?.();
+  };
+  const beginFavorite = (favorite: RouteFavorite) => {
+    navigateFavorite(favorite);
+  };
+  const onRouteApplied = (route: NonNullable<ReturnType<typeof useNavigation>['route']>) => {
+    if (guidance.active) guidance.replaceRoute(route);
   };
   const navigateTrack = (id: string, reversed = false) => {
     setSavedNavigationError('');
@@ -184,5 +205,6 @@ export function useGuidanceWorkflow({
     beginFavorite,
     navigateFavorite,
     navigateTrack,
+    onRouteApplied,
   };
 }

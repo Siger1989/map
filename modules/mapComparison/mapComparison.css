@@ -1,4 +1,5 @@
 /* Two equal map canvases; toolbar space is outside each map's projection viewport. */
+.observatory.home-map { overflow: clip; }
 .observatory.home-map[data-comparing='true'] {
   --compare-top: calc(var(--home-top) + 32px);
   --compare-half: calc((100% - var(--compare-top) - var(--home-bottom) - 44px) / 2);

@@ -582,13 +582,13 @@ test('source stepping changes only that pane, wraps, and does not use or persist
   const upperNext = f.host.querySelector('[aria-label="上图：下一图源"]');
   await f.act(async () => upperNext.click());
   assert.equal(counters.latest['map-comparison-primary'].mapSource, null, 'upper advances from current to sentinel');
-  assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[1].settings);
+  assert.deepEqual(counters.latest['map-comparison-primary'].settings, f.choices[1].settings);
   assert.equal(counters.latest['map-comparison-secondary'].settings, f.choices[1].settings, 'lower stays on sentinel');
   await chooseSource(f, '下', 'beta');
   assert.equal(counters.latest['map-comparison-secondary'].mapSource, f.choices[3].source);
-  assert.equal(counters.latest['map-comparison-primary'].settings, f.choices[1].settings, 'changing lower leaves upper unchanged');
+  assert.deepEqual(counters.latest['map-comparison-primary'].settings, f.choices[1].settings, 'changing lower leaves upper unchanged');
   await f.act(async () => f.host.querySelector('[aria-label="下图：下一图源"]').click());
-  assert.equal(counters.latest['map-comparison-secondary'].settings, f.choices[0].settings, 'last choice wraps to first');
+  assert.deepEqual(counters.latest['map-comparison-secondary'].settings, f.choices[0].settings, 'last choice wraps to first');
   assert.deepEqual(f.used, []);
 });
 
@@ -676,11 +676,13 @@ test('picker failed favorite writes are inert; keyboard, outside click, Escape, 
 test('Use applies the exact upper or lower choice only when its button is pressed', async t => {
   const f = await mount(t);
   await f.act(async () => f.host.querySelector('[aria-label="使用上方图源"]').click());
-  assert.equal(f.used.at(-1), f.choices[0]);
+  assert.equal(f.used.at(-1).id, f.choices[0].id);
+  assert.equal(f.used.at(-1).source, f.choices[0].source);
   assert.equal(f.used.length, 1);
   await chooseSource(f, '下', 'beta');
   await f.act(async () => f.host.querySelector('[aria-label="使用下方图源"]').click());
-  assert.equal(f.used.at(-1), f.choices[3]);
+  assert.equal(f.used.at(-1).id, f.choices[3].id);
+  assert.equal(f.used.at(-1).source, f.choices[3].source);
   assert.equal(f.used.length, 2);
 });
 
@@ -753,7 +755,7 @@ test('roads and display parameters update only the active comparison pane', asyn
   assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer toggles do not apply a new camera');
 });
 
-test('layer settings persist after close and by source choice, and Use returns only the selected pane settings', async t => {
+test('layer settings persist across source changes, and Use returns only the selected pane settings', async t => {
   const f = await mount(t);
   const cameraCallsAtStart = ['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0);
   await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
@@ -770,7 +772,7 @@ test('layer settings persist after close and by source choice, and Use returns o
   await changeReactControl(f, f.host.querySelector('#roads-opacity'), '0.35');
   await chooseSource(f, '上', 'sentinel');
   await chooseSource(f, '上', 'beta');
-  assert.equal(counters.latest['map-comparison-primary'].settings.roads, false);
+  assert.equal(counters.latest['map-comparison-primary'].settings.roads, true, 'new basemap selection carries the pane current road toggle');
   assert.equal(counters.latest['map-comparison-primary'].settings.roadsOpacity, 0.35);
 
   await f.act(async () => f.host.querySelector('.comparison-layer-tabs button:nth-child(2)').click());
@@ -784,12 +786,78 @@ test('layer settings persist after close and by source choice, and Use returns o
   const used = f.used.at(-1);
   assert.equal(used.id, 'beta');
   assert.equal(used.source, f.choices[3].source);
-  assert.equal(used.settings.roads, false);
+  assert.equal(used.settings.roads, true);
   assert.equal(used.settings.roadsOpacity, 0.35);
   assert.equal(used.settings.geology, false, 'lower geology setting is not included in upper Use');
   assert.equal(used.settings.elevationColors, false);
   assert.equal(lowerBefore.roads, f.choices[1].settings.roads, 'upper choice edits do not leak to the lower pane');
   assert.deepEqual(['map-comparison-primary', 'map-comparison-secondary'].map(key => counters.cameraCalls[key]?.length ?? 0), cameraCallsAtStart, 'layer changes and Use do not apply a new camera');
+});
+
+test('source changes keep pane overlays while restoring only the target source base settings', async t => {
+  const f = await mount(t);
+  f.choices[0].settings = layerSettings({
+    contours: true,
+    contourInterval: 50,
+    elevationColors: true,
+    elevationColorsOpacity: 0.35,
+    roads: false,
+    roadsOpacity: 0.4,
+    geology: false,
+    geologyOpacity: 0.6,
+    terrain: false,
+    exaggeration: 1.7,
+    labels: false,
+    tiandituLabels: 'cia',
+    tiandituBoundaries: false,
+  });
+  f.choices[3].settings = layerSettings({
+    satellite: true,
+    satelliteProvider: 'tianditu',
+    tiandituBase: 'img',
+    imageryMode: 'latest',
+    rasterLevel: 12,
+    rasterDatums: { 'source-b': 'GCJ02' },
+  });
+
+  await f.act(async () => f.host.querySelector('[aria-label="对比图层"]').click());
+  assert.equal(f.host.querySelector('#contours-toggle').getAttribute('aria-checked'), 'true');
+  await f.act(async () => f.host.querySelector('#contours-toggle').click());
+  const lowerBefore = counters.latest['map-comparison-secondary'].settings;
+  assert.equal(counters.latest['map-comparison-primary'].settings.contours, false);
+
+  await chooseSource(f, '上', 'beta');
+  let upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.contours, false);
+  assert.equal(upper.contourInterval, 50);
+  assert.equal(upper.elevationColors, true);
+  assert.equal(upper.elevationColorsOpacity, 0.35);
+  assert.equal(upper.terrain, false, 'basemap selection keeps the pane 3D toggle');
+  assert.equal(upper.exaggeration, 1.7, 'basemap selection keeps terrain exaggeration');
+  assert.equal(upper.roads, false);
+  assert.equal(upper.roadsOpacity, 0.4);
+  assert.equal(upper.labels, false);
+  assert.equal(upper.tiandituLabels, 'cia', 'annotation choice remains a pane layer preference');
+  assert.equal(upper.tiandituBoundaries, false, 'boundary overlay toggle remains pane-local');
+  assert.equal(upper.satellite, true);
+  assert.equal(upper.satelliteProvider, 'tianditu');
+  assert.equal(upper.tiandituBase, 'img');
+  assert.equal(upper.imageryMode, 'latest');
+  assert.equal(upper.rasterLevel, 12);
+  assert.deepEqual(upper.rasterDatums, { 'source-b': 'GCJ02' });
+  assert.equal(counters.latest['map-comparison-secondary'].settings, lowerBefore, 'switching the upper pane leaves lower pane settings untouched');
+
+  await chooseSource(f, '上', 'sentinel');
+  await chooseSource(f, '上', 'alpha');
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.contours, false, 'returning to a previous source keeps the pane current overlay state');
+  assert.equal(upper.roads, false);
+  await chooseSource(f, '上', 'beta');
+  upper = counters.latest['map-comparison-primary'].settings;
+  assert.equal(upper.contours, false, 'round trips do not restore a source snapshot');
+  assert.equal(upper.satelliteProvider, 'tianditu', 'target source provider remains source-specific');
+  assert.deepEqual(upper.rasterDatums, { 'source-b': 'GCJ02' }, 'target source datum remains source-specific');
+  assert.equal(counters.latest['map-comparison-secondary'].settings, lowerBefore);
 });
 
 test('comparison marker entry directly creates a pin at the primary center and opens the shared workspace slot', async t => {
@@ -1021,7 +1089,8 @@ test('leaving comparison or choosing a source pauses drawing and preserves the d
   await chooseSource(useFixture, '下', 'beta');
   await useFixture.act(async () => useFixture.host.querySelector('[aria-label="使用下方图源"]').click());
   assert.deepEqual(useFixture.pauses, [[usePoint]], 'using a source pauses without clearing the draft');
-  assert.equal(useFixture.used[0], useFixture.choices[3]);
+  assert.equal(useFixture.used[0].id, useFixture.choices[3].id);
+  assert.equal(useFixture.used[0].source, useFixture.choices[3].source);
   assert.equal(useFixture.operationsCalls.save, 0);
 });
 

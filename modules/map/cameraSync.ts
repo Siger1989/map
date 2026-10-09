@@ -18,6 +18,22 @@ type FocusPointMap = {
   }) => unknown;
 };
 
+type FollowPositionMap = {
+  easeTo: (
+    options: { center: CameraSnapshot['center']; duration: number },
+    eventData: { positionFollow: true },
+  ) => unknown;
+};
+
+/** Move the followed fix into the center while leaving the current zoom alone. */
+export function followPositionCamera(
+  map: FollowPositionMap,
+  center: CameraSnapshot['center'],
+  animate = true,
+) {
+  map.easeTo({ center, duration: animate ? 650 : 0 }, { positionFollow: true });
+}
+
 /** Focuses a coordinate while leaving the current zoom untouched unless requested. */
 export function focusPointCamera(
   map: FocusPointMap,

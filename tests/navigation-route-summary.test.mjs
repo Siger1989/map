@@ -69,10 +69,19 @@ test('route details show the bounded elevation profile without turn instructions
     }));
   };
   let showCalls = 0;
+  const appliedModes = [];
+  let swapCalls = 0;
   const host = document.getElementById('root');
   const root = createRoot(host);
   const props = {
     route,
+    start: { name: '绿色起点' },
+    end: { name: '红色终点' },
+    mode: 'auto',
+    loading: false,
+    planningError: '',
+    onModeChange(mode) { appliedModes.push(mode); },
+    onSwap() { swapCalls++; },
     onShow() { showCalls++; },
     onEdit() {},
     onSave() {},
@@ -85,7 +94,15 @@ test('route details show the bounded elevation profile without turn instructions
 
   await act(async () => root.render(React.createElement(RouteResultSummary, props)));
   assert.equal(host.querySelector('[aria-expanded="false"]')?.textContent, '详情');
+  assert.equal(host.querySelector('.route-endpoint-start')?.nextElementSibling.textContent, '绿色起点');
+  assert.equal(host.querySelector('.route-endpoint-end')?.nextElementSibling.textContent, '红色终点');
   assert.equal(host.querySelector('.route-elevation'), null, 'profile is deferred until details are opened');
+  await act(async () => host.querySelector('[aria-label="交换起点和终点"]').click());
+  assert.equal(swapCalls, 1, 'endpoint exchange stays on the route card');
+  const modeSelect = host.querySelector('[aria-label="当前导航方式"]');
+  Object.defineProperty(modeSelect, 'value', { configurable: true, value: 'bicycle' });
+  await act(async () => modeSelect.dispatchEvent(new window.Event('change', { bubbles: true })));
+  assert.deepEqual(appliedModes, ['bicycle'], 'mode selection is wired to automatic replanning');
 
   await act(async () => host.querySelector('[aria-expanded="false"]').click());
   await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
