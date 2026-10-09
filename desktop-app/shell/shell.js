@@ -5,6 +5,7 @@
   const helpButton = document.getElementById('help-toggle');
   const help = document.getElementById('mouse-help');
   const message = document.getElementById('desktop-message');
+  const panOverlay = document.getElementById('map-pan-overlay');
   const panButton = document.getElementById('map-pan');
   const panThumb = document.getElementById('pan-thumb');
   let panPointer = null;
@@ -25,7 +26,7 @@
     const x = event.clientX - rect.left - rect.width / 2;
     const y = event.clientY - rect.top - rect.height / 2;
     const length = Math.hypot(x, y);
-    const scale = length > 16 ? 16 / length : 1;
+    const scale = length > 20 ? 20 / length : 1;
     panVector = { x: x * scale, y: y * scale };
     panThumb.style.transform = `translate(${panVector.x}px, ${panVector.y}px)`;
   }
@@ -50,6 +51,7 @@
   function selectWorkspace(name) {
     stopPan();
     panButton.disabled = name !== 'map';
+    panOverlay.hidden = name !== 'map';
     if (name === 'industry' && !document.getElementById('industry-frame').getAttribute('src')) {
       document.getElementById('industry-frame').src = '/industry/';
     }
@@ -116,7 +118,39 @@
           // The selection surface owns map gestures. Keep the existing desktop controls clickable above it.
           const style = doc.createElement('style');
           style.dataset.desktopMapControls = 'true';
-          style.textContent = `html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control, .map-comparison-ui .map-comparison-gizmo) { left: 50%; right: auto; transform: translateX(-50%); }
+          style.textContent = `html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control, .map-comparison-ui .map-comparison-gizmo) {
+              position: absolute !important; top: auto !important; right: auto !important; bottom: calc(var(--home-footer) + 45px) !important; left: min(50%, calc(100% - 228px)) !important;
+              width: 110px !important; height: 118px !important; margin: 0 !important; transform: translateX(-50%) !important; z-index: 25 !important;
+            }
+            html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control .camera-gizmo, .map-comparison-ui .map-comparison-gizmo .camera-gizmo) {
+              position: relative !important; inset: auto !important; top: auto !important; right: auto !important; bottom: auto !important; left: auto !important;
+              width: 110px !important; height: 118px !important; margin: 0 !important; transform: none !important;
+            }
+            html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control .camera-gizmo > svg, .map-comparison-ui .map-comparison-gizmo .camera-gizmo > svg) {
+              display: block !important; width: 110px !important; height: 118px !important;
+            }
+            @media (max-width: 740px) {
+              html[data-shantu-desktop='true'] .observatory.home-map[data-survey='true'] .survey-dock {
+                bottom: calc(var(--home-footer) + 176px) !important;
+                max-height: calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 184px) !important;
+              }
+              html[data-shantu-desktop='true'] .observatory.home-map[data-survey='true'] .survey-dock .survey-dock-content {
+                flex: 1 1 auto !important; min-height: 0; overflow: auto !important;
+              }
+              html[data-shantu-desktop='true'] .observatory.home-map[data-survey='true'] .survey-dock .survey-action-row {
+                flex-shrink: 0;
+              }
+              html[data-shantu-desktop='true'] .observatory.home-map :is(.track-tools, .track-draw-tools) {
+                bottom: calc(var(--home-footer) + 176px) !important;
+                max-height: calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 184px) !important;
+                overflow: auto !important;
+              }
+            }
+            @media (max-width: 740px) and (max-height: 600px) {
+              html[data-shantu-desktop='true'] .observatory.home-map :is(.home-camera-control, .map-comparison-ui .map-comparison-gizmo) {
+                left: min(50%, calc(100% - 272px)) !important;
+              }
+            }
             .observatory.home-map:has(.map-box-selection[data-active='true']) .home-position-dock:not(:has(.route-display-settings)),
             .observatory.home-map:has(.map-box-selection[data-active='true']) .home-camera-control { z-index: 25; }`;
           doc.head.append(style);

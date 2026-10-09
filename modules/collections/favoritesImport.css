@@ -8,6 +8,7 @@
   padding: 8px;
   background: transparent;
 }
+
 .collection-workbench.favorites-import {
   position: relative;
   inset: auto;
@@ -19,22 +20,22 @@
   background: var(--ui-surface, #18201f);
   color: var(--ui-ink, #f2f5ed);
   border: 1px solid var(--ui-line, #39413e);
-  border-radius: var(--ui-radius-card, 20px);
+  border-radius: 8px;
   box-shadow: var(--ui-shadow, 0 12px 32px #0008);
 }
-/* Keep the existing favorites/map split. Only clear the dock's surface while
-   import is open, so this reads as one card without dimming or blocking the map. */
+
+/* Keep the existing favorites/map split and remove only the dock's extra plate. */
 html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .control-dock:has(.favorites-import-backdrop) .control-popover {
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-/* Import is an overlay task, not the collection directory: keep the map behind
-   the whole card and avoid inheriting the directory's forced 100% height. */
-html[data-ui-theme] .observatory.home-map[data-panel='favorites']:has(.favorites-import-backdrop) > .map-canvas { top:0; }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench.favorites-import { height:auto; min-height:0; }
-html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-import .workbench-collections { height:auto; flex:1 1 auto; min-height:0; }
+
+html[data-ui-theme] .observatory.home-map[data-panel='favorites']:has(.favorites-import-backdrop) > .map-canvas { top: 0; }
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench.favorites-import { height: auto; min-height: 0; }
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-import .workbench-collections { height: auto; flex: 1 1 auto; min-height: 0; }
+
 .favorites-import .workbench-collections {
   display: flex;
   flex-direction: column;
@@ -42,64 +43,308 @@ html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-imp
   min-height: 0;
   overflow: hidden;
 }
-.favorites-import .workbench-heading > div { justify-content: center; text-align: center; }
-.favorites-import .workbench-heading button {
-  width: auto;
-  min-width: 36px;
-  min-height: 36px;
-  padding: 0 4px;
-  white-space: nowrap;
-  font-size: 11px;
-}
-.favorites-import .workbench-heading button[aria-label='关闭导入'] { width: 36px; }
+
 .favorites-import .workbench-heading {
   flex-shrink: 0;
   min-height: 40px;
   height: 40px;
 }
+
+.favorites-import .workbench-heading > div { justify-content: center; text-align: center; }
+.favorites-import .workbench-heading strong { font-size: 13px; }
+
+.favorites-import .workbench-heading button {
+  width: auto;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-ink, inherit);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.favorites-import .workbench-heading button[aria-label='关闭导入'] { width: 36px; }
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .workbench-heading button {
+  background: transparent;
+  color: var(--ui-ink, #f2f5ed);
+  border-color: transparent;
+  font-size: 12px;
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .workbench-heading button:hover {
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 10%, var(--ui-surface, #18201f));
+  border-color: var(--ui-line, #39413e);
+}
+
 .favorites-import-tabs {
   display: flex;
   gap: 4px;
   padding: 4px 6px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--ui-line, #39413e);
 }
+
 .favorites-import-tabs button {
   flex: 1;
   min-width: 0;
   min-height: 36px;
   padding: 2px 4px;
-  border: 1px solid var(--ui-line, #9db4a8);
-  border-radius: 5px;
-  background: var(--ui-surface, #fff);
-  color: var(--ui-ink, #234b3e);
-  font-size: 11px;
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--ui-line, #39413e);
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--ui-muted, #aab4ae);
+  font-size: 12px;
+  line-height: 1.25;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
+
+.favorites-import-tabs button:hover {
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 8%, var(--ui-surface, #18201f));
+  color: var(--ui-ink, #f2f5ed);
+}
+
 .favorites-import-tabs button[aria-pressed='true'] {
-  background: var(--ui-accent, #266552);
-  color: var(--ui-ink, #fff);
+  border-bottom: 2px solid var(--ui-accent, #c4dc78);
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 12%, var(--ui-surface, #18201f));
+  color: var(--ui-accent, #c4dc78);
+  font-weight: 600;
 }
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-tabs button {
+  border: 1px solid transparent;
+  border-bottom: 1px solid var(--ui-line, #39413e);
+  background: transparent;
+  color: var(--ui-muted, #aab4ae);
+  font-size: 12px;
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-tabs button:hover {
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 8%, var(--ui-surface, #18201f));
+  color: var(--ui-ink, #f2f5ed);
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-tabs button[aria-pressed='true'] {
+  border: 1px solid transparent;
+  border-bottom: 2px solid var(--ui-accent, #c4dc78);
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 12%, var(--ui-surface, #18201f));
+  color: var(--ui-accent, #c4dc78);
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-tabs button:focus-visible {
+  outline: 2px solid var(--ui-accent, #c4dc78);
+  outline-offset: -2px;
+}
+
 .favorites-import-body {
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0 8px 8px;
+  color: var(--ui-ink, #f2f5ed);
+  scrollbar-gutter: stable;
 }
-.favorites-import-body > section {
-  gap: 4px;
+
+.favorites-import-body > section { gap: 6px; }
+
+/* The import-only view shares one row pattern for JSON, legacy, coordinate and CAD details. */
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-line, #39413e);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-ink, #f2f5ed);
+  font-size: 13px;
 }
-.favorites-import-body .import-coordinate-options summary {
-  min-height: 32px;
-}
-.favorites-import-body .import-file,
-.favorites-import-body button,
-.favorites-import-body summary,
-.favorites-import-body select {
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details > summary {
+  display: list-item;
+  list-style-position: inside;
   min-height: 36px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-ink, #f2f5ed);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
 }
-.favorites-import-body .route-note {
-  font-size: 11px;
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details > summary::marker {
+  color: var(--ui-muted, #aab4ae);
 }
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details[open] > summary::marker {
+  color: var(--ui-accent, #c4dc78);
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details > summary:hover {
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 7%, var(--ui-surface, #18201f));
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body details[open] > summary {
+  border-bottom: 1px solid var(--ui-line, #39413e);
+}
+
+.favorites-import-body details > :not(summary) { min-width: 0; }
+.favorites-import-body .transfer-sync { gap: 4px; }
+.favorites-import-body .transfer-sync-actions,
+.favorites-import-body .coordinate-transfer-actions,
+.favorites-import-body .cad-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.favorites-import-body .transfer-sync-preview { margin: 4px 0; }
+
+/* Help copy stays readable and transparent across the user-selected skin. */
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body :is(.import-file-hint, .route-note, .crs-hint, small, p) {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-muted, #aab4ae);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.favorites-import-body .import-file-heading {
+  display: block;
+  margin: 2px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-ink, inherit);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* A single explicit file action owns keyboard focus; its input is not a visible control. */
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body .import-file-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--ui-accent, #c4dc78);
+  border-radius: 4px;
+  background: var(--ui-button, #26372d);
+  color: var(--ui-button-ink, #f2f5ed);
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body .import-file-action:hover:not(:disabled) {
+  border-color: var(--ui-accent, #c4dc78);
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 14%, var(--ui-button, #26372d));
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body .import-file-action:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.favorites-import-body .import-file-input { display: none; }
+.favorites-import-body .import-file { min-height: 0; }
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body button:not(.import-file-action) {
+  min-height: 36px;
+  padding: 3px 8px;
+  border: 1px solid var(--ui-line, #39413e);
+  border-radius: 4px;
+  background: var(--ui-button, #26372d);
+  color: var(--ui-button-ink, #f2f5ed);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body button:not(.import-file-action):hover:not(:disabled) {
+  border-color: var(--ui-accent, #c4dc78);
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 12%, var(--ui-button, #26372d));
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body button:not(.import-file-action):disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body :is(button.route-primary, button.collection-primary, button.is-primary) {
+  border-color: var(--ui-accent, #c4dc78);
+  background: var(--ui-accent, #c4dc78);
+  color: var(--ui-on-accent, #10243c);
+}
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body :is(button, summary):focus-visible {
+  outline: 2px solid var(--ui-accent, #c4dc78);
+  outline-offset: -2px;
+}
+
+.favorites-import-body .transfer-sync-file:focus-within,
+.favorites-import-body .cad-file:focus-within {
+  outline: 2px solid var(--ui-accent, #c4dc78);
+  outline-offset: -2px;
+}
+
+.favorites-import-body .transfer-sync-file input[type='file'],
+.favorites-import-body .cad-file input[type='file'] {
+  outline: 0;
+}
+
+/* Coordinate exchange keeps its native picker, but the field chrome stays quiet. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover .collection-workbench.favorites-import .favorites-import-body .coordinate-transfer input[type='file'] {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ui-muted, #aab4ae);
+  font-size: 16px;
+  line-height: 1.3;
+  outline: 0;
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-body .coordinate-transfer input[type='file']::file-selector-button {
+  box-sizing: border-box;
+  min-height: 36px;
+  margin-right: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--ui-line, #39413e);
+  border-radius: 4px;
+  background: var(--ui-button, #26372d);
+  color: var(--ui-button-ink, #f2f5ed);
+  font: inherit;
+  cursor: pointer;
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-body .coordinate-transfer input[type='file']:hover::file-selector-button {
+  border-color: var(--ui-accent, #c4dc78);
+  background: color-mix(in srgb, var(--ui-accent, #c4dc78) 12%, var(--ui-button, #26372d));
+}
+
+html[data-ui-theme] .observatory.home-map .control-popover .favorites-import .favorites-import-body .coordinate-transfer input[type='file']:focus-visible::file-selector-button {
+  outline: 2px solid var(--ui-accent, #c4dc78);
+  outline-offset: -2px;
+}
+
+.favorites-import-body .import-coordinate-options summary { min-height: 36px; }
+.favorites-import-body .route-note { font-size: 12px; line-height: 1.45; }
+
+/* Preserve the marker Excel import's established 13px compact-field exception. */
 .favorites-import-body .marker-excel-import {
   position: static;
   inset: auto;
@@ -108,13 +353,23 @@ html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .favorites-imp
   min-height: 0;
   background: transparent;
 }
-.favorites-import-body .marker-excel-import .workbench-collections {
-  height: auto;
-  min-height: 0;
+
+.favorites-import-body .marker-excel-import .workbench-collections { height: auto; min-height: 0; }
+.favorites-import-body .marker-excel-content { overflow: visible; padding: 0; }
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body .marker-excel-import :is(.marker-excel-actions button, .marker-excel-footer button) {
+  min-height: 36px;
+  border: 1px solid var(--ui-line, #39413e);
+  border-radius: 4px;
+  background: var(--ui-button, #26372d);
+  color: var(--ui-button-ink, #f2f5ed);
+  font-size: 11px;
 }
-.favorites-import-body .marker-excel-content {
-  overflow: visible;
-  padding: 0;
+
+html[data-ui-theme] .observatory.home-map .favorites-import .favorites-import-body .marker-excel-import .marker-excel-footer button:first-child {
+  border-color: var(--ui-accent, #c4dc78);
+  background: var(--ui-accent, #c4dc78);
+  color: var(--ui-on-accent, #10243c);
 }
 
 @media (max-height: 560px) {

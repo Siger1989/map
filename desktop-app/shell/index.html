@@ -17,12 +17,6 @@
       <button id="map-tab" role="tab" aria-controls="map-frame" aria-selected="true" data-workspace="map">地图</button>
       <button id="industry-tab" role="tab" aria-controls="industry-frame" aria-selected="false" data-workspace="industry" tabindex="-1">行业生图</button>
     </nav>
-    <div class="desktop-pan-control">
-      <button id="map-pan" aria-label="拖动移动控制器平移地图" title="拖住圆点向四周移动地图，松开停止">
-        <span class="pan-arrows" aria-hidden="true">✥</span><span id="pan-thumb" aria-hidden="true"></span>
-      </button>
-      <span>顶部控制器平移</span>
-    </div>
     <div class="desktop-actions">
       <button id="help-toggle" aria-expanded="false" aria-controls="mouse-help">操作说明</button>
       <button id="fullscreen-toggle" title="F11 切换全屏">全屏 · F11</button>
@@ -31,6 +25,12 @@
   <main class="desktop-content">
     <iframe id="map-frame" class="workspace" role="tabpanel" aria-labelledby="map-tab" title="山兔地图" data-shantu-desktop="true" src="/map/" allow="fullscreen; geolocation; camera"></iframe>
     <iframe id="industry-frame" class="workspace is-inactive" role="tabpanel" aria-labelledby="industry-tab" title="行业生图" aria-hidden="true" inert></iframe>
+    <div id="map-pan-overlay" class="desktop-pan-control">
+      <button id="map-pan" aria-label="拖动地图平移控制器" title="按住并拖动地图平移控制器；松开立即停止">
+        <svg class="pan-ring" viewBox="0 0 72 72" aria-hidden="true" focusable="false"><circle cx="36" cy="36" r="25" /></svg>
+        <span id="pan-thumb" aria-hidden="true"></span>
+      </button>
+    </div>
   </main>
   <aside id="mouse-help" class="desktop-help" hidden>
     <div class="help-heading"><strong>电脑操作</strong><button id="help-close" aria-label="关闭操作说明">×</button></div>
@@ -38,7 +38,7 @@
       <dt>平移地图</dt><dd>按住鼠标左键拖动</dd>
       <dt>缩放</dt><dd>滚动鼠标滚轮；也可用地图缩放按钮</dd>
       <dt>旋转与俯仰</dt><dd>按住右键拖动，或 Ctrl + 左键拖动</dd>
-      <dt>绘制与框选</dt><dd>左键拖动执行当前任务；拖动顶部移动控制器可平移地图，松开停止，不用退出画线</dd>
+      <dt>绘制与框选</dt><dd>左键拖动执行当前任务；拖动地图下方的平移控制器可移动地图，松开立即停止，不用退出画线</dd>
       <dt>全屏</dt><dd>F11 或顶部全屏按钮；再次操作退出</dd>
     </dl>
     <p>手机使用单指平移、双指缩放和转动。电脑的定位、相机、后台记录和系统分享取决于桌面系统能力。</p>

@@ -1,0 +1,18 @@
+山兔 0.2.115-test / Android versionCode 122
+状态：APK、EXE版本包与固定入口替换均PASS；桌面窄屏及EXE隔离验收PASS。Windows原生窗口/Android真机未验收。GitHub推送由主审执行，推送前不宣称已上传。
+源码：D:/天气地图；分支 codex/rollback-ui-0235-20260921；本轮基线 00e5ddffcb054559f8cc025a65e5854ef1b40b18；未合main。本次源码提交，提交SHA以本文所在提交为准；主审推送后核对origin。
+
+APK：
+版本产物：APK/Shantu-0.2.115-test-standalone.apk
+大小：69,887,604 bytes
+SHA256：4462f00c04fa80e3bb7b975a2a37e6444dc3bb3478cccc4d47a18fbdf8f223e3
+applicationId：com.guanyun.weather.shantu.preview
+验证：v2/v3签名、zipalign、CRC、1920项资源核对PASS。APK独立构建/证据日志：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-apk-build.log；证据：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-apk-evidence.json。
+
+桌面/界面：
+移动平移控件为72px透明细环+圆点，相机控件110×118；窄屏位置公式用于避让控件和右侧dock，剖面开启不跳动。最终QA：360×480、390×480、508×480、390×780、1366×900两控制器无重叠，pan不与右dock相交，画线工具不遮camera，透明背景PASS；390×480/780与1366×900 survey前后相机位置一致，短屏内部滚动且标题/完成编辑可达。证据：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-final-ui.json；截图在 artifacts/screenshots/release115-20261009/。APK固定入口APK/山兔手机.apk已替换，hash与版本包一致。EXE版本产物：EXE/山兔桌面-0.2.115.exe；固定入口：EXE/山兔桌面.exe；均122,033,019 bytes，SHA256 F0D58CBC1DA300562BF0780695894DD6C8B43238092FA7B75650609B6DCD292D。隔离中文/空格路径单文件self-test exit0/oktrue；hidden serve shell/map/industry/status/四模板/CAD WASM/38私有seed均200，seed bytes一致、serve shell.js/css与源码hash一致；服务/mapPID正常退出。日志：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-final-evidence.json；固定入口证据：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-entry-replacement.json。仍需要WebView2 Runtime或Edge/Chrome；Windows原生窗口/权限和Android真机行为未验收。
+
+定向测试：tests/desktop-web.test.mjs、camera-gesture.test.mjs、camera-updates.test.mjs、collection-camera-resize.test.mjs、data-transfer-sync.test.mjs、coordinate-import.test.mjs、map-import-review.test.mjs、route-composition-transfer.test.mjs、marker-spreadsheet-import.test.mjs，共30/30通过。源码检查：tsc、shell.js node check、diff check通过。日志：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-tests.log；C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-final-checks.log。
+
+版本115记录独立于114历史。114旧APK hash仅为历史事实，不能复用或覆盖宣称为115。APK固定入口已替换；EXE固定入口已替换并核对hash；保留私有Key/签名材料，不将密钥写入源码或日志；无APK/EXE公开发布。待提交差异凭据扫描PASS（1个本机apk-preview候选值未出现在当前diff、未发现敏感文件路径）；仅说明当前差异无已知本机凭据值，不是通用安全保证。脚本：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-secret-scan.mjs；结果：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-secret-scan.json。
+最终桌面UI验证记录：C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/release115-20261009-final-ui.json

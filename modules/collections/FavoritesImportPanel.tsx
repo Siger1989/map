@@ -23,7 +23,7 @@ export function FavoritesImportPanel({ onClose, onImported }: {
       </nav>
       <div className="favorites-import-body">
         {mode === 'files'
-          ? <TransferPanel importOnly onImported={data => { onImported(data); onClose(); }} />
+          ? <TransferPanel importOnly filePickerStyle="button" onImported={data => { onImported(data); onClose(); }} />
           : <MarkerExcelImport embedded onBack={() => setMode('files')} onClose={onClose} />}
       </div>
       </div>

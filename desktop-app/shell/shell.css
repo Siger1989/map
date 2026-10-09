@@ -5,13 +5,16 @@ button { border: 0; border-radius: 4px; font: inherit; font-size: 13px; color: v
 button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
 button:hover { background: var(--ui-active); }
 .desktop-bar { position: relative; height: 44px; display: flex; align-items: center; gap: 16px; padding: 0 10px; background: var(--ui-surface); box-shadow: inset 0 -1px var(--ui-line); }
-.desktop-pan-control { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); font-size: 12px; color: var(--ui-muted); }
-.desktop-pan-control > span:last-child { position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%); white-space: nowrap; pointer-events: none; }
-#map-pan { position: absolute; inset: 0; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; touch-action: none; user-select: none; cursor: grab; overflow: hidden; }
+.desktop-pan-control { position: absolute; z-index: 30; left: min(calc(50% + clamp(128px, 14vw, 360px)), calc(100% - 100px)); bottom: calc(56px + 68px); width: 72px; height: 72px; transform: translateX(-50%); color: var(--ui-muted); pointer-events: none; }
+.desktop-pan-control[hidden] { display: none; }
+#map-pan { position: absolute; inset: 0; display: grid; place-items: center; width: 72px; height: 72px; min-height: 72px; padding: 0; border: 0; border-radius: 50%; background: transparent; box-shadow: none; touch-action: none; user-select: none; cursor: grab; overflow: hidden; pointer-events: auto; }
+#map-pan:hover, #map-pan:active { background: transparent; }
+#map-pan:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
 #map-pan:active { cursor: grabbing; }
 #map-pan:disabled { opacity: .4; cursor: default; }
-.pan-arrows { font-size: 32px; line-height: 44px; color: var(--ui-muted); }
-#pan-thumb { position: absolute; width: 10px; height: 10px; border-radius: 4px; background: var(--ui-accent); top: 17px; left: 17px; pointer-events: none; }
+.pan-ring { position: absolute; inset: 0; width: 72px; height: 72px; overflow: visible; pointer-events: none; }
+.pan-ring circle { fill: transparent; stroke: var(--ui-muted); stroke-width: 1.75px; filter: drop-shadow(0 1px 2px color-mix(in srgb, var(--ui-surface) 72%, transparent)); }
+#pan-thumb { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--ui-accent); box-shadow: 0 0 0 1px var(--ui-surface), 0 1px 3px color-mix(in srgb, var(--ui-surface) 70%, transparent); top: 31px; left: 31px; pointer-events: none; }
 .desktop-brand { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; }
 .desktop-brand img { width: 28px; height: 28px; object-fit: contain; border-radius: 4px; }
 [role="tablist"], .desktop-actions { display: flex; align-items: center; gap: 4px; }
@@ -28,3 +31,6 @@ dt { color: var(--ui-muted); } dd { margin: 0; }
 .desktop-help p { line-height: 1.6; margin: 10px 0 0; color: var(--ui-muted); }
 .desktop-message { position: absolute; z-index: 20; left: 50%; bottom: 12px; transform: translateX(-50%); margin: 0; padding: 8px 12px; max-width: calc(100% - 24px); border-radius: 8px; background: var(--ui-surface); color: var(--ui-danger); border: 1px solid var(--ui-line); }
 @media (max-width: 620px) { .desktop-bar { gap: 6px; } .desktop-brand strong { display: none; } button { padding: 0 8px; } }
+@media (max-width: 740px) and (max-height: 644px) {
+  .desktop-pan-control { left: min(calc(50% + clamp(128px, 14vw, 360px)), calc(100% - 144px)); }
+}

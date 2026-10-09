@@ -148,9 +148,9 @@ export const TrackDrawing = forwardRef<
     hint ||
     (p.mode === 'points'
       ? p.riverSnapping
-        ? `河流吸附 · 准星沿河定点 · ${desktopShell ? '顶部控制器平移' : '双指控图'}`
+        ? `河流吸附 · 准星沿河定点 · ${desktopShell ? '下方控制器平移' : '双指控图'}`
         : desktopShell
-          ? '准星定点 · 松开鼠标连接 · 顶部控制器平移'
+          ? '准星定点 · 松开鼠标连接 · 下方控制器平移'
           : '准星定点 · 松手连接 · 双指控图'
       : p.anchor
         ? '② 起点已定：按住绿色环拖动即可画线'

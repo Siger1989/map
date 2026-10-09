@@ -493,7 +493,7 @@ export function RouteEditToolbar({
               ? '已拼合 · 保存后成为一条路线，可撤销'
               : branch
               ? isDesktopShell()
-                ? '分叉中 · 准星定点，松开鼠标连线，顶部控制器平移'
+                ? '分叉中 · 准星定点，松开鼠标连线，下方控制器平移'
                 : '分叉中 · 准星定点，松手连线，双指控图'
                 : session.selected
                   ? '已选节点 · 直接拖动调整位置'

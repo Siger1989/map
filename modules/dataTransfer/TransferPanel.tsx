@@ -13,14 +13,16 @@ import { exportWorkspace, validateWorkspace, importWorkspace, summarizeWorkspace
 import { CoordinateTransfer } from '../coordinates/CoordinateTransfer';
 import { CadPanel } from '../cad/CadPanel';
 import './transferSync.css';
-export function TransferPanel({ importOnly = false, initialFiles, onImported }: {
+export function TransferPanel({ importOnly = false, filePickerStyle = 'native', initialFiles, onImported }: {
   importOnly?: boolean;
+  filePickerStyle?: 'native' | 'button';
   initialFiles?: File[];
   onImported?: (data: Transfer) => void;
 }) {
   const importing = useRef(false);
   const feedback = useRef<HTMLDivElement>(null);
   const opened = useRef<File[] | undefined>(undefined);
+  const routeFilesInput = useRef<HTMLInputElement>(null);
   const [coordinates, setCoordinates] = useState<ImportCoordinates>('auto');
   const [batch, setBatch] = useState<ImportBatch | null>(null);
   const pending = batch?.data;
@@ -93,6 +95,76 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
   useEffect(() => {
     if (loading || batch || message) feedback.current?.scrollIntoView({ block: 'nearest' });
   }, [loading, batch, message]);
+  const buttonFilePicker = filePickerStyle === 'button';
+  const coordinateOptions = (
+    <details className={buttonFilePicker ? 'import-disclosure import-coordinate-options' : 'import-coordinate-options'}>
+      <summary>奥维文件坐标设置（普通 GPX / KML 无需修改）</summary>
+      <label>
+        奥维文件坐标系
+        <select
+          aria-label="奥维文件坐标系"
+          value={coordinates}
+          disabled={loading || syncLoading}
+          onChange={(e) => {
+            setCoordinates(e.target.value as ImportCoordinates);
+            setBatch(null);
+          }}
+        >
+          <option value="auto">未指定 · 普通GPX/KML按标准识别</option>
+          <option value="cgcs2000">CGCS2000地理坐标（按奥维导出设置）</option>
+          <option value="gcj02">GCJ02（转换为GPS坐标，近似）</option>
+        </select>
+      </label>
+      <small>
+        同批奥维文件须使用相同坐标系；未知时先核对导出设置。投影坐标需先转地理坐标。
+      </small>
+    </details>
+  );
+  const buttonRouteFilePicker = (
+    <div className="import-file">
+      <strong className="import-file-heading">选择路线 / 收藏文件</strong>
+      <button
+        className="import-file-action"
+        type="button"
+        aria-label="选择路线 / 收藏文件"
+        disabled={loading || syncLoading}
+        onClick={() => routeFilesInput.current?.click()}
+      >
+        {loading ? '正在读取路线文件…' : '选择文件'}
+      </button>
+      <small className="import-file-hint">可同时选择多个文件，校验后预览并确认导入。</small>
+      <input
+        ref={routeFilesInput}
+        className="import-file-input"
+        type="file"
+        aria-label="选择路线 / 收藏文件"
+        multiple
+        accept=".gpx,.kml,.kmz,.ovkml,.ovkmz,.json,.geojson,.tcx,.fit,.csv,.tsv,.ovjsn,.ovobj"
+        disabled={loading || syncLoading}
+        onChange={(e) => {
+          const files = Array.from(e.currentTarget.files ?? []);
+          e.currentTarget.value = '';
+          void read(files);
+        }}
+      />
+    </div>
+  );
+  const routeFilePicker = buttonFilePicker ? buttonRouteFilePicker : (
+    <label className="import-file">
+      {loading ? '正在读取路线文件…' : '选择路线 / 收藏文件'}
+      <input
+        type="file"
+        multiple
+        accept=".gpx,.kml,.kmz,.ovkml,.ovkmz,.json,.geojson,.tcx,.fit,.csv,.tsv,.ovjsn,.ovobj"
+        disabled={loading || syncLoading}
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = '';
+          void read(files);
+        }}
+      />
+    </label>
+  );
   return (
     <section
       aria-label="数据导入导出"
@@ -103,43 +175,9 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
       }}
     >
       <>
-        <details className="import-coordinate-options">
-        <summary>奥维文件坐标设置（普通 GPX / KML 无需修改）</summary>
-        <label>
-          奥维文件坐标系
-          <select
-            aria-label="奥维文件坐标系"
-            value={coordinates}
-            disabled={loading || syncLoading}
-            onChange={(e) => {
-              setCoordinates(e.target.value as ImportCoordinates);
-              setBatch(null);
-            }}
-          >
-            <option value="auto">未指定 · 普通GPX/KML按标准识别</option>
-            <option value="cgcs2000">CGCS2000地理坐标（按奥维导出设置）</option>
-            <option value="gcj02">GCJ02（转换为GPS坐标，近似）</option>
-          </select>
-        </label>
-        <small>
-          同批奥维文件须使用相同坐标系；未知时先核对导出设置。投影坐标需先转地理坐标。
-        </small>
-        </details>
-        <label className="import-file">
-          {loading ? '正在读取路线文件…' : '选择路线 / 收藏文件'}
-          <input
-            type="file"
-            multiple
-            accept=".gpx,.kml,.kmz,.ovkml,.ovkmz,.json,.geojson,.tcx,.fit,.csv,.tsv,.ovjsn,.ovobj"
-            disabled={loading || syncLoading}
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
-              e.target.value = '';
-              void read(files);
-            }}
-          />
-        </label>
-        <details>
+        {buttonFilePicker ? routeFilePicker : coordinateOptions}
+        {buttonFilePicker ? coordinateOptions : routeFilePicker}
+        <details className={buttonFilePicker ? 'import-disclosure' : undefined}>
           <summary>支持格式 / 奥维文件怎么导入</summary>
           <p className="route-note">可直接读取 GPX、KML / KMZ、OVKML / OVKMZ、TCX、FIT、GeoJSON、CSV / TSV、OVJSN、OVOBJ 和山兔 JSON 备份。CSV 按 WGS84 经纬度表头读取；OVOBJ 已接入 v105 的部分点线面结构，其他版本仍需适配。</p>
           <p className="route-note">奥维文件可在上方调整坐标系。OVJSN 优先读取对象自身坐标标志；OVOBJ 未确认基准时按原坐标预览。含 waylines.wpml 的无人机航线 KMZ 只导入航点连线，不导入飞行指令。</p>
@@ -149,7 +187,7 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
         {pending && (
           <div className="import-preview">
             {pending.importWarnings?.map((notice,i)=><p className="route-note" key={i}>{notice}</p>)}
-            <details>
+            <details className={buttonFilePicker ? 'import-disclosure' : undefined}>
               <summary>{batch!.files.length}个文件通过校验</summary>
               {batch!.files.map((file, i) => (
                 <p key={i} className="route-note">
@@ -188,7 +226,7 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
             </div>
           </div>
         )}
-        <details className="transfer-sync">
+        <details className={buttonFilePicker ? 'import-disclosure transfer-sync' : 'transfer-sync'}>
           <summary>完整 JSON · 手机 / 电脑互载</summary>
           <div className="transfer-sync-actions">
             <button
@@ -257,7 +295,7 @@ export function TransferPanel({ importOnly = false, initialFiles, onImported }: 
         <CoordinateTransfer onImported={data=>{mergeData(data);onImported?.(data);}} />
         <CadPanel onImported={onImported} />
         </div>
-        <details open={!importOnly}>
+        <details className={buttonFilePicker ? 'import-disclosure' : undefined} open={!importOnly}>
         <summary>兼容旧版存档 / GPX / KML</summary>
         <div className="outdoor-actions">
           <button

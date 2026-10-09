@@ -37,3 +37,8 @@ PC原生空白/道路吸附具体失败环境尚未完整定位；默认海面�
 详细文件接口与根因/复测条件：docs/desktop-json-pan-20261008.md，modules/cad/README.md。
 本机日志 .openai/final114-apk-build.log、final114-tsc.log、final114-targeted-tests.log、desktop-update-02114-verify.json；不入Git。
 保留9174手机预览/3108 API和用户旧EXE；不得清缓存或用户数据来伪造一致。
+
+桌面控制器/收藏导入UI最终验收补记（2026-10-09）
+收藏导入390×857、360×780、390×480 PASS；TypeScript检查、Android Web构建、diff检查PASS。
+桌面控制器布局、普通/剖面rect保持、视角和平移拖动、双图布局、锁定pan及行业页显隐PASS；详见 D:/天气地图/docs/agent-handoff.md 与 C:/Users/sigeryang/Documents/ChatGPT/天气项目/logs/ui-controls-20261009-primary-qa.json。
+本次UI改动未重新打APK/EXE，未升版、未提交或推送；旧9190 EXE服务未改未重启，预览服务为桌面9191、手机9174/API3108。源码分支 codex/rollback-ui-0235-20260921，基线00e5ddffcb054559f8cc025a65e5854ef1b40b18，未合main。
