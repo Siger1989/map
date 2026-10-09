@@ -1,4 +1,4 @@
-import type { Map } from 'maplibre-gl';
+import type { Map, MapMovementEvent } from 'maplibre-gl';
 
 type DesktopPanDetail = {
   phase?: 'move' | 'end';
@@ -51,10 +51,10 @@ function isEligibleFirstMap(element: HTMLElement): boolean {
 /** Receives desktop-shell pan frames for this visible map only. */
 export function installDesktopPanReceiver(map: Map, element: HTMLElement): () => void {
   let activePan = false;
-  const onMoveStart = (event: { shantuDesktopPan?: boolean }) => {
+  const onMoveStart = (event: MapMovementEvent & { shantuDesktopPan?: boolean }) => {
     if (!event.shantuDesktopPan) activePan = false;
   };
-  const onMoveEnd = (event: { shantuDesktopPan?: boolean }) => {
+  const onMoveEnd = (event: MapMovementEvent & { shantuDesktopPan?: boolean }) => {
     if (event.shantuDesktopPan) activePan = false;
   };
   map.on('movestart', onMoveStart);
