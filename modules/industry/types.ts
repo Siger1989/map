@@ -23,6 +23,8 @@ export interface XlsxRow {
   row: number;
   values: Record<string, XlsxValue>;
   cells: Record<string, XlsxValue>;
+  /** Formula text is metadata only; the parser never evaluates it. */
+  formulas?: Record<string, string>;
 }
 
 export interface XlsxSheet {

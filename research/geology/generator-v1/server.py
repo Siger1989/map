@@ -35,8 +35,8 @@ DRAWING_TYPES = {"section", "drill"}
 TEMPLATE_FILES = {
     ("section", False): "实测剖面-标准模板.xlsx",
     ("section", True): "实测剖面-填写示例.xlsx",
-    ("drill", False): "钻孔柱状图-标准模板.xlsx",
-    ("drill", True): "钻孔柱状图-填写示例.xlsx",
+    ("drill", False): "钻孔资料整合模板-v3.xlsx",
+    ("drill", True): "钻孔整合模板-300米连续采样模拟.xlsx",
 }
 GENERATION_LOCK = threading.Lock()
 GENERATED_FILE_LABELS = {

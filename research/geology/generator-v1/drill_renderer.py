@@ -131,16 +131,202 @@ def _path(d: str, cls: str = "leader") -> str:
 
 
 def _analysis_lines(sample: dict[str, Any], units: dict[str, str]) -> list[str]:
+    items = sample.get("analysis_items")
+    if not items:
+        configured = sample.get("_analysis_items")
+        items = configured or [{"code": code, "name": code, "unit": units.get(code, ""), "show": True}
+                               for code in ("Au", "Pb", "Zn")]
+    assays = sample.get("assays") or {}
+    raw_values = sample.get("assay_raw") or {}
     lines = []
-    for element in ("Au", "Pb", "Zn"):
-        value = (sample.get("assays") or {}).get(element)
-        unit = units.get(element) or ""
-        if value is None:
-            lines.append(f"{element}：未提供" + (f"（{unit}）" if unit else ""))
+    for item in sorted((row for row in items if row.get("show", True)), key=lambda row: row.get("order", 0)):
+        code = str(item.get("code") or "")
+        name = str(item.get("name") or code)
+        value = assays.get(code)
+        raw = raw_values.get(code)
+        unit = item.get("unit") or units.get(code) or ""
+        if raw is not None and str(raw).strip():
+            rendered = str(raw)
+        elif value is None:
+            # Blank workbook cells stay visually blank; they are not numeric zero.
+            rendered = "" if sample.get("_integrated") else "未提供"
         else:
             # A measured zero is a real value and must not be rendered as missing.
-            lines.append(f"{element}：{_f(value, 4)}{(' ' + unit) if unit else ''}")
+            rendered = _f(value, 4)
+        suffix = f"（{unit}）" if unit and (not rendered or rendered == "未提供") else (f" {unit}" if unit else "")
+        lines.append(f"{name}：{rendered}{suffix}")
     return lines
+
+
+def _analysis_items(data: dict[str, Any]) -> list[dict[str, Any]]:
+    configured = data.get("project", {}).get("analysis_items") or data.get("analysis_items")
+    if configured:
+        return sorted(configured, key=lambda row: row.get("order", 0))
+    units = data.get("project", {}).get("analysis_units", {})
+    return [{"code": code, "name": code, "unit": units.get(code, ""), "order": i, "show": True}
+            for i, code in enumerate(("Au", "Pb", "Zn"))]
+
+
+def _display_value(value: Any, *, digits: int = 3) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    if isinstance(value, float):
+        return f"{value:.{digits}f}".rstrip("0").rstrip(".")
+    if isinstance(value, dict):
+        return "；".join(f"{key}={_display_value(item, digits=digits)}" for key, item in value.items())
+    if isinstance(value, (list, tuple)):
+        return "；".join(_display_value(item, digits=digits) for item in value)
+    return str(value)
+
+
+def _rate_note(record: dict[str, Any]) -> str:
+    value = record.get("recovery_original_percent")
+    return f"　原始录入采取率 {_display_value(value)}%" if value is not None else ""
+
+
+def _rate_display(record: dict[str, Any]) -> str:
+    label = "计算采取率" if "recovery_original_percent" in record else "采取率"
+    return f"{label} {_f(record.get('recovery_percent'))}%{_rate_note(record)}"
+
+
+def _appendix_model(data: dict[str, Any]) -> dict[str, Any]:
+    """Prepare explicit, source-preserving metadata panels without inferring units."""
+    measurements = data.get("depth_measurements") or {}
+    title = data.get("title_block") or {}
+    basic = data.get("basic_info") or {}
+    return {
+        "analysis_items": _analysis_items(data),
+        "measurements": measurements,
+        "title": title,
+        "basic": basic,
+    }
+
+
+def _basic_info_display_fields(data: dict[str, Any]) -> dict[str, Any]:
+    basic = data.get("basic_info") or {}
+    fields = dict(basic.get("fields") or {})
+    for label, value in (basic.get("summary") or {}).items():
+        fields.setdefault(str(label), value)
+    return fields
+
+
+def _measurement_columns() -> list[tuple[str, str]]:
+    return [("序号", "sequence"), ("记录孔深 (m)", "recorded_depth_m"),
+            ("校测孔深 (m)", "checked_depth_m"), ("误差 (m)", "error_m"),
+            ("误差率 (%)", "error_percent"), ("测量孔深 (m)", "measurement_depth_m"),
+            ("测量天顶角 (deg)", "zenith_deg"), ("实测方位角 (deg)", "azimuth_deg"),
+            ("测量方法", "method"), ("仪器", "instrument")]
+
+
+def _field_text(label: str, value: Any) -> str:
+    if isinstance(value, dict):
+        source = value.get("value")
+        return _display_value(source)
+    return _display_value(value)
+
+
+def _measurement_value(record: dict[str, Any], key: str) -> Any:
+    value = record.get(key)
+    if key == "source" and isinstance(value, dict):
+        cells = value.get("cells") or {}
+        location = ", ".join(str(item) for item in cells.values())
+        sheet_row = "!".join(str(part) for part in (value.get("sheet"), value.get("row")) if part not in (None, ""))
+        return f"{sheet_row} {location}".strip()
+    return value
+
+
+def _title_rows(fields: dict[str, Any], width: float) -> list[dict[str, Any]]:
+    if not fields:
+        return []
+    def scale_value(value: Any) -> str:
+        text = _field_text("比例尺分母", value)
+        if not text:
+            return ""
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return f"1:{_display_value(value)}"
+        return text
+    rows: list[dict[str, Any]] = []
+    full_width = width - 78.0
+    for label in ("项目/单位", "图名"):
+        value = fields.get(label, "")
+        lines = _wrap_text(_field_text(label, value), full_width, 9.5)
+        rows.append({"kind": "full", "items": [(label, value, _field_text(label, value))],
+                     "height": max(26.0, len(lines) * 11.0 + 15.0)})
+    pairs = [("拟编", "顺序号"), ("审核", "图号"), ("制图", "比例尺分母"),
+             ("项目负责", "日期"), ("单位负责", "资料来源")]
+    for left, right in pairs:
+        items = []
+        for label in (left, right):
+            value = fields.get(label, "")
+            rendered = scale_value(value) if label == "比例尺分母" else _field_text(label, value)
+            items.append(("比例尺" if label == "比例尺分母" else label, value, rendered))
+        value_width = width / 2.0 - 82.0
+        line_count = max((len(_wrap_text(rendered, value_width, 9.2)) for _label, _value, rendered in items), default=1)
+        rows.append({"kind": "paired", "items": items, "height": max(26.0, line_count * 11.0 + 15.0)})
+    known = {"项目/单位", "图名", "拟编", "顺序号", "审核", "图号", "制图", "比例尺分母", "项目负责", "日期", "单位负责", "资料来源"}
+    extras = [(str(label), value) for label, value in fields.items() if str(label) not in known]
+    for offset in range(0, len(extras), 2):
+        items = [(label, value, _field_text(label, value)) for label, value in extras[offset:offset + 2]]
+        value_width = width / 2.0 - 82.0
+        line_count = max((len(_wrap_text(rendered, value_width, 9.2)) for _label, _value, rendered in items), default=1)
+        rows.append({"kind": "paired", "items": items, "height": max(26.0, line_count * 11.0 + 15.0)})
+    return rows
+
+
+def _basic_info_heights(fields: dict[str, Any], width: float) -> list[float]:
+    if not fields:
+        return []
+    cell_width = max(160.0, (width - 70.0) / 3.0)
+    entries = list(fields.items())
+    heights = []
+    for start in range(0, len(entries), 3):
+        rows = entries[start:start + 3]
+        line_count = max((len(_wrap_text(f"{label}：{_field_text(label, value)}", cell_width - 20, 10.5)) for label, value in rows), default=1)
+        heights.append(max(20.0, line_count * 13.0 + 10.0))
+    return heights
+
+
+def _metadata_geometry(data: dict[str, Any], width: float) -> dict[str, float]:
+    # Keep a readable left table and reserve a separate right-hand drawing block.
+    left_width = max(1320.0, min(1650.0, width * 0.58))
+    title_width = 760.0
+    gap = 48.0
+    title_x = 35.0 + left_width + gap
+    canvas_width = max(width, title_x + title_width + 35.0)
+    model = _appendix_model(data)
+    records = model["measurements"].get("records") or []
+    left_inner = left_width - 24.0
+    columns = _measurement_columns()
+    cell_width = left_inner / len(columns)
+    header_height = max(30.0, max((len(_wrap_text(label, cell_width - 8.0, 8.5)) for label, _key in columns), default=1) * 10.0 + 10.0)
+    row_heights = []
+    for record in records:
+        wrapped_lengths = [len(_wrap_text(_display_value(_measurement_value(record, key)), cell_width - 8.0, 9.2))
+                               for _label, key in columns]
+        row_heights.append(max(26.0, max(wrapped_lengths, default=1) * 10.5 + 10.0))
+    summary = model["measurements"].get("summary") or {}
+    signature = model["measurements"].get("signatures") or {}
+    summary_text = "　".join(f"{key}：{_field_text(str(key), value)}" for key, value in summary.items())
+    signature_text = "　".join(f"{key}：{_field_text(str(key), value)}" for key, value in signature.items())
+    summary_lines = len(_wrap_text(summary_text, left_inner, 9.5)) if summary_text else 0
+    signature_lines = len(_wrap_text(signature_text, left_inner, 9.5)) if signature_text else 0
+    measurements_height = (44.0 + header_height + sum(row_heights) + summary_lines * 12.0 + signature_lines * 12.0 + 16.0) if records or summary or signature else 0.0
+    basic_height = (22.0 + sum(_basic_info_heights(model["basic"].get("fields") or {}, canvas_width)) + 10.0
+                    if model["basic"].get("fields") else 0.0)
+    title_rows = _title_rows(model["title"].get("fields") or {}, title_width)
+    title_height = 16.0 + sum(row["height"] for row in title_rows) + 8.0 if title_rows else 0.0
+    return {"left_x": 35.0, "left_width": left_width, "title_x": title_x,
+            "title_width": title_width, "canvas_width": canvas_width,
+            "measurements_height": measurements_height, "measurements_header_height": header_height,
+            "basic_height": basic_height,
+            "title_height": title_height,
+            "height": max(measurements_height, title_height)}
+
+
+def _metadata_height(data: dict[str, Any], width: float) -> float:
+    return _metadata_geometry(data, width)["height"]
 
 
 def _audit_record(record: dict[str, Any], y: Any, lo: float, hi: float) -> dict[str, Any]:
@@ -163,10 +349,13 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
     endpoint = float(data["meta"]["endpoint_m"])
     hi = min(endpoint, 45.0) if detail else endpoint
     scale_floor = MIN_DEPTH_HEIGHT / max(endpoint if not detail else hi, 1e-9)
-    scale = max(9.0, scale_floor) if not detail else max(25.0, scale_floor)
-    y = lambda depth: depth_y(depth, TOP, scale)
+    base_scale = max(9.0, scale_floor) if not detail else max(25.0, scale_floor)
+    basic_fields = _basic_info_display_fields(data)
+    plot_top = TOP
     layers = _visible(data["layers"], 0.0, hi)
-    samples = _visible(data["samples"], 0.0, hi)
+    samples = sorted(_visible(data["samples"], 0.0, hi),
+                     key=lambda row: (sum(_clip_interval(row, 0.0, hi)) / 2.0,
+                                      float(row["top_m"]), float(row["bottom_m"]), str(row["id"])))
     turns = _visible(data["turns"], 0.0, hi)
     structures = sorted((row for row in data["structures"] if 0 <= float(row["depth_m"]) <= hi),
                         key=lambda row: float(row["depth_m"]))
@@ -185,6 +374,45 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
     columns["structure"] = columns["assay"] + 260.0
     columns["structure_labels"] = columns["structure"] + 40.0
     width = columns["structure_labels"] + 275.0
+    basic_row_heights = _basic_info_heights(basic_fields, width)
+    basic_rows = len(basic_row_heights)
+    plot_top = TOP + (sum(basic_row_heights) + 44.0 if basic_rows else 0.0)
+
+    # Prepare real sample label heights before selecting the shared depth scale.
+    # This prevents vertically packed assay labels from drifting far below their
+    # depth intervals and leaving the borehole column visually empty.
+    sample_text_lines = []
+    sample_assay_lines = []
+    sample_heights = []
+    for row in samples:
+        lo_m, hi_m = float(row["top_m"]), float(row["bottom_m"])
+        content = f"样品 {row['id']}　{_f(lo_m)}–{_f(hi_m)} m　样长 {_f(row.get('length_m'))} m　岩心长 {_f(row.get('core_m'))} m　{_rate_display(row)}"
+        wrapped = _wrap_text(content, 390.0, 11.5)
+        assay_wrapped = []
+        assay_row = {**row, "analysis_items": _analysis_items(data),
+                     "_integrated": bool(data.get("project", {}).get("analysis_items") or data.get("analysis_items"))}
+        for assay_line in _analysis_lines(assay_row, data["project"].get("analysis_units", {})):
+            assay_wrapped.extend(_wrap_text(assay_line, 245.0, 10.5))
+        sample_text_lines.append(wrapped)
+        sample_assay_lines.append(assay_wrapped)
+        sample_heights.append(max(44.0, len(wrapped) * 15.0 + 10.0, len(assay_wrapped) * 15.0 + 12.0))
+
+    sample_mid_depths = [sum(_clip_interval(row, 0.0, hi)) / 2.0 for row in samples]
+    scale = base_scale
+    if sample_mid_depths and sample_mid_depths[0] > 1e-6:
+        first_fit = (sample_heights[0] / 2.0 + 7.0) / sample_mid_depths[0]
+        if math.isfinite(first_fit):
+            scale = max(scale, first_fit)
+    for idx in range(1, len(samples)):
+        depth_gap = sample_mid_depths[idx] - sample_mid_depths[idx - 1]
+        # Coincident/nearly coincident samples retain the existing leader packing;
+        # dividing by their depth difference would create an unbounded scale.
+        if depth_gap <= 1e-6:
+            continue
+        required = ((sample_heights[idx - 1] + sample_heights[idx]) / 2.0 + 4.0) / depth_gap
+        if math.isfinite(required):
+            scale = max(scale, required)
+    y = lambda depth: depth_y(depth, plot_top, scale)
 
     label_top = y(0.0) + 7.0
     depth_height = y(hi) - y(0.0)
@@ -193,7 +421,7 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
     for turn in turns:
         row = (f'{turn["id"]}　{_f(turn.get("top_m"))}–{_f(turn.get("bottom_m"))} m　'
                f'进尺 {_f(turn.get("advance_m"))} m　岩心 {_f(turn.get("core_m"))} m　'
-               f'采取率 {_f(turn.get("recovery_percent"))}%')
+               f'{_rate_display(turn)}')
         wrapped = _wrap_text(row, 405.0, 10.5)
         turn_lines.append(wrapped)
         turn_heights.append(max(23.0, len(wrapped) * 14.0 + 6.0))
@@ -220,33 +448,23 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
         content = f"{name}；{description}" if description else name
         wrapped = _wrap_text(content, columns["description_width"], 11.5)
         params = (f'段长 {_f(row.get("thickness_m"))} m　岩心长 {_f(row.get("core_m"))} m　'
-                  f'采取率 {_f(row.get("recovery_percent"))}%　花纹 {row.get("material_code") or "待配置"}')
+                  f'{_rate_display(row)}　花纹 {row.get("material_code") or "待配置"}')
         param_lines = _wrap_text(params, columns["description_width"], 10.5)
         description_lines.append(wrapped)
         description_param_lines.append(param_lines)
         description_heights.append(max(39.0, len(wrapped) * 15.0 + len(param_lines) * 13.0 + 14.0))
     description_label_y = _place_labels(layers, layer_mids, description_heights, lower=label_top)
 
-    sample_mids = [y(sum(_clip_interval(row, 0.0, hi)) / 2.0) for row in samples]
-    sample_text_lines = []
-    sample_assay_lines = []
-    sample_heights = []
-    for row in samples:
-        lo_m, hi_m = float(row["top_m"]), float(row["bottom_m"])
-        content = f"样品 {row['id']}　{_f(lo_m)}–{_f(hi_m)} m　样长 {_f(row.get('length_m'))} m　岩心长 {_f(row.get('core_m'))} m　采取率 {_f(row.get('recovery_percent'))}%"
-        wrapped = _wrap_text(content, 390.0, 11.5)
-        assay_wrapped = []
-        for assay_line in _analysis_lines(row, data["project"].get("analysis_units", {})):
-            assay_wrapped.extend(_wrap_text(assay_line, 245.0, 10.5))
-        sample_text_lines.append(wrapped)
-        sample_assay_lines.append(assay_wrapped)
-        sample_heights.append(max(44.0, len(wrapped) * 15.0 + 10.0, len(assay_wrapped) * 15.0 + 12.0))
+    sample_mids = [y(depth) for depth in sample_mid_depths]
     sample_label_y = _place_labels(samples, sample_mids, sample_heights, lower=label_top, gap=4.0)
 
     structure_mids = [y(float(row["depth_m"])) for row in structures]
     structure_label_y = _place_labels(structures, structure_mids, [20.0] * len(structures), lower=label_top)
     structure_label_width = max((_text_width(f"{_f(row['depth_m'])} m　孔径 {_f(row['diameter_mm'], 2)} mm", 11.5) for row in structures), default=0.0)
     width = max(width, columns["structure_labels"] + structure_label_width + 24.0)
+    metadata_geometry = _metadata_geometry(data, width)
+    width = max(width, metadata_geometry["canvas_width"])
+    metadata_geometry = _metadata_geometry(data, width)
 
     label_bottom = max(
         [y(hi), turn_bottom, label_top]
@@ -255,10 +473,18 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
         + [center + 10.0 for center in structure_label_y]
     )
     footer_y = label_bottom + 56.0
-    height = footer_y + 54.0
+    geometry_footer_height = 54.0
+    metadata = _appendix_model(data)
+    has_metadata = bool(metadata["basic"]) or bool(metadata["measurements"].get("records")) or bool(metadata["title"].get("fields"))
+    metadata_top = footer_y + geometry_footer_height + 18.0 if has_metadata else None
+    metadata_height = metadata_geometry["height"] if has_metadata else 0.0
+    height = (metadata_top + metadata_height + 28.0) if has_metadata else footer_y + geometry_footer_height
     return {
         "endpoint": endpoint, "hi": hi, "scale": scale, "y": y, "width": width,
         "height": height, "depth_height": depth_height, "turn_bottom": turn_bottom,
+        "plot_top": plot_top, "basic_rows": basic_rows, "basic_row_heights": basic_row_heights,
+        "metadata_top": metadata_top, "metadata_height": metadata_height,
+        "metadata_geometry": metadata_geometry,
         "turn_lines": turn_lines, "turn_heights": turn_heights, "turn_label_y": turn_label_y,
         "columns": columns, "layers": layers, "samples": samples, "turns": turns,
         "structures": structures, "lanes": lanes, "lane_count": lane_count,
@@ -274,8 +500,152 @@ def _layout(data: dict[str, Any], detail: bool) -> dict[str, Any]:
     }
 
 
+def _draw_basic_info(data: dict[str, Any], layout: dict[str, Any], width: float) -> tuple[list[str], dict[str, Any]]:
+    fields = _basic_info_display_fields(data)
+    if not fields:
+        return [], {"present": False}
+    x, y0 = 35.0, 96.0
+    full_width = width - 70.0
+    cell_width = full_width / 3.0
+    row_heights = layout["basic_row_heights"]
+    out = [_text(x, 110.0, "基本信息", 11.5, weight="bold")]
+    row_bounds = []
+    entries = list(fields.items())
+    cursor = y0 + 19.0
+    for row_index, start in enumerate(range(0, len(entries), 3)):
+        row_height = row_heights[row_index]
+        rows = entries[start:start + 3]
+        for column, (label, value) in enumerate(rows):
+            cell_x = x + column * cell_width
+            value_lines = _wrap_text(f"{label}：{_field_text(label, value)}", cell_width - 18.0, 10.5)
+            for line_index, line in enumerate(value_lines):
+                out.append(_text(cell_x + 6, cursor + 12.0 + line_index * 13.0, line, 10.5))
+        out.append(f'<line class="fine" x1="{x:.2f}" y1="{cursor+row_height:.2f}" x2="{x+full_width:.2f}" y2="{cursor+row_height:.2f}"/>')
+        row_bounds.append({"x": x, "y": cursor, "width": full_width, "height": row_height})
+        cursor += row_height
+    bounds = {"x": x, "y": y0, "width": full_width, "height": cursor - y0}
+    return out, {"present": True, "bounds": bounds, "row_bounds": row_bounds, "fields": list(fields)}
+
+
+def _draw_metadata(data: dict[str, Any], layout: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    if layout["metadata_top"] is None:
+        return [], {"present": False}
+    model = _appendix_model(data)
+    geometry = layout["metadata_geometry"]
+    top = layout["metadata_top"]
+    x, left_width = geometry["left_x"], geometry["left_width"]
+    title_x, title_width = geometry["title_x"], geometry["title_width"]
+    out: list[str] = []
+    panel_audit: dict[str, Any] = {"present": True, "panels": []}
+    measurements = model["measurements"]
+    records = measurements.get("records") or []
+    summary = measurements.get("summary") or {}
+    signatures = measurements.get("signatures") or {}
+    if records or summary or signatures:
+        panel_y = top
+        out.append(f'<rect x="{x:.2f}" y="{panel_y:.2f}" width="{left_width:.2f}" height="{geometry["measurements_height"]:.2f}" fill="white" stroke="#333" stroke-width="1"/>')
+        out.append(_text(x + 8, panel_y + 15, "孔深校正与弯曲度测量（与原始层/回次记录分列）", 11.5, weight="bold"))
+        columns = _measurement_columns()
+        cell_width = (left_width - 24.0) / len(columns)
+        table_x = x + 8.0
+        group_y = panel_y + 22.0
+        group_width = cell_width * 5.0
+        out.append(f'<rect x="{table_x:.2f}" y="{group_y:.2f}" width="{group_width:.2f}" height="18.00" fill="#e8e8e8" stroke="#aaa" stroke-width=".45"/>')
+        out.append(f'<rect x="{table_x+group_width:.2f}" y="{group_y:.2f}" width="{group_width:.2f}" height="18.00" fill="#e8e8e8" stroke="#aaa" stroke-width=".45"/>')
+        out.append(_text(table_x + group_width / 2, group_y + 13, "孔深校正", 9.5, anchor="middle", weight="bold"))
+        out.append(_text(table_x + group_width * 1.5, group_y + 13, "弯曲度测量", 9.5, anchor="middle", weight="bold"))
+        header_y = group_y + 18.0
+        header_height = geometry["measurements_header_height"]
+        for column, (label, _key) in enumerate(columns):
+            cell_x = table_x + column * cell_width
+            out.append(f'<rect x="{cell_x:.2f}" y="{header_y:.2f}" width="{cell_width:.2f}" height="{header_height:.2f}" fill="#f4f4f4" stroke="#aaa" stroke-width=".45"/>')
+            for line_index, line in enumerate(_wrap_text(label, cell_width - 8.0, 8.5)):
+                out.append(_text(cell_x + 4.0, header_y + 11.0 + line_index * 10.0, line, 8.5, weight="bold"))
+        row_y = header_y + header_height
+        row_audit = []
+        for index, record in enumerate(records):
+            field_rows = []
+            cell_values = []
+            row_height = 26.0
+            for column, (label, key) in enumerate(columns):
+                cell_x = table_x + column * cell_width
+                value = _display_value(_measurement_value(record, key))
+                value_lines = _wrap_text(value, cell_width - 8.0, 9.2)
+                row_height = max(row_height, len(value_lines) * 10.5 + 10.0)
+                cell_values.append((column, label, key, cell_x, value_lines))
+            for column, label, key, cell_x, value_lines in cell_values:
+                fill = "#f0f0f0" if column % 2 == 0 else "#fafafa"
+                out.append(f'<rect x="{cell_x:.2f}" y="{row_y:.2f}" width="{cell_width:.2f}" height="{row_height:.2f}" fill="{fill}" stroke="#aaa" stroke-width=".45"/>')
+                for line_index, line in enumerate(value_lines):
+                    out.append(_text(cell_x + 4.0, row_y + 14.0 + line_index * 10.5, line, 9.2))
+                field_rows.append({"label": label, "key": key, "bounds": {"x": cell_x, "y": row_y, "width": cell_width, "height": row_height}})
+            row_audit.append({"record_index": index, "bounds": {"x": table_x, "y": row_y, "width": left_width - 16.0, "height": row_height}, "fields": field_rows})
+            row_y += row_height
+        meta_items = [(str(key), value) for key, value in summary.items()]
+        if meta_items:
+            line = "　".join(f"{label}：{_field_text(label, value)}" for label, value in meta_items)
+            for line_index, wrapped in enumerate(_wrap_text(line, left_width - 20.0, 9.5)):
+                out.append(_text(x + 8, row_y + 12 + line_index * 12, wrapped, 9.5))
+            row_y += max(18.0, len(_wrap_text(line, left_width - 20.0, 9.5)) * 12.0)
+        signature_items = [(str(key), value) for key, value in signatures.items()]
+        if signature_items:
+            line = "　".join(f"{label}：{_field_text(label, value)}" for label, value in signature_items)
+            for line_index, wrapped in enumerate(_wrap_text(line, left_width - 20.0, 9.5)):
+                out.append(_text(x + 8, row_y + 12 + line_index * 12, wrapped, 9.5))
+            row_y += max(18.0, len(_wrap_text(line, left_width - 20.0, 9.5)) * 12.0)
+        panel_audit["panels"].append({"kind": "depth_measurements", "bounds": {"x": x, "y": panel_y, "width": left_width, "height": geometry["measurements_height"]}, "rows": row_audit, "summary_fields": list(summary), "signature_fields": list(signatures), "source_records": [record.get("source", {}) for record in records], "derived_flags": [record.get("derived") for record in records]})
+
+    title_fields = model["title"].get("fields") or {}
+    title_source = model["title"].get("source_cells") or {}
+    if title_fields:
+        panel_y = top
+        rows = _title_rows(title_fields, title_width)
+        out.append(f'<rect x="{title_x:.2f}" y="{panel_y:.2f}" width="{title_width:.2f}" height="{geometry["title_height"]:.2f}" fill="white" stroke="#333" stroke-width="1"/>')
+        row_bounds = []
+        row_y = panel_y
+        for row in rows:
+            row_height = row["height"]
+            out.append(f'<rect x="{title_x:.2f}" y="{row_y:.2f}" width="{title_width:.2f}" height="{row_height:.2f}" fill="#fafafa" stroke="#aaa" stroke-width=".45"/>')
+            if row["kind"] == "full":
+                label, _value, display = row["items"][0]
+                out.append(_text(title_x + 5, row_y + 14, label, 9.5, weight="bold"))
+                for line_index, line in enumerate(_wrap_text(display, title_width - 88.0, 9.5)):
+                    out.append(_text(title_x + 80, row_y + 14 + line_index * 11.0, line, 9.5))
+            else:
+                for side, (label, _value, display) in enumerate(row["items"]):
+                    cell_x = title_x + side * (title_width / 2.0)
+                    out.append(_text(cell_x + 5, row_y + 14, label, 9.2, weight="bold"))
+                    for line_index, line in enumerate(_wrap_text(display, title_width / 2.0 - 86.0, 9.2)):
+                        out.append(_text(cell_x + 82, row_y + 14 + line_index * 11.0, line, 9.2))
+            row_bounds.append({"x": title_x, "y": row_y, "width": title_width, "height": row_height})
+            row_y += row_height
+        panel_audit["panels"].append({"kind": "title_block", "bounds": {"x": title_x, "y": panel_y, "width": title_width, "height": geometry["title_height"]}, "rows": row_bounds, "fields": list(title_fields), "source_cells": title_source})
+    audited_bounds = []
+    for panel in panel_audit["panels"]:
+        audited_bounds.append({"kind": panel["kind"], **panel["bounds"]})
+        for row in panel.get("rows", []):
+            if "bounds" in row:
+                audited_bounds.append({"kind": f'{panel["kind"]}_row', **row["bounds"]})
+            for field in row.get("fields", []):
+                if "bounds" in field:
+                    audited_bounds.append({"kind": f'{panel["kind"]}_field', **field["bounds"]})
+    panel_audit["bounds"] = audited_bounds
+    panel_audit["within_canvas"] = all(
+        box["x"] >= 0 and box["y"] >= 0
+        and box["x"] + box["width"] <= layout["width"] + 1e-6
+        and box["y"] + box["height"] <= layout["height"] + 1e-6
+        for box in audited_bounds
+    )
+    return out, panel_audit
+
+
 def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str, dict[str, Any]]:
     """Render all records in the selected full-depth or 0–45 m view."""
+    integrated_source=data.get("source") or {}
+    if (data.get("schema_version")=="drill-integrated-1.0"
+            and integrated_source.get("template_version") in {"v2","v3"}):
+        from drill_reference_renderer import render_reference_drill_svg
+        return render_reference_drill_svg(data, detail=detail)
     layout = _layout(data, detail)
     endpoint, hi, scale = layout["endpoint"], layout["hi"], layout["scale"]
     y, width, height, cols = layout["y"], layout["width"], layout["height"], layout["columns"]
@@ -301,6 +671,8 @@ def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str
         _text(35, 70, "层段长=底深−顶深，仅为沿孔长度；花纹示意不表示层内实测界面，图件不代表行业图式已全部核定。", 11.5),
         _text(35, 87, full_description, 11.5),
     ]
+    basic_svg, basic_audit = _draw_basic_info(data, layout, width)
+    out.extend(basic_svg)
 
     headings = [
         (cols["axis"], "孔深 (m)"), (cols["turn"], "回次记录（独立列表）"),
@@ -308,12 +680,12 @@ def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str
         (cols["description"], "岩性描述与段参数"),
         (cols["sample"], f'样品区间（{layout["lane_count"]} 轨）'),
         (cols["sample_labels"], "样品明细（引线对应样品）"),
-        (cols["assay"], "Au / Pb / Zn 分析值"),
+        (cols["assay"], "分析项目结果"),
         (cols["structure"], "孔径点"),
         (cols["structure_labels"], "深度与孔径"),
     ]
     for x, label in headings:
-        out.append(_text(x, TOP - 18, label, 12, weight="bold"))
+        out.append(_text(x, layout["plot_top"] - 18, label, 12, weight="bold"))
 
     # One global depth axis; ticks are separate from one interval label per layer.
     axis_x = cols["axis"] + 38.0
@@ -433,6 +805,9 @@ def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str
             "plotted_midpoint_y": plotted_anchor_y,
             "label_anchor_y": anchor_y,
             "label_y": label_y,
+            "label_height": layout["sample_heights"][idx],
+            "label_top_y": label_y - layout["sample_heights"][idx] / 2.0,
+            "label_bottom_y": label_y + layout["sample_heights"][idx] / 2.0,
             "label_moved": abs(label_y - anchor_y) > 1e-7,
             "analysis_y": assay_start,
         })
@@ -474,6 +849,10 @@ def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str
     counts = data["summary"]
     out.append(_text(35, footer + 4, f'分层 {counts.get("layers", len(data["layers"]))}　回次 {counts.get("turns", len(data["turns"]))}　样品 {counts.get("samples", len(data["samples"]))}　终孔 {_f(endpoint)} m', 11))
     out.append(_text(35, footer + 23, "深度/层界按输入原始数值线性定位；未提供值保持空缺。详图截断仅为视窗边缘，不增加地质界面。", 10.5))
+    if layout["metadata_top"] is not None:
+        out.append(_text(35, footer + 38, "图面比例为参考像素比例，实际打印尺寸需另行核验；不保证90 mm打印精度。", 9.5))
+    metadata_svg, metadata_audit = _draw_metadata(data, layout)
+    out.extend(metadata_svg)
     out.append("</svg>")
 
     audit = {
@@ -493,6 +872,15 @@ def render_drill_svg(data: dict[str, Any], *, detail: bool = False) -> tuple[str
         "structures": structure_audit,
         "turns_independent_equal_height_ledger": True,
         "turn_records": turn_audit,
+        "basic_info": basic_audit,
+        "metadata": metadata_audit,
+        "metadata_viewport_extended": bool(layout["metadata_top"] is not None),
+        "canvas_bounds": {"viewBox": [0.0, 0.0, width, height],
+                          "metadata_within_canvas": metadata_audit.get("within_canvas", True),
+                          "basic_info_within_canvas": (not basic_audit.get("present") or
+                              (basic_audit["bounds"]["x"] >= 0 and basic_audit["bounds"]["y"] >= 0 and
+                               basic_audit["bounds"]["x"] + basic_audit["bounds"]["width"] <= width + 1e-6 and
+                               basic_audit["bounds"]["y"] + basic_audit["bounds"]["height"] <= height + 1e-6))},
         "detail_crop_is_not_geologic_boundary": bool(crop),
         "svg_image_elements": 0,
         "source_values_rounded_for_display_only": True,

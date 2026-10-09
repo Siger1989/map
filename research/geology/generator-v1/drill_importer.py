@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from importer import GeometryInputError, _cell, _is_blank, _issue, _number, _text
+from drill_integrated_importer import INTEGRATED_SHEETS, load_integrated_drill_workbook
 
 PROJECT_REQUIRED = ["模板类型", "模板版本", "项目名称", "钻孔编号", "长度单位", "孔深基准", "终孔深度_m", "Au单位", "Pb单位", "Zn单位"]
 SHEETS = {
@@ -205,6 +206,11 @@ def load_drill_workbook(path: str | Path) -> dict[str, Any]:
     except ImportError as exc:
         raise ImportError("读取钻孔 XLSX 需要 openpyxl") from exc
     wb = load_workbook(path, read_only=True, data_only=False)
+    integrated = ("钻孔基本信息" in wb.sheetnames or
+                  {"自定义测试项目", "样品测试结果"}.issubset(wb.sheetnames))
+    if integrated:
+        wb.close()
+        return load_integrated_drill_workbook(path)
     try:
         return _load_drill_workbook_open(path, wb)
     finally:

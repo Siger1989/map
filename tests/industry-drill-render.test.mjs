@@ -140,3 +140,28 @@ test('PC实测23层、131回次、97样品数据完整保留原始几何与逐�
   assert.ok(footerRows[1].y - footerRows[0].y >= 16);
   assert.ok(footerRows[2].y - footerRows[1].y >= 16);
 });
+
+test('120个六元素密集样品按标签行高自适应深度比例，主图和详图标签不长出孔底', () => {
+  const samples = Array.from({ length: 120 }, (_, index) => {
+    const top_m = index * 2.5, bottom_m = top_m + 2.4;
+    return sample(`S-${String(index + 1).padStart(3, '0')}`, top_m, bottom_m, {
+      length_m: 2.4, core_m: 1.8, recovery_percent: 75,
+      assays: { CU: 1.1, PB: 2.2, ZN: 3.3, AU: 4.4, AG: 5.5, FE: 6.6 },
+    });
+  });
+  const data = drill({ endpoint: 300, samples });
+  data.analysis_items = ['CU', 'PB', 'ZN', 'AU', 'AG', 'FE'].map((code, order) => ({ code, name: code, unit: 'mg/kg', order, show: true }));
+  data.project.analysis_units = Object.fromEntries(data.analysis_items.map(item => [item.code, item.unit]));
+  const { audit, svg } = renderDrill(data);
+  const layout = audit.track_layout;
+  assert.ok(audit.scale_px_per_m > 9, 'dense labels increase the unified main-view depth scale');
+  assert.ok(layout.detail_scale_px_per_m > 25, 'the 0–45 m detail uses the same density rule');
+  assert.ok(layout.sample_list_bottom_y <= layout.depth_bottom_y + 2);
+  assert.ok(layout.detail_sample_list_bottom_y <= layout.detail_depth_bottom_y + 2);
+  assert.ok(Number(svg.match(/height="([0-9.]+)/)?.[1]) < layout.depth_bottom_y + 500, 'footer remains a short extension below the measured depth axis');
+  assert.equal(audit.full.samples.length, 120);
+  assert.equal(audit.full.samples[0].top_m, 0);
+  assert.equal(audit.full.samples.at(-1).bottom_m, 299.9);
+  assert.ok(Math.abs((audit.full.samples[0].bottom_y - audit.full.samples[0].top_y) - 2.4 * audit.scale_px_per_m) < 1e-8);
+  assert.equal(audit.full.samples.at(-1).source, data.samples.at(-1).source);
+});

@@ -29,6 +29,7 @@ datas += [
 for name in (
     "实测剖面-标准模板.xlsx", "实测剖面-填写示例.xlsx",
     "钻孔柱状图-标准模板.xlsx", "钻孔柱状图-填写示例.xlsx",
+    "钻孔资料整合模板-v3.xlsx", "钻孔整合模板-300米连续采样模拟.xlsx",
 ):
     path = INDUSTRY / "outputs" / "standard-input-v2" / name
     if not path.is_file():
@@ -38,7 +39,8 @@ for name in (
 # Pipeline provenance hashes depend on the exact code and template source files.
 for name in (
     "importer.py", "renderer.py", "layer_geometry.py", "readability.py", "pipeline.py",
-    "drill_importer.py", "drill_renderer.py", "drill_pipeline.py",
+    "drill_importer.py", "drill_integrated_importer.py", "drill_renderer.py",
+    "drill_reference_renderer.py", "drill_pipeline.py",
 ):
     datas.append((str(INDUSTRY / name), "."))
 for name in ("materials.json", "drawing.json", "drill-patterns.json"):

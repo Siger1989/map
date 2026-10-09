@@ -6,7 +6,8 @@
   [switch]$UnsignedOnly,
   [switch]$StandaloneTest,
   [string]$DefaultMapSources,
-  [switch]$SkipCompression
+  [switch]$SkipCompression,
+  [switch]$ClearPublicTiandituKey
 )
 $ErrorActionPreference = 'Stop'
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -79,7 +80,11 @@ try {
     # leak into a release, even when a bundler leaves obsolete hashed assets.
     $webRoot = Join-Path $stage 'web'
     if (Test-Path -LiteralPath $webRoot) { throw 'Fresh APK web staging directory already exists' }
-    & npm.cmd run build:android:web -- --outDir $webRoot; Check-Tool 'Web build'
+    if ($ClearPublicTiandituKey) {
+      & node (Join-Path $PSScriptRoot 'build-android-public-web.mjs') $webRoot; Check-Tool 'Public web build'
+    } else {
+      & npm.cmd run build:android:web -- --outDir $webRoot; Check-Tool 'Web build'
+    }
   }
   if (!(Test-Path -LiteralPath (Join-Path $webRoot 'index.html'))) { throw 'Mobile entry point missing' }
   foreach ($dir in @($stage, $outputRoot, (Join-Path $stage 'classes'), (Join-Path $stage 'dex'), (Join-Path $stage 'generated'), (Join-Path $webRoot 'native'))) {

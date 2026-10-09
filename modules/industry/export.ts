@@ -21,7 +21,9 @@ function localName(value: string) { return value.replace(/[\\/:*?"<>|\u0000-\u00
 
 export async function downloadIndustryTemplate(kind: IndustryKind, example = false) {
   const prefix = kind === 'section' ? 'section' : 'drill';
-  const sourceName = `${prefix}-${example ? 'example' : 'template'}.xlsx`;
+  const sourceName = kind === 'drill'
+    ? `drill-integrated-v3-${example ? 'continuous-example' : 'template'}.xlsx`
+    : `${prefix}-${example ? 'example' : 'template'}.xlsx`;
   const response = await fetch(`/industry/${sourceName}`, { cache: 'force-cache' });
   if (!response.ok) throw new Error(`本地${kind === 'section' ? '剖面' : '钻孔'}${example ? '示例' : '模板'}暂不可用`);
   const bytes = await response.arrayBuffer();

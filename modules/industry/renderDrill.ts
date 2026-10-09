@@ -8,9 +8,12 @@ import {
   text,
 } from './patterns.ts';
 import drillPatternData from './templates/drill-patterns.json' with { type: 'json' };
+import { drillAssayLines, integratedBasicInfoHeight, renderIntegratedBasicInfo, renderIntegratedDrillFooter } from './integratedDrillRender.ts';
+import { renderReferenceDrill } from './referenceDrillRender.ts';
 
 const TOP = 96,
-  MIN_HEIGHT = 700;
+  MIN_HEIGHT = 700,
+  MAX_ADAPTIVE_DEPTH_SCALE = 120;
 export function sampleLanes(samples: any[]): {
   lanes: Record<string, number>;
   count: number;
@@ -91,13 +94,6 @@ function visible(rows: any[], hi: number) {
         num(a.top_m) - num(b.top_m) || num(a.bottom_m) - num(b.bottom_m),
     );
 }
-function assaySummary(sample: any, units: any) {
-  return ['Au', 'Pb', 'Zn'].map((key) => {
-    const value = sample.assays?.[key];
-    const formatted = value === null || value === undefined ? '未提供' : fmt(value, 4);
-    return `${key}：${formatted}${units?.[key] ? ` ${units[key]}` : ''}`;
-  }).join('；');
-}
 function layerPattern(layer: any) {
   const catalog = drillPatternData as any;
   const patterns = catalog.patterns as Record<string, unknown>;
@@ -109,15 +105,65 @@ function layerPattern(layer: any) {
   if (mapped && Object.hasOwn(patterns, mapped)) return `drill-${mapped}`;
   return drillPattern(layer.lithology_name);
 }
+function sampleLabelLayout(samples: any[], data: Record<string, any>, integrated: boolean) {
+  const sampleLines = samples.map((r: any) => integrated ? [
+    ...wrap(`样品 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m`, 46),
+    ...wrap(`样长 ${fmt(r.length_m)} m；岩心长 ${fmt(r.core_m)} m`, 58),
+    ...wrap(`计算采取率 ${fmt(r.recovery_percent)}%；原填采取率 ${fmt(r.recovery_raw_percent ?? r.recovery_original_percent)}%`, 58),
+  ] : [
+    ...wrap(`样品 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m`, 46),
+    ...wrap(`样长 ${fmt(r.length_m)} m；岩心长 ${fmt(r.core_m)} m；采取率 ${fmt(r.recovery_percent)}%`, 58),
+  ]);
+  const assayLines = samples.map((sample: any) => drillAssayLines(sample, data, integrated ? 40 : 48));
+  const heights = samples.map((_, i) => Math.max(sampleLines[i].length * 13 + 4, assayLines[i].length * 12 + 3));
+  return { sampleLines, assayLines, heights };
+}
+function scaleForSampleDensity(samples: any[], heights: number[], hi: number, minimum: number): number {
+  let required = minimum;
+  const centers = samples.map((sample) => (Math.max(0, num(sample.top_m)) + Math.min(hi, num(sample.bottom_m))) / 2);
+  if (centers.length && centers[0] > 1e-9)
+    required = Math.max(required, (heights[0] / 2 + 8) / centers[0]);
+  if (centers.length && hi - centers.at(-1)! > 1e-9)
+    required = Math.max(required, heights.at(-1)! / 2 / (hi - centers.at(-1)!));
+  for (let i = 1; i < samples.length; i++) {
+    const previous = samples[i - 1], current = samples[i];
+    if (num(current.top_m) < num(previous.bottom_m) - 1e-9) continue;
+    const previousCenter = (Math.max(0, num(previous.top_m)) + Math.min(hi, num(previous.bottom_m))) / 2;
+    const currentCenter = (Math.max(0, num(current.top_m)) + Math.min(hi, num(current.bottom_m))) / 2;
+    const centerGap = currentCenter - previousCenter;
+    if (centerGap <= 1e-9) continue;
+    const requiredGap = (heights[i - 1] + heights[i]) / 2 + 2;
+    required = Math.max(required, requiredGap / centerGap);
+  }
+  return Math.max(minimum, Math.min(MAX_ADAPTIVE_DEPTH_SCALE, required));
+}
+function placeSampleLabels(anchors: number[], heights: number[], lower: number, upper: number, gap = 2): number[] {
+  const out = place(anchors, heights, lower, gap);
+  if (!out.length) return out;
+  const needed = heights.reduce((sum, height) => sum + height, 0) + gap * (heights.length - 1);
+  if (needed > upper - lower) return out;
+  const last = out.length - 1;
+  out[last] = Math.min(out[last], upper - heights[last] / 2);
+  for (let i = last - 1; i >= 0; i--) {
+    const maxY = out[i + 1] - (heights[i] + heights[i + 1]) / 2 - gap;
+    out[i] = Math.min(out[i], maxY);
+  }
+  return out[0] - heights[0] / 2 < lower ? place(anchors, heights, lower, gap) : out;
+}
 function build(data: Record<string, any>, detail: boolean) {
   const endpoint = num(data.meta?.endpoint_m, NaN);
   if (!Number.isFinite(endpoint) || endpoint <= 0 || endpoint > 1e7)
     throw new Error('钻孔终孔深度缺失或超出安全范围');
-  const hi = detail ? Math.min(endpoint, 45) : endpoint,
-    scale = Math.max(detail ? 25 : 9, MIN_HEIGHT / Math.max(hi, 1e-9)),
-    y = (d: number) => TOP + d * scale;
+  const integrated = data.schema_version === 'drill-integrated-1.0';
+  const basicInfo = integrated ? renderIntegratedBasicInfo(data, 2300, 58) : null;
+  const bodyTop = integrated ? TOP + integratedBasicInfoHeight(data) : TOP;
+  const hi = detail ? Math.min(endpoint, 45) : endpoint;
+  const samples = visible(data.samples || [], hi);
+  const { sampleLines, assayLines, heights: sampleHeights } = sampleLabelLayout(samples, data, integrated);
+  const minimumScale = Math.max(detail ? 25 : 9, MIN_HEIGHT / Math.max(hi, 1e-9));
+  const scale = scaleForSampleDensity(samples, sampleHeights, hi, minimumScale);
+  const y = (d: number) => bodyTop + d * scale;
   const layers = visible(data.layers || [], hi),
-    samples = visible(data.samples || [], hi),
     turns = visible(data.turns || [], hi),
     structures = (data.structures || [])
       .filter((r: any) => num(r.depth_m) >= 0 && num(r.depth_m) <= hi)
@@ -137,7 +183,7 @@ function build(data: Record<string, any>, detail: boolean) {
   };
   cols.sampleLabel = Math.max(cols.sampleLabel, cols.sample + lane_count * 16 + 70);
   cols.assay = cols.sampleLabel + 425;
-  cols.structure = cols.assay + 310;
+  cols.structure = cols.assay + (integrated ? 390 : 310);
   cols.structureLabel = cols.structure + 50;
   const width = cols.structureLabel + 300,
     baseBottom = y(hi),
@@ -152,7 +198,9 @@ function build(data: Record<string, any>, detail: boolean) {
     layerY = place(layerAnchors, layerHeights, labelTop);
   const descLines = layers.map((r: any) =>
     wrap(
-      `${text(r.lithology_name) || '岩性名称未提供'}；${text(r.description) || '描述未提供'}\n层长 ${fmt(r.thickness_m)} m；岩心长 ${fmt(r.core_m)} m；采取率 ${fmt(r.recovery_percent)}%`,
+      integrated
+        ? `${text(r.lithology_name) || '岩性名称未提供'}；${text(r.description) || '描述未提供'}\n层长 ${fmt(r.thickness_m)} m；岩心长 ${fmt(r.core_m)} m\n计算采取率 ${fmt(r.recovery_percent)}%；原填采取率 ${fmt(r.recovery_raw_percent ?? r.recovery_original_percent)}%`
+        : `${text(r.lithology_name) || '岩性名称未提供'}；${text(r.description) || '描述未提供'}\n层长 ${fmt(r.thickness_m)} m；岩心长 ${fmt(r.core_m)} m；采取率 ${fmt(r.recovery_percent)}%`,
       36,
     ),
   );
@@ -161,24 +209,16 @@ function build(data: Record<string, any>, detail: boolean) {
   const sampleAnchors = samples.map((r: any) =>
     y((Math.max(0, num(r.top_m)) + Math.min(hi, num(r.bottom_m))) / 2),
   );
-  const sampleLines = samples.map((r: any) => [
-    ...wrap(`样品 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m`, 46),
-    ...wrap(`样长 ${fmt(r.length_m)} m；岩心长 ${fmt(r.core_m)} m；采取率 ${fmt(r.recovery_percent)}%`, 58),
-  ]);
-  const assayLines = samples.map((s: any) =>
-    wrap(assaySummary(s, data.project?.analysis_units || {}), 60),
-  );
-  const sampleHeights = samples.map((_, i) =>
-    Math.max(sampleLines[i].length * 13 + 4, assayLines[i].length * 12 + 3),
-  );
-  const sampleY = place(sampleAnchors, sampleHeights, labelTop, 2);
+  const sampleY = placeSampleLabels(sampleAnchors, sampleHeights, labelTop, baseBottom, 2);
   const structsY = place(
     structures.map((r: any) => y(r.depth_m)),
     structures.map(() => 19),
     labelTop,
   );
   const turnCardLines = turns.map((r) =>
-      wrap(`回次 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m　进尺 ${fmt(r.advance_m)} m　岩心长 ${fmt(r.core_m)} m　采取率 ${fmt(r.recovery_percent)}%`, 54),
+      wrap(integrated
+        ? `回次 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m　进尺 ${fmt(r.advance_m)} m　岩心长 ${fmt(r.core_m)} m\n计算采取率 ${fmt(r.recovery_percent)}%；原填采取率 ${fmt(r.recovery_raw_percent ?? r.recovery_original_percent)}%`
+        : `回次 ${text(r.id)}　${fmt(r.top_m)}–${fmt(r.bottom_m)} m　进尺 ${fmt(r.advance_m)} m　岩心长 ${fmt(r.core_m)} m　采取率 ${fmt(r.recovery_percent)}%`, integrated ? 54 : 54),
     ),
     turnHeights = turnCardLines.map((ls) => ls.length * 12 + 4),
     turnY: number[] = [];
@@ -194,13 +234,18 @@ function build(data: Record<string, any>, detail: boolean) {
     ...sampleY.map((v, i) => v + sampleHeights[i] / 2),
     ...structsY.map((v) => v + 12),
   );
-  const footer = labelBottom + 76,
-    height = footer + 54;
+  const footer = labelBottom + 76;
+  const integratedFooter = integrated ? renderIntegratedDrillFooter(data, width, footer + 44) : null;
+  const height = integrated ? footer + 44 + Number(integratedFooter?.height ?? 0) : footer + 54;
+  const analyteLabels = (Array.isArray(data.analysis_items)
+    ? data.analysis_items.filter((item: any) => item?.show !== false).sort((a: any, b: any) => Number(a.order ?? 0) - Number(b.order ?? 0)).map((item: any) => text(item.code))
+    : ['Au', 'Pb', 'Zn']);
   const section = (x: number, title: string) =>
-    `<text x="${x}" y="76" font-size="13" font-weight="bold">${esc(title)}</text><line x1="${x}" y1="82" x2="${x + 100}" y2="82" stroke="#888"/>`;
+    `<text x="${x}" y="${bodyTop - 20}" font-size="13" font-weight="bold">${esc(title)}</text><line x1="${x}" y1="${bodyTop - 14}" x2="${x + 100}" y2="${bodyTop - 14}" stroke="#888"/>`;
   const out = [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.ceil(height)}" viewBox="0 0 ${width} ${height}" role="img" aria-label="钻孔柱状矢量图"><defs>${drillDefs()}</defs><style>text{font-family:Arial,'Microsoft YaHei',sans-serif;fill:#222}.grid{stroke:#ccc;stroke-width:.7}.axis{stroke:#222;stroke-width:1}.layer-boundary{stroke:#222;stroke-width:1}.measured{stroke:#111;stroke-width:1.4;fill:none}.leader{stroke:#666;stroke-width:.7;fill:none}.sample-leader{stroke:#74808a;stroke-width:.55;opacity:.35;fill:none}.crop{stroke:#555;stroke-dasharray:5 4}</style><rect width="${width}" height="${height}" fill="white"/><text x="28" y="31" font-size="21" font-weight="bold">钻孔 ${esc(data.meta?.hole_id || data.project?.hole_id || '未命名')}</text><text x="28" y="53" font-size="12">沿孔深线性显示；纵向比例 ${fmt(scale, 2)} px/m；${detail ? `局部详图 0–${fmt(hi)} m` : '全孔视图'}</text>${section(cols.depth, '孔深 (m)')}${section(cols.turn, '回次记录列表')}${section(cols.layer, '分层区间')}${section(cols.lith, '岩性符号')}${section(cols.desc, '原文描述与岩心')}${section(cols.sample, `样品区间轨道（${lane_count}轨）`)}${section(cols.sampleLabel, '样品列表（按深度）')}${section(cols.assay, '分析值（Au / Pb / Zn）')}${section(cols.structure, '孔径点位')}${section(cols.structureLabel, '孔径标签')}`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${Math.ceil(height)}" viewBox="0 0 ${width} ${height}" role="img" aria-label="钻孔柱状矢量图"><defs>${drillDefs()}</defs><style>text{font-family:Arial,'Microsoft YaHei',sans-serif;fill:#222}.grid{stroke:#ccc;stroke-width:.7}.axis{stroke:#222;stroke-width:1}.layer-boundary{stroke:#222;stroke-width:1}.measured{stroke:#111;stroke-width:1.4;fill:none}.leader{stroke:#666;stroke-width:.7;fill:none}.sample-leader{stroke:#74808a;stroke-width:.55;opacity:.35;fill:none}.crop{stroke:#555;stroke-dasharray:5 4}</style><rect width="${width}" height="${height}" fill="white"/><text x="28" y="31" font-size="21" font-weight="bold">钻孔 ${esc(data.meta?.hole_id || data.project?.hole_id || '未命名')}</text><text x="28" y="53" font-size="12">沿孔深线性显示；纵向比例 ${fmt(scale, 2)} px/m；${detail ? `局部详图 0–${fmt(hi)} m` : '全孔视图'}</text>${section(cols.depth, '孔深 (m)')}${section(cols.turn, '回次记录列表')}${section(cols.layer, '分层区间')}${section(cols.lith, '岩性符号')}${section(cols.desc, '原文描述与岩心')}${section(cols.sample, `样品区间轨道（${lane_count}轨）`)}${section(cols.sampleLabel, '样品列表（按深度）')}${section(cols.assay, '分析项目结果')}${section(cols.structure, '孔径点位')}${section(cols.structureLabel, '孔径标签')}`,
   ];
+  if (basicInfo) out.push(basicInfo.svg);
   // A measured depth scale shared by all interval tracks.
   const step = hi > 100 ? 10 : hi > 20 ? 5 : 1;
   for (let d = 0; d <= hi + 1e-9; d += step) {
@@ -274,9 +319,9 @@ function build(data: Record<string, any>, detail: boolean) {
     out.push(
       `<text x="${width - 25}" y="${y(hi) - 8}" text-anchor="end" font-size="10">窗口边缘截断并延续，不是实际层界</text>`,
     );
-  out.push(
-    `<text x="28" y="${footer + 36}" font-size="9">符号按本项目固定模板精确匹配；未知岩性留白待定，不代表行业标准认证。</text></svg>`,
-  );
+  out.push(`<text x="28" y="${footer + 36}" font-size="9">符号按本项目固定模板精确匹配；未知岩性留白待定，不代表行业标准认证。</text>`);
+  if (integratedFooter) out.push(integratedFooter.svg);
+  out.push('</svg>');
   return {
     svg: out.join(''),
     scale,
@@ -303,6 +348,7 @@ function build(data: Record<string, any>, detail: boolean) {
     turnY,
     turnHeights,
     footer,
+    integrated_footer: integratedFooter?.audit ?? null,
   };
 }
 export function renderDrill(data: Record<string, any>): {
@@ -311,6 +357,8 @@ export function renderDrill(data: Record<string, any>): {
   audit: Record<string, unknown>;
 } {
   assertBounded(data);
+  const integrated = data.schema_version === 'drill-integrated-1.0';
+  if (integrated) return renderReferenceDrill(data);
   const full = build(data, false),
     detail = build(data, true);
   const auditRecords = (rows: any[], layout: any, kind: string) =>
@@ -363,10 +411,17 @@ export function renderDrill(data: Record<string, any>): {
         last_sample_lane_x: full.cols.sample + Math.max(0, full.lane_count - 1) * 16,
         sample_label_x: full.cols.sampleLabel,
         sample_list_bottom_y: listBottom(full.sampleY, full.sampleHeights),
+        depth_top_y: full.y(0),
+        depth_bottom_y: full.y(full.hi),
+        detail_scale_px_per_m: detail.scale,
+        detail_depth_bottom_y: detail.y(detail.hi),
+        detail_sample_list_bottom_y: listBottom(detail.sampleY, detail.sampleHeights),
         assay_x: full.cols.assay,
         structure_x: full.cols.structure,
         turn_list_bottom_y: listBottom(full.turnY, full.turnHeights),
         canvas_width: full.width,
+        integrated_footer: full.integrated_footer,
+        basic_info_rows: integrated ? renderIntegratedBasicInfo(data, full.width, 58).rows : 0,
       },
       full: {
         layers: auditRecords(full.layers, full, 'layer'),

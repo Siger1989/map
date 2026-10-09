@@ -9,13 +9,14 @@ import { mapTileVitePlugin } from '../tools/map-tile-proxy.mjs';
 import { apkPreviewSeeds } from '../tools/apk-preview-seeds.mjs';
 import { fileURLToPath } from 'node:url';
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  const env: Record<string, string> = mode === 'public' ? {} : loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '');
+  return ({
   worker: { format: 'es' },
   define: {
     'process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW': JSON.stringify(mode === 'apk-preview' ? '1' : ''),
     'process.env.NEXT_PUBLIC_TIANDITU_KEY': JSON.stringify(
-      loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '')
-        .NEXT_PUBLIC_TIANDITU_KEY ?? '',
+      env.NEXT_PUBLIC_TIANDITU_KEY ?? '',
     ),
   },
   root: fileURLToPath(new URL('.', import.meta.url)),
@@ -51,4 +52,5 @@ export default defineConfig(({ mode }) => ({
     cssMinify: 'lightningcss',
     sourcemap: false,
   },
-}));
+  });
+});

@@ -1,5 +1,7 @@
 import patterns from './templates/drill-patterns.json' with { type: 'json' };
 import { projectParameters, rowsByHeader } from './xlsx.ts';
+import { importIntegratedDrill } from './importIntegratedDrill.ts';
+import { isIntegratedDrillSheets } from './integratedDrillSchema.ts';
 import type { GeologyIssue, ImportResult, XlsxSheet, XlsxValue, XlsxWorkbook } from './types.ts';
 
 export const DRILL_PARAMETERS = ['模板类型', '模板版本', '项目名称', '钻孔编号', '长度单位', '孔深基准', '终孔深度_m', 'Au单位', 'Pb单位', 'Zn单位'];
@@ -57,6 +59,7 @@ function validateId(id: string, seen: Set<string>, at: string, label: string, is
 }
 
 export function importDrill(workbook: XlsxWorkbook): ImportResult {
+  if (isIntegratedDrillSheets(workbook.sheets)) return importIntegratedDrill(workbook);
   const issues: GeologyIssue[] = [...workbook.warnings];
   const project = workbook.sheets.get('项目');
   if (!project) throw new Error('规范工作簿必须包含“项目”工作表');

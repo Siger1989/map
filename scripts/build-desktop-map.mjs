@@ -18,14 +18,23 @@ function log(value) {
 
 function parseArgs(args) {
   let outDir;
+  let isPublic = false;
   for (let index = 0; index < args.length; index++) {
-    if (args[index] !== '--out-dir') throw new Error(`Unknown argument: ${args[index]}`);
-    if (outDir !== undefined) throw new Error('Duplicate --out-dir');
-    const value = args[++index];
-    if (!value || value.startsWith('--')) throw new Error('--out-dir requires a path');
-    outDir = value;
+    if (args[index] === '--public') {
+      if (isPublic) throw new Error('Duplicate --public');
+      isPublic = true;
+      continue;
+    }
+    if (args[index] === '--out-dir') {
+      if (outDir !== undefined) throw new Error('Duplicate --out-dir');
+      const value = args[++index];
+      if (!value || value.startsWith('--')) throw new Error('--out-dir requires a path');
+      outDir = value;
+      continue;
+    }
+    throw new Error(`Unknown argument: ${args[index]}`);
   }
-  return resolve(root, outDir ?? 'EXE/山兔桌面/resources/map-runtime');
+  return { outputRoot: resolve(root, outDir ?? 'EXE/山兔桌面/resources/map-runtime'), isPublic };
 }
 
 function assertBoundedOutput(path) {
@@ -47,7 +56,7 @@ async function walkFiles(directory, base = directory) {
 }
 
 async function main() {
-  const outputRoot = parseArgs(process.argv.slice(2));
+  const { outputRoot, isPublic } = parseArgs(process.argv.slice(2));
   assertBoundedOutput(outputRoot);
   const webRoot = resolve(outputRoot, 'web');
   const nodePath = resolve(outputRoot, 'node.exe');
@@ -60,30 +69,38 @@ async function main() {
   const version = versionSource.match(/APP_VERSION\s*=\s*'([^']+)'/)?.[1];
   if (!version) throw new Error('APP_VERSION could not be read from config/product.ts');
 
-  const seedBytes = await readFile(seedSource);
-  const seedManifest = JSON.parse(seedBytes.toString('utf8'));
-  if (seedManifest.version !== 1 || !Array.isArray(seedManifest.maps) || seedManifest.maps.length < 1 || seedManifest.maps.length > 100)
+  const seedBytes = isPublic ? undefined : await readFile(seedSource);
+  const seedManifest = seedBytes ? JSON.parse(seedBytes.toString('utf8')) : undefined;
+  if (seedManifest && (seedManifest.version !== 1 || !Array.isArray(seedManifest.maps) || seedManifest.maps.length < 1 || seedManifest.maps.length > 100))
     throw new Error('The local private map seed must be version 1 and contain 1 to 100 maps');
-  const env = loadEnv('apk-preview', root, '');
+  const env = isPublic ? {} : loadEnv('apk-preview', root, '');
   const tiandituKey = env.NEXT_PUBLIC_TIANDITU_KEY?.trim() ?? '';
-  if (!tiandituKey) throw new Error('The local Tianditu key is unavailable for the private desktop build');
+  if (!isPublic && !tiandituKey) throw new Error('The local Tianditu key is unavailable for the private desktop build');
 
   const geology = {};
-  for (const name of ['GEOCLOUD_TOKEN', 'GEOCLOUD_SERVICE', 'GEOCLOUD_LAYER']) {
-    const value = env[name]?.trim();
-    if (value) geology[name] = value;
+  if (!isPublic) {
+    for (const name of ['GEOCLOUD_TOKEN', 'GEOCLOUD_SERVICE', 'GEOCLOUD_LAYER']) {
+      const value = env[name]?.trim();
+      if (value) geology[name] = value;
+    }
   }
   const privateConfig = { version: 1, geology };
 
   await mkdir(webRoot, { recursive: true });
   await viteBuild({
     configFile: viteConfig,
-    mode: 'apk-preview',
+    mode: isPublic ? 'public' : 'apk-preview',
     logLevel: 'silent',
+    ...(isPublic ? { define: {
+      'process.env.NEXT_PUBLIC_TIANDITU_KEY': JSON.stringify(''),
+      'process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW': JSON.stringify(''),
+    } } : {}),
     build: { outDir: webRoot, emptyOutDir: true, sourcemap: false },
   });
-  await mkdir(dirname(seedTarget), { recursive: true });
-  await writeFile(seedTarget, seedBytes);
+  if (!isPublic) {
+    await mkdir(dirname(seedTarget), { recursive: true });
+    await writeFile(seedTarget, seedBytes);
+  }
   await bundle({
     entryPoints: [resolve(root, 'desktop-app/map_runtime.ts')],
     outfile: serverPath,
@@ -121,26 +138,33 @@ async function main() {
   catch (error) { if (error.code !== 'ENOENT') throw error; }
   if (!nodeAlreadyMatches) await copyFile(process.execPath, nodePath);
 
-  const webSeed = JSON.parse(await readFile(seedTarget, 'utf8'));
+  const webSeed = isPublic ? undefined : JSON.parse(await readFile(seedTarget, 'utf8'));
   const webFiles = await walkFiles(webRoot);
   const javascript = await Promise.all(webFiles.filter((item) => /\.m?js$/i.test(item.relative))
     .map((item) => readFile(item.path, 'utf8')));
-  const keyEmbedded = javascript.some((content) => content.includes(tiandituKey));
-  if (!keyEmbedded) throw new Error('The local Tianditu key was not found in the generated web assets');
+  const keyEmbedded = isPublic ? javascript.some((content) => content.includes('process.env.NEXT_PUBLIC_TIANDITU_KEY')) : javascript.some((content) => content.includes(tiandituKey));
+  if (isPublic ? keyEmbedded : !keyEmbedded) throw new Error(isPublic ? 'Public bundle retained an unresolved Tianditu key expression' : 'The local Tianditu key was not found in the generated web assets');
   const privateWritten = JSON.parse(await readFile(privateConfigPath, 'utf8'));
   const nodeInfo = await readFile(nodePath);
-  const geologyConfigMatches = ['GEOCLOUD_TOKEN', 'GEOCLOUD_SERVICE', 'GEOCLOUD_LAYER']
-    .every((name) => (env[name]?.trim() ?? '') === (privateWritten.geology?.[name] ?? ''));
-  const sourceSeedSha256 = createHash('sha256').update(seedBytes).digest('hex');
-  const outputSeedSha256 = createHash('sha256').update(await readFile(seedTarget)).digest('hex');
+  const geologyConfigMatches = isPublic
+    ? Object.keys(privateWritten.geology ?? {}).length === 0
+    : ['GEOCLOUD_TOKEN', 'GEOCLOUD_SERVICE', 'GEOCLOUD_LAYER']
+      .every((name) => (env[name]?.trim() ?? '') === (privateWritten.geology?.[name] ?? ''));
+  const sourceSeedSha256 = seedBytes ? createHash('sha256').update(seedBytes).digest('hex') : undefined;
+  const outputSeedSha256 = isPublic ? undefined : createHash('sha256').update(await readFile(seedTarget)).digest('hex');
+  const publicSeedIncluded = await readFile(seedTarget).then(() => true, (error) => {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  });
   const result = {
     app: 'shantu-desktop-map-build', version,
     outputRoot,
+    buildMode: isPublic ? 'public' : 'private',
     webFiles: webFiles.length,
     nodeBytes: nodeInfo.byteLength,
-    seedCount: webSeed.maps.length,
-    seedCountMatches: seedManifest.maps.length === webSeed.maps.length,
-    seedBytesMatch: sourceSeedSha256 === outputSeedSha256,
+    seedCount: webSeed?.maps.length ?? 0,
+    seedCountMatches: isPublic ? !publicSeedIncluded : seedManifest.maps.length === webSeed.maps.length,
+    seedBytesMatch: isPublic ? !publicSeedIncluded : sourceSeedSha256 === outputSeedSha256,
     tiandituKeyPresent: Boolean(tiandituKey),
     tiandituKeyEmbedded: keyEmbedded,
     geocloudTokenPresent: Boolean(privateWritten.geology?.GEOCLOUD_TOKEN),
@@ -148,7 +172,7 @@ async function main() {
     geocloudLayerPresent: Boolean(privateWritten.geology?.GEOCLOUD_LAYER),
     geologyConfigMatches,
   };
-  if (!result.seedCountMatches || !result.seedBytesMatch || !result.tiandituKeyEmbedded || !result.geologyConfigMatches || !nodeInfo.byteLength)
+  if (!result.seedCountMatches || !result.seedBytesMatch || (isPublic ? result.tiandituKeyEmbedded : !result.tiandituKeyEmbedded) || !result.geologyConfigMatches || !nodeInfo.byteLength)
     throw new Error('Desktop map artifact consistency check failed');
   log(JSON.stringify(result, null, 2));
   return result;
