@@ -12,12 +12,25 @@
   let panFrame = 0;
   let panVector = { x: 0, y: 0 };
   let panTime = 0;
+  let panActive = false;
+  function dispatchPan(detail) {
+    const frame = document.getElementById('map-frame');
+    try {
+      if (!frame?.contentWindow) return false;
+      frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('shantu-desktop-pan', { detail }));
+      return true;
+    } catch { return false; /* The map frame may be unloading. */ }
+  }
   function stopPan() {
     cancelAnimationFrame(panFrame);
     panFrame = 0;
     panTime = 0;
     const pointer = panPointer;
     panPointer = null;
+    if (panActive) {
+      dispatchPan({ phase: 'end', handled: false });
+      panActive = false;
+    }
     if (pointer !== null && panButton.hasPointerCapture(pointer)) panButton.releasePointerCapture(pointer);
     panThumb.style.transform = '';
   }
@@ -34,13 +47,13 @@
     if (panPointer === null || panButton.disabled) return stopPan();
     const elapsed = panTime ? Math.min(time - panTime, 50) : 16;
     panTime = time;
-    const frame = document.getElementById('map-frame');
-    const detail = { dx: panVector.x * elapsed / 40, dy: panVector.y * elapsed / 40, handled: false };
-    try {
-      if (Math.hypot(panVector.x, panVector.y) > 2) {
-        frame.contentWindow.dispatchEvent(new frame.contentWindow.CustomEvent('shantu-desktop-pan', { detail }));
-      }
-    } catch { return stopPan(); }
+    if (Math.hypot(panVector.x, panVector.y) > 2) {
+      if (!dispatchPan({ phase: 'move', dx: panVector.x * elapsed / 40, dy: panVector.y * elapsed / 40, handled: false })) return stopPan();
+      panActive = true;
+    } else if (panActive) {
+      dispatchPan({ phase: 'end', handled: false });
+      panActive = false;
+    }
     panFrame = requestAnimationFrame(panTick);
   }
   let toggling = false;

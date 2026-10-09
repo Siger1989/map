@@ -1,0 +1,23 @@
+山兔0.2.117-test / code124 电脑平移性能修复（2026-10-09）
+
+问题与修改
+PC移动圈每帧使用duration:0，真实MapLibre每帧触发moveend，导致视角localStorage保存与轨迹/照片等收尾同步反复执行。现在连续平移共用一个相机操作，松手、回到死区、取消、失焦、隐藏或切换工作区时结束；外部相机接管后不停止别人的操作。透明96px命中区、72px细环及116减敏速度保持。手机路径未改。
+源码范围：desktop-app/shell/shell.js、modules/map/desktopPan.ts、tests/desktop-pan-lifecycle.test.mjs、版本声明。
+
+实测
+主审在隔离浏览器使用真实MapLibre及最终117 EXE服务，连续60次rAF平移：movestart/moveend、视角保存、轨迹同步由116各60次变为117各1次，中心确实移动，释放后连续两次中心一致且moving=false。只证明这组重复工作减少，不把浏览器时间称为Windows原生FPS。
+最终EXE外壳1280×860实鼠标拖圈/松开通过；透明控件96×96、圆点回中。截图artifacts/screenshots/pc-performance-20261009/final117-pan.png；前后数据.openai/pc-performance-20261009-before.log、after.log及pc-performance117-shell-ui.log。
+6项平移生命周期测试、TypeScript与shell语法检查通过。EXE隔离self-test通过，4模板请求200，旧格式剖面/钻孔SVG和PNG生成通过。39私有图源及Key配置一致性仅作布尔核验。
+
+本机私有电脑包
+EXE/山兔桌面-0.2.117.exe
+123261920 bytes
+SHA256 85b6a75723800622d44ab1c44812eb0da5fbb6f19c121665b7a519e4d947b6cf
+固定入口EXE/山兔桌面.exe与版本包一致，旧116保留。不公开分发含私有Key的包。
+手机最新已验证APK仍为0.2.116，117未构建APK。原生Windows实际手感待用户验证，未停止用户打开的116窗口、未触碰其真实存档。
+
+Excel进度边界
+outputs/drill-template-20261009/钻孔资料整合模板-v1.xlsx是11页空白整合模板，SHA256 67da8e349a58db19431edb2245b69b93921bfb4f4103b7899607997af815d28c。真实旧pipeline导入失败MISSING_SHEET（缺少旧“项目”表），未生成SVG/PNG；Excel页渲染不是软件生图验收。用户已明确要求按该模板生图，导入、自定义元素、独立孔深/弯曲度表和图签适配正在另行施工，117不包含此项完成能力。原空模板不改，验证使用标明模拟数据的隔离副本。
+
+Git
+codex/rollback-ui-0235-20260921，基准b005945cb36fc8de14aa064123bed1f66f50fa33；包含本记录的提交是117接续点，未合main。地质原资料、PDF、旧安装包和用户进程保留。
