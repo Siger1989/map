@@ -29,6 +29,7 @@ export function useGuidanceWorkflow({
   onActivateUi,
   onInvalidRoute,
   initialFix,
+  recordingEnabled = true,
 }: {
   guidance: ReturnType<typeof useGuidance>;
   position: Pick<
@@ -53,6 +54,8 @@ export function useGuidanceWorkflow({
   onInvalidRoute: () => void;
   /** Last real fix known by the page; absent/stale fixes never become a user origin. */
   initialFix?: PositionFix | null;
+  /** Whether starting navigation may start a new recording on this platform. */
+  recordingEnabled?: boolean;
 }) {
   const guidanceOwnsLocation = useRef(false),
     guidanceFocused = useRef(false);
@@ -91,6 +94,7 @@ export function useGuidanceWorkflow({
       return;
     }
     if (
+      recordingEnabled &&
       recorder.sampling.policy.recordOnNavigation &&
       recorder.record.phase === 'idle'
     )

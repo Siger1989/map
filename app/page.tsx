@@ -1136,6 +1136,7 @@ export default function Home() {
       setPanel('route');
     },
     onInvalidRoute: () => setPanel('route'),
+    recordingEnabled: !desktopShell,
     onActivateUi: () => {
       setNavigationDisplayOpen(false);
       setBoxSelecting(false);
