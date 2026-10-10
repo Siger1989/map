@@ -391,3 +391,12 @@
 | Windows/设备 | 未验证 | 本次使用真实EXE内置服务的浏览器UI，未操作Windows WebView2原生窗口，不代表权限/触控手感/GPS/后台验收；不以IP估计替代GPS。历史小/矮窗口及架构预算不扩大修复 |
 
 范围、精确hash、复测条件及本机证据索引见[PC同步记录](desktop-sync-20261010.md)。未修改用户存档、移动记录数据和私有配置；仅公开无Key版本。本轮没有新增Android包，也不移动120原tag。
+
+## 2026-10-10 / 注册天地图与本机包纠正
+
+- PASS（配置/产物）：内置天地图规则覆盖预览、APK、PC、主/双图；上轮固定APK误用无Key公开包，fresh恢复私有120/code127。实际固定APK内嵌Key和39项seed匹配、ZIP1934项/CRC、原签名、zipalign和版本核验通过；PC仍正确私有包，Key/seed原文件未变。
+- PASS（入口）：刷新前9174实际内置菜单有选中的天地图影像及注记/境界选项；没有用“我的图源”替代。
+- FAIL（当前显示）：预览图形上下文中断，重新打开和新页均webgl2=false、地图未启动；尚未恢复，不报告视觉通过。实际截图artifacts/screenshots/tianditu-restore-20261010/preview-webgl2-fail.jpg。
+- 未验证：新私有APK真机覆盖安装和原生能力。未修改UI/CSS或清用户存档；私有产物不公开上传。复测先恢复WebGL2再检查瓦片、主/双图入口；跨设备/公开私有构建变化必须重新核对固定包内嵌Key/seed。
+
+范围、hash及证据见[天地图交付记录](tianditu-local-delivery-20261010.md)。
