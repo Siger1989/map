@@ -1,3 +1,21 @@
+## 2026-10-10 / 0.2.120交付验证状态
+
+用户已要求构建并上传`0.2.120-test/code127`。私有与公开APK已构建核验，aapt版本、原证书v2/v3连续、zipalign、1933/1934 ZIP项、473项terrain及Key/seed隔离均通过；实际大小/SHA见[0.2.120发行记录](release-0.2.120.md)。两份APK已构建核验；发行入口为固定tag `v0.2.120-test-standalone`，源码与公开资产的实际发布结果由远端tag及本机 `.openai/release-120-github.json` 核验。
+
+## 2026-10-10 / 发布后导航记录入口与路线遮罩快速预览（后纳入0.2.120）
+
+|检查项|实际证据|结果|
+|---|---|---|
+|导航记录入口与海拔曲线间距|此前原9174同origin源码编译预览，公开步行规划后开始导航，再在设置中关闭/开启曲线并返回；390×857与360×780均`guiding=true`、记录入口left=8px。曲线开时bottom=166px、图表间距16.054px、nav-clearance=110px；关闭后bottom=116px且图表节点为0|PASS（源码浏览器预览）|
+|单色模式legend与profile重挂载|390×857 legend checkbox保持true时，profile false→true准确重新挂载曲线；360结束时恢复profile=true，390恢复原设置|PASS（浏览器预览）|
+|倾斜地图DOM路线遮罩|真实`RouteLayer`隔离夹具pitch60°、bearing35°、zoom+1并平移；路线连续穿过注记气泡、照片块和选择预览点，helper子节点mask统计root/descendant=0/3；快速导航与预览按钮各点击1次|PASS（隔离夹具）|
+|清除/重建遮罩与2D|清路线后root/child mask都清除；清除/恢复marker和切换style后重新建立3个mask；2D路线连续可见；Helper模式fixture overrides=0|PASS（隔离夹具）|
+|定向检查与源码门禁|21项路线遮罩定向检查、全量TypeScript和Web构建通过；10项历史架构长度预算仍FAIL，本轮新增324/200行未超限|逻辑/构建PASS；既有架构FAIL保留|
+|0.2.120修复特异性正/负控|helper `targetsByMarker`与新CSS只在120出现；119负控仍含旧规则；120去掉`home-recording bottom+94px`和left共享selector|PASS|
+|版本/设备边界|390/360导航尺寸属于此前源码预览；0.2.120 fresh phone仅核HTTP/MIME、实际版本、地图加载保留存档及关于面板，未重跑完整导航尺寸流程。0.2.119 APK与现有EXE不含发布后改动。未开始录制/保存/导入；partial DEM与IP fallback不是GPS证据|两份APK已构建核验；发行入口为固定tag `v0.2.120-test-standalone`，源码与公开资产的实际发布结果由远端tag及本机 `.openai/release-120-github.json` 核验；真实Android GPS/触控/后台/HarmonyOS未验|
+
+预览页：[`nav-built-120-fresh-phone.html`](http://127.0.0.1:9174/@fs/D:/天气地图/.openai/nav-built-120-fresh-phone.html)，页面显示`0.2.120-test/code127`。导航布局证据 `.openai/nav-record-layout-20261010.json`，截图 `artifacts/screenshots/nav-icons-20261010/final-navigation-{390,360}-{curve,no-curve}.jpg`。路线遮罩证据截图 `artifacts/screenshots/nav-icons-20261010/final-helper-pitch60-bearing35-zoom.jpg`、`final-helper-2d.jpg`；隔离夹具 `.openai/nav-icon-layer-qa-20261010.html`。未改动保存的路线、标记或照片，临时显示设置已恢复。
+
 ## 2026-10-08 / 最终114状态矩阵（用户已明确打包交付）
 
 |必需状态|实际证据|结果|

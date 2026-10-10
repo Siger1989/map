@@ -288,7 +288,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 .observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label {
   bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 32px);
 }
-.observatory.home-map:not([data-rally='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']),[data-panel='tools'],[data-panel='outdoor']) .home-recording {
+.observatory.home-map:not([data-rally='true']):not([data-guiding='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']),[data-panel='tools'],[data-panel='outdoor']) .home-recording {
   bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 64px);
 }
 .observatory.home-map:not([data-rally='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true'],.track-tools[aria-label='绘制工具']),[data-panel='tools'],[data-panel='outdoor']) .global-focus-lock {

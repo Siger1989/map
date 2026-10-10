@@ -22,8 +22,8 @@ export type NavigationElevationDisplay = {
 
 export function RallyElevation({ route, fraction, display, previewFraction }: { route: PlannedRoute; fraction: number | null; display?: NavigationElevationDisplay; previewFraction?: number | null }) {
   const { profile = true, statistics = true, legend = true } = display?.preferences ?? {};
-  const dock = useDockClearance('--nav-info-clearance', profile || statistics || legend);
   const showLegend = legend && !!display && display.mode !== 'solid';
+  const dock = useDockClearance('--nav-info-clearance', profile || statistics || showLegend);
   const track = useMemo<ManualTrack>(() => ({ id: `rally-${route.createdAt}`, name: '导航海拔', createdAt: route.createdAt, segments: [route.coordinates] }), [route]);
   const elevation = useTrackElevation(track, profile || statistics);
   const samples = useMemo(() => trackHeights(elevation.profile ?? track), [elevation.profile, track]);

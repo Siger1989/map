@@ -1,7 +1,14 @@
 import type { Map, GeoJSONSource } from 'maplibre-gl';
 import type { FeatureCollection } from 'geojson';
+import { syncRouteIconPriority } from './routeIconPriority.ts';
 
 const snapshots = new WeakMap<GeoJSONSource, string>();
+type RouteTierGuard = {
+  syncing: boolean;
+  onStyleData: () => void;
+  onRemove: () => void;
+};
+const routeTierGuards = new WeakMap<Map, RouteTierGuard>();
 const overlayOrder = [
   'area-fill',
   'area-border',
@@ -39,15 +46,9 @@ const overlayOrder = [
   'position-ip-label',
   'cad-labels',
 ];
-const ROAD_LINE_LAYERS = [
-  'rivers',
-  'road-outline',
-  'main-roads',
-  'local-roads',
-  'railways',
-];
-const LINE_BELOW_PLACE_LABELS = new Set([
-  ...ROAD_LINE_LAYERS,
+// Route strokes form the final native GL tier so route icons and map labels
+// cannot paint over them. DOM markers are handled by routeIconPriority.
+const ROUTE_STROKE_LAYERS = [
   'route-outline',
   'route-path',
   'route-access',
@@ -58,6 +59,16 @@ const LINE_BELOW_PLACE_LABELS = new Set([
   'guidance-path',
   'guidance-access',
   'route-gap-line',
+];
+const ROAD_LINE_LAYERS = [
+  'rivers',
+  'road-outline',
+  'main-roads',
+  'local-roads',
+  'railways',
+];
+const LINE_BELOW_PLACE_LABELS = new Set([
+  ...ROAD_LINE_LAYERS,
   'cad-fill',
   'cad-outline',
   'cad-line',
@@ -93,7 +104,7 @@ export function syncPlaceLabelLayerOrder(map: Map) {
     ...overlayOrder.filter((id) => LINE_BELOW_PLACE_LABELS.has(id) && !ROAD_LINE_LAYERS.includes(id)),
   ].filter((id) => present.includes(id));
   const topOverlays = overlayOrder.filter(
-    (id) => present.includes(id) && !LINE_BELOW_PLACE_LABELS.has(id),
+    (id) => present.includes(id) && !LINE_BELOW_PLACE_LABELS.has(id) && !ROUTE_STROKE_LAYERS.includes(id),
   );
 
   if (anchor) {
@@ -103,19 +114,68 @@ export function syncPlaceLabelLayerOrder(map: Map) {
       for (const id of lineLayers) map.moveLayer(id, anchor.id);
     }
     const current = map.getStyle().layers.map((layer) => layer.id);
-    const suffix = current.slice(-topOverlays.length);
-    if (topOverlays.length && suffix.some((id, i) => id !== topOverlays[i]))
+    const orderedTopOverlays = current.filter((id) => topOverlays.includes(id));
+    if (topOverlays.length && orderedTopOverlays.some((id, i) => id !== topOverlays[i]))
       for (const id of topOverlays) map.moveLayer(id);
+    syncRouteStrokesLast(map);
     return;
   }
 
   // Without visible labels, preserve the established overlayOrder exactly;
   // base roads keep their style position and overlays remain above late roads.
-  const desiredTop = overlayOrder.filter((id) => present.includes(id));
+  const desiredTop = overlayOrder.filter((id) => present.includes(id) && !ROUTE_STROKE_LAYERS.includes(id));
   const current = map.getStyle().layers.map((layer) => layer.id);
-  const suffix = current.slice(-desiredTop.length);
-  if (desiredTop.length && suffix.some((id, i) => id !== desiredTop[i]))
+  const orderedTop = current.filter((id) => desiredTop.includes(id));
+  if (desiredTop.length && orderedTop.some((id, i) => id !== desiredTop[i]))
     for (const id of desiredTop) map.moveLayer(id);
+  syncRouteStrokesLast(map);
+}
+
+function syncRouteStrokesLast(map: Map) {
+  const layers = map.getStyle().layers;
+  const tier = ROUTE_STROKE_LAYERS.filter((id) =>
+    layers.some((layer) => layer.id === id && layer.type === 'line'),
+  );
+  if (!tier.length) {
+    detachRouteTierGuard(map);
+    return;
+  }
+
+  const guard = ensureRouteTierGuard(map);
+  if (guard?.syncing) return;
+  if (guard) guard.syncing = true;
+  try {
+    const present = map.getStyle().layers.map((layer) => layer.id);
+    const suffix = present.slice(-tier.length);
+    if (suffix.some((id, i) => id !== tier[i]))
+      for (const id of tier) map.moveLayer(id);
+  } finally {
+    if (guard) guard.syncing = false;
+  }
+}
+
+function ensureRouteTierGuard(map: Map): RouteTierGuard | null {
+  if (typeof map.on !== 'function' || typeof map.off !== 'function') return null;
+  const existing = routeTierGuards.get(map);
+  if (existing) return existing;
+  const guard = {} as RouteTierGuard;
+  guard.syncing = false;
+  guard.onStyleData = () => {
+    if (!guard.syncing) syncRouteStrokesLast(map);
+  };
+  guard.onRemove = () => detachRouteTierGuard(map);
+  routeTierGuards.set(map, guard);
+  map.on('styledata', guard.onStyleData);
+  map.on('remove', guard.onRemove);
+  return guard;
+}
+
+function detachRouteTierGuard(map: Map) {
+  const guard = routeTierGuards.get(map);
+  if (!guard) return;
+  map.off('styledata', guard.onStyleData);
+  map.off('remove', guard.onRemove);
+  routeTierGuards.delete(map);
 }
 
 /** Avoid invalidating terrain drape textures for unchanged geometry or layer order. */
@@ -129,6 +189,7 @@ export function syncOverlayData(map: Map, id: string, data: FeatureCollection) {
     snapshots.set(source, serialized);
   }
   syncPlaceLabelLayerOrder(map);
+  syncRouteIconPriority(map, id, data);
   return changed;
 }
 

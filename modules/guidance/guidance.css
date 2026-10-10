@@ -188,10 +188,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .navigation-elevation { position: absolute; inset: 0; z-index: 9; pointer-events: none; }
 .navigation-elevation .rally-elevation { pointer-events: auto; box-sizing: border-box; color: var(--ui-ink, var(--text)); }
 .observatory.home-map[data-guiding='true'] .route-weather-rail { top: calc(var(--home-top) + var(--home-header-height) + 122px) !important; --rail-height: max(80px, calc(100dvh - 502px - var(--home-top))); }
-.observatory.home-map[data-guiding='true'] .home-recording { bottom: calc(var(--home-footer) + 94px); }
 .observatory.home-map[data-guiding='true'] .home-position-dock { bottom: calc(var(--home-footer) + 84px); }
 .observatory.home-map[data-guiding='true'] .home-camera-control { bottom: calc(var(--home-footer) + 4px); right: 8px; }
-.observatory.home-map[data-guiding='true'] .home-recording { left:calc(var(--home-left) + 52px); }
 .observatory.home-map[data-guiding='true']:not([data-focus-locked='true']) .global-focus-lock { left:calc(var(--home-left) + 52px); }
 .observatory.home-map:has(.layer-window) .route-display-info { visibility: hidden; }
 /* Keep the collapsed heading and location state on separate, readable rows. */
