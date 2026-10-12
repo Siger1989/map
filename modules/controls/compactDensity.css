@@ -195,7 +195,7 @@
   background: #246748;
 }
 .observatory .position-status {
-  top: calc(56px + var(--safe-top));
+  top: var(--normal-nav-rail-top, calc(56px + var(--safe-top)));
   bottom: auto;
   left: 4px;
   right: 60px;

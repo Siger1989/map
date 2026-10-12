@@ -34,6 +34,9 @@
     max-height: 172px !important;
     overflow: auto !important;
   }
+  .observatory.home-map #map-control-panel:has(.route-panel[data-search-active="true"]:not([data-search-expanded="true"])) .dock-content {
+    max-height: 96px !important;
+  }
 }
 .observatory #map-control-panel .route-panel .routing-mode-control {
   margin: 0 !important;
@@ -199,4 +202,10 @@
   padding: 0 4px !important;
   min-height: var(--ui-compact-control-height,28px) !important;
   margin-left: 3px;
+}
+
+@media (max-width: 600px) {
+  .observatory.home-map #map-control-panel:has(.route-panel[data-search-expanded="true"]) {
+    display: none !important;
+  }
 }

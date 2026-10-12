@@ -117,6 +117,7 @@ export function RoutePanel({
     previousCount.current = n.stops.length;
   }, [n.stops]);
   const selected = n.stops.find((s) => s.id === active);
+  const searchActive = !!selected && !selected.place && selected.query.trim().length >= 2;
   const placeSearch = usePlaceSearch({
     query: selected?.query ?? '',
     enabled: !!selected && !selected.place && active !== null,
@@ -229,7 +230,7 @@ export function RoutePanel({
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
   />;
   return (
-    <div className="route-panel" data-picking={n.picking !== null}>
+    <div className="route-panel" data-picking={n.picking !== null} data-search-active={searchActive} data-search-expanded={searchActive && listExpanded}>
       {onImport && <button className="route-load" onClick={onImport}>加载路线文件</button>}
       {n.picking !== null && (
         <div className="route-picking-help" role="status">

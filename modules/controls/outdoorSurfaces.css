@@ -74,7 +74,8 @@ html[data-ui-theme] .collection-workbench :is(button[aria-pressed='true'],button
 html[data-ui-theme] .collection-workbench :is(.collection-primary,button.is-primary) { background:var(--ui-accent); color:var(--ui-on-accent); }
 html[data-ui-theme] :is(.photo-lightbox,.layout-editor-panel) { background:var(--ui-surface); color:var(--ui-ink); border-color:var(--ui-line); }
 html[data-ui-theme] :is(.photo-lightbox,.layout-editor-panel) button { background:var(--ui-raised); color:var(--ui-button-ink); border-color:var(--ui-line); border-radius:var(--ui-radius-control); }
-html[data-ui-theme] :is(.text-suggestions,.floating-search) { border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .text-suggestions { border-radius:var(--ui-radius-control); }
+html[data-ui-theme] .floating-search { border-radius:var(--ui-radius-card); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor :is(button,input,textarea):not([type='color']) { min-height:36px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .pin-editor .pin-save { min-height:44px; }
 /* Marker-size exception requested by the user: pin editor controls stay compact

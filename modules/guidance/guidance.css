@@ -221,3 +221,11 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .observatory.home-map[data-focus-locked='true'][data-guiding='true'] > .route-weather-rail { display:flex !important; top:12px !important; bottom:100px; }
 .observatory.home-map[data-focus-locked='true'][data-guiding='true'] .route-weather-rail > :is(.rail-heading,.rail-legend-toggle,.rail-detail) { display:none; }
 .observatory.home-map[data-focus-locked='true'][data-guiding='true'] .global-focus-lock { bottom:calc(var(--home-bottom) + 8px); }
+
+@media (max-height: 520px) {
+  .observatory.home-map[data-guiding='true'] .home-camera-control {
+    top: auto !important;
+    right: 8px !important;
+    bottom: calc(var(--home-footer) + 4px) !important;
+  }
+}

@@ -63,6 +63,8 @@ export function installRelationalLayout() {
       'data-view',
       'data-typing',
       'data-active',
+      'data-search-active',
+      'data-search-expanded',
     ],
   });
   document.addEventListener('change', schedule, true);

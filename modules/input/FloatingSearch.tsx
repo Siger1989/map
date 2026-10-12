@@ -44,12 +44,32 @@ export function FloatingSearch({
         const bottom = Math.min(viewport.top + viewport.height, footer.getBoundingClientRect().top);
         viewport.height = Math.max(0, bottom - viewport.top);
       }
+      let anchorBounds = anchor.getBoundingClientRect();
       let routeSegment: { top: number; height: number } | null = null;
       if (owner === 'route' && !desktop) {
         if (routePanelHost) {
           const panelRect = routePanelHost.getBoundingClientRect();
           const panelStyle = getComputedStyle(routePanelHost);
-          if (panelRect.width > 0 && panelRect.height > 0 && panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden') {
+          const routePanel = routePanelHost.querySelector<HTMLElement>('.route-panel');
+          const routeContent = routePanelHost.querySelector<HTMLElement>('.dock-content');
+          const expandedView = routePanel?.dataset.searchExpanded === 'true';
+          if (!expandedView && panelRect.width > 0 && panelRect.height > 0 && panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden') {
+            if (routePanel?.dataset.searchActive === 'true' && routeContent) {
+              const contentRect = routeContent.getBoundingClientRect();
+              if (contentRect.height > 0 && anchorBounds.height > 0) {
+                const delta = anchorBounds.height > contentRect.height
+                  ? anchorBounds.top - contentRect.top
+                  : anchorBounds.top < contentRect.top
+                    ? anchorBounds.top - contentRect.top
+                    : anchorBounds.bottom > contentRect.bottom
+                      ? anchorBounds.bottom - contentRect.bottom
+                      : 0;
+                if (Math.abs(delta) > 1) {
+                  routeContent.scrollTop += delta;
+                  anchorBounds = anchor.getBoundingClientRect();
+                }
+              }
+            }
             const safeTop = viewport.top + 4;
             const safeBottom = viewport.top + viewport.height - 4;
             const aboveHeight = Math.max(0, Math.min(safeBottom, panelRect.top) - safeTop);
@@ -65,7 +85,7 @@ export function FloatingSearch({
         }
       }
       const popupMaxHeight = Math.min(maxHeight, Math.max(0, viewport.height - 8));
-      const geometry = floatingGeometry(anchor.getBoundingClientRect(), viewport, popupMaxHeight);
+      const geometry = floatingGeometry(anchorBounds, viewport, popupMaxHeight);
       if ((owner === 'place' || owner === 'route') && !desktop) {
         const controlBounds = Array.from(document.querySelectorAll<HTMLElement>(
           '.observatory.home-map .home-map-actions, .observatory.home-map .home-position-dock',
