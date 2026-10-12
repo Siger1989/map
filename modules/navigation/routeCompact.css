@@ -29,6 +29,12 @@
   overscroll-behavior: contain;
   padding: 0 !important;
 }
+@media (max-height: 520px) {
+  .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
+    max-height: 172px !important;
+    overflow: auto !important;
+  }
+}
 .observatory #map-control-panel .route-panel .routing-mode-control {
   margin: 0 !important;
   gap: 3px;
@@ -92,6 +98,7 @@
 .observatory #map-control-panel .route-panel :is(.stop-icon, .stop-drag) { height: var(--route-row-height, 36px); }
 .observatory #map-control-panel .route-panel :is(.stop-remove, .stop-drag) { width: 36px; }
 .observatory #map-control-panel .route-panel .route-load { min-height: var(--route-load-height, 36px); }
+.observatory #map-control-panel .route-panel .route-search-inline-hint { margin: 1px 0 0; color: var(--route-muted,#5f7069); font-size: 10px; line-height: 1.2; }
 /* A completed route gives the map back; details occupy a bounded secondary area. */
 .observatory.home-map #map-control-panel:has(.route-summary) {
   top: auto !important;
@@ -112,6 +119,14 @@
   padding: 0 !important;
 }
 .route-summary { display: flex; flex-direction: column; gap: 2px; }
+.route-summary-preview { gap: 2px; }
+.route-preview-actions { display:flex; align-items:center; gap:3px; min-height:36px; padding-top:2px; }
+.route-preview-actions span { flex:1; min-width:0; color:var(--route-muted,#5f7069); font-size:10px; line-height:1.2; }
+.observatory #map-control-panel .route-preview-actions button { min-height:36px; padding:0 7px; border:1px solid var(--route-line,#9bb7bc); border-radius:var(--route-radius,4px); background:var(--route-field,#fff); color:var(--route-text,#163c4a); font-size:11px; white-space:nowrap; }
+.route-summary-preview .route-preview-actions { min-height:34px; padding-top:0; }
+.observatory #map-control-panel .route-summary-preview .route-preview-actions button { min-height:34px; }
+.route-summary-preview .route-preview-note { margin:0; color:var(--route-muted,#5f7069); font-size:10px; line-height:12px; white-space:nowrap; }
+.observatory #map-control-panel .route-summary-preview .route-summary-actions { padding-top:0; }
 .route-summary-endpoints {
   display: grid;
   grid-template-columns: minmax(0,1fr) auto;

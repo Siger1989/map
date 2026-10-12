@@ -28,6 +28,9 @@ export function FloatingSearch({
   const [style, setStyle] = useState<CSSProperties | null>(null);
   useLayoutEffect(() => {
     if (!anchor) return;
+    const routePanelHost = owner === 'route'
+      ? document.querySelector<HTMLElement>('.observatory.home-map #map-control-panel:has(.route-panel)')
+      : null;
     const update = () => {
       const viewport = searchViewport();
       const headerSearch = document.querySelector<HTMLElement>('.place-search');
@@ -41,27 +44,59 @@ export function FloatingSearch({
         const bottom = Math.min(viewport.top + viewport.height, footer.getBoundingClientRect().top);
         viewport.height = Math.max(0, bottom - viewport.top);
       }
-      const popupMaxHeight = expandToViewport
-        ? Math.min(maxHeight, Math.max(0, viewport.height - 8))
-        : maxHeight;
+      let routeSegment: { top: number; height: number } | null = null;
+      if (owner === 'route' && !desktop) {
+        if (routePanelHost) {
+          const panelRect = routePanelHost.getBoundingClientRect();
+          const panelStyle = getComputedStyle(routePanelHost);
+          if (panelRect.width > 0 && panelRect.height > 0 && panelStyle.display !== 'none' && panelStyle.visibility !== 'hidden') {
+            const safeTop = viewport.top + 4;
+            const safeBottom = viewport.top + viewport.height - 4;
+            const aboveHeight = Math.max(0, Math.min(safeBottom, panelRect.top) - safeTop);
+            const belowTop = Math.max(safeTop, panelRect.bottom);
+            const belowHeight = Math.max(0, safeBottom - belowTop);
+            const useAbove = aboveHeight >= Math.min(maxHeight, belowHeight) || aboveHeight >= belowHeight;
+            routeSegment = useAbove
+              ? { top: safeTop, height: aboveHeight }
+              : { top: belowTop, height: belowHeight };
+            viewport.top = routeSegment.top;
+            viewport.height = routeSegment.height;
+          }
+        }
+      }
+      const popupMaxHeight = Math.min(maxHeight, Math.max(0, viewport.height - 8));
       const geometry = floatingGeometry(anchor.getBoundingClientRect(), viewport, popupMaxHeight);
-      if (owner === 'place' && !desktop) {
+      if ((owner === 'place' || owner === 'route') && !desktop) {
         const controlBounds = Array.from(document.querySelectorAll<HTMLElement>(
           '.observatory.home-map .home-map-actions, .observatory.home-map .home-position-dock',
         ))
+          .filter(control => {
+            const bounds = control.getBoundingClientRect();
+            const style = getComputedStyle(control);
+            return bounds.width > 0 && bounds.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+          })
           .map(control => control.getBoundingClientRect())
-          .filter(bounds => bounds.width > 0 && bounds.height > 0);
-        if (controlBounds.length) {
-          const safeRight = Math.min(...controlBounds.map(bounds => bounds.left)) - 8;
-          geometry.left = Math.max(viewport.left + 4, Math.min(geometry.left, safeRight - geometry.width));
-        }
+          .filter(bounds => owner !== 'route' || (bounds.top < geometry.top + geometry.maxHeight && bounds.bottom > geometry.top));
+        const safeRight = controlBounds.length
+          ? Math.min(...controlBounds.map(bounds => bounds.left)) - 8
+          : viewport.left + viewport.width - 4;
+        geometry.width = Math.max(0, Math.min(300, viewport.width - 8, safeRight - viewport.left - 8));
+        geometry.left = Math.max(viewport.left + 4, Math.min(geometry.left, safeRight - geometry.width));
       }
       setStyle(expandToViewport
         ? { ...geometry, top: viewport.top + 4, maxHeight: popupMaxHeight }
         : geometry);
     };
     update();
-    return observeSearchViewport(update);
+    const stopObservingViewport = observeSearchViewport(update);
+    const panelObserver = routePanelHost && typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(update)
+      : null;
+    if (panelObserver && routePanelHost) panelObserver.observe(routePanelHost);
+    return () => {
+      stopObservingViewport();
+      panelObserver?.disconnect();
+    };
   }, [anchor, desktop, expandToViewport, maxHeight, owner]);
   const popupStyle = style && scrollable
     ? { ...style, height: style.maxHeight, display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' }

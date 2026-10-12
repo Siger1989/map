@@ -44,6 +44,10 @@ export function RoutePanel({
   onCancel,
   onImport,
   onRouteApplied,
+  previewMode,
+  onPreview,
+  onPreviewTopDown,
+  onExitPreview,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -58,10 +62,13 @@ export function RoutePanel({
   navigating: boolean;
   guidanceError: string;
   onShare: () => void;
-  onRally?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
   onRouteApplied?: (route: PlannedRoute) => void;
+  previewMode?: 'forward' | 'top' | null;
+  onPreview?: () => void;
+  onPreviewTopDown?: () => void;
+  onExitPreview?: () => void;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
@@ -215,9 +222,10 @@ export function RoutePanel({
   if (n.route && !editing && n.picking === null) return <RouteResultSummary
     start={n.start} end={n.end} mode={n.mode} loading={n.loading}
     planningError={n.error}
-    onModeChange={(mode) => n.setMode(mode, onRouteApplied)} onSwap={() => n.swap(onRouteApplied)}
-    route={n.route} onShow={() => onShow(n.route!)} onEdit={() => setEditing(true)}
+    onModeChange={(mode) => { onExitPreview?.(); n.setMode(mode, onRouteApplied); }} onSwap={() => { onExitPreview?.(); n.swap(onRouteApplied); }}
+    route={n.route} onShow={() => onShow(n.route!)} onEdit={() => { onExitPreview?.(); setEditing(true); }}
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
+    previewMode={previewMode} onPreview={onPreview} onPreviewTopDown={onPreviewTopDown} onExitPreview={onExitPreview}
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
   />;
   return (
@@ -248,6 +256,65 @@ export function RoutePanel({
           </button>
         ))}
       </div>
+
+      <div className="route-edit-actions">
+        <button
+          disabled={n.stops.length >= MAX_ROUTE_STOPS}
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.add();
+          }}
+        >
+          <Plus size={14} />
+          途经点
+        </button>
+        <button disabled={locating} onClick={onCurrentPosition}>
+          {locating ? '定位中…' : '我的位置'}
+        </button>
+        <button
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.swap(onRouteApplied);
+          }}
+        >
+          <ArrowDownUp size={13} />
+          反向
+        </button>
+        <button
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.clear();
+          }}
+        >
+          清除
+        </button>
+      </div>
+      <button
+        className="route-primary"
+        disabled={n.loading}
+        onClick={async () => {
+          const missing = n.stops.find((s) => !s.place);
+          setActive(missing?.id ?? null);
+          const route = await n.calculate(onRouteApplied);
+          if (missing) {
+            rows.current
+              ?.querySelector<HTMLInputElement>(
+                `[data-stop-id="${missing.id}"] input`,
+              )
+              ?.focus({ preventScroll: true });
+          }
+          if (route) onShow(route);
+        }}
+      >
+        {n.loading
+          ? '规划中…'
+          : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
+      </button>
+      {n.route && <div className="route-edit-actions"><button onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button></div>}
+      <RouteProviderNote />
+      <span className="route-sort-status" role="status">
+        {announcement}
+      </span>
       {n.picking === null && (
         <div className="route-next-step" role="status">
           {nextIndex >= 0
@@ -397,7 +464,12 @@ export function RoutePanel({
                   </button>
                 </div>
               )}
-              {focused && (
+              {focused && !s.place && s.query.trim().length < 2 && (
+                <p className="route-search-inline-hint" role="status">
+                  {s.query.trim().length === 0 ? '输入至少两个字搜索地点。' : '再输入一个字搜索地点。'}
+                </p>
+              )}
+              {focused && !s.place && s.query.trim().length >= 2 && (
                 <FloatingSearch
                   owner="route"
                   scrollable
@@ -441,7 +513,20 @@ export function RoutePanel({
                     />}
                     <div className="place-search-options">
                       <PlaceResultList places={placeSearch.places} query={s.query} near={near} route onSelect={(place) => {
-                        n.place(index, place); onPlace(place); setActive(null); setListExpanded(false); setFiltersOpen(false);
+                        const nextStop = index === 0 ? n.stops.at(-1) : undefined;
+                        const focusDestination = !!nextStop && nextStop.id !== s.id && !nextStop.place;
+                        n.place(index, place);
+                        onPlace(place);
+                        setActive(focusDestination ? nextStop?.id ?? null : null);
+                        setListExpanded(false);
+                        setFiltersOpen(false);
+                        if (focusDestination && nextStop) {
+                          requestAnimationFrame(() => {
+                            const input = rows.current?.querySelector<HTMLInputElement>(`[data-stop-id="${nextStop.id}"] input`);
+                            input?.focus({ preventScroll: true });
+                            input?.scrollIntoView({ block: 'nearest' });
+                          });
+                        }
                       }} />
                       <SearchFeedback
                         error={placeSearch.error} busy={placeSearch.busy} warnings={placeSearch.warnings}
@@ -453,7 +538,6 @@ export function RoutePanel({
                         }}
                         hasResults={placeSearch.places.length > 0}
                       />
-                      {s.query.trim().length < 2 && <p>输入完整地点名称开始搜索。</p>}
                     </div>
                     <SearchFooter loadedCount={placeSearch.places.length} hasMore={!!placeSearch.next} busy={placeSearch.busy} onLoadMore={placeSearch.loadMore} source={placeSearch.source} />
                   </dialog>
@@ -463,64 +547,7 @@ export function RoutePanel({
           );
         })}
       </div>
-      <span className="route-sort-status" role="status">
-        {announcement}
-      </span>
-      <div className="route-edit-actions">
-        <button
-          disabled={n.stops.length >= MAX_ROUTE_STOPS}
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.add();
-          }}
-        >
-          <Plus size={14} />
-          途经点
-        </button>
-        <button disabled={locating} onClick={onCurrentPosition}>
-          {locating ? '定位中…' : '我的位置'}
-        </button>
-        <button
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.swap(onRouteApplied);
-          }}
-        >
-          <ArrowDownUp size={13} />
-          反向
-        </button>
-        <button
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.clear();
-          }}
-        >
-          清除
-        </button>
-      </div>
-      <button
-        className="route-primary"
-        disabled={n.loading}
-        onClick={async () => {
-          const missing = n.stops.find((s) => !s.place);
-          setActive(missing?.id ?? null);
-          const route = await n.calculate(onRouteApplied);
-          if (missing) {
-            rows.current
-              ?.querySelector<HTMLInputElement>(
-                `[data-stop-id="${missing.id}"] input`,
-              )
-              ?.focus({ preventScroll: true });
-          }
-          if (route) onShow(route);
-        }}
-      >
-        {n.loading
-          ? '规划中…'
-          : `规划路线${n.stops.length > 2 ? ` · ${n.stops.length - 2} 个途经点` : ''}`}
-      </button>
-      {n.route && <div className="route-edit-actions"><button onClick={() => { setEditing(false); onShow(n.route!); }}>返回路线概览</button></div>}
-      <RouteProviderNote />
+
     </div>
   );
 }

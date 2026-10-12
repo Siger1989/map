@@ -318,6 +318,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 
 .observatory.home-map[data-panel='favorites'] :is(.home-position-dock,.home-map-actions) { display:none; }
 .observatory.home-map[data-panel='favorites'] .map-canvas .maplibregl-ctrl-scale { display:none; }
+.observatory.home-map[data-panel='route'] .control-dock { z-index:14; }
 .observatory.home-map[data-panel='favorites'] .control-dock { z-index:82; }
 /* Heading, center marker, and position follow remain reachable while locked. */
 .observatory.home-map[data-focus-locked=true] .home-position-dock { display:flex !important; right:8px; bottom:104px; }

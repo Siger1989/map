@@ -104,7 +104,7 @@ function Fixture() {
         <div className="qa-map" aria-hidden="true" />
         <GuidanceCard guidance={guidance} onStop={() => undefined} onFollow={() => undefined}
           onShow={() => undefined} following={false} onShare={() => undefined}
-          onRally={() => undefined}
+          onFirstPerson={() => undefined}
           telemetry={<NavigationTelemetry session={session} fix={null} />} />
         <button className="qa-rally-toggle" onClick={() => setShowRally((value) => !value)}>
           {showRally ? '隐藏底部海拔卡' : '显示底部海拔卡'}

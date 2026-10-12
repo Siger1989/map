@@ -1,4 +1,4 @@
-import { Navigation, X, RefreshCw, LocateFixed, BookOpen, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { Navigation, X, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, Map as MapIcon, PersonStanding } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
@@ -24,11 +24,14 @@ export function GuidanceCard({
   following,
   onShare,
   compact = true,
-  onRally,
+  onFirstPerson,
   onDisplay,
   telemetry,
   displayPanel,
   onCloseDisplay,
+  cameraMode = 'forward',
+  onCameraModeChange,
+  viewNotice,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
@@ -37,11 +40,14 @@ export function GuidanceCard({
   following: boolean;
   onShare: () => void;
   compact?: boolean;
-  onRally?: () => void;
+  onFirstPerson?: () => void;
   onDisplay?: () => void;
   telemetry?: ReactNode;
   displayPanel?: ReactNode;
   onCloseDisplay?: () => void;
+  cameraMode?: 'forward' | 'top';
+  onCameraModeChange?: (mode: 'forward' | 'top') => void;
+  viewNotice?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const s = g.session;
@@ -104,7 +110,7 @@ export function GuidanceCard({
             <span>{following ? `导航中 · ${TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}` : '继续导航'}</span>
           </button>}
           <div className="guidance-header-actions">
-            {onRally && <button aria-label="打开拉力路书" title="路书" onClick={onRally}><BookOpen size={17} /></button>}
+            {onFirstPerson && <button aria-label="第一人称模式" title="第一人称模式" onClick={onFirstPerson}><PersonStanding size={17} /></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
             <button onClick={onStop} aria-label="结束导航" title="结束导航">
               <X size={18} />
@@ -112,6 +118,7 @@ export function GuidanceCard({
           </div>
         </div>
         {compact && !expanded && !displayPanel && <span className="guidance-inline-status" role="status" title={compactStatus}>{statusLabel}</span>}
+        {viewNotice && !displayPanel && <span className="guidance-inline-status" role="status">{viewNotice}</span>}
       </header>
       {displayPanel ? <div className="guidance-display-content">{displayPanel}</div> : <>
       {(!compact || expanded) && telemetry}
@@ -167,6 +174,12 @@ export function GuidanceCard({
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
+            {onCameraModeChange && <button
+              className="guidance-camera-mode"
+              type="button"
+              aria-pressed={cameraMode === 'forward'}
+              onClick={() => onCameraModeChange(cameraMode === 'forward' ? 'top' : 'forward')}
+            >{cameraMode === 'forward' ? <><MapIcon size={15} />切换俯视</> : <><ArrowUp size={15} />切换前视</>}</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '继续导航'}

@@ -4,6 +4,7 @@ import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
 import { readLastView, saveLastView } from './lastView';
 import { CameraSync, focusPointCamera, followPositionCamera } from './cameraSync';
+import { navigationCameraOptions } from '../guidance/forwardCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
@@ -144,6 +145,8 @@ export type MapHandle = {
   ) => void;
   previewRoute: (coordinates: Coordinate | null) => void;
   followPosition: (coordinates: Coordinate, animate?: boolean) => boolean;
+  followNavigation: (coordinates: Coordinate, options: NavigationCameraRequest) => boolean;
+  previewNavigation: (coordinates: Coordinate, path: Coordinate[], forward: boolean, zoom?: number) => boolean;
   toCoordinate: (point: ScreenPoint) => Coordinate | null;
   stop: () => void;
   toScreen: (coordinate: Coordinate) => ScreenPoint | null;
@@ -152,6 +155,46 @@ export type MapHandle = {
   panZoomGesture: (previous: ScreenPoint[], next: ScreenPoint[]) => void;
   finishPanZoomGesture: () => void;
 };
+export type NavigationCameraRequest = {
+  forward: boolean;
+  heading?: number | null;
+  path?: Coordinate[];
+  progress?: number;
+  animate?: boolean;
+};
+
+function navigationUsableRect(map: Map) {
+  const container = map.getContainer();
+  const bounds = container.getBoundingClientRect();
+  const height = container.clientHeight || bounds.height;
+  const host = container.closest<HTMLElement>('.observatory.home-map');
+  let top = 0;
+  let bottom = height;
+  const centerX = bounds.left + bounds.width / 2;
+  const centerY = bounds.top + bounds.height / 2;
+  const blockers = Array.from(host?.querySelectorAll<HTMLElement>(
+    '.guidance-card, .home-bottom-nav, .navigation-elevation .rally-elevation, .route-weather-rail, .map-legends > *',
+  ) ?? []);
+  const routePanel = host?.querySelector<HTMLElement>('.control-dock.is-expanded #map-control-panel .route-panel');
+  const routePanelBounds = routePanel?.closest<HTMLElement>('#map-control-panel');
+  if (routePanelBounds) blockers.push(routePanelBounds);
+  for (const blocker of blockers) {
+    if (blocker.hidden || getComputedStyle(blocker).display === 'none' || getComputedStyle(blocker).visibility === 'hidden') continue;
+    const rect = blocker.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0 || centerX < rect.left || centerX > rect.right) continue;
+    const relativeTop = rect.top - bounds.top;
+    const relativeBottom = rect.bottom - bounds.top;
+    if (relativeTop <= height / 2 && relativeBottom > height / 2) {
+      const roomAbove = Math.max(0, relativeTop);
+      const roomBelow = Math.max(0, height - relativeBottom);
+      if (roomBelow >= roomAbove) top = Math.max(top, relativeBottom);
+      else bottom = Math.min(bottom, relativeTop);
+    }
+    else if (relativeBottom <= height / 2) top = Math.max(top, relativeBottom);
+    else if (relativeTop > height / 2) bottom = Math.min(bottom, relativeTop);
+  }
+  return { height, usableRect: { top: Math.min(top, height), bottom: Math.max(0, Math.min(bottom, height)) } };
+}
 export type TerrainMapProps = {
   initialCamera?: CameraSnapshot;
   persistCamera?: boolean;
@@ -712,6 +755,43 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           const m = mapRef.current;
           if (!m || !loaded.current) return false;
           followPositionCamera(m, center, animate);
+          return true;
+        },
+        followNavigation: (center, request) => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return false;
+          const { height, usableRect } = navigationUsableRect(m);
+          const camera = navigationCameraOptions({
+            center,
+            heading: request.heading ?? undefined,
+            path: request.path,
+            progress: request.progress,
+            height,
+            forward: request.forward,
+            animate: request.animate,
+            bearing: m.getBearing(),
+            usableRect,
+          });
+          m.easeTo(camera, { positionFollow: true });
+          return true;
+        },
+        previewNavigation: (center, path, forward, zoom) => {
+          const m = mapRef.current;
+          if (!m || !loaded.current) return false;
+          latest.current.onBrowse();
+          m.stop();
+          const { height, usableRect } = navigationUsableRect(m);
+          const camera = navigationCameraOptions({
+            center,
+            path,
+            progress: 0,
+            height,
+            forward,
+            animate: true,
+            bearing: m.getBearing(),
+            usableRect,
+          });
+          m.easeTo({ ...camera, ...(zoom === undefined ? {} : { zoom }) }, { routePreview: true });
           return true;
         },
         highlightOffline: (trip) => {

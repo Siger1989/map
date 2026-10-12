@@ -124,6 +124,149 @@
 .place-search-result-row small { margin-top: 2px; color: var(--muted, var(--ui-muted)); font-size: 10px; line-height: 1.25; }
 .place-search-result-row .place-result-meta { font-variant-numeric: tabular-nums; }
 .place-search-result-row .place-search-coarse { color: var(--warning, #8a6127); }
+.place-search-history,
+.place-selected-place {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+}
+.place-search-history {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.place-search-history-empty {
+  flex: 0 0 auto;
+  margin: 7px 9px;
+  color: var(--muted, var(--ui-muted));
+  font-size: 11px;
+  line-height: 1.4;
+}
+.place-search-history-heading {
+  display: flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px;
+  color: var(--muted, var(--ui-muted));
+  font-size: 10px;
+}
+.place-search-history-heading button,
+.place-search-history-remove {
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, var(--ui-accent));
+}
+.place-search-history ul {
+  min-width: 0;
+  margin: 0;
+  padding: 0 4px 4px;
+  list-style: none;
+}
+.place-search-history li {
+  display: flex;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  gap: 3px;
+  border-bottom: 1px solid var(--border, var(--ui-line));
+}
+.place-search-history-restore {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  overflow: hidden;
+  padding: 0 6px;
+  background: transparent;
+  color: var(--text, var(--ui-ink));
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.place-search-history-remove {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  color: var(--muted, var(--ui-muted));
+  font-size: 18px;
+}
+.floating-search[data-search-owner='place'] .place-search-results > .place-selected-place {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+.place-selected-place-content {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 9px 10px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.place-selected-place-content > strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.3;
+}
+.place-selected-place-content > p {
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+.place-selected-place-content > small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted, var(--ui-muted));
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.place-selected-place-content > .place-search-coarse { color: var(--warning, #8a6127); }
+.place-selected-place-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px 8px;
+  border-top: 1px solid var(--border, var(--ui-line));
+}
+.place-selected-place-actions > button {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--border, var(--ui-line));
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent, var(--ui-accent));
+  font-size: 11px;
+}
+.place-selected-place-actions > .place-search-go {
+  border-color: var(--accent, var(--ui-accent));
+  background: color-mix(in srgb, var(--accent, var(--ui-accent)) 12%, transparent);
+  font-size: 12px;
+}
+.place-selected-place-actions > .place-search-share { color: var(--accent, var(--ui-accent)); }
+.place-search-history button:is(:hover, :focus-visible),
+.place-selected-place-actions > button:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--accent, var(--ui-accent)) 10%, transparent);
+}
 .place-search-result-row .place-search-share {
   display: grid;
   width: 32px;
@@ -302,6 +445,34 @@
 .floating-search .place-search-result-row .place-result-meta {
   font-variant-numeric: tabular-nums;
 }
+.floating-search[data-search-owner='place'] .place-search-result-row .place-result-name-distance {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+}
+.floating-search[data-search-owner='place'] .place-search-result-row .place-result-name-distance > strong {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.floating-search[data-search-owner='place'] .place-search-result-row .place-result-distance {
+  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+  margin: 0;
+  color: var(--muted, var(--ui-muted));
+  font-size: 10px !important;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.floating-search[data-search-owner='place'] .place-search-result-row .place-search-address,
+.floating-search[data-search-owner='place'] .place-search-result-row .place-result-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .floating-search .place-search-result-row .place-result-meta.is-caution,
 .floating-search .place-search-result-row .place-search-coarse {
   color: var(--warning, #8a6127) !important;
@@ -355,20 +526,47 @@
   white-space: normal;
   text-overflow: clip;
 }
-.floating-search .place-result-expanded > .place-search-share {
+.floating-search .place-result-expanded .place-result-actions > .place-search-share {
   display: inline-flex;
   width: auto;
   min-width: 44px;
-  min-height: 36px !important;
+  min-height: 44px !important;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-top: 4px;
+  margin-top: 0;
   padding: 0 8px !important;
   border: 1px solid var(--border, var(--ui-line)) !important;
   border-radius: 4px !important;
   background: transparent !important;
   color: var(--accent, var(--ui-accent)) !important;
+}
+.place-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.floating-search .place-result-expanded .place-result-actions > .place-search-go,
+.floating-search .place-result-expanded .place-result-actions > .place-search-share {
+  margin-top: 0;
+}
+.floating-search .place-result-expanded .place-result-actions > .place-search-go {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: auto;
+  min-width: 44px;
+  min-height: 44px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px !important;
+  border: 1px solid var(--accent, var(--ui-accent)) !important;
+  border-radius: 4px !important;
+  background: color-mix(in srgb, var(--accent, var(--ui-accent)) 12%, transparent) !important;
+  color: var(--accent, var(--ui-accent)) !important;
+  font-size: 12px;
 }
 .place-search-footer {
   display: flex;
@@ -400,6 +598,40 @@
 .place-search-options-bar {
   flex: 0 0 40px;
   min-height: 40px;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(39px, auto) minmax(39px, auto);
+  align-items: end;
+  gap: 3px 6px;
+  align-content: start;
+  min-height: 90px;
+  flex: 0 0 auto;
+  padding: 3px 5px 4px;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar > label:first-child {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar > label:first-child select {
+  max-width: none;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar > .place-search-city {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar > .place-search-national {
+  grid-column: 2;
+  align-self: end;
+  min-height: 28px;
+  font-size: 11px;
+}
+.floating-search[data-search-owner='place'] .place-search-options-bar input:not([type='checkbox']) {
+  min-width: 120px;
+  font-size: 16px !important;
 }
 .observatory.home-map .home-topbar .place-search input.place-search-input {
   box-sizing: border-box;

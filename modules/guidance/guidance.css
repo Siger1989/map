@@ -212,6 +212,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .observatory.home-map .guidance-content dd { font-size: 13px; }
 .observatory.home-map .guidance-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .observatory.home-map .guidance-actions button { min-width: 0; min-height: 36px; padding: 2px 6px; font-size: 11px; border: 1px solid var(--ui-line, var(--border)); border-radius: var(--ui-radius-control, 12px); color: var(--ui-button-ink, var(--text)); background: var(--ui-raised, var(--surface)); }
+.observatory.home-map .guidance-actions .guidance-camera-mode { min-height:44px; display:inline-flex; align-items:center; justify-content:center; gap:4px; }
 .observatory.home-map[data-guiding='true'] { --normal-nav-rail-top: calc(var(--home-top) + var(--home-header-height) + 4px + var(--normal-nav-card-height, 64px) + 8px); }
 .observatory.home-map[data-guiding='true'] .route-weather-rail { top: var(--normal-nav-rail-top) !important; bottom:calc(var(--home-footer) + 206px); display:flex; flex-direction:column; }
 .observatory.home-map[data-guiding='true'] .route-weather-rail > .rail-colors { flex:1; height:auto; min-height:40px; }

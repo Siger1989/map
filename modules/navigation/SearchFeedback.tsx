@@ -21,6 +21,8 @@ export function PlaceResultList({
   places,
   near,
   onSelect,
+  onExpandDetail,
+  onNavigate,
   onShare,
   route = false,
   query = '',
@@ -28,6 +30,8 @@ export function PlaceResultList({
   places: RoutePlace[];
   near: Coordinate | null;
   onSelect: (place: RoutePlace) => void;
+  onExpandDetail?: () => void;
+  onNavigate?: (place: RoutePlace) => void;
   onShare?: (place: RoutePlace) => void;
   route?: boolean;
   query?: string;
@@ -47,13 +51,16 @@ export function PlaceResultList({
         <button type="button" data-place-result onClick={() => onSelect(place)}>
           <MapPin size={15} aria-hidden="true" />
           <span>
-            <strong>{place.name}</strong>
+            <span className={route ? undefined : 'place-result-name-distance'}>
+              <strong>{place.name}</strong>
+              {!route && near && <span className="place-result-distance">距地图中心 {formatDistance(metresBetween(near, place.coordinates))}</span>}
+            </span>
             <small className="place-search-address">{place.detail || '未提供地址信息'}</small>
             <small className={`place-result-meta${coarse || unknownPrecision ? ' is-caution' : ''}`}>
               {precisionLabels[place.precision ?? 'unknown'] ?? '精度未知'}
               {coarse ? ' · 需在地图核对' : unknownPrecision ? ' · 位置待确认' : ''}
               {' · '}{placeSource(place)}
-              {near ? ` · 距地图中心 ${formatDistance(metresBetween(near, place.coordinates))}` : ''}
+              {route && near && <> · 距地图中心 {formatDistance(metresBetween(near, place.coordinates))}</>}
             </small>
           </span>
         </button>
@@ -63,7 +70,10 @@ export function PlaceResultList({
           aria-label={`${expanded ? '收起' : '展开'}地点详情：${place.name}`}
           aria-expanded={expanded}
           aria-controls={expanded ? detailId : undefined}
-          onClick={() => setExpandedKey(expanded ? null : key)}
+          onClick={() => {
+            if (!expanded) onExpandDetail?.();
+            setExpandedKey(expanded ? null : key);
+          }}
         >
           {expanded ? <ChevronUp size={15} aria-hidden="true" /> : <ChevronDown size={15} aria-hidden="true" />}
           <span>详情</span>
@@ -74,12 +84,78 @@ export function PlaceResultList({
           <small>{precisionLabels[place.precision ?? 'unknown'] ?? '精度未知'} · {placeSource(place)} · {place.coordinateSystem ?? '坐标系未标注'}</small>
           {coarse && <small className="place-search-coarse">街道或行政区参考位置，请在地图核对，勿作精确门牌定位。</small>}
           {unknownPrecision && <small className="place-search-coarse">位置精度未知，请在地图上确认。</small>}
-          {!route && onShare && <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => onShare(place)}>
-            <Share2 size={15} aria-hidden="true" />分享地点
-          </button>}
+          {!route && (onNavigate || onShare) && <div className="place-result-actions">
+            {onNavigate && <button className="place-search-go" type="button" aria-label={`去这里：${place.name}`} onClick={() => onNavigate(place)}>
+              <MapPin size={15} aria-hidden="true" />去这里
+            </button>}
+            {onShare && <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => onShare(place)}>
+              <Share2 size={15} aria-hidden="true" />分享地点
+            </button>}
+          </div>}
         </div>}
       </div>;
     })}
+  </div>;
+}
+
+export function SelectedPlaceCard({
+  place,
+  onNavigate,
+  onShare,
+  onReturn,
+}: {
+  place: RoutePlace;
+  onNavigate?: (place: RoutePlace) => void;
+  onShare?: (place: RoutePlace) => void;
+  onReturn: () => void;
+}) {
+  const coarse = place.precision === 'street' || place.precision === 'locality' || place.precision === 'region';
+  const unknownPrecision = place.precision == null || place.precision === 'unknown';
+  return <section className="place-selected-place" aria-label="已选地点">
+    <div className="place-selected-place-content">
+      <strong>{place.name}</strong>
+      <p>{place.detail || '未提供完整地址信息'}</p>
+      <small>{precisionLabels[place.precision ?? 'unknown'] ?? '精度未知'} · {placeSource(place)} · {place.coordinateSystem ?? '坐标系未标注'}</small>
+      {coarse && <small className="place-search-coarse">街道或行政区参考位置，请在地图核对，勿作精确门牌定位。</small>}
+      {unknownPrecision && <small className="place-search-coarse">位置精度未知，请在地图上确认。</small>}
+    </div>
+    <div className="place-selected-place-actions">
+      {onNavigate && <button className="place-search-go" type="button" aria-label={`去这里：${place.name}`} onClick={() => onNavigate(place)}>
+        <MapPin size={15} aria-hidden="true" />去这里
+      </button>}
+      {onShare && <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => onShare(place)}>
+        <Share2 size={15} aria-hidden="true" />分享地点
+      </button>}
+      <button className="place-selected-place-return" type="button" aria-label="重新搜索/返回结果" onClick={onReturn}>
+        <ChevronDown size={15} aria-hidden="true" />重新搜索 / 返回结果
+      </button>
+    </div>
+  </section>;
+}
+
+export function SearchHistoryList({
+  entries,
+  onRestore,
+  onRemove,
+  onClear,
+}: {
+  entries: string[];
+  onRestore: (query: string) => void;
+  onRemove: (query: string) => void;
+  onClear: () => void;
+}) {
+  if (!entries.length) return <p className="place-search-history-empty">输入地点名称，搜索记录会显示在这里。</p>;
+  return <div className="place-search-history" aria-label="最近搜索">
+    <div className="place-search-history-heading">
+      <small>最近搜索</small>
+      <button type="button" aria-label="清空搜索记录" onClick={onClear}>清空</button>
+    </div>
+    <ul>
+      {entries.map((query) => <li key={query}>
+        <button className="place-search-history-restore" type="button" aria-label={`重新搜索：${query}`} onClick={() => onRestore(query)}>{query}</button>
+        <button className="place-search-history-remove" type="button" aria-label={`删除搜索记录：${query}`} onClick={() => onRemove(query)}>×</button>
+      </li>)}
+    </ul>
   </div>;
 }
 

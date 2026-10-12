@@ -3,7 +3,7 @@ import { RouteProviderNote } from './RouteProviderNote';
 import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 
-export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel }: {
+export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   start: { name: string } | null; end: { name: string } | null;
   mode: PlannedRoute['mode']; loading: boolean;
@@ -12,10 +12,26 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string;
   onEditPoints?: () => void; onCancel?: () => void;
+  previewMode?: 'forward' | 'top' | null;
+  onPreview?: () => void;
+  onPreviewTopDown?: () => void;
+  onExitPreview?: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [detailsMounted, setDetailsMounted] = useState(false);
-  return <section className="route-panel route-summary" aria-label="路线摘要" aria-busy={loading}>
+  return <section className={`route-panel route-summary${previewMode ? ' route-summary-preview' : ''}`} aria-label="路线摘要" aria-busy={loading}>
+    {previewMode ? <>
+      <nav className="route-preview-actions" aria-label="路线前视预览">
+        <span role="status">路线预览（{previewMode === 'forward' ? '第一人称' : '俯视'}）· 非定位导航</span>
+        {onPreviewTopDown && <button type="button" onClick={onPreviewTopDown}>{previewMode === 'forward' ? '俯视' : '第一人称'}</button>}
+        {onExitPreview && <button type="button" onClick={onExitPreview}>退出预览</button>}
+      </nav>
+      {!!route.accessDistance && <p className="route-preview-note">虚线接入约 {Math.round(route.accessDistance)} 米，时间按步行估算</p>}
+      <nav className="route-summary-actions" aria-label="路线操作">
+        <button className="is-primary" onClick={onStartNavigation} disabled={navigating || loading}>{navigating ? '导航中' : loading ? '规划中…' : '开始导航'}</button>
+      </nav>
+      {guidanceError && !navigating && <p className="route-error" role="alert">{guidanceError}</p>}
+    </> : <>
     {detailsMounted && <div className="route-summary-detail" id="route-summary-detail" hidden={!detailsOpen}>
       <RouteElevationSummary coordinates={route.coordinates} distance={route.distance} duration={route.duration} />
       <RouteProviderNote />
@@ -25,6 +41,9 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
       <button type="button" aria-label="交换起点和终点" onClick={onSwap}>↕ 交换</button>
       <div><b className="route-endpoint-end">终点</b><span>{end?.name ?? '终点'}</span></div>
     </div>
+    {onPreview && <nav className="route-preview-actions" aria-label="路线前视预览">
+      <button type="button" onClick={onPreview}>第一人称预览</button>
+    </nav>}
     <div className="route-summary-metrics">
       <strong>{formatDistance(route.distance)}</strong><span>{formatDuration(route.duration)}</span>
       <button onClick={() => { setDetailsOpen(false); onShow(); }}>看全程</button>
@@ -52,5 +71,6 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
     </nav>
     {(planningError || guidanceError) && !navigating && <p className="route-error" role="alert">{planningError || guidanceError}</p>}
     {saveMessage && <p className="route-note" role="status">{saveMessage}</p>}
+    </>}
   </section>;
 }
