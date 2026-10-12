@@ -1,0 +1,356 @@
+{
+  "date": "2026-10-12",
+  "baseCommit": "1947a6f0efa641928267cb85e01fa1f0f483ec16",
+  "branch": "codex/place-address-search-20261011",
+  "keyCheck": {
+    "originalPresent": true,
+    "isolatedPresent": true,
+    "configEqual": true
+  },
+  "baseline": {
+    "camera": [
+      104.166,
+      30.615
+    ],
+    "requests": [
+      {
+        "request": {
+          "keyWord": "东原晴天见",
+          "level": 12,
+          "mapBound": "73,3,136,54",
+          "queryType": 7,
+          "start": 0,
+          "count": 300,
+          "show": 2
+        },
+        "http": 200,
+        "count": 30,
+        "status": {
+          "cndesc": "服务正常",
+          "infocode": 1000
+        },
+        "community": [
+          {
+            "name": "东原晴天见",
+            "province": "四川省",
+            "city": "成都市",
+            "county": "龙泉驿区"
+          },
+          {
+            "name": "东原晴天见",
+            "province": "湖北省",
+            "city": "武汉市",
+            "county": "洪山区"
+          },
+          {
+            "name": "东原晴天见",
+            "province": "重庆市",
+            "county": "渝北区"
+          },
+          {
+            "name": "东原晴天见",
+            "province": "河南省",
+            "city": "郑州市",
+            "county": "二七区"
+          }
+        ]
+      }
+    ],
+    "firstResult": "菜鸟驿站成都东原晴天见店\n四川省 · 成都市 · 龙泉驿区 · 白鹤西二路41\n距中心 26 米"
+  },
+  "live": {
+    "kind": "actual app, public camera coordinates, no GPS simulation",
+    "queries": [
+      {
+        "provider": "tianditu",
+        "endpoint": "/v2/search",
+        "request": {
+          "keyWord": "青城山景区",
+          "level": 12,
+          "mapBound": "103.5850,30.1150,104.7470,31.1150",
+          "queryType": 2,
+          "start": 0,
+          "count": 20,
+          "show": 2
+        },
+        "http": 200,
+        "status": {
+          "cndesc": "服务正常",
+          "infocode": 1000
+        },
+        "count": 6,
+        "resultType": 1,
+        "names": [
+          "都江堰市国际旅游城市建设管理委员会办公室青城山景区前山管理处",
+          "都江堰市青城山景区医院",
+          "都江堰市公安局青城山景区派出所"
+        ]
+      },
+      {
+        "provider": "tianditu",
+        "endpoint": "/v2/search",
+        "request": {
+          "keyWord": "东原晴天见",
+          "level": 12,
+          "mapBound": "103.5850,30.1150,104.7470,31.1150",
+          "queryType": 2,
+          "start": 0,
+          "count": 20,
+          "show": 2
+        },
+        "http": 200,
+        "status": {
+          "cndesc": "服务正常",
+          "infocode": 1000
+        },
+        "count": 11,
+        "resultType": 1,
+        "names": [
+          "东原晴天见"
+        ]
+      },
+      {
+        "provider": "tianditu",
+        "endpoint": "/v2/search",
+        "request": {
+          "keyWord": "东原晴天见",
+          "level": 12,
+          "mapBound": "103.5848,30.1140,104.7467,31.1140",
+          "queryType": 2,
+          "start": 0,
+          "count": 20,
+          "show": 2
+        },
+        "http": 200,
+        "status": {
+          "cndesc": "服务正常",
+          "infocode": 1000
+        },
+        "count": 11,
+        "resultType": 1,
+        "names": [
+          "东原晴天见"
+        ]
+      },
+      {
+        "provider": "tianditu",
+        "endpoint": "/geocoder",
+        "request": {
+          "keyWord": "四川省成都市武侯区国学巷37号"
+        },
+        "http": 200,
+        "status": "0",
+        "geocodeLevel": "门址"
+      }
+    ],
+    "tiles": {
+      "t1.tianditu.gov.cn HTTP 200": 16,
+      "t0.tianditu.gov.cn HTTP 200": 18,
+      "t3.tianditu.gov.cn HTTP 200": 16,
+      "t2.tianditu.gov.cn HTTP 200": 18
+    },
+    "errors": []
+  },
+  "finalRoute": {
+    "kind": "final real public community query, actual TDT base, no GPS simulation",
+    "layouts": [
+      {
+        "label": "390",
+        "width": 390,
+        "height": 857,
+        "x": 48,
+        "y": 278,
+        "w": 240,
+        "h": 200,
+        "titleInset": 11,
+        "closeInset": 9,
+        "headerBottom": 46,
+        "footerTop": 807,
+        "clear": true,
+        "scrollClient": 93,
+        "scrollContent": 691,
+        "overflow": false,
+        "inputFonts": [
+          "16px",
+          "16px"
+        ]
+      },
+      {
+        "label": "360",
+        "width": 360,
+        "height": 780,
+        "x": 48,
+        "y": 278,
+        "w": 240,
+        "h": 200,
+        "titleInset": 11,
+        "closeInset": 9,
+        "headerBottom": 46,
+        "footerTop": 730,
+        "clear": true,
+        "scrollClient": 93,
+        "scrollContent": 691,
+        "overflow": false,
+        "inputFonts": [
+          "16px",
+          "16px"
+        ]
+      },
+      {
+        "label": "short",
+        "width": 390,
+        "height": 480,
+        "x": 48,
+        "y": 50,
+        "w": 240,
+        "h": 188,
+        "titleInset": 11,
+        "closeInset": 9,
+        "headerBottom": 46,
+        "footerTop": 430,
+        "clear": true,
+        "scrollClient": 81,
+        "scrollContent": 691,
+        "overflow": false,
+        "inputFonts": [
+          "16px",
+          "16px"
+        ]
+      }
+    ],
+    "firstResult": "东原晴天见\n四川省 · 成都市 · 龙泉驿区 · 洪河中路600\n地点 · 天地图 · 距中心 109 米"
+  },
+  "mockUI": {
+    "kind": "mock provider responses, real browser UI, no live search requests",
+    "total": 21,
+    "passed": 21,
+    "checks": [
+      {
+        "name": "空结果测试",
+        "pass": true
+      },
+      {
+        "name": "鉴权测试",
+        "pass": true
+      },
+      {
+        "name": "限流测试",
+        "pass": true
+      },
+      {
+        "name": "参数测试",
+        "pass": true
+      },
+      {
+        "name": "网络测试",
+        "pass": true
+      },
+      {
+        "name": "stale response ignored",
+        "pass": true
+      },
+      {
+        "name": "close cancels and stays closed",
+        "pass": true
+      },
+      {
+        "name": "IME defers requests",
+        "pass": true
+      },
+      {
+        "name": "IME end resumes",
+        "pass": true
+      },
+      {
+        "name": "more results reachable and appended",
+        "pass": true
+      },
+      {
+        "name": "suggestion changes query",
+        "pass": true
+      },
+      {
+        "name": "explicit Photon preserves unnamed house",
+        "pass": true
+      },
+      {
+        "name": "map zoom adds no search request",
+        "pass": true
+      },
+      {
+        "name": "city is request scoped",
+        "pass": true
+      },
+      {
+        "name": "nationwide removes city filter",
+        "pass": true
+      },
+      {
+        "name": "coarse geocoder has verification prompt",
+        "pass": true
+      },
+      {
+        "name": "route source is explicit",
+        "pass": true
+      },
+      {
+        "name": "short route avoids bottom navigation",
+        "pass": true,
+        "bounds": {
+          "popupTop": 50,
+          "popupBottom": 238,
+          "footerTop": 430,
+          "scrollClient": 54,
+          "scrollContent": 54,
+          "overflow": false
+        }
+      },
+      {
+        "name": "short route avoids header",
+        "pass": true
+      },
+      {
+        "name": "route keyboard reaches result",
+        "pass": true
+      },
+      {
+        "name": "route Escape closes popup",
+        "pass": true
+      }
+    ]
+  },
+  "targetedTests": {
+    "total": 39,
+    "passed": 39
+  },
+  "lint": {
+    "searchCode": "PASS",
+    "routePanelWholeFile": "FAIL: 10 pre-existing diagnostics"
+  },
+  "sourceHashes": {
+    "modules/controls/PlaceSearch.tsx": "b2a93576a0f7935206c89c3eb60d7c9d4ce5b7ddfb74301a04e050b2b8dc05f2",
+    "modules/input/FloatingSearch.tsx": "ea1200972ad94de46d20240e49c408c36e07d620536c348fc003e858772e38d7",
+    "modules/input/floatingGeometry.ts": "bd5e110fe63404f4903fd14000849207501c6089666e139c3b9869ee3356abe4",
+    "modules/navigation/RoutePanel.tsx": "b9d90504b14a7b2071580c8c3a9409e65a32b9f357ccb7760614a349149c3855",
+    "modules/navigation/provider.ts": "414ea6ffb4591ef625732a5d23f3c1f3f284e42dba60b4164bec104455f30e31",
+    "modules/navigation/types.ts": "3203e19c6b5c103fc1bd731c9e34c3631fc4d6fe86f591ac09f6270ad2bc1ba3",
+    "modules/navigation/tiandituSearch.ts": "c3319e680ef548b9126066e01799db7fc40f022338bdfd20f71e99cbd8449248",
+    "modules/navigation/tiandituSuggestions.ts": "b3e9b14e6c757d1d99b4ee2ffe7281091d1f413d364687e15404296f4109549a",
+    "modules/navigation/placeSearch.ts": "6eafda169e66a478cc5a6a3dcd41f106beaccc64f00a9da4ca630c6dd82332b5",
+    "modules/navigation/placeSearchTransport.ts": "8c81c372d1add5bc3781033b83022b837a2dec6a8c1a9da9c2fd3a52c5f102ba",
+    "modules/navigation/placeSearchHelpers.ts": "17cc3902c1076660cbb99871aeecbfe3655b98bcc95ddf34ca195e067b166594",
+    "modules/navigation/photonSearch.ts": "dff251c279b37b95d99f65dd37ee2e6bcafd77f06933ca93c7d282f15a7c1659",
+    "modules/navigation/tiandituGeocoder.ts": "703a51929aabd56fd4872d0980b407751aaee6b9aac633a4b55f02846c3a838e",
+    "modules/navigation/usePlaceSearch.ts": "0653d5883a59f5354f44a5291a8fa9b5f9f1831d7741367510cabd7e08ac63bc",
+    "modules/navigation/SearchOptions.tsx": "5537cce49fdc235592b3d5ac3a25074fb509200ac65267e078f03b28c2eee5e7",
+    "modules/navigation/SearchFeedback.tsx": "7aeb43195ce86f3dd76cd1d0578a7b618dd24170a16d08e9d7803c92a75fc90c",
+    "modules/navigation/searchResultOrder.ts": "d5b1483241f8337de6a945a3f23caa9caff17a65a0d1a65d05924a6f0dd6c382",
+    "modules/navigation/search.css": "d7af53087287a370efc8b34789f56e739bca52f27abc4c1f53665ce8f9dfe7df",
+    "tests/tianditu-search.test.mjs": "44a8c3d5b2ae2543e8c3ac8aa9ba3dd0b5ac53c65bba0297f8e4f0df2abdc92f",
+    "tests/search-viewport.test.mjs": "6b8c3dacb3349f5422cf2c56991fbabc86868c3f54e93c22abcb162774bb7593",
+    "tests/place-search-pipeline.test.mjs": "d56085f32568b3bd1d233261b2a259f93fa54c98bcbe4b1ffa6f4129804567e7",
+    "tests/search-hook.test.mjs": "d488a5e3e1ec65d75902da4dbb72b9681bbcb9123cc85c74bd5430fab88ed905",
+    "tests/search-result-order.test.mjs": "c68e2b0c6de82812314110832cf9629d5e5312f090d16a40916967dc3d57b6d6"
+  },
+  "screenshotPath": "artifacts/screenshots/search-20261011/optimized-search-390.png"
+}

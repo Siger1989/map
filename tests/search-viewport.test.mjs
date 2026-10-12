@@ -14,3 +14,10 @@ test('suggestions remain above keyboard, including scrolled visual viewport and 
     }
   }
 });
+
+test('short-screen results use the full space above an input and avoid the reserved bottom navigation', () => {
+  const box = floatingGeometry({left:48,width:180,top:242,bottom:274}, {top:0,left:0,width:390,height:426});
+  assert.equal(box.maxHeight,200);
+  assert.ok(box.top+box.maxHeight<=242);
+  assert.ok(box.top+box.maxHeight<=422);
+});

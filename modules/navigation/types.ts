@@ -4,6 +4,9 @@ export type RoutePlace = {
   name: string;
   coordinates: Coordinate;
   detail?: string;
+  source?: 'tianditu' | 'photon' | 'offline';
+  precision?: 'address' | 'poi' | 'street' | 'locality' | 'region' | 'unknown';
+  coordinateSystem?: 'WGS84' | 'CGCS2000';
 };
 export type RouteStep = {
   kind?: 'road' | 'access';

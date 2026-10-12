@@ -1,3 +1,5 @@
+> **2026-10-12 搜索分支同步补充：** 本轮下载目标为 `codex/place-address-search-20261011` 的主agent核对后的精确SHA，按 [W697接续](search-github-handoff-20261012.md) 建独立checkout，保留已有工作区、用户数据和本机私有配置。用户本轮明确禁止上传密钥、env与签名，因此本分支取消了 `.env.local`/测试jks跟踪；下文2026-09-24凭据同步条目仅为存量历史，本轮不继续采用。源码下载不更新APK/EXE，不改变认证权限。
+
 # 换电脑继续开发
 
 > 2026-10-08：最新完整接续以 `docs/HANDOFF-20261008.txt` 和根 `CURRENT_STATE.md` 为准。手机行业工具已打入0.2.110-test/code117；原始地质资料、后加图纸/截图、PC绘图源码及成果随本次同步。PC程序从 `research/geology/README.txt` 启动，参考文件与归档哈希清单在docs。继续使用 `codex/rollback-ui-0235-20260921`，未合入main；不要把下方早期版本和历史私密配置同步记录当作当前公开APK发布许可。

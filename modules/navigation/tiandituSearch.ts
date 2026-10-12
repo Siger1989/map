@@ -2,10 +2,31 @@ import { coordinate, type RoutePlace } from './types.ts';
 
 const SEARCH_ENDPOINT = 'https://api.tianditu.gov.cn/v2/search';
 const NATIONAL_MAP_BOUND = '73,3,136,54';
-const MAX_TDT_SEARCH_RESULTS = 300;
+const MAX_TDT_SEARCH_RESULTS = 20;
 
 /** Build a nationwide place-name request with detailed locality fields. */
-export function buildTiandituSearchURL(query: string, key: string): string {
+export type TiandituSearchRequest = {
+  start?: number;
+  count?: number;
+  queryType?: number;
+  mapBound?: string;
+  specify?: string;
+};
+
+export class TiandituResponseError extends Error {
+  readonly category: 'service' | 'format';
+  constructor(category: 'service' | 'format', message: string) {
+    super(message);
+    this.name = 'TiandituResponseError';
+    this.category = category;
+  }
+}
+
+export function buildTiandituSearchURL(
+  query: string,
+  key: string,
+  request: TiandituSearchRequest = {},
+): string {
   const keyword = typeof query === 'string' ? query.trim().slice(0, 120) : '';
   if (!keyword) throw new Error('请输入搜索内容。');
   if (typeof key !== 'string' || !key.trim())
@@ -17,10 +38,11 @@ export function buildTiandituSearchURL(query: string, key: string): string {
     JSON.stringify({
       keyWord: keyword,
       level: 12,
-      mapBound: NATIONAL_MAP_BOUND,
-      queryType: 7,
-      start: 0,
-      count: MAX_TDT_SEARCH_RESULTS,
+      ...(request.mapBound === undefined ? { mapBound: NATIONAL_MAP_BOUND } : { mapBound: request.mapBound }),
+      queryType: request.queryType ?? 1,
+      start: Math.max(0, Math.min(300, Math.floor(request.start ?? 0))),
+      count: Math.max(1, Math.min(300, Math.floor(request.count ?? MAX_TDT_SEARCH_RESULTS))),
+      ...(request.specify ? { specify: request.specify } : {}),
       show: 2,
     }),
   );
@@ -71,18 +93,8 @@ export function normalizeTiandituPlaces(data: unknown): RoutePlace[] {
   if (code === 3001) return [];
   if (code !== 1000) throw new Error('天地图搜索不可用，请检查服务授权或稍后重试。');
 
-  // Search can return a single explicit administrative centre instead of POIs.
-  // Do not interpret statistics, area arrays/bounds, suggestions, or routes as places.
-  if (Number(response.resultType) === 3) {
-    if (!response.area || typeof response.area !== 'object' || Array.isArray(response.area))
-      return [];
-    const area = response.area as TiandituPoi;
-    const name = typeof area.name === 'string' ? area.name.trim() : '';
-    const coordinates = parseLonLat(area.lonlat);
-    return name && coordinates
-      ? [{ name: name.slice(0, 160), coordinates, detail: '行政区中心' }]
-      : [];
-  }
+  // Administrative centres are surfaced as suggestions, never as precise place pins.
+  if (Number(response.resultType) === 3) return [];
   if (response.resultType !== undefined && Number(response.resultType) !== 1) return [];
   if (response.pois === undefined || response.pois === null) return [];
   if (!Array.isArray(response.pois)) throw new Error('天地图搜索响应格式异常。');
@@ -112,8 +124,12 @@ export function normalizeTiandituPlaces(data: unknown): RoutePlace[] {
       name: name.slice(0, 160),
       coordinates,
       ...(detail ? { detail: detail.slice(0, 240) } : {}),
+      source: 'tianditu',
+      precision: 'poi',
     });
     if (places.length === MAX_TDT_SEARCH_RESULTS) break;
   }
   return places;
 }
+
+export { normalizeTiandituSuggestions } from './tiandituSuggestions.ts';

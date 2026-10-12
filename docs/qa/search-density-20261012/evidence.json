@@ -1,0 +1,2225 @@
+{
+  "date": "2026-10-12",
+  "baseCommit": "1947a6f0efa641928267cb85e01fa1f0f483ec16",
+  "branch": "codex/place-address-search-20261011",
+  "keyCheck": {
+    "originalPresent": true,
+    "isolatedPresent": true,
+    "configEqual": true
+  },
+  "requestBudget": "20 results per page; expansion/filter visibility adds no requests",
+  "live": {
+    "kind": "Actual TianDiTu API, existing private preview, public community, fresh browser storage",
+    "requests": [
+      {
+        "request": {
+          "keyWord": "东原晴天见",
+          "level": 12,
+          "mapBound": "103.5850,30.1150,104.7470,31.1150",
+          "queryType": 2,
+          "start": 0,
+          "count": 20,
+          "show": 2
+        },
+        "status": 200,
+        "count": 11,
+        "returned": 11
+      }
+    ],
+    "tiles": [
+      {
+        "status": 200,
+        "kind": "vec"
+      },
+      {
+        "status": 200,
+        "kind": "vec"
+      },
+      {
+        "status": 200,
+        "kind": "vec"
+      },
+      {
+        "status": 200,
+        "kind": "vec"
+      }
+    ],
+    "results": [
+      {
+        "name": "place-390x857-compact",
+        "outer": {
+          "x": 84,
+          "y": 50,
+          "width": 240,
+          "height": 205,
+          "minHeight": "0px",
+          "maxHeight": "205px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 89,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 89,
+          "y": 222,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 89,
+          "y": 83,
+          "width": 230,
+          "height": 139,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 3,
+        "visibleIncludingPartial": 4,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "place-390x857-expanded",
+        "outer": {
+          "x": 84,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 89,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 89,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 89,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "place-360x780-compact",
+        "outer": {
+          "x": 54,
+          "y": 50,
+          "width": 240,
+          "height": 205,
+          "minHeight": "0px",
+          "maxHeight": "205px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 59,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 59,
+          "y": 222,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 59,
+          "y": 83,
+          "width": 230,
+          "height": 139,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 3,
+        "visibleIncludingPartial": 4,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 158,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "place-360x780-expanded",
+        "outer": {
+          "x": 54,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 59,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 59,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 59,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 158,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "place-390x480-compact",
+        "outer": {
+          "x": 38,
+          "y": 50,
+          "width": 240,
+          "height": 205,
+          "minHeight": "0px",
+          "maxHeight": "205px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 43,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 43,
+          "y": 222,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 43,
+          "y": 83,
+          "width": 230,
+          "height": 139,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 3,
+        "visibleIncludingPartial": 4,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "place-390x480-expanded",
+        "outer": {
+          "x": 38,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 43,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 43,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 43,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "地点搜索 · 已载 11 条"
+      },
+      {
+        "name": "route-390x857-compact",
+        "outer": {
+          "x": 48,
+          "y": 278,
+          "width": 240,
+          "height": 205,
+          "minHeight": "0px",
+          "maxHeight": "205px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 279,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 450,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 311,
+          "width": 230,
+          "height": 139,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 3,
+        "visibleIncludingPartial": 4,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      },
+      {
+        "name": "route-390x857-expanded",
+        "outer": {
+          "x": 48,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      },
+      {
+        "name": "route-360x780-compact",
+        "outer": {
+          "x": 48,
+          "y": 278,
+          "width": 240,
+          "height": 205,
+          "minHeight": "0px",
+          "maxHeight": "205px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 279,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 450,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 311,
+          "width": 230,
+          "height": 139,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 3,
+        "visibleIncludingPartial": 4,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 158,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      },
+      {
+        "name": "route-360x780-expanded",
+        "outer": {
+          "x": 48,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 158,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      },
+      {
+        "name": "route-390x480-compact",
+        "outer": {
+          "x": 48,
+          "y": 50,
+          "width": 240,
+          "height": 188,
+          "minHeight": "0px",
+          "maxHeight": "188px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 205,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 83,
+          "width": 230,
+          "height": 122,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 2,
+        "visibleIncludingPartial": 3,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      },
+      {
+        "name": "route-390x480-expanded",
+        "outer": {
+          "x": 48,
+          "y": 50,
+          "width": 240,
+          "height": 340,
+          "minHeight": "0px",
+          "maxHeight": "340px",
+          "padding": "0px 4px 4px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "heading": {
+          "x": 53,
+          "y": 51,
+          "width": 230,
+          "height": 32,
+          "minHeight": "32px",
+          "maxHeight": "none",
+          "padding": "0px 4px 0px 6px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "filters": null,
+        "footer": {
+          "x": 53,
+          "y": 357,
+          "width": 230,
+          "height": 28,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 5px 0px 7px",
+          "boxSizing": "border-box",
+          "display": "flex",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "footerText": "自动搜索 · 已载 11 条 · 可滚动查看",
+        "list": {
+          "x": 53,
+          "y": 83,
+          "width": 230,
+          "height": 274,
+          "minHeight": "0px",
+          "maxHeight": "none",
+          "padding": "0px 4px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "12px",
+          "lineHeight": "18px"
+        },
+        "scrollContent": 495,
+        "total": 11,
+        "fullyVisible": 6,
+        "visibleIncludingPartial": 7,
+        "rowHeight": 45,
+        "selectHeight": 44,
+        "moreCount": 0,
+        "headingInset": 11,
+        "closeInset": 9,
+        "viewportOverflow": false,
+        "aboveBottomNavigation": true,
+        "belowTopSearch": true,
+        "input": {
+          "x": 100,
+          "y": 2,
+          "width": 188,
+          "height": 44,
+          "minHeight": "auto",
+          "maxHeight": "none",
+          "padding": "0px 10px",
+          "boxSizing": "border-box",
+          "display": "block",
+          "font": "16px",
+          "lineHeight": "normal"
+        },
+        "selectedTitle": "终点 · 已载 11 条"
+      }
+    ],
+    "checks": [
+      {
+        "name": "place-390x857-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 205,
+          "list": 139
+        }
+      },
+      {
+        "name": "place-390x857-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-390x857-compact-three",
+        "pass": true
+      },
+      {
+        "name": "place-390x857-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "place-390x857-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-390x857-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "place-390x857-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "x": 335,
+            "y": 394,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 335,
+            "y": 440,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 335,
+            "y": 486,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 335,
+            "y": 532,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "x": 335,
+            "y": 578,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 335,
+            "y": 624,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 335,
+            "y": 670,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 335,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 335,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "place-360x780-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 205,
+          "list": 139
+        }
+      },
+      {
+        "name": "place-360x780-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-360x780-compact-three",
+        "pass": true
+      },
+      {
+        "name": "place-360x780-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "place-360x780-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-360x780-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "place-360x780-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "x": 305,
+            "y": 317,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 305,
+            "y": 363,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 305,
+            "y": 409,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 305,
+            "y": 455,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "x": 305,
+            "y": 501,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 305,
+            "y": 547,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 305,
+            "y": 593,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 305,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 305,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "place-390x480-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 205,
+          "list": 139
+        }
+      },
+      {
+        "name": "place-390x480-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-390x480-compact-three",
+        "pass": true
+      },
+      {
+        "name": "place-390x480-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "place-390x480-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "place-390x480-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "place-390x480-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "x": 289,
+            "y": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 335,
+            "y": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 289,
+            "y": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 335,
+            "y": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "x": 289,
+            "y": 251,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 335,
+            "y": 251,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 289,
+            "y": 297,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 335,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 335,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "input-horizontal-padding",
+        "pass": true,
+        "detail": {
+          "left": 10,
+          "right": 10,
+          "font": "16px",
+          "line": "normal",
+          "height": 44,
+          "value": "东原晴天见"
+        }
+      },
+      {
+        "name": "input-font16",
+        "pass": true
+      },
+      {
+        "name": "filter-input-font16",
+        "pass": true
+      },
+      {
+        "name": "details-full-community-address",
+        "pass": true
+      },
+      {
+        "name": "one-detail-panel",
+        "pass": true
+      },
+      {
+        "name": "last-of-11-reachable",
+        "pass": true
+      },
+      {
+        "name": "footer-outside-scroll",
+        "pass": true
+      },
+      {
+        "name": "display-controls-no-new-queries",
+        "pass": true
+      },
+      {
+        "name": "place-close",
+        "pass": true
+      },
+      {
+        "name": "place-reopen-compact",
+        "pass": true
+      },
+      {
+        "name": "route-390x857-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 205,
+          "list": 139
+        }
+      },
+      {
+        "name": "route-390x857-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-390x857-compact-three",
+        "pass": true
+      },
+      {
+        "name": "route-390x857-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "route-390x857-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-390x857-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "route-390x857-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 335,
+            "y": 486,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 335,
+            "y": 532,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 335,
+            "y": 578,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 335,
+            "y": 624,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 335,
+            "y": 670,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 335,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 335,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "route-360x780-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 205,
+          "list": 139
+        }
+      },
+      {
+        "name": "route-360x780-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-360x780-compact-three",
+        "pass": true
+      },
+      {
+        "name": "route-360x780-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "route-360x780-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-360x780-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "route-360x780-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 305,
+            "y": 409,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 305,
+            "y": 455,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 305,
+            "y": 501,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 305,
+            "y": 547,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 305,
+            "y": 593,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 305,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 305,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "route-390x480-compact-safe",
+        "pass": true,
+        "detail": {
+          "height": 188,
+          "list": 122
+        }
+      },
+      {
+        "name": "route-390x480-compact-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-390x480-expanded-safe",
+        "pass": true,
+        "detail": {
+          "height": 340,
+          "list": 274
+        }
+      },
+      {
+        "name": "route-390x480-expanded-selection44",
+        "pass": true
+      },
+      {
+        "name": "route-390x480-expanded-three",
+        "pass": true
+      },
+      {
+        "name": "route-390x480-expanded-map-control-hits",
+        "pass": true,
+        "detail": [
+          {
+            "label": "当前图层：天地图矢量底图，自动细节",
+            "x": 289,
+            "y": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "放大地图",
+            "x": 335,
+            "y": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "缩小地图",
+            "x": 289,
+            "y": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "地图朝向模式",
+            "x": 335,
+            "y": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "开启位置跟随",
+            "x": 289,
+            "y": 251,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "切换三维地形",
+            "x": 335,
+            "y": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          },
+          {
+            "label": "框选对象",
+            "x": 335,
+            "y": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "intersectsPopup": false
+          }
+        ]
+      },
+      {
+        "name": "route-display-controls-no-request",
+        "pass": true
+      },
+      {
+        "name": "destination-selection-preserved",
+        "pass": true
+      },
+      {
+        "name": "destination-select-advances-empty-origin",
+        "pass": true,
+        "detail": {
+          "activeLabel": "起点",
+          "title": "起点 · 已载 0 条",
+          "results": 0,
+          "prompt": "输入完整地点名称开始搜索。"
+        }
+      },
+      {
+        "name": "route-escape-closes",
+        "pass": true
+      }
+    ]
+  },
+  "pagination": {
+    "kind": "Injected deterministic provider pages, real browser UI, no live search",
+    "requests": [
+      {
+        "provider": "tianditu",
+        "query": "公开分页测试",
+        "start": 0,
+        "count": 20
+      },
+      {
+        "provider": "tianditu",
+        "query": "公开分页测试",
+        "start": 20,
+        "count": 20
+      },
+      {
+        "provider": "tianditu",
+        "query": "公开路线分页测试",
+        "start": 0,
+        "count": 20
+      },
+      {
+        "provider": "tianditu",
+        "query": "公开路线分页测试",
+        "start": 20,
+        "count": 20
+      }
+    ],
+    "checks": [
+      {
+        "name": "place-initial20",
+        "pass": true
+      },
+      {
+        "name": "place-count20",
+        "pass": true
+      },
+      {
+        "name": "place-toggles-no-queries",
+        "pass": true
+      },
+      {
+        "name": "place-more-visible-without-scroll",
+        "pass": true
+      },
+      {
+        "name": "place-busy-more-disabled",
+        "pass": true
+      },
+      {
+        "name": "place-appended35",
+        "pass": true
+      },
+      {
+        "name": "place-one-page-request",
+        "pass": true,
+        "detail": {
+          "requests": [
+            {
+              "provider": "tianditu",
+              "query": "公开分页测试",
+              "start": 20,
+              "count": 20
+            }
+          ]
+        }
+      },
+      {
+        "name": "place-exhausted-no-more",
+        "pass": true
+      },
+      {
+        "name": "place-last35-reachable",
+        "pass": true
+      },
+      {
+        "name": "route-initial20",
+        "pass": true
+      },
+      {
+        "name": "route-count20",
+        "pass": true
+      },
+      {
+        "name": "route-toggles-no-queries",
+        "pass": true
+      },
+      {
+        "name": "route-more-visible-without-scroll",
+        "pass": true
+      },
+      {
+        "name": "route-busy-more-disabled",
+        "pass": true
+      },
+      {
+        "name": "route-appended35",
+        "pass": true
+      },
+      {
+        "name": "route-one-page-request",
+        "pass": true,
+        "detail": {
+          "requests": [
+            {
+              "provider": "tianditu",
+              "query": "公开路线分页测试",
+              "start": 20,
+              "count": 20
+            }
+          ]
+        }
+      },
+      {
+        "name": "route-exhausted-no-more",
+        "pass": true
+      },
+      {
+        "name": "route-last35-reachable",
+        "pass": true
+      }
+    ]
+  },
+  "tools": {
+    "kind": "Real rendered UI, simulated public results, no live search or GPS calls",
+    "checks": [
+      {
+        "size": {
+          "width": 390,
+          "height": 857
+        },
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "left": 335,
+            "top": 394,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "当前图层：Sentinel-2 2025 · 约10米，自动细节",
+            "left": 335,
+            "top": 440,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "放大地图",
+            "left": 335,
+            "top": 486,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "缩小地图",
+            "left": 335,
+            "top": 532,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "left": 335,
+            "top": 578,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "地图朝向模式",
+            "left": 335,
+            "top": 624,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "开启位置跟随",
+            "left": 335,
+            "top": 670,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "切换二维地图",
+            "left": 335,
+            "top": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "框选对象",
+            "left": 335,
+            "top": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          }
+        ]
+      },
+      {
+        "size": {
+          "width": 360,
+          "height": 780
+        },
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "left": 305,
+            "top": 317,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "当前图层：Sentinel-2 2025 · 约10米，自动细节",
+            "left": 305,
+            "top": 363,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "放大地图",
+            "left": 305,
+            "top": 409,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "缩小地图",
+            "left": 305,
+            "top": 455,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "left": 305,
+            "top": 501,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "地图朝向模式",
+            "left": 305,
+            "top": 547,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "开启位置跟随",
+            "left": 305,
+            "top": 593,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "切换二维地图",
+            "left": 305,
+            "top": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "框选对象",
+            "left": 305,
+            "top": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          }
+        ]
+      },
+      {
+        "size": {
+          "width": 390,
+          "height": 480
+        },
+        "pass": true,
+        "detail": [
+          {
+            "label": "收藏图源快捷切换",
+            "left": 289,
+            "top": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "当前图层：Sentinel-2 2025 · 约10米，自动细节",
+            "left": 335,
+            "top": 159,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "放大地图",
+            "left": 289,
+            "top": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "缩小地图",
+            "left": 335,
+            "top": 205,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "在地图中心准星处添加标记",
+            "left": 289,
+            "top": 251,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "地图朝向模式",
+            "left": 335,
+            "top": 251,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "开启位置跟随",
+            "left": 289,
+            "top": 297,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "切换二维地图",
+            "left": 335,
+            "top": 59,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          },
+          {
+            "label": "框选对象",
+            "left": 335,
+            "top": 105,
+            "width": 44,
+            "height": 44,
+            "centerHit": true,
+            "overlap": false
+          }
+        ]
+      }
+    ]
+  },
+  "tests": {
+    "passed": 41,
+    "total": 41
+  },
+  "lint": {
+    "searchScope": "PASS",
+    "RoutePanelWholeFile": "FAIL: 10 recorded pre-existing issues"
+  },
+  "typecheck": "PASS",
+  "build": {
+    "web": "PASS",
+    "mobileWeb": "PASS",
+    "installers": "Not built"
+  },
+  "screenshot": {
+    "primaryPath": "artifacts/screenshots/search-density-20261012/final-place-390x857-expanded.png",
+    "compactPath": "artifacts/screenshots/search-density-20261012/final-place-390x857-compact.png"
+  },
+  "sourceHashes": {
+    "modules/controls/PlaceSearch.tsx": "ad76b943038efe39fac5f9129104d419cf0146e261f7f513eef947ee5066a46f",
+    "modules/input/FloatingSearch.tsx": "198070e867e2537b4828f26005b7fe7b1b1557488b1b88fe7687e4ec36229a01",
+    "modules/input/floatingGeometry.ts": "bd5e110fe63404f4903fd14000849207501c6089666e139c3b9869ee3356abe4",
+    "modules/navigation/RoutePanel.tsx": "dc3dcc97f1e7e1518f7cec600eed141c0e2c1b689c51fadac39f5f484c63380d",
+    "modules/navigation/provider.ts": "414ea6ffb4591ef625732a5d23f3c1f3f284e42dba60b4164bec104455f30e31",
+    "modules/navigation/types.ts": "3203e19c6b5c103fc1bd731c9e34c3631fc4d6fe86f591ac09f6270ad2bc1ba3",
+    "modules/navigation/tiandituSearch.ts": "c3319e680ef548b9126066e01799db7fc40f022338bdfd20f71e99cbd8449248",
+    "modules/navigation/tiandituSuggestions.ts": "b3e9b14e6c757d1d99b4ee2ffe7281091d1f413d364687e15404296f4109549a",
+    "modules/navigation/placeSearch.ts": "6eafda169e66a478cc5a6a3dcd41f106beaccc64f00a9da4ca630c6dd82332b5",
+    "modules/navigation/placeSearchTransport.ts": "8c81c372d1add5bc3781033b83022b837a2dec6a8c1a9da9c2fd3a52c5f102ba",
+    "modules/navigation/placeSearchHelpers.ts": "17cc3902c1076660cbb99871aeecbfe3655b98bcc95ddf34ca195e067b166594",
+    "modules/navigation/photonSearch.ts": "dff251c279b37b95d99f65dd37ee2e6bcafd77f06933ca93c7d282f15a7c1659",
+    "modules/navigation/tiandituGeocoder.ts": "703a51929aabd56fd4872d0980b407751aaee6b9aac633a4b55f02846c3a838e",
+    "modules/navigation/usePlaceSearch.ts": "0653d5883a59f5354f44a5291a8fa9b5f9f1831d7741367510cabd7e08ac63bc",
+    "modules/navigation/SearchOptions.tsx": "5537cce49fdc235592b3d5ac3a25074fb509200ac65267e078f03b28c2eee5e7",
+    "modules/navigation/SearchFeedback.tsx": "b711bd8992c416c1e2c3f9e2a891646f06f3489ffd32e6c82dba6e060e408ff3",
+    "modules/navigation/searchResultOrder.ts": "d5b1483241f8337de6a945a3f23caa9caff17a65a0d1a65d05924a6f0dd6c382",
+    "modules/navigation/search.css": "e2b5deebf45b9629494c17f9c15547096369c9a0194c75a31691979b6d5c8402",
+    "tests/tianditu-search.test.mjs": "44a8c3d5b2ae2543e8c3ac8aa9ba3dd0b5ac53c65bba0297f8e4f0df2abdc92f",
+    "tests/search-viewport.test.mjs": "6b8c3dacb3349f5422cf2c56991fbabc86868c3f54e93c22abcb162774bb7593",
+    "tests/place-search-pipeline.test.mjs": "d56085f32568b3bd1d233261b2a259f93fa54c98bcbe4b1ffa6f4129804567e7",
+    "tests/search-hook.test.mjs": "d488a5e3e1ec65d75902da4dbb72b9681bbcb9123cc85c74bd5430fab88ed905",
+    "tests/search-result-order.test.mjs": "c68e2b0c6de82812314110832cf9629d5e5312f090d16a40916967dc3d57b6d6",
+    "tests/search-ui-components.test.mjs": "615c955cc5e6941d4de928b1c905a193d66197970532db3e9a0880e2b1e37500"
+  },
+  "publication": {
+    "repository": "Siger1989/map",
+    "branch": "codex/place-address-search-20261011",
+    "baseCommit": "1947a6f0efa641928267cb85e01fa1f0f483ec16",
+    "privateConfigExcluded": true,
+    "signingFilesExcluded": true,
+    "sourceHashesUnchanged": true,
+    "ci": "Check the exact remote SHA after push"
+  }
+}

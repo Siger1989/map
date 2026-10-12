@@ -5,7 +5,7 @@ export function floatingGeometry(anchor: Rect, viewport: { top: number; left: nu
   const left = Math.max(viewport.left + 4, Math.min(anchor.left, viewport.left + viewport.width - width - 4));
   const belowTop = Math.max(top, anchor.bottom + 4), aboveBottom = Math.min(bottom, anchor.top - 4);
   const below = Math.max(0, bottom - belowTop), above = Math.max(0, aboveBottom - top);
-  const useBelow = below >= 120 || below >= above;
+  const useBelow = below >= maxHeight || (above < maxHeight && below >= above);
   const height = Math.min(maxHeight, useBelow ? below : above);
   return { left, width, top: useBelow ? Math.min(bottom, belowTop) : Math.max(top, aboveBottom - height), maxHeight: height };
 }

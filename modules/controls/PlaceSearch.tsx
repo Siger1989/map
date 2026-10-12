@@ -1,12 +1,13 @@
 import { isLayoutInteraction } from '../uiLayout/events';
 import { FloatingSearch } from '../input/FloatingSearch';
-import { useEffect, useRef, useState } from 'react';
-import { Search, X, MapPin, Share2 } from 'lucide-react';
-import { defaultPlaceSearchSource, searchPlaces, sortPlacesByDistance, type PlaceSearchSource } from '../navigation/provider';
-import { formatDistance, metresBetween, type Coordinate, type RoutePlace } from '../navigation/types';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { ChevronDown, ChevronUp, Search, SlidersHorizontal, X } from 'lucide-react';
+import type { Coordinate, RoutePlace } from '../navigation/types';
 import { isDesktopShell } from '../platform/desktop';
 import { useMapPlaceLabel } from './PlaceName';
-import { routingMode } from '../offlineRouting/preferences';
+import { usePlaceSearch } from '../navigation/usePlaceSearch';
+import { SearchOptions } from '../navigation/SearchOptions';
+import { PlaceResultList, SearchFeedback, SearchFooter } from '../navigation/SearchFeedback';
 
 export function PlaceSearch({
   center,
@@ -22,23 +23,31 @@ export function PlaceSearch({
   onShare: (place: RoutePlace) => void;
 }) {
   const [query, setQuery] = useState('');
-  const [source, setSource] = useState<PlaceSearchSource>(defaultPlaceSearchSource);
   const [open, setOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [listExpanded, setListExpanded] = useState(false);
   const [composing, setComposing] = useState(false);
-  const [revision, setRevision] = useState(0);
-  const [results, setResults] = useState<RoutePlace[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
   const root = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
   const desktopShell = isDesktopShell();
-  const near = useRef<Coordinate | null>(center);
-  near.current = center;
-  const orderedResults = sortPlacesByDistance(results, near.current);
-  const sortLabel = '距地图中心 · 由近到远';
-  const sortDescription = '按当前地图中心的直线距离排序；地图移动后会重新排序，不会重复搜索';
+  const search = usePlaceSearch({ query, enabled: open, composing, near: center });
   const { title } = useMapPlaceLabel(center, zoom);
-  const offline = routingMode() === 'offline';
+  const closeSearch = () => { setOpen(false); setListExpanded(false); setFiltersOpen(false); };
+
+  const navigateResults = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault(); event.stopPropagation(); input?.focus(); closeSearch();
+    }
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    const target = event.target;
+    if (!(target === input || (target instanceof Element && target.matches('[data-place-result]')))) return;
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-search-owner="place"] [data-place-result]'));
+    if (!buttons.length) return;
+    event.preventDefault();
+    const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const next = event.key === 'ArrowDown' ? (current + 1) % buttons.length : current <= 0 ? buttons.length - 1 : current - 1;
+    buttons[next]?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -47,93 +56,28 @@ export function PlaceSearch({
       if (
         event.target instanceof Node &&
         !root.current?.contains(event.target) &&
-        !(
-          event.target instanceof Element &&
-          event.target.closest('[data-search-owner="place"]')
-        )
-      )
-        setOpen(false);
+        !(event.target instanceof Element && event.target.closest('[data-search-owner="place"]'))
+      ) closeSearch();
     };
     document.addEventListener('pointerdown', dismiss, true);
     return () => document.removeEventListener('pointerdown', dismiss, true);
   }, [open]);
 
-  useEffect(() => {
-    setResults([]);
-    setMessage('');
-    setBusy(false);
-    if (!open || composing || query.trim().length < 2) return;
-    const controller = new AbortController();
-    setBusy(true);
-    const timer = setTimeout(async () => {
-      try {
-        const found = await searchPlaces(
-          query,
-          near.current,
-          controller.signal,
-          source,
-        );
-        if (!controller.signal.aborted) {
-          setResults(found);
-          if (!found.length) setMessage('未找到地点，试试完整地名或加上城市。');
-        }
-      } catch {
-        if (!controller.signal.aborted)
-          setMessage('搜索暂不可用，请检查网络后重新搜索。');
-      } finally {
-        if (!controller.signal.aborted) setBusy(false);
-      }
-    }, 500);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, open, composing, revision, source]);
-
   return (
     <div
       ref={root}
       className="place-search"
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          input.current?.focus();
-          setOpen(false);
-        }
-        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-          const buttons = Array.from(
-            document.querySelectorAll<HTMLButtonElement>(
-              '[data-search-owner="place"] [data-place-result]',
-            ) ?? [],
-          );
-          if (!buttons.length) return;
-          event.preventDefault();
-          const current = buttons.indexOf(
-            document.activeElement as HTMLButtonElement,
-          );
-          const next =
-            event.key === 'ArrowDown'
-              ? (current + 1) % buttons.length
-              : current <= 0
-                ? buttons.length - 1
-                : current - 1;
-          buttons[next]?.focus();
-        }
-      }}
     >
-      <form
-        role="search"
-        aria-label="地图地点搜索"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (composing) return;
-          onOpen();
-          setOpen(true);
-          setRevision((n) => n + 1);
-        }}
-      >
+      <form aria-label="地图地点搜索" onSubmit={(event) => {
+        event.preventDefault();
+        if (composing) return;
+        onOpen();
+        setOpen(true);
+        search.searchNow();
+      }}>
         <input
-          ref={input}
+          ref={setInput}
+          className="place-search-input"
           type="search"
           aria-label="搜索地点"
           maxLength={120}
@@ -143,124 +87,76 @@ export function PlaceSearch({
           autoComplete="off"
           enterKeyHint="search"
           aria-controls={open ? 'place-search-results' : undefined}
-          onFocus={() => {
-            onOpen();
-            setOpen(true);
-          }}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setOpen(true);
-          }}
+          onKeyDown={navigateResults}
+          onFocus={() => { onOpen(); setOpen(true); }}
+          onClick={() => { onOpen(); setOpen(true); }}
+          onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
           onCompositionStart={() => setComposing(true)}
           onCompositionEnd={() => setComposing(false)}
         />
-        {query && (
-          <button
-            type="button"
-            className="place-search-clear"
-            aria-label="清空地点搜索"
-            onClick={() => {
-              setQuery('');
-              input.current?.focus();
-            }}
-          >
-            <X size={14} />
-          </button>
-        )}
-        <button
-          type="submit"
-          className="icon-button"
-          aria-label="搜索地点并显示结果"
-        >
-          <Search size={17} />
-        </button>
+        {query && <button type="button" className="place-search-clear" aria-label="清空地点搜索" onClick={() => {
+          setQuery('');
+          setListExpanded(false);
+          setFiltersOpen(false);
+          search.resetOptions();
+          input?.focus();
+        }}><X size={14} /></button>}
+        <button type="submit" className="icon-button" aria-label="搜索地点并显示结果"><Search size={17} /></button>
       </form>
-      {open && (
-        <FloatingSearch
-          anchor={input.current}
-          owner="place"
-          scrollable={results.length > (desktopShell ? 6 : 3)}
-          desktop={desktopShell}
-          maxHeight={desktopShell ? 360 : 200}
+      {open && <FloatingSearch
+        anchor={input}
+        owner="place"
+        scrollable
+        desktop={desktopShell}
+        maxHeight={listExpanded ? 340 : 205}
+        expandToViewport={listExpanded}
+      >
+        <dialog open
+          id="place-search-results"
+          className="place-search-results glass suggestion-surface"
+          aria-modal={false}
+          data-app-back="50"
+          aria-label="地点搜索结果"
+          onKeyDown={navigateResults}
         >
-          <section
-            id="place-search-results"
-            className="place-search-results glass suggestion-surface"
-            data-app-back="50"
-            aria-label="地点搜索结果"
-            onKeyDown={event => {
-              if (event.key !== 'Escape' || event.defaultPrevented) return;
-              event.preventDefault();
-              event.stopPropagation();
-              input.current?.focus();
-              setOpen(false);
-            }}
-          >
-            <div className="place-search-heading">
-              <span>搜索</span>
-              <small className="place-search-order" title={sortDescription}>{sortLabel}</small>
-              {!offline && defaultPlaceSearchSource() === 'tianditu' && (
-                <select aria-label="搜索数据源" value={source}
-                  onChange={(event) => setSource(event.target.value as PlaceSearchSource)}>
-                  <option value="tianditu">天地图</option>
-                  <option value="photon">全球（OSM）</option>
-                </select>
-              )}
-              <button
-                type="button"
-                aria-label="关闭地点搜索"
-                onClick={() => setOpen(false)}
-              >
-                <X size={16} />
+          <div className="place-search-heading">
+            <span className="place-search-heading-title">{'\u5730\u70b9\u641c\u7d22'} · {'\u5df2\u8f7d'} {search.places.length} {'\u6761'}</span>
+            <div className="place-search-heading-actions">
+              <button type="button" className="place-search-filter-toggle" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}>
+                <SlidersHorizontal size={14} /><span>{'\u7b5b\u9009'}</span>
               </button>
+              <button type="button" className="place-search-expand-toggle" aria-label={listExpanded ? '\u6536\u8d77\u5217\u8868' : '\u5c55\u5f00\u5217\u8868'} aria-expanded={listExpanded} onClick={() => setListExpanded((value) => !value)}>
+                {listExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}<span>{listExpanded ? '\u6536\u8d77' : '\u5c55\u5f00'}</span>
+              </button>
+              <button type="button" aria-label={'\u5173\u95ed\u5730\u70b9\u641c\u7d22'} onClick={closeSearch}><X size={16} /></button>
             </div>
-            <div className="place-search-options">
-              {orderedResults.map((place, index) => (
-                <div className="place-search-row" key={`${place.coordinates.join(',')}-${index}`}>
-                <button
-                  type="button"
-                  data-place-result
-                  onClick={() => {
-                    onSelect(place);
-                    setOpen(false);
-                    setQuery('');
-                    input.current?.blur();
-                  }}
-                >
-                  <MapPin size={15} />
-                  <span>
-                    <strong>{place.name}</strong>
-                    <small>
-                      {place.detail ||
-                        `${place.coordinates[1].toFixed(4)}, ${place.coordinates[0].toFixed(4)}`}
-                    </small>
-                    {center && (
-                      <small className="place-result-distance">
-                        距中心 {formatDistance(metresBetween(center, place.coordinates))}
-                      </small>
-                    )}
-                  </span>
-                </button>
-                <button className="place-search-share" type="button" aria-label={`分享地点：${place.name}`} onClick={() => { setOpen(false); input.current?.blur(); onShare(place); }}><Share2 size={17}/></button>
-                </div>
-              ))}
-              {!results.length && (
-                <p role="status">
-                  {busy
-                    ? '正在搜索…'
-                    : message ||
-                      (query.trim().length === 1
-                        ? '请输入至少两个字。'
-                        : '输入城市、街道或山峰名称。')}
-                </p>
-              )}
-            </div>
-            <small className="place-search-credit">
-              {offline ? '已下载离线路网 · 道路名' : source === 'tianditu' ? '天地图 · 地名搜索' : 'Photon / OpenStreetMap'}
-            </small>
-          </section>
-        </FloatingSearch>
-      )}
+          </div>
+          {filtersOpen && <SearchOptions
+            source={search.source} onSourceChange={search.setSource}
+            city={search.city} onCityChange={search.setCity}
+            nationwide={search.nationwide} onNationwideChange={search.setNationwide}
+          />}
+          <div className="place-search-options">
+            <PlaceResultList places={search.places} query={query} near={center} onSelect={(place) => {
+              onSelect(place); closeSearch(); setQuery(''); input?.blur();
+            }} onShare={(place) => { closeSearch(); input?.blur(); onShare(place); }} />
+            <SearchFeedback
+              error={search.error} busy={search.busy} warnings={search.warnings}
+              suggestions={search.suggestions}
+              onSuggestion={(suggestion) => {
+                setQuery(suggestion.query);
+                setOpen(true);
+                search.setCity(suggestion.city ?? '');
+                search.searchNow();
+              }}
+              hasResults={search.places.length > 0}
+            />
+            {!query.trim() && <p>输入街道、门牌、地点或行政区名称。</p>}
+            {query.trim().length === 1 && <p>请再输入一个字以开始搜索。</p>}
+          </div>
+          <SearchFooter loadedCount={search.places.length} hasMore={!!search.next} busy={search.busy} onLoadMore={search.loadMore} source={search.source} />
+        </dialog>
+      </FloatingSearch>}
     </div>
   );
 }

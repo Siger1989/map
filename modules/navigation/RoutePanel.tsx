@@ -6,12 +6,17 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
   MapPin,
+  ChevronDown,
+  ChevronUp,
   Search,
+  SlidersHorizontal,
   GripVertical,
   Plus,
   X,
 } from 'lucide-react';
-import { searchPlaces } from './provider';
+import { usePlaceSearch } from './usePlaceSearch';
+import { SearchOptions } from './SearchOptions';
+import { PlaceResultList, SearchFeedback, SearchFooter } from './SearchFeedback';
 import { MAX_ROUTE_STOPS, stopLabel } from './stops';
 import {
   TRAVEL_MODES,
@@ -65,16 +70,13 @@ export function RoutePanel({
     previousRoute.current = n.route?.createdAt;
   }, [n.route?.createdAt]);
   const [active, setActive] = useState<string | null>(null),
-    [results, setResults] = useState<RoutePlace[]>([]),
-    [searching, setSearching] = useState(false),
-    [searchError, setSearchError] = useState(''),
-    [composing, setComposing] = useState(false),
-    [refresh, setRefresh] = useState(0);
+    [composing, setComposing] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [listExpanded, setListExpanded] = useState(false);
   const [target, setTarget] = useState<number | null>(null),
     [dragging, setDragging] = useState<string | null>(null),
     [announcement, setAnnouncement] = useState('');
   const rows = useRef<HTMLDivElement>(null),
-    request = useRef<AbortController | null>(null),
     drag = useRef<{
       id: string;
       pointer: number;
@@ -108,6 +110,12 @@ export function RoutePanel({
     previousCount.current = n.stops.length;
   }, [n.stops]);
   const selected = n.stops.find((s) => s.id === active);
+  const placeSearch = usePlaceSearch({
+    query: selected?.query ?? '',
+    enabled: !!selected && !selected.place && active !== null,
+    composing,
+    near,
+  });
   const pickingIndex =
     n.picking === 'start'
       ? 0
@@ -126,64 +134,17 @@ export function RoutePanel({
       )
       ?.scrollIntoView({ block: 'nearest' });
   }, [pickingIndex]);
-  const nearRef = useRef(near);
-  nearRef.current = near;
-  useEffect(() => {
-    request.current?.abort();
-    setResults([]);
-    setSearchError('');
-    setSearching(false);
-    if (
-      !selected ||
-      selected.place ||
-      selected.query.trim().length < 2 ||
-      composing
-    )
-      return;
-    const abort = new AbortController();
-    request.current = abort;
-    const timer = setTimeout(
-      async () => {
-        setSearching(true);
-        try {
-          const found = await searchPlaces(
-            selected.query,
-            nearRef.current,
-            abort.signal,
-          );
-          if (!abort.signal.aborted) {
-            setResults(found);
-            if (!found.length)
-              setSearchError('未找到地点，可点定位图标在地图选点。');
-          }
-        } catch (e) {
-          if (!abort.signal.aborted)
-            setSearchError(
-              e instanceof Error &&
-                !['TypeError', 'TimeoutError'].includes(e.name)
-                ? e.message
-                : '搜索暂不可用，可在地图选点。',
-            );
-        } finally {
-          if (!abort.signal.aborted) setSearching(false);
-        }
-      },
-      refresh ? 200 : 900,
-    );
-    return () => {
-      clearTimeout(timer);
-      abort.abort();
-    };
-  }, [active, selected?.query, selected?.place, composing, refresh]);
   useEffect(
     () => () => {
       if (drag.current) cancelAnimationFrame(drag.current.frame);
     },
     [],
   );
-  const search = (id: string) => {
+  const searchStop = (id: string) => {
+    setListExpanded(false);
+    setFiltersOpen(false);
     setActive(id);
-    setRefresh((v) => v + 1);
+    placeSearch.searchNow();
   };
   const targetAt = (y: number) => {
     const list = Array.from(
@@ -212,8 +173,7 @@ export function RoutePanel({
     if (!e.isPrimary || e.button !== 0) return;
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
-    request.current?.abort();
-    setActive(null);
+    setActive(null); setListExpanded(false); setFiltersOpen(false);
     setDragging(id);
     setTarget(index);
     drag.current = {
@@ -309,7 +269,7 @@ export function RoutePanel({
                 className="route-stop-row"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  search(s.id);
+                  searchStop(s.id);
                 }}
               >
                 <span
@@ -331,10 +291,23 @@ export function RoutePanel({
                   maxLength={120}
                   onFocus={() => {
                     n.setPicking(null);
+                    if (active !== s.id) { setListExpanded(false); setFiltersOpen(false); }
                     setActive(s.id);
                   }}
                   onCompositionStart={() => setComposing(true)}
                   onCompositionEnd={() => setComposing(false)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                      const first = document.querySelector<HTMLButtonElement>(
+                        '[data-search-owner="route"] [data-place-result]',
+                      );
+                      if (first) { event.preventDefault(); first.focus(); }
+                    } else if (event.key === 'Escape' && active === s.id) {
+                      event.preventDefault();
+                      setActive(null); setListExpanded(false); setFiltersOpen(false);
+                      (event.currentTarget as HTMLInputElement).blur();
+                    }
+                  }}
                   onChange={(e) => {
                     setActive(s.id);
                     n.edit(index, e.target.value);
@@ -347,9 +320,7 @@ export function RoutePanel({
                   aria-pressed={pickingIndex === index}
                   title="点击地图上的已有标记或空白位置"
                   onClick={() => {
-                    request.current?.abort();
-                    setActive(null);
-                    setResults([]);
+                    setActive(null); setListExpanded(false); setFiltersOpen(false);
                     (document.activeElement as HTMLElement)?.blur();
                     if (pickingIndex === index) n.setPicking(null);
                     else onPick(index);
@@ -376,8 +347,7 @@ export function RoutePanel({
                   onKeyDown={(e) => {
                     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                       e.preventDefault();
-                      request.current?.abort();
-                      setActive(null);
+                      setActive(null); setListExpanded(false); setFiltersOpen(false);
                       n.reorder(index, index + (e.key === 'ArrowUp' ? -1 : 1));
                     }
                   }}
@@ -392,8 +362,7 @@ export function RoutePanel({
                     title={`删除${label}`}
                     disabled={dragging !== null}
                     onClick={() => {
-                      request.current?.abort();
-                      setActive(null);
+                      setActive(null); setListExpanded(false); setFiltersOpen(false);
                       n.remove(index);
                       setAnnouncement(`已删除${label}`);
                     }}
@@ -406,20 +375,20 @@ export function RoutePanel({
                 <div className="stop-edit-options">
                   <button
                     disabled={
-                      searching || s.query.trim().length < 2 || !!s.place
+                      placeSearch.busy || s.query.trim().length < 2 || !!s.place
                     }
-                    onClick={() => search(s.id)}
+                    onClick={() => searchStop(s.id)}
                   >
                     <Search size={13} />
-                    {searching ? '搜索中…' : '搜索'}
+                    {placeSearch.busy ? '搜索中…' : '搜索'}
                   </button>
                   {s.query && (
-                    <button onClick={() => n.edit(index, '')}>清空</button>
+                    <button onClick={() => { n.edit(index, ''); setListExpanded(false); setFiltersOpen(false); }}>清空</button>
                   )}
                   <button
                     aria-label={`收起${label}搜索`}
                     onClick={() => {
-                      setActive(null);
+                      setActive(null); setListExpanded(false); setFiltersOpen(false);
                       (document.activeElement as HTMLElement)?.blur();
                     }}
                   >
@@ -428,52 +397,66 @@ export function RoutePanel({
                   </button>
                 </div>
               )}
-              {focused && searchError && (
-                <p role="status" className="route-error">
-                  {searchError}
-                </p>
-              )}
-              {focused && !!results.length && (
+              {focused && (
                 <FloatingSearch
                   owner="route"
+                  scrollable
+                  maxHeight={listExpanded ? 340 : 205}
+                  expandToViewport={listExpanded}
                   anchor={
                     rows.current?.querySelector<HTMLElement>(
                       `[data-stop-id="${s.id}"] input`,
                     ) ?? null
                   }
                 >
-                  <div className="floating-search-heading">
-                    <strong>
-                      {label}搜索结果 · {results.length}
-                    </strong>
-                    <button
-                      aria-label="关闭路线搜索结果"
-                      onClick={() => setActive(null)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <ul
-                    className="route-search-results suggestion-surface"
-                    aria-label={`${label}搜索结果`}
-                  >
-                    {results.map((p, i) => (
-                      <li key={i}>
-                        <button
-                          onClick={() => {
-                            request.current?.abort();
-                            n.place(index, p);
-                            onPlace(p);
-                            setResults([]);
-                            setActive(null);
-                          }}
-                        >
-                          <strong>{p.name}</strong>
-                          <small>{p.detail}</small>
+                  <dialog open className="place-search-results glass route-place-results" aria-modal={false} aria-label={`${label}搜索结果`}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setActive(null); setListExpanded(false); setFiltersOpen(false); }
+                      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                        if (!(event.target instanceof Element) || !event.target.matches('[data-place-result]')) return;
+                        const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[data-place-result]'));
+                        if (!buttons.length) return;
+                        event.preventDefault();
+                        const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                        const next = event.key === 'ArrowDown' ? (current + 1) % buttons.length : current <= 0 ? buttons.length - 1 : current - 1;
+                        buttons[next]?.focus();
+                      }
+                    }}>
+                    <div className="place-search-heading">
+                      <span className="place-search-heading-title">{label} · {'\u5df2\u8f7d'} {placeSearch.places.length} {'\u6761'}</span>
+                      <div className="place-search-heading-actions">
+                        <button type="button" className="place-search-filter-toggle" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((value) => !value)}>
+                          <SlidersHorizontal size={14} /><span>{'\u7b5b\u9009'}</span>
                         </button>
-                      </li>
-                    ))}
-                  </ul>
+                        <button type="button" className="place-search-expand-toggle" aria-label={listExpanded ? '\u6536\u8d77\u5217\u8868' : '\u5c55\u5f00\u5217\u8868'} aria-expanded={listExpanded} onClick={() => setListExpanded((value) => !value)}>
+                          {listExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}<span>{listExpanded ? '\u6536\u8d77' : '\u5c55\u5f00'}</span>
+                        </button>
+                        <button type="button" aria-label={'\u5173\u95ed\u641c\u7d22'} onClick={() => { setActive(null); setListExpanded(false); setFiltersOpen(false); }}><X size={14} /></button>
+                      </div>
+                    </div>
+                    {filtersOpen && <SearchOptions
+                      source={placeSearch.source} onSourceChange={placeSearch.setSource}
+                      city={placeSearch.city} onCityChange={placeSearch.setCity}
+                      nationwide={placeSearch.nationwide} onNationwideChange={placeSearch.setNationwide}
+                    />}
+                    <div className="place-search-options">
+                      <PlaceResultList places={placeSearch.places} query={s.query} near={near} route onSelect={(place) => {
+                        n.place(index, place); onPlace(place); setActive(null); setListExpanded(false); setFiltersOpen(false);
+                      }} />
+                      <SearchFeedback
+                        error={placeSearch.error} busy={placeSearch.busy} warnings={placeSearch.warnings}
+                        suggestions={placeSearch.suggestions}
+                        onSuggestion={(suggestion) => {
+                          n.edit(index, suggestion.query);
+                          placeSearch.setCity(suggestion.city ?? '');
+                          placeSearch.searchNow();
+                        }}
+                        hasResults={placeSearch.places.length > 0}
+                      />
+                      {s.query.trim().length < 2 && <p>输入完整地点名称开始搜索。</p>}
+                    </div>
+                    <SearchFooter loadedCount={placeSearch.places.length} hasMore={!!placeSearch.next} busy={placeSearch.busy} onLoadMore={placeSearch.loadMore} source={placeSearch.source} />
+                  </dialog>
                 </FloatingSearch>
               )}
             </div>
@@ -487,7 +470,7 @@ export function RoutePanel({
         <button
           disabled={n.stops.length >= MAX_ROUTE_STOPS}
           onClick={() => {
-            setActive(null);
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
             n.add();
           }}
         >
@@ -499,7 +482,7 @@ export function RoutePanel({
         </button>
         <button
           onClick={() => {
-            setActive(null);
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
             n.swap(onRouteApplied);
           }}
         >
@@ -508,7 +491,7 @@ export function RoutePanel({
         </button>
         <button
           onClick={() => {
-            setActive(null);
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
             n.clear();
           }}
         >

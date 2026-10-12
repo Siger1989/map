@@ -5,7 +5,7 @@ import {
   normalizeTiandituPlaces,
 } from '../modules/navigation/tiandituSearch.ts';
 
-test('builds HTTPS v2 nationwide place-name search with detailed locality fields', () => {
+test('builds HTTPS v2 nationwide place-name search with bounded twenty-result pages', () => {
   const url = new URL(buildTiandituSearchURL(' 四姑娘山 ', 'test-key'));
   assert.equal(url.origin, 'https://api.tianditu.gov.cn');
   assert.equal(url.pathname, '/v2/search');
@@ -15,9 +15,9 @@ test('builds HTTPS v2 nationwide place-name search with detailed locality fields
     keyWord: '四姑娘山',
     level: 12,
     mapBound: '73,3,136,54',
-    queryType: 7,
+    queryType: 1,
     start: 0,
-    count: 300,
+    count: 20,
     show: 2,
   });
   assert.throws(() => buildTiandituSearchURL('  ', 'test-key'), /搜索内容/);
@@ -33,13 +33,13 @@ test('normalizes named POIs in longitude,latitude order and keeps address detail
       { name: '无地址地名', lonlat: '104,30', address: '' },
     ],
   });
-  assert.deepEqual(result, [
+  assert.deepEqual(result.map(({ source, precision, ...place }) => place), [
     { name: '四姑娘山', coordinates: [102.902002, 31.11225], detail: '四川省小金县' },
     { name: '无地址地名', coordinates: [104, 30] },
   ]);
 });
 
-test('filters invalid coordinates, deduplicates, and retains results through rank three hundred', () => {
+test('filters invalid coordinates and deduplicates within a twenty-result page', () => {
   const pois = [
     { name: '重复', lonlat: '104,30' },
     { name: '重复', lonlat: '104,30' },
@@ -51,9 +51,9 @@ test('filters invalid coordinates, deduplicates, and retains results through ran
   ];
   pois[5].name = '   ';
   const result = normalizeTiandituPlaces({ status: { infocode: 1000 }, resultType: 1, pois });
-  assert.equal(result.length, 300);
-  assert.deepEqual(result[0], { name: '重复', coordinates: [104, 30] });
-  assert.equal(result.at(-1).name, '地名298');
+  assert.equal(result.length, 20);
+  assert.equal(result[0].coordinates[0], 104);
+  assert.match(result.at(-1).name, /18$/);
 });
 
 test('keeps a relevant place-name candidate after the former ten-result cutoff and labels its locality', () => {
@@ -77,7 +77,8 @@ test('keeps a relevant place-name candidate after the former ten-result cutoff a
     pois,
   });
   assert.equal(result.length, 15);
-  assert.deepEqual(result[14], {
+  const { source, precision, ...target } = result[14];
+  assert.deepEqual(target, {
     name: '牛背山',
     coordinates: [102.298825, 29.209062],
     detail: '四川省 · 雅安市 · 石棉县',
@@ -128,7 +129,7 @@ test('caps combined locality and address detail at 240 characters', () => {
   assert.equal(place.detail.length, 240);
 });
 
-test('maps an explicitly returned administrative centre and ignores other non-point results', () => {
+test('filters administrative centres and other non-point results out of selectable POIs', () => {
   assert.deepEqual(normalizeTiandituPlaces({ status: { infocode: 3001 } }), []);
   assert.deepEqual(normalizeTiandituPlaces({ status: { infocode: 1000 }, pois: [] }), []);
   assert.deepEqual(
@@ -137,7 +138,7 @@ test('maps an explicitly returned administrative centre and ignores other non-po
       resultType: 3,
       area: { name: '成都市', lonlat: '104.062269,30.661123' },
     }),
-    [{ name: '成都市', coordinates: [104.062269, 30.661123], detail: '行政区中心' }],
+    [],
   );
   assert.deepEqual(
     normalizeTiandituPlaces({ status: { infocode: 1000 }, resultType: 3, area: [{ name: '四川省', lonlat: '102,30' }] }),
@@ -174,122 +175,49 @@ test('throws a generic authorization/service error without echoing key or URL', 
   assert.throws(() => normalizeTiandituPlaces(null), /响应格式异常/);
 });
 
-test('searchPlaces honors explicit TianDiTu selection and handles abort/key errors without fallback', async () => {
-  const { searchPlaces } = await import('../modules/navigation/provider.ts');
-  const oldKey = process.env.NEXT_PUBLIC_TIANDITU_KEY;
-  const oldFetch = globalThis.fetch;
+test('injected search pipeline handles explicit selection, ranking, abort, and auto fallback without real network', async () => {
+  const { createPlaceSearcher } = await import('../modules/navigation/placeSearch.ts');
   const key = 'integrationtestkey012345678901';
   const urls = [];
-  process.env.NEXT_PUBLIC_TIANDITU_KEY = key;
-  globalThis.fetch = async (input) => {
-    const url = String(input);
-    urls.push(url);
-    assert.match(url, /^https:\/\/api\.tianditu\.gov\.cn\/v2\/search/);
-    const params = new URL(url).searchParams;
-    assert.deepEqual(JSON.parse(params.get('postStr')), {
-      keyWord: '显式TDT集成唯一查询',
-      level: 12,
-      mapBound: '73,3,136,54',
-      queryType: 7,
-      start: 0,
-      count: 300,
-      show: 2,
-    });
-    return new Response(JSON.stringify({
-      status: { infocode: 1000 },
-      resultType: 1,
-      pois: [],
-    }), { status: 200, headers: { 'content-type': 'application/json' } });
-  };
-  try {
-    const explicit = await searchPlaces(
-      '显式TDT集成唯一查询', [104, 30], new AbortController().signal, 'tianditu',
-    );
-    assert.deepEqual(explicit, []);
-    assert.equal(urls.length, 1);
+  let payload = { status: { infocode: 1000 }, resultType: 1, pois: [] };
+  const searcher = createPlaceSearcher({
+    getConfig: () => ({ domestic: true, token: key }),
+    fetch: async (url, init) => {
+      urls.push({ url: String(url), signal: init.signal });
+      if (String(url).includes('photon.komoot.io')) {
+        return new Response(JSON.stringify({ features: [{
+          geometry: { coordinates: [104.066, 30.659] },
+          properties: { name: 'Photon fallback', city: '成都' },
+        }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify(payload), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+    minIntervalMs: 0,
+  });
 
-    const aborted = new AbortController();
-    aborted.abort(new DOMException('test abort', 'AbortError'));
-    await assert.rejects(
-      searchPlaces('取消查询唯一串', [104, 30], aborted.signal, 'tianditu'),
-      /test abort/,
-    );
-    assert.equal(urls.length, 1);
+  const empty = await searcher.searchPlacesDetailed('explicit query', [104, 30], new AbortController().signal, 'tianditu');
+  assert.deepEqual(empty.places, []);
+  assert.equal(urls.length, 2);
+  assert.ok(urls.every(({ url }) => url.includes('api.tianditu.gov.cn')));
+  assert.match(urls[0].url, /^https:\/\/api\.tianditu\.gov\.cn\/v2\/search/);
 
-    process.env.NEXT_PUBLIC_TIANDITU_KEY = '';
-    await assert.rejects(
-      searchPlaces('缺少密钥唯一查询', [104, 30], new AbortController().signal, 'tianditu'),
-      /未配置天地图搜索密钥/,
-    );
-    assert.equal(urls.length, 1);
-  } finally {
-    globalThis.fetch = oldFetch;
-    if (oldKey === undefined) delete process.env.NEXT_PUBLIC_TIANDITU_KEY;
-    else process.env.NEXT_PUBLIC_TIANDITU_KEY = oldKey;
-  }
-});
+  payload = { status: { infocode: 1000 }, resultType: 1, pois: [
+    { name: 'far', lonlat: '110,35' },
+    { name: 'near', lonlat: '104.001,30.001' },
+    { name: 'middle', lonlat: '105,31' },
+  ] };
+  const ranked = await searcher.searchPlacesDetailed('ranking query', [104, 30], new AbortController().signal, 'tianditu');
+  assert.deepEqual(ranked.places.map((place) => place.name), ['near', 'middle', 'far']);
 
-test('searchPlaces ranks the returned TianDiTu results by the supplied map center', async () => {
-  const { searchPlaces } = await import('../modules/navigation/provider.ts');
-  const oldKey = process.env.NEXT_PUBLIC_TIANDITU_KEY;
-  const oldFetch = globalThis.fetch;
-  process.env.NEXT_PUBLIC_TIANDITU_KEY = 'integrationtestkey012345678901';
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    status: { infocode: 1000 },
-    resultType: 1,
-    pois: [
-      { name: '远处', lonlat: '110,35' },
-      { name: '中心附近', lonlat: '104.001,30.001' },
-      { name: '中间', lonlat: '105,31' },
-    ],
-  }), { status: 200, headers: { 'content-type': 'application/json' } });
-  try {
-    const results = await searchPlaces(
-      '地图中心排序唯一查询', [104, 30], new AbortController().signal, 'tianditu',
-    );
-    assert.deepEqual(results.map((place) => place.name), ['中心附近', '中间', '远处']);
-  } finally {
-    globalThis.fetch = oldFetch;
-    if (oldKey === undefined) delete process.env.NEXT_PUBLIC_TIANDITU_KEY;
-    else process.env.NEXT_PUBLIC_TIANDITU_KEY = oldKey;
-  }
-});
+  const controller = new AbortController();
+  controller.abort(new DOMException('test abort', 'AbortError'));
+  const beforeAbort = urls.length;
+  await assert.rejects(searcher.searchPlacesDetailed('abort query', [104, 30], controller.signal, 'tianditu'));
+  assert.equal(urls.length, beforeAbort);
 
-test('default TianDiTu empty result falls back to Photon, while explicit TianDiTu does not', async () => {
-  const { searchPlaces } = await import('../modules/navigation/provider.ts');
-  const oldKey = process.env.NEXT_PUBLIC_TIANDITU_KEY;
-  const oldFetch = globalThis.fetch;
-  const key = 'integrationtestkey012345678901';
-  const urls = [];
-  process.env.NEXT_PUBLIC_TIANDITU_KEY = key;
-  globalThis.fetch = async (input) => {
-    const url = String(input);
-    urls.push(url);
-    if (url.includes('api.tianditu.gov.cn')) {
-      return new Response(JSON.stringify({ status: { infocode: 3001 }, pois: [] }), {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    assert.match(url, /^https:\/\/photon\.komoot\.io\/api\//);
-    return new Response(JSON.stringify({
-      features: [{
-        geometry: { coordinates: [104.066, 30.659] },
-        properties: { name: 'Photon回退结果', city: '成都' },
-      }],
-    }), { status: 200, headers: { 'content-type': 'application/json' } });
-  };
-  try {
-    const results = await searchPlaces(
-      '默认回退唯一查询', [104, 30], new AbortController().signal,
-    );
-    assert.deepEqual(results.map((place) => place.name), ['Photon回退结果']);
-    assert.equal(urls.length, 2);
-    assert.match(urls[0], /^https:\/\/api\.tianditu\.gov\.cn\/v2\/search/);
-    assert.match(urls[1], /^https:\/\/photon\.komoot\.io\/api\//);
-  } finally {
-    globalThis.fetch = oldFetch;
-    if (oldKey === undefined) delete process.env.NEXT_PUBLIC_TIANDITU_KEY;
-    else process.env.NEXT_PUBLIC_TIANDITU_KEY = oldKey;
-  }
+  payload = { status: { infocode: 3001 }, pois: [] };
+  const fallback = await searcher.searchPlacesDetailed('fallback query', [104, 30], new AbortController().signal);
+  assert.deepEqual(fallback.places.map((place) => place.name), ['Photon fallback']);
+  assert.equal(urls.filter(({ url }) => url.includes('photon.komoot.io')).length, 1);
+  assert.ok(urls.every(({ signal }) => signal instanceof AbortSignal));
 });
