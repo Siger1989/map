@@ -110,6 +110,10 @@
   background: transparent;
   cursor: pointer;
 }
+.maplibregl-marker-covered.trip-photo-marker {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 .trip-photo-marker .photo-annotation-badge {
   position: absolute;
   bottom: 0;

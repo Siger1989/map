@@ -195,6 +195,10 @@ export class AnnotationLayer implements CustomLayerInterface {
         'is-underground',
         item.placement === 'underground',
       );
+      element.classList.toggle(
+        'is-underground-model-label',
+        item.kind !== 'pin' && item.placement === 'underground',
+      );
       element.style.setProperty('--marker-color', item.color);
       const rgb = /^#([0-9a-f]{6})$/i.exec(item.color)?.[1];
       if (rgb) {
@@ -264,19 +268,28 @@ export class AnnotationLayer implements CustomLayerInterface {
         event.preventDefault();
         this.onSelect(item.id);
       };
+      const opacityWhenCovered = item.kind !== 'pin' && item.placement === 'underground' ? 1 : 0;
       if (existing) {
         existing.setLngLat(item.coordinates);
         existing.setOffset([0, 0]);
+        if (element.dataset.occludedOpacity !== String(opacityWhenCovered))
+          existing.setOpacity(1, opacityWhenCovered);
         element.style.visibility = '';
-      } else
-        this.markers.set(
-          item.id,
-          new Marker({ element, anchor: 'bottom', subpixelPositioning: true })
-            .setLngLat(item.coordinates)
-            .addTo(map),
-        );
-      // A model label is projected from its mesh, not the terrain anchor tested by Marker.
-      this.markers.get(item.id)!.setOpacity(1, 1);
+      } else {
+        const marker = new Marker({
+          element,
+          anchor: 'bottom',
+          subpixelPositioning: true,
+          opacity: 1,
+          opacityWhenCovered,
+        })
+          .setLngLat(item.coordinates)
+          .addTo(map);
+        this.markers.set(item.id, marker);
+      }
+      // Ordinary pins and model labels disappear behind terrain. Explicit underground
+      // models keep their existing X-ray label treatment; the mesh itself is unchanged.
+      element.dataset.occludedOpacity = String(opacityWhenCovered);
       if (item.kind === 'pin' || altitudeRange(item) === null) continue;
       const ground = this.settings.terrain
         ? (item.groundElevation ?? 0) * this.settings.exaggeration

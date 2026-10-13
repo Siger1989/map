@@ -74,7 +74,7 @@ export class PhotoLayer {
           element: button,
           anchor: 'bottom',
           opacity: 1,
-          opacityWhenCovered: 1,
+          opacityWhenCovered: 0,
         })
           .setLngLat(group[0].coordinates)
           .addTo(this.map),

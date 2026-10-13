@@ -7,7 +7,10 @@ import mobileWorkerCompatibility from '../scripts/mobile-worker-compat.mjs';
 import layoutEditor from '../tools/layout-editor/plugin.mjs';
 import { mapTileVitePlugin } from '../tools/map-tile-proxy.mjs';
 import { apkPreviewSeeds } from '../tools/apk-preview-seeds.mjs';
+import { createPreviewWatchIgnore } from '../tools/previewWatchIgnore.mjs';
 import { fileURLToPath } from 'node:url';
+
+const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig(({ mode }) => {
   const env: Record<string, string> = mode === 'public' ? {} : loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '');
@@ -25,7 +28,7 @@ export default defineConfig(({ mode }) => {
   // APK requests use LocalGateway. Browser-only mobile previews need the web API server.
   server: {
     // Packaging output must not reload an in-progress map preview.
-    watch: { ignored: ['**/.build/**', '**/dist/**', '**/APK/**', '**/.openai/**', '**/artifacts/**', '**/config/ui-layout-draft.json*'] },
+    watch: { ignored: createPreviewWatchIgnore(projectRoot) },
     proxy: {
       '/api': {
         target: process.env.SHANTU_DEV_API_URL || 'http://localhost:3108',

@@ -56,6 +56,8 @@ import {
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
+import { installSelectionMarkerVisibility } from './selectionMarkerVisibility';
+import './selectionMarkerVisibility.css';
 import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
 import { installDesktopPanReceiver } from './desktopPan';
@@ -963,6 +965,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let releaseLastView: (() => void) | undefined;
       let releaseFollowPan: (() => void) | undefined;
       let releaseDesktopPan: (() => void) | undefined;
+      let releaseSelectionVisibility: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
@@ -1222,9 +1225,12 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             new maplibre.ScaleControl({ maxWidth: 44, unit: 'metric' }),
             'bottom-left',
           );
-          const marker = new maplibre.Marker({ color: '#9de8c4', scale: 0.6 })
+          const marker = new maplibre.Marker({ color: '#9de8c4', scale: 0.6, opacity: 1, opacityWhenCovered: 0 })
             .setLngLat(selected)
             .addTo(map);
+          marker.getElement().classList.add('map-selection-marker');
+          const selectionVisibility = installSelectionMarkerVisibility(map, marker.getElement(), () => selected);
+          releaseSelectionVisibility = selectionVisibility.cleanup;
           const pick = (lng: number, lat: number) => {
             if (latest.current.readOnly) return;
             terrainAbort.current?.abort();
@@ -1232,6 +1238,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             terrainAbort.current = abort;
             selected = [lng, lat];
             marker.setLngLat(selected);
+            selectionVisibility.refresh();
             latest.current.onPoint({ lng, lat, elevation: null });
             void readElevation(lng, lat, abort.signal)
               .then((elevation) => {
@@ -1541,6 +1548,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         releaseLastView?.();
         releaseFollowPan?.();
         releaseDesktopPan?.();
+        releaseSelectionVisibility?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;

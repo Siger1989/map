@@ -133,6 +133,8 @@ function projectLine(map: MapLibreMap, coordinates: Position[], viewport: Bounds
   const runs: Array<Array<[number, number]>> = [];
   let run: Array<[number, number]> = [];
   let samples = 0;
+  let cachedCoordinate: Position | null = null;
+  let cachedProjection: [number, number] | null = null;
   const project = (coordinate: Position): [number, number] | null => {
     const point = map.project(coordinate as [number, number]);
     if (!finite(point.x) || !finite(point.y)) return null;
@@ -149,7 +151,10 @@ function projectLine(map: MapLibreMap, coordinates: Position[], viewport: Bounds
   };
   for (let i = 1; i < coordinates.length && samples < MAX_SAMPLES_PER_FEATURE; i++) {
     const a = coordinates[i - 1], b = coordinates[i];
-    const pa = project(a), pb = project(b);
+    const pa = a === cachedCoordinate ? cachedProjection : project(a);
+    const pb = project(b);
+    cachedCoordinate = b;
+    cachedProjection = pb;
     if (!pa || !pb) { flush(); continue; }
     const pm = project(interpolate(a, b, 0.5));
     if (!pm || !intersects([pa, pm, pb])) { flush(); continue; }
@@ -157,7 +162,8 @@ function projectLine(map: MapLibreMap, coordinates: Position[], viewport: Bounds
     const steps = Math.max(2, Math.min(64, Math.ceil(span / 8)));
     if (samples + steps > MAX_SAMPLES_PER_FEATURE) { flush(); break; }
     for (let step = 0; step <= steps; step++) {
-      const point = step === 0 ? pa : step === steps ? pb : project(interpolate(a, b, step / steps));
+      const point = step === 0 ? pa : step === steps ? pb :
+        steps % 2 === 0 && step === steps / 2 ? pm : project(interpolate(a, b, step / steps));
       if (point && (!run.length || Math.hypot(run.at(-1)![0] - point[0], run.at(-1)![1] - point[1]) > 0.1)) run.push(point);
       samples++;
     }
@@ -170,18 +176,63 @@ export function projectRouteFeature(map: MapLibreMap, feature: Feature, viewport
   return lineCoordinates(feature).flatMap((coordinates) => projectLine(map, coordinates, viewport));
 }
 
-function svgMask(paths: MaskPath[], width: number, height: number) {
+export function createRouteMaskSvg(
+  paths: MaskPath[], width: number, height: number, mode: 'alpha' | 'luminance',
+  limits: { maxPaths: number; maxChars: number; rejectOverflow?: boolean } = {
+    maxPaths: MAX_MASK_PATHS, maxChars: MAX_SVG_CHARS,
+  },
+) {
   let draw = '';
-  for (const { points, width: strokeWidth, dash, cap } of paths.slice(0, MAX_MASK_PATHS)) {
+  let renderedPaths = 0;
+  for (const { points, width: strokeWidth, dash, cap } of paths) {
     if (points.length < 2 || strokeWidth <= 0) continue;
+    if (renderedPaths >= limits.maxPaths) return limits.rejectOverflow ? null : finishMask(draw, width, height, mode);
     const d = points.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     const dashArray = dash.length ? ` stroke-dasharray="${dash.map((v) => (v * strokeWidth).toFixed(1)).join(' ')}"` : '';
     const path = `<path d="${d}" fill="none" stroke="black" stroke-width="${strokeWidth.toFixed(1)}" stroke-linecap="${cap}" stroke-linejoin="round"${dashArray}/>`;
-    if (draw.length + path.length > MAX_SVG_CHARS) break;
+    if (draw.length + path.length > limits.maxChars) {
+      if (limits.rejectOverflow) return null;
+      break;
+    }
     draw += path;
+    renderedPaths++;
   }
   if (!draw) return null;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width.toFixed(1)}" height="${height.toFixed(1)}" viewBox="0 0 ${width.toFixed(1)} ${height.toFixed(1)}"><defs><mask id="m" mask-type="luminance"><rect width="100%" height="100%" fill="white"/>${draw}</mask></defs><rect width="100%" height="100%" fill="white" mask="url(#m)"/></svg>`;
+  return finishMask(draw, width, height, mode);
+}
+
+function finishMask(draw: string, width: number, height: number, mode: 'alpha' | 'luminance') {
+  if (!draw) return null;
+  const dimensions = `xmlns="http://www.w3.org/2000/svg" width="${width.toFixed(1)}" height="${height.toFixed(1)}" viewBox="0 0 ${width.toFixed(1)} ${height.toFixed(1)}"`;
+  if (mode === 'luminance')
+    return `<svg ${dimensions}><rect width="100%" height="100%" fill="white"/>${draw}</svg>`;
+  return `<svg ${dimensions}><defs><mask id="m" mask-type="luminance"><rect width="100%" height="100%" fill="white"/>${draw}</mask></defs><rect width="100%" height="100%" fill="white" mask="url(#m)"/></svg>`;
+}
+
+export function supportsLuminanceMask(element: HTMLElement) {
+  const viewCSS = element.ownerDocument?.defaultView?.CSS;
+  const css = viewCSS ?? (globalThis as typeof globalThis & { CSS?: typeof CSS }).CSS;
+  try { return typeof css?.supports === 'function' && css.supports('mask-mode', 'luminance'); }
+  catch { return false; }
+}
+
+export function applyRouteMaskImage(
+  element: HTMLElement, url: string, size: string, position: string, maskMode: 'alpha' | 'luminance',
+) {
+  setMaskProperty(element.style, 'mask-image', url);
+  setMaskProperty(element.style, '-webkit-mask-image', url);
+  setMaskProperty(element.style, 'mask-size', size);
+  setMaskProperty(element.style, '-webkit-mask-size', size);
+  setMaskProperty(element.style, 'mask-position', position);
+  setMaskProperty(element.style, '-webkit-mask-position', position);
+  setMaskProperty(element.style, 'mask-repeat', 'no-repeat');
+  setMaskProperty(element.style, '-webkit-mask-repeat', 'no-repeat');
+  setMaskProperty(element.style, 'mask-mode', maskMode);
+  setMaskProperty(element.style, '-webkit-mask-mode', maskMode);
+  setMaskProperty(element.style, 'mask-origin', 'border-box');
+  setMaskProperty(element.style, '-webkit-mask-origin', 'border-box');
+  setMaskProperty(element.style, 'mask-clip', 'no-clip');
+  setMaskProperty(element.style, '-webkit-mask-clip', 'no-clip');
 }
 
 export function setRouteMask(
@@ -204,22 +255,10 @@ export function setRouteMask(
     points: path.points.map(([x, y]) => [x / sx, y / sy] as [number, number]),
     width: path.width / ((sx + sy) / 2),
   }));
-  const svg = svgMask(scaledPaths, local.width, local.height);
+  const maskMode = supportsLuminanceMask(element) ? 'luminance' : 'alpha';
+  const svg = createRouteMaskSvg(scaledPaths, local.width, local.height, maskMode);
   if (!svg) { restoreRouteMask(element, saved); return; }
   const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  setMaskProperty(element.style, 'mask-image', url);
-  setMaskProperty(element.style, '-webkit-mask-image', url);
-  setMaskProperty(element.style, 'mask-size', `${local.width}px ${local.height}px`);
-  setMaskProperty(element.style, '-webkit-mask-size', `${local.width}px ${local.height}px`);
   const position = `${local.left}px ${local.top}px`;
-  setMaskProperty(element.style, 'mask-position', position);
-  setMaskProperty(element.style, '-webkit-mask-position', position);
-  setMaskProperty(element.style, 'mask-repeat', 'no-repeat');
-  setMaskProperty(element.style, '-webkit-mask-repeat', 'no-repeat');
-  setMaskProperty(element.style, 'mask-mode', 'alpha');
-  setMaskProperty(element.style, '-webkit-mask-mode', 'alpha');
-  setMaskProperty(element.style, 'mask-origin', 'border-box');
-  setMaskProperty(element.style, '-webkit-mask-origin', 'border-box');
-  setMaskProperty(element.style, 'mask-clip', 'no-clip');
-  setMaskProperty(element.style, '-webkit-mask-clip', 'no-clip');
+  applyRouteMaskImage(element, url, `${local.width}px ${local.height}px`, position, maskMode);
 }

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { clipProjectedPathForMarker, syncRouteIconPriority } from '../modules/map/routeIconPriority.ts';
-import { saveRouteMask, setRouteMask } from '../modules/map/routeIconPriorityGeometry.ts';
+import { restoreRouteMask, saveRouteMask, setRouteMask } from '../modules/map/routeIconPriorityGeometry.ts';
+import { releaseSharedFrameMask, tryApplySharedFrameMask } from '../modules/map/routeIconPriorityFrameMask.ts';
 
 test('flat Mercator masks refresh after visual changes and route tiles, not unrelated repaints', () => {
   const map = fakeMap([marker({ left: 20, top: 30, right: 50, bottom: 70, width: 30, height: 40 })]);
@@ -209,6 +210,158 @@ test('writes only changed mask declarations and clears stale important priority'
   assert.deepEqual(element.style.writes.map(([name]) => name), ['mask-origin'],
     'the required value is rewritten to remove an external important priority');
   assert.equal(element.style.getPropertyPriority('mask-origin'), '');
+});
+
+test('uses equivalent direct luminance geometry when supported and restores prior mask styles', () => {
+  const previousCSS = Object.getOwnPropertyDescriptor(globalThis, 'CSS');
+  const bounds = { left: 20, top: 30, right: 50, bottom: 70 };
+  const paths = [
+    { points: [[5, 10], [25, 10], [27, 20]], width: 4, dash: [2, 1], cap: 'round' },
+  ];
+  const run = (supported) => {
+    Object.defineProperty(globalThis, 'CSS', { configurable: true, value: { supports: (property, value) =>
+      property === 'mask-mode' && value === 'luminance' && supported } });
+    const original = { 'mask-image': 'url("prior.svg")', 'mask-mode': 'alpha', '-webkit-mask-mode': 'alpha' };
+    const element = marker(bounds, [], '', original);
+    const saved = saveRouteMask(element);
+    setRouteMask(element, saved, bounds, paths);
+    const image = element.style.getPropertyValue('mask-image');
+    const svg = decodeURIComponent(image.match(/data:image\/svg\+xml,([^\"]+)/)[1]);
+    const paintedPaths = [...svg.matchAll(/<path\b[^>]*\/>/g)].map(([path]) => path);
+    assert.equal(element.style.getPropertyValue('mask-mode'), supported ? 'luminance' : 'alpha');
+    assert.equal(element.style.getPropertyValue('-webkit-mask-mode'), supported ? 'luminance' : 'alpha');
+    restoreRouteMask(element, saved);
+    assert.equal(element.style.getPropertyValue('mask-image'), 'url("prior.svg")');
+    assert.equal(element.style.getPropertyValue('mask-mode'), 'alpha');
+    assert.equal(element.style.getPropertyValue('-webkit-mask-mode'), 'alpha');
+    return { svg, paintedPaths };
+  };
+  try {
+    const luminance = run(true);
+    const alpha = run(false);
+    assert.deepEqual(luminance.paintedPaths, alpha.paintedPaths,
+      'the exact route path and stroke attributes are shared by both SVG forms');
+    assert.match(luminance.svg, /^<svg[^>]*><rect[^>]*fill="white"\/>/);
+    assert.doesNotMatch(luminance.svg, /<defs>|<mask\b|mask="url\(#m\)"/);
+    assert.match(alpha.svg, /<defs><mask id="m" mask-type="luminance">/);
+    assert.match(alpha.svg, /mask="url\(#m\)"/);
+  } finally {
+    if (previousCSS) Object.defineProperty(globalThis, 'CSS', previousCSS);
+    else delete globalThis.CSS;
+  }
+});
+
+test('shares one marker-union SVG across axis-aligned scaled targets with exact per-target offsets', () => {
+  const previousCSS = Object.getOwnPropertyDescriptor(globalThis, 'CSS');
+  const container = { parentElement: null };
+  const makeTarget = (left, top, width, height, offsetWidth, offsetHeight) => {
+    const values = new Map([['mask-image', 'url("original.svg")']]);
+    const priorities = new Map();
+    const style = {
+      getPropertyValue: (name) => values.get(name) ?? '',
+      getPropertyPriority: (name) => priorities.get(name) ?? '',
+      setProperty: (name, value, priority = '') => { values.set(name, value); priorities.set(name, priority); },
+      removeProperty: (name) => { values.delete(name); priorities.delete(name); },
+    };
+    const target = { style, offsetWidth, offsetHeight, parentElement: container,
+      ownerDocument: { defaultView: { CSS: { supports: () => true }, getComputedStyle: () => ({ transform: 'none' }) } } };
+    return { target, metrics: { left, top, width, height, right: left + width, bottom: top + height, offsetWidth, offsetHeight } };
+  };
+  try {
+    Object.defineProperty(globalThis, 'CSS', { configurable: true, value: { supports: () => true } });
+    const first = makeTarget(110, 220, 40, 40, 20, 20); // scale 2
+    const second = makeTarget(150, 240, 10, 10, 20, 20); // scale 0.5
+    const saved = [saveRouteMask(first.target), saveRouteMask(second.target)];
+    const sharedPath = { points: [[5, 6], [12, 8]], width: 3, dash: [2, 1], cap: 'round' };
+    const entries = [
+      { target: first.target, markerBounds: { left: 110, top: 220, right: 130, bottom: 240 }, paths: [sharedPath], metrics: first.metrics },
+      { target: second.target, markerBounds: { left: 105, top: 215, right: 125, bottom: 235 },
+        paths: [{ ...sharedPath, points: [[10, 11], [17, 13]] }], metrics: second.metrics },
+    ];
+    assert.equal(tryApplySharedFrameMask(container, { left: 100, top: 200, width: 10, height: 10 }, entries), true,
+      'the shared SVG spans the full marker union without clipping to the canvas');
+    const firstUrl = first.target.style.getPropertyValue('mask-image');
+    assert.equal(second.target.style.getPropertyValue('mask-image'), firstUrl);
+    assert.equal(first.target.style.getPropertyValue('mask-size'), '12.5px 12.5px');
+    assert.equal(first.target.style.getPropertyValue('mask-position'), '-2.5px -2.5px');
+    assert.equal(second.target.style.getPropertyValue('mask-size'), '50px 50px');
+    assert.equal(second.target.style.getPropertyValue('mask-position'), '-90px -50px');
+    const svg = decodeURIComponent(firstUrl.match(/data:image\/svg\+xml,([^\"]+)/)[1]);
+    assert.equal([...svg.matchAll(/<path\b/g)].length, 1, 'identical global path geometry is deduplicated');
+    assert.match(svg, /width="25\.0" height="25\.0" viewBox="0 0 25\.0 25\.0"/);
+    assert.match(svg, /d="M10\.0,11\.0 L17\.0,13\.0"/);
+    assert.equal(first.target.style.getPropertyValue('mask-mode'), 'luminance');
+    restoreRouteMask(first.target, saved[0]); restoreRouteMask(second.target, saved[1]);
+    assert.equal(first.target.style.getPropertyValue('mask-image'), 'url("original.svg")');
+    assert.equal(second.target.style.getPropertyValue('mask-image'), 'url("original.svg")');
+  } finally {
+    if (previousCSS) Object.defineProperty(globalThis, 'CSS', previousCSS);
+    else delete globalThis.CSS;
+  }
+});
+
+test('shared-frame mask declines rotation and over-budget frames without writing styles', () => {
+  const container = { parentElement: null };
+  const makeEntry = (transform, paths) => {
+    const values = new Map();
+    const writes = [];
+    const target = { style: {
+      getPropertyValue: (name) => values.get(name) ?? '', getPropertyPriority: () => '',
+      setProperty: (name, value) => { writes.push(name); values.set(name, value); }, removeProperty: (name) => values.delete(name),
+    }, offsetWidth: 20, offsetHeight: 20, parentElement: container,
+    ownerDocument: { defaultView: { CSS: { supports: () => true }, getComputedStyle: () => ({ transform }) } } };
+    return { target, writes, entry: { target, markerBounds: { left: 0, top: 0, right: 20, bottom: 20 },
+      paths, metrics: { left: 0, top: 0, width: 20, height: 20, right: 20, bottom: 20, offsetWidth: 20, offsetHeight: 20 } } };
+  };
+  const path = { points: [[1, 1], [10, 10]], width: 4, dash: [], cap: 'round' };
+  const rotated = makeEntry('matrix(0, 1, -1, 0, 0, 0)', [path]);
+  assert.equal(tryApplySharedFrameMask(container, { left: 0, top: 0, width: 100, height: 100 }, [rotated.entry]), false);
+  assert.deepEqual(rotated.writes, []);
+
+  const ordinary = makeEntry('none', Array.from({ length: 2049 }, (_, index) => ({
+    ...path, points: [[index, 1], [index + 0.5, 10]],
+  })));
+  assert.equal(tryApplySharedFrameMask(container, { left: 0, top: 0, width: 100, height: 100 }, [ordinary.entry]), false);
+  assert.deepEqual(ordinary.writes, [], 'over-budget frames fall back before any shared-mask writes');
+});
+
+test('reuses short Blob URLs per container and revokes only URLs owned by the frame mask', () => {
+  const revoked = [], created = [];
+  const view = {
+    CSS: { supports: () => true },
+    getComputedStyle: () => ({ transform: 'none' }),
+    Blob: class { constructor(parts, options) { this.parts = parts; this.type = options.type; } },
+    URL: {
+      createObjectURL: (blob) => { const url = `blob:frame-${created.length + 1}`; created.push([url, blob]); return url; },
+      revokeObjectURL: (url) => revoked.push(url),
+    },
+  };
+  const container = { parentElement: null };
+  const target = { offsetWidth: 20, offsetHeight: 20, parentElement: container, ownerDocument: { defaultView: view }, style: (() => {
+    const values = new Map([['mask-image', 'url("user-mask.svg")']]);
+    return { getPropertyValue: (key) => values.get(key) ?? '', getPropertyPriority: () => '',
+      setProperty: (key, value) => values.set(key, value), removeProperty: (key) => values.delete(key) };
+  })() };
+  const saved = saveRouteMask(target);
+  const entry = { target, markerBounds: { left: 0, top: 0, right: 20, bottom: 20 },
+    paths: [{ points: [[1, 1], [10, 10]], width: 4, dash: [], cap: 'round' }],
+    metrics: { left: 0, top: 0, width: 20, height: 20, right: 20, bottom: 20, offsetWidth: 20, offsetHeight: 20 } };
+  const frame = { left: 0, top: 0, width: 100, height: 100 };
+  assert.equal(tryApplySharedFrameMask(container, frame, [entry]), true);
+  assert.equal(target.style.getPropertyValue('mask-image'), 'url("blob:frame-1")');
+  assert.equal(tryApplySharedFrameMask(container, frame, [entry]), true);
+  assert.equal(created.length, 1, 'unchanged frame SVG keeps the same URL');
+  entry.paths = [{ ...entry.paths[0], points: [[1, 1], [11, 11]] }];
+  assert.equal(tryApplySharedFrameMask(container, frame, [entry]), true);
+  assert.equal(target.style.getPropertyValue('mask-image'), 'url("blob:frame-2")');
+  assert.deepEqual(revoked, ['blob:frame-1'], 'replacing the frame SVG revokes only its previous owned URL');
+  releaseSharedFrameMask(container);
+  assert.deepEqual(revoked, ['blob:frame-1', 'blob:frame-2']);
+  restoreRouteMask(target, saved);
+  assert.equal(target.style.getPropertyValue('mask-image'), 'url("user-mask.svg")',
+    'releasing shared resources does not revoke or replace the saved user mask');
+  releaseSharedFrameMask(container);
+  assert.equal(revoked.length, 2, 'release is idempotent');
 });
 
 test('pre-read target metrics preserve mask geometry with non-unit transforms', () => {
@@ -625,4 +778,49 @@ test('non-route sources and invisible route layers do not mask markers', () => {
   syncRouteIconPriority(map, 'planned-route', routeData);
   assert.equal(element.style.getPropertyValue('mask-image'), '');
   assert.deepEqual(map.layoutQueries, [], 'missing layers are filtered before querying layout');
+});
+
+test('panning reuses descendant layout, while a changed child invalidates that layout', () => {
+  const previous = globalThis.MutationObserver;
+  let callback;
+  globalThis.MutationObserver = class {
+    constructor(fn) { callback = fn; }
+    observe() {}
+    disconnect() {}
+  };
+  try {
+    const rect = { left: 20, top: 30, right: 50, bottom: 70, width: 30, height: 40 };
+    const childRect = { left: 30, top: 30, right: 60, bottom: 70, width: 30, height: 40 };
+    const element = marker(rect, [childRect], '', { background: 'green', transform: 'translate(20px,30px)' });
+    const child = element.children[0];
+    let reads = 0;
+    child.getBoundingClientRect = () => { reads++; return childRect; };
+    const map = fakeMap([element]);
+    syncRouteIconPriority(map, 'planned-route', routeData);
+    const firstReads = reads;
+    const oldValue = element.getAttribute('style');
+    element.style.setProperty('transform', 'translate(25px,30px)');
+    rect.left += 5; rect.right += 5; childRect.left += 5; childRect.right += 5;
+    callback([{ type: 'attributes', target: element, attributeName: 'style', oldValue }]);
+    assert.equal(reads, firstReads, 'pure translation does not read the descendants again');
+    childRect.right += 20; childRect.width += 20;
+    callback([{ type: 'attributes', target: child, attributeName: 'class' }]);
+    assert.ok(reads > firstReads, 'a changed child requires an exact fresh measurement');
+    map.fire('remove');
+  } finally { globalThis.MutationObserver = previous; }
+});
+
+test('terrain-hidden markers restore their mask and do not issue route queries until visible again', () => {
+  const element = marker({ left: 20, top: 30, right: 50, bottom: 70, width: 30, height: 40 });
+  const map = fakeMap([element]);
+  syncRouteIconPriority(map, 'planned-route', routeData);
+  const count = map.queryCount;
+  assert.ok(element.style.getPropertyValue('mask-image'));
+  element.style.setProperty('opacity', '0'); map.fire('move');
+  assert.equal(map.queryCount, count);
+  assert.equal(element.style.getPropertyValue('mask-image'), '');
+  element.style.setProperty('opacity', '1'); map.fire('move');
+  assert.equal(map.queryCount, count + 1);
+  assert.ok(element.style.getPropertyValue('mask-image'));
+  map.fire('remove');
 });

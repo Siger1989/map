@@ -155,6 +155,10 @@
   min-width: 44px;
   min-height: 44px;
 }
+.maplibregl-marker-covered.annotation-marker:not(.is-underground-model-label) {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 .annotation-marker-visual { display: block; position: relative; }
 .annotation-marker.is-point .annotation-marker-visual {
   padding-bottom: 14px;

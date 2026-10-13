@@ -1,5 +1,10 @@
 import type { Feature, FeatureCollection, LineString, MultiLineString } from 'geojson';
 import type { Map as MapLibreMap } from 'maplibre-gl';
+import { MarkerLayoutCache } from './markerLayoutCache.ts';
+import { ProjectedPathBoundsIndex, isPathRelevant } from './projectedPathBounds.ts';
+import { groupMarkerQueries } from './markerQueryGroups.ts';
+import { withTerrainProjectionScope } from './terrainProjectionScope.ts';
+import { releaseSharedFrameMask, tryApplySharedFrameMask, type FrameMaskEntry } from './routeIconPriorityFrameMask.ts';
 import {
   clipRoutePaths, markerMaskTargets, markerScreenBounds, projectRouteFeature,
   restoreRouteMask, saveRouteMask, setRouteMask,
@@ -73,7 +78,9 @@ export function clipProjectedPathForMarker(
   localBounds: Bounds,
   localClipBounds: Bounds,
   cache: MarkerClipCache,
+  boundsIndex?: ProjectedPathBoundsIndex,
 ): ClippedPaths {
+  if (boundsIndex && !isPathRelevant(localBounds, boundsIndex.getPathBounds(projected, pathIndex))) return [];
   let clippedByPath = cache.get(projected);
   if (!clippedByPath) {
     clippedByPath = [];
@@ -190,8 +197,33 @@ function currentSourceFeature(state: State, source: RouteSource, rendered: Featu
   return { feature: signatures.get(signature) ?? rendered, geometrySignature: signature };
 }
 
+/** Returns canvas-local bounds covering visible markers for mask-only route projection. */
 function createState(map: MapLibreMap): State {
   const state = {} as State;
+  const layoutCache = new MarkerLayoutCache((element) => {
+    const visualBounds = markerScreenBounds(element);
+    const targets = markerMaskTargets(element);
+    return { visualBounds, targets, targetMetrics: targets.map((target) => {
+      const rect = target.getBoundingClientRect();
+      return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+        width: rect.width, height: rect.height, offsetWidth: target.offsetWidth, offsetHeight: target.offsetHeight };
+    }) };
+  });
+  const cachedMarkers = new Set<HTMLElement>();
+  const observedElements = new Set<Element>();
+  const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const marker = entry.target.closest<HTMLElement>('.maplibregl-marker');
+      if (marker) layoutCache.invalidate(marker);
+    }
+    if (entries.length) state.schedule();
+  });
+  const invalidateLayouts = () => { layoutCache.clear(); state.onVisualChange(); };
+  const onContentLoad = (event: Event) => {
+    const marker = (event.target as Element)?.closest?.<HTMLElement>('.maplibregl-marker');
+    if (marker) { layoutCache.invalidate(marker); state.schedule(); }
+  };
+  const ancestorObserver = typeof MutationObserver === 'undefined' ? null : new MutationObserver(invalidateLayouts);
   state.map = map;
   state.sources = new Map();
   state.sourceGeometrySignatures = new Map();
@@ -201,7 +233,7 @@ function createState(map: MapLibreMap): State {
   state.frame = null;
   state.observer = null;
   state.flatDirty = true;
-  state.update = () => {
+  state.update = () => withTerrainProjectionScope(map, () => {
     if (state.disposed) return;
     try {
       if (map.isStyleLoaded()) {
@@ -220,6 +252,9 @@ function createState(map: MapLibreMap): State {
       right: canvasRect.left + map.getCanvas().clientWidth,
       bottom: canvasRect.top + map.getCanvas().clientHeight };
     const live = new Set(container.querySelectorAll<HTMLElement>('.maplibregl-marker'));
+    for (const marker of cachedMarkers) if (!live.has(marker)) {
+      layoutCache.invalidate(marker); cachedMarkers.delete(marker);
+    }
     for (const [marker, targets] of state.targetsByMarker) if (!live.has(marker)) {
       for (const target of targets) {
         const saved = state.originals.get(target);
@@ -234,21 +269,52 @@ function createState(map: MapLibreMap): State {
       return;
     }
     const markersWithLayout = [...live].map((element) => {
-      const bounds = markerScreenBounds(element);
-      const targets = markerMaskTargets(element);
-      const targetMetrics = new Map(targets.map((target) => {
-        const rect = target.getBoundingClientRect();
-        return [target, {
-          left: rect.left, top: rect.top, width: rect.width, height: rect.height,
-          offsetWidth: target.offsetWidth, offsetHeight: target.offsetHeight,
-        } satisfies MaskTargetMetrics] as const;
-      }));
-      return { element, bounds, targets, targetMetrics };
+      // Hidden terrain-covered markers need neither route queries nor an SVG mask.
+      const hidden = element.style.getPropertyValue('opacity') === '0' ||
+        element.style.getPropertyValue('visibility') === 'hidden' ||
+        element.classList?.contains('is-distance-hidden');
+      if (hidden) return { element, bounds: null, targets: [] as HTMLElement[], targetMetrics: new Map<HTMLElement, MaskTargetMetrics>() };
+      const layout = layoutCache.get(element);
+      cachedMarkers.add(element);
+      const targetMetrics = new Map(layout.targets.map((target, index) => [target, layout.targetMetrics[index]]));
+      return { element, bounds: layout.visualBounds, targets: layout.targets, targetMetrics };
     });
+    const desiredObservedElements = new Set(layoutCache.observedElements);
+    for (const element of observedElements) if (!desiredObservedElements.has(element)) {
+      resizeObserver?.unobserve(element); observedElements.delete(element);
+    }
+    for (const element of desiredObservedElements) if (!observedElements.has(element)) {
+      resizeObserver?.observe(element); observedElements.add(element);
+    }
     const projectedCache = new Map<Feature, Array<Array<[number, number]>>>();
     const projectedFallbackCache = new Map<string, Array<Array<[number, number]>>>();
+    const boundsIndex = new ProjectedPathBoundsIndex();
     const canvasViewport = { left: 0, top: 0,
       right: map.getCanvas().clientWidth, bottom: map.getCanvas().clientHeight };
+    const hitsByMarker = new Map<HTMLElement, ReturnType<MapLibreMap['queryRenderedFeatures']>>();
+    let mergeQueries = false;
+    try {
+      if (typeof map.getProjection === 'function') {
+        const projection = map.getProjection();
+        mergeQueries = !projection || projection.type === 'mercator';
+      }
+    } catch { /* retain individual queries for unknown projections */ }
+    const groups = mergeQueries ? groupMarkerQueries(markersWithLayout, viewport) :
+      markersWithLayout.filter(item => item.bounds).map(item => ({ unionBounds: item.bounds!, members: [item] }));
+    for (const group of groups) {
+      const bounds = group.unionBounds;
+      if (bounds.right <= viewport.left || bounds.left >= viewport.right ||
+        bounds.bottom <= viewport.top || bounds.top >= viewport.bottom) continue;
+      const queryBounds: [[number, number], [number, number]] = [
+        [bounds.left - canvasRect.left, bounds.top - canvasRect.top],
+        [bounds.right - canvasRect.left, bounds.bottom - canvasRect.top],
+      ];
+      let hits: ReturnType<MapLibreMap['queryRenderedFeatures']> = [];
+      try { hits = map.queryRenderedFeatures(queryBounds, { layers: lineLayers }); } catch { /* style can be between reloads */ }
+      for (const member of group.members) hitsByMarker.set(member.element, hits);
+    }
+    const resolvedCache = new Map<Feature, ResolvedRouteFeature>();
+    const frameMaskEntries: FrameMaskEntry[] = [];
     for (const { element, bounds, targets: currentTargets, targetMetrics } of markersWithLayout) {
       if (!bounds || bounds.right <= viewport.left || bounds.left >= viewport.right ||
         bounds.bottom <= viewport.top || bounds.top >= viewport.bottom) {
@@ -261,12 +327,7 @@ function createState(map: MapLibreMap): State {
         state.targetsByMarker.delete(element);
         continue;
       }
-      const queryBounds: [[number, number], [number, number]] = [
-        [bounds.left - canvasRect.left, bounds.top - canvasRect.top],
-        [bounds.right - canvasRect.left, bounds.bottom - canvasRect.top],
-      ];
-      let hits: ReturnType<MapLibreMap['queryRenderedFeatures']> = [];
-      try { hits = map.queryRenderedFeatures(queryBounds, { layers: lineLayers }); } catch { /* style can be between reloads */ }
+      const hits = hitsByMarker.get(element) ?? [];
       const paths: MaskPath[] = [];
       const markerClipCache: MarkerClipCache = new WeakMap();
       const localBounds = { left: bounds.left - canvasRect.left, top: bounds.top - canvasRect.top,
@@ -279,7 +340,12 @@ function createState(map: MapLibreMap): State {
         const source = sourceForLayer(layer);
         if (!lineLayers.includes(layer) || !state.sources.has(source)) continue;
         if (rendered.source && rendered.source !== source) continue;
-        const resolved = currentSourceFeature(state, source, rendered as unknown as Feature<LineString | MultiLineString>);
+        const renderedFeature = rendered as unknown as Feature<LineString | MultiLineString>;
+        let resolved = resolvedCache.get(renderedFeature);
+        if (!resolved) {
+          resolved = currentSourceFeature(state, source, renderedFeature);
+          resolvedCache.set(renderedFeature, resolved);
+        }
         const feature = resolved.feature;
         if (feature.geometry.type !== 'LineString' && feature.geometry.type !== 'MultiLineString') continue;
         const props = (feature.properties ?? {}) as Record<string, unknown>;
@@ -308,7 +374,7 @@ function createState(map: MapLibreMap): State {
         for (let pathIndex = 0; pathIndex < projected.length; pathIndex++) {
           if (paths.length >= MAX_MASK_PATHS) break;
           const clippedPaths = clipProjectedPathForMarker(
-            projected, pathIndex, projected[pathIndex], localBounds, localClipBounds, markerClipCache);
+            projected, pathIndex, projected[pathIndex], localBounds, localClipBounds, markerClipCache, boundsIndex);
           for (const points of clippedPaths) {
             if (paths.length >= MAX_MASK_PATHS) break;
             paths.push({ points, width, dash: dashValue, cap });
@@ -334,12 +400,20 @@ function createState(map: MapLibreMap): State {
         for (const target of targets) {
           let saved = state.originals.get(target);
           if (!saved) { saved = saveRouteMask(target); state.originals.set(target, saved); }
-          setRouteMask(target, saved, bounds, paths, targetMetrics.get(target));
+          const metrics = targetMetrics.get(target);
+          if (metrics) frameMaskEntries.push({ target, markerBounds: bounds, paths, metrics });
         }
         state.targetsByMarker.set(element, targets);
       }
     }
-  };
+    if (!tryApplySharedFrameMask(container, canvasRect, frameMaskEntries)) {
+      for (const { target, markerBounds, paths, metrics } of frameMaskEntries) {
+        const saved = state.originals.get(target);
+        if (saved) setRouteMask(target, saved, markerBounds, paths, metrics);
+      }
+      releaseSharedFrameMask(container);
+    }
+  });
   state.schedule = () => {
     if (state.disposed || state.frame !== null) return;
     if (typeof requestAnimationFrame === 'function') {
@@ -369,10 +443,15 @@ function createState(map: MapLibreMap): State {
     state.frame = null;
     state.observer?.disconnect();
     state.observer = null;
+    resizeObserver?.disconnect();
+    ancestorObserver?.disconnect();
+    observedElements.clear(); cachedMarkers.clear(); layoutCache.clear();
+    map.getContainer().removeEventListener?.('load', onContentLoad, true);
+    map.getContainer().ownerDocument?.fonts?.removeEventListener('loadingdone', invalidateLayouts);
     map.off('move', state.onVisualChange);
-    map.off('resize', state.onVisualChange);
+    map.off('resize', invalidateLayouts);
     map.off('render', state.onRender);
-    map.off('styledata', state.onVisualChange);
+    map.off('styledata', invalidateLayouts);
     map.off('sourcedata', state.onSourceData);
     map.off('remove', state.dispose);
     for (const [element, saved] of state.originals) restoreRouteMask(element, saved);
@@ -380,34 +459,53 @@ function createState(map: MapLibreMap): State {
     state.targetsByMarker.clear();
     state.sources.clear();
     state.sourceGeometrySignatures.clear();
+    try { releaseSharedFrameMask(map.getContainer()); } catch { /* map container may already be detached */ }
     states.delete(map);
   };
   map.on('move', state.onVisualChange);
-  map.on('resize', state.onVisualChange);
+  map.on('resize', invalidateLayouts);
   map.on('render', state.onRender);
-  map.on('styledata', state.onVisualChange);
+  map.on('styledata', invalidateLayouts);
   map.on('sourcedata', state.onSourceData);
   map.on('remove', state.dispose);
+  map.getContainer().addEventListener?.('load', onContentLoad, true);
+  map.getContainer().ownerDocument?.fonts?.addEventListener('loadingdone', invalidateLayouts);
   if (typeof MutationObserver !== 'undefined') {
     const container = map.getContainer();
     state.observer = new MutationObserver((records) => {
-      const markerChanged = records.some((record) => {
-        if (record.type === 'childList') return true;
+      let markerChanged = false;
+      for (const record of records) {
+        if (record.type === 'childList') { layoutCache.clear(); markerChanged = true; continue; }
         const target = record.target as HTMLElement;
-        if (target.closest?.('.maplibregl-marker')) {
-          if (record.attributeName !== 'style') return true;
-          return nonMaskStyleSignature(target.getAttribute('style')) !==
-            nonMaskStyleSignature(record.oldValue);
+        // MapLibre repeats classList.remove on every marker opacity check, even
+        // when the marker was already uncovered. These are not layout changes.
+        if (record.attributeName && record.oldValue !== undefined &&
+          target.getAttribute?.(record.attributeName) === record.oldValue) continue;
+        const marker = target.closest?.<HTMLElement>('.maplibregl-marker');
+        if (marker) {
+          if (record.attributeName !== 'style') { layoutCache.invalidate(marker); markerChanged = true; continue; }
+          const current = nonMaskStyleSignature(target.getAttribute('style'));
+          const previous = nonMaskStyleSignature(record.oldValue);
+          if (current === previous) continue;
+          // Root movement is a pure translation; rotation/scale are checked by the cache.
+          // Descendant transforms, custom scale variables and all other styles affect layout.
+          const layoutStyle = (value: string) => value.split(';').filter(declaration =>
+            !/^(transform|opacity):/.test(declaration)).join('; ');
+          if (target !== marker || layoutStyle(current) !== layoutStyle(previous)) layoutCache.invalidate(marker);
+          markerChanged = true;
+        } else if (target.contains?.(map.getContainer())) {
+          layoutCache.clear(); markerChanged = true;
         }
-        return false;
-      });
+      }
       if (markerChanged) state.schedule();
     });
     state.observer.observe(container, {
       subtree: true, childList: true, attributes: true,
       attributeOldValue: true,
-      attributeFilter: ['class', 'style', 'hidden', 'aria-expanded', 'data-presentation'],
+      attributeFilter: ['class', 'style', 'hidden', 'aria-expanded', 'data-presentation', 'src', 'width', 'height', 'viewBox', 'd', 'fill'],
     });
+    for (let ancestor = container.parentElement; ancestor; ancestor = ancestor.parentElement)
+      ancestorObserver?.observe(ancestor, { attributes: true, attributeFilter: ['class', 'style'] });
   }
   return state;
 }
