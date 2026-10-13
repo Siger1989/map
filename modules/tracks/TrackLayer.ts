@@ -2,7 +2,7 @@ import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { resolvedRouteTerminals } from './routeTerminals';
 import { selectedEdgeData, syncSelectedEdges } from './selectedEdgeLayer';
 import { syncTrackNotes } from './trackNotes';
-import { invalidateOverlayData, syncOverlayData } from '../map/overlayData';
+import { invalidateOverlayData, syncOverlayData, syncPlaceLabelLayerOrder } from '../map/overlayData';
 import {
   syncRouteWarnings,
   type RouteWarning,
@@ -76,8 +76,12 @@ export class TrackLayer {
   private trackFeatureIds = new Map<string, Set<string | number>>();
   private nodeFeatures = new Map<string, Set<string | number>>();
   private lineFeatures = new Map<string, Set<string | number>>();
+  private nodePreviewGeometryIndexed = false;
   private activePreview: TrackOverlay['preview'] = null;
   private selectedEdgeSource: GeoJSONSource | null = null;
+  private trackNotesSource: GeoJSONSource | null = null;
+  private routeWarningsSource: GeoJSONSource | null = null;
+  private lineSelectionSource: GeoJSONSource | null = null;
   private selectedEdgeTrackId: string | null = null;
   private selectedEdgeGeometry: FeatureCollection['features'][number]['geometry'] | null = null;
   private selectedEdgeBaseline: FeatureCollection | null = null;
@@ -205,6 +209,10 @@ export class TrackLayer {
   }
   sync(state: TrackOverlay) {
     this.recoveryAttempted = new WeakSet();
+    if (this.canSkipUnchangedBrowseSync(state)) {
+      syncPlaceLabelLayerOrder(this.map);
+      return;
+    }
     const previous = this.state;
     const hadActivePreview = !!this.activePreview;
     if (hadActivePreview) this.preview(null);
@@ -382,11 +390,14 @@ export class TrackLayer {
     const lineFeatures = new Map<string, Set<string | number>>();
     const trackFeatureIds = new Map<string, Set<string | number>>();
     assignTrackFeatureIds(data.features);
-    for (const feature of data.features) indexFeature(feature, baselineFeatures, trackFeatureIds, nodeFeatures, lineFeatures);
+    for (const feature of data.features) indexFeature(
+      feature, baselineFeatures, trackFeatureIds, nodeFeatures, lineFeatures, state.editing !== false,
+    );
     this.baselineFeatures = baselineFeatures;
     this.trackFeatureIds = trackFeatureIds;
     this.nodeFeatures = nodeFeatures;
     this.lineFeatures = lineFeatures;
+    this.nodePreviewGeometryIndexed = state.editing !== false;
     syncSelectedEdges(m, state);
     const selectedEdges = selectedEdgeData(state);
     this.selectedEdgeBaseline = selectedEdges;
@@ -439,6 +450,9 @@ export class TrackLayer {
             ]
           : [],
     });
+    this.trackNotesSource = m.getSource('manual-track-notes') as GeoJSONSource | undefined ?? null;
+    this.routeWarningsSource = m.getSource('route-grade-warnings') as GeoJSONSource | undefined ?? null;
+    this.lineSelectionSource = m.getSource('track-line-selection') as GeoJSONSource | undefined ?? null;
     const currentTrackIds = new Set(state.saved.map((track) => String(track.id)));
     currentTrackIds.add(DRAFT_ID);
     this.handleCache.retain(currentTrackIds);
@@ -448,6 +462,22 @@ export class TrackLayer {
   private invalidateProjectedHandles() {
     this.projectionValid = false;
     this.projectionEpoch++;
+  }
+
+  private canSkipUnchangedBrowseSync(state: TrackOverlay) {
+    if (state !== this.state || state.editing !== false || this.activePreview || !this.baselineSource ||
+      this.map.getSource('manual-tracks') !== this.baselineSource ||
+      this.map.getSource('manual-track-selection-edge') !== this.selectedEdgeSource ||
+      this.map.getSource('manual-track-notes') !== this.trackNotesSource ||
+      this.map.getSource('route-grade-warnings') !== this.routeWarningsSource ||
+      this.map.getSource('track-line-selection') !== this.lineSelectionSource ||
+      !this.map.getLayer('manual-track-selection-edge') ||
+      TRACK_LAYER_IDS.some(id => !this.map.getLayer(id)) ||
+      !this.map.getLayer('manual-track-notes-line') ||
+      !this.map.getLayer('manual-track-notes-point') ||
+      !this.map.getLayer('route-grade-warning-dot') ||
+      !this.map.getLayer('route-grade-warning-label')) return false;
+    return true;
   }
 
   private routeHandles(
@@ -744,6 +774,7 @@ export class TrackLayer {
   /** Update only the currently dragged node's line and point features. */
   preview(preview: TrackOverlay['preview'], retryAfterRestore = true) {
     const revision = ++this.previewRevision;
+    if (preview) this.ensureNodePreviewGeometryIndex();
     const source = this.map.getSource('manual-tracks') as GeoJSONSource | undefined;
     if (!source || source !== this.baselineSource || typeof source.updateData !== 'function') {
       this.activePreview = null;
@@ -814,6 +845,15 @@ export class TrackLayer {
       if (index) return profilePreviewMoves(index, preview.node.coordinate, preview.coordinate);
     }
     return new Map([[preview.node.coordinate.join(','), preview.coordinate]]);
+  }
+
+  private ensureNodePreviewGeometryIndex() {
+    if (this.nodePreviewGeometryIndexed) return;
+    this.nodeFeatures.clear();
+    this.lineFeatures.clear();
+    for (const feature of this.baselineFeatures.values())
+      indexNodePreviewGeometry(feature, this.nodeFeatures, this.lineFeatures);
+    this.nodePreviewGeometryIndexed = true;
   }
 
   private previewSelectedEdge(preview: TrackOverlay['preview'], revision: number) {
@@ -915,12 +955,30 @@ function indexFeature(
   tracks: Map<string, Set<string | number>>,
   nodes: Map<string, Set<string | number>>,
   lines: Map<string, Set<string | number>>,
+  indexMembership = true,
 ) {
   const id = feature.id;
   const trackId = String(feature.properties?.trackId ?? 'unknown');
   if (id === undefined) return;
   baseline.set(id, feature);
   addIndexed(tracks, trackId, id);
+  if (feature.geometry.type === 'Point') {
+    if (!indexMembership) return;
+    indexNodePreviewGeometry(feature, nodes, lines);
+  } else if (feature.geometry.type === 'MultiLineString') {
+    if (!indexMembership) return;
+    indexNodePreviewGeometry(feature, nodes, lines);
+  }
+}
+
+function indexNodePreviewGeometry(
+  feature: FeatureCollection['features'][number],
+  nodes: Map<string, Set<string | number>>,
+  lines: Map<string, Set<string | number>>,
+) {
+  const id = feature.id;
+  const trackId = String(feature.properties?.trackId ?? 'unknown');
+  if (id === undefined) return;
   if (feature.geometry.type === 'Point') {
     const p = feature.properties ?? {};
     addIndexed(nodes, nodeKey(trackId, [Number(p.nodeLng ?? p.lng), Number(p.nodeLat ?? p.lat)]), id);

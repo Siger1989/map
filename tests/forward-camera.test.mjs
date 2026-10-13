@@ -21,6 +21,28 @@ test('forward camera uses the real center, reliable heading, safe positive offse
   assert.equal('gps' in options, false);
 });
 
+test('a reliable heading does not inspect or rebuild the route path', () => {
+  let reads = 0;
+  const points = new Proxy([[104.1, 30.6], [104.2, 30.6]], {
+    get(target, property, receiver) {
+      reads++;
+      return Reflect.get(target, property, receiver);
+    },
+  });
+
+  const options = navigationCameraOptions({
+    center: [104.1, 30.6],
+    heading: 82,
+    path: points,
+    progress: 100,
+    height: 857,
+    forward: true,
+  });
+
+  assert.equal(options.bearing, 82);
+  assert.equal(reads, 0, 'a finite heading must bypass route-path traversal');
+});
+
 test('route tangent samples ahead of progress, including curved geometry and antimeridian paths', () => {
   const corner = navigationCameraOptions({
     center: [10, 0],

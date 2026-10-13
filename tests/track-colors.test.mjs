@@ -11,6 +11,18 @@ import { startRouteEdit, styleRouteEdit } from '../modules/tracks/routeEdit.ts';
 const track=(id,color,points)=>({id,name:id,source:'manual',createdAt:1,segments:[points],style:{color,width:2,opacity:1}});
 const a=[104,30],b=[104.001,30],c=[104.002,30],d=[104.003,30],e=[104.004,30];
 const red=track('red','#ff0000',[a,b,c]),blue=track('blue','#0000ff',[d,e]);
+test('solid track rendering skips edge-key work without explicit colors and preserves colored splits',()=>{
+  let joins=0;
+  const points=[new Proxy([1,2],{get(target,key,receiver){if(key==='join')joins++;return Reflect.get(target,key,receiver);}}),[3,4],[5,6]];
+  const plain=coloredLineParts(points,new Map(),'#ffb477');
+  assert.equal(joins,0,'no route-edge key strings are built when the color map is empty');
+  assert.equal(plain.length,1);assert.strictEqual(plain[0].coordinates,points);assert.equal(plain[0].color,'#ffb477');
+  const colored=coloredLineParts([[1,2],[3,4],[5,6]],new Map([
+    ['1,2|3,4','#ff0000'],['3,4|5,6','#0000ff'],
+  ]),'#ffffff');
+  assert.deepEqual(colored.map(run=>run.color),['#ff0000','#0000ff']);
+  assert.deepEqual(colored.map(run=>run.coordinates),[[[1,2],[3,4]],[[3,4],[5,6]]]);
+});
 test('connecting keeps red and blue physical edges through storage and reversal',()=>{
   const joined=connectTrackNodes(red,c,blue,d,'joined');assert.equal(joined.segments.length,1);assert.deepEqual(joined.edgeColors,[['#ff0000','#ff0000','#ff0000','#0000ff']]);
   const read=parseSavedTracks(JSON.stringify([joined]))[0];assert.deepEqual(read.edgeColors,joined.edgeColors);

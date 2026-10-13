@@ -123,10 +123,9 @@ export function navigationCameraOptions(input: NavigationCameraOptionsInput): Na
     return { center, pitch: 0, ...(fallbackBearing === undefined ? {} : { bearing: fallbackBearing }), offset: [0, viewportOffset(input.height, input.usableRect, false)], duration: input.animate ? 650 : 0 };
   }
 
-  const path = asPath(input.path);
   const heading = finiteAngle(input.heading)
     ? input.heading
-    : routeHeading(center, path, input.progress);
+    : routeHeading(center, asPath(input.path), input.progress);
   const bearing = heading === undefined
     ? fallbackBearing
     : fallbackBearing === undefined ? normalizeHeading(heading) : unwrapNear(heading, fallbackBearing);

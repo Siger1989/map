@@ -28,8 +28,8 @@ test('120 follower camera ends refresh once, direct gestures immediately, teardo
 function createMap() {
   const sources = new Map(), layers = new Map();
   const stats = { vertices: 0, updates: 0, fullWrites: 0 };
-  return { stats, sources,
-    getSource: id => sources.get(id), getLayer: id => layers.get(id), on() {},
+  return { stats, sources, layers,
+    getSource: id => sources.get(id), getLayer: id => layers.get(id), on() {}, off() {},
     addSource(id, spec) { sources.set(id, { data: structuredClone(spec.data),
       setData(data) { this.data = structuredClone(data); if (id === 'manual-tracks') stats.fullWrites++; return Promise.resolve(); },
       updateData(diff) { for (const update of diff.update ?? []) {
@@ -45,6 +45,103 @@ function createMap() {
     isMoving: () => false, project: ([x,y]) => ({ x: x * 1e5, y: y * 1e5 }),
   };
 }
+function browseState(points) {
+  const track = { id: 'dense', name: 'dense', createdAt: 0, style, segments: [points], nodes: [] };
+  return { saved: [track], draft: [], visible: true, style, nodes: [], selectedId: null, editing: false };
+}
+function routeFeatures(map) {
+  return map.sources.get('manual-tracks').data.features.filter(feature => feature.geometry.type === 'MultiLineString');
+}
+function routeContainsCoordinate(map, coordinate) {
+  return routeFeatures(map).some(feature => feature.geometry.coordinates.some(line =>
+    line.some(point => point[0] === coordinate[0] && point[1] === coordinate[1])));
+}
+
+test('ordinary browse skips only identical healthy state and lazily indexes public previews', () => {
+  const points = Array.from({ length: 1800 }, (_, i) => [20 + i * .00001, 10 + Math.sin(i / 30) * .001]);
+  const map = createMap(), layer = new TrackLayer(map), state = browseState(points);
+  layer.sync(state);
+
+  const stringify = JSON.stringify;
+  let routeSnapshots = 0;
+  JSON.stringify = function(value, ...args) {
+    if (value?.type === 'FeatureCollection' && value.features?.some(feature =>
+      feature.properties?.trackId === 'dense' && feature.geometry.type === 'MultiLineString')) routeSnapshots++;
+    return stringify.call(this, value, ...args);
+  };
+  try {
+    layer.sync(state);
+    assert.equal(routeSnapshots, 0, 'same browse state does not rebuild or serialize route GeoJSON');
+    layer.sync({ ...state });
+    assert.equal(routeSnapshots, 1, 'a fresh wrapper performs a real sync');
+  } finally { JSON.stringify = stringify; }
+
+  const moved = [points[900][0] + .002, points[900][1] + .002];
+  layer.preview({ node: { trackId: 'dense', coordinate: points[900] }, coordinate: moved });
+  assert.ok(routeContainsCoordinate(map, moved), 'direct browse preview updates the route');
+  assert.ok(map.stats.updates > 0, 'lazy preview index finds affected route features');
+  layer.preview(null);
+  assert.ok(routeContainsCoordinate(map, points[900]), 'cancel restores canonical route coordinates');
+
+  const changedPoint = [points[900][0] + .004, points[900][1] + .003];
+  const changedPoints = points.map((point, index) => index === 900 ? changedPoint : point);
+  const changedState = { ...state, saved: [{ ...state.saved[0], segments: [changedPoints] }] };
+  layer.sync(changedState);
+  assert.ok(routeContainsCoordinate(map, changedPoint), 'immutable geometry change is fully resynchronized');
+
+  const oldWrites = map.stats.fullWrites;
+  map.sources.delete('manual-tracks');
+  layer.sync(state);
+  assert.ok(map.sources.has('manual-tracks'), 'replaced source is recreated');
+  assert.ok(map.stats.fullWrites > oldWrites, 'source recovery performs a full data write');
+  map.layers.delete('manual-track-line');
+  layer.sync(state);
+  assert.ok(map.layers.has('manual-track-line'), 'deleted route layer is recreated');
+});
+
+test('entering edit mode after browsing builds node indexes before preview', () => {
+  const points = Array.from({ length: 900 }, (_, i) => [20 + i * .00001, 10 + Math.sin(i / 30) * .001]);
+  const map = createMap(), layer = new TrackLayer(map), browse = browseState(points);
+  layer.sync(browse);
+  const editing = { ...browse, editing: true, selectedId: 'dense' };
+  layer.sync(editing);
+  const moved = [points[450][0] + .001, points[450][1] + .001];
+  layer.preview({ node: { trackId: 'dense', coordinate: points[450] }, coordinate: moved });
+  assert.ok(routeContainsCoordinate(map, moved), 'edit-mode preview moves the requested node');
+  layer.preview(null);
+  assert.ok(routeContainsCoordinate(map, points[450]));
+});
+
+test('unchanged browse restores replaced auxiliary sources and selected-edge layers', () => {
+  const points = Array.from({ length: 80 }, (_, i) => [20 + i * .0001, 10 + Math.sin(i / 8) * .001]);
+  const base = browseState(points), annotatedTrack = {
+    ...base.saved[0], pointDetails: { [points[10].join(',')]: { note: 'Synthetic note' } },
+  };
+  const state = { ...base, saved: [annotatedTrack],
+    analysisMarkers: [{ coordinate: points[20], label: 'Synthetic warning' }],
+    linePoint: { trackId: 'dense', coordinate: points[30] },
+  };
+  const map = createMap(), layer = new TrackLayer(map);
+  layer.sync(state);
+  const expectedCounts = new Map([
+    ['manual-track-notes', 1], ['route-grade-warnings', 1], ['track-line-selection', 1],
+  ]);
+
+  for (const [id, expectedCount] of expectedCounts) {
+    map.sources.delete(id);
+    map.addSource(id, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    layer.sync(state);
+    assert.equal(map.sources.get(id).data.features.length, expectedCount, `${id} replacement receives current browse data`);
+  }
+
+  map.layers.delete('manual-track-selection-edge');
+  layer.sync(state);
+  assert.ok(map.layers.has('manual-track-selection-edge'), 'deleted selected-edge layer is recreated');
+  map.layers.delete('track-line-selection-halo');
+  layer.sync(state);
+  assert.ok(map.layers.has('track-line-selection-halo'), 'deleted selection halo layer is recreated');
+});
+
 test('dual dense-route drag bounds worker payload and preserves every edge and cancel geometry', () => {
   const points = Array.from({length: 10000}, (_, i) => [20 + i * .00001, 10 + Math.sin(i / 30) * .001]);
   const track = { id: 'dense', name: 'dense', createdAt: 0, style, segments: [points], nodes: [] };

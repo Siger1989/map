@@ -4,6 +4,9 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 export type Bounds = { left: number; top: number; right: number; bottom: number };
 export type MaskPath = { points: Array<[number, number]>; width: number; dash: number[]; cap: string };
 export type SavedMask = Array<[string, string, string]>;
+export type MaskTargetMetrics = {
+  left: number; top: number; width: number; height: number; offsetWidth: number; offsetHeight: number;
+};
 
 const MAX_SAMPLES_PER_FEATURE = 12000;
 const MAX_MASK_PATHS = 48;
@@ -29,6 +32,11 @@ export function restoreRouteMask(element: HTMLElement, saved: SavedMask) {
     if (value) element.style.setProperty(name, value, priority);
     else element.style.removeProperty(name);
   }
+}
+
+function setMaskProperty(style: CSSStyleDeclaration, name: string, value: string) {
+  if (style.getPropertyValue(name) !== value || style.getPropertyPriority(name))
+    style.setProperty(name, value);
 }
 
 export function markerMaskTargets(marker: HTMLElement): HTMLElement[] {
@@ -176,10 +184,13 @@ function svgMask(paths: MaskPath[], width: number, height: number) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width.toFixed(1)}" height="${height.toFixed(1)}" viewBox="0 0 ${width.toFixed(1)} ${height.toFixed(1)}"><defs><mask id="m" mask-type="luminance"><rect width="100%" height="100%" fill="white"/>${draw}</mask></defs><rect width="100%" height="100%" fill="white" mask="url(#m)"/></svg>`;
 }
 
-export function setRouteMask(element: HTMLElement, saved: SavedMask, bounds: Bounds, paths: MaskPath[]) {
-  const own = element.getBoundingClientRect();
-  const scaleX = own.width > 0 && element.offsetWidth > 0 ? own.width / element.offsetWidth : 1;
-  const scaleY = own.height > 0 && element.offsetHeight > 0 ? own.height / element.offsetHeight : 1;
+export function setRouteMask(
+  element: HTMLElement, saved: SavedMask, bounds: Bounds, paths: MaskPath[], targetMetrics?: MaskTargetMetrics,
+) {
+  const own = targetMetrics ?? { ...element.getBoundingClientRect(), offsetWidth: element.offsetWidth,
+    offsetHeight: element.offsetHeight };
+  const scaleX = own.width > 0 && own.offsetWidth > 0 ? own.width / own.offsetWidth : 1;
+  const scaleY = own.height > 0 && own.offsetHeight > 0 ? own.height / own.offsetHeight : 1;
   const sx = finite(scaleX) && scaleX > 0 ? scaleX : 1;
   const sy = finite(scaleY) && scaleY > 0 ? scaleY : 1;
   const local = {
@@ -196,19 +207,19 @@ export function setRouteMask(element: HTMLElement, saved: SavedMask, bounds: Bou
   const svg = svgMask(scaledPaths, local.width, local.height);
   if (!svg) { restoreRouteMask(element, saved); return; }
   const url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  element.style.setProperty('mask-image', url);
-  element.style.setProperty('-webkit-mask-image', url);
-  element.style.setProperty('mask-size', `${local.width}px ${local.height}px`);
-  element.style.setProperty('-webkit-mask-size', `${local.width}px ${local.height}px`);
+  setMaskProperty(element.style, 'mask-image', url);
+  setMaskProperty(element.style, '-webkit-mask-image', url);
+  setMaskProperty(element.style, 'mask-size', `${local.width}px ${local.height}px`);
+  setMaskProperty(element.style, '-webkit-mask-size', `${local.width}px ${local.height}px`);
   const position = `${local.left}px ${local.top}px`;
-  element.style.setProperty('mask-position', position);
-  element.style.setProperty('-webkit-mask-position', position);
-  element.style.setProperty('mask-repeat', 'no-repeat');
-  element.style.setProperty('-webkit-mask-repeat', 'no-repeat');
-  element.style.setProperty('mask-mode', 'alpha');
-  element.style.setProperty('-webkit-mask-mode', 'alpha');
-  element.style.setProperty('mask-origin', 'border-box');
-  element.style.setProperty('-webkit-mask-origin', 'border-box');
-  element.style.setProperty('mask-clip', 'no-clip');
-  element.style.setProperty('-webkit-mask-clip', 'no-clip');
+  setMaskProperty(element.style, 'mask-position', position);
+  setMaskProperty(element.style, '-webkit-mask-position', position);
+  setMaskProperty(element.style, 'mask-repeat', 'no-repeat');
+  setMaskProperty(element.style, '-webkit-mask-repeat', 'no-repeat');
+  setMaskProperty(element.style, 'mask-mode', 'alpha');
+  setMaskProperty(element.style, '-webkit-mask-mode', 'alpha');
+  setMaskProperty(element.style, 'mask-origin', 'border-box');
+  setMaskProperty(element.style, '-webkit-mask-origin', 'border-box');
+  setMaskProperty(element.style, 'mask-clip', 'no-clip');
+  setMaskProperty(element.style, '-webkit-mask-clip', 'no-clip');
 }

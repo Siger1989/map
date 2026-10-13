@@ -3,7 +3,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import {
   clipRoutePaths, markerMaskTargets, markerScreenBounds, projectRouteFeature,
   restoreRouteMask, saveRouteMask, setRouteMask,
-  type Bounds, type MaskPath, type SavedMask,
+  type Bounds, type MaskPath, type MaskTargetMetrics, type SavedMask,
 } from './routeIconPriorityGeometry.ts';
 
 type RouteSource = 'planned-route' | 'manual-tracks' | 'manual-track-selection-edge' | 'route-guidance' | 'route-gap';
@@ -31,19 +31,62 @@ const MAX_MASK_PATHS = 48;
 type State = {
   map: MapLibreMap;
   sources: Map<RouteSource, FeatureCollection>;
+  sourceGeometrySignatures: Map<RouteSource, Map<string, Feature>>;
   originals: Map<HTMLElement, SavedMask>;
   targetsByMarker: Map<HTMLElement, Set<HTMLElement>>;
   disposed: boolean;
   frame: number | null;
   observer: MutationObserver | null;
+  flatDirty: boolean;
+  onVisualChange: () => void;
+  onRender: () => void;
+  onSourceData: (event: { sourceId?: string }) => void;
   update: () => void;
   schedule: () => void;
   dispose: () => void;
 };
+type ResolvedRouteFeature = { feature: Feature; geometrySignature?: string };
+type ProjectedPaths = Array<Array<[number, number]>>;
+type ClippedPaths = Array<Array<[number, number]>>;
+type MarkerClipCache = WeakMap<ProjectedPaths, Array<ClippedPaths | undefined>>;
 const states = new WeakMap<MapLibreMap, State>();
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 const finite = (n: number) => Number.isFinite(n);
+
+function flatMercator(map: MapLibreMap): boolean {
+  try {
+    if (!(typeof map.getPitch === 'function' && map.getPitch() === 0 &&
+      typeof map.getTerrain === 'function' && !map.getTerrain() &&
+      typeof map.getProjection === 'function')) return false;
+    const projection = map.getProjection();
+    // MapLibre returns an absent stylesheet projection for its default Mercator.
+    return !projection || projection.type === 'mercator';
+  } catch { return false; }
+}
+
+/** @internal Reuses marker-local transforms and clipping for identical projected paths in one marker. */
+export function clipProjectedPathForMarker(
+  projected: ProjectedPaths,
+  pathIndex: number,
+  screenPath: Array<[number, number]>,
+  localBounds: Bounds,
+  localClipBounds: Bounds,
+  cache: MarkerClipCache,
+): ClippedPaths {
+  let clippedByPath = cache.get(projected);
+  if (!clippedByPath) {
+    clippedByPath = [];
+    cache.set(projected, clippedByPath);
+  }
+  let clipped = clippedByPath[pathIndex];
+  if (!clipped) {
+    const localPoints = screenPath.map(([x, y]) => [x - localBounds.left, y - localBounds.top] as [number, number]);
+    clipped = clipRoutePaths(localPoints, localClipBounds);
+    clippedByPath[pathIndex] = clipped;
+  }
+  return clipped;
+}
 
 function nonMaskStyleSignature(styleText: string | null): string {
   if (!styleText) return '';
@@ -126,34 +169,47 @@ function sourceForLayer(layer: RouteLayerId): RouteSource {
   return 'planned-route';
 }
 
-function currentSourceFeature(state: State, source: RouteSource, rendered: Feature): Feature {
+function currentSourceFeature(state: State, source: RouteSource, rendered: Feature): ResolvedRouteFeature {
   const candidates = state.sources.get(source)?.features ?? [];
   if (rendered.id !== undefined) {
     const withId = candidates.find((feature) => feature.id === rendered.id &&
       (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString'));
-    if (withId) return withId;
+    if (withId) return { feature: withId };
   }
   const signature = JSON.stringify(rendered.geometry);
-  return candidates.find((feature) =>
-    (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') &&
-    JSON.stringify(feature.geometry) === signature) ?? rendered;
+  let signatures = state.sourceGeometrySignatures.get(source);
+  if (!signatures) {
+    signatures = new Map();
+    for (const feature of candidates) {
+      if (feature.geometry.type !== 'LineString' && feature.geometry.type !== 'MultiLineString') continue;
+      const candidateSignature = JSON.stringify(feature.geometry);
+      if (!signatures.has(candidateSignature)) signatures.set(candidateSignature, feature);
+    }
+    state.sourceGeometrySignatures.set(source, signatures);
+  }
+  return { feature: signatures.get(signature) ?? rendered, geometrySignature: signature };
 }
 
 function createState(map: MapLibreMap): State {
   const state = {} as State;
   state.map = map;
   state.sources = new Map();
+  state.sourceGeometrySignatures = new Map();
   state.originals = new Map();
   state.targetsByMarker = new Map();
   state.disposed = false;
   state.frame = null;
   state.observer = null;
+  state.flatDirty = true;
   state.update = () => {
     if (state.disposed) return;
     try {
       if (map.isStyleLoaded()) {
         for (const source of state.sources.keys())
-          if (!map.getSource(source)) state.sources.delete(source);
+          if (!map.getSource(source)) {
+            state.sources.delete(source);
+            state.sourceGeometrySignatures.delete(source);
+          }
       }
     } catch { /* style is being replaced */ }
     if (!state.sources.size) { state.dispose(); return; }
@@ -177,11 +233,23 @@ function createState(map: MapLibreMap): State {
       state.dispose();
       return;
     }
-    const projectedCache = new Map<string, Array<Array<[number, number]>>>();
+    const markersWithLayout = [...live].map((element) => {
+      const bounds = markerScreenBounds(element);
+      const targets = markerMaskTargets(element);
+      const targetMetrics = new Map(targets.map((target) => {
+        const rect = target.getBoundingClientRect();
+        return [target, {
+          left: rect.left, top: rect.top, width: rect.width, height: rect.height,
+          offsetWidth: target.offsetWidth, offsetHeight: target.offsetHeight,
+        } satisfies MaskTargetMetrics] as const;
+      }));
+      return { element, bounds, targets, targetMetrics };
+    });
+    const projectedCache = new Map<Feature, Array<Array<[number, number]>>>();
+    const projectedFallbackCache = new Map<string, Array<Array<[number, number]>>>();
     const canvasViewport = { left: 0, top: 0,
       right: map.getCanvas().clientWidth, bottom: map.getCanvas().clientHeight };
-    for (const element of live) {
-      const bounds = markerScreenBounds(element);
+    for (const { element, bounds, targets: currentTargets, targetMetrics } of markersWithLayout) {
       if (!bounds || bounds.right <= viewport.left || bounds.left >= viewport.right ||
         bounds.bottom <= viewport.top || bounds.top >= viewport.bottom) {
         const previousTargets = state.targetsByMarker.get(element) ?? [];
@@ -200,6 +268,7 @@ function createState(map: MapLibreMap): State {
       let hits: ReturnType<MapLibreMap['queryRenderedFeatures']> = [];
       try { hits = map.queryRenderedFeatures(queryBounds, { layers: lineLayers }); } catch { /* style can be between reloads */ }
       const paths: MaskPath[] = [];
+      const markerClipCache: MarkerClipCache = new WeakMap();
       const localBounds = { left: bounds.left - canvasRect.left, top: bounds.top - canvasRect.top,
         right: bounds.right - canvasRect.left, bottom: bounds.bottom - canvasRect.top };
       const localClipBounds = { left: 0, top: 0,
@@ -210,7 +279,8 @@ function createState(map: MapLibreMap): State {
         const source = sourceForLayer(layer);
         if (!lineLayers.includes(layer) || !state.sources.has(source)) continue;
         if (rendered.source && rendered.source !== source) continue;
-        const feature = currentSourceFeature(state, source, rendered as unknown as Feature<LineString | MultiLineString>) as Feature;
+        const resolved = currentSourceFeature(state, source, rendered as unknown as Feature<LineString | MultiLineString>);
+        const feature = resolved.feature;
         if (feature.geometry.type !== 'LineString' && feature.geometry.type !== 'MultiLineString') continue;
         const props = (feature.properties ?? {}) as Record<string, unknown>;
         const opacity = paintNumber(map, layer, 'line-opacity', feature, 1);
@@ -221,15 +291,25 @@ function createState(map: MapLibreMap): State {
         const cap = capValue === 'round' || capValue === 'square' ? capValue : 'butt';
         const dash = map.getPaintProperty(layer, 'line-dasharray' as never) as unknown;
         const dashValue = Array.isArray(dash) && dash.every((v) => typeof v === 'number') ? dash as number[] : [];
-        const key = `${source}:${feature.id ?? ''}:${JSON.stringify(feature.geometry)}`;
-        let projected = projectedCache.get(key);
-        if (!projected) {
-          projected = projectRouteFeature(map, feature, canvasViewport);
-          projectedCache.set(key, projected);
+        let projected: Array<Array<[number, number]>> | undefined;
+        if (resolved.geometrySignature !== undefined) {
+          projected = projectedFallbackCache.get(resolved.geometrySignature);
+          if (!projected) {
+            projected = projectRouteFeature(map, feature, canvasViewport);
+            projectedFallbackCache.set(resolved.geometrySignature, projected);
+          }
+        } else {
+          projected = projectedCache.get(feature);
+          if (!projected) {
+            projected = projectRouteFeature(map, feature, canvasViewport);
+            projectedCache.set(feature, projected);
+          }
         }
-        for (const screenPath of projected) {
-          const localPoints = screenPath.map(([x, y]) => [x - localBounds.left, y - localBounds.top] as [number, number]);
-          for (const points of clipRoutePaths(localPoints, localClipBounds)) {
+        for (let pathIndex = 0; pathIndex < projected.length; pathIndex++) {
+          if (paths.length >= MAX_MASK_PATHS) break;
+          const clippedPaths = clipProjectedPathForMarker(
+            projected, pathIndex, projected[pathIndex], localBounds, localClipBounds, markerClipCache);
+          for (const points of clippedPaths) {
             if (paths.length >= MAX_MASK_PATHS) break;
             paths.push({ points, width, dash: dashValue, cap });
           }
@@ -245,7 +325,7 @@ function createState(map: MapLibreMap): State {
         }
         state.targetsByMarker.delete(element);
       } else {
-        const targets = new Set(markerMaskTargets(element));
+        const targets = new Set(currentTargets);
         for (const target of previousTargets) if (!targets.has(target)) {
           const saved = state.originals.get(target);
           if (saved) restoreRouteMask(target, saved);
@@ -254,7 +334,7 @@ function createState(map: MapLibreMap): State {
         for (const target of targets) {
           let saved = state.originals.get(target);
           if (!saved) { saved = saveRouteMask(target); state.originals.set(target, saved); }
-          setRouteMask(target, saved, bounds, paths);
+          setRouteMask(target, saved, bounds, paths, targetMetrics.get(target));
         }
         state.targetsByMarker.set(element, targets);
       }
@@ -266,6 +346,22 @@ function createState(map: MapLibreMap): State {
       state.frame = requestAnimationFrame(() => { state.frame = null; state.update(); });
     } else state.update();
   };
+  // Flat route geometry changes with the camera, route tiles, styles or markers.
+  // Unrelated base-tile repainting must not repeat all DOM queries and masks.
+  // Terrain, pitched and non-Mercator views retain their per-render refresh.
+  state.onVisualChange = () => {
+    state.flatDirty = true;
+    if (!flatMercator(map)) state.schedule();
+  };
+  state.onRender = () => {
+    if (flatMercator(map) && !state.flatDirty) return;
+    state.flatDirty = false;
+    state.schedule();
+  };
+  state.onSourceData = (event) => {
+    if (event.sourceId && state.sources.has(event.sourceId as RouteSource))
+      state.onVisualChange();
+  };
   state.dispose = () => {
     if (state.disposed) return;
     state.disposed = true;
@@ -273,21 +369,24 @@ function createState(map: MapLibreMap): State {
     state.frame = null;
     state.observer?.disconnect();
     state.observer = null;
-    map.off('move', state.schedule);
-    map.off('resize', state.schedule);
-    map.off('render', state.schedule);
-    map.off('styledata', state.schedule);
+    map.off('move', state.onVisualChange);
+    map.off('resize', state.onVisualChange);
+    map.off('render', state.onRender);
+    map.off('styledata', state.onVisualChange);
+    map.off('sourcedata', state.onSourceData);
     map.off('remove', state.dispose);
     for (const [element, saved] of state.originals) restoreRouteMask(element, saved);
     state.originals.clear();
     state.targetsByMarker.clear();
     state.sources.clear();
+    state.sourceGeometrySignatures.clear();
     states.delete(map);
   };
-  map.on('move', state.schedule);
-  map.on('resize', state.schedule);
-  map.on('render', state.schedule);
-  map.on('styledata', state.schedule);
+  map.on('move', state.onVisualChange);
+  map.on('resize', state.onVisualChange);
+  map.on('render', state.onRender);
+  map.on('styledata', state.onVisualChange);
+  map.on('sourcedata', state.onSourceData);
   map.on('remove', state.dispose);
   if (typeof MutationObserver !== 'undefined') {
     const container = map.getContainer();
@@ -323,12 +422,17 @@ export function syncRouteIconPriority(map: MapLibreMap, sourceId: string, data: 
   let state = states.get(map);
   if (!state) { state = createState(map); states.set(map, state); }
   const source = sourceId as RouteSource;
-  if (data.features.some((feature) => feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString'))
+  if (data.features.some((feature) => feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString')) {
     state.sources.set(source, data);
-  else state.sources.delete(source);
+    state.sourceGeometrySignatures.delete(source);
+  } else {
+    state.sources.delete(source);
+    state.sourceGeometrySignatures.delete(source);
+  }
   if (!state.sources.size) {
     state.dispose();
     return;
   }
+  state.flatDirty = true;
   state.schedule();
 }

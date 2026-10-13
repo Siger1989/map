@@ -82,11 +82,13 @@ export function trackLineFeatures(item: TrackRenderItem, state: TrackOverlay): F
     ? analysisParts
     : style.colorMode && style.colorMode !== 'solid'
       ? metricLineParts(metricTrack, style.colorMode)
-      : alternativeLineParts(
-          track.segments,
-          track.id === state.selectedId ? state.alternativeId : 'main',
-          style.color,
-        ).flatMap((part) =>
+      : (track.segments.length === 1
+        ? [{ coordinates: track.segments[0], muted: false }]
+        : alternativeLineParts(
+            track.segments,
+            track.id === state.selectedId ? state.alternativeId : 'main',
+            style.color,
+          )).flatMap((part) =>
           coloredLineParts(part.coordinates, colors, part.color ?? style.color)
             .map((piece) => ({ ...part, ...piece })),
         );

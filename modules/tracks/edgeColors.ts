@@ -128,6 +128,7 @@ export function coloredLineParts(
   colors: Map<string, string | null>,
   fallback: string,
 ) {
+  if (!colors.size) return coordinates.length > 1 ? [{ coordinates, color: fallback }] : [];
   const parts: { coordinates: Coordinate[]; color: string }[] = [];
   for (let i = 1; i < coordinates.length; i++) {
     const a = coordinates[i - 1],
