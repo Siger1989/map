@@ -9,7 +9,7 @@ import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
 import type { TripPackage } from '../outdoor/offline';
-import { tiandituBase, tiandituLayers, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
+import { tiandituBase, tiandituLayers, usesVectorPlaceLabels, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
 import { MapSourceLayer } from '../mapSources/MapSourceLayer';
 import { RasterCoordinates } from '../mapSources/RasterCoordinates';
@@ -20,7 +20,7 @@ import { SOURCE_ID, type MapSource } from '../mapSources/types';
 import { ovmapSourceIds } from '../mapSources/ovmapTiles';
 ('use client');
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import type { Map, Marker } from 'maplibre-gl';
+import type { Map } from 'maplibre-gl';
 import { addContours, syncContourInterval, baseStyle } from '../terrain/terrain';
 import { readElevation } from '../terrain/elevation';
 import {
@@ -56,7 +56,7 @@ import {
 } from '../tracks/DrawingGestureBridge';
 import { observeMagnifier } from './magnifier';
 import { observeMapRendering } from './renderDiagnostics';
-import { installSelectionMarkerVisibility } from './selectionMarkerVisibility';
+import { NearbyMarker } from './NearbyMarker';
 import './selectionMarkerVisibility.css';
 import { mapResizeScheduler } from './mapResizeScheduler';
 import { cameraViewPublisher } from './cameraUpdates';
@@ -289,7 +289,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     );
     const sourceRef = useRef<MapSourceLayer | null>(null);
     const coordinatesRef = useRef<RasterCoordinates | null>(null);
-    const previewRef = useRef<Marker | null>(null);
+    const previewRef = useRef<NearbyMarker | null>(null);
     const latest = useRef(props);
     latest.current = props;
     const geologyRef = useRef<GeologyLayer | null>(null);
@@ -455,7 +455,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const map = mapRef.current;
       if (!map || !loaded.current) return;
       const useDomestic = usesTianditu(latest.current.settings, domestic);
-      const glyphs = useDomestic ? window.location.origin + '/fonts/{fontstack}/{range}.pbf' : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
+      const vectorPlaceLabels = useDomestic && usesVectorPlaceLabels(latest.current.settings);
+      const glyphs = useDomestic && !vectorPlaceLabels ? window.location.origin + '/fonts/{fontstack}/{range}.pbf' : 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf';
       if (map.getGlyphs() !== glyphs) map.setGlyphs(glyphs);
       const s = latest.current.section.enabled
         ? {
@@ -467,7 +468,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const custom = Boolean(latest.current.mapSource);
       void sourceRef.current?.select(latest.current.mapSource ?? null).then(syncRasterLock);
       syncRasterLock();
-      if (!useDomestic || s.roads) addCartography(map);
+      if (!useDomestic || s.roads || vectorPlaceLabels) addCartography(map);
       const terrain = map.getTerrain();
       if (
         s.terrain
@@ -535,7 +536,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           }
         }
         for (const id of ['road-names', 'road-numbers'])
-          if (useDomestic && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+          if (useDomestic && !vectorPlaceLabels && map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
       }
       geologyRef.current?.sync(s);
       if (syncDataOverlays) {
@@ -965,7 +966,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let releaseLastView: (() => void) | undefined;
       let releaseFollowPan: (() => void) | undefined;
       let releaseDesktopPan: (() => void) | undefined;
-      let releaseSelectionVisibility: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
@@ -1072,7 +1072,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           preview.className = 'route-preview-cursor';
           preview.setAttribute('aria-label', '行程预览位置');
           preview.textContent = '览';
-          previewRef.current = new maplibre.Marker({
+          previewRef.current = new NearbyMarker({
             element: preview,
             anchor: 'center',
           });
@@ -1225,12 +1225,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             new maplibre.ScaleControl({ maxWidth: 44, unit: 'metric' }),
             'bottom-left',
           );
-          const marker = new maplibre.Marker({ color: '#9de8c4', scale: 0.6, opacity: 1, opacityWhenCovered: 0 })
+          const marker = new NearbyMarker({ color: '#9de8c4', scale: 0.6, opacity: 1, opacityWhenCovered: 0 })
             .setLngLat(selected)
             .addTo(map);
           marker.getElement().classList.add('map-selection-marker');
-          const selectionVisibility = installSelectionMarkerVisibility(map, marker.getElement(), () => selected);
-          releaseSelectionVisibility = selectionVisibility.cleanup;
           const pick = (lng: number, lat: number) => {
             if (latest.current.readOnly) return;
             terrainAbort.current?.abort();
@@ -1238,7 +1236,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             terrainAbort.current = abort;
             selected = [lng, lat];
             marker.setLngLat(selected);
-            selectionVisibility.refresh();
             latest.current.onPoint({ lng, lat, elevation: null });
             void readElevation(lng, lat, abort.signal)
               .then((elevation) => {
@@ -1548,7 +1545,6 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         releaseLastView?.();
         releaseFollowPan?.();
         releaseDesktopPan?.();
-        releaseSelectionVisibility?.();
         previewRef.current?.remove();
         previewRef.current = null;
         disposed = true;

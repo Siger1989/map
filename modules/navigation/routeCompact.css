@@ -30,13 +30,21 @@
   padding: 0 !important;
 }
 @media (max-height: 520px) {
-  .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
+  html:not([data-shantu-keyboard='open']) .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
     max-height: 172px !important;
     overflow: auto !important;
   }
-  .observatory.home-map #map-control-panel:has(.route-panel[data-search-active="true"]:not([data-search-expanded="true"])) .dock-content {
+  html:not([data-shantu-keyboard='open']) .observatory.home-map #map-control-panel:has(.route-panel[data-search-active="true"]:not([data-search-expanded="true"])) .dock-content {
     max-height: 96px !important;
   }
+}
+/* An IME does not turn a portrait planner into a short-screen planner. Truly
+   short layouts retain their existing scrolling area while the keyboard is up. */
+html[data-shantu-keyboard='open'][data-shantu-layout-band='short'] .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
+  max-height: 172px !important;
+}
+html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.route-panel:not(.route-summary)) .dock-content {
+  padding-bottom: var(--route-keyboard-scroll-space, 0px) !important;
 }
 .observatory #map-control-panel .route-panel .routing-mode-control {
   margin: 0 !important;

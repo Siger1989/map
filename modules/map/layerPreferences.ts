@@ -27,7 +27,7 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     for (const key of booleans) if (typeof value[key] === 'boolean') Object.assign(result, { [key]: value[key] });
     if (value.satelliteProvider === 'sentinel' || value.satelliteProvider === 'tianditu') result.satelliteProvider = value.satelliteProvider;
     if (value.tiandituBase === 'vec' || value.tiandituBase === 'img' || value.tiandituBase === 'ter') result.tiandituBase = value.tiandituBase;
-    if (['auto', 'cva', 'cia', 'cta', 'none'].includes(String(value.tiandituLabels))) result.tiandituLabels = value.tiandituLabels as LayerSettings['tiandituLabels'];
+    if (['auto', 'cva', 'cia', 'cta', 'vector', 'none'].includes(String(value.tiandituLabels))) result.tiandituLabels = value.tiandituLabels as LayerSettings['tiandituLabels'];
     if (value.geologySource === 'world' || value.geologySource === 'geocloud20w') result.geologySource = value.geologySource;
     if (value.imageryMode === 'detail' || value.imageryMode === 'latest') result.imageryMode = value.imageryMode;
     if (value.contourInterval === 30 || value.contourInterval === 50 || value.contourInterval === 100 || value.contourInterval === 200) result.contourInterval = value.contourInterval;

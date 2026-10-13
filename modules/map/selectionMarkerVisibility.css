@@ -1,4 +1,3 @@
-.map-selection-marker.is-distance-hidden,
 .maplibregl-marker-covered.map-selection-marker {
   visibility: hidden !important;
   pointer-events: none !important;

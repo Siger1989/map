@@ -1,0 +1,107 @@
+.phone-preview-keyboard {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 7px 7px;
+  transform-origin: bottom left;
+  overflow: hidden;
+  color: #172a27;
+  background: #d5d9df;
+  border-top: 1px solid #aeb6bf;
+  font: 12px/1.2 system-ui, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.phone-preview-keyboard[hidden] { display: none; }
+.phone-preview-keyboard-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 22px;
+  min-width: 0;
+  color: #53616b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.phone-preview-keyboard-heading span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.phone-preview-keyboard-candidates {
+  display: flex;
+  align-items: center;
+  flex: 0 0 32px;
+  min-width: 0;
+  gap: 5px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: #eef0f3;
+}
+.phone-preview-keyboard-candidates button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 27px;
+  padding: 0 3px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #1a2928;
+  font: 14px system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.phone-preview-keyboard-buffer,
+.phone-preview-keyboard-empty {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  color: #62706d;
+  font: 10px ui-monospace, monospace;
+}
+.phone-preview-keyboard-grid {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.phone-preview-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1px;
+  border: 0;
+  border-radius: 5px;
+  background: #f6f7f9;
+  color: #1d2b29;
+  box-shadow: 0 1px 1px #929aa3;
+}
+.phone-preview-key strong { font-size: 18px; font-weight: 500; line-height: 1; }
+.phone-preview-key small { color: #697674; font-size: 8px; line-height: 1; }
+.phone-preview-keyboard-footer {
+  display: grid;
+  flex: 0 0 34px;
+  grid-template-columns: .85fr .65fr 1.2fr .75fr .9fr;
+  gap: 4px;
+}
+.phone-preview-keyboard-footer button {
+  min-width: 0;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 5px;
+  background: #eef0f3;
+  color: #263432;
+  font: 10px system-ui, sans-serif;
+  white-space: nowrap;
+}
+.phone-preview-keyboard-footer .phone-preview-keyboard-done {
+  background: #397d69;
+  color: white;
+}
+.phone-preview-keyboard.is-numeric .phone-preview-key strong { color: #2865a4; }

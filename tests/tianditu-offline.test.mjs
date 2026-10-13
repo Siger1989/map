@@ -11,6 +11,7 @@ import {
 } from '../modules/outdoor/tiandituCache.ts';
 import {
   tiandituLayers,
+  usesVectorPlaceLabels,
   TIANDITU_LAYERS,
 } from '../modules/cartography/tianditu.ts';
 import { DEFAULT_LAYERS, applyLayerPatch } from '../modules/map/types.ts';
@@ -117,6 +118,7 @@ test('all seven layers are selectable with matching default labels and caps', ()
     const layers = tiandituLayers({
       ...DEFAULT_LAYERS,
       tiandituBase: base,
+      tiandituLabels: 'auto',
       tiandituBoundaries: true,
     });
     layers.forEach((l) => seen.add(l));
@@ -124,6 +126,10 @@ test('all seven layers are selectable with matching default labels and caps', ()
   }
   assert.equal(seen.size, 7);
   assert.equal(TIANDITU_LAYERS.ter.maxzoom, 14);
+  assert.equal(DEFAULT_LAYERS.tiandituLabels, 'vector');
+  assert.deepEqual(tiandituLayers({ ...DEFAULT_LAYERS, tiandituBase: 'img', tiandituLabels: undefined }), ['img'], 'missing mode uses the clear vector default');
+  assert.equal(usesVectorPlaceLabels({ ...DEFAULT_LAYERS, tiandituLabels: undefined }), true);
+  assert.deepEqual(tiandituLayers({ ...DEFAULT_LAYERS, tiandituBase: 'img', tiandituLabels: 'auto' }), ['img', 'cia'], 'explicit legacy auto keeps base-matched raster labels');
   assert.deepEqual(
     tiandituLayers({
       ...DEFAULT_LAYERS,
@@ -132,6 +138,11 @@ test('all seven layers are selectable with matching default labels and caps', ()
     }),
     ['img'],
   );
+  const vectorLabels = { ...DEFAULT_LAYERS, tiandituBase: 'img', tiandituLabels: 'vector', tiandituBoundaries: true };
+  assert.deepEqual(tiandituLayers(vectorLabels), ['img', 'ibo'], 'vector mode keeps base/boundary and omits raster labels');
+  assert.equal(usesVectorPlaceLabels(vectorLabels), true);
+  assert.deepEqual(tiandituLayers({ ...vectorLabels, labels: false }), ['img', 'ibo'], 'closed labels load no raster or vector annotation layer');
+  assert.equal(usesVectorPlaceLabels({ ...vectorLabels, labels: false }), false, 'label master switch suppresses vector text');
   const settings = applyLayerPatch(DEFAULT_LAYERS, {
     tiandituBase: 'ter',
     satellite: false,

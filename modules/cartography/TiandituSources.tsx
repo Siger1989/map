@@ -1,5 +1,5 @@
-import type { LayerSettings } from '../map/types';
-import { tiandituBase, TIANDITU_LAYERS } from './tianditu';
+import { DEFAULT_TIANDITU_LABELS, type LayerSettings } from '../map/types';
+import { tiandituBase, TIANDITU_LAYERS, usesVectorPlaceLabels } from './tianditu';
 import { usesSentinel } from './sentinel';
 import { FavoriteSourceStar } from '../mapSources/FavoriteSourceStar';
 export function TiandituSources({
@@ -38,13 +38,13 @@ export function TiandituSources({
           </div>
         ))}
       </div>
-      <small>{settings.satelliteProvider === 'tianditu' ? '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>
+      <small>{settings.satelliteProvider === 'tianditu' ? usesVectorPlaceLabels(settings) ? '地名：OpenStreetMap · 覆盖可能不同' : '天地图 · 高清备用 · 有每日额度' : '默认 · 约10米 · 非商业使用 · 下载待接入'}</small>
       {settings.satelliteProvider === 'tianditu' && <div className="tianditu-options">
         <label>
           <select
             aria-label="地名注记"
             value={
-              settings.labels ? (settings.tiandituLabels ?? 'auto') : 'none'
+              settings.labels ? (settings.tiandituLabels ?? DEFAULT_TIANDITU_LABELS) : 'none'
             }
             onChange={(e) =>
               onChange({
@@ -54,7 +54,8 @@ export function TiandituSources({
               })
             }
           >
-            <option value="auto">匹配底图</option>
+            <option value="vector">清晰文字（默认）</option>
+            <option value="auto">原图注记（自动）</option>
             <option value="cva">矢量注记</option>
             <option value="cia">影像注记</option>
             <option value="cta">地形注记</option>

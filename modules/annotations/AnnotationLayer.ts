@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import {
-  Marker,
   MercatorCoordinate,
   type Map,
   type CustomLayerInterface,
@@ -15,6 +14,7 @@ import { modelLabelAnchor } from './modelLabel';
 import { modelGeometry, modelRotation } from './modelGeometry';
 import { markerIconElement } from './icons';
 import { markerScale, markerPresentation } from './markerScale';
+import { NearbyMarker } from '../map/NearbyMarker';
 
 /** One world metre per geometry unit; buried solids render as transparent X-ray overlays. */
 export class AnnotationLayer implements CustomLayerInterface {
@@ -25,7 +25,7 @@ export class AnnotationLayer implements CustomLayerInterface {
   private renderer?: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.Camera();
-  private markers = new globalThis.Map<string, Marker>();
+  private markers = new globalThis.Map<string, NearbyMarker>();
   private frames = new globalThis.Map<string, THREE.Group>();
   private items: Annotation[] = [];
   private selected: string | null = null;
@@ -276,7 +276,7 @@ export class AnnotationLayer implements CustomLayerInterface {
           existing.setOpacity(1, opacityWhenCovered);
         element.style.visibility = '';
       } else {
-        const marker = new Marker({
+        const marker = new NearbyMarker({
           element,
           anchor: 'bottom',
           subpixelPositioning: true,
@@ -488,7 +488,7 @@ export class AnnotationLayer implements CustomLayerInterface {
     for (const [id, frame] of this.frames) {
       const marker = this.markers.get(id);
       const mesh = frame.children[0]?.children[0];
-      if (!marker || !(mesh instanceof THREE.Mesh)) continue;
+      if (!marker || !marker.getElement().isConnected || !(mesh instanceof THREE.Mesh)) continue;
       const anchor = frame.visible
         ? modelLabelAnchor(
             mesh,

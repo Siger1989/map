@@ -15,7 +15,7 @@ test('map layer preferences round-trip actual user selections', () => {
     const selected = {
       ...DEFAULT_LAYERS,
       terrain: false, satellite: true, satelliteProvider: 'tianditu', tiandituBase: 'ter',
-      tiandituLabels: 'cta', tiandituBoundaries: false, imageryMode: 'latest',
+      tiandituLabels: 'vector', tiandituBoundaries: false, imageryMode: 'latest',
       roads: false, labels: false,
       geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.45,
       contours: true, contourInterval: 100, elevationColors: true,
@@ -110,6 +110,32 @@ test('invalid stored values fall back field by field and valid choices survive',
   assert.equal(parsed?.rasterLevel, fallback.rasterLevel);
 });
 
+test('vector label choice is saved and invalid modes fall back to defaults', () => {
+  const values = new Map();
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, value),
+  } });
+  try {
+    const selected = { ...DEFAULT_LAYERS, satellite: true, satelliteProvider: 'tianditu', tiandituBase: 'img', tiandituLabels: 'vector' };
+    saveLayerPreferences(selected);
+    assert.equal(readLayerPreferences().tiandituLabels, 'vector');
+    saveLayerPreferences({ ...selected, tiandituLabels: 'auto' });
+    assert.equal(readLayerPreferences().tiandituLabels, 'auto', 'returning to original labels survives reopening preferences');
+    for (const legacyMode of ['auto', 'cia', 'cva', 'cta', 'none']) {
+      const legacy = parseLayerPreferences(JSON.stringify({ version: 1, layers: { tiandituLabels: legacyMode } }));
+      assert.equal(legacy.tiandituLabels, legacyMode, `existing ${legacyMode} choice remains intact`);
+    }
+    const malformed = parseLayerPreferences(JSON.stringify({ version: 1, layers: { tiandituLabels: 'invalid' } }));
+    assert.equal(malformed.tiandituLabels, DEFAULT_LAYERS.tiandituLabels);
+    assert.equal(DEFAULT_LAYERS.tiandituLabels, 'vector', 'new settings default to clear text');
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
+    else delete globalThis.localStorage;
+  }
+});
+
 test('map source restoration accepts existing built-ins or stored maps and rejects removed IDs', () => {
   const maps = [{ id: 'custom-1' }];
   assert.equal(resolveAvailableMapSelection('custom-1', maps), 'custom-1');
@@ -132,7 +158,7 @@ test('changing a basemap keeps user layer choices while adopting target source s
     roads: false,
     roadsOpacity: 0.4,
     labels: false,
-    tiandituLabels: 'cia',
+    tiandituLabels: 'vector',
     tiandituBoundaries: false,
     exaggeration: 1.7,
   };
@@ -173,11 +199,11 @@ test('Tianditu source panel layer controls do not trigger a basemap merge', () =
     roads: false,
   };
 
-  const labels = sourcePanelSettings({ tiandituLabels: 'cia', labels: true }, current);
+  const labels = sourcePanelSettings({ tiandituLabels: 'vector', labels: true }, current);
   assert.equal(labels.sourceChanged, false);
   assert.equal(labels.settings.satelliteProvider, 'tianditu');
   assert.equal(labels.settings.tiandituBase, 'img');
-  assert.equal(labels.settings.tiandituLabels, 'cia');
+  assert.equal(labels.settings.tiandituLabels, 'vector');
   assert.equal(labels.settings.contours, true);
   assert.equal(labels.settings.roads, false);
 
@@ -196,7 +222,7 @@ test('Tianditu source panel layer controls do not trigger a basemap merge', () =
   assert.equal(base.settings.tiandituBase, 'vec');
   assert.equal(base.settings.contours, true, 'switching base preserves overlay settings');
   assert.equal(base.settings.roads, false, 'switching base preserves road visibility');
-  assert.equal(base.settings.tiandituLabels, 'cia', 'switching base preserves annotation preference');
+  assert.equal(base.settings.tiandituLabels, 'vector', 'switching base preserves annotation preference');
   assert.equal(base.settings.tiandituBoundaries, false, 'switching base preserves boundary visibility');
   assert.deepEqual(base.settings.rasterDatums, { 'saved-source': 'gcj02' }, 'target starts from current source settings');
 });

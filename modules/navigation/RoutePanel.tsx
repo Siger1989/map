@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { usePlaceSearch } from './usePlaceSearch';
+import { useRouteKeyboardFocus } from './useRouteKeyboardFocus';
 import { SearchOptions } from './SearchOptions';
 import { PlaceResultList, SearchFeedback, SearchFooter } from './SearchFeedback';
 import { MAX_ROUTE_STOPS, stopLabel } from './stops';
@@ -92,6 +93,7 @@ export function RoutePanel({
       frame: number;
     } | null>(null);
   const previousCount = useRef(n.stops.length);
+  useRouteKeyboardFocus(rows);
   const destination = n.stops.at(-1)?.place;
   useEffect(() => {
     const origin = n.stops[0];

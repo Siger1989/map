@@ -5,7 +5,7 @@ export type LayerSettings = {
   satelliteProvider?: 'sentinel' | 'tianditu';
   offlineBasemap?: boolean;
   tiandituBase?: 'vec' | 'img' | 'ter';
-  tiandituLabels?: 'auto' | 'cva' | 'cia' | 'cta' | 'none';
+  tiandituLabels?: 'auto' | 'cva' | 'cia' | 'cta' | 'vector' | 'none';
   tiandituBoundaries?: boolean;
   offlineMaxZoom?: number | null;
   contours: boolean;
@@ -22,6 +22,7 @@ export type LayerSettings = {
   exaggeration: number;
   imageryMode: 'detail' | 'latest';
 };
+export const DEFAULT_TIANDITU_LABELS = 'vector' as const;
 export const DEFAULT_LAYERS: LayerSettings = {
   terrain: true,
   satellite: false,
@@ -37,6 +38,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   roadsOpacity: 1,
   rasterLevel: null,
   labels: true,
+  tiandituLabels: DEFAULT_TIANDITU_LABELS,
   exaggeration: 1,
   imageryMode: 'detail',
 };

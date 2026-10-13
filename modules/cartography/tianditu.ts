@@ -1,4 +1,4 @@
-import type { LayerSettings } from '../map/types';
+import { DEFAULT_TIANDITU_LABELS, type LayerSettings } from '../map/types.ts';
 
 /** National WMTS catalogue, checked against the official service page and capabilities. */
 export const TIANDITU_LAYERS = {
@@ -17,15 +17,18 @@ export function tiandituBase(
 ): TiandituBase {
   return s.tiandituBase ?? (s.satellite ? 'img' : 'vec');
 }
+export function usesVectorPlaceLabels(settings: LayerSettings): boolean {
+  return settings.labels && (settings.tiandituLabels ?? DEFAULT_TIANDITU_LABELS) === 'vector';
+}
 export function tiandituLayers(s: LayerSettings): TiandituLayer[] {
   const base = tiandituBase(s);
-  const annotation =
-    s.tiandituLabels && s.tiandituLabels !== 'auto'
-      ? s.tiandituLabels
-      : ({ vec: 'cva', img: 'cia', ter: 'cta' } as const)[base];
+  const labelMode = s.tiandituLabels ?? DEFAULT_TIANDITU_LABELS;
+  const annotation = labelMode === 'auto'
+    ? ({ vec: 'cva', img: 'cia', ter: 'cta' } as const)[base]
+    : labelMode;
   return [
     base,
-    ...(s.labels && annotation !== 'none' ? [annotation] : []),
+    ...(s.labels && annotation !== 'none' && annotation !== 'vector' ? [annotation] : []),
     ...(s.tiandituBoundaries ? ['ibo' as const] : []),
   ];
 }

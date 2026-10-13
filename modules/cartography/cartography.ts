@@ -5,6 +5,7 @@ import type {
 } from 'maplibre-gl';
 import type { LayerSettings } from '../map/types';
 import { syncPlaceLabelLayerOrder } from '../map/overlayData.ts';
+import { usesVectorPlaceLabels } from './tianditu.ts';
 const chineseName: ExpressionSpecification = [
   'coalesce',
   ['get', 'name:zh'],
@@ -181,6 +182,9 @@ export function addCartography(map: Map) {
         'text-max-width': 9,
         'text-padding': 10,
         'text-allow-overlap': false,
+        // Keep glyphs facing the screen rather than stretching with terrain.
+        'text-pitch-alignment': 'viewport',
+        'text-rotation-alignment': line ? 'map' : 'viewport',
         'symbol-placement': line ? 'line' : 'point',
         'symbol-spacing': 360,
       },
@@ -268,5 +272,7 @@ export function cartographySettingsForDisplay(
   settings: LayerSettings,
   domestic: boolean,
 ): LayerSettings {
-  return domestic ? { ...settings, labels: false } : settings;
+  return domestic && !usesVectorPlaceLabels(settings)
+    ? { ...settings, labels: false }
+    : settings;
 }

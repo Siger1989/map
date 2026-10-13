@@ -1,9 +1,11 @@
-import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { VisiblePhoto } from './storage';
 import { markerIconElement } from '../annotations/icons';
+import { NearbyMarker } from '../map/NearbyMarker';
+import { getNearbyMarkerRange, isCoordinateWithinNearbyRange } from '../map/nearbyMarkerRange';
 export class PhotoLayer {
   private photos: VisiblePhoto[] = [];
-  private markers: Marker[] = [];
+  private markers: NearbyMarker[] = [];
   constructor(
     private map: MapLibreMap,
     private onOpen: (ids: string[]) => void,
@@ -18,8 +20,10 @@ export class PhotoLayer {
     this.markers.forEach((m) => m.remove());
     this.markers = [];
     const groups = new Map<string, VisiblePhoto[]>();
+    const nearbyRange = getNearbyMarkerRange(this.map);
     const { clientWidth: w, clientHeight: h } = this.map.getContainer();
     for (const photo of this.photos) {
+      if (!isCoordinateWithinNearbyRange(nearbyRange, photo.coordinates)) continue;
       const p = this.map.project(photo.coordinates);
       if (
         !Number.isFinite(p.x) ||
@@ -70,7 +74,7 @@ export class PhotoLayer {
         this.onOpen(group.map((p) => p.id));
       });
       this.markers.push(
-        new Marker({
+        new NearbyMarker({
           element: button,
           anchor: 'bottom',
           opacity: 1,

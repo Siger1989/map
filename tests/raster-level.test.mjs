@@ -89,11 +89,11 @@ test('map road and river visibility follows the layer setting, not snap mode', (
       getStyle: () => ({ layers }),
       moveLayer(id, before) { const from = layers.findIndex(layer => layer.id === id); if (from < 0) return; const [layer] = layers.splice(from, 1); const to = before ? layers.findIndex(item => item.id === before) : -1; layers.splice(to < 0 ? layers.length : to, 0, layer); },
     };
-    const settings = { roads, labels: true };
+    const settings = { roads, labels: true, tiandituLabels: 'auto' };
     const displaySettings = cartographySettingsForDisplay(settings, true);
-    assert.deepEqual(displaySettings, { roads, labels: false });
+    assert.deepEqual(displaySettings, { roads, labels: false, tiandituLabels: 'auto' });
     assert.notEqual(displaySettings, settings);
-    assert.deepEqual(settings, { roads, labels: true });
+    assert.deepEqual(settings, { roads, labels: true, tiandituLabels: 'auto' });
     syncCartography(map, displaySettings);
     for (const id of ['rivers', 'road-outline', 'main-roads', 'local-roads'])
       assert.equal(visibility.get(id), roads ? 'visible' : 'none', id);
@@ -106,6 +106,18 @@ test('map road and river visibility follows the layer setting, not snap mode', (
       internationalSettings,
     );
     assert.deepEqual(internationalSettings, { roads, labels: true });
+  }
+});
+test('clear place labels are independent of roads and never mutate saved layer settings', () => {
+  for (const roads of [true, false]) for (const labels of [true, false]) {
+    const original = { roads, labels, tiandituLabels: 'vector', terrain: true };
+    assert.deepEqual(cartographySettingsForDisplay(original, true), original);
+    assert.deepEqual(original, { roads, labels, tiandituLabels: 'vector', terrain: true });
+    for (const tiandituLabels of ['auto', 'cia', 'cva', 'cta', 'none']) {
+      const raster = { ...original, tiandituLabels };
+      assert.deepEqual(cartographySettingsForDisplay(raster, true), { ...raster, labels: false });
+      assert.deepEqual(raster, { ...original, tiandituLabels });
+    }
   }
 });
 test('installed MapLibre keeps free zoom with bounded requests and a fixed maximum detail level', async () => {

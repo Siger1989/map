@@ -64,6 +64,7 @@ async function compileWithMapLibreStub(entryPoint) {
                 globalThis.__markerTerrainHarness.markers.push(this);
               }
               getElement() { return this.element; }
+              getLngLat() { return this.coordinates ? { lng: this.coordinates[0], lat: this.coordinates[1] } : null; }
               setLngLat(coordinates) { this.coordinates = coordinates; return this; }
               setOffset(offset) { this.offset = offset; return this; }
               setOpacity(opacity, opacityWhenCovered) {
@@ -115,6 +116,7 @@ test('AnnotationLayer uses public Marker opacity options and only preserves X-ra
       const mapListeners = new Map();
       layer.map = {
         getZoom: () => 16,
+        getCenter: () => ({ lng: 104, lat: 30 }),
         getCanvas: () => ({ clientWidth: 400, clientHeight: 400 }),
         on: (name, callback) => mapListeners.set(name, callback),
         off: (name, callback) => {
@@ -150,6 +152,14 @@ test('AnnotationLayer uses public Marker opacity options and only preserves X-ra
       const switched = { ...surfaceBox, placement: 'underground' };
       layer.update([switched], null, settings);
       assert.deepEqual(boxMarker.opacityCalls, [[1, 1]], 'changing a reused model label to underground updates its covered opacity');
+
+      const distantPin = newAnnotation('pin', [120, 30], 120, 'distant-pin');
+      layer.update([pin, distantPin], null, settings);
+      const distantMarker = globalThis.__markerTerrainHarness.markers.find(marker =>
+        marker.options.element?.dataset?.annotationId === 'distant-pin');
+      assert.ok(distantMarker, 'the marker object retains its original element for later reuse');
+      assert.equal(distantMarker.map, undefined, 'a distant annotation never reaches native Marker.addTo');
+      assert.strictEqual(samePin.map, layer.map, 'the nearby annotation stays attached');
       layer.onRemove();
     });
   } finally {
@@ -185,6 +195,39 @@ test('PhotoLayer uses covered opacity zero and releases marker and map listeners
       layer.dispose();
       assert.equal(marker.removed, true);
       assert.equal(listeners.has('moveend'), false);
+    });
+  } finally {
+    if (previousHarness === undefined) delete globalThis.__markerTerrainHarness;
+    else globalThis.__markerTerrainHarness = previousHarness;
+  }
+});
+
+test('PhotoLayer filters distant photos before map projection and marker creation', async () => {
+  const previousHarness = globalThis.__markerTerrainHarness;
+  globalThis.__markerTerrainHarness = { markers: [] };
+  try {
+    await withDocument(async () => {
+      const { PhotoLayer } = await compileWithMapLibreStub('../modules/photos/PhotoLayer.ts');
+      let projections = 0;
+      const listeners = new Map();
+      const map = {
+        on: (name, callback) => listeners.set(name, callback),
+        off: (name, callback) => { if (listeners.get(name) === callback) listeners.delete(name); },
+        getCenter: () => ({ lng: 104, lat: 30 }),
+        getZoom: () => 12,
+        getCanvas: () => ({ clientWidth: 390, clientHeight: 750 }),
+        getContainer: () => ({ clientWidth: 390, clientHeight: 750 }),
+        project: () => { projections++; return { x: 100, y: 100 }; },
+      };
+      const layer = new PhotoLayer(map, () => {});
+      layer.sync([
+        { id: 'near', name: '附近照片', kind: 'track', coordinates: [104.001, 30], url: 'blob:near' },
+        { id: 'far', name: '远处照片', kind: 'track', coordinates: [120, 30], url: 'blob:far' },
+      ]);
+      assert.equal(projections, 1, 'only the nearby photo reaches map.project');
+      assert.equal(globalThis.__markerTerrainHarness.markers.length, 1, 'distant photo gets no DOM marker');
+      assert.deepEqual(globalThis.__markerTerrainHarness.markers[0].coordinates, [104.001, 30]);
+      layer.dispose();
     });
   } finally {
     if (previousHarness === undefined) delete globalThis.__markerTerrainHarness;
