@@ -29,4 +29,4 @@
 - 1934项ZIP/CRC PASS；473项基础地形构建核验PASS；Key存在、39种子与原输入字节一致；没有.env/jks/keystore文件。
 - 原121版本归档hash仍 `cdff8703d96a8860f3e42321308f3d7d275c72a562dd870388081f7c10c89527`；recovery诊断包保留，未改存档、不要求卸载。
 
-活动源码为 `codex/place-address-search-20261011`，基于de2775a加本轮源码差异构建；APK是在本轮源码提交前生成，不把包内基础Git标识称为最终提交SHA。同步仅源码/测试/文档；实际远端SHA由交付后核对。未合main，未发布含Key APK。Codex Dot当前工具没有任意APK上传入口，未声称云端已上传；原生HarmonyOS包仍未交付。
+活动源码为 `codex/place-address-search-20261011`，基于de2775a加本轮源码差异构建；APK是在本轮源码提交前生成，不把包内基础Git标识称为最终提交SHA。同步仅源码/测试/文档；源码优化提交ad4a011a9886ba7d19bc7538baddf9cbf7fa523b已推送当前分支且远端SHA核对一致。未合main，未发布含Key APK。Codex Dot当前工具没有任意APK上传入口，未声称云端已上传；原生HarmonyOS包仍未交付。
