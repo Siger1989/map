@@ -18,7 +18,7 @@
 - fresh staging `mobile/.build/apk-20261014-082442/`；ZIP 1934项CRC PASS，1926项网页资源与staging一致，496张地形PNG解压像素流一致（基础地形473张）。classes.dex和地图worker与123相同。
 - 内置天地图Key与9174预览配置一致；39图源种子逐字节一致。没有.env、签名密钥、缓存日志混入APK；Key只作为用户已授权的本机/自用包配置存在。
 - 前轮同一导航源码57项定向、tsc、四尺寸20态及三手机尺寸展开/返回PASS；本轮版本提升后的fresh Web/Android构建PASS。实际APK解出的网页390×857启动、导航选中CSS加载、无横溢、内置天地图入口/选中及12次影像响应PASS。
-- 隔离网页初始全球视图的部分外部高程请求502，浏览器IP定位不可用；选择天地图后的影像实际加载通过。未模拟原生GPS或成功回调，不将网页结果扩大为设备验收。
+- 隔离网页QA代理使用127.0.0.1，而本机API实际监听IPv6 localhost（::1），因此该夹具的高程/API请求502、IP定位不可用；天地图影像直接加载通过。此限制属于本轮浏览器核验环境，未更改APK内的原生LocalGateway。未模拟原生GPS或成功回调，不将网页结果扩大为设备验收。
 
 证据位于本机 `.openai/release-125/`：`preflight.json`、`build.log`、`integrity.json`、`bundle-check.json`、`packaged-smoke.json`、`packaged-tianditu-390.png`、`local-delivery.json`、`cloud-delivery.json`、`source-manifest.json`、`source-sync.json`。
 
