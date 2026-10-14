@@ -5,8 +5,10 @@ import {
 } from '../navigation/types.ts';
 import type { PositionFix } from '../position/types';
 import { pathOf, project, type Path, type Projection } from './geometry.ts';
+import { assessNavigationPosition, type NavigationPositionAssessment } from './positionAssessment.ts';
 
 export type GuidanceSession = {
+  positionAssessment?: NavigationPositionAssessment;
   replanned?: boolean;
   networkSwitched?: boolean;
   route: PlannedRoute;
@@ -120,6 +122,7 @@ export function advance(
     return {
       ...s,
       quality,
+      positionAssessment: undefined,
       qualityFromLocationError: !!error,
       anchor: null,
       offSince: null,
@@ -154,6 +157,7 @@ export function advance(
     return {
       ...s,
       quality: '定位跳动，等待稳定位置',
+      positionAssessment: undefined,
       qualityFromLocationError: false,
       anchor: null,
       offSince: null,
@@ -219,6 +223,7 @@ export function advance(
     travelled,
     progress: arrived ? s.path.length : progress,
     offset: hit.offset,
+    positionAssessment: assessNavigationPosition(s.path, hit.distance, hit.offset, fix, gap ? null : s.last, s.offset),
     nextCheckpoint,
     offSince,
     offRoute,

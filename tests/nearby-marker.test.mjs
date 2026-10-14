@@ -16,9 +16,9 @@ function fakeMap(center = [0, 0], zoom = 20) {
     resetProjectCount() { projectCount = 0; },
     on(name, fn) { const entries = listeners.get(name) ?? []; entries.push(fn); listeners.set(name, entries); return this; },
     off(name, fn) { listeners.set(name, (listeners.get(name) ?? []).filter((item) => item !== fn)); return this; },
-    fire(name) {
+    fire(name, event = {}) {
       const snapshot = [...(listeners.get(name) ?? [])];
-      for (const fn of snapshot) fn({ type: name });
+      for (const fn of snapshot) fn({ type: name, ...event });
     },
     getCenter() { return { lng: this.center[0], lat: this.center[1] }; },
     getZoom() { return this.zoom; },
@@ -138,6 +138,95 @@ test('attached markers use the outer radius while detached markers require the i
   map.center = [0, metersToLatitude(130)];
   map.fire('move');
   assert.equal(map.appendCount, 2, 'the marker re-enters inside the inner radius');
+});
+
+test('two-finger zoom across the nearby boundary retains mounted markers until gesture end', () => {
+  const map = fakeMap([0, 0], 10);
+  const log = [];
+  const marker = instrument(new NearbyMarker({ element: markerElement(log) }), log)
+    .setLngLat([0, 5600 / 111195])
+    .addTo(map);
+  assert.equal(map.appendCount, 1);
+  log.length = 0;
+  map.fire('movestart', { originalEvent: { touches: [{}, {}] } });
+  map.fire('zoomstart');
+
+  for (const zoom of [10.25, 9.8, 10.25, 9.8]) {
+    map.zoom = zoom;
+    map.fire('move');
+  }
+
+  assert.equal(map.appendCount, 1, 'a mounted marker is not repeatedly appended during pinch zoom');
+  assert.equal(log.filter((entry) => entry === 'element-remove').length, 0);
+
+  map.zoom = 10.25;
+  map.fire('move');
+  map.fire('zoomend');
+  assert.ok(marker._map, 'moveend still owns the active two-finger gesture');
+  map.fire('moveend');
+  assert.equal(marker._map, undefined, 'the normal nearby range is applied when the gesture ends');
+  assert.equal(log.filter((entry) => entry === 'element-remove').length, 1);
+});
+
+test('same-coordinate setLngLat keeps an attached boundary marker during zoom, then gesture end prunes it', () => {
+  const map = fakeMap([0, 0], 10);
+  const log = [];
+  const marker = instrument(new NearbyMarker({ element: markerElement(log) }), log)
+    .setLngLat([0, 5600 / 111195])
+    .addTo(map);
+  assert.equal(map.appendCount, 1);
+  log.length = 0;
+
+  map.fire('zoomstart');
+  map.zoom = 12.5;
+  map.fire('move');
+  assert.ok(marker._map, 'the active zoom retains this marker beyond the normal nearby radius');
+
+  marker.setLngLat(marker.getLngLat());
+  assert.ok(marker._map, 'a same-coordinate terrain-driven update uses the active gesture retention range');
+  assert.equal(map.appendCount, 1, 'the update does not detach and re-append the marker');
+  assert.equal(log.filter((entry) => entry === 'element-remove').length, 0);
+
+  map.fire('zoomend');
+  assert.equal(marker._map, undefined, 'zoom end reapplies the normal nearby range');
+  assert.equal(log.filter((entry) => entry === 'element-remove').length, 1);
+});
+
+test('gesture retention still enforces the 30km cap and attaches new nearby markers', () => {
+  const map = fakeMap([0, 0], 10);
+  const marker = instrument(new NearbyMarker({ element: markerElement() }))
+    .setLngLat([0, 5000 / 111195])
+    .addTo(map);
+  assert.ok(marker._map);
+  map.fire('movestart', { originalEvent: { touches: [{}, {}] } });
+
+  map.center = [0, -25_001 / 111195];
+  map.fire('move');
+  assert.equal(marker._map, undefined, 'gesture retention never keeps a marker beyond 30km');
+
+  const nearby = instrument(new NearbyMarker({ element: markerElement() }))
+    .setLngLat([0, map.center[1]])
+    .addTo(map);
+  assert.ok(nearby._map, 'newly nearby markers still attach during a held gesture');
+  map.fire('moveend');
+});
+
+test('rotateend applies the normal range even without a paired moveend', () => {
+  const map = fakeMap([0, 0], 10);
+  const log = [];
+  const marker = instrument(new NearbyMarker({ element: markerElement(log) }), log)
+    .setLngLat([0, 5600 / 111195])
+    .addTo(map);
+  assert.ok(marker._map);
+  log.length = 0;
+  map.fire('rotatestart');
+  map.zoom = 10.25;
+  map.fire('move');
+  assert.ok(marker._map, 'the marker remains mounted while rotation/zoom is active');
+
+  map.fire('rotateend');
+  assert.equal(marker._map, undefined);
+  assert.equal(log.filter((entry) => entry === 'element-remove').length, 1);
 });
 
 test('manual removal and map removal clean manager listeners and isolate different maps', () => {

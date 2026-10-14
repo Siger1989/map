@@ -46,6 +46,10 @@ export type PlannedRoute = {
 export type RouteOverlay = {
   /** Display-only colored geometry. Original routing/access semantics stay intact. */
   displayParts?: { coordinates: Coordinate[]; color: string }[];
+  /** Display-only route chainage from the active navigation session. */
+  navigationProgress?: number;
+  /** Use close-range travelled-road widths while navigation is active. */
+  navigationClose?: boolean;
   start: RoutePlace | null;
   end: RoutePlace | null;
   route: PlannedRoute | null;

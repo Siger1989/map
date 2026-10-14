@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$Python = "",
   [string]$Node = "",
   [string]$OutputDirectory = "EXE\山兔桌面",

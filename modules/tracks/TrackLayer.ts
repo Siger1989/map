@@ -19,6 +19,12 @@ import { cameraDetailZoom } from '../map/cameraDetailZoom';
 import { prepareVisibleNodeMove, moves as visibleNodeMoves } from './visibleNodeMove';
 import type { SnapViewport } from './snapping';
 import { pickLinePoint, type TrackLinePoint } from './linePoint';
+import {
+  pickTrackContinuation,
+  TRACK_CONTINUATION_TOLERANCE,
+  type TrackContinuationHit,
+} from './prepareTrackContinuation';
+import { withTerrainProjectionScope } from '../map/terrainProjectionScope';
 import type { TrackEdgeColors } from './edgeColors';
 import {
   DRAFT_ID,
@@ -206,6 +212,46 @@ export class TrackLayer {
       { layers: ['manual-track-line'] },
     );
     return hits[0]?.properties.trackId ?? null;
+  }
+  /** Refine only saved lines that MapLibre rendered near this tap. */
+  pickContinuation(point: ScreenPoint): TrackContinuationHit | null {
+    const state = this.state;
+    if (!state?.visible) return null;
+    let hits: ReturnType<MapLibreMap['queryRenderedFeatures']>;
+    try {
+      if (!this.map.getLayer('manual-track-line')) return null;
+      hits = this.map.queryRenderedFeatures(
+        [
+          [point.x - TRACK_CONTINUATION_TOLERANCE, point.y - TRACK_CONTINUATION_TOLERANCE],
+          [point.x + TRACK_CONTINUATION_TOLERANCE, point.y + TRACK_CONTINUATION_TOLERANCE],
+        ],
+        { layers: ['manual-track-line'] },
+      );
+    } catch {
+      return null;
+    }
+    if (!hits.length) return null;
+
+    const renderedIds = new Set<string>();
+    for (const feature of hits) {
+      const id = feature.properties?.trackId;
+      if (id !== undefined && id !== null) renderedIds.add(String(id));
+    }
+    if (!renderedIds.size) return null;
+    const candidates = state.saved.filter((track) =>
+      !track.hidden && track.id !== DRAFT_ID && track.id !== 'live-recording' &&
+      renderedIds.has(String(track.id)),
+    );
+    if (!candidates.length) return null;
+
+    return withTerrainProjectionScope(this.map, () =>
+      pickTrackContinuation(
+        candidates,
+        point,
+        (coordinate) => this.map.project(coordinate),
+        { draftEmpty: true, tolerance: TRACK_CONTINUATION_TOLERANCE },
+      ),
+    );
   }
   sync(state: TrackOverlay) {
     this.recoveryAttempted = new WeakSet();

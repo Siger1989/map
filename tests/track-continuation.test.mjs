@@ -1,14 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { build } from 'esbuild';
 import { metresBetween } from '../modules/navigation/types.ts';
 import { appendVertex } from '../modules/tracks/draft.ts';
 import { drawingRecord, storeDrawingRecord } from '../modules/tracks/archive.ts';
 import { parseSavedTracks, TRACK_STORAGE, MAX_TRACK_POINTS } from '../modules/tracks/drawing.ts';
+import { DRAFT_ID } from '../modules/tracks/editing.ts';
 import {
   pickTrackContinuation,
   prepareTrackContinuation,
   trackContinuationDetails,
 } from '../modules/tracks/prepareTrackContinuation.ts';
+
+const trackLayerBundle = await build({
+  entryPoints: ['modules/tracks/TrackLayer.ts'],
+  bundle: true,
+  write: false,
+  format: 'esm',
+  platform: 'node',
+  logLevel: 'silent',
+});
+const { TrackLayer } = await import(
+  `data:text/javascript;base64,${Buffer.from(trackLayerBundle.outputFiles[0].text).toString('base64')}`
+);
 
 const line = [[103, 30], [103.01, 30]];
 const manual = {
@@ -119,6 +133,81 @@ test('far or hidden routes do not capture a tap, and an existing draft takes pre
   assert.equal(pickTrackContinuation([manual], { x: 5, y: 20 }, project, { draftEmpty: true }), null);
   assert.equal(pickTrackContinuation([{ ...manual, hidden: true }], { x: 5, y: 0 }, project, { draftEmpty: true }), null);
   assert.equal(pickTrackContinuation([manual], { x: 5, y: 0 }, project, { draftEmpty: false }), null);
+});
+
+function continuationLayer(saved, renderedIds, project = ([lng, lat]) => ({
+  x: (lng - 103) * 1000,
+  y: (lat - 30) * 1000,
+})) {
+  let projectCalls = 0, queryError = null, layersReady = true;
+  const map = {
+    getLayer: () => layersReady ? {} : undefined,
+    queryRenderedFeatures: (bounds, options) => {
+      assert.deepEqual(bounds, [[-7, -8], [17, 16]]);
+      assert.deepEqual(options, { layers: ['manual-track-line'] });
+      if (queryError) throw queryError;
+      return renderedIds.map(trackId => ({ properties: { trackId } }));
+    },
+    project: coordinate => { projectCalls++; return project(coordinate); },
+  };
+  const layer = new TrackLayer(map);
+  layer.state = { visible: true, saved, draft: [], style: {}, nodes: [] };
+  return {
+    layer,
+    projectCount: () => projectCalls,
+    queryError(error) { queryError = error; },
+    layersReady(value) { layersReady = value; },
+  };
+}
+
+test('continuation narrows projection to locally rendered candidates and preserves hit chainage', () => {
+  const farTracks = Array.from({ length: 180 }, (_, index) => ({
+    ...manual,
+    id: `far-${index}`,
+    segments: [[[110 + index / 1000, 35], [110.01 + index / 1000, 35]]],
+  }));
+  const candidate = { ...manual, id: 'near' };
+  const harness = continuationLayer([...farTracks, candidate], ['near', 'near', 'draft', 'live-recording']);
+  const hit = harness.layer.pickContinuation({ x: 5, y: 4 });
+  const expected = pickTrackContinuation([candidate], { x: 5, y: 4 }, project, { draftEmpty: true });
+  assert.ok(hit);
+  assert.deepEqual(hit, expected);
+  assert.ok(harness.projectCount() < 100, `projected ${harness.projectCount()} points for one rendered candidate`);
+});
+
+test('rendered IDs dedupe while hidden/live/draft entries are excluded and overlaps follow saved order', () => {
+  const first = { ...manual, id: 'first' };
+  const second = { ...manual, id: 'second' };
+  const hidden = { ...manual, id: 'hidden', hidden: true };
+  const live = { ...manual, id: 'live-recording' };
+  const draft = { ...manual, id: DRAFT_ID };
+  const harness = continuationLayer([first, hidden, live, draft, second], [
+    'second', 'hidden', 'live-recording', DRAFT_ID, 'second', 'first', 'first',
+  ]);
+  const hit = harness.layer.pickContinuation({ x: 5, y: 4 });
+  assert.equal(hit?.track.id, 'first');
+  assert.ok(harness.projectCount() < 130, `duplicate features projected ${harness.projectCount()} points`);
+});
+
+test('unavailable line layer and rendered-feature query errors return null without projection scans', () => {
+  const harness = continuationLayer([manual], ['manual-1']);
+  harness.layersReady(false);
+  assert.equal(harness.layer.pickContinuation({ x: 5, y: 4 }), null);
+  harness.layersReady(true);
+  harness.queryError(new Error('style not ready'));
+  assert.equal(harness.layer.pickContinuation({ x: 5, y: 4 }), null);
+  assert.equal(harness.projectCount(), 0);
+});
+
+test('many saved tracks with no locally rendered hit and hidden overlay do no projection work', () => {
+  const saved = Array.from({ length: 180 }, (_, index) => ({ ...manual, id: `saved-${index}` }));
+  const harness = continuationLayer(saved, []);
+  assert.equal(harness.layer.pickContinuation({ x: 5, y: 4 }), null);
+  assert.equal(harness.projectCount(), 0);
+
+  harness.layer.state.visible = false;
+  assert.equal(harness.layer.pickContinuation({ x: 5, y: 4 }), null);
+  assert.equal(harness.projectCount(), 0);
 });
 
 test('continuation rejects segment and point limits before preparing an unsavable branch', () => {

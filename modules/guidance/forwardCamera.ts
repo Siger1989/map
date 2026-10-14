@@ -32,6 +32,7 @@ export type NavigationCameraOptions = {
 const FORWARD_PITCH = 60;
 export const navigationCloseZoom = (mode?: TravelMode) => mode === 'pedestrian' ? 18.2 : mode === 'bicycle' ? 17.8 : 17.4;
 const FORWARD_OFFSET_MARGIN = 8;
+const FORWARD_PUCK_CLEARANCE = 32;
 const TANGENT_SAMPLE_METRES = 45;
 const MIN_TANGENT_METRES = 8;
 
@@ -112,10 +113,11 @@ function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput
   const top = Math.max(0, Math.min(height, rawTop));
   const bottom = Math.max(0, Math.min(height, rawBottom));
   const safeTop = top + FORWARD_OFFSET_MARGIN;
-  const safeBottom = bottom - FORWARD_OFFSET_MARGIN;
+  const safeBottom = bottom - (forward ? FORWARD_PUCK_CLEARANCE : FORWARD_OFFSET_MARGIN);
   const usableHeight = safeBottom - safeTop;
   if (usableHeight <= 0) return 0;
-  const preferredY = forward ? safeTop + usableHeight * 0.72 : height / 2;
+  // Anchor near the lower edge of the unobscured map, leaving the route ahead visible.
+  const preferredY = forward ? safeTop + usableHeight * 0.88 : height / 2;
   const targetY = Math.max(safeTop, Math.min(safeBottom, preferredY));
   return Math.max(safeTop - height / 2, Math.min(safeBottom - height / 2, targetY - height / 2));
 }

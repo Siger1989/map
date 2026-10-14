@@ -6,20 +6,43 @@ import {
 } from './nearbyMarkerRange.ts';
 
 const managers = new WeakMap<MapLibreMap, NearbyMarkerManager>();
+const MAX_ATTACHED_RANGE_METERS = 30_000;
+type ActiveGesture = 'touch' | 'zoom' | 'rotate';
 
 class NearbyMarkerManager {
   readonly markers = new Set<NearbyMarker>();
   readonly map: MapLibreMap;
   private range: NearbyMarkerRange | null;
+  private readonly activeGestures = new Set<ActiveGesture>();
   private disposed = false;
   private readonly onUpdate = () => this.update();
+  private readonly onMoveStart = (event: { originalEvent?: unknown }) => {
+    const touches = (event.originalEvent as { touches?: { length?: number } } | undefined)?.touches?.length ?? 0;
+    if (touches >= 2) this.activeGestures.add('touch');
+  };
+  private readonly onZoomStart = () => this.activeGestures.add('zoom');
+  private readonly onZoomEnd = () => this.onGestureEnd('zoom');
+  private readonly onRotateStart = () => this.activeGestures.add('rotate');
+  private readonly onRotateEnd = () => this.onGestureEnd('rotate');
+  private readonly onMoveEnd = () => {
+    this.activeGestures.clear();
+    this.update();
+  };
+  private readonly onGestureEnd = (gesture: ActiveGesture) => {
+    if (this.activeGestures.delete(gesture) && !this.activeGestures.size) this.update();
+  };
   private readonly onRemove = () => this.dispose();
 
   constructor(map: MapLibreMap) {
     this.map = map;
     // Register before the first native Marker.addTo() installs Marker._update.
     map.on('move', this.onUpdate);
-    map.on('moveend', this.onUpdate);
+    map.on('movestart', this.onMoveStart);
+    map.on('moveend', this.onMoveEnd);
+    map.on('zoomstart', this.onZoomStart);
+    map.on('zoomend', this.onZoomEnd);
+    map.on('rotatestart', this.onRotateStart);
+    map.on('rotateend', this.onRotateEnd);
     map.on('resize', this.onUpdate);
     map.on('terrain', this.onUpdate);
     map.on('projectiontransition', this.onUpdate);
@@ -39,27 +62,36 @@ class NearbyMarkerManager {
     if (!this.markers.size) this.dispose();
   }
 
-  currentRange() {
+  currentRanges() {
     this.range = getNearbyMarkerRange(this.map);
-    return this.range;
+    const retentionRange = this.activeGestures.size && this.range
+      ? { ...this.range, enterRadiusMeters: MAX_ATTACHED_RANGE_METERS, exitRadiusMeters: MAX_ATTACHED_RANGE_METERS }
+      : null;
+    return { range: this.range, retentionRange };
   }
 
   update() {
     if (this.disposed) return;
-    this.range = getNearbyMarkerRange(this.map);
+    const { range, retentionRange } = this.currentRanges();
     for (const marker of [...this.markers])
-      if (this.markers.has(marker)) marker.syncNearbyState(this.range);
+      if (this.markers.has(marker)) marker.syncNearbyState(range, retentionRange);
   }
 
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
     this.map.off('move', this.onUpdate);
-    this.map.off('moveend', this.onUpdate);
+    this.map.off('movestart', this.onMoveStart);
+    this.map.off('moveend', this.onMoveEnd);
+    this.map.off('zoomstart', this.onZoomStart);
+    this.map.off('zoomend', this.onZoomEnd);
+    this.map.off('rotatestart', this.onRotateStart);
+    this.map.off('rotateend', this.onRotateEnd);
     this.map.off('resize', this.onUpdate);
     this.map.off('terrain', this.onUpdate);
     this.map.off('projectiontransition', this.onUpdate);
     this.map.off('remove', this.onRemove);
+    this.activeGestures.clear();
     for (const marker of [...this.markers]) marker.nearbyMapRemoved(this);
     this.markers.clear();
     managers.delete(this.map);
@@ -108,10 +140,11 @@ export class NearbyMarker extends MapLibreMarker {
 
   override setLngLat(lnglat: LngLatLike): this {
     const manager = this.nearbyManager;
+    const ranges = manager?.currentRanges();
     if (manager && this.nativeAttached &&
-      !isCoordinateWithinNearbyRange(manager.currentRange(), lnglat, true)) this.detachNative();
+      !isCoordinateWithinNearbyRange(ranges?.retentionRange ?? ranges?.range ?? null, lnglat, true)) this.detachNative();
     super.setLngLat(lnglat);
-    if (manager) this.syncNearbyState(manager.currentRange());
+    if (manager && ranges) this.syncNearbyState(ranges.range, ranges.retentionRange);
     return this;
   }
 
@@ -122,12 +155,17 @@ export class NearbyMarker extends MapLibreMarker {
   }
 
   /** @internal Called by the per-map manager. */
-  syncNearbyState(range: NearbyMarkerRange | null) {
+  syncNearbyState(range: NearbyMarkerRange | null, gestureRange: NearbyMarkerRange | null = null) {
     if (!this.nearbyMap || !this.nearbyManager) return;
     const coordinate = this.getLngLat();
     if (!coordinate) return;
     if (isCoordinateWithinNearbyRange(range, coordinate, this.nativeAttached)) {
       if (!this.nativeAttached) this.attachNative();
+    } else if (this.nativeAttached && gestureRange &&
+      isCoordinateWithinNearbyRange(gestureRange, coordinate, true)) {
+      // Keep an already-mounted marker through pinch/rotation jitter, but never
+      // exceed the configured 30km cap; moveend applies the normal range again.
+      return;
     } else if (this.nativeAttached) this.detachNative();
   }
 

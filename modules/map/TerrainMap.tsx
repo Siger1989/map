@@ -46,6 +46,7 @@ import type { Coordinate, RouteOverlay, TravelMode } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { twoFingerGestureDelta } from '../collections/boxSelection';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
+import type { TrackContinuationHit } from '../tracks/prepareTrackContinuation';
 import { handlePlannedRoutePick, handleTrackEditClick } from './trackEditClick';
 import { waitForTrackRender, type TrackRenderReceipt } from '../tracks/trackRenderHandoff';
 import { AreaLayer, type AreaOverlay } from '../areas/AreaLayer';
@@ -106,6 +107,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  pickTrackContinuation: (point: ScreenPoint) => TrackContinuationHit | null;
   waitForTrackRender: (receipt: TrackRenderReceipt, done: () => void) => () => void;
   applyCamera: (camera: CameraSnapshot) => void;
   previewTrackNode: (preview: TrackOverlay['preview']) => void;
@@ -174,6 +176,7 @@ function navigationUsableRect(map: Map) {
   const container = map.getContainer();
   const bounds = container.getBoundingClientRect();
   const height = container.clientHeight || bounds.height;
+  const verticalScale = bounds.height > 0 ? height / bounds.height : 1;
   const host = container.closest<HTMLElement>('.observatory.home-map');
   let top = 0;
   let bottom = height;
@@ -189,8 +192,8 @@ function navigationUsableRect(map: Map) {
     if (blocker.hidden || getComputedStyle(blocker).display === 'none' || getComputedStyle(blocker).visibility === 'hidden') continue;
     const rect = blocker.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0 || centerX < rect.left || centerX > rect.right) continue;
-    const relativeTop = rect.top - bounds.top;
-    const relativeBottom = rect.bottom - bounds.top;
+    const relativeTop = (rect.top - bounds.top) * verticalScale;
+    const relativeBottom = (rect.bottom - bounds.top) * verticalScale;
     if (relativeTop <= height / 2 && relativeBottom > height / 2) {
       const roomAbove = Math.max(0, relativeTop);
       const roomBelow = Math.max(0, height - relativeBottom);
@@ -552,7 +555,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         routeRef.current?.setNavigationPosition(latest.current.positionNavigating ? latest.current.position?.coordinates ?? null : null);
         syncTracks(latest.current.trackOverlay);
         areaRef.current?.sync(latest.current.areaOverlay);
-        positionRef.current?.sync(latest.current.position, latest.current.positionHeading, latest.current.positionNavigating);
+        positionRef.current?.sync(latest.current.position, latest.current.positionHeading, latest.current.positionNavigating, latest.current.positionNavigating && latest.current.navigationCues != null && latest.current.navigationCues.cameraMode !== 'top');
       }
       // Annotation appearance follows map settings, while its data effect below
       // handles annotation-only changes.
@@ -599,6 +602,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     useImperativeHandle(
       ref,
       () => ({
+        pickTrackContinuation: (point) => trackRef.current?.pickContinuation(point) ?? null,
         waitForTrackRender: (receipt, done) => {
           const current = mapRef.current;
           if (current) return waitForTrackRender(current, () => syncedTracks.current, receipt, done);
@@ -1657,9 +1661,9 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (loaded.current) areaRef.current?.sync(props.areaOverlay);
     }, [props.areaOverlay]);
     useEffect(() => {
-      if (loaded.current) positionRef.current?.sync(props.position, props.positionHeading, props.positionNavigating);
+      if (loaded.current) positionRef.current?.sync(props.position, props.positionHeading, props.positionNavigating, props.positionNavigating && props.navigationCues != null && props.navigationCues.cameraMode !== 'top');
       if (loaded.current) routeRef.current?.setNavigationPosition(props.positionNavigating ? props.position?.coordinates ?? null : null);
-    }, [props.position, props.positionHeading, props.positionNavigating]);
+    }, [props.position, props.positionHeading, props.positionNavigating, props.navigationCues]);
     useEffect(() => {
       if (loaded.current) photosRef.current?.sync(props.photos);
     }, [props.photos]);

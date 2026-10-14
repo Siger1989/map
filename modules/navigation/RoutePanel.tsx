@@ -49,6 +49,7 @@ export function RoutePanel({
   onPreview,
   onPreviewTopDown,
   onExitPreview,
+  waitingForPosition = false,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -70,6 +71,7 @@ export function RoutePanel({
   onPreview?: () => void;
   onPreviewTopDown?: () => void;
   onExitPreview?: () => void;
+  waitingForPosition?: boolean;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
@@ -97,7 +99,7 @@ export function RoutePanel({
   const destination = n.stops.at(-1)?.place;
   useEffect(() => {
     const origin = n.stops[0];
-    if (!destination || !origin || origin.place || origin.query.trim() || n.picking !== null) return;
+    if (waitingForPosition || !destination || !origin || origin.place || origin.query.trim() || n.picking !== null) return;
     setEditing(true);
     setActive(origin.id);
     const frame = requestAnimationFrame(() => {
@@ -105,7 +107,7 @@ export function RoutePanel({
         ?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [destination, n.stops[0]?.place, n.stops[0]?.query, n.picking]);
+  }, [destination, n.stops[0]?.place, n.stops[0]?.query, n.picking, waitingForPosition]);
   useEffect(() => {
     if (n.stops.length > previousCount.current) {
       const added = n.stops.at(-2)!;
@@ -248,6 +250,7 @@ export function RoutePanel({
           {n.error}
         </p>
       )}
+      {waitingForPosition && <p className="route-next-step" role="status">正在获取当前位置，定位后自动规划；也可手动选择起点。</p>}
       <div className="route-modes" aria-label="出行方式">
         {TRAVEL_MODES.map((m) => (
           <button

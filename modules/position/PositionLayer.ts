@@ -6,7 +6,7 @@ import { positionArrowImage } from './positionArrow';
 const POSITION_NEUTRAL = '#cbd2cf';
 export class PositionLayer {
   constructor(private map: Map) {}
-  sync(fix: PositionFix | null, heading: number | null = null, navigating = false) {
+  sync(fix: PositionFix | null, heading: number | null = null, navigating = false, closeView = false) {
     const m = this.map;
     if (!m.getSource('current-position')) {
       m.addSource('current-position', {
@@ -19,6 +19,35 @@ export class PositionLayer {
         source: 'current-position',
         filter: ['==', ['geometry-type'], 'Polygon'],
         paint: { 'fill-color': POSITION_NEUTRAL, 'fill-opacity': 0.14 },
+      });
+      m.addLayer({
+        id: 'position-navigation-glow',
+        type: 'circle', source: 'current-position',
+        filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'navigating'], true], ['!=', ['get', 'closeView'], true]],
+        paint: { 'circle-radius': 29, 'circle-color': '#168fff', 'circle-opacity': 0.24,
+          'circle-blur': 0.65, 'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport' },
+      });
+      m.addLayer({
+        id: 'position-navigation-puck',
+        type: 'circle', source: 'current-position',
+        filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'navigating'], true], ['!=', ['get', 'closeView'], true]],
+        paint: { 'circle-radius': 19, 'circle-color': '#ffffff', 'circle-stroke-width': 2,
+          'circle-stroke-color': '#b6e2ff', 'circle-pitch-alignment': 'viewport', 'circle-pitch-scale': 'viewport' },
+      });
+      m.addLayer({
+        id: 'position-navigation-close-glow',
+        type: 'circle', source: 'current-position',
+        filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'navigating'], true], ['==', ['get', 'closeView'], true]],
+        paint: { 'circle-radius': 31, 'circle-color': '#168fff', 'circle-opacity': 0.3,
+          'circle-blur': 0.45, 'circle-pitch-alignment': 'map', 'circle-pitch-scale': 'map' },
+      });
+      m.addLayer({
+        id: 'position-navigation-close-puck',
+        type: 'circle', source: 'current-position',
+        filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'navigating'], true], ['==', ['get', 'closeView'], true]],
+        paint: { 'circle-radius': 25, 'circle-color': '#ffffff', 'circle-opacity': 0.98,
+          'circle-stroke-width': 2.5, 'circle-stroke-color': '#168fff',
+          'circle-pitch-alignment': 'map', 'circle-pitch-scale': 'map' },
       });
       m.addLayer({
         id: 'position-dot',
@@ -34,13 +63,13 @@ export class PositionLayer {
       });
       if (!m.hasImage('position-heading-arrow')) m.addImage('position-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
       if (!m.hasImage('position-ip-heading-arrow')) m.addImage('position-ip-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
-      if (!m.hasImage('position-navigation-arrow')) m.addImage('position-navigation-arrow', positionArrowImage([72, 201, 255]), { pixelRatio: 2 });
+      if (!m.hasImage('position-navigation-arrow')) m.addImage('position-navigation-arrow', positionArrowImage([0, 131, 255]), { pixelRatio: 2 });
       m.addLayer({
         id: 'position-arrow', type: 'symbol', source: 'current-position',
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'heading']],
         layout: {
           'icon-image': ['case', ['==', ['get', 'navigating'], true], 'position-navigation-arrow', ['==', ['get', 'provider'], 'ip'], 'position-ip-heading-arrow', 'position-heading-arrow'],
-          'icon-size': ['case', ['==', ['get', 'navigating'], true], 1.7, 1.2],
+          'icon-size': ['case', ['==', ['get', 'navigating'], true], 1.9, 1.2],
           'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map',
           'icon-pitch-alignment': 'viewport', 'icon-allow-overlap': true, 'icon-ignore-placement': true,
         },
@@ -74,7 +103,7 @@ export class PositionLayer {
         },
         {
           type: 'Feature',
-          properties: { navigating: navigating && fix.provider !== 'ip', ...(fix.provider === 'ip' ? { provider: 'ip' } : {}), ...(heading !== null && Number.isFinite(heading) ? { heading: ((heading % 360) + 360) % 360 } : {}) },
+          properties: { navigating: navigating && fix.provider !== 'ip', closeView: navigating && closeView && fix.provider !== 'ip', ...(fix.provider === 'ip' ? { provider: 'ip' } : {}), ...(heading !== null && Number.isFinite(heading) ? { heading: ((heading % 360) + 360) % 360 } : {}) },
           geometry: { type: 'Point', coordinates: fix.coordinates },
         },
       );

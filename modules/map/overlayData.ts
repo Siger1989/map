@@ -43,14 +43,23 @@ const overlayOrder = [
   'position-accuracy',
   'cad-labels',
   'navigation-cue-outline',
+  'navigation-cue-route-ribbon',
   'navigation-cue-arrows',
+  'navigation-cue-offset-reference-outline',
+  'navigation-cue-offset-reference',
+  'navigation-cue-route-projection',
+  'position-navigation-glow',
+  'position-navigation-puck',
+  'position-navigation-close-glow',
+  'position-navigation-close-puck',
   'position-dot',
   'position-arrow',
   'position-ip-label',
 ];
 // Routes stay above ordinary icons; immediate guidance and the real position
 // remain legible above the route. DOM markers are handled by routeIconPriority.
-const NAVIGATION_TOP_LAYERS = ['navigation-cue-outline', 'navigation-cue-arrows', 'position-dot', 'position-arrow', 'position-ip-label'];
+const NAVIGATION_TOP_LAYERS = ['navigation-cue-outline', 'navigation-cue-route-ribbon', 'navigation-cue-arrows', 'navigation-cue-offset-reference-outline', 'navigation-cue-offset-reference', 'navigation-cue-route-projection', 'position-navigation-glow', 'position-navigation-puck', 'position-navigation-close-glow', 'position-navigation-close-puck', 'position-dot', 'position-arrow', 'position-ip-label'];
+const NAVIGATION_RIBBON_LAYERS = ['navigation-cue-outline', 'navigation-cue-route-ribbon', 'navigation-cue-offset-reference-outline', 'navigation-cue-offset-reference'];
 const ROUTE_STROKE_LAYERS = [
   'route-outline',
   'route-path',
@@ -76,6 +85,8 @@ const LINE_BELOW_PLACE_LABELS = new Set([
   'cad-outline',
   'cad-line',
   'cad-point',
+  'navigation-cue-offset-reference-outline',
+  'navigation-cue-offset-reference',
 ]);
 const PLACE_LABEL_LAYERS = new Set([
   'domestic-labels-map',
@@ -94,6 +105,12 @@ const PLACE_LABEL_LAYERS = new Set([
 /** Keep geographic strokes below visible raster/vector labels; retain annotations above them. */
 export function syncPlaceLabelLayerOrder(map: Map) {
   const layers = map.getStyle().layers;
+  // Close navigation has a wider band. Keep its geographic labels and endpoint
+  // annotations legible without the normal route-last pass undoing this order.
+  if (hasVisibleNavigationRibbon(layers)) {
+    syncRouteStrokesLast(map);
+    return;
+  }
   const present = layers.map((layer) => layer.id);
   const visibleLabels = layers.filter(
     (layer) => (PLACE_LABEL_LAYERS.has(layer.id) || layer.id.startsWith('shantu-user-map-ovmap-')) && layer.layout?.visibility !== 'none',
@@ -134,16 +151,29 @@ export function syncPlaceLabelLayerOrder(map: Map) {
   syncRouteStrokesLast(map);
 }
 
+function hasVisibleNavigationRibbon(layers: ReturnType<Map['getStyle']>['layers']) {
+  return layers.some(layer => layer.id === 'navigation-cue-route-ribbon' && layer.layout?.visibility !== 'none');
+}
+
 function syncRouteStrokesLast(map: Map) {
   const layers = map.getStyle().layers;
   const routes = ROUTE_STROKE_LAYERS.filter((id) =>
     layers.some((layer) => layer.id === id && layer.type === 'line'),
   );
-  if (!routes.length) {
+  const closeNavigation = hasVisibleNavigationRibbon(layers);
+  if (!routes.length && !closeNavigation) {
     detachRouteTierGuard(map);
     return;
   }
-  const tier = [...routes, ...NAVIGATION_TOP_LAYERS.filter(id => layers.some(layer => layer.id === id))];
+  const presentIds = new Set(layers.map(layer => layer.id));
+  const tier = closeNavigation ? [
+    ...ROAD_LINE_LAYERS.filter(id => presentIds.has(id)),
+    ...overlayOrder.filter(id => presentIds.has(id) && LINE_BELOW_PLACE_LABELS.has(id) && !NAVIGATION_RIBBON_LAYERS.includes(id)),
+    ...routes,
+    ...NAVIGATION_RIBBON_LAYERS.filter(id => presentIds.has(id)),
+    ...layers.filter(layer => (PLACE_LABEL_LAYERS.has(layer.id) || layer.id.startsWith('shantu-user-map-ovmap-')) && layer.layout?.visibility !== 'none').map(layer => layer.id),
+    ...overlayOrder.filter(id => presentIds.has(id) && !LINE_BELOW_PLACE_LABELS.has(id) && !ROUTE_STROKE_LAYERS.includes(id) && !NAVIGATION_RIBBON_LAYERS.includes(id)),
+  ] : [...routes, ...NAVIGATION_TOP_LAYERS.filter(id => presentIds.has(id) && !LINE_BELOW_PLACE_LABELS.has(id))];
 
   const guard = ensureRouteTierGuard(map);
   if (guard?.syncing) return;

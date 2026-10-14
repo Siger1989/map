@@ -26,3 +26,39 @@ test('navigation only hides a start badge near the real marker and restores it o
   layer.setNavigationPosition(null);assert.equal(starts().length,1);
   assert.equal(state.start.name,'当前位置');
 });
+
+test('navigation puck follows real position state and clears on stop or a missing fix', async () => {
+  await build({entryPoints:['modules/position/PositionLayer.ts'],outfile:'.openai/nav-reference-20261014/PositionLayer-test.mjs',bundle:true,format:'esm',platform:'node',packages:'external'});
+  const {PositionLayer}=await import('../.openai/nav-reference-20261014/PositionLayer-test.mjs');
+  const sources=new Map(), layers=[], images=new Map();
+  const map={getSource:id=>sources.get(id),addSource(id){sources.set(id,{setData(data){this.data=data}})},
+    getLayer:id=>layers.find(l=>l.id===id),addLayer:l=>layers.push(l),getStyle:()=>({layers}),
+    hasImage:id=>images.has(id),addImage:(id,image)=>images.set(id,image),
+    moveLayer(id){const i=layers.findIndex(l=>l.id===id);layers.push(...layers.splice(i,1))},on(){},off(){},
+    getContainer:()=>({querySelectorAll:()=>[],getBoundingClientRect:()=>({left:0,top:0,width:390,height:857}),addEventListener(){},removeEventListener(){}})};
+  const layer=new PositionLayer(map), fix={coordinates:[104,30],accuracy:8,timestamp:Date.now()};
+  const point=()=>sources.get('current-position').data.features.find(f=>f.geometry.type==='Point');
+  layer.sync(fix,30,true);
+  assert.equal(point().properties.navigating,true);
+  for (const id of ['position-navigation-glow','position-navigation-puck']) {
+    const spec=layers.find(l=>l.id===id);
+    assert.ok(spec.filter.some(part=>Array.isArray(part)&&JSON.stringify(part).includes('navigating')));
+    assert.equal(spec.paint['circle-pitch-scale'],'viewport','white puck must retain its screen size at a steep pitch');
+  }
+  assert.equal(point().properties.closeView,false,'ordinary navigation keeps the regular screen-space puck');
+  layer.sync(fix,30,true,true);
+  assert.equal(point().properties.closeView,true,'only the explicit fourth argument enables the close-view puck');
+  for (const id of ['position-navigation-close-glow','position-navigation-close-puck']) {
+    const spec=layers.find(l=>l.id===id);
+    assert.ok(spec.filter.some(part=>Array.isArray(part)&&JSON.stringify(part).includes('closeView')&&part.at(-1)===true));
+    assert.equal(spec.paint['circle-pitch-alignment'],'map','close-view puck follows the ground plane and can appear elliptical');
+    assert.equal(spec.paint['circle-pitch-scale'],'map');
+  }
+  layer.sync(fix,30,false);
+  assert.equal(point().properties.navigating,false,'ending navigation restores the regular marker');
+  assert.equal(point().properties.closeView,false,'ending navigation clears the close-view state');
+  layer.sync({...fix,provider:'ip'},30,true);
+  assert.equal(point().properties.navigating,false,'an IP estimate must never receive the navigation puck');
+  layer.sync(null,null,true);
+  assert.deepEqual(sources.get('current-position').data.features,[],'location loss cannot leave an apparently live puck');
+});

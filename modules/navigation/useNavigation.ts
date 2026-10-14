@@ -118,6 +118,50 @@ export function useNavigation() {
     loading,
     error,
     place,
+    planTo: async (
+      destination: RoutePlace,
+      fallbackStart?: RoutePlace,
+      onApplied?: (route: PlannedRoute) => void,
+    ) => {
+      request.current?.abort();
+      request.current = null;
+      setLoading(false);
+      setError('');
+      routeRef.current = null;
+      setRoute(null);
+      setVisible(true);
+      setPicking(null);
+
+      const nextStops = current.current.map((stop, index) => {
+        if (index === 0 && !stop.place && !stop.query.trim() && fallbackStart) {
+          return { ...stop, place: fallbackStart, query: fallbackStart.name };
+        }
+        if (index === current.current.length - 1) {
+          return { ...stop, place: destination, query: destination.name };
+        }
+        return stop;
+      });
+      current.current = nextStops;
+      setStops(nextStops);
+
+      const missingIndex = nextStops.findIndex((stop) => !stop.place);
+      if (missingIndex >= 0) {
+        const missing = nextStops[missingIndex];
+        setError(missingIndex === 0
+          ? missing.query.trim()
+            ? '请从搜索结果选择起点后再规划。'
+            : '请等待准确定位或手动选择起点后再规划。'
+          : `${stopLabel(missingIndex, nextStops.length)}尚未选择地点，请选择搜索结果或移除该途经点。`);
+        return null;
+      }
+      return calculatePlaces(
+        nextStops.map((stop) => stop.place!) as RoutePlace[],
+        mode,
+        false,
+        undefined,
+        onApplied,
+      );
+    },
     setPicking,
     pickingLabel:
       picking === null ? '' : stopLabel(indexOf(picking), stops.length),

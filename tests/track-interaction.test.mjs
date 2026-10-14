@@ -645,8 +645,30 @@ test('map style is valid and solitary precision points never become invalid line
   const sources = {},
     layers = [];
   let data;
+  const handlers = new Map(),
+    canvas = {
+      clientWidth: 400,
+      clientHeight: 400,
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: 400, bottom: 400, width: 400, height: 400 }),
+    },
+    container = {
+      querySelectorAll: () => [],
+      addEventListener() {},
+      removeEventListener() {},
+      ownerDocument: { fonts: { addEventListener() {}, removeEventListener() {} } },
+    };
   const map = {
+    on: (event, handler) => {
+      const listeners = handlers.get(event) ?? new Set();
+      listeners.add(handler);
+      handlers.set(event, listeners);
+    },
+    off: (event, handler) => handlers.get(event)?.delete(handler),
+    getContainer: () => container,
+    getCanvas: () => canvas,
     getSource: (n) => sources[n],
+    getLayoutProperty: (_id, property) => property === 'visibility' ? 'visible' : undefined,
+    queryRenderedFeatures: () => [],
     addSource: (n, s) => {
       sources[n] = {
         ...s,

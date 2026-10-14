@@ -38,6 +38,24 @@ class EventMapFake extends MapFake {
 }
 
 const baseLines = ['road-outline', 'main-roads', 'local-roads'];
+test('offset reference remains below place labels in both views without repeated layer moves', () => {
+  const references = ['navigation-cue-offset-reference-outline', 'navigation-cue-offset-reference'];
+  for (const close of [false, true]) {
+    const map = new MapFake([
+      'road-names', ...references, 'position-navigation-close-puck', 'position-arrow',
+      'navigation-cue-route-ribbon', 'navigation-cue-outline', 'route-path', 'route-outline',
+    ]);
+    map.visible('navigation-cue-route-ribbon', close);
+    map.visible('navigation-cue-outline', close);
+    syncPlaceLabelLayerOrder(map);
+    for (const reference of references)
+      assert.ok(map.ids().indexOf(reference) < map.ids().indexOf('road-names'));
+    assert.ok(map.ids().indexOf('position-arrow') > map.ids().indexOf('road-names'));
+    const moves = map.moves;
+    for (let i = 0; i < 20; i++) syncPlaceLabelLayerOrder(map);
+    assert.equal(map.moves, moves, `stable ordering must not cause marker placement churn (close=${close})`);
+  }
+});
 const routeLines = ['route-outline', 'route-path', 'route-access', 'manual-track-outline', 'manual-track-selection-edge', 'manual-track-line', 'guidance-outline', 'guidance-path', 'guidance-access', 'route-gap-line'];
 const topMarks = ['route-points', 'route-point-labels', 'route-gap-points', 'manual-track-node', 'manual-track-selected-node', 'manual-track-endpoint-label', 'manual-track-notes-point', 'guidance-target', 'route-grade-warning-dot', 'route-grade-warning-label', 'track-line-selection-halo', 'track-line-selection', 'position-dot', 'position-arrow', 'cad-labels'];
 const navigationTop = ['position-dot', 'position-arrow'];
@@ -169,4 +187,33 @@ test('navigation arrows and position stay above crossing route lines across styl
   assert.equal(map.moves, moves);
   map.addLayer('late-icon', 'symbol');
   assert.deepEqual(map.ids().slice(-nav.length), nav);
+});
+
+test('close navigation keeps labels above the green ribbon and position above labels, without layer churn', () => {
+  const ribbon = ['navigation-cue-outline', 'navigation-cue-route-ribbon'];
+  const nav = ['navigation-cue-arrows', 'position-navigation-glow', 'position-navigation-puck', 'position-dot', 'position-arrow', 'position-ip-label'];
+  const map = new EventMapFake(layers(['city-names', 'road-names', ...topMarks.filter(id => !nav.includes(id)), ...ribbon, ...nav]));
+  for (const id of ribbon) map.layers.find(layer => layer.id === id).type = 'line';
+  map.emitMoveEvents = true;
+  syncPlaceLabelLayerOrder(map);
+  const ids = map.ids();
+  for (const id of [...baseLines, ...routeLines]) assert.ok(ids.indexOf(id) < ids.indexOf(ribbon[0]));
+  for (const id of ['city-names', 'road-names']) {
+    assert.ok(ids.indexOf(id) > ids.indexOf(ribbon[1]));
+    assert.ok(ids.indexOf(id) < ids.indexOf('route-point-labels'));
+    assert.ok(ids.indexOf(id) < ids.indexOf('position-navigation-puck'));
+  }
+  assert.deepEqual(ids.slice(-nav.length), nav);
+  const moves = map.moves;
+  for (let i = 0; i < 100; i++) { syncPlaceLabelLayerOrder(map); map.emit('styledata'); }
+  assert.equal(map.moves, moves, 'stable navigation does not invalidate terrain draping each frame');
+  map.addLayer('late-native-symbol', 'symbol');
+  assert.deepEqual(map.ids().slice(-nav.length), nav);
+
+  for (const id of ribbon) map.visible(id, false);
+  syncPlaceLabelLayerOrder(map);
+  assert.ok(map.ids().indexOf('city-names') < map.ids().indexOf('route-outline'), 'leaving close navigation restores normal order');
+  const afterExit = map.moves;
+  for (let i = 0; i < 100; i++) { syncPlaceLabelLayerOrder(map); map.emit('styledata'); }
+  assert.equal(map.moves, afterExit);
 });

@@ -3,12 +3,12 @@
   z-index: 9;
   top: calc(56px + var(--safe-top));
   left: var(--edge-left);
-  width: min(320px, calc(100% - var(--edge-left) - var(--edge-right) - 56px));
+  width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 56px));
   max-height: min(38dvh, 320px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--ui-radius-card, 20px);
+  border-radius: var(--ui-radius-card, 8px);
 }
 .guidance-card header {
   display: block;
@@ -36,7 +36,7 @@
   place-items: center;
   padding: 0;
   border: 1px solid var(--ui-line, var(--border));
-  border-radius: var(--ui-radius-control, 12px);
+  border-radius: 4px;
   color: var(--ui-button-ink, var(--text));
   background: var(--ui-raised, var(--surface));
 }
@@ -48,7 +48,7 @@
   overscroll-behavior: contain;
 }
 .guidance-card[data-compact='true'] header { display: block; }
-.guidance-card[data-compact='true'] header strong { flex: 1 1 auto; font-size: 11px; white-space: nowrap; gap: 4px; }
+.guidance-card[data-compact='true'] header strong { flex: 1 1 auto; font-size: 12px; white-space: nowrap; gap: 4px; }
 .guidance-card .guidance-expand { margin-left: 0; }
 .guidance-card[data-compact='true'] .guidance-content { padding: 0 8px 8px; }
 .guidance-card[data-compact='true'] .guidance-content > :not(.guidance-status):not(.guidance-instruction):not(.guidance-error) { display: none; }
@@ -57,30 +57,77 @@
 .observatory.home-map .guidance-card[data-compact='true'] {
   top: calc(var(--home-header-height) + var(--home-top) + 4px) !important;
   left: var(--home-left) !important;
-  width: min(300px, calc(100vw - var(--home-left) - var(--home-right) - 52px)) !important;
-  border-radius: var(--ui-radius-card, 20px);
+  width: min(300px, calc(100vw - var(--home-left) - var(--home-right) - 80px)) !important;
+  border-radius: var(--ui-radius-card, 8px);
   padding: 0 4px !important;
   box-sizing: border-box;
 }
 .observatory.home-map .guidance-card[data-compact='true'] header {
   height: auto !important; min-height: 0 !important; padding: 4px 8px !important;
 }
-.observatory.home-map .guidance-card[data-compact='true'] header strong { font-size: 11px; white-space: nowrap; gap: 4px; }
+.observatory.home-map .guidance-card[data-compact='true'] header strong { font-size: 12px; white-space: nowrap; gap: 4px; }
 .observatory.home-map .guidance-card[data-compact='true'] header strong svg { width: 15px; }
 .guidance-inline-status { display: block; max-height: 48px; overflow: auto; overscroll-behavior: contain; min-width: 0; padding: 0 2px 2px; font-size: 11px; line-height: 1.35; color: var(--ui-muted, var(--muted)); overflow-wrap: anywhere; }
-.observatory.home-map .guidance-card[data-compact='true'] header button {
-  min-width: 36px !important; width: 36px !important; height: 36px !important; min-height: 36px !important;
-  flex: 0 0 36px; margin: 0; padding: 0; color: var(--ui-button-ink, var(--text)); border-radius: var(--ui-radius-control, 12px);
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
+.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] {
+  min-width:30px; width:30px; height:32px; min-height:32px;
+  flex:0 0 30px; margin:0; padding:0; color:var(--ui-button-ink, var(--text)); border-radius:var(--ui-radius-control, 4px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header button.guidance-resume {
   display:flex; align-items:center; justify-content:flex-start; gap:4px;
-  flex:1 1 auto; min-width:0 !important; width:auto !important;
-  padding:0 2px; border:0; background:transparent; font-size:11px;
+  flex:1 1 auto; min-width:0; width:auto; height:32px; min-height:32px;
+  padding:0 3px; border:0; background:transparent; font-size:12px;
   white-space:nowrap; color:var(--ui-accent);
 }
 .guidance-resume svg { flex-shrink:0; }
 .guidance-resume span { overflow:hidden; text-overflow:ellipsis; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-content { display: none; }
+.guidance-compact-primary { display:flex; align-items:center; gap:8px; min-height:62px; padding:1px 8px 8px; }
+.guidance-maneuver-icon { width:44px; height:44px; flex:0 0 44px; display:grid; place-items:center; color:var(--ui-ink, var(--text)); background:transparent; border:0; border-radius:4px; }
+.guidance-maneuver-copy { display:flex; flex-direction:column; justify-content:center; min-width:0; line-height:1.15; }
+.guidance-maneuver-distance { color:var(--ui-ink, var(--text)); font-size:34px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.04em; white-space:nowrap; }
+.guidance-maneuver-distance small { font-size:16px; font-weight:500; letter-spacing:0; }
+.guidance-maneuver-text { margin-top:2px; overflow:hidden; color:var(--ui-ink, var(--text)); font-size:14px; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+.guidance-remaining-line { margin-top:2px; color:var(--ui-muted, var(--muted)); font-size:11px; line-height:1.2; white-space:nowrap; }
+.guidance-compact-state { display:block; flex-shrink:0; max-height:40px; padding-bottom:2px; overflow:auto; color:var(--ui-ink, var(--text)); font-size:13px; line-height:18px; overflow-wrap:anywhere; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] {
+  color:#fff;
+  background:#204da8;
+  border:0;
+  box-shadow:0 3px 12px #07152c55;
+}
+.observatory.home-map .guidance-card[data-forward-navigation='true'] header,
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-content { color:#fff; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] header button {
+  color:#fff;
+  border-color:#ffffff55;
+  background:#ffffff16;
+}
+.observatory.home-map .guidance-card[data-forward-navigation='true'] header button.guidance-resume { color:#fff; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] header button.guidance-first-person[aria-pressed='true'] {
+  color:#fff;
+  border-color:#ffffffa8;
+  background:#ffffff2b;
+}
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon,
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance,
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-text,
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-compact-state { color:#fff; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-remaining-line,
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-inline-status { color:#e1eaff; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance { font-size:28px; }
+@media (max-height:520px) {
+  .observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance { font-size:28px; }
+}
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon { flex-basis:44px; }
+.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon svg { width:44px; height:44px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-heading-row { min-height:32px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-header-actions { gap:3px; }
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex:1 1 auto; min-width:0; width:auto; height:32px; min-height:32px; padding:0 3px; border:0; background:transparent; color:var(--ui-accent, var(--accent)); font-size:12px; white-space:nowrap; }
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person { display:flex; align-items:center; justify-content:center; gap:3px; min-width:44px; width:auto; height:32px; min-height:32px; flex:0 0 auto; padding:0 5px; border-radius:4px; font-size:10px; }
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person[aria-pressed='true'] { color:var(--ui-accent, var(--accent)); border-color:var(--ui-accent, var(--accent)); background:color-mix(in srgb, var(--ui-accent, var(--accent)) 10%, var(--ui-raised, var(--surface))); }
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
+.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] { background:transparent; }
 .guidance-content p {
   margin: 0 0 6px;
   line-height: 1.4;
@@ -228,4 +275,97 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
     right: 8px !important;
     bottom: calc(var(--home-footer) + 4px) !important;
   }
+}
+
+/* Navigation-card controls keep full touch targets at every compact state. */
+.observatory.home-map .guidance-card {
+  overflow: visible;
+}
+.observatory.home-map .guidance-card .guidance-heading-row {
+  width: 100%;
+  min-height: 44px;
+  gap: 4px;
+}
+.observatory.home-map .guidance-card header button {
+  box-sizing: border-box;
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  border-radius: var(--ui-radius-control, 4px);
+}
+.observatory.home-map .guidance-card header button.guidance-resume {
+  flex: 1 1 auto;
+  min-width: 44px;
+  width: auto;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.observatory.home-map .guidance-card header button.guidance-first-person {
+  min-width: 52px;
+  width: auto;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: 11px;
+}
+.observatory.home-map .guidance-card .guidance-header-actions {
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-heading-row {
+  min-height: 44px;
+}
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume {
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person {
+  min-width: 52px;
+  height: 44px;
+  min-height: 44px;
+}
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
+.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] {
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  flex: 0 0 44px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header button.guidance-resume {
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-content,
+.observatory.home-map .guidance-card .guidance-display-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+/* Compact directions are shown only in the explicitly selected first-person view. */
+.observatory.home-map .guidance-card[data-compact='true'] {
+  width:min(240px, calc(100vw - var(--home-left) - var(--home-right) - 80px)) !important;
+}
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-resume span { display:none; }
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume { justify-content:center; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-compact-primary {
+  min-height:48px; gap:6px; padding:0 2px 4px;
+}
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon { width:32px; height:32px; flex-basis:32px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon svg { width:32px; height:32px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-text { font-size:12px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-inline-status { max-height:30px; padding:0 2px 2px; }
+.observatory.home-map .guidance-card[data-compact='true'][data-camera-mode='top'] {
+  background:transparent; border:0; box-shadow:none;
+}
+
+.observatory.home-map .guidance-card[data-compact='false'] header button.guidance-expand,
+.observatory.home-map .guidance-card[data-compact='false'] header button[aria-label='结束导航'] {
+  min-width:44px; width:44px; height:44px; min-height:44px; flex:0 0 44px;
 }

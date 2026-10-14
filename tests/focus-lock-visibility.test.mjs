@@ -48,7 +48,8 @@ test('home binding does not borrow follow blocking or retained draft/finished-re
   assert.match(binding,/drawing: tracks\.drawing/);
   assert.doesNotMatch(binding,/recording\s*:/,'recording and paused recording do not block hiding the map');
   assert.match(page,/!desktopShell && panel === null[\s\S]*?<RecordingQuickAction/,'map keeps its quick recording control available before hiding');
-  assert.match(binding,/rally: rallyMode && !!navigation\.route/);
+  assert.match(binding,/navigation:\s*guidance\.active/);
+  assert.match(binding,/rally:\s*false/);
   assert.match(binding,/areaEditing: !!areas\.selected && areaEditing/);
   assert.match(binding,/annotationDetails: panel === 'annotations' && !!selectedAnnotation/);
   assert.doesNotMatch(page.slice(page.indexOf('const canAddCenterMarker'),page.indexOf('// follow.blocked')),/!selectedAnnotation/);

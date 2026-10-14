@@ -1,8 +1,17 @@
 import { createBrowserTileCache } from './browserTileCache.ts';
 import { createCachedTileFetcher } from './cachedTileTransport.ts';
 
+function isIndexedDBAvailable(): boolean {
+  try {
+    return typeof globalThis.indexedDB !== 'undefined';
+  } catch {
+    // Storage can be disabled by the browser or embedding context; map tiles must still load online.
+    return false;
+  }
+}
+
 // Open metadata while the map itself initializes, before its first tile batch.
-const browseStore = typeof globalThis.indexedDB === 'undefined' ? undefined : createBrowserTileCache();
+const browseStore = isIndexedDBAvailable() ? createBrowserTileCache() : undefined;
 let browserTileFetcher = browseStore ? createCachedTileFetcher(browseStore, fetchProviderTile) : undefined;
 const directTileFetcher = browseStore ? createCachedTileFetcher(browseStore,(url,signal)=>fetch(url,{signal})) : undefined;
 export function tileTransportSnapshot() {
@@ -88,7 +97,7 @@ export async function fetchMapTile(
   signal.throwIfAborted();
   // Only interactive browsing uses the new bounded cache. Explicit downloads
   // and the removed OfflineStore/route-area cache do not participate.
-  if (typeof globalThis.indexedDB === 'undefined') return fetchProviderTile(url, signal);
+  if (!isIndexedDBAvailable()) return fetchProviderTile(url, signal);
   browserTileFetcher ??= createCachedTileFetcher(createBrowserTileCache(), fetchProviderTile);
   return browserTileFetcher.fetch(url, signal);
 }

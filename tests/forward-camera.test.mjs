@@ -49,7 +49,8 @@ test('explicit close navigation enlarges by travel mode while subsequent fixes p
   const walk = navigationCameraOptions({ ...input, close: true, travelMode: 'pedestrian' });
   assert.equal(car.zoom, 17.4);
   assert.ok(walk.zoom > car.zoom);
-  assert.ok(857 / 2 + car.offset[1] > 120 + (750 - 120) * 0.7);
+  assert.ok(857 / 2 + car.offset[1] > 120 + (750 - 120) * 0.8, 'first-person position stays near the lower map area');
+  assert.ok(857 / 2 + car.offset[1] <= 750 - 32, 'the journey card clears the whole position disc');
   assert.equal('zoom' in navigationCameraOptions(input), false);
   assert.equal('zoom' in navigationCameraOptions({ ...input, close: true, forward: false }), false);
 });
@@ -88,7 +89,7 @@ test('offset stays inside the usable viewport on short screens and yields to bot
   });
   assert.ok(short.offset[1] < 0, 'a bottom overlay can move the camera point above screen center');
   assert.ok(32 + 8 <= 300 / 2 + short.offset[1]);
-  assert.ok(300 / 2 + short.offset[1] <= 172 - 8);
+  assert.ok(300 / 2 + short.offset[1] <= 172 - 32, 'the whole disc clears the bottom overlay on a short screen');
 
   const bottomCard = navigationCameraOptions({
     center: [0, 0], heading: 0, height: 480, forward: true,

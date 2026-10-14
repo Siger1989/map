@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { parseHTML } from 'linkedom';
 
 test('navigation card and route summary expose first-person camera and route preview interactions', async (t) => {
@@ -56,7 +57,10 @@ test('navigation card and route summary expose first-person camera and route pre
     distance: 1000,
     duration: 300,
     mode: 'pedestrian',
-    steps: [{ instruction: '沿路线前进', distance: 1000 }],
+    steps: [
+      { instruction: '沿路线前进', distance: 400, duration: 100 },
+      { instruction: '向右转', distance: 600, duration: 200 },
+    ],
     createdAt: 1,
   };
   const session = {
@@ -114,18 +118,78 @@ test('navigation card and route summary expose first-person camera and route pre
     for (const key of ['window', 'document', 'HTMLElement', 'ResizeObserver', 'IS_REACT_ACT_ENVIRONMENT']) delete globalThis[key];
   });
 
+  await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), cameraMode: undefined })));
+  assert.equal(host.querySelector('.guidance-compact-primary'), null, 'ordinary navigation defaults to a clear top view');
+  assert.equal(host.querySelector('[aria-label="第一人称模式"]').getAttribute('aria-pressed'), 'false');
+  assert.equal(host.querySelector('[aria-label="结束导航"]')?.tagName, 'BUTTON', 'ending navigation stays available without a prompt panel');
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('.guidance-compact-primary')?.getAttribute('data-maneuver'), 'straight');
+  assert.equal(host.querySelector('.guidance-maneuver-distance')?.textContent, '500 米');
+  assert.equal(host.querySelector('.guidance-maneuver-text')?.textContent, '沿路线前进');
   assert.ok(host.querySelector('[aria-label="第一人称模式"]'), 'the navigation header exposes first-person mode');
   assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'true');
   assert.equal(host.querySelector('.guidance-first-person span').textContent, '近景');
+  await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), following: true })));
+  assert.equal(host.querySelector('.guidance-resume span')?.textContent, '步行导航', 'the active compact caption fits beside header controls');
+  assert.equal(host.querySelector('.guidance-resume').getAttribute('aria-label'), '继续导航', 'the compact caption preserves the continue-navigation action name');
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  session.last = { coordinates: [104.001, 30], accuracy: 8, timestamp: Date.now() };
+  session.offset = 20;
+  guidance.remaining = 700;
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.match(host.textContent, /距规划线约20 米 · 尚未确认偏航/);
+  assert.equal(session.offRoute, false, 'nearby-road information must not declare confirmed deviation');
+  for (const source of ['network', 'ip']) {
+    session.last = {
+      coordinates: [104.001, 30], accuracy: 8, timestamp: Date.now(),
+      ...(source === 'network' ? { source: 'network' } : { provider: 'ip' }),
+    };
+    await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  }
+  session.last = { coordinates: [104.001, 30], accuracy: 8, timestamp: Date.now(), source: 'gps' };
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  session.quality = '定位精度不足';
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.doesNotMatch(host.textContent, /距规划线约20/);
+  session.quality = ''; session.offset = 0;
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('[aria-label*="路书"]'), null, 'the original roadbook entry is absent');
   assert.doesNotMatch(host.textContent, /路书/);
+  assert.equal(host.querySelector('[data-position-assessment]'), null, 'assessments do not replace the label unless the nearby-offset state is valid');
+  session.offset = 20;
+  await React.act(async () => root.render(React.createElement(GuidanceCard, {
+    ...cardProps(), positionAssessment: { kind: 'parallel', message: '位置在平行道路，尚未确认偏航' },
+  })));
+  assert.equal(host.querySelector('[data-position-assessment="parallel"]')?.textContent, '位置在平行道路，尚未确认偏航');
+  assert.equal(host.querySelector('[role="note"]'), null, 'the reference explanation is available in expanded details');
+  assert.deepEqual([...host.querySelectorAll('.guidance-header-actions button')].map((button) => button.getAttribute('aria-label')),
+    ['第一人称模式', '展开导航详情', '结束导航']);
+  session.positionAssessment = { kind: 'uncertain', message: '正在确认位置' };
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('[data-position-assessment="uncertain"]')?.textContent, '正在确认位置', 'the session assessment is used when the prop is absent');
+  assert.equal(host.querySelector('[role="note"]'), null);
+  session.positionAssessment = { kind: 'away', message: '正在远离规划线 · 待确认偏航', allowReference: false };
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('[data-position-assessment="away"]')?.textContent, '正在远离规划线 · 待确认偏航');
+  assert.equal(host.querySelector('[role="note"]'), null, 'away motion suppresses the yellow direction-reference note');
+  delete session.positionAssessment;
+  session.offset = 0;
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   await React.act(async () => host.querySelector('[aria-label="第一人称模式"]').click());
   assert.deepEqual(firstPersonCalls, ['first-person'], 'the header action calls the first-person callback');
   await React.act(async () => root.render(React.createElement(GuidanceCard, {
     ...cardProps(), viewNotice: '第一人称路线预览 · 非定位导航，等待准确定位',
   })));
   assert.match(host.querySelector('header').textContent, /非定位导航，等待准确定位/, 'waiting for GPS still gives visible preview feedback');
+  assert.equal(host.querySelector('.guidance-compact-primary')?.getAttribute('data-maneuver'), 'straight', 'view notices do not suppress the next maneuver');
+  assert.equal(host.querySelector('.guidance-compact-state'), null, 'view notice is auxiliary rather than the primary direction');
+  assert.equal(host.querySelector('.guidance-inline-status')?.textContent, '第一人称路线预览 · 非定位导航，等待准确定位');
+  await React.act(async () => root.render(React.createElement(GuidanceCard, {
+    ...cardProps(), guidance: { ...guidance, session: { ...session, quality: '定位精度不足' } },
+    viewNotice: '第一人称路线预览 · 非定位导航，等待准确定位',
+  })));
+  assert.equal(host.querySelector('.guidance-compact-state')?.textContent, '定位精度不足', 'GPS quality takes priority over the auxiliary view notice');
+  assert.equal(host.querySelector('.guidance-inline-status')?.textContent, '第一人称路线预览 · 非定位导航，等待准确定位');
 
   await React.act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
   let cameraButton = [...host.querySelectorAll('.guidance-camera-mode')][0];
@@ -136,10 +200,18 @@ test('navigation card and route summary expose first-person camera and route pre
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'false');
   assert.equal(host.querySelector('.guidance-first-person span').textContent, '俯视');
+  assert.equal(host.querySelector('.guidance-compact-primary'), null, 'top view has no direction panel');
+  assert.equal(host.querySelector('.guidance-trip-summary'), null, 'no bottom metrics overlay in either mode');
   cameraButton = host.querySelector('.guidance-camera-mode');
   assert.equal(cameraButton.textContent, '切换前视');
   await React.act(async () => cameraButton.click());
   assert.deepEqual(cameraModeCalls, ['top', 'forward']);
+
+  const css = await readFile('modules/guidance/guidance.css', 'utf8');
+  assert.match(css, /\.guidance-card header button\s*\{[^}]*min-width:\s*44px;[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
+  assert.match(css, /\.guidance-card header button\.guidance-first-person\s*\{[^}]*min-width:\s*52px;/s);
+  assert.match(css, /\.guidance-content\s*\{[\s\S]*?overflow:\s*auto;/);
+  assert.match(css, /\.observatory\.home-map \.guidance-card\s*\{[\s\S]*?overflow:\s*visible;/);
 
   const previewEvents = [];
   const summaryProps = (previewMode = null) => ({

@@ -1,27 +1,39 @@
-import type { Feature, FeatureCollection, LineString } from 'geojson';
+import type { FeatureCollection, LineString, Point } from 'geojson';
 import { coordinate, type Coordinate, metresBetween } from '../navigation/types.ts';
 import { pathOf, type Path } from './geometry.ts';
 
 export type NavigationCueInput = {
   coordinates: Coordinate[];
   position: Coordinate;
+  accuracy?: number;
+  /** Suppress an invented connector when motion/accuracy contradicts a safe reference. */
+  referenceAllowed?: boolean;
   progress?: number;
+  cameraMode?: 'forward' | 'top';
   kind: 'route' | 'rejoin';
 };
 
-export type NavigationCueFeatureCollection = FeatureCollection<LineString, {
+export type NavigationCueFeatureCollection = FeatureCollection<LineString | Point, {
   kind: NavigationCueInput['kind'];
   ordinal: number;
+  role: 'ribbon' | 'offset-reference' | 'route-projection' | 'chevron' | 'rejoin' | 'lead';
+  closeView?: boolean;
+  bearing?: number;
 }>;
-export type NavigationCueResult = { data: NavigationCueFeatureCollection; progress?: number };
+export type NavigationCueResult = { data: NavigationCueFeatureCollection; progress?: number; referenceJoinProgress?: number };
 
-const MAX_ARROWS = 5;
+const MAX_ROUTE_ARROWS = 24;
+const MAX_REJOIN_ARROWS = 5;
 const FIRST_ARROW_METRES = 20;
-const ARROW_SPACING_METRES = 38;
-const ARROW_WING_METRES = 5;
-const ARROW_BACK_METRES = 6;
-const ARROW_TIP_METRES = 5;
+const ARROW_SPACING_METRES = 22;
+const RIBBON_LENGTH_METRES = 500;
+const MAX_RIBBON_POINTS = 128;
+const LEAD_MIN_REMAINING_METRES = 60;
+const LEAD_TARGET_METRES = 50;
 const MAX_POSITION_OFFSET_METRES = 100;
+const OFFSET_REFERENCE_BASE_METRES = 12;
+const OFFSET_REFERENCE_FORWARD_METRES = 12;
+const OFFSET_REFERENCE_POINTS = 32;
 
 const deltaLongitude = (from: number, to: number) => ((to - from + 540) % 360) - 180;
 const interpolate = (a: Coordinate, b: Coordinate, t: number): Coordinate => [
@@ -48,6 +60,23 @@ function pointAtDistance(path: Path, distance: number): Coordinate {
   const from = path.cumulative[right - 1];
   const span = path.cumulative[right] - from;
   return interpolate(path.points[right - 1], path.points[right], (target - from) / (span || 1));
+}
+
+/** Display-only chainage where the offset reference rejoins a planned route. */
+export function navigationReferenceJoinProgress(
+  input: NavigationCueInput | null,
+  resolvedPath: Path | null,
+): number | undefined {
+  if (!input || input.kind !== 'route' || input.referenceAllowed === false || !resolvedPath || !coordinate(input.position) ||
+    !Number.isFinite(input.progress) || !Number.isFinite(resolvedPath.length) || resolvedPath.length <= 0)
+    return undefined;
+  const anchor = Math.max(0, Math.min(resolvedPath.length, input.progress!));
+  const positionOffset = metresBetween(pointAtDistance(resolvedPath, anchor), input.position);
+  const accuracy = Number.isFinite(input.accuracy) && (input.accuracy ?? 0) >= 0 ? input.accuracy! : 0;
+  if (positionOffset <= Math.max(OFFSET_REFERENCE_BASE_METRES, accuracy + 5) ||
+    positionOffset > MAX_POSITION_OFFSET_METRES)
+    return undefined;
+  return anchor + Math.min(OFFSET_REFERENCE_FORWARD_METRES, resolvedPath.length - anchor);
 }
 
 function projectInRange(path: Path, point: Coordinate, min: number, max: number, prefer: number) {
@@ -81,13 +110,6 @@ function projectInRange(path: Path, point: Coordinate, min: number, max: number,
   return best;
 }
 
-function moveMetres(origin: Coordinate, east: number, north: number): Coordinate {
-  const latitude = Math.max(-85, Math.min(85, origin[1]));
-  const latitudeRadians = latitude * Math.PI / 180;
-  const longitude = origin[0] + east / (111_320 * Math.max(0.01, Math.cos(latitudeRadians)));
-  return [((longitude + 540) % 360) - 180, origin[1] + north / 111_320];
-}
-
 function tangentAt(path: Path, distance: number): { east: number; north: number } | null {
   const before = pointAtDistance(path, Math.max(0, distance - 5));
   const after = pointAtDistance(path, Math.min(path.length, distance + 5));
@@ -99,15 +121,71 @@ function tangentAt(path: Path, distance: number): { east: number; north: number 
   return { east: east / length, north: north / length };
 }
 
+function bearingOf(tangent: { east: number; north: number }): number {
+  return (Math.atan2(tangent.east, tangent.north) * 180 / Math.PI + 360) % 360;
+}
+
+function offsetCoordinate(origin: Coordinate, east: number, north: number): Coordinate {
+  const latitude = Math.max(-85, Math.min(85, origin[1]));
+  const longitude = origin[0] + east / (111_320 * Math.max(0.01, Math.cos(latitude * Math.PI / 180)));
+  return [((longitude + 540) % 360) - 180, origin[1] + north / 111_320];
+}
+
+/** Bounded local-metre cubic from the real fix toward a point just ahead on route. */
+function offsetReference(
+  from: Coordinate,
+  to: Coordinate,
+  tangent: { east: number; north: number } | null,
+  forwardDistance: number,
+): Coordinate[] {
+  const latitudeRadians = from[1] * Math.PI / 180;
+  const endX = deltaLongitude(from[0], to[0]) * 111_320 * Math.cos(latitudeRadians);
+  const endY = (to[1] - from[1]) * 111_320;
+  if (forwardDistance < 1 || !tangent) return [from, to];
+  const handleLength = forwardDistance / 2;
+  const control1X = tangent.east * handleLength;
+  const control1Y = tangent.north * handleLength;
+  const control2X = endX - tangent.east * handleLength;
+  const control2Y = endY - tangent.north * handleLength;
+  const coordinates: Coordinate[] = [];
+  for (let index = 0; index < OFFSET_REFERENCE_POINTS; index++) {
+    const sample = index / (OFFSET_REFERENCE_POINTS - 1);
+    const t = sample * sample * (3 - 2 * sample);
+    const inverse = 1 - t;
+    const east = 3 * inverse * inverse * t * control1X +
+      3 * inverse * t * t * control2X + t * t * t * endX;
+    const north = 3 * inverse * inverse * t * control1Y +
+      3 * inverse * t * t * control2Y + t * t * t * endY;
+    coordinates.push(offsetCoordinate(from, east, north));
+  }
+  return coordinates;
+}
+
+/** Sample the visible ribbon locally and cap output even for unusually dense route data. */
+function ribbonSamples(path: Path, start: number, end: number): Array<{ distance: number; point: Coordinate }> {
+  const samples = [{ distance: start, point: pointAtDistance(path, start) }];
+  const first = Math.max(1, lowerBound(path.cumulative, start, 1));
+  const last = Math.max(first, lowerBound(path.cumulative, end, first));
+  const interiorCount = Math.max(0, last - first);
+  const stride = Math.max(1, Math.ceil(interiorCount / (MAX_RIBBON_POINTS - 2)));
+  for (let index = first; index < last; index += stride) {
+    const distance = path.cumulative[index];
+    if (distance > start && distance < end) samples.push({ distance, point: path.points[index] });
+  }
+  samples.push({ distance: end, point: pointAtDistance(path, end) });
+  return samples;
+}
+
 /** Build a bounded set of forward-facing chevrons along route chainage. */
 export function createNavigationCueData(
   input: NavigationCueInput | null,
   previousProgress?: number,
   resolvedPath?: Path | null,
+  leadTargetMetres = LEAD_TARGET_METRES,
 ): NavigationCueResult {
   const features: NavigationCueFeatureCollection['features'] = [];
-  const empty = (progress?: number): NavigationCueResult => ({
-    data: { type: 'FeatureCollection', features }, progress,
+  const empty = (progress?: number, referenceJoinProgress?: number): NavigationCueResult => ({
+    data: { type: 'FeatureCollection', features }, progress, referenceJoinProgress,
   });
   if (!input || !coordinate(input.position) || input.coordinates.length < 2 ||
     (resolvedPath === undefined && !input.coordinates.every(coordinate))) {
@@ -139,31 +217,84 @@ export function createNavigationCueData(
   }
 
   const anchorPoint = pointAtDistance(path, anchor);
-  if (metresBetween(anchorPoint, input.position) > MAX_POSITION_OFFSET_METRES) {
+  const positionOffset = metresBetween(anchorPoint, input.position);
+  if (positionOffset > MAX_POSITION_OFFSET_METRES) {
     return empty();
   }
 
-  for (let ordinal = 0; ordinal < MAX_ARROWS; ordinal++) {
+  const accuracy = Number.isFinite(input.accuracy) && (input.accuracy ?? 0) >= 0 ? input.accuracy! : 0;
+  const referenceThreshold = Math.max(OFFSET_REFERENCE_BASE_METRES, accuracy + 5);
+  const referenceJoinProgress = navigationReferenceJoinProgress({ ...input, progress: anchor }, path);
+  if (referenceJoinProgress !== undefined && positionOffset > referenceThreshold) {
+    const tangent = tangentAt(path, anchor);
+    const forwardDistance = referenceJoinProgress - anchor;
+    const referenceEnd = pointAtDistance(path, referenceJoinProgress);
+    if ([...input.position, ...anchorPoint, ...referenceEnd].every(Number.isFinite)) {
+      features.push({
+        type: 'Feature',
+        properties: { kind: 'route', role: 'offset-reference', ordinal: -3, closeView: input.cameraMode !== 'top' },
+        geometry: { type: 'LineString', coordinates: offsetReference(input.position, referenceEnd, tangent, forwardDistance) },
+      });
+      features.push({
+        type: 'Feature',
+        properties: { kind: 'route', role: 'route-projection', ordinal: -2, closeView: input.cameraMode !== 'top' },
+        geometry: { type: 'Point', coordinates: anchorPoint },
+      });
+    }
+  }
+
+  if (input.cameraMode === 'top') return empty(anchor, referenceJoinProgress);
+
+  if (input.kind === 'route') {
+    const start = referenceJoinProgress ?? anchor;
+    const end = Math.min(path.length, anchor + RIBBON_LENGTH_METRES);
+    if (end > start) {
+      const samples = ribbonSamples(path, start, end);
+      const coordinates = samples.map(({ point }) => point);
+      if (coordinates.length >= 2) {
+        features.push({
+          type: 'Feature',
+          properties: { kind: 'route', role: 'ribbon', ordinal: -1, closeView: true },
+          geometry: { type: 'LineString', coordinates },
+        });
+      }
+    }
+  }
+
+  const remaining = path.length - anchor;
+  const targetMetres = Number.isFinite(leadTargetMetres)
+    ? Math.max(20, Math.min(LEAD_TARGET_METRES, leadTargetMetres))
+    : LEAD_TARGET_METRES;
+  const leadDistance = input.kind === 'route' && remaining >= LEAD_MIN_REMAINING_METRES
+    ? anchor + Math.min(targetMetres, remaining * 0.65)
+    : null;
+  if (leadDistance !== null) {
+    const tangent = tangentAt(path, leadDistance);
+    if (tangent) {
+      features.push({
+        type: 'Feature',
+        properties: { kind: 'route', role: 'lead', ordinal: -2, bearing: bearingOf(tangent) },
+        geometry: { type: 'Point', coordinates: pointAtDistance(path, leadDistance) },
+      });
+    }
+  }
+
+  const maxArrows = input.kind === 'route' ? MAX_ROUTE_ARROWS : MAX_REJOIN_ARROWS;
+  for (let ordinal = 0; ordinal < maxArrows; ordinal++) {
     const distance = anchor + FIRST_ARROW_METRES + ordinal * ARROW_SPACING_METRES;
     if (distance > path.length) break;
+    if (leadDistance !== null && Math.abs(distance - leadDistance) <= 14) continue;
     const center = pointAtDistance(path, distance);
     const tangent = tangentAt(path, distance);
     if (!tangent) continue;
-    const left = { east: -tangent.north, north: tangent.east };
-    const tail = moveMetres(center,
-      -tangent.east * ARROW_BACK_METRES + left.east * ARROW_WING_METRES,
-      -tangent.north * ARROW_BACK_METRES + left.north * ARROW_WING_METRES);
-    const tip = moveMetres(center, tangent.east * ARROW_TIP_METRES, tangent.north * ARROW_TIP_METRES);
-    const otherTail = moveMetres(center,
-      -tangent.east * ARROW_BACK_METRES - left.east * ARROW_WING_METRES,
-      -tangent.north * ARROW_BACK_METRES - left.north * ARROW_WING_METRES);
+    const role = input.kind === 'route' ? 'chevron' : 'rejoin';
     features.push({
       type: 'Feature',
-      properties: { kind: input.kind, ordinal },
-      geometry: { type: 'LineString', coordinates: [tail, tip, otherTail] },
+      properties: { kind: input.kind, role, ordinal, bearing: bearingOf(tangent) },
+      geometry: { type: 'Point', coordinates: center },
     });
   }
-  return empty(anchor);
+  return empty(anchor, referenceJoinProgress);
 }
 
 /** Geometry-only convenience API for callers that do not need the projected chainage. */

@@ -1,16 +1,18 @@
 import type { Map } from 'maplibre-gl';
-import { syncOverlayData } from '../map/overlayData';
+import { syncOverlayData } from '../map/overlayData.ts';
 import type { FeatureCollection, Feature } from 'geojson';
-import { metresBetween, type Coordinate, type RouteOverlay } from './types';
+import { metresBetween, type Coordinate, type RouteOverlay } from './types.ts';
+import { createNavigationProgressParts } from './routeProgress.ts';
 import type { ScreenPoint } from '../tracks/drawing';
 
 /** Draped GeoJSON route and endpoints, independent of roads/terrain providers. */
 export class RouteLayer {
+  private map: Map;
   private hasRoute = false;
   private state: RouteOverlay | null = null;
   private navigationPosition: Coordinate | null = null;
   private startHidden = false;
-  constructor(private map: Map) {}
+  constructor(map: Map) { this.map = map; }
   /** Omit the redundant start badge only while it overlaps the navigator. */
   setNavigationPosition(position: Coordinate | null) {
     this.navigationPosition = position;
@@ -51,7 +53,11 @@ export class RouteLayer {
           ['!=', 'kind', 'access'],
         ],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#102a38', 'line-width': 8, 'line-opacity': ['coalesce', ['get', 'opacity'], 1] },
+        paint: {
+          'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#384244', '#102a38'],
+          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 18, 8],
+          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+        },
       });
       m.addLayer({
         id: 'route-path',
@@ -64,8 +70,12 @@ export class RouteLayer {
         ],
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': ['coalesce', ['get', 'color'], '#59dcff'],
-          'line-width': 4,
+          'line-color': ['case',
+            ['==', ['get', 'navigationState'], 'future'], '#39c878',
+            ['==', ['get', 'navigationState'], 'traveled'], '#8e999b',
+            ['coalesce', ['get', 'color'], '#59dcff'],
+          ],
+          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, 4],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
@@ -75,8 +85,8 @@ export class RouteLayer {
         source: 'planned-route',
         filter: ['==', 'kind', 'access'],
         paint: {
-          'line-color': '#ffcb65',
-          'line-width': 4,
+          'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#8e999b', '#ffcb65'],
+          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, 4],
           'line-dasharray': [2, 2],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
@@ -123,24 +133,40 @@ export class RouteLayer {
       });
     }
     const features: Feature[] = [];
-    if (state.route && state.displayParts)
-      for (const part of state.displayParts)
+    const navigationActive = !!state.route && Number.isFinite(state.navigationProgress);
+    if (state.route && navigationActive) {
+      for (const part of createNavigationProgressParts(state.route, state.navigationProgress!)) {
         features.push({
           type: 'Feature',
-          properties: { kind: 'road', color: part.color, opacity: state.route.displayOpacity ?? 1 },
+          properties: {
+            kind: part.kind,
+            navigationState: part.navigationState,
+            navigationClose: state.navigationClose === true,
+            opacity: state.route.displayOpacity ?? 1,
+          },
           geometry: { type: 'LineString', coordinates: part.coordinates },
         });
-    if (state.route)
-      for (const segment of state.route.segments ?? [
-        { kind: 'road', coordinates: state.route.coordinates },
-      ]) {
-        if (state.displayParts && segment.kind !== 'access') continue;
-        features.push({
-          type: 'Feature',
-          properties: { kind: segment.kind, opacity: state.route.displayOpacity ?? 1 },
-          geometry: { type: 'LineString', coordinates: segment.coordinates },
-        });
       }
+    } else {
+      if (state.route && state.displayParts)
+        for (const part of state.displayParts)
+          features.push({
+            type: 'Feature',
+            properties: { kind: 'road', color: part.color, opacity: state.route.displayOpacity ?? 1 },
+            geometry: { type: 'LineString', coordinates: part.coordinates },
+          });
+      if (state.route)
+        for (const segment of state.route.segments ?? [
+          { kind: 'road', coordinates: state.route.coordinates },
+        ]) {
+          if (state.displayParts && segment.kind !== 'access') continue;
+          features.push({
+            type: 'Feature',
+            properties: { kind: segment.kind, opacity: state.route.displayOpacity ?? 1 },
+            geometry: { type: 'LineString', coordinates: segment.coordinates },
+          });
+        }
+    }
     for (const slot of ['start', 'end'] as const)
       if (state[slot] && !(slot === 'start' && this.startHidden))
         features.push({
