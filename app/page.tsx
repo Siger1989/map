@@ -70,7 +70,7 @@ import {
   type ShareRoute,
 } from '@/modules/routeShare/data';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
-import { navigationCloseZoom, navigationCameraOptions } from '@/modules/guidance/forwardCamera';
+import { navigationCloseZoom } from '@/modules/guidance/forwardCamera';
 import type { NavigationCueInput } from '@/modules/guidance/navigationCueGeometry';
 import { navigationReferenceJoinProgress } from '@/modules/guidance/navigationCueGeometry';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
@@ -112,6 +112,7 @@ import { shareDraftTrack } from '@/modules/tracks/shareDraft';
 import type { TrackLinePoint } from '@/modules/tracks/linePoint';
 import { markerChainage } from '@/modules/tracks/linePoint';
 import { usePosition } from '@/modules/position/usePosition';
+import { reliableGpsCourse } from '@/modules/position/motionHeading';
 import { useMotionHeading } from '@/modules/position/useMotionHeading';
 import { canFollow, isPositionTracking, recordingPosition, positionZoom } from '@/modules/position/follow';
 import { useFollowPosition } from '@/modules/position/useFollowPosition';
@@ -554,10 +555,15 @@ export default function Home() {
           (!position.fix || recordingFix.timestamp >= position.fix.timestamp)
         ? recordingFix
         : position.fix;
-  const motionHeading = useMotionHeading(cameraFix, position.direction === 'motion');
+  const manualNavigationPose = useRef<{ pitch: number; bearing: number } | null>(null);
+  const manualAngleGesture = useRef(false);
+  const motionHeading = useMotionHeading(cameraFix, guidance.active || position.direction === 'motion');
   const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
-  const markerHeading = position.direction === 'device' || position.direction === 'motion' ? directionHeading :
-    displayedFix?.heading !== undefined && Number.isFinite(displayedFix.heading) && (displayedFix.speed ?? 0) >= 1 && (displayedFix.headingAccuracy ?? 0) <= 35 ? displayedFix.heading : null;
+  const gpsDirectionFix = cameraFix && canFollow(cameraFix) && cameraFix.source !== 'network' && cameraFix.provider !== 'ip';
+  const gpsCourse = gpsDirectionFix ? reliableGpsCourse(cameraFix) : null;
+  const actualMotionHeading = gpsDirectionFix ? gpsCourse ?? motionHeading.heading : null;
+  const markerHeading = guidance.active ? actualMotionHeading : position.direction === 'device' ? position.heading :
+    position.direction === 'motion' ? actualMotionHeading : gpsCourse;
   const navigationSession = guidance.session;
   const navigationPath = guidance.rejoin?.route.coordinates ??
     (navigationSession?.offRoute ? undefined : navigationSession?.departurePending
@@ -565,13 +571,8 @@ export default function Home() {
       : navigationSession?.path.points);
   const navigationProgress = guidance.rejoin || navigationSession?.departurePending ? undefined
     : navigationSession?.offRoute ? undefined : navigationSession?.progress;
-  const reliableMotionHeading = cameraFix && cameraFix.source !== 'network' && cameraFix.provider !== 'ip' && cameraFix.accuracy <= 30
-    ? cameraFix.speed !== undefined && cameraFix.speed >= 1 && cameraFix.speed <= 80 &&
-      cameraFix.heading !== undefined && Number.isFinite(cameraFix.heading) &&
-      cameraFix.heading >= 0 && cameraFix.heading < 360 && (cameraFix.headingAccuracy ?? 0) <= 35
-      ? cameraFix.heading
-      : position.direction === 'motion' && !motionHeading.status ? motionHeading.heading : null
-    : null;
+  const reliableMotionHeading = gpsDirectionFix && cameraFix.accuracy <= 30
+    ? gpsCourse ?? (!motionHeading.status ? motionHeading.heading : null) : null;
   const followGuidanceCamera = (coordinates: Coordinate, animate: boolean, mode = navigationCameraMode, close = false) => map.current?.followNavigation(coordinates, {
     forward: mode === 'forward',
     heading: reliableMotionHeading,
@@ -580,11 +581,13 @@ export default function Home() {
     animate,
     close,
     travelMode: navigationSession?.route.mode,
+    pose: manualNavigationPose.current,
   }) ?? false;
   const skipNextFollowKey = useRef('');
   const follow = useFollowPosition({
     fix: cameraFix,
     phase: recorder.record.phase,
+    defer: () => manualAngleGesture.current || !!map.current?.isUserInteracting(),
     blocked:
       areas.drawing ||
       !!editor.session ||
@@ -620,8 +623,7 @@ export default function Home() {
   }, []);
   const userBrowse = useCallback(() => {
     cancelStartupCamera();
-    follow.pause();
-  }, [cancelStartupCamera, follow.pause]);
+  }, [cancelStartupCamera]);
   const startupCameraBlocked =
     follow.blocked ||
     guidance.active ||
@@ -704,6 +706,7 @@ export default function Home() {
     }
   };
   const changeMapDirection = (direction: DirectionMode) => {
+    manualNavigationPose.current = null;
     cancelStartupCamera();
     focusLock.adoptMode(direction === 'motion' || follow.following, direction);
     if (direction === 'device') void position.device();
@@ -722,6 +725,7 @@ export default function Home() {
     else { map.current?.stop(); follow.resume(); if (recorder.record.phase !== 'recording') position.locate(); }
   };
   const resumeNavigation = () => {
+    manualNavigationPose.current = null;
     cancelStartupCamera();
     map.current?.previewRoute(null);
     position.motion();
@@ -734,6 +738,7 @@ export default function Home() {
   };
   const changeNavigationCameraMode = (mode: 'forward' | 'top') => {
     if (follow.blocked) { setNavigationViewNotice('请先退出当前选点或编辑任务。'); return; }
+    manualNavigationPose.current = null;
     setNavigationCameraMode(mode);
     cancelStartupCamera();
     position.motion();
@@ -780,12 +785,8 @@ export default function Home() {
   const navigationDisplayJoin = useMemo(() => navigationSession && !navigationSession.offRoute && !navigationSession.departurePending
     ? navigationReferenceJoinProgress(navigationCues, navigationSession.path) : undefined,
   [navigationCues, navigationSession]);
-  const navigationMarkerHeading = useMemo(() => {
-    if (!guidance.active || navigationCameraMode !== 'forward' || !navigationCues || !cameraFix) return markerHeading;
-    return navigationCameraOptions({ center: cameraFix.coordinates, forward: true, height: 0,
-      heading: reliableMotionHeading ?? undefined, path: navigationPath, progress: navigationProgress,
-      bearing: view.bearing }).bearing ?? markerHeading;
-  }, [guidance.active, navigationCameraMode, navigationCues, cameraFix, markerHeading, reliableMotionHeading, navigationPath, navigationProgress, view.bearing]);
+  // Position arrows use measured travel direction, never the planned route tangent.
+  const navigationMarkerHeading = markerHeading;
   const focusSection = (value: SectionSettings) => {
     if (!value.plane) return;
     if (value.survey) {
@@ -1180,6 +1181,7 @@ export default function Home() {
   useEffect(() => {
     if (
       !guidance.active &&
+      !manualNavigationPose.current &&
       (position.direction === 'device' || (position.direction === 'motion' && follow.following)) &&
       directionHeading !== null &&
       !follow.blocked
@@ -2037,7 +2039,8 @@ export default function Home() {
           positionHeading={navigationMarkerHeading}
           positionNavigating={guidance.active && !!cameraFix}
           onBrowse={userBrowse}
-          onManualRotate={position.free}
+          onManualRotate={() => { if (!follow.following) position.free(); }}
+          onManualView={pose => { manualNavigationPose.current = pose; }}
           annotations={mapAnnotations}
           roadSnapping={tracks.roadSnapping}
           nodeSnapping={tracks.snapping}
@@ -2965,17 +2968,16 @@ export default function Home() {
             <CameraGizmo
               view={view}
               onGestureView={(pitch, bearing, phase) => {
+                manualAngleGesture.current = phase === 'move';
                 if (phase !== 'cancel') {
-                  follow.pause();
-                  position.free();
+                  manualNavigationPose.current = { pitch, bearing };
                   if (pitch > 0 && !layers.terrain && !section.enabled)
                     update({ terrain: true });
                 }
                 map.current?.viewGesture(pitch, bearing, phase);
               }}
               onView={(pitch, bearing) => {
-                follow.pause();
-                position.free();
+                manualNavigationPose.current = { pitch, bearing };
                 if (pitch > 0 && !layers.terrain && !section.enabled)
                   update({ terrain: true });
                 map.current?.view(pitch, bearing, false);
@@ -3034,6 +3036,7 @@ export default function Home() {
             map.current?.zoom(amount);
           }}
           onNorth={() => {
+            manualNavigationPose.current = { pitch: view.pitch, bearing: 0 };
             cancelStartupCamera();
             position.north();
             map.current?.north();
@@ -3060,6 +3063,7 @@ export default function Home() {
           direction={position.direction}
           onDimension={() => {
             const terrain = !layers.terrain;
+            manualNavigationPose.current = { pitch: terrain ? 62 : 0, bearing: view.bearing };
             update({ terrain });
             const camera = map.current?.cameraSnapshot();
             if (camera) saveLastView({ ...camera, pitch: terrain ? 62 : 0, terrain });

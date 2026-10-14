@@ -7,6 +7,19 @@ const closeAngle = (a, b, tolerance = 2) => {
   assert.ok(Math.abs(delta) <= tolerance, `expected ${a}° near ${b}°`);
 };
 
+test('GPS keeps a manually adjusted pitch and bearing until an explicit camera-mode reset', () => {
+  for (const forward of [true, false]) {
+    const pose = { pitch: 35, bearing: 120 };
+    const first = navigationCameraOptions({ center:[104,30], heading:10, height:857, forward, pose });
+    const next = navigationCameraOptions({ center:[104.001,30.001], heading:40, height:857, forward, pose });
+    assert.deepEqual(next.center,[104.001,30.001]);
+    assert.deepEqual([first.pitch,first.bearing,next.pitch,next.bearing],[35,120,35,120]);
+    assert.equal('zoom' in next,false);
+    const reset = navigationCameraOptions({ center:next.center,heading:40,height:857,forward });
+    assert.equal(reset.pitch,forward ? 60 : 0);
+  }
+});
+
 test('forward camera uses the real center, reliable heading, safe positive offset, and no implicit zoom or padding', () => {
   const center = [104.1, 30.6];
   const options = navigationCameraOptions({ center, heading: 82, bearing: 80, height: 857, forward: true, animate: true });

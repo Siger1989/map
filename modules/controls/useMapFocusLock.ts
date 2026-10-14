@@ -16,6 +16,12 @@ export function useMapFocusLock(options: {
   const restore = () => {
     const saved = snapshot.current, o = current.current; if (!saved) return;
     const following = saved.following;
+    if (following) {
+      // GPS following stays active during camera gestures. Never undo an
+      // explicit cancellation or reset the user's newly adjusted angles.
+      setBrowsing(false);
+      return;
+    }
     o.map()?.restoreCamera({ ...saved.camera, center: following && o.fix ? o.fix : saved.camera.center });
     if (saved.direction === 'device') void o.device(); else if (saved.direction === 'motion') o.motion(); else if (saved.direction === 'north') o.north(); else o.free();
     if (following) o.resume();
@@ -25,7 +31,7 @@ export function useMapFocusLock(options: {
     if (!locked) return;
     const pointers = new Set<number>();
     const isMap = (event: Event) => (event.target as Element)?.closest?.('.map-canvas,.home-camera-control');
-    const begin = () => { clear(); current.current.pause(); current.current.free(); setBrowsing(true); };
+    const begin = () => { clear(); if (!current.current.following) current.current.free(); setBrowsing(true); };
     const schedule = () => { clear(); if (!pointers.size) timer.current = setTimeout(restore, 10000); };
     const down = (event: PointerEvent) => { if (!isMap(event)) return; pointers.add(event.pointerId); begin(); };
     const up = (event: PointerEvent) => { if (pointers.delete(event.pointerId)) schedule(); };

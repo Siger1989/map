@@ -9,17 +9,19 @@ export function useFollowPosition({
   phase,
   blocked,
   onFollow,
+  defer,
 }: {
   fix: PositionFix | null;
   phase: Recording['phase'];
   blocked: boolean;
   onFollow: (point: Coordinate, fix: PositionFix, initial: boolean) => boolean;
+  /** Defer camera delivery during a gesture without cancelling follow intent. */
+  defer?: () => boolean;
 }) {
   const [following, setFollowing] = useState(false);
   const [waiting, setWaiting] = useState(false);
-  const current = useRef({ fix, blocked, onFollow });
-  current.current = { fix, blocked, onFollow };
-  const previousPhase = useRef(phase);
+  const current = useRef({ fix, blocked, onFollow, defer });
+  current.current = { fix, blocked, onFollow, defer };
   const delivered = useRef('');
   const cameraFix = useRef<PositionFix | null>(null);
   const pause = useCallback(() => setFollowing(false), []);
@@ -33,17 +35,12 @@ export function useFollowPosition({
 
   useEffect(() => {
     if (phase === 'recording') resume();
-    else if (previousPhase.current === 'recording') pause();
-    previousPhase.current = phase;
-  }, [phase, pause, resume]);
-  useEffect(() => {
-    if (blocked) pause();
-  }, [blocked, following, pause]);
-
+  }, [phase, resume]);
   useEffect(() => {
     if (!following || blocked) return;
     const update = () => {
       if (document.hidden || current.current.blocked) return;
+      if (current.current.defer?.()) return;
       const value = current.current.fix;
       if (!canFollow(value)) {
         setWaiting(true);

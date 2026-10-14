@@ -107,6 +107,7 @@ import {
   type ViewState,
 } from './types';
 export type MapHandle = {
+  isUserInteracting: () => boolean;
   pickTrackContinuation: (point: ScreenPoint) => TrackContinuationHit | null;
   waitForTrackRender: (receipt: TrackRenderReceipt, done: () => void) => () => void;
   applyCamera: (camera: CameraSnapshot) => void;
@@ -170,6 +171,7 @@ export type NavigationCameraRequest = {
   animate?: boolean;
   close?: boolean;
   travelMode?: TravelMode;
+  pose?: { pitch: number; bearing: number } | null;
 };
 
 function navigationUsableRect(map: Map) {
@@ -251,6 +253,7 @@ export type TerrainMapProps = {
   photos: VisiblePhoto[];
   onPhotoSelect: (ids: string[]) => void;
   onManualRotate: () => void;
+  onManualView?: (pose: { pitch: number; bearing: number }) => void;
   onBrowse: () => void;
   annotations: Annotation[];
   annotationSelected: string | null;
@@ -704,6 +707,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         stop: () => {
           mapRef.current?.stop();
         },
+        isUserInteracting: () => {
+          const m = mapRef.current;
+          return !!m && (m.dragPan.isActive() || m.dragRotate.isActive() ||
+            m.touchZoomRotate.isActive() || m.touchPitch.isActive() || m.scrollZoom.isActive());
+        },
         getSnapViewport: () => loaded.current ? snapViewportRef.current?.read() ?? null : null,
         toScreen: (point) => {
           const projected = mapRef.current?.project(point);
@@ -787,6 +795,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             animate: request.animate,
             close: request.close,
             travelMode: request.travelMode,
+            pose: request.pose,
             bearing: m.getBearing(),
             usableRect,
           });
@@ -1497,6 +1506,12 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           map.on('pitchstart', (event) => {
             if (event.originalEvent) latest.current.onBrowse();
           });
+          const manualPose = (event: { originalEvent?: unknown }) => {
+            if (event.originalEvent)
+              latest.current.onManualView?.({ pitch: map.getPitch(), bearing: map.getBearing() });
+          };
+          map.on('rotate', manualPose);
+          map.on('pitch', manualPose);
           map.on('moveend', (event) => {
             if (boxGestureActive.current || !loaded.current) return;
             publishView({ bearing: map.getBearing(), pitch: map.getPitch(), zoom: map.getZoom() }, true);

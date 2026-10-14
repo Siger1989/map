@@ -47,6 +47,8 @@ test('automatic reroute waits for confirmed off-route evidence, fresh fixes, for
   assert.equal(shouldAutoReroute({ ...session, offRoute: false }, fix, options), false);
   assert.equal(shouldAutoReroute(session, { ...fix, coordinates: [103.01, 30] }, options), false);
   assert.equal(shouldAutoReroute(session, { ...fix, accuracy: 80 }, options), false);
+  assert.equal(shouldAutoReroute(session, { ...fix, source: 'network' }, options), false);
+  assert.equal(shouldAutoReroute(session, { ...fix, provider: 'ip' }, options), false);
   assert.equal(shouldAutoReroute(session, { ...fix, timestamp: now - 30000 }, options), false);
   assert.equal(shouldAutoReroute(session, fix, { ...options, nextRequestAt: now + 1000 }), false);
   assert.equal(shouldAutoReroute(session, fix, { ...options, pending: true }), false);
@@ -56,6 +58,29 @@ test('automatic reroute waits for confirmed off-route evidence, fresh fixes, for
   assert.equal(shouldReplaceTrackOnDeviation({ ...session, route: { ...session.route, geometryKind: 'track' } }), false);
   assert.equal(shouldReplaceTrackOnDeviation({ ...session, route: { ...session.route, trackNetwork: [session.route.coordinates] } }), false);
   assert.equal(shouldReplaceTrackOnDeviation(session), true);
+});
+
+test('confirmed deviation keeps rerouting through the 35m-to-20m hysteresis band only while still off route', () => {
+  const now = Date.now();
+  const fixAtOffset = (offset) => ({
+    coordinates: [103.005, 30 + offset / 111_195],
+    timestamp: now,
+    accuracy: 5,
+  });
+  const session = createSession(route(), now);
+  const options = { now, online: true, hidden: false, pending: false, nextRequestAt: now };
+  const confirmed32m = fixAtOffset(32);
+  session.last = confirmed32m;
+  session.quality = '';
+  session.offRoute = true;
+  assert.equal(shouldAutoReroute(session, confirmed32m, options), true,
+    'a previously confirmed deviation may request again before returning inside the 20m release threshold');
+  assert.equal(shouldAutoReroute({ ...session, offRoute: false }, confirmed32m, options), false,
+    '32m alone does not confirm a deviation');
+
+  const returned20m = fixAtOffset(18);
+  assert.equal(shouldAutoReroute({ ...session, last: returned20m }, returned20m, options), false,
+    'returning within the shared release threshold ends automatic rerouting');
 });
 
 test('automatic reroute uses the current travel mode and remaining checkpoints, then adopts only a route that still fits live location', async () => {

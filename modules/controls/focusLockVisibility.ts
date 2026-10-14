@@ -10,7 +10,8 @@ export type FocusLockActivity =
 export function focusLockVisibility(locked: boolean, panel: string | null, activities: Record<FocusLockActivity, boolean>) {
   const reasons = [
     ...(panel === null ? [] : ['panel']),
-    ...Object.entries(activities).filter(([, active]) => active).map(([name]) => name),
+    // User 2026-10-14: navigation itself must keep the lock entry available.
+    ...Object.entries(activities).filter(([name, active]) => active && name !== 'navigation').map(([name]) => name),
   ];
   return { visible: locked || reasons.length === 0, reasons };
 }

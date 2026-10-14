@@ -1,5 +1,5 @@
 import type { GuidanceSession } from './session';
-import { createSession, deviationLimit, freshFix } from './session.ts';
+import { createSession, deviationLimit, freshFix, onRouteLimit, reliableGpsFix } from './session.ts';
 import { pathOf, project } from './geometry.ts';
 import type { PlannedRoute, RoutePlace, TravelMode } from '../navigation/types';
 import type { PositionFix } from '../position/types';
@@ -35,12 +35,13 @@ export function shouldAutoReroute(
     !options.hidden &&
     !options.pending &&
     now >= options.nextRequestAt &&
-    freshFix(session.last, now) &&
-    freshFix(fix, now) &&
+    reliableGpsFix(session.last, now) &&
+    reliableGpsFix(fix, now) &&
     !!session.last &&
     !!fix &&
     fix.timestamp >= session.last.timestamp &&
-    project(session.path, fix.coordinates).offset > deviationLimit(fix);
+    // offRoute is already hysteresis-confirmed; use its return threshold here.
+    project(session.path, fix.coordinates).offset > onRouteLimit(fix);
 }
 
 export function shouldReplaceTrackOnDeviation(session: GuidanceSession) {
@@ -78,7 +79,7 @@ export async function calculateReroute(
   now = Date.now(),
 ) {
   signal.throwIfAborted();
-  if (!freshFix(origin, now)) throw new Error('请等待有效定位后重新规划');
+  if (!reliableGpsFix(origin, now)) throw new Error('请等待有效定位后重新规划');
   const { end, via } = remainingRoutePlaces(session);
   const route = await planner(
     { name: '当前位置', coordinates: origin.coordinates },
@@ -92,7 +93,7 @@ export async function calculateReroute(
   const checkedAt = Date.now();
   if (
     !live ||
-    !freshFix(live, checkedAt) ||
+    !reliableGpsFix(live, checkedAt) ||
     live.timestamp < origin.timestamp ||
     project(pathOf(route.coordinates), live.coordinates).offset > deviationLimit(live)
   )

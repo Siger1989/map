@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MotionHeading, travelBearing } from '../modules/position/motionHeading.ts';
+import { MotionHeading, reliableGpsCourse, travelBearing } from '../modules/position/motionHeading.ts';
 import { readNativePosition } from '../modules/position/nativePosition.ts';
 import { positionFix } from '../modules/position/types.ts';
 const now=1800000000000;
@@ -30,6 +30,15 @@ test('GPS course survives quiet acceleration at constant speed, wraps north, and
   assert.ok(next>359&&next<360);
   assert.equal(model.update(fix(0,0,3000,{heading:180,speed:2,headingAccuracy:80}),now+3000).heading,next);
   assert.equal(model.update(fix(0,0,4000,{heading:180,speed:2}),now+30000).heading,next);
+});
+test('missing bearing accuracy is not treated as perfect and IP estimates never establish course',()=>{
+  const weak=fix(0,0,0,{heading:90,speed:2,accuracy:25});
+  assert.equal(reliableGpsCourse(weak),null);
+  assert.equal(reliableGpsCourse({...weak,accuracy:8}),90);
+  assert.equal(reliableGpsCourse({...weak,headingAccuracy:36,accuracy:3}),null);
+  const model=new MotionHeading();
+  assert.equal(model.update({...weak,provider:'ip'},now).heading,null);
+  assert.equal(model.update(weak,now).heading,null);
 });
 test('missing GPS course falls back to bounded displacement; jumps and duplicate fixes cannot rotate map',()=>{
   const model=new MotionHeading();model.update(fix(),now);

@@ -10,6 +10,10 @@ test('ordinary browsing restores entry after each task or panel closes',()=>{
   assert.equal(focusLockVisibility(false,null,idle()).visible,true);
   for(const name of names){
     const activity={...idle(),[name]:true};
+    if (name === 'navigation') {
+      assert.deepEqual(focusLockVisibility(false,null,activity), { visible:true,reasons:[] });
+      continue;
+    }
     assert.deepEqual(focusLockVisibility(false,null,activity),{visible:false,reasons:[name]});
     activity[name]=false;
     assert.equal(focusLockVisibility(false,null,activity).visible,true,name);
@@ -18,6 +22,14 @@ test('ordinary browsing restores entry after each task or panel closes',()=>{
     assert.equal(focusLockVisibility(false,panel,idle()).visible,false,panel);
     assert.equal(focusLockVisibility(false,null,idle()).visible,true);
   }
+});
+
+test('active navigation permits lock and unlock, but an open panel or editing task still blocks entry',()=>{
+  const navigating={...idle(),navigation:true};
+  assert.equal(focusLockVisibility(false,null,navigating).visible,true);
+  assert.equal(focusLockVisibility(false,'tools',navigating).visible,false);
+  assert.equal(focusLockVisibility(false,null,{...navigating,drawing:true}).visible,false);
+  assert.equal(focusLockVisibility(true,'tools',navigating).visible,true);
 });
 
 test('unlock is reachable even if another activity or panel becomes active while locked',()=>{

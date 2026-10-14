@@ -43,8 +43,14 @@ export const freshFix = (fix: PositionFix | null, now = Date.now()): boolean =>
   Number.isFinite(fix.accuracy) &&
   fix.accuracy >= 0 &&
   fix.accuracy <= 50;
+/** Automatic rerouting requires a fresh device location, never a network/IP estimate. */
+export const reliableGpsFix = (fix: PositionFix | null, now = Date.now()): fix is PositionFix =>
+  !!fix && freshFix(fix, now) && fix.source !== 'network' && fix.provider !== 'ip';
 export const deviationLimit = (fix: PositionFix) =>
   Math.max(35, fix.accuracy * 2 + 10);
+/** The tighter threshold used to release an already-confirmed off-route state. */
+export const onRouteLimit = (fix: PositionFix) =>
+  Math.max(20, fix.accuracy + 5);
 export function createSession(
   route: PlannedRoute,
   now = Date.now(),
@@ -184,7 +190,7 @@ export function advance(
     s.progress,
   );
   const far = hit.offset > deviationLimit(fix),
-    close = hit.offset <= Math.max(20, fix.accuracy + 5);
+    close = hit.offset <= onRouteLimit(fix);
   const offSince = far ? (s.offSince ?? fix.timestamp) : null;
   const offRoute = close
     ? false

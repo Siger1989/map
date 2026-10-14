@@ -18,6 +18,8 @@ export type NavigationCameraOptionsInput = {
   /** Only set on explicit entry/resume; ordinary fixes preserve the user's zoom. */
   close?: boolean;
   travelMode?: TravelMode;
+  /** A user-adjusted pose persists while GPS continues moving the center. */
+  pose?: { pitch: number; bearing: number } | null;
 };
 
 export type NavigationCameraOptions = {
@@ -127,7 +129,7 @@ export function navigationCameraOptions(input: NavigationCameraOptionsInput): Na
   const center: Coordinate = [input.center[0], input.center[1]];
   const fallbackBearing = finiteAngle(input.bearing) ? input.bearing : undefined;
   if (!input.forward) {
-    return { center, pitch: 0, ...(fallbackBearing === undefined ? {} : { bearing: fallbackBearing }), offset: [0, viewportOffset(input.height, input.usableRect, false)], duration: input.animate ? 650 : 0 };
+    return { center, pitch: input.pose ? Math.max(0, Math.min(80, input.pose.pitch)) : 0, ...(input.pose ? { bearing: input.pose.bearing } : fallbackBearing === undefined ? {} : { bearing: fallbackBearing }), offset: [0, viewportOffset(input.height, input.usableRect, false)], duration: input.animate ? 650 : 0 };
   }
 
   const heading = finiteAngle(input.heading)
@@ -139,9 +141,9 @@ export function navigationCameraOptions(input: NavigationCameraOptionsInput): Na
 
   return {
     center,
-    pitch: FORWARD_PITCH,
+    pitch: input.pose ? Math.max(0, Math.min(80, input.pose.pitch)) : FORWARD_PITCH,
     ...(input.close ? { zoom: navigationCloseZoom(input.travelMode) } : {}),
-    ...(bearing === undefined ? {} : { bearing }),
+    ...(input.pose ? { bearing: input.pose.bearing } : bearing === undefined ? {} : { bearing }),
     offset: [0, viewportOffset(input.height, input.usableRect, true)],
     duration: input.animate ? 650 : 0,
   };
