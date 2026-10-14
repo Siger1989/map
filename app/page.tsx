@@ -69,6 +69,8 @@ import {
   type ShareRoute,
 } from '@/modules/routeShare/data';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
+import { navigationCloseZoom, navigationCameraOptions } from '@/modules/guidance/forwardCamera';
+import type { NavigationCueInput } from '@/modules/guidance/navigationCueGeometry';
 import { useRouteFavorites } from '@/modules/navigation/useRouteFavorites';
 import { MapBoxSelect } from '@/modules/collections/MapBoxSelect';
 import { catalogEntries } from '@/modules/collections/catalog';
@@ -560,7 +562,7 @@ export default function Home() {
     (navigationSession?.offRoute ? undefined : navigationSession?.departurePending
       ? navigationSession.departureRoute?.coordinates
       : navigationSession?.path.points);
-  const navigationProgress = guidance.rejoin || navigationSession?.departurePending ? 0
+  const navigationProgress = guidance.rejoin || navigationSession?.departurePending ? undefined
     : navigationSession?.offRoute ? undefined : navigationSession?.progress;
   const reliableMotionHeading = cameraFix && cameraFix.source !== 'network' && cameraFix.provider !== 'ip' && cameraFix.accuracy <= 30
     ? cameraFix.speed !== undefined && cameraFix.speed >= 1 && cameraFix.speed <= 80 &&
@@ -569,12 +571,14 @@ export default function Home() {
       ? cameraFix.heading
       : position.direction === 'motion' && !motionHeading.status ? motionHeading.heading : null
     : null;
-  const followGuidanceCamera = (coordinates: Coordinate, animate: boolean, mode = navigationCameraMode) => map.current?.followNavigation(coordinates, {
+  const followGuidanceCamera = (coordinates: Coordinate, animate: boolean, mode = navigationCameraMode, close = false) => map.current?.followNavigation(coordinates, {
     forward: mode === 'forward',
     heading: reliableMotionHeading,
     path: navigationPath,
     progress: navigationProgress,
     animate,
+    close,
+    travelMode: navigationSession?.route.mode,
   }) ?? false;
   const skipNextFollowKey = useRef('');
   const follow = useFollowPosition({
@@ -599,7 +603,7 @@ export default function Home() {
       }
       if (guidance.active) {
         setNavigationViewNotice('');
-        return followGuidanceCamera(coordinates, true);
+        return followGuidanceCamera(coordinates, true, navigationCameraMode, initial);
       }
       return map.current?.followPosition(coordinates, position.direction !== 'device' && position.direction !== 'motion') ?? false;
     },
@@ -723,18 +727,22 @@ export default function Home() {
     follow.resume();
     if (!follow.blocked && guidance.active && canFollow(cameraFix)) {
       setNavigationViewNotice('');
-      followGuidanceCamera(cameraFix.coordinates, false);
+      followGuidanceCamera(cameraFix.coordinates, true, navigationCameraMode, true);
     } else if (guidance.active) setNavigationViewNotice('等待准确定位，当前可手动查看路线。');
     if (!position.watching || position.locationError) position.locate();
   };
   const changeNavigationCameraMode = (mode: 'forward' | 'top') => {
+    if (follow.blocked) { setNavigationViewNotice('请先退出当前选点或编辑任务。'); return; }
     setNavigationCameraMode(mode);
-    if (follow.following && guidance.active && canFollow(cameraFix)) {
+    cancelStartupCamera();
+    position.motion();
+    follow.resume();
+    if (guidance.active && canFollow(cameraFix)) {
       setNavigationViewNotice('');
-      followGuidanceCamera(cameraFix.coordinates, false, mode);
-    } else if (!follow.blocked) {
-      map.current?.view(mode === 'forward' ? 55 : 0, map.current?.cameraSnapshot()?.bearing ?? view.bearing, false);
-      if (!canFollow(cameraFix)) setNavigationViewNotice(`${mode === 'forward' ? '第一人称' : '俯视'}视角 · 等待准确定位，不跟随`);
+      followGuidanceCamera(cameraFix.coordinates, true, mode, true);
+    } else {
+      setNavigationViewNotice('正在重新获取准确定位，恢复后继续跟随');
+      position.locate();
     }
   };
   useEffect(() => {
@@ -753,6 +761,25 @@ export default function Home() {
         : null,
     [guidance.rejoin],
   );
+  const navigationCues = useMemo<NavigationCueInput | null>(() => {
+    if (guidance.active) {
+      if (navigationCameraMode !== 'forward' || !follow.following || follow.waiting ||
+          navigationSession?.arrived || !canFollow(cameraFix) || cameraFix.provider === 'ip' ||
+          cameraFix.source === 'network' || cameraFix.accuracy > 50 || !navigationPath) return null;
+      return { coordinates: navigationPath, position: cameraFix.coordinates, progress: navigationProgress,
+        kind: guidance.rejoin ? 'rejoin' : 'route' };
+    }
+    const route = navigation.route;
+    return routePreviewMode === 'forward' && panel === 'route' && route?.coordinates.length
+      ? { coordinates: route.coordinates, position: route.coordinates[0], progress: 0, kind: 'route' } : null;
+  }, [guidance.active, guidance.rejoin, navigationCameraMode, follow.following, follow.waiting,
+    navigationSession?.arrived, cameraFix, navigationPath, navigationProgress, routePreviewMode, panel, navigation.route]);
+  const navigationMarkerHeading = useMemo(() => {
+    if (!guidance.active || !navigationCues || !cameraFix) return markerHeading;
+    return navigationCameraOptions({ center: cameraFix.coordinates, forward: true, height: 0,
+      heading: reliableMotionHeading ?? undefined, path: navigationPath, progress: navigationProgress,
+      bearing: view.bearing }).bearing ?? markerHeading;
+  }, [guidance.active, navigationCues, cameraFix, markerHeading, reliableMotionHeading, navigationPath, navigationProgress, view.bearing]);
   const focusSection = (value: SectionSettings) => {
     if (!value.plane) return;
     if (value.survey) {
@@ -1250,7 +1277,7 @@ export default function Home() {
     if (!routePreviewMode || panel !== 'route' || guidance.active) return;
     const route = navigation.route;
     if (!route?.coordinates.length) return;
-    const initialZoom = routePreviewInitialCamera.current ? 16 : undefined;
+    const initialZoom = routePreviewMode === 'forward' ? navigationCloseZoom(route.mode) : undefined;
     routePreviewInitialCamera.current = false;
     map.current?.previewNavigation(route.coordinates[0], route.coordinates, routePreviewMode === 'forward', initialZoom);
   }, [routePreviewMode]);
@@ -1933,6 +1960,7 @@ export default function Home() {
           onGeology={setGeology}
           routeOverlay={plannedEdit.current && editor.session ? { ...routeDisplay.route, route: null } : routeDisplay.route}
           guidanceOverlay={guidanceOverlay}
+          navigationCues={navigationCues}
           trackOverlay={routeDisplay.tracks}
           areaOverlay={areaOverlay}
           onModelTerrainStatus={setModelTerrainStatus}
@@ -1988,7 +2016,8 @@ export default function Home() {
             photos.setSelected(ids[0]);
           }}
           position={displayedFix}
-          positionHeading={markerHeading}
+          positionHeading={navigationMarkerHeading}
+          positionNavigating={guidance.active && !!cameraFix}
           onBrowse={userBrowse}
           onManualRotate={position.free}
           annotations={mapAnnotations}
@@ -2760,24 +2789,8 @@ export default function Home() {
                 ? <RouteDisplaySettings display={routeDisplay} embedded navigating onClose={() => setNavigationDisplayOpen(false)} /> : undefined}
               onCloseDisplay={() => setNavigationDisplayOpen(false)}
               telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={displayedFix} />}
-              onFirstPerson={() => {
-                setNavigationCameraMode('forward');
-                const fix = cameraFix;
-                if (!follow.blocked && canFollow(fix) && fix.accuracy <= 50 && fix.source !== 'network' && fix.provider !== 'ip') {
-                  setNavigationViewNotice('');
-                  position.motion();
-                  follow.resume();
-                  followGuidanceCamera(fix.coordinates, false, 'forward');
-                } else {
-                  follow.pause();
-                  const route = guidance.session?.route;
-                  const previewed = !follow.blocked && route && route.coordinates.length > 1 &&
-                    map.current?.previewNavigation(route.coordinates[0], route.coordinates, true, 16);
-                  setNavigationViewNotice(previewed
-                    ? '第一人称路线预览 · 非定位导航，等待准确定位'
-                    : follow.blocked ? '请先退出当前选点或编辑任务。' : '地图尚未就绪，等待准确定位。');
-                }
-              }}
+              onFirstPerson={() => changeNavigationCameraMode(navigationCameraMode === 'forward' ? 'top' : 'forward')}
+              cameraWaiting={!!guidance.session?.quality || !canFollow(cameraFix)}
               viewNotice={navigationViewNotice}
               onDisplay={() => {
                 setPanel(null);

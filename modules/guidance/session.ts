@@ -25,6 +25,7 @@ export type GuidanceSession = {
   last: PositionFix | null;
   anchor: PositionFix | null;
   quality: string;
+  qualityFromLocationError: boolean;
   gap: boolean;
   offRoute: boolean;
   offSince: number | null;
@@ -73,6 +74,7 @@ export function createSession(
     last: null,
     anchor: null,
     quality: '等待当前位置…',
+    qualityFromLocationError: false,
     gap: false,
     offRoute: false,
     offSince: null,
@@ -118,12 +120,27 @@ export function advance(
     return {
       ...s,
       quality,
+      qualityFromLocationError: !!error,
       anchor: null,
       offSince: null,
       arriveSince: null,
       gap: s.gap || !!s.last,
     };
-  if (!fix || (s.last && fix.timestamp <= s.last.timestamp)) return s;
+  if (!fix) return s;
+  if (s.last && fix.timestamp <= s.last.timestamp) {
+    // A transient bridge/provider error can clear while the still-fresh cached
+    // fix has the same timestamp. Clear only that external error state; an old
+    // or duplicate fix must not clear poor-accuracy/jump quality or rewind route.
+    if (
+      s.qualityFromLocationError &&
+      fix.timestamp === s.last.timestamp &&
+      fix.coordinates[0] === s.last.coordinates[0] &&
+      fix.coordinates[1] === s.last.coordinates[1] &&
+      freshFix(fix, now)
+    )
+      return { ...s, quality: '', qualityFromLocationError: false };
+    return s;
+  }
   const elapsed = s.last ? (fix.timestamp - s.last.timestamp) / 1000 : 0;
   const movement = s.last
     ? metresBetween(s.last.coordinates, fix.coordinates)
@@ -137,6 +154,7 @@ export function advance(
     return {
       ...s,
       quality: '定位跳动，等待稳定位置',
+      qualityFromLocationError: false,
       anchor: null,
       offSince: null,
       arriveSince: null,
@@ -196,6 +214,7 @@ export function advance(
     last: fix,
     anchor,
     quality: '',
+    qualityFromLocationError: false,
     gap: s.gap || gap,
     travelled,
     progress: arrived ? s.path.length : progress,

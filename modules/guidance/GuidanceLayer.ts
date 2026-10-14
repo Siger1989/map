@@ -26,16 +26,16 @@ export class GuidanceLayer {
         type: 'line',
         source: 'route-guidance',
         filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#30261d', 'line-width': 9 },
+        layout: { 'line-join': 'round', 'line-cap': 'butt' },
+        paint: { 'line-color': '#30261d', 'line-width': 9, 'line-dasharray': [5 / 3, 10 / 9] },
       });
       m.addLayer({
         id: 'guidance-path',
         type: 'line',
         source: 'route-guidance',
         filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#ffb052', 'line-width': 5 },
+        layout: { 'line-join': 'round', 'line-cap': 'butt' },
+        paint: { 'line-color': '#ffb052', 'line-width': 5, 'line-dasharray': [3, 2] },
       });
       m.addLayer({
         id: 'guidance-access', type: 'line', source: 'route-guidance', filter: ['==', 'kind', 'access'],

@@ -1,13 +1,24 @@
 import type { Map } from 'maplibre-gl';
 import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection, Feature } from 'geojson';
-import type { RouteOverlay } from './types';
+import { metresBetween, type Coordinate, type RouteOverlay } from './types';
 import type { ScreenPoint } from '../tracks/drawing';
 
 /** Draped GeoJSON route and endpoints, independent of roads/terrain providers. */
 export class RouteLayer {
   private hasRoute = false;
+  private state: RouteOverlay | null = null;
+  private navigationPosition: Coordinate | null = null;
+  private startHidden = false;
   constructor(private map: Map) {}
+  /** Omit the redundant start badge only while it overlaps the navigator. */
+  setNavigationPosition(position: Coordinate | null) {
+    this.navigationPosition = position;
+    if (this.state && this.shouldHideStart(this.state) !== this.startHidden) this.sync(this.state);
+  }
+  private shouldHideStart(state: RouteOverlay) {
+    return !!state.start && !!this.navigationPosition && metresBetween(state.start.coordinates, this.navigationPosition) < 40;
+  }
   pick(point: ScreenPoint): boolean {
     if (!this.hasRoute) return false;
     const layers = ['route-path', 'route-access', 'route-points'].filter((id) => this.map.getLayer(id));
@@ -18,6 +29,8 @@ export class RouteLayer {
     ).length > 0;
   }
   sync(state: RouteOverlay) {
+    this.state = state;
+    this.startHidden = this.shouldHideStart(state);
     const m = this.map;
     this.hasRoute = Boolean(state.route);
     if (!m.getSource('planned-route'))
@@ -129,7 +142,7 @@ export class RouteLayer {
         });
       }
     for (const slot of ['start', 'end'] as const)
-      if (state[slot])
+      if (state[slot] && !(slot === 'start' && this.startHidden))
         features.push({
           type: 'Feature',
           properties: { slot, label: slot === 'start' ? '起' : '终', name: state[slot]!.name },

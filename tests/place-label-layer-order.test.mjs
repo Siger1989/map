@@ -40,6 +40,8 @@ class EventMapFake extends MapFake {
 const baseLines = ['road-outline', 'main-roads', 'local-roads'];
 const routeLines = ['route-outline', 'route-path', 'route-access', 'manual-track-outline', 'manual-track-selection-edge', 'manual-track-line', 'guidance-outline', 'guidance-path', 'guidance-access', 'route-gap-line'];
 const topMarks = ['route-points', 'route-point-labels', 'route-gap-points', 'manual-track-node', 'manual-track-selected-node', 'manual-track-endpoint-label', 'manual-track-notes-point', 'guidance-target', 'route-grade-warning-dot', 'route-grade-warning-label', 'track-line-selection-halo', 'track-line-selection', 'position-dot', 'position-arrow', 'cad-labels'];
+const navigationTop = ['position-dot', 'position-arrow'];
+const routeAndPosition = [...routeLines, ...navigationTop];
 const otherNativeIcons = ['cad-point', 'model-terrain-contact'];
 const layers = (...groups) => ['background', ...baseLines, ...routeLines, ...groups.flat()];
 
@@ -54,7 +56,7 @@ test('roads stay below raster labels; route strokes form the final tier above la
   for (const id of otherNativeIcons) assert.ok(ids.indexOf(id) < ids.indexOf('route-outline'), `${id} remains below route strokes`);
   for (const id of ['track-line-selection-halo', 'track-line-selection'])
     assert.ok(ids.indexOf(id) < ids.indexOf('route-outline'), `${id} circle remains below route strokes`);
-  assert.deepEqual(ids.slice(-routeLines.length), routeLines, 'route strokes are the final stable GL tier');
+  assert.deepEqual(ids.slice(-routeAndPosition.length), routeAndPosition, 'current position remains above the route tier');
 });
 
 test('a future route-tier id with a non-line type is not promoted above icons', () => {
@@ -76,7 +78,7 @@ test('vector place labels become the line boundary when raster labels are hidden
   for (const id of topMarks) assert.ok(ids.indexOf(id) > city, `${id} remains above vector labels`);
   for (const id of routeLines) assert.ok(ids.indexOf(id) > city, `${id} is above vector labels`);
   for (const id of otherNativeIcons) assert.ok(ids.indexOf(id) < ids.indexOf('route-outline'), `${id} remains below route strokes`);
-  assert.deepEqual(ids.slice(-routeLines.length), routeLines);
+  assert.deepEqual(ids.slice(-routeAndPosition.length), routeAndPosition);
 });
 
 test('hidden labels retain the legacy overlay order and repeated sync is stable', () => {
@@ -89,7 +91,7 @@ test('hidden labels retain the legacy overlay order and repeated sync is stable'
   assert.deepEqual(ids.filter((id) => baseLines.includes(id)), baseBefore, 'base roads keep their style order');
   assert.ok(ids.indexOf('route-points') < ids.indexOf('route-access'));
   assert.ok(ids.indexOf('guidance-target') < ids.indexOf('guidance-path'));
-  assert.deepEqual(ids.slice(-routeLines.length), routeLines);
+  assert.deepEqual(ids.slice(-routeAndPosition.length), routeAndPosition);
   const firstMoveCount = map.moves;
   syncPlaceLabelLayerOrder(map);
   assert.equal(map.moves, firstMoveCount, 'unchanged order performs no map moves');
@@ -102,7 +104,7 @@ test('late native icon layers are kept below the route tier on the next sync', (
   syncPlaceLabelLayerOrder(map);
   const ids = map.ids();
   assert.ok(ids.indexOf('late-native-icon') < ids.indexOf('route-outline'));
-  assert.deepEqual(ids.slice(-routeLines.length), routeLines);
+  assert.deepEqual(ids.slice(-routeAndPosition.length), routeAndPosition);
   const moves = map.moves;
   syncPlaceLabelLayerOrder(map);
   assert.equal(map.moves, moves, 'late-layer correction is idempotent');
@@ -121,7 +123,7 @@ test('styledata guard reorders late layers without a source sync and unbinds on 
   map.emit('styledata');
   const afterFirstEvent = map.moves;
   assert.ok(afterFirstEvent > beforeEvent, 'styledata event reorders routes without GeoJSON sync');
-  assert.deepEqual(map.ids().slice(-routeLines.length), routeLines);
+  assert.deepEqual(map.ids().slice(-routeAndPosition.length), routeAndPosition);
   map.emit('styledata');
   assert.equal(map.moves, afterFirstEvent, 'repeated styledata is idempotent');
 
@@ -147,9 +149,24 @@ test('visibility changes switch the active boundary without resetting annotation
   map.visible('domestic-labels-map', false);
   map.visible('city-names', false);
   syncPlaceLabelLayerOrder(map);
-  assert.deepEqual(map.ids().slice(-routeLines.length), routeLines);
+  assert.deepEqual(map.ids().slice(-routeAndPosition.length), routeAndPosition);
   map.visible('city-names', true);
   syncPlaceLabelLayerOrder(map);
   assert.ok(map.ids().indexOf('route-path') > map.ids().indexOf('city-names'));
-  assert.deepEqual(map.ids().slice(-routeLines.length), routeLines);
+  assert.deepEqual(map.ids().slice(-routeAndPosition.length), routeAndPosition);
+});
+
+
+test('navigation arrows and position stay above crossing route lines across style reloads without repeated reorders', () => {
+  const nav = ['navigation-cue-outline', 'navigation-cue-arrows', 'position-dot', 'position-arrow', 'position-ip-label'];
+  const map = new EventMapFake(layers(['city-names', 'position-accuracy', 'cad-labels', ...nav]));
+  for (const id of nav.slice(0, 2)) map.layers.find(layer => layer.id === id).type = 'line';
+  syncPlaceLabelLayerOrder(map);
+  assert.deepEqual(map.ids().slice(-nav.length), nav);
+  assert.ok(map.ids().indexOf('position-accuracy') < map.ids().indexOf('route-outline'));
+  const moves = map.moves;
+  for (let i = 0; i < 100; i++) { syncPlaceLabelLayerOrder(map); map.emit('styledata'); }
+  assert.equal(map.moves, moves);
+  map.addLayer('late-icon', 'symbol');
+  assert.deepEqual(map.ids().slice(-nav.length), nav);
 });

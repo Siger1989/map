@@ -11,7 +11,7 @@ test('forward camera uses the real center, reliable heading, safe positive offse
   const center = [104.1, 30.6];
   const options = navigationCameraOptions({ center, heading: 82, bearing: 80, height: 857, forward: true, animate: true });
   assert.deepEqual(options.center, center);
-  assert.equal(options.pitch, 55);
+  assert.equal(options.pitch, 60);
   assert.equal(options.bearing, 82);
   assert.ok(options.offset[1] > 0);
   assert.equal(options.offset[0], 0);
@@ -41,6 +41,17 @@ test('a reliable heading does not inspect or rebuild the route path', () => {
 
   assert.equal(options.bearing, 82);
   assert.equal(reads, 0, 'a finite heading must bypass route-path traversal');
+});
+
+test('explicit close navigation enlarges by travel mode while subsequent fixes preserve manual zoom', () => {
+  const input = { center: [104, 30], heading: 0, height: 857, forward: true, usableRect: { top: 120, bottom: 750 } };
+  const car = navigationCameraOptions({ ...input, close: true, travelMode: 'auto' });
+  const walk = navigationCameraOptions({ ...input, close: true, travelMode: 'pedestrian' });
+  assert.equal(car.zoom, 17.4);
+  assert.ok(walk.zoom > car.zoom);
+  assert.ok(857 / 2 + car.offset[1] > 120 + (750 - 120) * 0.7);
+  assert.equal('zoom' in navigationCameraOptions(input), false);
+  assert.equal('zoom' in navigationCameraOptions({ ...input, close: true, forward: false }), false);
 });
 
 test('route tangent samples ahead of progress, including curved geometry and antimeridian paths', () => {

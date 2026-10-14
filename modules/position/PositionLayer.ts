@@ -6,7 +6,7 @@ import { positionArrowImage } from './positionArrow';
 const POSITION_NEUTRAL = '#cbd2cf';
 export class PositionLayer {
   constructor(private map: Map) {}
-  sync(fix: PositionFix | null, heading: number | null = null) {
+  sync(fix: PositionFix | null, heading: number | null = null, navigating = false) {
     const m = this.map;
     if (!m.getSource('current-position')) {
       m.addSource('current-position', {
@@ -26,19 +26,21 @@ export class PositionLayer {
         source: 'current-position',
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['!', ['has', 'heading']]],
         paint: {
-          'circle-radius': 6,
-          'circle-color': POSITION_NEUTRAL,
+          'circle-radius': ['case', ['==', ['get', 'navigating'], true], 9, 6],
+          'circle-color': ['case', ['==', ['get', 'navigating'], true], '#48c9ff', POSITION_NEUTRAL],
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 2,
         },
       });
       if (!m.hasImage('position-heading-arrow')) m.addImage('position-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
       if (!m.hasImage('position-ip-heading-arrow')) m.addImage('position-ip-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
+      if (!m.hasImage('position-navigation-arrow')) m.addImage('position-navigation-arrow', positionArrowImage([72, 201, 255]), { pixelRatio: 2 });
       m.addLayer({
         id: 'position-arrow', type: 'symbol', source: 'current-position',
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'heading']],
         layout: {
-          'icon-image': ['case', ['==', ['get', 'provider'], 'ip'], 'position-ip-heading-arrow', 'position-heading-arrow'], 'icon-size': 1.2,
+          'icon-image': ['case', ['==', ['get', 'navigating'], true], 'position-navigation-arrow', ['==', ['get', 'provider'], 'ip'], 'position-ip-heading-arrow', 'position-heading-arrow'],
+          'icon-size': ['case', ['==', ['get', 'navigating'], true], 1.7, 1.2],
           'icon-rotate': ['get', 'heading'], 'icon-rotation-alignment': 'map',
           'icon-pitch-alignment': 'viewport', 'icon-allow-overlap': true, 'icon-ignore-placement': true,
         },
@@ -72,7 +74,7 @@ export class PositionLayer {
         },
         {
           type: 'Feature',
-          properties: { ...(fix.provider === 'ip' ? { provider: 'ip' } : {}), ...(heading !== null && Number.isFinite(heading) ? { heading: ((heading % 360) + 360) % 360 } : {}) },
+          properties: { navigating: navigating && fix.provider !== 'ip', ...(fix.provider === 'ip' ? { provider: 'ip' } : {}), ...(heading !== null && Number.isFinite(heading) ? { heading: ((heading % 360) + 360) % 360 } : {}) },
           geometry: { type: 'Point', coordinates: fix.coordinates },
         },
       );

@@ -116,6 +116,8 @@ test('navigation card and route summary expose first-person camera and route pre
 
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.ok(host.querySelector('[aria-label="第一人称模式"]'), 'the navigation header exposes first-person mode');
+  assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'true');
+  assert.equal(host.querySelector('.guidance-first-person span').textContent, '近景');
   assert.equal(host.querySelector('[aria-label*="路书"]'), null, 'the original roadbook entry is absent');
   assert.doesNotMatch(host.textContent, /路书/);
   await React.act(async () => host.querySelector('[aria-label="第一人称模式"]').click());
@@ -132,6 +134,8 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.deepEqual(cameraModeCalls, ['top']);
   cameraMode = 'top';
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'false');
+  assert.equal(host.querySelector('.guidance-first-person span').textContent, '俯视');
   cameraButton = host.querySelector('.guidance-camera-mode');
   assert.equal(cameraButton.textContent, '切换前视');
   await React.act(async () => cameraButton.click());

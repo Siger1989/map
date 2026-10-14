@@ -231,7 +231,7 @@ test('location layer contains a closed accuracy polygon and removes location dat
   assert.equal(arrow.layout['icon-rotation-alignment'], 'map');
   assert.equal(arrow.layout['icon-pitch-alignment'], 'viewport');
   const dot = layers.find(value => value.id === 'position-dot');
-  assert.equal(dot.paint['circle-color'], '#cbd2cf');
+  assert.deepEqual(dot.paint['circle-color'], ['case', ['==', ['get', 'navigating'], true], '#48c9ff', '#cbd2cf']);
   assert.equal(dot.paint['circle-stroke-color'], '#ffffff');
   assert.deepEqual(dot.filter, ['all', ['==', ['geometry-type'], 'Point'], ['!', ['has', 'heading']]]);
   assert.deepEqual(arrow.filter, ['all', ['==', ['geometry-type'], 'Point'], ['has', 'heading']]);

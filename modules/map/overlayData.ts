@@ -41,13 +41,16 @@ const overlayOrder = [
   'cad-line',
   'cad-point',
   'position-accuracy',
+  'cad-labels',
+  'navigation-cue-outline',
+  'navigation-cue-arrows',
   'position-dot',
   'position-arrow',
   'position-ip-label',
-  'cad-labels',
 ];
-// Route strokes form the final native GL tier so route icons and map labels
-// cannot paint over them. DOM markers are handled by routeIconPriority.
+// Routes stay above ordinary icons; immediate guidance and the real position
+// remain legible above the route. DOM markers are handled by routeIconPriority.
+const NAVIGATION_TOP_LAYERS = ['navigation-cue-outline', 'navigation-cue-arrows', 'position-dot', 'position-arrow', 'position-ip-label'];
 const ROUTE_STROKE_LAYERS = [
   'route-outline',
   'route-path',
@@ -133,13 +136,14 @@ export function syncPlaceLabelLayerOrder(map: Map) {
 
 function syncRouteStrokesLast(map: Map) {
   const layers = map.getStyle().layers;
-  const tier = ROUTE_STROKE_LAYERS.filter((id) =>
+  const routes = ROUTE_STROKE_LAYERS.filter((id) =>
     layers.some((layer) => layer.id === id && layer.type === 'line'),
   );
-  if (!tier.length) {
+  if (!routes.length) {
     detachRouteTierGuard(map);
     return;
   }
+  const tier = [...routes, ...NAVIGATION_TOP_LAYERS.filter(id => layers.some(layer => layer.id === id))];
 
   const guard = ensureRouteTierGuard(map);
   if (guard?.syncing) return;

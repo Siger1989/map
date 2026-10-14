@@ -32,6 +32,7 @@ export function GuidanceCard({
   cameraMode = 'forward',
   onCameraModeChange,
   viewNotice,
+  cameraWaiting = false,
 }: {
   guidance: GuidanceState;
   onStop: () => void;
@@ -48,6 +49,7 @@ export function GuidanceCard({
   cameraMode?: 'forward' | 'top';
   onCameraModeChange?: (mode: 'forward' | 'top') => void;
   viewNotice?: string;
+  cameraWaiting?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const s = g.session;
@@ -70,7 +72,7 @@ export function GuidanceCard({
             ? g.loading
               ? '正在计算接回路线…'
               : g.rejoin
-                ? '沿橙线接回原路线'
+                ? '沿橙色虚线接回原路线'
                 : `已偏离约${formatDistance(s.offset)}`
             : s.offSince !== null
               ? '可能偏离，正在确认…'
@@ -79,7 +81,7 @@ export function GuidanceCard({
                 : '沿原路线导航');
   const compactStatus = g.error || status;
   const statusLabel = compactStatus.includes('权限') ? '定位未授权'
-    : !s.quality && g.instruction && !s.departurePending
+    : s.offRoute ? compactStatus : !s.quality && g.instruction && !s.departurePending
       ? `${formatDistance(g.instruction.distance)} · ${g.instruction.text}` : compactStatus;
   return (
     <section
@@ -110,7 +112,10 @@ export function GuidanceCard({
             <span>{following ? `导航中 · ${TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}` : '继续导航'}</span>
           </button>}
           <div className="guidance-header-actions">
-            {onFirstPerson && <button aria-label="第一人称模式" title="第一人称模式" onClick={onFirstPerson}><PersonStanding size={17} /></button>}
+            {onFirstPerson && <button className="guidance-first-person" aria-label="第一人称模式"
+              aria-pressed={cameraMode === 'forward'} data-waiting={cameraWaiting}
+              title={cameraMode === 'forward' ? '第一人称已开启 · 点击切换俯视' : '开启近距离第一人称'}
+              onClick={onFirstPerson}><PersonStanding size={19} /><span>{cameraMode === 'forward' ? cameraWaiting ? '等待' : '近景' : '俯视'}</span></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
             <button onClick={onStop} aria-label="结束导航" title="结束导航">
               <X size={18} />

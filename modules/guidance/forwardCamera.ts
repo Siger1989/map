@@ -1,4 +1,4 @@
-import { coordinate, metresBetween, type Coordinate } from '../navigation/types.ts';
+import { coordinate, metresBetween, type Coordinate, type TravelMode } from '../navigation/types.ts';
 import { pathOf, pointAt, project, type Path } from './geometry.ts';
 
 export type NavigationCameraOptionsInput = {
@@ -15,6 +15,9 @@ export type NavigationCameraOptionsInput = {
   bearing?: number;
   /** Optional visible vertical range within height. */
   usableRect?: { top: number; bottom: number };
+  /** Only set on explicit entry/resume; ordinary fixes preserve the user's zoom. */
+  close?: boolean;
+  travelMode?: TravelMode;
 };
 
 export type NavigationCameraOptions = {
@@ -23,9 +26,11 @@ export type NavigationCameraOptions = {
   bearing?: number;
   offset: [number, number];
   duration: number;
+  zoom?: number;
 };
 
-const FORWARD_PITCH = 55;
+const FORWARD_PITCH = 60;
+export const navigationCloseZoom = (mode?: TravelMode) => mode === 'pedestrian' ? 18.2 : mode === 'bicycle' ? 17.8 : 17.4;
 const FORWARD_OFFSET_MARGIN = 8;
 const TANGENT_SAMPLE_METRES = 45;
 const MIN_TANGENT_METRES = 8;
@@ -110,12 +115,12 @@ function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput
   const safeBottom = bottom - FORWARD_OFFSET_MARGIN;
   const usableHeight = safeBottom - safeTop;
   if (usableHeight <= 0) return 0;
-  const preferredY = forward ? safeTop + usableHeight * 0.65 : height / 2;
+  const preferredY = forward ? safeTop + usableHeight * 0.72 : height / 2;
   const targetY = Math.max(safeTop, Math.min(safeBottom, preferredY));
   return Math.max(safeTop - height / 2, Math.min(safeBottom - height / 2, targetY - height / 2));
 }
 
-/** Build only the camera fields needed for forward navigation; zoom and padding remain caller-owned. */
+/** Frame the next stretch of route; only explicit close-view entry changes zoom. */
 export function navigationCameraOptions(input: NavigationCameraOptionsInput): NavigationCameraOptions {
   const center: Coordinate = [input.center[0], input.center[1]];
   const fallbackBearing = finiteAngle(input.bearing) ? input.bearing : undefined;
@@ -133,6 +138,7 @@ export function navigationCameraOptions(input: NavigationCameraOptionsInput): Na
   return {
     center,
     pitch: FORWARD_PITCH,
+    ...(input.close ? { zoom: navigationCloseZoom(input.travelMode) } : {}),
     ...(bearing === undefined ? {} : { bearing }),
     offset: [0, viewportOffset(input.height, input.usableRect, true)],
     duration: input.animate ? 650 : 0,

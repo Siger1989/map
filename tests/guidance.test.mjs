@@ -100,6 +100,61 @@ test('stale, missing, future and permission-denied fixes cannot advance or confi
   assert.equal(denied.progress, 0);
   assert.equal(denied.offRoute, false);
 });
+test('a transient location error clears on the same fresh fix without advancing navigation', () => {
+  const now = 100000;
+  let s = advance(createSession(route(), now), fix(0), now);
+  const accepted = s.last;
+  const progress = s.progress;
+  const travelled = s.travelled;
+
+  s = advance(s, accepted, now + 1000, '定位读取失败，请重新定位');
+  assert.equal(s.qualityFromLocationError, true);
+  assert.match(s.quality, /定位读取失败/);
+
+  const recovered = advance(s, accepted, now + 2000, '');
+  assert.equal(recovered.quality, '');
+  assert.equal(recovered.qualityFromLocationError, false);
+  assert.equal(recovered.last, accepted);
+  assert.equal(recovered.progress, progress);
+  assert.equal(recovered.travelled, travelled);
+  assert.equal(recovered.anchor, null, 'the error gap is not counted as travelled distance');
+});
+test('same or older fixes do not clear accuracy/jump quality or rewind the last accepted fix', () => {
+  const now = 100000;
+  const initial = fix(0);
+  let poor = advance(createSession(route(), now), initial, now);
+  poor = advance(poor, fix(0.001, 0, 1, 150), now + 1000);
+  assert.match(poor.quality, /精度/);
+  assert.equal(poor.qualityFromLocationError, false);
+  assert.equal(advance(poor, initial, now + 2000).quality, poor.quality);
+
+  let jump = advance(createSession(route(), now), initial, now);
+  jump = advance(jump, fix(0.008, 0.004, 1), now + 1000);
+  assert.match(jump.quality, /跳动/);
+  assert.equal(jump.qualityFromLocationError, false);
+  assert.equal(advance(jump, initial, now + 2000).quality, jump.quality);
+
+  let errored = advance(createSession(route(), now), fix(0), now);
+  const last = errored.last;
+  errored = advance(errored, last, now + 1000, '定位读取失败，请重新定位');
+  const oldFreshFix = { ...last, timestamp: last.timestamp - 1000 };
+  const oldResult = advance(errored, oldFreshFix, now + 2000, '');
+  assert.equal(oldResult.quality, errored.quality);
+  assert.equal(oldResult.last, last);
+
+  const conflictingSameTimestamp = {
+    ...last,
+    coordinates: [last.coordinates[0] + 0.001, last.coordinates[1]],
+  };
+  const conflictingResult = advance(errored, conflictingSameTimestamp, now + 2000, '');
+  assert.equal(conflictingResult.quality, errored.quality);
+  assert.equal(conflictingResult.last, last);
+
+  const expiredResult = advance(errored, last, now + 30000, '');
+  assert.match(expiredResult.quality, /过期/);
+  assert.equal(expiredResult.qualityFromLocationError, false);
+  assert.equal(expiredResult.last, last);
+});
 test('two distinct reliable fixes over three seconds confirm departure; repeated ticks do not', () => {
   let s = step(createSession(route()), fix(0));
   s = step(s, fix(0, 0.0006, 10));
@@ -213,11 +268,31 @@ test('return path has its own source and is removed on stop without modifying th
       });
     },
     getLayer: (id) => layers.get(id),
-    getStyle: () => ({ layers: [...layers.values()] }),
     addLayer(layer) {
       layers.set(layer.id, layer);
     },
     moveLayer() {},
+    getStyle: () => ({ layers: [...layers.values()] }),
+    on() {},
+    off() {},
+    getContainer: () => ({
+      querySelectorAll: () => [],
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 }),
+      addEventListener() {},
+      removeEventListener() {},
+    }),
+    getCanvas: () => ({
+      clientWidth: 100,
+      clientHeight: 100,
+      getBoundingClientRect: () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 }),
+    }),
+    getPitch: () => 0,
+    getTerrain: () => null,
+    getProjection: () => ({ type: 'mercator' }),
+    isStyleLoaded: () => true,
+    queryRenderedFeatures: () => [],
+    getLayoutProperty: () => 'visible',
+    getPaintProperty: () => null,
   };
   const layer = new GuidanceLayer(map);
   layer.sync({

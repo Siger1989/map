@@ -5,6 +5,7 @@ import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satell
 import { readLastView, saveLastView } from './lastView';
 import { CameraSync, focusPointCamera, followPositionCamera } from './cameraSync';
 import { navigationCameraOptions } from '../guidance/forwardCamera';
+import { applyNavigationCamera } from '../guidance/navigationCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
@@ -36,10 +37,12 @@ import { GeologyLayer } from '../geology/GeologyLayer';
 import type { GeologyState } from '../geology/data';
 import { RouteLayer } from '../navigation/RouteLayer';
 import { GuidanceLayer, type GuidanceOverlay } from '../guidance/GuidanceLayer';
+import { NavigationCueLayer } from '../guidance/NavigationCueLayer';
+import type { NavigationCueInput } from '../guidance/navigationCueGeometry';
 import { RouteGapLayer } from '../tracks/RouteGapLayer';
 import { RouteIssueLayer } from '../tracks/RouteIssueLayer';
 import type { RouteGap } from '../tracks/routeInfo';
-import type { Coordinate, RouteOverlay } from '../navigation/types';
+import type { Coordinate, RouteOverlay, TravelMode } from '../navigation/types';
 import { coordinate } from '../navigation/types';
 import { twoFingerGestureDelta } from '../collections/boxSelection';
 import { TrackLayer, type TrackOverlay } from '../tracks/TrackLayer';
@@ -163,6 +166,8 @@ export type NavigationCameraRequest = {
   path?: Coordinate[];
   progress?: number;
   animate?: boolean;
+  close?: boolean;
+  travelMode?: TravelMode;
 };
 
 function navigationUsableRect(map: Map) {
@@ -228,6 +233,7 @@ export type TerrainMapProps = {
   onGeology: (state: GeologyState) => void;
   routeOverlay: RouteOverlay;
   guidanceOverlay?: GuidanceOverlay;
+  navigationCues?: NavigationCueInput | null;
   onMapPick: (coordinates: Coordinate) => void;
   onMapHold?: (hold: MapHold) => void;
   trackOverlay: TrackOverlay;
@@ -238,6 +244,7 @@ export type TerrainMapProps = {
   onDrawingInput: (event: DrawingInput) => void;
   position: PositionFix | null;
   positionHeading?: number | null;
+  positionNavigating?: boolean;
   photos: VisiblePhoto[];
   onPhotoSelect: (ids: string[]) => void;
   onManualRotate: () => void;
@@ -295,6 +302,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const geologyRef = useRef<GeologyLayer | null>(null);
     const routeRef = useRef<RouteLayer | null>(null);
     const guidanceRef = useRef<GuidanceLayer | null>(null);
+    const navigationCueRef = useRef<NavigationCueLayer | null>(null);
     const routeGapRef = useRef<RouteGapLayer | null>(null);
     const routeIssueRef = useRef<RouteIssueLayer | null>(null);
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
@@ -541,9 +549,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       geologyRef.current?.sync(s);
       if (syncDataOverlays) {
         routeRef.current?.sync(latest.current.routeOverlay);
+        routeRef.current?.setNavigationPosition(latest.current.positionNavigating ? latest.current.position?.coordinates ?? null : null);
         syncTracks(latest.current.trackOverlay);
         areaRef.current?.sync(latest.current.areaOverlay);
-        positionRef.current?.sync(latest.current.position, latest.current.positionHeading);
+        positionRef.current?.sync(latest.current.position, latest.current.positionHeading, latest.current.positionNavigating);
       }
       // Annotation appearance follows map settings, while its data effect below
       // handles annotation-only changes.
@@ -772,10 +781,12 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             height,
             forward: request.forward,
             animate: request.animate,
+            close: request.close,
+            travelMode: request.travelMode,
             bearing: m.getBearing(),
             usableRect,
           });
-          m.easeTo(camera, { positionFollow: true });
+          applyNavigationCamera(m, camera, { positionFollow: true });
           return true;
         },
         previewNavigation: (center, path, forward, zoom) => {
@@ -794,7 +805,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             bearing: m.getBearing(),
             usableRect,
           });
-          m.easeTo({ ...camera, ...(zoom === undefined ? {} : { zoom }) }, { routePreview: true });
+          applyNavigationCamera(m, { ...camera, ...(zoom === undefined ? {} : { zoom }) }, { routePreview: true });
           return true;
         },
         highlightOffline: (trip) => {
@@ -1253,6 +1264,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             routeRef.current = new RouteLayer(map);
             guidanceRef.current = new GuidanceLayer(map);
             guidanceRef.current.sync(latest.current.guidanceOverlay ?? null);
+            navigationCueRef.current = new NavigationCueLayer(map);
+            navigationCueRef.current.sync(latest.current.navigationCues ?? null);
             routeGapRef.current = new RouteGapLayer(map);
             routeIssueRef.current = new RouteIssueLayer(map);
             routeGapRef.current.sync(null);
@@ -1572,6 +1585,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         longPressRef.current?.dispose();
         longPressRef.current = null;
         guidanceRef.current = null;
+        navigationCueRef.current = null;
         drawingRef.current?.dispose();
         drawingRef.current = null;
         snapViewportRef.current = null;
@@ -1631,6 +1645,9 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         guidanceRef.current?.sync(props.guidanceOverlay ?? null);
     }, [props.guidanceOverlay]);
     useEffect(() => {
+      if (loaded.current) navigationCueRef.current?.sync(props.navigationCues ?? null);
+    }, [props.navigationCues]);
+    useEffect(() => {
       if (loaded.current) syncTracks(props.trackOverlay);
     }, [props.trackOverlay]);
     useEffect(() => {
@@ -1640,8 +1657,9 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       if (loaded.current) areaRef.current?.sync(props.areaOverlay);
     }, [props.areaOverlay]);
     useEffect(() => {
-      if (loaded.current) positionRef.current?.sync(props.position, props.positionHeading);
-    }, [props.position, props.positionHeading]);
+      if (loaded.current) positionRef.current?.sync(props.position, props.positionHeading, props.positionNavigating);
+      if (loaded.current) routeRef.current?.setNavigationPosition(props.positionNavigating ? props.position?.coordinates ?? null : null);
+    }, [props.position, props.positionHeading, props.positionNavigating]);
     useEffect(() => {
       if (loaded.current) photosRef.current?.sync(props.photos);
     }, [props.photos]);
