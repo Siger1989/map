@@ -1,4 +1,4 @@
-import { Navigation, X, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, Map as MapIcon, PersonStanding } from 'lucide-react';
+import { Navigation, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, Map as MapIcon, PersonStanding } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
@@ -29,6 +29,8 @@ export function GuidanceCard({
   onFirstPerson,
   onDisplay,
   telemetry,
+  compactTelemetry,
+  motionNotice,
   displayPanel,
   onCloseDisplay,
   cameraMode = 'top',
@@ -47,6 +49,8 @@ export function GuidanceCard({
   onFirstPerson?: () => void;
   onDisplay?: () => void;
   telemetry?: ReactNode;
+  compactTelemetry?: ReactNode;
+  motionNotice?: string;
   displayPanel?: ReactNode;
   onCloseDisplay?: () => void;
   cameraMode?: 'forward' | 'top';
@@ -83,9 +87,14 @@ export function GuidanceCard({
               : s.networkSwitched
                 ? '已切换相连分叉 · 终点不变'
                 : '沿原路线导航');
-  const showCompactInstruction = !g.error && !s.quality && !s.offRoute && !s.arrived && !s.departurePending && !!g.instruction;
+  const instructionKind = maneuverKind(g.instruction?.text ?? '');
+  const instructionCoversRemainingRoute = instructionKind === 'straight' && !!g.instruction &&
+    g.remaining > 0 && g.instruction.distance >= g.remaining * 0.8;
+  const showCompactInstruction = !g.error && !s.quality && !s.offRoute && !s.arrived && !s.departurePending &&
+    !!g.instruction && instructionKind !== 'arrival' && !instructionCoversRemainingRoute;
   const [maneuverDistance, maneuverUnit] = (g.instruction ? formatDistance(g.instruction.distance) : '').split(' ');
   const compactState = g.error || s.quality || (s.offRoute || s.arrived || s.departurePending ? status : '');
+  const compactPriorityStatus = compactState;
   const positionIsReliable = !s.offRoute && !s.arrived && !s.quality && !s.departurePending && freshFix(s.last);
   const nearbyRouteOffset = positionIsReliable &&
     s.last && Number.isFinite(s.offset) && s.offset > Math.max(12, s.last.accuracy + 5)
@@ -98,7 +107,19 @@ export function GuidanceCard({
   const allowDirectionReference = effectivePositionAssessment?.kind !== 'away' &&
     sessionPositionAssessment?.allowReference !== false;
   const forwardNavigation = cameraMode === 'forward' && !s.arrived && !displayPanel;
-  const kind = s.arrived ? 'arrival' : showCompactInstruction ? maneuverKind(g.instruction?.text ?? '') : 'unknown';
+  const compactContextStatus = compactPriorityStatus
+    ? forwardNavigation ? '' : compactPriorityStatus
+    : motionNotice || positionStatus || viewNotice || '';
+  const kind = s.arrived ? 'arrival' : showCompactInstruction ? instructionKind : 'unknown';
+  const nextCheckpoint = s.checkpoints[s.nextCheckpoint];
+  const nextStop = s.route.stops?.[s.nextCheckpoint + 1];
+  const destination = s.route.stops?.at(-1)?.name || '终点';
+  const nextCheckpointDistance = nextCheckpoint
+    ? formatDistance(Math.max(0, nextCheckpoint.distance - s.progress))
+    : formatDistance(g.remaining);
+  const routeTargetLabel = nextCheckpoint && nextStop && s.nextCheckpoint < s.route.stops!.length - 2
+    ? `途经 ${nextStop.name || `点 ${s.nextCheckpoint + 1}`}`
+    : destination;
   const ManeuverIcon = kind === 'left' ? CornerUpLeft
     : kind === 'right' ? CornerUpRight
       : kind === 'uturn' ? Undo2
@@ -131,21 +152,12 @@ export function GuidanceCard({
             {displayPanel ? '路线显示' : s.arrived
               ? '导航完成'
               : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
-          </strong> : <button className="guidance-resume" aria-label="继续导航" aria-pressed={following} onClick={onFollow}>
+          </strong> : <button className="guidance-resume guidance-follow-status" aria-label="继续导航" aria-pressed={following} onClick={onFollow}>
             <Navigation size={15} />
-            <span>{following
-              ? `${TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}导航`
-              : '继续导航'}</span>
+            <span>{cameraWaiting ? '等待定位' : following ? '导航跟随中' : '继续导航'} · {TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
           </button>}
           <div className="guidance-header-actions">
-            {onFirstPerson && <button className="guidance-first-person" aria-label="第一人称模式"
-              aria-pressed={cameraMode === 'forward'} data-waiting={cameraWaiting}
-              title={cameraMode === 'forward' ? '第一人称已开启 · 点击切换俯视' : '开启近距离第一人称'}
-              onClick={onFirstPerson}><PersonStanding size={19} /><span>{cameraMode === 'forward' ? cameraWaiting ? '等待' : '近景' : '俯视'}</span></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
-            <button onClick={onStop} aria-label="结束导航" title="结束导航">
-              <X size={18} />
-            </button>
           </div>
         </div>
         {compact && !expanded && !displayPanel && forwardNavigation && <div className="guidance-compact-primary" data-maneuver={kind}>
@@ -154,12 +166,23 @@ export function GuidanceCard({
             {showCompactInstruction ? <>
               <span className="guidance-maneuver-distance">{maneuverDistance}<small> {maneuverUnit}</small></span>
               <span className="guidance-maneuver-text" title={g.instruction!.text}>{g.instruction!.text}</span>
-            </> : <span className="guidance-compact-state" role="status" title={compactState || status}>{compactState || status}</span>}
+            </> : s.arrived || s.departurePending || s.offRoute || s.quality || g.error
+              ? <span className="guidance-compact-state" role="status" title={compactState || status}>{compactState || status}</span>
+              : <>
+                <span className="guidance-maneuver-distance guidance-target-distance">{nextCheckpointDistance}</span>
+                <span className="guidance-maneuver-text" title={`沿路线前往${routeTargetLabel}`}>沿路线前往{routeTargetLabel}</span>
+              </>}
+            {showCompactInstruction && <span className="guidance-remaining-line">全程剩余 {formatDistance(g.remaining)}</span>}
           </div>
         </div>}
-        {positionStatus && !displayPanel && (forwardNavigation || expanded) && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{positionStatus}</span>}
+        {compact && !expanded && !displayPanel && (compactTelemetry || compactContextStatus) && <div className="guidance-compact-context">
+          {compactTelemetry && <div className="guidance-compact-telemetry">{compactTelemetry}</div>}
+          {compactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{compactContextStatus}</span>}
+        </div>}
+        {motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{motionNotice}</span>}
+        {positionStatus && !motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{positionStatus}</span>}
         {positionStatus && allowDirectionReference && !displayPanel && expanded && <span className="guidance-inline-status" role="note">黄色仅作接回方向参考</span>}
-        {viewNotice && !positionStatus && !displayPanel && (forwardNavigation || expanded) && <span className="guidance-inline-status" role="status">{viewNotice}</span>}
+        {viewNotice && !positionStatus && !motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status">{viewNotice}</span>}
       </header>
       {displayPanel ? <div className="guidance-display-content">{displayPanel}</div> : <>
       {(!compact || expanded) && telemetry}
@@ -212,6 +235,9 @@ export function GuidanceCard({
           </p>
         )}
           <div className="guidance-actions">
+            {onFirstPerson && <button className="guidance-first-person" aria-label="第一人称模式"
+              aria-pressed={cameraMode === 'forward'} data-waiting={cameraWaiting}
+              onClick={onFirstPerson}><PersonStanding size={15} />{cameraMode === 'forward' ? cameraWaiting ? '第一人称等待定位' : '第一人称已开启' : '开启第一人称'}</button>}
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
@@ -242,6 +268,7 @@ export function GuidanceCard({
                 )}
               </button>
             )}
+            <button type="button" onClick={onStop}>结束导航</button>
           </div>
         {s.gap && (
           <p className="guidance-note">定位中断或精度不足期间未累加距离。</p>

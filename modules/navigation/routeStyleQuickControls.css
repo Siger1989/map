@@ -1,0 +1,58 @@
+.observatory #map-control-panel .route-summary .route-style-quick-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.observatory #map-control-panel .route-summary .route-style-quick-controls label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  border: 1px solid var(--route-line, #9bb7bc);
+  border-radius: 4px;
+  background: var(--route-field, #fff);
+  color: var(--route-text, #163c4a);
+  font-size: 10px;
+  line-height: 1;
+}
+.observatory #map-control-panel .route-summary .route-style-quick-controls select {
+  width: 34px;
+  min-width: 0;
+  height: 22px;
+  padding: 0 1px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.observatory #map-control-panel .route-summary .route-style-quick-controls label:first-child select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.observatory.home-map #map-control-panel .route-summary .route-style-quick-controls select {
+  min-height: 22px;
+  height: 22px;
+  padding: 0 1px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.observatory #map-control-panel .route-summary .route-style-quick-controls i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid #17343b;
+  border-radius: 50%;
+}
+.observatory #map-control-panel .route-summary .route-style-quick-controls label:focus-within {
+  outline: 2px solid var(--route-accent, #15572b);
+  outline-offset: 1px;
+}

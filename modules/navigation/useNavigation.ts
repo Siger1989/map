@@ -3,12 +3,14 @@ import { planRoute } from './provider';
 import { validFavorite, type RouteFavorite } from './favorites';
 import { defaultRouteName, routeNameOrDefault } from './routeName';
 import { MAX_ROUTE_STOPS, moveStop, stopLabel, type RouteStop } from './stops';
+import { resolveRouteStyle } from './routeStyleControls.ts';
 import type {
   Coordinate,
   Endpoint,
   PlannedRoute,
   RoutePlace,
   TravelMode,
+  RouteStyle,
 } from './types';
 const emptyStops = (): RouteStop[] => [
   { id: 'origin', query: '', place: null },
@@ -80,6 +82,7 @@ export function useNavigation() {
       );
       if (abort.signal.aborted || request.current !== abort) return null;
       const named = { ...result, name: defaultRouteName(values[0], values.at(-1)!) };
+      if (keepPrevious && routeRef.current?.style) named.style = routeRef.current.style;
       routeRef.current = named;
       setRoute(named);
       setMode(selectedMode);
@@ -336,6 +339,13 @@ export function useNavigation() {
       if (!name || !route) return false;
       setRoute((current) => current ? { ...current, name } : current);
       return true;
+    },
+    setRouteStyle: (style: RouteStyle) => {
+      const currentRoute = routeRef.current;
+      if (!currentRoute) return;
+      const updated = { ...currentRoute, style: resolveRouteStyle(style) };
+      routeRef.current = updated;
+      setRoute(updated);
     },
     visible,
     setVisible,

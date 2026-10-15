@@ -76,7 +76,7 @@ export function TrackStyleControls({
         {TRACK_COLORS.map((color, i) => (
           <button
             key={color}
-            aria-label={['橙色', '红色', '蓝色', '绿色', '黄色', '白色'][i]}
+            aria-label={['红色', '蓝色', '绿色', '紫色', '橙色', '粉色'][i]}
             aria-pressed={style.color === color}
             onClick={() => onChange({ ...style, color })}
           >

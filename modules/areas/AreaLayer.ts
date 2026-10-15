@@ -18,7 +18,7 @@ export class AreaLayer {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       });
-    if (!m.getLayer('area-fill')) {
+    if (!m.getLayer('area-fill'))
       m.addLayer({
         id: 'area-fill',
         type: 'fill',
@@ -26,6 +26,7 @@ export class AreaLayer {
         filter: ['==', '$type', 'Polygon'],
         paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.22 },
       });
+    if (!m.getLayer('area-border'))
       m.addLayer({
         id: 'area-border',
         type: 'line',
@@ -33,6 +34,19 @@ export class AreaLayer {
         filter: ['!=', '$type', 'Point'],
         paint: { 'line-color': ['get', 'color'], 'line-width': 3 },
       });
+    if (!m.getLayer('area-node-halo'))
+      m.addLayer({
+        id: 'area-node-halo',
+        type: 'circle',
+        source: 'area-shapes',
+        filter: ['==', '$type', 'Point'],
+        paint: {
+          'circle-radius': 8,
+          'circle-color': '#10231e',
+          'circle-opacity': 0.96,
+        },
+      });
+    if (!m.getLayer('area-nodes'))
       m.addLayer({
         id: 'area-nodes',
         type: 'circle',
@@ -42,10 +56,9 @@ export class AreaLayer {
           'circle-radius': 5,
           'circle-color': ['get', 'color'],
           'circle-stroke-color': '#fff',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': 2.5,
         },
       });
-    }
     const data: FeatureCollection = { type: 'FeatureCollection', features: [] };
     for (const area of state.items.filter((a) => a.visible)) {
       const points = area.boundary.map((p, i) =>

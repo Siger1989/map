@@ -118,8 +118,8 @@ function viewportOffset(height: number, usableRect: NavigationCameraOptionsInput
   const safeBottom = bottom - (forward ? FORWARD_PUCK_CLEARANCE : FORWARD_OFFSET_MARGIN);
   const usableHeight = safeBottom - safeTop;
   if (usableHeight <= 0) return 0;
-  // Anchor near the lower edge of the unobscured map, leaving the route ahead visible.
-  const preferredY = forward ? safeTop + usableHeight * 0.88 : height / 2;
+  // Keep space behind the puck as well as ahead, including when chrome is hidden.
+  const preferredY = forward ? safeTop + usableHeight * 0.68 : height / 2;
   const targetY = Math.max(safeTop, Math.min(safeBottom, preferredY));
   return Math.max(safeTop - height / 2, Math.min(safeBottom - height / 2, targetY - height / 2));
 }

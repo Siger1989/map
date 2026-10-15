@@ -3,9 +3,10 @@ import {
   FAVORITES_STORAGE,
   parseFavorites,
   validFavorite,
+  updateFavoriteRouteStyle,
   type RouteFavorite,
 } from './favorites';
-import type { Coordinate, PlannedRoute, RoutePlace } from './types';
+import type { Coordinate, PlannedRoute, RoutePlace, RouteStyle } from './types';
 import { routeNameOrDefault } from './routeName';
 export function useRouteFavorites() {
   const [items, setItems] = useState<RouteFavorite[]>([]),
@@ -94,6 +95,12 @@ export function useRouteFavorites() {
       if (!persist(next)) return false;
       setMessage('收藏路线名称已更新。');
       return true;
+    },
+    updateStyle: (route: PlannedRoute, style: RouteStyle) => {
+      const next = updateFavoriteRouteStyle(items, route, style);
+      if (!next.some((item, index) => item !== items[index])) return true;
+      setMessageRoute(route.createdAt);
+      return persist(next);
     },
     remove: (id: string) => {
       if (persist(items.filter((i) => i.id !== id))) setMessage('已移除收藏。');

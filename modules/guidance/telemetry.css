@@ -1,0 +1,86 @@
+.navigation-telemetry--compact {
+  position: static;
+  inset: auto;
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  margin: 0;
+  padding: 0 7px;
+  border: 1px solid var(--ui-line, var(--border));
+  border-radius: 8px;
+  background: var(--ui-raised, var(--surface));
+}
+
+.navigation-telemetry--compact .navigation-speeds {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100%;
+}
+
+.navigation-telemetry--compact .navigation-speeds > span {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 3px;
+  padding: 0 4px;
+  line-height: 1.05;
+  font-size: 11px;
+}
+
+.navigation-telemetry--compact .navigation-speeds > span + span {
+  border-left: 1px solid var(--ui-line, var(--border));
+}
+
+.navigation-telemetry--compact .navigation-speed-label {
+  color: var(--ui-muted, var(--muted));
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.navigation-telemetry--compact .navigation-speeds strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ui-ink, var(--text));
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navigation-telemetry--compact .navigation-speeds strong[data-missing] {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+}
+
+.navigation-telemetry--compact .navigation-speeds strong small {
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.observatory.home-map .navigation-telemetry--compact .navigation-speeds > span {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.observatory.home-map .navigation-telemetry--compact .navigation-speeds strong {
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.observatory.home-map .navigation-telemetry--compact .navigation-speeds strong[data-missing] {
+  font-size: 11px;
+  line-height: 14px;
+}

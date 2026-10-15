@@ -8,6 +8,7 @@ import { RoutePointSummary } from '../routeAnalysis/RoutePointSummary';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SmartInput } from '../input/SmartText';
 import { useDockClearance } from './useDockClearance';
+import { useRouteEditKeyboardFocus } from './useRouteEditKeyboardFocus';
 import { ComparisonEditorPositionButton } from '../mapComparison/ComparisonEditorPosition';
 import { RouteSelectionFields } from './RouteSelectionFields';
 import type { PointDetail } from './selectionDetails';
@@ -218,7 +219,7 @@ export function RouteDetails({
           </dl>
           </details>
           </section>
-          {onAppearance && <section className="route-detail-group route-detail-appearance-group" aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['橙色','红色','蓝色','绿色','黄色','白色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
+          {onAppearance && <section className="route-detail-group route-detail-appearance-group" aria-label="整条路线外观"><h3>整条路线外观</h3><div className="route-appearance-row">{TRACK_COLORS.map((color,i) => <button key={color} aria-label={`路线${['红色','蓝色','绿色','紫色','橙色','粉色'][i]}`} aria-pressed={track.style?.color === color} onClick={() => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), color, colorMode: 'solid' }) ? '路线颜色已保存' : '保存失败，请重试')}><i style={{background:color}} /></button>)}<input type="color" aria-label="自定义整条路线颜色" value={track.style?.color ?? '#ffb477'} onChange={e => setAppearanceMessage(onAppearance({...normalizeTrackStyle(track.style), color:e.target.value, colorMode:'solid'}) ? '路线颜色已保存' : '保存失败，请重试')} /></div>
             <label className="route-width-control">粗细<select aria-label="整条路线线宽" value={normalizeTrackStyle(track.style).width} onChange={e => setAppearanceMessage(onAppearance({ ...normalizeTrackStyle(track.style), width: Number(e.target.value) }) ? '路线粗细已保存' : '保存失败，请重试')}>
               {TRACK_WIDTHS.map(width => <option key={width} value={width}>{width} px</option>)}
             </select></label>
@@ -389,6 +390,7 @@ export function RouteEditToolbar({
   onRiverSnapping: () => void;
 }) {
   const dock = useDockClearance('--route-edit-clearance');
+  useRouteEditKeyboardFocus(dock);
   const [view, setView] = useState<'tools' | 'selection' | 'style' | 'marker'>('tools');
   const [routeName, setRouteName] = useState(session.track.name);
   const routeNameBuffer = useRef(session.track.name);
@@ -473,7 +475,7 @@ export function RouteEditToolbar({
               <button className="route-solid" onClick={() => onSave(commitRouteName())}>保存并退出</button>
             </div>
           </> : <>
-            <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点属性 · ${selectedCount}点`}</strong>
+          <strong>{activeView === 'style' ? '线条样式' : activeView === 'marker' ? '添加标记' : `节点备注·${selectedCount}点`}</strong>
             <ComparisonEditorPositionButton kind="路线"/>
           </>}
         </header>
@@ -534,7 +536,7 @@ export function RouteEditToolbar({
           <button aria-pressed={!boxMode} onClick={() => onSelectionMode(null)}>{boxMode ? '退出框选' : '点选'}</button>
           <button aria-pressed={boxMode === 'add'} disabled={branch} onClick={() => onSelectionMode('add')}>框选加</button>
           <button aria-pressed={boxMode === 'subtract'} disabled={branch} onClick={() => onSelectionMode('subtract')}>框选减</button>
-          <button data-edit-entry="selection" aria-label="节点属性" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>属性</button>
+          <button data-edit-entry="selection" aria-label="节点备注" disabled={!selectedCount} onClick={() => {onSelectionMode(null);setView('selection');}}>备注</button>
           <button className="route-set-endpoint" disabled={selectedCount !== 1 || branch} aria-pressed={selectedCount === 1 && !!session.track.routeTerminals?.end && equalCoordinate(selectedPoints[0],session.track.routeTerminals.end)} onClick={onSetEnd}>设终点</button>
         </div>
         </div>
@@ -545,7 +547,7 @@ export function RouteEditToolbar({
           {TRACK_COLORS.map((color, i) => (
             <button
               key={color}
-              aria-label={['橙色', '红色', '蓝色', '绿色', '黄色', '白色'][i]}
+              aria-label={['红色', '蓝色', '绿色', '紫色', '橙色', '粉色'][i]}
               aria-pressed={style.color === color}
               onClick={() => onStyle({ ...style, color, colorMode: 'solid' })}
             >

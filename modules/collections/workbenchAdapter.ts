@@ -1,5 +1,6 @@
 import { catalogEntries, regionFor } from './catalog.ts';
 import {
+  collectionGroupColor,
   defaultLayout,
   groupFor,
   orderedEntries,
@@ -35,7 +36,7 @@ export function workbenchTree(data: Transfer): WorkbenchItem[] {
     ),
   );
   const groups = new Map<string, WorkbenchItem>(
-    layout.groups.map((g) => [g.id, { ...g, kind: 'folder', children: [] }]),
+    layout.groups.map((g) => [g.id, { ...g, color: collectionGroupColor(g), kind: 'folder', children: [] }]),
   );
   groups.set('unfiled', {
     id: 'unfiled',
@@ -127,6 +128,7 @@ export function workbenchTransfer(
     order: [],
     treeOrder: [],
   };
+  const previousGroups = new Map(previousLayout.groups.map((group) => [group.id, group]));
   const visit = (items: WorkbenchItem[], parent?: string) => {
     for (const item of items) {
       layout.treeOrder!.push(
@@ -136,13 +138,18 @@ export function workbenchTransfer(
         if (item.id === 'unfiled') {
           if (parent || item.children?.some((i) => i.kind === 'folder'))
             throw new Error('未分组只存放收藏条目，文件夹请移到收藏根目录。');
-        } else
+        } else {
+          const previous = previousGroups.get(item.id);
+          const color = previous && item.color === collectionGroupColor(previous)
+            ? previous.color
+            : item.color;
           layout.groups.push({
             id: item.id,
             name: item.name,
-            color: item.color,
+            color,
             ...(parent && { parentId: parent }),
           });
+        }
         visit(item.children ?? [], item.id);
       } else {
         layout.assignments[item.id] = parent ?? 'unfiled';

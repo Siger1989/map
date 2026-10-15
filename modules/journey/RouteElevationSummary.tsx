@@ -75,11 +75,11 @@ export function RouteElevationSummary({
         <strong>海拔变化</strong>
         <small>起点 → 终点</small>
       </div>
-      <div
-        className="route-elevation-chart"
-        aria-label={`起点${metres(stats.start)}，终点${metres(stats.end)}`}
-      >
-        {stats.available > 0 ? (
+      {stats.available > 0 ? (
+        <div
+          className="route-elevation-chart"
+          aria-label={`起点${metres(stats.start)}，终点${metres(stats.end)}`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
@@ -111,18 +111,18 @@ export function RouteElevationSummary({
               />
             </AreaChart>
           </ResponsiveContainer>
-        ) : (
-          <span role="status">
-            {result?.loading
-              ? '正在读取沿线海拔…'
-              : result?.error || '暂无海拔数据'}
-          </span>
-        )}
-      </div>
-      <div className="route-elevation-ends">
+        </div>
+      ) : (
+        <p className="route-elevation-chart-empty" role="status">
+          {result?.loading
+            ? '正在读取沿线海拔…'
+            : result?.error || '暂无海拔数据'}
+        </p>
+      )}
+      {stats.available > 0 && <div className="route-elevation-ends">
         <span>起 {metres(stats.start)}</span>
         <span>终 {metres(stats.end)} · km</span>
-      </div>
+      </div>}
       <dl className="route-metric-grid">
         {[
           ['总里程', formatDistance(distance)],

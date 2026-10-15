@@ -33,13 +33,24 @@ test('navigation puck follows real position state and clears on stop or a missin
   const sources=new Map(), layers=[], images=new Map();
   const map={getSource:id=>sources.get(id),addSource(id){sources.set(id,{setData(data){this.data=data}})},
     getLayer:id=>layers.find(l=>l.id===id),addLayer:l=>layers.push(l),getStyle:()=>({layers}),
-    hasImage:id=>images.has(id),addImage:(id,image)=>images.set(id,image),
+    hasImage:id=>images.has(id),addImage:(id,image,options)=>images.set(id,{image,options}),
     moveLayer(id){const i=layers.findIndex(l=>l.id===id);layers.push(...layers.splice(i,1))},on(){},off(){},
     getContainer:()=>({querySelectorAll:()=>[],getBoundingClientRect:()=>({left:0,top:0,width:390,height:857}),addEventListener(){},removeEventListener(){}})};
   const layer=new PositionLayer(map), fix={coordinates:[104,30],accuracy:8,timestamp:Date.now()};
   const point=()=>sources.get('current-position').data.features.find(f=>f.geometry.type==='Point');
   layer.sync(fix,30,true);
   assert.equal(point().properties.navigating,true);
+  const navArrow=images.get('position-navigation-arrow');
+  assert.equal(navArrow.image.width,144,'navigation arrow uses an 8x texture width');
+  assert.equal(navArrow.image.height,176,'navigation arrow uses an 8x texture height');
+  assert.equal(navArrow.options.pixelRatio,8,'high-density texture preserves its logical marker dimensions');
+  const arrowPixels=new Set();
+  for(let i=0;i<navArrow.image.data.length;i+=4)if(navArrow.image.data[i+3])arrowPixels.add(navArrow.image.data.slice(i,i+3).join(','));
+  assert.ok(arrowPixels.has('0,68,157'),'left facet is shaded');
+  assert.ok(arrowPixels.has('25,151,255'),'right facet is lit');
+  assert.ok([...arrowPixels].some(pixel=>{const [r,g,b]=pixel.split(',').map(Number);return r>110&&g>190&&b>240;}),'ridge highlight is rendered');
+  assert.ok(arrowPixels.has('2,37,91'),'dark beveled outline is rendered');
+  assert.equal(JSON.stringify(layers.find(l=>l.id==='position-arrow').layout['icon-image']).includes('position-navigation-arrow'),true,'navigation keeps using its own blue arrow image');
   for (const id of ['position-navigation-glow','position-navigation-puck']) {
     const spec=layers.find(l=>l.id===id);
     assert.ok(spec.filter.some(part=>Array.isArray(part)&&JSON.stringify(part).includes('navigating')));

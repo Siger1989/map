@@ -111,9 +111,12 @@ test('navigation display settings replace card data and return to expanded navig
     onDisplay() { displayCalls++; },
     onCloseDisplay() { closeDisplayCalls++; },
     telemetry: React.createElement('section', { className: 'navigation-telemetry', 'data-testid': 'telemetry' }, '遥测数据'),
+    compactTelemetry: React.createElement('section', { className: 'navigation-telemetry navigation-telemetry--compact', 'data-testid': 'compact-telemetry' }, '实时速度'),
+    motionNotice: '运动方向稳定',
   };
-  const render = async () => act(async () => root.render(React.createElement(GuidanceCard, {
+  const render = async (overrides = {}) => act(async () => root.render(React.createElement(GuidanceCard, {
     ...baseProps,
+    ...overrides,
     displayPanel,
   })));
   t.after(async () => {
@@ -123,14 +126,37 @@ test('navigation display settings replace card data and return to expanded navig
 
   await render();
   assert.equal(host.querySelectorAll('.guidance-card').length, 1);
-  assert.equal(host.querySelector('.navigation-telemetry'), null, 'collapsed card starts without telemetry');
-  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '继续导航');
-  await act(async () => host.querySelector('.guidance-resume').click());
+  assert.ok(host.querySelector('[data-testid="compact-telemetry"]'), 'compact telemetry lives inside the collapsed navigation card');
+  assert.equal(host.querySelector('.guidance-compact-context')?.textContent, '实时速度运动方向稳定', 'motion feedback shares the compact card with speed data');
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /继续导航 · 步行/);
+  await render({ following: true, cameraWaiting: true });
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /等待定位 · 步行/, 'waiting for a usable fix takes priority over requested follow');
+  assert.doesNotMatch(host.querySelector('.guidance-follow-status')?.textContent, /导航跟随中/);
+  const priorityStates = [
+    [g => { g.error = '路线服务错误'; }, '路线服务错误'],
+    [g => { g.session.quality = '定位精度不足'; }, '定位精度不足'],
+    [g => { g.session.offRoute = true; g.session.offset = 75; }, '已偏离约75 米'],
+    [g => { g.session.departurePending = true; g.departureMessage = '正在接近起点'; }, '正在接近起点'],
+    [g => { g.session.arrived = true; }, '已到达终点'],
+  ];
+  for (const [mutate, expected] of priorityStates) {
+    const guidance = makeGuidance();
+    mutate(guidance);
+    await render({ guidance, motionNotice: '运动方向等待确认' });
+    assert.match(host.querySelector('.guidance-compact-context')?.textContent ?? '', new RegExp(expected));
+    assert.doesNotMatch(host.querySelector('.guidance-compact-context')?.textContent ?? '', /运动方向等待确认/, 'priority route state is not covered by auxiliary motion guidance');
+  }
+  await render();
+  await act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
+  assert.equal(host.querySelector('.guidance-inline-status')?.textContent, '运动方向稳定', 'the motion notice remains available in expanded details');
+  const followAction = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('继续导航'));
+  assert.ok(followAction, 'following can still be resumed from expanded details');
+  await act(async () => followAction.click());
   assert.equal(followCalls, 1, 'the navigation heading invokes the real follow callback');
   await render();
-  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '导航中 · 步行');
-  await act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /导航跟随中 · 步行/);
   assert.ok(host.querySelector('.navigation-telemetry'), 'ordinary expansion shows telemetry');
+  assert.equal(host.querySelector('[data-testid="compact-telemetry"]'), null, 'expanded details use the original telemetry slot without duplicating compact data');
   assert.ok(host.querySelector('[data-testid="guidance-travelled"]'), 'ordinary expansion shows route data');
 
   await act(async () => host.querySelector('[aria-label="导航路线显示设置"]').click());
@@ -150,5 +176,5 @@ test('navigation display settings replace card data and return to expanded navig
   assert.equal(host.querySelectorAll('.guidance-card').length, 1);
   assert.ok(host.querySelector('.navigation-telemetry'), 'return restores the expanded telemetry');
   assert.ok(host.querySelector('[data-testid="guidance-travelled"]'), 'return restores expanded route details');
-  assert.equal(host.querySelector('.guidance-resume')?.textContent.trim(), '导航中 · 步行');
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /导航跟随中 · 步行/);
 });

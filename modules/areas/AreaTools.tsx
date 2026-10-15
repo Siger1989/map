@@ -6,7 +6,7 @@ import {
   readAttributeTemplate,
   rememberAttributes,
 } from '../annotations/attributes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Trash2, X } from 'lucide-react';
 import {
   AREA_DISPLAY_UNITS,
@@ -29,6 +29,17 @@ export function AreaTools({
   const [removing, setRemoving] = useState(false),
     [notice, setNotice] = useState('');
   const [areaUnit, setAreaUnit] = useState<AreaDisplayUnit>(readAreaDisplayUnit);
+  useEffect(() => {
+    if (!state.drawing) return;
+    const cancelOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      state.cancel();
+    };
+    window.addEventListener('keydown', cancelOnEscape, true);
+    return () => window.removeEventListener('keydown', cancelOnEscape, true);
+  }, [state.drawing, state.cancel]);
   if (state.drawing)
     return (
       <section className="area-drawing-tools glass" aria-label="划区域工具">
@@ -43,7 +54,9 @@ export function AreaTools({
         </label>
         <div>
           <button onClick={state.undoDraft}>撤销点</button>
-          <button disabled={state.draft.length < 3} onClick={onFinish}>
+          <button disabled={state.draft.length < 3} onClick={() => {
+            if (state.validateDraft()) onFinish();
+          }}>
             闭合区域
           </button>
           <button onClick={state.cancel}>取消</button>
@@ -61,6 +74,7 @@ export function AreaTools({
       <header>
         <strong title={item.name}>{item.name || '区域'}</strong>
         <label className="area-area-summary">
+          <span>面积</span>
           <output aria-label="区域面积">{formatAreaValue(metrics.area, areaUnit)}</output>
           <select className="area-area-unit" aria-label="面积单位" value={areaUnit} onChange={event => {
             const next = event.target.value as AreaDisplayUnit;

@@ -1,0 +1,85 @@
+/* Result-card affordances are local to this component. */
+.observatory #map-control-panel .route-summary .route-summary-actions-primary,
+.observatory #map-control-panel .route-summary .route-summary-actions-secondary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+.observatory #map-control-panel .route-summary .route-summary-actions-primary > button { flex: initial; }
+.observatory #map-control-panel .route-summary .route-summary-metrics { width:100%; min-width:0; }
+.observatory #map-control-panel .route-summary .route-summary-quick-controls {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:4px;
+  min-width:0;
+  margin-left:auto;
+}
+.observatory #map-control-panel .route-summary .route-summary-quick-controls > * { flex:0 1 auto; min-width:0; }
+.observatory #map-control-panel .route-summary .route-summary-quick-controls button:first-of-type { margin-left:0 !important; }
+.observatory #map-control-panel .route-summary-detail .route-summary-actions { flex-wrap: wrap; }
+.observatory #map-control-panel .route-summary-detail .route-mode-select { flex: 1 0 100%; justify-content: flex-start; }
+.observatory #map-control-panel .route-summary-detail .route-summary-actions > button { flex: 1 1 0; min-width: 0; }
+.observatory #map-control-panel .route-summary .route-summary-endpoints > .route-endpoint-row {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 3px 7px;
+  border: 1px solid var(--route-line, #9bb7bc) !important;
+  border-radius: var(--route-radius, 4px) !important;
+  background: var(--route-field, #fff) !important;
+  color: var(--route-text, #163c4a) !important;
+  text-align: left;
+  cursor: pointer;
+}
+.observatory #map-control-panel .route-summary .route-summary-endpoints > .route-endpoint-row-start { grid-row: 1; }
+.observatory #map-control-panel .route-summary .route-summary-endpoints > .route-endpoint-row-end { grid-row: 2; }
+.observatory #map-control-panel .route-summary .route-endpoint-row b { flex: 0 0 48px; }
+.observatory #map-control-panel .route-summary .route-endpoint-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.observatory #map-control-panel .route-summary .route-endpoint-row:focus-visible,
+.observatory #map-control-panel .route-summary .route-endpoint-swap:focus-visible { outline: 2px solid var(--route-accent, #15572b); outline-offset: 1px; }
+.observatory #map-control-panel .route-summary .route-summary-endpoints > .route-endpoint-swap {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  min-height: 36px;
+  padding: 0 7px;
+  border: 1px solid var(--route-line, #9bb7bc);
+  border-radius: var(--route-radius, 4px);
+  background: var(--route-field, #fff);
+  color: var(--route-text, #163c4a);
+  white-space: nowrap;
+}
+.observatory #map-control-panel .route-summary .route-mode-select {
+  min-height: 36px;
+  padding: 3px 7px;
+  border: 1px solid var(--route-accent, #518267);
+  border-radius: var(--route-radius, 4px);
+  background: var(--route-selected, #dcf0dd);
+  color: var(--route-accent, #15572b);
+  font-weight: 700;
+}
+.observatory #map-control-panel .route-summary .route-mode-select select {
+  border: 1px solid var(--route-accent, #518267);
+  background: var(--route-field, #fff);
+  color: var(--route-text, #163c4a);
+  font-weight: 700;
+}
+.observatory #map-control-panel .route-summary .route-access-note {
+  margin: 0;
+  padding: 3px 7px;
+  border-left: 2px dashed var(--route-muted, #6f8077);
+  border-radius: 0 4px 4px 0;
+  color: var(--route-muted, #5f7069);
+  font-size: 10px;
+  line-height: 1.3;
+}
+.route-elevation-chart-empty {
+  min-height: 0;
+  padding: 2px 0;
+  color: var(--route-muted, #5f7069);
+  font-size: 10px;
+  line-height: 1.3;
+}

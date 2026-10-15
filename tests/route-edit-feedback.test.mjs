@@ -13,7 +13,7 @@ await writeFile('.openai/route-edit-feedback-bundle.mjs',bundle.outputFiles[0].t
 const {useRouteDisplay,RouteEditToolbar,TrackLayer,TrackTools,draftTrackRenderItem,trackLineFeatures,ANALYSIS_POLICY}=await import('../.openai/route-edit-feedback-bundle.mjs');
 const React=await import('react'),{act}=React,{createRoot}=await import('react-dom/client');
 const style={color:'#ff4400',width:3};
-function dom(){ const {window}=parseHTML('<html><body><div id="root"></div></body></html>'); Object.assign(globalThis,{window,document:window.document,IS_REACT_ACT_ENVIRONMENT:true}); globalThis.localStorage={getItem:()=>JSON.stringify({mode:'slope'}),setItem(){}}; return window; }
+function dom(){ const {window}=parseHTML('<html><body><div id="root"></div></body></html>'); window.requestAnimationFrame=callback=>window.setTimeout(()=>callback(Date.now()),0); window.cancelAnimationFrame=window.clearTimeout.bind(window); Object.assign(globalThis,{window,document:window.document,requestAnimationFrame:window.requestAnimationFrame.bind(window),cancelAnimationFrame:window.cancelAnimationFrame.bind(window),IS_REACT_ACT_ENVIRONMENT:true}); globalThis.localStorage={getItem:()=>JSON.stringify({mode:'slope'}),setItem(){}}; return window; }
 function mapMock(){
   const sources=new Map(),layers=new Map(),stats={writes:0,projects:0,updates:0};
   return {sources,stats,on(){},getSource:id=>sources.get(id),getLayer:id=>layers.get(id),
@@ -47,6 +47,14 @@ test('main toolbar exposes setting one branch node as end with real undo and no 
   const button=()=>document.querySelector('.route-selection-modes .route-set-endpoint');
   assert.equal(button().disabled,true);
   await act(async()=>select(d));assert.equal(button().disabled,false);
+  const noteEntry=document.querySelector('[data-edit-entry="selection"]');
+  assert.equal(noteEntry.textContent.trim(),'备注');
+  assert.equal(noteEntry.getAttribute('aria-label'),'节点备注');
+  await act(async()=>noteEntry.click());
+  assert.equal(document.querySelector('.route-edit-dock-heading strong').textContent,'节点备注·1点');
+  assert.ok(document.querySelector('.route-selection-fields input[aria-label="选中点备注"]'));
+  await act(async()=>document.querySelector('[aria-label="返回编辑工具"]').click());
+  assert.equal(document.querySelector('.route-edit-dock').dataset.view,'tools');
   await act(async()=>button().click());assert.deepEqual(session.track.routeTerminals.end,d);assert.equal(button().getAttribute('aria-pressed'),'true');
   await act(async()=>rerender(undoRouteEdit));assert.equal(session.track.routeTerminals?.end,undefined);assert.deepEqual(session.track.routeTerminals.start,a);
   await act(async()=>rerender(toggleEditBranch));assert.equal(button().disabled,true,'unfinished branch does not mark its fixed anchor as destination');

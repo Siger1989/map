@@ -2,7 +2,8 @@
   gap: 4px;
 }
 .observatory.home-map #map-control-panel .dock-heading:has(.route-header-name) h2 {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   margin-right: 0;
   white-space: nowrap;
 }
@@ -10,7 +11,7 @@ html[data-ui-theme] .observatory.home-map #map-control-panel .dock-heading .rout
 html[data-ui-theme] .observatory.home-map .map-comparison-planned-route .route-header-name {
   flex: 1 1 100px;
   box-sizing: border-box;
-  width: 100px;
+  width: 100%;
   min-width: 0;
   height: 28px;
   min-height: 28px;

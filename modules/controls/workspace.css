@@ -347,6 +347,40 @@
   font-size: 10px !important;
   max-width: 64px;
 }
+.observatory.home-map .map-canvas .maplibregl-ctrl-scale {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 0 2px !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #f5f8f5 !important;
+  font-size: 9px !important;
+  line-height: 12px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+  text-shadow: 0 1px 2px #000, 0 0 3px #000b !important;
+}
+.observatory.home-map .map-canvas .maplibregl-ctrl-scale::before {
+  content: '';
+  display: block;
+  flex: 0 0 6px;
+  align-self: stretch;
+  box-sizing: border-box;
+  border: 1px solid #f5f8f5;
+  border-top: 1px solid #f5f8f5;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  background: transparent;
+  box-shadow: 0 0 2px #000b;
+}
 .maplibregl-canvas:focus {
   outline: none;
 }

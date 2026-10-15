@@ -1,5 +1,6 @@
 export type Coordinate = [number, number];
 export type TravelMode = 'auto' | 'bicycle' | 'pedestrian';
+export type RouteStyle = { color: string; width: number };
 export type RoutePlace = {
   name: string;
   coordinates: Coordinate;
@@ -24,6 +25,8 @@ export type PlannedRoute = {
   trackConnections?: import('../guidance/trackConnections').TrackConnection[];
   /** Preserve the saved track's altitude/slope coloring transparency in navigation. */
   displayOpacity?: number;
+  /** User-selected planning-line appearance; optional for legacy saved routes. */
+  style?: RouteStyle;
   routingSource?: { kind: 'offline'; name: string; createdAt: number };
   segments?: { kind: 'road' | 'access'; coordinates: Coordinate[] }[];
   roadLegs?: Coordinate[][];

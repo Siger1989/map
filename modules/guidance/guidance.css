@@ -16,7 +16,7 @@
   padding: 4px 8px;
   flex-shrink: 0;
 }
-.guidance-heading-row { display: flex; align-items: center; gap: 4px; min-height: 36px; }
+.guidance-heading-row { display: flex; align-items: center; gap: 4px; min-height: 44px; }
 .guidance-card header strong {
   display: flex;
   align-items: center;
@@ -48,7 +48,7 @@
   overscroll-behavior: contain;
 }
 .guidance-card[data-compact='true'] header { display: block; }
-.guidance-card[data-compact='true'] header strong { flex: 1 1 auto; font-size: 12px; white-space: nowrap; gap: 4px; }
+.guidance-card[data-compact='true'] header strong { flex: 1 1 auto; min-width:0; font-size: 12px; white-space: nowrap; gap: 4px; }
 .guidance-card .guidance-expand { margin-left: 0; }
 .guidance-card[data-compact='true'] .guidance-content { padding: 0 8px 8px; }
 .guidance-card[data-compact='true'] .guidance-content > :not(.guidance-status):not(.guidance-instruction):not(.guidance-error) { display: none; }
@@ -63,71 +63,38 @@
   box-sizing: border-box;
 }
 .observatory.home-map .guidance-card[data-compact='true'] header {
-  height: auto !important; min-height: 0 !important; padding: 4px 8px !important;
+  position:relative; height: auto !important; min-height: 0 !important; padding: 4px 8px !important;
 }
 .observatory.home-map .guidance-card[data-compact='true'] header strong { font-size: 12px; white-space: nowrap; gap: 4px; }
 .observatory.home-map .guidance-card[data-compact='true'] header strong svg { width: 15px; }
 .guidance-inline-status { display: block; max-height: 48px; overflow: auto; overscroll-behavior: contain; min-width: 0; padding: 0 2px 2px; font-size: 11px; line-height: 1.35; color: var(--ui-muted, var(--muted)); overflow-wrap: anywhere; }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
-.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] {
-  min-width:30px; width:30px; height:32px; min-height:32px;
-  flex:0 0 30px; margin:0; padding:0; color:var(--ui-button-ink, var(--text)); border-radius:var(--ui-radius-control, 4px);
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand {
+  min-width:44px; width:44px; height:44px; min-height:44px;
+  flex:0 0 44px; margin:0; padding:0; color:var(--ui-button-ink, var(--text)); border-radius:var(--ui-radius-control, 4px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header button.guidance-resume {
   display:flex; align-items:center; justify-content:flex-start; gap:4px;
-  flex:1 1 auto; min-width:0; width:auto; height:32px; min-height:32px;
+  flex:1 1 auto; min-width:0; width:auto; height:44px; min-height:44px;
   padding:0 3px; border:0; background:transparent; font-size:12px;
   white-space:nowrap; color:var(--ui-accent);
 }
 .guidance-resume svg { flex-shrink:0; }
 .guidance-resume span { overflow:hidden; text-overflow:ellipsis; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-content { display: none; }
-.guidance-compact-primary { display:flex; align-items:center; gap:8px; min-height:62px; padding:1px 8px 8px; }
-.guidance-maneuver-icon { width:44px; height:44px; flex:0 0 44px; display:grid; place-items:center; color:var(--ui-ink, var(--text)); background:transparent; border:0; border-radius:4px; }
+.guidance-compact-primary { display:flex; align-items:center; gap:5px; min-height:44px; padding:0 4px 4px; }
+.guidance-maneuver-icon { width:28px; height:28px; flex:0 0 28px; display:grid; place-items:center; color:var(--ui-ink, var(--text)); background:transparent; border:0; border-radius:4px; }
 .guidance-maneuver-copy { display:flex; flex-direction:column; justify-content:center; min-width:0; line-height:1.15; }
-.guidance-maneuver-distance { color:var(--ui-ink, var(--text)); font-size:34px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.04em; white-space:nowrap; }
-.guidance-maneuver-distance small { font-size:16px; font-weight:500; letter-spacing:0; }
-.guidance-maneuver-text { margin-top:2px; overflow:hidden; color:var(--ui-ink, var(--text)); font-size:14px; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
-.guidance-remaining-line { margin-top:2px; color:var(--ui-muted, var(--muted)); font-size:11px; line-height:1.2; white-space:nowrap; }
+.guidance-maneuver-distance { color:var(--ui-ink, var(--text)); font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.03em; white-space:nowrap; }
+.guidance-maneuver-distance small { font-size:12px; font-weight:500; letter-spacing:0; }
+.guidance-maneuver-text { margin-top:1px; overflow:hidden; color:var(--ui-ink, var(--text)); font-size:12px; line-height:1.15; text-overflow:ellipsis; white-space:nowrap; }
+.guidance-remaining-line { margin-top:1px; color:var(--ui-muted, var(--muted)); font-size:10px; line-height:1.1; white-space:nowrap; }
 .guidance-compact-state { display:block; flex-shrink:0; max-height:40px; padding-bottom:2px; overflow:auto; color:var(--ui-ink, var(--text)); font-size:13px; line-height:18px; overflow-wrap:anywhere; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] {
-  color:#fff;
-  background:#204da8;
-  border:0;
-  box-shadow:0 3px 12px #07152c55;
-}
-.observatory.home-map .guidance-card[data-forward-navigation='true'] header,
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-content { color:#fff; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] header button {
-  color:#fff;
-  border-color:#ffffff55;
-  background:#ffffff16;
-}
-.observatory.home-map .guidance-card[data-forward-navigation='true'] header button.guidance-resume { color:#fff; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] header button.guidance-first-person[aria-pressed='true'] {
-  color:#fff;
-  border-color:#ffffffa8;
-  background:#ffffff2b;
-}
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon,
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance,
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-text,
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-compact-state { color:#fff; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-remaining-line,
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-inline-status { color:#e1eaff; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance { font-size:28px; }
-@media (max-height:520px) {
-  .observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-distance { font-size:28px; }
-}
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon { flex-basis:44px; }
-.observatory.home-map .guidance-card[data-forward-navigation='true'] .guidance-maneuver-icon svg { width:44px; height:44px; }
-.observatory.home-map .guidance-card[data-compact='true'] .guidance-heading-row { min-height:32px; }
-.observatory.home-map .guidance-card[data-compact='true'] .guidance-header-actions { gap:3px; }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume { display:flex; align-items:center; justify-content:flex-start; gap:4px; flex:1 1 auto; min-width:0; width:auto; height:32px; min-height:32px; padding:0 3px; border:0; background:transparent; color:var(--ui-accent, var(--accent)); font-size:12px; white-space:nowrap; }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person { display:flex; align-items:center; justify-content:center; gap:3px; min-width:44px; width:auto; height:32px; min-height:32px; flex:0 0 auto; padding:0 5px; border-radius:4px; font-size:10px; }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person[aria-pressed='true'] { color:var(--ui-accent, var(--accent)); border-color:var(--ui-accent, var(--accent)); background:color-mix(in srgb, var(--ui-accent, var(--accent)) 10%, var(--ui-raised, var(--surface))); }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
-.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] { background:transparent; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-heading-row { min-height:44px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-header-actions { gap:0; }
+.guidance-follow-status span { overflow:hidden; text-overflow:ellipsis; }
+.guidance-compact-context { display:flex; flex-direction:column; gap:3px; min-width:0; padding:0 4px 4px; }
+.guidance-compact-telemetry { min-width:0; }
+.guidance-compact-context .guidance-inline-status { padding:1px 2px 0; color:var(--ui-accent, var(--accent)); font-size:11px; line-height:14px; }
 .guidance-content p {
   margin: 0 0 6px;
   line-height: 1.4;
@@ -237,7 +204,6 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .observatory.home-map[data-guiding='true'] .route-weather-rail { top: calc(var(--home-top) + var(--home-header-height) + 122px) !important; --rail-height: max(80px, calc(100dvh - 502px - var(--home-top))); }
 .observatory.home-map[data-guiding='true'] .home-position-dock { bottom: calc(var(--home-footer) + 84px); }
 .observatory.home-map[data-guiding='true'] .home-camera-control { bottom: calc(var(--home-footer) + 4px); right: 8px; }
-.observatory.home-map[data-guiding='true']:not([data-focus-locked='true']) .global-focus-lock { left:calc(var(--home-left) + 52px); }
 .observatory.home-map:has(.layer-window) .route-display-info { visibility: hidden; }
 /* Keep the collapsed heading and location state on separate, readable rows. */
 .observatory.home-map .guidance-card { top: calc(var(--home-header-height) + var(--home-top) + 4px); left: var(--home-left); width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 80px)); border-radius: var(--ui-radius-card, 8px); box-sizing: border-box; max-height: min(280px, calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 24px)); }
@@ -264,10 +230,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .observatory.home-map[data-guiding='true'] .route-weather-rail { top: var(--normal-nav-rail-top) !important; bottom:calc(var(--home-footer) + 206px); display:flex; flex-direction:column; }
 .observatory.home-map[data-guiding='true'] .route-weather-rail > .rail-colors { flex:1; height:auto; min-height:40px; }
 .observatory.home-map[data-guiding='true'] .route-weather-rail > :not(.rail-colors) { flex-shrink:0; }
-.observatory.home-map[data-guiding='true'] .global-focus-lock { bottom:calc(var(--home-footer) + 154px); }
 .observatory.home-map[data-focus-locked='true'][data-guiding='true'] > .route-weather-rail { display:flex !important; top:12px !important; bottom:100px; }
 .observatory.home-map[data-focus-locked='true'][data-guiding='true'] .route-weather-rail > :is(.rail-heading,.rail-legend-toggle,.rail-detail) { display:none; }
-.observatory.home-map[data-focus-locked='true'][data-guiding='true'] .global-focus-lock { bottom:calc(var(--home-bottom) + 8px); }
 
 @media (max-height: 520px) {
   .observatory.home-map[data-guiding='true'] .home-camera-control {
@@ -295,51 +259,22 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
   flex: 0 0 auto;
   border-radius: var(--ui-radius-control, 4px);
 }
-.observatory.home-map .guidance-card header button.guidance-resume {
-  flex: 1 1 auto;
-  min-width: 44px;
-  width: auto;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 4px;
-}
-.observatory.home-map .guidance-card header button.guidance-first-person {
-  min-width: 52px;
-  width: auto;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 6px;
-  font-size: 11px;
-}
 .observatory.home-map .guidance-card .guidance-header-actions {
   gap: 4px;
   flex: 0 0 auto;
 }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-heading-row {
-  min-height: 44px;
+  min-height: 18px; padding-right:44px;
 }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume {
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-header-actions {
+  position:absolute; top:4px; right:4px;
 }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-first-person {
-  min-width: 52px;
-  height: 44px;
-  min-height: 44px;
-}
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand,
-.observatory.home-map .guidance-card[data-compact='true'] header button[aria-label='结束导航'] {
+.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-expand {
   min-width: 44px;
   width: 44px;
   height: 44px;
   min-height: 44px;
   flex: 0 0 44px;
-}
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header button.guidance-resume {
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
 }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-content,
 .observatory.home-map .guidance-card .guidance-display-content {
@@ -350,19 +285,90 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 
 /* Compact directions are shown only in the explicitly selected first-person view. */
 .observatory.home-map .guidance-card[data-compact='true'] {
-  width:min(240px, calc(100vw - var(--home-left) - var(--home-right) - 80px)) !important;
+  width:min(300px, calc(100vw - var(--home-left) - var(--home-right) - 80px)) !important;
 }
-.observatory.home-map .guidance-card[data-compact='true'] .guidance-resume span { display:none; }
-.observatory.home-map .guidance-card[data-compact='true'] header button.guidance-resume { justify-content:center; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-compact-primary {
-  min-height:48px; gap:6px; padding:0 2px 4px;
+  min-height:44px; gap:5px; padding:0 2px 4px;
 }
-.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon { width:32px; height:32px; flex-basis:32px; }
-.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon svg { width:32px; height:32px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon { width:28px; height:28px; flex-basis:28px; }
+.observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-icon svg { width:26px; height:26px; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-maneuver-text { font-size:12px; }
 .observatory.home-map .guidance-card[data-compact='true'] .guidance-inline-status { max-height:30px; padding:0 2px 2px; }
-.observatory.home-map .guidance-card[data-compact='true'][data-camera-mode='top'] {
-  background:transparent; border:0; box-shadow:none;
+
+/* Keep compact navigation telemetry, status, and actions in one themed card. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] {
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:4px !important;
+  color:var(--ui-ink);
+  background:var(--ui-surface);
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius-card);
+  box-shadow:var(--ui-shadow);
+  overflow:hidden;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] header {
+  box-sizing:border-box;
+  width:100%;
+  padding:0 !important;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-heading-row {
+  position:static;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  width:100%;
+  min-height:32px;
+  padding:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] header button.guidance-resume {
+  position:static;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  flex:1 1 auto;
+  width:auto;
+  min-width:0;
+  height:32px;
+  min-height:32px;
+  padding:0 7px;
+  border:1px solid var(--ui-accent);
+  border-radius:var(--ui-radius-control);
+  background:var(--ui-accent);
+  color:var(--ui-on-accent);
+  font-size:11px;
+  line-height:1.15;
+  text-align:left;
+  white-space:nowrap;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-header-actions {
+  position:static;
+  flex:0 0 auto;
+  gap:0;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] header button.guidance-expand {
+  box-sizing:border-box;
+  width:32px;
+  min-width:32px;
+  height:32px;
+  min-height:32px;
+  flex:0 0 32px;
+  padding:0;
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius-control);
+  background:var(--ui-raised);
+  color:var(--ui-button-ink);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-follow-status span { min-width:0; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-compact-context { gap:2px; padding:0 2px 2px; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .navigation-telemetry--compact {
+  height:34px;
+  min-height:34px;
+  max-height:34px;
+  border-radius:var(--ui-radius-control);
+  background:var(--ui-raised);
 }
 
 .observatory.home-map .guidance-card[data-compact='false'] header button.guidance-expand,

@@ -160,8 +160,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-modes button:enabled:hover { background: var(--ui-selected); border-color: var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-list { display: flex; flex-direction: column; gap: 4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block { border-radius: var(--route-radius); padding: 0 4px; background: var(--ui-field); border: 1px solid var(--ui-line); box-shadow: none; }
-/* State uses a quiet surface; focus belongs only to the individual control. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block:is(.is-next,.is-picking,:focus-within) { border-color: var(--ui-line); background: var(--ui-selected); box-shadow: none; }
+/* Highlight the selected stop as a whole, including its input surface. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block:is(.is-active,.is-picking,:focus-within) { border-color: transparent; background: color-mix(in srgb,var(--ui-accent) 24%,var(--ui-field)); box-shadow: none; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-block:is(.is-active,.is-picking,:focus-within) input { background: color-mix(in srgb,var(--ui-accent) 18%,var(--ui-field)); outline: none; box-shadow: none; border-color: transparent; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-row { display: flex; align-items: center; gap: 4px; background: transparent; border: 0; border-radius: var(--ui-radius-control); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-next-step { box-sizing: border-box; border-radius: var(--route-radius); padding: 3px 6px; line-height: 16px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-stop-label { display: none; }
@@ -174,7 +175,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'][data-panel='r
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .stop-pick { display: flex; flex-direction: row; justify-content: center; gap: 3px; width: 48px; min-width: 48px; color: var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .stop-pick span { white-space: nowrap; font-size: 11px; line-height: 14px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .stop-drag { width: 32px; min-width: 32px; background: transparent; color: var(--ui-muted); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-edit-actions button { padding: 0 3px; font-size: 11px; background: transparent; color: var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-edit-actions button { justify-content: center; padding: 0 4px; gap: 3px; font-size: 11px; white-space: nowrap; background: var(--ui-raised); color: var(--ui-ink); border: 1px solid var(--ui-line); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-edit-actions .route-current-position { background: #b93838; border-color: #e87474; color: #fff; font-weight: 700; }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel[data-picking='true'] > :not(.route-picking-help):not(.route-error) { display: none; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-primary { padding: 0 6px; color: var(--ui-on-accent); background: var(--ui-accent); font-size: 13px; line-height: 18px; font-weight: 750; border: 0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel .route-primary:disabled { color: var(--ui-muted); background: var(--ui-field); opacity: .5; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .route-panel :is(.route-error,.route-picking-help) { color: var(--ui-danger); background: transparent; }

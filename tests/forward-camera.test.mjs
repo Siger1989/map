@@ -62,7 +62,8 @@ test('explicit close navigation enlarges by travel mode while subsequent fixes p
   const walk = navigationCameraOptions({ ...input, close: true, travelMode: 'pedestrian' });
   assert.equal(car.zoom, 17.4);
   assert.ok(walk.zoom > car.zoom);
-  assert.ok(857 / 2 + car.offset[1] > 120 + (750 - 120) * 0.8, 'first-person position stays near the lower map area');
+  const anchor = (857 / 2 + car.offset[1] - 120) / (750 - 120);
+  assert.ok(anchor >= 0.62 && anchor <= 0.72, 'first-person position leaves useful space behind it');
   assert.ok(857 / 2 + car.offset[1] <= 750 - 32, 'the journey card clears the whole position disc');
   assert.equal('zoom' in navigationCameraOptions(input), false);
   assert.equal('zoom' in navigationCameraOptions({ ...input, close: true, forward: false }), false);

@@ -185,7 +185,7 @@ function navigationUsableRect(map: Map) {
   const centerX = bounds.left + bounds.width / 2;
   const centerY = bounds.top + bounds.height / 2;
   const blockers = Array.from(host?.querySelectorAll<HTMLElement>(
-    '.guidance-card, .home-bottom-nav, .navigation-elevation .rally-elevation, .route-weather-rail, .map-legends > *',
+    '.guidance-card, .navigation-live-strip, .home-bottom-nav, .navigation-elevation .rally-elevation, .route-weather-rail, .map-legends > *',
   ) ?? []);
   const routePanel = host?.querySelector<HTMLElement>('.control-dock.is-expanded #map-control-panel .route-panel');
   const routePanelBounds = routePanel?.closest<HTMLElement>('#map-control-panel');

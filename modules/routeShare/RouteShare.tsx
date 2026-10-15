@@ -235,7 +235,7 @@ export function RouteShare({
           </a>
         )}
         <p role="status">{message}</p>
-        <details open>
+        <details>
           <summary>工程坐标交换 · JSON / CSV</summary>
           <p>选择目标工程坐标系后保存或分享，文件内包含 CRS 元数据与路线点位/已有海拔。此格式用于山兔工程坐标交换，不替代 GPX/KML。</p>
           <CrsSelector id="route-share-target-crs" value={targetCrs} onChange={setTargetCrs} label="导出坐标系" />
@@ -251,7 +251,7 @@ export function RouteShare({
           </div>
           <p>桌面环境优先保存；不支持系统分享时仍可保存文件后手动发送。</p>
         </details>
-        <details open>
+        <details>
           <summary>通用路线文件 · GPX / KML</summary>
           <p>
             GPX/KML 坐标固定为 WGS 84 并保留完整线形；GPX 保留已有时间和海拔，KML 保留已有海拔。未知时间不会补造。

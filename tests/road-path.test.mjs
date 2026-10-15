@@ -71,6 +71,25 @@ test('reported mountain road connects across bridges and tile seams at zoom 13 a
   }
 });
 
+test('road path rejects inputs above its synchronous point budget', () => {
+  const overBudget = line(
+    'large',
+    Array.from({ length: 3001 }, (_, i) => [1 + i * 0.00001, 1]),
+  );
+  const start = match(bend, 0, 0.2),
+    end = match(bend, 1, 0.8);
+  assert.equal(roadPath(start, end, [overBudget]), null);
+});
+
+test('road path stops endpoint seam work at its synchronous check budget', () => {
+  const dense = Array.from({ length: 600 }, (_, i) =>
+    line(`dense-${i}`, [[1, 1], [1.01, 1]]),
+  );
+  const start = match(dense[0], 0, 0.2),
+    end = match(dense[0], 0, 0.8);
+  assert.equal(roadPath(start, end, dense), null);
+});
+
 test('two selected points retain every bend, forwards and backwards', () => {
   const a = match(bend, 0, 0.5),
     b = match(bend, 2, 0.5);

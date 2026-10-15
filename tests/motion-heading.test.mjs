@@ -26,13 +26,51 @@ test('walking displacement establishes course while stationary jitter and poor f
 test('GPS course survives quiet acceleration at constant speed, wraps north, and rejects stale/poor headings',()=>{
   const model=new MotionHeading();
   assert.equal(model.update(fix(0,0,0,{heading:359,speed:2,headingAccuracy:5}),now,true).heading,359);
-  const next=model.update(fix(0,0,2000,{heading:1,speed:2}),now+2000,true).heading;
-  assert.ok(next>359&&next<360);
+  const next=model.update(fix(0,0.00005,2000,{heading:3,speed:2,headingAccuracy:5}),now+2000,true).heading;
+  assert.ok(next>=0&&next<3);
   assert.equal(model.update(fix(0,0,3000,{heading:180,speed:2,headingAccuracy:80}),now+3000).heading,next);
   assert.equal(model.update(fix(0,0,4000,{heading:180,speed:2}),now+30000).heading,next);
 });
+test('stationary drift keeps the last trusted direction instead of following GPS jitter',()=>{
+  const model=new MotionHeading();
+  assert.equal(model.update(fix(0,0,0,{heading:90,speed:3,headingAccuracy:5}),now).heading,90);
+  for(let i=1;i<=8;i++){
+    const next=model.update(fix(i*0.00001,0,i*1000,{heading:250,speed:0.2,accuracy:5}),now+i*1000,true);
+    assert.equal(next.heading,90);
+  }
+});
+test('low speed movement accumulates displacement before establishing a direction',()=>{
+  const model=new MotionHeading();
+  model.update(fix(0,0,0,{accuracy:4,speed:0.7}),now);
+  assert.equal(model.update(fix(0.000018,0,2500,{accuracy:4,speed:0.7}),now+2500).heading,null);
+  assert.equal(model.update(fix(0.000072,0,10000,{accuracy:4,speed:0.7}),now+10000).heading,90);
+});
+test('large sustained GPS turns require confirmation then follow promptly',()=>{
+  const model=new MotionHeading();
+  assert.equal(model.update(fix(0,0,0,{heading:0,speed:4,headingAccuracy:5}),now).heading,0);
+  assert.equal(model.update(fix(0,0,1000,{heading:130,speed:4,headingAccuracy:5}),now+1000).heading,0);
+  const turned=model.update(fix(0,0,2000,{heading:134,speed:4,headingAccuracy:5}),now+2000).heading;
+  assert.ok(turned>90&&turned<134,`expected prompt turn toward 134°, got ${turned}`);
+  const followed=model.update(fix(0,0,3000,{heading:135,speed:4,headingAccuracy:5}),now+3000).heading;
+  assert.ok(followed>turned&&followed<135);
+});
+
+test('sparse fresh GPS updates can confirm a real turn without accepting one outlier',()=>{
+  const model=new MotionHeading();
+  model.update(fix(0,0,0,{heading:0,speed:4,headingAccuracy:5}),now);
+  assert.equal(model.update(fix(0,0,6000,{heading:130,speed:4,headingAccuracy:5}),now+6000).heading,0);
+  const heading=model.update(fix(0,0,12000,{heading:134,speed:4,headingAccuracy:5}),now+12000).heading;
+  assert.ok(heading>90&&heading<134);
+});
+test('stale and low-accuracy points retain direction and cannot rotate it',()=>{
+  const model=new MotionHeading();
+  model.update(fix(0,0,0,{heading:45,speed:3,headingAccuracy:5}),now);
+  assert.equal(model.update(fix(0,0,1000,{heading:180,speed:4,headingAccuracy:5}),now+12000).heading,45);
+  assert.equal(model.update(fix(0,0,2000,{heading:180,speed:4,headingAccuracy:5,accuracy:31}),now+2000).heading,45);
+  assert.equal(model.update(fix(0,0,3000,{heading:180,speed:4,headingAccuracy:80}),now+3000).heading,45);
+});
 test('missing bearing accuracy is not treated as perfect and IP estimates never establish course',()=>{
-  const weak=fix(0,0,0,{heading:90,speed:2,accuracy:25});
+  const weak=fix(0,0,0,{heading:90,speed:2.5,accuracy:25});
   assert.equal(reliableGpsCourse(weak),null);
   assert.equal(reliableGpsCourse({...weak,accuracy:8}),90);
   assert.equal(reliableGpsCourse({...weak,headingAccuracy:36,accuracy:3}),null);
@@ -55,4 +93,14 @@ test('native and browser fixes retain optional GPS course while old fixes stay c
   assert.equal(native.speed,2);assert.equal(native.headingAccuracy,7);
   const old=positionFix({coords:{longitude:0,latitude:0,accuracy:3,speed:null,heading:null},timestamp:now});
   assert.equal('heading' in old,false);assert.equal('speed' in old,false);
+});
+
+
+test('walking GPS course waits for net movement and ignores a small heading deadband',()=>{
+  const model=new MotionHeading();
+  model.update(fix(0,0,0,{heading:0,speed:1.8,accuracy:5,headingAccuracy:5}),now);
+  for(let i=1;i<6;i++) assert.equal(model.update(fix(i%2*0.00001,0,i*1000,{heading:i%2?45:315,speed:1.8,accuracy:5,headingAccuracy:5}),now+i*1000).heading,0);
+  assert.equal(model.update(fix(0,0.00006,6000,{heading:2,speed:1.8,accuracy:5,headingAccuracy:5}),now+6000).heading,0);
+  const turning=model.update(fix(0.00006,0.00006,10000,{heading:40,speed:1.8,accuracy:5,headingAccuracy:5}),now+10000).heading;
+  assert.ok(turning>0&&turning<40);
 });

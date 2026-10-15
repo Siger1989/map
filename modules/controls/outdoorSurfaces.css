@@ -5,7 +5,7 @@ html[data-ui-theme] :is(.collection-workbench,.text-suggestions,.floating-search
 html[data-ui-theme] :is(.observatory.home-map,.collection-workbench,.layout-editor-panel,.layout-mobile) select { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); border-radius:var(--ui-radius-control); color-scheme:inherit; }
 html[data-ui-theme] :is(.observatory.home-map,.collection-workbench,.layout-editor-panel,.layout-mobile) :is(option,optgroup) { color:var(--ui-ink); background:var(--ui-surface); }
 /* Route task cards have one opaque surface; nested frost creates a grey rim and soft text. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-route-card,.guidance-card,.route-display-settings,.selected-route-info,.rally-elevation,.route-details)[class]:not([data-embedded='true']) {
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-route-card,.guidance-card,.route-display-settings,.selected-route-info,.rally-elevation,.route-details,.track-tools,.track-draw-tools,.route-edit-dock)[class]:not([data-embedded='true']) {
   background:var(--ui-surface); border-color:var(--ui-line); box-shadow:none;
   -webkit-backdrop-filter:none; backdrop-filter:none;
 }
@@ -19,11 +19,6 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .guidance-first-person span { font-size:9px; line-height:11px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header .guidance-first-person[aria-pressed='true'] { color:var(--ui-accent); background:color-mix(in srgb,var(--ui-accent) 18%,var(--ui-raised)); box-shadow:inset 0 0 0 1px var(--ui-accent); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card header .guidance-first-person[data-waiting='true'] { color:var(--ui-muted); box-shadow:none; }
-/* First-person navigation owns a blue instruction surface; other camera modes use the shared theme. */
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-forward-navigation='true'][class] {
-  --ui-surface:#214cb0; --ui-raised:#1a3d8d; --ui-ink:#ffffff; --ui-button-ink:#ffffff; --ui-muted:#e1eaff; --ui-accent:#ffffff; --ui-line:#ffffff55;
-  background:#214cb0; color:#ffffff; border-color:transparent;
-}
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.home-route-card,.home-journey-points) button { border:0; border-radius:var(--ui-radius-control); padding:6px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions,
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions:has([aria-label='删除当前路线']) { grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }

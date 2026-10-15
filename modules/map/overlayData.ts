@@ -12,6 +12,7 @@ const routeTierGuards = new WeakMap<Map, RouteTierGuard>();
 const overlayOrder = [
   'area-fill',
   'area-border',
+  'area-node-halo',
   'area-nodes',
   'route-outline',
   'route-path',

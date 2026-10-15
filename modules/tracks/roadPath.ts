@@ -4,6 +4,10 @@ import type { RoadLine, RoadMatch } from './roadSnapping';
 type Node = { point: Coordinate; edges: Map<string, number> };
 const key = (p: Coordinate) => `${p[0].toFixed(7)},${p[1].toFixed(7)}`;
 const JOIN_METRES = 3;
+// roadPath runs synchronously on the map thread. Bound each confirmed segment's
+// work; callers can fall back to a direct segment on unusually dense tiles.
+export const MAX_ROAD_PATH_INPUT_POINTS = 3000;
+export const MAX_ROAD_PATH_ENDPOINT_CHECKS = 150_000;
 const xy = ([lng, lat]: Coordinate) => [
   ((lng * Math.PI) / 180) * 6378137,
   Math.asinh(Math.tan((lat * Math.PI) / 180)) * 6378137,
@@ -32,6 +36,11 @@ export function roadPath(
       [...lines, from.line, to.line].map((line) => [line.id, line]),
     ).values(),
   ];
+  if (
+    roads.reduce((total, line) => total + line.coordinates.length, 0) >
+    MAX_ROAD_PATH_INPUT_POINTS
+  )
+    return null;
   const endpoints: { id: string; x: number; y: number }[] = [];
   for (const line of roads) {
     for (const point of line.coordinates) node(key(point), point);
@@ -42,6 +51,7 @@ export function roadPath(
     }
   }
   endpoints.sort((a, b) => a.x - b.x);
+  let endpointChecks = 0;
   const cutsByLine = new Map<string, { id: string; t: number }[][]>();
   for (const line of roads) {
     const lineCuts: { id: string; t: number }[][] = [];
@@ -77,6 +87,7 @@ export function roadPath(
         endpoints[j].x <= Math.max(ax, bx) + tolerance;
         j++
       ) {
+        if (++endpointChecks > MAX_ROAD_PATH_ENDPOINT_CHECKS) return null;
         const end = endpoints[j];
         if (
           end.y < Math.min(ay, by) - tolerance ||

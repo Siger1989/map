@@ -12,8 +12,8 @@
 }
 .observatory.home-map #map-control-panel:has(.route-panel) .dock-heading {
   flex-shrink: 0;
-  height: 44px !important;
-  min-height: 44px !important;
+  height: 32px !important;
+  min-height: 32px !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -83,7 +83,8 @@ html[data-shantu-keyboard='open'] .observatory.home-map #map-control-panel:has(.
 }
 .observatory #map-control-panel .route-panel .route-edit-actions {
   margin: var(--route-action-margin, 2px) 0 !important;
-  gap: 2px;
+  gap: 4px;
+  padding-bottom: 2px;
 }
 .observatory #map-control-panel .route-panel .route-edit-actions button {
   height: var(--route-button-height, 36px) !important;

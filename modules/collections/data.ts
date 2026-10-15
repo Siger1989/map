@@ -6,13 +6,36 @@ import { validTabOrder, type CollectionTab } from './tabOrder.ts';
 
 /** Organization only: route geometry, GPS samples and photos stay in their original stores. */
 export const COLLECTION_STORAGE = 'shantu.route-collections.v1';
+/** Tableau 10 categorical colors, assigned by the six built-in collection kinds. */
+export const BUILT_IN_GROUP_COLORS: Record<string, string> = {
+  auto: '#4e79a7',
+  bicycle: '#59a14f',
+  pedestrian: '#f28e2b',
+  recorded: '#af7aa1',
+  imported: '#76b7b2',
+  manual: '#e15759',
+};
+const LEGACY_BUILT_IN_GROUP_COLORS: Record<string, string> = {
+  auto: '#72b7ff',
+  bicycle: '#89dfb3',
+  pedestrian: '#ffbd78',
+  recorded: '#c6a0ff',
+  imported: '#68d7df',
+  manual: '#f59dbd',
+};
+/** Update only built-in defaults; custom group colors remain user-selected. */
+export function collectionGroupColor(group: Pick<CollectionGroup, 'id' | 'color'>) {
+  return group.color.toLowerCase() === LEGACY_BUILT_IN_GROUP_COLORS[group.id]
+    ? BUILT_IN_GROUP_COLORS[group.id]
+    : group.color;
+}
 export const COLORS = [
-  { value: '#72b7ff', name: '蓝色' },
-  { value: '#89dfb3', name: '绿色' },
-  { value: '#ffbd78', name: '橙色' },
-  { value: '#c6a0ff', name: '紫色' },
-  { value: '#68d7df', name: '青色' },
-  { value: '#f59dbd', name: '粉色' },
+  { value: BUILT_IN_GROUP_COLORS.auto, name: '蓝色' },
+  { value: BUILT_IN_GROUP_COLORS.bicycle, name: '绿色' },
+  { value: BUILT_IN_GROUP_COLORS.pedestrian, name: '橙色' },
+  { value: BUILT_IN_GROUP_COLORS.recorded, name: '紫色' },
+  { value: BUILT_IN_GROUP_COLORS.imported, name: '青色' },
+  { value: BUILT_IN_GROUP_COLORS.manual, name: '红色' },
 ];
 export type CollectionGroup = {
   id: string;

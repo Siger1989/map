@@ -1,11 +1,13 @@
 import { RouteProviderNote } from './RouteProviderNote';
 import { RouteResultSummary } from './RouteResultSummary';
+import type { ReactNode } from 'react';
 import './routeCompact.css';
 import { FloatingSearch } from '../input/FloatingSearch';
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   ArrowDownUp,
   MapPin,
+  LocateFixed,
   ChevronDown,
   ChevronUp,
   Search,
@@ -44,12 +46,14 @@ export function RoutePanel({
   onEditPoints,
   onCancel,
   onImport,
+  importInHeader = false,
   onRouteApplied,
   previewMode,
   onPreview,
   onPreviewTopDown,
   onExitPreview,
   waitingForPosition = false,
+  quickRouteControls,
 }: {
   navigation: NavigationState;
   near: Coordinate;
@@ -66,12 +70,14 @@ export function RoutePanel({
   onShare: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
+  importInHeader?: boolean;
   onRouteApplied?: (route: PlannedRoute) => void;
   previewMode?: 'forward' | 'top' | null;
   onPreview?: () => void;
   onPreviewTopDown?: () => void;
   onExitPreview?: () => void;
   waitingForPosition?: boolean;
+  quickRouteControls?: ReactNode;
 }) {
   const [editing, setEditing] = useState(() => !n.route);
   const previousRoute = useRef(n.route?.createdAt);
@@ -232,10 +238,11 @@ export function RoutePanel({
     onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
     previewMode={previewMode} onPreview={onPreview} onPreviewTopDown={onPreviewTopDown} onExitPreview={onExitPreview}
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
+    quickRouteControls={quickRouteControls}
   />;
   return (
     <div className="route-panel" data-picking={n.picking !== null} data-search-active={searchActive} data-search-expanded={searchActive && listExpanded}>
-      {onImport && <button className="route-load" onClick={onImport}>加载路线文件</button>}
+      {onImport && !importInHeader && <button className="route-load" onClick={onImport}>加载路线文件</button>}
       {n.picking !== null && (
         <div className="route-picking-help" role="status">
           <span>
@@ -263,38 +270,6 @@ export function RoutePanel({
         ))}
       </div>
 
-      <div className="route-edit-actions">
-        <button
-          disabled={n.stops.length >= MAX_ROUTE_STOPS}
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.add();
-          }}
-        >
-          <Plus size={14} />
-          途经点
-        </button>
-        <button disabled={locating} onClick={onCurrentPosition}>
-          {locating ? '定位中…' : '我的位置'}
-        </button>
-        <button
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.swap(onRouteApplied);
-          }}
-        >
-          <ArrowDownUp size={13} />
-          反向
-        </button>
-        <button
-          onClick={() => {
-            setActive(null); setListExpanded(false); setFiltersOpen(false);
-            n.clear();
-          }}
-        >
-          清除
-        </button>
-      </div>
       <button
         className="route-primary"
         disabled={n.loading}
@@ -336,7 +311,7 @@ export function RoutePanel({
             <div
               key={s.id}
               data-stop-id={s.id}
-              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${nextIndex === index ? 'is-next' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
+              className={`route-stop-block ${pickingIndex === index ? 'is-picking' : ''} ${focused ? 'is-active' : ''} ${nextIndex === index ? 'is-next' : ''} ${dragging === s.id ? 'is-dragging' : ''} ${dragging && target === index ? 'is-drop-target' : ''}`}
             >
               <form
                 className="route-stop-row"
@@ -444,7 +419,7 @@ export function RoutePanel({
                   </button>
                 )}
               </form>
-              {focused && (
+              {focused && !s.place && s.query.trim().length > 0 && (
                 <div className="stop-edit-options">
                   <button
                     disabled={
@@ -470,9 +445,9 @@ export function RoutePanel({
                   </button>
                 </div>
               )}
-              {focused && !s.place && s.query.trim().length < 2 && (
+              {focused && !s.place && s.query.trim().length === 1 && (
                 <p className="route-search-inline-hint" role="status">
-                  {s.query.trim().length === 0 ? '输入至少两个字搜索地点。' : '再输入一个字搜索地点。'}
+                  再输入一个字搜索地点。
                 </p>
               )}
               {focused && !s.place && s.query.trim().length >= 2 && (
@@ -552,6 +527,39 @@ export function RoutePanel({
             </div>
           );
         })}
+      </div>
+      <div className="route-edit-actions">
+        <button
+          disabled={n.stops.length >= MAX_ROUTE_STOPS}
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.add();
+          }}
+        >
+          <Plus size={14} />
+          途经点
+        </button>
+        <button className="route-current-position" disabled={locating} onClick={onCurrentPosition}>
+          <LocateFixed size={16} aria-hidden="true" />
+          {locating ? '定位中…' : '我的位置'}
+        </button>
+        <button
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.swap(onRouteApplied);
+          }}
+        >
+          <ArrowDownUp size={13} />
+          反向
+        </button>
+        <button
+          onClick={() => {
+            setActive(null); setListExpanded(false); setFiltersOpen(false);
+            n.clear();
+          }}
+        >
+          清除
+        </button>
       </div>
 
     </div>

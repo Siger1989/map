@@ -141,3 +141,38 @@ test('unit persistence failure leaves the stored preference unchanged and invali
   assert.equal(writeAreaDisplayUnit('ha'), true);
   assert.equal(readAreaDisplayUnit(), 'ha');
 });
+
+test('area closure validates before routing and Escape cancels the live draft', async t => {
+  const { window } = setupStorage();
+  const React = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const AreaTools = await loadTools();
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  t.after(async () => React.act(async () => root.unmount()));
+  let valid = false, validations = 0, finished = 0, cancelled = 0;
+  const state = {
+    drawing: true,
+    draft: [[104, 31], [104.01, 31], [104.01, 31.01]],
+    items: [], selected: null, roadSnapping: true, error: '',
+    setRoadSnapping() {}, undoDraft() {},
+    validateDraft() { validations++; return valid; },
+    cancel() { cancelled++; },
+  };
+  await React.act(async () => root.render(React.createElement(AreaTools, {
+    state, onFinish() { finished++; }, onHide() {},
+  })));
+  const close = [...host.querySelectorAll('button')].find(button => button.textContent.includes('闭合区域'));
+  assert.ok(close);
+  await React.act(async () => close.click());
+  assert.equal(validations, 1);
+  assert.equal(finished, 0, 'invalid boundaries never enter road closure or persistence');
+  valid = true;
+  await React.act(async () => close.click());
+  assert.equal(finished, 1);
+  const escape = new window.Event('keydown');
+  Object.defineProperty(escape, 'key', { value: 'Escape' });
+  await React.act(async () => window.dispatchEvent(escape));
+  assert.equal(cancelled, 1, 'Escape clears the unfinished drawing');
+});

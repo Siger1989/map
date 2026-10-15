@@ -2,7 +2,7 @@ import type { Map } from 'maplibre-gl';
 import { syncOverlayData } from '../map/overlayData';
 import type { FeatureCollection } from 'geojson';
 import type { PositionFix } from './types';
-import { positionArrowImage } from './positionArrow';
+import { positionArrowImage, positionNavigationArrowImage } from './positionArrow';
 const POSITION_NEUTRAL = '#cbd2cf';
 export class PositionLayer {
   constructor(private map: Map) {}
@@ -63,7 +63,10 @@ export class PositionLayer {
       });
       if (!m.hasImage('position-heading-arrow')) m.addImage('position-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
       if (!m.hasImage('position-ip-heading-arrow')) m.addImage('position-ip-heading-arrow', positionArrowImage(), { pixelRatio: 2 });
-      if (!m.hasImage('position-navigation-arrow')) m.addImage('position-navigation-arrow', positionArrowImage([0, 131, 255]), { pixelRatio: 2 });
+      if (!m.hasImage('position-navigation-arrow')) {
+        const navigationArrow = positionNavigationArrowImage();
+        m.addImage('position-navigation-arrow', navigationArrow, { pixelRatio: navigationArrow.pixelRatio });
+      }
       m.addLayer({
         id: 'position-arrow', type: 'symbol', source: 'current-position',
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['has', 'heading']],

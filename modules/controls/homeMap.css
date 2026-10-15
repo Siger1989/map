@@ -15,6 +15,7 @@
   --home-header-inset: 6px;
   --home-bottom: env(safe-area-inset-bottom, 0px);
   --home-footer: calc(56px + var(--home-bottom));
+  --home-left-control-bottom: calc(var(--home-footer) + max(var(--map-bottom-clearance, 0px), 60px));
   --home-breathe: clamp(8px, 4.4dvh, 38px);
   --home-card-width: min(70vw, 300px, calc(100vw - var(--home-left) - var(--home-right) - 56px));
   font-family: "Noto Sans SC", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
@@ -269,9 +270,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 /* Keep 12px clear above the unchanged 68px camera controller, including its raised pose. */
 .observatory.home-map:not([data-route-edit='true']):not([data-survey='true']):not([data-guiding='true']) .home-position-dock { bottom:var(--ui-controls-bottom,calc(var(--home-footer) + 84px)); }
 
-.observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-footer) + max(var(--selected-info-clearance, 0px), 60px) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.observatory.home-map .global-focus-lock { position:absolute; z-index:81; left:var(--home-left); bottom:calc(var(--home-left-control-bottom) + 60px); width:44px; min-height:44px; border:1px solid #9bb7bc; border-radius:4px; background:white; color:#15572b; font-size:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 .observatory.home-map .global-focus-lock small { font-size:9px; }
-.observatory.home-map .home-recording { bottom:calc(var(--home-footer) + max(var(--map-bottom-clearance, 0px), 60px)); }
+.observatory.home-map .home-recording { bottom:var(--home-left-control-bottom); }
 /* Bottom task cards own the lower-left area. Measure their real height and put
    map metadata above them, while the camera keeps its reserved right column. */
 .observatory.home-map { --map-bottom-clearance:0px; }
@@ -288,11 +289,9 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 .observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label {
   bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 32px);
 }
-.observatory.home-map:not([data-rally='true']):not([data-guiding='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true']),[data-panel='tools'],[data-panel='outdoor']) .home-recording {
-  bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 64px);
-}
-.observatory.home-map:not([data-rally='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true'],.track-tools[aria-label='绘制工具']),[data-panel='tools'],[data-panel='outdoor']) .global-focus-lock {
-  bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 124px);
+/* One shared anchor keeps the 44px controls 16px apart when overlays lift them. */
+.observatory.home-map:not([data-rally='true']):not([data-guiding='true']):is(:has(.selected-route-info > :is(.route-elevation-profile,dl,.selected-route-point),.rally-elevation[data-body='true'],.track-tools[aria-label='绘制工具']),[data-panel='tools'],[data-panel='outdoor']) {
+  --home-left-control-bottom:calc(var(--home-footer) + var(--map-bottom-clearance) + 64px);
 }
 .observatory.home-map:not([data-comparing='true']) .map-canvas .maplibregl-ctrl-scale {
   position:fixed; top:calc(var(--home-top) + var(--home-header-height) + 112px);
@@ -302,11 +301,10 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 }
 .observatory.home-map:not([data-comparing='true']) > .map-canvas > .map-imagery-date-label,
 .observatory.home-map:not([data-comparing='true']) > .map-canvas .maplibregl-ctrl-attrib { display:none; }
-.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) { display:none !important; }
+.observatory.home-map[data-focus-locked=true] > :not(.map-canvas):not(.global-focus-lock):not(.focus-live-data):not(.navigation-live-strip):not(.route-weather-rail):not(.home-position-dock):not(.home-camera-control):not(.map-center-cursor) { display:none !important; }
 .observatory.home-map[data-focus-locked=true]:not([data-guiding=true]) > .route-weather-rail { display:none !important; }
 .observatory.home-map[data-focus-locked=true]::before { display:none !important; }
 .observatory.home-map[data-focus-locked=true] .maplibregl-control-container { display:none; }
-.observatory.home-map[data-focus-locked=true] .global-focus-lock { bottom:calc(var(--home-bottom) + 8px); }
 .observatory.home-map .focus-live-data { position:absolute; z-index:80; left:60px; right:8px; bottom:calc(var(--home-bottom) + 8px); padding:4px; background:#fffffff0; border:1px solid #9bb7bc; border-radius:4px; font-size:11px; pointer-events:none; }
 .observatory.home-map .focus-live-data .navigation-telemetry { position:static; width:auto; margin:0; border:0; padding:0; }
 .observatory.home-map .focus-live-data { color:var(--home-ink); }
@@ -329,7 +327,18 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-c
 .route-travel-mode small { flex-basis:100%; }
 
 .observatory.home-map[data-focus-locked=true] .home-camera-control { display:block !important; bottom:8px; right:8px; }
-.observatory.home-map[data-focus-locked=true] .global-focus-lock { left:var(--home-left); right:auto; bottom:12px; }
+
+/* Move the whole pair in navigation, never the lock alone. Hiding UI keeps its anchor. */
+.observatory.home-map[data-guiding='true'] {
+  --home-left-control-bottom:calc(var(--home-bottom) + 68px);
+}
+.observatory.home-map .navigation-live-strip {
+  position:absolute; z-index:80; top:calc(var(--home-top) + var(--home-header-height) + 4px);
+  left:var(--home-left); width:min(240px,calc(100% - var(--home-left) - var(--home-right) - 80px));
+  box-sizing:border-box; color:var(--ui-ink,var(--home-ink)); background:var(--ui-surface,#182320ed);
+  border:1px solid var(--ui-line,var(--home-line)); border-radius:8px; pointer-events:none;
+}
+.observatory.home-map[data-focus-locked='true'] .navigation-live-strip { top:calc(var(--home-top) + 8px); }
 
 .observatory.home-map .home-position-dock .elevation-legend-compact { box-sizing:border-box; width:44px; height:84px; min-height:84px; padding:3px; border:1px solid var(--home-line); border-radius:4px; background:#fffffff0; color:#10243c; overflow:hidden; pointer-events:none; }
 .elevation-legend-compact strong { font-size:9px; line-height:12px; text-align:center; }

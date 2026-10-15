@@ -153,7 +153,7 @@ export function ControlDock({
               </button>
             )}
             <h2 id="dock-title">
-              {title ??
+              {titleContent ?? title ??
                 (active === 'about'
                   ? '关于山兔'
                   : active === 'annotations'
@@ -166,7 +166,6 @@ export function ControlDock({
                             ? '路线规划'
                             : PANELS.find((p) => p.id === active)?.label)}
             </h2>
-            {titleContent}
             {!back && onHide && <button className="dock-hide" onClick={onHide} aria-label={`${hideLabel}地图对象`}>{hideLabel}</button>}
             <button
               ref={closeButton}

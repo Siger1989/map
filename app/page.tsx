@@ -41,6 +41,7 @@ import { readLayerPreferences, saveLayerPreferences } from '@/modules/map/layerP
 import { LayerWindow } from '@/modules/controls/LayerWindow';
 import { PlaceSearch } from '@/modules/controls/PlaceSearch';
 import { RouteNameInput } from '@/modules/navigation/RouteNameInput';
+import { RouteStyleQuickControls } from '@/modules/navigation/RouteStyleQuickControls';
 import { defaultRouteName } from '@/modules/navigation/routeName';
 import { samePlannedRoute } from '@/modules/navigation/routeVisibility';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
@@ -247,7 +248,21 @@ export default function Home() {
     elevation: null,
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
-  const [panel, setPanel] = useState<ControlPanel>(null);
+  const [panel, setPanelState] = useState<ControlPanel>(null);
+  const panelRef = useRef<ControlPanel>(panel);
+  panelRef.current = panel;
+  const panelTransitionGate = useRef<(next: ControlPanel) => boolean>(() => true);
+  const setPanelPrepared = (next: ControlPanel) => setPanelState(next);
+  const setPanel = useCallback((next: ControlPanel) => {
+    if (
+      next !== null &&
+      next !== panelRef.current &&
+      !panelTransitionGate.current(next)
+    )
+      return;
+    setPanelState(next);
+  }, []);
+  const [operationSwitchError, setOperationSwitchError] = useState('');
   const [industryToolsState, setIndustryToolsState] = useState<IndustryToolsState>(() => createIndustryToolsState());
   const previousPanel = useRef<ControlPanel>(panel);
   const favoritesCamera = useRef<ReturnType<MapHandle['cameraSnapshot']>>(null);
@@ -403,14 +418,14 @@ export default function Home() {
     setAnnotationTab('basic');
     setPanel('annotations');
   }, (point) => map.current?.groundElevation(point) ?? null);
-  const startArea = () => {
-    tracks.pause();
+  const startArea = (prepared = false) => {
+    if (!prepared && !prepareFeatureSwitch(false)) return;
     setActiveTrackNode(null);
     annotations.select(null);
     navigation.setPicking(null);
     setProfileOpen(false);
     setSectionEditing(false);
-    setPanel(null);
+    setPanelPrepared(null);
     setQuickAdd(null);
     map.current?.stop();
     areas.start();
@@ -561,7 +576,7 @@ export default function Home() {
   const directionHeading = position.direction === 'motion' ? motionHeading.heading : position.heading;
   const gpsDirectionFix = cameraFix && canFollow(cameraFix) && cameraFix.source !== 'network' && cameraFix.provider !== 'ip';
   const gpsCourse = gpsDirectionFix ? reliableGpsCourse(cameraFix) : null;
-  const actualMotionHeading = gpsDirectionFix ? gpsCourse ?? motionHeading.heading : null;
+  const actualMotionHeading = gpsDirectionFix ? motionHeading.heading : null;
   const markerHeading = guidance.active ? actualMotionHeading : position.direction === 'device' ? position.heading :
     position.direction === 'motion' ? actualMotionHeading : gpsCourse;
   const navigationSession = guidance.session;
@@ -572,7 +587,7 @@ export default function Home() {
   const navigationProgress = guidance.rejoin || navigationSession?.departurePending ? undefined
     : navigationSession?.offRoute ? undefined : navigationSession?.progress;
   const reliableMotionHeading = gpsDirectionFix && cameraFix.accuracy <= 30
-    ? gpsCourse ?? (!motionHeading.status ? motionHeading.heading : null) : null;
+    ? motionHeading.heading : null;
   const followGuidanceCamera = (coordinates: Coordinate, animate: boolean, mode = navigationCameraMode, close = false) => map.current?.followNavigation(coordinates, {
     forward: mode === 'forward',
     heading: reliableMotionHeading,
@@ -867,28 +882,28 @@ export default function Home() {
   };
   const toggleSection = () => {
     if (!sectionReady) return;
+    if (!prepareFeatureSwitch(false)) return;
     survey.close();
     measurement.close();
-    tracks.finish();
     tracks.select(null);
     annotations.select(null);
     navigation.setPicking(null);
     position.free();
-    setPanel(null);
+    setPanelPrepared(null);
     setProfileOpen(false);
     setPlanePreview(null);
     setSectionEditing(false);
     setSectionListOpen((open) => !open);
   };
   const createSection = () => {
+    if (!prepareFeatureSwitch(false)) return;
     measurement.close();
-    tracks.finish();
     tracks.select(null);
     annotations.select(null);
     annotations.setPicking(null);
     navigation.setPicking(null);
     position.free();
-    setPanel(null);
+    setPanelPrepared(null);
     setSectionListOpen(false);
     setSectionEditing(false);
     setProfileOpen(false);
@@ -1100,6 +1115,50 @@ export default function Home() {
     });
     return true;
   };
+  const autoSaveEditorForSwitch = (keepEditorForReturn: boolean) => {
+    const current = editor.currentSession();
+    if (!current) return true;
+    if (!current.history.length) {
+      if (!keepEditorForReturn) closeEditor();
+      return true;
+    }
+    const result = tracks.commitEdit(current);
+    if (!result.track) {
+      editor.setError(result.error);
+      setUnsavedExit(false);
+      return false;
+    }
+    if (result.removed) {
+      closeEditor();
+      return true;
+    }
+    if (plannedEdit.current) {
+      if (navigation.route?.createdAt === plannedEdit.current.createdAt)
+        navigation.clear();
+      plannedEdit.current = null;
+    }
+    setRouteNodeBox(false);
+    setRouteNodeSelection([]);
+    setRouteWindow('card');
+    setActiveTrackNode(null);
+    setUnsavedExit(false);
+    if (keepEditorForReturn) editor.start(result.track);
+    else closeEditor();
+    return true;
+  };
+  const prepareFeatureSwitch = (keepEditorForReturn: boolean, saveLineDraft = true) => {
+    setOperationSwitchError('');
+    if (editor.currentSession() && !autoSaveEditorForSwitch(keepEditorForReturn)) {
+      setOperationSwitchError(editor.error || '路线草稿自动保存失败，草稿已保留。');
+      return false;
+    }
+    if (saveLineDraft && (tracks.editing || tracks.draft.some((line) => line.length)) && !tracks.complete()) {
+      setOperationSwitchError(tracks.error || '线稿自动保存失败，草稿已保留。');
+      return false;
+    }
+    return true;
+  };
+  panelTransitionGate.current = (next) => prepareFeatureSwitch(next !== 'track', next !== 'track');
   const requestComparisonExit = (exit: () => void = () => setComparison(null)) => {
     const current = editor.currentSession();
     comparisonExitGate.request({
@@ -1173,6 +1232,7 @@ export default function Home() {
     !tracks.drawing &&
     !guidance.active &&
     !areas.drawing &&
+    !(areas.selected && areaEditing) &&
     !sectionEditing &&
     !survey.active;
   const selectionName = selectedAnnotation
@@ -1665,7 +1725,9 @@ export default function Home() {
     onDiscard={() => { closeEditor(); comparisonExitGate.resolve(true); }}
     onContinue={() => { comparisonExitGate.resolve(false); setUnsavedExit(false); }}
   /> : null;
-  const routeEditorOverlay = editor.session ? <>
+  // Keep the in-memory edit session while another dock is active; unmounting
+  // the editor overlay pauses its controls and its keyboard listeners.
+  const routeEditorOverlay = editor.session && panel === null ? <>
     <RouteEditToolbar
       session={editor.session}
       snapName={featureMove?.snappedNode ? tracks.saved.find(t => t.id === featureMove.snappedNode!.trackId)?.name : undefined}
@@ -1841,7 +1903,8 @@ export default function Home() {
           <button className="global-focus-lock" aria-label={focusLock.locked ? '解除界面隐藏锁定' : '隐藏界面并锁定视角'} aria-pressed={focusLock.locked}
             onClick={focusLock.toggle}>{focusLock.locked ? '解锁' : '锁定'}<small>{focusLock.locked && focusLock.browsing ? '10秒回位' : focusLock.locked ? '显示UI' : '隐藏UI'}</small></button>
         )}
-        {focusLock.locked && (guidance.session || recorder.record.phase === 'recording') && <section className="focus-live-data" aria-label="锁定实时数据">{guidance.session ? <NavigationTelemetry session={guidance.session} fix={displayedFix}/> : <span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span>}</section>}
+        {focusLock.locked && guidance.session && !panel && <section className="navigation-live-strip" aria-label="实时导航数据"><NavigationTelemetry session={guidance.session} fix={position.fix} compact /></section>}
+        {focusLock.locked && !guidance.session && recorder.record.phase === 'recording' && <section className="focus-live-data" aria-label="锁定实时数据"><span>正在记录 · {cameraFix ? `${cameraFix.coordinates[1].toFixed(5)}, ${cameraFix.coordinates[0].toFixed(5)}` : '等待定位'}</span></section>}
         <MapComparisonHost session={comparison} primary={map} view={view} search={comparison ? placeSearch : null}
           editorOverlay={comparison ? routeEditorOverlay : null}
           plannedRoute={panel === 'route' && navigation.route && !editor.session ? {
@@ -1857,7 +1920,7 @@ export default function Home() {
             onClose: () => setPanel(null),
           } : null}
           editorDialog={comparison ? routeEditorDialog : null}
-          editorPaneOverlay={(_, paneMap) => (routeNodeBox || !!routeNodeSelection.length) && editor.session && <div className="map-comparison-edit-overlay">
+          editorPaneOverlay={(_, paneMap) => panel === null && (routeNodeBox || !!routeNodeSelection.length) && editor.session && <div className="map-comparison-edit-overlay">
             <TrackNodeBoxSelect
               active={routeNodeBox}
               mode={routeNodeBoxMode}
@@ -1911,7 +1974,11 @@ export default function Home() {
           setComparison(null);
         })} markerEditor={renderMarkerWorkspace} operations={{
           onMark: (coordinates, kind) => annotations.add(kind, coordinates),
-          onOutline: () => { setComparison(null); startArea(); },
+          onOutline: () => {
+            if (!prepareFeatureSwitch(false)) return;
+            setComparison(null);
+            startArea(true);
+          },
           direction: position.direction,
           directionStatus: position.direction === 'motion' ? motionHeading.status : position.directionError,
           onDirectionChange: changeMapDirection,
@@ -2075,8 +2142,9 @@ export default function Home() {
               setPanel('route');
             });
           }}
-          onTrackLineSelect={point => { if (!focusLock.locked && switchFromSection()) selectLinePoint(point); }}
+          onTrackLineSelect={point => { if (editor.session && panel !== null) return; if (!focusLock.locked && switchFromSection()) selectLinePoint(point); }}
           onTrackNodeSelect={(node) => {
+            if (editor.session && panel !== null) return;
             if (!switchFromSection()) return;
             if (node.trackId === 'live-recording') return;
             if (editor.session) {
@@ -2110,6 +2178,7 @@ export default function Home() {
             });
           }}
           onDragBegin={(target) => {
+            if (editor.session && panel !== null) return;
             if (!switchFromSection()) return;
             position.free();
             follow.pause();
@@ -2133,6 +2202,7 @@ export default function Home() {
           }}
           onDragPreview={setFeatureMove}
           onDragCommit={({ target, coordinate, snappedNode }) => {
+            if (editor.session && panel !== null) { setFeatureMove(null); return; }
             if (target.kind === 'track' && editor.session) {
               const moved = editor.change((value) =>
                 moveEditNode(
@@ -2252,7 +2322,7 @@ export default function Home() {
               return;
             }
             if (editor.session) {
-              if (editor.session.branch !== null)
+              if (panel === null && editor.session.branch !== null)
                 editor.change((value) => appendEditBranch(value, coordinates));
               return;
             }
@@ -2514,8 +2584,10 @@ export default function Home() {
           candidates={areas.draft}
           snapping={true}
           roadSnapping={areas.roadSnapping}
-          snapRoad={(point, previous, from) =>
-            map.current?.snapRoad(point, previous, from) ?? {
+          // Keep cursor previews cheap: only snap to the nearest road. Build a
+          // road-following section once the user confirms an actual vertex.
+          snapRoad={(point, previous) =>
+            map.current?.snapRoad(point, previous) ?? {
               status: 'loading',
               match: null,
             }
@@ -2527,7 +2599,18 @@ export default function Home() {
             map.current?.magnify(canvas, point) ?? (() => {})
           }
           onAnchor={() => {}}
-          onVertex={areas.add}
+          onVertex={(point) => {
+            const previous = areas.draft.at(-1);
+            const pixel = areas.roadSnapping && previous
+              ? map.current?.toScreen(point)
+              : null;
+            const result = pixel && previous
+              ? map.current?.snapRoad(pixel, null, previous)
+              : null;
+            if (result?.section?.length && result.match)
+              areas.add(result.match.coordinate, result.section);
+            else areas.add(point);
+          }}
           onStroke={() => {}}
         />
         {(areas.drawing || (areas.selected && areaEditing)) &&
@@ -2799,6 +2882,11 @@ export default function Home() {
           </div>
         ) : null}
         {guidance.active &&
+          !panel &&
+          !measurement.active &&
+          !areas.drawing &&
+          !(areas.selected && areaEditing) &&
+          !survey.active &&
           !editor.session &&
           !sectionEditing &&
           !annotations.picking &&
@@ -2810,7 +2898,12 @@ export default function Home() {
               displayPanel={navigationDisplayOpen && !panel && !quickAdd && !measurement.active
                 ? <RouteDisplaySettings display={routeDisplay} embedded navigating onClose={() => setNavigationDisplayOpen(false)} /> : undefined}
               onCloseDisplay={() => setNavigationDisplayOpen(false)}
-              telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={displayedFix} />}
+              telemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={position.fix} />}
+              compactTelemetry={guidance.session && <NavigationTelemetry session={guidance.session} fix={position.fix} compact />}
+              motionNotice={position.locationError || position.directionError ||
+                (position.locating ? '正在获取当前位置…' : displayedFix?.provider === 'ip'
+                  ? '当前为IP估计位置，等待真实GPS定位'
+                  : motionHeading.status)}
               onFirstPerson={() => changeNavigationCameraMode(navigationCameraMode === 'forward' ? 'top' : 'forward')}
               cameraWaiting={!!guidance.session?.quality || !canFollow(cameraFix)}
               viewNotice={navigationViewNotice}
@@ -2858,7 +2951,7 @@ export default function Home() {
             />
           )}
         </div>
-        {(position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
+        {!guidance.active && (position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
           !panel && (
@@ -2950,6 +3043,7 @@ export default function Home() {
             onManage={() => { setSourcesParent('layers'); setPanel('sources'); }}
           /> : undefined}
           markControl={canAddCenterMarker ? <CenterMarkButton map={() => map.current} target={linePoint?.coordinate} onAdd={(coordinates) => {
+            if (!prepareFeatureSwitch(true)) return;
             if (focusLock.locked) focusLock.toggle();
             map.current?.stop();
             position.free();
@@ -2959,7 +3053,7 @@ export default function Home() {
             setProfileOpen(false);
             if (annotations.add('pin', coordinates)) {
               setAnnotationTab('basic');
-              setPanel('annotations');
+              setPanelPrepared('annotations');
             }
           }} /> : undefined}
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
@@ -2998,9 +3092,9 @@ export default function Home() {
               setPanel(null);
               return;
             }
+            if (!prepareFeatureSwitch(false)) return;
             userBrowse();
             map.current?.stop();
-            tracks.pause();
             annotations.select(null);
             annotations.setPicking(null);
             navigation.setPicking(null);
@@ -3009,7 +3103,7 @@ export default function Home() {
             setProfileOpen(false);
             setQuickAdd(null);
             setTrackLinePoint(null);
-            setPanel(null);
+            setPanelPrepared(null);
             setBoxSelecting(true);
           }}
           networkAvailable={
@@ -3147,7 +3241,7 @@ export default function Home() {
               : panel
           }
           drawingActive={panel === null && tracks.drawing}
-          title={panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
+          title={panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
           titleContent={panel === 'route' && navigation.route ? <RouteNameInput
             key={navigation.route.createdAt}
             name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
@@ -3184,6 +3278,9 @@ export default function Home() {
                   : undefined
           }
           onActive={(next) => {
+            // Persist active route edits and line drafts before another feature
+            // takes over. A failed write leaves the current operation open.
+            if (next !== null && !prepareFeatureSwitch(next !== 'track', next !== 'track')) return;
             setSectionListOpen(false);
             if (next !== 'annotations') setAdjustingPinId(null);
             if (next !== panel) setCollectionSelectedKeys([]);
@@ -3221,10 +3318,10 @@ export default function Home() {
                 annotations.select(null);
               }
               tracks.start();
-              setPanel(null);
+              setPanelPrepared(null);
               return;
             }
-            setPanel(next);
+            setPanelPrepared(next);
           }}
         >
           {mountIndustryToolsPanel(INDUSTRY_TOOLS_ENABLED, panel) && <IndustryTools state={industryToolsState} onStateChange={setIndustryToolsState} />}
@@ -3523,6 +3620,10 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
+              quickRouteControls={<RouteStyleQuickControls style={navigation.route?.style} onChange={style => {
+                if (navigation.route && favorites.updateStyle(navigation.route, style)) navigation.setRouteStyle(style);
+              }} />}
+              importInHeader
               onImport={openRouteImportDialog}
               onEditPoints={editPlannedPoints}
               onCancel={stopNavigation}
@@ -3585,6 +3686,11 @@ export default function Home() {
         {sectionSaveError && (
           <p className="section-save-error glass" role="alert">
             {sectionSaveError}
+          </p>
+        )}
+        {operationSwitchError && (
+          <p className="section-save-error glass" role="alert">
+            {operationSwitchError}
           </p>
         )}
         {sectionListOpen && (

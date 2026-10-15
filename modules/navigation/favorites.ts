@@ -1,4 +1,4 @@
-import { coordinate, type PlannedRoute, type RoutePlace } from './types.ts';
+import { coordinate, type PlannedRoute, type RoutePlace, type RouteStyle } from './types.ts';
 export type RouteFavorite = {
   visible?: boolean;
   id: string;
@@ -9,6 +9,16 @@ export type RouteFavorite = {
   route: PlannedRoute;
 };
 export const FAVORITES_STORAGE = 'guanyun.route-favorites.v1';
+export function updateFavoriteRouteStyle(items: RouteFavorite[], route: PlannedRoute, style: RouteStyle): RouteFavorite[] {
+  const start = route.stops?.[0]?.coordinates ?? route.coordinates[0];
+  const end = route.stops?.at(-1)?.coordinates ?? route.coordinates.at(-1);
+  const samePoint = (favoritePlace: RoutePlace, coordinate: number[] | undefined) =>
+    !!coordinate && favoritePlace.coordinates[0] === coordinate[0] && favoritePlace.coordinates[1] === coordinate[1];
+  return items.map((item) => item.route.createdAt === route.createdAt && item.route.mode === route.mode &&
+    samePoint(item.start, start) && samePoint(item.end, end)
+    ? { ...item, route: { ...item.route, style } }
+    : item);
+}
 const place = (p: unknown): p is RoutePlace =>
   !!p &&
   typeof p === 'object' &&
@@ -31,6 +41,7 @@ export function validFavorite(value: unknown): value is RouteFavorite {
     !!r &&
     (r.name === undefined || (typeof r.name === 'string' && r.name.length <= 60)) &&
     (r.displayOpacity === undefined || (finitePositive(r.displayOpacity) && r.displayOpacity <= 1)) &&
+    (r.style === undefined || (!!r.style && typeof r.style === 'object' && typeof r.style.color === 'string' && /^#[a-f0-9]{6}$/i.test(r.style.color) && typeof r.style.width === 'number' && Number.isFinite(r.style.width) && r.style.width >= 0.5 && r.style.width <= 5)) &&
     (r.trackConnections === undefined || (Array.isArray(r.trackConnections) && r.trackConnections.length <= 64 &&
       r.trackConnections.every(c => c && ['direct', 'road'].includes(c.routing) && Array.isArray(c.coordinates) && c.coordinates.length >= 2 && c.coordinates.length <= 100000 && c.coordinates.every(coordinate)))) &&
     (r.preferredTrackPath === undefined ||

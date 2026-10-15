@@ -13,6 +13,7 @@ import type { RouteFavorite } from '../navigation/favorites';
 import {
   COLORS,
   UNFILED,
+  collectionGroupColor,
   deleteGroup,
   dropEntry,
   entriesFor,
@@ -28,7 +29,7 @@ import { GroupEditor } from './GroupEditor';
 import './collections.css';
 
 const tint = (group: CollectionGroup) =>
-  ({ '--collection-color': group.color }) as CSSProperties;
+  ({ '--collection-color': collectionGroupColor(group) }) as CSSProperties;
 export function RouteCollectionsPanel({
   favorites,
   tracks,

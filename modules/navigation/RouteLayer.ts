@@ -55,7 +55,7 @@ export class RouteLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#384244', '#102a38'],
-          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 18, 8],
+          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 18, ['+', ['coalesce', ['get', 'routeWidth'], 4], 4]],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
@@ -73,9 +73,9 @@ export class RouteLayer {
           'line-color': ['case',
             ['==', ['get', 'navigationState'], 'future'], '#39c878',
             ['==', ['get', 'navigationState'], 'traveled'], '#8e999b',
-            ['coalesce', ['get', 'color'], '#59dcff'],
+            ['coalesce', ['get', 'color'], ['get', 'routeColor'], '#59dcff'],
           ],
-          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, 4],
+          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, ['coalesce', ['get', 'routeWidth'], 4]],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
@@ -133,6 +133,8 @@ export class RouteLayer {
       });
     }
     const features: Feature[] = [];
+    const routeStyle = state.route?.style;
+    const routeStyleProperties = routeStyle ? { routeColor: routeStyle.color, routeWidth: routeStyle.width } : {};
     const navigationActive = !!state.route && Number.isFinite(state.navigationProgress);
     if (state.route && navigationActive) {
       for (const part of createNavigationProgressParts(state.route, state.navigationProgress!)) {
@@ -143,6 +145,7 @@ export class RouteLayer {
             navigationState: part.navigationState,
             navigationClose: state.navigationClose === true,
             opacity: state.route.displayOpacity ?? 1,
+            ...routeStyleProperties,
           },
           geometry: { type: 'LineString', coordinates: part.coordinates },
         });
@@ -152,7 +155,7 @@ export class RouteLayer {
         for (const part of state.displayParts)
           features.push({
             type: 'Feature',
-            properties: { kind: 'road', color: part.color, opacity: state.route.displayOpacity ?? 1 },
+            properties: { kind: 'road', color: part.color, opacity: state.route.displayOpacity ?? 1, ...routeStyleProperties },
             geometry: { type: 'LineString', coordinates: part.coordinates },
           });
       if (state.route)
@@ -162,7 +165,7 @@ export class RouteLayer {
           if (state.displayParts && segment.kind !== 'access') continue;
           features.push({
             type: 'Feature',
-            properties: { kind: segment.kind, opacity: state.route.displayOpacity ?? 1 },
+            properties: { kind: segment.kind, opacity: state.route.displayOpacity ?? 1, ...routeStyleProperties },
             geometry: { type: 'LineString', coordinates: segment.coordinates },
           });
         }

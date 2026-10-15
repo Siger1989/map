@@ -61,6 +61,7 @@ test('navigation card and route summary expose first-person camera and route pre
       { instruction: '沿路线前进', distance: 400, duration: 100 },
       { instruction: '向右转', distance: 600, duration: 200 },
     ],
+    stops: [{ name: '起点', coordinates: [104, 30] }, { name: '终点', coordinates: [104.001, 30.001] }],
     createdAt: 1,
   };
   const session = {
@@ -120,18 +121,17 @@ test('navigation card and route summary expose first-person camera and route pre
 
   await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), cameraMode: undefined })));
   assert.equal(host.querySelector('.guidance-compact-primary'), null, 'ordinary navigation defaults to a clear top view');
-  assert.equal(host.querySelector('[aria-label="第一人称模式"]').getAttribute('aria-pressed'), 'false');
-  assert.equal(host.querySelector('[aria-label="结束导航"]')?.tagName, 'BUTTON', 'ending navigation stays available without a prompt panel');
+  assert.equal(host.querySelectorAll('.guidance-header-actions button').length, 1, 'the collapsed header has only the 44px more button');
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /继续导航 · 步行/);
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('.guidance-compact-primary')?.getAttribute('data-maneuver'), 'straight');
   assert.equal(host.querySelector('.guidance-maneuver-distance')?.textContent, '500 米');
   assert.equal(host.querySelector('.guidance-maneuver-text')?.textContent, '沿路线前进');
-  assert.ok(host.querySelector('[aria-label="第一人称模式"]'), 'the navigation header exposes first-person mode');
-  assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'true');
-  assert.equal(host.querySelector('.guidance-first-person span').textContent, '近景');
+  assert.equal(host.querySelector('.guidance-remaining-line')?.textContent, '全程剩余 1.0 公里', 'remaining route distance is secondary and labeled as total remaining');
+  assert.equal(host.querySelector('.guidance-actions [aria-label="第一人称模式"]')?.getAttribute('aria-pressed'), 'true', 'first-person stays available in details');
+  assert.ok(host.querySelector('.guidance-actions button:last-child'), 'ending navigation remains available in details');
   await React.act(async () => root.render(React.createElement(GuidanceCard, { ...cardProps(), following: true })));
-  assert.equal(host.querySelector('.guidance-resume span')?.textContent, '步行导航', 'the active compact caption fits beside header controls');
-  assert.equal(host.querySelector('.guidance-resume').getAttribute('aria-label'), '继续导航', 'the compact caption preserves the continue-navigation action name');
+  assert.match(host.querySelector('.guidance-follow-status')?.textContent, /导航跟随中 · 步行/);
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   session.last = { coordinates: [104.001, 30], accuracy: 8, timestamp: Date.now() };
   session.offset = 20;
@@ -163,7 +163,7 @@ test('navigation card and route summary expose first-person camera and route pre
   assert.equal(host.querySelector('[data-position-assessment="parallel"]')?.textContent, '位置在平行道路，尚未确认偏航');
   assert.equal(host.querySelector('[role="note"]'), null, 'the reference explanation is available in expanded details');
   assert.deepEqual([...host.querySelectorAll('.guidance-header-actions button')].map((button) => button.getAttribute('aria-label')),
-    ['第一人称模式', '展开导航详情', '结束导航']);
+    ['展开导航详情']);
   session.positionAssessment = { kind: 'uncertain', message: '正在确认位置' };
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('[data-position-assessment="uncertain"]')?.textContent, '正在确认位置', 'the session assessment is used when the prop is absent');
@@ -175,8 +175,10 @@ test('navigation card and route summary expose first-person camera and route pre
   delete session.positionAssessment;
   session.offset = 0;
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
-  await React.act(async () => host.querySelector('[aria-label="第一人称模式"]').click());
+  await React.act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
+  await React.act(async () => host.querySelector('.guidance-actions [aria-label="第一人称模式"]').click());
   assert.deepEqual(firstPersonCalls, ['first-person'], 'the header action calls the first-person callback');
+  await React.act(async () => host.querySelector('[aria-label="收起导航详情"]').click());
   await React.act(async () => root.render(React.createElement(GuidanceCard, {
     ...cardProps(), viewNotice: '第一人称路线预览 · 非定位导航，等待准确定位',
   })));
@@ -189,9 +191,8 @@ test('navigation card and route summary expose first-person camera and route pre
     viewNotice: '第一人称路线预览 · 非定位导航，等待准确定位',
   })));
   assert.equal(host.querySelector('.guidance-compact-state')?.textContent, '定位精度不足', 'GPS quality takes priority over the auxiliary view notice');
-  assert.equal(host.querySelector('.guidance-inline-status')?.textContent, '第一人称路线预览 · 非定位导航，等待准确定位');
+  assert.equal(host.querySelector('.guidance-inline-status'), null, 'first-person primary state is not duplicated in the auxiliary status row');
 
-  await React.act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
   let cameraButton = [...host.querySelectorAll('.guidance-camera-mode')][0];
   assert.equal(cameraButton.textContent, '切换俯视');
   await React.act(async () => cameraButton.click());
@@ -199,19 +200,41 @@ test('navigation card and route summary expose first-person camera and route pre
   cameraMode = 'top';
   await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
   assert.equal(host.querySelector('.guidance-first-person').getAttribute('aria-pressed'), 'false');
-  assert.equal(host.querySelector('.guidance-first-person span').textContent, '俯视');
   assert.equal(host.querySelector('.guidance-compact-primary'), null, 'top view has no direction panel');
   assert.equal(host.querySelector('.guidance-trip-summary'), null, 'no bottom metrics overlay in either mode');
   cameraButton = host.querySelector('.guidance-camera-mode');
   assert.equal(cameraButton.textContent, '切换前视');
   await React.act(async () => cameraButton.click());
   assert.deepEqual(cameraModeCalls, ['top', 'forward']);
+  cameraMode = 'forward';
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
 
   const css = await readFile('modules/guidance/guidance.css', 'utf8');
   assert.match(css, /\.guidance-card header button\s*\{[^}]*min-width:\s*44px;[^}]*height:\s*44px;[^}]*min-height:\s*44px;/s);
-  assert.match(css, /\.guidance-card header button\.guidance-first-person\s*\{[^}]*min-width:\s*52px;/s);
   assert.match(css, /\.guidance-content\s*\{[\s\S]*?overflow:\s*auto;/);
   assert.match(css, /\.observatory\.home-map \.guidance-card\s*\{[\s\S]*?overflow:\s*visible;/);
+  assert.match(css, /\.observatory\.home-map \.guidance-card\[data-compact='true'\]\s*\{[^}]*width:min\(300px/s);
+  assert.match(css, /--normal-nav-rail-top:\s*calc\(var\(--home-top\) \+ var\(--home-header-height\) \+ 4px/);
+  assert.match(css, /\.guidance-card\[data-compact='true'\] header button\.guidance-expand\s*\{[^}]*width:\s*32px/s, 'compact expand control fits beside follow in the same row');
+  assert.doesNotMatch(css, /background:\s*#204da8/i, 'first-person mode does not recolour the whole card blue');
+  assert.match(css, /\.guidance-compact-context[\s\S]*?\.navigation-telemetry--compact/, 'compact telemetry is styled within the shared card context');
+  assert.doesNotMatch(css, /\.global-focus-lock\s*\{/);
+
+  guidance.instruction = null;
+  guidance.remaining = 27600;
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('.guidance-maneuver-text')?.textContent, '沿路线前往终点', 'missing turn data is described as route guidance to the destination');
+  assert.equal(host.querySelector('.guidance-maneuver-distance')?.textContent, '27.6 公里', 'the endpoint distance is presented as route distance, not a next turn');
+  assert.equal(host.querySelector('.guidance-remaining-line'), null, 'the same endpoint distance is not repeated as a second metric');
+  guidance.instruction = { distance: 27600, text: '沿路线前进' };
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('.guidance-maneuver-text')?.textContent, '沿路线前往终点', 'an all-route straight instruction is not presented as a useful next turn');
+  assert.equal(host.querySelector('.guidance-maneuver-distance')?.textContent, '27.6 公里');
+  assert.equal(host.querySelector('.guidance-remaining-line'), null);
+  guidance.instruction = { distance: 27600, text: '到达终点' };
+  await React.act(async () => root.render(React.createElement(GuidanceCard, cardProps())));
+  assert.equal(host.querySelector('.guidance-maneuver-text')?.textContent, '沿路线前往终点', 'arrival-distance text also falls back to a clearly labeled route target');
+  assert.equal(host.querySelector('.guidance-remaining-line'), null);
 
   const previewEvents = [];
   const summaryProps = (previewMode = null) => ({
@@ -238,10 +261,15 @@ test('navigation card and route summary expose first-person camera and route pre
   });
 
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps(null))));
-  assert.equal(host.querySelector('.route-preview-actions button').textContent, '第一人称预览');
+  assert.equal(host.querySelector('.route-summary-endpoints'), null, 'endpoints stay inside collapsed details');
+  assert.equal(host.querySelector('.route-mode-select'), null, 'route mode stays inside collapsed details');
+  assert.equal(host.querySelectorAll('.route-summary-actions')[0].querySelectorAll('button').length, 3, 'first action row has three controls');
+  assert.equal(host.querySelectorAll('.route-summary-actions')[1].querySelectorAll('button').length, 3, 'second action row has three controls');
   await React.act(async () => host.querySelector('[aria-expanded="false"]').click());
   assert.ok(host.querySelector('.route-summary-detail'), 'route details can be opened before preview');
-  await React.act(async () => host.querySelector('.route-preview-actions button').click());
+  assert.ok(host.querySelector('.route-summary-endpoints'), 'details reveal editable route endpoints');
+  assert.ok(host.querySelector('.route-mode-select'), 'details reveal route mode');
+  await React.act(async () => [...host.querySelectorAll('.route-summary-detail button')].find((button) => button.textContent === '第一人称预览').click());
   assert.deepEqual(previewEvents, ['preview'], 'starting preview calls onPreview');
 
   await React.act(async () => root.render(React.createElement(RouteResultSummary, summaryProps('forward'))));

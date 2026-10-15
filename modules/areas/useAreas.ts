@@ -89,6 +89,16 @@ export function useAreas() {
       return false;
     }
   };
+  const validateDraft = (points = draft) => {
+    try {
+      closeBoundary(points);
+      setError('');
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '区域无法闭合');
+      return false;
+    }
+  };
   return {
     items,
     selected,
@@ -110,6 +120,7 @@ export function useAreas() {
       setDrawing(false);
       setError('');
     },
+    validateDraft,
     add: (p: Coordinate, section?: Coordinate[]) => {
       const extra = section?.length ? section : [p];
       const next = [

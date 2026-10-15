@@ -325,6 +325,12 @@
   opacity: 0;
   cursor: pointer;
 }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock .route-custom-color {
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-ink);
+}
 .route-edit-sliders {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -751,6 +757,18 @@
   overflow: visible;
   gap: 4px;
 }
+.observatory.home-map .route-edit-dock[data-view][data-name-keyboard='open'] {
+  bottom: calc(var(--home-footer, 56px) + 8px + env(safe-area-inset-bottom) + var(--route-edit-ime-inset, 0px));
+  max-height: min(200px, calc(var(--shantu-visual-height, 100dvh) - var(--home-footer, 56px) - 24px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.observatory.home-map .route-edit-dock[data-view][data-name-keyboard='open'] .route-edit-dock-heading {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
 .observatory .route-edit-dock[data-view] .route-edit-dock-heading {
   position: static;
   min-height: var(--ui-compact-control-height,28px);
@@ -797,16 +815,52 @@
 }
 .observatory .route-edit-dock[data-view='selection'] .route-selection-fields {
   display: grid;
-  grid-template-columns: var(--ui-compact-control-height,28px) minmax(0,1fr) auto;
+  box-sizing: border-box;
+  grid-template-columns: 36px minmax(0,1fr) auto;
   gap: 4px;
+  width: 100%;
+  min-width: 0;
   margin: 0;
+  padding: 4px;
+  border: 1px solid var(--ui-line, #c9d5d0);
+  border-radius: 4px;
+  background: var(--ui-raised, #fff);
+}
+.observatory .route-edit-dock[data-view='selection'] .route-selection-fields > label {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--ui-line, #c9d5d0);
+  border-radius: 4px;
+  background: var(--ui-field, #fff);
 }
 .observatory .route-edit-dock[data-view='selection'] .route-selection-fields > input {
+  box-sizing: border-box;
+  min-width: 0;
   width: 100%;
   height: 36px;
+  padding: 4px 6px;
   font-size: 16px;
+  border-radius: 4px;
 }
-.observatory .route-edit-dock[data-view='selection'] .route-selection-fields input[type='color'] { height: 36px; }
+.observatory .route-edit-dock[data-view='selection'] .route-selection-fields input[type='color'] {
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 1px;
+  border-radius: 4px;
+}
+.observatory .route-edit-dock[data-view='selection'] .route-selection-fields > button {
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 4px;
+}
 .observatory .route-edit-dock[data-view='selection'] .route-add-point-marker { grid-column: 1 / 3; justify-self: start; }
 .observatory .route-edit-dock[data-view='selection'] .route-set-endpoint { grid-column: 3; }
 .observatory .route-edit-dock[data-view='style'] .route-edit-style { margin: 0; }
@@ -915,4 +969,103 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-e
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-error:not(:has(.home-route-gap-button)):not(:has(.home-route-error-close)) {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Local outdoor skin for the drawing-based route editor. Keep its existing dock,
+   keyboard avoidance and point-edit flows; only unify the visual controls. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] {
+  box-sizing: border-box;
+  width: min(300px, calc(100% - 16px));
+  padding: 6px;
+  color: var(--ui-ink);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-card,8px);
+  box-shadow: var(--ui-shadow);
+  gap: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-edit-dock-heading {
+  color: var(--ui-ink);
+  background: var(--ui-surface);
+  border-color: var(--ui-line);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] :is(button,select,input:not([type='range']):not([type='color']),textarea) {
+  box-sizing: border-box;
+  min-width: 0;
+  color: var(--ui-ink);
+  background: var(--ui-raised);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control,4px);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] button {
+  min-height: var(--ui-compact-control-height,28px);
+  height: var(--ui-compact-control-height,28px);
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] :is(input:not([type='range']):not([type='color']),textarea,select) {
+  background: var(--ui-field);
+  border-color: var(--ui-line);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] :is(.route-edit-name-input,.route-selection-fields > input:not([type='color']),.route-point-marker-fields input:not([type='color'])) {
+  min-height: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-edit-actions-row {
+  gap: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-edit-mode-row,
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-selection-modes {
+  gap: 4px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] button[aria-pressed='true'] {
+  color: var(--ui-accent);
+  background: var(--ui-selected);
+  border-color: color-mix(in srgb,var(--ui-accent) 58%,var(--ui-line));
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-branch-toggle {
+  color: var(--ui-ink);
+  background: var(--ui-raised);
+  border-color: var(--ui-line);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-branch-toggle[aria-pressed='true'] {
+  color: var(--ui-on-accent);
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-solid {
+  color: var(--ui-on-accent);
+  background: var(--ui-accent);
+  border-color: var(--ui-accent);
+  font-weight: 700;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-selection-fields {
+  padding: 4px;
+  border-color: var(--ui-line);
+  border-radius: var(--ui-radius-control,4px);
+  background: var(--ui-raised);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-selection-fields > label {
+  border-color: var(--ui-line);
+  border-radius: var(--ui-radius-control,4px);
+  background: var(--ui-field);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-edit-status {
+  color: var(--ui-muted);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .route-window-error {
+  color: var(--ui-danger);
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] :is(button,input,select,textarea):focus-visible {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .route-edit-dock[data-view] .comparison-editor-position-button {
+  min-height: 44px;
+  height: 44px;
+  border-color: var(--ui-line);
+  background: var(--ui-raised);
 }
