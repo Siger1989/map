@@ -6,8 +6,6 @@ import {
   createCameraGestureFrame,
   orbitCamera,
   ringAngle,
-  ringRadius,
-  RING_DEADZONE,
   rotateCameraRing,
   wrapBearing,
   type CameraGesturePhase,
@@ -136,7 +134,7 @@ export function CameraGizmo({
     e.preventDefault();
     cancel();
     const p = position(e);
-    if (!p || ringRadius(p.x - 55, p.y - 81) < RING_DEADZONE) return;
+    if (!p) return;
     if (kind === 'bearing' && !canStartRingDrag(p.x - 55, p.y - 81)) return;
     drag.current = {
       pointer: e.pointerId,

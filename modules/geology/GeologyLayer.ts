@@ -15,6 +15,8 @@ export class GeologyLayer {
   constructor(private map: MapLibreMap, private onChange: (state: GeologyState) => void) {
     this.cloud = new GeocloudLayer(map, onChange);
     map.on('idle', this.inspect);
+    map.on('moveend', this.inspectCursor);
+    map.on('movestart', this.clearCursor);
     map.on('click', this.pick);
     map.on('error', this.onError);
   }
@@ -82,6 +84,24 @@ export class GeologyLayer {
     // Keep the full source list for attribution even when the legend scrolls.
     const sources = [...new Map(units.map((u) => [u.source, { name: u.source, url: u.sourceUrl }])).values()];
     this.state = { ...this.state, status: units.length ? 'ready' : this.state.status === 'error' ? 'error' : 'empty', legend: units, sources };
+    this.inspectCursor();
+    this.emit();
+  };
+  private inspectCursor = () => {
+    if (!this.enabled || !this.map.getSource(GEOLOGY_SOURCE) || !this.map.isSourceLoaded(GEOLOGY_SOURCE)) return;
+    const canvas = this.map.getCanvas();
+    const feature = this.map.queryRenderedFeatures(
+      [canvas.clientWidth / 2, canvas.clientHeight / 2],
+      { layers: ['geology-units'] },
+    )[0];
+    const cursorSelection = feature ? geologyUnit(feature.properties) : null;
+    if (JSON.stringify(this.state.cursorSelection) === JSON.stringify(cursorSelection)) return;
+    this.state = { ...this.state, cursorSelection };
+    this.emit();
+  };
+  private clearCursor = () => {
+    if (!this.state.cursorSelection) return;
+    this.state = { ...this.state, cursorSelection: null };
     this.emit();
   };
   private pick = (event: MapMouseEvent) => {
@@ -99,6 +119,8 @@ export class GeologyLayer {
   dispose() {
     this.cloud.dispose();
     this.map.off('idle', this.inspect);
+    this.map.off('moveend', this.inspectCursor);
+    this.map.off('movestart', this.clearCursor);
     this.map.off('click', this.pick);
     this.map.off('error', this.onError);
   }

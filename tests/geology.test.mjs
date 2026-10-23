@@ -33,6 +33,8 @@ test('geology style is valid; features drive legends and hidden layers cannot be
   const handlers = new Map();
   let emitted;
   const feature = { properties: { color: '#812B92', age: 'Mesozoic', name: 'Mesozoic intrusive rocks', ref_name: 'World geology', ref_year: '2007' } };
+  const pickedFeature = { properties: { color: '#338844', age: 'Cenozoic', name: 'Cenozoic sedimentary rocks' } };
+  let centerFeature = feature;
   const map = {
     on: (name, fn) => handlers.set(name, fn), off: (name) => handlers.delete(name),
     getSource: (id) => sources[id], addSource: (id, value) => { sources[id] = value; },
@@ -41,7 +43,12 @@ test('geology style is valid; features drive legends and hidden layers cannot be
     setLayoutProperty: (id, key, value) => { const l = map.getLayer(id); l.layout = { ...l.layout, [key]: value }; },
     setPaintProperty: (id, key, value) => { map.getLayer(id).paint[key] = value; },
     isSourceLoaded: () => true,
-    queryRenderedFeatures: () => [feature, feature],
+    getCanvas: () => ({ clientWidth: 400, clientHeight: 600 }),
+    queryRenderedFeatures: (point, options) => {
+      if (!point) return [feature, feature];
+      if (JSON.stringify(point) === JSON.stringify([200, 300])) return centerFeature ? [centerFeature] : [];
+      return [pickedFeature];
+    },
   };
   const controller = new GeologyLayer(map, (state) => { emitted = state; });
   controller.sync(DEFAULT_LAYERS);
@@ -54,8 +61,18 @@ test('geology style is valid; features drive legends and hidden layers cannot be
   assert.equal(emitted.status, 'ready');
   assert.equal(emitted.legend.length, 1);
   assert.equal(emitted.legend[0].color, '#812B92');
+  assert.equal(emitted.cursorSelection.name, '中生代 侵入岩', 'the canvas center is queried independently of click selection');
   handlers.get('click')({ point: [1, 1] });
-  assert.equal(emitted.selection.name, '中生代 侵入岩');
+  assert.equal(emitted.selection.name, '新生代 沉积岩');
+  assert.equal(emitted.cursorSelection.name, '中生代 侵入岩', 'a click does not replace the center crosshair result');
+  handlers.get('movestart')();
+  assert.equal(emitted.cursorSelection, null, 'moving clears stale center information');
+  centerFeature = pickedFeature;
+  handlers.get('moveend')();
+  assert.equal(emitted.cursorSelection.name, '新生代 沉积岩', 'moveend refreshes the canvas center');
+  centerFeature = null;
+  handlers.get('moveend')();
+  assert.equal(emitted.cursorSelection, null, 'a center point with no hit clears the result');
   controller.sync({ ...DEFAULT_LAYERS, geology: true, geologyOpacity: 0.5 });
   assert.equal(map.getLayer('geology-units').paint['fill-opacity'], 0.5);
   handlers.get('error')({ sourceId: 'geology-source' });
@@ -63,6 +80,7 @@ test('geology style is valid; features drive legends and hidden layers cannot be
   controller.sync(DEFAULT_LAYERS);
   handlers.get('click')({ point: [1, 1] });
   assert.equal(emitted.selection, null);
+  assert.equal(emitted.cursorSelection, null, 'disabling geology clears the center result');
   assert.equal(map.getLayer('geology-units').layout.visibility, 'none');
   controller.dispose();
   assert.equal(handlers.size, 0);
@@ -77,7 +95,12 @@ test('unauthorized detailed source never reuses world legend; stale replies cann
     on() {}, off() {}, getLayer: (id) => layers.get(id), getSource: (id) => sources.get(id),
     addSource: (id, value) => sources.set(id, value), addLayer: (layer) => layers.set(layer.id, layer),
     setLayoutProperty() {}, setPaintProperty() {}, isSourceLoaded: () => true,
-    queryRenderedFeatures: () => [{ properties: { color: '#812B92', name: 'World map', ref_name: 'World' } }],
+    getCanvas: () => ({ clientWidth: 400, clientHeight: 600 }),
+    queryRenderedFeatures: (point) => {
+      const worldFeature = { properties: { color: '#812B92', name: 'World map', ref_name: 'World' } };
+      if (!point || JSON.stringify(point) === JSON.stringify([200, 300])) return [worldFeature];
+      return [];
+    },
   };
   const controller = new GeologyLayer(map, (state) => { emitted = state; });
   try {

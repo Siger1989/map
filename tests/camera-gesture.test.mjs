@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { build } from 'esbuild';
 import {
   createCameraGestureFrame,
   orbitCamera,
@@ -127,4 +128,86 @@ test('camera gesture cancellation drops pending moves and signals cancellation a
     { pitch: 18, bearing: 9, phase: 'move' },
     { pitch: 18, bearing: 9, phase: 'cancel' },
   ]);
+});
+
+test('rendered gizmo accepts model drags in the ring deadzone while keeping ring start and cancellation rules', async (t) => {
+  const { parseHTML } = await import('linkedom');
+  const { window } = parseHTML('<html><body><div id="root"></div></body></html>');
+  const captures = new WeakMap();
+  window.PointerEvent = window.Event;
+  Object.assign(globalThis, { window, document: window.document, IS_REACT_ACT_ENVIRONMENT: true });
+  let nextFrame = 1;
+  const frames = new Map();
+  globalThis.requestAnimationFrame = callback => { const id = nextFrame++; frames.set(id, callback); return id; };
+  globalThis.cancelAnimationFrame = id => frames.delete(id);
+  const frame = () => { const pending = [...frames.values()]; frames.clear(); pending.forEach(callback => callback(0)); };
+  await build({
+    entryPoints: ['modules/controls/CameraGizmo.tsx'],
+    outfile: '.openai/camera-gizmo-test/CameraGizmo.js',
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    packages: 'external',
+    jsx: 'automatic',
+  });
+  const React = await import('react');
+  const { createRoot } = await import('react-dom/client');
+  const { CameraGizmo } = await import('../.openai/camera-gizmo-test/CameraGizmo.js');
+  const root = createRoot(document.getElementById('root'));
+  t.after(async () => {
+    await React.act(async () => root.unmount());
+    delete globalThis.window;
+    delete globalThis.document;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+    delete globalThis.requestAnimationFrame;
+    delete globalThis.cancelAnimationFrame;
+  });
+  const calls = [];
+  await React.act(async () => root.render(React.createElement(CameraGizmo, {
+    view: { pitch: 40, bearing: 0, zoom: 12, latitude: 0, longitude: 0 },
+    onView() {},
+    onGestureView: (pitch, bearing, phase) => calls.push({ pitch, bearing, phase }),
+  })));
+  const svg = document.querySelector('.camera-gizmo svg');
+  svg.setPointerCapture = id => captures.set(svg, id);
+  svg.hasPointerCapture = id => captures.get(svg) === id;
+  svg.releasePointerCapture = id => { if (captures.get(svg) === id) captures.delete(svg); };
+  svg.getScreenCTM = () => ({ inverse: () => ({}) });
+  svg.createSVGPoint = () => ({ x: 0, y: 0, matrixTransform() { return this; } });
+  const pointer = (type, id, x, y) => {
+    const event = new window.Event(type, { bubbles: true, cancelable: true });
+    Object.assign(event, { pointerId: id, pointerType: 'touch', isPrimary: true, button: 0, buttons: type === 'pointerup' ? 0 : 1, clientX: x, clientY: y });
+    return event;
+  };
+  const model = () => document.querySelector('.camera-model');
+  const ring = () => document.querySelector('.camera-ring');
+
+  await React.act(async () => {
+    model().dispatchEvent(pointer('pointerdown', 1, 55, 81));
+    svg.dispatchEvent(pointer('pointermove', 1, 65, 71));
+    svg.dispatchEvent(pointer('pointerup', 1, 65, 71));
+  });
+  assert.deepEqual(calls, [{ pitch: 53.5, bearing: 13.5, phase: 'end' }], 'the model can tilt and rotate from a point inside the ring deadzone');
+  assert.equal(svg.hasPointerCapture(1), false, 'pointerup releases capture');
+
+  await React.act(async () => ring().dispatchEvent(pointer('pointerdown', 2, 55, 81)));
+  assert.equal(svg.hasPointerCapture(2), false, 'the bearing ring still rejects a deadzone start');
+
+  await React.act(async () => {
+    model().dispatchEvent(pointer('pointerdown', 3, 55, 81));
+    svg.dispatchEvent(pointer('pointermove', 3, 60, 81));
+    frame();
+    svg.dispatchEvent(pointer('lostpointercapture', 3, 60, 81));
+  });
+  assert.equal(calls.at(-1).phase, 'cancel', 'lost pointer capture cancels an active model gesture');
+  assert.equal(svg.hasPointerCapture(3), false);
+
+  await React.act(async () => {
+    model().dispatchEvent(pointer('pointerdown', 4, 55, 81));
+    svg.dispatchEvent(pointer('pointermove', 4, 55, 76));
+    frame();
+    svg.dispatchEvent(pointer('pointercancel', 4, 55, 76));
+  });
+  assert.equal(calls.at(-1).phase, 'cancel', 'pointercancel cancels an active model gesture');
+  assert.equal(svg.hasPointerCapture(4), false);
 });

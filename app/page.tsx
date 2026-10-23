@@ -183,7 +183,8 @@ import {
 } from '@/modules/tracks/TrackDrawing';
 import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { INITIAL_GEOLOGY } from '@/modules/geology/data';
-import { GeologyPanel, GeologyLegend } from '@/modules/geology/GeologyPanel';
+import { GeologyPanel } from '@/modules/geology/GeologyPanel';
+import { GeologyMapLegend } from '@/modules/geology/GeologyMapLegend';
 import { useAreas } from '@/modules/areas/useAreas';
 import { AreaTools } from '@/modules/areas/AreaTools';
 import { useMapTools } from '@/modules/controls/useMapTools';
@@ -2946,18 +2947,6 @@ export default function Home() {
           </>
           )}
         {guidance.session && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
-        <div
-          className="map-legends"
-          hidden={!!panel || !layers.geology}
-        >
-          {layers.geology && (
-            <GeologyLegend
-              state={geology}
-              source={layers.geologySource}
-              onDetails={() => { setGeologyDetailsOpen(true); setPanel('layers'); }}
-            />
-          )}
-        </div>
         {!guidance.active && (position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
@@ -2980,10 +2969,12 @@ export default function Home() {
               </button>
             </div>
           )}
+        {layers.geology && !panel && <GeologyMapLegend state={geology} source={layers.geologySource} />}
         <LayerWindow
           open={panel === 'layers'}
           detail={geologyDetailsOpen ? <GeologyPanel state={geology} source={layers.geologySource} onSource={geologySource => update({ geologySource })} onRetry={() => map.current?.refreshGeology()} /> : undefined}
           onDetailBack={() => setGeologyDetailsOpen(false)}
+          onGeologyDetails={() => setGeologyDetailsOpen(true)}
           onOpen={(open) => {
             setGeologyDetailsOpen(false);
             if (open) {

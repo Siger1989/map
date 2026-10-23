@@ -16,6 +16,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +30,57 @@ const (
 	volumeName      = "Shantu installer"
 	maxPayloadBytes = 2 << 30
 )
+
+var safeSemverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$`)
+
+func isSafeSemver(value string) bool {
+	parts := safeSemverPattern.FindStringSubmatch(value)
+	if parts == nil {
+		return false
+	}
+	if parts[5] != "" {
+		for _, identifier := range strings.Split(parts[5], ".") {
+			if len(identifier) > 1 && identifier[0] == '0' {
+				numeric := true
+				for _, char := range identifier {
+					if char < '0' || char > '9' {
+						numeric = false
+						break
+					}
+				}
+				if numeric {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func appVersionCore(value string) string {
+	return strings.SplitN(strings.SplitN(value, "+", 2)[0], "-", 2)[0]
+}
+
+func parsePackageRoot(root string) (string, string, error) {
+	if !strings.HasPrefix(root, "Shantu-") {
+		return "", "", errors.New("unexpected package prefix")
+	}
+	visibility := ""
+	for _, candidate := range []string{"public", "private"} {
+		if strings.HasSuffix(root, "-macOS-"+candidate) {
+			visibility = candidate
+			break
+		}
+	}
+	if visibility == "" {
+		return "", "", errors.New("unexpected package prefix")
+	}
+	version := strings.TrimSuffix(strings.TrimPrefix(root, "Shantu-"), "-macOS-"+visibility)
+	if !isSafeSemver(version) {
+		return "", "", errors.New("package prefix contains an unsafe version")
+	}
+	return version, visibility, nil
+}
 
 type manifest struct {
 	Format        string            `json:"format"`
@@ -173,13 +225,13 @@ func readPayload(filename string) (*payload, error) {
 			}
 		}
 	}
-	if root != "Shantu-0.2.132-test-macOS-public" && root != "Shantu-0.2.132-test-macOS-private" {
-		return nil, errors.New("unexpected package prefix")
+	prefixVersion, visibility, err := parsePackageRoot(root)
+	if err != nil {
+		return nil, err
 	}
 	if manifestPath == "" {
 		return nil, errors.New("manifest.json is missing from package root")
 	}
-	visibility := strings.TrimPrefix(root, "Shantu-0.2.132-test-macOS-")
 	var m manifest
 	var manifestBytes []byte
 	for _, f := range zr.File {
@@ -200,19 +252,21 @@ func readPayload(filename string) (*payload, error) {
 		}
 		break
 	}
-	if m.Format != "shantu-macos-portable" || m.FormatVersion != 1 || m.AppVersion != "0.2.132-test" || m.Platform != "macOS" || m.Visibility != visibility {
+	if m.Format != "shantu-macos-portable" || m.FormatVersion != 1 || !isSafeSemver(m.AppVersion) ||
+		m.AppVersion != prefixVersion || m.Platform != "macOS" || m.Visibility != visibility {
 		return nil, errors.New("manifest metadata does not match the package prefix")
 	}
 	if len(m.Architectures) != 2 || m.Architectures[0] != "arm64" || m.Architectures[1] != "x64" {
 		return nil, errors.New("manifest architecture list is unexpected")
 	}
-	wantFiles := 1932
-	wantWebFiles := 1925
-	if visibility == "private" {
-		wantFiles, wantWebFiles = 1933, 1926
+	if len(m.Files) < 7 {
+		return nil, errors.New("manifest has too few payload files")
 	}
-	if len(m.Files) != wantFiles {
-		return nil, errors.New("manifest has an unexpected file count")
+	wantWebFiles := 0
+	for name := range m.Files {
+		if strings.HasPrefix(name, "web/") {
+			wantWebFiles++
+		}
 	}
 
 	files := make(map[string][]byte, len(m.Files)+1)
@@ -253,10 +307,14 @@ func readPayload(filename string) (*payload, error) {
 		return nil, errors.New("payload counts do not match the expected package")
 	}
 	files["manifest.json"] = manifestBytes
-	for _, required := range []string{"README-Mac.md", "Start-Mac.command", "server.mjs", "runtime/LICENSE-node-arm64.txt", "runtime/LICENSE-node-x64.txt", "runtime/node-arm64", "runtime/node-x64"} {
+	for _, required := range []string{"README-Mac.md", "Start-Mac.command", "server.mjs", "web/index.html", "runtime/LICENSE-node-arm64.txt", "runtime/LICENSE-node-x64.txt", "runtime/node-arm64", "runtime/node-x64"} {
 		if _, ok := files[required]; !ok {
 			return nil, errors.New("required package file is missing")
 		}
+	}
+	_, hasPrivateSeed := files["web/native/default-map-sources.json"]
+	if (visibility == "private") != hasPrivateSeed {
+		return nil, errors.New("map-source seed does not match package visibility")
 	}
 	if err := checkMachO(files["runtime/node-arm64"], 0x0100000c); err != nil {
 		return nil, errors.New("arm64 Node executable has an unexpected Mach-O architecture")
@@ -348,7 +406,8 @@ func makeVolumeTree(p *payload, iconBytes []byte) ([]*hfsplus.Entry, error) {
 	resources := &hfsplus.Entry{Name: "Resources", Kind: hfsplus.KindDir, Mode: 0755}
 	launcher := []byte("#!/bin/sh\nset -eu\nRESOURCES=\"$(CDPATH= cd -- \"$(dirname -- \"$0\")/../Resources\" && pwd)\"\nexec /usr/bin/open -a Terminal \"$RESOURCES/Start-Mac.command\"\n")
 	macOS.Children = append(macOS.Children, &hfsplus.Entry{Name: "Shantu", Kind: hfsplus.KindFile, Data: launcher, Mode: 0755})
-	plist := []byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>\n<key>CFBundleName</key><string>山兔</string>\n<key>CFBundleDisplayName</key><string>山兔</string>\n<key>CFBundleExecutable</key><string>Shantu</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>0.2.132</string>\n<key>CFBundleVersion</key><string>132</string>\n<key>LSMinimumSystemVersion</key><string>11</string>\n<key>CFBundleIconFile</key><string>AppIcon</string>\n</dict></plist>\n")
+	bundleVersion := appVersionCore(p.manifest.AppVersion)
+	plist := []byte(fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>\n<key>CFBundleName</key><string>山兔</string>\n<key>CFBundleDisplayName</key><string>山兔</string>\n<key>CFBundleExecutable</key><string>Shantu</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>%s</string>\n<key>CFBundleVersion</key><string>%s</string>\n<key>LSMinimumSystemVersion</key><string>11</string>\n<key>CFBundleIconFile</key><string>AppIcon</string>\n</dict></plist>\n", bundleVersion, bundleVersion))
 	contents.Children = append(contents.Children,
 		&hfsplus.Entry{Name: "Info.plist", Kind: hfsplus.KindFile, Data: plist, Mode: 0644},
 		&hfsplus.Entry{Name: "PkgInfo", Kind: hfsplus.KindFile, Data: []byte("APPL????"), Mode: 0644},
@@ -362,7 +421,7 @@ func makeVolumeTree(p *payload, iconBytes []byte) ([]*hfsplus.Entry, error) {
 	}
 	resources.Children = append(resources.Children, &hfsplus.Entry{Name: "AppIcon.icns", Kind: hfsplus.KindFile, Data: iconBytes, Mode: 0644})
 	sortTree(app)
-	readme := []byte("Shantu for macOS 0.2.132-test\n\nDrag Shantu.app to Applications, then double-click it to start Shantu. The app is a launcher for the existing local-browser edition: it opens Start-Mac.command in Terminal, starts the local server on port 8787, and opens the map in your browser. Keep Terminal open while using the map; quit that Terminal session to stop the server.\n")
+	readme := []byte(fmt.Sprintf("Shantu for macOS %s\n\nDrag Shantu.app to Applications, then double-click it to start Shantu. The app is a launcher for the existing local-browser edition: it opens Start-Mac.command in Terminal, starts the local server on port 8787, and opens the map in your browser. Keep Terminal open while using the map; quit that Terminal session to stop the server.\n", p.manifest.AppVersion))
 	return []*hfsplus.Entry{
 		app,
 		{Name: "Applications", Kind: hfsplus.KindSymlink, Target: "/Applications", Mode: 0755},

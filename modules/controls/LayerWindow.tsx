@@ -19,6 +19,7 @@ export function LayerWindow({
   mapStatus,
   detail,
   onDetailBack,
+  onGeologyDetails,
 }: {
   open: boolean;
   onOpen: (open: boolean) => void;
@@ -31,6 +32,7 @@ export function LayerWindow({
   mapStatus: string;
   detail?: ReactNode;
   onDetailBack?: () => void;
+  onGeologyDetails?: () => void;
 }) {
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -97,7 +99,11 @@ export function LayerWindow({
             </button>
           </div>
           <div className="dock-content">
-            {detail || <><LayerPanel
+            {detail || <>{settings.geology && <button className="layer-geology-detail" onClick={onGeologyDetails}>
+              地质图例与说明
+            </button>}
+
+            <LayerPanel
               presets={<LayerPresets settings={settings} onChange={onChange} />}
               customSource={customSource}
               onOpenSources={onOpenSources}

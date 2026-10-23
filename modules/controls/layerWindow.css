@@ -68,6 +68,27 @@
   overscroll-behavior: contain;
 }
 .observatory.home-map .map-layer-control .layer-window.control-popover .dock-content > :is(.layer-panel,.map-status) { flex: 0 0 auto; }
+.observatory.home-map .map-layer-control .layer-window .layer-geology-detail {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  margin: 0 0 2px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-control, 4px);
+  color: var(--ui-ink);
+  background: var(--ui-surface);
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+/* The short-screen camera position crosses the layer window's close button. */
+@media (max-height: 600px) {
+  .observatory.home-map[data-panel='layers'] > .home-camera-control {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
 .observatory .map-layer-control .layer-window .layer-panel .map-source-link {
   min-height: 36px;
   gap: 4px;

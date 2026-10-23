@@ -6,6 +6,12 @@ on:
       - '.github/workflows/macos-dmg-check.yml'
       - 'scripts/macos-dmg/**'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Draft or published release tag containing the public macOS ZIP and SHA256 file
+        required: true
+        type: string
+        default: v0.2.133-test-standalone
 permissions:
   contents: read
 jobs:
@@ -24,25 +30,98 @@ jobs:
         with:
           go-version: '1.27.3'
           cache: false
-      - name: Download the already published public payload
+      - name: Select release tag
+        id: release
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 'https://github.com/Siger1989/map/releases/download/v0.2.132-test-macos/Shantu-0.2.132-test-macOS-public.zip' -o "$RUNNER_TEMP/public.zip"
-          echo "dff40aee4548944bf2716f0a2528b94b2635bac5bae1b5f597ea4c9aa1a7cc50  $RUNNER_TEMP/public.zip" | shasum -a 256 -c -
+          if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            tag="$INPUT_RELEASE_TAG"
+            [[ "$tag" =~ ^v[0-9A-Za-z.+-]+$ ]]
+          else
+            # Push validation stays pinned to the existing 132 fixture release.
+            tag='v0.2.132-test-macos'
+          fi
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+      - name: Download the public payload and its checksum from the selected release
+        id: download
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/release-payload"
+          mkdir -p "$dir"
+          gh release download "$RELEASE_TAG" --repo Siger1989/map \
+            --pattern 'Shantu-*-macOS-public.zip' \
+            --pattern 'Shantu-*-macOS-public.zip.sha256' \
+            --dir "$dir"
+          archive=''
+          archive_count=0
+          while IFS= read -r candidate; do
+            archive="$candidate"
+            archive_count=$((archive_count + 1))
+          done < <(find "$dir" -maxdepth 1 -type f -name 'Shantu-*-macOS-public.zip' -print)
+          [[ "$archive_count" -eq 1 ]]
+          checksum="$archive.sha256"
+          test -f "$checksum"
+          (cd "$dir" && shasum -a 256 -c "$(basename "$checksum")")
+          python3 - "$archive" "$RELEASE_TAG" "$EVENT_NAME" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import re
+          import sys
+          import zipfile
+
+          archive, tag, event, output = sys.argv[1:]
+          semver = re.compile(r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$")
+          with zipfile.ZipFile(archive) as z:
+              names = z.namelist()
+              roots = {name.split("/", 1)[0] for name in names}
+              if len(roots) != 1:
+                  raise SystemExit("ZIP must contain exactly one top-level package prefix")
+              root = next(iter(roots))
+              manifest = json.loads(z.read(root + "/manifest.json"))
+          version = manifest.get("appVersion", "")
+          if not semver.fullmatch(version):
+              raise SystemExit("manifest appVersion is not safe semantic version text")
+          node_version = manifest.get("nodeVersion", "")
+          if not isinstance(node_version, str) or not semver.fullmatch(node_version):
+              raise SystemExit("manifest nodeVersion is not safe version text")
+          prefix = f"Shantu-{version}-macOS-public"
+          if root != prefix or manifest.get("format") != "shantu-macos-portable" or manifest.get("formatVersion") != 1 or manifest.get("platform") != "macOS" or manifest.get("visibility") != "public":
+              raise SystemExit("release ZIP prefix and validated manifest metadata do not match")
+          if event == "workflow_dispatch":
+              if tag != f"v{version}-standalone":
+                  raise SystemExit("manual release tag must be v<manifest appVersion>-standalone")
+          elif tag != "v0.2.132-test-macos" or version != "0.2.132-test":
+              raise SystemExit("push fixture release no longer matches its expected manifest version")
+          with open(output, "a", encoding="utf-8") as stream:
+              stream.write(f"prefix={prefix}\nversion={version}\nnode_version={node_version}\n")
+          PY
       - name: Build the disk image from the verified public payload
         working-directory: scripts/macos-dmg
         shell: bash
+        env:
+          PACKAGE_PREFIX: ${{ steps.download.outputs.prefix }}
         run: |
           set -euo pipefail
           go test ./...
           mkdir -p "$RUNNER_TEMP/dmg-output"
-          go run -mod=readonly . -input "$RUNNER_TEMP/public.zip" -output "$RUNNER_TEMP/dmg-output/Shantu-0.2.132-test-macOS-public.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" > "$RUNNER_TEMP/dmg-output/build.json"
+          go run -mod=readonly . -input "$RUNNER_TEMP/release-payload/$PACKAGE_PREFIX.zip" -output "$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" > "$RUNNER_TEMP/dmg-output/build.json"
       - name: Mount, check every payload file, and run the native Node server
         shell: bash
+        env:
+          PACKAGE_PREFIX: ${{ steps.download.outputs.prefix }}
+          APP_VERSION: ${{ steps.download.outputs.version }}
+          NODE_VERSION: ${{ steps.download.outputs.node_version }}
         run: |
           set -euo pipefail
-          image="$RUNNER_TEMP/dmg-output/Shantu-0.2.132-test-macOS-public.dmg"
+          image="$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg"
           mount="$RUNNER_TEMP/shantu-mounted"
           mkdir -p "$mount"
           hdiutil verify "$image"
@@ -52,14 +131,14 @@ jobs:
           python3 scripts/macos-dmg/verify-mounted.py "$mount"
           resources="$mount/Shantu.app/Contents/Resources"
           case "$(uname -m)" in arm64) node="$resources/runtime/node-arm64";; x86_64) node="$resources/runtime/node-x64";; *) exit 1;; esac
-          test "$("$node" --version)" = 'v22.23.4'
+          test "$("$node" --version)" = "v$NODE_VERSION"
           SHANTU_NO_OPEN=1 "$resources/Start-Mac.command" > "$RUNNER_TEMP/server.log" 2>&1 &
           server_pid=$!
           for attempt in $(seq 1 30); do
             if curl -fsS 'http://127.0.0.1:8787/__shantu__/status' > "$RUNNER_TEMP/dmg-output/status.json"; then break; fi
             sleep 1
           done
-          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["app"]=="shantu-desktop-web" and d["version"]=="0.2.132-test"' "$RUNNER_TEMP/dmg-output/status.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["app"]=="shantu-desktop-web" and d["version"]==sys.argv[2]' "$RUNNER_TEMP/dmg-output/status.json" "$APP_VERSION"
           curl --fail --silent 'http://127.0.0.1:8787/' > "$RUNNER_TEMP/index.html"
           curl --fail --silent --location 'http://127.0.0.1:8787/api/terrain/9/395/203.png' > "$RUNNER_TEMP/terrain.png"
           python3 -c 'import sys; assert open(sys.argv[1],"rb").read(8)==b"\x89PNG\r\n\x1a\n"' "$RUNNER_TEMP/terrain.png"

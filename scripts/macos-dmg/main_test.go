@@ -76,6 +76,61 @@ func TestCheckMachOThinArchitectures(t *testing.T) {
 	}
 }
 
+func TestIsSafeSemver(t *testing.T) {
+	for _, version := range []string{"0.2.133-test", "1.0.0", "2.3.4-alpha.1+build.7"} {
+		if !isSafeSemver(version) {
+			t.Errorf("isSafeSemver(%q) = false", version)
+		}
+	}
+	for _, version := range []string{"", "00.2.3", "1.02.3", "1.2.03", "1.2.3-01", "1.2.3/../../escape", "1.2.3\n"} {
+		if isSafeSemver(version) {
+			t.Errorf("isSafeSemver(%q) = true", version)
+		}
+	}
+}
+
+func TestParsePackageRoot(t *testing.T) {
+	for _, test := range []struct {
+		root       string
+		version    string
+		visibility string
+		wantErr    bool
+	}{
+		{root: "Shantu-0.2.133-test-macOS-public", version: "0.2.133-test", visibility: "public"},
+		{root: "Shantu-0.2.133-test-macOS-private", version: "0.2.133-test", visibility: "private"},
+		{root: "Shantu-0.2.133-test/escape-macOS-public", wantErr: true},
+		{root: "Shantu-01.2.3-macOS-public", wantErr: true},
+		{root: "Shantu-1.2.3-macOS-other", wantErr: true},
+	} {
+		version, visibility, err := parsePackageRoot(test.root)
+		if (err != nil) != test.wantErr {
+			t.Errorf("parsePackageRoot(%q) error = %v, wantErr %v", test.root, err, test.wantErr)
+			continue
+		}
+		if err == nil && (version != test.version || visibility != test.visibility) {
+			t.Errorf("parsePackageRoot(%q) = (%q, %q), want (%q, %q)", test.root, version, visibility, test.version, test.visibility)
+		}
+	}
+}
+
+func TestVolumeVersionMetadataComesFromManifest(t *testing.T) {
+	version := "0.2.133-test"
+	children, err := makeVolumeTree(&payload{manifest: manifest{AppVersion: version}, files: map[string][]byte{}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app := findEntry(&hfsplus.Entry{Kind: hfsplus.KindDir, Children: children}, "Shantu.app")
+	plist := string(findEntry(app, "Contents/Info.plist").Data)
+	if !strings.Contains(plist, "<key>CFBundleShortVersionString</key><string>0.2.133</string>") ||
+		!strings.Contains(plist, "<key>CFBundleVersion</key><string>0.2.133</string>") {
+		t.Fatalf("plist does not use the version core: %s", plist)
+	}
+	readme := findEntry(&hfsplus.Entry{Kind: hfsplus.KindDir, Children: children}, "README.txt")
+	if readme == nil || !strings.Contains(string(readme.Data), "Shantu for macOS "+version) {
+		t.Fatal("volume README does not use the manifest appVersion")
+	}
+}
+
 func findEntry(parent *hfsplus.Entry, path string) *hfsplus.Entry {
 	parts := strings.Split(path, "/")
 	cur := parent

@@ -17,9 +17,10 @@ export type GeologyState = {
   legend: GeologyUnit[];
   sources: { name: string; url: string | null }[];
   selection: GeologyUnit | null;
+  cursorSelection: GeologyUnit | null;
 };
 export const INITIAL_GEOLOGY: GeologyState = {
-  source: 'world', status: 'off', legend: [], sources: [], selection: null,
+  source: 'world', status: 'off', legend: [], sources: [], selection: null, cursorSelection: null,
 };
 const translations: Record<string, string> = {
   Quaternary: '第四纪', Neogene: '新近纪', Paleogene: '古近纪',
