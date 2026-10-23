@@ -1,0 +1,76 @@
+name: Verify macOS DMG on Apple Silicon and Intel
+on:
+  push:
+    branches: [codex/place-address-search-20261011]
+    paths:
+      - '.github/workflows/macos-dmg-check.yml'
+      - 'scripts/macos-dmg/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dmg:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.27.3'
+          cache: false
+      - name: Download the already published public payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 'https://github.com/Siger1989/map/releases/download/v0.2.132-test-macos/Shantu-0.2.132-test-macOS-public.zip' -o "$RUNNER_TEMP/public.zip"
+          echo "dff40aee4548944bf2716f0a2528b94b2635bac5bae1b5f597ea4c9aa1a7cc50  $RUNNER_TEMP/public.zip" | shasum -a 256 -c -
+      - name: Build the disk image from the verified public payload
+        working-directory: scripts/macos-dmg
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test ./...
+          mkdir -p "$RUNNER_TEMP/dmg-output"
+          go run -mod=readonly . -input "$RUNNER_TEMP/public.zip" -output "$RUNNER_TEMP/dmg-output/Shantu-0.2.132-test-macOS-public.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" > "$RUNNER_TEMP/dmg-output/build.json"
+      - name: Mount, check every payload file, and run the native Node server
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="$RUNNER_TEMP/dmg-output/Shantu-0.2.132-test-macOS-public.dmg"
+          mount="$RUNNER_TEMP/shantu-mounted"
+          mkdir -p "$mount"
+          hdiutil verify "$image"
+          hdiutil attach -readonly -nobrowse -mountpoint "$mount" "$image"
+          server_pid=''
+          trap 'if [ -n "$server_pid" ]; then kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; fi; hdiutil detach "$mount"' EXIT
+          python3 scripts/macos-dmg/verify-mounted.py "$mount"
+          resources="$mount/Shantu.app/Contents/Resources"
+          case "$(uname -m)" in arm64) node="$resources/runtime/node-arm64";; x86_64) node="$resources/runtime/node-x64";; *) exit 1;; esac
+          test "$("$node" --version)" = 'v22.23.4'
+          SHANTU_NO_OPEN=1 "$resources/Start-Mac.command" > "$RUNNER_TEMP/server.log" 2>&1 &
+          server_pid=$!
+          for attempt in $(seq 1 30); do
+            if curl -fsS 'http://127.0.0.1:8787/__shantu__/status' > "$RUNNER_TEMP/dmg-output/status.json"; then break; fi
+            sleep 1
+          done
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d["app"]=="shantu-desktop-web" and d["version"]=="0.2.132-test"' "$RUNNER_TEMP/dmg-output/status.json"
+          curl --fail --silent 'http://127.0.0.1:8787/' > "$RUNNER_TEMP/index.html"
+          curl --fail --silent --location 'http://127.0.0.1:8787/api/terrain/9/395/203.png' > "$RUNNER_TEMP/terrain.png"
+          python3 -c 'import sys; assert open(sys.argv[1],"rb").read(8)==b"\x89PNG\r\n\x1a\n"' "$RUNNER_TEMP/terrain.png"
+          SHANTU_NO_OPEN=1 "$resources/Start-Mac.command" > "$RUNNER_TEMP/repeated-start.log"
+          kill -0 "$server_pid"
+          shasum -a 256 "$image" > "$RUNNER_TEMP/dmg-output/SHA256SUMS.txt"
+          printf 'OS=%s\narch=%s\nmount=PASS\nmanifest=PASS\nnative_node=PASS\nserver=PASS\nrepeat_start=PASS\nGUI_Gatekeeper=NOT_TESTED\n' "$(sw_vers -productVersion)" "$(uname -m)" > "$RUNNER_TEMP/dmg-output/verification.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: macos-dmg-${{ matrix.os }}
+          path: ${{ runner.temp }}/dmg-output/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
