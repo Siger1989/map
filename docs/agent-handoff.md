@@ -1,3 +1,5 @@
+> **2026-10-23 / DMG与统一交付文件夹**：已生成真正HFS+/UDZO Mac DMG，含Shantu.app浏览器地图启动器、原图标与Applications链接。公开payload/镜像在Apple Silicon、Intel两套macOS CI通过挂载、全文件校验和原生Node/服务/重复启动；私有DMG仅本机，独立CRC/解包哈希通过。六包按Android APK、Windows EXE、Mac DMG及自用/公开分类到交付包/山兔-2026-10-23，逐项SHA核对、旧文件保留；Android/Windows131，Mac132。Finder/Gatekeeper/Safari与触控板未验证。见[目录与验收](delivery-folder-20261023.md)。
+
 > **2026-10-23 / Mac 132便携交付**：本轮地图修复纳入自带Node22.23.4的Apple Silicon/Intel双架构ZIP；自用天地图Key/39图源与公开包分离。两套web构建、4项打包/接口/版本测试、全文件哈希与运行时校验、从最终ZIP解出的实际浏览器天地图/高程200及重复启动通过。Mac真机/Safari/触控板未验证；为本地浏览器版，非原生.app，不含Windows Python行业工作台。源码132/Android预备139；已有APK/EXE仍131，本轮未重建。见[Mac交付与校验](release-0.2.132-macos.md)。
 
 > **2026-10-23 / 地质图例、摇杆与等高距联动（快速预览）**：地质常驻摘要缩小且避开锁定/暂停记录，无滚动；完整说明在图层窗口。摇杆中心55%无效、外圈触控加宽并修正SVG坐标；默认高清。等高线远近统一所选高差，海拔色带/色标按同一30/50/100/200米分档；减少子瓦片生成。定位并修复固定在线高程服务被Fake-IP校验误拒导致502的问题。54项定向、tsc、九组布局/真实拖动及实际预览通过；3108/9174已更新，Key与存档保留。APK/EXE仍131，未打包提交推送；真机触控/GPS/FPS未验证。 [本轮验收](geology-camera-contours-20261023.md)。
