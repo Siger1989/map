@@ -22,12 +22,14 @@ export function searchViewport() {
 export function observeSearchViewport(update: () => void) {
   const keyboard = (navigator as Navigator & { virtualKeyboard?: EventTarget }).virtualKeyboard;
   window.addEventListener('resize', update);
+  window.addEventListener('shantu-keyboard-layout', update);
   document.addEventListener('scroll', update, true);
   window.visualViewport?.addEventListener('resize', update);
   window.visualViewport?.addEventListener('scroll', update);
   keyboard?.addEventListener('geometrychange', update);
   return () => {
     window.removeEventListener('resize', update);
+    window.removeEventListener('shantu-keyboard-layout', update);
     document.removeEventListener('scroll', update, true);
     window.visualViewport?.removeEventListener('resize', update);
     window.visualViewport?.removeEventListener('scroll', update);

@@ -63,9 +63,14 @@ export function PinEditor({ state, item, photos, onClose, onShare, onAdjust, onC
         const row = input.closest<HTMLElement>('.pin-attribute');
         if (!row) return;
         const viewport = list.getBoundingClientRect();
-        const active = row.getBoundingClientRect();
-        if (active.bottom > viewport.bottom) list.scrollTop += active.bottom - viewport.bottom;
-        else if (active.top < viewport.top) list.scrollTop -= viewport.top - active.top;
+        const keyboardOpen = document.documentElement.dataset.shantuKeyboard === 'open';
+        const visual = window.visualViewport;
+        const visibleTop = keyboardOpen ? Math.max(viewport.top, (visual?.offsetTop ?? 0) + 8) : viewport.top;
+        const visibleBottom = keyboardOpen ? Math.min(viewport.bottom, (visual?.offsetTop ?? 0) + (visual?.height ?? window.innerHeight) - 8) : viewport.bottom;
+        const rowBounds = row.getBoundingClientRect();
+        const active = rowBounds.height > visibleBottom - visibleTop ? input.getBoundingClientRect() : rowBounds;
+        if (active.bottom > visibleBottom) list.scrollTop += active.bottom - visibleBottom;
+        else if (active.top < visibleTop) list.scrollTop -= visibleTop - active.top;
       });
     };
     const node = editor.current;

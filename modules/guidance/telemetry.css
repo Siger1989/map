@@ -9,9 +9,9 @@
   max-height: 36px;
   margin: 0;
   padding: 0 7px;
-  border: 1px solid var(--ui-line, var(--border));
-  border-radius: 8px;
-  background: var(--ui-raised, var(--surface));
+  border: 1px solid var(--navigation-telemetry-line, var(--ui-line, var(--border)));
+  border-radius: var(--navigation-telemetry-radius, 8px);
+  background: var(--navigation-telemetry-surface, var(--ui-raised, var(--surface)));
 }
 
 .navigation-telemetry--compact .navigation-speeds {

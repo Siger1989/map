@@ -41,6 +41,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.control-popover,.route-surface,.route-dialog,.home-route-card,.pin-editor) :is(button.is-primary,button.route-primary,button.collection-primary,button.recording-start,button.pin-save) { background:var(--ui-accent); color:var(--ui-on-accent); border-color:transparent; min-height:44px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.route-danger,.is-danger,.pin-danger,.record-console-status[data-error='true'],.route-error,.pin-status) { color:var(--ui-danger); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.dock-heading,.route-surface>header,.route-dialog>header,.home-map-popup>header,.raster-level-panel>header,.place-share-panel>header) { background:transparent; color:var(--ui-ink); border-color:transparent; border-radius:0; box-sizing:border-box; min-height:48px; height:auto; padding:6px 10px; }
+/* The compact raster menu keeps its header inside the 200px operation-card limit. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .raster-level-panel > header { min-height:36px; padding:0; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover .dock-heading { flex-shrink:0; border-bottom:0; gap:4px; }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .control-popover .dock-heading h2 { color:var(--ui-ink); font-size:14px; }
 /* Keep title controls inset; route and recording retain their existing outer padding. */
@@ -65,7 +67,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-
   html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .tool-grid button:hover:not(:disabled) { background:var(--ui-selected); color:var(--ui-active-ink); border-color:var(--ui-accent); }
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] #map-control-panel .tool-grid button:active:not(:disabled) { background:var(--ui-accent); color:var(--ui-on-accent); border-color:var(--ui-accent); }
-html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.weather-main p,.record-console-status,.record-accuracy-hint,.record-console-footer,.pin-field span,.pin-coordinate-value span,.pin-style-row button span:first-child,.photo-picker small,.photo-drafts small,.photo-saved small) { color:var(--ui-muted); }
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] :is(.weather-main p,.record-console-status:not([data-error='true']),.record-accuracy-hint,.record-console-footer,.pin-field span,.pin-coordinate-value span,.pin-style-row button span:first-child,.photo-picker small,.photo-drafts small,.photo-saved small) { color:var(--ui-muted); }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .home-route-actions button + button { border-left:0; border-radius:var(--ui-radius-control); }
 /* Favorites retain their full-width split. Body portals inherit root tokens. */
 html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .control-dock .control-popover { border-radius:0; background:var(--ui-surface); color:var(--ui-ink); }

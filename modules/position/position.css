@@ -46,6 +46,41 @@
   margin-left: auto;
   background: transparent;
 }
+/* Location notices stay as a short text line; only the dismiss control receives pointer input. */
+html[data-ui-theme] .observatory.home-map .position-status.glass[role='status'] {
+  width: max-content;
+  max-width: min(276px, calc(100vw - 72px));
+  padding: 0;
+  color: var(--ui-muted, #a6b4aa);
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+html[data-ui-theme] .observatory.home-map .position-status.glass[role='status'] > span {
+  opacity: .82;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+html[data-ui-theme] .observatory.home-map .position-status.glass[role='status'][data-error='true'] {
+  color: var(--ui-danger, #ff807a);
+}
+html[data-ui-theme] .observatory.home-map .position-status.glass[role='status'] > button {
+  box-sizing: border-box;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  margin-left: 2px;
+  color: inherit;
+  line-height: 18px;
+  pointer-events: auto;
+}
 .route-favorites > strong {
   display: block;
   margin-bottom: 7px;

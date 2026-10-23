@@ -110,6 +110,9 @@ export function GuidanceCard({
   const compactContextStatus = compactPriorityStatus
     ? forwardNavigation ? '' : compactPriorityStatus
     : motionNotice || positionStatus || viewNotice || '';
+  const visibleCompactContextStatus = cameraWaiting && compactContextStatus === '等待当前位置…'
+    ? motionNotice && !/等待|正在获取/.test(motionNotice) ? motionNotice : ''
+    : compactContextStatus;
   const kind = s.arrived ? 'arrival' : showCompactInstruction ? instructionKind : 'unknown';
   const nextCheckpoint = s.checkpoints[s.nextCheckpoint];
   const nextStop = s.route.stops?.[s.nextCheckpoint + 1];
@@ -154,7 +157,8 @@ export function GuidanceCard({
               : `导航中 · ${TRAVEL_MODES.find((m) => m.id === s.route.mode)?.label}`}
           </strong> : <button className="guidance-resume guidance-follow-status" aria-label="继续导航" aria-pressed={following} onClick={onFollow}>
             <Navigation size={15} />
-            <span>{cameraWaiting ? '等待定位' : following ? '导航跟随中' : '继续导航'} · {TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
+            <span className="guidance-follow-label">{cameraWaiting ? '等待定位' : following ? '导航跟随中' : '继续导航'}</span>
+            <span className="guidance-mode-tag">{TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
           </button>}
           <div className="guidance-header-actions">
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
@@ -175,9 +179,9 @@ export function GuidanceCard({
             {showCompactInstruction && <span className="guidance-remaining-line">全程剩余 {formatDistance(g.remaining)}</span>}
           </div>
         </div>}
-        {compact && !expanded && !displayPanel && (compactTelemetry || compactContextStatus) && <div className="guidance-compact-context">
+        {compact && !expanded && !displayPanel && (compactTelemetry || visibleCompactContextStatus) && <div className="guidance-compact-context">
           {compactTelemetry && <div className="guidance-compact-telemetry">{compactTelemetry}</div>}
-          {compactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{compactContextStatus}</span>}
+          {visibleCompactContextStatus && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{visibleCompactContextStatus}</span>}
         </div>}
         {motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{motionNotice}</span>}
         {positionStatus && !motionNotice && !displayPanel && expanded && <span className="guidance-inline-status" role="status" data-position-assessment={effectivePositionAssessment?.kind}>{positionStatus}</span>}

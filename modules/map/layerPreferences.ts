@@ -36,6 +36,7 @@ export function parseLayerPreferences(raw: string | null, fallback: LayerSetting
     if (bounded(value.roadsOpacity, 0, 1)) result.roadsOpacity = value.roadsOpacity;
     if (bounded(value.exaggeration, 0.1, 5)) result.exaggeration = value.exaggeration;
     if (value.rasterLevel === null || bounded(value.rasterLevel, 0, 24)) result.rasterLevel = value.rasterLevel;
+    if (value.rasterQuality === 'standard' || value.rasterQuality === 'high') result.rasterQuality = value.rasterQuality;
     // Retired weather keys and offline package caps are intentionally ignored.
     delete result.offlineMaxZoom;
     return result;

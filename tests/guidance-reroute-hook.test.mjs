@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
 import { pathToFileURL } from 'node:url';
+import { navigationStartPlace } from '../modules/guidance/routeStart.ts';
 
 const output = '.openai/guidance-reroute-hook/hook-test.mjs';
 await build({
@@ -158,6 +159,44 @@ test('a moving off-route fix invalidates a stale request and retries from the la
   assert.deepEqual(calls[1][0].coordinates, moved, 'the retry starts at the latest reliable GPS fix');
   assert.deepEqual(calls[1][1].coordinates, original.stops.at(-1).coordinates);
   calls[1][4].forEach((place, i) => coordinatesNear(place.coordinates, original.stops[i + 1].coordinates));
+  const rerouted = { ...route(), stops: [calls[1][0], ...calls[1][4], calls[1][1]],
+    coordinates: [moved, ...calls[1][4].map(p => p.coordinates), calls[1][1].coordinates],
+    snapped: [moved, ...calls[1][4].map(p => p.coordinates), calls[1][1].coordinates] };
+  await React.act(async () => replies[1].resolve(rerouted));
+  assert.equal(app.state.session.replanned, true);
+  assert.deepEqual(app.state.session.route.coordinates[0], moved);
+  assert.deepEqual(navigationStartPlace(app.state.session, null), original.stops[0], 'automatic rerouting keeps the original map start');
+});
+
+test('successive manual reroutes keep the journey start while routing from each latest fix', async (t) => {
+  const calls = [];
+  const app = await mount(t, async (start, end, mode, signal, via = []) => {
+    calls.push(start);
+    const stops = [start, ...via, end];
+    return { ...route(), mode, stops, coordinates: stops.map(p => p.coordinates), snapped: stops.map(p => p.coordinates) };
+  });
+  await app.start();
+  const original = app.state.session.originalRoute;
+  const snapshot = structuredClone(original);
+  for (const position of [[103.002, 30], [103.004, 30]]) {
+    await app.setTime(app.now() + 1000);
+    await app.setFix(fixAt(app.now(), position));
+    await React.act(async () => app.state.replan());
+    assert.deepEqual(calls.at(-1).coordinates, position);
+    assert.deepEqual(app.state.session.route.coordinates[0], position);
+    assert.deepEqual(navigationStartPlace(app.state.session, null), original.stops[0]);
+    assert.deepEqual(app.state.session.route.stops.at(-1), original.stops.at(-1));
+    assert.deepEqual(original, snapshot);
+  }
+});
+
+test('legacy routes without stop metadata retain their original start coordinates and name fallback', () => {
+  const original = route();
+  delete original.stops;
+  const session = { originalRoute: original };
+  const fallback = { name: '出发地点', coordinates: original.coordinates[0] };
+  assert.deepEqual(navigationStartPlace(session, fallback), fallback);
+  assert.deepEqual(navigationStartPlace(session, null), { name: '起点', coordinates: original.coordinates[0] });
 });
 
 test('a failed planner request automatically retries after its bounded backoff using fresh GPS', async (t) => {

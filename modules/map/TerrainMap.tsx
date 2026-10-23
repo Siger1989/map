@@ -92,6 +92,8 @@ import { TERRAIN_SECTION_ENABLED } from '../../config/features';
 import type { SectionSettings, SectionStatus } from '../section/types';
 import { basemapConfiguration } from '../cartography/basemaps';
 import { RasterLevelLock } from '../cartography/RasterLevelLock';
+import { RasterQuality } from '../cartography/RasterQuality';
+import { applyClearDaySky } from './sky';
 import { imageryDateLabel, imageryDateSourceKey } from './imageryDateLabel';
 import './imageryDateLabel.css';
 import { PhotoLayer } from '../photos/PhotoLayer';
@@ -313,6 +315,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     const routeIssueRef = useRef<RouteIssueLayer | null>(null);
     const detailPatchRef = useRef<RasterDetailPatch | null>(null);
     const rasterLockRef = useRef<RasterLevelLock | null>(null);
+    const rasterQualityRef = useRef<RasterQuality | null>(null);
     const trackRef = useRef<TrackLayer | null>(null);
     const syncedTracks = useRef<TrackOverlay | null>(null);
     const trackPreviewRef = useRef<TrackOverlay['preview']>(null);
@@ -457,6 +460,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
+      rasterQualityRef.current?.sync(ids, s.rasterLevel == null && s.rasterQuality === 'high');
       const source=ids[0] ? map.getSource(ids[0]) : null;
       detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
       if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
@@ -1038,6 +1042,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           });
           releaseFollowPan = installFollowPanHandler(map, () => latest.current.onBrowse());
           rasterLockRef.current = new RasterLevelLock(map);
+          rasterQualityRef.current = new RasterQuality(map);
           map.on('sourcedata', syncRasterLock);
           const rememberView = () => {
             if (boxGestureActive.current || latest.current.persistCamera === false) return;
@@ -1270,6 +1275,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           };
           map.once('style.load', async () => {
             if (disposed) return;
+            applyClearDaySky(map);
             loaded.current = true;
             geologyRef.current = new GeologyLayer(map, (state) =>
               latest.current.onGeology(state),
@@ -1617,6 +1623,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         detailPatchRef.current = null;
         mapRef.current?.remove();
         rasterLockRef.current = null;
+        rasterQualityRef.current = null;
         modelTerrainRef.current = null;
         modelMaskRef.current?.dispose();
         modelMaskRef.current = null;

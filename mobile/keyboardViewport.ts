@@ -1,3 +1,5 @@
+import { installKeyboardFocusVisibility, type KeyboardFocusVisibilityController } from './keyboardFocus.ts';
+
 type ViewportWindow = Window & {
   visualViewport?: VisualViewport | null;
   navigator?: Navigator & { userAgentData?: { mobile?: boolean } };
@@ -96,6 +98,7 @@ export function installKeyboardViewportCompatibility(
   let focusedEditable = false;
   let keyboardOpen = false;
   let disposed = false;
+  let focusVisibility: KeyboardFocusVisibilityController | null = null;
 
   const setLayoutMode = (height: number) => {
     const safeHeight = Number.isFinite(height) && height > 0 ? height : 0;
@@ -107,9 +110,11 @@ export function installKeyboardViewportCompatibility(
     root.dataset.shantuLayoutBand = layoutBand(keyboardOpen ? baselineHeight : safeHeight);
     if (keyboardOpen) root.dataset[KEYBOARD_ATTRIBUTE] = 'open';
     else delete root.dataset[KEYBOARD_ATTRIBUTE];
+    focusVisibility?.schedule();
   };
 
   const onFocusIn = (event: FocusEvent) => {
+    focusVisibility?.schedule();
     if (!editable(event.target)) return;
     focusedEditable = true;
     if (!keyboardOpen) {
@@ -122,6 +127,7 @@ export function installKeyboardViewportCompatibility(
   const onFocusOut = (event: FocusEvent) => {
     if (editable(event.target)) focusedEditable = false;
     // Do not release here: a candidate click or a switch to another input can blur briefly.
+    focusVisibility?.schedule();
   };
 
   const onViewportChange = () => {
@@ -168,6 +174,7 @@ export function installKeyboardViewportCompatibility(
   windowRef.addEventListener('orientationchange', onViewportChange, { passive: true });
   visualViewport?.addEventListener('resize', onViewportChange, { passive: true });
   visualViewport?.addEventListener('scroll', onViewportChange, { passive: true });
+  focusVisibility = installKeyboardFocusVisibility(documentRef, windowRef);
   setLayoutMode(baselineHeight);
 
   const cleanup = () => {
@@ -179,6 +186,8 @@ export function installKeyboardViewportCompatibility(
     windowRef.removeEventListener('orientationchange', onViewportChange);
     visualViewport?.removeEventListener('resize', onViewportChange);
     visualViewport?.removeEventListener('scroll', onViewportChange);
+    focusVisibility?.cleanup();
+    focusVisibility = null;
     for (const [property, snapshot] of original.variables) restoreStyle(root, property, snapshot);
     if (original.hadKeyboardAttribute) root.dataset[KEYBOARD_ATTRIBUTE] = original.keyboardAttribute ?? '';
     else delete root.dataset[KEYBOARD_ATTRIBUTE];

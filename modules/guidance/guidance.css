@@ -375,3 +375,36 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 .observatory.home-map .guidance-card[data-compact='false'] header button[aria-label='结束导航'] {
   min-width:44px; width:44px; height:44px; min-height:44px; flex:0 0 44px;
 }
+
+/* Compact follow remains a 44px target; its active state is text-led like a heading. */
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] header button.guidance-follow-status,
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] header button.guidance-follow-status[aria-pressed='true'] {
+  box-sizing:border-box;
+  height:44px;
+  min-height:44px;
+  padding:0 4px;
+  border:0 !important;
+  background:transparent !important;
+  color:var(--ui-ink) !important;
+  font-weight:600;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-follow-label {
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .guidance-mode-tag {
+  flex:0 0 auto;
+  padding:3px 6px;
+  border:1px solid var(--ui-line);
+  border-radius:var(--ui-radius-control);
+  color:var(--ui-muted);
+  font-size:10px;
+  font-weight:500;
+  line-height:1;
+}
+html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-card[data-compact='true'] .navigation-telemetry--compact {
+  border:0;
+  border-radius:0;
+  background:transparent;
+}

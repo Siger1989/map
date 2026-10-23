@@ -18,7 +18,7 @@ export function OutdoorPanel({
   onSavedTrack,
   onTrackRemapped,
   tracks, selectedId,
-  onMarkCurrent, locationStatus,
+  onMarkCurrent, locationStatus, locationError,
   initialTab = 'record',
   recordingEnabled = true,
   onImport,
@@ -35,6 +35,7 @@ export function OutdoorPanel({
   selectedId: string | null;
   onMarkCurrent: () => string;
   locationStatus: string;
+  locationError?: boolean;
   initialTab?: 'journey' | 'record' | 'photos';
   recordingEnabled?: boolean;
   onImport?: () => void;
@@ -68,6 +69,7 @@ export function OutdoorPanel({
           onPhotos={() => setTab('photos')}
           onMarkCurrent={onMarkCurrent}
           locationStatus={locationStatus}
+          locationError={locationError}
         />
       )}
       {activeTab === 'routing' && <OfflineRoutingPanel points={points} name={name} onShow={onShow} />}

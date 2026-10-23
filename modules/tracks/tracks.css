@@ -276,9 +276,12 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   left: var(--edge-left, 8px);
   right: calc(var(--home-right) + 80px);
   bottom: calc(var(--home-footer, 64px) + 8px);
-  width: min(276px, calc(100% - var(--home-left) - var(--home-right) - 80px));
-  max-width: min(276px, calc(100% - var(--home-left) - var(--home-right) - 80px));
-  box-sizing:border-box; padding:6px 10px;
+  width: min(232px, calc(100% - var(--home-left) - var(--home-right) - 80px));
+  max-width: min(232px, calc(100% - var(--home-left) - var(--home-right) - 80px));
+  max-height: min(200px, calc(100dvh - var(--home-top, 0px) - var(--home-header-height, 50px) - var(--home-footer, 64px) - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing:border-box; padding:4px;
   gap: 4px;
   border-radius: var(--ui-radius-card,8px);
 }
@@ -287,7 +290,7 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   flex: 0 0 100%;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] :is(button, select, .track-condition-input, input[type='color']) {
-  min-height: 36px;
+  min-height: 28px;
   border-radius: var(--ui-radius-control,4px);
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button {
@@ -301,19 +304,23 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   flex: 1 0 100%;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style input[type='color'] {
-  width: 40px;
-  height: 36px;
-  padding: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 3px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-drawing-style select {
-  width: 68px;
-  min-width: 68px;
-  padding: 2px 6px;
+  width: 58px;
+  min-width: 58px;
+  min-height: 32px;
+  height: 32px;
+  padding: 2px 4px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-condition-input {
   flex: 1 1 80px;
   width: 80px;
-  padding: 2px 8px;
+  min-height: 32px;
+  height: 32px;
+  padding: 2px 6px;
   font-size: 16px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'][data-view='display'] {
@@ -344,7 +351,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools-
   font-size: 12px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-tools-actions button {
-  min-height: 36px;
+  min-height: 28px;
+  height: 28px;
 }
 
 /* Keep drawing tools on the shared charcoal surface and make every action read as a control. */
@@ -377,8 +385,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   flex: 1 1 calc(33.333% - 4px);
   min-width: 0;
   justify-content: center;
-  min-height: 44px;
-  height: 44px;
+  min-height: 28px;
+  height: 28px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] button[aria-pressed='true'] {
   color: var(--ui-accent);
@@ -395,8 +403,8 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[
   gap: 4px;
 }
 html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .track-tools[aria-label='绘制工具'] .track-tools-actions button:last-child {
-  min-height: 44px;
-  height: 44px;
+  min-height: 28px;
+  height: 28px;
   color: var(--ui-on-accent);
   border-color: var(--ui-accent);
   background: var(--ui-accent);

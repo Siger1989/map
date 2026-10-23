@@ -60,6 +60,7 @@ import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useSearchQuickNavigation } from '@/modules/navigation/useSearchQuickNavigation';
 import { createSearchNavigationDraft } from '@/modules/navigation/searchNavigationDraft';
 import { useGuidance } from '@/modules/guidance/useGuidance';
+import { navigationStartPlace } from '@/modules/guidance/routeStart';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
 import { RouteShare } from '@/modules/routeShare/RouteShare';
@@ -71,6 +72,7 @@ import {
   type ShareRoute,
 } from '@/modules/routeShare/data';
 import { GuidanceCard } from '@/modules/guidance/GuidanceCard';
+import { GuidanceProgressRail } from '@/modules/guidance/GuidanceProgressRail';
 import { navigationCloseZoom } from '@/modules/guidance/forwardCamera';
 import type { NavigationCueInput } from '@/modules/guidance/navigationCueGeometry';
 import { navigationReferenceJoinProgress } from '@/modules/guidance/navigationCueGeometry';
@@ -1396,8 +1398,8 @@ export default function Home() {
   const routeOverlay = useMemo(
     () => {
       const activeRoute = guidance.active ? guidance.session?.route : null;
-      const start = activeRoute
-        ? activeRoute.stops?.[0] ?? { name: '当前位置', coordinates: activeRoute.coordinates[0] }
+      const start = activeRoute && guidance.session
+        ? navigationStartPlace(guidance.session, navigation.start)
         : navigation.start;
       const end = activeRoute
         ? activeRoute.stops?.at(-1) ?? { name: '终点', coordinates: activeRoute.coordinates.at(-1)! }
@@ -1420,6 +1422,7 @@ export default function Home() {
       navigationDisplayJoin,
       guidance.active,
       guidance.session?.route,
+      guidance.session?.originalRoute,
       navigationSession?.progress,
       navigationCues?.kind,
     ],
@@ -2882,6 +2885,7 @@ export default function Home() {
           </div>
         ) : null}
         {guidance.active &&
+          !comparison &&
           !panel &&
           !measurement.active &&
           !areas.drawing &&
@@ -2893,6 +2897,8 @@ export default function Home() {
           navigation.picking === null &&
           !quickAdd &&
           !tracks.editing && (
+          <>
+          {guidance.session && <GuidanceProgressRail session={guidance.session} />}
           <GuidanceCard
               positionAssessment={guidance.session?.positionAssessment}
               displayPanel={navigationDisplayOpen && !panel && !quickAdd && !measurement.active
@@ -2936,6 +2942,7 @@ export default function Home() {
                 }
               }}
             />
+          </>
           )}
         {guidance.session && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
         <div
@@ -2954,8 +2961,8 @@ export default function Home() {
         {!guidance.active && (position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
-          !panel && (
-            <div className="position-status glass" role="status">
+          !panel && !tracks.drawing && !branchEditing && (
+            <div className="position-status glass" role="status" data-error={!!position.locationError || !!position.directionError}>
               <span>
                 {position.locationError ||
                   position.directionError ||
@@ -3057,7 +3064,7 @@ export default function Home() {
             }
           }} /> : undefined}
           elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
-          layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.floor(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256))))} onLevel={rasterLevel => update({ rasterLevel })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
+          layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.round(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256)) + (layers.rasterQuality === 'high' ? 1 : 0)))} onLevel={rasterLevel => update({ rasterLevel })} quality={layers.rasterQuality ?? 'standard'} onQuality={rasterQuality => update({ rasterQuality })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           viewControl={
             <CameraGizmo
               view={view}
@@ -3366,6 +3373,7 @@ export default function Home() {
               key={outdoorPhotos?'photos':'record'}
               initialTab={desktopShell || outdoorPhotos ? 'photos' : 'record'}
               recordingEnabled={!desktopShell}
+              locationError={!!position.locationError}
               locationStatus={position.locationError || (position.locating ? '正在定位…' : displayedFix && Date.now() - displayedFix.timestamp < 30000 ? `定位估计误差 ±${Math.round(displayedFix.accuracy)} 米` : '当前位置尚未定位，点标记可获取位置')}
               onMarkCurrent={() => {
                 if (!displayedFix || Date.now() - displayedFix.timestamp >= 30000) {

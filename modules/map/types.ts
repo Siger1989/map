@@ -18,6 +18,7 @@ export type LayerSettings = {
   roads: boolean;
   roadsOpacity?: number;
   rasterLevel?: number | null;
+  rasterQuality?: 'standard' | 'high';
   labels: boolean;
   exaggeration: number;
   imageryMode: 'detail' | 'latest';
@@ -37,6 +38,7 @@ export const DEFAULT_LAYERS: LayerSettings = {
   roads: true,
   roadsOpacity: 1,
   rasterLevel: null,
+  rasterQuality: 'standard',
   labels: true,
   tiandituLabels: DEFAULT_TIANDITU_LABELS,
   exaggeration: 1,

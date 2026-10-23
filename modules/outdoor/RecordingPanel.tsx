@@ -9,11 +9,11 @@ import { recordingTransfer, saveRecording } from './savedRecording';
 import { RecordingCompactSettings } from './RecordingCompactSettings';
 import './recordingConsole.css';
 
-export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped, onPhotos, onMarkCurrent, locationStatus }: {
+export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped, onPhotos, onMarkCurrent, locationStatus, locationError = false }: {
   recorder: ReturnType<typeof useRecording>; points: Coordinate[];
   onShow: (points: Coordinate[]) => void; onSavedTrack: (id: string) => void;
   onTrackRemapped: (from: string, to: string) => Promise<void>;
-  onPhotos: () => void; onMarkCurrent: () => string; locationStatus: string;
+  onPhotos: () => void; onMarkCurrent: () => string; locationStatus: string; locationError?: boolean;
 }) {
   const [message, setMessage] = useState('');
   const [ending,setEnding]=useState(false);
@@ -22,6 +22,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped
   const count = record.segments.reduce((n, line) => n + line.length, 0);
   const status = { idle: '未开始', recording: '记录中', paused: '已暂停', finished: '待处理' }[record.phase];
   const error = record.error || recorder.appearance.error || recorder.preferences.error || recorder.sampling.error;
+  const hasStatusError = !!error || (!message && !recorder.qualityNote && locationError);
   const act = (work: () => void) => { try { setMessage(''); work(); } catch (error) { setMessage((error as Error).message); } };
   const finish = async (keep:boolean) => {
     try {setMessage('');const id=await recorder.finish(keep,onTrackRemapped);setEnding(false);setMessage(keep?'记录已保存，可在收藏中查看':'本次记录已结束');if(id)onSavedTrack(id);}
@@ -29,7 +30,7 @@ export function RecordingPanel({ recorder, onShow, onSavedTrack, onTrackRemapped
   };
   return <section className="record-console" aria-label="记录控制台">
     <div className="record-console-stats"><strong>{formatDistance(trackDistance(segments))}</strong><span>{count}点 · {status}</span></div>
-    <p className="record-console-status" data-error={!!error} role="status" title={error || message || locationStatus}>{error || message || recorder.qualityNote || locationStatus}</p>
+    <p className="record-console-status" data-error={hasStatusError} role="status" title={error || message || locationStatus}>{error || message || recorder.qualityNote || locationStatus}</p>
     <div className="record-function-group record-group-control">
       {ending || record.phase==='finished' ? <>
         <small>{count ? '结束本次记录' : '尚无有效轨迹点，无法保存'}</small>
