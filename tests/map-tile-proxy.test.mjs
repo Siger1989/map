@@ -7,6 +7,11 @@ import {
 } from '../tools/map-tile-proxy.mjs';
 
 const image = { status: 200, mime: 'image/png', body: Buffer.from([137, 80, 78, 71]) };
+const png = {
+  status: 200,
+  mime: 'image/png',
+  body: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+};
 
 test('map tile proxy pins validated public DNS results and returns bounded image response', async () => {
   let pinned;
@@ -37,6 +42,51 @@ test('map tile proxy rejects private, mixed, and special-purpose DNS answers', a
     ],
     request: async () => { throw new Error('must not connect'); },
   }), /not public/);
+});
+
+test('the fixed Terrarium URL may use only the managed RFC2544 HTTPS relay path', async () => {
+  let pinned;
+  const tileUrl = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png';
+  const tile = await fetchPublicMapTile(tileUrl, {
+    lookup: async () => [{ address: '198.18.0.111', family: 4 }],
+    request: async (...args) => { pinned = args.slice(1, 4); return png; },
+  });
+  assert.deepEqual(pinned, ['elevation-tiles-prod.s3.amazonaws.com', '198.18.0.111', 4]);
+  assert.deepEqual(tile.body, png.body);
+
+  const rejected = [
+    ['https://tiles.example.test/terrarium/12/3227/1670.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com.evil.test/terrarium/12/3227/1670.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/private/12/3227/1670.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/15/1/1.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/4096/1.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png?x=1', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png#x', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://user:pass@elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png', [{ address: '198.18.0.111', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png', [{ address: '198.18.0.111', family: 4 }, { address: '8.8.8.8', family: 4 }]],
+    ['https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png', [{ address: '127.0.0.1', family: 4 }]],
+  ];
+  for (const [url, records] of rejected) {
+    let requested = false;
+    await assert.rejects(fetchPublicMapTile(url, {
+      lookup: async () => records,
+      request: async () => { requested = true; return png; },
+    }), /not public|Unsupported/);
+    assert.equal(requested, false, url);
+  }
+});
+
+test('the managed Terrarium relay rejects redirects and non-PNG bodies', async () => {
+  const url = 'https://elevation-tiles-prod.s3.amazonaws.com/terrarium/12/3227/1670.png';
+  const lookup = async () => [{ address: '198.18.0.111', family: 4 }];
+  await assert.rejects(fetchPublicMapTile(url, {
+    lookup,
+    request: async () => ({ status: 302, location: 'https://cdn.example.test/tile.png' }),
+  }), /redirects are not allowed/);
+  await assert.rejects(fetchPublicMapTile(url, {
+    lookup,
+    request: async () => ({ status: 200, mime: 'image/jpeg', body: Buffer.from('not a png') }),
+  }), /PNG/);
 });
 
 test('map tile redirects re-resolve and re-pin each public host', async () => {

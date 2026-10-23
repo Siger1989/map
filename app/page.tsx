@@ -183,7 +183,7 @@ import {
 } from '@/modules/tracks/TrackDrawing';
 import { ElevationLegend } from '@/modules/controls/ElevationLegend';
 import { INITIAL_GEOLOGY } from '@/modules/geology/data';
-import { GeologyPanel } from '@/modules/geology/GeologyPanel';
+import { GeologyPanel, GeologyLegend } from '@/modules/geology/GeologyPanel';
 import { useAreas } from '@/modules/areas/useAreas';
 import { AreaTools } from '@/modules/areas/AreaTools';
 import { useMapTools } from '@/modules/controls/useMapTools';
@@ -251,6 +251,7 @@ export default function Home() {
   });
   const [mapStatus, setMapStatus] = useState('正在加载真实地形…');
   const [panel, setPanelState] = useState<ControlPanel>(null);
+  const [geologyDetailsOpen, setGeologyDetailsOpen] = useState(false);
   const panelRef = useRef<ControlPanel>(panel);
   panelRef.current = panel;
   const panelTransitionGate = useRef<(next: ControlPanel) => boolean>(() => true);
@@ -2947,14 +2948,13 @@ export default function Home() {
         {guidance.session && !panel && !measurement.active && !sectionEditing && <NavigationTelemetry session={guidance.session} fix={displayedFix} elevation display={routeDisplay} />}
         <div
           className="map-legends"
-          hidden={panel !== 'layers' && !layers.elevationColors && !layers.geology}
+          hidden={!!panel || !layers.geology}
         >
           {layers.geology && (
-            <GeologyPanel
+            <GeologyLegend
               state={geology}
               source={layers.geologySource}
-              onSource={(geologySource) => update({ geologySource })}
-              onRetry={() => map.current?.refreshGeology()}
+              onDetails={() => { setGeologyDetailsOpen(true); setPanel('layers'); }}
             />
           )}
         </div>
@@ -2982,7 +2982,10 @@ export default function Home() {
           )}
         <LayerWindow
           open={panel === 'layers'}
+          detail={geologyDetailsOpen ? <GeologyPanel state={geology} source={layers.geologySource} onSource={geologySource => update({ geologySource })} onRetry={() => map.current?.refreshGeology()} /> : undefined}
+          onDetailBack={() => setGeologyDetailsOpen(false)}
           onOpen={(open) => {
+            setGeologyDetailsOpen(false);
             if (open) {
               photos.setSelected(null);
               tracks.pause();
@@ -3063,8 +3066,8 @@ export default function Home() {
               setPanelPrepared('annotations');
             }
           }} /> : undefined}
-          elevationControl={layers.elevationColors ? <ElevationLegend /> : undefined}
-          layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.round(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256)) + (layers.rasterQuality === 'high' ? 1 : 0)))} onLevel={rasterLevel => update({ rasterLevel })} quality={layers.rasterQuality ?? 'standard'} onQuality={rasterQuality => update({ rasterQuality })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
+          elevationControl={layers.elevationColors ? <ElevationLegend interval={layers.contourInterval ?? 30} /> : undefined}
+          layerControl={<RasterLevelControl name={rasterName} level={layers.rasterLevel ?? null} minLevel={Math.max(1, mapSources.source?.minzoom ?? 1)} maxLevel={rasterMaxLevel} availableLevel={Math.min(rasterMaxLevel, Math.round(view.zoom + Math.log2(512 / (mapSources.source?.tileSize ?? 256)) + ((layers.rasterQuality ?? 'high') === 'high' ? 1 : 0)))} onLevel={rasterLevel => update({ rasterLevel })} quality={layers.rasterQuality ?? 'high'} onQuality={rasterQuality => update({ rasterQuality })} onSources={() => { setSourcesParent('layers'); setPanel('sources'); }} opacity={layers.roadsOpacity ?? 1} onOpacity={roadsOpacity => update({ roadsOpacity })} />}
           viewControl={
             <CameraGizmo
               view={view}

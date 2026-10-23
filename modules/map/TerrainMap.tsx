@@ -107,6 +107,7 @@ import {
   type LayerSettings,
   type Point,
   type ViewState,
+  usesHighRasterQuality,
 } from './types';
 export type MapHandle = {
   isUserInteracting: () => boolean;
@@ -460,7 +461,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
       rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
-      rasterQualityRef.current?.sync(ids, s.rasterLevel == null && s.rasterQuality === 'high');
+      rasterQualityRef.current?.sync(ids, usesHighRasterQuality(s));
       const source=ids[0] ? map.getSource(ids[0]) : null;
       detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
       if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {

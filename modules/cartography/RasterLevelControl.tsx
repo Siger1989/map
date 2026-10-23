@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LockKeyhole, Layers, X } from 'lucide-react';
 import './rasterLevel.css';
-export function RasterLevelControl({ name, level, minLevel = 1, maxLevel, availableLevel, onLevel, onSources, opacity, onOpacity, quality = 'standard', onQuality }: {
+export function RasterLevelControl({ name, level, minLevel = 1, maxLevel, availableLevel, onLevel, onSources, opacity, onOpacity, quality = 'high', onQuality }: {
   name: string; level: number | null; minLevel?: number; maxLevel: number; availableLevel: number;
   onLevel: (level: number | null) => void; onSources: () => void;
   opacity: number; onOpacity: (value: number) => void;

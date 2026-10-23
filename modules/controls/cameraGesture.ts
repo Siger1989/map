@@ -6,6 +6,42 @@ export const ringDelta = (previous: number, next: number) =>
   wrapBearing(next - previous);
 export const ringAngle = (x: number, y: number) =>
   (Math.atan2(x / 46, -y / 23) * 180) / Math.PI;
+/** Elliptical radius in the same coordinate system as the visible bearing ring. */
+export const ringRadius = (x: number, y: number) => Math.hypot(x / 46, y / 23);
+export const RING_DEADZONE = 0.55;
+export const canStartRingDrag = (x: number, y: number) => {
+  const radius = ringRadius(x, y);
+  // Include the outer edge of the 26-unit invisible stroke at the short axis.
+  return radius >= RING_DEADZONE && radius <= 1.6;
+};
+
+/** Crossing the centre pauses rotation; re-entry establishes a new angle, not a jump. */
+export function rotateCameraRing(
+  previous: { angle: number | null; bearing: number; ringPoint?: { x: number; y: number } },
+  x: number,
+  y: number,
+) {
+  const ringPoint = { x, y };
+  if (ringRadius(x, y) < RING_DEADZONE)
+    return { angle: null, bearing: previous.bearing, ringPoint };
+  const angle = ringAngle(x, y);
+  let crossesCentre = false;
+  if (previous.ringPoint) {
+    const px = previous.ringPoint.x / 46, py = previous.ringPoint.y / 23;
+    const dx = x / 46 - px, dy = y / 23 - py;
+    const lengthSquared = dx * dx + dy * dy;
+    const t = lengthSquared ? Math.max(0, Math.min(1, -(px * dx + py * dy) / lengthSquared)) : 0;
+    // A fast pointer can cross the whole deadzone between two delivered events.
+    crossesCentre = Math.hypot(px + t * dx, py + t * dy) < RING_DEADZONE;
+  }
+  return {
+    angle,
+    ringPoint,
+    bearing: previous.angle === null || crossesCentre
+      ? previous.bearing
+      : wrapBearing(previous.bearing + ringDelta(previous.angle, angle)),
+  };
+}
 
 export type CameraGesturePose = { pitch: number; bearing: number };
 export type CameraGesturePhase = 'move' | 'end' | 'cancel';

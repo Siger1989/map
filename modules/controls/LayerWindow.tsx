@@ -1,5 +1,5 @@
 import { isLayoutInteraction } from '../uiLayout/events';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Layers, X } from 'lucide-react';
 import type { LayerSettings } from '../map/types';
 import { LayerPanel } from './LayerPanel';
@@ -17,6 +17,8 @@ export function LayerWindow({
   satelliteDate,
   satelliteStatus,
   mapStatus,
+  detail,
+  onDetailBack,
 }: {
   open: boolean;
   onOpen: (open: boolean) => void;
@@ -27,6 +29,8 @@ export function LayerWindow({
   satelliteDate?: string;
   satelliteStatus?: string;
   mapStatus: string;
+  detail?: ReactNode;
+  onDetailBack?: () => void;
 }) {
   const root = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -81,7 +85,8 @@ export function LayerWindow({
           aria-labelledby="layer-window-title"
         >
           <div className="dock-heading">
-            <h2 id="layer-window-title">图层</h2>
+            {detail && <button className="icon-button" aria-label="返回图层设置" onClick={onDetailBack}>‹</button>}
+            <h2 id="layer-window-title">{detail ? '地质图例' : '图层'}</h2>
             <button
               ref={closeButton}
               className="icon-button"
@@ -92,7 +97,7 @@ export function LayerWindow({
             </button>
           </div>
           <div className="dock-content">
-            <LayerPanel
+            {detail || <><LayerPanel
               presets={<LayerPresets settings={settings} onChange={onChange} />}
               customSource={customSource}
               onOpenSources={onOpenSources}
@@ -105,6 +110,7 @@ export function LayerWindow({
             <p className="map-status" role="status">
               {mapStatus}
             </p>
+            </>}
           </div>
         </section>
       )}

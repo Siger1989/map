@@ -12,12 +12,17 @@ export function readContourInterval(): ContourInterval {
 export function saveContourInterval(value: ContourInterval) {
   try { localStorage.setItem(CONTOUR_INTERVAL_KEY, String(contourInterval(value))); } catch { /* Session setting still works. */ }
 }
+export function contourMinimumZoom(value: unknown) {
+  const interval = contourInterval(value);
+  return interval === 30 ? 11 : interval === 50 ? 10 : interval === 100 ? 9 : 8;
+}
 export function contourTileOptions(interval: unknown, z: number) {
-  // Keep wide-area views bounded; high zoom uses the user's exact interval.
-  const minimum = z < 10 ? 500 : z < 12 ? 200 : z < 14 ? 100 : 0;
-  const minor = Math.max(contourInterval(interval), minimum);
+  const minor = contourInterval(interval);
   return {
-    overzoom: Math.max(0, z - 12),
+    // DemSource clamps to native z12 and splits the parent for the z13 output.
+    overzoom: 0,
+    // Match MapLibre's internal extent so loading does not re-quantize vertices.
+    extent: 8192,
     levels: z < 7 ? [] : [minor, minor * 5],
     elevationKey: 'ele', levelKey: 'level', contourLayer: 'contours',
   };

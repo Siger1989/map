@@ -38,12 +38,16 @@ export const DEFAULT_LAYERS: LayerSettings = {
   roads: true,
   roadsOpacity: 1,
   rasterLevel: null,
-  rasterQuality: 'standard',
+  rasterQuality: 'high',
   labels: true,
   tiandituLabels: DEFAULT_TIANDITU_LABELS,
   exaggeration: 1,
   imageryMode: 'detail',
 };
+/** Fixed raster levels take precedence; otherwise missing preferences use the high detail default. */
+export function usesHighRasterQuality(settings: Pick<LayerSettings, 'rasterLevel' | 'rasterQuality'>): boolean {
+  return settings.rasterLevel == null && (settings.rasterQuality ?? 'high') === 'high';
+}
 /** Apply map display changes while refusing retired weather-layer keys from old clients. */
 export function applyLayerPatch(
   current: LayerSettings,

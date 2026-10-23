@@ -77,13 +77,41 @@ function validateUrl(raw) {
   return { url, hostname, port };
 }
 
-async function resolvePublic(hostname, lookup) {
-  let records;
-  if (net.isIP(hostname)) records = [{ address: hostname, family: net.isIP(hostname) }];
-  else records = await lookup(hostname, { all: true, verbatim: true });
-  if (!records?.length || records.some((record) => !isPublicAddress(record.address)))
-    throw new Error('Map tile host is not public');
-  return records;
+const TERRARIUM_HOST = 'elevation-tiles-prod.s3.amazonaws.com';
+
+function isKnownTerrainTile(url, hostname, port) {
+  if (
+    url.protocol !== 'https:' ||
+    hostname !== TERRARIUM_HOST ||
+    port !== 443 ||
+    url.search ||
+    url.hash
+  ) return false;
+  const match = /^\/terrarium\/(\d{1,2})\/(\d{1,6})\/(\d{1,6})\.png$/.exec(url.pathname);
+  if (!match) return false;
+  const [, zs, xs, ys] = match;
+  const z = Number(zs), x = Number(xs), y = Number(ys);
+  return z <= 14 && x < 2 ** z && y < 2 ** z;
+}
+
+function isPinnedTerrainRelay(record) {
+  return record.family === 4 && inV4(record.address, '198.18.0.0', 15);
+}
+
+async function resolveTileAddresses(url, hostname, port, lookup) {
+  const records = net.isIP(hostname)
+    ? [{ address: hostname, family: net.isIP(hostname) }]
+    : await lookup(hostname, { all: true, verbatim: true });
+  if (!records?.length) throw new Error('Map tile host is not public');
+  if (records.every((record) => isPublicAddress(record.address)))
+    return { records, viaTerrainRelay: false };
+
+  // Some managed networks resolve this fixed public terrain host to an HTTPS
+  // relay IP in RFC 2544's benchmark range. Keep the exception limited to its
+  // image-only tile path and still pin DNS plus validate the S3 TLS hostname.
+  if (isKnownTerrainTile(url, hostname, port) && records.every(isPinnedTerrainRelay))
+    return { records, viaTerrainRelay: true };
+  throw new Error('Map tile host is not public');
 }
 
 export function createPinnedRequester({
@@ -278,13 +306,22 @@ export async function fetchPublicMapTile(rawUrl, {
       const remainingMs = deadlineAt - Date.now();
       if (remainingMs <= 0) throw new Error('Map tile request timed out');
       const { url, hostname, port } = validateUrl(current);
-      const records = await raceSignal(resolvePublic(hostname, lookup));
+      const { records, viaTerrainRelay } = await raceSignal(
+        resolveTileAddresses(url, hostname, port, lookup),
+      );
       const response = await raceSignal(request(
         url, hostname, records[0].address, records[0].family, port, remainingMs, maxBytes, deadline.signal,
       ));
+      if (viaTerrainRelay && response.location)
+        throw new Error('Terrain relay redirects are not allowed');
       if (!response.location) {
         if (response.status !== 200 || !MIME.has(response.mime) || !response.body || response.body.byteLength > maxBytes)
           throw new Error('Map tile response rejected');
+        if (viaTerrainRelay && (
+          response.mime !== 'image/png' ||
+          response.body.byteLength < 8 ||
+          !response.body.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+        )) throw new Error('Terrain relay response is not a PNG');
         return response;
       }
       if (hop === MAX_REDIRECTS) throw new Error('Too many map tile redirects');

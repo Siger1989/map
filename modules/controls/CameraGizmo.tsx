@@ -2,10 +2,13 @@ import { useCallback, useEffect, useRef, type PointerEvent } from 'react';
 import type { ViewState } from '../map/types';
 import {
   clampPitch,
+  canStartRingDrag,
   createCameraGestureFrame,
   orbitCamera,
   ringAngle,
-  ringDelta,
+  ringRadius,
+  RING_DEADZONE,
+  rotateCameraRing,
   wrapBearing,
   type CameraGesturePhase,
   type CameraGesturePose,
@@ -17,8 +20,9 @@ type CameraDrag = {
   x: number;
   y: number;
   pitch: number;
-  angle: number;
+  angle: number | null;
   bearing: number;
+  ringPoint?: { x: number; y: number };
 };
 function dragPose(
   drag: CameraDrag,
@@ -28,10 +32,21 @@ function dragPose(
     const next = orbitCamera(drag, point.x - drag.x, point.y - drag.y);
     return { pitch: next.pitch, bearing: next.bearing };
   }
-  const angle = ringAngle(point.x - 55, point.y - 81);
-  drag.bearing = wrapBearing(drag.bearing + ringDelta(drag.angle, angle));
-  drag.angle = angle;
+  const next = rotateCameraRing(drag, point.x - 55, point.y - 81);
+  drag.bearing = next.bearing;
+  drag.angle = next.angle;
+  drag.ringPoint = next.ringPoint;
   return { pitch: drag.pitch, bearing: drag.bearing };
+}
+
+function svgPoint(svg: SVGSVGElement | null, clientX: number, clientY: number) {
+  const matrix = svg?.getScreenCTM();
+  if (!svg || !matrix) return null;
+  // Account for preserveAspectRatio letterboxing and the scaled phone preview.
+  const point = svg.createSVGPoint();
+  point.x = clientX;
+  point.y = clientY;
+  return point.matrixTransform(matrix.inverse());
 }
 
 /** The model orbits/tilts around the map centre; the ring changes heading only. */
@@ -76,11 +91,8 @@ export function CameraGizmo({
       if (current?.pointer !== event.pointerId) return;
       let finalPose: CameraGesturePose | undefined;
       if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
-        const rect = svg.current!.getBoundingClientRect();
-        finalPose = dragPose(current, {
-          x: ((event.clientX! - rect.left) * 110) / rect.width,
-          y: ((event.clientY! - rect.top) * 118) / rect.height,
-        });
+        const point = svgPoint(svg.current, event.clientX!, event.clientY!);
+        if (point) finalPose = dragPose(current, point);
       }
       drag.current = null;
       if (svg.current?.hasPointerCapture(current.pointer))
@@ -118,18 +130,14 @@ export function CameraGizmo({
       document.removeEventListener('visibilitychange', visibility);
     };
   }, [cancel, end, cancelPointer]);
-  const position = (e: PointerEvent) => {
-    const rect = svg.current!.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) * 110) / rect.width,
-      y: ((e.clientY - rect.top) * 118) / rect.height,
-    };
-  };
+  const position = (e: PointerEvent) => svgPoint(svg.current, e.clientX, e.clientY);
   const begin = (kind: 'orbit' | 'bearing', e: PointerEvent<SVGGElement>) => {
     if (!e.isPrimary || e.button !== 0) return;
     e.preventDefault();
     cancel();
     const p = position(e);
+    if (!p || ringRadius(p.x - 55, p.y - 81) < RING_DEADZONE) return;
+    if (kind === 'bearing' && !canStartRingDrag(p.x - 55, p.y - 81)) return;
     drag.current = {
       pointer: e.pointerId,
       kind,
@@ -138,6 +146,7 @@ export function CameraGizmo({
       pitch: view.pitch,
       angle: ringAngle(p.x - 55, p.y - 81),
       bearing: view.bearing,
+      ringPoint: { x: p.x - 55, y: p.y - 81 },
     };
     svg.current!.setPointerCapture(e.pointerId);
   };
@@ -149,6 +158,7 @@ export function CameraGizmo({
       return;
     }
     const p = position(e);
+    if (!p) return;
     gestureFrame.current?.move(dragPose(d, p));
   };
   const y = 70 - 40 * Math.sin((view.pitch * Math.PI) / 180);
@@ -209,7 +219,8 @@ export function CameraGizmo({
             ry="23"
             fill="none"
             stroke="transparent"
-            strokeWidth="18"
+            strokeWidth="26"
+            pointerEvents="stroke"
           />
           <ellipse
             cx="55"

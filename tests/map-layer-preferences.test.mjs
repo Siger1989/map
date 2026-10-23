@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_LAYERS, applyLayerPatch } from '../modules/map/types.ts';
+import { DEFAULT_LAYERS, applyLayerPatch, usesHighRasterQuality } from '../modules/map/types.ts';
 import { LAYER_PREFERENCES_KEY, parseLayerPreferences, readLayerPreferences, saveLayerPreferences } from '../modules/map/layerPreferences.ts';
 import { resolveAvailableMapSelection, settingsForBasemapSource, sourcePanelSettings } from '../modules/mapSources/selection.ts';
 
@@ -21,6 +21,7 @@ test('map layer preferences round-trip actual user selections', () => {
       contours: true, contourInterval: 100, elevationColors: true,
       elevationColorsOpacity: 0.35, exaggeration: 1.6,
       offlineBasemap: true, offlineMaxZoom: 13, rasterLevel: 12,
+      rasterQuality: 'standard',
       roadsOpacity: 0.6, rasterDatums: { 'custom:abc': 'gcj02' },
     };
     saveLayerPreferences(selected);
@@ -71,6 +72,25 @@ test('malformed, missing and old preference formats retain current startup defau
     if (previous) Object.defineProperty(globalThis, 'localStorage', previous);
     else delete globalThis.localStorage;
   }
+});
+
+test('new and missing raster quality defaults to high while saved standard and fixed levels are respected', () => {
+  assert.equal(DEFAULT_LAYERS.rasterQuality, 'high');
+  const oldLayers = parseLayerPreferences(JSON.stringify({ version: 1, layers: { satellite: true } }));
+  assert.equal(oldLayers?.rasterQuality, 'high', 'old preference records inherit the new default');
+  assert.equal(usesHighRasterQuality(oldLayers), true);
+
+  const explicitStandard = parseLayerPreferences(JSON.stringify({
+    version: 1,
+    layers: { rasterQuality: 'standard' },
+  }));
+  assert.equal(explicitStandard?.rasterQuality, 'standard');
+  assert.equal(usesHighRasterQuality(explicitStandard), false);
+
+  assert.equal(usesHighRasterQuality({ rasterLevel: 14, rasterQuality: 'high' }), false,
+    'fixed raster level takes priority over automatic high detail');
+  assert.equal(usesHighRasterQuality({ rasterLevel: null, rasterQuality: undefined }), true,
+    'missing quality falls back to high in the map renderer');
 });
 
 test('future preference versions are preserved while corrupt values can be replaced', () => {

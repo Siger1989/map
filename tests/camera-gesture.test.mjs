@@ -3,7 +3,42 @@ import assert from 'node:assert/strict';
 import {
   createCameraGestureFrame,
   orbitCamera,
+  canStartRingDrag,
+  ringAngle,
+  rotateCameraRing,
 } from '../modules/controls/cameraGesture.ts';
+
+test('bearing ring accepts its touch band and rejects the centre and distant points', () => {
+  for (const [x, y] of [[0, 0], [2, -1], [20, 5], [80, 0], [0, 40]])
+    assert.equal(canStartRingDrag(x, y), false);
+  for (const [x, y] of [[46, 0], [-46, 0], [0, -23], [0, 30], [0, 36], [30, 0]])
+    assert.equal(canStartRingDrag(x, y), true);
+});
+
+test('bearing ring pauses around its centre and reanchors without jumping on re-entry', () => {
+  let state = { angle: 90, bearing: 35, ringPoint: { x: 46, y: 0 } };
+  for (const [x, y] of [[2, 1], [-2, -1], [0, 0]]) {
+    state = rotateCameraRing(state, x, y);
+    assert.equal(state.bearing, 35);
+    assert.equal(state.angle, null);
+  }
+  state = rotateCameraRing(state, -46, 0);
+  assert.equal(state.bearing, 35);
+  state = rotateCameraRing(state, -46 * Math.cos(Math.PI / 18), -23 * Math.sin(Math.PI / 18));
+  assert.ok(Math.abs(state.bearing - 45) < 1e-9);
+});
+
+test('bearing ring does not flip when a fast drag skips over the centre', () => {
+  const state = { angle: 90, bearing: 15, ringPoint: { x: 46, y: 0 } };
+  assert.equal(rotateCameraRing(state, -46, 0).bearing, 15);
+});
+
+test('normal ring motion wraps north and stays independent of pitch', () => {
+  const point = (degrees) => ({ x: 46 * Math.sin(degrees * Math.PI / 180), y: -23 * Math.cos(degrees * Math.PI / 180) });
+  const start = point(179), next = point(-179);
+  const state = rotateCameraRing({ angle: ringAngle(start.x, start.y), bearing: 179, ringPoint: start }, next.x, next.y);
+  assert.equal(state.bearing, -179);
+});
 
 test('model drag accepts horizontal, vertical and diagonal camera movement', () => {
   assert.deepEqual(orbitCamera({ pitch: 40, bearing: 0 }, 20, 0), {

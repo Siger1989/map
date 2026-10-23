@@ -1,6 +1,10 @@
 import type { Map, StyleSpecification, VectorTileSource } from 'maplibre-gl';
-import { contourInterval, contourTileOptions } from './contourInterval';
-import { elevationExpression, contourColorExpression } from './elevationColors';
+import { contourInterval, contourMinimumZoom, contourTileOptions } from './contourInterval';
+import {
+  contourColorExpressionForInterval,
+  elevationExpression,
+  elevationExpressionForInterval,
+} from './elevationColors';
 import {
   basemapConfiguration,
   tiandituTiles,
@@ -12,6 +16,7 @@ import { SATELLITE_UNDERLAY, satelliteUnderlaySource } from '../cartography/sate
 import { TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 export { TERRAIN_URL } from './tiles';
 export const TERRAIN_MAXZOOM = 12;
+export const CONTOUR_MAXZOOM = 13;
 export const TERRAIN_CREDIT =
   '<a href="https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn" target="_blank">成都区域 FABDEM V1-2 · Hawker / Neal · CC BY-NC-SA 4.0</a> · <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank">其他区域 Mapzen / SRTM</a>';
 export function baseStyle(): StyleSpecification {
@@ -163,16 +168,28 @@ export function baseStyle(): StyleSpecification {
   };
 }
 const contourStates = new WeakMap<Map, { interval: number; url: (value: number) => string }>();
+const intervalByMap = new WeakMap<Map, number>();
 let contourProtocolSequence = 0;
 // One bounded DEM/contour cache and shared worker across quality changes and map remounts.
 let sharedContourDem: InstanceType<(typeof import('maplibre-contour'))['default']['DemSource']> | undefined;
 export function syncContourInterval(map: Map, value: unknown) {
   const state = contourStates.get(map), interval = contourInterval(value);
-  if (!state || state.interval === interval) return;
-  const source = map.getSource('contour-lines') as VectorTileSource | undefined;
-  if (!source) return;
-  source.setTiles([state.url(interval)]);
-  state.interval = interval;
+  const changed = intervalByMap.get(map) !== interval;
+  intervalByMap.set(map, interval);
+  if (state && state.interval !== interval) {
+    const source = map.getSource('contour-lines') as VectorTileSource | undefined;
+    source?.setTiles([state.url(interval)]);
+    state.interval = interval;
+  }
+  if (changed) {
+    const elevationLayer = map.getLayer('elevation-colors');
+    if (elevationLayer)
+      map.setPaintProperty('elevation-colors', 'color-relief-color', elevationExpressionForInterval(interval));
+    if (map.getLayer('contours'))
+      map.setPaintProperty('contours', 'line-color', contourColorExpressionForInterval(interval));
+  }
+  for (const id of ['contours', 'contour-labels'])
+    if (map.getLayer(id)) map.setLayerZoomRange(id, contourMinimumZoom(interval), 24);
 }
 export async function addContours(map: Map, interval: unknown = 30, alive = () => true) {
   const [{ default: contour }, maplibre] = await Promise.all([
@@ -195,7 +212,7 @@ export async function addContours(map: Map, interval: unknown = 30, alive = () =
     if (!match) throw new Error('Invalid contour tile');
     const [, zs, xs, ys, quality] = match;
     const z = Number(zs), x = Number(xs), y = Number(ys);
-    if (z > 15 || x >= 2 ** z || y >= 2 ** z) throw new Error('Invalid contour coordinates');
+    if (z > CONTOUR_MAXZOOM || x >= 2 ** z || y >= 2 ** z) throw new Error('Invalid contour coordinates');
     const result = await dem.manager.fetchContourTile(z, x, y, contourTileOptions(Number(quality), z), abort);
     return { data: result.arrayBuffer };
   });
@@ -206,7 +223,7 @@ export async function addContours(map: Map, interval: unknown = 30, alive = () =
     type: 'vector',
     tiles: [url(state.interval)],
     minzoom: 7,
-    maxzoom: 15,
+    maxzoom: CONTOUR_MAXZOOM,
   });
   map.addLayer({
     id: 'contours',
@@ -216,7 +233,7 @@ export async function addContours(map: Map, interval: unknown = 30, alive = () =
     minzoom: 7,
     layout: { visibility: 'none' },
     paint: {
-      'line-color': contourColorExpression,
+      'line-color': contourColorExpressionForInterval(state.interval),
       'line-opacity': 0.8,
       'line-width': ['case', ['>', ['get', 'level'], 0], 1.05, 0.45],
     },
@@ -243,4 +260,5 @@ export async function addContours(map: Map, interval: unknown = 30, alive = () =
       'text-halo-width': 1.4,
     },
   });
+  syncContourInterval(map, interval);
 }

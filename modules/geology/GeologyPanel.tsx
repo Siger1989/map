@@ -1,5 +1,25 @@
 import { INITIAL_GEOLOGY, type GeologyState } from './data';
 
+/** Only the map key stays on the canvas; source controls and prose live in the layer window. */
+export function GeologyLegend({ state: snapshot, source, onDetails }: {
+  state: GeologyState;
+  source: GeologyState['source'];
+  onDetails: () => void;
+}) {
+  const state = snapshot.source === source ? snapshot : { ...INITIAL_GEOLOGY, source, status: 'loading' as const };
+  const cloud = source === 'geocloud20w';
+  const units = state.selection ? [state.selection] : state.legend.slice(0, 2);
+  return <button className="geology-summary glass" aria-label="打开地质图例与说明" onClick={onDetails}>
+    <span className="geology-summary-heading"><strong>地质图例</strong><small>{cloud ? '1∶20万' : '世界概览'} ›</small></span>
+    {!cloud && units.map(unit => <span className="geology-summary-unit" key={unit.key}>
+      <i style={{ background: unit.color }} /><span title={`${unit.name} · ${unit.age} · ${unit.lithology}`}>{unit.name}</span>
+    </span>)}
+    {!cloud && units.length > 0 ? <span className="geology-line-legend"><span><i />断层</span><span><i />构造线</span></span> :
+      <span className="geology-summary-status">{state.status === 'authorization' ? '需要服务授权' : state.status === 'loading' ? '正在加载…' : state.status === 'error' ? '连接失败 · 查看' : cloud ? '原图图例 · 查看' : '暂无图例 · 查看'}</span>}
+    {!state.selection && state.legend.length > 2 && !cloud && <small>共 {state.legend.length} 类 · 查看全部</small>}
+  </button>;
+}
+
 export function GeologyPanel({
   state: snapshot,
   source,
