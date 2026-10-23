@@ -13,6 +13,18 @@
   let panVector = { x: 0, y: 0 };
   let panTime = 0;
   let panActive = false;
+  let activeWorkspace = 'map';
+  let overlayFrame = 0;
+  function syncPanOverlay() {
+    let layerMenuOpen = false;
+    try { layerMenuOpen = Boolean(document.getElementById('map-frame').contentDocument?.querySelector('.raster-level-panel')); } catch {}
+    panOverlay.hidden = activeWorkspace !== 'map' || layerMenuOpen;
+    if (panOverlay.hidden) stopPan();
+  }
+  function schedulePanOverlay() {
+    cancelAnimationFrame(overlayFrame);
+    overlayFrame = requestAnimationFrame(syncPanOverlay);
+  }
   function dispatchPan(detail) {
     const frame = document.getElementById('map-frame');
     try {
@@ -63,8 +75,9 @@
   }
   function selectWorkspace(name) {
     stopPan();
+    activeWorkspace = name;
     panButton.disabled = name !== 'map';
-    panOverlay.hidden = name !== 'map';
+    syncPanOverlay();
     if (name === 'industry' && !document.getElementById('industry-frame').getAttribute('src')) {
       document.getElementById('industry-frame').src = '/industry/';
     }
@@ -164,9 +177,22 @@
                 left: min(50%, calc(100% - 272px)) !important;
               }
             }
+            @media (max-height: 644px) {
+              /* The short-window dock moves near the top; an upward popup would be clipped. */
+              html[data-shantu-desktop='true'] .observatory.home-map .raster-level-panel {
+                position: fixed; top: calc(var(--home-top, 0px) + var(--home-header-height, 48px) + 8px);
+                right: calc(var(--home-right, 8px) + 104px); bottom: auto;
+                width: min(252px, calc(100vw - var(--home-right, 8px) - 112px));
+              }
+            }
             .observatory.home-map:has(.map-box-selection[data-active='true']) .home-position-dock:not(:has(.route-display-settings)),
             .observatory.home-map:has(.map-box-selection[data-active='true']) .home-camera-control { z-index: 25; }`;
           doc.head.append(style);
+          // The outer joystick cannot participate in the iframe popup's stacking order.
+          doc.addEventListener('pointerdown', schedulePanOverlay, true);
+          doc.addEventListener('click', schedulePanOverlay, true);
+          doc.addEventListener('keyup', schedulePanOverlay, true);
+          syncPanOverlay();
         }
       } catch { /* Only same-origin documents can attach desktop shortcuts. */ }
     });

@@ -92,12 +92,20 @@ function shellHarness() {
     CustomEvent: CustomEventMock,
     dispatchEvent(event) { events.push(event); return true; },
   };
+  const frameDocument = listeners({
+    rasterOpen: false,
+    documentElement: { dataset: {} },
+    head: { append() {} },
+    createElement: () => ({ dataset: {}, textContent: '' }),
+    querySelector(selector) { return selector === '.raster-level-panel' && this.rasterOpen ? {} : null; },
+  });
+  frame.contentDocument = frameDocument;
   const documentHandlers = new Map();
   const document = {
     hidden: false,
     fullscreenElement: null,
     documentElement: { requestFullscreen: async () => {} },
-    querySelectorAll: () => [],
+    querySelectorAll: (selector) => selector === '.workspace' ? [frame] : [],
     getElementById: (id) => elements.get(id),
     addEventListener(name, listener) { documentHandlers.set(name, listener); },
     removeEventListener(name, listener) { if (documentHandlers.get(name) === listener) documentHandlers.delete(name); },
@@ -119,7 +127,7 @@ function shellHarness() {
     queuedFrames.clear();
     batch.forEach((callback) => callback(time));
   };
-  return { context, elements, events, flushFrame };
+  return { context, elements, events, flushFrame, frameDocument };
 }
 
 test('receiver retargets one pan lifecycle and ends it even after map eligibility changes', () => {
@@ -218,4 +226,25 @@ test('shell sends one end phase when a held pan is released', async () => {
   flushFrame(16);
   pan.fire('pointerup', { pointerId: 8 });
   assert.deepEqual(events.map((event) => event.detail.phase), ['move', 'end']);
+});
+
+test('layer popup hides the outer pan control, ends a held gesture and restores it after dismissal', async () => {
+  const { context, elements, events, flushFrame, frameDocument } = shellHarness();
+  const source = await readFile(new URL('../desktop-app/shell/shell.js', import.meta.url), 'utf8');
+  runInNewContext(source, context);
+  elements.get('map-frame').fire('load');
+  const pan = elements.get('map-pan');
+  pan.fire('pointerdown', { button: 0, pointerId: 9, clientX: 68, clientY: 48, preventDefault() {} });
+  flushFrame(16);
+  frameDocument.rasterOpen = true;
+  frameDocument.fire('click');
+  flushFrame(32);
+  assert.equal(elements.get('map-pan-overlay').hidden, true);
+  assert.equal(pan.capture, null);
+  assert.equal(events.at(-1).detail.phase, 'end');
+  frameDocument.rasterOpen = false;
+  frameDocument.fire('keyup', { key: 'Escape' });
+  flushFrame(48);
+  assert.equal(elements.get('map-pan-overlay').hidden, false);
+  assert.equal(events.filter(e => e.detail.phase === 'end').length, 1);
 });
