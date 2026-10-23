@@ -1,5 +1,7 @@
 # 山兔交付文件夹整理说明（2026-10-23）
 
+> **最终交付更新**：用户要求只要私人地图版，最新批次已统一为0.2.133，当前目录为 `交付包/山兔-0.2.133-test-2026-10-23/`，仅含三个private APK/EXE/DMG、说明与校验文件。天地图及39项个人图源保留。下文131/132六包批次为历史记录，原目录已移至 `EXE/历史交付/山兔-2026-10-23/`；不再作为当前交付。新脚本 `scripts/organize-release.mjs --private-only`，完整核验与哈希见 [133交付说明](release-0.2.133.md)。
+
 ## 状态
 
 已完成六个产物的分类复制与逐文件 SHA-256 复核。当前 APK 与 Windows EXE 为 0.2.131，Mac 为 0.2.132 DMG。公开 DMG 的生成、真实挂载与本地服务已在 Apple Silicon 和 Intel 的 GitHub macOS 环境分别通过；交付的公开文件取自已验收的 Apple Silicon 作业。私有 DMG 仅在本机生成，独立 7-Zip 解压/CRC 与全部1933项清单哈希、私有seed一致性通过，没有上传私有数据。Finder双击、Gatekeeper、Safari与触控板仍未验证。
@@ -67,4 +69,4 @@ pwsh -NoProfile -File .\scripts\organize-delivery.ps1
 | 自用 private | 147370122 | e66a76150f2470cd2796aa3fcef38bf1f52785de3e9a824f3f8fd349286ca739 |
 | 公开 public | 147366594 | a019a00b3aec05f12e9276aa5993c2f24520332fcc98f0b87593cb2280e9139c |
 
-源码同步至 `codex/place-address-search-20261011`，不宣称合入main。新的公开DMG及校验说明位于[DMG测试发行](https://github.com/Siger1989/map/releases/tag/v0.2.132-test-dmg)；原131 APK/EXE与132 ZIP发行保留。
+源码同步至 `codex/place-address-search-20261011`，不宣称合入main。原计划132 DMG独立发行已由 [133统一测试发行](https://github.com/Siger1989/map/releases/tag/v0.2.133-test-standalone) 取代；原131 APK/EXE与132 ZIP发行保留。
