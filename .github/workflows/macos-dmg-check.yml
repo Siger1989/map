@@ -111,7 +111,7 @@ jobs:
           sh desktop-web/macos/build-launcher.sh "$RUNNER_TEMP/macos-launcher"
           codesign --force --sign - "$RUNNER_TEMP/macos-launcher/Shantu"
           codesign --verify --verbose=2 "$RUNNER_TEMP/macos-launcher/Shantu"
-          lipo -verify_arch arm64 x86_64 "$RUNNER_TEMP/macos-launcher/Shantu"
+          lipo "$RUNNER_TEMP/macos-launcher/Shantu" -verify_arch arm64 x86_64
       - name: Build the disk image from the verified public test fixture
         working-directory: scripts/macos-dmg
         shell: bash
