@@ -4,10 +4,13 @@ type CacheOptions = {
   maxEntries?: number;
   ttlMs?: number;
   readTimeoutMs?: number;
+  memoryMaxBytes?: number;
   indexedDB?: IDBFactory;
 };
 
 type Metadata = { key: string; size: number; time: number; ttlMs: number };
+type MemoryEntry = { value: ArrayBuffer; expiresAt: number };
+type ReadTicket = { key: string; invalidated: boolean; invalidate: () => void };
 type WriteOperation = { kind: 'put'; key: string; value: ArrayBuffer; size: number; time: number; ttlMs: number } | { kind: 'forget'; key: string };
 
 const DEFAULT_DATABASE = 'shantu-browser-tile-cache-v1';
@@ -15,6 +18,9 @@ const DATABASE_VERSION = 1;
 const TILES = 'tiles';
 const METADATA = 'metadata';
 const MAX_TILE_BYTES = 8 * 1024 * 1024;
+const DEFAULT_MEMORY_MAX_BYTES = 16 * 1024 * 1024;
+const MAX_MEMORY_ENTRIES = 512;
+const MAX_ACTIVE_READS = 128;
 const MAX_QUEUED_OPERATIONS = 16;
 const MAX_QUEUED_BYTES = 16 * 1024 * 1024;
 
@@ -31,20 +37,71 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
   const maxEntries = options.maxEntries ?? 4096;
   const ttlMs = options.ttlMs ?? 300_000;
   const readTimeoutMs = options.readTimeoutMs ?? 20;
+  const memoryMaxBytes = options.memoryMaxBytes ?? DEFAULT_MEMORY_MAX_BYTES;
   const databaseName = options.databaseName ?? DEFAULT_DATABASE;
   const factory = options.indexedDB ?? (typeof indexedDB === 'undefined' ? undefined : indexedDB);
 
   if (!databaseName || !Number.isSafeInteger(maxBytes) || maxBytes < 0 || !Number.isSafeInteger(maxEntries) || maxEntries < 0 ||
-      !Number.isFinite(ttlMs) || ttlMs < 0 || !Number.isFinite(readTimeoutMs) || readTimeoutMs < 0)
+      !Number.isFinite(ttlMs) || ttlMs < 0 || !Number.isFinite(readTimeoutMs) || readTimeoutMs < 0 ||
+      !Number.isSafeInteger(memoryMaxBytes) || memoryMaxBytes < 0)
     throw new RangeError('浏览瓦片缓存限制无效');
 
   let database: IDBDatabase | undefined;
   let disposed = false;
+  const memory = new Map<string, MemoryEntry>();
+  const activeReads = new Set<ReadTicket>();
+  let memoryBytes = 0;
   let queue: WriteOperation[] = [];
   let queuedBytes = 0;
   let inFlightBytes = 0;
   let writing = false;
+  let activeOperation: WriteOperation | undefined;
   let opening: Promise<IDBDatabase | undefined> | undefined;
+
+  const invalidateReads = (key?: string) => {
+    for (const ticket of [...activeReads]) {
+      if (key === undefined || ticket.key === key) ticket.invalidate();
+    }
+  };
+
+  const forgetPending = (key: string) =>
+    (activeOperation?.kind === 'forget' && activeOperation.key === key) ||
+    queue.some(operation => operation.kind === 'forget' && operation.key === key);
+
+  const dropMemory = (key: string) => {
+    const entry = memory.get(key);
+    if (!entry) return;
+    memory.delete(key);
+    memoryBytes -= entry.value.byteLength;
+  };
+
+  const rememberMemory = (key: string, value: ArrayBuffer, expiresAt: number, copyValue = true) => {
+    const size = value.byteLength;
+    // Check every bound before copying; an item that cannot fit never allocates a hot-cache copy.
+    if (disposed || !key || memoryMaxBytes === 0 || size === 0 || size > MAX_TILE_BYTES || size > memoryMaxBytes ||
+        expiresAt < Date.now()) return;
+    dropMemory(key);
+    while (memory.size >= MAX_MEMORY_ENTRIES || memoryBytes + size > memoryMaxBytes) {
+      const oldest = memory.keys().next().value as string | undefined;
+      if (oldest === undefined) return;
+      dropMemory(oldest);
+    }
+    const copy = copyValue ? value.slice(0) : value;
+    memory.set(key, { value: copy, expiresAt });
+    memoryBytes += copy.byteLength;
+  };
+
+  const getMemory = (key: string): ArrayBuffer | undefined => {
+    const entry = memory.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.expiresAt > 0) {
+      dropMemory(key);
+      return undefined;
+    }
+    memory.delete(key);
+    memory.set(key, entry);
+    try { return entry.value.slice(0); } catch { return undefined; }
+  };
 
   const ensureOpen = (): Promise<IDBDatabase | undefined> => {
     if (database) return Promise.resolve(database);
@@ -122,9 +179,13 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
       if (!db || disposed) { queue = []; queuedBytes = 0; return; }
       while (!disposed && queue.length) {
         const operation = queue.shift()!;
+        activeOperation = operation;
         if (operation.kind === 'put') { queuedBytes -= operation.size; inFlightBytes += operation.size; }
         try { await runOperation(db, operation); } catch { /* best-effort cache writes */ }
-        finally { if (operation.kind === 'put') inFlightBytes -= operation.size; }
+        finally {
+          if (operation.kind === 'put') inFlightBytes -= operation.size;
+          activeOperation = undefined;
+        }
       }
     } finally {
       writing = false;
@@ -158,16 +219,23 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
 
   return {
     async get(key: string): Promise<ArrayBuffer | undefined> {
-      if (disposed || !database || !key) return undefined;
+      if (disposed || !key) return undefined;
+      const hot = getMemory(key);
+      if (hot) return hot;
+      if (forgetPending(key)) return undefined;
+      if (!database) return undefined;
+      if (activeReads.size >= MAX_ACTIVE_READS) return undefined;
       let transaction: IDBTransaction;
       try { transaction = database.transaction([TILES, METADATA], 'readonly'); }
       catch { return undefined; }
       let timer: ReturnType<typeof setTimeout> | undefined;
       let settled = false;
       return new Promise(resolve => {
+        let ticket: ReadTicket | undefined;
         const finish = (value?: ArrayBuffer) => {
           if (settled) return;
           settled = true;
+          if (ticket) activeReads.delete(ticket);
           if (timer !== undefined) clearTimeout(timer);
           resolve(value);
         };
@@ -181,18 +249,33 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
           let tileReady = false, metaReady = false;
           let tile: { key: string; value: ArrayBuffer } | undefined;
           let meta: Metadata | undefined;
+          ticket = {
+            key,
+            invalidated: false,
+            invalidate: () => {
+              if (!ticket || ticket.invalidated) return;
+              ticket.invalidated = true;
+              try { transaction.abort(); } catch { /* already completed */ }
+              finish(undefined);
+            },
+          };
+          activeReads.add(ticket);
           const complete = () => {
             if (!tileReady || !metaReady) return;
+            if (settled || ticket?.invalidated || disposed) { finish(undefined); return; }
             const entryTtl = meta ? Math.min(ttlMs, meta.ttlMs ?? ttlMs) : ttlMs;
             if (!tile || !meta || Date.now() - meta.time > entryTtl) {
               if (tile || meta) enqueue({ kind: 'forget', key });
               finish(undefined);
               return;
             }
-            try { finish(tile.value.slice(0)); } catch { finish(undefined); }
+            try {
+              rememberMemory(key, tile.value, meta.time + entryTtl, false);
+              finish(tile.value.slice(0));
+            } catch { finish(undefined); }
           };
-          tileRequest.onsuccess = () => { tile = tileRequest.result; tileReady = true; complete(); };
-          metaRequest.onsuccess = () => { meta = metaRequest.result; metaReady = true; complete(); };
+          tileRequest.onsuccess = () => { if (settled || ticket?.invalidated || disposed) return; tile = tileRequest.result; tileReady = true; complete(); };
+          metaRequest.onsuccess = () => { if (settled || ticket?.invalidated || disposed) return; meta = metaRequest.result; metaReady = true; complete(); };
           tileRequest.onerror = metaRequest.onerror = () => finish(undefined);
           transaction.onabort = transaction.onerror = () => finish(undefined);
         } catch { finish(undefined); }
@@ -202,20 +285,33 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
       if (disposed || !key || !(buffer instanceof ArrayBuffer)) return;
       const effectiveTtl = Math.min(ttlMs, entryTtlMs ?? ttlMs);
       if (!Number.isFinite(effectiveTtl) || effectiveTtl <= 0) return;
-      // Reject before copying: dropped writes must not allocate another tile body.
       const size = buffer.byteLength;
-      if (!size || size > MAX_TILE_BYTES || size > maxBytes || maxEntries === 0 ||
-          queue.length + Number(writing) >= MAX_QUEUED_OPERATIONS ||
-          queuedBytes + inFlightBytes + size > MAX_QUEUED_BYTES) return;
+      if (!size || size > MAX_TILE_BYTES) return;
+      const time = Date.now();
+      const canRemember = memoryMaxBytes > 0 && size <= memoryMaxBytes;
+      // Memory admission is independent from this best-effort persistent write queue.
+      const canPersist = size <= maxBytes && maxEntries > 0 &&
+        queue.length + Number(writing) < MAX_QUEUED_OPERATIONS &&
+        queuedBytes + inFlightBytes + size <= MAX_QUEUED_BYTES;
+      if (!canRemember && !canPersist) return;
+      invalidateReads(key);
       const value = buffer.slice(0);
-      enqueue({ kind: 'put', key, value, size: value.byteLength, time: Date.now(), ttlMs: effectiveTtl });
+      if (canRemember) rememberMemory(key, value, time + effectiveTtl, false);
+      if (canPersist) enqueue({ kind: 'put', key, value, size: value.byteLength, time, ttlMs: effectiveTtl });
     },
     forget(key: string) {
-      if (key) enqueue({ kind: 'forget', key });
+      if (!disposed && key) {
+        dropMemory(key);
+        invalidateReads(key);
+        enqueue({ kind: 'forget', key });
+      }
     },
     dispose() {
       if (disposed) return;
       disposed = true;
+      invalidateReads();
+      memory.clear();
+      memoryBytes = 0;
       queue = [];
       queuedBytes = 0;
       if (!writing) {

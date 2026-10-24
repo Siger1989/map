@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { IDBFactory } from 'fake-indexeddb';
 import { createBrowserTileCache } from '../modules/mapSources/browserTileCache.ts';
 
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -138,9 +139,95 @@ async function waitForHit(cache, key) {
   assert.fail(`cache entry ${key} was not written`);
 }
 
+let realDatabaseId = 0;
+const realCache = (factory, options = {}) => createBrowserTileCache({
+  indexedDB: factory,
+  databaseName: `shantu-browser-tile-cache-test-${++realDatabaseId}`,
+  ...options,
+});
+
+async function waitForMiss(cache, key) {
+  for (let i = 0; i < 100; i++) {
+    if (await cache.get(key) === undefined) return;
+    await tick();
+  }
+  assert.fail(`cache entry ${key} was not removed`);
+}
+
+function holdRealReadCallbacks(indexedDB, held) {
+  const wrapRequest = (request, holdSuccess = false) => {
+    let proxy;
+    proxy = new Proxy(request, {
+      get(target, property) {
+        const value = Reflect.get(target, property, target);
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+      set(target, property, value) {
+        if (holdSuccess && property === 'onsuccess') {
+          target.onsuccess = event => held.push(() => value.call(proxy, event));
+          return true;
+        }
+        return Reflect.set(target, property, value, target);
+      },
+    });
+    return proxy;
+  };
+  const wrapStore = store => new Proxy(store, {
+    get(target, property) {
+      if (property === 'get') return key => wrapRequest(target.get(key), true);
+      const value = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+  const wrapDatabase = database => new Proxy(database, {
+    get(target, property) {
+      if (property === 'transaction') return (...args) => {
+        const transaction = target.transaction(...args);
+        return new Proxy(transaction, {
+          get(tx, txProperty) {
+            if (txProperty === 'objectStore') return name => wrapStore(tx.objectStore(name));
+            const value = Reflect.get(tx, txProperty, tx);
+            return typeof value === 'function' ? value.bind(tx) : value;
+          },
+          set(tx, txProperty, value) { return Reflect.set(tx, txProperty, value, tx); },
+        });
+      };
+      const value = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+    set(target, property, value) { return Reflect.set(target, property, value, target); },
+  });
+  return {
+    open(name, version) {
+      let proxy;
+      proxy = new Proxy(indexedDB.open(name, version), {
+        get(target, property) {
+          if (property === 'result') return target.result ? wrapDatabase(target.result) : target.result;
+          const value = Reflect.get(target, property, target);
+          return typeof value === 'function' ? value.bind(target) : value;
+        },
+        set(target, property, value) {
+          if (property === 'onsuccess') {
+            target.onsuccess = event => value.call(proxy, event);
+            return true;
+          }
+          return Reflect.set(target, property, value, target);
+        },
+      });
+      return proxy;
+    },
+  };
+}
+
+async function waitForHeldCallbacks(held) {
+  await until(() => held.length >= 2, 'real IndexedDB read callbacks were not held');
+}
+
+const releaseHeldCallbacks = held => { for (const release of held.splice(0)) release(); };
+
 test('reopens the isolated database and returns an independent cached buffer', async () => {
   const indexedDB = new FakeIndexedDB();
-  const firstCache = createBrowserTileCache({ indexedDB });
+  const firstCache = createBrowserTileCache({ indexedDB, memoryMaxBytes: 0 });
   const source = Uint8Array.of(1, 2, 3, 4).buffer;
   firstCache.put('sha256:a', source);
   new Uint8Array(source)[0] = 99;
@@ -148,7 +235,7 @@ test('reopens the isolated database and returns an independent cached buffer', a
   assert.deepEqual([...new Uint8Array(firstHit)], [1, 2, 3, 4]);
   firstCache.dispose();
 
-  const secondCache = createBrowserTileCache({ indexedDB });
+  const secondCache = createBrowserTileCache({ indexedDB, memoryMaxBytes: 0 });
   const reopened = await waitForHit(secondCache, 'sha256:a');
   assert.deepEqual([...new Uint8Array(reopened)], [1, 2, 3, 4]);
   secondCache.dispose();
@@ -159,7 +246,7 @@ test('expires entries by TTL and honors the smaller per-entry server max-age', a
   const originalNow = Date.now;
   let now = 10_000;
   Date.now = () => now;
-  const cache = createBrowserTileCache({ indexedDB, ttlMs: 500, readTimeoutMs: 20 });
+  const cache = createBrowserTileCache({ indexedDB, ttlMs: 500, readTimeoutMs: 20, memoryMaxBytes: 0 });
   try {
     cache.put('short', Uint8Array.of(1).buffer, 40);
     await waitForHit(cache, 'short');
@@ -173,7 +260,7 @@ test('expires entries by TTL and honors the smaller per-entry server max-age', a
 
 test('evicts oldest entries to satisfy byte and entry budgets', async () => {
   const indexedDB = new FakeIndexedDB();
-  const bytesCache = createBrowserTileCache({ indexedDB, maxBytes: 5, maxEntries: 10 });
+  const bytesCache = createBrowserTileCache({ indexedDB, maxBytes: 5, maxEntries: 10, memoryMaxBytes: 0 });
   bytesCache.put('old', Uint8Array.of(1, 2, 3).buffer);
   await waitForHit(bytesCache, 'old');
   bytesCache.put('new', Uint8Array.of(4, 5, 6).buffer);
@@ -183,7 +270,7 @@ test('evicts oldest entries to satisfy byte and entry budgets', async () => {
   bytesCache.dispose();
 
   const entryFactory = new FakeIndexedDB();
-  const entryCache = createBrowserTileCache({ indexedDB: entryFactory, maxBytes: 64, maxEntries: 2 });
+  const entryCache = createBrowserTileCache({ indexedDB: entryFactory, maxBytes: 64, maxEntries: 2, memoryMaxBytes: 0 });
   for (const key of ['a', 'b', 'c']) {
     entryCache.put(key, Uint8Array.of(key.charCodeAt(0)).buffer);
     await waitForHit(entryCache, key);
@@ -196,7 +283,7 @@ test('evicts oldest entries to satisfy byte and entry budgets', async () => {
 
 test('read failures and timed-out reads become misses without throwing', async () => {
   const indexedDB = new FakeIndexedDB();
-  const cache = createBrowserTileCache({ indexedDB, readTimeoutMs: 5 });
+  const cache = createBrowserTileCache({ indexedDB, readTimeoutMs: 5, memoryMaxBytes: 0 });
   cache.put('present', Uint8Array.of(9).buffer);
   await waitForHit(cache, 'present');
   indexedDB.failNextRequest = true;
@@ -212,7 +299,7 @@ test('read failures and timed-out reads become misses without throwing', async (
 
 test('background write queue is bounded by 16MiB including the active write', async () => {
   const indexedDB = new FakeIndexedDB();
-  const cache = createBrowserTileCache({ indexedDB, maxBytes: 32 * 1024 * 1024, maxEntries: 10 });
+  const cache = createBrowserTileCache({ indexedDB, maxBytes: 32 * 1024 * 1024, maxEntries: 10, memoryMaxBytes: 0 });
   indexedDB.paused = true;
   const large = new ArrayBuffer(8 * 1024 * 1024);
   cache.put('active', large);
@@ -224,4 +311,118 @@ test('background write queue is bounded by 16MiB including the active write', as
   assert.equal(await cache.get('over-limit'), undefined, 'write above queue byte limit is dropped');
   assert.ok(await cache.get('active'));
   cache.dispose();
+});
+
+test('memory cache returns an immediate independent hit before IndexedDB opens', async () => {
+  const indexedDB = new IDBFactory();
+  const databaseName = `shantu-browser-tile-cache-real-${++realDatabaseId}`;
+  const cache = createBrowserTileCache({ indexedDB, databaseName, maxBytes: 0, memoryMaxBytes: 64 });
+  const source = Uint8Array.of(1, 2, 3).buffer;
+  cache.put('sha256:memory-hit', source);
+  new Uint8Array(source)[0] = 9;
+  const first = await cache.get('sha256:memory-hit');
+  assert.deepEqual([...new Uint8Array(first)], [1, 2, 3], 'memory hit is available before IndexedDB opens');
+  new Uint8Array(first)[1] = 8;
+  assert.deepEqual([...new Uint8Array(await cache.get('sha256:memory-hit'))], [1, 2, 3], 'callers cannot mutate the cached value');
+  cache.dispose();
+});
+
+test('real IndexedDB hit promotion keeps the original provider TTL', async () => {
+  const indexedDB = new IDBFactory();
+  const databaseName = `shantu-browser-tile-cache-real-${++realDatabaseId}`;
+  const originalNow = Date.now;
+  let now = 20_000;
+  Date.now = () => now;
+  const writer = createBrowserTileCache({ indexedDB, databaseName, ttlMs: 500, memoryMaxBytes: 0 });
+  const idbReader = createBrowserTileCache({ indexedDB, databaseName, ttlMs: 500, memoryMaxBytes: 0 });
+  const hotReader = createBrowserTileCache({ indexedDB, databaseName, ttlMs: 500, memoryMaxBytes: 64 });
+  try {
+    writer.put('sha256:short-lived', Uint8Array.of(7, 8).buffer, 40);
+    await waitForHit(idbReader, 'sha256:short-lived');
+    writer.dispose();
+    idbReader.dispose();
+
+    now += 30;
+    assert.deepEqual([...new Uint8Array(await hotReader.get('sha256:short-lived'))], [7, 8], 'IDB hit is promoted to memory');
+    now += 11;
+    assert.equal(await hotReader.get('sha256:short-lived'), undefined, 'promotion does not restart the 40ms provider TTL');
+  } finally {
+    hotReader.dispose();
+    Date.now = originalNow;
+  }
+});
+
+test('memory cache uses byte-bounded LRU and supports a zero-byte disable switch', async () => {
+  const indexedDB = new IDBFactory();
+  const lru = realCache(indexedDB, { maxBytes: 0, memoryMaxBytes: 4 });
+  lru.put('a', Uint8Array.of(1, 1).buffer);
+  lru.put('b', Uint8Array.of(2, 2).buffer);
+  await lru.get('a'); // Promote a to the newest position.
+  lru.put('c', Uint8Array.of(3, 3).buffer);
+  assert.ok(await lru.get('a'));
+  assert.equal(await lru.get('b'), undefined, 'least-recently-used bytes are evicted first');
+  assert.deepEqual([...new Uint8Array(await lru.get('c'))], [3, 3]);
+  lru.dispose();
+
+  const disabled = realCache(new IDBFactory(), { maxBytes: 0, memoryMaxBytes: 0 });
+  disabled.put('disabled', Uint8Array.of(4).buffer);
+  assert.equal(await disabled.get('disabled'), undefined, 'zero disables the memory layer');
+  disabled.dispose();
+});
+
+test('forget removes memory and IndexedDB entries; dispose clears the hot layer only', async () => {
+  const indexedDB = new IDBFactory();
+  const databaseName = `shantu-browser-tile-cache-real-${++realDatabaseId}`;
+  const cache = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 64 });
+  const idbReader = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 0 });
+  cache.put('sha256:forget', Uint8Array.of(5, 6).buffer);
+  await waitForHit(idbReader, 'sha256:forget');
+  cache.forget('sha256:forget');
+  assert.equal(await cache.get('sha256:forget'), undefined, 'forget drops the hot copy immediately');
+  await waitForMiss(idbReader, 'sha256:forget');
+
+  cache.put('sha256:preserve', Uint8Array.of(7).buffer);
+  await waitForHit(idbReader, 'sha256:preserve');
+  cache.dispose();
+  cache.forget('sha256:preserve');
+  assert.equal(await cache.get('sha256:preserve'), undefined, 'disposed cache cannot serve its former memory copy');
+  assert.deepEqual([...new Uint8Array(await idbReader.get('sha256:preserve'))], [7], 'dispose leaves persistent cache data intact');
+  idbReader.dispose();
+});
+
+test('in-flight real IndexedDB gets cannot revive data after forget, dispose, or put', async () => {
+  for (const action of ['forget', 'dispose', 'put']) {
+    const indexedDB = new IDBFactory();
+    const databaseName = `shantu-browser-tile-cache-race-${action}-${++realDatabaseId}`;
+    const writer = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 0 });
+    const observer = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 0 });
+    writer.put('sha256:race', Uint8Array.of(1, 2).buffer);
+    await waitForHit(observer, 'sha256:race');
+    writer.dispose();
+    observer.dispose();
+
+    const held = [];
+    const cache = createBrowserTileCache({ indexedDB: holdRealReadCallbacks(indexedDB, held), databaseName, memoryMaxBytes: 64 });
+    await tick(); await tick(); // Let the actual IDBOpenDBRequest complete before starting the held read.
+    const pending = cache.get('sha256:race');
+    await waitForHeldCallbacks(held);
+    if (action === 'forget') cache.forget('sha256:race');
+    else if (action === 'dispose') cache.dispose();
+    else cache.put('sha256:race', Uint8Array.of(8, 9).buffer);
+    assert.equal(await pending, undefined, `${action} settles the old read as a miss`);
+    releaseHeldCallbacks(held);
+
+    if (action === 'put') {
+      assert.deepEqual([...new Uint8Array(await cache.get('sha256:race'))], [8, 9], 'late old read cannot replace the new hot value');
+      cache.dispose();
+    } else if (action === 'forget') {
+      const forgetObserver = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 0 });
+      await waitForMiss(forgetObserver, 'sha256:race');
+      forgetObserver.dispose();
+    } else {
+      const reopened = createBrowserTileCache({ indexedDB, databaseName, memoryMaxBytes: 0 });
+      assert.deepEqual([...new Uint8Array(await waitForHit(reopened, 'sha256:race'))], [1, 2], 'dispose keeps the persistent entry available');
+      reopened.dispose();
+    }
+  }
 });

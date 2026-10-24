@@ -92,6 +92,8 @@ test('aborting a proxied tile cancels the matching native request without sendin
   const calls = [];
   const cancelled = [];
   let finish;
+  let started;
+  const requestStarted = new Promise(resolve => { started = resolve; });
   Object.defineProperty(globalThis, 'location', {
     configurable: true,
     value: { origin: 'https://appassets.androidplatform.net' },
@@ -102,11 +104,14 @@ test('aborting a proxied tile cancels the matching native request without sendin
   });
   globalThis.fetch = (endpoint, options) => {
     calls.push([endpoint, options]);
+    started();
     return new Promise((resolve) => { finish = () => resolve(new Response('tile')); });
   };
   try {
     const controller = new AbortController();
     const pending = fetchMapTile('https://private.example/tiles/1/2/3.png?token=do-not-log', controller.signal);
+    // Cache lookup is asynchronous; test cancellation after the native request has started.
+    await requestStarted;
     const request = new URL(calls[0][0]);
     const requestId = request.searchParams.get('requestId');
     assert.match(requestId, /^mt-[a-f0-9-]+$/);

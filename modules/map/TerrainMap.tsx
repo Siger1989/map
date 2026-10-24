@@ -1,4 +1,5 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
+import { RECENT_TILE_CACHE } from './recentTileCache';
 import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentMapStyle';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
 import { SATELLITE_UNDERLAY, showSatelliteUnderlay } from '../cartography/satelliteUnderlay';
@@ -1017,6 +1018,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
           const initialCamera = cameraSync.current.pendingCamera() ?? latest.current.initialCamera ??
             (latest.current.persistCamera === false ? INITIAL_VIEW : readLastView() ?? INITIAL_VIEW);
           const map = new maplibre.Map({
+            ...RECENT_TILE_CACHE,
             container: container.current,
             style: baseStyle(),
             // Use MapLibre's native devicePixelRatio; a 2x cap softens high-DPI
