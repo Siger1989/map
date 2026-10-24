@@ -62,6 +62,13 @@ final class LocalGateway {
                 if (!DataTransport.validTile(z, x, y, 5)) return text(400, "Invalid geology tile");
                 return binary(DataTransport.get("https://tiles.macrostrat.org/carto/" + z + "/" + x + "/" + y + ".mvt", 4 * 1024 * 1024), "application/vnd.mapbox-vector-tile");
             }
+            if ("/api/offline-tile".equals(path)) {
+                String source=uri.getQueryParameter("url");
+                if(source==null||source.isEmpty())return text(400,"Missing tile URL");
+                WebResourceResponse cached=OfflineStore.hit(context,source);
+                if(cached!=null)return cached;
+                return text(404,"Offline tile not cached");
+            }
             if ("/api/map-tile".equals(path)) {
                 String source = uri.getQueryParameter("url");
                 if (source == null || source.isEmpty()) return text(400, "Missing tile URL");

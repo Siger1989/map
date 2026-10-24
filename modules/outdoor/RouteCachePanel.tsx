@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { MapSource } from '../mapSources/types';
 import type { Coordinate } from '../navigation/types';
-import { planImportedRouteDownload } from './importedRouteDownload';
+import { MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES } from './importedRouteDownload';
+import { estimateImportedRouteDownloadAsync } from './asyncImportedRoutePlan';
 import { OFFLINE_MAP_KEY } from './tileCache';
 import type { TripPackage } from './offline';
 import type { useOffline } from './useOffline';
@@ -32,6 +33,10 @@ function cachedSize(bytes: number) {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   return bytes > 0 ? `${(bytes / 1024).toFixed(1)} KB` : '0 KB';
+}
+
+function estimatedSize(bytes: number) {
+  return bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(2)} GB` : `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 }
 
 function zoomOptions(source: MapSource) {
@@ -100,11 +105,19 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   }, []);
 
   const area = useMemo(() => selectedRoutes.length ? ({ kind: 'route' as const, segments: selectedRoutes.flatMap((route) => route.segments.filter((segment) => segment.length >= 2)), bufferKm }) : null, [selectedRoutes, bufferKm]);
-  const estimate = useMemo(() => {
-    if (!area || !selectedSource) return null;
-    try { return { plan: planImportedRouteDownload(area, selectedSource, zoom), error: '' }; }
-    catch (error) { return { plan: null, error: (error as Error).message }; }
+  const [estimate, setEstimate] = useState<{ plan: Awaited<ReturnType<typeof estimateImportedRouteDownloadAsync>> | null; error: string; pending: boolean; area: typeof area; sourceId: string; zoom: number }>({ plan: null, error: '', pending: false, area: null, sourceId: '', zoom: 0 });
+  useEffect(() => {
+    if (!area || !selectedSource) { setEstimate({ plan: null, error: '', pending: false, area, sourceId: selectedSource?.id ?? '', zoom }); return; }
+    const controller = new AbortController();
+    const tuple = { area, sourceId: selectedSource.id, zoom };
+    setEstimate({ ...tuple, plan: null, error: '', pending: true });
+    void estimateImportedRouteDownloadAsync(area, selectedSource, zoom, { signal: controller.signal }).then(
+      (plan) => setEstimate({ ...tuple, plan, error: '', pending: false }),
+      (error) => { if (!controller.signal.aborted) setEstimate({ ...tuple, plan: null, error: (error as Error).message, pending: false }); },
+    );
+    return () => controller.abort();
   }, [area, selectedSource, zoom]);
+  const estimateCurrent = estimate.area === area && estimate.sourceId === (selectedSource?.id ?? '') && estimate.zoom === zoom;
   const zooms = selectedSource ? zoomOptions(selectedSource) : [];
   const packages = offline.packages.filter((trip) => trip.provider === 'imported');
   const activeTrip = offline.current;
@@ -130,7 +143,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   };
 
   const start = () => {
-    if (!selectedRoutes.length || !selectedSource || !area || !estimate?.plan || offline.busy) return;
+    if (!selectedRoutes.length || !selectedSource || !area || !estimateCurrent || !estimate.plan || estimate.pending || offline.busy) return;
     setAttemptedStart(true);
     const name = batch ? `批量路线（${selectedRoutes.length}条）` : selectedRoutes[0].name;
     void offline.createImportedRoute(name, area, selectedSource, zoom, selectedRoutes.map(route => route.name));
@@ -216,19 +229,19 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
                   </label>
                   <label>最高级别
                     <select disabled={!selectedSource} value={selectedSource ? zoom : ''} onChange={(event) => setZoom(Number(event.target.value))}>
-                      {zooms.map((value) => <option key={value} value={value}>{value} 级</option>)}
+                      {zooms.map((value) => <option key={value} value={value}>{value} 级{value === selectedSource?.maxzoom ? '（上限）' : ''}</option>)}
                     </select>
                   </label>
                 </div>
-                <div className="route-cache-estimate" role="status">
-                  {estimate?.error || (estimate?.plan ? `预计 ${estimate.plan.count.toLocaleString()} 次请求 · 约 ${(estimate.plan.estimatedBytes / 1048576).toFixed(0)} MB` : '无法估算当前路线缓存量')}
+                <div className="route-cache-estimate" role="status" aria-live="polite">
+                  {!estimateCurrent || estimate.pending ? '正在后台估算路线缓存量…' : estimate.error || (estimate.plan ? `预计 ${estimate.plan.count.toLocaleString()} 项图源请求 · ${estimatedSize(estimate.plan.estimatedBytes)}（上限 ${MAX_IMPORTED_DOWNLOAD_RESOURCES.toLocaleString()} 项 / ${(MAX_IMPORTED_DOWNLOAD_BYTES / 1024 ** 3).toFixed(0)} GiB）` : '选择路线和图源后估算缓存量')}
                 </div>
                 <div className="route-cache-settings-actions">
-                  <button className="route-cache-primary" disabled={!estimate?.plan || offline.busy} onClick={start}>开始缓存</button>
+                  <button className="route-cache-primary" disabled={!estimateCurrent || !estimate.plan || estimate.pending || offline.busy} onClick={start}>开始缓存</button>
                   <button className="route-cache-back" onClick={() => setSetupStep(batch ? 'source' : 'route')}>返回</button>
                 </div>
                 {attemptedStart && !activeTrip && offline.message && <small className="route-cache-message" role="status">{offline.message}</small>}
-                <small className="route-cache-note">顺序下载，请保持前台；自定义图源仍会消耗服务额度。</small>
+                <small className="route-cache-note">{offline.background ? '后台 8 路下载，进度见通知；计入图源额度。' : '保持前台 8 路下载；计入图源额度。'}</small>
               </>}
             </>
           )}

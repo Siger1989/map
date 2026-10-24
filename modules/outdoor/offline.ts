@@ -1,4 +1,4 @@
-import { nativeOffline, downloadNative, applyNativeProgress } from './nativeOffline.ts';
+import { nativeOffline, nativeRouteOffline, canUseNativeRouteDownload, downloadNative, applyNativeProgress } from './nativeOffline.ts';
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { TERRAIN_URL } from '../terrain/tiles.ts';
@@ -10,14 +10,18 @@ import type { LayerSettings } from '../map/types';
 import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 import { readMap } from '../mapSources/storage.ts';
 import type { MapSource } from '../mapSources/types.ts';
-import { planImportedRouteDownload, validateImportedDownloadSource, validateImportedDownloadUrls, assertImportedDownloadBudget } from './importedRouteDownload.ts';
+import { validateImportedDownloadSource, validateImportedDownloadUrls, assertImportedDownloadBudget } from './importedRouteDownload.ts';
+import { planImportedRouteDownloadAsync } from './asyncImportedRoutePlan.ts';
 export { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 import { planBounds } from '../offlineRouting/routeBounds.ts';
+import { tripPackages, putTrip as persistTripIndex, persistTripManifest, loadTripManifest, removeTripIndex, removeTripManifest, hydrateTripPackages } from './tripStorage.ts';
+export { tripPackages } from './tripStorage.ts';
 export { planBounds } from '../offlineRouting/routeBounds.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
-const CACHE = 'guanyun-trips-v1',
-  INDEX = 'guanyun.trips.v1';
+const CACHE = 'guanyun-trips-v1';
 export type TripPackage = {
+  manifest?: boolean;
+  urlCount?: number;
   native?: boolean;
   provider?: 'tianditu' | 'openfreemap' | 'imported';
   sourceId?: string;
@@ -38,14 +42,6 @@ export type TripPackage = {
   createdAt: number;
   complete: boolean;
 };
-export function tripPackages(): TripPackage[] {
-  try {
-    const v = JSON.parse(localStorage.getItem(INDEX) ?? '[]');
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
 export type DownloadProvider = 'tianditu' | 'openfreemap';
 export function mapDownloadPlan(area: DownloadArea, settings: LayerSettings, provider: DownloadProvider, zoom: number) {
   if (provider === 'tianditu') throw new Error(TIANDITU_OFFLINE_DISABLED);
@@ -102,9 +98,19 @@ export async function prepareImportedRoutePackage(
   const signature = (item: MapSource) => JSON.stringify([item.tiles, item.scheme ?? 'xyz', item.tileSize, item.minzoom, item.maxzoom, item.bounds, item.ovmap?.layers]);
   if (signature(source) !== signature(stored)) throw new Error('导入图源已变化，请重新选择后再下载');
   if (tripPackages().length >= 8) throw new Error('已达 8 个离线包，请先移除不用的包');
-  const plan = planImportedRouteDownload(area, source, zoom);
-  const estimate = await navigator.storage?.estimate?.();
-  if (estimate?.quota && estimate.quota - (estimate.usage ?? 0) < plan.estimatedBytes * 1.15)
+  const plan = await planImportedRouteDownloadAsync(area, source, zoom, { signal });
+  const routeBridge = nativeRouteOffline();
+  let availableBytes: number | undefined;
+  if (routeBridge) {
+    const available = routeBridge.offlineAvailableBytes?.();
+    if (typeof available !== 'number' || !Number.isFinite(available))
+      throw new Error('无法确认本机离线存储空间，请检查设备存储后重试');
+    availableBytes = Math.max(0, available);
+  } else {
+    const estimate = await navigator.storage?.estimate?.();
+    if (estimate?.quota) availableBytes = Math.max(0, estimate.quota - (estimate.usage ?? 0));
+  }
+  if (availableBytes !== undefined && availableBytes < plan.estimatedBytes * 1.15)
     throw new Error('可用存储空间不足，请降低清晰度或清理旧包');
   signal.throwIfAborted();
   const trip: TripPackage = {
@@ -133,17 +139,12 @@ export async function prepareImportedRoutePackage(
       rasterDatums: { [`custom:${stored.id}`]: source.datum ?? 'wgs84' },
     },
   };
-  putTrip(trip);
+  await persistTripManifest(trip);
   return trip;
 }
 const removingTrips = new Set<string>();
 export function putTrip(trip: TripPackage) {
-  if(removingTrips.has(trip.id)) return;
-  const list = tripPackages();
-  const index = list.findIndex((t) => t.id === trip.id);
-  if (index < 0) list.push(trip);
-  else list[index] = trip;
-  localStorage.setItem(INDEX, JSON.stringify(list));
+  if (!removingTrips.has(trip.id)) persistTripIndex(trip);
 }
 export const offlineTransform: RequestTransformFunction = (url, kind) => {
   const u = new URL(url, window.location.origin);
@@ -295,19 +296,22 @@ export async function downloadTrip(
   progress: (t: TripPackage) => void,
   fetchImported?: (url: string, signal: AbortSignal) => Promise<Response>,
 ) {
+  trip = await loadTripManifest(trip);
   if (!canDownloadTrip(trip)) throw new Error(TIANDITU_OFFLINE_DISABLED);
   if (trip.provider === 'imported') {
     if (!trip.sourceId || !trip.sourceName || !trip.urls.length) throw new Error('导入图源下载包信息不完整');
-    if (!fetchImported) throw new Error('导入图源下载通道暂不可用');
     const source = await readMap(trip.sourceId);
     if (!source || source.kind !== 'online') throw new Error('此离线包的导入图源已移除，无法继续下载');
     validateImportedDownloadSource(source);
     validateImportedDownloadUrls(trip.urls);
-  } else if(nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
+    if (canUseNativeRouteDownload(trip)) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
+    if (!fetchImported) throw new Error('导入图源下载通道暂不可用');
+  } else if (nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
   const cache = await caches.open(CACHE);
   let cursor = 0,
     done = 0,
     bytes = 0,
+    reservedBytes = 0,
     failed = 0;
   const pending:string[]=[];
   for(const url of trip.urls) {
@@ -320,15 +324,28 @@ export async function downloadTrip(
   let fatal = '';
   let lastUpdate = 0;
   const update = (force = false) => {
-    if (!force && Date.now() - lastUpdate < 250) return;
+    if (!force && Date.now() - lastUpdate < 500) return;
     lastUpdate = Date.now();
     const next = { ...trip, done, bytes, complete: done === trip.urls.length };
     putTrip(next);
     progress(next);
   };
   update(true);
-  await Promise.all(
-    Array.from({ length: trip.provider === 'imported' || trip.provider === 'tianditu' ? 1 : 3 }, async () => {
+  const stopReason = (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/单张地图图像超过 8MB/.test(message)) return message;
+    if (trip.provider === 'imported') {
+      const status = Number((error as { status?: unknown })?.status) || Number(/\((\d{3})\)/.exec(message)?.[1]);
+      if ([401, 403, 429].includes(status)) return '图源授权或服务额度受限，下载已暂停；已有瓦片保留，可稍后手动继续';
+      if (signal.aborted || message === '图源请求已取消' || /aborted|abort/i.test(message)) return '下载已暂停，可稍后继续';
+      if (/离线包达到|存储空间|quota/i.test(message)) return message;
+      return '图源请求失败，下载已暂停；已下载瓦片保留，可稍后手动继续';
+    }
+    if (/天地图|1 GB|quota|storage/i.test(message)) return message;
+    if (trip.provider === 'tianditu' && !signal.aborted) return '下载连接中断或资源暂缺，已暂停；联网后可继续补齐';
+    return '';
+  };
+  const worker = async () => {
       while (cursor < pending.length && !signal.aborted && !fatal) {
         const url = pending[cursor++];
         try {
@@ -339,44 +356,38 @@ export async function downloadTrip(
             : await fetch(resourceFetchUrl(url), { signal: requestSignal }));
           const length = trip.provider === 'imported' ? await validateImportedTileResponse(response) : await validateTileResponse(url, response);
           if (length > 8 * 1024 * 1024)
+            throw new Error('单张地图图像超过 8MB 上限，下载已暂停');
+          if (trip.provider === 'imported') assertImportedDownloadBudget(bytes + reservedBytes + length);
+          else if (bytes + reservedBytes + length > 1024 * 1024 * 1024)
             throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
-          if (trip.provider === 'imported') assertImportedDownloadBudget(bytes + length);
-          else if (bytes + length > 1024 * 1024 * 1024)
-            throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
-          bytes += length;
+          // Reserve before the async write so concurrent workers cannot all pass the same budget check.
+          reservedBytes += length;
           try {
             if (!cached) await cache.put(resourceCacheKey(url), response);
+            bytes += length;
             done++;
           } catch (error) {
-            bytes -= length;
             throw error;
-          }
-          if (!cached && trip.provider === 'tianditu') await new Promise(resolve => setTimeout(resolve, 350));
+          } finally { reservedBytes -= length; }
         } catch (e) {
           failed++;
-          const message = (e as Error).message;
-          if (trip.provider === 'imported') {
-            const status = Number((e as { status?: unknown }).status) || Number(/\((\d{3})\)/.exec(message)?.[1]);
-            fatal = [401, 403, 429].includes(status)
-              ? '图源授权或服务额度受限，下载已暂停；已有瓦片保留，可稍后手动继续'
-              : message === '图源请求已取消'
-                ? message
-                : '图源请求失败，下载已暂停；已下载瓦片保留，可稍后手动继续';
-          }
-          else if (/天地图|1 GB|quota|storage/i.test(message)) fatal = message;
-          else if (trip.provider === 'tianditu' && !signal.aborted) fatal = '下载连接中断或资源暂缺，已暂停；联网后可继续补齐';
+          fatal ||= stopReason(e);
         }
-        update();
+        try { update(); } catch (error) { fatal ||= stopReason(error); }
       }
-    }),
-  );
-  update(true);
+  };
+  const concurrency = trip.provider === 'imported' ? 8 : 3;
+  await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, () => worker()));
+  let checkpointError = '';
+  try { update(true); } catch (error) { checkpointError = (error as Error).message; }
   if (signal.aborted) throw new Error('下载已暂停，可稍后继续');
   if (fatal) throw new Error(fatal);
+  if (checkpointError) throw new Error(checkpointError);
   if (failed)
     throw new Error(`${trip.urls.length - done} 项未下载，点击继续补齐`);
 }
 export async function verifyTrip(trip: TripPackage) {
+  trip = await loadTripManifest(trip);
   if(trip.native && nativeOffline()){const checked=applyNativeProgress(trip,JSON.parse(nativeOffline()!.offlineVerify(trip.id)));putTrip(checked);return checked;}
   const cache = await caches.open(CACHE);
   let done = 0,
@@ -401,12 +412,22 @@ export async function verifyTrip(trip: TripPackage) {
 export async function removeTrip(trip: TripPackage) {
   removingTrips.add(trip.id);
   try {
+    const allTrips = await hydrateTripPackages();
+    trip = await loadTripManifest(trip);
     if(nativeOffline() && !nativeOffline()!.offlineRemove(trip.id))throw Error('缓存移除失败；下载尚未停止或存储暂不可用，请稍后重试');
-    const keep = new Set(tripPackages().filter(t=>t.id!==trip.id).flatMap(t=>t.urls.map(resourceCacheKey)));
+    const keep = new Set(allTrips.filter(t=>t.id!==trip.id).flatMap(t=>t.urls.map(resourceCacheKey)));
     const cache = await caches.open(CACHE);
     for(const url of trip.urls) if(!keep.has(resourceCacheKey(url)))await cache.delete(resourceCacheKey(url));
     // Re-read after awaits: another package may have received progress meanwhile.
-    localStorage.setItem(INDEX,JSON.stringify(tripPackages().filter(t=>t.id!==trip.id)));
+    removeTripIndex(trip.id);
+    if (trip.manifest) {
+      try { await removeTripManifest(trip.id); }
+      catch (error) {
+        // Keep the package recoverable if its IndexedDB manifest could not be removed.
+        persistTripIndex(trip);
+        throw error;
+      }
+    }
     if(localStorage.getItem('shantu.offline-package.v1')===trip.id)localStorage.removeItem('shantu.offline-package.v1');
   } finally { removingTrips.delete(trip.id); }
 }

@@ -23,6 +23,10 @@ public final class MapTileProxyTest {
         try { MapTileProxy.validate(url); throw new AssertionError("accepted invalid URL"); }
         catch (IOException expected) { }
     }
+    private static void rejectsOffline(String url) throws Exception {
+        try { MapTileProxy.validateOffline(url); throw new AssertionError("accepted restricted offline URL"); }
+        catch (IOException expected) { }
+    }
     private static void rejectsRedirect(String source,String location) throws Exception {
         try { MapTileProxy.resolveRedirect(source,location); throw new AssertionError("accepted invalid redirect"); }
         catch (IOException expected) { }
@@ -56,6 +60,8 @@ public final class MapTileProxyTest {
         }
     }
     public static void main(String[] args) throws Exception {
+        check(MapTileProxy.MAX_ACTIVE_REQUESTS==8 && MapTileProxy.MAX_ACTIVE_PER_HOST==8,
+            "eight-worker offline downloads fit global and per-host transport caps");
         check(MapTileProxy.isPublicAddress(InetAddress.getByName("8.8.8.8")), "public IPv4");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("127.0.0.1")), "loopback IPv4");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("10.1.2.3")), "private IPv4");
@@ -103,6 +109,11 @@ public final class MapTileProxyTest {
         check(MapTileProxy.imageMime("not an image".getBytes(StandardCharsets.US_ASCII)) == null, "reject non-image");
         MapTileProxy.validate("https://tiles.example.org/1/2/3.png");
         MapTileProxy.validate("http://tiles.example.org:8080/1/2/3.png");
+        MapTileProxy.validateOffline("https://tiles.example.org/1/2/3.png");
+        MapTileProxy.validateOffline("http://tiles.example.org:8080/1/2/3.png");
+        rejectsOffline("https://t0.tianditu.gov.cn/vec_w/wmts?x=1");
+        rejectsOffline("https://maps.tianditu.com/1/2/3.png");
+        rejectsOffline("https://tile.openstreetmap.org/1/2/3.png");
         rejects("file:///etc/passwd");
         rejects("https://user:pass@tiles.example.org/a");
         rejects("https://tiles.example.org:22/a");

@@ -13,6 +13,9 @@ public final class MapTileResponseCheck {
         out.write(body);
         return out.toByteArray();
     }
+    private static byte[] statusResponse(int status) {
+        return ("HTTP/1.1 " + status + " Unavailable\r\nContent-Length: 0\r\n\r\n").getBytes(StandardCharsets.US_ASCII);
+    }
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
@@ -55,6 +58,10 @@ public final class MapTileResponseCheck {
             MapTileProxy.parseResponse(new ByteArrayInputStream(response("Content-Length: 4\r\n", new byte[4])));
             throw new AssertionError("Invalid image accepted");
         } catch (MapTileProxy.TileException error) { require("format".equals(error.diagnostic), "Image diagnostic changed"); }
+        for (int status : new int[] {401, 403, 429}) {
+            try { MapTileProxy.parseResponse(new ByteArrayInputStream(statusResponse(status))); throw new AssertionError("Authorization/quota status accepted"); }
+            catch (MapTileProxy.TileException error) { require(error.status == status, "Upstream status not preserved: " + status); }
+        }
         System.out.println("PASS native tile framing: persistent / partial / trailing / invalid / EOF / chunked / image");
     }
 }

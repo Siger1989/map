@@ -30,9 +30,9 @@ final class MapTileProxy {
     private static final int MAX_URL_LENGTH = 8192;
     private static final int MAX_REDIRECTS = 3;
     static final int MAX_ACTIVE_REQUESTS = 8;
-    static final int MAX_ACTIVE_PER_HOST = 4;
+    static final int MAX_ACTIVE_PER_HOST = 8;
     private static final int MAX_IDLE_CONNECTIONS = 8;
-    private static final int MAX_IDLE_PER_HOST = 4;
+    private static final int MAX_IDLE_PER_HOST = 8;
     private static final long IDLE_TTL_NANOS = TimeUnit.SECONDS.toNanos(30);
     private static final long CANCEL_TOMBSTONE_MS = 30_000L;
     private static final int MAX_CANCEL_TOMBSTONES = 128;
@@ -159,14 +159,20 @@ final class MapTileProxy {
     interface PinnedAttempt { UpstreamResponse run(InetAddress address,long attemptDeadline) throws IOException; }
 
     static Tile fetch(String rawUrl) throws IOException {
-        return fetchInternal(rawUrl, null);
+        return fetchInternal(rawUrl, null, false);
     }
 
     static Tile fetch(String rawUrl, String requestId) throws IOException {
-        if (requestId == null || requestId.isEmpty() || requestId.length() > 256) return fetchInternal(rawUrl, null);
+        if (requestId == null || requestId.isEmpty() || requestId.length() > 256) return fetchInternal(rawUrl, null, false);
         RequestControl control = registerRequest(requestId);
-        try { return fetchInternal(rawUrl, control); }
+        try { return fetchInternal(rawUrl, control, false); }
         finally { unregisterRequest(requestId, control); }
+    }
+
+    static Tile fetchOffline(String rawUrl,String requestId) throws IOException {
+        if(requestId==null||requestId.isEmpty()||requestId.length()>256)return fetchInternal(rawUrl,null,true);
+        RequestControl control=registerRequest(requestId);
+        try{return fetchInternal(rawUrl,control,true);}finally{unregisterRequest(requestId,control);}
     }
 
     static void cancel(String requestId) {
@@ -208,13 +214,13 @@ final class MapTileProxy {
         while (entries.hasNext()) if (entries.next().getValue() <= now) entries.remove();
     }
 
-    private static Tile fetchInternal(String rawUrl, RequestControl control) throws IOException {
+    private static Tile fetchInternal(String rawUrl, RequestControl control,boolean offline) throws IOException {
         long deadline = System.nanoTime() + TIMEOUT_MS * 1_000_000L;
         String current = rawUrl;
         for (int hop=0; hop<=MAX_REDIRECTS; hop++) {
             if (control != null) control.check();
             final Target target;
-            try { target = validate(current); }
+            try { target = offline?validateOffline(current):validate(current); }
             catch (IOException error) { throw new TileException(hop==0?400:502, "url", "Invalid tile URL"); }
             UpstreamResponse response = request(target, deadline, control);
             if (control != null) control.check();
@@ -466,7 +472,7 @@ final class MapTileProxy {
             headers.put(name, value);
         }
         if (isRedirect(status)) return new UpstreamResponse(status, headers.get("location"), null);
-        if (status != 200) throw new TileException(502,"upstream_http","Upstream status unavailable");
+        if (status != 200) throw new TileException(status==401||status==403||status==429?status:502,"upstream_http","Upstream status unavailable");
         boolean hasLength = headers.containsKey("content-length");
         boolean hasTransfer = headers.containsKey("transfer-encoding");
         if (hasLength && hasTransfer) throw formatError("Ambiguous tile body framing");
@@ -541,6 +547,14 @@ final class MapTileProxy {
         int port = uri.getPort() < 0 ? ("https".equalsIgnoreCase(scheme) ? 443 : 80) : uri.getPort();
         if (port != 80 && port != 443 && port != 8000 && port != 8080 && port != 8443 && port != 8880 && port != 8888 && port != 20262) throw new IOException("Unsupported tile port");
         return new Target(uri, host, port);
+    }
+
+    static Target validateOffline(String raw) throws IOException {
+        Target target=validate(raw);
+        String host=target.host.toLowerCase(Locale.ROOT);
+        if(host.equals("tianditu.gov.cn") || host.endsWith(".tianditu.gov.cn") || host.equals("tianditu.com") || host.endsWith(".tianditu.com") || host.equals("openstreetmap.org") || host.endsWith(".openstreetmap.org") || host.equals("openstreetmap.fr") || host.endsWith(".openstreetmap.fr"))
+            throw new IOException("Offline provider is not permitted");
+        return target;
     }
 
     static boolean isPublicAddress(InetAddress address) {

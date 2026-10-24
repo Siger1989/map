@@ -40,3 +40,18 @@ test('cache-only mode reads a selected package and rejects a miss without networ
     else delete globalThis.localStorage;
   }
 });
+
+test('native selected-package tiles read the local endpoint, while cache misses never fetch a provider offline',async()=>{
+  const before={window:globalThis.window,fetch:globalThis.fetch,caches:globalThis.caches,storage:globalThis.localStorage};
+  const url='https://tiles.example.test/19/2/3.png';let requests=[];
+  globalThis.window={GuanyunNative:{offlineStart(){},offlineHas:value=>value===url}};
+  globalThis.localStorage={getItem:key=>({'shantu.offline-map-only.v1':'true','shantu.offline-package.v1':'native-package','guanyun.trips.v1':JSON.stringify([{id:'native-package',urls:[url]}])})[key]??null};
+  globalThis.caches={open:async()=>({match:async()=>undefined})};
+  globalThis.fetch=async request=>{requests.push(request);assert.ok(request.startsWith('/api/offline-tile?'));return new Response('native tile');};
+  try {
+    const signal=new AbortController().signal;
+    assert.equal(await(await cachedMapFetch(url,signal)).text(),'native tile');
+    await assert.rejects(cachedMapFetch('https://tiles.example.test/19/2/4.png',signal),/没有这张地图瓦片/);
+    assert.equal(requests.length,1);
+  }finally{globalThis.window=before.window;globalThis.fetch=before.fetch;globalThis.caches=before.caches;globalThis.localStorage=before.storage;}
+});

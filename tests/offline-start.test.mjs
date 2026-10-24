@@ -1,28 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
-import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
 
-test('retired native download bridge refuses without touching Android or stored data', () => {
+test('native bridge exposes the v2 imported-route chunk protocol', () => {
   const source=readFileSync('mobile/android/src/com/guanyun/weather/NativeBridge.java','utf8');
-  const method=source.slice(source.indexOf('    @JavascriptInterface public String offlineStart'),source.indexOf('    @JavascriptInterface public String offlineState')).replace('@JavascriptInterface ','');
-  const dir=path.resolve('.openai/offline-start-java');mkdirSync(dir,{recursive:true});
-  // No Android or storage fakes: touching either would fail to compile this boundary.
-  writeFileSync(path.join(dir,'StartCheck.java'),`public class StartCheck {
-    ${method}
-    public static void main(String[] args) {
-      for (String input : new String[] {null, "", "old-download-task"})
-        if (!"地图缓存功能已移除".equals(new StartCheck().offlineStart(input))) throw new AssertionError();
-      System.out.println("disabled without side effects");
-    }
-  }`);
-  const jdk=process.env.JAVA_HOME || 'D:/GodotAndroid/jdk-17';
-  const bin=name=>path.join(jdk,'bin',name+(process.platform==='win32'?'.exe':''));
-  execFileSync(bin('javac'),['-encoding','UTF-8','-d',dir,path.join(dir,'StartCheck.java')],{timeout:30000});
-  assert.match(execFileSync(bin('java'),['-cp',dir,'StartCheck'],{encoding:'utf8',timeout:10000}),/disabled without side effects/);
+  assert.match(source,/offlineCapabilities\(\)\s*\{\s*return "\{\\"version\\":2,\\"imported\\":true,\\"chunked\\":true\}";/);
+  assert.match(source,/offlineBegin\(String id,String name,int total\).*OfflineStore\.begin\(activity,id,name,total\)/);
+  assert.match(source,/offlineAppend\(String id,int offset,String rawUrls\).*OfflineStore\.append\(activity,id,offset,rawUrls\)/);
+  assert.match(source,/offlineDiscard\(String id\).*OfflineStore\.discard\(activity,id\)/);
+  assert.match(source,/offlineCommit\(String id\).*OfflineStore\.commit\(activity,id\)/s);
+  assert.match(source,/offlineStart\(String raw\).*OfflineStore\.prepare\(activity,raw\)/s);
+  assert.doesNotMatch(source,/地图缓存功能已移除/);
+  const service=readFileSync('mobile/android/src/com/guanyun/weather/OfflineDownloadService.java','utf8');
+  const proxy=readFileSync('mobile/android/src/com/guanyun/weather/MapTileProxy.java','utf8');
+  assert.match(service,/newFixedThreadPool\(8\);for\(int w=0;w<8;w\+\+\)/);
+  assert.match(proxy,/MAX_ACTIVE_REQUESTS\s*=\s*8/);
+  assert.match(proxy,/MAX_ACTIVE_PER_HOST\s*=\s*8/);
 });
 
 test('imported route estimate is passive and starts only after the explicit user click', async (t) => {

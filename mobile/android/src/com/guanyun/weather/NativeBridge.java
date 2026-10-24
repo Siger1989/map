@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.StatFs;
 import android.webkit.JavascriptInterface;
 
 /** Narrow recording/export API; only bundled main-frame navigation is permitted. */
@@ -38,11 +39,32 @@ final class NativeBridge {
             activity.requestScreenOn(enabled);
         });
     }
-    // Compatibility boundary for older pages; new downloads are no longer available.
-    @JavascriptInterface public String offlineStart(String raw) { return "地图缓存功能已移除"; }
+    @JavascriptInterface public String offlineCapabilities() { return "{\"version\":2,\"imported\":true,\"chunked\":true}"; }
+    @JavascriptInterface public double offlineAvailableBytes() { try{return new StatFs(activity.getFilesDir().getAbsolutePath()).getAvailableBytes();}catch(Exception e){return 0;} }
+    private boolean offlineReady() {
+        if(!activity.trustedForeground())return false;
+        if(Build.VERSION.SDK_INT>=33&&activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){activity.runOnUiThread(()->activity.requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},4204));return false;}
+        return true;
+    }
+    @JavascriptInterface public String offlineBegin(String id,String name,int total) { if(!offlineReady())return activity.trustedForeground()?"请允许通知权限后再开始缓存":"请保持山兔在前台后开始缓存";return OfflineStore.begin(activity,id,name,total); }
+    @JavascriptInterface public String offlineAppend(String id,int offset,String rawUrls) { return OfflineStore.append(activity,id,offset,rawUrls); }
+    @JavascriptInterface public void offlineDiscard(String id) { OfflineStore.discard(activity,id); }
+    @JavascriptInterface public String offlineCommit(String id) {
+        if(!offlineReady())return activity.trustedForeground()?"请允许通知权限后再开始缓存":"请保持山兔在前台后开始缓存";
+        String result=OfflineStore.commit(activity,id);if(!"ok".equals(result))return result;
+        try {Intent intent=new Intent(activity,OfflineDownloadService.class).putExtra("offlineId",id);if(Build.VERSION.SDK_INT>=26)activity.startForegroundService(intent);else activity.startService(intent);return "ok";}
+        catch(Exception e){OfflineStore.status(activity,id,"paused","后台服务暂不可用，请返回应用后重试");OfflineDownloadService.releaseReservation(id);return "后台服务暂不可用，请返回应用后重试";}
+    }
+    @JavascriptInterface public String offlineStart(String raw) {
+        if(!offlineReady())return activity.trustedForeground()?"请允许通知权限后再开始缓存":"请保持山兔在前台后开始缓存";
+        String result=OfflineStore.prepare(activity,raw);if(!"ok".equals(result))return result;
+        try { Intent intent=new Intent(activity,OfflineDownloadService.class).putExtra("offlineId",OfflineStore.activeId(activity));if(Build.VERSION.SDK_INT>=26)activity.startForegroundService(intent);else activity.startService(intent);return "ok"; }
+        catch(Exception e){try{String id=OfflineStore.activeId(activity);OfflineStore.status(activity,id,"paused","后台服务暂不可用，请返回应用后重试");OfflineDownloadService.releaseReservation(id);}catch(Exception ignored){}return "后台服务暂不可用，请返回应用后重试";}
+    }
     @JavascriptInterface public String offlineState() { return OfflineStore.snapshot(activity); }
-    @JavascriptInterface public void offlinePause() { activity.stopService(new Intent(activity,OfflineDownloadService.class));OfflineStore.status(activity,"paused","下载已暂停，可继续"); }
-    @JavascriptInterface public boolean offlineHas(String url) { return false; }
+    @JavascriptInterface public void offlinePause() { activity.startService(new Intent(activity,OfflineDownloadService.class).setAction("pause")); }
+    @JavascriptInterface public void offlineCancel() { activity.startService(new Intent(activity,OfflineDownloadService.class).setAction("cancel")); }
+    @JavascriptInterface public boolean offlineHas(String url) { return OfflineStore.has(activity,url); }
     @JavascriptInterface public String offlineVerify(String id) { return OfflineStore.verify(activity,id); }
     @JavascriptInterface public boolean offlineRemove(String id) { return OfflineStore.remove(activity,id); }
     @JavascriptInterface public String recordState() { return RecordingStore.snapshot(activity); }

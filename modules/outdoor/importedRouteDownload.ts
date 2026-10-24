@@ -1,12 +1,13 @@
 import type { MapSource } from '../mapSources/types.ts';
 import { renderOvmapTemplate } from '../mapSources/ovmapTemplates.ts';
 import { warpPlan } from '../mapSources/coordinates.ts';
-import { downloadBounds, downloadTiles, MAX_DOWNLOAD_RESOURCES, type DownloadArea, type Tile } from './downloadPlan.ts';
+import { downloadBounds, downloadTiles, type DownloadArea, type Tile } from './downloadPlan.ts';
 
-export const MAX_IMPORTED_DOWNLOAD_BYTES = 1024 ** 3;
+export const MAX_IMPORTED_DOWNLOAD_RESOURCES = 250_000;
+export const MAX_IMPORTED_DOWNLOAD_BYTES = 8 * 1024 ** 3;
 export function assertImportedDownloadBudget(bytes: number) {
   if (!Number.isFinite(bytes) || bytes < 0 || bytes > MAX_IMPORTED_DOWNLOAD_BYTES)
-    throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
+    throw new Error('路线缓存预计超过 8 GiB 上限，请降低清晰度或分段缓存');
 }
 const REGULAR_TEMPLATE_TOKENS = new Set(['z', 'x', 'y', 'ratio', 'bbox-epsg-3857', 'quadkey', 'prefix']);
 export type ImportedRoutePlan = {
@@ -108,7 +109,7 @@ export function planImportedRouteDownload(
     throw new Error('请选择此图源支持的最高级别');
 
   const bounds = downloadBounds(area);
-  const outputTiles = downloadTiles(area, zoom, MAX_DOWNLOAD_RESOURCES, false, source.minzoom);
+  const outputTiles = downloadTiles(area, zoom, MAX_IMPORTED_DOWNLOAD_RESOURCES, false, source.minzoom);
   const dependencies = new Map<number, Map<string, Tile>>();
   for (const tile of outputTiles) {
     if (!intersectsBounds(tile, source.bounds)) continue;
@@ -143,15 +144,15 @@ export function planImportedRouteDownload(
       for (const url of urls) {
         const urlEstimate = url.includes('@2x') ? estimate * 4 : estimate;
         sizes.set(url, Math.max(sizes.get(url) ?? 0, urlEstimate));
-        if (sizes.size > MAX_DOWNLOAD_RESOURCES)
-          throw new Error('路线图源瓦片超过 2 万项，请降低清晰度或缩小沿线范围');
+        if (sizes.size > MAX_IMPORTED_DOWNLOAD_RESOURCES)
+          throw new Error(`路线图源请求量超过 ${MAX_IMPORTED_DOWNLOAD_RESOURCES.toLocaleString()} 项上限；当前路线两侧各 ${area.bufferKm} km 范围无法缩小，请降低级别或分段缓存`);
       }
     }
   }
   const urls = [...sizes.keys()];
   const estimatedBytes = urls.reduce((total, url) => total + sizes.get(url)!, 0);
   if (estimatedBytes > MAX_IMPORTED_DOWNLOAD_BYTES)
-    throw new Error('预计超过 1 GB，请降低清晰度或缩小沿线范围');
+    throw new Error('预计空间超过 8 GiB 上限，请降低级别或分段缓存');
   if (!urls.length) throw new Error('所选级别没有可下载的路线瓦片');
   return { urls, bounds, count: urls.length, estimatedBytes };
 }

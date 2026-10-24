@@ -1,5 +1,7 @@
 import { resourceCacheKey } from './tiandituCache.ts';
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
+import { packageUrls } from './tripStorage.ts';
+import { nativeOffline } from './nativeOffline.ts';
 
 export type BrowseTile = { z: number; x: number; y: number };
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
@@ -12,9 +14,10 @@ type TileFetcher = (url: string, signal: AbortSignal) => Promise<Response>;
 let selectedIndexId = '';
 let selectedIndexRaw = '';
 let selectedPackageUrls = new Set<string>();
+let selectedUrlList: string[] | undefined;
 let offlineOnlyOverride: boolean | undefined;
 
-function selectedTripUrls(): Set<string> {
+async function selectedTripUrls(): Promise<Set<string>> {
   try {
     const selected = localStorage.getItem('shantu.offline-package.v1');
     if (!selected) return NO_PACKAGE_URLS;
@@ -28,9 +31,13 @@ function selectedTripUrls(): Set<string> {
       return selectedPackageUrls;
     }
     const matching = (entries as TripIndexEntry[]).filter(entry => entry.id === selected);
-    selectedPackageUrls = new Set(matching.flatMap(entry => Array.isArray(entry.urls)
-      ? entry.urls.filter((url): url is string => typeof url === 'string').map(resourceCacheKey)
-      : []));
+    const urls = matching.length ? await packageUrls(selected) : [];
+    if (selected === selectedIndexId && urls === selectedUrlList) {
+      selectedIndexRaw = raw;
+      return selectedPackageUrls;
+    }
+    selectedPackageUrls = new Set(urls.map(resourceCacheKey));
+    selectedUrlList = urls;
     selectedIndexId = selected;
     selectedIndexRaw = raw;
     return selectedPackageUrls;
@@ -75,9 +82,15 @@ export async function cachedMapFetch(
   void tile; void viewed;
   const cacheOnly = cacheOnlyEnabled();
   const key = resourceCacheKey(url);
-  const packaged = selectedTripUrls().has(key);
+  const packaged = (await selectedTripUrls()).has(key);
   let cacheFailure: unknown;
   if (packaged) {
+    const bridge = nativeOffline();
+    if (bridge?.offlineHas(url)) {
+      const response = await fetch(`/api/offline-tile?url=${encodeURIComponent(url)}`, { signal });
+      signal.throwIfAborted();
+      if (response.ok) return response;
+    }
     try {
       const cache = await caches.open(TRIP_TILE_CACHE);
       signal.throwIfAborted();

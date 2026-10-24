@@ -129,7 +129,7 @@ export function downloadTiles(
               row++
             ) {
               if (++operations > 2000000)
-                throw new Error('路线范围过大，请降低清晰度或分段下载');
+                throw new Error(`当前路线范围在此级别计算量过大；路线两侧各 ${area.bufferKm} km 范围保持不变，请降低级别或分段缓存`);
               const dy = Math.max(0, Math.abs(row + 0.5 - y) - 0.5),
                 dx = Math.sqrt(Math.max(0, radius * radius - dy * dy));
               add(row, x - dx, x + dx);
@@ -144,7 +144,9 @@ export function downloadTiles(
         for (let x = Math.max(a, end + 1); x <= b; x++) {
           tiles.push({ z, x, y });
           if (tiles.length > limit)
-            throw new Error('范围或清晰度过大，请降低清晰度或缩小范围');
+            throw new Error(area.kind === 'route'
+              ? `路线缓存超过请求项预算；两侧各 ${area.bufferKm} km 范围保持不变，请降低级别或分段缓存`
+              : '范围或清晰度过大，请降低清晰度或缩小范围');
         }
         end = Math.max(end, b);
       }

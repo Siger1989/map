@@ -1,4 +1,5 @@
-import { nativeOffline, nativeOfflineState, applyNativeProgress } from './nativeOffline';
+import { nativeOffline, nativeRouteOffline, canUseNativeRouteDownload, nativeOfflineState, applyNativeProgress } from './nativeOffline';
+import { hydrateTripPackages, loadTripManifest } from './tripStorage';
 import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
 import {
@@ -24,6 +25,7 @@ export function useOffline() {
   const task = useRef<AbortController | null>(null);
   const activeId = useRef<string | null>(null);
   const activeProvider = useRef<TripPackage['provider']>(null);
+  const activeNative = useRef(false);
   const deleting = useRef(new Set<string>());
   const [removing, setRemoving] = useState<string[]>([]);
   const remove = async (trip: TripPackage) => {
@@ -56,27 +58,37 @@ export function useOffline() {
     finally {deleting.current.delete(trip.id);setRemoving([...deleting.current]);setPackages(tripPackages());}
   };
   useEffect(() => {
-    setPackages(tripPackages());
+    let alive=true;
+    void hydrateTripPackages().then(items=>{if(alive)setPackages(items);}).catch(error=>{if(alive)setMessage((error as Error).message);});
     let nativeSignature="";
-    const syncNative=()=>{
+    let syncing=false;
+    const syncNative=async()=>{
       if(!nativeOffline())return;
-      if (task.current && activeProvider.current === 'imported') return;
-      const state=nativeOfflineState(),trip=tripPackages().find(t=>t.id===state.id);if(!trip || deleting.current.has(trip.id))return;
+      if (task.current || syncing) return;
+      const state=nativeOfflineState(),stored=tripPackages().find(t=>t.id===state.id);if(!stored || deleting.current.has(stored.id))return;
+      const signature=JSON.stringify(state);if(signature===nativeSignature)return;
+      syncing=true;
+      try {
+      const trip=await loadTripManifest(stored);
+      if(!alive || deleting.current.has(trip.id) || !tripPackages().some(item=>item.id===trip.id))return;
       if (!canDownloadTrip(trip) && ['queued','running','waiting'].includes(state.state ?? '')) {
         nativeOffline()?.offlinePause();
         setBusy(false);setMessage(TIANDITU_OFFLINE_DISABLED);
         return;
       }
-      const signature=JSON.stringify(state);if(signature===nativeSignature)return;nativeSignature=signature;
+      nativeSignature=signature;
       const next=applyNativeProgress(trip,state);putTrip(next);setPackages(tripPackages());setCurrent(next);
       if(!task.current)setBusy(['queued','running','waiting'].includes(state.state??''));
       setMessage(state.state==='waiting' ? '等待网络恢复，已下载内容保留' : state.error || (next.complete?'缓存完成':state.state==='running' || state.state==='queued'?'后台缓存中':'已下载内容保留，可继续'));
+      } catch(error) {if(alive)setMessage((error as Error).message);}
+      finally {syncing=false;}
     };
     syncNative();const timer=setInterval(syncNative,1000);
-    return () => {clearInterval(timer);if(!nativeOffline() || activeProvider.current === 'imported')task.current?.abort();};
+    return () => {alive=false;clearInterval(timer);if(!activeNative.current)task.current?.abort();};
   }, []);
   const run = async (work: (signal: AbortSignal) => Promise<unknown>) => {
     if (task.current) return;
+    if (['queued','running','waiting'].includes(nativeOfflineState().state ?? '')) {setMessage('已有后台缓存正在下载，请先暂停');return;}
     if(deleting.current.size){setMessage('正在移除缓存，请稍候');return;}
     const controller = new AbortController();
     task.current = controller;
@@ -91,6 +103,7 @@ export function useOffline() {
       task.current = null;
       activeId.current = null;
       activeProvider.current = null;
+      activeNative.current = false;
       setBusy(false);
       setPackages(tripPackages());
     }
@@ -99,6 +112,7 @@ export function useOffline() {
     // Keep the retry target even if native startup fails before its first update.
     activeId.current=trip.id;
     activeProvider.current=trip.provider;
+    activeNative.current=trip.provider === 'imported' && canUseNativeRouteDownload(trip);
     setCurrent(trip);
     return downloadTrip(trip, signal, (progress) => {
       if(deleting.current.has(trip.id))return;
@@ -111,7 +125,7 @@ export function useOffline() {
     packages,
     removing,
     current,
-    background: !!nativeOffline() && current?.provider !== 'imported',
+    background: !!nativeRouteOffline() && (!current || canUseNativeRouteDownload(current)),
     busy,
     message,
     createMap: (_name: string, _area: DownloadArea, _settings: LayerSettings, _provider: DownloadProvider, _zoom: number) => {
@@ -141,6 +155,6 @@ export function useOffline() {
     },
     verify: (trip: TripPackage) => deleting.current.has(trip.id) ? Promise.resolve() : run(() => {activeId.current=trip.id;return verifyTrip(trip);}),
     remove,
-    pause: () => {if(activeProvider.current !== 'imported' && nativeOffline())nativeOffline()!.offlinePause();task.current?.abort();},
+    pause: () => {if(activeNative.current || current?.native)nativeRouteOffline()?.offlinePause();task.current?.abort();},
   };
 }

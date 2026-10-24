@@ -6,9 +6,22 @@ const mocks = new Map([
   ['./nativeOffline.ts', `
     const s=()=>globalThis.__importedRouteCacheTest;
     export function nativeOffline(){s().nativeCalls++;return s().bridge;}
+    export function nativeRouteOffline(){s().routeChecks++;return s().routeBridge??null;}
+    export function canUseNativeRouteDownload(trip){return !!s().routeBridge&&(trip.native||trip.done===0);}
     export async function downloadNative(){s().nativeDownloadCalls++;}
     export function applyNativeProgress(value){return value;}
   `],
+  ['./tripStorage.ts', `
+    const key='guanyun.trips.v1';
+    export function tripPackages(){try{return JSON.parse(localStorage.getItem(key)??'[]')}catch{return []}}
+    export function putTrip(trip){const list=tripPackages(),i=list.findIndex(x=>x.id===trip.id);if(i<0)list.push(trip);else list[i]=trip;localStorage.setItem(key,JSON.stringify(list))}
+    export async function persistTripManifest(trip){putTrip(trip)}
+    export async function loadTripManifest(trip){return trip}
+    export async function removeTripManifest(){if(globalThis.__importedRouteCacheTest.failManifestRemoval)throw new Error('manifest deletion failed')}
+    export function removeTripIndex(id){localStorage.setItem(key,JSON.stringify(tripPackages().filter(t=>t.id!==id)))}
+    export async function hydrateTripPackages(){return tripPackages()}
+  `],
+  ['./asyncImportedRoutePlan.ts', `export async function planImportedRouteDownloadAsync(){return {urls:[],bounds:[0,0,1,1],count:0,estimatedBytes:0}}`],
   ['../navigation/types.ts', `export const coordinate=p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite);`],
   ['../terrain/tiles.ts', `export const TERRAIN_URL='/api/terrain/{z}/{x}/{y}.png';`],
   ['./tileCache.ts', `export const cachedMapFetch=async()=>{throw Error('unexpected map fetch')};export const offlineMapOnly=()=>false;`],
@@ -27,7 +40,7 @@ const mocks = new Map([
   ['../mapSources/storage.ts', `export async function readMap(id){return globalThis.__importedRouteCacheTest.sources.get(id)??null;}`],
   ['./importedRouteDownload.ts', `
     export const MAX_IMPORTED_DOWNLOAD_BYTES=1024**3;
-    export function assertImportedDownloadBudget(bytes){if(!Number.isFinite(bytes)||bytes<0||bytes>MAX_IMPORTED_DOWNLOAD_BYTES)throw Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');}
+    export function assertImportedDownloadBudget(bytes){const limit=globalThis.__importedRouteCacheTest?.byteLimit??MAX_IMPORTED_DOWNLOAD_BYTES;if(!Number.isFinite(bytes)||bytes<0||bytes>limit)throw Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');}
     export function planImportedRouteDownload(){return {urls:[],bounds:[0,0,1,1],count:0,estimatedBytes:0};}
     export function validateImportedDownloadSource(source){
       const templates=source.ovmap?source.ovmap.layers.flatMap(x=>x.tiles):source.tiles??[];
@@ -59,9 +72,9 @@ async function environment(t) {
   const originals = new Map(keys.map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
   const rows = new Map();
   const state = {
-    nativeCalls: 0, nativeDownloadCalls: 0, bridge: { offlineStart() { state.nativeDownloadCalls++; } },
+    nativeCalls: 0, routeChecks: 0, nativeDownloadCalls: 0, bridge: { offlineStart() { state.nativeDownloadCalls++; } },
     sources: new Map([['source-1', { id: 'source-1', name: 'Imported XYZ', kind: 'online' }]]),
-    putCount: 0, rows,
+    putCount: 0, indexWrites: 0, rows,
   };
   const cache = {
     async match(key) { return rows.get(key)?.clone(); },
@@ -72,7 +85,7 @@ async function environment(t) {
   Object.defineProperty(globalThis, 'caches', { configurable: true, value: { open: async () => cache } });
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
     getItem(key) { return local.get(key) ?? null; },
-    setItem(key, value) { local.set(key, String(value)); },
+    setItem(key, value) { state.indexWrites++; local.set(key, String(value)); },
     removeItem(key) { local.delete(key); },
   } });
   Object.defineProperty(globalThis, '__importedRouteCacheTest', { configurable: true, value: state });
@@ -103,6 +116,26 @@ test('imported route saves one valid image, reuses its cached body, verifies com
   assert.equal(verified.complete, true);
   assert.equal(state.nativeCalls, 0);
   assert.equal(state.nativeDownloadCalls, 0);
+});
+
+test('only the explicit native route-download capability redirects imported packages', async t => {
+  const state = await environment(t);
+  state.routeBridge = {};
+  const trip = makeTrip(['https://tiles.example.test/12/4/4.png']);
+  await api.downloadTrip(trip, new AbortController().signal, () => {});
+  assert.equal(state.nativeDownloadCalls, 1);
+  assert.equal(state.rows.size, 0);
+});
+
+test('legacy browser partial packages stay on browser cache when native route support appears', async t => {
+  const state = await environment(t);
+  state.routeBridge = {};
+  const trip = makeTrip(['https://tiles.example.test/12/4/5.png'], {done: 1, bytes: tileBytes.byteLength});
+  let calls = 0;
+  await api.downloadTrip(trip, new AbortController().signal, () => {}, async () => { calls++; return imageResponse(); });
+  assert.equal(calls, 1);
+  assert.equal(state.nativeDownloadCalls, 0);
+  assert.equal(state.rows.size, 1);
 });
 
 test('an HTML 200 body is rejected and never stored as an imported map tile', async t => {
@@ -139,39 +172,145 @@ test('a 429 is fatal for imported downloads and does not retry', async t => {
   assert.equal(state.nativeCalls, 0);
 });
 
-test('imported downloads run sequentially and resume by fetching only missing URLs', async t => {
+test('imported downloads use a bounded eight-request pool and resume by fetching only missing URLs', async t => {
   const state = await environment(t);
-  const urls = ['https://tiles.example.test/12/1/1.png', 'https://tiles.example.test/12/2/2.png'];
+  const urls = Array.from({length: 16},(_,i)=>`https://tiles.example.test/12/${i+1}/${i+1}.png`);
   const trip = makeTrip(urls);
   const controller = new AbortController();
   const attempts = [];
   let inFlight = 0;
   let maxInFlight = 0;
-  await assert.rejects(
-    api.downloadTrip(trip, controller.signal, () => {}, async (url) => {
+  let release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let allStarted;
+  const started = new Promise(resolve => { allStarted = resolve; });
+  const firstPass = api.downloadTrip(trip, controller.signal, () => {}, async (url) => {
       attempts.push(url);
       inFlight++;
       maxInFlight = Math.max(maxInFlight, inFlight);
       try {
-        if (url === urls[0]) return imageResponse();
-        controller.abort();
-        throw new Error('图源请求已取消');
+        if (inFlight === 8) { controller.abort(); allStarted(); }
+        await gate;
+        return imageResponse();
       } finally {
         inFlight--;
       }
-    }),
-    /下载已暂停/,
-  );
-  assert.equal(maxInFlight, 1);
-  assert.equal(state.rows.size, 1);
+    });
+  await started;
+  release();
+  await assert.rejects(firstPass, /下载已暂停/);
+  assert.equal(maxInFlight, 8);
+  assert.ok(state.rows.size >= 1 && state.rows.size <= 8, 'only already-started requests may complete after pause');
 
   await api.downloadTrip(trip, new AbortController().signal, () => {}, async (url) => {
     attempts.push(url);
     return imageResponse();
   });
-  assert.deepEqual(attempts, [urls[0], urls[1], urls[1]]);
-  assert.equal(state.rows.size, 2);
-  assert.equal(state.putCount, 2);
+  assert.equal(attempts.length, urls.length, 'resume requests only the URLs absent from cache');
+  assert.equal(state.rows.size, urls.length);
+});
+
+test('first imported failure stops scheduling, settles active requests, and checkpoints successful writes', async t => {
+  const state = await environment(t);
+  const urls = Array.from({length: 17},(_,i)=>`https://tiles.example.test/12/${i+1}/1.png`);
+  const trip = makeTrip(urls);
+  let inFlight = 0, maxInFlight = 0, networkCalls = 0, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let allStarted;
+  const started = new Promise(resolve => { allStarted = resolve; });
+  const pending = api.downloadTrip(trip, new AbortController().signal, () => {}, async (url) => {
+    networkCalls++; inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
+    if (inFlight === 8) allStarted();
+    try {
+      await gate;
+      if (url === urls[0]) return new Response('limited', {status: 429});
+      return imageResponse();
+    } finally { inFlight--; }
+  });
+  await started;
+  release();
+  await assert.rejects(pending, /授权或服务额度受限/);
+  assert.equal(maxInFlight, 8);
+  assert.equal(networkCalls, 8, 'the worker pool must not start queued URLs after the first failure');
+  assert.equal(inFlight, 0, 'failure is reported only after active requests settle');
+  assert.equal(state.rows.size, 7);
+  assert.equal(state.putCount, 7);
+  assert.equal(state.indexWrites, 2, 'failed transfer persists an initial and settled checkpoint');
+  const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
+  assert.equal(saved.done, 7);
+  assert.equal(saved.bytes, tileBytes.byteLength * 7);
+});
+
+test('concurrent tile writes reserve bytes before each asynchronous cache put', async t => {
+  const state = await environment(t);
+  state.byteLimit = tileBytes.byteLength * 3;
+  const urls = Array.from({length: 9},(_,i)=>`https://tiles.example.test/12/${i+1}/10.png`);
+  const trip = makeTrip(urls);
+  state.rows.set(urls[0], imageResponse());
+  let inFlight = 0, maxInFlight = 0, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  let allStarted;
+  const started = new Promise(resolve => { allStarted = resolve; });
+  const pending = api.downloadTrip(trip, new AbortController().signal, () => {}, async () => {
+    inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
+    if (inFlight === 8) allStarted();
+    try { await gate; return imageResponse(); } finally { inFlight--; }
+  });
+  await started;
+  release();
+  await assert.rejects(pending, /离线包达到/);
+  assert.equal(maxInFlight, 8);
+  const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
+  assert.equal(saved.done, 3, 'cached tile plus only two writes that fit the shared budget');
+  assert.equal(saved.bytes, tileBytes.byteLength * 3);
+});
+
+test('oversized single map image reports the per-image limit', async t => {
+  const state = await environment(t);
+  state.bridge = null;
+  const previousFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+  const large = new Uint8Array(8 * 1024 * 1024 + 1);
+  large.set([137, 80, 78, 71, 13, 10, 26, 10]);
+  let fetchCalls = 0;
+  globalThis.fetch = async () => { fetchCalls++; return new Response(large); };
+  const trip = makeTrip(['https://tiles.example.test/12/1/1.png'], {provider: 'openfreemap'});
+  try {
+    await assert.rejects(api.downloadTrip(trip, new AbortController().signal, () => {}), /单张地图图像超过 8MB 上限/);
+    assert.equal(fetchCalls, 1);
+  } finally {
+    if (previousFetch) Object.defineProperty(globalThis, 'fetch', previousFetch);
+    else delete globalThis.fetch;
+  }
+});
+
+test('route progress throttles index writes and reuses only validated cached image bytes', async t => {
+  const state = await environment(t);
+  const urls = Array.from({length: 12},(_,i)=>`https://tiles.example.test/12/${i+1}/9.png`);
+  const trip = makeTrip(urls);
+  state.rows.set(urls[0], imageResponse());
+  state.rows.set(urls[1], new Response('<html>bad</html>', {status: 200}));
+  let networkCalls = 0, progressCalls = 0;
+  await api.downloadTrip(trip, new AbortController().signal, () => { progressCalls++; }, async () => { networkCalls++; return imageResponse(); });
+  assert.equal(networkCalls, urls.length - 1);
+  assert.equal(state.rows.size, urls.length);
+  assert.equal(state.putCount, urls.length - 1);
+  assert.ok(state.indexWrites <= 3, 'metadata index is not rewritten for every tile');
+  assert.ok(progressCalls <= 3, 'progress updates are throttled with forced start/final checkpoints');
+  const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
+  assert.equal(saved.done, urls.length);
+  assert.equal(saved.bytes, tileBytes.byteLength * urls.length);
+});
+
+test('failed manifest deletion restores the compact package index for recovery', async t => {
+  const state = await environment(t);
+  state.bridge = null;
+  state.failManifestRemoval = true;
+  const trip = makeTrip(['https://tiles.example.test/12/2/9.png'], {manifest: true, urlCount: 1});
+  api.putTrip(trip);
+  await assert.rejects(api.removeTrip(trip), /manifest deletion failed/);
+  const saved = api.tripPackages().find(item => item.id === trip.id);
+  assert.ok(saved, 'package index survives so the user can retry or recover the manifest');
+  assert.deepEqual(saved.urls, trip.urls);
 });
 
 test('resuming an imported package rechecks its current source and saved URLs before any fetch', async t => {

@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { downloadTiles } from '../modules/outdoor/downloadPlan.ts';
-const built = await build({ entryPoints: ['modules/outdoor/importedRouteDownload.ts', 'modules/mapSources/coordinates.ts'], bundle: true, platform: 'node', format: 'esm', write: false, outdir: '.openai/imported-route-tests' });
+const built = await build({ entryPoints: ['modules/outdoor/importedRouteDownload.ts', 'modules/outdoor/asyncImportedRoutePlan.ts', 'modules/mapSources/coordinates.ts'], bundle: true, platform: 'node', format: 'esm', write: false, outdir: '.openai/imported-route-tests' });
 const modules = await Promise.all(built.outputFiles.map((file) => import(`data:text/javascript;base64,${Buffer.from(file.contents).toString('base64')}`)));
-const { planImportedRouteDownload } = modules.find((module) => module.planImportedRouteDownload);
+const { planImportedRouteDownload, MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES } = modules.find((module) => module.planImportedRouteDownload);
 const { warpPlan } = modules.find((module) => module.warpPlan);
+const { planImportedRouteDownloadAsync, estimateImportedRouteDownloadAsync } = modules.find((module) => module.planImportedRouteDownloadAsync);
 
 const source = (overrides = {}) => ({
   id: 'imported-source', name: 'Imported raster', kind: 'online', format: 'XYZ', attribution: '',
@@ -32,12 +33,13 @@ test('batch routes equal the union of individual corridors, without connecting r
 });
 
 test('imported route plan offers declared odd max zoom and counts unique requests without fetching', () => {
-  const at18 = planImportedRouteDownload(route(), source(), 18);
-  const at19 = planImportedRouteDownload(route(), source(), 19);
+  const area = route({ bufferKm: 4 });
+  const at18 = planImportedRouteDownload(area, source(), 18);
+  const at19 = planImportedRouteDownload(area, source(), 19);
   assert.ok(at19.urls.some((url) => pathCoords(url)?.[0] === 19));
   assert.ok(at19.count > at18.count);
   assert.equal(at19.count, new Set(at19.urls).size);
-  assert.ok(at19.estimatedBytes > 0 && at19.estimatedBytes <= 1024 ** 3);
+  assert.ok(at19.estimatedBytes > 0 && at19.estimatedBytes <= 8 * 1024 ** 3);
   assert.throws(() => planImportedRouteDownload(route(), source(), 20), /支持的最高级别/);
 });
 
@@ -106,8 +108,8 @@ test('route planner rejects unsupported sources, templates, providers and excess
   assert.throws(() => planImportedRouteDownload(route(), source({ tiles: ['https://example.test/{s}/{z}/{x}/{y}.png'] }), 14), /模板变量/);
   assert.throws(() => planImportedRouteDownload(route(), source({ tiles: ['https://t0.tianditu.gov.cn/tiles/{z}/{x}/{y}.png'] }), 14), /天地图离线下载已暂停/);
   assert.throws(() => planImportedRouteDownload(route(), source({ tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'] }), 14), /不支持批量下载/);
-  const long = route({ bufferKm: 0.5, segments: [[[0, 0], [0.002, 0]]] });
-  assert.throws(() => planImportedRouteDownload(long, source({ minzoom: 24, maxzoom: 24 }), 24), /过大|2 万项/);
+  const long = route({ bufferKm: 0.5, segments: [[[0, 0], [0.2, 0]]] });
+  assert.throws(() => planImportedRouteDownload(long, source({ minzoom: 24, maxzoom: 24 }), 24), /两侧各 0.5 km 范围保持不变/);
 });
 
 test('current source and persisted URLs are rechecked against provider restrictions before resume', async () => {
@@ -115,6 +117,21 @@ test('current source and persisted URLs are rechecked against provider restricti
   assert.throws(() => validateImportedDownloadSource(source({ tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'] })), /不支持批量下载/);
   assert.throws(() => validateImportedDownloadUrls(['https://t0.tianditu.gov.cn/{z}/{x}/{y}.png']), /天地图离线下载已暂停/);
   assert.throws(() => validateImportedDownloadUrls(['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png']), /不支持批量下载/);
-  assert.throws(() => assertImportedDownloadBudget(1024 ** 3 + 1), /达到 1 GB 上限/);
-  assert.doesNotThrow(() => assertImportedDownloadBudget(1024 ** 3));
+  assert.throws(() => assertImportedDownloadBudget(MAX_IMPORTED_DOWNLOAD_BYTES + 1), /8 GiB 上限/);
+  assert.doesNotThrow(() => assertImportedDownloadBudget(MAX_IMPORTED_DOWNLOAD_BYTES));
+  assert.equal(MAX_IMPORTED_DOWNLOAD_RESOURCES, 250_000);
+  assert.equal(MAX_IMPORTED_DOWNLOAD_BYTES, 8 * 1024 ** 3);
+});
+
+test('async adapter falls back for Node, returns compact estimates, and discards aborted work', async () => {
+  const area = route({ bufferKm: 4 });
+  const map = source({ minzoom: 12, maxzoom: 14 });
+  const plan = await planImportedRouteDownloadAsync(area, map, 14);
+  const estimate = await estimateImportedRouteDownloadAsync(area, map, 14);
+  assert.equal(estimate.count, plan.count);
+  assert.equal(estimate.estimatedBytes, plan.estimatedBytes);
+  const controller = new AbortController();
+  const pending = estimateImportedRouteDownloadAsync(area, map, 14, { signal: controller.signal });
+  controller.abort();
+  await assert.rejects(pending, { name: 'AbortError' });
 });
