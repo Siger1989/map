@@ -6,6 +6,8 @@ on:
       - '.github/workflows/macos-dmg-check.yml'
       - 'scripts/macos-dmg/**'
       - 'desktop-web/macos/**'
+      - 'desktop-web/server.ts'
+      - 'tests/desktop-web.test.mjs'
   workflow_dispatch:
     inputs:
       release_tag:
