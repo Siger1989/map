@@ -424,6 +424,12 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                     result["webgl2"] as? Bool == true && result["mapUI"] as? Bool == true { break }
                 try await Task.sleep(for: .milliseconds(500))
             }
+            if let failedResource = (result["errors"] as? [String])?.first(where: {
+                $0.hasPrefix("http://127.0.0.1:8787/") && $0.hasSuffix(".js")
+            }) {
+                result["resourceProbe"] = await probeFailedResource(failedResource)
+                result["moduleImportProbe"] = await probeModuleImport(failedResource)
+            }
             let storageResult = try await runStorageSmoke()
             var passed = result["ready"] as? String == "complete" &&
                 result["canvas"] as? Bool == true && result["webgl2"] as? Bool == true &&
@@ -461,6 +467,55 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
             if ownsServer { serverProcess?.terminate() }
             NSApp.terminate(nil)
         }
+    }
+
+    private func probeFailedResource(_ source: String) async -> [String: Any] {
+        guard let url = URL(string: source), url.host == "127.0.0.1", url.port == 8787 else {
+            return ["error": "ignored non-local script URL"]
+        }
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            let http = response as? HTTPURLResponse
+            let prefix = String(decoding: data.prefix(256), as: UTF8.self)
+            return ["url": source, "status": http?.statusCode ?? 0,
+                    "contentType": http?.value(forHTTPHeaderField: "Content-Type") ?? "",
+                    "contentLength": http?.value(forHTTPHeaderField: "Content-Length") ?? "",
+                    "bytes": data.count, "bodyPrefix": prefix]
+        } catch {
+            return ["url": source, "error": error.localizedDescription]
+        }
+    }
+
+    private func probeModuleImport(_ source: String) async -> [String: Any] {
+        guard let url = URL(string: source), url.host == "127.0.0.1", url.port == 8787 else {
+            return ["error": "ignored non-local script URL"]
+        }
+        let cacheBusted = source + (source.contains("?") ? "&" : "?") + "shantuSmoke=" + UUID().uuidString
+        guard let cacheBustedData = try? JSONSerialization.data(withJSONObject: [cacheBusted]),
+              let cacheBustedJSON = String(data: cacheBustedData, encoding: .utf8) else {
+            return ["error": "could not encode local script URL"]
+        }
+        let quotedCacheBusted = String(cacheBustedJSON.dropFirst().dropLast())
+        let start = """
+        (() => {
+          window.__shantuModuleImportProbe = { state:'pending' };
+          import(\(quotedCacheBusted)).then(
+            () => window.__shantuModuleImportProbe = { state:'resolved' },
+            e => window.__shantuModuleImportProbe = { state:'rejected', name:String(e?.name||''),
+              message:String(e?.message||e), stack:String(e?.stack||'').slice(0,3000) }
+          );
+          return true;
+        })()
+        """
+        _ = try? await webView.evaluateJavaScript(start)
+        for _ in 0..<20 {
+            if let value = try? await webView.evaluateJavaScript("window.__shantuModuleImportProbe || null"),
+               let state = value as? [String: Any], state["state"] as? String != "pending" {
+                return ["url": source, "cacheBustedURL": cacheBusted, "result": state]
+            }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        return ["url": source, "cacheBustedURL": cacheBusted, "result": ["state": "timeout"]]
     }
 
     private func runStorageSmoke() async throws -> [String: Bool] {
