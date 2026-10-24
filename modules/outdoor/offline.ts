@@ -10,7 +10,7 @@ import type { LayerSettings } from '../map/types';
 import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 import { readMap } from '../mapSources/storage.ts';
 import type { MapSource } from '../mapSources/types.ts';
-import { planImportedRouteDownload } from './importedRouteDownload.ts';
+import { planImportedRouteDownload, validateImportedDownloadSource, validateImportedDownloadUrls, assertImportedDownloadBudget } from './importedRouteDownload.ts';
 export { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 import { planBounds } from '../offlineRouting/routeBounds.ts';
 export { planBounds } from '../offlineRouting/routeBounds.ts';
@@ -27,6 +27,7 @@ export type TripPackage = {
   zoom?: number;
   bufferKm?: number;
   detailCorridor?: boolean;
+  routeNames?: string[];
   display?: Partial<LayerSettings>;
   id: string;
   name: string;
@@ -83,8 +84,18 @@ export async function prepareImportedRoutePackage(
   source: MapSource,
   zoom: number,
   signal: AbortSignal,
+  routeNames?: readonly string[],
 ): Promise<TripPackage> {
   signal.throwIfAborted();
+  if (routeNames && routeNames.length > 2000) throw new Error('路线名称数量不能超过 2000');
+  const names = [...new Set((routeNames ?? [name])
+    .filter((value): value is string => typeof value === 'string')
+    .map(value => value.trim().slice(0, 60))
+    .filter(Boolean))];
+  if (!names.length) {
+    const fallback = name.trim().slice(0, 60);
+    if (fallback) names.push(fallback);
+  }
   if (source.kind !== 'online') throw new Error('仅支持已导入的在线图源');
   const stored = await readMap(source.id);
   if (!stored || stored.kind !== 'online') throw new Error('此导入图源已移除，请重新选择');
@@ -106,6 +117,7 @@ export async function prepareImportedRoutePackage(
     createdAt: Date.now(),
     complete: false,
     provider: 'imported',
+    routeNames: names,
     sourceId: stored.id,
     sourceName: stored.name,
     datum: source.datum ?? 'wgs84',
@@ -289,6 +301,8 @@ export async function downloadTrip(
     if (!fetchImported) throw new Error('导入图源下载通道暂不可用');
     const source = await readMap(trip.sourceId);
     if (!source || source.kind !== 'online') throw new Error('此离线包的导入图源已移除，无法继续下载');
+    validateImportedDownloadSource(source);
+    validateImportedDownloadUrls(trip.urls);
   } else if(nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
   const cache = await caches.open(CACHE);
   let cursor = 0,
@@ -302,6 +316,7 @@ export async function downloadTrip(
     if(hit?.ok){try{bytes+=trip.provider === 'imported' ? await validateImportedTileResponse(hit) : await validateTileResponse(url,hit);done++;continue;}catch{await cache.delete(resourceCacheKey(url));}}
     pending.push(url);
   }
+  if (trip.provider === 'imported') assertImportedDownloadBudget(bytes);
   let fatal = '';
   let lastUpdate = 0;
   const update = (force = false) => {
@@ -323,7 +338,10 @@ export async function downloadTrip(
             ? await fetchImported!(url, requestSignal)
             : await fetch(resourceFetchUrl(url), { signal: requestSignal }));
           const length = trip.provider === 'imported' ? await validateImportedTileResponse(response) : await validateTileResponse(url, response);
-          if (length > 8 * 1024 * 1024 || bytes + length > 1024 * 1024 * 1024)
+          if (length > 8 * 1024 * 1024)
+            throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
+          if (trip.provider === 'imported') assertImportedDownloadBudget(bytes + length);
+          else if (bytes + length > 1024 * 1024 * 1024)
             throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
           bytes += length;
           try {

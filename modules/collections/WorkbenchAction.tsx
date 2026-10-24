@@ -30,6 +30,8 @@ type Props = {
   onBatch: (ids: string[]) => void;
   onOpen: (key: string) => void;
   onNavigate: (key: string) => void;
+  onCacheRoute: (key: string) => void;
+  onCacheRoutes: (keys: string[]) => void;
   onManage: (keys?: string[]) => void;
   error: string;
   busy: boolean;
@@ -88,6 +90,7 @@ export function WorkbenchAction(p: Props) {
       (item?.kind === 'folder'
         ? workbenchLeaves(item.children ?? []).map((i) => i.id)
         : keys);
+    const cacheIds = all.filter(i => selectionIds.includes(i.id) && (i.kind === 'track' || i.kind === 'route')).map(i => i.id);
     title = item?.name ?? '收藏管理';
     body = (
       <div className="collection-action-buttons">
@@ -101,6 +104,12 @@ export function WorkbenchAction(p: Props) {
         )}
         {item && (item.kind === 'track' || item.kind === 'route') && (
           <button onClick={() => p.onNavigate(item.id)}>开始导航</button>
+        )}
+        {item && (item.kind === 'track' || item.kind === 'route') && (
+          <button onClick={() => p.onCacheRoute(item.id)}>缓存地图</button>
+        )}
+        {(!item || item.kind === 'folder') && (
+          <button disabled={!cacheIds.length} onClick={() => p.onCacheRoutes(cacheIds)}>批量缓存地图</button>
         )}
         {item && (
           <button onClick={() => p.onAction({ type: 'edit', id: item.id })}>

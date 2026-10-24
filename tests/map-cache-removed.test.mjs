@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { readFileSync } from 'node:fs';
 
-test('application runtime excludes retired map cache and download modules', async () => {
+test('route packages are explicit; retired passive corridor cache and native download remain excluded', async () => {
   const result = await build({
     entryPoints: ['app/page.tsx'], bundle: true, write: false, metafile: true,
     platform: 'browser', format: 'esm', packages: 'external', jsx: 'automatic',
@@ -13,7 +13,7 @@ test('application runtime excludes retired map cache and download modules', asyn
       b.onLoad({ filter: /.*/, namespace: 'asset-reference' }, () => ({ contents: 'export default "worker.js"' }));
     } }],
   });
-  const retired = /(?:^|\/)modules\/(?:outdoor\/(?:browseCache|browseCacheRoute|browseTileSources|useBrowseCacheRoute|BrowseCacheSettings|OfflineDownload|OfflinePanel|OfflineMapSettings|useOffline|useOfflineMapMode|offline|importedRouteDownload)\.(?:ts|tsx)|collections\/OfflineMapFolder\.tsx)$/;
+  const retired = /(?:^|\/)modules\/(?:outdoor\/(?:browseCacheRoute|browseTileSources|useBrowseCacheRoute|BrowseCacheSettings|OfflineDownload|OfflinePanel|OfflineMapSettings)\.(?:ts|tsx)|collections\/OfflineMapFolder\.tsx)$/;
   assert.deepEqual(Object.keys(result.metafile.inputs).filter(file => retired.test(file.replaceAll('\\', '/'))), []);
   // Installed old map packages no longer intercept every WebView request.
   const gateway = readFileSync('mobile/android/src/com/guanyun/weather/LocalGateway.java', 'utf8');

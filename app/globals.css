@@ -1,6 +1,11 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source(none);
 @import 'tw-animate-css';
 @import '../modules/controls/compact.css';
+@source './';
+@source '../components';
+@source '../modules';
+@source '../mobile/*.tsx';
+@source '../mobile/*.ts';
 :root {
   color-scheme: dark;
   --bg: #0b1720;

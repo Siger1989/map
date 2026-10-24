@@ -25,7 +25,16 @@ const mocks = new Map([
   `],
   ['./offlineDownloadPolicy.ts', `export const TIANDITU_OFFLINE_DISABLED='disabled';export const canDownloadTrip=()=>true;`],
   ['../mapSources/storage.ts', `export async function readMap(id){return globalThis.__importedRouteCacheTest.sources.get(id)??null;}`],
-  ['./importedRouteDownload.ts', `export function planImportedRouteDownload(){return {urls:[],bounds:[0,0,1,1],count:0,estimatedBytes:0};}`],
+  ['./importedRouteDownload.ts', `
+    export const MAX_IMPORTED_DOWNLOAD_BYTES=1024**3;
+    export function assertImportedDownloadBudget(bytes){if(!Number.isFinite(bytes)||bytes<0||bytes>MAX_IMPORTED_DOWNLOAD_BYTES)throw Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');}
+    export function planImportedRouteDownload(){return {urls:[],bounds:[0,0,1,1],count:0,estimatedBytes:0};}
+    export function validateImportedDownloadSource(source){
+      const templates=source.ovmap?source.ovmap.layers.flatMap(x=>x.tiles):source.tiles??[];
+      for(const value of templates){const u=new URL(value.replace(/\\{[^{}]*\\}/g,'0'));const host=u.hostname.toLowerCase();if(host==='tile.openstreetmap.org'||host.endsWith('.tile.openstreetmap.org'))throw Error('该公共地图服务不支持批量下载');if(host==='tianditu.gov.cn'||host.endsWith('.tianditu.gov.cn')||host==='tianditu.com'||host.endsWith('.tianditu.com'))throw Error('天地图离线下载已暂停');}
+    }
+    export function validateImportedDownloadUrls(urls){for(const value of urls){const host=new URL(value).hostname.toLowerCase();if(host==='tile.openstreetmap.org'||host.endsWith('.tile.openstreetmap.org'))throw Error('该公共地图服务不支持批量下载');if(host==='tianditu.gov.cn'||host.endsWith('.tianditu.gov.cn')||host==='tianditu.com'||host.endsWith('.tianditu.com'))throw Error('天地图离线下载已暂停');}}
+  `],
 ]);
 
 const bundled = await build({
@@ -130,6 +139,67 @@ test('a 429 is fatal for imported downloads and does not retry', async t => {
   assert.equal(state.nativeCalls, 0);
 });
 
+test('imported downloads run sequentially and resume by fetching only missing URLs', async t => {
+  const state = await environment(t);
+  const urls = ['https://tiles.example.test/12/1/1.png', 'https://tiles.example.test/12/2/2.png'];
+  const trip = makeTrip(urls);
+  const controller = new AbortController();
+  const attempts = [];
+  let inFlight = 0;
+  let maxInFlight = 0;
+  await assert.rejects(
+    api.downloadTrip(trip, controller.signal, () => {}, async (url) => {
+      attempts.push(url);
+      inFlight++;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      try {
+        if (url === urls[0]) return imageResponse();
+        controller.abort();
+        throw new Error('图源请求已取消');
+      } finally {
+        inFlight--;
+      }
+    }),
+    /下载已暂停/,
+  );
+  assert.equal(maxInFlight, 1);
+  assert.equal(state.rows.size, 1);
+
+  await api.downloadTrip(trip, new AbortController().signal, () => {}, async (url) => {
+    attempts.push(url);
+    return imageResponse();
+  });
+  assert.deepEqual(attempts, [urls[0], urls[1], urls[1]]);
+  assert.equal(state.rows.size, 2);
+  assert.equal(state.putCount, 2);
+});
+
+test('resuming an imported package rechecks its current source and saved URLs before any fetch', async t => {
+  const state = await environment(t);
+  let networkCalls = 0;
+  const trip = makeTrip(['https://a.tile.openstreetmap.org/12/5/6.png']);
+  await assert.rejects(
+    api.downloadTrip(trip, new AbortController().signal, () => {}, async () => {
+      networkCalls++;
+      return imageResponse();
+    }),
+    /不支持批量下载/,
+  );
+  assert.equal(networkCalls, 0);
+  assert.equal(state.putCount, 0);
+
+  state.sources.set('source-1', { id: 'source-1', name: 'Previously edited', kind: 'online', tiles: ['https://t0.tianditu.gov.cn/{z}/{x}/{y}.png'] });
+  const ordinaryTrip = makeTrip(['https://tiles.example.test/12/5/6.png']);
+  await assert.rejects(
+    api.downloadTrip(ordinaryTrip, new AbortController().signal, () => {}, async () => {
+      networkCalls++;
+      return imageResponse();
+    }),
+    /天地图离线下载已暂停/,
+  );
+  assert.equal(networkCalls, 0);
+});
+
 test('verifyTrip does not mark a cached HTML 200 body as a complete package', async t => {
   const state = await environment(t);
   const url = 'https://tiles.example.test/12/7/8.png';
@@ -139,4 +209,22 @@ test('verifyTrip does not mark a cached HTML 200 body as a complete package', as
   assert.equal(verified.done, 0);
   assert.equal(verified.bytes, 0);
   assert.equal(verified.complete, false);
+});
+
+test('imported route package persists complete deduplicated route names and keeps legacy fallback metadata', async t => {
+  await environment(t);
+  const source = {
+    id: 'source-1', name: 'Imported XYZ', kind: 'online',
+    tiles: ['https://tiles.example.test/{z}/{x}/{y}.png'],
+    scheme: 'xyz', tileSize: 256, minzoom: 0, maxzoom: 18,
+  };
+  globalThis.__importedRouteCacheTest.sources.set(source.id, source);
+  const area = { kind: 'route', segments: [[[0, 0], [1, 1]]], bufferKm: 4 };
+  const names = [' Route A ', 'Route B', 'Route A', '', 'X'.repeat(75)];
+  const trip = await api.prepareImportedRoutePackage('Batch cache', area, source, 14, new AbortController().signal, names);
+  assert.deepEqual(trip.routeNames, ['Route A', 'Route B', 'X'.repeat(60)]);
+  assert.deepEqual(api.tripPackages().find(item => item.id === trip.id)?.routeNames, trip.routeNames, 'route names are persisted in the existing package index');
+
+  const legacyStyle = await api.prepareImportedRoutePackage('Single route', area, source, 14, new AbortController().signal);
+  assert.deepEqual(legacyStyle.routeNames, ['Single route']);
 });

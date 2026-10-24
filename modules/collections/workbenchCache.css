@@ -1,0 +1,36 @@
+.observatory.home-map .collection-workbench .workbench-cache-folder {
+  box-sizing: border-box;
+  height: 32px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--folder-line, var(--ui-line));
+}
+html[data-ui-theme] .observatory.home-map[data-panel='favorites'] .collection-workbench .workbench-tags > button[data-collection-tab='cache'] {
+  flex: 1 0 60px;
+  min-width: 60px;
+}
+.observatory.home-map .collection-workbench .workbench-cache-folder > button {
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  min-height: 32px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  color: var(--ui-ink, #f2f5ed);
+  background: transparent;
+  text-align: left;
+}
+.observatory.home-map .collection-workbench .workbench-cache-folder > button > svg { flex: 0 0 auto; color: var(--ui-accent, #d0f76b); }
+.observatory.home-map .collection-workbench .workbench-cache-folder > button > span { display: flex; min-width: 0; flex: 1; align-items: baseline; gap: 6px; }
+.observatory.home-map .collection-workbench .workbench-cache-folder strong { font-size: 11px; }
+.observatory.home-map .collection-workbench .workbench-cache-folder small { color: var(--ui-muted, #a9b3ad); font-size: 10px; }
+.observatory.home-map .collection-workbench .workbench-cache-folder .workbench-cache-count { flex: 0 0 auto; }
+.observatory.home-map .collection-workbench .workbench-cache-folder > button:hover { background: var(--ui-selected); }
+
+html[data-ui-theme] .observatory.home-map .collection-workbench .workbench-cache-folder > button {
+  height: 32px;
+  min-height: 32px;
+}

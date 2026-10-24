@@ -4,7 +4,7 @@ import { RouteElevationSummary } from '../journey/RouteElevationSummary';
 import { formatDistance, formatDuration, type PlannedRoute } from './types';
 import './routeResultSummary.css';
 
-export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
+export function RouteResultSummary({ route, start, end, mode, loading, planningError, onModeChange, onSwap, onShow, onEdit, onSave, onShare, onCache, onStartNavigation, navigating, guidanceError, saveMessage, onEditPoints, onCancel, previewMode, onPreview, onPreviewTopDown, onExitPreview, quickRouteControls }: {
   route: PlannedRoute; onShow: () => void; onEdit: () => void;
   start: { name: string } | null; end: { name: string } | null;
   mode: PlannedRoute['mode']; loading: boolean;
@@ -13,6 +13,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
   onSave: () => void; onShare: () => void; onStartNavigation: () => void;
   navigating: boolean; guidanceError: string; saveMessage: string;
   onEditPoints?: () => void; onCancel?: () => void;
+  onCache?: () => void;
   previewMode?: 'forward' | 'top' | null;
   onPreview?: () => void;
   onPreviewTopDown?: () => void;
@@ -53,6 +54,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
         </label>
         {onPreview && <button type="button" onClick={onPreview}>第一人称预览</button>}
         {onEditPoints && <button type="button" onClick={onEditPoints}>编辑线点</button>}
+        {onCache && <button type="button" onClick={onCache}>缓存地图</button>}
         {onCancel && <button type="button" onClick={onCancel}>取消路线</button>}
       </nav>
       <RouteElevationSummary coordinates={route.coordinates} distance={route.distance} duration={route.duration} />

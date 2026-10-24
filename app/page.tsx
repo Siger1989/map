@@ -28,6 +28,9 @@ import { useMapFocusLock, type CameraSnapshot } from '@/modules/controls/useMapF
 import { useScreenAwake } from '@/modules/position/useScreenAwake';
 import { useRecording } from '@/modules/outdoor/useRecording';
 import { OutdoorPanel } from '@/modules/outdoor/OutdoorPanel';
+import { RouteCachePanel } from '@/modules/outdoor/RouteCachePanel';
+import { useOffline } from '@/modules/outdoor/useOffline';
+import { useOfflineMapMode } from '@/modules/outdoor/useOfflineMapMode';
 import { ReturnPanel } from '@/modules/returnHome/ReturnPanel';
 import { RecordingQuickAction } from '@/modules/outdoor/RecordingQuickAction';
 import { isDesktopShell } from '@/modules/platform/desktop';
@@ -295,7 +298,8 @@ export default function Home() {
     }
     previousPanel.current = panel;
   }, [panel]);
-  const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools'>(
+  const [routeCacheTarget, setRouteCacheTarget] = useState<{ routeId?: string; routeIds?: string[]; batch?: boolean; returnPanel?: 'route' | null; tab: 'setup' | 'packages' }>({ tab: 'setup' });
+  const [sourcesParent, setSourcesParent] = useState<'layers' | 'tools' | 'cache'>(
     'tools',
   );
   const [sourcesNavigation, setSourcesNavigation] =
@@ -328,6 +332,7 @@ export default function Home() {
   const [routeNodeBoxMode, setRouteNodeBoxMode] = useState<'add' | 'subtract'>('add');
   const [routeNodeSelection, setRouteNodeSelection] = useState<Coordinate[]>([]);
   const mapSources = useMapSources();
+  const offline = useOffline();
   const [comparison, setComparison] = useState<ComparisonSession | null>(null);
   const [favoriteSourceOpen, setFavoriteSourceOpen] = useState(false);
   const domesticBasemap = usesTianditu(layers, basemapConfiguration().domestic);
@@ -1493,6 +1498,14 @@ export default function Home() {
     mapSources.select(sourceId);
     update(settingsForBasemapSource(settings, layers));
   };
+  const openCachedMap = useOfflineMapMode(update, mapSources.select);
+  const cacheRoutes = useMemo(() => [
+    ...(navigation.route ? [{ id: 'planned', name: navigation.route.name || '当前规划路线', segments: [navigation.route.coordinates] }] : []),
+    ...(tracks.draft.some(segment => segment.length >= 2) ? [{ id: 'draft', name: tracks.draftName || '当前画线草稿', segments: tracks.draft }] : []),
+    ...tracks.saved.map(track => ({ id: track.id, name: track.name, segments: track.segments })),
+    ...favorites.items.map(item => ({ id: `favorite:${item.id}`, name: item.name, segments: [item.route.coordinates] })),
+  ].filter(route => route.segments.some(segment => segment.length >= 2)).map(route => ({ ...route, segments: route.segments.filter(segment => segment.length >= 2) })), [navigation.route, tracks.draft, tracks.draftName, tracks.saved, favorites.items]);
+  const favoriteCacheRoutes = useMemo(() => cacheRoutes.filter(route => route.id !== 'planned' && route.id !== 'draft'), [cacheRoutes]);
   useMapTools({
     read: () => ({
       layers,
@@ -2424,6 +2437,10 @@ export default function Home() {
                   onMarker={() => setRouteWindow('marker')}
                   onEdit={() => beginRouteEdit(railTrack)}
                   onDetails={() => setRouteWindow('details')}
+                  onCache={() => {
+                    setRouteCacheTarget({ routeId: railTrack.id === DRAFT_ID ? 'draft' : railTrack.id, tab: 'setup', returnPanel: null });
+                    setPanel('cache');
+                  }}
                   onDisplay={() => { routeDisplay.choose(railTrack.id); setRouteWindow('display'); }}
                   onDelete={railTrack.id === DRAFT_ID ? undefined : () => {
                     if (!tracks.remove(railTrack.id)) return false;
@@ -3242,7 +3259,7 @@ export default function Home() {
               : panel
           }
           drawingActive={panel === null && tracks.drawing}
-          title={panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
+          title={panel === 'cache' ? (routeCacheTarget.tab === 'packages' ? '缓存区域' : routeCacheTarget.batch ? '批量缓存地图' : '路线地图缓存') : panel === 'route' ? defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' }) : panel === 'industry' ? '行业工具' : panel === 'sources' ? sourcesNavigation?.title : undefined}
           titleContent={panel === 'route' && navigation.route ? <RouteNameInput
             key={navigation.route.createdAt}
             name={navigation.route.name || defaultRouteName({ name: navigation.start?.name || '起点' }, { name: navigation.end?.name || '终点' })}
@@ -3259,6 +3276,8 @@ export default function Home() {
                     setPanel('annotations');
                   },
                 }
+              : panel === 'cache'
+                ? { label: routeCacheTarget.returnPanel === null ? '返回地图路线' : routeCacheTarget.returnPanel === 'route' ? '返回路线' : '返回收藏', onClick: () => setPanel(routeCacheTarget.returnPanel === undefined ? 'favorites' : routeCacheTarget.returnPanel) }
               : panel === 'industry'
                 ? { label: '返回工具', onClick: () => setPanel('tools') }
                 : routeChild
@@ -3273,7 +3292,7 @@ export default function Home() {
                 : panel === 'sources'
                   ? (sourcesNavigation ?? {
                       label:
-                        sourcesParent === 'layers' ? '返回图层' : '返回工具',
+                        sourcesParent === 'layers' ? '返回图层' : sourcesParent === 'cache' ? '返回缓存' : '返回工具',
                       onClick: () => setPanel(sourcesParent),
                     })
                   : undefined
@@ -3326,6 +3345,17 @@ export default function Home() {
           }}
         >
           {mountIndustryToolsPanel(INDUSTRY_TOOLS_ENABLED, panel) && <IndustryTools state={industryToolsState} onStateChange={setIndustryToolsState} />}
+          {panel === 'cache' && <RouteCachePanel routes={routeCacheTarget.batch ? favoriteCacheRoutes : cacheRoutes} sources={mapSources.maps} offline={offline}
+            initialRouteId={routeCacheTarget.routeId} initialTab={routeCacheTarget.tab}
+            batch={routeCacheTarget.batch} initialRouteIds={routeCacheTarget.routeIds}
+            onSources={() => { setSourcesParent('cache'); setSourcesNavigation(null); setPanel('sources'); }}
+            onOpenMap={trip => {
+              openCachedMap(trip);
+              window.dispatchEvent(new Event('shantu:offline-map-mode'));
+              userBrowse();
+              map.current?.fitRoute([[trip.bounds[0], trip.bounds[1]], [trip.bounds[2], trip.bounds[3]]]);
+              setPanel(null);
+            }} />}
           {panel === 'sources' && (
             <MapSourcesPanel
               incomingFile={incomingRoute.mapSource}
@@ -3461,6 +3491,26 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              onCacheRoutes={keys => {
+                const routeIds = keys.map(key => key.startsWith('track:') ? key.slice(6) : key.startsWith('route:') ? `favorite:${key.slice(6)}` : '').filter(id => cacheRoutes.some(route => route.id === id));
+                if (!routeIds.length) return;
+                preserveFavoritesFocus();
+                setRouteCacheTarget({ routeIds, batch: true, tab: 'setup' });
+                setPanel('cache');
+              }}
+              cacheCount={offline.packages.filter(trip => trip.provider === 'imported').length}
+              onCacheRoute={key => {
+                const routeId = key.startsWith('track:') ? key.slice(6) : key.startsWith('route:') ? `favorite:${key.slice(6)}` : '';
+                if (!cacheRoutes.some(route => route.id === routeId)) return;
+                preserveFavoritesFocus();
+                setRouteCacheTarget({ routeId, tab: 'setup' });
+                setPanel('cache');
+              }}
+              onCacheFolder={() => {
+                preserveFavoritesFocus();
+                setRouteCacheTarget({ tab: 'packages' });
+                setPanel('cache');
+              }}
               onImportedData={data => {
                 follow.pause(); position.free();
                 const track = data.tracks[0];
@@ -3487,7 +3537,6 @@ export default function Home() {
                   areas.select(null);
                   setTrackLinePoint(null);
                   map.current?.fitCollection(collectionPreviewPoints(entry));
-                  setPanel('route');
                   return;
                 }
                 if (entry.kind === 'track') tracks.select(entry.track.id);
@@ -3622,6 +3671,10 @@ export default function Home() {
           )}
           {panel === 'route' && (
             <RoutePanel
+              onCache={() => {
+                setRouteCacheTarget({ routeId: 'planned', tab: 'setup', returnPanel: 'route' });
+                setPanel('cache');
+              }}
               quickRouteControls={<RouteStyleQuickControls style={navigation.route?.style} onChange={style => {
                 if (navigation.route && favorites.updateStyle(navigation.route, style)) navigation.setRouteStyle(style);
               }} />}

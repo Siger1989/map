@@ -1,0 +1,166 @@
+.route-cache-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--ui-ink, #f2f5ed);
+  font-size: 12px;
+}
+
+.route-cache-panel button,
+.route-cache-panel select {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid var(--ui-line, rgba(255, 255, 255, .14));
+  border-radius: 4px;
+  color: var(--ui-ink, #f2f5ed);
+  background: var(--ui-field, #202a27);
+  font: inherit;
+}
+.route-cache-panel button { padding: 2px 4px; cursor: pointer; }
+.route-cache-panel button:hover:not(:disabled) { border-color: var(--ui-accent, #d0f76b); }
+.route-cache-panel button:focus-visible,
+.route-cache-panel select:focus-visible,
+.route-cache-panel input:focus-visible { outline: 2px solid var(--ui-accent, #d0f76b); outline-offset: -2px; }
+.route-cache-panel button:disabled { cursor: not-allowed; opacity: .52; }
+
+.route-cache-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.route-cache-tabs button { min-height: 28px; }
+.route-cache-tabs button[aria-selected="true"] {
+  border-color: transparent;
+  color: var(--ui-accent, #d0f76b);
+  background: var(--ui-selected, #293529);
+}
+.route-cache-tabs span { color: var(--ui-muted, #a9b3ad); }
+
+.route-cache-setup,
+.route-cache-package-pane { display: flex; min-height: 0; flex-direction: column; gap: 4px; }
+.route-cache-select-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  color: var(--ui-muted, #a9b3ad);
+}
+.route-cache-batch-tools,
+.route-cache-batch-summary { display: flex; min-height: 28px; align-items: center; justify-content: space-between; gap: 4px; color: var(--ui-muted, #a9b3ad); }
+.route-cache-batch-tools > button,
+.route-cache-batch-summary > button { flex: 0 0 auto; color: var(--ui-accent, #d0f76b); }
+.route-cache-batch-list {
+  display: flex;
+  min-height: 0;
+  max-height: 72px;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.route-cache-batch-row {
+  display: flex;
+  min-height: 26px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  color: var(--ui-ink, #f2f5ed);
+  background: var(--ui-field, #202a27);
+}
+.route-cache-batch-row input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--ui-accent, #d0f76b); }
+.route-cache-batch-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-cache-panel select { width: 100%; min-height: 32px; padding: 2px 4px; font-size: 16px; }
+.route-cache-inline-help { display: flex; align-items: center; justify-content: space-between; gap: 4px; color: var(--ui-muted, #a9b3ad); }
+.route-cache-inline-help button { color: var(--ui-accent, #d0f76b); }
+.route-cache-primary {
+  min-height: 32px !important;
+  border-color: transparent !important;
+  color: var(--ui-on-accent, #172018) !important;
+  background: var(--ui-accent, #d0f76b) !important;
+  font-weight: 650 !important;
+}
+.route-cache-primary:disabled { opacity: .46 !important; }
+.route-cache-settings-actions { display: flex; gap: 4px; }
+.route-cache-settings-actions .route-cache-primary { flex: 1 1 auto; }
+.route-cache-options { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.route-cache-options > label { display: flex; min-width: 0; flex-direction: column; gap: 2px; color: var(--ui-muted, #a9b3ad); }
+.route-cache-options select { min-height: 32px; }
+.route-cache-estimate { min-height: 16px; color: var(--ui-muted, #a9b3ad); line-height: 1.3; }
+.route-cache-note,
+.route-cache-message { color: var(--ui-muted, #a9b3ad); font-size: 11px; line-height: 1.25; }
+.route-cache-note { margin: 0; }
+.route-cache-back { color: var(--ui-muted, #a9b3ad) !important; }
+.route-cache-open-error { color: var(--ui-danger, #ff8b78) !important; }
+
+.route-cache-progress,
+.route-cache-package {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  background: var(--ui-raised, #252e2b);
+}
+.route-cache-progress > strong,
+.route-cache-package > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.route-cache-progress > span,
+.route-cache-package > span,
+.route-cache-package > small,
+.route-cache-progress > small { color: var(--ui-muted, #a9b3ad); }
+.route-cache-panel progress { width: 100%; height: 5px; accent-color: var(--ui-accent, #d0f76b); }
+.route-cache-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.route-cache-actions > button:first-child { flex: 1 1 auto; }
+.route-cache-actions .route-cache-danger { color: var(--ui-danger, #ff8b78); }
+
+.route-cache-only { display: flex; min-height: 28px; align-items: center; gap: 6px; padding: 0 4px; }
+.route-cache-only input { width: 16px; height: 16px; accent-color: var(--ui-accent, #d0f76b); }
+.route-cache-cache-hint { color: var(--ui-muted, #a9b3ad); }
+.route-cache-online { align-self: flex-start; color: var(--ui-accent, #d0f76b) !important; }
+.route-cache-empty { padding: 8px 4px; border-radius: 4px; color: var(--ui-muted, #a9b3ad); background: var(--ui-raised, #252e2b); text-align: center; }
+.route-cache-package-list {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 4px;
+  overflow: visible;
+}
+.observatory .control-dock .control-popover .route-cache-package > .route-cache-package-open {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  width: 100%;
+  height: auto;
+  padding: 4px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  background: transparent;
+  border-color: transparent;
+}
+.route-cache-package-open > strong { font-size: 12px; line-height: 1.35; }
+.route-cache-package-open > span { font-size: 11px; line-height: 1.3; color: var(--ui-muted); }
+.route-cache-package-open progress { margin: 1px 0; }
+
+@media (max-width: 370px) {
+  .route-cache-select-row { grid-template-columns: 64px minmax(0, 1fr); }
+}
+
+/* Keep this task card inside its 200px dock space despite shared 36px defaults. */
+.observatory .control-dock .control-popover .dock-content .route-cache-panel :is(button, select) { min-height: 28px !important; }
+.observatory .control-dock .control-popover .dock-content .route-cache-panel .route-cache-select-row select,
+.observatory .control-dock .control-popover .dock-content .route-cache-panel .route-cache-options select { min-height: 32px !important; }
+
+/* The shared dock is right-aligned; reserve the measured right-side tool rail. */
+.observatory.home-map[data-panel='cache'] .control-dock { z-index: 14; }
+.observatory.home-map[data-panel='cache'] .control-dock .control-popover {
+  left: 8px !important;
+  right: auto !important;
+  width: min(276px, calc(100% - 80px)) !important;
+}
+@media (max-height: 560px) {
+  .observatory.home-map[data-panel='cache'] .control-dock .control-popover {
+    width: min(276px, calc(100% - 120px)) !important;
+  }
+}

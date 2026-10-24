@@ -52,6 +52,7 @@ import { collectionSpreadsheet, collectionTransfer } from './export';
 import { selectedWorkbenchKeys } from './workbenchShareData';
 import { CollectionTabs } from './CollectionTabs';
 import { matchesCollectionTab } from './tabOrder';
+import './workbenchCache.css';
 
 type Props = {
   onImport?: () => void;
@@ -61,6 +62,10 @@ type Props = {
   onOpen: (key: string) => void;
   onNavigate: (key: string) => void;
   onManage: (keys?: string[]) => void;
+  onCacheRoute: (key: string) => void;
+  onCacheRoutes: (keys: string[]) => void;
+  onCacheFolder: () => void;
+  cacheCount: number;
 };
 export function WorkbenchPanel(props: Props) {
   const store = useWorkbenchData();
@@ -594,8 +599,17 @@ export function WorkbenchPanel(props: Props) {
             </div>
           )}
           <div ref={swipe.list} className="workbench-tree-list">
+            {(type === 'all' || type === 'cache') && (
+              <div className="workbench-cache-folder">
+                <button type="button" onClick={props.onCacheFolder} aria-label={`打开缓存区域，${props.cacheCount} 个缓存包`}>
+                  <Folder size={16} />
+                  <span><strong>缓存区域</strong><small>离线地图包</small></span>
+                  <small className="workbench-cache-count">{props.cacheCount}</small>
+                </button>
+              </div>
+            )}
             {sortWorkbenchItems(view, sort, sortCenter).map((i) => row(i))}
-            {!view.length && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : type === 'route' ? '暂无匹配的行程或路线计划' : '没有匹配的收藏'}</p>}
+            {!view.length && type !== 'cache' && <p className="workbench-empty">{type === 'hidden' ? '暂无隐藏项目' : type === 'route' ? '暂无匹配的行程或路线计划' : '没有匹配的收藏'}</p>}
           </div>
           {batch && (
             <div className="workbench-batch">
@@ -696,6 +710,14 @@ export function WorkbenchPanel(props: Props) {
           onAction={showAction}
           onBatch={startBatch}
           onOpen={props.onOpen}
+          onCacheRoute={(key) => {
+            setAction(null);
+            props.onCacheRoute(key);
+          }}
+          onCacheRoutes={(keys) => {
+            setAction(null);
+            props.onCacheRoutes(keys);
+          }}
           onNavigate={(key) => {
             setAction(null);
             props.onNavigate(key);

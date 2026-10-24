@@ -2,6 +2,7 @@
 export const COLLECTION_TABS = {
   regions: '地区',
   all: '全部',
+  cache: '缓存区域',
   hidden: '隐藏',
   route: '行程',
   track: '轨迹',

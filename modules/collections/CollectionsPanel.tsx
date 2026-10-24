@@ -56,6 +56,10 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onReselect?: (keys: string[]) => void;
   onLocate: (entry: CatalogEntry) => void;
   mapCenter: [number, number];
+  onCacheRoute: (key: string) => void;
+  onCacheRoutes: (keys: string[]) => void;
+  onCacheFolder: () => void;
+  cacheCount: number;
 };
 export function CollectionsPanel(props: Props) {
   const entries = useMemo(
@@ -271,6 +275,10 @@ export function CollectionsPanel(props: Props) {
           setBatch(!!keys?.length);
           setLegacy(false);
         }}
+        onCacheRoute={props.onCacheRoute}
+        onCacheRoutes={props.onCacheRoutes}
+        onCacheFolder={props.onCacheFolder}
+        cacheCount={props.cacheCount}
       />
     );
   return (

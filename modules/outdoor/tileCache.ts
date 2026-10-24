@@ -1,14 +1,94 @@
-import type { BrowseTile } from './browseCache.ts';
+import { resourceCacheKey } from './tiandituCache.ts';
+import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
+
+export type BrowseTile = { z: number; x: number; y: number };
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
 export const OFFLINE_MAP_KEY = 'shantu.offline-map-only.v1';
-export function offlineMapStatus(message: string) {
-  return message;
+const TRIP_INDEX_KEY = 'guanyun.trips.v1';
+const NO_PACKAGE_URLS = new Set<string>();
+
+type TripIndexEntry = { id?: unknown; urls?: unknown };
+type TileFetcher = (url: string, signal: AbortSignal) => Promise<Response>;
+let selectedIndexId = '';
+let selectedIndexRaw = '';
+let selectedPackageUrls = new Set<string>();
+let offlineOnlyOverride: boolean | undefined;
+
+function selectedTripUrls(): Set<string> {
+  try {
+    const selected = localStorage.getItem('shantu.offline-package.v1');
+    if (!selected) return NO_PACKAGE_URLS;
+    const raw = localStorage.getItem(TRIP_INDEX_KEY) ?? '[]';
+    if (selected === selectedIndexId && raw === selectedIndexRaw) return selectedPackageUrls;
+    const entries = JSON.parse(raw) as unknown;
+    if (!Array.isArray(entries)) {
+      selectedPackageUrls = new Set();
+      selectedIndexId = selected;
+      selectedIndexRaw = raw;
+      return selectedPackageUrls;
+    }
+    const matching = (entries as TripIndexEntry[]).filter(entry => entry.id === selected);
+    selectedPackageUrls = new Set(matching.flatMap(entry => Array.isArray(entry.urls)
+      ? entry.urls.filter((url): url is string => typeof url === 'string').map(resourceCacheKey)
+      : []));
+    selectedIndexId = selected;
+    selectedIndexRaw = raw;
+    return selectedPackageUrls;
+  } catch { selectedIndexId = ''; selectedIndexRaw = ''; selectedPackageUrls = new Set(); return selectedPackageUrls; }
 }
-export function offlineMapOnly() {
-  return false;
+
+function cacheOnlyEnabled() {
+  if (offlineOnlyOverride !== undefined) return offlineOnlyOverride;
+  try { return localStorage.getItem(OFFLINE_MAP_KEY) === 'true'; } catch { return false; }
 }
-export async function cachedMapFetch(url: string, signal: AbortSignal, tile?: BrowseTile, viewed = false): Promise<Response> {
+
+export function offlineMapStatus(message: string) { return message; }
+export function offlineMapOnly() { return cacheOnlyEnabled(); }
+export function setOfflineMapOnly(enabled: boolean) { offlineOnlyOverride = enabled; }
+
+/** Route MapLibre HTTP requests through the selected package only in cache-only mode. */
+export const offlineMapTransform: RequestTransformFunction = (url, kind) => {
+  if (!offlineMapOnly() || !['Source', 'Tile', 'Glyphs'].includes(kind ?? '')) return { url };
+  try {
+    const parsed = new URL(url, globalThis.location?.origin ?? 'http://localhost');
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return { url };
+    return { url: `tripcache://${encodeURIComponent(parsed.href)}` };
+  } catch { return { url }; }
+};
+
+export const offlineMapProtocol: AddProtocolAction = async (request, controller) => {
+  const url = decodeURIComponent(request.url.slice('tripcache://'.length));
+  const response = await cachedMapFetch(url, controller.signal, undefined, true);
+  if (!response.ok) throw new Error(`地图缓存暂不可用 (${response.status})`);
+  return { data: request.type === 'json' ? await response.json() : await response.arrayBuffer() };
+};
+
+/** Read only explicitly packaged tiles. Cache-only mode fails closed on misses. */
+export async function cachedMapFetch(
+  url: string,
+  signal: AbortSignal,
+  tile?: BrowseTile,
+  viewed = false,
+  fetcher: TileFetcher = (request, requestSignal) => fetch(request, { signal: requestSignal }),
+): Promise<Response> {
   signal.throwIfAborted();
   void tile; void viewed;
-  return fetch(url, { signal });
+  const cacheOnly = cacheOnlyEnabled();
+  const key = resourceCacheKey(url);
+  const packaged = selectedTripUrls().has(key);
+  let cacheFailure: unknown;
+  if (packaged) {
+    try {
+      const cache = await caches.open(TRIP_TILE_CACHE);
+      signal.throwIfAborted();
+      const hit = await cache.match(key);
+      signal.throwIfAborted();
+      if (hit?.ok) return hit;
+    } catch (error) { signal.throwIfAborted(); cacheFailure = error; }
+  }
+  if (cacheOnly) {
+    if (cacheFailure) throw new Error('离线地图缓存暂不可读，请检查已选缓存包');
+    throw new Error('当前缓存包没有这张地图瓦片，请联网后补齐或切换缓存包');
+  }
+  return fetcher(url, signal);
 }

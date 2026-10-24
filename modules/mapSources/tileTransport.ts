@@ -1,5 +1,6 @@
 import { createBrowserTileCache } from './browserTileCache.ts';
 import { createCachedTileFetcher } from './cachedTileTransport.ts';
+import { cachedMapFetch } from '../outdoor/tileCache.ts';
 
 function isIndexedDBAvailable(): boolean {
   try {
@@ -22,7 +23,8 @@ export function tileTransportSnapshot() {
 /** Retain direct/CORS semantics for ordinary coordinate-corrected XYZ sources. */
 export function fetchDirectRasterTile(url:string,signal:AbortSignal):Promise<Response>{
   signal.throwIfAborted();
-  return directTileFetcher ? directTileFetcher.fetch(url,signal) : fetch(url,{signal});
+  return cachedMapFetch(url,signal,undefined,true,(request,requestSignal)=>
+    directTileFetcher ? directTileFetcher.fetch(request,requestSignal) : fetch(request,{signal:requestSignal}));
 }
 
 function isTiandituHost(hostname: string): boolean {
@@ -95,11 +97,11 @@ export async function fetchMapTile(
   signal: AbortSignal,
 ): Promise<Response> {
   signal.throwIfAborted();
-  // Only interactive browsing uses the new bounded cache. Explicit downloads
-  // and the removed OfflineStore/route-area cache do not participate.
-  if (!isIndexedDBAvailable()) return fetchProviderTile(url, signal);
-  browserTileFetcher ??= createCachedTileFetcher(createBrowserTileCache(), fetchProviderTile);
-  return browserTileFetcher.fetch(url, signal);
+  browserTileFetcher ??= isIndexedDBAvailable()
+    ? createCachedTileFetcher(createBrowserTileCache(), fetchProviderTile)
+    : undefined;
+  return cachedMapFetch(url,signal,undefined,true,(request,requestSignal)=>
+    browserTileFetcher ? browserTileFetcher.fetch(request,requestSignal) : fetchProviderTile(request,requestSignal));
 }
 
 /** Explicit user download: shares provider transport, without automatic cache writes. */

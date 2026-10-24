@@ -12,7 +12,7 @@ import { elevationStats } from '../journey/metrics';
 import { formatDistance, formatDuration } from '../navigation/types';
 
 /** Home summary only. Detailed point metrics remain in the existing route details. */
-export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError, onLocateGap }: {
+export function HomeRouteCard({ track, point, alternative, error, onBack, onNavigate, onMarker, onEdit, onDetails, onDisplay, onRename, onDelete, onClearError, onLocateGap, onCache }: {
   track: ManualTrack; point: TrackLinePoint | null; alternative: string; error: string;
   onBack: () => void; onNavigate: () => void; onMarker: () => void; onEdit: () => void; onDetails: () => void;
   onRename: (name: string) => boolean;
@@ -20,6 +20,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
   onDelete?: () => boolean;
   onClearError?: () => void;
   onLocateGap?: () => void;
+  onCache?: () => void;
 }) {
   const [name, setName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -71,6 +72,7 @@ export function HomeRouteCard({ track, point, alternative, error, onBack, onNavi
       <button disabled={!point} onClick={onMarker} aria-label="添加标记"><Bookmark size={18} />标记</button>
       <button onClick={onEdit}><Pencil size={18} />编辑</button>
       <button onClick={onDetails}><FileText size={18} />详情</button>
+      {onCache && <button onClick={onCache}>缓存地图</button>}
       {onDisplay && <button onClick={onDisplay} aria-label="路线显示设置"><ChartNoAxesCombined size={18} />路线显示</button>}
       {onDelete && <button onClick={() => setConfirmDelete(true)} aria-label="删除当前路线"><Trash2 size={18}/>删除</button>}
     </nav></>}

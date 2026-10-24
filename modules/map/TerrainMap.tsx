@@ -9,6 +9,7 @@ import { applyNavigationCamera } from '../guidance/navigationCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
+import { offlineMapProtocol, offlineMapTransform } from '../outdoor/tileCache';
 import type { TripPackage } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, usesVectorPlaceLabels, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
@@ -109,6 +110,7 @@ import {
   type ViewState,
   usesHighRasterQuality,
 } from './types';
+let offlineMapProtocolRegistered = false;
 export type MapHandle = {
   isUserInteracting: () => boolean;
   pickTrackContinuation: (point: ScreenPoint) => TrackContinuationHit | null;
@@ -460,11 +462,14 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         : s.satellite ? [s.imageryMode === 'detail' ? 'detail' : 'satellite'] : [];
       const datum = s.rasterDatums?.[rasterDatumKey(s, mapSource?.id)] ?? defaultRasterDatum(mapSource);
       coordinatesRef.current?.sync(!mapSource && domesticMap ? tiandituLayers(s).map(id => TDT_SOURCE_IDS[id]) : ids, datum);
-      rasterLockRef.current?.sync(ids, ids.length ? s.rasterLevel ?? null : null);
+      const rasterCap = s.offlineMaxZoom == null
+        ? s.rasterLevel ?? null
+        : Math.min(s.rasterLevel ?? s.offlineMaxZoom, s.offlineMaxZoom);
+      rasterLockRef.current?.sync(ids, ids.length ? rasterCap : null);
       rasterQualityRef.current?.sync(ids, usesHighRasterQuality(s));
       const source=ids[0] ? map.getSource(ids[0]) : null;
-      detailPatchRef.current?.sync(ids[0] ?? '', source && s.rasterLevel != null ? Math.min(source.maxzoom,s.rasterLevel) : null);
-      if (domestic && s.rasterLevel == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
+      detailPatchRef.current?.sync(ids[0] ?? '', source && rasterCap != null ? Math.min(source.maxzoom,rasterCap) : null);
+      if (domestic && s.rasterLevel == null && s.offlineMaxZoom == null) for (const layer of Object.keys(TIANDITU_LAYERS) as TiandituLayer[]) {
         const id = TDT_SOURCE_IDS[layer], source = map.getSource(id);
         const maxzoom = TIANDITU_LAYERS[layer].maxzoom;
         if (source && source.maxzoom !== maxzoom) { source.maxzoom = maxzoom; map.refreshTiles(id); }
@@ -999,6 +1004,10 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
         try {
+          if (!offlineMapProtocolRegistered) {
+            maplibre.addProtocol('tripcache', offlineMapProtocol);
+            offlineMapProtocolRegistered = true;
+          }
           // Bundlers relocate import.meta.url. Use explicit local module workers so
           // DEM and vector decoding do not silently wait on an HTML fallback URL.
           maplibre.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
@@ -1017,6 +1026,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             maxZoom: 20,
             minZoom: 0,
             attributionControl: false,
+            transformRequest: offlineMapTransform,
             // Native two-finger handlers keep single-finger drags as panning.
             touchZoomRotate: true,
             touchPitch: true,

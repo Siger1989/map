@@ -43,6 +43,7 @@ export function RoutePanel({
   navigating,
   guidanceError,
   onShare,
+  onCache,
   onEditPoints,
   onCancel,
   onImport,
@@ -68,6 +69,7 @@ export function RoutePanel({
   navigating: boolean;
   guidanceError: string;
   onShare: () => void;
+  onCache?: () => void;
   onEditPoints?: () => void; onCancel?: () => void;
   onImport?: () => void;
   importInHeader?: boolean;
@@ -235,7 +237,7 @@ export function RoutePanel({
     planningError={n.error}
     onModeChange={(mode) => { onExitPreview?.(); n.setMode(mode, onRouteApplied); }} onSwap={() => { onExitPreview?.(); n.swap(onRouteApplied); }}
     route={n.route} onShow={() => onShow(n.route!)} onEdit={() => { onExitPreview?.(); setEditing(true); }}
-    onSave={onSave} onShare={onShare} onStartNavigation={onStartNavigation}
+    onSave={onSave} onShare={onShare} onCache={onCache} onStartNavigation={onStartNavigation}
     previewMode={previewMode} onPreview={onPreview} onPreviewTopDown={onPreviewTopDown} onExitPreview={onExitPreview}
     navigating={navigating} guidanceError={guidanceError} saveMessage={saveMessage} onEditPoints={onEditPoints} onCancel={onCancel}
     quickRouteControls={quickRouteControls}

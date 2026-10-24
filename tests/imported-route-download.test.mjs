@@ -21,6 +21,16 @@ const pathCoords = (url) => {
 };
 const rawUrl = (templates, z, x, y) => templates[0].replace('{z}', String(z)).replace('{x}', String(x)).replace('{y}', String(y));
 
+test('batch routes equal the union of individual corridors, without connecting routes or duplicate requests', () => {
+  const map = source({ minzoom: 12, maxzoom: 14 });
+  const first = route({ bufferKm: 4 });
+  const second = route({ bufferKm: 4, segments: [[[105, 31], [105.02, 31.02]]] });
+  const expected = new Set([...planImportedRouteDownload(first, map, 14).urls, ...planImportedRouteDownload(second, map, 14).urls]);
+  const batch = planImportedRouteDownload(route({ bufferKm: 4, segments: [...first.segments, ...second.segments, ...first.segments] }), map, 14);
+  assert.deepEqual(new Set(batch.urls), expected);
+  assert.equal(batch.count, expected.size);
+});
+
 test('imported route plan offers declared odd max zoom and counts unique requests without fetching', () => {
   const at18 = planImportedRouteDownload(route(), source(), 18);
   const at19 = planImportedRouteDownload(route(), source(), 19);
@@ -36,6 +46,16 @@ test('ratio templates include both standard and high-density tile URLs', () => {
   const plan = planImportedRouteDownload(route(), map, 12);
   assert.ok(plan.urls.some((url) => /\/12\/\d+\/\d+\.png$/.test(url)));
   assert.ok(plan.urls.some((url) => /\/12\/\d+\/\d+@2x\.png$/.test(url)));
+  const oneSize = Math.ceil(256 * 256 * 0.4);
+  assert.equal(plan.estimatedBytes, plan.count / 2 * oneSize * 5);
+});
+
+test('4 km per-side corridor is accepted and included in the route bounds', () => {
+  const area = route({ bufferKm: 4 });
+  const bounds = planImportedRouteDownload(area, source({ minzoom: 12, maxzoom: 12 }), 12).bounds;
+  assert.ok(bounds[0] < 104 && bounds[2] > 104.01);
+  assert.ok(bounds[1] < 30 && bounds[3] > 30.01);
+  assert.throws(() => planImportedRouteDownload(route({ bufferKm: 3 }), source(), 14), /沿线范围/);
 });
 
 test('disconnected route segments remain separate corridor clusters', () => {
@@ -88,4 +108,13 @@ test('route planner rejects unsupported sources, templates, providers and excess
   assert.throws(() => planImportedRouteDownload(route(), source({ tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'] }), 14), /不支持批量下载/);
   const long = route({ bufferKm: 0.5, segments: [[[0, 0], [0.002, 0]]] });
   assert.throws(() => planImportedRouteDownload(long, source({ minzoom: 24, maxzoom: 24 }), 24), /过大|2 万项/);
+});
+
+test('current source and persisted URLs are rechecked against provider restrictions before resume', async () => {
+  const { validateImportedDownloadSource, validateImportedDownloadUrls, assertImportedDownloadBudget } = modules.find((module) => module.validateImportedDownloadSource);
+  assert.throws(() => validateImportedDownloadSource(source({ tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'] })), /不支持批量下载/);
+  assert.throws(() => validateImportedDownloadUrls(['https://t0.tianditu.gov.cn/{z}/{x}/{y}.png']), /天地图离线下载已暂停/);
+  assert.throws(() => validateImportedDownloadUrls(['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png']), /不支持批量下载/);
+  assert.throws(() => assertImportedDownloadBudget(1024 ** 3 + 1), /达到 1 GB 上限/);
+  assert.doesNotThrow(() => assertImportedDownloadBudget(1024 ** 3));
 });

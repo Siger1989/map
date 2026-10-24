@@ -45,7 +45,10 @@ export function useOffline() {
           await new Promise(resolve=>setTimeout(resolve,200));
         }
       }
+      let wasSelected = false;
+      try { wasSelected = localStorage.getItem('shantu.offline-package.v1') === trip.id; } catch {}
       await removeTrip(trip);
+      if (wasSelected) window.dispatchEvent(new Event('shantu:offline-map-mode'));
       setCurrent(value=>value?.id===trip.id?null:value);
       if(activeId.current===trip.id || state.id===trip.id)setBusy(false);
       setMessage('离线包已移除，原路线保留');
@@ -115,10 +118,10 @@ export function useOffline() {
       setMessage('新离线下载仅支持已导入图源的路线走廊');
       return Promise.resolve();
     },
-    createImportedRoute: (name: string, area: Extract<DownloadArea, { kind: 'route' }>, source: MapSource, zoom: number) => run(async signal => {
+    createImportedRoute: (name: string, area: Extract<DownloadArea, { kind: 'route' }>, source: MapSource, zoom: number, routeNames?: readonly string[]) => run(async signal => {
       activeProvider.current='imported';
       setCurrent(null);
-      const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal);
+      const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal,routeNames);
       await download(trip,signal);
     }),
     createRegion: (_name: string, _bounds: TripPackage['bounds'], _zoom: number) => {

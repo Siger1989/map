@@ -233,6 +233,7 @@ test('legacy TianDiTu packages remain readable, verifiable, and safely removable
   for (const url of [shared, firstOnly, secondOnly]) entries.set(resourceCacheKey(url), png.clone());
   storage.set('guanyun.trips.v1', JSON.stringify([first, second]));
   storage.set(OFFLINE_MAP_KEY, 'true');
+  storage.set('shantu.offline-package.v1', first.id);
   globalThis.window = { location: { origin: 'https://appassets.androidplatform.net' } };
   globalThis.localStorage = { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: (key) => storage.delete(key) };
   globalThis.caches = { open: async () => cache };
@@ -240,8 +241,8 @@ test('legacy TianDiTu packages remain readable, verifiable, and safely removable
   globalThis.fetch = async () => { requests++; return new Response('network tile'); };
   try {
     const live = 'https://t3.tianditu.gov.cn/vec_w/wmts?request=GetTile&layer=vec&tilematrixset=w&tilematrix=8&tilecol=201&tilerow=105&tk=expired';
-    assert.equal(await (await cachedMapFetch(live, new AbortController().signal)).text(), 'network tile');
-    assert.equal(requests, 1, 'stale trip cache is not consulted by normal rendering');
+    assert.match(await (await cachedMapFetch(live, new AbortController().signal)).text(), /PNG/);
+    assert.equal(requests, 0, 'selected legacy package is read by map rendering while cache-only mode is on');
     const checked = await verifyTrip(first);
     assert.equal(checked.done, 2);
     assert.equal(checked.complete, true);
@@ -250,7 +251,7 @@ test('legacy TianDiTu packages remain readable, verifiable, and safely removable
     assert.equal(await cache.match(resourceCacheKey(shared)) instanceof Response, true);
     assert.equal(await cache.match(resourceCacheKey(firstOnly)), undefined);
     assert.equal(await cache.match(resourceCacheKey(secondOnly)) instanceof Response, true);
-    assert.equal(requests, 1);
+    assert.equal(requests, 0);
   } finally {
     for (const [key, value] of Object.entries(saved)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
   }

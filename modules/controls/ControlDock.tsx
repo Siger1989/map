@@ -29,6 +29,7 @@ export type ControlPanel =
   | 'industry'
   | 'outdoor'
   | 'sources'
+  | 'cache'
   | null;
 const PANELS = [
   { id: 'outdoor', label: '记录', icon: NotebookPen },
@@ -95,7 +96,7 @@ export function ControlDock({
     onActive(null);
     root.current
       ?.querySelector<HTMLButtonElement>(
-        `[data-panel-toggle="${active === 'sources' || active === 'industry' ? 'tools' : active}"]`,
+        `[data-panel-toggle="${active === 'cache' ? 'favorites' : active === 'sources' || active === 'industry' ? 'tools' : active}"]`,
       )
       ?.focus({ preventScroll: true });
   };

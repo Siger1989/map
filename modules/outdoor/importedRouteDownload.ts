@@ -4,6 +4,10 @@ import { warpPlan } from '../mapSources/coordinates.ts';
 import { downloadBounds, downloadTiles, MAX_DOWNLOAD_RESOURCES, type DownloadArea, type Tile } from './downloadPlan.ts';
 
 export const MAX_IMPORTED_DOWNLOAD_BYTES = 1024 ** 3;
+export function assertImportedDownloadBudget(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes < 0 || bytes > MAX_IMPORTED_DOWNLOAD_BYTES)
+    throw new Error('离线包达到 1 GB 上限，已暂停；请降低清晰度');
+}
 const REGULAR_TEMPLATE_TOKENS = new Set(['z', 'x', 'y', 'ratio', 'bbox-epsg-3857', 'quadkey', 'prefix']);
 export type ImportedRoutePlan = {
   urls: string[];
@@ -39,7 +43,7 @@ function regularTileUrl(templates: string[], tile: Tile, scheme: 'xyz' | 'tms', 
     .replaceAll('{prefix}', (x % 16).toString(16) + (tile.y % 16).toString(16));
 }
 
-function validateSource(source: MapSource) {
+export function validateImportedDownloadSource(source: MapSource) {
   if (!source || source.kind !== 'online' || !source.id || !source.name)
     throw new Error('请先选择已导入的在线图源');
   if (!Number.isInteger(source.minzoom) || !Number.isInteger(source.maxzoom) || source.minzoom < 0 || source.maxzoom > 24 || source.minzoom > source.maxzoom)
@@ -99,7 +103,7 @@ export function planImportedRouteDownload(
 ): ImportedRoutePlan {
   if (area?.kind !== 'route' || !Array.isArray(area.segments) || !area.segments.length || area.segments.some((segment) => !Array.isArray(segment) || segment.length < 2))
     throw new Error('请先选择包含有效路段的路线');
-  validateSource(source);
+  validateImportedDownloadSource(source);
   if (!Number.isInteger(zoom) || zoom < source.minzoom || zoom > source.maxzoom)
     throw new Error('请选择此图源支持的最高级别');
 
@@ -137,7 +141,8 @@ export function planImportedRouteDownload(
         : [''].concat(layer.tiles[(tile.x + tile.y) % layer.tiles.length].includes('{ratio}') ? ['@2x'] : [])
           .map((ratio) => regularTileUrl(layer.tiles, tile, source.scheme === 'tms' ? 'tms' : 'xyz', ratio));
       for (const url of urls) {
-        sizes.set(url, Math.max(sizes.get(url) ?? 0, estimate));
+        const urlEstimate = url.includes('@2x') ? estimate * 4 : estimate;
+        sizes.set(url, Math.max(sizes.get(url) ?? 0, urlEstimate));
         if (sizes.size > MAX_DOWNLOAD_RESOURCES)
           throw new Error('路线图源瓦片超过 2 万项，请降低清晰度或缩小沿线范围');
       }
@@ -149,4 +154,19 @@ export function planImportedRouteDownload(
     throw new Error('预计超过 1 GB，请降低清晰度或缩小沿线范围');
   if (!urls.length) throw new Error('所选级别没有可下载的路线瓦片');
   return { urls, bounds, count: urls.length, estimatedBytes };
+}
+
+/** Reject persisted package URLs that violate current public-provider restrictions. */
+export function validateImportedDownloadUrls(urls: string[]) {
+  for (const value of urls) {
+    let parsed: URL;
+    try { parsed = new URL(value); } catch { throw new Error('离线包包含无效图源地址，请重新规划下载'); }
+    if (!['http:', 'https:'].includes(parsed.protocol))
+      throw new Error('离线包包含无效图源地址，请重新规划下载');
+    const host = parsed.hostname.toLowerCase();
+    if (host === 'tianditu.gov.cn' || host.endsWith('.tianditu.gov.cn') || host === 'tianditu.com' || host.endsWith('.tianditu.com'))
+      throw new Error('天地图离线下载已暂停，以保护服务额度；已有天地图离线包仍可查看或删除');
+    if (host === 'tile.openstreetmap.org' || host.endsWith('.tile.openstreetmap.org'))
+      throw new Error('该公共地图服务不支持批量下载，请选择其他已导入图源');
+  }
 }

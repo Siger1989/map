@@ -30,7 +30,7 @@ export function downloadBounds(
   if (
     !points.length ||
     !points.every(coordinate) ||
-    ![0.5, 1, 2, 5, 10, 20].includes(area.bufferKm)
+    ![0.5, 1, 2, 4, 5, 10, 20].includes(area.bufferKm)
   )
     throw new Error('请选择有效路线和沿线范围');
   let w = 180,
