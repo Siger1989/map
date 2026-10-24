@@ -104,6 +104,112 @@ jobs:
           with open(output, "a", encoding="utf-8") as stream:
               stream.write(f"prefix={prefix}\nversion={version}\nnode_version={node_version}\n")
           PY
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.23.4'
+          cache: npm
+      - name: Install locked Node dependencies
+        run: npm ci
+      - name: Reuse and verify runtime binaries from the pinned public fixture
+        shell: bash
+        env:
+          FIXTURE_PREFIX: ${{ steps.download.outputs.prefix }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/release-payload/$FIXTURE_PREFIX.zip"
+          runtime="$RUNNER_TEMP/macos-runtime"
+          mkdir -p "$runtime/darwin-arm64/bin" "$runtime/darwin-x64/bin"
+          python3 - "$archive" "$FIXTURE_PREFIX" "$runtime" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import stat
+          import sys
+          import zipfile
+
+          archive, prefix, output = sys.argv[1:]
+          output = pathlib.Path(output)
+          expected = {
+              "runtime/node-arm64": output / "darwin-arm64/bin/node",
+              "runtime/LICENSE-node-arm64.txt": output / "darwin-arm64/LICENSE",
+              "runtime/node-x64": output / "darwin-x64/bin/node",
+              "runtime/LICENSE-node-x64.txt": output / "darwin-x64/LICENSE",
+          }
+          with zipfile.ZipFile(archive) as package:
+              names = package.namelist()
+              if len(names) != len(set(names)):
+                  raise SystemExit("Fixture ZIP contains duplicate entries")
+              root = prefix + "/"
+              manifest = json.loads(package.read(root + "manifest.json"))
+              if manifest.get("nodeVersion") != "22.23.4":
+                  raise SystemExit("Pinned fixture does not contain the expected Node 22.23.4 runtimes")
+              hashes = manifest.get("files", {})
+              for relative, destination in expected.items():
+                  member = root + relative
+                  info = package.getinfo(member)
+                  mode = info.external_attr >> 16
+                  if stat.S_ISLNK(mode) or (stat.S_IFMT(mode) not in (0, stat.S_IFREG)):
+                      raise SystemExit(f"Fixture runtime entry is not a regular file: {relative}")
+                  data = package.read(member)
+                  if hashlib.sha256(data).hexdigest().lower() != str(hashes.get(relative, "")).lower():
+                      raise SystemExit(f"Fixture runtime entry does not match the package manifest: {relative}")
+                  destination.write_bytes(data)
+                  if relative in ("runtime/node-arm64", "runtime/node-x64"):
+                      destination.chmod(0o755)
+          PY
+          case "$(uname -m)" in
+            arm64) node="$runtime/darwin-arm64/bin/node" ;;
+            x86_64) node="$runtime/darwin-x64/bin/node" ;;
+            *) echo "Unsupported runner architecture: $(uname -m)" >&2; exit 1 ;;
+          esac
+          test "$("$node" --version)" = v22.23.4
+      - name: Build the current-source public macOS payload
+        id: payload
+        shell: bash
+        env:
+          NEXT_PUBLIC_TIANDITU_KEY: ''
+        run: |
+          set -euo pipefail
+          npm run build:android:web -- --mode public --outDir ../.openai/macos-ci-web
+          mkdir -p "$RUNNER_TEMP/current-payload"
+          node scripts/build-macos.mjs \
+            --public \
+            --web-dir "$GITHUB_WORKSPACE/.openai/macos-ci-web" \
+            --runtime-dir "$RUNNER_TEMP/macos-runtime" \
+            --node-version 22.23.4 \
+            --out-dir "$RUNNER_TEMP/current-payload" \
+            > "$RUNNER_TEMP/current-payload/build.json"
+          python3 - "$RUNNER_TEMP/current-payload/build.json" "$GITHUB_WORKSPACE/config/product.ts" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import pathlib
+          import re
+          import sys
+          import zipfile
+
+          build_path, product_path, output = map(pathlib.Path, sys.argv[1:])
+          build = json.loads(build_path.read_text())
+          archive = pathlib.Path(build["file"])
+          with zipfile.ZipFile(archive) as package:
+              roots = {name.split("/", 1)[0] for name in package.namelist()}
+              if len(roots) != 1:
+                  raise SystemExit("Fresh public ZIP does not have exactly one package root")
+              prefix = next(iter(roots))
+              manifest = json.loads(package.read(prefix + "/manifest.json"))
+          product = product_path.read_text()
+          configured = re.search(r"APP_VERSION\s*=\s*'([^']+)'", product)
+          if not configured or manifest.get("appVersion") != configured.group(1):
+              raise SystemExit("Fresh public payload version does not match current config/product.ts")
+          if (prefix != f"Shantu-{manifest['appVersion']}-macOS-public" or
+                  manifest.get("format") != "shantu-macos-portable" or
+                  manifest.get("formatVersion") != 1 or manifest.get("platform") != "macOS" or
+                  manifest.get("visibility") != "public" or manifest.get("nodeVersion") != "22.23.4" or
+                  "web/native/default-map-sources.json" in manifest.get("files", {})):
+              raise SystemExit("Fresh current-source payload manifest is invalid or not public")
+          if build.get("visibility") != "public":
+              raise SystemExit("Payload builder did not report a public package")
+          with output.open("a", encoding="utf-8") as stream:
+              stream.write(f"prefix={prefix}\nversion={manifest['appVersion']}\nnode_version={manifest['nodeVersion']}\n")
+          PY
       - name: Compile the universal native window launcher
         shell: bash
         run: |
@@ -112,23 +218,24 @@ jobs:
           codesign --force --sign - "$RUNNER_TEMP/macos-launcher/Shantu"
           codesign --verify --verbose=2 "$RUNNER_TEMP/macos-launcher/Shantu"
           lipo "$RUNNER_TEMP/macos-launcher/Shantu" -verify_arch arm64 x86_64
-      - name: Build the disk image from the verified public test fixture
+      - name: Build the disk image from the current-source public payload
         working-directory: scripts/macos-dmg
         shell: bash
         env:
-          PACKAGE_PREFIX: ${{ steps.download.outputs.prefix }}
+          PACKAGE_PREFIX: ${{ steps.payload.outputs.prefix }}
         run: |
           set -euo pipefail
           go test ./...
           mkdir -p "$RUNNER_TEMP/dmg-output"
-          go run -mod=readonly . -input "$RUNNER_TEMP/release-payload/$PACKAGE_PREFIX.zip" -output "$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" -launcher "$RUNNER_TEMP/macos-launcher/Shantu" > "$RUNNER_TEMP/dmg-output/build.json"
+          go run -mod=readonly . -input "$RUNNER_TEMP/current-payload/$PACKAGE_PREFIX.zip" -output "$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" -launcher "$RUNNER_TEMP/macos-launcher/Shantu" > "$RUNNER_TEMP/dmg-output/build.json"
           cp "$RUNNER_TEMP/macos-launcher/Shantu" "$RUNNER_TEMP/dmg-output/Shantu"
       - name: Mount and exercise the native window, storage, blob export, and process lifecycle
         shell: bash
         env:
-          PACKAGE_PREFIX: ${{ steps.download.outputs.prefix }}
-          APP_VERSION: ${{ steps.download.outputs.version }}
-          NODE_VERSION: ${{ steps.download.outputs.node_version }}
+          SHANTU_SMOKE_HTTP: '1'
+          PACKAGE_PREFIX: ${{ steps.payload.outputs.prefix }}
+          APP_VERSION: ${{ steps.payload.outputs.version }}
+          NODE_VERSION: ${{ steps.payload.outputs.node_version }}
         run: |
           set -euo pipefail
           image="$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg"

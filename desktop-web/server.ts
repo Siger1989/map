@@ -33,6 +33,12 @@ const mime: Record<string, string> = {
 export function createDesktopServer(root: string) {
   const publicRoot = resolve(root);
   return createServer(async (req, res) => {
+    // CI diagnoses native WebKit bootstrap failures without recording URLs or provider credentials.
+    if (process.env.SHANTU_SMOKE_HTTP === '1' && req.url?.startsWith('/assets/')) {
+      const asset = req.url.split('?')[0];
+      res.once('finish', () => console.log(JSON.stringify({ asset, status: res.statusCode, event: 'finish' })));
+      res.once('close', () => { if (!res.writableFinished) console.log(JSON.stringify({ asset, event: 'closed-before-finish' })); });
+    }
     try {
       const port = (res.socket?.address() as { port: number })?.port;
       if (
