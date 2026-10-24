@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/macos-dmg-check.yml'
       - 'scripts/macos-dmg/**'
+      - 'desktop-web/macos/**'
   workflow_dispatch:
     inputs:
       release_tag:
@@ -103,7 +104,15 @@ jobs:
           with open(output, "a", encoding="utf-8") as stream:
               stream.write(f"prefix={prefix}\nversion={version}\nnode_version={node_version}\n")
           PY
-      - name: Build the disk image from the verified public payload
+      - name: Compile the universal native window launcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh desktop-web/macos/build-launcher.sh "$RUNNER_TEMP/macos-launcher"
+          codesign --force --sign - "$RUNNER_TEMP/macos-launcher/Shantu"
+          codesign --verify --verbose=2 "$RUNNER_TEMP/macos-launcher/Shantu"
+          lipo -verify_arch arm64 x86_64 "$RUNNER_TEMP/macos-launcher/Shantu"
+      - name: Build the disk image from the verified public test fixture
         working-directory: scripts/macos-dmg
         shell: bash
         env:
@@ -112,8 +121,9 @@ jobs:
           set -euo pipefail
           go test ./...
           mkdir -p "$RUNNER_TEMP/dmg-output"
-          go run -mod=readonly . -input "$RUNNER_TEMP/release-payload/$PACKAGE_PREFIX.zip" -output "$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" > "$RUNNER_TEMP/dmg-output/build.json"
-      - name: Mount, check every payload file, and run the native Node server
+          go run -mod=readonly . -input "$RUNNER_TEMP/release-payload/$PACKAGE_PREFIX.zip" -output "$RUNNER_TEMP/dmg-output/$PACKAGE_PREFIX.dmg" -icon "$GITHUB_WORKSPACE/public/brand/shantu-logo.png" -launcher "$RUNNER_TEMP/macos-launcher/Shantu" > "$RUNNER_TEMP/dmg-output/build.json"
+          cp "$RUNNER_TEMP/macos-launcher/Shantu" "$RUNNER_TEMP/dmg-output/Shantu"
+      - name: Mount and exercise the native window, storage, blob export, and process lifecycle
         shell: bash
         env:
           PACKAGE_PREFIX: ${{ steps.download.outputs.prefix }}
@@ -144,9 +154,33 @@ jobs:
           python3 -c 'import sys; assert open(sys.argv[1],"rb").read(8)==b"\x89PNG\r\n\x1a\n"' "$RUNNER_TEMP/terrain.png"
           SHANTU_NO_OPEN=1 "$resources/Start-Mac.command" > "$RUNNER_TEMP/repeated-start.log"
           kill -0 "$server_pid"
+          kill "$server_pid"
+          wait "$server_pid" || true
+          server_pid=''
+          # Launch the actual bundle executable. No external browser or Terminal is started.
+          python3 - "$mount/Shantu.app/Contents/MacOS/Shantu" "$RUNNER_TEMP/dmg-output" <<'PY'
+          import json, pathlib, subprocess, sys, time, urllib.request
+          binary, directory = sys.argv[1:]
+          output = pathlib.Path(directory)
+          with (output / 'native-window.log').open('w') as log:
+              subprocess.run([binary, '--smoke-test', str(output / 'native-window.json'),
+                              '--smoke-download', str(output / 'native-export.txt')],
+                             stdout=log, stderr=subprocess.STDOUT, check=True, timeout=180)
+          report = json.loads((output / 'native-window.json').read_text())
+          assert report.get('passed') is True, report
+          for attempt in range(30):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8787/__shantu__/status', timeout=1)
+              except Exception:
+                  break
+              time.sleep(.2)
+          else:
+              raise AssertionError('Native app left its owned server running after exit')
+          PY
           shasum -a 256 "$image" > "$RUNNER_TEMP/dmg-output/SHA256SUMS.txt"
-          printf 'OS=%s\narch=%s\nmount=PASS\nmanifest=PASS\nnative_node=PASS\nserver=PASS\nrepeat_start=PASS\nGUI_Gatekeeper=NOT_TESTED\n' "$(sw_vers -productVersion)" "$(uname -m)" > "$RUNNER_TEMP/dmg-output/verification.txt"
+          printf 'OS=%s\narch=%s\nmount=PASS\nmanifest=PASS\nnative_node=PASS\nserver=PASS\nrepeat_start=PASS\nnative_window_storage_export=PASS\nowned_server_exit=PASS\nGatekeeper_notarization=NOT_TESTED\n' "$(sw_vers -productVersion)" "$(uname -m)" > "$RUNNER_TEMP/dmg-output/verification.txt"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
         with:
           name: macos-dmg-${{ matrix.os }}
           path: ${{ runner.temp }}/dmg-output/

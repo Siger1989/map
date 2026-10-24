@@ -96,15 +96,17 @@ type manifest struct {
 type payload struct {
 	manifest manifest
 	files    map[string][]byte
+	launcher []byte
 }
 
 func main() {
 	input := flag.String("input", "", "portable macOS ZIP package")
 	output := flag.String("output", "", "new DMG output path")
 	iconPath := flag.String("icon", "", "PNG or JPEG app icon source")
+	launcherPath := flag.String("launcher", "", "universal arm64/x86_64 macOS app executable")
 	flag.Parse()
-	if *input == "" || *output == "" || *iconPath == "" {
-		fatalf("-input, -output, and -icon are required")
+	if *input == "" || *output == "" || *iconPath == "" || *launcherPath == "" {
+		fatalf("-input, -output, -icon, and -launcher are required")
 	}
 	if !strings.EqualFold(filepath.Ext(*output), ".dmg") {
 		fatalf("output path must end in .dmg")
@@ -115,10 +117,15 @@ func main() {
 		fatalf("cannot inspect output path")
 	}
 
+	launcher, err := readLauncher(*launcherPath)
+	if err != nil {
+		fatalf("launcher validation failed: %v", err)
+	}
 	p, err := readPayload(*input)
 	if err != nil {
 		fatalf("input validation failed: %v", err)
 	}
+	p.launcher = launcher
 	iconBytes, err := makeIcon(*iconPath)
 	if err != nil {
 		fatalf("icon validation failed: %v", err)
@@ -355,11 +362,90 @@ func checkMachO(data []byte, expectedCPU uint32) error {
 	if len(data) < 8 {
 		return errors.New("truncated Mach-O")
 	}
-	if binary.LittleEndian.Uint32(data[:4]) != 0xfeedfacf {
+	var order binary.ByteOrder
+	switch string(data[:4]) {
+	case "\xcf\xfa\xed\xfe":
+		order = binary.LittleEndian
+	case "\xfe\xed\xfa\xcf":
+		order = binary.BigEndian
+	default:
 		return errors.New("unrecognized Mach-O magic")
 	}
-	if binary.LittleEndian.Uint32(data[4:8]) != expectedCPU {
+	if order.Uint32(data[4:8]) != expectedCPU {
 		return errors.New("wrong CPU type")
+	}
+	return nil
+}
+
+func readLauncher(filename string) ([]byte, error) {
+	info, err := os.Stat(filename)
+	if err != nil || !info.Mode().IsRegular() {
+		return nil, errors.New("launcher must be a readable regular Mach-O file")
+	}
+	if info.Size() < 8 || info.Size() > 512<<20 {
+		return nil, errors.New("launcher size is outside the 8-byte to 512-MiB safety range")
+	}
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, errors.New("launcher cannot be read")
+	}
+	if err := checkUniversalMachO(data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// checkUniversalMachO accepts only a real universal 64-bit Mach-O containing
+// both Apple Silicon and Intel slices. Scripts and thin executables are refused.
+func checkUniversalMachO(data []byte) error {
+	if len(data) < 8 {
+		return errors.New("launcher is not a universal Mach-O executable")
+	}
+	magic := binary.BigEndian.Uint32(data[:4])
+	var order binary.ByteOrder = binary.BigEndian
+	var is64 bool
+	switch magic {
+	case 0xcafebabe:
+	case 0xcafebabf:
+		is64 = true
+	case 0xbebafeca:
+		order = binary.LittleEndian
+	case 0xbfbafeca:
+		order = binary.LittleEndian
+		is64 = true
+	default:
+		return errors.New("launcher must be a universal Mach-O binary, not a script or thin executable")
+	}
+	count := order.Uint32(data[4:8])
+	entrySize := uint64(20)
+	if is64 {
+		entrySize = 32
+	}
+	if count < 2 || count > 32 || uint64(len(data)) < 8+uint64(count)*entrySize {
+		return errors.New("launcher has an invalid universal Mach-O architecture table")
+	}
+	found := map[uint32]bool{}
+	for i := uint32(0); i < count; i++ {
+		entry := 8 + uint64(i)*entrySize
+		cpu := order.Uint32(data[entry : entry+4])
+		var offset, size uint64
+		if is64 {
+			offset = order.Uint64(data[entry+8 : entry+16])
+			size = order.Uint64(data[entry+16 : entry+24])
+		} else {
+			offset = uint64(order.Uint32(data[entry+8 : entry+12]))
+			size = uint64(order.Uint32(data[entry+12 : entry+16]))
+		}
+		if (cpu != 0x0100000c && cpu != 0x01000007) || found[cpu] || size < 8 || offset > uint64(len(data)) || size > uint64(len(data))-offset {
+			return errors.New("launcher universal slices are invalid or contain duplicate/unsupported architectures")
+		}
+		if err := checkMachO(data[offset:offset+size], cpu); err != nil {
+			return fmt.Errorf("launcher slice has invalid Mach-O header: %w", err)
+		}
+		found[cpu] = true
+	}
+	if !found[0x0100000c] || !found[0x01000007] {
+		return errors.New("launcher must contain both arm64 and x86_64 slices")
 	}
 	return nil
 }
@@ -400,14 +486,16 @@ func findChild(parent *hfsplus.Entry, name string) *hfsplus.Entry {
 }
 
 func makeVolumeTree(p *payload, iconBytes []byte) ([]*hfsplus.Entry, error) {
+	if err := checkUniversalMachO(p.launcher); err != nil {
+		return nil, fmt.Errorf("invalid native launcher: %w", err)
+	}
 	app := &hfsplus.Entry{Name: "Shantu.app", Kind: hfsplus.KindDir, Mode: 0755}
 	contents := &hfsplus.Entry{Name: "Contents", Kind: hfsplus.KindDir, Mode: 0755}
 	macOS := &hfsplus.Entry{Name: "MacOS", Kind: hfsplus.KindDir, Mode: 0755}
 	resources := &hfsplus.Entry{Name: "Resources", Kind: hfsplus.KindDir, Mode: 0755}
-	launcher := []byte("#!/bin/sh\nset -eu\nRESOURCES=\"$(CDPATH= cd -- \"$(dirname -- \"$0\")/../Resources\" && pwd)\"\nexec /usr/bin/open -a Terminal \"$RESOURCES/Start-Mac.command\"\n")
-	macOS.Children = append(macOS.Children, &hfsplus.Entry{Name: "Shantu", Kind: hfsplus.KindFile, Data: launcher, Mode: 0755})
+	macOS.Children = append(macOS.Children, &hfsplus.Entry{Name: "Shantu", Kind: hfsplus.KindFile, Data: p.launcher, Mode: 0755})
 	bundleVersion := appVersionCore(p.manifest.AppVersion)
-	plist := []byte(fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>\n<key>CFBundleName</key><string>山兔</string>\n<key>CFBundleDisplayName</key><string>山兔</string>\n<key>CFBundleExecutable</key><string>Shantu</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>%s</string>\n<key>CFBundleVersion</key><string>%s</string>\n<key>LSMinimumSystemVersion</key><string>11</string>\n<key>CFBundleIconFile</key><string>AppIcon</string>\n</dict></plist>\n", bundleVersion, bundleVersion))
+	plist := []byte(fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict>\n<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>\n<key>CFBundleName</key><string>山兔</string>\n<key>CFBundleDisplayName</key><string>山兔</string>\n<key>CFBundleExecutable</key><string>Shantu</string>\n<key>CFBundlePackageType</key><string>APPL</string>\n<key>CFBundleShortVersionString</key><string>%s</string>\n<key>CFBundleVersion</key><string>%s</string>\n<key>LSMinimumSystemVersion</key><string>13.0</string>\n<key>CFBundleIconFile</key><string>AppIcon</string>\n</dict></plist>\n", bundleVersion, bundleVersion))
 	contents.Children = append(contents.Children,
 		&hfsplus.Entry{Name: "Info.plist", Kind: hfsplus.KindFile, Data: plist, Mode: 0644},
 		&hfsplus.Entry{Name: "PkgInfo", Kind: hfsplus.KindFile, Data: []byte("APPL????"), Mode: 0644},
@@ -421,7 +509,7 @@ func makeVolumeTree(p *payload, iconBytes []byte) ([]*hfsplus.Entry, error) {
 	}
 	resources.Children = append(resources.Children, &hfsplus.Entry{Name: "AppIcon.icns", Kind: hfsplus.KindFile, Data: iconBytes, Mode: 0644})
 	sortTree(app)
-	readme := []byte(fmt.Sprintf("Shantu for macOS %s\n\nDrag Shantu.app to Applications, then double-click it to start Shantu. The app is a launcher for the existing local-browser edition: it opens Start-Mac.command in Terminal, starts the local server on port 8787, and opens the map in your browser. Keep Terminal open while using the map; quit that Terminal session to stop the server.\n", p.manifest.AppVersion))
+	readme := []byte(fmt.Sprintf("Shantu for macOS %s\n\nDrag Shantu.app to Applications, then double-click it to open the map in the Shantu app window. The app starts its bundled local service and displays the map in a native WebKit window. Quit Shantu to stop the service.\n", p.manifest.AppVersion))
 	return []*hfsplus.Entry{
 		app,
 		{Name: "Applications", Kind: hfsplus.KindSymlink, Target: "/Applications", Mode: 0755},

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/binary"
+	"os"
 	"strings"
 	"testing"
 
@@ -76,6 +78,48 @@ func TestCheckMachOThinArchitectures(t *testing.T) {
 	}
 }
 
+func TestCheckUniversalMachORequiresArm64AndX8664(t *testing.T) {
+	valid := universalFixture(0x0100000c, 0x01000007)
+	if err := checkUniversalMachO(valid); err != nil {
+		t.Fatalf("valid universal launcher rejected: %v", err)
+	}
+	for name, data := range map[string][]byte{
+		"shell script": []byte("#!/bin/sh\necho launcher\n"),
+		"thin arm64":   thinFixture(0x0100000c),
+		"missing x64":  universalFixture(0x0100000c),
+		"duplicate":    universalFixture(0x0100000c, 0x0100000c),
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := checkUniversalMachO(data); err == nil {
+				t.Fatal("invalid launcher accepted")
+			}
+		})
+	}
+	badOffset := append([]byte(nil), valid...)
+	binary.BigEndian.PutUint32(badOffset[16:20], 0xff)
+	if err := checkUniversalMachO(badOffset); err == nil {
+		t.Fatal("out-of-range slice accepted")
+	}
+}
+
+func TestReadLauncherRequiresUniversalMachO(t *testing.T) {
+	path := t.TempDir() + "/launcher"
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readLauncher(path); err == nil {
+		t.Fatal("script launcher accepted")
+	}
+	want := universalFixture(0x0100000c, 0x01000007)
+	if err := os.WriteFile(path, want, 0644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := readLauncher(path)
+	if err != nil || !bytes.Equal(got, want) {
+		t.Fatalf("readLauncher() error = %v; bytes match = %v", err, bytes.Equal(got, want))
+	}
+}
+
 func TestIsSafeSemver(t *testing.T) {
 	for _, version := range []string{"0.2.133-test", "1.0.0", "2.3.4-alpha.1+build.7"} {
 		if !isSafeSemver(version) {
@@ -115,20 +159,63 @@ func TestParsePackageRoot(t *testing.T) {
 
 func TestVolumeVersionMetadataComesFromManifest(t *testing.T) {
 	version := "0.2.133-test"
-	children, err := makeVolumeTree(&payload{manifest: manifest{AppVersion: version}, files: map[string][]byte{}}, nil)
+	launcher := universalFixture(0x0100000c, 0x01000007)
+	startCommand := []byte("#!/bin/sh\necho legacy payload retained\n")
+	if _, err := makeVolumeTree(&payload{manifest: manifest{AppVersion: version}, files: map[string][]byte{}, launcher: []byte("#!/bin/sh\n")}, nil); err == nil {
+		t.Fatal("volume accepted a shell launcher")
+	}
+	children, err := makeVolumeTree(&payload{manifest: manifest{AppVersion: version}, files: map[string][]byte{"Start-Mac.command": startCommand}, launcher: launcher}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	app := findEntry(&hfsplus.Entry{Kind: hfsplus.KindDir, Children: children}, "Shantu.app")
 	plist := string(findEntry(app, "Contents/Info.plist").Data)
 	if !strings.Contains(plist, "<key>CFBundleShortVersionString</key><string>0.2.133</string>") ||
-		!strings.Contains(plist, "<key>CFBundleVersion</key><string>0.2.133</string>") {
+		!strings.Contains(plist, "<key>CFBundleVersion</key><string>0.2.133</string>") ||
+		!strings.Contains(plist, "<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>") ||
+		!strings.Contains(plist, "<key>LSMinimumSystemVersion</key><string>13.0</string>") {
 		t.Fatalf("plist does not use the version core: %s", plist)
 	}
+	executable := findEntry(app, "Contents/MacOS/Shantu")
+	if executable == nil || executable.Mode != 0755 || !bytes.Equal(executable.Data, launcher) {
+		t.Fatal("app executable is not the supplied universal launcher with executable mode")
+	}
+	retainedCommand := findEntry(app, "Contents/Resources/Start-Mac.command")
+	if retainedCommand == nil || retainedCommand.Mode != 0755 || !bytes.Equal(retainedCommand.Data, startCommand) {
+		t.Fatal("existing payload command or its executable mode was not preserved")
+	}
 	readme := findEntry(&hfsplus.Entry{Kind: hfsplus.KindDir, Children: children}, "README.txt")
-	if readme == nil || !strings.Contains(string(readme.Data), "Shantu for macOS "+version) {
+	if readme == nil || !strings.Contains(string(readme.Data), "Shantu for macOS "+version) || strings.Contains(string(readme.Data), "Terminal") {
 		t.Fatal("volume README does not use the manifest appVersion")
 	}
+}
+
+func universalFixture(cpus ...uint32) []byte {
+	const headerSize = 8
+	const entrySize = 20
+	const sliceSize = 8
+	out := make([]byte, headerSize+entrySize*len(cpus)+sliceSize*len(cpus))
+	binary.BigEndian.PutUint32(out, 0xcafebabe)
+	binary.BigEndian.PutUint32(out[4:], uint32(len(cpus)))
+	offset := uint32(headerSize + entrySize*len(cpus))
+	for i, cpu := range cpus {
+		entry := headerSize + i*entrySize
+		binary.BigEndian.PutUint32(out[entry:], cpu)
+		binary.BigEndian.PutUint32(out[entry+8:], offset)
+		binary.BigEndian.PutUint32(out[entry+12:], sliceSize)
+		slice := int(offset)
+		copy(out[slice:slice+4], []byte{0xcf, 0xfa, 0xed, 0xfe})
+		binary.LittleEndian.PutUint32(out[slice+4:], cpu)
+		offset += sliceSize
+	}
+	return out
+}
+
+func thinFixture(cpu uint32) []byte {
+	data := make([]byte, 8)
+	copy(data, []byte{0xcf, 0xfa, 0xed, 0xfe})
+	binary.LittleEndian.PutUint32(data[4:], cpu)
+	return data
 }
 
 func findEntry(parent *hfsplus.Entry, path string) *hfsplus.Entry {
