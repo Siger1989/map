@@ -233,7 +233,7 @@ test('switching raster binding cancels its inputs and starts a separate request 
   }
 });
 
-test('eight bounded pipelines can download ahead of two worker slots', async () => {
+test('four bounded pipelines can download ahead of two worker slots', async () => {
   const previousWorker = globalThis.Worker, previousWindow = globalThis.window;
   const previousFetch = globalThis.fetch, previousSetTimeout = globalThis.setTimeout;
   const workers = [], timers = [];
@@ -257,14 +257,14 @@ test('eight bounded pipelines can download ahead of two worker slots', async () 
     const requests = urls.map(url => coordinates.protocol({ url }, new AbortController()));
     for (let i = 0; i < 50 && workers.length < 2; i++) await tick();
     assert.equal(workers.length, 2);
-    assert.equal(timers.length, 8, 'only eight requests may occupy the network/warp pipeline');
+    assert.equal(timers.length, 4, 'only four requests may occupy the network/warp pipeline');
     assert.ok(timers.every(timer => timer.delay === 20000));
     workers[0].completed = true;
     workers[0].complete();
     await requests[0];
     for (let i = 0; i < 50 && workers.length < 3; i++) await tick();
     assert.equal(workers.length, 3);
-    assert.equal(timers.length, 9, 'the ninth request enters only after a pipeline slot is released');
+    assert.equal(timers.length, 5, 'the fifth request enters only after a pipeline slot is released');
     let completedWorkers = 1;
     while (completedWorkers < urls.length) {
       for (let i = 0; i < 50 && !workers.some(candidate => !candidate.completed); i++) await tick();

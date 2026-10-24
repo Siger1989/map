@@ -1004,8 +1004,8 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
         try {
-          // Share a bounded image queue across both maps; decoding workers stay bounded separately.
-          maplibre.setMaxParallelImageRequests(32);
+          // Keep a bounded image queue across both maps; decoding workers stay bounded separately.
+          maplibre.setMaxParallelImageRequests(16);
           if (!offlineMapProtocolRegistered) {
             maplibre.addProtocol('tripcache', offlineMapProtocol);
             offlineMapProtocolRegistered = true;

@@ -37,7 +37,8 @@ final class MapTileProxy {
     private static final long CANCEL_TOMBSTONE_MS = 30_000L;
     private static final int MAX_CANCEL_TOMBSTONES = 128;
     private static final Object REQUEST_LOCK = new Object();
-    private static final MapTransferBudget TRANSFER_BUDGET=new MapTransferBudget(32,16,16,4);
+    // Keep interactive map traffic at the pre-137 limit; bulk downloads have their own budget.
+    private static final MapTransferBudget TRANSFER_BUDGET=new MapTransferBudget(24,8,16,4);
     private static final Map<String, RequestControl> ACTIVE_REQUESTS = new HashMap<>();
     private static final Map<String, Long> CANCELLED_BEFORE_START = new HashMap<>();
     private static final Object CONNECTION_POOL_LOCK = new Object();

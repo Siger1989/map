@@ -76,13 +76,13 @@ async function finishTiles(requests, from, expected) {
   while (from < expected) {
     await waitFor(() => requests.length > from, 'remaining tile work should start');
     const to = Math.min(requests.length, expected);
-    assert.ok(to - from <= 8, 'each wave remains bounded to eight active requests');
+    assert.ok(to - from <= 2, 'each wave remains bounded to two active requests');
     await settleBatches(requests, from, to);
     from = to;
   }
 }
 
-test('fixed-detail view starts eight tiles at once, gates the ninth, closes bitmaps, and adds the image', async t => {
+test('fixed-detail view starts two tiles at once, gates the third, closes bitmaps, and adds the image', async t => {
   const { map, state, drawn, closed } = fixture(t);
   const requests = [];
   const patch = new RasterDetailPatch(map, (url, signal) => {
@@ -90,14 +90,14 @@ test('fixed-detail view starts eight tiles at once, gates the ninth, closes bitm
   });
   patch.sync('overview', 5);
   const expectedTiles = detailPatch(0, 0, 5, [-30, -25, 30, 25]).tiles.length;
-  await waitFor(() => requests.length === 8, 'initial batch should fill eight slots');
-  assert.equal(requests.length, 8);
-  await settleBatches(requests, 0, 8);
-  await waitFor(() => requests.length > 8, 'the next batch should start after active requests finish');
-  assert.equal(requests.length, 16, 'only the first eight can start before any response settles');
-  await finishTiles(requests, 8, expectedTiles);
+  await waitFor(() => requests.length === 2, 'initial batch should fill two slots');
+  assert.equal(requests.length, 2);
+  await settleBatches(requests, 0, 2);
+  await waitFor(() => requests.length > 2, 'the next batch should start after active requests finish');
+  assert.equal(requests.length, 4, 'only the first two can start before any response settles');
+  await finishTiles(requests, 2, expectedTiles);
   await waitFor(() => state.addedSources.length === 1, 'completed fixed-detail patch should submit an image source');
-  assert.ok(requests.length > 8, 'the view fixture covers more than eight tiles');
+  assert.ok(requests.length > 2, 'the view fixture covers more than two tiles');
   assert.equal(requests.length, expectedTiles);
   assert.equal(drawn.length, requests.length);
   assert.equal(closed.length, drawn.length, 'all decoded bitmaps are closed after drawing');
@@ -114,14 +114,14 @@ test('changing the view aborts the old request set and prevents its output from 
     const gate = deferred(); requests.push({ url, signal, gate }); return gate.promise;
   });
   patch.sync('overview', 5);
-  await waitFor(() => requests.length === 8, 'old view should start its first bounded batch');
-  const oldRequests = requests.slice(0, 8);
+  await waitFor(() => requests.length === 2, 'old view should start its first bounded batch');
+  const oldRequests = requests.slice(0, 2);
 
   const newBounds = [45, -25, 105, 25];
   state.bounds = { getWest: () => newBounds[0], getSouth: () => newBounds[1], getEast: () => newBounds[2], getNorth: () => newBounds[3] };
   const newTileCount = detailPatch(0, 0, 5, newBounds).tiles.length;
   state.handler();
-  await waitFor(() => requests.length > 8, 'new view should begin after old work is cancelled');
+  await waitFor(() => requests.length > 2, 'new view should begin after old work is cancelled');
   assert.ok(oldRequests.every(request => request.signal.aborted), 'view change aborts every old in-flight request');
   for (const request of oldRequests) request.gate.resolve(response);
   await tick(); await tick();
@@ -129,9 +129,9 @@ test('changing the view aborts the old request set and prevents its output from 
   assert.equal(state.addedLayers.length, 0);
   assert.equal(closed.length, drawn.length, 'any decoded old-view bitmap is closed');
 
-  const newRequests = requests.slice(8);
+  const newRequests = requests.slice(2);
   assert.ok(newRequests.every(request => !request.signal.aborted));
-  await finishTiles(requests, 8, 8 + newTileCount);
+  await finishTiles(requests, 2, 2 + newTileCount);
   for (let i = 0; i < 100 && state.addedSources.length === 0; i++) await tick();
   assert.equal(state.addedSources.length, 1, 'new view may publish after all its tiles finish');
   assert.equal(state.addedLayers.length, 1);

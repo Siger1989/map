@@ -35,7 +35,7 @@ export class RasterDetailPatch {
     report('正在加载固定级别影像…');
     let cursor=0, completed=0;
     try {
-      await Promise.all(Array.from({length:8},async()=>{
+      await Promise.all(Array.from({length:2},async()=>{
         while(cursor<patch.tiles.length && !controller.signal.aborted) {
           const tile=patch.tiles[cursor++];
           const url=template.replace('{z}',String(tile.z)).replace('{x}',String(tile.x)).replace('{y}',String(source.scheme==='tms'?2**tile.z-tile.y-1:tile.y)).replace('{ratio}','');

@@ -25,11 +25,11 @@ export class RasterCoordinates {
   private cache = new Map<string, ArrayBuffer>();
   private cacheBytes = 0;
   private stages = {
-    pipeline: { active: 0, limit: 8, waiting: new Set<() => void>() },
+    pipeline: { active: 0, limit: 4, waiting: new Set<() => void>() },
     worker: { active: 0, limit: 2, waiting: new Set<() => void>() },
   };
   private idleWorkers: Worker[] = [];
-  private inputTiles = new SharedTileFetch(8, 96);
+  private inputTiles = new SharedTileFetch(4, 96);
   private stats = { started: 0, completed: 0, cancelled: 0, failed: 0, outputHits: 0 };
   private timings: Record<string, { count: number; totalMs: number; maxMs: number }> = {};
   private closed = false;
