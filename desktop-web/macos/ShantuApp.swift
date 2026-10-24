@@ -8,6 +8,13 @@ private let statusURL = URL(string: "http://127.0.0.1:8787/__shantu__/status")!
 @main
 @MainActor
 final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+    private struct PendingDownload {
+        let temporaryURL: URL
+        let destinationURL: URL
+        let mayReplaceExisting: Bool
+        let isSmokeTest: Bool
+    }
+
     private static var retainedDelegate: ShantuApp?
     private var appVersion: String {
         guard let resource = Bundle.main.resourceURL,
@@ -22,6 +29,7 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
     private var smokeJSONPath: URL?
     private var smokeDownloadPath: URL?
     private var smokeDownloadContinuation: CheckedContinuation<Void, Error>?
+    private var pendingDownloads: [ObjectIdentifier: PendingDownload] = [:]
     private var smokeFinished = false
     private var smokeStarted = false
 
@@ -64,6 +72,22 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
     private func createWindow() {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
+        if smokeJSONPath != nil {
+            let diagnostics = """
+            (() => {
+              window.__shantuNativeErrors = [];
+              const record = value => { try { if(window.__shantuNativeErrors.length<50)
+                window.__shantuNativeErrors.push(String(value).slice(0,1000)); } catch {} };
+              addEventListener('error', event => { const target=event.target;
+                record(event.message || target?.src || target?.href || event.error || 'window error'); }, true);
+              addEventListener('unhandledrejection', event => record(event.reason || 'unhandled rejection'));
+              const original = console.error.bind(console);
+              console.error = (...values) => { values.forEach(record); original(...values); };
+            })();
+            """
+            configuration.userContentController.addUserScript(WKUserScript(
+                source: diagnostics, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -254,7 +278,16 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                     userInfo: [NSLocalizedDescriptionKey: "smoke 下载目标文件已存在。"])))
                 return
             }
-            completionHandler(smokePath)
+            guard let temporary = temporaryURL(for: smokePath) else {
+                completionHandler(nil)
+                finishSmokeDownload(.failure(NSError(domain: "ShantuSmoke", code: 6,
+                    userInfo: [NSLocalizedDescriptionKey: "无法创建 smoke 下载临时路径。"])))
+                return
+            }
+            pendingDownloads[ObjectIdentifier(download)] = PendingDownload(
+                temporaryURL: temporary, destinationURL: smokePath,
+                mayReplaceExisting: false, isSmokeTest: true)
+            completionHandler(temporary)
             return
         }
         let panel = NSSavePanel()
@@ -265,40 +298,75 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                 completionHandler(nil)
                 return
             }
-            do {
-                if FileManager.default.fileExists(atPath: destination.path) {
-                    try FileManager.default.removeItem(at: destination)
-                }
-                completionHandler(destination)
-            } catch {
+            guard let self, let temporary = self.temporaryURL(for: destination) else {
                 completionHandler(nil)
-                self?.showDownloadError(error.localizedDescription)
+                self?.showDownloadError("无法创建下载临时路径。")
+                return
             }
+            let exists = FileManager.default.fileExists(atPath: destination.path)
+            self.pendingDownloads[ObjectIdentifier(download)] = PendingDownload(
+                temporaryURL: temporary, destinationURL: destination,
+                mayReplaceExisting: exists, isSmokeTest: false)
+            completionHandler(temporary)
         }
     }
 
     func downloadDidFinish(_ download: WKDownload) {
-        guard let smokePath = smokeDownloadPath else { return }
+        let identifier = ObjectIdentifier(download)
+        guard let pending = pendingDownloads.removeValue(forKey: identifier) else { return }
         do {
-            let contents = try String(contentsOf: smokePath, encoding: .utf8)
-            guard contents == "shantu-wkdownload-smoke" else {
-                throw NSError(domain: "ShantuSmoke", code: 4,
-                    userInfo: [NSLocalizedDescriptionKey: "WKDownload 文件内容与测试值不符。"])
+            if pending.isSmokeTest {
+                let contents = try String(contentsOf: pending.temporaryURL, encoding: .utf8)
+                guard contents == "shantu-wkdownload-smoke" else {
+                    throw NSError(domain: "ShantuSmoke", code: 4,
+                        userInfo: [NSLocalizedDescriptionKey: "WKDownload 文件内容与测试值不符。"])
+                }
             }
-            finishSmokeDownload(.success(()))
+            try commitDownload(pending)
+            if pending.isSmokeTest { finishSmokeDownload(.success(())) }
         } catch {
-            finishSmokeDownload(.failure(error))
+            try? FileManager.default.removeItem(at: pending.temporaryURL)
+            if pending.isSmokeTest { finishSmokeDownload(.failure(error)) }
+            else { showDownloadError(error.localizedDescription) }
         }
     }
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        if smokeDownloadPath != nil {
+        let pending = pendingDownloads.removeValue(forKey: ObjectIdentifier(download))
+        if let pending { try? FileManager.default.removeItem(at: pending.temporaryURL) }
+        if pending?.isSmokeTest == true || smokeDownloadPath != nil {
             finishSmokeDownload(.failure(error))
             return
         }
         let nsError = error as NSError
         guard nsError.code != NSURLErrorCancelled else { return }
         showDownloadError(error.localizedDescription)
+    }
+
+    private func temporaryURL(for destination: URL) -> URL? {
+        let folder = destination.deletingLastPathComponent()
+        guard FileManager.default.fileExists(atPath: folder.path) else { return nil }
+        for _ in 0..<8 {
+            let name = ".\(destination.lastPathComponent).shantu-\(UUID().uuidString).download"
+            let candidate = folder.appendingPathComponent(name)
+            if !FileManager.default.fileExists(atPath: candidate.path) { return candidate }
+        }
+        return nil
+    }
+
+    private func commitDownload(_ pending: PendingDownload) throws {
+        let manager = FileManager.default
+        let exists = manager.fileExists(atPath: pending.destinationURL.path)
+        if exists {
+            guard pending.mayReplaceExisting else {
+                throw NSError(domain: "Shantu", code: 7,
+                    userInfo: [NSLocalizedDescriptionKey: "下载期间目标文件被其他程序创建，已保留原文件。"])
+            }
+            _ = try manager.replaceItemAt(pending.destinationURL, withItemAt: pending.temporaryURL,
+                                          backupItemName: nil, options: [])
+        } else {
+            try manager.moveItem(at: pending.temporaryURL, to: pending.destinationURL)
+        }
     }
 
     private func showDownloadError(_ message: String) {
@@ -319,7 +387,7 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                  initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
         let panel = NSOpenPanel()
         panel.canChooseFiles = true
-        panel.canChooseDirectories = false
+        panel.canChooseDirectories = parameters.allowsDirectories
         panel.allowsMultipleSelection = parameters.allowsMultipleSelection
         panel.allowedContentTypes = [.item]
         panel.begin { response in completionHandler(response == .OK ? panel.urls : nil) }
@@ -336,8 +404,16 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
         let script = """
         (() => { const c=document.querySelector('canvas.maplibregl-canvas') || document.querySelector('canvas');
           let gl=false; try { gl=!!c?.getContext('webgl2'); } catch(e) {}
+          let probeGL=false; try { const p=document.createElement('canvas').getContext('webgl2');
+            probeGL=!!(p && !p.isContextLost()); p?.getExtension('WEBGL_lose_context')?.loseContext(); } catch(e) {}
+          const root=document.getElementById('root');
           return {ready:document.readyState, title:document.title, canvas:!!c, webgl2:gl,
-                  mapUI:!!document.querySelector('.maplibregl-map'), url:location.href}; })()
+                  mapUI:!!document.querySelector('.maplibregl-map'), url:location.href,
+                  compatibility:{webgl2:probeGL,worker:typeof Worker==='function',wasm:typeof WebAssembly==='object',
+                    userAgent:navigator.userAgent}, compatibilityText:root?.querySelector('details pre')?.textContent||'',
+                  rootText:(root?.innerText||'').slice(0,8000),rootHTML:(root?.innerHTML||'').slice(0,12000),
+                  errors:(window.__shantuNativeErrors||[]).slice(0,50),
+                  scripts:Array.from(document.scripts).map(s=>s.src).filter(Boolean)}; })()
         """
         do {
             var result: [String: Any] = [:]
@@ -349,6 +425,14 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                 try await Task.sleep(for: .milliseconds(500))
             }
             let storageResult = try await runStorageSmoke()
+            var passed = result["ready"] as? String == "complete" &&
+                result["canvas"] as? Bool == true && result["webgl2"] as? Bool == true &&
+                result["mapUI"] as? Bool == true && storageResult["localStorage"] == true &&
+                storageResult["indexedDB"] == true
+            if !passed {
+                let _: Any? = try await webView.evaluateJavaScript(
+                    "const d=document.querySelector('#root details'); if(d)d.open=true; true")
+            }
             let snapshot = try await webView.takeSnapshot(configuration: nil)
             guard let tiff = snapshot.tiffRepresentation,
                   let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) else {
@@ -356,10 +440,6 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
             }
             let pngURL = output.deletingPathExtension().appendingPathExtension("png")
             try png.write(to: pngURL, options: .atomic)
-            var passed = result["ready"] as? String == "complete" &&
-                result["canvas"] as? Bool == true && result["webgl2"] as? Bool == true &&
-                result["mapUI"] as? Bool == true && storageResult["localStorage"] == true &&
-                storageResult["indexedDB"] == true
             var downloadResult: [String: Any] = ["requested": false]
             if let downloadPath = smokeDownloadPath {
                 try await runBlobDownloadSmoke()

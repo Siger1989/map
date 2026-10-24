@@ -6,7 +6,7 @@ The DMG contains `Shantu.app` and an `Applications` link. `Shantu.app/Contents/M
 
 ## Build
 
-Use Go 1.24 or newer. Build the standalone universal launcher with the Swift agent's `desktop-web/macos/build-launcher.sh`, then pass either the public or private portable ZIP, the project logo PNG, and the compiled Mach-O executable:
+Use Go 1.24 or newer. Build the standalone universal launcher with `desktop-web/macos/build-launcher.sh`, then pass the private portable ZIP, the project logo PNG, and the compiled Mach-O executable. Public fixtures remain available only for credential-free CI tests; user deliveries include the registered Tianditu configuration.
 
 ```powershell
 $zip = Resolve-Path (Read-Host 'Path to the validated public or private macOS ZIP')
