@@ -376,7 +376,7 @@ export async function downloadTrip(
         try { update(); } catch (error) { fatal ||= stopReason(error); }
       }
   };
-  const concurrency = trip.provider === 'imported' ? 8 : 3;
+  const concurrency = trip.provider === 'imported' ? 16 : 3;
   await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, () => worker()));
   let checkpointError = '';
   try { update(true); } catch (error) { checkpointError = (error as Error).message; }

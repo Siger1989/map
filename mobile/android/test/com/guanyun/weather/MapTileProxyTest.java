@@ -60,8 +60,11 @@ public final class MapTileProxyTest {
         }
     }
     public static void main(String[] args) throws Exception {
-        check(MapTileProxy.MAX_ACTIVE_REQUESTS==8 && MapTileProxy.MAX_ACTIVE_PER_HOST==8,
-            "eight-worker offline downloads fit global and per-host transport caps");
+        check(MapTileProxy.MAX_ACTIVE_REQUESTS==32 && MapTileProxy.MAX_ACTIVE_PER_HOST==32,
+            "map and offline traffic fit total and same-host transport caps");
+        Field idleCap=MapTileProxy.class.getDeclaredField("MAX_IDLE_CONNECTIONS");idleCap.setAccessible(true);
+        Field idleHostCap=MapTileProxy.class.getDeclaredField("MAX_IDLE_PER_HOST");idleHostCap.setAccessible(true);
+        check(idleCap.getInt(null)==32&&idleHostCap.getInt(null)==32,"bounded shared keep-alive pool supports 32 connections total and per host");
         check(MapTileProxy.isPublicAddress(InetAddress.getByName("8.8.8.8")), "public IPv4");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("127.0.0.1")), "loopback IPv4");
         check(!MapTileProxy.isPublicAddress(InetAddress.getByName("10.1.2.3")), "private IPv4");

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
+import { readFile } from 'node:fs/promises';
 
 const mocks = new Map([
   ['./nativeOffline.ts', `
@@ -50,14 +51,26 @@ const mocks = new Map([
   `],
 ]);
 
-const bundled = await build({
-  entryPoints: ['modules/outdoor/offline.ts'], bundle: true, platform: 'node', format: 'esm', write: false,
-  plugins: [{ name: 'mock-imported-route-backend', setup(build) {
+const mockPlugin = { name: 'mock-imported-route-backend', setup(build) {
     build.onResolve({ filter: /.*/ }, args => mocks.has(args.path) ? { path: args.path, namespace: 'imported-route-mock' } : undefined);
     build.onLoad({ filter: /.*/, namespace: 'imported-route-mock' }, args => ({ contents: mocks.get(args.path), loader: 'js' }));
-  } }],
-});
-const api = await import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].contents).toString('base64')}`);
+  } };
+const concurrencyVariant = size => ({ name: `download-concurrency-${size}`, setup(build) {
+  build.onLoad({ filter: /modules[\\/]outdoor[\\/]offline\.ts$/ }, async args => ({
+    contents: (await readFile(args.path, 'utf8')).replace(
+      "trip.provider === 'imported' ? 16 : 3", `trip.provider === 'imported' ? ${size} : 3`),
+    loader: 'ts',
+  }));
+} });
+const buildApi = async (size = 16) => {
+  const bundled = await build({
+    entryPoints: ['modules/outdoor/offline.ts'], bundle: true, platform: 'node', format: 'esm', write: false,
+    plugins: [concurrencyVariant(size), mockPlugin],
+  });
+  return import(`data:text/javascript;base64,${Buffer.from(bundled.outputFiles[0].contents).toString('base64')}`);
+};
+const api = await buildApi();
+const api8 = await buildApi(8);
 
 const tileBytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0]);
 const imageResponse = () => new Response(tileBytes, { status: 200, headers: { 'Content-Type': 'image/png' } });
@@ -78,7 +91,10 @@ async function environment(t) {
   };
   const cache = {
     async match(key) { return rows.get(key)?.clone(); },
-    async put(key, response) { state.putCount++; rows.set(key, response.clone()); },
+    async put(key, response) {
+      if (state.writeDelayMs) await new Promise(resolve => setTimeout(resolve, state.writeDelayMs));
+      state.putCount++; rows.set(key, response.clone());
+    },
     async delete(key) { return rows.delete(key); },
   };
   const local = new Map();
@@ -172,9 +188,9 @@ test('a 429 is fatal for imported downloads and does not retry', async t => {
   assert.equal(state.nativeCalls, 0);
 });
 
-test('imported downloads use a bounded eight-request pool and resume by fetching only missing URLs', async t => {
+test('imported downloads use a bounded sixteen-request pool and resume by fetching only missing URLs', async t => {
   const state = await environment(t);
-  const urls = Array.from({length: 16},(_,i)=>`https://tiles.example.test/12/${i+1}/${i+1}.png`);
+  const urls = Array.from({length: 24},(_,i)=>`https://tiles.example.test/12/${i+1}/${i+1}.png`);
   const trip = makeTrip(urls);
   const controller = new AbortController();
   const attempts = [];
@@ -189,7 +205,7 @@ test('imported downloads use a bounded eight-request pool and resume by fetching
       inFlight++;
       maxInFlight = Math.max(maxInFlight, inFlight);
       try {
-        if (inFlight === 8) { controller.abort(); allStarted(); }
+        if (inFlight === 16) { controller.abort(); allStarted(); }
         await gate;
         return imageResponse();
       } finally {
@@ -199,8 +215,8 @@ test('imported downloads use a bounded eight-request pool and resume by fetching
   await started;
   release();
   await assert.rejects(firstPass, /下载已暂停/);
-  assert.equal(maxInFlight, 8);
-  assert.ok(state.rows.size >= 1 && state.rows.size <= 8, 'only already-started requests may complete after pause');
+  assert.equal(maxInFlight, 16);
+  assert.ok(state.rows.size >= 1 && state.rows.size <= 16, 'only already-started requests may complete after pause');
 
   await api.downloadTrip(trip, new AbortController().signal, () => {}, async (url) => {
     attempts.push(url);
@@ -220,7 +236,7 @@ test('first imported failure stops scheduling, settles active requests, and chec
   const started = new Promise(resolve => { allStarted = resolve; });
   const pending = api.downloadTrip(trip, new AbortController().signal, () => {}, async (url) => {
     networkCalls++; inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
-    if (inFlight === 8) allStarted();
+    if (inFlight === 16) allStarted();
     try {
       await gate;
       if (url === urls[0]) return new Response('limited', {status: 429});
@@ -230,21 +246,21 @@ test('first imported failure stops scheduling, settles active requests, and chec
   await started;
   release();
   await assert.rejects(pending, /授权或服务额度受限/);
-  assert.equal(maxInFlight, 8);
-  assert.equal(networkCalls, 8, 'the worker pool must not start queued URLs after the first failure');
+  assert.equal(maxInFlight, 16);
+  assert.equal(networkCalls, 16, 'the worker pool must not start queued URLs after the first failure');
   assert.equal(inFlight, 0, 'failure is reported only after active requests settle');
-  assert.equal(state.rows.size, 7);
-  assert.equal(state.putCount, 7);
+  assert.equal(state.rows.size, 15);
+  assert.equal(state.putCount, 15);
   assert.equal(state.indexWrites, 2, 'failed transfer persists an initial and settled checkpoint');
   const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
-  assert.equal(saved.done, 7);
-  assert.equal(saved.bytes, tileBytes.byteLength * 7);
+  assert.equal(saved.done, 15);
+  assert.equal(saved.bytes, tileBytes.byteLength * 15);
 });
 
 test('concurrent tile writes reserve bytes before each asynchronous cache put', async t => {
   const state = await environment(t);
   state.byteLimit = tileBytes.byteLength * 3;
-  const urls = Array.from({length: 9},(_,i)=>`https://tiles.example.test/12/${i+1}/10.png`);
+  const urls = Array.from({length: 24},(_,i)=>`https://tiles.example.test/12/${i+1}/10.png`);
   const trip = makeTrip(urls);
   state.rows.set(urls[0], imageResponse());
   let inFlight = 0, maxInFlight = 0, release;
@@ -253,16 +269,42 @@ test('concurrent tile writes reserve bytes before each asynchronous cache put', 
   const started = new Promise(resolve => { allStarted = resolve; });
   const pending = api.downloadTrip(trip, new AbortController().signal, () => {}, async () => {
     inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
-    if (inFlight === 8) allStarted();
+    if (inFlight === 16) allStarted();
     try { await gate; return imageResponse(); } finally { inFlight--; }
   });
   await started;
   release();
   await assert.rejects(pending, /离线包达到/);
-  assert.equal(maxInFlight, 8);
+  assert.equal(maxInFlight, 16);
   const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
   assert.equal(saved.done, 3, 'cached tile plus only two writes that fit the shared budget');
   assert.equal(saved.bytes, tileBytes.byteLength * 3);
+});
+
+test('controlled delayed-tile simulation compares the real 8 and 16 worker download paths', async t => {
+  const state = await environment(t);
+  state.writeDelayMs = 3;
+  const urls = Array.from({length: 32},(_,i)=>`https://tiles.example.test/12/${i+1}/20.png`);
+  const trip = makeTrip(urls);
+  const measure = async (runner, poolSize) => {
+    state.rows.clear(); state.putCount = 0; state.indexWrites = 0;
+    let active = 0, peak = 0;
+    const started = performance.now();
+    await runner.downloadTrip(trip, new AbortController().signal, () => {}, async () => {
+      active++; peak = Math.max(peak, active);
+      try { await new Promise(resolve => setTimeout(resolve, 20)); return imageResponse(); }
+      finally { active--; }
+    });
+    return { poolSize, elapsedMs: performance.now() - started, peak, writes: state.putCount };
+  };
+  const eight = await measure(api8, 8);
+  const sixteen = await measure(api, 16);
+  assert.equal(eight.peak, 8);
+  assert.equal(sixteen.peak, 16);
+  assert.equal(eight.writes, urls.length);
+  assert.equal(sixteen.writes, urls.length);
+  // Record throughput without making shared-runner scheduling a correctness gate.
+  console.log(`simulated 32 tiles, 20ms fetch + 3ms cache put: 8=${eight.elapsedMs.toFixed(1)}ms peak=${eight.peak} writes=${eight.writes}; 16=${sixteen.elapsedMs.toFixed(1)}ms peak=${sixteen.peak} writes=${sixteen.writes}`);
 });
 
 test('oversized single map image reports the per-image limit', async t => {

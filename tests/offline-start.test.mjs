@@ -15,9 +15,9 @@ test('native bridge exposes the v2 imported-route chunk protocol', () => {
   assert.doesNotMatch(source,/地图缓存功能已移除/);
   const service=readFileSync('mobile/android/src/com/guanyun/weather/OfflineDownloadService.java','utf8');
   const proxy=readFileSync('mobile/android/src/com/guanyun/weather/MapTileProxy.java','utf8');
-  assert.match(service,/newFixedThreadPool\(8\);for\(int w=0;w<8;w\+\+\)/);
-  assert.match(proxy,/MAX_ACTIVE_REQUESTS\s*=\s*8/);
-  assert.match(proxy,/MAX_ACTIVE_PER_HOST\s*=\s*8/);
+  assert.match(service,/newFixedThreadPool\(16\);for\(int w=0;w<16;w\+\+\)/);
+  assert.match(proxy,/MAX_ACTIVE_REQUESTS\s*=\s*32/);
+  assert.match(proxy,/MAX_ACTIVE_PER_HOST\s*=\s*32/);
 });
 
 test('imported route estimate is passive and starts only after the explicit user click', async (t) => {

@@ -241,7 +241,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
                   <button className="route-cache-back" onClick={() => setSetupStep(batch ? 'source' : 'route')}>返回</button>
                 </div>
                 {attemptedStart && !activeTrip && offline.message && <small className="route-cache-message" role="status">{offline.message}</small>}
-                <small className="route-cache-note">{offline.background ? '后台 8 路下载，进度见通知；计入图源额度。' : '保持前台 8 路下载；计入图源额度。'}</small>
+                <small className="route-cache-note">{offline.background ? '后台 16 路下载，进度见通知；计入图源额度。' : '保持前台 16 路下载；计入图源额度。'}</small>
               </>}
             </>
           )}

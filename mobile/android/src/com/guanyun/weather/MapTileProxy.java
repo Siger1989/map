@@ -29,14 +29,15 @@ final class MapTileProxy {
     private static final int MAX_HEADER_BYTES = 32768;
     private static final int MAX_URL_LENGTH = 8192;
     private static final int MAX_REDIRECTS = 3;
-    static final int MAX_ACTIVE_REQUESTS = 8;
-    static final int MAX_ACTIVE_PER_HOST = 8;
-    private static final int MAX_IDLE_CONNECTIONS = 8;
-    private static final int MAX_IDLE_PER_HOST = 8;
+    static final int MAX_ACTIVE_REQUESTS = 32;
+    static final int MAX_ACTIVE_PER_HOST = 32;
+    private static final int MAX_IDLE_CONNECTIONS = 32;
+    private static final int MAX_IDLE_PER_HOST = 32;
     private static final long IDLE_TTL_NANOS = TimeUnit.SECONDS.toNanos(30);
     private static final long CANCEL_TOMBSTONE_MS = 30_000L;
     private static final int MAX_CANCEL_TOMBSTONES = 128;
     private static final Object REQUEST_LOCK = new Object();
+    private static final MapTransferBudget TRANSFER_BUDGET=new MapTransferBudget(32,16,16,4);
     private static final Map<String, RequestControl> ACTIVE_REQUESTS = new HashMap<>();
     private static final Map<String, Long> CANCELLED_BEFORE_START = new HashMap<>();
     private static final Object CONNECTION_POOL_LOCK = new Object();
@@ -50,7 +51,7 @@ final class MapTileProxy {
     static {
         DEADLINE_CLOSER.scheduleAtFixedRate(MapTileProxy::expireIdleConnections, 30, 30, TimeUnit.SECONDS);
     }
-    private static final java.util.concurrent.ExecutorService DNS_LOOKUP = java.util.concurrent.Executors.newFixedThreadPool(2, r -> {
+    private static final java.util.concurrent.ExecutorService DNS_LOOKUP = java.util.concurrent.Executors.newFixedThreadPool(8, r -> {
         Thread thread = new Thread(r, "map-tile-dns"); thread.setDaemon(true); return thread;
     });
 
@@ -78,11 +79,14 @@ final class MapTileProxy {
     }
 
     private static final class RequestControl {
+        final MapTransferBudget.Ticket budgetTicket;
         private volatile boolean cancelled;
         private volatile Socket socket;
         private volatile java.util.concurrent.Future<?> lookup;
+        RequestControl(MapTransferBudget.Kind kind){budgetTicket=TRANSFER_BUDGET.ticket(kind);}
         synchronized void cancel() {
             cancelled = true;
+            budgetTicket.cancel();
             Socket active = socket;
             if (active != null) try { active.close(); } catch (IOException ignored) { }
             java.util.concurrent.Future<?> pendingLookup = lookup;
@@ -159,20 +163,24 @@ final class MapTileProxy {
     interface PinnedAttempt { UpstreamResponse run(InetAddress address,long attemptDeadline) throws IOException; }
 
     static Tile fetch(String rawUrl) throws IOException {
-        return fetchInternal(rawUrl, null, false);
+        return fetchManaged(rawUrl,null,false);
     }
 
     static Tile fetch(String rawUrl, String requestId) throws IOException {
-        if (requestId == null || requestId.isEmpty() || requestId.length() > 256) return fetchInternal(rawUrl, null, false);
-        RequestControl control = registerRequest(requestId);
-        try { return fetchInternal(rawUrl, control, false); }
-        finally { unregisterRequest(requestId, control); }
+        return fetchManaged(rawUrl,requestId,false);
     }
 
     static Tile fetchOffline(String rawUrl,String requestId) throws IOException {
-        if(requestId==null||requestId.isEmpty()||requestId.length()>256)return fetchInternal(rawUrl,null,true);
-        RequestControl control=registerRequest(requestId);
-        try{return fetchInternal(rawUrl,control,true);}finally{unregisterRequest(requestId,control);}
+        return fetchManaged(rawUrl,requestId,true);
+    }
+
+    private static Tile fetchManaged(String rawUrl,String requestId,boolean offline)throws IOException{
+        boolean indexed=requestId!=null&&!requestId.isEmpty()&&requestId.length()<=256;
+        RequestControl control=indexed?registerRequest(requestId,offline?MapTransferBudget.Kind.OFFLINE:MapTransferBudget.Kind.MAP):new RequestControl(offline?MapTransferBudget.Kind.OFFLINE:MapTransferBudget.Kind.MAP);
+        try(MapTransferBudget.Lease ignored=TRANSFER_BUDGET.acquire(control.budgetTicket)){
+            control.check();return fetchInternal(rawUrl,control,offline);
+        }catch(IOException error){if(control.cancelled||Thread.currentThread().isInterrupted())throw cancelledError();throw error;}
+        finally{if(indexed)unregisterRequest(requestId,control);}
     }
 
     static void cancel(String requestId) {
@@ -192,10 +200,10 @@ final class MapTileProxy {
         }
     }
 
-    private static RequestControl registerRequest(String requestId) {
+    private static RequestControl registerRequest(String requestId,MapTransferBudget.Kind kind) {
         synchronized (REQUEST_LOCK) {
             pruneCancellationTombstones(System.nanoTime());
-            RequestControl control = new RequestControl();
+            RequestControl control = new RequestControl(kind);
             Long cancelledUntil = CANCELLED_BEFORE_START.remove(requestId);
             if (cancelledUntil != null) control.cancel();
             ACTIVE_REQUESTS.put(requestId, control);

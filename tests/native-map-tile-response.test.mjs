@@ -15,6 +15,7 @@ test('native tiles finish at Content-Length without waiting for EOF', (t) => {
   try {
     execFileSync(binary('javac'), ['--release', '8', '-d', folder,
       fileURLToPath(new URL('../mobile/android/src/com/guanyun/weather/MapTileProxy.java', import.meta.url)),
+      fileURLToPath(new URL('../mobile/android/src/com/guanyun/weather/MapTransferBudget.java', import.meta.url)),
       fileURLToPath(new URL('./android/MapTileResponseCheck.java', import.meta.url)),
     ], { windowsHide: true, stdio: 'pipe', timeout: 20000 });
     const result = execFileSync(binary('java'), ['-cp', folder, 'com.guanyun.weather.MapTileResponseCheck'],

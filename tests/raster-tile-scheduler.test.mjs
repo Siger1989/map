@@ -233,14 +233,16 @@ test('switching raster binding cancels its inputs and starts a separate request 
   }
 });
 
-test('four bounded pipelines can download ahead of two worker slots', async () => {
+test('eight bounded pipelines can download ahead of two worker slots', async () => {
   const previousWorker = globalThis.Worker, previousWindow = globalThis.window;
   const previousFetch = globalThis.fetch, previousSetTimeout = globalThis.setTimeout;
   const workers = [], timers = [];
   class HoldingWorker {
-    postMessage(_message) { workers.push(this); }
+    postMessage(_message) {
+      const worker = this;
+      workers.push({ completed: false, complete() { worker.onmessage?.({ data: { bytes: new ArrayBuffer(3) } }); } });
+    }
     terminate() { this.terminated = true; }
-    complete() { this.onmessage?.({ data: { bytes: new ArrayBuffer(3) } }); }
   }
   globalThis.Worker = HoldingWorker;
   globalThis.window = { location: { href: 'http://localhost/raster-fixture' } };
@@ -251,21 +253,29 @@ test('four bounded pipelines can download ahead of two worker slots', async () =
   try {
     coordinates.sync(['source'], 'gcj02');
     const [, bindingId] = source.tiles[0].match(/shantu-crs-[^:]+:\/\/(\d+)/);
-    const urls = [0, 1, 2].map(x => `${coordinates.scheme}://${bindingId}/2/${x}/0`);
-    const first = coordinates.protocol({ url: urls[0] }, new AbortController());
-    const second = coordinates.protocol({ url: urls[1] }, new AbortController());
-    const third = coordinates.protocol({ url: urls[2] }, new AbortController());
+    const urls = Array.from({length: 9}, (_, x) => `${coordinates.scheme}://${bindingId}/4/${x}/0`);
+    const requests = urls.map(url => coordinates.protocol({ url }, new AbortController()));
     for (let i = 0; i < 50 && workers.length < 2; i++) await tick();
     assert.equal(workers.length, 2);
-    assert.equal(timers.length, 3);
+    assert.equal(timers.length, 8, 'only eight requests may occupy the network/warp pipeline');
     assert.ok(timers.every(timer => timer.delay === 20000));
+    workers[0].completed = true;
     workers[0].complete();
-    await first;
+    await requests[0];
     for (let i = 0; i < 50 && workers.length < 3; i++) await tick();
     assert.equal(workers.length, 3);
-    assert.equal(timers.length, 3);
-    workers[1].complete(); workers[2].complete();
-    await Promise.all([second, third]);
+    assert.equal(timers.length, 9, 'the ninth request enters only after a pipeline slot is released');
+    let completedWorkers = 1;
+    while (completedWorkers < urls.length) {
+      for (let i = 0; i < 50 && !workers.some(candidate => !candidate.completed); i++) await tick();
+      const worker = workers.find(candidate => !candidate.completed);
+      assert.ok(worker, 'each admitted pipeline eventually reaches a warp worker');
+      worker.completed = true;
+      worker.complete();
+      completedWorkers++;
+      await tick();
+    }
+    await Promise.all(requests);
   } finally {
     coordinates.dispose();
     globalThis.Worker = previousWorker;
