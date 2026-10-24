@@ -5,6 +5,7 @@ import { mkdtemp, mkdir, writeFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { request, createServer } from 'node:http';
+import { connect } from 'node:net';
 test('portable web server serves public files and existing terrain APIs without exposing local files or other hosts', async (t) => {
   const compiled = await build({
     entryPoints: ['desktop-web/server.ts'],
@@ -71,6 +72,24 @@ test('portable web server serves public files and existing terrain APIs without 
     req.end();
   });
   assert.equal(foreign, 403);
+  // WebKit pipelines bootstrap assets on one HTTP/1 connection. Queued responses
+  // do not have res.socket yet, but their incoming request always has a socket.
+  const pipelined = await new Promise((accept, reject) => {
+    const port = server.address().port;
+    const socket = connect(port, '127.0.0.1');
+    let output = '';
+    socket.setEncoding('utf8');
+    socket.setTimeout(5000, () => socket.destroy(new Error('pipeline timeout')));
+    socket.on('error', reject);
+    socket.on('data', chunk => { output += chunk; });
+    socket.on('end', () => accept(output));
+    socket.on('connect', () => socket.write(
+      `GET / HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\n\r\n` +
+      `GET / HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\n\r\n` +
+      `GET / HTTP/1.1\r\nHost: unrelated.example\r\nConnection: close\r\n\r\n`
+    ));
+  });
+  assert.deepEqual([...pipelined.matchAll(/HTTP\/1\.1 (\d+)/g)].map(match => Number(match[1])), [200, 200, 403]);
 });
 
 test('starting twice reuses the same origin; unrelated services and older versions are left running', async (t) => {

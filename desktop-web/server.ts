@@ -40,7 +40,9 @@ export function createDesktopServer(root: string) {
       res.once('close', () => { if (!res.writableFinished) console.log(JSON.stringify({ asset, event: 'closed-before-finish' })); });
     }
     try {
-      const port = (res.socket?.address() as { port: number })?.port;
+      // Pipelined responses are not assigned a socket until the prior response
+      // finishes. Validate against the incoming connection, which already exists.
+      const port = req.socket.localPort;
       if (
         !['127.0.0.1:' + port, 'localhost:' + port].includes(
           req.headers.host ?? '',
