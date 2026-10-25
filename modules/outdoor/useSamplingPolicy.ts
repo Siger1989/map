@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_SAMPLING,
   SAMPLING_KEY,
@@ -12,6 +12,7 @@ export function useSamplingPolicy() {
   const [supported, setSupported] = useState(false),
     [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const updateInFlight = useRef(false);
   useEffect(() => {
     if (macBridge()) {
       let active = true;
@@ -45,13 +46,15 @@ export function useSamplingPolicy() {
   const update = async (next: SamplingPolicy) => {
     if (macBridge()) {
       if (!validSampling(next)) { setError('采样参数无效'); return false; }
+      if (updateInFlight.current) { setError('macOS 采样设置正在保存，请稍后重试'); return false; }
+      updateInFlight.current = true;
       setPending(true); setError('正在保存 macOS 采样设置…');
       try {
         const config = await configureMacRecording({ sampling: next });
         if (!validSampling(config.sampling)) throw Error('macOS 返回的采样配置无效');
         setPolicy(config.sampling as unknown as SamplingPolicy); setError(''); return true;
       } catch (e) { setError(e instanceof Error ? e.message : 'macOS 设置保存失败'); return false; }
-      finally { setPending(false); }
+      finally { updateInFlight.current = false; setPending(false); }
     }
     if (!supported || !validSampling(next)) {
       setError('采样参数无效或安装包不支持');

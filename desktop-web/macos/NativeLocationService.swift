@@ -80,6 +80,8 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
     private var archiveCorrupt = false
     private var needsNewSegment = false
     private var lastAcceptedAt: Double?
+    private var adaptiveStationary = false
+    private var adaptiveMotionState = "unknown"
     private enum PendingRecordAuthorization: Equatable { case start, resume }
     private var pendingRecordAuthorization: PendingRecordAuthorization?
 
@@ -120,6 +122,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
         snapshot["archiveCorrupt"] = archiveCorrupt
         snapshot["maximumAccuracy"] = maximumAccuracy
         snapshot["sampling"] = sampling.json
+        snapshot["adaptiveState"] = sampling.adaptive ? adaptiveMotionState : "disabled"
         return snapshot
     }
 
@@ -141,11 +144,13 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             locationSubscribed = true
             locationError = ""
             do { try ensureAuthorizationAndUpdates() }
-            catch { changed(); throw error }
+            catch { applySamplingToManager(); changed(); throw error }
+            applySamplingToManager()
             changed()
             return locationSnapshot
         case "location.stop":
             locationSubscribed = false
+            applySamplingToManager()
             stopUpdatesIfUnused()
             changed()
             return locationSnapshot
@@ -202,6 +207,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
                 manager.startUpdatingLocation()
             }
             continuePendingRecordAfterAuthorization()
+            applySamplingToManager()
         case .denied:
             failForPermission("macOS 已拒绝山兔定位权限；请在系统设置中允许定位后重新启动")
         case .restricted:
@@ -219,6 +225,8 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
         guard Self.isFreshAndValid(location, now: Date()) else { return }
         latestLocation = location
         locationError = ""
+        updateAdaptiveMotionState(from: location)
+        applySamplingToManager()
         if hasActiveRecording { append(location) }
         changed()
     }
@@ -341,10 +349,12 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
                 lastAcceptedAt = nil
             }
             archiveCorrupt = false
+            applySamplingToManager()
             do { try writeArchive() }
             catch {
                 record.phase = "paused"
                 record.error = (error as? LocalizedError)?.errorDescription ?? "记录保存失败"
+                applySamplingToManager()
                 stopUpdatesIfUnused()
                 throw error
             }
@@ -353,6 +363,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
                 pendingRecordAuthorization = nil
                 record.phase = "paused"
                 record.error = ""
+                applySamplingToManager()
                 try writeArchive()
                 return
             }
@@ -360,6 +371,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             record.phase = "paused"
             record.error = ""
             needsNewSegment = true
+            applySamplingToManager()
             try writeArchive()
             stopUpdatesIfUnused()
         case "resume":
@@ -373,10 +385,12 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             record.error = ""
             needsNewSegment = !record.segments.isEmpty
             lastAcceptedAt = record.segments.last?.last?.time
+            applySamplingToManager()
             do { try writeArchive() }
             catch {
                 record.phase = "paused"
                 record.error = (error as? LocalizedError)?.errorDescription ?? "记录保存失败"
+                applySamplingToManager()
                 stopUpdatesIfUnused()
                 throw error
             }
@@ -386,6 +400,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             if !record.id.isEmpty {
                 record.phase = "finished"
                 record.error = ""
+                applySamplingToManager()
                 try writeArchive()
             }
             stopUpdatesIfUnused()
@@ -395,6 +410,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             archiveCorrupt = false
             needsNewSegment = false
             lastAcceptedAt = nil
+            applySamplingToManager()
             try writeArchive()
             stopUpdatesIfUnused()
         default:
@@ -434,11 +450,13 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
         let oldSampling = sampling
         maximumAccuracy = newAccuracy
         sampling = newSampling
+        applySamplingToManager()
         if args["maximumAccuracy"] != nil || args["sampling"] != nil {
             do { try writeArchive() }
             catch {
                 maximumAccuracy = oldAccuracy
                 sampling = oldSampling
+                applySamplingToManager()
                 throw error
             }
         }
@@ -536,16 +554,41 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
             needsNewSegment = !record.segments.isEmpty
             lastAcceptedAt = record.segments.last?.last?.time
         }
+        applySamplingToManager()
         do { try writeArchive() }
         catch {
             record.phase = "paused"
             record.error = (error as? LocalizedError)?.errorDescription ?? "记录保存失败"
+            applySamplingToManager()
             stopUpdatesIfUnused()
         }
     }
 
     private func stopUpdatesIfUnused() {
         if !locationSubscribed && !hasActiveRecording { manager.stopUpdatingLocation() }
+    }
+
+    private func updateAdaptiveMotionState(from location: CLLocation) {
+        let speed = location.speed
+        // Core Location reports -1 when speed is unavailable. In that case,
+        // keep the configured baseline instead of guessing that the device is still.
+        guard speed.isFinite, speed >= 0 else {
+            adaptiveStationary = false
+            adaptiveMotionState = "unknown"
+            return
+        }
+        adaptiveStationary = speed < 0.5
+        adaptiveMotionState = adaptiveStationary ? "stationary" : "moving"
+    }
+
+    private func applySamplingToManager() {
+        manager.distanceFilter = Self.effectiveDistanceFilter(
+            distanceMetres: sampling.distanceMetres,
+            adaptive: sampling.adaptive,
+            stationary: adaptiveStationary,
+            locationSubscribed: locationSubscribed)
+        // Keep best accuracy so the configured maximum-accuracy gate remains meaningful.
+        // Adaptive mode reduces native update frequency through distanceFilter only.
     }
 
     private func loadArchive() {
@@ -611,6 +654,7 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
                             error: phase == "recording" ? "应用重新启动，记录已暂停并保存" : savedError)
             lastAcceptedAt = segments.last?.last?.time
             needsNewSegment = phase == "recording" || phase == "paused"
+            applySamplingToManager()
             if phase == "recording" { persistArchive() }
         } catch {
             archiveCorrupt = true
@@ -709,4 +753,14 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
         guard seconds >= interval else { return false }
         return distance >= minimumDistance || (!distanceOnly && seconds >= stationarySeconds)
     }
+
+    nonisolated static func effectiveDistanceFilter(distanceMetres: Double,
+                                                     adaptive: Bool,
+                                                     stationary: Bool,
+                                                     locationSubscribed: Bool) -> Double {
+        if locationSubscribed { return min(5, distanceMetres) }
+        if adaptive && stationary { return max(distanceMetres, 25) }
+        return distanceMetres
+    }
+
 }

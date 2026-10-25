@@ -24,17 +24,17 @@ export function RecordingPrecision({
           step={1}
           inputMode="numeric"
           value={input}
-          disabled={!preferences.supported}
+          disabled={!preferences.supported || preferences.pending}
           onChange={(e) => setInput(e.target.value)}
         />
         <button
-          disabled={!preferences.supported}
+          disabled={!preferences.supported || preferences.pending}
           onClick={() => void preferences.update(Number(input))}
         >
           应用精度设置
         </button>
         <button
-          disabled={!preferences.supported}
+          disabled={!preferences.supported || preferences.pending}
           onClick={() => {
             void preferences.update(DEFAULT_RECORDING_ACCURACY).then(saved => {
               if (saved) setInput(String(DEFAULT_RECORDING_ACCURACY));

@@ -22,16 +22,16 @@ export function RecordingCompactSettings({ recorder }: { recorder: ReturnType<ty
       <label>颜色<input aria-label="轨迹颜色" type="color" value={style.color} onChange={e => appearance.update({ ...style, color: e.target.value })} /></label>
     </div>
     <div className="record-console-grid">
-      <label>采样<select aria-label="记录模式" disabled={!sampling.supported} value={policy.mode} onChange={e => { const mode = e.target.value as SamplingPolicy['mode']; sampling.update({ ...policy, ...(mode === 'custom' ? {} : SAMPLING_PRESETS[mode]), mode }); }}><option value="power">省电</option><option value="standard">标准</option><option value="accuracy">高频</option><option value="custom">自定义</option></select></label>
-      <NumberField label="精度≤m" value={preferences.maximum} min={5} max={80} disabled={!preferences.supported} onCommit={preferences.update} />
-      <NumberField label="间隔秒" value={policy.intervalSeconds} min={1} max={30} disabled={!sampling.supported} onCommit={v => samplingNumber('intervalSeconds', v)} />
-      <NumberField label="距离m" value={policy.distanceMetres} min={1} max={100} disabled={!sampling.supported} onCommit={v => samplingNumber('distanceMetres', v)} />
+      <label>采样<select aria-label="记录模式" disabled={!sampling.supported || sampling.pending} value={policy.mode} onChange={e => { const mode = e.target.value as SamplingPolicy['mode']; sampling.update({ ...policy, ...(mode === 'custom' ? {} : SAMPLING_PRESETS[mode]), mode }); }}><option value="power">省电</option><option value="standard">标准</option><option value="accuracy">高频</option><option value="custom">自定义</option></select></label>
+      <NumberField label="精度≤m" value={preferences.maximum} min={5} max={80} disabled={!preferences.supported || preferences.pending} onCommit={preferences.update} />
+      <NumberField label="间隔秒" value={policy.intervalSeconds} min={1} max={30} disabled={!sampling.supported || sampling.pending} onCommit={v => samplingNumber('intervalSeconds', v)} />
+      <NumberField label="距离m" value={policy.distanceMetres} min={1} max={100} disabled={!sampling.supported || sampling.pending} onCommit={v => samplingNumber('distanceMetres', v)} />
     </div>
     <small className="record-accuracy-hint">精度范围 5–80 米 · 越小越严格</small>
     <div className="record-console-checks">
-      <label title="按距离记点，原地不补点"><input type="checkbox" checked={policy.distanceOnly} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, distanceOnly: e.target.checked })} />仅按距离</label>
-      <label title="静止时降低定位频率，移动后恢复"><input type="checkbox" checked={policy.adaptive} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, adaptive: e.target.checked })} />静止降频</label>
-      <label title="没有待处理记录时，开始导航自动开始新记录"><input type="checkbox" checked={policy.recordOnNavigation} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, recordOnNavigation: e.target.checked })} />导航时自动记录</label>
+      <label title="按距离记点，原地不补点"><input type="checkbox" checked={policy.distanceOnly} disabled={!sampling.supported || sampling.pending} onChange={e => sampling.update({ ...policy, distanceOnly: e.target.checked })} />仅按距离</label>
+      <label title="静止时降低定位频率，移动后恢复"><input type="checkbox" checked={policy.adaptive} disabled={!sampling.supported || sampling.pending} onChange={e => sampling.update({ ...policy, adaptive: e.target.checked })} />静止降频</label>
+      <label title="没有待处理记录时，开始导航自动开始新记录"><input type="checkbox" checked={policy.recordOnNavigation} disabled={!sampling.supported || sampling.pending} onChange={e => sampling.update({ ...policy, recordOnNavigation: e.target.checked })} />导航时自动记录</label>
     </div>
     {(preferences.error || sampling.error) && <small role="status" className="route-error">{preferences.error || sampling.error}</small>}
   </div>;

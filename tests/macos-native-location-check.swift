@@ -6,6 +6,7 @@ import CoreLocation
 struct NativeLocationServiceSmokeCheck {
     static func main() async throws {
         try checkSamplingRules()
+        try checkNativeSamplingFilters()
         try checkNativePositionSnapshotShape()
         try checkRestartRecoveryAndCorruptArchiveProtection()
         print("macOS native location checks passed")
@@ -28,6 +29,29 @@ struct NativeLocationServiceSmokeCheck {
             distance: 0, seconds: 30, interval: 4,
             minimumDistance: 5, stationarySeconds: 30, distanceOnly: true),
             "distance-only sampling accepted a stationary fix")
+    }
+
+    private static func checkNativeSamplingFilters() throws {
+        try require(NativeLocationService.effectiveDistanceFilter(
+            distanceMetres: 1, adaptive: false, stationary: false,
+            locationSubscribed: false) == 1,
+            "custom one-meter recording filter was not applied")
+        try require(NativeLocationService.effectiveDistanceFilter(
+            distanceMetres: 1, adaptive: true, stationary: true,
+            locationSubscribed: false) == 25,
+            "adaptive stationary state did not reduce native update frequency")
+        try require(NativeLocationService.effectiveDistanceFilter(
+            distanceMetres: 1, adaptive: true, stationary: false,
+            locationSubscribed: false) == 1,
+            "native filter did not return to the configured distance after motion")
+        try require(NativeLocationService.effectiveDistanceFilter(
+            distanceMetres: 1, adaptive: true, stationary: true,
+            locationSubscribed: true) == 1,
+            "active map subscription did not preserve a one-meter recording filter")
+        try require(NativeLocationService.effectiveDistanceFilter(
+            distanceMetres: 10, adaptive: false, stationary: false,
+            locationSubscribed: true) == 5,
+            "active map subscription did not cap a ten-meter filter at five meters")
     }
 
     private static func checkNativePositionSnapshotShape() throws {

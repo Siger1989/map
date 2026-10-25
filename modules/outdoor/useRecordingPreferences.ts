@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   DEFAULT_RECORDING_ACCURACY,
   LEGACY_RECORDING_ACCURACY,
@@ -13,6 +13,7 @@ export function useRecordingPreferences() {
   const [supported, setSupported] = useState(false);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const updateInFlight = useRef(false);
   useEffect(() => {
     if (macBridge()) {
       let active = true;
@@ -50,12 +51,14 @@ export function useRecordingPreferences() {
   const update = async (value: number) => {
     if (macBridge()) {
       if (!validRecordingAccuracy(value)) { setError('请输入5到80之间的整数（米）'); return false; }
+      if (updateInFlight.current) { setError('macOS 记录精度正在保存，请稍后重试'); return false; }
+      updateInFlight.current = true;
       setPending(true); setError('正在保存 macOS 记录精度…');
       try {
         const config = await configureMacRecording({ maximumAccuracy: value });
         setMaximum(readRecordingAccuracy(config.maximumAccuracy)); setError(''); return true;
       } catch (e) { setError(e instanceof Error ? e.message : 'macOS 设置保存失败'); return false; }
-      finally { setPending(false); }
+      finally { updateInFlight.current = false; setPending(false); }
     }
     if (!supported) {
       setError('当前安装包不支持此设置，请更新后使用');

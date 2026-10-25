@@ -28,7 +28,7 @@ export function SamplingSettings({
         模式
         <select
           aria-label="记录模式"
-          disabled={!settings.supported}
+          disabled={!settings.supported || settings.pending}
           value={draft.mode}
           onChange={(event) => {
             const mode = event.target.value as SamplingPolicy['mode'];
@@ -55,6 +55,7 @@ export function SamplingSettings({
               type="number"
               min={1}
               max={30}
+              disabled={!settings.supported || settings.pending}
               value={draft.intervalSeconds}
               onChange={(event) =>
                 setDraft({
@@ -71,6 +72,7 @@ export function SamplingSettings({
               type="number"
               min={1}
               max={100}
+              disabled={!settings.supported || settings.pending}
               value={draft.distanceMetres}
               onChange={(event) =>
                 setDraft({
@@ -86,6 +88,7 @@ export function SamplingSettings({
         <input
           type="checkbox"
           checked={draft.distanceOnly}
+          disabled={!settings.supported || settings.pending}
           onChange={(event) =>
             setDraft({ ...draft, distanceOnly: event.target.checked })
           }
@@ -96,6 +99,7 @@ export function SamplingSettings({
         <input
           type="checkbox"
           checked={draft.adaptive}
+          disabled={!settings.supported || settings.pending}
           onChange={(event) =>
             setDraft({ ...draft, adaptive: event.target.checked })
           }
@@ -106,6 +110,7 @@ export function SamplingSettings({
         <input
           type="checkbox"
           checked={draft.recordOnNavigation}
+          disabled={!settings.supported || settings.pending}
           onChange={(event) =>
             setDraft({ ...draft, recordOnNavigation: event.target.checked })
           }
@@ -114,7 +119,7 @@ export function SamplingSettings({
       </label>
       <div className="outdoor-actions">
         <button
-          disabled={!settings.supported}
+          disabled={!settings.supported || settings.pending}
           onClick={() => settings.update(draft)}
         >
           应用记录模式
