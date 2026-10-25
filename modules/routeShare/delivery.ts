@@ -1,4 +1,9 @@
+import { deliverMacFile } from '../platform/macNative.ts';
 export async function deliverRouteFile(file: File, share: boolean) {
+  if (window.ShantuMac?.version === 1) {
+    const result = await deliverMacFile(file, share);
+    return result === 'shared' ? '已完成系统分享' : '已保存路线文件';
+  }
   if (window.GuanyunNative) {
     if (!window.GuanyunNative.routeOutput)
       throw new Error('此 APK 不支持路线分享，请安装新版');

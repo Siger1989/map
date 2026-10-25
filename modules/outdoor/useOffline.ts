@@ -1,4 +1,4 @@
-import { nativeOffline, nativeRouteOffline, canUseNativeRouteDownload, nativeOfflineState, applyNativeProgress } from './nativeOffline';
+import { nativeRouteOffline, canUseNativeRouteDownload, applyNativeProgress, isNativeOfflineAvailable, readNativeOfflineState, nativeOfflinePause } from './nativeOffline';
 import { hydrateTripPackages, loadTripManifest } from './tripStorage';
 import { useEffect, useRef, useState } from 'react';
 import type { Coordinate } from '../navigation/types';
@@ -33,16 +33,15 @@ export function useOffline() {
     deleting.current.add(trip.id);setRemoving([...deleting.current]);
     try {
       if(activeId.current===trip.id) task.current?.abort();
-      const bridge=nativeOffline();
-      const state=nativeOfflineState();
-      if(bridge && state.id===trip.id)bridge.offlinePause();
+      const state=await readNativeOfflineState();
+      if(isNativeOfflineAvailable() && state.id===trip.id)await nativeOfflinePause();
       const deadline=Date.now()+35000;
       while(activeId.current===trip.id && task.current) {
         if(Date.now()>deadline)throw Error('正在停止下载，请稍后重试移除');
         await new Promise(resolve=>setTimeout(resolve,100));
       }
-      if(bridge && state.id===trip.id) {
-        while(!bridge.offlineRemove(trip.id)) {
+      if(isNativeOfflineAvailable() && state.id===trip.id) {
+        while(['queued','running','waiting','downloading'].includes((await readNativeOfflineState()).state ?? '')) {
           if(Date.now()>deadline)throw Error('下载尚未停止或删除失败，请稍后重试');
           await new Promise(resolve=>setTimeout(resolve,200));
         }
@@ -63,23 +62,23 @@ export function useOffline() {
     let nativeSignature="";
     let syncing=false;
     const syncNative=async()=>{
-      if(!nativeOffline())return;
+      if(!isNativeOfflineAvailable())return;
       if (task.current || syncing) return;
-      const state=nativeOfflineState(),stored=tripPackages().find(t=>t.id===state.id);if(!stored || deleting.current.has(stored.id))return;
+      const state=await readNativeOfflineState(),stored=tripPackages().find(t=>t.id===state.id);if(!stored || deleting.current.has(stored.id))return;
       const signature=JSON.stringify(state);if(signature===nativeSignature)return;
       syncing=true;
       try {
       const trip=await loadTripManifest(stored);
       if(!alive || deleting.current.has(trip.id) || !tripPackages().some(item=>item.id===trip.id))return;
-      if (!canDownloadTrip(trip) && ['queued','running','waiting'].includes(state.state ?? '')) {
-        nativeOffline()?.offlinePause();
+      if (!canDownloadTrip(trip) && ['queued','running','waiting','downloading'].includes(state.state ?? '')) {
+        await nativeOfflinePause();
         setBusy(false);setMessage(TIANDITU_OFFLINE_DISABLED);
         return;
       }
       nativeSignature=signature;
       const next=applyNativeProgress(trip,state);putTrip(next);setPackages(tripPackages());setCurrent(next);
-      if(!task.current)setBusy(['queued','running','waiting'].includes(state.state??''));
-      setMessage(state.state==='waiting' ? '等待网络恢复，已下载内容保留' : state.error || (next.complete?'缓存完成':state.state==='running' || state.state==='queued'?'后台缓存中':'已下载内容保留，可继续'));
+       if(!task.current)setBusy(['queued','running','waiting','downloading'].includes(state.state??''));
+       setMessage(state.state==='waiting' ? '等待网络恢复，已下载内容保留' : state.error || (next.complete?'缓存完成':state.state==='running' || state.state==='queued' || state.state==='downloading'?'缓存中':'已下载内容保留，可继续'));
       } catch(error) {if(alive)setMessage((error as Error).message);}
       finally {syncing=false;}
     };
@@ -88,7 +87,7 @@ export function useOffline() {
   }, []);
   const run = async (work: (signal: AbortSignal) => Promise<unknown>) => {
     if (task.current) return;
-    if (['queued','running','waiting'].includes(nativeOfflineState().state ?? '')) {setMessage('已有后台缓存正在下载，请先暂停');return;}
+    if (['queued','running','waiting','downloading'].includes((await readNativeOfflineState()).state ?? '')) {setMessage('已有后台缓存正在下载，请先暂停');return;}
     if(deleting.current.size){setMessage('正在移除缓存，请稍候');return;}
     const controller = new AbortController();
     task.current = controller;
@@ -112,7 +111,7 @@ export function useOffline() {
     // Keep the retry target even if native startup fails before its first update.
     activeId.current=trip.id;
     activeProvider.current=trip.provider;
-    activeNative.current=trip.provider === 'imported' && canUseNativeRouteDownload(trip);
+    activeNative.current=isNativeOfflineAvailable() && (window.ShantuMac?.version === 1 || (trip.provider === 'imported' && canUseNativeRouteDownload(trip)));
     setCurrent(trip);
     return downloadTrip(trip, signal, (progress) => {
       if(deleting.current.has(trip.id))return;
@@ -125,7 +124,7 @@ export function useOffline() {
     packages,
     removing,
     current,
-    background: !!nativeRouteOffline() && (!current || canUseNativeRouteDownload(current)),
+    background: isNativeOfflineAvailable() && (!current || window.ShantuMac?.version === 1 || canUseNativeRouteDownload(current)),
     busy,
     message,
     createMap: (_name: string, _area: DownloadArea, _settings: LayerSettings, _provider: DownloadProvider, _zoom: number) => {
@@ -155,6 +154,6 @@ export function useOffline() {
     },
     verify: (trip: TripPackage) => deleting.current.has(trip.id) ? Promise.resolve() : run(() => {activeId.current=trip.id;return verifyTrip(trip);}),
     remove,
-    pause: () => {if(activeNative.current || current?.native)nativeRouteOffline()?.offlinePause();task.current?.abort();},
+    pause: () => {if(activeNative.current || current?.native)void nativeOfflinePause();task.current?.abort();},
   };
 }

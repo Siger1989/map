@@ -664,8 +664,9 @@ final class NativeLocationService: NSObject, CLLocationManagerDelegate {
     }
 
     private static func fixJSON(_ location: CLLocation) -> [String: Any] {
-        ["coordinates": [location.coordinate.longitude, location.coordinate.latitude],
-         "time": location.timestamp.timeIntervalSince1970 * 1000,
+        ["longitude": location.coordinate.longitude,
+         "latitude": location.coordinate.latitude,
+         "timestamp": location.timestamp.timeIntervalSince1970 * 1000,
          "accuracy": max(0, location.horizontalAccuracy),
          "altitude": location.verticalAccuracy.isFinite && location.verticalAccuracy >= 0 &&
             location.altitude.isFinite ? location.altitude as Any : NSNull(),

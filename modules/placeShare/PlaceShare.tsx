@@ -3,6 +3,7 @@ import { X, Share2, Copy } from 'lucide-react';
 import { useRouteDialogFocus } from '../tracks/useRouteDialogFocus';
 import { placeShareData, type PlaceShareSource } from './data';
 import { sharePlace } from './delivery';
+import { writeClipboard } from '../platform/macNative';
 import './placeShare.css';
 
 export function PlaceShare({ place, onClose, onExport }: {
@@ -21,7 +22,10 @@ export function PlaceShare({ place, onClose, onExport }: {
     finally { setBusy(false); }
   };
   const copy = async () => {
-    try { await navigator.clipboard.writeText(data.text); setMessage(place.shareText ? '完整标记信息已复制' : '地点名称、坐标和链接已复制'); }
+    try {
+      await writeClipboard(data.text);
+      setMessage(place.shareText ? '完整标记信息已复制' : '地点名称、坐标和链接已复制');
+    }
     catch { setManualCopy(true); setMessage('请长按下方文字复制'); }
   };
   return <div className="place-share-backdrop">

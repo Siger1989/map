@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { folderTheme } from './folderTheme';
 import { deliverFile } from '../files/delivery';
+import { writeClipboard } from '../platform/macNative';
 import { annotationSpreadsheet } from '../annotations/spreadsheet';
 import { spreadsheetRegions } from '../annotations/spreadsheetRegions';
 import { XLSX_MIME } from '../files/spreadsheet';
@@ -312,7 +313,7 @@ export function WorkbenchPanel(props: Props) {
   };
   const copy = async (ids: string[]) => {
     try {
-      await navigator.clipboard.writeText(
+      await writeClipboard(
         JSON.stringify(selectedTransfer(ids), null, 2),
       );
       setActionMessage('已复制 JSON 内容，可保存为 .json 文件后导入山兔。');

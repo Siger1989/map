@@ -1,10 +1,12 @@
 import Foundation
+import CoreLocation
 
 @main
 @MainActor
 struct NativeLocationServiceSmokeCheck {
     static func main() async throws {
         try checkSamplingRules()
+        try checkNativePositionSnapshotShape()
         try checkRestartRecoveryAndCorruptArchiveProtection()
         print("macOS native location checks passed")
     }
@@ -26,6 +28,42 @@ struct NativeLocationServiceSmokeCheck {
             distance: 0, seconds: 30, interval: 4,
             minimumDistance: 5, stationarySeconds: 30, distanceOnly: true),
             "distance-only sampling accepted a stationary fix")
+    }
+
+    private static func checkNativePositionSnapshotShape() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("shantu-native-fix-check-\(UUID().uuidString)",
+                                    isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let service = NativeLocationService(storageRoot: root, changed: {})
+        let timestamp = Date()
+        let location = CLLocation(coordinate: CLLocationCoordinate2D(latitude: 31.2, longitude: 121.5),
+                                  altitude: 12.5,
+                                  horizontalAccuracy: 4.0,
+                                  verticalAccuracy: 6.0,
+                                  course: -1,
+                                  speed: -1,
+                                  timestamp: timestamp)
+        service.locationManager(CLLocationManager(), didUpdateLocations: [location])
+
+        let snapshot = service.locationSnapshot
+        let fix = snapshot["fix"] as? [String: Any]
+        try require(fix != nil, "a fresh CLLocation was not exposed in the snapshot")
+        try require((fix?["longitude"] as? NSNumber)?.doubleValue == 121.5,
+                    "native fix is missing longitude")
+        try require((fix?["latitude"] as? NSNumber)?.doubleValue == 31.2,
+                    "native fix is missing latitude")
+        try require((fix?["timestamp"] as? NSNumber)?.doubleValue ==
+                    timestamp.timeIntervalSince1970 * 1000,
+                    "native fix timestamp is not in JavaScript milliseconds")
+        try require((fix?["accuracy"] as? NSNumber)?.doubleValue == 4.0,
+                    "native fix is missing horizontal accuracy")
+        try require(fix?["source"] as? String == "network",
+                    "native Mac fix must identify its network source")
+        try require(fix?["coordinates"] == nil && fix?["time"] == nil,
+                    "location snapshot unexpectedly uses the track-record fix shape")
+        service.shutdown()
     }
 
     private static func checkRestartRecoveryAndCorruptArchiveProtection() throws {

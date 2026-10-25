@@ -1,4 +1,4 @@
-import { nativeOffline, nativeRouteOffline, canUseNativeRouteDownload, downloadNative, applyNativeProgress } from './nativeOffline.ts';
+import { nativeRouteOffline, canUseNativeRouteDownload, downloadNative, applyNativeProgress, isNativeOfflineAvailable, nativeOfflineAvailableBytes, nativeOfflineVerify, nativeOfflineRemove } from './nativeOffline.ts';
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { coordinate, type Coordinate } from '../navigation/types.ts';
 import { TERRAIN_URL } from '../terrain/tiles.ts';
@@ -101,8 +101,8 @@ export async function prepareImportedRoutePackage(
   const plan = await planImportedRouteDownloadAsync(area, source, zoom, { signal });
   const routeBridge = nativeRouteOffline();
   let availableBytes: number | undefined;
-  if (routeBridge) {
-    const available = routeBridge.offlineAvailableBytes?.();
+  if (routeBridge || isNativeOfflineAvailable()) {
+    const available = await nativeOfflineAvailableBytes();
     if (typeof available !== 'number' || !Number.isFinite(available))
       throw new Error('无法确认本机离线存储空间，请检查设备存储后重试');
     availableBytes = Math.max(0, available);
@@ -306,7 +306,7 @@ export async function downloadTrip(
     validateImportedDownloadUrls(trip.urls);
     if (canUseNativeRouteDownload(trip)) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
     if (!fetchImported) throw new Error('导入图源下载通道暂不可用');
-  } else if (nativeOffline()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
+  } else if (isNativeOfflineAvailable()) { await downloadNative(trip,signal,next=>{putTrip(next);progress(next);});return; }
   const cache = await caches.open(CACHE);
   let cursor = 0,
     done = 0,
@@ -388,7 +388,7 @@ export async function downloadTrip(
 }
 export async function verifyTrip(trip: TripPackage) {
   trip = await loadTripManifest(trip);
-  if(trip.native && nativeOffline()){const checked=applyNativeProgress(trip,JSON.parse(nativeOffline()!.offlineVerify(trip.id)));putTrip(checked);return checked;}
+  if(trip.native && isNativeOfflineAvailable()){const checked=applyNativeProgress(trip,await nativeOfflineVerify(trip.id));putTrip(checked);return checked;}
   const cache = await caches.open(CACHE);
   let done = 0,
     bytes = 0;
@@ -414,7 +414,7 @@ export async function removeTrip(trip: TripPackage) {
   try {
     const allTrips = await hydrateTripPackages();
     trip = await loadTripManifest(trip);
-    if(nativeOffline() && !nativeOffline()!.offlineRemove(trip.id))throw Error('缓存移除失败；下载尚未停止或存储暂不可用，请稍后重试');
+    if(trip.native && isNativeOfflineAvailable() && !await nativeOfflineRemove(trip.id))throw Error('缓存移除失败；下载尚未停止或存储暂不可用，请稍后重试');
     const keep = new Set(allTrips.filter(t=>t.id!==trip.id).flatMap(t=>t.urls.map(resourceCacheKey)));
     const cache = await caches.open(CACHE);
     for(const url of trip.urls) if(!keep.has(resourceCacheKey(url)))await cache.delete(resourceCacheKey(url));

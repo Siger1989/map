@@ -1,7 +1,7 @@
 import { resourceCacheKey } from './tiandituCache.ts';
 import type { AddProtocolAction, RequestTransformFunction } from 'maplibre-gl';
 import { packageUrls } from './tripStorage.ts';
-import { nativeOffline } from './nativeOffline.ts';
+import { nativeOfflineHas, nativeOfflineRead, nativeOffline } from './nativeOffline.ts';
 
 export type BrowseTile = { z: number; x: number; y: number };
 export const TRIP_TILE_CACHE = 'guanyun-trips-v1';
@@ -85,8 +85,15 @@ export async function cachedMapFetch(
   const packaged = (await selectedTripUrls()).has(key);
   let cacheFailure: unknown;
   if (packaged) {
+    if (window.ShantuMac?.version === 1) {
+      if (await nativeOfflineHas(url)) {
+        const response = await nativeOfflineRead(url);
+        signal.throwIfAborted();
+        if (response?.ok) return response;
+      }
+    }
     const bridge = nativeOffline();
-    if (bridge?.offlineHas(url)) {
+    if (bridge && await nativeOfflineHas(url)) {
       const response = await fetch(`/api/offline-tile?url=${encodeURIComponent(url)}`, { signal });
       signal.throwIfAborted();
       if (response.ok) return response;

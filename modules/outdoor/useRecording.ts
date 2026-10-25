@@ -6,6 +6,7 @@ import { useSamplingPolicy } from './useSamplingPolicy';
 import { useRecordingPreferences } from './useRecordingPreferences';
 import { recordingAccuracyMessage } from './recordingPreferences';
 import { nativeRecordingSnapshot } from './nativeRecordingSnapshot';
+import { macBridge, macRequest, readMacRecordingConfig, subscribeMacState } from '../platform/macNative';
 import {
   appendFix,
   emptyRecording,
@@ -46,7 +47,7 @@ declare global {
 }
 export function useRecording() {
   const [record, setRecord] = useState<Recording>(emptyRecording);
-  const [native, setNative] = useState(false);
+  const [native, setNative] = useState(() => typeof window !== 'undefined' && (!!window.GuanyunNative || !!macBridge()));
   const preferences = useRecordingPreferences();
   const appearance = useRecordingStyle();
   const sampling = useSamplingPolicy();
@@ -77,6 +78,31 @@ export function useRecording() {
     }
   };
   useEffect(() => {
+    if (macBridge()) {
+      setNative(true);
+      const snapshot = nativeRecordingSnapshot();
+      const consume = (raw: unknown) => {
+        if (raw === undefined || raw === null || raw === '') return;
+        try {
+          const serialized = typeof raw === 'string' ? raw : JSON.stringify(raw);
+          const parsed = JSON.parse(serialized);
+          if (!parsed || !['idle', 'recording', 'paused', 'finished'].includes(parsed.phase) ||
+              typeof parsed.id !== 'string' || !Array.isArray(parsed.segments)) return;
+          const next = snapshot(serialized);
+          current.current = next;
+          setRecord(next);
+          nativeCommand.current = null;
+        } catch {
+          setRecord(r => r.error === '原生记录暂时无法读取'
+            ? r : { ...r, error: 'macOS 记录暂时无法读取；原数据已保留' });
+        }
+      };
+      const unsubscribe = subscribeMacState(state => consume(state.recording));
+      void macRequest('record.state').then(consume).catch(() => {
+        setRecord(r => ({ ...r, error: '正在连接 macOS 记录服务；现有记录保持不变' }));
+      });
+      return unsubscribe;
+    }
     const bridge = window.GuanyunNative;
     setNative(!!bridge);
     if (bridge) {
@@ -183,6 +209,39 @@ export function useRecording() {
   ) => {
     if(finishingRef.current)return;
     setQualityNote('');
+    if (macBridge()) {
+      if ((action === 'start' || action === 'resume') &&
+          (!preferences.supported || !sampling.supported || preferences.pending || sampling.pending)) {
+        setRecord(r => ({ ...r, error: '正在读取 macOS 已保存的记录配置，请稍后重试' }));
+        return;
+      }
+      if (nativeCommand.current === action) return;
+      nativeCommand.current = action;
+      void (async () => {
+        const config = action === 'start' || action === 'resume'
+          ? await readMacRecordingConfig()
+          : null;
+        const raw = await macRequest('record.command', {
+          command: action,
+          ...(config ? { maximumAccuracy: config.maximumAccuracy, sampling: config.sampling } : {}),
+        });
+        if (raw !== undefined && raw !== null) {
+          const next = readRecording(typeof raw === 'string' ? raw : JSON.stringify(raw));
+          current.current = next; setRecord(next); nativeCommand.current = null;
+        } else {
+          const state = await macRequest('record.state');
+          if (state !== undefined && state !== null) {
+            const next = readRecording(typeof state === 'string' ? state : JSON.stringify(state));
+            current.current = next; setRecord(next);
+          }
+          nativeCommand.current = null;
+        }
+      })().catch(error => {
+        nativeCommand.current = null;
+        setRecord(r => ({ ...r, error: error instanceof Error ? error.message : 'macOS 记录命令失败' }));
+      });
+      return;
+    }
     if (window.GuanyunNative) {
       if (nativeCommand.current === action) return;
       nativeCommand.current = action;
@@ -220,9 +279,17 @@ export function useRecording() {
     if(finishingRef.current)return null;
     finishingRef.current=true;setFinishing(true);setQualityNote('');
     const bridge=window.GuanyunNative;
+    const mac=macBridge();
     const read=()=>bridge ? readRecording(bridge.recordState()) : current.current;
-    const send=(action:'finish'|'clear')=> {
+    const send=async (action:'finish'|'clear')=> {
       if(bridge)bridge.record(action);
+      else if(mac) {
+        const raw = await macRequest('record.command', { command: action });
+        const state = raw ?? await macRequest('record.state');
+        if(state===undefined||state===null)throw Error('macOS 未确认记录状态');
+        const next=readRecording(typeof state==='string'?state:JSON.stringify(state));
+        current.current=next;setRecord(next);
+      }
       else {
         if(!writable.current)throw Error('记录存储不可写，原数据已保留');
         const next=action==='clear' ? emptyRecording() : {...current.current,phase:'finished' as const};

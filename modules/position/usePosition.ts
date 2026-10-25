@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   canStartNativeStartupLocation,
+  readNativePosition,
   watchNativePosition,
   type NativePositionBridge,
 } from './nativePosition';
@@ -15,6 +16,7 @@ import {
   type PositionFix,
   type LocationMode,
 } from './types';
+import { macBridge, macRequest, macSnapshot, subscribeMacState } from '../platform/macNative';
 type OrientationPermission = typeof DeviceOrientationEvent & {
   requestPermission?: (absolute?: boolean) => Promise<string>;
 };
@@ -95,6 +97,53 @@ export function usePosition() {
       });
     };
     fallbackTimer.current = window.setTimeout(() => startFallback(), 6000);
+    if (macBridge()) {
+      setLocationError('正在请求 macOS 定位权限…');
+      let stopped = false;
+      const consume = (raw: unknown) => {
+        if (stopped || raw === undefined || raw === null) return;
+        try {
+          const state = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if (state?.mode && state.mode !== modeRef.current) return;
+          const result = readNativePosition(JSON.stringify(state));
+          if (result.fix) accept(result.fix);
+          else if (result.error) {
+            setLocating(false); healthyWatch.current = false; setLocationError(result.error);
+          }
+          else if (typeof state?.error === 'string' && state.error) {
+            setLocating(false); healthyWatch.current = false; setLocationError(state.error);
+          } else if (state?.authorization === 'not-determined' || state?.authorization === 'requesting') {
+            setLocationError('正在等待 macOS 定位权限…');
+          } else if (state?.authorization === 'denied') {
+            setLocating(false); healthyWatch.current = false;
+            setLocationError(typeof state.error === 'string' && state.error
+              ? state.error : 'macOS 已拒绝山兔定位权限；请在系统设置中允许定位后重试');
+          } else if (state?.authorization === 'restricted') {
+            setLocating(false); healthyWatch.current = false;
+            setLocationError(typeof state.error === 'string' && state.error
+              ? state.error : '此 Mac 的系统策略限制定位权限');
+          }
+        } catch { setLocationError('macOS 定位状态无效，请重试'); }
+      };
+      const unsubscribe = subscribeMacState(snapshot => consume(snapshot.location));
+      if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current);
+      fallbackTimer.current = null;
+      nativeStop.current = () => {
+        stopped = true;
+        unsubscribe();
+        void macRequest('location.stop').catch(() => {});
+      };
+      void macRequest('location.start', { mode: modeRef.current })
+        .then(() => macRequest('location.state'))
+        .then(consume)
+        .catch(error => {
+          if (stopped || request !== locationGeneration.current) return;
+          setLocating(false); healthyWatch.current = false;
+          setLocationError(error instanceof Error ? error.message : 'macOS 定位启动失败');
+        });
+      consume(macSnapshot('location'));
+      return;
+    }
     const bridge = window.GuanyunNative;
     if (bridge?.locate && bridge.locationState && bridge.stopLocation) {
       nativeStop.current = watchNativePosition(
@@ -299,6 +348,7 @@ export function usePosition() {
       // Restarting the bridge here could re-request a just-denied permission.
       const bridge = window.GuanyunNative;
       if (bridge?.locate && bridge.locationState && bridge.stopLocation) return;
+      if (macBridge()) return;
       if (document.hidden) stopWatch();
       else if (active.current) beginWatch();
     };

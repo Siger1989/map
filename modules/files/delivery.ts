@@ -1,7 +1,9 @@
 import { sendArchive, type ArchiveBridge } from './nativeArchive.ts';
+import { deliverMacFile, isMacNativeSupported } from '../platform/macNative.ts';
 const streamedText = (name: string) => /^(Shantu-workspace\.json|Shantu-(route-coordinates-\d{1,16}|coordinates-\d{4}-\d{2}-\d{2})\.(json|csv))$/.test(name);
 /** Shared generated-file boundary; Android retains explicit read-only picker/share grants. */
 export function canShareGeneratedFile(name: string, mime: string) {
+  if (isMacNativeSupported()) return true;
   if (typeof window !== 'undefined' && window.GuanyunNative) {
     const native = window.GuanyunNative;
     return name.endsWith('.zip') || streamedText(name)
@@ -23,6 +25,10 @@ export async function deliverFile(
   signal?: AbortSignal,
 ) {
   signal?.throwIfAborted();
+  if (isMacNativeSupported()) {
+    const result = await deliverMacFile(file, share, signal);
+    return result === 'shared' ? '已完成系统分享' : '已保存文件';
+  }
   if (window.GuanyunNative) {
     if (file.name.endsWith('.zip') || streamedText(file.name)) {
       const native = window.GuanyunNative;

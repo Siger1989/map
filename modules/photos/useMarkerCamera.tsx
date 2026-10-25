@@ -4,6 +4,7 @@ import { readPhoto, type PhotoDraft } from './import';
 import { markerPhoto } from './association';
 import { PHOTO_ACCEPT } from './selection';
 import type { TripPhoto } from './storage';
+import { macCapturePhoto } from '../platform/macNative';
 
 /** Keep the captured marker identity frozen while the external camera is foreground. */
 export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
@@ -54,6 +55,19 @@ export function useMarkerCamera(save: (photos: TripPhoto[]) => Promise<void>) {
       setMarkerId(marker.id);
       setStatus('');
       setRetry(false);
+      if (window.ShantuMac?.version === 1) {
+        setBusy(true);
+        setStatus('正在打开 macOS 相机…');
+        void macCapturePhoto().then(({ file }) => {
+          pending.current = { file, ...(target.current ?? { marker: structuredClone(marker), time: Date.now() }) };
+          return persist();
+        }).catch(error => {
+          setStatus(error instanceof Error && error.name === 'AbortError'
+            ? '已取消拍摄'
+            : error instanceof Error ? error.message : '相机拍摄失败');
+        }).finally(() => setBusy(false));
+        return;
+      }
       if (input.current) {
         input.current.value = '';
         input.current.click();

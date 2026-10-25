@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { coordinate, type Coordinate, type RoutePlace } from '../navigation/types';
+import { writeClipboard } from '../platform/macNative';
 
 export function routeEndpointPlace(routeName: string, label: string, stopName: string | undefined, point: Coordinate): RoutePlace {
   if (!coordinate(point)) throw new Error('地点坐标无效');
@@ -15,7 +16,7 @@ export function RouteEndpointActions({ routeName, label, stopName, point, onShar
   const [error, setError] = useState('');
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`${point[0].toFixed(6)}, ${point[1].toFixed(6)}`);
+      await writeClipboard(`${point[0].toFixed(6)}, ${point[1].toFixed(6)}`);
       setCopied(true); setError('');
     } catch { setError('复制失败，请点击分享后复制信息'); }
   };

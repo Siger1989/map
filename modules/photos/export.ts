@@ -3,6 +3,7 @@ import { photoLocationLabel } from './association';
 import { PRODUCT_NAME, EXPORT_PREFIX } from '../../config/product';
 import { altitudeLabel, weatherSource } from './details';
 import { describeWeather } from '../weather/data';
+import { deliverMacFile } from '../platform/macNative.ts';
 export function weatherLabel(photo: TripPhoto) {
   const w = photo.weather;
   if (!w) return `拍摄天气：${photo.weatherError || '未记录'}`;
@@ -125,6 +126,10 @@ async function base64(file: File) {
   });
 }
 export async function deliverPhoto(file: File, share: boolean) {
+  if (window.ShantuMac?.version === 1) {
+    const result = await deliverMacFile(file, share);
+    return result === 'shared' ? '已完成系统分享' : '已保存图片';
+  }
   const native = window.GuanyunNative;
   if (native) {
     if (!native.photoOutput)

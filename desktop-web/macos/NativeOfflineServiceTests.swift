@@ -53,6 +53,33 @@ enum NativeOfflineServiceTests {
         try expect(state?["state"] as? String == "paused", "invalid completed package must pause")
     }
 
+    static func testLocalReadAndHasDoNotRequireDNS() async throws {
+        let unresolved = "https://this-host-must-not-resolve.invalid/tiles/a.png"
+        let (service, _) = try fixture(id: "local-read", urls: [unresolved], dataByURL: [unresolved: validPNG])
+        try expect(try await service.handle("offline.has", ["url": unresolved]) as? Bool == true, "local cache hit must not resolve DNS")
+        let result = try await service.handle("offline.read", ["url": unresolved]) as? [String: String]
+        try expect(result?["mime"] == "image/png" && result?["base64"] != nil, "local tile read must work without DNS")
+    }
+
+    static func testUncommittedDeleteTombstoneRestoresMetadataFormat() async throws {
+        let (service, storage) = try fixture(id: "rollback", urls: [tileURL])
+        _ = service
+        let manifests = storage.appendingPathComponent("NativeOffline/packages")
+        let metadataURL = manifests.appendingPathComponent("\(hash("rollback")).meta")
+        let tombstone = manifests.appendingPathComponent("\(hash("rollback")).deleting-test")
+        try FileManager.default.moveItem(at: metadataURL, to: tombstone)
+        let deletionRecord: [String: Any] = [
+            "metadata": ["id": "rollback", "name": "existing", "done": 0, "bytes": 0,
+                         "state": "paused", "error": NSNull(), "manifestToken": "fixture-token"],
+            "urls": [tileURL]
+        ]
+        try JSONSerialization.data(withJSONObject: deletionRecord).write(to: tombstone, options: .atomic)
+        let restored = NativeOfflineService(storageRoot: storage, changed: {})
+        let state = try await restored.handle("offline.verify", ["id": "rollback"]) as? [String: Any]
+        try expect(state?["total"] as? Int == 1 && state?["state"] as? String == "paused", "manifest still present must roll back tombstone to a normal package")
+        try expect(FileManager.default.fileExists(atPath: metadataURL.path) && !FileManager.default.fileExists(atPath: tombstone.path), "rollback must restore .meta and clear tombstone")
+    }
+
     static func testSharedTileIsReusedWithoutNetworkOrDoubleCounting() async throws {
         let (service, _) = try fixture(id: "existing", urls: [tileURL], dataByURL: [tileURL: validPNG])
         try expect(try await service.handle("offline.begin", ["id": "new", "name": "new", "total": 1]) as? String == "ok", "begin shared package")
@@ -124,6 +151,8 @@ struct RunNativeOfflineServiceTests {
     static func main() async throws {
         try await NativeOfflineServiceTests.testDraftFailureAndDiscardPreserveCommittedManifest()
         try await NativeOfflineServiceTests.testVerifyRecountsOnlyValidContiguousFiles()
+        try await NativeOfflineServiceTests.testLocalReadAndHasDoNotRequireDNS()
+        try await NativeOfflineServiceTests.testUncommittedDeleteTombstoneRestoresMetadataFormat()
         try await NativeOfflineServiceTests.testSharedTileIsReusedWithoutNetworkOrDoubleCounting()
         try NativeOfflineServiceTests.testRetryAfterIsNeverShortenedAndFinal429DoesNotRetry()
         try NativeOfflineServiceTests.testURLRulesCoverPrivateIPv4IPv6DNSAndLength()

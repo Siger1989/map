@@ -31,6 +31,10 @@ final class NativeOfflineService {
         var expected: Int
         var urls: [String]
     }
+    private struct DeletionRecord: Codable {
+        var metadata: Metadata
+        var urls: [String]
+    }
     private struct FetchedTile: Sendable {
         var temporaryURL: URL?
         var bytes: Int
@@ -49,6 +53,7 @@ final class NativeOfflineService {
     private var generations: [String: Int] = [:]
     private var workers: [String: Task<Void, Never>] = [:]
     private var workerGeneration: [String: Int] = [:]
+    private var diskBytes: Int64 = 0
     private let maxItems = 250_000
     private let maxTileBytes = 8 * 1024 * 1024
     private let maxBudget: Int64 = 8 * 1024 * 1024 * 1024
@@ -64,6 +69,7 @@ final class NativeOfflineService {
         try? FileManager.default.createDirectory(at: tiles, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: manifests, withIntermediateDirectories: true)
         try? FileManager.default.createDirectory(at: draftsDirectory, withIntermediateDirectories: true)
+        diskBytes = inventoryTileBytes()
         loadPackages()
     }
 
@@ -160,8 +166,10 @@ final class NativeOfflineService {
         case "offline.verify":
             let id = try string(args, "id")
             guard packages[id] != nil else { throw failure("缓存包不存在") }
-            if let worker = workers[id] { await worker.value }
             guard var package = packages[id] else { throw failure("缓存包不存在") }
+            // Progress is persisted after each installed tile. Avoid blocking the UI on
+            // a long-running download or racing its in-flight batch reconciliation.
+            if workers[id] != nil { return stateObject(package) }
             let verified = verifyFiles(package.urls)
             package.done = verified.done
             package.bytes = verified.bytes
@@ -178,20 +186,39 @@ final class NativeOfflineService {
             if let worker = workers[id] { await worker.value }
             guard let package = packages[id], package.state != "downloading" else { return false }
             let tombstone = try moveMetadataToTombstone(id)
-            packages.removeValue(forKey: id)
-            try removeManifest(id: id, token: package.manifestToken)
-            let referenced = Set(packages.values.flatMap(\.urls))
-            for raw in Set(package.urls) where !referenced.contains(raw) {
-                try removeTileIfPresent(raw)
+            do {
+                let metadata = Metadata(id: package.id, name: package.name, done: package.done, bytes: package.bytes,
+                                        state: package.state, error: package.error, manifestToken: package.manifestToken)
+                try atomicWrite(try JSONEncoder().encode(DeletionRecord(metadata: metadata, urls: package.urls)), to: tombstone)
+                try removeManifest(id: id, token: package.manifestToken)
+            } catch {
+                do {
+                    try persistMetadata(package)
+                    try? FileManager.default.removeItem(at: tombstone)
+                } catch { throw failure("删除未提交，但缓存清单恢复失败；请检查磁盘空间后重启应用") }
+                throw error
             }
-            try FileManager.default.removeItem(at: tombstone)
+            // Manifest removal is the logical-delete commit point. Do not restore the package
+            // after this point: some unreferenced tiles may already have been collected.
+            packages.removeValue(forKey: id)
+            let referenced = Set(packages.values.flatMap(\.urls))
+            do {
+                for raw in Set(package.urls) where !referenced.contains(raw) {
+                    try removeTileIfPresent(raw)
+                }
+                try FileManager.default.removeItem(at: tombstone)
+            } catch {
+                if lastID == id { lastID = packages.keys.first }
+                changed()
+                throw failure("缓存包已删除，存储清理失败；稍后重试或重启应用可继续清理")
+            }
             if lastID == id { lastID = packages.keys.first }
             changed()
             return true
 
         case "offline.read":
             guard let raw = args["url"] as? String else { return NSNull() }
-            try validatePublicURL(raw)
+            try Self.validateTileKey(raw)
             let file = tileURL(raw)
             guard let data = try? Data(contentsOf: file), data.count <= maxTileBytes,
                   Self.validImage(data, mime: Self.mimeType(data)) else { return NSNull() }
@@ -199,7 +226,7 @@ final class NativeOfflineService {
 
         case "offline.has":
             guard let raw = args["url"] as? String else { return false }
-            try validatePublicURL(raw)
+            try Self.validateTileKey(raw)
             return validTile(at: tileURL(raw))
 
         case "offline.availableBytes": return availableBytes()
@@ -246,13 +273,19 @@ final class NativeOfflineService {
                 do {
                     if let temporary = fetched.temporaryURL {
                         let oldSize = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                        let projected = usedTileBytes() - Int64(oldSize) + Int64(fetched.bytes)
+                        let projected = diskBytes - Int64(oldSize) + Int64(fetched.bytes)
                         guard projected <= maxBudget, availableBytes() > Int64(fetched.bytes) + 1_048_576 else {
                             pauseIfCurrent(id, generation, error: "磁盘剩余空间不足，缓存任务已暂停")
                             stoppedAtGap = true
                             break
                         }
-                        try replaceTile(temporary, destination: destination)
+                        do {
+                            try replaceTile(temporary, destination: destination)
+                            diskBytes = projected
+                        } catch {
+                            diskBytes = inventoryTileBytes()
+                            throw error
+                        }
                     } else if !validTile(at: destination) {
                         pauseIfCurrent(id, generation, error: "缓存文件校验失败，任务已暂停")
                         stoppedAtGap = true
@@ -395,6 +428,33 @@ final class NativeOfflineService {
             lastID = package.id
             try? persistMetadata(package)
         }
+        retryPendingDeletionCleanup()
+    }
+
+    private func retryPendingDeletionCleanup() {
+        guard let files = try? FileManager.default.contentsOfDirectory(at: manifests, includingPropertiesForKeys: nil) else { return }
+        var referenced = Set(packages.values.flatMap(\.urls))
+        for file in files where file.lastPathComponent.contains(".deleting-") {
+            guard let data = try? Data(contentsOf: file), let record = try? JSONDecoder().decode(DeletionRecord.self, from: data) else { continue }
+            do {
+                let manifest = manifestURL(record.metadata.id, record.metadata.manifestToken)
+                if FileManager.default.fileExists(atPath: manifest.path) {
+                    try atomicWrite(try JSONEncoder().encode(record.metadata), to: metadataURL(record.metadata.id))
+                    packages[record.metadata.id] = Package(id: record.metadata.id, name: record.metadata.name,
+                        urls: record.urls, done: record.metadata.done, bytes: record.metadata.bytes,
+                        state: record.metadata.state, error: record.metadata.error, manifestToken: record.metadata.manifestToken)
+                    referenced.formUnion(record.urls)
+                    lastID = record.metadata.id
+                    try FileManager.default.removeItem(at: file)
+                    continue
+                }
+                try removeManifest(id: record.metadata.id, token: record.metadata.manifestToken)
+                for raw in Set(record.urls) where !referenced.contains(raw) { try removeTileIfPresent(raw) }
+                try FileManager.default.removeItem(at: file)
+            } catch {
+                // Keep the tombstone for a later retry; the package is already logically removed.
+            }
+        }
     }
 
     private func verifyFiles(_ urls: [String]) -> (done: Int, bytes: Int64) {
@@ -452,20 +512,37 @@ final class NativeOfflineService {
         let attrs = try? FileManager.default.attributesOfFileSystem(forPath: root.path)
         return (attrs?[.systemFreeSize] as? NSNumber)?.int64Value ?? 0
     }
-    private func usedTileBytes() -> Int64 {
+    private func inventoryTileBytes() -> Int64 {
         guard let files = try? FileManager.default.contentsOfDirectory(at: tiles, includingPropertiesForKeys: [.fileSizeKey]) else { return 0 }
         return files.reduce(Int64(0)) { total, file in total + Int64((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0) }
     }
     private func ensureBudget() throws {
-        guard usedTileBytes() <= maxBudget, availableBytes() >= 1_048_576 else { throw failure("磁盘剩余空间不足，缓存任务已暂停") }
+        guard diskBytes <= maxBudget, availableBytes() >= 1_048_576 else { throw failure("磁盘剩余空间不足，缓存任务已暂停") }
     }
     private func replaceTile(_ source: URL, destination: URL) throws {
-        if FileManager.default.fileExists(atPath: destination.path) { try FileManager.default.removeItem(at: destination) }
-        try FileManager.default.moveItem(at: source, to: destination)
+        guard FileManager.default.fileExists(atPath: destination.path) else {
+            try FileManager.default.moveItem(at: source, to: destination)
+            return
+        }
+        let backup = destination.deletingLastPathComponent().appendingPathComponent(".replace-\(UUID().uuidString)")
+        try FileManager.default.moveItem(at: destination, to: backup)
+        do {
+            try FileManager.default.moveItem(at: source, to: destination)
+            try FileManager.default.removeItem(at: backup)
+        } catch {
+            if !FileManager.default.fileExists(atPath: destination.path) {
+                try? FileManager.default.moveItem(at: backup, to: destination)
+            }
+            throw error
+        }
     }
     private func removeTileIfPresent(_ raw: String) throws {
         let file = tileURL(raw)
-        if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+        if FileManager.default.fileExists(atPath: file.path) {
+            let size = Int64((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+            try FileManager.default.removeItem(at: file)
+            diskBytes = max(0, diskBytes - size)
+        }
     }
     private func validTile(at url: URL) -> Bool { Self.validTileFile(at: url) }
     private func string(_ args: [String: Any], _ key: String) throws -> String {
@@ -501,6 +578,13 @@ final class NativeOfflineService {
         let host = rawHost.trimmingCharacters(in: CharacterSet(charactersIn: "[]")).trimmingCharacters(in: CharacterSet(charactersIn: "."))
         guard !host.isEmpty, host != "localhost", !host.hasSuffix(".localhost"), !host.hasSuffix(".local") else { throw makeError("拒绝访问本地或私有网络") }
         guard PublicHostResolver.shared.isPublic(host) else { throw makeError("拒绝访问本地或私有网络") }
+    }
+    fileprivate nonisolated static func validateTileKey(_ raw: String) throws {
+        guard raw.utf8.count <= 16_384, let url = URL(string: raw),
+              let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty, url.user == nil, url.password == nil else {
+            throw makeError("缓存瓦片地址无效")
+        }
     }
     fileprivate nonisolated static func validateRedirect(_ url: URL) throws { try validateURL(url.absoluteString) }
     fileprivate nonisolated static func retryDecision(_ response: HTTPURLResponse, attempt: Int, now: Date = Date()) -> RetryDecision {
@@ -656,6 +740,11 @@ private final class BoundedPublicDownloadDelegate: NSObject, URLSessionDownloadD
     var exceededLimit: Bool { lock.lock(); defer { lock.unlock() }; return didExceed }
 
     init(maximumBytes: Int) { self.maximumBytes = maximumBytes }
+
+    // `URLSession.download(for:delegate:)` returns ownership of the temporary file to
+    // the async caller. Leave the callback URL untouched so the caller can validate
+    // and then install or remove the returned file.
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {

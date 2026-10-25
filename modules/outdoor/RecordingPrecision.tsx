@@ -29,14 +29,16 @@ export function RecordingPrecision({
         />
         <button
           disabled={!preferences.supported}
-          onClick={() => preferences.update(Number(input))}
+          onClick={() => void preferences.update(Number(input))}
         >
           应用精度设置
         </button>
         <button
           disabled={!preferences.supported}
           onClick={() => {
-            if (preferences.update(DEFAULT_RECORDING_ACCURACY)) setInput(String(DEFAULT_RECORDING_ACCURACY));
+            void preferences.update(DEFAULT_RECORDING_ACCURACY).then(saved => {
+              if (saved) setInput(String(DEFAULT_RECORDING_ACCURACY));
+            });
           }}
         >
           恢复默认
@@ -46,7 +48,7 @@ export function RecordingPrecision({
         可设5–80米，默认5米；保存后对新定位点生效。数值越小筛选越严格，弱信号时可能长时间不记点。这是接受门槛，不是定位精度保证。
       </p>
       {!preferences.supported && (
-        <p className="route-note">当前安装包仍使用80米门槛，请升级后设置。</p>
+        <p className="route-note">{window.ShantuMac?.version === 1 ? 'macOS 记录配置尚未确认，暂不能修改。' : '当前安装包仍使用80米门槛，请升级后设置。'}</p>
       )}
       {preferences.error && (
         <p role="status" className="route-error">

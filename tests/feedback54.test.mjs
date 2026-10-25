@@ -16,6 +16,20 @@ test('save failure and empty recording keep checkpoint; discard can end empty',a
 test('native finish timeout never saves or clears',async()=>{
  const state=record(),calls=[];await assert.rejects(finishRecording({keep:true,read:()=>state,send:a=>calls.push(a),save:()=>{throw Error('must not save');},timeout:-1}));assert.deepEqual(calls,['finish']);
 });
+test('finish awaits native finish and clear confirmations and propagates command failures',async()=>{
+ let state=record(),releaseFinish,releaseClear;const calls=[];
+ const finishing=finishRecording({keep:false,read:()=>state,send:async action=>{
+  calls.push(action);
+  if(action==='finish') { await new Promise(resolve=>{releaseFinish=resolve;}); state={...state,phase:'finished'}; }
+  else { await new Promise(resolve=>{releaseClear=resolve;}); state={...state,phase:'idle'}; }
+ }});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(calls,['finish']);assert.equal(state.phase,'recording');
+ releaseFinish();await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(calls,['finish','clear']);assert.equal(state.phase,'finished');
+ releaseClear();assert.equal(await finishing,null);assert.equal(state.phase,'idle');
+ await assert.rejects(finishRecording({keep:false,read:()=>record(),send:async()=>{throw Error('native denied');}}),/native denied/);
+});
 test('photo track remap completes before clearing and a remap failure keeps checkpoint for retry',async()=>{
  let state={...record(),phase:'finished'},calls=[];
  const save=async()=>{calls.push('save');return 'existing-id';};

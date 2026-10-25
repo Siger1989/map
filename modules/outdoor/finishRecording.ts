@@ -1,12 +1,12 @@
 import type { Recording } from './recording';
 /** Wait for the native final snapshot before saving, and clear only after persistence succeeds. */
 export async function finishRecording(options: {
-  keep: boolean; read: () => Recording; send: (action: 'finish' | 'clear') => void;
+  keep: boolean; read: () => Recording; send: (action: 'finish' | 'clear') => void | Promise<void>;
   save: (record: Recording) => string | Promise<string>; wait?: () => Promise<void>; timeout?: number;
 }) {
   const original=options.read();
   if(original.phase==='idle')throw Error('当前没有正在进行的记录');
-  options.send('finish');
+  await options.send('finish');
   const wait=options.wait ?? (()=>new Promise<void>(resolve=>setTimeout(resolve,100)));
   const until=Date.now()+(options.timeout ?? 12000);
   let final=options.read();
@@ -20,7 +20,7 @@ export async function finishRecording(options: {
     if(!final.segments.some(s=>s.length))throw Error('尚无有效轨迹点，无法保存；可取消并结束');
     saved=await options.save(final);
   }
-  options.send('clear');
+  await options.send('clear');
   const clearUntil=Date.now()+(options.timeout ?? 12000);
   while(options.read().phase!=='idle') {
     if(Date.now()>clearUntil)throw Error(saved?'轨迹已保存，收尾未确认，请重试':'结束收尾未确认，请重试');

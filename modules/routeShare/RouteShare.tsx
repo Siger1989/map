@@ -3,6 +3,7 @@ import { CurrentMapContext } from './CurrentMapContext';
 import { TRAVEL_MODES } from '../navigation/types';
 import { externalLegs, routeFileText, routeTransfer, type ShareRoute } from './data';
 import { deliverRouteFile } from './delivery';
+import { macShareUrl, writeClipboard } from '../platform/macNative';
 import { canShareGeneratedFile } from '../files/delivery.ts';
 import { readActiveProjectCrs, type ProjectCrs } from '../coordinates/index.ts';
 import { CrsSelector } from '../coordinates/CrsSelector.tsx';
@@ -295,6 +296,12 @@ export function RouteShare({
               <button
                 onClick={() =>
                   void run(async () => {
+                    if (window.ShantuMac?.version === 1) {
+                      const result = await macShareUrl(l.url);
+                      if (result === 'cancelled') throw new DOMException('分享已取消', 'AbortError');
+                      if (result !== 'shared') throw new Error('macOS 未确认分享完成');
+                      return '已完成系统分享';
+                    }
                     if (window.GuanyunNative?.routeLinkShare) {
                       const r = window.GuanyunNative.routeLinkShare(l.url);
                       if (r !== 'ok') throw new Error(r);
@@ -304,7 +311,7 @@ export function RouteShare({
                       await navigator.share({ title: data.name, url: l.url });
                       return '已交给系统分享';
                     }
-                    await navigator.clipboard.writeText(l.url);
+                    await writeClipboard(l.url);
                     return '导航链接已复制';
                   })
                 }

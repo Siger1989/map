@@ -33,5 +33,6 @@ export function RecordingCompactSettings({ recorder }: { recorder: ReturnType<ty
       <label title="静止时降低定位频率，移动后恢复"><input type="checkbox" checked={policy.adaptive} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, adaptive: e.target.checked })} />静止降频</label>
       <label title="没有待处理记录时，开始导航自动开始新记录"><input type="checkbox" checked={policy.recordOnNavigation} disabled={!sampling.supported} onChange={e => sampling.update({ ...policy, recordOnNavigation: e.target.checked })} />导航时自动记录</label>
     </div>
+    {(preferences.error || sampling.error) && <small role="status" className="route-error">{preferences.error || sampling.error}</small>}
   </div>;
 }
