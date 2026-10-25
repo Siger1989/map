@@ -1,0 +1,39 @@
+name: Verify macOS native services
+on:
+  push:
+    branches: [codex/place-address-search-20261011]
+    paths:
+      - 'desktop-web/macos/**'
+      - 'tests/macos-native-*.swift'
+      - '.github/workflows/macos-native-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Compile independent app and native services
+        run: sh desktop-web/macos/build-launcher.sh "$RUNNER_TEMP/native"
+      - name: Exercise native storage and recording rules without user permissions
+        run: |
+          set -eu
+          swiftc -parse-as-library -framework CoreLocation desktop-web/macos/NativeLocationService.swift tests/macos-native-location-check.swift -o "$RUNNER_TEMP/location-check"
+          "$RUNNER_TEMP/location-check"
+          swiftc -parse-as-library desktop-web/macos/NativeOfflineService.swift desktop-web/macos/NativeOfflineServiceTests.swift -o "$RUNNER_TEMP/offline-check"
+          "$RUNNER_TEMP/offline-check"
+          swiftc -parse-as-library -framework AppKit desktop-web/macos/NativeFileService.swift tests/macos-native-files-check.swift -o "$RUNNER_TEMP/files-check"
+          "$RUNNER_TEMP/files-check"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-services-${{ matrix.os }}
+          path: ${{ runner.temp }}/native/
+          retention-days: 7

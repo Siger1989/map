@@ -170,6 +170,11 @@ func TestVolumeVersionMetadataComesFromManifest(t *testing.T) {
 	}
 	app := findEntry(&hfsplus.Entry{Kind: hfsplus.KindDir, Children: children}, "Shantu.app")
 	plist := string(findEntry(app, "Contents/Info.plist").Data)
+	for _, purpose := range []string{"NSLocationUsageDescription", "NSLocationWhenInUseUsageDescription", "NSCameraUsageDescription"} {
+		if !strings.Contains(plist, "<key>"+purpose+"</key><string>") {
+			t.Fatalf("missing native permission purpose: %s", purpose)
+		}
+	}
 	if !strings.Contains(plist, "<key>CFBundleShortVersionString</key><string>0.2.133</string>") ||
 		!strings.Contains(plist, "<key>CFBundleVersion</key><string>0.2.133</string>") ||
 		!strings.Contains(plist, "<key>CFBundleIdentifier</key><string>org.shantu.map.launcher</string>") ||

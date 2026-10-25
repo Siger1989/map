@@ -66,6 +66,8 @@ assert metadata["CFBundleIdentifier"] == "org.shantu.map.launcher"
 assert metadata["LSMinimumSystemVersion"] == "13.0"
 assert metadata["CFBundleShortVersionString"] == bundle_version
 assert metadata["CFBundleVersion"] == bundle_version
+for purpose in ("NSLocationUsageDescription", "NSLocationWhenInUseUsageDescription", "NSCameraUsageDescription"):
+    assert isinstance(metadata.get(purpose), str) and len(metadata[purpose]) > 5, purpose
 volume_readme = (volume / "README.txt").read_text()
 assert f"Shantu for macOS {version}" in volume_readme
 assert "native WebKit window" in volume_readme and "Terminal" not in volume_readme

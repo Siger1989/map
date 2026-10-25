@@ -7,7 +7,7 @@ private let statusURL = URL(string: "http://127.0.0.1:8787/__shantu__/status")!
 
 @main
 @MainActor
-final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class ShantuApp: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
     private struct PendingDownload {
         let temporaryURL: URL
         let destinationURL: URL
@@ -26,6 +26,8 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
     private var webView: WKWebView!
     private var serverProcess: Process?
     private var ownsServer = false
+    private var native: NativeBridge?
+    private var statusItem: NSStatusItem?
     private var smokeJSONPath: URL?
     private var smokeDownloadPath: URL?
     private var smokeDownloadContinuation: CheckedContinuation<Void, Error>?
@@ -57,13 +59,45 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
             showStartupError("应用包缺少有效版本清单。")
             return
         }
+        do {
+            native = try NativeBridge(window: { [weak self] in self?.window }, stateChanged: { [weak self] in self?.updateTaskStatus() })
+        } catch {
+            showStartupError("无法打开应用数据目录，请检查磁盘空间和文件权限。")
+            return
+        }
         createWindow()
         Task { await startOrReuseServer() }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showMainWindow()
+        return true
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard smokeJSONPath == nil else { return true }
+        sender.orderOut(nil)
+        updateTaskStatus()
+        return false
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if smokeJSONPath != nil { return .terminateNow }
+        if native?.hasActiveTasks == true || native?.hasPendingDialogs == true {
+            let alert = NSAlert()
+            alert.messageText = "退出山兔？"
+            alert.informativeText = "退出会暂停记录和缓存下载并保留进度，未完成的文件选择或分享会取消。关闭窗口可让应用继续在后台运行；Mac睡眠或断网仍可能中断任务。"
+            alert.addButton(withTitle: "继续运行")
+            alert.addButton(withTitle: "暂停并退出")
+            if alert.runModal() != .alertSecondButtonReturn { return .terminateCancel }
+        }
+        return .terminateNow
+    }
 
     func applicationWillTerminate(_ notification: Notification) {
+        native?.shutdown()
         if ownsServer, let process = serverProcess, process.isRunning {
             process.terminate()
         }
@@ -72,6 +106,10 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
     private func createWindow() {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
+        if let native {
+            configuration.userContentController.addScriptMessageHandler(native, contentWorld: .page, name: "shantuNative")
+            configuration.userContentController.addUserScript(WKUserScript(source: NativeBridge.bootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         if smokeJSONPath != nil {
             let diagnostics = """
             (() => {
@@ -91,11 +129,14 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
         webView.uiDelegate = self
+        native?.webView = webView
         webView.autoresizingMask = [.width, .height]
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 820),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable],
                           backing: .buffered, defer: false)
         window.title = "山兔"
+        window.delegate = self
+        window.isReleasedWhenClosed = false
         window.center()
         window.contentView = webView
         window.minSize = NSSize(width: 760, height: 560)
@@ -109,6 +150,17 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
         main.addItem(app)
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "关于山兔", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "定位权限与后台任务…", action: #selector(showNativeStatus), keyEquivalent: ",")
+        appMenu.addItem(.separator())
+        appMenu.addItem(withTitle: "隐藏山兔", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hideOthers = appMenu.addItem(withTitle: "隐藏其他", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
+        hideOthers.keyEquivalentModifierMask = [.command, .option]
+        appMenu.addItem(withTitle: "显示全部", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
+        let servicesItem = NSMenuItem(title: "服务", action: nil, keyEquivalent: "")
+        let servicesMenu = NSMenu(title: "服务")
+        servicesItem.submenu = servicesMenu
+        appMenu.addItem(servicesItem)
+        NSApp.servicesMenu = servicesMenu
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "退出山兔", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         app.submenu = appMenu
@@ -129,12 +181,67 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
         editMenu.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         edit.submenu = editMenu
 
+        let windowItem = NSMenuItem()
+        let windowMenu = NSMenu(title: "窗口")
+        windowMenu.addItem(withTitle: "显示地图", action: #selector(showMainWindow), keyEquivalent: "0")
+        windowMenu.addItem(withTitle: "最小化", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        windowMenu.addItem(withTitle: "关闭窗口（保留后台任务）", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        windowItem.submenu = windowMenu
+        main.addItem(windowItem)
+        NSApp.windowsMenu = windowMenu
+
         let help = NSMenuItem()
         main.addItem(help)
         let helpMenu = NSMenu(title: "帮助")
         helpMenu.addItem(withTitle: "导入旧浏览器中的数据", action: #selector(showDataHelp), keyEquivalent: "")
         help.submenu = helpMenu
         NSApp.mainMenu = main
+    }
+
+    @objc private func showMainWindow() {
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @objc private func showNativeStatus() {
+        let alert = NSAlert()
+        alert.messageText = "山兔 · 系统权限与后台任务"
+        let tasks = native?.taskDescription ?? ""
+        alert.informativeText = "定位由macOS系统提供，电脑不一定有GPS。定位或拍照时才申请对应权限。\n当前后台任务：\(tasks.isEmpty ? "无" : tasks)。\n关闭窗口会保留应用与任务；显式退出会保存并暂停。电脑睡眠、合盖或网络断开可能中断定位和下载。"
+        alert.addButton(withTitle: "好")
+        alert.addButton(withTitle: "打开定位权限设置")
+        if native?.hasActiveTasks == true { alert.addButton(withTitle: "暂停后台任务") }
+        let result = alert.runModal()
+        if result == .alertSecondButtonReturn { _ = native?.openLocationSettings() }
+        if result == .alertThirdButtonReturn { native?.pauseTasks() }
+    }
+
+    private func updateTaskStatus() {
+        if native?.hasActiveTasks == true {
+            if statusItem == nil {
+                statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+                let menu = NSMenu()
+                menu.addItem(withTitle: "显示山兔", action: #selector(showMainWindow), keyEquivalent: "")
+                menu.addItem(withTitle: "任务与权限…", action: #selector(showNativeStatus), keyEquivalent: "")
+                menu.addItem(withTitle: "退出山兔…", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+                statusItem?.menu = menu
+            }
+            statusItem?.button?.title = "山兔 · 运行中"
+            statusItem?.button?.toolTip = native?.taskDescription
+        } else if let item = statusItem {
+            NSStatusBar.system.removeStatusItem(item)
+            statusItem = nil
+        }
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        guard smokeJSONPath == nil else { return }
+        let alert = NSAlert()
+        alert.messageText = "地图界面意外停止"
+        alert.informativeText = "原生记录与缓存任务仍由应用管理。重新加载界面后会恢复读取任务状态。"
+        alert.addButton(withTitle: "重新加载")
+        alert.runModal()
+        webView.reload()
     }
 
     @objc private func showDataHelp() {
@@ -394,6 +501,7 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        native?.changed()
         guard let output = smokeJSONPath, !smokeStarted else { return }
         smokeStarted = true
         Task { await runSmokeTest(output: output) }
@@ -431,10 +539,11 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                 result["moduleImportProbe"] = await probeModuleImport(failedResource)
             }
             let storageResult = try await runStorageSmoke()
+            let bridgeResult = try await runNativeBridgeSmoke()
             var passed = result["ready"] as? String == "complete" &&
                 result["canvas"] as? Bool == true && result["webgl2"] as? Bool == true &&
                 result["mapUI"] as? Bool == true && storageResult["localStorage"] == true &&
-                storageResult["indexedDB"] == true
+                storageResult["indexedDB"] == true && bridgeResult
             if !passed {
                 let _: Any? = try await webView.evaluateJavaScript(
                     "const d=document.querySelector('#root details'); if(d)d.open=true; true")
@@ -453,7 +562,7 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
                 passed = passed && (downloadResult["passed"] as? Bool == true)
             }
             let report: [String: Any] = ["passed": passed, "version": appVersion,
-                "document": result, "storage": storageResult, "snapshot": pngURL.path,
+                "document": result, "storage": storageResult, "nativeBridge": bridgeResult, "snapshot": pngURL.path,
                 "download": downloadResult]
             let json = try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
             try json.write(to: output, options: .atomic)
@@ -516,6 +625,24 @@ final class ShantuApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
             try? await Task.sleep(for: .milliseconds(250))
         }
         return ["url": source, "cacheBustedURL": cacheBusted, "result": ["state": "timeout"]]
+    }
+
+    private func runNativeBridgeSmoke() async throws -> Bool {
+        let script = """
+        const bridge = window.ShantuMac;
+        if (bridge?.version !== 1) return false;
+        const state = await bridge.request('state');
+        if (!state?.location || !state?.recording || !state?.offline) return false;
+        const token = await bridge.request('files.begin', {name:'native-smoke.txt',size:3});
+        try {
+          if (await bridge.request('files.append',{token,offset:0,base64:'YWJj'}) !== 3) return false;
+        } finally { await bridge.request('files.cancel',{token}); }
+        let rejected = false;
+        try { await bridge.request('unsupported.smoke'); } catch (_) { rejected = true; }
+        return rejected;
+        """
+        let value = try await webView.callAsyncJavaScript(script, arguments: [:], in: nil, contentWorld: .page)
+        return value as? Bool == true
     }
 
     private func runStorageSmoke() async throws -> [String: Bool] {

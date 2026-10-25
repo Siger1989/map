@@ -1,0 +1,148 @@
+import Foundation
+
+@main
+@MainActor
+struct NativeLocationServiceSmokeCheck {
+    static func main() async throws {
+        try checkSamplingRules()
+        try checkRestartRecoveryAndCorruptArchiveProtection()
+        print("macOS native location checks passed")
+    }
+
+    private static func checkSamplingRules() throws {
+        try require(!NativeLocationService.acceptsSample(
+            distance: 10, seconds: 3, interval: 4,
+            minimumDistance: 5, stationarySeconds: 30, distanceOnly: false),
+            "sampling accepted a fix before its interval")
+        try require(NativeLocationService.acceptsSample(
+            distance: 5, seconds: 4, interval: 4,
+            minimumDistance: 5, stationarySeconds: 30, distanceOnly: true),
+            "sampling rejected a qualifying distance fix")
+        try require(NativeLocationService.acceptsSample(
+            distance: 0, seconds: 30, interval: 4,
+            minimumDistance: 5, stationarySeconds: 30, distanceOnly: false),
+            "sampling rejected the stationary interval")
+        try require(!NativeLocationService.acceptsSample(
+            distance: 0, seconds: 30, interval: 4,
+            minimumDistance: 5, stationarySeconds: 30, distanceOnly: true),
+            "distance-only sampling accepted a stationary fix")
+    }
+
+    private static func checkRestartRecoveryAndCorruptArchiveProtection() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("shantu-native-location-check-\(UUID().uuidString)",
+                                    isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let archiveURL = root.appendingPathComponent("OutdoorRecording", isDirectory: true)
+            .appendingPathComponent("recording.json")
+        try FileManager.default.createDirectory(at: archiveURL.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let fixture: [String: Any] = [
+            "id": "fixture-recording",
+            "phase": "recording",
+            "startedAt": 1_800_000_000_000.0,
+            "segments": [[[
+                "coordinates": [120.0, 30.0],
+                "time": 1_800_000_000_000.0,
+                "accuracy": 4.0,
+                "altitude": NSNull(),
+            ]]],
+            "error": "",
+            "maximumAccuracy": 25,
+            "sampling": [
+                "mode": "accuracy", "intervalSeconds": 1,
+                "distanceMetres": 2, "stationarySeconds": 10,
+                "adaptive": false, "distanceOnly": false,
+                "recordOnNavigation": false,
+            ],
+        ]
+        try JSONSerialization.data(withJSONObject: fixture, options: [.sortedKeys])
+            .write(to: archiveURL, options: .atomic)
+
+        let recovered = NativeLocationService(storageRoot: root, changed: {})
+        let recoveredSnapshot = recovered.recordingSnapshot
+        try require(recoveredSnapshot["phase"] as? String == "paused",
+                    "a recording reopened in the active phase")
+        try require(recoveredSnapshot["id"] as? String == "fixture-recording",
+                    "restart recovery changed the recording id")
+        try require(recoveredSnapshot["archiveCorrupt"] as? Bool == false,
+                    "a valid fixture was marked corrupt")
+        try require((recoveredSnapshot["maximumAccuracy"] as? NSNumber)?.intValue == 25,
+                    "restart did not restore the maximum accuracy")
+        let restoredSampling = recoveredSnapshot["sampling"] as? [String: Any]
+        try require(restoredSampling?["mode"] as? String == "accuracy",
+                    "restart did not restore the sampling mode")
+        try require((restoredSampling?["distanceMetres"] as? NSNumber)?.intValue == 2,
+                    "restart did not restore the sampling distance")
+
+        let updatedSampling: [String: Any] = [
+            "mode": "custom", "intervalSeconds": 3,
+            "distanceMetres": 7, "stationarySeconds": 15,
+            "adaptive": true, "distanceOnly": true,
+            "recordOnNavigation": true,
+        ]
+        _ = try recovered.handle("record.configure", [
+            "maximumAccuracy": 35, "sampling": updatedSampling,
+        ])
+        let beforeInvalidConfig = recovered.recordingSnapshot
+        do {
+            _ = try recovered.handle("record.configure", [
+                "maximumAccuracy": 40,
+                "sampling": ["mode": "invalid"],
+            ])
+            throw CheckFailure(description: "invalid configuration unexpectedly succeeded")
+        } catch is CheckFailure {
+            throw CheckFailure(description: "invalid configuration unexpectedly succeeded")
+        } catch {
+            // Invalid updates must leave both preference values unchanged.
+        }
+        try require((recovered.recordingSnapshot["maximumAccuracy"] as? NSNumber)?.intValue ==
+                    (beforeInvalidConfig["maximumAccuracy"] as? NSNumber)?.intValue,
+                    "invalid configuration changed maximum accuracy")
+        try require((recovered.recordingSnapshot["sampling"] as? [String: Any])?["mode"] as? String == "custom",
+                    "invalid configuration changed the sampling policy")
+        recovered.shutdown()
+
+        let reopened = NativeLocationService(storageRoot: root, changed: {})
+        let reopenedSnapshot = reopened.recordingSnapshot
+        try require((reopenedSnapshot["maximumAccuracy"] as? NSNumber)?.intValue == 35,
+                    "configured maximum accuracy was not persisted")
+        try require((reopenedSnapshot["sampling"] as? [String: Any])?["mode"] as? String == "custom",
+                    "configured sampling policy was not persisted")
+        reopened.shutdown()
+
+        let corruptRoot = root.appendingPathComponent("corrupt", isDirectory: true)
+        let corruptURL = corruptRoot.appendingPathComponent("OutdoorRecording", isDirectory: true)
+            .appendingPathComponent("recording.json")
+        try FileManager.default.createDirectory(at: corruptURL.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        let corruptBytes = Data("{ invalid saved data".utf8)
+        try corruptBytes.write(to: corruptURL, options: .atomic)
+
+        let corruptService = NativeLocationService(storageRoot: corruptRoot, changed: {})
+        try require(corruptService.recordingSnapshot["archiveCorrupt"] as? Bool == true,
+                    "a malformed archive was not reported")
+        do {
+            _ = try corruptService.handle("record.command", ["command": "start"])
+            throw CheckFailure(description: "start unexpectedly replaced a corrupt archive")
+        } catch is CheckFailure {
+            throw CheckFailure(description: "start unexpectedly replaced a corrupt archive")
+        } catch {
+            // The service must return an explicit error and leave the fixture untouched.
+        }
+        let preserved = try Data(contentsOf: corruptURL)
+        try require(preserved == corruptBytes, "the corrupt archive was overwritten")
+        corruptService.shutdown()
+    }
+
+    private static func require(_ condition: @autoclosure () -> Bool,
+                                _ message: String) throws {
+        if !condition() { throw CheckFailure(description: message) }
+    }
+}
+
+private struct CheckFailure: Error, CustomStringConvertible {
+    let description: String
+    init(description: String) { self.description = description }
+}
