@@ -40,7 +40,7 @@ final class NativeOfflineService {
         var bytes: Int
     }
     fileprivate enum FetchIssue: Error, Equatable { case invalidResponse, tooLarge, invalidImage, rateLimited }
-    fileprivate enum RetryDecision: Equatable { case wait(Int), pause }
+    enum RetryDecision: Equatable { case wait(Int), pause }
 
     private let root: URL
     private let tiles: URL
@@ -210,7 +210,9 @@ final class NativeOfflineService {
             } catch {
                 if lastID == id { lastID = packages.keys.first }
                 changed()
-                throw failure("缓存包已删除，存储清理失败；稍后重试或重启应用可继续清理")
+                // Logical deletion already committed. Keep the tombstone for startup
+                // cleanup and report success so callers do not retain a deleted index.
+                return true
             }
             if lastID == id { lastID = packages.keys.first }
             changed()
@@ -351,7 +353,7 @@ final class NativeOfflineService {
                 let delegate = BoundedPublicDownloadDelegate(maximumBytes: 8 * 1024 * 1024)
                 var temporaryURL: URL?
                 do {
-                    let (temporary, response) = try await URLSession.shared.download(for: request, delegate: delegate)
+                    let (temporary, response) = try await OfflineURLSession.shared.session.download(for: request, delegate: delegate)
                     temporaryURL = temporary
                     guard let http = response as? HTTPURLResponse else { try? FileManager.default.removeItem(at: temporary); throw FetchIssue.invalidResponse }
                     guard (200..<300).contains(http.statusCode) else {
@@ -570,7 +572,7 @@ final class NativeOfflineService {
     }
     private func failure(_ message: String) -> NSError { Self.makeError(message) }
 
-    fileprivate nonisolated static func validateURL(_ raw: String) throws {
+    nonisolated static func validateURL(_ raw: String) throws {
         guard raw.utf8.count <= 16_384, let url = URL(string: raw),
               let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
               let rawHost = url.host?.lowercased(), !rawHost.isEmpty,
@@ -586,8 +588,8 @@ final class NativeOfflineService {
             throw makeError("缓存瓦片地址无效")
         }
     }
-    fileprivate nonisolated static func validateRedirect(_ url: URL) throws { try validateURL(url.absoluteString) }
-    fileprivate nonisolated static func retryDecision(_ response: HTTPURLResponse, attempt: Int, now: Date = Date()) -> RetryDecision {
+    nonisolated static func validateRedirect(_ url: URL) throws { try validateURL(url.absoluteString) }
+    nonisolated static func retryDecision(_ response: HTTPURLResponse, attempt: Int, now: Date = Date()) -> RetryDecision {
         if attempt >= 3 { return .pause }
         if let header = response.value(forHTTPHeaderField: "Retry-After") {
             let seconds: Int?
@@ -602,7 +604,7 @@ final class NativeOfflineService {
         }
         return .wait(min(30, 1 << min(attempt, 5)))
     }
-    fileprivate nonisolated static func isPrivateIPv6(_ bytes: [UInt8]) -> Bool {
+    nonisolated static func isPrivateIPv6(_ bytes: [UInt8]) -> Bool {
         guard bytes.count == 16 else { return true }
         if bytes.allSatisfy({ $0 == 0 }) { return true }
         if bytes[0..<15].allSatisfy({ $0 == 0 }) && bytes[15] == 1 { return true }
@@ -651,10 +653,25 @@ final class NativeOfflineService {
     fileprivate nonisolated static func sha256(_ value: String) -> String {
         SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
     }
-    fileprivate nonisolated static func exceedsTileLimit(written: Int64, expected: Int64, maximum: Int64 = 8 * 1024 * 1024) -> Bool {
+    nonisolated static func exceedsTileLimit(written: Int64, expected: Int64, maximum: Int64 = 8 * 1024 * 1024) -> Bool {
         written > maximum || expected > maximum
     }
     private nonisolated static func makeError(_ message: String) -> NSError { NSError(domain: "ShantuOffline", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
+}
+
+private final class OfflineURLSession: @unchecked Sendable {
+    static let shared = OfflineURLSession()
+    let session: URLSession
+
+    private init() {
+        let configuration = URLSessionConfiguration.default
+        configuration.httpMaximumConnectionsPerHost = 16
+        configuration.timeoutIntervalForRequest = 40
+        configuration.timeoutIntervalForResource = 120
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        session = URLSession(configuration: configuration)
+    }
 }
 
 private struct IPv4Address {
