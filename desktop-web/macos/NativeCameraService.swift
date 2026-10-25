@@ -76,6 +76,8 @@ final class NativeCameraService: NSObject, AVCapturePhotoCaptureDelegate, NSWind
     nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         let data = photo.fileDataRepresentation()
         Task { @MainActor in
+            // A cancelled capture must never finish a later camera request.
+            guard self.output === output, self.continuation != nil else { return }
             if error != nil { self.finish(.failure(self.failure("拍照失败，请重试"))); return }
             guard let data, !data.isEmpty, data.count <= 16 * 1024 * 1024 else {
                 self.finish(.failure(self.failure("照片过大或无有效图像"))); return

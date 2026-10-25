@@ -138,6 +138,53 @@ enum NativeOfflineServiceTests {
         }
     }
 
+    static func testControlledURLSessionDownloadIfConfigured() async throws {
+        guard let rawURL = ProcessInfo.processInfo.environment["SHANTU_NATIVE_NETWORK_TEST_URL"], !rawURL.isEmpty else { return }
+
+        let source = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("public/brand/shantu-logo.png")
+        let expected = try Data(contentsOf: source)
+        let storage = FileManager.default.temporaryDirectory.appendingPathComponent("shantu-offline-network-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: storage) }
+
+        let id = "network-\(UUID().uuidString)"
+        let service = NativeOfflineService(storageRoot: storage, changed: {})
+        do {
+            try expect(try await service.handle("offline.begin", ["id": id, "name": "network test", "total": 1]) as? String == "ok", "network begin")
+            try expect(try await service.handle("offline.append", ["id": id, "offset": 0, "urls": [rawURL]]) as? String == "ok", "network append")
+            try expect(try await service.handle("offline.commit", ["id": id]) as? String == "ok", "network commit")
+
+            var state: [String: Any] = [:]
+            for _ in 0..<60 {
+                state = try await service.handle("offline.verify", ["id": id]) as? [String: Any] ?? [:]
+                let current = state["state"] as? String
+                if current == "complete" { break }
+                if current == "paused" {
+                    let reason = state["error"] as? String ?? "no error detail"
+                    throw TestFailure.failed("controlled native network download paused: \(reason)")
+                }
+                try await Task.sleep(for: .seconds(1))
+            }
+            try expect(state["state"] as? String == "complete", "controlled native network download must complete within 60 seconds")
+            try expect(state["done"] as? Int == 1 && state["bytes"] as? Int64 == Int64(expected.count), "network state must match the source image size")
+            let read = try await service.handle("offline.read", ["url": rawURL]) as? [String: String]
+            try expect(read?["base64"].flatMap({ Data(base64Encoded: $0) }) == expected, "downloaded temporary file bytes must match the source image")
+
+            let restarted = NativeOfflineService(storageRoot: storage, changed: {})
+            let restored = try await restarted.handle("offline.verify", ["id": id]) as? [String: Any]
+            try expect(restored?["state"] as? String == "complete" && restored?["done"] as? Int == 1, "download must survive service reconstruction")
+            let restoredRead = try await restarted.handle("offline.read", ["url": rawURL]) as? [String: String]
+            try expect(restoredRead?["base64"].flatMap({ Data(base64Encoded: $0) }) == expected, "reconstructed service must read exact downloaded bytes")
+            try expect(try await restarted.handle("offline.remove", ["id": id]) as? Bool == true, "network test package removal")
+            try expect(try await restarted.handle("offline.has", ["url": rawURL]) as? Bool == false, "removed network tile must not remain cached")
+        } catch {
+            if service.hasActiveDownload { _ = try? await service.handle("offline.pause", [:]) }
+            for _ in 0..<100 where service.hasActiveDownload { try? await Task.sleep(for: .milliseconds(50)) }
+            throw error
+        }
+    }
+
     private static func expect(_ condition: Bool, _ message: String) throws {
         guard condition else { throw TestFailure.failed(message) }
     }
@@ -157,6 +204,7 @@ struct RunNativeOfflineServiceTests {
         try NativeOfflineServiceTests.testRetryAfterIsNeverShortenedAndFinal429DoesNotRetry()
         try NativeOfflineServiceTests.testURLRulesCoverPrivateIPv4IPv6DNSAndLength()
         try await NativeOfflineServiceTests.testIntegerRejectsFractionsBooleansAndOverflow()
+        try await NativeOfflineServiceTests.testControlledURLSessionDownloadIfConfigured()
         print("NativeOfflineServiceTests passed")
     }
 }

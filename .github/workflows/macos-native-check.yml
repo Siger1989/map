@@ -29,6 +29,7 @@ jobs:
           swiftc -parse-as-library -framework CoreLocation desktop-web/macos/NativeLocationService.swift tests/macos-native-location-check.swift -o "$RUNNER_TEMP/location-check"
           "$RUNNER_TEMP/location-check"
           swiftc -parse-as-library desktop-web/macos/NativeOfflineService.swift desktop-web/macos/NativeOfflineServiceTests.swift -o "$RUNNER_TEMP/offline-check"
+          export SHANTU_NATIVE_NETWORK_TEST_URL="https://raw.githubusercontent.com/Siger1989/map/$GITHUB_SHA/public/brand/shantu-logo.png"
           "$RUNNER_TEMP/offline-check"
           swiftc -parse-as-library -framework AppKit desktop-web/macos/NativeFileService.swift tests/macos-native-files-check.swift -o "$RUNNER_TEMP/files-check"
           "$RUNNER_TEMP/files-check"
