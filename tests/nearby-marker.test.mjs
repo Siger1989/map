@@ -62,8 +62,8 @@ test('range uses ground meters per pixel and the canvas diagonal without map pro
   assert.ok(range);
   assert.equal(range.exitRadiusMeters, 150, 'the configured radius has a 150m floor');
   assert.equal(range.enterRadiusMeters, 135);
-  assert.equal(getNearbyMarkerRange(fakeMap([0, 0], 2)).exitRadiusMeters, 30000,
-    'the configured radius has a 30km ceiling');
+  assert.ok(getNearbyMarkerRange(fakeMap([0, 0], 2)).exitRadiusMeters > 30000,
+    'the radius grows with the ground area covered by a zoomed-out viewport');
 });
 
 test('range distance wraps across the antimeridian and fails open for invalid or polar inputs', () => {
@@ -192,7 +192,7 @@ test('same-coordinate setLngLat keeps an attached boundary marker during zoom, t
   assert.equal(log.filter((entry) => entry === 'element-remove').length, 1);
 });
 
-test('gesture retention still enforces the 30km cap and attaches new nearby markers', () => {
+test('gesture retention keeps the 30km minimum and attaches new nearby markers', () => {
   const map = fakeMap([0, 0], 10);
   const marker = instrument(new NearbyMarker({ element: markerElement() }))
     .setLngLat([0, 5000 / 111195])
@@ -202,13 +202,39 @@ test('gesture retention still enforces the 30km cap and attaches new nearby mark
 
   map.center = [0, -25_001 / 111195];
   map.fire('move');
-  assert.equal(marker._map, undefined, 'gesture retention never keeps a marker beyond 30km');
+  assert.equal(marker._map, undefined, 'at near zoom, gesture retention prunes this marker after it moves beyond 30km');
 
   const nearby = instrument(new NearbyMarker({ element: markerElement() }))
     .setLngLat([0, map.center[1]])
     .addTo(map);
   assert.ok(nearby._map, 'newly nearby markers still attach during a held gesture');
   map.fire('moveend');
+});
+
+test('zoomed-out viewport attaches distant markers and keeps them through zoom updates and gesture end', () => {
+  const map = fakeMap([0, 0], 2);
+  const distance = 40_000;
+  const marker = instrument(new NearbyMarker({ element: markerElement() }))
+    .setLngLat([0, distance / 111195])
+    .addTo(map);
+  assert.ok(marker._map, 'a marker beyond 30km attaches when it is inside the expanded viewport range');
+
+  map.fire('zoomstart');
+  map.zoom = 3;
+  map.fire('move');
+  marker.setLngLat(marker.getLngLat());
+  assert.ok(marker._map, 'zoom and same-coordinate updates use the expanded gesture retention range');
+
+  map.fire('zoomend');
+  assert.ok(marker._map, 'the marker remains visible when the normal post-gesture range still includes it');
+});
+
+test('markers beyond the expanded zoomed-out viewport range remain detached', () => {
+  const map = fakeMap([0, 0], 2);
+  const marker = instrument(new NearbyMarker({ element: markerElement() }))
+    .setLngLat([0, 20])
+    .addTo(map);
+  assert.equal(marker._map, undefined, 'markers beyond the viewport-derived radius are still pruned');
 });
 
 test('rotateend applies the normal range even without a paired moveend', () => {

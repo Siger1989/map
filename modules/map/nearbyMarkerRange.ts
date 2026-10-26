@@ -31,7 +31,7 @@ export function getNearbyMarkerRange(map: MapLibreMap): NearbyMarkerRange | null
     const metersPerPixel = EARTH_CIRCUMFERENCE_METERS * Math.cos(center[1] * Math.PI / 180) /
       (512 * 2 ** zoom);
     if (!Number.isFinite(metersPerPixel) || metersPerPixel <= 0) return null;
-    const radius = Math.max(150, Math.min(30000, metersPerPixel * Math.hypot(width, height) * 0.6));
+    const radius = Math.max(150, metersPerPixel * Math.hypot(width, height) * 0.6);
     return { center, enterRadiusMeters: radius * 0.9, exitRadiusMeters: radius };
   } catch { return null; }
 }

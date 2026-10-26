@@ -4,7 +4,7 @@ import { build } from 'esbuild';
 import { measurementMetrics, parseMeasurement, pointPose, segmentMetrics } from '../modules/measurement/data.ts';
 import { markerPhoto, photosForMarker, photoLocationLabel } from '../modules/photos/association.ts';
 import { validPhoto } from '../modules/photos/storage.ts';
-import { markerScale } from '../modules/annotations/markerScale.ts';
+import { markerPresentation, markerScale } from '../modules/annotations/markerScale.ts';
 import { cutNodes } from '../modules/tracks/deleteNodes.ts';
 import { removeEditNodes, selectEditNode, removeEditNode, startRouteEdit, storeRouteEdit, undoRouteEdit } from '../modules/tracks/routeEdit.ts';
 import { parseSavedTracks } from '../modules/tracks/drawing.ts';
@@ -43,6 +43,16 @@ test('marker shrink is monotonic, bounded and returns to full size on zoom in', 
   assert.equal(markerScale(16), 1); assert.equal(markerScale(3), .35);
   for (let z = 4; z < 16; z++) assert.ok(markerScale(z) < markerScale(z + 1));
   assert.ok(markerScale(10) < .7);
+});
+test('marker labels appear two zoom levels earlier with a one-level icon transition', () => {
+  assert.equal(markerPresentation(9, false), 'label');
+  assert.equal(markerPresentation(8.999, false), 'icon');
+  assert.equal(markerPresentation(8, false), 'icon');
+  assert.equal(markerPresentation(7.999, false), 'dot');
+  assert.equal(markerPresentation(7, false), 'dot');
+  assert.equal(markerPresentation(0, true), 'label');
+  assert.equal(markerPresentation(Number.NaN, false), 'label');
+  assert.equal(markerPresentation(Number.POSITIVE_INFINITY, false), 'label');
 });
 test('delete removes only selected vertices and incident edges across junctions', () => {
   const a = [104, 30], b = [104.01, 30], c = [104.02, 30], d = [104.03, 30], e = [104.04, 30];

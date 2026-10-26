@@ -6,7 +6,7 @@ import {
 } from './nearbyMarkerRange.ts';
 
 const managers = new WeakMap<MapLibreMap, NearbyMarkerManager>();
-const MAX_ATTACHED_RANGE_METERS = 30_000;
+const MIN_GESTURE_RETENTION_METERS = 30_000;
 type ActiveGesture = 'touch' | 'zoom' | 'rotate';
 
 class NearbyMarkerManager {
@@ -65,7 +65,11 @@ class NearbyMarkerManager {
   currentRanges() {
     this.range = getNearbyMarkerRange(this.map);
     const retentionRange = this.activeGestures.size && this.range
-      ? { ...this.range, enterRadiusMeters: MAX_ATTACHED_RANGE_METERS, exitRadiusMeters: MAX_ATTACHED_RANGE_METERS }
+      ? {
+        ...this.range,
+        enterRadiusMeters: Math.max(MIN_GESTURE_RETENTION_METERS, this.range.exitRadiusMeters),
+        exitRadiusMeters: Math.max(MIN_GESTURE_RETENTION_METERS, this.range.exitRadiusMeters),
+      }
       : null;
     return { range: this.range, retentionRange };
   }
@@ -163,8 +167,8 @@ export class NearbyMarker extends MapLibreMarker {
       if (!this.nativeAttached) this.attachNative();
     } else if (this.nativeAttached && gestureRange &&
       isCoordinateWithinNearbyRange(gestureRange, coordinate, true)) {
-      // Keep an already-mounted marker through pinch/rotation jitter, but never
-      // exceed the configured 30km cap; moveend applies the normal range again.
+      // Keep mounted markers through pinch/rotation jitter, using at least 30km
+      // or the current viewport range; moveend applies the normal range again.
       return;
     } else if (this.nativeAttached) this.detachNative();
   }

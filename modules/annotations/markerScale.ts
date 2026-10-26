@@ -5,9 +5,12 @@ export function markerScale(zoom: number) {
 
 /**
  * MapLibre's 512 px camera zoom is one level below the conventional 256 px UI
- * tile level, so labels start at raw zoom 11 (visible UI level 12).
+ * tile level. Labels start at raw zoom 9, two raw levels earlier than before.
+ * The displayed source level also depends on the raster sampling profile
+ * (for example, raw zoom 8 is about UI level 10 in high mode and 9 in standard).
+ * The icon-only transition occupies raw zoom 8 to 9.
  */
 export function markerPresentation(zoom: number, selected: boolean) {
-  if (selected || !Number.isFinite(zoom) || zoom >= 11) return 'label';
-  return zoom < 10 ? 'dot' : 'icon';
+  if (selected || !Number.isFinite(zoom) || zoom >= 9) return 'label';
+  return zoom < 8 ? 'dot' : 'icon';
 }
