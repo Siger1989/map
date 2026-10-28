@@ -38,5 +38,17 @@ class NativeRenderMemoryBudgetTest {
         assertEquals(32, NativeRenderMemoryBudget.vectorTileCount(Long.MAX_VALUE))
     }
 
+    @Test fun composedRasterIncludesRoomForWarpAndUpload() {
+        for (heap in listOf(64L, 192L, 512L, 2048L)) {
+            for (tileSize in listOf(256, 512, 1024, 2048)) {
+                val side = NativeRenderMemoryBudget.rasterPatchSide(heap * MIB, tileSize)
+                val pixels = side.toLong() * tileSize * side * tileSize
+                assertTrue(pixels <= 2048L * 2048L)
+                // One source tile is the minimum, even on a small heap.
+                assertTrue(pixels * 4 <= maxOf(heap * MIB / 32, tileSize.toLong() * tileSize * 4))
+            }
+        }
+    }
+
     private companion object { const val MIB = 1024L * 1024L }
 }

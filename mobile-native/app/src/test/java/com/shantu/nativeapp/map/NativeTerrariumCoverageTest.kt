@@ -32,6 +32,14 @@ class NativeTerrariumCoverageTest {
     }
 
     @Test
+    fun `bilinear elevation ignores missing zero weight neighbors but requires every weighted sample`() {
+        assertEquals(12.0, bilinearElevation(12.0, Double.NaN, Double.NaN, Double.NaN, 0.0, 0.0), 0.0)
+        assertEquals(15.0, bilinearElevation(10.0, 20.0, 30.0, 40.0, 0.5, 0.0), 0.0)
+        assertEquals(25.0, bilinearElevation(10.0, 20.0, 30.0, 40.0, 0.5, 0.5), 0.0)
+        assertTrue(bilinearElevation(10.0, null, 30.0, 40.0, 0.5, 0.0).isNaN())
+    }
+
+    @Test
     fun `regional coverage bounds do not claim global fabdem availability`() {
         val bounds = intArrayOf(10, 12, 20, 22)
         assertTrue(NativeTerrariumMath.tileInsideCoverage(8, 11, 21, bounds))

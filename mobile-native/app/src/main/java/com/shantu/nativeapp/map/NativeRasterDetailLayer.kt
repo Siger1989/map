@@ -180,7 +180,7 @@ internal class NativeRasterDetailLayer(
         val centerLon=look.position.longitude.inDegrees
         val centerLat=look.position.latitude.inDegrees
         val bounds=viewportBounds()
-        val maxSide=(8192/source.tileSize).coerceAtLeast(1)
+        val maxSide=NativeRenderMemoryBudget.rasterPatchSide(Runtime.getRuntime().maxMemory(),source.tileSize)
         val patch=runCatching { NativeRasterDetailPlan.create(centerLon,centerLat,z,bounds,maxSide) }.getOrNull() ?: return
         if(lastPatchKey==patch.key)return
         lastPatchKey=patch.key

@@ -15,6 +15,14 @@ internal object NativeRenderMemoryBudget {
         (maxHeapBytes.coerceAtLeast(0L) / BYTES_PER_VECTOR_TILE).coerceIn(MIN_VECTOR_TILES.toLong(), MAX_VECTOR_TILES.toLong()).toInt()
 
     const val MIN_VECTOR_TILES = 12
+    /** Bitmap + warp pixels + GPU upload coexist. Reserve at most 1/32 heap per copy. */
+    fun rasterPatchSide(maxHeapBytes: Long, tileSize: Int): Int {
+        require(tileSize in setOf(256, 512, 1024, 2048))
+        val pixels = (maxHeapBytes.coerceAtLeast(0L) / 32L / 4L).coerceIn(256L * 256L, 2048L * 2048L)
+        val side = kotlin.math.sqrt(pixels.toDouble()).toInt() / tileSize
+        return side.coerceIn(1, 16)
+    }
+
     const val MAX_VECTOR_TILES = 32
     private const val MIB = 1024L * 1024L
     private const val BYTES_PER_VECTOR_TILE = 8L * MIB

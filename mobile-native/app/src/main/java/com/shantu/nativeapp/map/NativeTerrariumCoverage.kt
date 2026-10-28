@@ -109,15 +109,9 @@ internal class NativeTerrariumCoverage(
                         val x0 = kotlin.math.floor(sx).toInt().coerceIn(0, tileSize - 1)
                         val x1 = (x0 + 1).coerceIn(0, tileSize - 1)
                         val fx = (sx - kotlin.math.floor(sx)).coerceIn(0.0, 1.0)
-                        val samples = listOf(
-                            at(x0, y0) to ((1.0 - fx) * (1.0 - fy)),
-                            at(x1, y0) to (fx * (1.0 - fy)),
-                            at(x1, y1) to (fx * fy),
-                            at(x0, y1) to ((1.0 - fx) * fy),
-                        ).filter { it.second > 1e-12 }
-                        if (samples.all { it.first?.isFinite() == true }) {
-                            values[pixelY * outputSize + pixelX] = samples.sumOf { (value, weight) -> value!! * weight }
-                        }
+                        values[pixelY * outputSize + pixelX] = bilinearElevation(
+                            at(x0, y0), at(x1, y0), at(x1, y1), at(x0, y1), fx, fy,
+                        )
                     }
                 }
                 values
@@ -247,6 +241,20 @@ internal class NativeTerrariumCoverage(
         groups.forEach { group -> group.filterNotNull().distinct().forEach { if (!it.isRecycled) it.recycle() } }
     }
 
+}
+
+/** Bilinear interpolation without per-pixel collections or Pair allocations. */
+internal fun bilinearElevation(v00: Double?, v10: Double?, v11: Double?, v01: Double?, fx: Double, fy: Double): Double {
+    val w00 = (1.0 - fx) * (1.0 - fy)
+    val w10 = fx * (1.0 - fy)
+    val w11 = fx * fy
+    val w01 = (1.0 - fx) * fy
+    var result = 0.0
+    if (w00 > 1e-12) { if (v00?.isFinite() != true) return Double.NaN; result += v00 * w00 }
+    if (w10 > 1e-12) { if (v10?.isFinite() != true) return Double.NaN; result += v10 * w10 }
+    if (w11 > 1e-12) { if (v11?.isFinite() != true) return Double.NaN; result += v11 * w11 }
+    if (w01 > 1e-12) { if (v01?.isFinite() != true) return Double.NaN; result += v01 * w01 }
+    return result
 }
 
 private suspend fun tileBitmap(cache: MutableMap<Int, Bitmap?>, key: Int, load: suspend () -> Bitmap?): Bitmap? {

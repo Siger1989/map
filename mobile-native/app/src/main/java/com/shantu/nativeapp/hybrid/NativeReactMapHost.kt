@@ -1368,7 +1368,12 @@ class NativeReactMapHost(
         val now = android.os.SystemClock.elapsedRealtime()
         if (!force && now - entry.lastSnapPublishAt < 500L) return
         entry.lastSnapPublishAt = now
-        val bounds = runCatching {
+        val settings = entry.renderState.optJSONObject("settings") ?: JSONObject()
+        val interaction = entry.renderState.optJSONObject("interaction") ?: JSONObject()
+        val roads = settings.optBoolean("roadsEnabled", settings.optBoolean("roads"))
+        val rivers = interaction.optBoolean("riverSnapping")
+        // Disabled snapping still publishes its hidden state, but needs no terrain rays.
+        val bounds = if (!roads && !rivers) null else runCatching {
             val width = entry.controller.view.width.toFloat(); val height = entry.controller.view.height.toFloat()
             if (width <= 0 || height <= 0) return@runCatching null
             val corners = listOf(
@@ -1381,10 +1386,6 @@ class NativeReactMapHost(
                 else listOf(lons.minOrNull()!!, lats.minOrNull()!!, lons.maxOrNull()!!, lats.maxOrNull()!!)
             }
         }.getOrNull()
-        val settings = entry.renderState.optJSONObject("settings") ?: JSONObject()
-        val interaction = entry.renderState.optJSONObject("interaction") ?: JSONObject()
-        val roads = settings.optBoolean("roadsEnabled", settings.optBoolean("roads"))
-        val rivers = interaction.optBoolean("riverSnapping")
         // Floating-point reconstruction jitter is not a camera move. Bounds at sub-metre
         // precision still track the visible geometry without rebuilding it on idle frames.
         val stableBounds = bounds?.map { kotlin.math.round(it * 1_000_000.0) / 1_000_000.0 }
