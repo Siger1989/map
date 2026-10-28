@@ -36,6 +36,7 @@ import './collections.css';
 import { collectionArchive } from './archive';
 import { ZIP_MIME } from '../files/archive';
 import type { TripPhoto } from '../photos/storage';
+import type { Recording } from '../outdoor/recording';
 type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onImport?: () => void;
   onImportedData?: (data: Transfer) => void;
@@ -60,6 +61,7 @@ type Props = ComponentProps<typeof RouteCollectionsPanel> & {
   onCacheRoutes: (keys: string[]) => void;
   onCacheFolder: () => void;
   cacheCount: number;
+  recording?: Recording;
 };
 export function CollectionsPanel(props: Props) {
   const entries = useMemo(
@@ -248,6 +250,10 @@ export function CollectionsPanel(props: Props) {
   if (importOpen) return <FavoritesImportPanel
     onClose={() => setImportOpen(false)}
     onImported={data => props.onImportedData?.(data)}
+    taskMigration={{
+      draft: { segments: props.tracks.draft, kinds: [], history: [], pointLine: null, style: props.tracks.style, edgeColors: props.tracks.edgeColors, colorConditions: props.tracks.colorConditions },
+      recording: props.recording ?? { id: '', phase: 'idle', startedAt: 0, segments: [], error: '' },
+    }}
   />;
   if (legacy)
     return (

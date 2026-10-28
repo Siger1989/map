@@ -4,21 +4,24 @@ import { fetchMapTile, tileResponseError, TileTransportError } from '../modules/
 
 test('Tianditu browser tiles use HTTPS direct requests and preserve key parameters', async () => {
   const originalFetch = globalThis.fetch;
+  const originalDecoder = globalThis.createImageBitmap;
+  globalThis.createImageBitmap = async () => ({ width: 256, height: 256, close() {} });
   const calls = [];
   globalThis.fetch = async (...args) => {
     calls.push(args);
-    return new Response(null, { status: 200 });
+    return new Response(Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,1,0,0,0,1,0]), { status: 200, headers: { 'Content-Type': 'image/png' } });
   };
   try {
     const signal = new AbortController().signal;
     await fetchMapTile('http://t0.tianditu.gov.cn/DataServer?T=vec_w&x=4&y=7&l=8&tk=fixture', signal);
     assert.equal(calls.length, 1);
     assert.equal(calls[0][0], 'https://t0.tianditu.gov.cn/DataServer?T=vec_w&x=4&y=7&l=8&tk=fixture');
-    assert.equal(calls[0][1].signal, signal);
+    assert.ok(calls[0][1].signal instanceof AbortSignal, 'shared transport owns its independently cancellable network signal');
     assert.equal(calls[0][1].credentials, 'omit');
     assert.equal(calls[0][1].referrerPolicy, undefined);
   } finally {
     globalThis.fetch = originalFetch;
+    globalThis.createImageBitmap = originalDecoder;
   }
 });
 

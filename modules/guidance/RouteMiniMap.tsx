@@ -6,8 +6,11 @@ import { basemapConfiguration, tiandituTiles } from '../cartography/basemaps';
 import { tiandituBase, TIANDITU_LAYERS } from '../cartography/tianditu';
 import { CameraGizmo } from '../controls/CameraGizmo';
 import { SENTINEL_TILES, SENTINEL_MAXZOOM, usesSentinel, usesTianditu } from '../cartography/sentinel';
+import { registerTiandituProtocol, tiandituRequestTransform } from '../mapSources/tiandituProtocol';
+import { installTiandituRecovery } from '../mapSources/tiandituRecovery';
+import { NativeRouteMiniMap } from './NativeRouteMiniMap';
 type Option={id:string;coordinates:Coordinate[];color:string;segments?:PlannedRoute['segments'];opacity?:number};
-export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='original',settings}: {
+function WebRouteMiniMap({coordinates,color='#c2513f',routes,selectedId='original',settings}: {
   coordinates:Coordinate[];color?:string;routes?:Option[];selectedId?:string;settings?:LayerSettings;
 }) {
   const container=useRef<HTMLDivElement>(null), update=useRef<()=>void>(()=>{});
@@ -20,13 +23,16 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
   const sentinel=!settings || usesSentinel(settings),tdt=!!settings && usesTianditu(settings,domestic.domestic);
   useEffect(()=>{
     let disposed=false, map:import('maplibre-gl').Map|undefined;
+    let releaseTiandituRecovery: (() => void) | undefined;
     const markers:import('maplibre-gl').Marker[]=[];
     setError('底图加载中…');
     const timer=setTimeout(()=>{if(!disposed)setError('底图暂未加载，可重试；路线仍可查看');},15000);
     void import('maplibre-gl').then(ml=>{
       if(disposed || !container.current)return;
       ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');
+      registerTiandituProtocol(ml);
       map=new ml.Map({container:container.current,interactive:true,keyboard:false,attributionControl:false,fadeDuration:0,
+        transformRequest: tiandituRequestTransform,
         bounds:routeBounds(latest.current.options.map(r=>r.coordinates)),fitBoundsOptions:{padding:{top:30,bottom:30,left:30,right:86},maxZoom:16},
         style:{version:8,sources:{base:{type:'raster',tiles:sentinel?SENTINEL_TILES:tdt?tiandituTiles(base,domestic.token):['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:sentinel?SENTINEL_MAXZOOM:tdt?Math.min(TIANDITU_LAYERS[base].maxzoom,18):19},routes:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},layers:[
           {id:'background',type:'background',paint:{'background-color':'#dce6d5'}},{id:'base',type:'raster',source:'base'},
@@ -36,6 +42,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
           {id:'connection',type:'line',source:'routes',filter:['all',['==',['get','selected'],true],['==',['get','kind'],'access']],paint:{'line-color':['get','color'],'line-width':4,'line-dasharray':[2,2],'line-opacity':['get','opacity']}}
         ]}});
       camera.current=map;
+      releaseTiandituRecovery=installTiandituRecovery(map);
       const syncView=()=>{if(map&&!disposed)setView({zoom:map.getZoom(),pitch:map.getPitch(),bearing:map.getBearing()});};
       map.on('move',syncView);syncView();
       update.current=()=>{
@@ -54,7 +61,7 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
       map.on('sourcedata',event=>{if(event.sourceId==='base' && event.tile && event.isSourceLoaded){clearTimeout(timer);if(!disposed)setError('');}});
       map.on('error',()=>{if(!disposed)setError('底图加载失败，请检查网络后重试');});
     }).catch(()=>{if(!disposed)setError('底图暂不可用，请重试');});
-    return()=>{disposed=true;clearTimeout(timer);update.current=()=>{};camera.current=null;markers.forEach(m=>m.remove());map?.remove();};
+    return()=>{disposed=true;clearTimeout(timer);releaseTiandituRecovery?.();update.current=()=>{};camera.current=null;markers.forEach(m=>m.remove());map?.remove();};
   },[base,sentinel,tdt,domestic.token,retry]);
   const geometry=JSON.stringify([options,selectedId,coordinates]);
   useEffect(()=>update.current(),[geometry]);
@@ -68,4 +75,12 @@ export function RouteMiniMap({coordinates,color='#c2513f',routes,selectedId='ori
     <a href={sentinel?'https://cloudless.eox.at':tdt?'https://www.tianditu.gov.cn/':'https://www.openstreetmap.org/copyright'} target="_blank" rel="noreferrer" title={sentinel?'EOxCloudless · modified Copernicus Sentinel data 2025 · CC BY-NC-SA 4.0':undefined}>{sentinel?'© EOX · Sentinel 2025 · CC BY-NC-SA':tdt?'© 天地图':'© OpenStreetMap'}</a>
     {error && <small role="status">{error}<button onClick={()=>setRetry(n=>n+1)}>重试</button></small>}
   </section>;
+}
+
+/** Keep the browser MapLibre implementation intact; native builds share TerrainMap's bridge session. */
+export function RouteMiniMap(props: {
+  coordinates:Coordinate[];color?:string;routes?:Option[];selectedId?:string;settings?:LayerSettings;
+}) {
+  if (typeof window !== 'undefined' && window.ShantuNativeMap) return <NativeRouteMiniMap {...props} />;
+  return <WebRouteMiniMap {...props} />;
 }

@@ -7,6 +7,7 @@ type Bridge = {
   offlineStart(raw:string):string; offlineState():string; offlinePause():void;
   offlineHas(url:string):boolean; offlineVerify(id:string):string; offlineRemove(id:string):boolean;
   offlineCapabilities?():string; offlineAvailableBytes?():number;
+  offlineExportLegacyArchive?():string;
   offlineBegin?(id:string,name:string,total:number):string;
   offlineAppend?(id:string,offset:number,urls:string):string;
   offlineCommit?(id:string):string; offlineDiscard?(id:string):void;
@@ -14,6 +15,14 @@ type Bridge = {
 export function nativeOffline():Bridge|null {
   const bridge=typeof window!=='undefined' ? (window as unknown as {GuanyunNative?:Bridge}).GuanyunNative : undefined;
   return bridge?.offlineStart ? bridge : null;
+}
+export function canExportLegacyOfflineArchive() { return !!nativeOffline()?.offlineExportLegacyArchive; }
+export function requestLegacyOfflineArchiveExport() {
+  const bridge=nativeOffline();
+  if(!bridge?.offlineExportLegacyArchive)throw new Error('当前APK没有旧版缓存导出入口，请先更新到带导出功能的旧版应用');
+  const result=bridge.offlineExportLegacyArchive();
+  if(result!=='started')throw new Error(result||'旧版缓存导出未能启动');
+  return result;
 }
 export function isNativeOfflineAvailable() { return !!macBridge() || !!nativeOffline(); }
 function decodeState(raw: unknown): State {

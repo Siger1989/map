@@ -7,6 +7,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.json.*;
 
 /** Durable private tile store. New downloads are limited to explicitly imported HTTPS/HTTP tiles. */
@@ -132,4 +134,61 @@ final class OfflineStore {
             new android.util.AtomicFile(new File(root(c),hash(id)+".progress")).delete();if(id.equals(active))new android.util.AtomicFile(new File(root(c),"active")).delete();return true;
         }catch(Exception e){return false;}
     }
+
+    /** Build an explicit SAF-exportable archive from this app's real legacy private cache. */
+    static synchronized File exportLegacyArchive(Context c) throws Exception {
+        if(OfflineDownloadService.running)throw new IOException("请先暂停或完成离线下载，再导出旧版缓存");
+        File cache=root(c), output=new File(c.getCacheDir(),"shantu-legacy-offline-"+System.currentTimeMillis()+".zip");
+        File work=new File(c.getCacheDir(),"offline-export-"+UUID.randomUUID());
+        if(!work.mkdirs())throw new IOException("无法创建离线导出暂存目录");
+        Set<String> tileNames=new LinkedHashSet<>();List<File> manifests=new ArrayList<>();List<byte[]> taskJson=new ArrayList<>();long expanded=0;
+        try {
+            File[] jobs=cache.listFiles((dir,name)->name.matches("[a-f0-9]{64}\\.json"));
+            if(jobs==null||jobs.length==0)throw new IOException("旧版缓存目录中没有可导出的路线任务");
+            if(jobs.length>250000)throw new IOException("旧版缓存任务数量超过归档支持范围");
+            int exportedTasks=0;
+            for(File jobFile:jobs){
+                JSONObject old=read(jobFile);String id=old.optString("id");
+                if(id.isEmpty()||id.length()>160||!"imported".equals(old.optString("provider")))continue;
+                JSONArray inline=old.optJSONArray("urls");File manifestSource=urlsFile(c,id);
+                if(inline==null&&!manifestSource.isFile())continue;
+                File manifest=new File(work,hash(id)+".urls");String chain="";int count=0;long manifestBytes=0;
+                try(BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(manifest),StandardCharsets.UTF_8))){
+                    if(inline!=null){
+                        if(inline.length()>MAX_URLS)throw new IOException("旧版任务瓦片数超过25万");
+                        for(int i=0;i<inline.length();i++){
+                            String url=inline.getString(i);if(!allowed(url)||url.indexOf('\n')>=0||url.indexOf('\r')>=0||url.length()>8192)throw new IOException("旧版任务含无效瓦片地址");
+                            String line=url+"\n";byte[] bytes=line.getBytes(StandardCharsets.UTF_8);manifestBytes+=bytes.length;if(manifestBytes>MAX_MANIFEST_BYTES)throw new IOException("旧版清单超过128MiB");writer.write(line);chain=chainDigest(chain,bytes);count++;tileNames.add(hash(identity(url))+".tile");
+                        }
+                    } else {
+                        if(manifestSource.length()>MAX_MANIFEST_BYTES)throw new IOException("旧版清单超过128MiB");
+                        try(BufferedReader reader=new BufferedReader(new InputStreamReader(new FileInputStream(manifestSource),StandardCharsets.UTF_8))){
+                            String url;while((url=reader.readLine())!=null){if(!allowed(url)||url.length()>8192)throw new IOException("旧版任务含无效瓦片地址");String line=url+"\n";byte[] bytes=line.getBytes(StandardCharsets.UTF_8);manifestBytes+=bytes.length;if(manifestBytes>MAX_MANIFEST_BYTES||++count>MAX_URLS)throw new IOException("旧版清单超过支持范围");writer.write(line);chain=chainDigest(chain,bytes);tileNames.add(hash(identity(url))+".tile");}
+                        }
+                    }
+                }
+                if(count==0||count!=old.optInt("total",count))throw new IOException("旧版任务清单数量不完整");
+                if(tileNames.size()+(exportedTasks+1L)*2>500002)throw new IOException("旧版缓存文件条目超过归档支持范围");
+                JSONObject task=new JSONObject().put("id",id).put("name",old.optString("name","路线缓存")).put("provider","imported").put("total",count).put("manifestDigest",chain);
+                if(old.has("state"))task.put("state",old.get("state"));if(old.has("error"))task.put("error",old.get("error"));
+                byte[] encoded=task.toString().getBytes(StandardCharsets.UTF_8);expanded+=encoded.length+manifestBytes;if(expanded>MAX_BYTES)throw new IOException("旧版离线包超过8GiB");
+                taskJson.add(encoded);manifests.add(manifest);exportedTasks++;
+            }
+            if(exportedTasks==0)throw new IOException("没有有效的旧版离线任务清单");
+            Map<String,File> availableTiles=new LinkedHashMap<>();
+            for(String name:tileNames){File tile=new File(cache,name);if(!tile.isFile()||tile.length()==0)continue;if(tile.length()>4L*1024*1024)throw new IOException("旧版缓存含超过4MiB的瓦片，无法迁入");expanded+=tile.length();if(expanded>MAX_BYTES)throw new IOException("旧版离线包超过8GiB");availableTiles.put(name,tile);}
+            try(ZipOutputStream zip=new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)))){
+                zip.setLevel(java.util.zip.Deflater.BEST_SPEED);
+                for(int i=0;i<taskJson.size();i++){
+                    String base=hash(new JSONObject(new String(taskJson.get(i),StandardCharsets.UTF_8)).getString("id"));
+                    putBytes(zip,base+".json",taskJson.get(i));putFile(zip,base+".urls",manifests.get(i));
+                }
+                for(Map.Entry<String,File> entry:availableTiles.entrySet())putFile(zip,entry.getKey(),entry.getValue());
+            }
+            return output;
+        }catch(Exception error){output.delete();throw error;}finally{deleteTree(work);}
+    }
+    private static void putBytes(ZipOutputStream zip,String name,byte[] bytes)throws Exception{zip.putNextEntry(new ZipEntry(name));zip.write(bytes);zip.closeEntry();}
+    private static void putFile(ZipOutputStream zip,String name,File file)throws Exception{zip.putNextEntry(new ZipEntry(name));try(InputStream in=new BufferedInputStream(new FileInputStream(file))){byte[] buffer=new byte[64*1024];int n;while((n=in.read(buffer))!=-1)zip.write(buffer,0,n);}zip.closeEntry();}
+    private static void deleteTree(File file){if(file.isDirectory()){File[] children=file.listFiles();if(children!=null)for(File child:children)deleteTree(child);}file.delete();}
 }

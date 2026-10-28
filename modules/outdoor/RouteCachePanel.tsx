@@ -4,6 +4,7 @@ import type { Coordinate } from '../navigation/types';
 import { MAX_IMPORTED_DOWNLOAD_BYTES, MAX_IMPORTED_DOWNLOAD_RESOURCES } from './importedRouteDownload';
 import { estimateImportedRouteDownloadAsync } from './asyncImportedRoutePlan';
 import { OFFLINE_MAP_KEY } from './tileCache';
+import { canExportLegacyOfflineArchive, requestLegacyOfflineArchiveExport } from './nativeOffline';
 import type { TripPackage } from './offline';
 import type { useOffline } from './useOffline';
 import './routeCachePanel.css';
@@ -120,6 +121,7 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
   const estimateCurrent = estimate.area === area && estimate.sourceId === (selectedSource?.id ?? '') && estimate.zoom === zoom;
   const zooms = selectedSource ? zoomOptions(selectedSource) : [];
   const packages = offline.packages.filter((trip) => trip.provider === 'imported');
+  const canExportLegacyArchive = canExportLegacyOfflineArchive();
   const activeTrip = offline.current;
   const availableTrip = (trip: TripPackage) => !!trip.sourceId && onlineSources.some((source) => source.id === trip.sourceId);
   let selectedPackageId = '';
@@ -250,6 +252,13 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
         <div className="route-cache-package-pane">
           {offline.message && <small className="route-cache-message" role="status">{offline.message}</small>}
           {openError && <small className="route-cache-open-error" role="alert">{openError}</small>}
+          {canExportLegacyArchive && <div className="route-cache-inline-help" role="group" aria-label="迁移旧版离线缓存">
+            <span>将此旧版 APK 私有缓存导出为 ZIP；在新应用的“本地离线地图”中选择“迁入旧版离线缓存归档”。确认新应用已导入后，再决定是否移除旧版安装。</span>
+            <button onClick={() => {
+              try { requestLegacyOfflineArchiveExport(); setOpenError('正在打包旧版离线缓存；完成后会打开系统保存窗口，请将ZIP保存到新应用可访问的位置。'); }
+              catch (error) { setOpenError((error as Error).message || '旧版缓存导出失败'); }
+            }}>导出旧版缓存 ZIP</button>
+          </div>}
           <label className="route-cache-only">
             <input type="checkbox" checked={onlyCached && !!selectedPackage} disabled={!selectedPackage} onChange={(event) => setCacheOnly(event.target.checked)} />
             仅显示缓存图像

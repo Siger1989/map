@@ -95,7 +95,7 @@ export function BoxSelectOverlay({ active = true, label, count, children, onBox,
     return bounds ? { x: event.clientX - bounds.left, y: event.clientY - bounds.top } : null;
   };
   return <div ref={overlay} className="map-box-selection" data-active={active} data-action-flow={actionFlow} data-gesture-active={twoFingerActive.current ? 'true' : 'false'} data-selection-mode={mode} aria-label={label}>
-    {active && !actionFlow && <div ref={surface} className="map-box-surface" onPointerDown={e => {
+    {active && !actionFlow && <div ref={surface} className="map-box-surface" data-native-map-ui onPointerDown={e => {
       if (e.button !== 0) return;
       const point = pointInSurface(e, true)!;
       pointers.current.set(e.pointerId, point);

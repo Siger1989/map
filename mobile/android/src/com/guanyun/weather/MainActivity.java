@@ -17,7 +17,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 /** A bundled client, with a narrow local recording and document bridge. */
-public final class MainActivity extends Activity {
+public class MainActivity extends Activity {
     private WebView webView;
     private LocationPermissions locationPermissions;
     private AppFiles appFiles;
@@ -39,9 +39,17 @@ public final class MainActivity extends Activity {
     boolean trustedForeground() { return bridgePageState.trustedForeground(); }
     private static final String START = "https://appassets.androidplatform.net/index.html";
 
+    // Default factories preserve the existing bundled APK. The isolated native
+    // map host subclasses this activity so all system services keep one owner.
+    protected FrameLayout createContentRoot() { return new FrameLayout(this); }
+    protected WebView createContentWebView() { return new WebView(this); }
+    protected void onContentReady(FrameLayout root, WebView content) { }
+    protected void onContentPageStarted(String url) { }
+    protected void onContentInsets(boolean keyboardVisible) { }
+
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        FrameLayout root = new FrameLayout(this);
+        FrameLayout root = createContentRoot();
         root.setBackgroundColor(Color.rgb(16, 33, 43));
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         root.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -49,13 +57,14 @@ public final class MainActivity extends Activity {
                 android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
                 int keyboard = insets.getInsets(WindowInsets.Type.ime()).bottom;
                 root.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, keyboard));
+                onContentInsets(insets.isVisible(WindowInsets.Type.ime()));
                 // The native root already keeps content clear of bars/cutouts.
                 // Do not apply the same inset again inside the WebView's CSS.
                 return WindowInsets.CONSUMED;
             }
             return insets;
         });
-        webView = new WebView(this);
+        webView = createContentWebView();
         webView.setBackgroundColor(Color.rgb(16, 33, 43));
         WebSettings settings = webView.getSettings();
         String installedVersion = "unknown";
@@ -85,6 +94,7 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
                 bridgePageState.page(url);
+                onContentPageStarted(url);
                 // A reloaded page has no active navigation session yet.
                 requestScreenOn(false);
             }
@@ -109,6 +119,7 @@ public final class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
         setContentView(root);
         root.requestApplyInsets();
+        onContentReady(root, webView);
         // OEM package versions are not Chromium versions. The bundled bootstrap
         // supplies missing web APIs and checks actual rendering capabilities.
         webView.loadUrl(START);

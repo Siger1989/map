@@ -291,6 +291,8 @@
   background: #fff8df;
   box-shadow: 0 2px 8px #10212966;
 }
+.native-annotation-navigation-overlay .annotation-marker-body { visibility: hidden; }
+.native-annotation-navigation-overlay .annotation-marker-visual::after { display: none !important; }
 .annotation-marker-nav-menu button {
   min-height: 34px;
   padding: 0 4px;

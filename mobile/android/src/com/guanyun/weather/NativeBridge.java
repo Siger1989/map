@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.StatFs;
 import android.webkit.JavascriptInterface;
+import java.io.File;
 
 /** Narrow recording/export API; only bundled main-frame navigation is permitted. */
 final class NativeBridge {
@@ -39,7 +40,27 @@ final class NativeBridge {
             activity.requestScreenOn(enabled);
         });
     }
-    @JavascriptInterface public String offlineCapabilities() { return "{\"version\":2,\"imported\":true,\"chunked\":true}"; }
+    @JavascriptInterface public String offlineCapabilities() { return "{\"version\":2,\"imported\":true,\"chunked\":true,\"legacyArchiveExport\":true}"; }
+    /** Exports this installed app's real private OfflineStore through the user-selected SAF destination. */
+    @JavascriptInterface public String offlineExportLegacyArchive() {
+        if(!activity.trustedForeground())return "请保持山兔在前台后导出离线归档";
+        if(OfflineDownloadService.running)return "请先暂停或完成离线下载，再导出旧版缓存";
+        new Thread(()->{
+            File archive=null;
+            try {
+                archive=OfflineStore.exportLegacyArchive(activity);
+                File completed=archive;
+                activity.runOnUiThread(()->{
+                    if(!activity.trustedForeground()){completed.delete();return;}
+                    files.saveGenerated("Shantu-legacy-offline.zip","application/zip",completed);
+                });
+            } catch(Exception error) {
+                if(archive!=null)archive.delete();
+                activity.runOnUiThread(()->android.widget.Toast.makeText(activity,error.getMessage()==null?"旧版离线缓存导出失败":error.getMessage(),android.widget.Toast.LENGTH_LONG).show());
+            }
+        },"shantu-offline-archive-export").start();
+        return "started";
+    }
     @JavascriptInterface public double offlineAvailableBytes() { try{return new StatFs(activity.getFilesDir().getAbsolutePath()).getAvailableBytes();}catch(Exception e){return 0;} }
     private boolean offlineReady() {
         if(!activity.trustedForeground())return false;

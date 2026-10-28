@@ -1,6 +1,11 @@
 import type { StyleSpecification } from 'maplibre-gl';
 
-export type ShareMapStyle = { style: StyleSpecification; attribution: string };
+export type ShareMapStyle = {
+  style: StyleSpecification;
+  attribution: string;
+  /** Native hosts print an independent native map without moving the live camera. */
+  renderNative?: (data: import('./data').ShareRoute, signal: AbortSignal) => Promise<HTMLCanvasElement>;
+};
 
 /** Copy current basemap/thematic layers; route editing and location overlays are supplied separately. */
 export function currentShareMapStyle(input: StyleSpecification): ShareMapStyle {

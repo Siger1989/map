@@ -1,6 +1,8 @@
 import { createBrowserTileCache } from './browserTileCache.ts';
 import { createCachedTileFetcher } from './cachedTileTransport.ts';
 import { cachedMapFetch } from '../outdoor/tileCache.ts';
+import { fetchTiandituResponse } from './tiandituProtocol.ts';
+import { isTiandituTileUrl } from './tiandituLoader.ts';
 
 function isIndexedDBAvailable(): boolean {
   try {
@@ -23,6 +25,7 @@ export function tileTransportSnapshot() {
 /** Retain direct/CORS semantics for ordinary coordinate-corrected XYZ sources. */
 export function fetchDirectRasterTile(url:string,signal:AbortSignal):Promise<Response>{
   signal.throwIfAborted();
+  if (isTiandituTileUrl(url)) return fetchTiandituResponse(url, signal);
   return cachedMapFetch(url,signal,undefined,true,(request,requestSignal)=>
     directTileFetcher ? directTileFetcher.fetch(request,requestSignal) : fetch(request,{signal:requestSignal}));
 }
@@ -97,6 +100,8 @@ export async function fetchMapTile(
   signal: AbortSignal,
 ): Promise<Response> {
   signal.throwIfAborted();
+  const tianditu = tiandituBrowserUrl(url);
+  if (tianditu && isTiandituTileUrl(tianditu)) return fetchTiandituResponse(tianditu, signal);
   browserTileFetcher ??= isIndexedDBAvailable()
     ? createCachedTileFetcher(createBrowserTileCache(), fetchProviderTile)
     : undefined;

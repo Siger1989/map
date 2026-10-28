@@ -3,6 +3,8 @@ import type { MapHandle } from '../map/TerrainMap';
 import type { Coordinate } from '../navigation/types';
 import type { DirectionMode } from '../position/types';
 export type CameraSnapshot = { center: Coordinate; zoom: number; pitch: number; bearing: number; detailZoom?: number };
+type NativeMapGesture = { mapId: string; gestureId: string | number; pointerId: number; pointerCount?: number; phase: 'start' | 'end' | 'cancel'; source: 'native' };
+const NATIVE_MAP_GESTURE_EVENT = 'shantu:native-map-gesture';
 export function useMapFocusLock(options: {
   map: () => MapHandle | null; following: boolean; guiding: boolean; direction: DirectionMode;
   fix: Coordinate | null; pause: () => void; resume: () => void;
@@ -30,16 +32,27 @@ export function useMapFocusLock(options: {
   useEffect(() => {
     if (!locked) return;
     const pointers = new Set<number>();
+    const nativeGestures = new Set<string>();
     const isMap = (event: Event) => (event.target as Element)?.closest?.('.map-canvas,.home-camera-control');
     const begin = () => { clear(); if (!current.current.following) current.current.free(); setBrowsing(true); };
-    const schedule = () => { clear(); if (!pointers.size) timer.current = setTimeout(restore, 10000); };
+    const schedule = () => { clear(); if (!pointers.size && !nativeGestures.size) timer.current = setTimeout(restore, 10000); };
     const down = (event: PointerEvent) => { if (!isMap(event)) return; pointers.add(event.pointerId); begin(); };
     const up = (event: PointerEvent) => { if (pointers.delete(event.pointerId)) schedule(); };
     const wheel = (event: WheelEvent) => { if (isMap(event)) { begin(); schedule(); } };
+    const nativeGesture = (event: Event) => {
+      const detail = (event as CustomEvent<NativeMapGesture>).detail;
+      if (!detail || detail.source !== 'native' || typeof detail.mapId !== 'string' ||
+          (typeof detail.gestureId !== 'string' && typeof detail.gestureId !== 'number') ||
+          !['start', 'end', 'cancel'].includes(detail.phase)) return;
+      const key = `${detail.mapId}:${detail.gestureId}`;
+      if (detail.phase === 'start') { nativeGestures.add(key); begin(); }
+      else if (nativeGestures.delete(key)) schedule();
+    };
     document.addEventListener('pointerdown', down, true);
     document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', up, true);
     document.addEventListener('wheel', wheel, {capture:true, passive:true});
-    return () => { clear(); document.removeEventListener('pointerdown', down, true); document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true); document.removeEventListener('wheel', wheel, true); };
+    document.addEventListener(NATIVE_MAP_GESTURE_EVENT, nativeGesture as EventListener, true);
+    return () => { clear(); document.removeEventListener('pointerdown', down, true); document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true); document.removeEventListener('wheel', wheel, true); document.removeEventListener(NATIVE_MAP_GESTURE_EVENT, nativeGesture as EventListener, true); };
   }, [locked]);
   return { locked, browsing, adoptMode: (following:boolean,direction:DirectionMode) => {
     if(!locked || !snapshot.current)return;

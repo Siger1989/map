@@ -34,6 +34,11 @@ function ready(map: Map, event: 'load' | 'idle', signal: AbortSignal) {
 }
 /** Independent flat map with complete bounds and labels. The interactive map is never moved. */
 export async function renderRouteMap(data: ShareRoute, signal: AbortSignal, current?: ShareMapStyle) {
+  if (current?.renderNative) return current.renderNative(data, signal);
+  if (typeof window !== 'undefined' && window.location?.origin === 'https://appassets.androidplatform.net' &&
+      typeof window.ShantuNativeMap?.postMessage === 'function') {
+    throw new Error('原生地图尚未就绪，请稍后重试分享出图');
+  }
   const ml = await import('maplibre-gl');
   signal.throwIfAborted();
   ml.setWorkerUrl('/vendor/maplibre/maplibre-gl-worker.mjs');

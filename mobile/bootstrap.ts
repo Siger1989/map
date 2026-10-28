@@ -3,9 +3,15 @@ import { probeRuntime } from '../modules/compatibility/capabilities';
 import { APP_VERSION } from '../config/product';
 
 async function start() {
-  const capabilities = probeRuntime(document, window);
+  const nativeMap = location.origin === 'https://appassets.androidplatform.net' &&
+    typeof window.ShantuNativeMap?.postMessage === 'function';
+  // Native rendering must not depend on creating a second WebGL context in WebView.
+  const capabilities = nativeMap ? {
+    renderer: 'native', webgl2: null, worker: typeof Worker === 'function',
+    wasm: typeof WebAssembly === 'object', userAgent: navigator.userAgent,
+  } : { renderer: 'web', ...probeRuntime(document, window) };
   try {
-    if (!capabilities.webgl2 || !capabilities.worker)
+    if ((!nativeMap && !capabilities.webgl2) || !capabilities.worker)
       throw new Error(
         !capabilities.webgl2
           ? '当前图形驱动未能创建三维地图画面'

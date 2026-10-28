@@ -1,0 +1,274 @@
+{
+  "maps": [
+    {
+      "id": "builtin-osm",
+      "name": "OSM 标准地图",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 19,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "© OpenStreetMap contributors",
+      "detail": "街道与地名 · 仅在线浏览，禁止区域预下载",
+      "category": "全球",
+      "terms": "https://operations.osmfoundation.org/policies/tiles/",
+      "creditUrl": "https://www.openstreetmap.org/copyright"
+    },
+    {
+      "id": "builtin-opentopo",
+      "name": "OpenTopoMap 等高线",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://a.tile.opentopomap.org/{z}/{x}/{y}.png"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 17,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "© OpenStreetMap contributors, SRTM | OpenTopoMap (CC-BY-SA)",
+      "detail": "地形与登山参考 · CC-BY-SA署名相同方式共享 · 在线",
+      "category": "全球",
+      "terms": "https://opentopomap.org/about",
+      "creditUrl": "https://opentopomap.org/about"
+    },
+    {
+      "id": "builtin-blue-marble",
+      "name": "NASA 蓝色地球",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 8,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "NASA GIBS / Blue Marble",
+      "detail": "全球历史合成影像 · 最高8级，不是实时高清卫星",
+      "category": "全球",
+      "terms": "https://nasa-gibs.github.io/gibs-api-docs/",
+      "creditUrl": "https://nasa-gibs.github.io/gibs-api-docs/"
+    },
+    {
+      "id": "builtin-blue-relief",
+      "name": "NASA 地形与海底",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 8,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "NASA GIBS / Blue Marble",
+      "detail": "全球地形晕渲和海底地形 · 最高8级",
+      "category": "全球",
+      "terms": "https://nasa-gibs.github.io/gibs-api-docs/",
+      "creditUrl": "https://nasa-gibs.github.io/gibs-api-docs/"
+    },
+    {
+      "id": "builtin-night-2012",
+      "name": "NASA 夜间灯光 2012",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_CityLights_2012/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 8,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "NASA GIBS / VIIRS 2012",
+      "detail": "2012年历史合成 · 最高8级，不是实时灯光",
+      "category": "全球",
+      "terms": "https://nasa-gibs.github.io/gibs-api-docs/",
+      "creditUrl": "https://nasa-gibs.github.io/gibs-api-docs/"
+    },
+    {
+      "id": "builtin-usgs-topo",
+      "name": "USGS 地形地图",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 16,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "USGS The National Map",
+      "detail": "美国区域 · 等高线、水系、地名",
+      "category": "美国",
+      "terms": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "creditUrl": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "bounds": [
+        -179.99,
+        17,
+        -65,
+        72
+      ]
+    },
+    {
+      "id": "builtin-usgs-imagery",
+      "name": "USGS 正射影像",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 16,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "USGS The National Map",
+      "detail": "美国区域 · 航空正射影像，年代因地区而异",
+      "category": "美国",
+      "terms": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "creditUrl": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "bounds": [
+        -179.99,
+        17,
+        -65,
+        72
+      ]
+    },
+    {
+      "id": "builtin-usgs-hybrid",
+      "name": "USGS 影像与地名",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}"
+      ],
+      "scheme": "xyz",
+      "minzoom": 0,
+      "maxzoom": 16,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "USGS The National Map",
+      "detail": "美国区域 · 正射影像叠加地形地名",
+      "category": "美国",
+      "terms": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "creditUrl": "https://www.usgs.gov/faqs/what-are-base-map-services-or-urls-used-national-map",
+      "bounds": [
+        -179.99,
+        17,
+        -65,
+        72
+      ]
+    },
+    {
+      "id": "builtin-gsi-standard",
+      "name": "地理院 标准地图",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png"
+      ],
+      "scheme": "xyz",
+      "minzoom": 2,
+      "maxzoom": 18,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "国土地理院 / 地理院タイル",
+      "detail": "日本区域 · 标准地形地名",
+      "category": "日本",
+      "terms": "https://maps.gsi.go.jp/development/ichiran.html",
+      "creditUrl": "https://maps.gsi.go.jp/development/ichiran.html",
+      "bounds": [
+        122,
+        20,
+        154,
+        46
+      ]
+    },
+    {
+      "id": "builtin-gsi-pale",
+      "name": "地理院 浅色地图",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
+      ],
+      "scheme": "xyz",
+      "minzoom": 2,
+      "maxzoom": 18,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "国土地理院 / 地理院タイル",
+      "detail": "日本区域 · 浅色底图，方便叠加线路",
+      "category": "日本",
+      "terms": "https://maps.gsi.go.jp/development/ichiran.html",
+      "creditUrl": "https://maps.gsi.go.jp/development/ichiran.html",
+      "bounds": [
+        122,
+        20,
+        154,
+        46
+      ]
+    },
+    {
+      "id": "builtin-gsi-photo",
+      "name": "地理院 航空影像",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg"
+      ],
+      "scheme": "xyz",
+      "minzoom": 2,
+      "maxzoom": 18,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "国土地理院 / 地理院タイル",
+      "detail": "日本区域 · 各年代航空与卫星拼接影像",
+      "category": "日本",
+      "terms": "https://maps.gsi.go.jp/development/ichiran.html",
+      "creditUrl": "https://maps.gsi.go.jp/development/ichiran.html",
+      "bounds": [
+        122,
+        20,
+        154,
+        46
+      ]
+    },
+    {
+      "id": "builtin-gsi-relief",
+      "name": "地理院 分层设色",
+      "kind": "online",
+      "format": "XYZ",
+      "tiles": [
+        "https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png"
+      ],
+      "scheme": "xyz",
+      "minzoom": 2,
+      "maxzoom": 15,
+      "tileSize": 256,
+      "bytes": 0,
+      "attribution": "国土地理院 / 地理院タイル",
+      "detail": "日本区域 · 高程颜色与地形起伏",
+      "category": "日本",
+      "terms": "https://maps.gsi.go.jp/development/ichiran.html",
+      "creditUrl": "https://maps.gsi.go.jp/development/ichiran.html",
+      "bounds": [
+        122,
+        20,
+        154,
+        46
+      ]
+    }
+  ]
+}

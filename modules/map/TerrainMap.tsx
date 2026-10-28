@@ -1,4 +1,5 @@
 import { RasterDetailPatch } from '../cartography/RasterDetailPatch';
+import { NativeTerrainMap } from './native/NativeTerrainMap';
 import { RECENT_TILE_CACHE } from './recentTileCache';
 import { currentShareMapStyle, type ShareMapStyle } from '../routeShare/currentMapStyle';
 import { usesSentinel, usesTianditu } from '../cartography/sentinel';
@@ -10,7 +11,9 @@ import { applyNavigationCamera } from '../guidance/navigationCamera';
 import { installFollowPanHandler } from './followGestures';
 import { cameraDetailZoom } from './cameraDetailZoom';
 import { flashOfflineCoverage } from '../outdoor/offlineCoverage';
-import { offlineMapProtocol, offlineMapTransform } from '../outdoor/tileCache';
+import { offlineMapProtocol } from '../outdoor/tileCache';
+import { mapTileRequestTransform, registerTiandituProtocol, tiandituLoadingSnapshot } from '../mapSources/tiandituProtocol';
+import { installTiandituRecovery } from '../mapSources/tiandituRecovery';
 import type { TripPackage } from '../outdoor/offline';
 import { tiandituBase, tiandituLayers, usesVectorPlaceLabels, TIANDITU_LAYERS, TDT_SOURCE_IDS } from '../cartography/tianditu';
 import type { TiandituLayer } from '../cartography/tianditu';
@@ -284,7 +287,7 @@ export type TerrainMapProps = {
 };
 let terrainMapProtocolInstance = 0;
 
-export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
+const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
   function TerrainMap(props, ref) {
     const { settings, onPoint, onStatus } = props;
     const container = useRef<HTMLDivElement>(null);
@@ -961,6 +964,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             rendering: diagnostics.current?.snapshot(),
             rasterLoading: coordinatesRef.current?.snapshot(),
             tileTransport: tileTransportSnapshot(),
+            tiandituLoading: tiandituLoadingSnapshot(),
             snapViewport: snapViewportRef.current?.read() ?? null,
             scene: {
               tracks: latest.current.trackOverlay.saved.length,
@@ -1002,11 +1006,13 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
       let releaseFollowPan: (() => void) | undefined;
       let releaseDesktopPan: (() => void) | undefined;
       let releaseSourceProtocol: (() => void) | undefined;
+      let releaseTiandituRecovery: (() => void) | undefined;
       import('maplibre-gl').then((maplibre) => {
         if (disposed || !container.current) return;
         try {
           // Keep a bounded image queue across both maps; decoding workers stay bounded separately.
           maplibre.setMaxParallelImageRequests(16);
+          registerTiandituProtocol(maplibre);
           if (!offlineMapProtocolRegistered) {
             maplibre.addProtocol('tripcache', offlineMapProtocol);
             offlineMapProtocolRegistered = true;
@@ -1030,7 +1036,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             maxZoom: 20,
             minZoom: 0,
             attributionControl: false,
-            transformRequest: offlineMapTransform,
+            transformRequest: mapTileRequestTransform,
             // Native two-finger handlers keep single-finger drags as panning.
             touchZoomRotate: true,
             touchPitch: true,
@@ -1040,6 +1046,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             canvasContextAttributes: { antialias: false },
           });
           mapRef.current = map;
+          releaseTiandituRecovery = installTiandituRecovery(map);
           releaseDesktopPan = installDesktopPanReceiver(map, container.current);
           const queuedCamera = cameraSync.current.pendingCamera();
           if (queuedCamera) applyCameraToMap(map, queuedCamera);
@@ -1634,6 +1641,7 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
         coordinatesRef.current?.dispose();
         coordinatesRef.current = null;
         releaseSourceProtocol?.();
+        releaseTiandituRecovery?.();
         detailPatchRef.current?.dispose();
         detailPatchRef.current = null;
         mapRef.current?.remove();
@@ -1765,3 +1773,11 @@ export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(
     );
   },
 );
+
+/** Use the WorldWind host only inside its registered native WebView bridge. */
+export const TerrainMap = forwardRef<MapHandle, TerrainMapProps>(function TerrainMap(props, ref) {
+  if (typeof window !== 'undefined' && window.ShantuNativeMap) {
+    return <NativeTerrainMap {...props} ref={ref} />;
+  }
+  return <WebTerrainMap {...props} ref={ref} />;
+});

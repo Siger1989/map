@@ -218,6 +218,8 @@ export function createBrowserTileCache(options: CacheOptions = {}) {
   void ensureOpen().then(() => { if (!disposed) void pump(); });
 
   return {
+    /** Optional bounded callers may wait for a cold database open before their first read. */
+    async ready(): Promise<void> { await ensureOpen(); },
     async get(key: string): Promise<ArrayBuffer | undefined> {
       if (disposed || !key) return undefined;
       const hot = getMemory(key);

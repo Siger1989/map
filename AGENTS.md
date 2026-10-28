@@ -1,3 +1,5 @@
+> **2026-10-28 用户已批准的新技术路线**：原 React/TypeScript/CSS 界面和业务功能保留，仅地图渲染改原生；系统服务继续原生。功能不删不改，数据/私人天地图/主双图/交互契约不变。本条覆盖 native-android 旧文档中“全部UI重写Kotlin、UI不得使用WebView/React DOM”的冲突要求；不允许隐藏网页地图兜底。已确认的四项规则见 `docs/native-android/hybrid-goals-20261028.md`、`hybrid-features-20261028.md`、`hybrid-implementation-20261028.md`、`hybrid-quality-gates-20261028.md`。先隔离验证，未完成全部适配不得宣称功能已完全保持。
+
 > 2026-10-24用户最新交付要求：以后预览、APK、EXE、DMG及主图/双图都保留用户已注册的内置天地图，只交付含天地图的私人配置版本，不再另行生成供用户安装或公开发布的无天地图版本。用于隔离CI验证的无凭据测试素材不得冒充交付包。私人Key不写源码/日志/公开Release；既有存档和历史包保留。
 
 # UI视觉门禁（2026-09-30，最高优先级）

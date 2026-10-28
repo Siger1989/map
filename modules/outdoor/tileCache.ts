@@ -85,7 +85,7 @@ export async function cachedMapFetch(
   const packaged = (await selectedTripUrls()).has(key);
   let cacheFailure: unknown;
   if (packaged) {
-    if (window.ShantuMac?.version === 1) {
+    if (typeof window !== 'undefined' && window.ShantuMac?.version === 1) {
       if (await nativeOfflineHas(url)) {
         const response = await nativeOfflineRead(url);
         signal.throwIfAborted();
@@ -111,4 +111,24 @@ export async function cachedMapFetch(
     throw new Error('当前缓存包没有这张地图瓦片，请联网后补齐或切换缓存包');
   }
   return fetcher(url, signal);
+}
+
+/** Read only the selected original package's CacheStorage entry for the native renderer. Never fetches. */
+export async function readSelectedBrowserPackageCache(url: string, packageId: string, signal: AbortSignal): Promise<Response | null> {
+  signal.throwIfAborted();
+  if (!offlineMapOnly() || !packageId) return null;
+  try { if (localStorage.getItem('shantu.offline-package.v1') !== packageId) return null; }
+  catch { return null; }
+  if (!(await selectedTripUrls()).has(resourceCacheKey(url))) return null;
+  signal.throwIfAborted();
+  try {
+    const cache = await caches.open(TRIP_TILE_CACHE);
+    signal.throwIfAborted();
+    const response = await cache.match(resourceCacheKey(url));
+    signal.throwIfAborted();
+    return response?.ok ? response : null;
+  } catch {
+    signal.throwIfAborted();
+    return null;
+  }
 }

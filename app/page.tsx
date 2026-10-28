@@ -3491,6 +3491,7 @@ export default function Home() {
           )}
           {panel === 'favorites' && (
             <CollectionsPanel
+              recording={recorder.record}
               onCacheRoutes={keys => {
                 const routeIds = keys.map(key => key.startsWith('track:') ? key.slice(6) : key.startsWith('route:') ? `favorite:${key.slice(6)}` : '').filter(id => cacheRoutes.some(route => route.id === id));
                 if (!routeIds.length) return;

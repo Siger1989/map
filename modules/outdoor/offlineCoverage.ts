@@ -1,6 +1,6 @@
 import type { Map as LibreMap } from 'maplibre-gl';
 import type { TripPackage } from './offline';
-import { tdtIdentity } from './tiandituCache';
+import { tdtIdentity } from './tiandituCache.ts';
 export function coverageGeometry(trip:TripPackage):{data:GeoJSON.FeatureCollection;filled:boolean;label:string} {
   const zoom=Math.min(trip.zoom??14,14),rows=new Map<number,Set<number>>();
   if(trip.complete)for(const url of trip.urls){const id=tdtIdentity(url),parts=id?.split(':');if(!parts || Number(parts[2])!==zoom)continue;const x=Number(parts[3]),y=Number(parts[4]);if(!rows.has(y))rows.set(y,new Set());rows.get(y)!.add(x);}

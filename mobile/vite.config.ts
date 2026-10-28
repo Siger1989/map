@@ -13,11 +13,12 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
 export default defineConfig(({ mode }) => {
+  const privatePreview = mode === 'apk-preview' || mode === 'native-hybrid';
   const env: Record<string, string> = mode === 'public' ? {} : loadEnv(mode, fileURLToPath(new URL('..', import.meta.url)), '');
   return ({
   worker: { format: 'es' },
   define: {
-    'process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW': JSON.stringify(mode === 'apk-preview' ? '1' : ''),
+    'process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW': JSON.stringify(privatePreview ? '1' : ''),
     'process.env.NEXT_PUBLIC_TIANDITU_KEY': JSON.stringify(
       env.NEXT_PUBLIC_TIANDITU_KEY ?? '',
     ),
@@ -37,7 +38,12 @@ export default defineConfig(({ mode }) => {
     },
   },
   resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
-  plugins: [apkPreviewSeeds({ enabled: mode === 'apk-preview', privatePath: fileURLToPath(new URL('../.openai/default-map-sources-private.json', import.meta.url)) }), mapTileVitePlugin(), react(), mobileWorkerCompatibility(), layoutEditor()],
+  plugins: [
+    ...(mode === 'native-hybrid' ? [{
+      name: 'native-hybrid-local-document',
+      transformIndexHtml: () => [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: "frame-src 'none'; object-src 'none'; base-uri 'self'" }, injectTo: 'head' as const }],
+    }] : []),
+    apkPreviewSeeds({ enabled: privatePreview, privatePath: fileURLToPath(new URL('../.openai/default-map-sources-private.json', import.meta.url)) }), mapTileVitePlugin(), react(), mobileWorkerCompatibility(), layoutEditor()],
   css: {
     postcss: {
       plugins: [
@@ -48,7 +54,7 @@ export default defineConfig(({ mode }) => {
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: mode === 'native-hybrid' ? 'dist-hybrid' : 'dist',
     emptyOutDir: true,
     target: 'chrome99',
     cssTarget: 'chrome99',

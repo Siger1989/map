@@ -1,0 +1,7 @@
+<resources>
+  <style name="ShantuHybridTheme" parent="AppTheme">
+    <item name="android:windowSplashScreenBackground">#10212b</item>
+    <item name="android:windowSplashScreenAnimatedIcon">@drawable/shantu_hybrid_launcher</item>
+    <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+  </style>
+</resources>

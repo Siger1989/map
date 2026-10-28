@@ -1,0 +1,8 @@
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+.DS_Store
+# CMake intermediates stay local even if Android Studio uses its default build layout.
+**/.cxx/

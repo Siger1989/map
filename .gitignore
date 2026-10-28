@@ -51,7 +51,10 @@ next-env.d.ts
 /artifacts/screenshots/
 /artifacts/map-source-fixtures/
 /mobile/dist/
+/mobile/dist-hybrid/
 /mobile/.build/
+/mobile/.openai/
+/output/playwright/
 /APK/
 /交付包/
 /output/pc-industry/

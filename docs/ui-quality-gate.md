@@ -1,3 +1,19 @@
+## 2026-10-27：原生地图与旧版天空（隔离工程）
+
+| 项目 | 结果与证据 |
+|---|---|
+| 整工程编译/定向测试 | PASS：assembleDebug、最新30 tests（网络17）；整合天空/过滤/排队版本编译PASS |
+| API35 390×857实际天地图 | PASS：native-map-engine-20261027/globe.png、city-sky-warm.png |
+| 首次近景黑屏 | 修复主线程重绘与启动LookAt锚点后实际出图；失败截图保留 |
+| 天空沿用旧蓝白风格 | 已接入同色值；初版偏白，0.18渐变修正已编译，最终截图待验 |
+| 斜视清晰度 | 用户反馈FAIL：横条/分块；AF8X+细一级已编译，实际复验待模拟器恢复 |
+| 原生缓存 | 已见磁盘文件和diskHits；断网冷重启待验 |
+| 全功能/UI一致、360×780、真机性能 | 未通过/未验证，不交付替换包 |
+
+最终天空安装时模拟器system_server SIGABRT，package服务消失；保留userdata切host GPU重启后package服务再次不可用；最终实际截图仍受阻，不能把此前截图当最终shader效果。旧141私有包和9174原网页保留。
+
+> **2026-10-27 / 加载复测与图源缺失**：用户实际城市视图复现空底图，第一版低缩放PASS不足以证明稳定。内置天地图出现429，导入天地图出现403；已补充250ms请求节奏、30/60/120s冷却排队及DataServer共享调度，网络no-store保留有效图片独立缓存。49项定向与tsc PASS；最后切回内置天地图新增77次HTTP200并实际显示影像（截图builtin-direct-recheck.jpg），不外推长期/真机。VPN/TUN开启，但实际天地图连接命中GeoIP/DIRECT，未修改VPN。当前39图源缺少历史“谷歌 · 【推荐】超强”，本机包/备份未找到原地址，尚未恢复；需原二维码/导出或旧包。私人配置与真实存档未清空，APK仍141，未出包提交推送。用户追加速度优化，正在检查缓存批量回访与排队耗时。
+
 > **2026-10-26 / 141私人APK交付**：用户要求更新APK，最终标记缩小/名称提前修复纳入0.2.141-test/code148，原独立包名和4a94签名。25项定向、tsc、fresh构建、1927资源/DEX与39种子/Key一致、1935项CRC、v2/v3与zipalign通过；最终APK解包390/360主图与双图缩放/编辑返回复查通过，天地图单次影像HTTP200。70,306,068字节，SHA ca3d673a58846d70fe98ff89165d5c9e0eabbe7d9f78d36b89cedda19b5660ad。私人交付目录与固定APK入口更新，旧包保留；9174使用本包提取JS/CSS对齐，私人包未公开上传。真机覆盖安装/性能待验，EXE133/Mac140未重建，原生鸿蒙仍未交付。详见[141交付](release-0.2.141.md)。
 
 > **2026-10-26 / 标记缩小与名称提前（快速预览）**：解除标记加载半径固定30km上限，范围随视口扩大，缩放手势同步使用扩展范围；名称从raw zoom11提前至9（当前高清约11级），更小时保持图案/9px圆点。24项定向、tsc、私人预览重建通过；390×857/360×780主图zoom9→3→9、47km点保留、编辑返回及双图zoom7/9与退出实测通过，主审亲看截图/computed。9174/3108已恢复，天地图Key/私有种子和真实存档保留；APK139/Mac140未包含本轮，未升版出包提交推送，真机/密集点性能待验。详见[本轮验收](marker-visibility-20261026.md)。
@@ -639,3 +655,99 @@
 | 原生权限、真实位置、相机、分享与长期后台 | 未验证（真实设备） | 按需系统授权与真实结果接口已实现；CI协议和存档测试不能代替用户M系列机器上的系统服务验收 |
 
 完整平台结果、安装包及限制见 [140交付](release-0.2.140.md)。
+
+## 2026-10-27 / 天地图加载系统（无UI布局改动）
+
+| 项目 | 结果 | 证据与限制 |
+|---|---|---|
+| 390×857首页、360×780首页/内置图源/关闭返回 | PASS（指定浏览状态） | `artifacts/screenshots/tianditu-loading-20261027/`；无横向溢出，主代理实际查看截图，天地图及39私有图源入口保留 |
+| 真MapLibre模拟503恢复 | PASS（隔离fixture） | 2秒冷却后定向补载，13次加载成功事件，相机105/30/zoom4不变；纯色模拟图不冒充实地图 |
+| 真实天地图浏览缓存 | PASS（有限会话） | 重开27缓存命中、1网络HTTP200、0天地图加载错误；高程/IP定位仍有独立网络报错 |
+| Android真机与完整功能矩阵 | 未验证 | 未更新APK，固定141；长期稳定性/后台恢复/双图完整交互仍需真机，不作为全UI或手机性能验收 |
+
+详细施工、56项定向测试与交付边界见 [天地图加载系统](tianditu-loading-system-20261027.md)。
+# 2026-10-28 / 原生Android接续验证
+
+本批完整范围及根因见 [原生接续记录](native-android/parity-validation-20261028.md)。此表只记录实际证据，不构成完整原生替代版验收。
+
+| 必验项 | 结果与证据 | 边界与再次测试条件 |
+|---|---|---|
+| 原生编译与业务逻辑 | PASS：209项测试，0失败/错误/跳过；assembleDebug通过 | 不代表原生界面/真机通过 |
+| 390×857、360×780、390×480面板布局 | PASS（Robolectric）：固定头尾、正文可滚、尺寸往返、零可用高、标题同行与草稿保护 | 完整应用中的实际截图与点击未验；不得记整套视觉PASS |
+| 300m整合钻孔固定参考图 | 限定证据：真实v2/v3示例100回次/30层/120样品/720结果；NATIVE图形模式栅格PNG已由主审亲看，恢复原表头/列宽/采样黑白条/三块底表 | 系统serif回退未验证宋体，用户确认、手机内导入/缩放/导出未验 |
+| 内置私人天地图及资产 | PASS（候选包完整性）：Key存在且一致、39图源逐项一致、473+23地形PNG、CRC与四ABI | 本轮候选未成功启动，不能代替实际出图或断网测试 |
+| 双图同步/底栏、自由手绘、框选与剖面真实交互 | 未验证；模拟器安装FAIL，系统包服务Broken pipe，另有StorageManager空引用 | 在稳定且boot_completed=1的隔离Android环境重装精确候选，再跑完整主/双图交互及GPS/后台矩阵 |
+| 私人141与用户存档 | 保留：固定包hash未变，未替换交付包/清数据/推送发布 | 当前开发候选不能作为完整升级版交付 |
+
+## 2026-10-28 / React UI 与原生地图 probe33
+
+| 项目 | 结果 | 证据及重测条件 |
+|---|---|---|
+| 390×857主图透明宿主、原底栏/工具菜单 | PASS（指定模拟器状态） | probe33-current-main.png；computed宽390/高857、零地图Canvas、原React按钮实际点击；不是全UI验收 |
+| 双图真实帧/静止同步/真实双指 | 限定PASS | probe33-dual-a/2d/pinch；两张实际mapId、45度、正确视口，中心与zoom稳定，双指后两张均12.56885687961；2D文字切换仍FAIL待34 |
+| 2D→3D按钮往返 | FAIL（probe33）已修待验 | 原生pitch约1e-14被原UI判断为3D；归零噪声修复及WorldWind回归待34 |
+| 绘制真实地面输入/草稿 | 部分证据 | 三节点已生成；probe33-drawing；非完整保存验收 |
+| 绘制双指完整结束流 | FAIL/未完成 | 软件GPU中本应用ANR打断为CANCEL，未得到完整UP；保存ANR证据，34在host GPU/禁Vulkan复测，不能记真机手感通过 |
+| 360×780/390×480、照片/CAD/剖面/分享 | 未验证 | 最新包须实际computed/截图/点击/返回；旧源码、单测或旧图不能代替 |
+| 最终私人APK与用户设备 | 未交付/未验证 | 当前为内部probe33；原141固定包及用户存档保留；真GPS/后台/相机/系统分享、手机性能与鸿蒙分开列明 |
+
+截图相对路径：`artifacts/screenshots/hybrid-map-20261028/`。最新施工与包完整性见 `docs/native-android/hybrid-progress-20261028.md`。
+
+## 2026-10-29 / probe37-current 与probe34分段运行证据
+
+本表更新当前候选与重测条件，保留上表probe33 ANR等历史FAIL。probe37安装中，表内实际PASS均明确标注为probe34；不能将构建、源码测试或旧探针截图改记为probe37运行通过。
+
+| 项目 | 结果 | 证据与重测条件 |
+|---|---|---|
+| 最新源码/构建 | PASS（源码检查） | 私人React15、最新完整tsc、统一Node107/107、原生135/135、compile37 assemble；`.openai/hybrid-final-node-tests16-20261029.log`及compile36/37日志，不代表视觉通过 |
+| 精确probe37完整性 | PASS（包核验） | 181309210字节，SHA256 `15c078dafbf32e9e67eeed77c4797b294d53bfa756bc16208d6e9ec8e04aa493`；2178 CRC/1925 fresh资产/39源与Key一致性/473+23高程/四份64位ELF16KiB；`.openai/hybrid-probe37-integrity-20261029.json` |
+| 2D0→3D62度 | PASS（probe34指定操作） | `probe34-2d.png`；37新增DEM/精确瞄准/触摸锚点组合仍需实际复查 |
+| 绘制完整双指流与584m保存 | PASS（probe34有限会话） | host GPU/禁Vulkan取得完整结束流，cancel/navigation交接正常且该会话无本应用ANR；probe33 ANR仍保留历史FAIL；`probe34-drawing-current.png`、`probe34-drawing-finish-360.png` |
+| 360×780绘制完成/详情/返回、锁定/解锁 | PASS（probe34指定状态） | `probe34-main-360.png`、`probe34-drawing-finish-360.png`、`probe34-locked-360.png`；临时10秒测试设置已恢复原值，不扩大为全部隐藏UI矩阵 |
+| 390×480勘探线建立、保存与收藏 | PASS（probe34持久化/操作） | 两次真实原生拾取，1699m、2点保存且收藏存在；`probe34-section-points.png`、`probe34-section-completed.png`、`probe34-section-390x480.png`；稳定图表/交线选点视觉未验证，早期`probe34-section-sheet.png`不能当定稿 |
+| GPX系统SAF选择/合并 | PASS（probe34合成素材） | 实际导入191m合成轨迹；`probe34-picker.png`、`probe34-gpx-imported.png`；不是真GPS或实走数据 |
+| 两张EXIF JPEG读取/时间匹配/保存 | 分段PASS；地图渲染FAIL已修待验 | `probe34-photos-import.png`、`probe34-photos-added.png`；地图wire曾携带detail Blob，37仅移除wire字段并保留持久清晰副本，须验证实际缩略图/分组/点选/详情 |
+| 照片label/透明file与测线stroke命中 | PASS（源码/定向）；37运行未验 | 最新统一107项含真实collector输出回归：水平/竖直零bbox可命中、空角不拦、offscreen clipping；实际picker/地图触摸需37复验 |
+| CAD真实选档、WGS84转换、保存 | 分段PASS（probe34）；原生叠加未验 | 3图元经真实SAF和原React操作保存；`probe34-import-cad-before.png`、`probe34-cad-summary-click.png`；须在37实际看到线/文字及显示切换 |
+| 分享独立原生打印与最终图像 | 未验证（probe37） | 请求已排除其它实时规划路线且回归通过；实际print帧、生成图片、保存/系统分享分别验收 |
+| 最新probe37运行/最终149包 | 未验证/未构建 | probe37仅安装中；未有本包运行证据，最终原身份code149私人APK尚未生成；交付本地自行拷贝，不发企业微信、不公开私人包 |
+| 真实设备系统能力/性能/HarmonyOS | 未验证 | 真GPS、后台/锁屏、相机、跨应用分享、手机触控/性能及鸿蒙分别验收；不由模拟器或合成fixture外推 |
+
+截图根目录仍为 `artifacts/screenshots/hybrid-map-20261028/`，完整新接续见 `docs/native-android/hybrid-progress-20261028.md` 的2026-10-29末节。当前未达到全功能/全视觉门禁；固定141、历史包与真实用户数据保持。
+
+## 2026-10-29 / probe37–39实际复验与最终40待验
+
+本表接续上表：更新37已经实际验证的限定状态，保留历史失败；尤其不能以probe39打印管线完成替代最终分享图像验收。
+
+| 项目 | 结果 | 证据与重测条件 |
+|---|---|---|
+| 最新源码与定向回归 | PASS（源码） | 私人React16、调度修复TSC、统一Node110/110；`.openai/hybrid-final-node-tests17-20261029.log`、`hybrid-projection-scheduler-tsc-20261029.log`；不是最终40运行通过 |
+| probe38/39构建与资产边界 | PASS（各自候选） | compile38原生139/139+assemble（2m30s），39诊断assemble（1m05s），精确核验为 `.openai/hybrid-probe38-integrity-20261029.json`、`hybrid-probe39-integrity-20261029.json`。39内仍是React15，之后的React16不得倒记为39包内容 |
+| 原照片label实际SAF入口 | PASS（probe37） | 无需DOM诊断，真实触摸原label打开系统选择器；保留旧选档失败历史，不外推GPU点选 |
+| 两张持久照片/地图wire | PASS（probe37数据与序列化）；GPU点选未验证 | 2张持久照片、检查到的821B detail保留，wire为1组2张，无Blob错误；中心命中重叠PIN不能当照片丢失。最终40需实际缩略图/分组/点选/详情 |
+| CAD原生线/文字叠加 | PASS（probe37指定fixture） | 4个native features且HYBRID QA文字可见，`probe37-main-settled.png`；不扩展到全部CAD格式 |
+| 3D真实瞄准/节点编辑/双指/完成保存 | PASS（probe37有限会话） | 手指Y−44瞄准坐标实际提交2节点，撤销替换有效；完整双指流cancel一次后UP，无该会话ANR，保存2.4km。不删除probe33 ANR历史FAIL，不代表真机性能 |
+| 主/双图2D→3D50度静止同步 | PASS（probe37指定状态） | 实际readMaps中心/zoom稳定，`probe37-dual-3d-settled.png`；最终40最新组合仍复验 |
+| 剖面稳定图表及缩放/全图/返回/完成编辑 | PASS（probe37指定状态） | 主审view_image复核 `probe37-section-chart-settled.png`：剖面曲线与平面等高线可见。前表早图不足已由稳态证据补齐；不扩大到未测导出分支 |
+| zoom12/pitch55天地图3D与真实DEM | PASS（probe38指定视角） | `probe38-3d-zoom12-settled.png`山地清晰，frame/cache DEM revision一致且网格ready、有高程；不声称手机FPS/全画质通过 |
+| 近景3D前景分块 | 未解决 | 当前仍有前景块；raster/cache-ready仅是假设，新增诊断需去除URL/Key，定位并在最终40复测后才能改结果 |
+| 分享最终底图/路线图像 | **FAIL（probe39）** | 实际1200×2773 `probe39-route-share.jpg`暗空底图且路线过细；首帧2530ms/source_ready501ms/最终帧581ms/PixelCopy309ms完成仅为管线证据。print/readiness/描边修复后须fresh40实际重看输出 |
+| 系统分享按钮/返回 | PASS（probe39入口）；未发送 | 实际打开 `com.android.intentresolver`，未发给任何应用，Back返回；不是跨应用发送成功 |
+| 180ms有界合并与DEM重同步 | PASS（新源码/3项行为）；最终40运行未验 | 80ms持续frame不再重置首个timer、使用最新状态；DEM到达可更新，初始ACK及cleanup保护通过。没有证据证明probe38照片丢失，不作该结论 |
+| 最终40/原身份149与交付 | 待验证/未构建 | 40需新原生/分享修复+React16组合；原身份code149私人APK仍未构建，141哈希保留。未commit/push；仅本地自拷，不发企业微信、不公开私人包 |
+| 手机平台能力与HarmonyOS | 未验证 | 真GPS、后台/锁屏、相机、手机触控与性能、鸿蒙分别验收，不由模拟器/合成数据/构建通过外推 |
+
+证据根目录仍为 `artifacts/screenshots/hybrid-map-20261028/`，当前仍未满足全功能/全视觉门禁。最新分段结果以本表及进度末节为准，旧表保留历史。
+
+### 2026-10-29 原React + 原生地图私人142交付
+
+| 范围 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 精确最终149安装、原桌面入口、保存数据 | PASS（独立AVD） | 系统解析并启动旧MainActivity别名；覆盖安装后测试GPX与天地图选择保留；未动真实用户存档或Androws |
+| 390×857 首页/3D/透明叠层 | PASS（指定场景） | `delivery149-final-main-3d.png`；body/root透明、documentWidth390、底栏44px且在边界内、地图画布0；DEM版本一致/20格81920点/真实山地 |
+| 360×780 / 390×480 | PASS（既有适用状态） | probe43首页computed/截图无横向溢出；probe34/37画线、锁定解锁、剖面与返回见前述记录，不声称精确最终包全矩阵重做 |
+| 照片与初始化恢复 | PASS（probe45） | 自动分组、物理点击原查看页及翻页返回；丢首次真实ACK后约10.4秒自动恢复，未手动resume |
+| 分享真实高清绘制 | PASS（精确最终包） | `delivery149-final-route-share.jpg` 已查看；TDT目标叶自身纹理/对应真实帧与最终帧门禁，主相机保持；低清早期候选与冷缓存超时为历史FAIL，不当作最终通过证据 |
+| 功能/平台边界 | 未验证 | 真机手感/FPS、GPS、后台锁屏、相机、跨应用发送、全部页面/状态穷尽验证；鸿蒙原生HAP未交付 |
+
+构建和170项原生测试通过不等于上述未验证项通过。只交付本机私人APK，不公开含Key产物；源与完整交付记录见 `docs/release-0.2.142.md`。
