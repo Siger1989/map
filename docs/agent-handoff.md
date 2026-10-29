@@ -1,3 +1,5 @@
+> **2026-10-29 / 网页141 vs 原生142模拟器消耗对比未完成**：按用户明确要求实际尝试精确交付141/142，未用尚未出包修复替换142。多套API35/34及SSD隔离AVD遇到系统ANR/服务重启；网页141曾确认TDT与瓦片加载完成，随后WebView renderer SIGSEGV致宿主退出；SwiftShader再次采样超时/断连。完整主进程+renderer消耗样本不足，不能判断两版谁更省，0值/单进程数据不得作为对比。原交付包、私人配置和真实存档未改；本轮模拟器已停止。详见 docs/native-android/web-native-emulator-comparison-20261029.md。
+
 > **2026-10-29 / OPPO Find X8反馈142性能FAIL，修复候选未交付**：用户报告进入即卡、加载慢、内存过大退出。已修DEM逐像素集合分配、固定级别拼图峰值预算及吸附关闭仍做地形拾取；172项原生回归零失败/错误/跳过。ADB无连接设备，手机退出根因、内存曲线及修复后流畅度尚未核实；固定级别新预算的实际覆盖/主双图/分享回归待验。原142固定APK及私人配置/存档保留，未升版本出包，不宣称已修好。见 docs/native-android/performance-find-x8-20261029.md。
 
 > **2026-10-29 / 私人142已本机交付**：按用户最新要求自行拷贝，不发送企业微信、不公开APK。最终 `APK/山兔手机.apk` 与 `交付包/山兔-0.2.142-test-2026-10-29/01-Android-APK/Shantu-0.2.142-test-private.apk` 完全一致，180488627字节，SHA256 `7833d6fa8c60c52b9b1ee8b76d07e4b24e2ba959c6597249c7e4cd242b2317c4`。com.guanyun.weather.shantu.preview / 0.2.142-test / code149，原4a94证书、旧MainActivity桌面别名与存储标识保留。原React业务界面+WorldWind原生地图；39图源、私人天地图与496高程保留。旧141交付存档哈希仍为ca3d673a...；用户Androws与真实存档未动。完整修改、证据及限制见 `docs/release-0.2.142.md`。
