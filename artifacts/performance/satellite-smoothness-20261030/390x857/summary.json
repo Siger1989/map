@@ -1,0 +1,54 @@
+{
+  "diagnostic": true,
+  "instrumented": true,
+  "rows": [
+    {
+      "phase": "case0-control",
+      "FPS": 31.17,
+      "slowPercent": 9.67741935483871,
+      "p95PresentBucketMs": 66,
+      "pssPeakMiB": 466.1025390625,
+      "cpuFourCore": 56.79185969556585,
+      "hook": {
+        "calls": 572,
+        "mode": "control"
+      }
+    },
+    {
+      "phase": "case1-mute-frame",
+      "FPS": 43.991,
+      "slowPercent": 4.172274562584119,
+      "p95PresentBucketMs": 50,
+      "pssPeakMiB": 407.1943359375,
+      "cpuFourCore": 30.957778407480873,
+      "hook": {
+        "calls": 762,
+        "mode": "mute-frame"
+      }
+    },
+    {
+      "phase": "case2-mute-frame",
+      "FPS": 46.932,
+      "slowPercent": 3.4177215189873418,
+      "p95PresentBucketMs": 33,
+      "pssPeakMiB": 368.0244140625,
+      "cpuFourCore": 21.428972645059822,
+      "hook": {
+        "calls": 803,
+        "mode": "mute-frame"
+      }
+    },
+    {
+      "phase": "case3-control",
+      "FPS": 12.634,
+      "slowPercent": 49.23664122137404,
+      "p95PresentBucketMs": 250,
+      "pssPeakMiB": 458.564453125,
+      "cpuFourCore": 68.0219401810311,
+      "hook": {
+        "calls": 268,
+        "mode": "control"
+      }
+    }
+  ]
+}

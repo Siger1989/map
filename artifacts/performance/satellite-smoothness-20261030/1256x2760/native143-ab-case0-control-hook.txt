@@ -1,0 +1,2 @@
+{"ready": true, "mode": "control"}
+{"calls": 455, "mode": "control", "lastWidth": 1256, "lastHeight": 2679}

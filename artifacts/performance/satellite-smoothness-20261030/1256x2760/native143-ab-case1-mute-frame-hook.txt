@@ -1,0 +1,2 @@
+{"ready": true, "mode": "mute-frame"}
+{"calls": 840, "mode": "mute-frame", "lastWidth": 1256, "lastHeight": 2679}
