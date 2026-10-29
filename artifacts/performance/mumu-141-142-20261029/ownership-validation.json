@@ -1,0 +1,210 @@
+[
+  {
+    "run": "web141-r1",
+    "sampleCount": 52,
+    "finalSampleProcesses": [
+      {
+        "pid": 9197,
+        "record": "*APP* UID 10041 ProcessRecord{1e961aa 9197:com.guanyun.weather.shantu.preview/u0a41}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      },
+      {
+        "pid": 9242,
+        "record": "*APP* UID 99019 ProcessRecord{3fd565f 9242:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a41i19}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      }
+    ],
+    "phases": [
+      {
+        "phase": "pitch0-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch0-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch0-pan",
+        "count": 15
+      },
+      {
+        "phase": "pitch0-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch55-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-pan",
+        "count": 11
+      },
+      {
+        "phase": "pitch55-settle",
+        "count": 4
+      }
+    ]
+  },
+  {
+    "run": "web141-r2",
+    "sampleCount": 67,
+    "finalSampleProcesses": [
+      {
+        "pid": 10535,
+        "record": "*APP* UID 10041 ProcessRecord{5b87741 10535:com.guanyun.weather.shantu.preview/u0a41}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      },
+      {
+        "pid": 10590,
+        "record": "*APP* UID 99023 ProcessRecord{36aae46 10590:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a41i23}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      }
+    ],
+    "phases": [
+      {
+        "phase": "pitch0-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch0-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch0-pan",
+        "count": 11
+      },
+      {
+        "phase": "pitch0-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch55-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-pan",
+        "count": 12
+      },
+      {
+        "phase": "pitch55-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-longidle",
+        "count": 18
+      }
+    ]
+  },
+  {
+    "run": "native142-r1",
+    "sampleCount": 53,
+    "finalSampleProcesses": [
+      {
+        "pid": 7349,
+        "record": "*APP* UID 10041 ProcessRecord{3aafc5f 7349:com.guanyun.weather.shantu.preview/u0a41}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      },
+      {
+        "pid": 7396,
+        "record": "*APP* UID 99013 ProcessRecord{3e7d75b 7396:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a41i13}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      }
+    ],
+    "phases": [
+      {
+        "phase": "pitch0-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch0-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch0-pan",
+        "count": 12
+      },
+      {
+        "phase": "pitch0-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch55-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-pan",
+        "count": 15
+      },
+      {
+        "phase": "pitch55-settle",
+        "count": 4
+      }
+    ]
+  },
+  {
+    "run": "native142-r2",
+    "sampleCount": 66,
+    "finalSampleProcesses": [
+      {
+        "pid": 4457,
+        "record": "*APP* UID 10041 ProcessRecord{d8c618a 4457:com.guanyun.weather.shantu.preview/u0a41}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      },
+      {
+        "pid": 4513,
+        "record": "*APP* UID 99007 ProcessRecord{51d8c 4513:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a41i7}",
+        "packageList": "packageList={com.guanyun.weather.shantu.preview}"
+      }
+    ],
+    "phases": [
+      {
+        "phase": "pitch0-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch0-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch0-pan",
+        "count": 11
+      },
+      {
+        "phase": "pitch0-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-startup",
+        "count": 5
+      },
+      {
+        "phase": "pitch55-idle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-pan",
+        "count": 11
+      },
+      {
+        "phase": "pitch55-settle",
+        "count": 4
+      },
+      {
+        "phase": "pitch55-longidle",
+        "count": 18
+      }
+    ]
+  }
+]

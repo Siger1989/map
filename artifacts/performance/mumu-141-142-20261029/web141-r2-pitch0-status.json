@@ -1,0 +1,43 @@
+{
+  "camera": {
+    "center": {
+      "lng": 102.9,
+      "lat": 31
+    },
+    "zoom": 12,
+    "pitch": 0,
+    "bearing": 0
+  },
+  "settings": {
+    "version": 1,
+    "layers": {
+      "terrain": true,
+      "satellite": true,
+      "satelliteProvider": "tianditu",
+      "contours": false,
+      "contourInterval": 30,
+      "elevationColors": false,
+      "elevationColorsOpacity": 1,
+      "geology": false,
+      "geologySource": "world",
+      "geologyOpacity": 0.85,
+      "roads": true,
+      "roadsOpacity": 1,
+      "rasterLevel": null,
+      "rasterQuality": "high",
+      "labels": true,
+      "tiandituLabels": "auto",
+      "exaggeration": 1,
+      "imageryMode": "detail",
+      "offlineBasemap": false,
+      "tiandituBase": "img"
+    }
+  },
+  "webLoaded": true,
+  "webTilesLoaded": true,
+  "canvases": 1,
+  "viewport": [
+    390,
+    833
+  ]
+}

@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.guanyun.weather.shantu.preview/com.guanyun.weather.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.guanyun.weather.shantu.preview/com.guanyun.weather.MainActivity
+TotalTime: 1986
+WaitTime: 2002
+Complete

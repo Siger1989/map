@@ -1,0 +1,7 @@
+Starting: Intent { cmp=com.guanyun.weather.shantu.preview/com.guanyun.weather.NativeReactActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.guanyun.weather.shantu.preview/com.guanyun.weather.NativeReactActivity
+TotalTime: 3234
+WaitTime: 3246
+Complete
