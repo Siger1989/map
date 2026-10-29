@@ -26,6 +26,18 @@ import java.util.concurrent.atomic.AtomicInteger
 class BoundedTileNetworkTest {
     private val imageBytes = byteArrayOf(11, 22, 33, 44)
 
+    @Test
+    fun `sha256 cache names preserve lowercase utf8 digest and unsigned byte encoding`() {
+        assertEquals(
+            "9a6c4f4af02544eff70d5e7c15efcc02598ecba1dbbf5e9d14b6a342471db7c6",
+            sha256Hex("https://example.invalid/tiles/4/3/2".toByteArray(Charsets.UTF_8)),
+        )
+        assertEquals(
+            "9f415e9936a20af93da9a5b03989dd5cca87a22d92ea4190a0a03265c513865c",
+            sha256Hex(byteArrayOf(0x00, 0x80.toByte(), 0xff.toByte(), 0x10)),
+        )
+    }
+
     @After fun resetOfflineDisplayPolicy() {
         NativeOfflineDisplayPolicy.reset()
         NativeTileNetworkPool.installOfflineReader(null)

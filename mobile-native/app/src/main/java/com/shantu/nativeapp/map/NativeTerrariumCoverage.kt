@@ -73,14 +73,22 @@ internal class NativeTerrariumCoverage(
             val repair = local.readRepair(sourceZ, sourceX, sourceY, tileSize)
             val fabdem = local.readFabdem(sourceZ, sourceX, sourceY, tileSize)
             var fallback: Bitmap? = null
+            var fallbackPixels: IntArray? = null
             try {
+                val repairPixels = repair?.let { bitmap ->
+                    IntArray(tileSize * tileSize).also { pixels -> bitmap.getPixels(pixels, 0, tileSize, 0, 0, tileSize, tileSize) }
+                }
+                val fabdemPixels = fabdem?.let { bitmap ->
+                    IntArray(tileSize * tileSize).also { pixels -> bitmap.getPixels(pixels, 0, tileSize, 0, 0, tileSize, tileSize) }
+                }
                 var needsFallback = false
                 for (pixelY in 0 until tileSize) {
                     ensureTerrainRasterActive()
                     for (pixelX in 0 until tileSize) {
                         if ((pixelX and 15) == 0) ensureTerrainRasterActive()
-                        if (readTerrarium(repair, pixelX, pixelY) == null &&
-                            readTerrarium(fabdem, pixelX, pixelY) == null) {
+                        val index = pixelY * tileSize + pixelX
+                        if (readTerrariumPixel(repairPixels, index) == null &&
+                            readTerrariumPixel(fabdemPixels, index) == null) {
                             needsFallback = true
                             break
                         }
@@ -88,13 +96,18 @@ internal class NativeTerrariumCoverage(
                     if (needsFallback) break
                 }
                 if (needsFallback) {
-                    fallback = fetchPublic(sourceZ, sourceX, sourceY, tileSize) ?: return@withContext null
+                    val loadedFallback = fetchPublic(sourceZ, sourceX, sourceY, tileSize) ?: return@withContext null
+                    fallback = loadedFallback
+                    fallbackPixels = IntArray(tileSize * tileSize).also {
+                        loadedFallback.getPixels(it, 0, tileSize, 0, 0, tileSize, tileSize)
+                    }
                 }
                 val values = DoubleArray(outputSize * outputSize) { Double.NaN }
                 val subTileX = x % scale
                 val subTileY = y % scale
                 fun at(px: Int, py: Int): Double? =
-                    sampleElevation(repair, fabdem, fallback, px.coerceIn(0, tileSize - 1), py.coerceIn(0, tileSize - 1))
+                    sampleTerrainPixel(repairPixels, fabdemPixels, fallbackPixels,
+                        py.coerceIn(0, tileSize - 1) * tileSize + px.coerceIn(0, tileSize - 1))
                 for (pixelY in 0 until outputSize) {
                     ensureTerrainRasterActive()
                     val sy = ((subTileY + (pixelY + 0.5) / outputSize) * (tileSize / scale.toDouble()) - 0.5)
@@ -224,6 +237,7 @@ internal class NativeTerrariumCoverage(
         return bitmap
     }
 
+    // The SDK geographic-grid conversion still uses its per-row bitmap path.
     private fun sampleElevation(repair: Bitmap?, fabdem: Bitmap?, fallback: Bitmap?, x: Int, y: Int): Double? =
         readTerrarium(repair, x, y) ?: readTerrarium(fabdem, x, y) ?: readTerrarium(fallback, x, y)
 
@@ -231,16 +245,27 @@ internal class NativeTerrariumCoverage(
         if (bitmap == null) return null
         val color = bitmap.getPixel(x, y)
         if ((color ushr 24) == 0) return null
-        val red = (color ushr 16) and 0xff
-        val green = (color ushr 8) and 0xff
-        val blue = color and 0xff
-        return NativeTerrariumMath.decodeTerrarium(red, green, blue)
+        return NativeTerrariumMath.decodeTerrarium((color ushr 16) and 0xff, (color ushr 8) and 0xff, color and 0xff)
     }
 
     private fun recycleAll(vararg groups: Collection<Bitmap?>) {
         groups.forEach { group -> group.filterNotNull().distinct().forEach { if (!it.isRecycled) it.recycle() } }
     }
 
+}
+
+/** Reads a copied ARGB tile without crossing the Bitmap/JNI boundary for each sample. */
+internal fun sampleTerrainPixel(repair: IntArray?, fabdem: IntArray?, fallback: IntArray?, index: Int): Double? =
+    readTerrariumPixel(repair, index) ?: readTerrariumPixel(fabdem, index) ?: readTerrariumPixel(fallback, index)
+
+private fun readTerrariumPixel(pixels: IntArray?, index: Int): Double? {
+    if (pixels == null) return null
+    val color = pixels[index]
+    if ((color ushr 24) == 0) return null
+    val red = (color ushr 16) and 0xff
+    val green = (color ushr 8) and 0xff
+    val blue = color and 0xff
+    return NativeTerrariumMath.decodeTerrarium(red, green, blue)
 }
 
 /** Bilinear interpolation without per-pixel collections or Pair allocations. */

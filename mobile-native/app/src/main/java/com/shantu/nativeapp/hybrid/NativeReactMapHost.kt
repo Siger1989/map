@@ -141,6 +141,7 @@ class NativeReactMapHost(
         var sectionJob: Job? = null,
         var sectionInput: String? = null,
         var demJob: Job? = null,
+        val demTileCache: NativeBridgeDemTileCache<JSONObject> = NativeBridgeDemTileCache(),
         val demSamplingGate: NativeBridgeDemSamplingGate = NativeBridgeDemSamplingGate(),
         var demKey: String? = null,
         var demRetryAfterAt: Long = 0L,
@@ -1472,13 +1473,18 @@ class NativeReactMapHost(
                 for (batch in batches) {
                     val loaded = withContext(Dispatchers.IO) { coroutineScope {
                         batch.map { tile -> async {
+                            val tileId = "${tile.z}/${tile.x}/${tile.y}"
+                            val cacheKey = "$tileId/$DEM_TILE_SIZE"
+                            entry.demTileCache.get(cacheKey, android.os.SystemClock.elapsedRealtime())?.let { return@async it }
                             val source = try { entry.controller.sampleBridgeDemTile(tile.z, tile.x, tile.y, DEM_TILE_SIZE) }
                             catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
                             catch (_: Throwable) { null } ?: return@async null
                             val grid = NativeBridgeDemGrid.fromMercatorPixels(tile.z, tile.x, tile.y, source, DEM_TILE_SIZE) ?: return@async null
                             val heights = JSONArray().also { out -> grid.heights.forEach { out.put(it ?: JSONObject.NULL) } }
-                            JSONObject().put("id", "${tile.z}/${tile.x}/${tile.y}").put("west", grid.west).put("south", grid.south).put("east", grid.east).put("north", grid.north)
+                            // Published grid objects are immutable; only the containing tile list grows.
+                            JSONObject().put("id", tileId).put("west", grid.west).put("south", grid.south).put("east", grid.east).put("north", grid.north)
                                 .put("width", grid.width).put("height", grid.height).put("heights", heights)
+                                .also { entry.demTileCache.put(cacheKey, it, android.os.SystemClock.elapsedRealtime()) }
                         } }.awaitAll().filterNotNull()
                     } }
                     if (!isCurrent(entry) || entry.demKey != key) return@launch

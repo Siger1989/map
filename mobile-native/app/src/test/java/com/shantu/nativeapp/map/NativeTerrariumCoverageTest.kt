@@ -40,6 +40,18 @@ class NativeTerrariumCoverageTest {
     }
 
     @Test
+    fun `copied raster pixels preserve priority alpha nodata and boundary indexing`() {
+        val repair = intArrayOf(0x00000000, 0xff800000.toInt())
+        val fabdem = intArrayOf(0xff800200.toInt(), 0xff800100.toInt())
+        val fallback = intArrayOf(0xff7f0000.toInt(), 0xff900000.toInt())
+
+        assertEquals(2.0, sampleTerrainPixel(repair, fabdem, fallback, 0)!!, 0.0)
+        assertEquals(0.0, sampleTerrainPixel(repair, fabdem, fallback, 1)!!, 0.0)
+        assertEquals(0.0, sampleTerrainPixel(null, repair, fallback, 1)!!, 0.0)
+        assertTrue(sampleTerrainPixel(null, null, intArrayOf(0x00000000), 0) == null)
+    }
+
+    @Test
     fun `regional coverage bounds do not claim global fabdem availability`() {
         val bounds = intArrayOf(10, 12, 20, 22)
         assertTrue(NativeTerrariumMath.tileInsideCoverage(8, 11, 21, bounds))

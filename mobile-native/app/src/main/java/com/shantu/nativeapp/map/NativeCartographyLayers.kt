@@ -184,7 +184,7 @@ class NativeCartographyLayers(
     private val onImageryStatus: (NativeImageryStatus) -> Unit = {},
 ) : AutoCloseable {
     private val vectorTileBudget = NativeRenderMemoryBudget.vectorTileCount(Runtime.getRuntime().maxMemory())
-    private val labelTileBudget = minOf(24, vectorTileBudget)
+    private val labelTileBudget = vectorTileBudget
 
     /** Real OpenFreeMap land/water polygons over the native DEM-backed dark base surface. */
     val terrainLandWaterLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = vectorTileBudget,

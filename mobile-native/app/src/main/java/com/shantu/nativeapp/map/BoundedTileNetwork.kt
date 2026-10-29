@@ -525,8 +525,7 @@ internal class BoundedTileNetwork(
     }
 
     private fun cacheFile(url: String): File {
-        val digest = MessageDigest.getInstance("SHA-256").digest(url.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it) }
+        val digest = sha256Hex(url.toByteArray(Charsets.UTF_8))
         return File(directory, "$digest.tile")
     }
 
@@ -623,4 +622,17 @@ internal class BoundedTileNetwork(
         val THOUSAND_BIG_INTEGER = java.math.BigInteger.valueOf(1_000L)
         val LONG_MAX_BIG_INTEGER = java.math.BigInteger.valueOf(Long.MAX_VALUE)
     }
+}
+
+/** Lowercase SHA-256 hex without Formatter/locale work on the tile request path. */
+internal fun sha256Hex(bytes: ByteArray): String {
+    val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
+    val hex = "0123456789abcdef"
+    return CharArray(digest.size * 2).also { chars ->
+        digest.forEachIndexed { index, byte ->
+            val value = byte.toInt() and 0xff
+            chars[index * 2] = hex[value ushr 4]
+            chars[index * 2 + 1] = hex[value and 0x0f]
+        }
+    }.concatToString()
 }
