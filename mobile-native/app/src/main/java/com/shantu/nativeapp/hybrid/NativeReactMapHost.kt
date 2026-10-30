@@ -263,18 +263,34 @@ class NativeReactMapHost(
                 .put("attached", window.isAttachedToWindow))
         }
         val network = poolSnapshot
+        val stages = maps.values.firstOrNull()?.controller?.tileStageTelemetrySnapshot()
+        val decodeBuckets = JSONArray().apply { stages?.decodeDurationBuckets?.forEach { put(it) } }
         return JSONObject()
             .put("available", true)
             .put("heapMaxBytes", runtime.maxMemory())
             .put("heapUsedBytes", runtime.totalMemory() - runtime.freeMemory())
             .put("mapCount", maps.size)
             .put("maps", mapsJson)
+            .put("tileStages", stages?.let {
+                JSONObject().put("scope", "process")
+                    .put("decodedImages", it.decodedImages).put("decodeNanos", it.decodedNanos)
+                    .put("decodeFailures", it.decodeFailures).put("decodeDurationBucketCounts", decodeBuckets)
+                    .put("completedFrames", it.renderedFrames).put("perTileDrawCount", it.perTileDrawCount ?: JSONObject.NULL)
+                    .put("latencyCoverage", "BitmapFactory decode duration and frame completion only; no per-tile receive-to-draw timing")
+            } ?: JSONObject())
             .put("network", network?.let {
                 JSONObject().put("requests", it.networkRequests).put("successes", it.successes)
                     .put("errors", it.errors).put("rateLimits", it.rateLimits)
+                    .put("memoryHits", it.memoryHits).put("diskHits", it.diskHits).put("retries", it.retries)
+                    .put("cancellations", it.cancellations).put("decodeValidationMs", it.decodeMs)
                     .put("receivedBytes", it.receivedBytes).put("queued", it.queuedNetworkRequests)
                     .put("active", it.activeNetworkRequests).put("queueWaitMs", it.queueWaitMs)
                     .put("networkMs", it.networkMs)
+                    .put("pendingCacheWriteBytes", it.pendingCacheWriteBytes)
+                    .put("droppedCacheWrites", it.droppedCacheWrites)
+                    .put("completedCacheWrites", it.completedCacheWrites)
+                    .put("failedCacheWrites", it.failedCacheWrites)
+                    .put("activeBackground", it.activeBackgroundRequests)
             } ?: JSONObject())
     }
 
@@ -564,6 +580,9 @@ class NativeReactMapHost(
         val previousEffectiveSettings = NativeBridgeSectionTerrain.effective(previous.optJSONObject("settings") ?: JSONObject(), previous.optJSONObject("section"))
         val nextRenderExaggeration = effectiveSettings.optDouble("exaggeration", 1.0).takeIf { it.isFinite() } ?: 1.0
         val nextRenderInteraction = CachedInteractionState.from(input.optJSONObject("interaction"))
+        if (entry.renderInteraction.drawingActive && !nextRenderInteraction.drawingActive) {
+            entry.controller.setTileDemandDrawingFocus(null, null)
+        }
         val selectedMarker = input.optString("annotationSelected").takeIf { it.isNotBlank() && it != "null" }
         entry.controller.setBridgeMarkerPresentation(cameraJson(entry).optDouble("zoom", Double.NaN), selectedMarker)
         val source = input.optJSONObject("mapSource")
@@ -595,6 +614,7 @@ class NativeReactMapHost(
         entry.viewport?.optJSONObject("cssRect")?.let { rect ->
             entry.container.visibility = if (rect.optDouble("width") > 0 && rect.optDouble("height") > 0) View.VISIBLE else View.INVISIBLE
         }
+        entry.controller.refreshTileViewDemand()
         send("result", mapId, requestId, JSONObject().put("applied", true).put("revision", revision))
         markFrameDirty(entry)
     }
@@ -1916,10 +1936,12 @@ class NativeReactMapHost(
                         val cssHeight = entry.controller.view.height / scale
                         val aimX = x.coerceIn(8.0, (cssWidth - 8.0).coerceAtLeast(8.0))
                         val aimY = (y - 44.0).coerceIn(8.0, (cssHeight - 8.0).coerceAtLeast(8.0))
+                        entry.controller.setTileDemandDrawingFocus(aimX * scale, aimY * scale)
                         groundPoint = JSONObject().put("x", aimX).put("y", aimY)
                         coordinate = entry.controller.unprojectCoordinate((aimX * scale).toFloat(), (aimY * scale).toFloat())
                             ?.let { JSONArray().put(it.second).put(it.first) }
                     } else {
+                        entry.controller.setTileDemandDrawingFocus(null, null)
                         groundPoint = null
                         coordinate = null
                     }

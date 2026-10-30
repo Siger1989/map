@@ -41,23 +41,28 @@ internal class NativePersistentBrowseCache(
     }
 
     /** Disk work always runs on Dispatchers.IO. Stale bytes remain available when allowStale is true. */
-    suspend fun read(url: String, allowStale: Boolean = true): Entry? = ioOrNull("read") {
-        val key = hash(url)
+    suspend fun read(url: String, allowStale: Boolean = true, cacheIdentity: String? = null): Entry? = ioOrNull("read") {
+        val key = hash(cacheIdentity ?: url)
         synchronized(lock) {
             ensureOpen()
             val db = helper.writableDatabase
             drainDeletes(db)
             val gen = generation(db)
-            val row = find(db, key, gen) ?: return@synchronized null
+            // Identity-aware callers first read the new permission-scoped key, then retain read-only
+            // compatibility with entries saved by earlier releases under the URL hash.
+            val currentRow = find(db, key, gen)
+            val rowKey = if (currentRow != null) key else hash(url)
+            val row = currentRow ?: (if (cacheIdentity != null) find(db, rowKey, gen) else null)
+                ?: return@synchronized null
             val file = safeFile(row.path)
             if (file == null || file.length() != row.size || row.size !in 1..MAX_TILE_BYTES) {
-                removeEntry(db, key, gen, row)
+                removeEntry(db, rowKey, gen, row)
                 drainDeletes(db)
                 return@synchronized null
             }
             val bytes = try { file.readBytes() } catch (_: Exception) { null }
             if (bytes == null || bytes.size.toLong() != row.size) {
-                removeEntry(db, key, gen, row)
+                removeEntry(db, rowKey, gen, row)
                 drainDeletes(db)
                 return@synchronized null
             }
@@ -66,17 +71,17 @@ internal class NativePersistentBrowseCache(
             val fresh = age >= 0 && age <= ttlMillis
             if (!fresh && !allowStale) return@synchronized null
             ContentValues().apply { put("last_accessed", now) }.also {
-                db.update("entries", it, "url_hash=? AND generation=?", arrayOf(key, gen.toString()))
+                db.update("entries", it, "url_hash=? AND generation=?", arrayOf(rowKey, gen.toString()))
             }
             Entry(bytes, row.savedAt, fresh)
         }
     }
 
     /** Returns false for storage errors, oversized values, closed cache, or a response invalidated by clear(). */
-    suspend fun write(url: String, bytes: ByteArray, savedAtMillis: Long = clock(), generationToken: Long? = null): Boolean =
+    suspend fun write(url: String, bytes: ByteArray, savedAtMillis: Long = clock(), generationToken: Long? = null, cacheIdentity: String? = null): Boolean =
         ioOrFalse("write") {
             if (bytes.isEmpty() || bytes.size.toLong() > MAX_TILE_BYTES || bytes.size.toLong() > maxBytes) return@ioOrFalse false
-            val key = hash(url)
+            val key = hash(cacheIdentity ?: url)
             synchronized(lock) {
                 ensureOpen()
                 val db = helper.writableDatabase

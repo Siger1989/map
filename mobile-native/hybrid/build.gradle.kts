@@ -89,6 +89,12 @@ val prepareHybridContractTests by tasks.registering(Sync::class) {
     from(rootProject.file("app/src/test/java")) {
         include("com/shantu/nativeapp/map/NativeOfflineDisplayPolicyTest.kt")
         include("com/shantu/nativeapp/map/BoundedTileNetworkTest.kt")
+        include("com/shantu/nativeapp/map/TileRequestQueuePolicyTest.kt")
+        include("com/shantu/nativeapp/map/TileRequestPermitSchedulerTest.kt")
+        include("com/shantu/nativeapp/map/TileProjectedPriorityTest.kt")
+        include("com/shantu/nativeapp/map/NativeRasterDetailTileStateTest.kt")
+        include("com/shantu/nativeapp/map/NativeTileStageTelemetryTest.kt")
+        include("com/shantu/nativeapp/map/NativeTileLayerVisibilityTest.kt")
         include("com/shantu/nativeapp/map/NativePersistentBrowseCacheTest.kt")
         include("com/shantu/nativeapp/map/NativeCartographyLayersTest.kt")
         include("com/shantu/nativeapp/map/NativeTiandituZoomPolicyTest.kt")

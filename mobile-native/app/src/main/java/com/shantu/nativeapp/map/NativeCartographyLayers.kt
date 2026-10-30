@@ -182,6 +182,9 @@ class NativeCartographyLayers internal constructor(
     private val tiandituKey: () -> String,
     private val source: TileSource = SharedOpenFreeMapTileSource(),
     private val sharedNetwork: BoundedTileNetwork? = null,
+    private val tileIdentityFor: (String, String, Int, Int, Int, String) -> TileRequestIdentity? = { _, _, _, _, _, _ -> null },
+    private val viewId: () -> String? = { null },
+    private val generation: () -> Long? = { null },
     private val onImageryStatus: (NativeImageryStatus) -> Unit = {},
 ) : AutoCloseable {
     private val vectorTileBudget = NativeRenderMemoryBudget.vectorTileCount(Runtime.getRuntime().maxMemory())
@@ -200,7 +203,11 @@ class NativeCartographyLayers internal constructor(
         maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = placeLabelStyle, displayName = "Place labels")
     val tiandituLabelRenderLayer = RenderableLayer("Tianditu raster annotations")
     val tiandituBoundaryRenderLayer = RenderableLayer("Tianditu global boundaries")
-    private val imagery = NativeImageryBasemap(window.context, window, onImageryStatus)
+    private val imagery = NativeImageryBasemap(
+        window.context, window, onImageryStatus, sharedNetwork,
+        tileIdentityFor = { source, z, x, y, style -> tileIdentityFor(source, "imagery", z, x, y, style) },
+        viewId = viewId, demandGeneration = generation,
+    )
     /** Mount above the controller's standard basemap for explicitly selected Sentinel/GIBS imagery. */
     val baseRenderLayer: RenderableLayer get() = imagery.baseRenderLayer
     /** Mount below the controller's standard TDT/custom base for the bundled historical overview. */
@@ -212,7 +219,7 @@ class NativeCartographyLayers internal constructor(
     private var boundaryEnabled = false
     private var closed = false
     private var riverSnapping = false
-    private val raster = TiandituRasterSource(tiandituKey, sharedNetwork)
+    private val raster = TiandituRasterSource(tiandituKey, sharedNetwork, tileIdentityFor, viewId, generation)
 
     init {
         // No vector source may start decoding a world overview before React supplies its selection.
@@ -441,7 +448,13 @@ private fun checkResponseLength(length: Long, limit: Int) {
     check(length == -1L || length in 0..limit.toLong()) { "Map tile response exceeds limit" }
 }
 
-private class TiandituRasterSource(private val keyProvider: () -> String, private val sharedNetwork: BoundedTileNetwork?) : AutoCloseable {
+private class TiandituRasterSource(
+    private val keyProvider: () -> String,
+    private val sharedNetwork: BoundedTileNetwork?,
+    private val tileIdentityFor: (String, String, Int, Int, Int, String) -> TileRequestIdentity?,
+    private val viewId: () -> String?,
+    private val generation: () -> Long?,
+) : AutoCloseable {
     private val active = ConcurrentHashMap.newKeySet<HttpURLConnection>()
     private val executor = Executors.newFixedThreadPool(4)
     private val requestPermits = Semaphore(4)
@@ -454,15 +467,16 @@ private class TiandituRasterSource(private val keyProvider: () -> String, privat
             override val contentType = name
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource {
                 val url = tiandituUrl(layer, x, y, z)
-                val imageFactory = RasterImageFactory(url)
+                val identity = tileIdentityFor("tianditu", layer, z, x, y, "raster")
+                val imageFactory = RasterImageFactory(url, identity, viewId(), generation)
                 return ImageSource.fromImageFactory(imageFactory)
             }
         }
         return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, tileSize = 256, maxZoom = maxZoom, minZoom = 1)
     }
 
-    private suspend fun fetch(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory? = null): ByteArray {
-        if (sharedNetwork != null) return sharedNetwork.fetch(url, renderedFactory = renderedFactory) ?: ByteArray(0)
+    private suspend fun fetch(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory? = null, identity: TileRequestIdentity? = null, view: String? = null, generation: Long? = null): ByteArray {
+        if (sharedNetwork != null) return sharedNetwork.fetch(url, renderedFactory = renderedFactory, identity = identity, viewId = view, generation = generation) ?: ByteArray(0)
         return requestPermits.withPermit { fetchOne(url) }
     }
 
@@ -470,20 +484,26 @@ private class TiandituRasterSource(private val keyProvider: () -> String, privat
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         require(bounds.outWidth in 1..1024 && bounds.outHeight in 1..1024 && bounds.outWidth.toLong() * bounds.outHeight <= 1_048_576) { "地图注记图片尺寸无效" }
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: error("地图注记图片解码失败")
+        return NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) } ?: error("地图注记图片解码失败")
     }
 
-    private inner class RasterImageFactory(private val url: String) : ImageSource.NetworkBoundImageFactory {
+    private inner class RasterImageFactory(private val url: String, private val identity: TileRequestIdentity?, private val view: String?, private val generation: () -> Long?) : ImageSource.NetworkBoundImageFactory {
         override suspend fun createCachedBitmap(): Bitmap? = withContext(Dispatchers.IO) {
-            val bytes = sharedNetwork?.readCached(url, this@RasterImageFactory) ?: return@withContext null
+            val bytes = sharedNetwork?.readCached(url, this@RasterImageFactory, identity, view, generation()) ?: return@withContext null
             decodeRasterBitmap(bytes)
         }
 
         override suspend fun createBitmap(): Bitmap? = withContext(Dispatchers.IO) {
-            val bytes = fetch(url, this@RasterImageFactory)
+            val bytes = fetch(url, this@RasterImageFactory, identity, view, generation())
             if (bytes.isEmpty()) return@withContext null
             decodeRasterBitmap(bytes)
         }
+
+        override fun toString() = "TiandituRasterImageFactory"
+        override fun equals(other: Any?): Boolean = other is TiandituRasterSource.RasterImageFactory &&
+            this@TiandituRasterSource === other.outer() && (identity?.cacheKey ?: url) == (other.identity?.cacheKey ?: other.url)
+        override fun hashCode(): Int = 31 * System.identityHashCode(this@TiandituRasterSource) + (identity?.cacheKey ?: url).hashCode()
+        private fun outer(): TiandituRasterSource = this@TiandituRasterSource
     }
 
     private suspend fun fetchOne(url: String): ByteArray {

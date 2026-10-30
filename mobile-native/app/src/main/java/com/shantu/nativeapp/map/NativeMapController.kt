@@ -37,6 +37,9 @@ import earth.worldwind.shape.OrientationMode
 import earth.worldwind.shape.ShapeAttributes
 import java.net.URLEncoder
 import kotlin.math.pow
+import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.WeakHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -103,14 +106,18 @@ class NativeMapController internal constructor(
             worldWindow.requestRedraw()
         }
     }
-    private val cartography = NativeCartographyLayers(worldWindow, { key }, sharedNetwork = network) { status ->
+    private val cartography = NativeCartographyLayers(
+        worldWindow, { key }, sharedNetwork = network,
+        tileIdentityFor = { source, layer, z, x, y, style -> tileIdentityAndRegister(source, layer, z, x, y, style) },
+        viewId = { tileViewId }, generation = { tileDemandGeneration },
+    ) { status ->
         if (status.message.isNotBlank()) reportStatus(status.message)
         imageryStatusListener?.invoke(status)
     }
     @Volatile private var imageryStatusListener: ((NativeImageryStatus) -> Unit)? = null
     private val skyLayer = ClearDaySkyLayer()
     private val baseLayer: RenderableLayer = RenderableLayer("Tianditu base")
-    private val fixedDetailLayer=NativeRasterDetailLayer(worldWindow,network,::reportStatus)
+    private val fixedDetailLayer=NativeRasterDetailLayer(worldWindow,network,::reportStatus,::tileDemandFocusPx,::currentTileDemandGeneration,::fixedDetailTileRank)
     private val terrainBackgroundLayer = BackgroundLayer(
         ImageSource.fromBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565).apply { eraseColor(0xFF203B3F.toInt()) }),
         ImageOptions(ImageConfig.RGB_565),
@@ -190,6 +197,19 @@ class NativeMapController internal constructor(
     private var bridgeGroundAnchor: NativeCameraSnapshot? = null
     private var bridgeAnchorElevation: Double? = null
     private var bridgeAnchorExaggeration = Double.NaN
+    private val tileFootprints = object : LinkedHashMap<TileRequestIdentity, List<Pair<Double, Double>>>(128, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<TileRequestIdentity, List<Pair<Double, Double>>>?): Boolean = size > MAX_TILE_FOOTPRINTS
+    }
+    @Volatile private var tileDemandGeneration = 1L
+    private var lastTileDemandSignature: List<Long>? = null
+    private var drawingFocus: TileScreenPoint? = null
+    @Volatile private var tileDemandDirty = true
+    private val tileViewId = "map-${java.util.UUID.randomUUID()}"
+    private val tileDemandPostPending = AtomicBoolean(false)
+    private val namespaceHashes = object : LinkedHashMap<String, String>(64, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean = size > MAX_NAMESPACE_HASHES
+    }
+    private val customStyleFingerprints = WeakHashMap<NativeMapSource, List<String>>()
 
     internal fun clearBridgeGroundAnchor() { bridgeGroundAnchor = null; bridgeAnchorElevation = null }
 
@@ -239,6 +259,7 @@ class NativeMapController internal constructor(
     internal fun configureCartography(settings:NativeCartographySettings,activeCustomSource:Boolean,baseSelectionAllowed:Boolean,maxRasterZoom:Int?=null) {
         check(Looper.myLooper()==Looper.getMainLooper())
         cartography.apply(settings,activeCustomSource,baseSelectionAllowed,maxRasterZoom)
+        refreshTileDemand(forceGeneration = true)
         val builtInTerrainBase = !activeCustomSource &&
             (settings.sourceId == "terrain" || settings.sourceId == "offline" || settings.offlineBasemap)
         setTerrainBasemapEnabled(builtInTerrainBase)
@@ -273,6 +294,7 @@ class NativeMapController internal constructor(
         baseLayer.isEnabled = visible
         labelLayer.isEnabled = visible && rasterLabelOpacity > 0f
         fixedDetailLayer.renderLayer.isEnabled = visible
+        refreshTileDemand(forceGeneration = true)
         if (!visible && !terrainBasemapEnabled) {
             resetBridgeRasterEvidence()
         }
@@ -301,6 +323,9 @@ class NativeMapController internal constructor(
     init {
         // Keep oblique imagery readable instead of isotropic mipmaps smearing it into bands.
         Texture.anisotropicFiltering = AFLevel.AF8X
+        // WorldWind 2.1.1's RenderResourceCache remote lane is a separate admission cap from our
+        // shared HTTP scheduler. Raise only its network-image slot count to the same 20-request cap.
+        worldWindow.engine.renderResourceCache.remoteRetrievalQueueSize = BoundedTileNetwork.MAX_ACTIVE_REQUESTS
         val initial = LookAt().apply {
             set(
                 28.0.degrees, 10.0.degrees, 0.0, AltitudeMode.ABSOLUTE,
@@ -334,6 +359,7 @@ class NativeMapController internal constructor(
             override fun beginDrawing(dc:earth.worldwind.draw.DrawContext){}
             override fun endDrawing(dc:earth.worldwind.draw.DrawContext){
                 frameDrawn=true
+                NativeTileStageTelemetry.recordRenderedFrame()
                 val mvp = dc.modelviewProjection.m
                 val previous = lastBridgeFrameMatrix
                 val changed = previous?.contentEquals(mvp) != true
@@ -345,6 +371,11 @@ class NativeMapController internal constructor(
                 }
                 if (frameListener != null && copy != null) runCatching { frameListener.invoke(copy, dc.viewport.width, dc.viewport.height) }
                 runCatching { bridgeFrameActivityListener?.invoke() }
+                val demandMatrix = mvp.copyOf()
+                if (tileDemandPostPending.compareAndSet(false, true)) mainHandler.post {
+                    tileDemandPostPending.set(false)
+                    refreshTileDemand(projectionMatrix = demandMatrix)
+                }
                 val now=android.os.SystemClock.elapsedRealtime()
                 if(now-lastFrameStatusAt<750)return
                 lastFrameStatusAt=now
@@ -433,6 +464,7 @@ class NativeMapController internal constructor(
     fun dispose() {
         if (disposed) return
         disposed = true
+        network.removeViewDemand(tileViewId)
         cacheRefreshObserver.close()
         resetBridgeRasterEvidence()
         geology?.close();geology=null
@@ -469,6 +501,7 @@ class NativeMapController internal constructor(
             custom = false,
         )
         applySelectedSource()
+        refreshTileDemand(forceGeneration = true)
         reportStatus("已选择内置${selectedSource?.name}图源，等待首屏瓦片请求")
     }
 
@@ -480,6 +513,7 @@ class NativeMapController internal constructor(
         selectedSourceId = source.id
         selectedSource = NativeMapSourceSelection(source.id, source.name, source.attribution, custom = true, limitations = source.limitations)
         applySelectedSource()
+        refreshTileDemand(forceGeneration = true)
         val limitationStatus = source.limitations.takeIf { it.isNotEmpty() }?.joinToString("；")?.let { "；$it" }.orEmpty()
         reportStatus("已选择自定义图源，等待首屏瓦片请求$limitationStatus")
     }
@@ -522,7 +556,7 @@ class NativeMapController internal constructor(
         check(Looper.myLooper() == Looper.getMainLooper()) { "Label opacity must be changed on the Android main thread" }
         require(opacity.isFinite() && opacity in 0.0..1.0)
         rasterLabelOpacity = opacity.toFloat()
-        mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f; worldWindow.requestRedraw() } }
+        mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f; refreshTileDemand(forceGeneration = true); worldWindow.requestRedraw() } }
     }
 
     /** Updates the shared GPS/heading overlay. Heading must come from trusted sensors or GPS course. */
@@ -616,6 +650,7 @@ class NativeMapController internal constructor(
                 labelLayer.addRenderable(makeTileSurfaceImage(labels, true))
             }
             fixedDetailLayer.sync(fixedRasterZoom,fixedRasterDetailProvider(custom,id,rasterCallbacks))
+            refreshTileDemand(forceGeneration = true)
             worldWindow.requestRedraw()
         }
     }
@@ -679,7 +714,12 @@ class NativeMapController internal constructor(
             NativeTerrainOverlays.ATTRIBUTION else null
 
     private fun ensureTerrainCoverage(): NativeTerrariumCoverage = terrainCoverage
-        ?: NativeTerrariumCoverage(appContext, network).also { terrainCoverage = it }
+        ?: NativeTerrariumCoverage(
+            appContext, network,
+            tileIdentityFor = { z, x, y -> tileIdentityAndRegister("public-terrain-dem", "terrarium", z, x, y, "rgb-encoding-v1", "public") },
+            viewId = { if (terrainEnabled || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled || terrainOverlayOptions.elevationColorsEnabled) tileViewId else null },
+            demandGeneration = { tileDemandGeneration },
+        ).also { terrainCoverage = it }
 
     private fun syncTerrainAttachment() {
         val coverage = if (terrainEnabled) ensureTerrainCoverage() else terrainCoverage
@@ -1092,6 +1132,180 @@ class NativeMapController internal constructor(
         return (result.x to result.y).takeIf { it.first.isFinite() && it.second.isFinite() }
     }
 
+    /** Screen-pixel focus used by every raster request path; ordinary browsing is the actual viewport center. */
+    internal fun tileDemandFocusPx(): TileScreenPoint = drawingFocus ?: TileScreenPoint(view.width / 2.0, view.height / 2.0)
+    internal fun currentTileDemandGeneration(): Long = tileDemandGeneration
+    internal fun tileDemandViewId(): String = tileViewId
+    internal fun tileStageTelemetrySnapshot(): NativeTileStageSnapshot = NativeTileStageTelemetry.snapshot()
+    internal fun refreshTileViewDemand() = refreshTileDemand()
+
+    internal fun setTileDemandDrawingFocus(xPx: Double?, yPx: Double?) {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        val next = if (xPx != null && yPx != null && xPx.isFinite() && yPx.isFinite()) TileScreenPoint(xPx, yPx) else null
+        if (drawingFocus == next) return
+        drawingFocus = next
+        refreshTileDemand(forceGeneration = true)
+    }
+
+    internal fun tileIdentity(source: String, layer: String, z: Int, x: Int, y: Int, style: String = "default", credential: String = key): TileRequestIdentity =
+        TileRequestIdentity(stableNamespace(source), layer, z, x, y, stableNamespace(style), stableNamespace(credential, cacheInput = false))
+
+    /** Register only primitive geographic corners; bounded LRU does not retain image factories or URLs. */
+    internal fun tileIdentityAndRegister(source: String, layer: String, z: Int, x: Int, y: Int, style: String = "default", credential: String = key): TileRequestIdentity? {
+        val corners = TileProjectedPriority.mercatorCorners(z, x, y) ?: return null
+        val identity = tileIdentity(source, layer, z, x, y, style, credential)
+        synchronized(tileFootprints) {
+            if (tileFootprints[identity] != corners) {
+                tileFootprints[identity] = corners
+                tileDemandDirty = true
+            }
+        }
+        return identity
+    }
+
+    private fun customRasterStyleFingerprint(source: NativeMapSource, layerIndex: Int): String {
+        val fingerprints = synchronized(customStyleFingerprints) {
+            customStyleFingerprints[source] ?: run {
+                val fields = buildList {
+                    add("format=${source.format}"); add("datum=${source.datum}"); add("tileSize=${source.tileSize}")
+                    add("matrixSet=${source.tileMatrixSet.orEmpty()}")
+                    add("subdomains=${source.subdomains.joinToString(separator = "\u0000")}")
+                    source.layers.forEachIndexed { index, layer ->
+                        add("layer=$index"); add("minZoom=${layer.minZoom}"); add("maxZoom=${layer.maxZoom}")
+                        add("tileSize=${layer.tileSize}"); add("scheme=${layer.scheme}"); add("subdivide=${layer.subdivide}")
+                        add("ovmap=${layer.ovmapTemplate}"); layer.tiles.forEach { add("template=$it") }
+                    }
+                }
+                val fingerprint = NativeRasterStyleFingerprint.create(fields)
+                List(source.layers.size) { fingerprint }.also { customStyleFingerprints[source] = it }
+            }
+        }
+        return fingerprints.getOrNull(layerIndex) ?: NativeRasterStyleFingerprint.create(listOf("format=${source.format}", "layer=$layerIndex"))
+    }
+
+    internal fun fixedDetailTileRank(providerIdentity: String, z: Int, x: Int, y: Int): Double? {
+        val custom = customSource
+        val identity = if (providerIdentity.startsWith("tianditu:")) {
+            val layer = providerIdentity.substringAfterLast(':')
+            tileIdentityAndRegister("tianditu", layer, z, x, y)
+        } else {
+            val layer = custom?.layers?.firstOrNull() ?: return null
+            val requestTile = NativeRasterSourceTileKey.requestKey(layer, z, x, y) ?: return null
+            tileIdentityAndRegister(custom.id, "raster-0", requestTile.z, requestTile.x, requestTile.y, customRasterStyleFingerprint(custom, 0), custom.token)
+        }
+        return identity?.let(::tileProjectedRank)
+    }
+
+    internal fun tileProjectedRank(identity: TileRequestIdentity): Double? {
+        val geographicCorners = synchronized(tileFootprints) { tileFootprints[identity] } ?: return null
+        val corners = geographicCorners.mapNotNull { (lon, lat) ->
+            projectCoordinate(lat, lon)?.let { TileScreenPoint(it.first, it.second) }
+        }
+        val cornerHull = TileProjectedPriority.convexHull(corners)
+        val polygon = if (corners.size == 4 && cornerHull.size >= 3) cornerHull else {
+            val geographicGrid = TileProjectedPriority.mercatorGrid(identity.z, identity.x, identity.y, segmentsPerSide = 3) ?: return null
+            TileProjectedPriority.convexHull(geographicGrid.mapNotNull { (lon, lat) ->
+                projectCoordinate(lat, lon)?.let { TileScreenPoint(it.first, it.second) }
+            })
+        }
+        if (!TileProjectedPriority.intersectsViewport(polygon, view.width.toDouble(), view.height.toDouble())) return null
+        return TileProjectedPriority.distanceToQuad(tileDemandFocusPx(), polygon).takeIf(Double::isFinite)
+    }
+
+    private fun refreshTileDemand(forceGeneration: Boolean = false, projectionMatrix: DoubleArray? = null) {
+        if (Looper.myLooper() != Looper.getMainLooper() || disposed) return
+        val camera = cameraSnapshot()
+        val focus = tileDemandFocusPx()
+        val signature = listOf(camera.latitude, camera.longitude, camera.rangeMeters, camera.headingDegrees, camera.pitchDegrees,
+            camera.rollDegrees, view.width.toDouble(), view.height.toDouble(), focus.x, focus.y, if (view.visibility == View.VISIBLE) 1.0 else 0.0)
+            .map { java.lang.Double.doubleToLongBits(it) } + (projectionMatrix ?: doubleArrayOf()).map { java.lang.Double.doubleToLongBits(it) }
+        val cameraChanged = signature != lastTileDemandSignature
+        if (!forceGeneration && !cameraChanged && !tileDemandDirty) return
+        if (forceGeneration || cameraChanged) tileDemandGeneration++
+        lastTileDemandSignature = signature
+        tileDemandDirty = false
+        val visible = view.visibility == View.VISIBLE && view.width > 0 && view.height > 0
+        val registeredIdentities = synchronized(tileFootprints) { tileFootprints.keys.toList() }
+        val activeIdentities = ArrayList<TileRequestIdentity>(registeredIdentities.size)
+        val inactiveIdentities = LinkedHashSet<TileRequestIdentity>()
+        if (visible) {
+            val visibilityState = snapshotTileLayerVisibilityState()
+            registeredIdentities.forEach { identity ->
+                if (NativeTileLayerVisibility.isActive(identity, visibilityState)) activeIdentities += identity
+                else inactiveIdentities += identity
+            }
+        } else {
+            inactiveIdentities.addAll(registeredIdentities)
+        }
+        val ranks = if (!visible) emptyMap() else activeIdentities.asSequence().mapNotNull { identity ->
+                tileProjectedRank(identity)?.let { identity to it }
+            }.toMap()
+        network.updateViewDemand(TileViewDemand(tileViewId, tileDemandGeneration, visible, ranks, inactiveIdentities))
+    }
+
+    private fun snapshotTileLayerVisibilityState(): NativeTileLayerVisibilityState {
+        val custom = customSource
+        val selectedTdtBase = when (selectedSourceId) {
+            SOURCE_VECTOR -> "vec"
+            SOURCE_TERRAIN -> "ter"
+            SOURCE_IMAGERY -> "img"
+            else -> null
+        }
+        val customStyles = custom?.layers?.indices?.associate { index ->
+            "raster-$index" to stableNamespace(customRasterStyleFingerprint(custom, index))
+        }.orEmpty()
+        val customEnabled = custom?.layers?.indices?.associate { index ->
+            "raster-$index" to if (index == 0) baseLayer.isEnabled else labelLayer.isEnabled && labelLayer.opacity > 0f
+        }.orEmpty()
+        return NativeTileLayerVisibilityState(
+            tiandituSourceNamespace = stableNamespace("tianditu"),
+            selectedTiandituBaseLayer = selectedTdtBase,
+            legacyRasterVisible = legacyRasterLayersVisible,
+            legacyBaseLayerEnabled = baseLayer.isEnabled,
+            tiandituKeyConfigured = key.isNotBlank(),
+            cartographyLabelLayer = cartography.plan.tiandituLabels,
+            cartographyLabelEnabled = cartography.tiandituLabelRenderLayer.isEnabled,
+            cartographyLabelOpacity = cartography.tiandituLabelRenderLayer.opacity,
+            boundaryEnabled = cartography.tiandituBoundaryRenderLayer.isEnabled &&
+                cartography.plan.tiandituBoundaries && cartography.tiandituBoundaryRenderLayer.opacity > 0f,
+            currentCustomSourceNamespace = custom?.id?.let(::stableNamespace),
+            customLayerStyles = customStyles,
+            customLayerEnabled = customEnabled,
+            sentinelDetailSourceNamespace = stableNamespace("sentinel-eox"),
+            gibsSourceNamespace = stableNamespace("nasa-gibs-viirs"),
+            gibsProbeSourceNamespace = stableNamespace("nasa-gibs-probe"),
+            terrainDemSourceNamespace = stableNamespace("public-terrain-dem"),
+            sentinelDetailVisible = cartography.plan.effectiveBase == "sentinel-detail" &&
+                cartography.baseRenderLayer.isEnabled && cartography.baseRenderLayer.opacity > 0f,
+            sentinelLatestVisible = cartography.plan.effectiveBase == "sentinel-latest" &&
+                cartography.baseRenderLayer.isEnabled && cartography.baseRenderLayer.opacity > 0f,
+            terrainDemVisible = terrainEnabled || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled ||
+                terrainOverlayOptions.elevationColorsEnabled,
+        )
+    }
+
+    private fun stableNamespace(value: String, cacheInput: Boolean = true): String = if (cacheInput) synchronized(namespaceHashes) {
+        namespaceHashes[value] ?: run {
+            val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+            val hex = CharArray(24); val digits = "0123456789abcdef"
+            for (index in 0 until 12) {
+                val byte = digest[index].toInt() and 0xff
+                hex[index * 2] = digits[byte ushr 4]; hex[index * 2 + 1] = digits[byte and 0x0f]
+            }
+            String(hex).also { namespaceHashes[value] = it }
+        }
+    } else shortHash(value)
+
+    private fun shortHash(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+        val hex = CharArray(24); val digits = "0123456789abcdef"
+        for (index in 0 until 12) {
+            val byte = digest[index].toInt() and 0xff
+            hex[index * 2] = digits[byte ushr 4]; hex[index * 2 + 1] = digits[byte and 0x0f]
+        }
+        return String(hex)
+    }
+
     /** A real ground hit for a physical-pixel screen coordinate, null for sky/space. */
     internal fun unprojectCoordinate(x: Float, y: Float): Pair<Double, Double>? {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Unprojection reads must run on the Android main thread" }
@@ -1166,6 +1380,11 @@ class NativeMapController internal constructor(
         val maxZoom = NativeTiandituZoomPolicy.effectiveMaxZoom(layerName, fixedRasterZoom)
         return makeTileSurfaceImage("Tianditu WMTS $layerName", 1, maxZoom, transparent, 256,
             { x, y, z -> tileUrl(layerName, x, y, z) },
+            { x, y, z -> TiandituImageFactory(network, tileUrl(layerName, x, y, z),
+                rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
+                rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
+                rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
+                tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration }) },
             onBaseBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
             onImageLoadStarted = rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
             onImageLoadFinished = rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
@@ -1175,6 +1394,7 @@ class NativeMapController internal constructor(
     private fun makeTileSurfaceImages(source: NativeMapSource, rasterCallbacks: NativeRasterLoadCallbacks): List<MercatorTiledSurfaceImage> =
         source.layers.mapIndexed { layerIndex, layer ->
             val callbacks = if (layerIndex == 0) rasterCallbacks else null
+            val styleNamespace = customRasterStyleFingerprint(source, layerIndex)
             makeTileSurfaceImage(
                 "Custom ${source.format} ${if (layerIndex == 0) "base" else "overlay $layerIndex"}",
                 layer.outputMinZoom, fixedRasterZoom?.coerceIn(layer.outputMinZoom,layer.outputMaxZoom)?:layer.outputMaxZoom, layerIndex > 0, layer.outputTileSize,
@@ -1182,7 +1402,9 @@ class NativeMapController internal constructor(
                 { x, y, z -> NativeRasterImageFactory(network, source, layerIndex, x, y, z,
                     callbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
                     callbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
-                    callbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK) },
+                    callbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
+                    tileIdentity(source.id, "raster-$layerIndex", z, x, y, styleNamespace, source.token), tileViewId, { tileDemandGeneration },
+                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister(source.id, "raster-$layerIndex", rawZ, rawX, rawY, styleNamespace, source.token) }) },
                 trackPrintFrameCoverage = callbacks != null && bridgePrintRasterFrameCoverage != null,
             )
         }
@@ -1191,11 +1413,16 @@ class NativeMapController internal constructor(
         if(custom!=null) {
             if(custom.kind!="online")return null
             val layer=custom.layers.firstOrNull() ?: return null
-            return NativeRasterDetailProvider("${custom.id}:${System.identityHashCode(custom)}:base",
+            val styleNamespace=customRasterStyleFingerprint(custom,0)
+            val stableProviderIdentity = "custom:${tileIdentity(custom.id, "raster-0", 0, 0, 0, styleNamespace, custom.token).cacheKey}:base"
+            return NativeRasterDetailProvider(stableProviderIdentity,
                 layer.outputMinZoom,layer.outputMaxZoom,layer.outputTileSize) { x,y,z ->
                 NativeRasterImageFactory(
                     network,custom,0,x,y,z,rasterCallbacks.onBitmapDecoded,
                     rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
+                    tileIdentity(custom.id,"raster-0",z,x,y,styleNamespace,custom.token),
+                    tileViewId,{ tileDemandGeneration },
+                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister(custom.id,"raster-0",rawZ,rawX,rawY,styleNamespace,custom.token) },
                 ).createBitmap()
             }
         }
@@ -1207,7 +1434,8 @@ class NativeMapController internal constructor(
         }
         return NativeRasterDetailProvider("tianditu:$sourceId:$name",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
             TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
-                rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished).createBitmap()
+                rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
+                tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,{ tileDemandGeneration }).createBitmap()
         }
     }
 
@@ -1252,6 +1480,8 @@ class NativeMapController internal constructor(
         tiandituTileUrl(layerName, x, y, z, encodedKey)
 
     companion object {
+        private const val MAX_TILE_FOOTPRINTS = 1024
+        private const val MAX_NAMESPACE_HASHES = 256
         const val SOURCE_IMAGERY = "tianditu-imagery"
         const val SOURCE_VECTOR = "tianditu-vector"
         const val SOURCE_TERRAIN = "tianditu-terrain"
@@ -1265,12 +1495,16 @@ internal data class TiandituImageFactory(
     private val onBitmapDecoded: () -> Unit = NO_RASTER_DECODE_CALLBACK,
     private val onLoadStarted: () -> Unit = NO_RASTER_LOAD_CALLBACK,
     private val onLoadFinished: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+    private val identity: TileRequestIdentity? = null,
+    private val viewId: String? = null,
+    private val generation: (() -> Long?)? = null,
+    private val rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)? = null,
 ) : ImageSource.NetworkBoundImageFactory {
     override suspend fun createCachedBitmap(): Bitmap? {
         onLoadStarted()
         try {
-            return network.readCached(url, this)?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() }
+            return network.readCached(url, this, identity, viewId, generation?.invoke())?.let { bytes ->
+                NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() }
             }
         } finally {
             onLoadFinished()
@@ -1280,8 +1514,8 @@ internal data class TiandituImageFactory(
     override suspend fun createBitmap(): Bitmap? {
         onLoadStarted()
         try {
-            return network.fetch(url, renderedFactory = this)?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() }
+            return network.fetch(url, renderedFactory = this, identity = identity, viewId = viewId, generation = generation?.invoke())?.let { bytes ->
+                NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() }
             }
         } finally {
             onLoadFinished()
@@ -1291,6 +1525,10 @@ internal data class TiandituImageFactory(
     // ImageSource is a render-cache key. Keep diagnostics credential-free even though the
     // generated data-class equality intentionally includes source URL and generation callback.
     override fun toString() = "TiandituImageFactory"
+
+    private fun sourceIdentity() = NativeImageSourceIdentity(network, network, identity, url, onBitmapDecoded, onLoadStarted, onLoadFinished, generation)
+    override fun equals(other: Any?) = other is TiandituImageFactory && sourceIdentity() == other.sourceIdentity()
+    override fun hashCode() = sourceIdentity().hashCode()
 }
 
 /** Custom rasters share the bounded network/cache path; datum conversion is applied to pixels before display. */
@@ -1304,6 +1542,10 @@ internal data class NativeRasterImageFactory(
     private val onBitmapDecoded: () -> Unit = NO_RASTER_DECODE_CALLBACK,
     private val onLoadStarted: () -> Unit = NO_RASTER_LOAD_CALLBACK,
     private val onLoadFinished: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+    private val identity: TileRequestIdentity? = null,
+    private val viewId: String? = null,
+    private val generation: (() -> Long?)? = null,
+    private val rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)? = null,
 ) : ImageSource.NetworkBoundImageFactory {
     private val layer = source.layers[layerIndex]
 
@@ -1311,8 +1553,8 @@ internal data class NativeRasterImageFactory(
         if (source.datum != NativeRasterDatum.WGS84 || layer.subdivide) return null
         onLoadStarted()
         try {
-            return network.readCached(sourceUrl(outputX, outputY, outputZoom), this)
-                ?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() } }
+            return network.readCached(sourceUrl(outputX, outputY, outputZoom), this, identity, viewId, generation?.invoke())
+                ?.let { bytes -> NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() } }
         } finally {
             onLoadFinished()
         }
@@ -1367,8 +1609,13 @@ internal data class NativeRasterImageFactory(
         } finally { mosaic.recycle() }
     }
 
-    private suspend fun fetchSource(x: Int, y: Int, z: Int): Bitmap? =
-        network.fetch(sourceUrl(x, y, z), renderedFactory = this)?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() } }
+    private suspend fun fetchSource(x: Int, y: Int, z: Int): Bitmap? {
+        val urlTile = NativeRasterSourceTileKey.from(z, x, y) ?: return null
+        val requestTile = NativeRasterSourceTileKey.requestKey(layer, z, x, y) ?: return null
+        val rawIdentity = rawIdentityFor?.invoke(requestTile.x, requestTile.y, requestTile.z) ?: identity
+        return network.fetch(sourceUrl(urlTile.x, urlTile.y, urlTile.z), renderedFactory = this, identity = rawIdentity, viewId = viewId, generation = generation?.invoke())
+            ?.let { bytes -> NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() } }
+    }
 
     private fun sourceUrl(x: Int, y: Int, z: Int): String {
         val side = 1 shl z
@@ -1377,6 +1624,12 @@ internal data class NativeRasterImageFactory(
 
     // Avoid data-class output of NativeMapSource/template/token values.
     override fun toString() = "NativeRasterImageFactory"
+
+    private fun sourceIdentity() = NativeImageSourceIdentity(network, source, identity, outputFallbackKey(), onBitmapDecoded, onLoadStarted, onLoadFinished, generation)
+    override fun equals(other: Any?) = other is NativeRasterImageFactory && sourceIdentity() == other.sourceIdentity()
+    override fun hashCode() = sourceIdentity().hashCode()
+
+    private fun outputFallbackKey() = "${source.id}:$layerIndex:$outputZoom:$outputX:$outputY:${source.format}:${layer.tileSize}:${layer.scheme}"
 }
 
 /** Disk cache is capped at 64 MiB; memory cache at 12 MiB; map rendering retains two reserved requests. */

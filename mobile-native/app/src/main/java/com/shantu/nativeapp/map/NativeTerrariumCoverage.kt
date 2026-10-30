@@ -38,6 +38,9 @@ internal class NativeTerrariumCoverage(
     context: Context,
     private val network: BoundedTileNetwork,
     private val maxZoom: Int = 12,
+    private val tileIdentityFor: ((Int, Int, Int) -> TileRequestIdentity?)? = null,
+    private val viewId: (() -> String?)? = null,
+    private val demandGeneration: (() -> Long?)? = null,
 ) : TiledElevationCoverage(
     buildNativeTerrainTileMatrixSet(maxZoom),
     object : ElevationSourceFactory {
@@ -53,7 +56,7 @@ internal class NativeTerrariumCoverage(
         displayName = "Regional FABDEM + repairs / public Terrarium"
     }
 
-    override fun clone(): NativeTerrariumCoverage = NativeTerrariumCoverage(appContext, network, maxZoom)
+    override fun clone(): NativeTerrariumCoverage = NativeTerrariumCoverage(appContext, network, maxZoom, tileIdentityFor, viewId, demandGeneration)
 
     /**
      * Samples the same repair -> regional FABDEM -> public Terrarium priority for a Mercator
@@ -228,8 +231,13 @@ internal class NativeTerrariumCoverage(
     }
 
     private suspend fun fetchPublic(z: Int, x: Int, y: Int, tileSize: Int): Bitmap? {
-        val bytes = network.fetch(NativeTerrariumMath.publicTileUrl(z, x, y)) ?: return null
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+        val identity = tileIdentityFor?.invoke(z, x, y)
+        val bytes = network.fetch(
+            NativeTerrariumMath.publicTileUrl(z, x, y), identity = identity,
+            viewId = if (identity == null) null else viewId?.invoke(),
+            generation = if (identity == null) null else demandGeneration?.invoke(),
+        ) ?: return null
+        val bitmap = NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) } ?: return null
         if (bitmap.width != tileSize || bitmap.height != tileSize) {
             bitmap.recycle()
             return null

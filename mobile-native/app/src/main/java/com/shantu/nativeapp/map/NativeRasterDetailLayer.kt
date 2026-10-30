@@ -2,9 +2,7 @@ package com.shantu.nativeapp.map
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -21,18 +19,17 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.job
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.asinh
 import kotlin.math.atan
 import kotlin.math.floor
 import kotlin.math.min
 import kotlin.math.sinh
 import kotlin.math.tan
-import kotlin.coroutines.coroutineContext
 
 internal data class NativeRasterDetailTile(val z:Int,val x:Int,val y:Int,val col:Int,val row:Int)
 internal data class NativeRasterDetailBounds(val west:Double,val south:Double,val east:Double,val north:Double)
@@ -113,6 +110,9 @@ internal class NativeRasterDetailLayer(
     private val window:WorldWindow,
     private val network:BoundedTileNetwork,
     private val onStatus:(String)->Unit,
+    private val focusPx:()->TileScreenPoint,
+    private val demandGeneration:()->Long,
+    private val tileRank:(providerIdentity:String,z:Int,x:Int,y:Int)->Double?,
 ) : AutoCloseable {
     val renderLayer=RenderableLayer("Fixed raster detail")
     private val main=Handler(Looper.getMainLooper())
@@ -122,7 +122,10 @@ internal class NativeRasterDetailLayer(
     private var fixedZoom:Int?=null
     private var lastPatchKey:String?=null
     private var generation=0
-    private var currentBitmap:Bitmap?=null
+    private data class TileImage(val bitmap:Bitmap,val renderable:SurfaceImage)
+    private val tileImages=linkedMapOf<String,TileImage>()
+    private val tileJobs=linkedMapOf<String,kotlinx.coroutines.Job>()
+    private var tileState=NativeRasterDetailTileState(4L*1024L*1024L)
     private var closed=false
     private var resumed=true
     private val layoutListener=View.OnLayoutChangeListener { _,_,_,_,_,_,_,_,_ -> updateViewport() }
@@ -149,9 +152,16 @@ internal class NativeRasterDetailLayer(
         require(zoom==null || zoom in 0..24)
         val providerChanged=provider?.identity!=nextProvider?.identity
         if(fixedZoom==zoom && !providerChanged)return
+        if(providerChanged || (provider?.tileSize!=nextProvider?.tileSize)) {
+            cancelTileJobs();clearImage()
+            val tileSize=nextProvider?.tileSize ?: provider?.tileSize ?: 256
+            val side=NativeRenderMemoryBudget.rasterPatchSide(Runtime.getRuntime().maxMemory(),tileSize)
+            tileState=NativeRasterDetailTileState(side.toLong()*side*tileSize*tileSize*4L)
+        }
         fixedZoom=zoom;provider=nextProvider
         generation++;activeJob?.cancel();activeJob=null;lastPatchKey=null
-        clearImage()
+        cancelTileJobs()
+        if(providerChanged || zoom==null)clearImage()
         if(zoom==null) { main.removeCallbacks(poll);onStatus("");return }
         if(nextProvider==null) { main.removeCallbacks(poll);onStatus("当前图源不支持固定级别细节拼图");return }
         if(zoom !in nextProvider.minZoom..nextProvider.maxZoom) {
@@ -168,11 +178,15 @@ internal class NativeRasterDetailLayer(
         if(!closed && resumed && fixedZoom!=null)main.postDelayed(poll,delay)
     }
 
-    fun pause() { resumed=false;main.removeCallbacks(poll) }
+    fun pause() { resumed=false;main.removeCallbacks(poll);cancelTileJobs() }
     fun resume() { if(closed)return;resumed=true;schedulePoll(0L) }
 
     private fun updateViewport() {
-        if(closed || !resumed || !window.isAttachedToWindow || window.width<=0 || window.height<=0)return
+        if(closed || !resumed || !window.isAttachedToWindow || window.visibility!=View.VISIBLE || !renderLayer.isEnabled || renderLayer.opacity<=0f || window.width<=0 || window.height<=0) {
+            lastPatchKey=null
+            cancelTileJobs()
+            return
+        }
         val z=fixedZoom ?: return
         val source=provider ?: return
         if(z !in source.minZoom..source.maxZoom)return
@@ -182,70 +196,64 @@ internal class NativeRasterDetailLayer(
         val bounds=viewportBounds()
         val maxSide=NativeRenderMemoryBudget.rasterPatchSide(Runtime.getRuntime().maxMemory(),source.tileSize)
         val patch=runCatching { NativeRasterDetailPlan.create(centerLon,centerLat,z,bounds,maxSide) }.getOrNull() ?: return
-        if(lastPatchKey==patch.key)return
-        lastPatchKey=patch.key
-        val mine=++generation
-        activeJob?.cancel()
-        clearImage()
-        onStatus(if(patch.fullViewport)"正在加载固定级别 $z（覆盖当前视野）…" else "正在加载固定级别 $z（中心细节，外围概览）…")
-        activeJob=scope.launch(start=CoroutineStart.ATOMIC) {
-            val bitmap=runCatching { loadPatch(source,patch) }.getOrNull()
-            if(bitmap==null) {
-                withContext(Dispatchers.Main.immediate) {
-                    if(!closed && generation==mine)onStatus("固定级别 $z 瓦片暂缺；外围保持同源概览，可移动后重试")
-                }
-                return@launch
-            }
-            withContext(Dispatchers.Main.immediate) {
-                if(closed || generation!=mine || fixedZoom!=z || provider?.identity!=source.identity) {
-                    bitmap.recycle();return@withContext
-                }
-                val sector=Sector.fromDegrees(patch.south,patch.west,patch.north,patch.east)
-                renderLayer.clearRenderables()
-                renderLayer.addRenderable(SurfaceImage(sector,ImageSource.fromBitmap(bitmap)))
-                retire(currentBitmap)
-                currentBitmap=bitmap
-                window.requestRedraw()
-                onStatus(if(patch.fullViewport)"当前视野使用固定级别 $z" else "中心为固定级别 $z，外围同源概览")
-            }
-        }
-    }
-
-    private suspend fun loadPatch(source:NativeRasterDetailProvider,patch:NativeRasterDetailPatch):Bitmap?=coroutineScope {
-        val bitmap=Bitmap.createBitmap(patch.width*source.tileSize,patch.height*source.tileSize,Bitmap.Config.ARGB_8888)
-        val canvas=Canvas(bitmap)
-        val cursor=AtomicInteger()
-        val completed=AtomicInteger()
-        try {
-            repeat(TILE_WORKERS) {
-                launch {
-                    while(true) {
-                        coroutineContext.ensureActive()
-                        val index=cursor.getAndIncrement()
-                        if(index>=patch.tiles.size)break
-                        val tile=patch.tiles[index]
-                        val fetched=source.fetchOutputTile(tile.x,tile.y,tile.z) ?: throw IllegalStateException("fixed tile unavailable")
-                        try {
-                            val normalized=if(fetched.width!=source.tileSize || fetched.height!=source.tileSize)
-                                Bitmap.createScaledBitmap(fetched,source.tileSize,source.tileSize,true) else fetched
-                            try {
-                                synchronized(canvas) {
-                                    canvas.drawBitmap(normalized,null,Rect(tile.col*source.tileSize,tile.row*source.tileSize,
-                                        (tile.col+1)*source.tileSize,(tile.row+1)*source.tileSize),null)
-                                }
-                            } finally { if(normalized!==fetched)normalized.recycle() }
-                        } finally { fetched.recycle() }
-                        completed.incrementAndGet()
+        val viewKey="${patch.key}:${demandGeneration()}"
+        if(lastPatchKey==viewKey)return
+        lastPatchKey=viewKey
+        val visible=patch.tiles.map { key(source.identity,it) }.toSet()
+        val diff=tileState.reconcile(visible,true)
+        diff.retire.forEach(::retireTile)
+        tileJobs.keys.filter { it !in visible }.toList().forEach { tileJobs.remove(it)?.cancel() }
+        val mine=generation
+        onStatus(if(patch.fullViewport)"正在增量加载固定级别 $z（覆盖当前视野）…" else "正在增量加载固定级别 $z（中心细节，外围概览）…")
+        focusPx() // Rank callback uses this controller-owned physical-pixel focus.
+        val orderedTiles=patch.tiles.sortedWith(compareBy<NativeRasterDetailTile> { tileRank(source.identity,it.z,it.x,it.y) ?: Double.POSITIVE_INFINITY })
+        for(tile in orderedTiles) {
+            val tileKey=key(source.identity,tile)
+            if(tileKey !in diff.request)continue
+            tileJobs[tileKey]=scope.launch(start=CoroutineStart.ATOMIC) {
+                var bitmap:Bitmap?=null
+                val self=currentCoroutineContext().job
+                try {
+                    val fetched=source.fetchOutputTile(tile.x,tile.y,tile.z) ?: throw IllegalStateException("fixed tile unavailable")
+                    try { bitmap=warpTile(fetched,tile,source.tileSize) }
+                    finally { if(!fetched.isRecycled && bitmap!==fetched)fetched.recycle() }
+                    withContext(Dispatchers.Main.immediate) {
+                        val b=bitmap ?: return@withContext
+                        if(closed || generation!=mine || provider?.identity!=source.identity || tileKey !in tileState.pendingKeys() || tileJobs[tileKey]!==self) {
+                            if(tileJobs[tileKey]===self) { tileState.failed(tileKey);removeTileJobIfCurrent(tileKey,self) }
+                            b.recycle();bitmap=null;return@withContext
+                        }
+                        val n=1 shl tile.z
+                        val west=tile.x.toDouble()/n*360.0-180.0
+                        val east=(tile.x+1.0)/n*360.0-180.0
+                        val north=NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(),tile.z)
+                        val south=NativeRasterDetailPlan.latitudeAtTile((tile.y+1).toDouble(),tile.z)
+                        // WorldWind uses minLatitude, minLongitude, maxLatitude, maxLongitude.
+                        val image=SurfaceImage(Sector.fromDegrees(south,west,north,east),ImageSource.fromBitmap(b))
+                        val evicted=tileState.ready(tileKey,b.allocationByteCount.toLong())
+                        evicted.forEach(::retireTile)
+                        if(tileKey in evicted) { b.recycle();bitmap=null;removeTileJobIfCurrent(tileKey,self);return@withContext }
+                        tileImages[tileKey]=TileImage(b,image);renderLayer.addRenderable(image)
+                        bitmap=null // ownership moved to the resident image cache
+                        removeTileJobIfCurrent(tileKey,self);window.requestRedraw()
+                        val allReady=visible.all(tileState::contains)
+                        if(allReady)onStatus(if(patch.fullViewport)"当前视野使用固定级别 $z" else "中心为固定级别 $z，外围同源概览")
+                    }
+                } catch(error:CancellationException) {
+                    bitmap?.recycle();bitmap=null
+                    withContext(NonCancellable+Dispatchers.Main.immediate) { if(tileJobs[tileKey]===self) { tileState.failed(tileKey);removeTileJobIfCurrent(tileKey,self) } }
+                    throw error
+                } catch(_:Exception) {
+                    bitmap?.recycle();bitmap=null
+                    withContext(NonCancellable+Dispatchers.Main.immediate) {
+                        if(tileJobs[tileKey]===self) { tileState.failed(tileKey);removeTileJobIfCurrent(tileKey,self) }
+                        if(!closed&&generation==mine)onStatus("部分固定级别瓦片暂缺；已就绪高清瓦片保留")
                     }
                 }
             }
-            if(completed.get()!=patch.tiles.size)throw IllegalStateException("incomplete fixed tile patch")
-            NativeRasterDetailWarp.toGeographicLatitude(bitmap,patch)
-        } catch(error:CancellationException) {
-            bitmap.recycle();throw error
-        } catch(error:Exception) {
-            bitmap.recycle();throw error
         }
+        if(diff.request.isEmpty() && visible.all(tileState::contains))
+            onStatus(if(patch.fullViewport)"当前视野使用固定级别 $z" else "中心为固定级别 $z，外围同源概览")
     }
 
     /** WorldWind SurfaceImage maps texture rows linearly in latitude; source tiles are Mercator. */
@@ -299,7 +307,22 @@ internal class NativeRasterDetailLayer(
     private fun clearImage() {
         renderLayer.clearRenderables()
         window.requestRedraw()
-        retire(currentBitmap);currentBitmap=null
+        tileImages.values.forEach { retire(it.bitmap) };tileImages.clear()
+        tileState.clear()
+    }
+
+    private fun key(source:String,tile:NativeRasterDetailTile)="$source/${tile.z}/${tile.x}/${tile.y}"
+    private fun removeTileJobIfCurrent(key:String,job:kotlinx.coroutines.Job) { if(tileJobs[key]===job)tileJobs.remove(key) }
+    private fun retireTile(key:String) { tileImages.remove(key)?.let { retire(it.bitmap);renderLayer.clearRenderables();tileImages.values.forEach { retained -> renderLayer.addRenderable(retained.renderable) } } }
+    private fun cancelTileJobs() { tileJobs.values.forEach { it.cancel() };tileJobs.clear();tileState.cancelPending() }
+
+    private fun warpTile(fetched:Bitmap,tile:NativeRasterDetailTile,tileSize:Int):Bitmap {
+        val normalized=if(fetched.width!=tileSize||fetched.height!=tileSize)Bitmap.createScaledBitmap(fetched,tileSize,tileSize,true) else fetched
+        val n=1 shl tile.z
+        val patch=NativeRasterDetailPatch(tile.z,tile.x,tile.y,1,1,false,tile.x.toDouble()/n*360.0-180.0,
+            NativeRasterDetailPlan.latitudeAtTile((tile.y+1).toDouble(),tile.z),(tile.x+1.0)/n*360.0-180.0,
+            NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(),tile.z),listOf(tile))
+        return NativeRasterDetailWarp.toGeographicLatitude(normalized,patch)
     }
 
     private fun retire(bitmap:Bitmap?) {
@@ -316,13 +339,12 @@ internal class NativeRasterDetailLayer(
         activeJob?.cancel();activeJob=null
         scope.cancel()
         renderLayer.clearRenderables()
-        retire(currentBitmap);currentBitmap=null
+        tileImages.values.forEach { retire(it.bitmap) };tileImages.clear();cancelTileJobs()
         provider=null
         window.requestRedraw()
     }
 
     private companion object {
-        const val TILE_WORKERS=2
         const val POLL_INTERVAL_MS=500L
         const val BITMAP_RETIRE_DELAY_MS=750L
     }

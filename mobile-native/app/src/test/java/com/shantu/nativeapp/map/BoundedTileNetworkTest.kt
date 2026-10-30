@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -47,6 +48,11 @@ class BoundedTileNetworkTest {
         )
         assertArrayEquals(imageBytes, first.fetch(freshUrl))
         assertEquals(1, firstCalls.get())
+        val persistentWriteDeadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(5)
+        while(firstStore.stats()?.entries!=1L) {
+            check(System.nanoTime()<persistentWriteDeadline) { "background persistent cache write did not commit" }
+            kotlinx.coroutines.delay(10)
+        }
         assertEquals("successful response is indexed in persistent cache: failure=${cacheFailure.get()}", 1L, firstStore.stats()?.entries)
         first.close()
         firstStore.close()
@@ -64,10 +70,15 @@ class BoundedTileNetworkTest {
         val staleCache = NativePersistentBrowseCache(context, minFreeBytes = 0)
         assertTrue(staleCache.write(staleUrl, imageBytes, savedAtMillis = System.currentTimeMillis() - 25L * 60 * 60 * 1000))
         val refreshStarted = CountDownLatch(1)
+        val releaseRefresh = CountDownLatch(1)
         val refreshCalls = AtomicInteger()
         val staleNetwork = BoundedTileNetwork(
             Files.createTempDirectory("browse-cache-stale-").toFile(), {},
-            TileHttpClient { refreshCalls.incrementAndGet(); refreshStarted.countDown(); TileHttpResponse(200, null, imageBytes) },
+            TileHttpClient {
+                refreshCalls.incrementAndGet(); refreshStarted.countDown()
+                check(releaseRefresh.await(5, TimeUnit.SECONDS))
+                TileHttpResponse(200, null, imageBytes)
+            },
             isValidImage = { true }, persistentCache = staleCache,
         )
         val staleFactory = TiandituImageFactory(staleNetwork, staleUrl)
@@ -76,6 +87,11 @@ class BoundedTileNetworkTest {
         val observer = staleNetwork.observeRefresh { refreshedFactory.set(it); refreshed.countDown() }
         assertArrayEquals("stale imagery is available immediately", imageBytes, staleNetwork.readCached(staleUrl, staleFactory))
         assertTrue("stale tile refresh is scheduled", refreshStarted.await(5, TimeUnit.SECONDS))
+        val joinedRefresh = async(Dispatchers.IO) { staleNetwork.fetch(staleUrl, forceNetwork = true) }
+        kotlinx.coroutines.delay(30)
+        assertEquals("foreground request joins the same canonical refresh instead of downloading twice", 1, refreshCalls.get())
+        releaseRefresh.countDown()
+        assertArrayEquals(imageBytes, joinedRefresh.await())
         assertTrue("successful refresh notifies render cache observer", refreshed.await(5, TimeUnit.SECONDS))
         assertEquals(staleFactory, refreshedFactory.get())
         assertEquals(1, refreshCalls.get())
@@ -88,12 +104,19 @@ class BoundedTileNetworkTest {
         val context = RuntimeEnvironment.getApplication()
         val url = "https://tiles.example.test/write-fails"
         val cache = NativePersistentBrowseCache(context, minFreeBytes = Long.MAX_VALUE)
+        cache.clear()
         val network = BoundedTileNetwork(
             Files.createTempDirectory("browse-cache-write-failure-").toFile(), {},
             TileHttpClient { TileHttpResponse(200, null, imageBytes) }, isValidImage = { true }, persistentCache = cache,
         )
         assertArrayEquals(imageBytes, network.fetch(url))
-        assertNull(cache.read(url))
+        val writeFailureDeadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(5)
+        while(network.snapshot().failedCacheWrites==0L) {
+            check(System.nanoTime()<writeFailureDeadline) { "asynchronous browse-cache write failure was not reported" }
+            kotlinx.coroutines.delay(10)
+        }
+        assertEquals("storage failure leaves no persisted tile entry", 0L, cache.stats()?.entries)
+        assertEquals(0L, network.snapshot().completedCacheWrites)
         network.close()
     }
 
@@ -156,10 +179,17 @@ class BoundedTileNetworkTest {
     @Test
     fun `429 honors bounded retry after and retries only once`() = runBlocking {
         val calls = AtomicInteger()
-        val (tiles, _) = network("retry") { _, _ ->
-            if (calls.incrementAndGet() == 1) TileHttpResponse(429, "0", null)
-            else TileHttpResponse(200, null, imageBytes)
-        }
+        val elapsed = AtomicInteger(1_000)
+        val tiles = BoundedTileNetwork(
+            Files.createTempDirectory("retry-").toFile(), {},
+            TileHttpClient {
+                if (calls.incrementAndGet() == 1) TileHttpResponse(429, "0", null)
+                else TileHttpResponse(200, null, imageBytes)
+            },
+            isValidImage = { true },
+            elapsedRealtimeMillis = { elapsed.get().toLong() },
+            waitForCooldownMillis = { elapsed.addAndGet(it.toInt()) },
+        )
 
         val result = tiles.fetch("https://example.invalid/tile?token=private")
 
@@ -177,8 +207,8 @@ class BoundedTileNetworkTest {
     }
 
     @Test
-    fun `parallel map misses use four shared foreground slots`() = runBlocking {
-        val started = CountDownLatch(BoundedTileNetwork.MAX_MAP_REQUESTS)
+    fun `foreground map misses use the shared twenty request budget`() = runBlocking {
+        val started = CountDownLatch(BoundedTileNetwork.MAX_ACTIVE_REQUESTS)
         val release = CountDownLatch(1)
         val active = AtomicInteger()
         val maximum = AtomicInteger()
@@ -192,27 +222,27 @@ class BoundedTileNetworkTest {
             TileHttpResponse(200, null, imageBytes)
         }.first
 
-        val tasks = (0 until 8).map { index ->
+        val tasks = (0 until BoundedTileNetwork.MAX_ACTIVE_REQUESTS).map { index ->
             async(Dispatchers.IO) { network.fetch("https://example.invalid/tile/$index") }
         }
-        assertTrue("all four foreground map slots should become active", started.await(5, TimeUnit.SECONDS))
-        assertEquals(BoundedTileNetwork.MAX_MAP_REQUESTS, maximum.get())
-        assertEquals(BoundedTileNetwork.MAX_MAP_REQUESTS, network.snapshot().activeNetworkRequests)
+        assertTrue("all submitted foreground requests should start without a fixed cadence", started.await(5, TimeUnit.SECONDS))
+        assertEquals(BoundedTileNetwork.MAX_ACTIVE_REQUESTS, maximum.get())
+        assertEquals(BoundedTileNetwork.MAX_ACTIVE_REQUESTS, network.snapshot().activeNetworkRequests)
         release.countDown()
         tasks.forEach { assertNotNull(it.await()) }
 
-        assertEquals(8L, network.snapshot().networkRequests)
-        assertEquals(8L, network.snapshot().successes)
+        assertEquals(BoundedTileNetwork.MAX_ACTIVE_REQUESTS.toLong(), network.snapshot().networkRequests)
+        assertEquals(BoundedTileNetwork.MAX_ACTIVE_REQUESTS.toLong(), network.snapshot().successes)
         assertEquals(0L, network.snapshot().errors)
-        assertTrue(network.snapshot().queueWaitMs > 0L)
+        assertTrue(network.snapshot().queueWaitMs >= 0L)
         assertTrue(network.snapshot().networkMs > 0L)
         network.close()
     }
 
     @Test
-    fun `sixteen bulk workers coexist with four reserved foreground map requests`() = runBlocking {
-        val bulkStarted=CountDownLatch(16)
-        val mapStarted=CountDownLatch(BoundedTileNetwork.MAX_MAP_REQUESTS)
+    fun `background bulk work stays within two slots and yields immediately to foreground`() = runBlocking {
+        val bulkStarted=CountDownLatch(2)
+        val mapStarted=CountDownLatch(4)
         val release=CountDownLatch(1)
         val bulkActive=AtomicInteger()
         val mapActive=AtomicInteger()
@@ -236,20 +266,20 @@ class BoundedTileNetworkTest {
                 TileHttpResponse(200,null,imageBytes)
             },isValidImage={true})
         val bulk=(0 until 20).map { i -> async(Dispatchers.IO) { network.fetch("https://custom-${i%4}.invalid/bulk/$i",bulkDownload=true) } }
-        assertTrue("bulk workers should fill their sixteen-request budget",bulkStarted.await(5,TimeUnit.SECONDS))
+        assertTrue("background bulk fills its bounded two slots",bulkStarted.await(5,TimeUnit.SECONDS))
         val map=(0 until 4).map { i -> async(Dispatchers.IO) { network.fetch("https://map.invalid/map/$i") } }
-        assertTrue("map keeps all four foreground slots",mapStarted.await(5,TimeUnit.SECONDS))
-        assertEquals(20,network.snapshot().activeNetworkRequests)
+        assertTrue("foreground work starts while background bulk is active",mapStarted.await(5,TimeUnit.SECONDS))
+        assertEquals(6,network.snapshot().activeNetworkRequests)
         release.countDown()
         bulk.forEach { assertNotNull(it.await()) }; map.forEach { assertNotNull(it.await()) }
-        assertEquals(16,maxBulk.get()); assertEquals(BoundedTileNetwork.MAX_MAP_REQUESTS,maxMap.get())
+        assertEquals(2,maxBulk.get()); assertEquals(4,maxMap.get())
         assertEquals(4,hostMaximum.size)
         assertTrue(hostMaximum.values.all { it.get() <= 4 })
         network.close()
     }
 
-    @Test fun `custom source bulk lane enforces a per-host four request budget`() = runBlocking {
-        val fourStarted=CountDownLatch(4)
+    @Test fun `custom source bulk lane is bounded by background budget`() = runBlocking {
+        val fourStarted=CountDownLatch(2)
         val release=CountDownLatch(1)
         val active=AtomicInteger()
         val maximum=AtomicInteger()
@@ -264,11 +294,11 @@ class BoundedTileNetworkTest {
         val tasks=(0 until 12).map { i -> async(Dispatchers.IO) {
             network.fetch("https://custom-source.invalid/tile/$i",bulkDownload=true)
         } }
-        assertTrue("one source host should fill its four request budget",fourStarted.await(5,TimeUnit.SECONDS))
-        assertEquals(4,maximum.get())
+        assertTrue("bulk work respects the shared background slot cap",fourStarted.await(5,TimeUnit.SECONDS))
+        assertEquals(2,maximum.get())
         release.countDown()
         tasks.forEach { assertNotNull(it.await()) }
-        assertTrue(maximum.get()<=BoundedTileNetwork.MAX_CUSTOM_BULK_PER_HOST)
+        assertTrue(maximum.get()<=2)
         network.close()
     }
 
@@ -278,16 +308,18 @@ class BoundedTileNetworkTest {
         val network=network("shared-tianditu-cooldown") { _, _ ->
             calls.incrementAndGet(); TileHttpResponse(429,"3600",null)
         }.first
-        assertNull(network.fetch("https://t0.tianditu.gov.cn/img_w/tile/one"))
-        assertNull(network.fetch("https://t7.tianditu.gov.cn/cva_w/tile/two",bulkDownload=true))
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://t0.tianditu.gov.cn/img_w/tile/one") })
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://t7.tianditu.gov.cn/cva_w/tile/two",bulkDownload=true) })
         assertEquals("429 on any DataServer subdomain cools down the shared host class",1,calls.get())
         assertTrue(network.cooldownRemainingMillis()>=3_500_000L)
         network.close()
 
     }
 
-    @Test fun `Tianditu keeps four bounded in flight starts spaced and map slots reserved`() = runBlocking {
-        val started=CountDownLatch(4)
+    @Test fun `Tianditu shares the twenty slot scheduler without fixed start spacing`() = runBlocking {
+        val totalLimit = BoundedTileNetwork.MAX_ACTIVE_REQUESTS
+        val backgroundLimit = TileRequestPermitScheduler.MAX_BACKGROUND_ACTIVE
+        val started=CountDownLatch(totalLimit)
         val release=CountDownLatch(1)
         val starts=java.util.Collections.synchronizedList(mutableListOf<Long>())
         val active=AtomicInteger()
@@ -310,24 +342,21 @@ class BoundedTileNetworkTest {
             TileHttpResponse(200,null,imageBytes)
         },isValidImage={true})
         val bulk=(0 until 8).map { i -> async(Dispatchers.IO) { network.fetch("https://t${i%8}.tianditu.gov.cn/bulk/$i",bulkDownload=true) } }
-        val maps=(0 until 8).map { i -> async(Dispatchers.IO) { network.fetch("https://t${i%8}.tianditu.gov.cn/map/$i") } }
-        assertTrue("TDT should make progress with four bounded active requests",started.await(6,TimeUnit.SECONDS))
-        assertEquals(4,maxActive.get())
-        assertTrue("map requests stay within the four foreground slots",maxMap.get()<=BoundedTileNetwork.MAX_MAP_REQUESTS)
-        assertTrue("bulk is capped at two TDT slots",maxBulk.get()<=BoundedTileNetwork.MAX_TIANDITU_BULK_REQUESTS)
-        val ordered=starts.toList().sorted()
-        assertEquals(4,ordered.size)
-        for(i in 1 until ordered.size)
-            assertTrue("shared TDT request starts preserve 250 ms pacing",TimeUnit.NANOSECONDS.toMillis(ordered[i]-ordered[i-1])>=220L)
+        val maps=(0 until totalLimit - backgroundLimit).map { i -> async(Dispatchers.IO) { network.fetch("https://t${i%8}.tianditu.gov.cn/map/$i") } }
+        assertTrue("TDT image requests share the total scheduler",started.await(6,TimeUnit.SECONDS))
+        assertEquals(totalLimit,maxActive.get())
+        assertEquals(totalLimit - backgroundLimit,maxMap.get())
+        assertEquals(backgroundLimit,maxBulk.get())
+        assertEquals(totalLimit,network.snapshot().activeNetworkRequests)
+        assertTrue("actual concurrency stays within the shared gate",maxActive.get()<=BoundedTileNetwork.MAX_ACTIVE_REQUESTS)
         release.countDown()
         maps.forEach { assertNotNull(it.await()) }
         bulk.forEach { assertNotNull(it.await()) }
-        assertEquals(0,network.tiandituBulkWaiterCountForTest())
         network.close()
     }
 
-    @Test fun `Tianditu foreground map can use all four paced server slots`() = runBlocking {
-        val started = CountDownLatch(BoundedTileNetwork.MAX_TIANDITU_ACTIVE_REQUESTS)
+    @Test fun `Tianditu foreground requests share the unconstrained server-governed gate`() = runBlocking {
+        val started = CountDownLatch(8)
         val release = CountDownLatch(1)
         val active = AtomicInteger()
         val maximum = AtomicInteger()
@@ -348,16 +377,10 @@ class BoundedTileNetworkTest {
         val maps = (0 until 8).map { index ->
             async(Dispatchers.IO) { network.fetch("https://t${index % 8}.tianditu.gov.cn/map/$index") }
         }
-        assertTrue("foreground TDT requests should fill all four shared host slots", started.await(6, TimeUnit.SECONDS))
-        assertEquals(BoundedTileNetwork.MAX_TIANDITU_ACTIVE_REQUESTS, maximum.get())
+        assertTrue("foreground TDT requests should start without client imposed pacing", started.await(6, TimeUnit.SECONDS))
+        assertEquals(8, maximum.get())
         val ordered = starts.toList().sorted()
-        assertEquals(BoundedTileNetwork.MAX_TIANDITU_ACTIVE_REQUESTS, ordered.size)
-        for (index in 1 until ordered.size) {
-            assertTrue(
-                "TDT start cadence remains bounded at 250 ms",
-                TimeUnit.NANOSECONDS.toMillis(ordered[index] - ordered[index - 1]) >= 220L,
-            )
-        }
+        assertEquals(8, ordered.size)
         release.countDown()
         maps.forEach { assertNotNull(it.await()) }
         assertEquals(8L, network.snapshot().networkRequests)
@@ -383,8 +406,8 @@ class BoundedTileNetworkTest {
         assertTrue(bulkStarted.await(5,TimeUnit.SECONDS))
         val bulk=async(Dispatchers.IO) { network.fetch("https://t2.tianditu.gov.cn/bulk/third",bulkDownload=true) }
         val deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(5)
-        while(network.tiandituBulkWaiterCountForTest()==0) {
-            check(System.nanoTime()<deadline) { "third Tianditu bulk request did not queue behind reserved bulk slots" }
+        while(network.snapshot().queuedNetworkRequests==0) {
+            check(System.nanoTime()<deadline) { "third Tianditu bulk request did not queue behind bounded background slots" }
             kotlinx.coroutines.yield()
         }
         val map=async(Dispatchers.IO) { network.fetch("https://t3.tianditu.gov.cn/img_w/map") }
@@ -397,7 +420,7 @@ class BoundedTileNetworkTest {
 
     @Test
     fun `queued network request cancellation removes its waiter without occupying a thread`() = runBlocking {
-        val activeLimit = BoundedTileNetwork.MAX_MAP_REQUESTS
+        val activeLimit = BoundedTileNetwork.MAX_ACTIVE_REQUESTS
         val started = CountDownLatch(activeLimit)
         val releaseRequests = CountDownLatch(1)
         val network = BoundedTileNetwork(
@@ -417,8 +440,10 @@ class BoundedTileNetworkTest {
         waitForQueue(network, 1)
         assertEquals(activeLimit, network.snapshot().activeNetworkRequests)
 
+        kotlinx.coroutines.delay(10)
         queued.cancelAndJoin()
         assertEquals(0, network.snapshot().queuedNetworkRequests)
+        assertTrue("a genuinely queued request accumulates queue wait", network.snapshot().queueWaitMs > 0L)
         releaseRequests.countDown()
         activeRequests.forEach { assertNotNull(it.await()) }
         assertEquals(activeLimit.toLong(), network.snapshot().networkRequests)
@@ -427,7 +452,7 @@ class BoundedTileNetworkTest {
 
     @Test
     fun `close wakes queued network requests and leaves no permit waiters`() = runBlocking<Unit> {
-        val activeLimit = BoundedTileNetwork.MAX_MAP_REQUESTS
+        val activeLimit = BoundedTileNetwork.MAX_ACTIVE_REQUESTS
         val started = CountDownLatch(activeLimit)
         val releaseRequests = CountDownLatch(1)
         val network = BoundedTileNetwork(
@@ -475,7 +500,7 @@ class BoundedTileNetworkTest {
 
     @Test
     fun `close racing with permit release reclaims an acquired waiter permit`() = runBlocking {
-        val activeLimit = BoundedTileNetwork.MAX_MAP_REQUESTS
+        val activeLimit = BoundedTileNetwork.MAX_ACTIVE_REQUESTS
         val started = CountDownLatch(activeLimit)
         val releaseRequests = CountDownLatch(1)
         val race = CountDownLatch(1)
@@ -506,6 +531,11 @@ class BoundedTileNetworkTest {
         closer.join(5_000)
         assertTrue(!closer.isAlive)
         assertEquals(0, network.snapshot().queuedNetworkRequests)
+        val releasedBy = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (network.snapshot().activeNetworkRequests != 0) {
+            check(System.nanoTime() < releasedBy) { "closed HTTP workers must release their slots when they exit" }
+            kotlinx.coroutines.yield()
+        }
         assertEquals(0, network.snapshot().activeNetworkRequests)
     }
 
@@ -527,6 +557,154 @@ class BoundedTileNetworkTest {
     }
 
     @Test
+    fun `logical identity reopens cache across URL aliases without crossing auth namespaces`() = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        NativePersistentBrowseCache(context).let { cache -> cache.clear(); cache.close() }
+        val identity = TileRequestIdentity("source-hash", "img", 7, 21, 19, "style-hash", "credential-hash-a")
+        val firstUrl = "https://t0.example.test/tiles/7/21/19?token=private-a"
+        val aliasUrl = "https://t7.example.test/tiles/7/21/19?token=private-a"
+        val calls = AtomicInteger()
+        val firstCache = NativePersistentBrowseCache(context, minFreeBytes = 0)
+        val first = BoundedTileNetwork(
+            Files.createTempDirectory("identity-cache-first-").toFile(), {},
+            TileHttpClient { calls.incrementAndGet(); TileHttpResponse(200, null, imageBytes) },
+            isValidImage = { true }, persistentCache = firstCache,
+        )
+        assertArrayEquals(imageBytes, first.fetch(firstUrl, identity = identity))
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (firstCache.stats()?.entries != 1L) {
+            check(System.nanoTime() < deadline) { "identity cache write did not commit" }
+            kotlinx.coroutines.delay(10)
+        }
+        first.close(); firstCache.close()
+
+        val reopenedCalls = AtomicInteger()
+        val reopened = BoundedTileNetwork(
+            Files.createTempDirectory("identity-cache-reopen-").toFile(), {},
+            TileHttpClient { reopenedCalls.incrementAndGet(); TileHttpResponse(200, null, imageBytes) },
+            isValidImage = { true }, persistentCache = NativePersistentBrowseCache(context, minFreeBytes = 0),
+        )
+        assertArrayEquals("stable logical identity reads through a host URL alias after reopen", imageBytes,
+            reopened.fetch(aliasUrl, identity = identity))
+        assertEquals(0, reopenedCalls.get())
+        val otherCredential = identity.copy(authNamespace = "credential-hash-b")
+        assertArrayEquals(imageBytes, reopened.fetch(aliasUrl, identity = otherCredential))
+        assertEquals("different credentials cannot read the prior identity cache entry", 1, reopenedCalls.get())
+        reopened.close()
+    }
+
+    @Test
+    fun `no-store probe uses network gate but does not populate memory or disk cache`() = runBlocking {
+        val calls = AtomicInteger()
+        val identity = TileRequestIdentity("probe-source-hash", "image", 0, 0, 0, "probe-style-hash", "no-auth")
+        val network = BoundedTileNetwork(
+            Files.createTempDirectory("probe-no-store-").toFile(), {},
+            TileHttpClient { calls.incrementAndGet(); TileHttpResponse(200, null, imageBytes) },
+            isValidImage = { true },
+        )
+        val url = "https://imagery.example.test/probe.png"
+        assertArrayEquals(imageBytes, network.fetchProbe(url, identity))
+        assertArrayEquals(imageBytes, network.fetch(url, identity = identity))
+        assertEquals("probe response was not cached", 2, calls.get())
+        assertEquals(0L, network.snapshot().memoryHits)
+        assertEquals(0L, network.snapshot().diskHits)
+        network.close()
+    }
+
+    @Test
+    fun `retry budget persists for generation until explicit retry`() = runBlocking {
+        val calls = AtomicInteger()
+        val identity = TileRequestIdentity("retry-source-hash", "img", 6, 10, 11, "style-hash", "auth-hash")
+        val network = BoundedTileNetwork(
+            Files.createTempDirectory("retry-budget-").toFile(), {},
+            TileHttpClient { calls.incrementAndGet(); TileHttpResponse(503, null, null) },
+            isValidImage = { true },
+        )
+        val url = "https://tiles.example.test/retry-budget"
+        assertNull(network.fetch(url, identity = identity, generation = 4))
+        assertEquals(5, calls.get())
+        assertNull(network.fetch(url, identity = identity, generation = 4))
+        assertEquals("same generation/frame calls do not reset the retry budget", 5, calls.get())
+        network.retryTile(url, identity, generation = 4)
+        assertNull(network.fetch(url, identity = identity, generation = 4))
+        assertEquals("explicit retry grants one new finite budget", 10, calls.get())
+        assertNull(network.fetch(url, identity = identity, generation = 5))
+        assertEquals("new request generation has a separate bounded budget", 15, calls.get())
+        network.close()
+    }
+
+    @Test
+    fun `cancelling one shared response observer preserves the other observer`() = runBlocking {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val calls = AtomicInteger()
+        val network = BoundedTileNetwork(
+            Files.createTempDirectory("single-flight-observer-cancel-").toFile(), {},
+            TileHttpClient {
+                calls.incrementAndGet(); started.countDown()
+                check(release.await(5, TimeUnit.SECONDS))
+                TileHttpResponse(200, null, imageBytes)
+            }, isValidImage = { true },
+        )
+        val url = "https://example.invalid/shared-observer"
+        val first = async(Dispatchers.IO) { network.fetch(url) }
+        assertTrue(started.await(5, TimeUnit.SECONDS))
+        val second = async(Dispatchers.IO) { network.fetch(url) }
+        kotlinx.coroutines.delay(30)
+        first.cancelAndJoin()
+        assertEquals(1, network.snapshot().activeNetworkRequests)
+        release.countDown()
+        assertArrayEquals(imageBytes, second.await())
+        assertEquals(1, calls.get())
+        network.close()
+    }
+
+    @Test
+    fun `noncooperative cancelled worker keeps its permit until its IO actually ends`() = runBlocking {
+        val started = CountDownLatch(1)
+        val otherStarted = CountDownLatch(BoundedTileNetwork.MAX_ACTIVE_REQUESTS - 1)
+        val release = CountDownLatch(1)
+        val active = AtomicInteger()
+        val maximum = AtomicInteger()
+        val network = BoundedTileNetwork(
+            Files.createTempDirectory("worker-slot-release-").toFile(), {},
+            TileHttpClient { url ->
+                val now = active.incrementAndGet()
+                maximum.updateAndGet { old -> maxOf(old, now) }
+                if (url.endsWith("/stuck")) {
+                    started.countDown()
+                    while (release.count > 0) {
+                        try { release.await() } catch (_: InterruptedException) { /* Deliberately noncooperative fake. */ }
+                    }
+                } else {
+                    otherStarted.countDown()
+                    check(release.await(5, TimeUnit.SECONDS))
+                }
+                active.decrementAndGet()
+                TileHttpResponse(200, null, imageBytes)
+            }, isValidImage = { true },
+        )
+        val cancelledObserver = async(Dispatchers.IO) { withTimeoutOrNull(120) { network.fetch("https://example.invalid/stuck") } }
+        assertTrue(started.await(5, TimeUnit.SECONDS))
+        assertNull("observer timeout returns while the noncooperative worker still owns its permit", cancelledObserver.await())
+        val remaining = (0 until BoundedTileNetwork.MAX_ACTIVE_REQUESTS).map { index ->
+            async(Dispatchers.IO) { network.fetch("https://example.invalid/other/$index") }
+        }
+        assertTrue("only the other nineteen I/O workers may start while the cancelled worker is still alive",
+            otherStarted.await(5, TimeUnit.SECONDS))
+        assertEquals(BoundedTileNetwork.MAX_ACTIVE_REQUESTS, network.snapshot().activeNetworkRequests)
+        assertTrue(maximum.get() <= BoundedTileNetwork.MAX_ACTIVE_REQUESTS)
+        release.countDown()
+        remaining.forEach { assertNotNull(it.await()) }
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (network.snapshot().activeNetworkRequests != 0) {
+            check(System.nanoTime() < deadline) { "all worker permits should return after underlying I/O ends" }
+            kotlinx.coroutines.yield()
+        }
+        network.close()
+    }
+
+    @Test
     fun `long Retry-After blocks every tile for that host`() = runBlocking {
         val calls = AtomicInteger()
         val network = network("host-cooldown") { _, _ ->
@@ -534,8 +712,8 @@ class BoundedTileNetworkTest {
             TileHttpResponse(429, "3600", null)
         }.first
 
-        assertNull(network.fetch("https://example.invalid/tile/first"))
-        assertNull(network.fetch("https://example.invalid/tile/second"))
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://example.invalid/tile/first") })
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://example.invalid/tile/second") })
         assertEquals(1, calls.get())
         assertTrue(network.cooldownRemainingMillis() >= 3_500_000L)
         network.close()
@@ -549,8 +727,8 @@ class BoundedTileNetworkTest {
             TileHttpResponse(429, "999999999999999999999999999999999999", null)
         }.first
 
-        assertNull(network.fetch("https://example.invalid/tile/first"))
-        assertNull(network.fetch("https://example.invalid/tile/second"))
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://example.invalid/tile/first") })
+        assertNull(withTimeoutOrNull(120) { network.fetch("https://example.invalid/tile/second") })
         assertEquals(1, calls.get())
         assertTrue(network.cooldownRemainingMillis() > 30_000L)
         network.close()
@@ -618,7 +796,7 @@ class BoundedTileNetworkTest {
 
         assertNull(tiles.fetch("https://example.invalid/tile/fail"))
         assertTrue(directory.listFiles().isNullOrEmpty())
-        assertEquals(1L, tiles.snapshot().networkRequests)
+        assertEquals(5L, tiles.snapshot().networkRequests)
         assertEquals(1L, tiles.snapshot().errors)
         assertEquals(0L, tiles.snapshot().successes)
         tiles.close()
@@ -631,10 +809,10 @@ class BoundedTileNetworkTest {
 
         assertNull(rejecting.fetch("https://example.invalid/tile/invalid"))
         assertTrue(directory.listFiles().isNullOrEmpty())
-        assertEquals(1L, rejecting.snapshot().networkRequests)
+        assertEquals(5L, rejecting.snapshot().networkRequests)
         assertEquals(1L, rejecting.snapshot().errors)
         assertEquals(0L, rejecting.snapshot().successes)
-        assertEquals(imageBytes.size.toLong(), rejecting.snapshot().receivedBytes)
+        assertEquals((imageBytes.size * 5).toLong(), rejecting.snapshot().receivedBytes)
         rejecting.close()
     }
 
@@ -673,33 +851,37 @@ class BoundedTileNetworkTest {
     fun `cooldown extended during short retry wait prevents early retry`() = runBlocking {
         val calls = AtomicInteger()
         val extensionStarted = CountDownLatch(1)
-        val extensionMayRespond = CountDownLatch(1)
-        val extensionFinished = CountDownLatch(1)
+        val releaseExtension = CountDownLatch(1)
+        val initialRateLimited = CountDownLatch(1)
         lateinit var network: BoundedTileNetwork
         val client = TileHttpClient { url ->
             calls.incrementAndGet()
-            if (url.endsWith("/initial")) TileHttpResponse(429, "1", null)
+            if (url.endsWith("/initial")) {
+                initialRateLimited.countDown()
+                TileHttpResponse(429, "1", null)
+            }
             else {
                 extensionStarted.countDown()
-                check(extensionMayRespond.await(5, TimeUnit.SECONDS))
+                check(releaseExtension.await(5, TimeUnit.SECONDS))
                 TileHttpResponse(429, "3600", null)
             }
         }
         network = BoundedTileNetwork(
             Files.createTempDirectory("shantu-extended-cooldown-").toFile(), {}, client, { true },
-        ) {
-            extensionMayRespond.countDown()
-            check(extensionFinished.await(5, TimeUnit.SECONDS))
-        }
-        Thread {
-            runBlocking { network.fetch("https://example.invalid/extension") }
-            extensionFinished.countDown()
-        }.start()
+        )
+        val extension = async(Dispatchers.IO) { network.fetch("https://example.invalid/extension") }
         assertTrue(extensionStarted.await(5, TimeUnit.SECONDS))
-
-        assertNull(network.fetch("https://example.invalid/initial"))
-        assertEquals("second tile extended the host cooldown; initial tile was not retried", 2, calls.get())
+        val initial = async(Dispatchers.IO) { network.fetch("https://example.invalid/initial") }
+        assertTrue(initialRateLimited.await(5, TimeUnit.SECONDS))
+        releaseExtension.countDown()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (network.snapshot().rateLimits < 2L) {
+            check(System.nanoTime() < deadline) { "concurrent Retry-After did not extend shared cooldown" }
+            kotlinx.coroutines.yield()
+        }
+        assertEquals(2, calls.get())
         assertTrue(network.cooldownRemainingMillis() >= 3_500_000L)
+        extension.cancelAndJoin(); initial.cancelAndJoin()
         network.close()
     }
 
