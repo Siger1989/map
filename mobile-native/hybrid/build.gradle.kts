@@ -126,6 +126,17 @@ android {
         }
         buildTypes.getByName("debug").signingConfig = signingConfigs.getByName("personal")
     }
+    buildTypes.register("optimized") {
+        initWith(buildTypes.getByName("release"))
+        isDebuggable = false
+        isMinifyEnabled = true
+        isShrinkResources = false
+        proguardFiles(
+            getDefaultProguardFile("proguard-android-optimize.txt"),
+            file("proguard-optimized.pro"),
+        )
+        if (personalDelivery) signingConfig = signingConfigs.getByName("personal")
+    }
     sourceSets["main"].apply {
         java.srcDir("../app/src/main/java")
         java.srcDir("../../mobile/android/src")

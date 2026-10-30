@@ -1,0 +1,137 @@
+Threads: 62 total,   0 running,  62 sleeping,   0 stopped,   0 zombie
+  Mem:  4034432K total,  1329524K used,  2704908K free,     5124K buffers
+ Swap:  8388604K total,        0K used,  8388604K free,   377300K cached
+400%cpu   4%user   0%nice  12%sys 385%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+ 5690 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.26 Binder:4541_7   com.guanyun.weather.shantu.preview
+ 5339 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.34 Binder:4541_6   com.guanyun.weather.shantu.preview
+ 4801 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.57 pool-3-thread-4 com.guanyun.weather.shantu.preview
+ 4800 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.56 pool-3-thread-3 com.guanyun.weather.shantu.preview
+ 4799 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.59 pool-3-thread-2 com.guanyun.weather.shantu.preview
+ 4798 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.79 pool-3-thread-1 com.guanyun.weather.shantu.preview
+ 4781 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.78 Binder:4541_5   com.guanyun.weather.shantu.preview
+ 4745 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:04.02 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4743 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:06.72 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4732 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.03 Okio Watchdog   com.guanyun.weather.shantu.preview
+ 4721 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.09 OkHttp Connecti com.guanyun.weather.shantu.preview
+ 4708 u0_a41       30  10  29G 266M 133M S  0.0   6.7   0:02.26 mvt-assembly    com.guanyun.weather.shantu.preview
+ 4707 u0_a41       30  10  29G 266M 133M S  0.0   6.7   0:00.59 mvt-assembly    com.guanyun.weather.shantu.preview
+ 4694 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:10.43 native-bridge-e com.guanyun.weather.shantu.preview
+ 4693 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:03.41 native-snap-geo com.guanyun.weather.shantu.preview
+ 4685 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:08.35 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4676 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 map-tile-timeou com.guanyun.weather.shantu.preview
+ 4672 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:04.52 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4670 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.59 pool-1-thread-2 com.guanyun.weather.shantu.preview
+ 4669 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:02.02 pool-1-thread-1 com.guanyun.weather.shantu.preview
+ 4665 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:37.04 GLThread 65     com.guanyun.weather.shantu.preview
+ 4647 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.51 JavaBridge      com.guanyun.weather.shantu.preview
+ 4646 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.38 Binder:4541_4   com.guanyun.weather.shantu.preview
+ 4645 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4644 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 queued-work-loo com.guanyun.weather.shantu.preview
+ 4641 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 hwuiTask0       com.guanyun.weather.shantu.preview
+ 4642 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 hwuiTask1       com.guanyun.weather.shantu.preview
+ 4631 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4621 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:01.20 Chrome_ChildIOT com.guanyun.weather.shantu.preview
+ 4620 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:06.06 Chrome_InProcGp com.guanyun.weather.shantu.preview
+ 4619 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CleanupReferenc com.guanyun.weather.shantu.preview
+ 4618 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:08.15 VizWebView      com.guanyun.weather.shantu.preview
+ 4615 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.10 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4614 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CookieMonsterBa com.guanyun.weather.shantu.preview
+ 4613 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CookieMonsterCl com.guanyun.weather.shantu.preview
+ 4611 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.86 NetworkService  com.guanyun.weather.shantu.preview
+ 4610 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4609 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 VideoCaptureThr com.guanyun.weather.shantu.preview
+ 4608 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.05 AudioThread     com.guanyun.weather.shantu.preview
+ 4605 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.03 MemoryInfra     com.guanyun.weather.shantu.preview
+ 4604 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:15.61 Chrome_IOThread com.guanyun.weather.shantu.preview
+ 4603 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.01 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4602 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.05 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4596 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.53 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4595 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:03.33 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4594 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolServi com.guanyun.weather.shantu.preview
+ 4586 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.09 Chrome_ProcessL com.guanyun.weather.shantu.preview
+ 4580 u0_a41       10 -10  29G 266M 133M S  0.0   6.7   0:19.60 RenderThread    com.guanyun.weather.shantu.preview
+ 4579 u0_a41       29   9  29G 266M 133M S  0.0   6.7   0:00.18 Profile Saver   com.guanyun.weather.shantu.preview
+ 4567 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.15 Binder:4541_4   com.guanyun.weather.shantu.preview
+ 4565 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.44 Binder:4541_3   com.guanyun.weather.shantu.preview
+ 4559 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:02.14 Binder:4541_2   com.guanyun.weather.shantu.preview
+ 4558 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.38 Binder:4541_1   com.guanyun.weather.shantu.preview
+ 4553 u0_a41       29   9  29G 266M 133M S  0.0   6.7   0:16.62 Jit thread pool com.guanyun.weather.shantu.preview
+ 4557 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:00.00 FinalizerWatchd com.guanyun.weather.shantu.preview
+ 4556 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:00.12 FinalizerDaemon com.guanyun.weather.shantu.preview
+ 4555 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:01.24 ReferenceQueueD com.guanyun.weather.shantu.preview
+ 4554 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:15.24 HeapTaskDaemon  com.guanyun.weather.shantu.preview
+ 4552 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 ADB-JDWP Connec com.guanyun.weather.shantu.preview
+ 4550 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 Signal Catcher  com.guanyun.weather.shantu.preview
+ 4551 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 perfetto_hprof_ com.guanyun.weather.shantu.preview
+ 4541 u0_a41       10 -10  29G 266M 133M S  0.0   6.7   1:15.49 .shantu.preview com.guanyun.weather.shantu.preview
+
+
+
+Threads: 62 total,   0 running,  62 sleeping,   0 stopped,   0 zombie
+  Mem:  4034432K total,  1330684K used,  2703748K free,     5124K buffers
+ Swap:  8388604K total,        0K used,  8388604K free,   377284K cached
+400%cpu   1%user   0%nice   4%sys 394%idle   0%iow   0%irq   1%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+ 5690 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.26 Binder:4541_7   com.guanyun.weather.shantu.preview
+ 5339 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.34 Binder:4541_6   com.guanyun.weather.shantu.preview
+ 4801 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.57 pool-3-thread-4 com.guanyun.weather.shantu.preview
+ 4800 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.56 pool-3-thread-3 com.guanyun.weather.shantu.preview
+ 4799 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.59 pool-3-thread-2 com.guanyun.weather.shantu.preview
+ 4798 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.79 pool-3-thread-1 com.guanyun.weather.shantu.preview
+ 4781 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.78 Binder:4541_5   com.guanyun.weather.shantu.preview
+ 4745 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:04.02 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4743 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:06.72 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4732 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.03 Okio Watchdog   com.guanyun.weather.shantu.preview
+ 4721 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.09 OkHttp Connecti com.guanyun.weather.shantu.preview
+ 4708 u0_a41       30  10  29G 266M 133M S  0.0   6.7   0:02.26 mvt-assembly    com.guanyun.weather.shantu.preview
+ 4707 u0_a41       30  10  29G 266M 133M S  0.0   6.7   0:00.59 mvt-assembly    com.guanyun.weather.shantu.preview
+ 4694 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:10.43 native-bridge-e com.guanyun.weather.shantu.preview
+ 4693 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:03.41 native-snap-geo com.guanyun.weather.shantu.preview
+ 4685 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:08.35 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4676 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 map-tile-timeou com.guanyun.weather.shantu.preview
+ 4672 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:04.52 DefaultDispatch com.guanyun.weather.shantu.preview
+ 4670 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.59 pool-1-thread-2 com.guanyun.weather.shantu.preview
+ 4669 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:02.02 pool-1-thread-1 com.guanyun.weather.shantu.preview
+ 4665 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:37.04 GLThread 65     com.guanyun.weather.shantu.preview
+ 4647 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.51 JavaBridge      com.guanyun.weather.shantu.preview
+ 4646 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.38 Binder:4541_4   com.guanyun.weather.shantu.preview
+ 4645 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4644 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 queued-work-loo com.guanyun.weather.shantu.preview
+ 4641 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 hwuiTask0       com.guanyun.weather.shantu.preview
+ 4642 u0_a41       18  -2  29G 266M 133M S  0.0   6.7   0:00.00 hwuiTask1       com.guanyun.weather.shantu.preview
+ 4631 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4621 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:01.20 Chrome_ChildIOT com.guanyun.weather.shantu.preview
+ 4620 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:06.06 Chrome_InProcGp com.guanyun.weather.shantu.preview
+ 4619 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CleanupReferenc com.guanyun.weather.shantu.preview
+ 4618 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:08.15 VizWebView      com.guanyun.weather.shantu.preview
+ 4615 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.10 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4614 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CookieMonsterBa com.guanyun.weather.shantu.preview
+ 4613 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 CookieMonsterCl com.guanyun.weather.shantu.preview
+ 4611 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.86 NetworkService  com.guanyun.weather.shantu.preview
+ 4610 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolSingl com.guanyun.weather.shantu.preview
+ 4609 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 VideoCaptureThr com.guanyun.weather.shantu.preview
+ 4608 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.05 AudioThread     com.guanyun.weather.shantu.preview
+ 4605 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.03 MemoryInfra     com.guanyun.weather.shantu.preview
+ 4604 u0_a41       16  -4  29G 266M 133M S  0.0   6.7   0:15.61 Chrome_IOThread com.guanyun.weather.shantu.preview
+ 4603 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.01 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4602 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.05 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4596 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.53 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4595 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:03.33 ThreadPoolForeg com.guanyun.weather.shantu.preview
+ 4594 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.00 ThreadPoolServi com.guanyun.weather.shantu.preview
+ 4586 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.09 Chrome_ProcessL com.guanyun.weather.shantu.preview
+ 4580 u0_a41       10 -10  29G 266M 133M S  0.0   6.7   0:19.60 RenderThread    com.guanyun.weather.shantu.preview
+ 4579 u0_a41       29   9  29G 266M 133M S  0.0   6.7   0:00.18 Profile Saver   com.guanyun.weather.shantu.preview
+ 4567 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.15 Binder:4541_4   com.guanyun.weather.shantu.preview
+ 4565 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:01.44 Binder:4541_3   com.guanyun.weather.shantu.preview
+ 4559 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:02.14 Binder:4541_2   com.guanyun.weather.shantu.preview
+ 4558 u0_a41       20   0  29G 266M 133M S  0.0   6.7   0:00.38 Binder:4541_1   com.guanyun.weather.shantu.preview
+ 4553 u0_a41       29   9  29G 266M 133M S  0.0   6.7   0:16.62 Jit thread pool com.guanyun.weather.shantu.preview
+ 4557 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:00.00 FinalizerWatchd com.guanyun.weather.shantu.preview
+ 4556 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:00.12 FinalizerDaemon com.guanyun.weather.shantu.preview
+ 4555 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:01.24 ReferenceQueueD com.guanyun.weather.shantu.preview
+ 4554 u0_a41       24   4  29G 266M 133M S  0.0   6.7   0:15.24 HeapTaskDaemon  com.guanyun.weather.shantu.preview
+ 4552 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 ADB-JDWP Connec com.guanyun.weather.shantu.preview
+ 4550 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 Signal Catcher  com.guanyun.weather.shantu.preview
+ 4551 u0_a41        0 -20  29G 266M 133M S  0.0   6.7   0:00.00 perfetto_hprof_ com.guanyun.weather.shantu.preview
+ 4541 u0_a41       10 -10  29G 266M 133M S  0.0   6.7   1:15.49 .shantu.preview com.guanyun.weather.shantu.preview

@@ -1,0 +1,27 @@
+{
+  "camera": {
+    "center": [
+      102.89999999999998,
+      31
+    ],
+    "zoom": 12.000000000000007,
+    "pitch": 55,
+    "bearing": 0,
+    "detailZoom": 12.000000000000007
+  },
+  "settings": {
+    "terrain": true,
+    "satellite": true,
+    "satelliteProvider": "tianditu",
+    "roads": true,
+    "labels": true,
+    "rasterQuality": "high",
+    "rasterLevel": null
+  },
+  "nativeReady": true,
+  "canvases": 0,
+  "viewport": [
+    391,
+    834
+  ]
+}

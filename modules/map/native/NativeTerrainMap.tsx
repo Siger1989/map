@@ -24,6 +24,7 @@ import { readNativeProfileNotesRaw, sectionSettingsWithNativeNotes, type NativeP
 import { advanceNativeFollowGesture, beginNativeFollowGesture, type NativeFollowGesture } from './followGesture.ts';
 import { installNativeBrowserCacheBridge } from './browserCacheBridge.ts';
 import { NativeCameraSync } from './cameraSync.ts';
+import { NativeCameraPersistence } from './cameraPersistence.ts';
 import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProjectionEvents } from './projectionSyncScheduler.ts';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
@@ -401,6 +402,7 @@ type Runtime = {
   viewportAbort: AbortController | null;
   camera: CameraSnapshot | null;
   cameraSync: NativeCameraSync;
+  cameraPersistence: NativeCameraPersistence;
   frame: NativeProjectionFrame | null;
   stateRevision: number;
   generation: number;
@@ -447,7 +449,15 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
   const runtimeRef = useRef<Runtime | null>(null);
   if (!runtimeRef.current) runtimeRef.current = {
     client: null, mapId: null, created: false, hostCreated: false, viewport: null, viewportFingerprint: '', viewportAbort: null,
-    camera: null, cameraSync: new NativeCameraSync(), frame: null, stateRevision: 0, generation: 0, props, element: null, subscriptions: [],
+    camera: null, cameraSync: new NativeCameraSync(), cameraPersistence: new NativeCameraPersistence(
+      () => runtimeRef.current?.mapId === 'main' && runtimeRef.current?.props.persistCamera !== false,
+      (camera) => {
+        const current = runtimeRef.current;
+        if (!current || current.mapId !== 'main' || current.props.persistCamera === false) return;
+        saveLastView({ center: camera.center, zoom: camera.zoom, pitch: camera.pitch, bearing: camera.bearing, terrain: current.props.settings.terrain });
+        if (typeof window !== 'undefined') writeCameraHash(camera);
+      },
+    ), frame: null, stateRevision: 0, generation: 0, props, element: null, subscriptions: [],
     projectionListeners: new Set(), waiters: new Set(), roadLines: null, riverLines: null, roadGeometryStatus: null, riverGeometryStatus: null,
     frameSnapRevision: null, snapGeometryRevision: null, pendingSnapGeometry: null, nativeCadGeometry: null, interaction: null, previewSyncTimer: null,
     transientGeometry: new NativeTransientGeometry(() => runtimeRef.current?.syncTransientGeometry?.()),
@@ -526,10 +536,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
       if (pitchChanged || bearingChanged) safeCallback(() => latest.onManualView?.({ pitch: camera.pitch, bearing: camera.bearing }));
       if (bearingChanged) safeCallback(() => latest.onManualRotate());
     }
-    if (latest.persistCamera !== false && runtime.mapId === 'main') {
-      saveLastView({ center: camera.center, zoom: camera.zoom, pitch: camera.pitch, bearing: camera.bearing, terrain: latest.settings.terrain });
-      if (typeof window !== 'undefined') writeCameraHash(camera);
-    }
+    runtime.cameraPersistence.update(camera);
   };
 
   const updateProjection = (rawFrame: NativeProjectionFrame) => {
@@ -751,6 +758,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         const action = Number(value.action);
         if (action === 0) {
           runtime.cameraSync.beginUserGesture();
+          runtime.cameraPersistence.beginGesture();
           runtime.userInteracting = true;
           runtime.drawingGroundHit = null;
           const pointers = Array.isArray(value.pointers) ? value.pointers : [];
@@ -777,7 +785,10 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
             runtime.touchGesture = transition.gesture;
             if (transition.endedFollow) safeCallback(() => latest.onBrowse());
           }
-          if (action === 1 || action === 3) runtime.userInteracting = false;
+          if (action === 1 || action === 3) {
+            runtime.userInteracting = false;
+            runtime.cameraPersistence.endGesture();
+          }
         }
         break;
       }
@@ -1052,6 +1063,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     return () => {
       disposed = true;
       abort.abort();
+      runtime.cameraPersistence.flush();
       initializationRetry.cancel();
       if (retryTimer) clearTimeout(retryTimer);
       retryTimer = null;

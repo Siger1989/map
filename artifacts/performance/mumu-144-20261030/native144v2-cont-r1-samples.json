@@ -1,0 +1,1150 @@
+[
+  {
+    "at": 1793318899925,
+    "phase": "pitch55-startup",
+    "pssKiB": 297074,
+    "rssKiB": 475952,
+    "cpuTicks": 503,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 179912,
+        "rssKiB": 268196,
+        "ticks": 389
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 117162,
+        "rssKiB": 207756,
+        "ticks": 114
+      }
+    ],
+    "durationMs": 809
+  },
+  {
+    "at": 1793318902583,
+    "phase": "pitch55-startup",
+    "pssKiB": 362980,
+    "rssKiB": 543696,
+    "cpuTicks": 1141,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 232407,
+        "rssKiB": 322432,
+        "ticks": 944
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 130573,
+        "rssKiB": 221264,
+        "ticks": 197
+      }
+    ],
+    "durationMs": 655
+  },
+  {
+    "at": 1793318905198,
+    "phase": "pitch55-startup",
+    "pssKiB": 399222,
+    "rssKiB": 579704,
+    "cpuTicks": 1912,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 267881,
+        "rssKiB": 357692,
+        "ticks": 1708
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 131341,
+        "rssKiB": 222012,
+        "ticks": 204
+      }
+    ],
+    "durationMs": 615
+  },
+  {
+    "at": 1793318908061,
+    "phase": "pitch55-startup",
+    "pssKiB": 407956,
+    "rssKiB": 589008,
+    "cpuTicks": 2695,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 276689,
+        "rssKiB": 366816,
+        "ticks": 2457
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 131267,
+        "rssKiB": 222192,
+        "ticks": 238
+      }
+    ],
+    "durationMs": 857
+  },
+  {
+    "at": 1793318910724,
+    "phase": "pitch55-startup",
+    "pssKiB": 422016,
+    "rssKiB": 596192,
+    "cpuTicks": 3554,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 285261,
+        "rssKiB": 372012,
+        "ticks": 3299
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 136755,
+        "rssKiB": 224180,
+        "ticks": 255
+      }
+    ],
+    "durationMs": 658
+  },
+  {
+    "at": 1793318918209,
+    "phase": "pitch55-idle",
+    "pssKiB": 414189,
+    "rssKiB": 588492,
+    "cpuTicks": 5356,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 251435,
+        "rssKiB": 338672,
+        "ticks": 5030
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 162754,
+        "rssKiB": 249820,
+        "ticks": 326
+      }
+    ],
+    "durationMs": 444
+  },
+  {
+    "at": 1793318920629,
+    "phase": "pitch55-idle",
+    "pssKiB": 414565,
+    "rssKiB": 589072,
+    "cpuTicks": 5395,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 247689,
+        "rssKiB": 335104,
+        "ticks": 5063
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 166876,
+        "rssKiB": 253968,
+        "ticks": 332
+      }
+    ],
+    "durationMs": 418
+  },
+  {
+    "at": 1793318923029,
+    "phase": "pitch55-idle",
+    "pssKiB": 414388,
+    "rssKiB": 589104,
+    "cpuTicks": 5397,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 247544,
+        "rssKiB": 335136,
+        "ticks": 5064
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 166844,
+        "rssKiB": 253968,
+        "ticks": 333
+      }
+    ],
+    "durationMs": 399
+  },
+  {
+    "at": 1793318925436,
+    "phase": "pitch55-idle",
+    "pssKiB": 414422,
+    "rssKiB": 589116,
+    "cpuTicks": 5398,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 247576,
+        "rssKiB": 335144,
+        "ticks": 5064
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 166846,
+        "rssKiB": 253972,
+        "ticks": 334
+      }
+    ],
+    "durationMs": 407
+  },
+  {
+    "at": 1793318927835,
+    "phase": "pitch55-pan",
+    "pssKiB": 414403,
+    "rssKiB": 589096,
+    "cpuTicks": 5399,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 247558,
+        "rssKiB": 335124,
+        "ticks": 5065
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 166845,
+        "rssKiB": 253972,
+        "ticks": 334
+      }
+    ],
+    "durationMs": 398
+  },
+  {
+    "at": 1793318928334,
+    "phase": "pitch55-pan",
+    "pssKiB": 409982,
+    "rssKiB": 582004,
+    "cpuTicks": 5399,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 244329,
+        "rssKiB": 331976,
+        "ticks": 5065
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 165653,
+        "rssKiB": 250028,
+        "ticks": 334
+      }
+    ],
+    "durationMs": 455
+  },
+  {
+    "at": 1793318929690,
+    "phase": "pitch55-pan",
+    "pssKiB": 416729,
+    "rssKiB": 591636,
+    "cpuTicks": 5568,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 249615,
+        "rssKiB": 339736,
+        "ticks": 5209
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 167114,
+        "rssKiB": 251900,
+        "ticks": 359
+      }
+    ],
+    "durationMs": 754
+  },
+  {
+    "at": 1793318931083,
+    "phase": "pitch55-pan",
+    "pssKiB": 416218,
+    "rssKiB": 591416,
+    "cpuTicks": 5833,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 261105,
+        "rssKiB": 351516,
+        "ticks": 5415
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 155113,
+        "rssKiB": 239900,
+        "ticks": 418
+      }
+    ],
+    "durationMs": 792
+  },
+  {
+    "at": 1793318932279,
+    "phase": "pitch55-pan",
+    "pssKiB": 415993,
+    "rssKiB": 589892,
+    "cpuTicks": 5977,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 262754,
+        "rssKiB": 352736,
+        "ticks": 5525
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 153239,
+        "rssKiB": 237156,
+        "ticks": 452
+      }
+    ],
+    "durationMs": 594
+  },
+  {
+    "at": 1793318933630,
+    "phase": "pitch55-pan",
+    "pssKiB": 419442,
+    "rssKiB": 593508,
+    "cpuTicks": 6133,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 264190,
+        "rssKiB": 354312,
+        "ticks": 5637
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 155252,
+        "rssKiB": 239196,
+        "ticks": 496
+      }
+    ],
+    "durationMs": 747
+  },
+  {
+    "at": 1793318935187,
+    "phase": "pitch55-pan",
+    "pssKiB": 384317,
+    "rssKiB": 558452,
+    "cpuTicks": 6335,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 226660,
+        "rssKiB": 316848,
+        "ticks": 5762
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 157657,
+        "rssKiB": 241604,
+        "ticks": 573
+      }
+    ],
+    "durationMs": 956
+  },
+  {
+    "at": 1793318936584,
+    "phase": "pitch55-pan",
+    "pssKiB": 386943,
+    "rssKiB": 561244,
+    "cpuTicks": 6479,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 229088,
+        "rssKiB": 319428,
+        "ticks": 5869
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 157855,
+        "rssKiB": 241816,
+        "ticks": 610
+      }
+    ],
+    "durationMs": 794
+  },
+  {
+    "at": 1793318937849,
+    "phase": "pitch55-pan",
+    "pssKiB": 378348,
+    "rssKiB": 552684,
+    "cpuTicks": 6611,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 230994,
+        "rssKiB": 321368,
+        "ticks": 5963
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 147354,
+        "rssKiB": 231316,
+        "ticks": 648
+      }
+    ],
+    "durationMs": 663
+  },
+  {
+    "at": 1793318939106,
+    "phase": "pitch55-pan",
+    "pssKiB": 381636,
+    "rssKiB": 555992,
+    "cpuTicks": 6729,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 232643,
+        "rssKiB": 323036,
+        "ticks": 6041
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 148993,
+        "rssKiB": 232956,
+        "ticks": 688
+      }
+    ],
+    "durationMs": 654
+  },
+  {
+    "at": 1793318940753,
+    "phase": "pitch55-pan",
+    "pssKiB": 385333,
+    "rssKiB": 559788,
+    "cpuTicks": 6926,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 234641,
+        "rssKiB": 325132,
+        "ticks": 6180
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 150692,
+        "rssKiB": 234656,
+        "ticks": 746
+      }
+    ],
+    "durationMs": 1043
+  },
+  {
+    "at": 1793318942215,
+    "phase": "pitch55-pan",
+    "pssKiB": 388545,
+    "rssKiB": 563516,
+    "cpuTicks": 7094,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 236299,
+        "rssKiB": 327276,
+        "ticks": 6298
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 152246,
+        "rssKiB": 236240,
+        "ticks": 796
+      }
+    ],
+    "durationMs": 860
+  },
+  {
+    "at": 1793318943586,
+    "phase": "pitch55-pan",
+    "pssKiB": 390319,
+    "rssKiB": 565368,
+    "cpuTicks": 7226,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 237903,
+        "rssKiB": 328956,
+        "ticks": 6386
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 152416,
+        "rssKiB": 236412,
+        "ticks": 840
+      }
+    ],
+    "durationMs": 770
+  },
+  {
+    "at": 1793318944823,
+    "phase": "pitch55-pan",
+    "pssKiB": 393407,
+    "rssKiB": 568464,
+    "cpuTicks": 7351,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 239708,
+        "rssKiB": 330768,
+        "ticks": 6475
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 153699,
+        "rssKiB": 237696,
+        "ticks": 876
+      }
+    ],
+    "durationMs": 636
+  },
+  {
+    "at": 1793318946081,
+    "phase": "pitch55-pan",
+    "pssKiB": 386505,
+    "rssKiB": 561576,
+    "cpuTicks": 7476,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 241662,
+        "rssKiB": 332736,
+        "ticks": 6563
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 144843,
+        "rssKiB": 228840,
+        "ticks": 913
+      }
+    ],
+    "durationMs": 657
+  },
+  {
+    "at": 1793318947323,
+    "phase": "pitch55-pan",
+    "pssKiB": 387843,
+    "rssKiB": 562984,
+    "cpuTicks": 7587,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243439,
+        "rssKiB": 334580,
+        "ticks": 6642
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 144404,
+        "rssKiB": 228404,
+        "ticks": 945
+      }
+    ],
+    "durationMs": 641
+  },
+  {
+    "at": 1793318948518,
+    "phase": "pitch55-pan",
+    "pssKiB": 390317,
+    "rssKiB": 565488,
+    "cpuTicks": 7697,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 245129,
+        "rssKiB": 336300,
+        "ticks": 6718
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 145188,
+        "rssKiB": 229188,
+        "ticks": 979
+      }
+    ],
+    "durationMs": 595
+  },
+  {
+    "at": 1793318949641,
+    "phase": "pitch55-pan",
+    "pssKiB": 390765,
+    "rssKiB": 555808,
+    "cpuTicks": 7815,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 244604,
+        "rssKiB": 328212,
+        "ticks": 6807
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 146161,
+        "rssKiB": 227596,
+        "ticks": 1008
+      }
+    ],
+    "durationMs": 520
+  },
+  {
+    "at": 1793318954317,
+    "phase": "pitch55-settle",
+    "pssKiB": 390876,
+    "rssKiB": 556192,
+    "cpuTicks": 8173,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243866,
+        "rssKiB": 327720,
+        "ticks": 7125
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 147010,
+        "rssKiB": 228472,
+        "ticks": 1048
+      }
+    ],
+    "durationMs": 452
+  },
+  {
+    "at": 1793318956726,
+    "phase": "pitch55-settle",
+    "pssKiB": 390818,
+    "rssKiB": 556184,
+    "cpuTicks": 8173,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243807,
+        "rssKiB": 327708,
+        "ticks": 7125
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 147011,
+        "rssKiB": 228476,
+        "ticks": 1048
+      }
+    ],
+    "durationMs": 409
+  },
+  {
+    "at": 1793318959170,
+    "phase": "pitch55-settle",
+    "pssKiB": 390703,
+    "rssKiB": 556200,
+    "cpuTicks": 8174,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243717,
+        "rssKiB": 327720,
+        "ticks": 7125
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 146986,
+        "rssKiB": 228480,
+        "ticks": 1049
+      }
+    ],
+    "durationMs": 443
+  },
+  {
+    "at": 1793318961608,
+    "phase": "pitch55-settle",
+    "pssKiB": 388288,
+    "rssKiB": 553764,
+    "cpuTicks": 8263,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243754,
+        "rssKiB": 327732,
+        "ticks": 7126
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 144534,
+        "rssKiB": 226032,
+        "ticks": 1137
+      }
+    ],
+    "durationMs": 435
+  },
+  {
+    "at": 1793318964018,
+    "phase": "pitch55-longidle",
+    "pssKiB": 375726,
+    "rssKiB": 541212,
+    "cpuTicks": 8431,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243759,
+        "rssKiB": 327744,
+        "ticks": 7126
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 131967,
+        "rssKiB": 213468,
+        "ticks": 1305
+      }
+    ],
+    "durationMs": 407
+  },
+  {
+    "at": 1793318967418,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367095,
+    "rssKiB": 531328,
+    "cpuTicks": 8434,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242931,
+        "rssKiB": 326216,
+        "ticks": 7126
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124164,
+        "rssKiB": 205112,
+        "ticks": 1308
+      }
+    ],
+    "durationMs": 398
+  },
+  {
+    "at": 1793318970840,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367119,
+    "rssKiB": 531364,
+    "cpuTicks": 8435,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242952,
+        "rssKiB": 326248,
+        "ticks": 7127
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124167,
+        "rssKiB": 205116,
+        "ticks": 1308
+      }
+    ],
+    "durationMs": 421
+  },
+  {
+    "at": 1793318974253,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367140,
+    "rssKiB": 531384,
+    "cpuTicks": 8436,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242968,
+        "rssKiB": 326264,
+        "ticks": 7127
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124172,
+        "rssKiB": 205120,
+        "ticks": 1309
+      }
+    ],
+    "durationMs": 411
+  },
+  {
+    "at": 1793318977675,
+    "phase": "pitch55-longidle",
+    "pssKiB": 366971,
+    "rssKiB": 531220,
+    "cpuTicks": 8439,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242800,
+        "rssKiB": 326100,
+        "ticks": 7129
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124171,
+        "rssKiB": 205120,
+        "ticks": 1310
+      }
+    ],
+    "durationMs": 421
+  },
+  {
+    "at": 1793318981080,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367288,
+    "rssKiB": 531532,
+    "cpuTicks": 8441,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243112,
+        "rssKiB": 326408,
+        "ticks": 7131
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124176,
+        "rssKiB": 205124,
+        "ticks": 1310
+      }
+    ],
+    "durationMs": 403
+  },
+  {
+    "at": 1793318984493,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367291,
+    "rssKiB": 531548,
+    "cpuTicks": 8442,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243112,
+        "rssKiB": 326420,
+        "ticks": 7131
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124179,
+        "rssKiB": 205128,
+        "ticks": 1311
+      }
+    ],
+    "durationMs": 411
+  },
+  {
+    "at": 1793318987886,
+    "phase": "pitch55-longidle",
+    "pssKiB": 367321,
+    "rssKiB": 531564,
+    "cpuTicks": 8442,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 243138,
+        "rssKiB": 326432,
+        "ticks": 7131
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124183,
+        "rssKiB": 205132,
+        "ticks": 1311
+      }
+    ],
+    "durationMs": 392
+  },
+  {
+    "at": 1793318991301,
+    "phase": "pitch55-longidle",
+    "pssKiB": 366332,
+    "rssKiB": 530588,
+    "cpuTicks": 8443,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242145,
+        "rssKiB": 325452,
+        "ticks": 7132
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124187,
+        "rssKiB": 205136,
+        "ticks": 1311
+      }
+    ],
+    "durationMs": 414
+  },
+  {
+    "at": 1793318994686,
+    "phase": "pitch55-longidle",
+    "pssKiB": 366347,
+    "rssKiB": 530604,
+    "cpuTicks": 8443,
+    "details": [
+      {
+        "pid": 10179,
+        "ppid": 1131,
+        "uid": 10041,
+        "name": "com.guanyun.weather.shantu.preview",
+        "pssKiB": 242156,
+        "rssKiB": 325464,
+        "ticks": 7132
+      },
+      {
+        "pid": 10223,
+        "ppid": 1656,
+        "uid": 99023,
+        "name": "com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0",
+        "pssKiB": 124191,
+        "rssKiB": 205140,
+        "ticks": 1311
+      }
+    ],
+    "durationMs": 383
+  }
+]

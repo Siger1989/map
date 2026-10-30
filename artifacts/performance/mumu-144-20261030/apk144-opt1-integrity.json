@@ -1,0 +1,15 @@
+{
+  "apk": "D:\\ShantuNativeTools\\mobile-native-build\\hybrid\\outputs\\apk\\optimized\\hybrid-optimized.apk",
+  "bytes": 165099680,
+  "sha256": "c6fd28c6b950aa2f1be4ac63c0dda41eb93e68078bbf67944d1fe4ae1d7cd747",
+  "crc": "PASS",
+  "zipEntries": 2165,
+  "privateConfigurationMatch": true,
+  "privateCredentialPresent": true,
+  "reactNativeCredentialMatch": true,
+  "seedConfigurationMatch": true,
+  "freshReactAssetsMatched": 1925,
+  "native64BitLibraries": 4,
+  "elf16KiB": "PASS",
+  "baseline142Unchanged": true
+}

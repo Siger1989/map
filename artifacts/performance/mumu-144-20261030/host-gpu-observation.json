@@ -1,0 +1,37 @@
+{
+  "engines": [
+    {
+      "Name": "pid_44572_luid_0x00000000_0x00012D78_phys_0_eng_0_engtype_3D",
+      "UtilizationPercentage": 79
+    },
+    {
+      "Name": "pid_44572_luid_0x00000000_0x00012D78_phys_0_eng_1_engtype_Compute_0",
+      "UtilizationPercentage": 16
+    },
+    {
+      "Name": "pid_29748_luid_0x00000000_0x00012D78_phys_0_eng_8_engtype_VideoEncode",
+      "UtilizationPercentage": 7
+    },
+    {
+      "Name": "pid_40724_luid_0x00000000_0x00012D78_phys_0_eng_3_engtype_VideoDecode",
+      "UtilizationPercentage": 3
+    },
+    {
+      "Name": "pid_44572_luid_0x00000000_0x00012D78_phys_0_eng_8_engtype_VideoEncode",
+      "UtilizationPercentage": 3
+    }
+  ],
+  "capturedAtUtc": "2026-10-30T01:06:57.8754598Z",
+  "processes": [
+    {
+      "Id": 29748,
+      "Name": "GameViewerServer",
+      "StartTime": null
+    },
+    {
+      "Id": 44572,
+      "Name": "UnrealEditor",
+      "StartTime": "2026-10-30T08:50:56.1523003+08:00"
+    }
+  ]
+}

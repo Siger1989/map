@@ -1,0 +1,50 @@
+Applications Memory Usage (in Kilobytes):
+Uptime: 1234972 Realtime: 1234972
+
+** MEMINFO in pid 4541 [com.guanyun.weather.shantu.preview] **
+                   Pss  Private  Private     Swap      Rss     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty    Total     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------   ------
+  Native Heap    36085    36060        0        0    36828    70896    15578    41701
+  Dalvik Heap    82370    82320        0        0    83520    71831    47255    24576
+ Dalvik Other     8221     5600        0        0    11776                           
+        Stack     4568     4568        0        0     4580                           
+       Ashmem      206      164        0        0      536                           
+    Other dev       18        0       16        0      316                           
+     .so mmap    19908     1232    14948        0    42476                           
+    .jar mmap    12315        0     6532        0    24716                           
+    .apk mmap    46649     5636    20124        0    67920                           
+    .dex mmap    15069        8    14880        0    15376                           
+    .oat mmap     1438        0      676        0     6740                           
+    .art mmap     7353     6796        8        0    19828                           
+   Other mmap      887       36      792        0     1736                           
+      Unknown     8811     8808        0        0     9096                           
+        TOTAL   243898   151228    57976        0   325444   142727    62833    66277
+ 
+ App Summary
+                       Pss(KB)                        Rss(KB)
+                        ------                         ------
+           Java Heap:    89124                         103348
+         Native Heap:    36060                          36828
+                Code:    64080                         162508
+               Stack:     4568                           4580
+            Graphics:        0                              0
+       Private Other:    15372
+              System:    34694
+             Unknown:                                   18180
+ 
+           TOTAL PSS:   243898            TOTAL RSS:   325444      TOTAL SWAP (KB):        0
+ 
+ Objects
+               Views:       10         ViewRootImpl:        1
+         AppContexts:        6           Activities:        1
+              Assets:        6        AssetManagers:        0
+       Local Binders:       31        Proxy Binders:       40
+       Parcel memory:        8         Parcel count:       32
+    Death Recipients:        2      OpenSSL Sockets:        5
+            WebViews:        1
+ 
+ SQL
+         MEMORY_USED:        0
+  PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
+ 

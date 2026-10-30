@@ -153,6 +153,102 @@ test('terrain exaggeration changes rendered projection but preserves factual gro
   assert.ok(Math.abs(ground.value.coordinate[1] - 90) < 1e-6);
 });
 
+test('terrain unprojection falls back to a bounded bracket on a steep synthetic DEM', () => {
+  const dem = syntheticSteepSlopeDem();
+  const frame = steepNativeFrame();
+  const target = [102.9, 31];
+  const projected = projectWgs84(target, frame, dem);
+  assert.equal(projected.status, 'ready');
+
+  const ground = unprojectWgs84({ x: projected.value.x, y: projected.value.y }, frame, dem);
+  assert.equal(ground.status, 'ready');
+  const longitudeErrorMeters = Math.abs(ground.value.coordinate[0] - target[0]) * 111_320 * Math.cos(target[1] * Math.PI / 180);
+  const latitudeErrorMeters = Math.abs(ground.value.coordinate[1] - target[1]) * 111_320;
+  assert.ok(Math.hypot(longitudeErrorMeters, latitudeErrorMeters) < 2);
+  assert.ok(Math.abs(ground.value.elevationMeters - dem.sample(...target)) < 1);
+
+  const reprojected = projectWgs84(ground.value.coordinate, frame, dem);
+  assert.equal(reprojected.status, 'ready');
+  assert.ok(Math.hypot(reprojected.value.x - projected.value.x, reprojected.value.y - projected.value.y) < 0.05);
+});
+
+test('terrain bracket fallback does not bridge a no-data hole in front of a later DEM surface', () => {
+  const dem = syntheticSteepSlopeDem({ noDataRows: [16, 17, 18] });
+  const frame = steepNativeFrame();
+  const projected = projectWgs84([102.9, 31], frame, dem);
+  assert.equal(projected.status, 'ready');
+
+  assert.deepEqual(unprojectWgs84({ x: projected.value.x, y: projected.value.y }, frame, dem), {
+    status: 'blocked', reason: 'dem-sample-unavailable',
+  });
+});
+
+test('terrain unprojection retains valid below-ellipsoid sea elevations', () => {
+  const dem = new NativeDemCache();
+  const tile = { id: 'negative-sea', west: -1, south: 89, east: 1, north: 90, width: 2, height: 2, heights: [-250, -250, -250, -250] };
+  assert.equal(dem.replace(1, [tile]), true);
+  const inverseViewProjection = [1,0,0,0, 0,1,0,0, 0,0,-2 * 6_356_752.314245,0, 0,0,0,1];
+  const frame = {
+    sequence: 1, camera: { center: [0, 90], zoom: 8, pitch: 0, bearing: 0 },
+    viewProjection: invertMatrix4(inverseViewProjection), inverseViewProjection,
+    viewport: { x: 0, y: 0, width: 100, height: 100 }, cssScale: 1,
+    clipDepth: 'minusOneToOne', demRevision: 1, capturedAt: 1, terrainEnabled: true,
+  };
+  const projected = projectWgs84([0, 90], frame, dem);
+  assert.equal(projected.status, 'ready');
+  const ground = unprojectWgs84({ x: projected.value.x, y: projected.value.y }, frame, dem);
+  assert.equal(ground.status, 'ready');
+  assert.equal(ground.value.elevationMeters, -250);
+  assert.ok(Math.abs(ground.value.coordinate[1] - 90) < 1e-6);
+});
+
+test('DEM cache preserves highest-resolution priority and falls back across no-data samples', () => {
+  const dem = new NativeDemCache();
+  const coarse = { id: 'coarse', west: 0, south: 0, east: 1, north: 1, width: 2, height: 2, heights: [500, 500, 500, 500] };
+  const fineHeights = Array.from({ length: 16 }, (_, index) => 0.125 + (index % 4) * 0.25 + Math.floor(index / 4) * 0.5);
+  fineHeights[5] = null;
+  const fine = { id: 'fine', west: 0, south: 0, east: 1, north: 1, width: 4, height: 4, heights: fineHeights };
+  assert.equal(dem.replace(1, [coarse, fine]), true);
+  assert.ok(Math.abs(dem.sample(0.1, 0.1) - 1.55) < 1e-12);
+  assert.equal(dem.sample(0.5, 0.5), 500);
+});
+
+function syntheticSteepSlopeDem({ noDataRows = [] } = {}) {
+  const tiles = [
+    { id: 'synthetic-north', west: 102.65899658203125, south: 31.0552869290102, east: 103.00506591796875, north: 31.351291407790587 },
+    { id: 'synthetic-south', west: 102.65899658203125, south: 30.75363814621857, east: 103.00506591796875, north: 31.0505809842175 },
+  ].map((bounds) => ({
+    ...bounds, width: 64, height: 64,
+    heights: Array.from({ length: 64 * 64 }, (_, index) => {
+      const row = Math.floor(index / 64);
+      if (bounds.id === 'synthetic-south' && noDataRows.includes(row)) return null;
+      const latitude = bounds.north - (bounds.north - bounds.south) * row / 63;
+      return 4200 + 600 * Math.sin((latitude - 30.98) * Math.PI * 63 + 0.8);
+    }),
+  }));
+  const dem = new NativeDemCache();
+  assert.equal(dem.replace(1, tiles), true);
+  return dem;
+}
+
+function steepNativeFrame() {
+  // Captured WorldWind frame transform, kept as a compact projection fixture; terrain is synthetic.
+  const inverseViewProjection = [
+    -0.18929514342161433, -0.04335437539062495, 2.901302856259236e-15, 8.826801183225432e-22,
+    -0.03761224945788125, 0.16422370502143047, 0.37840291839990114, 0,
+    150.64429080242428, -657.7475139742285, -400.8055147664493, -0.0001228957710077655,
+    -151.1010174960789, 659.7416874388638, 402.9700512699954, 0.00012343475103965385,
+  ];
+  return {
+    sequence: 1486,
+    camera: { center: [102.9, 31], zoom: 12, pitch: 55, bearing: 0 },
+    viewProjection: invertMatrix4(inverseViewProjection), inverseViewProjection,
+    viewport: { x: 0, y: 0, width: 1256, height: 2679 },
+    cssScale: 3.21227621483376, clipDepth: 'minusOneToOne', demRevision: 1,
+    capturedAt: 1, terrainEnabled: true, verticalExaggeration: 1,
+  };
+}
+
 function frameFor(viewProjection) {
   return {
     sequence: 1,

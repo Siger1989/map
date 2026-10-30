@@ -1,0 +1,35 @@
+{
+  "status": "NOT_ACCEPTED",
+  "apk144v1Sha256": "56c66292449e13773980ce9f00fb58093873553c6cbf776f956ba939b96c5501",
+  "apk144v2Sha256": "224c32e5fc3968592a5ab1b575d2ab1c87523aba912c23f9a07b92d3593a313b",
+  "apk144v3Sha256": "d8db7a5c172565212bda7eaffa431615b15c098fb0beedba73d7f4580bf87eca",
+  "physicalPixels": [
+    1256,
+    2760
+  ],
+  "dpi": 515,
+  "vcpus": 4,
+  "ramMiB": 4096,
+  "singlePointerDurationMs": 20000,
+  "moveNominalMs": 16,
+  "camera": {
+    "center": [
+      102.9,
+      31
+    ],
+    "zoom": 12,
+    "pitch": 55
+  },
+  "terrain": true,
+  "roads": true,
+  "labels": true,
+  "rasterQuality": "high",
+  "source": "private Tianditu",
+  "frameMetrics": "SurfaceFlinger histogram buckets; no input-to-display latency or rolling worst-second measurement",
+  "measurementInstrumentation": false,
+  "diagnosticTimingInstrumentation": true,
+  "uncontrolledHostGpuCompetitionObserved": true,
+  "apk144v4Sha256": "fbc1013244ef53a9996efc3bb27b09dd88f0748bf4c14bbc658b7b6d223eb483",
+  "apk144Optimized1Sha256": "c6fd28c6b950aa2f1be4ac63c0dda41eb93e68078bbf67944d1fe4ae1d7cd747",
+  "userStage": "source audit only; MuMu deferred; Unreal remains running"
+}

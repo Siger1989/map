@@ -1,0 +1,6197 @@
+[
+  {
+    "name": "native143-cont-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 348.6962890625,
+        "pssPeakMiB": 368.59765625,
+        "pssStartMiB": 255.19140625,
+        "pssEndMiB": 368.59765625,
+        "cpuMeanFourCorePercent": 74.92422020142759,
+        "cpuMedianFourCorePercent": 73.25636978586128
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 390.58251953125,
+        "pssPeakMiB": 390.6103515625,
+        "pssStartMiB": 390.6103515625,
+        "pssEndMiB": 390.45703125,
+        "cpuMeanFourCorePercent": 0.1941747572815534,
+        "cpuMedianFourCorePercent": 0.20576131687242796
+      },
+      "pitch55-pan": {
+        "samples": 17,
+        "pssMedianMiB": 390.4189453125,
+        "pssPeakMiB": 411.62890625,
+        "pssStartMiB": 390.4189453125,
+        "pssEndMiB": 383.41015625,
+        "cpuMeanFourCorePercent": 55.31844316674038,
+        "cpuMedianFourCorePercent": 58.2186623020648
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 324.412109375,
+        "pssPeakMiB": 374.662109375,
+        "pssStartMiB": 374.662109375,
+        "pssEndMiB": 324.123046875,
+        "cpuMeanFourCorePercent": 1.113275814082939,
+        "cpuMedianFourCorePercent": 0.10469011725293134
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 293.96875,
+        "pssPeakMiB": 314.5693359375,
+        "pssStartMiB": 314.5693359375,
+        "pssEndMiB": 293.62890625,
+        "cpuMeanFourCorePercent": 1.097209485130355,
+        "cpuMedianFourCorePercent": 0.07389890629618681
+      }
+    },
+    "frames": {
+      "fps": 15.334,
+      "frames": 327,
+      "p95BucketMs": 200,
+      "p99BucketMs": 300,
+      "slow54Percent": 36.08562691131498,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 15
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 82
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 75
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 37
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 21
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 13
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 18
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 16
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 15
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 9
+        },
+        {
+          "bucketMs": 200,
+          "frames": 17
+        },
+        {
+          "bucketMs": 250,
+          "frames": 5
+        },
+        {
+          "bucketMs": 300,
+          "frames": 3
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 1
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native143-cont-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 359.01171875,
+        "pssPeakMiB": 406.5927734375,
+        "pssStartMiB": 304.474609375,
+        "pssEndMiB": 406.5927734375,
+        "cpuMeanFourCorePercent": 73.86135634028892,
+        "cpuMedianFourCorePercent": 72.48014150851391
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 388.5341796875,
+        "pssPeakMiB": 388.5732421875,
+        "pssStartMiB": 388.515625,
+        "pssEndMiB": 388.5732421875,
+        "cpuMeanFourCorePercent": 0.10447137484329294,
+        "cpuMedianFourCorePercent": 0.10464629552113856
+      },
+      "pitch55-pan": {
+        "samples": 20,
+        "pssMedianMiB": 405.365234375,
+        "pssPeakMiB": 440.2294921875,
+        "pssStartMiB": 388.484375,
+        "pssEndMiB": 413.0771484375,
+        "cpuMeanFourCorePercent": 51.523712486105964,
+        "cpuMedianFourCorePercent": 53.5377358490566
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 373.7451171875,
+        "pssPeakMiB": 386.0380859375,
+        "pssStartMiB": 386.0380859375,
+        "pssEndMiB": 361.4130859375,
+        "cpuMeanFourCorePercent": 0.6246712256706997,
+        "cpuMedianFourCorePercent": 0.27124773960216997
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 329.58251953125,
+        "pssPeakMiB": 355.921875,
+        "pssStartMiB": 355.921875,
+        "pssEndMiB": 329.0830078125,
+        "cpuMeanFourCorePercent": 2.3616518797472392,
+        "cpuMedianFourCorePercent": 0.0730140186915888
+      }
+    },
+    "frames": {
+      "fps": 15.953,
+      "frames": 343,
+      "p95BucketMs": 250,
+      "p99BucketMs": 300,
+      "slow54Percent": 26.53061224489796,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 14
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 112
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 91
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 35
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 21
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 4
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 7
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 6
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 6
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 5
+        },
+        {
+          "bucketMs": 200,
+          "frames": 19
+        },
+        {
+          "bucketMs": 250,
+          "frames": 14
+        },
+        {
+          "bucketMs": 300,
+          "frames": 7
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 1
+        },
+        {
+          "bucketMs": 450,
+          "frames": 1
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144-cont-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 362.638671875,
+        "pssPeakMiB": 423.8291015625,
+        "pssStartMiB": 294.92578125,
+        "pssEndMiB": 376.5400390625,
+        "cpuMeanFourCorePercent": 74.15832575068244,
+        "cpuMedianFourCorePercent": 74.83332139039669
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 377.3798828125,
+        "pssPeakMiB": 377.9404296875,
+        "pssStartMiB": 377.39453125,
+        "pssEndMiB": 377.9404296875,
+        "cpuMeanFourCorePercent": 0.31180709534368073,
+        "cpuMedianFourCorePercent": 0.31263026260942056
+      },
+      "pitch55-pan": {
+        "samples": 20,
+        "pssMedianMiB": 391.13623046875,
+        "pssPeakMiB": 406.1884765625,
+        "pssStartMiB": 377.951171875,
+        "pssEndMiB": 360.3662109375,
+        "cpuMeanFourCorePercent": 26.572693937806562,
+        "cpuMedianFourCorePercent": 25.431425976385107
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 374.7861328125,
+        "pssPeakMiB": 374.978515625,
+        "pssStartMiB": 374.978515625,
+        "pssEndMiB": 374.7900390625,
+        "cpuMeanFourCorePercent": 0.1745078877565266,
+        "cpuMedianFourCorePercent": 0
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 347.92578125,
+        "pssPeakMiB": 374.4931640625,
+        "pssStartMiB": 374.4931640625,
+        "pssEndMiB": 347.2626953125,
+        "cpuMeanFourCorePercent": 2.296201869647643,
+        "cpuMedianFourCorePercent": 0.07370283018867925
+      }
+    },
+    "frames": {
+      "fps": 54.256,
+      "frames": 1090,
+      "p95BucketMs": 33,
+      "p99BucketMs": 50,
+      "slow54Percent": 0.5504587155963303,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 5
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 973
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 92
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 14
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 2
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 1
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 0
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 1
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144-cont-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 366.0458984375,
+        "pssPeakMiB": 428.0712890625,
+        "pssStartMiB": 315.9619140625,
+        "pssEndMiB": 398.2333984375,
+        "cpuMeanFourCorePercent": 77.88335186495502,
+        "cpuMedianFourCorePercent": 78.71682864254336
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 386.3525390625,
+        "pssPeakMiB": 386.3740234375,
+        "pssStartMiB": 386.3564453125,
+        "pssEndMiB": 386.3740234375,
+        "cpuMeanFourCorePercent": 0.1386193512614361,
+        "cpuMedianFourCorePercent": 0.20695364238410596
+      },
+      "pitch55-pan": {
+        "samples": 20,
+        "pssMedianMiB": 364.46875,
+        "pssPeakMiB": 393.359375,
+        "pssStartMiB": 386.3896484375,
+        "pssEndMiB": 362.3193359375,
+        "cpuMeanFourCorePercent": 27.05992083352291,
+        "cpuMedianFourCorePercent": 26.80851063829787
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 378.1943359375,
+        "pssPeakMiB": 378.2158203125,
+        "pssStartMiB": 378.18359375,
+        "pssEndMiB": 378.1416015625,
+        "cpuMeanFourCorePercent": 0.2067254685777288,
+        "cpuMedianFourCorePercent": 0.10403662089055349
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 355.9091796875,
+        "pssPeakMiB": 373.884765625,
+        "pssStartMiB": 373.884765625,
+        "pssEndMiB": 355.0556640625,
+        "cpuMeanFourCorePercent": 1.098382530022456,
+        "cpuMedianFourCorePercent": 0.1460280373831776
+      }
+    },
+    "frames": {
+      "fps": 53.701,
+      "frames": 1078,
+      "p95BucketMs": 33,
+      "p99BucketMs": 50,
+      "slow54Percent": 0.463821892393321,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 13
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 930
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 118
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 12
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 2
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 0
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 0
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 1
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144-opt1-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 325.212890625,
+        "pssPeakMiB": 493.3203125,
+        "pssStartMiB": 236.4375,
+        "pssEndMiB": 493.3203125,
+        "cpuMeanFourCorePercent": 52.33946049176414,
+        "cpuMedianFourCorePercent": 52.369159237341705
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 320.58642578125,
+        "pssPeakMiB": 322.337890625,
+        "pssStartMiB": 322.337890625,
+        "pssEndMiB": 317.658203125,
+        "cpuMeanFourCorePercent": 7.371167645140248,
+        "cpuMedianFourCorePercent": 2.3696682464454977
+      },
+      "pitch55-pan": {
+        "samples": 14,
+        "pssMedianMiB": 312.35400390625,
+        "pssPeakMiB": 325.87890625,
+        "pssStartMiB": 317.2138671875,
+        "pssEndMiB": 325.87890625,
+        "cpuMeanFourCorePercent": 30.751782242384962,
+        "cpuMedianFourCorePercent": 29.396044895777663
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 304.3193359375,
+        "pssPeakMiB": 306.064453125,
+        "pssStartMiB": 306.064453125,
+        "pssEndMiB": 304.3193359375,
+        "cpuMeanFourCorePercent": 0.1647337901950448,
+        "cpuMedianFourCorePercent": 0.09897070467141728
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 303.66259765625,
+        "pssPeakMiB": 303.7978515625,
+        "pssStartMiB": 303.7978515625,
+        "pssEndMiB": 303.1875,
+        "cpuMeanFourCorePercent": 0.0938790837401427,
+        "cpuMedianFourCorePercent": 0.07090187180941578
+      }
+    },
+    "frames": {
+      "fps": 30.691,
+      "frames": 637,
+      "p95BucketMs": 66,
+      "p99BucketMs": 102,
+      "slow54Percent": 9.419152276295135,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 28
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 236
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 215
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 98
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 39
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 13
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 4
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 0
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 1
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false,
+    "acceptanceScope": "internal observation under shared host GPU; not fair FPS acceptance"
+  },
+  {
+    "name": "native144v2-cont-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 389.865234375,
+        "pssPeakMiB": 412.125,
+        "pssStartMiB": 290.111328125,
+        "pssEndMiB": 412.125,
+        "cpuMeanFourCorePercent": 70.63153995740346,
+        "cpuMedianFourCorePercent": 71.0408528673008
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 404.6923828125,
+        "pssPeakMiB": 404.8486328125,
+        "pssStartMiB": 404.4814453125,
+        "pssEndMiB": 404.708984375,
+        "cpuMeanFourCorePercent": 1.45288501452885,
+        "cpuMedianFourCorePercent": 0.20833333333333334
+      },
+      "pitch55-pan": {
+        "samples": 18,
+        "pssMedianMiB": 381.169921875,
+        "pssPeakMiB": 409.611328125,
+        "pssStartMiB": 404.6904296875,
+        "pssEndMiB": 381.6064453125,
+        "cpuMeanFourCorePercent": 27.698798495826836,
+        "cpuMedianFourCorePercent": 26.086956521739136
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 381.60205078125,
+        "pssPeakMiB": 381.71484375,
+        "pssStartMiB": 381.71484375,
+        "pssEndMiB": 379.1875,
+        "cpuMeanFourCorePercent": 3.0859964339596764,
+        "cpuMedianFourCorePercent": 0.10229132569558103
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 358.52490234375,
+        "pssPeakMiB": 366.919921875,
+        "pssStartMiB": 366.919921875,
+        "pssEndMiB": 357.7607421875,
+        "cpuMeanFourCorePercent": 0.0978218338333116,
+        "cpuMedianFourCorePercent": 0.0732493407559332
+      }
+    },
+    "frames": {
+      "fps": 39.606,
+      "frames": 805,
+      "p95BucketMs": 50,
+      "p99BucketMs": 66,
+      "slow54Percent": 1.7391304347826086,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 27
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 443
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 247
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 74
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 8
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 2
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 1
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 0
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 1
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144v2-cont-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 361.236328125,
+        "pssPeakMiB": 397.4306640625,
+        "pssStartMiB": 309.2197265625,
+        "pssEndMiB": 365.1572265625,
+        "cpuMeanFourCorePercent": 71.35452660677262,
+        "cpuMedianFourCorePercent": 69.34202396303459
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 389.24267578125,
+        "pssPeakMiB": 389.267578125,
+        "pssStartMiB": 389.267578125,
+        "pssEndMiB": 388.091796875,
+        "cpuMeanFourCorePercent": 0.06921373200442968,
+        "cpuMedianFourCorePercent": 0
+      },
+      "pitch55-pan": {
+        "samples": 19,
+        "pssMedianMiB": 381.982421875,
+        "pssPeakMiB": 409.4697265625,
+        "pssStartMiB": 388.078125,
+        "pssEndMiB": 378.00390625,
+        "cpuMeanFourCorePercent": 28.522649669929436,
+        "cpuMedianFourCorePercent": 27.779842978647476
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 372.49853515625,
+        "pssPeakMiB": 372.515625,
+        "pssStartMiB": 372.5087890625,
+        "pssEndMiB": 372.314453125,
+        "cpuMeanFourCorePercent": 0.13758943313153552,
+        "cpuMedianFourCorePercent": 0.20458265139116205
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 351.705078125,
+        "pssPeakMiB": 366.5634765625,
+        "pssStartMiB": 366.5634765625,
+        "pssEndMiB": 350.7548828125,
+        "cpuMeanFourCorePercent": 1.2119338885996878,
+        "cpuMedianFourCorePercent": 0.07370283018867925
+      }
+    },
+    "frames": {
+      "fps": 43.696,
+      "frames": 891,
+      "p95BucketMs": 50,
+      "p99BucketMs": 66,
+      "slow54Percent": 1.4590347923681257,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 23
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 579
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 235
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 41
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 7
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 3
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 1
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 0
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 0
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144v3-cont-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 352.0078125,
+        "pssPeakMiB": 391.771484375,
+        "pssStartMiB": 287.24609375,
+        "pssEndMiB": 364.41796875,
+        "cpuMeanFourCorePercent": 69.3204472566525,
+        "cpuMedianFourCorePercent": 73.42134747943615
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 395.92724609375,
+        "pssPeakMiB": 396.484375,
+        "pssStartMiB": 383.3759765625,
+        "pssEndMiB": 395.8583984375,
+        "cpuMeanFourCorePercent": 15.11318242343542,
+        "cpuMedianFourCorePercent": 0.09956192751891675
+      },
+      "pitch55-pan": {
+        "samples": 15,
+        "pssMedianMiB": 373.8740234375,
+        "pssPeakMiB": 392.9619140625,
+        "pssStartMiB": 392.08984375,
+        "pssEndMiB": 385.9853515625,
+        "cpuMeanFourCorePercent": 32.096530228720724,
+        "cpuMedianFourCorePercent": 31.489201879229626
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 374.4775390625,
+        "pssPeakMiB": 379.9365234375,
+        "pssStartMiB": 379.9365234375,
+        "pssEndMiB": 365.015625,
+        "cpuMeanFourCorePercent": 5.277221108884436,
+        "cpuMedianFourCorePercent": 0.3027856277755349
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 363.23876953125,
+        "pssPeakMiB": 365.1591796875,
+        "pssStartMiB": 364.9326171875,
+        "pssEndMiB": 360.5927734375,
+        "cpuMeanFourCorePercent": 0.10822845480688952,
+        "cpuMedianFourCorePercent": 0.07200460829493088
+      }
+    },
+    "frames": {
+      "fps": 32.167,
+      "frames": 662,
+      "p95BucketMs": 66,
+      "p99BucketMs": 118,
+      "slow54Percent": 5.8912386706948645,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 28
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 253
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 244
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 98
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 22
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 9
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 0
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 2
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 2
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 3
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144v3-cont-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 365.130859375,
+        "pssPeakMiB": 433.8525390625,
+        "pssStartMiB": 280.7890625,
+        "pssEndMiB": 433.8525390625,
+        "cpuMeanFourCorePercent": 67.65142907088541,
+        "cpuMedianFourCorePercent": 69.69230127000333
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 358.47802734375,
+        "pssPeakMiB": 378.208984375,
+        "pssStartMiB": 378.208984375,
+        "pssEndMiB": 358.41796875,
+        "cpuMeanFourCorePercent": 4.384799362211002,
+        "cpuMedianFourCorePercent": 0.10113268608414241
+      },
+      "pitch55-pan": {
+        "samples": 16,
+        "pssMedianMiB": 352.20361328125,
+        "pssPeakMiB": 363.857421875,
+        "pssStartMiB": 356.49609375,
+        "pssEndMiB": 354.7734375,
+        "cpuMeanFourCorePercent": 28.28552680914886,
+        "cpuMedianFourCorePercent": 26.752072343632253
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 358.798828125,
+        "pssPeakMiB": 364.9296875,
+        "pssStartMiB": 364.9296875,
+        "pssEndMiB": 349.8173828125,
+        "cpuMeanFourCorePercent": 6.096774193548387,
+        "cpuMedianFourCorePercent": 0.2823795180722891
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 349.66064453125,
+        "pssPeakMiB": 349.830078125,
+        "pssStartMiB": 349.8154296875,
+        "pssEndMiB": 348.978515625,
+        "cpuMeanFourCorePercent": 0.11524631980085437,
+        "cpuMedianFourCorePercent": 0.13747594171020072
+      }
+    },
+    "frames": {
+      "fps": 37.521,
+      "frames": 772,
+      "p95BucketMs": 50,
+      "p99BucketMs": 102,
+      "slow54Percent": 3.4974093264248705,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 43
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 364
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 271
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 67
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 16
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 3
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 4
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 2
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 0
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "native144v4-internal",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 359.6123046875,
+        "pssPeakMiB": 373.751953125,
+        "pssStartMiB": 268.7685546875,
+        "pssEndMiB": 359.7724609375,
+        "cpuMeanFourCorePercent": 67.16804979253112,
+        "cpuMedianFourCorePercent": 72.93017394557066
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 351.55859375,
+        "pssPeakMiB": 393.2744140625,
+        "pssStartMiB": 393.2744140625,
+        "pssEndMiB": 351.513671875,
+        "cpuMeanFourCorePercent": 10.096719383087178,
+        "cpuMedianFourCorePercent": 0.19083969465648853
+      },
+      "pitch55-pan": {
+        "samples": 12,
+        "pssMedianMiB": 365.16552734375,
+        "pssPeakMiB": 381.75,
+        "pssStartMiB": 349.4677734375,
+        "pssEndMiB": 381.75,
+        "cpuMeanFourCorePercent": 41.43264687527859,
+        "cpuMedianFourCorePercent": 37.78838504375497
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 376.17431640625,
+        "pssPeakMiB": 381.6357421875,
+        "pssStartMiB": 381.6357421875,
+        "pssEndMiB": 366.2626953125,
+        "cpuMeanFourCorePercent": 7.58638276169833,
+        "cpuMedianFourCorePercent": 0.47782874617737
+      },
+      "stress0": {
+        "samples": 11,
+        "pssMedianMiB": 346.40625,
+        "pssPeakMiB": 372.2685546875,
+        "pssStartMiB": 329.3056640625,
+        "pssEndMiB": 349.1357421875,
+        "cpuMeanFourCorePercent": 36.513859275053306,
+        "cpuMedianFourCorePercent": 32.06968514455146
+      },
+      "stress1": {
+        "samples": 10,
+        "pssMedianMiB": 346.392578125,
+        "pssPeakMiB": 353.7021484375,
+        "pssStartMiB": 336.6767578125,
+        "pssEndMiB": 352.4716796875,
+        "cpuMeanFourCorePercent": 41.05496756572209,
+        "cpuMedianFourCorePercent": 36.9177403369673
+      },
+      "stress2": {
+        "samples": 7,
+        "pssMedianMiB": 369.2041015625,
+        "pssPeakMiB": 376.7939453125,
+        "pssStartMiB": 369.2041015625,
+        "pssEndMiB": 372.072265625,
+        "cpuMeanFourCorePercent": 59.34962976179855,
+        "cpuMedianFourCorePercent": 54.31805344981547
+      },
+      "stress3": {
+        "samples": 8,
+        "pssMedianMiB": 349.37841796875,
+        "pssPeakMiB": 394.041015625,
+        "pssStartMiB": 339.744140625,
+        "pssEndMiB": 341.6103515625,
+        "cpuMeanFourCorePercent": 54.684825663846645,
+        "cpuMedianFourCorePercent": 53.37545726637845
+      },
+      "stress4": {
+        "samples": 8,
+        "pssMedianMiB": 352.45751953125,
+        "pssPeakMiB": 376.8798828125,
+        "pssStartMiB": 338.77734375,
+        "pssEndMiB": 363.083984375,
+        "cpuMeanFourCorePercent": 58.50888742593811,
+        "cpuMedianFourCorePercent": 59.45069941999317
+      },
+      "stress5": {
+        "samples": 8,
+        "pssMedianMiB": 359.5419921875,
+        "pssPeakMiB": 390.908203125,
+        "pssStartMiB": 347.6767578125,
+        "pssEndMiB": 390.908203125,
+        "cpuMeanFourCorePercent": 60.749355174442286,
+        "cpuMedianFourCorePercent": 60.01818732949379
+      },
+      "stress6": {
+        "samples": 10,
+        "pssMedianMiB": 352.7294921875,
+        "pssPeakMiB": 389.771484375,
+        "pssStartMiB": 364.806640625,
+        "pssEndMiB": 359.412109375,
+        "cpuMeanFourCorePercent": 53.903756444880926,
+        "cpuMedianFourCorePercent": 50.81300813008129
+      },
+      "stress7": {
+        "samples": 11,
+        "pssMedianMiB": 349.3603515625,
+        "pssPeakMiB": 363.8125,
+        "pssStartMiB": 348.4990234375,
+        "pssEndMiB": 342.2958984375,
+        "cpuMeanFourCorePercent": 48.91812146545365,
+        "cpuMedianFourCorePercent": 48.899047120285104
+      },
+      "stress8": {
+        "samples": 11,
+        "pssMedianMiB": 360.8662109375,
+        "pssPeakMiB": 382.494140625,
+        "pssStartMiB": 368.4443359375,
+        "pssEndMiB": 366.3779296875,
+        "cpuMeanFourCorePercent": 50.684094221637125,
+        "cpuMedianFourCorePercent": 49.12993586083409
+      },
+      "stress9": {
+        "samples": 10,
+        "pssMedianMiB": 357.7236328125,
+        "pssPeakMiB": 366.5166015625,
+        "pssStartMiB": 352.4912109375,
+        "pssEndMiB": 365.1474609375,
+        "cpuMeanFourCorePercent": 51.826647564469916,
+        "cpuMedianFourCorePercent": 48.80434782608696
+      },
+      "poststress-idle": {
+        "samples": 20,
+        "pssMedianMiB": 364.23046875,
+        "pssPeakMiB": 383.9150390625,
+        "pssStartMiB": 364.3359375,
+        "pssEndMiB": 374.2421875,
+        "cpuMeanFourCorePercent": 24.654941299512426,
+        "cpuMedianFourCorePercent": 24.278029445073614
+      }
+    },
+    "frames": {
+      "fps": 22.751,
+      "frames": 473,
+      "p95BucketMs": 118,
+      "p99BucketMs": 200,
+      "slow54Percent": 20.084566596194502,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 22
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 139
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 134
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 83
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 29
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 30
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 11
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 6
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 5
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 6
+        },
+        {
+          "bucketMs": 200,
+          "frames": 4
+        },
+        {
+          "bucketMs": 250,
+          "frames": 2
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 1
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false,
+    "acceptanceScope": "internal observation under shared host GPU; not fair FPS acceptance"
+  },
+  {
+    "name": "native144v4-trace-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 351.6181640625,
+        "pssPeakMiB": 364.6904296875,
+        "pssStartMiB": 274.009765625,
+        "pssEndMiB": 364.6904296875,
+        "cpuMeanFourCorePercent": 63.62911795961743,
+        "cpuMedianFourCorePercent": 67.52722029864346
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 350.96435546875,
+        "pssPeakMiB": 355.1201171875,
+        "pssStartMiB": 343.2158203125,
+        "pssEndMiB": 355.1201171875,
+        "cpuMeanFourCorePercent": 59.06449738524115,
+        "cpuMedianFourCorePercent": 63.93596986817326
+      },
+      "pitch55-pan": {
+        "samples": 12,
+        "pssMedianMiB": 351.46044921875,
+        "pssPeakMiB": 415.189453125,
+        "pssStartMiB": 351.140625,
+        "pssEndMiB": 415.189453125,
+        "cpuMeanFourCorePercent": 62.78609427192874,
+        "cpuMedianFourCorePercent": 62.81292671825216
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 363.47314453125,
+        "pssPeakMiB": 368.11328125,
+        "pssStartMiB": 368.11328125,
+        "pssEndMiB": 361.609375,
+        "cpuMeanFourCorePercent": 18.71266609776911,
+        "cpuMedianFourCorePercent": 18.82443334613907
+      },
+      "stress0": {
+        "samples": 9,
+        "pssMedianMiB": 335.5537109375,
+        "pssPeakMiB": 344.3779296875,
+        "pssStartMiB": 326.2998046875,
+        "pssEndMiB": 344.3779296875,
+        "cpuMeanFourCorePercent": 56.57631830423073,
+        "cpuMedianFourCorePercent": 56.9612258973752
+      },
+      "stress1": {
+        "samples": 1,
+        "pssMedianMiB": 356.5283203125,
+        "pssPeakMiB": 356.5283203125,
+        "pssStartMiB": 356.5283203125,
+        "pssEndMiB": 356.5283203125,
+        "cpuMeanFourCorePercent": null,
+        "cpuMedianFourCorePercent": null
+      }
+    },
+    "frames": {
+      "fps": 15.694,
+      "frames": 353,
+      "p95BucketMs": 150,
+      "p99BucketMs": 400,
+      "slow54Percent": 38.52691218130311,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 6
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 71
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 75
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 65
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 50
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 30
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 17
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 10
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 7
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 6
+        },
+        {
+          "bucketMs": 200,
+          "frames": 5
+        },
+        {
+          "bucketMs": 250,
+          "frames": 4
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 2
+        },
+        {
+          "bucketMs": 400,
+          "frames": 1
+        },
+        {
+          "bucketMs": 450,
+          "frames": 2
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 1
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": true,
+    "exclusionReason": "Incomplete run; ADB read interrupted; not included in conclusions.",
+    "acceptanceScope": "internal observation under shared host GPU; not fair FPS acceptance"
+  },
+  {
+    "name": "native144v4-trace-r3",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 357.5478515625,
+        "pssPeakMiB": 388.3798828125,
+        "pssStartMiB": 265.2939453125,
+        "pssEndMiB": 388.3798828125,
+        "cpuMeanFourCorePercent": 65.4995904995905,
+        "cpuMedianFourCorePercent": 67.6924237080309
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 346.5087890625,
+        "pssPeakMiB": 359.9912109375,
+        "pssStartMiB": 359.9912109375,
+        "pssEndMiB": 334.4111328125,
+        "cpuMeanFourCorePercent": 38.070909762403055,
+        "cpuMedianFourCorePercent": 27.267508610792195
+      },
+      "pitch55-pan": {
+        "samples": 13,
+        "pssMedianMiB": 336.6240234375,
+        "pssPeakMiB": 376.6953125,
+        "pssStartMiB": 328.0927734375,
+        "pssEndMiB": 376.6953125,
+        "cpuMeanFourCorePercent": 52.511366560864715,
+        "cpuMedianFourCorePercent": 52.639261806679414
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 347.43603515625,
+        "pssPeakMiB": 357.8115234375,
+        "pssStartMiB": 357.8115234375,
+        "pssEndMiB": 353.6044921875,
+        "cpuMeanFourCorePercent": 19.248486443801,
+        "cpuMedianFourCorePercent": 22.41581832419734
+      },
+      "stress0": {
+        "samples": 10,
+        "pssMedianMiB": 317.78076171875,
+        "pssPeakMiB": 334.4052734375,
+        "pssStartMiB": 310.849609375,
+        "pssEndMiB": 334.4052734375,
+        "cpuMeanFourCorePercent": 32.54017158837749,
+        "cpuMedianFourCorePercent": 30.245419979260284
+      },
+      "stress1": {
+        "samples": 11,
+        "pssMedianMiB": 332.5166015625,
+        "pssPeakMiB": 340.8330078125,
+        "pssStartMiB": 329.9130859375,
+        "pssEndMiB": 332.5166015625,
+        "cpuMeanFourCorePercent": 38.91115564462258,
+        "cpuMedianFourCorePercent": 34.376662299538985
+      },
+      "stress2": {
+        "samples": 11,
+        "pssMedianMiB": 325.275390625,
+        "pssPeakMiB": 347.3779296875,
+        "pssStartMiB": 325.275390625,
+        "pssEndMiB": 347.3779296875,
+        "cpuMeanFourCorePercent": 48.02167515298734,
+        "cpuMedianFourCorePercent": 47.39140698772427
+      },
+      "stress3": {
+        "samples": 10,
+        "pssMedianMiB": 325.33935546875,
+        "pssPeakMiB": 349.8818359375,
+        "pssStartMiB": 326.6875,
+        "pssEndMiB": 349.8818359375,
+        "cpuMeanFourCorePercent": 49.36543064902217,
+        "cpuMedianFourCorePercent": 47.55753875058713
+      },
+      "stress4": {
+        "samples": 10,
+        "pssMedianMiB": 328.1943359375,
+        "pssPeakMiB": 347.2041015625,
+        "pssStartMiB": 324.451171875,
+        "pssEndMiB": 315.3544921875,
+        "cpuMeanFourCorePercent": 52.1224688948524,
+        "cpuMedianFourCorePercent": 51.48444863336476
+      },
+      "stress5": {
+        "samples": 11,
+        "pssMedianMiB": 329.041015625,
+        "pssPeakMiB": 349.6416015625,
+        "pssStartMiB": 329.041015625,
+        "pssEndMiB": 343.9013671875,
+        "cpuMeanFourCorePercent": 48.546801538680725,
+        "cpuMedianFourCorePercent": 46.49786951734138
+      },
+      "stress6": {
+        "samples": 10,
+        "pssMedianMiB": 333.265625,
+        "pssPeakMiB": 359.390625,
+        "pssStartMiB": 343.8330078125,
+        "pssEndMiB": 325.4599609375,
+        "cpuMeanFourCorePercent": 46.97452229299363,
+        "cpuMedianFourCorePercent": 48.330404217926194
+      },
+      "stress7": {
+        "samples": 11,
+        "pssMedianMiB": 340.1279296875,
+        "pssPeakMiB": 371.287109375,
+        "pssStartMiB": 327.236328125,
+        "pssEndMiB": 358.2509765625,
+        "cpuMeanFourCorePercent": 40.49808252090745,
+        "cpuMedianFourCorePercent": 35.904600781306364
+      },
+      "stress8": {
+        "samples": 11,
+        "pssMedianMiB": 325.81640625,
+        "pssPeakMiB": 337.953125,
+        "pssStartMiB": 325.53515625,
+        "pssEndMiB": 337.953125,
+        "cpuMeanFourCorePercent": 27.01231880472963,
+        "cpuMedianFourCorePercent": 25.237343601610412
+      },
+      "stress9": {
+        "samples": 12,
+        "pssMedianMiB": 333.60546875,
+        "pssPeakMiB": 365.9482421875,
+        "pssStartMiB": 346.9208984375,
+        "pssEndMiB": 340.0556640625,
+        "cpuMeanFourCorePercent": 30.14210372106651,
+        "cpuMedianFourCorePercent": 23.028130170987314
+      },
+      "poststress-idle": {
+        "samples": 20,
+        "pssMedianMiB": 331.861328125,
+        "pssPeakMiB": 332.5,
+        "pssStartMiB": 327.46484375,
+        "pssEndMiB": 304.3828125,
+        "cpuMeanFourCorePercent": 0.4201866513335397,
+        "cpuMedianFourCorePercent": 0.13950892857142858
+      }
+    },
+    "frames": {
+      "fps": 24.304,
+      "frames": 528,
+      "p95BucketMs": 86,
+      "p99BucketMs": 150,
+      "slow54Percent": 21.21212121212121,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 33
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 148
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 139
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 96
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 59
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 31
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 9
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 6
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 1
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 2
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 1
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 1
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false,
+    "acceptanceScope": "internal observation under shared host GPU; not fair FPS acceptance"
+  },
+  {
+    "name": "web141-cont-r1",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 305.814453125,
+        "pssPeakMiB": 313.419921875,
+        "pssStartMiB": 249.376953125,
+        "pssEndMiB": 305.80859375,
+        "cpuMeanFourCorePercent": 19.62799301202343,
+        "cpuMedianFourCorePercent": 13.603756910970366
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 299.27294921875,
+        "pssPeakMiB": 299.2890625,
+        "pssStartMiB": 299.263671875,
+        "pssEndMiB": 299.2890625,
+        "cpuMeanFourCorePercent": 0.1392563709789723,
+        "cpuMedianFourCorePercent": 0.10490977759127151
+      },
+      "pitch55-pan": {
+        "samples": 21,
+        "pssMedianMiB": 289.619140625,
+        "pssPeakMiB": 299.2841796875,
+        "pssStartMiB": 299.2841796875,
+        "pssEndMiB": 292.39453125,
+        "cpuMeanFourCorePercent": 44.22429729345404,
+        "cpuMedianFourCorePercent": 45.921278655888536
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 297.18798828125,
+        "pssPeakMiB": 297.23046875,
+        "pssStartMiB": 297.23046875,
+        "pssEndMiB": 297.1904296875,
+        "cpuMeanFourCorePercent": 0.13914011409489355,
+        "cpuMedianFourCorePercent": 0.10495382031905962
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 287.3720703125,
+        "pssPeakMiB": 297.1826171875,
+        "pssStartMiB": 297.1826171875,
+        "pssEndMiB": 256.5048828125,
+        "cpuMeanFourCorePercent": 0.5605563318493484,
+        "cpuMedianFourCorePercent": 0.14723203769140164
+      }
+    },
+    "frames": {
+      "fps": 56.489,
+      "frames": 1110,
+      "p95BucketMs": 33,
+      "p99BucketMs": 50,
+      "slow54Percent": 0.36036036036036034,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 1027
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 70
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 9
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 0
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 3
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 0
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 0
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 1
+        },
+        {
+          "bucketMs": 250,
+          "frames": 0
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  },
+  {
+    "name": "web141-cont-r2",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 325.0517578125,
+        "pssPeakMiB": 326.7431640625,
+        "pssStartMiB": 241.2509765625,
+        "pssEndMiB": 325.060546875,
+        "cpuMeanFourCorePercent": 20.48246483059243,
+        "cpuMedianFourCorePercent": 18.37421678011406
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 320.27294921875,
+        "pssPeakMiB": 320.2998046875,
+        "pssStartMiB": 320.26953125,
+        "pssEndMiB": 320.1240234375,
+        "cpuMeanFourCorePercent": 0.09560229445506692,
+        "cpuMedianFourCorePercent": 0
+      },
+      "pitch55-pan": {
+        "samples": 16,
+        "pssMedianMiB": 308.19873046875,
+        "pssPeakMiB": 320.146484375,
+        "pssStartMiB": 320.146484375,
+        "pssEndMiB": 312.1298828125,
+        "cpuMeanFourCorePercent": 39.818478007912496,
+        "cpuMedianFourCorePercent": 40.51246537396121
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 318.26806640625,
+        "pssPeakMiB": 318.2763671875,
+        "pssStartMiB": 318.2626953125,
+        "pssEndMiB": 318.2734375,
+        "cpuMeanFourCorePercent": 0.13068478829064298,
+        "cpuMedianFourCorePercent": 0.09796238244514105
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 310.271484375,
+        "pssPeakMiB": 312.078125,
+        "pssStartMiB": 312.078125,
+        "pssEndMiB": 310.1767578125,
+        "cpuMeanFourCorePercent": 0.06419515326592842,
+        "cpuMedianFourCorePercent": 0.07163323782234957
+      }
+    },
+    "frames": {
+      "fps": 34.217,
+      "frames": 687,
+      "p95BucketMs": 66,
+      "p99BucketMs": 150,
+      "slow54Percent": 8.442503639010189,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 2
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 417
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 148
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 62
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 30
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 10
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 5
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 2
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 4
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 3
+        },
+        {
+          "bucketMs": 200,
+          "frames": 3
+        },
+        {
+          "bucketMs": 250,
+          "frames": 1
+        },
+        {
+          "bucketMs": 300,
+          "frames": 0
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": true,
+    "exclusionReason": "Overlapped Gradle compilation; pilot only."
+  },
+  {
+    "name": "web141-cont-r3",
+    "phases": {
+      "pitch55-startup": {
+        "samples": 5,
+        "pssMedianMiB": 307.376953125,
+        "pssPeakMiB": 313.8564453125,
+        "pssStartMiB": 261.3037109375,
+        "pssEndMiB": 307.376953125,
+        "cpuMeanFourCorePercent": 18.612132352941178,
+        "cpuMedianFourCorePercent": 10.956429271571878
+      },
+      "pitch55-idle": {
+        "samples": 4,
+        "pssMedianMiB": 303.6357421875,
+        "pssPeakMiB": 303.6806640625,
+        "pssStartMiB": 303.6806640625,
+        "pssEndMiB": 303.6298828125,
+        "cpuMeanFourCorePercent": 0.06868131868131869,
+        "cpuMedianFourCorePercent": 0.10170870626525631
+      },
+      "pitch55-pan": {
+        "samples": 22,
+        "pssMedianMiB": 294.54931640625,
+        "pssPeakMiB": 304.2119140625,
+        "pssStartMiB": 303.650390625,
+        "pssEndMiB": 304.2119140625,
+        "cpuMeanFourCorePercent": 42.876838235294116,
+        "cpuMedianFourCorePercent": 45.45454545454545
+      },
+      "pitch55-settle": {
+        "samples": 4,
+        "pssMedianMiB": 303.4580078125,
+        "pssPeakMiB": 303.4609375,
+        "pssStartMiB": 303.4599609375,
+        "pssEndMiB": 303.4609375,
+        "cpuMeanFourCorePercent": 0.10499790004199916,
+        "cpuMedianFourCorePercent": 0.10499790004199916
+      },
+      "pitch55-longidle": {
+        "samples": 10,
+        "pssMedianMiB": 295.83642578125,
+        "pssPeakMiB": 301.611328125,
+        "pssStartMiB": 301.611328125,
+        "pssEndMiB": 265.912109375,
+        "cpuMeanFourCorePercent": 0.36043120678921325,
+        "cpuMedianFourCorePercent": 0.07378984651711924
+      }
+    },
+    "frames": {
+      "fps": 56.894,
+      "frames": 1117,
+      "p95BucketMs": 33,
+      "p99BucketMs": 33,
+      "slow54Percent": 0.26857654431512984,
+      "histogram": [
+        {
+          "bucketMs": 0,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1,
+          "frames": 0
+        },
+        {
+          "bucketMs": 2,
+          "frames": 0
+        },
+        {
+          "bucketMs": 3,
+          "frames": 0
+        },
+        {
+          "bucketMs": 4,
+          "frames": 0
+        },
+        {
+          "bucketMs": 5,
+          "frames": 0
+        },
+        {
+          "bucketMs": 6,
+          "frames": 0
+        },
+        {
+          "bucketMs": 7,
+          "frames": 0
+        },
+        {
+          "bucketMs": 8,
+          "frames": 0
+        },
+        {
+          "bucketMs": 9,
+          "frames": 0
+        },
+        {
+          "bucketMs": 10,
+          "frames": 0
+        },
+        {
+          "bucketMs": 11,
+          "frames": 0
+        },
+        {
+          "bucketMs": 12,
+          "frames": 0
+        },
+        {
+          "bucketMs": 13,
+          "frames": 0
+        },
+        {
+          "bucketMs": 14,
+          "frames": 0
+        },
+        {
+          "bucketMs": 15,
+          "frames": 0
+        },
+        {
+          "bucketMs": 16,
+          "frames": 1036
+        },
+        {
+          "bucketMs": 17,
+          "frames": 0
+        },
+        {
+          "bucketMs": 18,
+          "frames": 0
+        },
+        {
+          "bucketMs": 19,
+          "frames": 0
+        },
+        {
+          "bucketMs": 20,
+          "frames": 0
+        },
+        {
+          "bucketMs": 21,
+          "frames": 0
+        },
+        {
+          "bucketMs": 22,
+          "frames": 0
+        },
+        {
+          "bucketMs": 23,
+          "frames": 0
+        },
+        {
+          "bucketMs": 24,
+          "frames": 0
+        },
+        {
+          "bucketMs": 25,
+          "frames": 0
+        },
+        {
+          "bucketMs": 26,
+          "frames": 0
+        },
+        {
+          "bucketMs": 27,
+          "frames": 0
+        },
+        {
+          "bucketMs": 28,
+          "frames": 0
+        },
+        {
+          "bucketMs": 29,
+          "frames": 0
+        },
+        {
+          "bucketMs": 30,
+          "frames": 0
+        },
+        {
+          "bucketMs": 31,
+          "frames": 0
+        },
+        {
+          "bucketMs": 32,
+          "frames": 0
+        },
+        {
+          "bucketMs": 33,
+          "frames": 75
+        },
+        {
+          "bucketMs": 34,
+          "frames": 0
+        },
+        {
+          "bucketMs": 36,
+          "frames": 0
+        },
+        {
+          "bucketMs": 38,
+          "frames": 0
+        },
+        {
+          "bucketMs": 40,
+          "frames": 0
+        },
+        {
+          "bucketMs": 42,
+          "frames": 0
+        },
+        {
+          "bucketMs": 44,
+          "frames": 0
+        },
+        {
+          "bucketMs": 46,
+          "frames": 0
+        },
+        {
+          "bucketMs": 48,
+          "frames": 0
+        },
+        {
+          "bucketMs": 50,
+          "frames": 3
+        },
+        {
+          "bucketMs": 54,
+          "frames": 0
+        },
+        {
+          "bucketMs": 58,
+          "frames": 0
+        },
+        {
+          "bucketMs": 62,
+          "frames": 0
+        },
+        {
+          "bucketMs": 66,
+          "frames": 2
+        },
+        {
+          "bucketMs": 70,
+          "frames": 0
+        },
+        {
+          "bucketMs": 74,
+          "frames": 0
+        },
+        {
+          "bucketMs": 78,
+          "frames": 0
+        },
+        {
+          "bucketMs": 82,
+          "frames": 0
+        },
+        {
+          "bucketMs": 86,
+          "frames": 0
+        },
+        {
+          "bucketMs": 90,
+          "frames": 0
+        },
+        {
+          "bucketMs": 94,
+          "frames": 0
+        },
+        {
+          "bucketMs": 98,
+          "frames": 0
+        },
+        {
+          "bucketMs": 102,
+          "frames": 0
+        },
+        {
+          "bucketMs": 106,
+          "frames": 0
+        },
+        {
+          "bucketMs": 110,
+          "frames": 0
+        },
+        {
+          "bucketMs": 114,
+          "frames": 0
+        },
+        {
+          "bucketMs": 118,
+          "frames": 0
+        },
+        {
+          "bucketMs": 122,
+          "frames": 0
+        },
+        {
+          "bucketMs": 126,
+          "frames": 0
+        },
+        {
+          "bucketMs": 130,
+          "frames": 0
+        },
+        {
+          "bucketMs": 134,
+          "frames": 0
+        },
+        {
+          "bucketMs": 138,
+          "frames": 0
+        },
+        {
+          "bucketMs": 142,
+          "frames": 0
+        },
+        {
+          "bucketMs": 146,
+          "frames": 0
+        },
+        {
+          "bucketMs": 150,
+          "frames": 0
+        },
+        {
+          "bucketMs": 200,
+          "frames": 0
+        },
+        {
+          "bucketMs": 250,
+          "frames": 0
+        },
+        {
+          "bucketMs": 300,
+          "frames": 1
+        },
+        {
+          "bucketMs": 350,
+          "frames": 0
+        },
+        {
+          "bucketMs": 400,
+          "frames": 0
+        },
+        {
+          "bucketMs": 450,
+          "frames": 0
+        },
+        {
+          "bucketMs": 500,
+          "frames": 0
+        },
+        {
+          "bucketMs": 550,
+          "frames": 0
+        },
+        {
+          "bucketMs": 600,
+          "frames": 0
+        },
+        {
+          "bucketMs": 650,
+          "frames": 0
+        },
+        {
+          "bucketMs": 700,
+          "frames": 0
+        },
+        {
+          "bucketMs": 750,
+          "frames": 0
+        },
+        {
+          "bucketMs": 800,
+          "frames": 0
+        },
+        {
+          "bucketMs": 850,
+          "frames": 0
+        },
+        {
+          "bucketMs": 900,
+          "frames": 0
+        },
+        {
+          "bucketMs": 950,
+          "frames": 0
+        },
+        {
+          "bucketMs": 1000,
+          "frames": 0
+        }
+      ]
+    },
+    "excluded": false
+  }
+]

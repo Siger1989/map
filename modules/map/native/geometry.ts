@@ -16,11 +16,21 @@ const MAX_DEM_CELLS = 1_000_000;
 const MAX_DEM_BATCH_CELLS = 4_000_000;
 const MAX_DEM_TILES = 256;
 const DEPTH_EPSILON = 1e-7;
+const MAX_TERRAIN_BRACKET_STEPS = 256;
+const MAX_TERRAIN_ROOT_ITERATIONS = 24;
+const TERRAIN_RESIDUAL_TOLERANCE_METERS = 0.75;
+
+type TerrainRaySample = {
+  geo: { longitude: number; latitude: number; altitudeMeters: number };
+  ground: number;
+  residual: number;
+};
 
 /** Revisioned, bounded native DEM samples used only when the host supplied real terrain data. */
 export class NativeDemCache {
   private revisionValue = -1;
   private tiles: NativeDemTile[] = [];
+  private smallestCellSpacingMeters = Number.POSITIVE_INFINITY;
 
   get revision() { return this.revisionValue; }
 
@@ -28,7 +38,9 @@ export class NativeDemCache {
     if (!Number.isSafeInteger(revision) || revision < 0 || revision < this.revisionValue) return false;
     if (tiles.length > MAX_DEM_TILES || tiles.some((tile) => !validDemTile(tile)) ||
       tiles.reduce((sum, tile) => sum + tile.width * tile.height, 0) > MAX_DEM_BATCH_CELLS) return false;
-    this.tiles = tiles.map((tile) => ({ ...tile, heights: [...tile.heights] }));
+    this.tiles = tiles.map((tile) => ({ ...tile, heights: [...tile.heights] }))
+      .sort((a, b) => tileResolution(b) - tileResolution(a));
+    this.smallestCellSpacingMeters = Math.min(...this.tiles.map(tileCellSpacingMeters));
     this.revisionValue = revision;
     return true;
   }
@@ -36,6 +48,7 @@ export class NativeDemCache {
   clear(revision = this.revisionValue + 1) {
     if (!Number.isSafeInteger(revision) || revision < this.revisionValue) return false;
     this.tiles = [];
+    this.smallestCellSpacingMeters = Number.POSITIVE_INFINITY;
     this.revisionValue = revision;
     return true;
   }
@@ -43,15 +56,17 @@ export class NativeDemCache {
   sample(longitude: number, latitude: number): number | null {
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
     const lon = wrapLongitude(longitude);
-    const candidates = this.tiles
-      .filter((tile) => lon >= tile.west && lon <= tile.east && latitude >= tile.south && latitude <= tile.north)
-      .sort((a, b) => b.width * b.height / ((b.east - b.west) * (b.north - b.south)) -
-        a.width * a.height / ((a.east - a.west) * (a.north - a.south)));
-    for (const tile of candidates) {
+    for (const tile of this.tiles) {
+      if (lon < tile.west || lon > tile.east || latitude < tile.south || latitude > tile.north) continue;
       const value = bilinear(tile, lon, latitude);
       if (value !== null) return value;
     }
     return null;
+  }
+
+  /** Conservative smallest spacing lets bounded ray scans avoid stepping over a DEM no-data cell. */
+  terrainRayStepMeters(): number | null {
+    return Number.isFinite(this.smallestCellSpacingMeters) ? this.smallestCellSpacingMeters * 0.5 : null;
   }
 }
 
@@ -186,32 +201,87 @@ export function unprojectWgs84(
     const elevation = frame.demRevision <= dem.revision ? dem.sample(geo.longitude, geo.latitude) : null;
     return { status: 'ready', value: { coordinate: [geo.longitude, geo.latitude], elevationMeters: elevation } };
   }
-  let t = tEllipsoid;
   const sampleAt = (value: number) => {
     if (value < 0 || value > 1) return null;
     const point = addScaled(near, direction, value);
     const geo = ecefToWgs84(...point);
     if (!geo) return null;
     const ground = dem.sample(geo.longitude, geo.latitude);
-    return ground === null ? null : { point, geo, ground, residual: geo.altitudeMeters - ground * (frame.verticalExaggeration ?? 1) };
+    return ground === null ? null : { geo, ground, residual: geo.altitudeMeters - ground * (frame.verticalExaggeration ?? 1) };
   };
+  let t = tEllipsoid;
+  let fallbackReason = 'terrain-intersection-unresolved';
   for (let i = 0; i < 10; i++) {
     const sample = sampleAt(t);
-    if (!sample) return blocked('dem-sample-unavailable');
-    if (Math.abs(sample.residual) < 0.75) {
-      return { status: 'ready', value: { coordinate: [sample.geo.longitude, sample.geo.latitude], elevationMeters: sample.ground } };
+    if (!sample) {
+      fallbackReason = 'dem-sample-unavailable';
+      break;
+    }
+    if (Math.abs(sample.residual) < TERRAIN_RESIDUAL_TOLERANCE_METERS) {
+      return readyTerrainIntersection(sample);
     }
     const dt = Math.max(1e-9, Math.min(1e-5, 1 / length));
     const adjacent = sampleAt(t + dt);
-    if (!adjacent) return blocked('terrain-intersection-unresolved');
+    if (!adjacent) {
+      fallbackReason = 'dem-sample-unavailable';
+      break;
+    }
     const derivative = (adjacent.residual - sample.residual) / dt;
-    if (!Number.isFinite(derivative) || Math.abs(derivative) < 1e-5) return blocked('terrain-intersection-unresolved');
+    if (!Number.isFinite(derivative) || Math.abs(derivative) < 1e-5) break;
     const next = t - sample.residual / derivative;
-    if (!Number.isFinite(next) || next < 0 || next > 1) return blocked('terrain-intersection-outside-frame');
+    if (!Number.isFinite(next) || next < 0 || next > 1) {
+      fallbackReason = 'terrain-intersection-outside-frame';
+      break;
+    }
     t = next;
   }
-  return blocked('terrain-intersection-unresolved');
+
+  // A local Newton slope can overshoot across sharp DEM changes. Search from the camera
+  // toward the ellipsoid for the first sampled sign change, then solve only inside that
+  // bracket. A missing sample after entering DEM coverage is a hard stop: never bridge it.
+  let previous: { t: number; sample: TerrainRaySample } | null = null;
+  let sawCoverage = false;
+  const stepMeters = dem.terrainRayStepMeters();
+  const scanStep = stepMeters ? stepMeters / length : tEllipsoid / MAX_TERRAIN_BRACKET_STEPS;
+  let sampleT = 0;
+  for (let i = 0; i <= MAX_TERRAIN_BRACKET_STEPS; i++) {
+    const sample = sampleAt(sampleT);
+    if (!sample) {
+      if (sawCoverage) return blocked('dem-sample-unavailable');
+      // The ray may enter the cached DEM footprint after its near plane.
+    } else {
+      if (!sawCoverage) {
+        sawCoverage = true;
+        if (sample.residual < 0) return blocked('dem-sample-unavailable');
+      }
+      if (Math.abs(sample.residual) < TERRAIN_RESIDUAL_TOLERANCE_METERS) return readyTerrainIntersection(sample);
+      if (previous && oppositeOrZero(previous.sample.residual, sample.residual)) {
+        let low = previous;
+        let high = { t: sampleT, sample };
+        for (let iteration = 0; iteration < MAX_TERRAIN_ROOT_ITERATIONS; iteration++) {
+          const middleT = (low.t + high.t) * 0.5;
+          const middle = sampleAt(middleT);
+          if (!middle) return blocked('dem-sample-unavailable');
+          if (Math.abs(middle.residual) < TERRAIN_RESIDUAL_TOLERANCE_METERS) return readyTerrainIntersection(middle);
+          if (oppositeOrZero(low.sample.residual, middle.residual)) high = { t: middleT, sample: middle };
+          else low = { t: middleT, sample: middle };
+        }
+        return blocked('terrain-intersection-unresolved');
+      }
+      previous = { t: sampleT, sample };
+    }
+    const nextT = sampleT + scanStep;
+    if (!(nextT > sampleT)) return blocked('terrain-intersection-unresolved');
+    sampleT = nextT;
+  }
+  return blocked(sawCoverage ? fallbackReason : 'dem-sample-unavailable');
 }
+
+function readyTerrainIntersection(sample: TerrainRaySample): NativeGeometryResult<NativeGroundCoordinate> {
+  return { status: 'ready', value: { coordinate: [sample.geo.longitude, sample.geo.latitude], elevationMeters: sample.ground } };
+}
+
+function oppositeOrZero(a: number, b: number) { return a === 0 || b === 0 || Math.sign(a) !== Math.sign(b); }
 
 export function matrix4Vector(matrix: Matrix4, vector: readonly number[]): number[] | null {
   if (matrix.length !== 16 || vector.length !== 4 || matrix.some((v) => !Number.isFinite(v)) || vector.some((v) => !Number.isFinite(v))) return null;
@@ -259,15 +329,30 @@ function validDemTile(tile: NativeDemTile) {
     tile.width * tile.height <= MAX_DEM_CELLS && tile.heights.length === tile.width * tile.height &&
     tile.heights.every((value) => value === null || (Number.isFinite(value) && Math.abs(value) <= 12_000));
 }
+function tileResolution(tile: NativeDemTile) {
+  return tile.width * tile.height / ((tile.east - tile.west) * (tile.north - tile.south));
+}
+function tileCellSpacingMeters(tile: NativeDemTile) {
+  const conservativeEarthRadius = 6_330_000;
+  const metersPerDegree = conservativeEarthRadius * Math.PI / 180;
+  const latitude = Math.max(Math.abs(tile.south), Math.abs(tile.north));
+  const latitudeStep = metersPerDegree * (tile.north - tile.south) / (tile.height - 1);
+  const longitudeStep = metersPerDegree * Math.cos(degreesToRadians(latitude)) * (tile.east - tile.west) / (tile.width - 1);
+  return Math.max(0.5, Math.min(latitudeStep, longitudeStep));
+}
 function bilinear(tile: NativeDemTile, longitude: number, latitude: number): number | null {
   const x = (longitude - tile.west) / (tile.east - tile.west) * (tile.width - 1);
   const y = (tile.north - latitude) / (tile.north - tile.south) * (tile.height - 1);
   const x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(tile.width - 1, x0 + 1), y1 = Math.min(tile.height - 1, y0 + 1);
-  const values = [tile.heights[y0 * tile.width + x0], tile.heights[y0 * tile.width + x1], tile.heights[y1 * tile.width + x0], tile.heights[y1 * tile.width + x1]];
-  if (values.some((value) => value === null || value === undefined)) return null;
+  const topLeft = tile.heights[y0 * tile.width + x0];
+  const topRight = tile.heights[y0 * tile.width + x1];
+  const bottomLeft = tile.heights[y1 * tile.width + x0];
+  const bottomRight = tile.heights[y1 * tile.width + x1];
+  if (topLeft === null || topLeft === undefined || topRight === null || topRight === undefined ||
+    bottomLeft === null || bottomLeft === undefined || bottomRight === null || bottomRight === undefined) return null;
   const tx = x - x0, ty = y - y0;
-  const top = values[0]! * (1 - tx) + values[1]! * tx;
-  const bottom = values[2]! * (1 - tx) + values[3]! * tx;
+  const top = topLeft * (1 - tx) + topRight * tx;
+  const bottom = bottomLeft * (1 - tx) + bottomRight * tx;
   return top * (1 - ty) + bottom * ty;
 }
 function blocked<T = never>(reason: string): NativeGeometryResult<T> { return { status: 'blocked', reason }; }

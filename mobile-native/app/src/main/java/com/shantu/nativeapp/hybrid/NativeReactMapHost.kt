@@ -92,6 +92,8 @@ class NativeReactMapHost(
         }
     }
 
+    private data class RenderedFrame(val matrix: DoubleArray, val width: Int, val height: Int, val capturedAt: Long)
+
     private data class MapEntry(
         val id: String,
         val controller: NativeMapController,
@@ -108,7 +110,12 @@ class NativeReactMapHost(
         val actualFrameCount: AtomicLong = AtomicLong(),
         val lastActualFrameAt: AtomicLong = AtomicLong(),
         @Volatile var lastMatrixAt: Long = 0L,
-        @Volatile var framePublishPending: Boolean = false,
+        val framePublishPending: java.util.concurrent.atomic.AtomicBoolean = java.util.concurrent.atomic.AtomicBoolean(),
+        val latestFrame: NativeBridgeLatestFrame<RenderedFrame> = NativeBridgeLatestFrame(),
+        @Volatile var lastRenderedMatrix: DoubleArray? = null,
+        @Volatile var lastCameraMotionAt: Long = 0L,
+        var framePublishTask: Runnable? = null,
+        var settledFrameTask: Runnable? = null,
         var touchDown: Pair<Float, Float>? = null,
         var gestureSequence: Long = 0L,
         var capturedGestureId: Long? = null,
@@ -129,7 +136,10 @@ class NativeReactMapHost(
         val snapGeometry: NativeBridgeSnapGeometry? = null,
         var snapObserver: AutoCloseable? = null,
         var snapReadyObserver: AutoCloseable? = null,
-        var snapSignature: String? = null,
+        var snapPublishedPayload: JSONObject? = null,
+        var eventEncoder: NativeBridgeEventEncoder? = null,
+        var eventEncodeSequence: Long = 0L,
+        val eventEncodeTokens: MutableMap<String, Long> = mutableMapOf(),
         var snapInputSignature: String? = null,
         var snapRevision: Long = 0L,
         var snapTilesDirty: Boolean = false,
@@ -386,19 +396,20 @@ class NativeReactMapHost(
         val snap = NativeBridgeSnapGeometry(controller.worldWindowForBridge(), controller.cartographyForBridge())
         val entry = MapEntry(mapId, controller, container, ownerToken = requestedOwner, ownerGeneration = requestedGeneration,
             sectionLayer = section, overlayRenderer = overlays, snapGeometry = snap)
+        val mapSession = sessionId
+        entry.eventEncoder = NativeBridgeEventEncoder({ channel, token, encoded ->
+            main.post {
+                if (mapSession != null && sessionId == mapSession && isCurrent(entry) && entry.eventEncodeTokens[channel] == token)
+                    postEmit(encoded, mapSession)
+            }
+        })
         entry.sectionCollection = NativeBridgeSectionCollection(controller.worldWindowForBridge(), controller::createSectionDemSampler) { message ->
             emitEvent(mapId, "status", JSONObject().put("message", message))
         }
         val scheduleSnapUpdate: () -> Unit = { main.post {
             if (isCurrent(entry)) {
                 entry.snapTilesDirty = true
-                if (!entry.snapPublishScheduled) {
-                    entry.snapPublishScheduled = true
-                    main.postDelayed({
-                        entry.snapPublishScheduled = false
-                        if (isCurrent(entry)) publishSnapGeometry(entry)
-                    }, 500L)
-                }
+                scheduleSnapPublish(entry)
             }
         }; Unit }
         entry.snapObserver = snap.observeTileLoads { _, _, _ -> scheduleSnapUpdate() }
@@ -435,6 +446,12 @@ class NativeReactMapHost(
         if (maps[mapId] !== entry) return
         shareJobs.entries.filter { it.value.first == mapId }.toList().forEach { (id, item) -> shareJobs.remove(id); item.second.cancel() }
         maps.remove(mapId)
+        entry.eventEncoder?.close()
+        entry.eventEncodeTokens.clear()
+        entry.framePublishTask?.let(main::removeCallbacks)
+        entry.settledFrameTask?.let(main::removeCallbacks)
+        entry.framePublishPending.set(false)
+        entry.latestFrame.takeLatest()
         entry.controller.setBridgeFrameListener(null)
         entry.scope.cancel()
         entry.sectionJob?.cancel()
@@ -1258,26 +1275,77 @@ class NativeReactMapHost(
         shareJobs[requestId] = mapId to job
     }
 
+    /** GL callback only captures the newest real frame; never queues a history of UI work. */
     private fun onRenderedFrame(entry: MapEntry, mvp: DoubleArray, width: Int, height: Int) {
         entry.actualFrameCount.incrementAndGet()
-        entry.lastActualFrameAt.set(android.os.SystemClock.elapsedRealtime())
         val now = android.os.SystemClock.elapsedRealtime()
-        if (entry.framePublishPending || now - entry.lastMatrixAt < FRAME_EVENT_INTERVAL_MS) return
-        entry.lastMatrixAt = now
-        entry.framePublishPending = true
-        val matrixCopy = mvp.copyOf()
+        entry.lastActualFrameAt.set(now)
+        if (entry.lastRenderedMatrix?.contentEquals(mvp) != true) entry.lastCameraMotionAt = now
+        // NativeMapController already passes an owned copy of the rendered MVP.
+        entry.lastRenderedMatrix = mvp
+        entry.latestFrame.offer(RenderedFrame(mvp, width, height, System.currentTimeMillis()))
+        queueLatestFrame(entry)
+    }
+
+    private fun realtimeFrameRequired(entry: MapEntry): Boolean {
+        val state = entry.renderState
+        val interaction = state.optJSONObject("interaction")
+        fun activeId(key: String) = state.optString(key).let { it.isNotBlank() && it != "null" }
+        return maps.size > 1 || entry.id != "main" || entry.cameraAnimator != null ||
+            state.optBoolean("positionNavigating") || entry.renderInteraction.drawingActive ||
+            interaction?.optBoolean("pickingActive") == true || interaction?.optBoolean("annotationPicking") == true ||
+            interaction?.optBoolean("measurementPicking") == true || activeId("annotationEditingId") ||
+            state.optJSONObject("trackOverlay")?.optBoolean("editing") == true ||
+            state.optBoolean("sectionEditing") || state.optJSONObject("section")?.optBoolean("enabled") == true
+    }
+
+    private fun queueLatestFrame(entry: MapEntry) {
+        if (!entry.framePublishPending.compareAndSet(false, true)) return
         main.post {
-            entry.framePublishPending = false
-            if (!isCurrent(entry)) return@post
-            if (entry.cameraAnimator == null && entry.controller.refreshBridgeGroundAnchor()) {
+            if (!isCurrent(entry)) { entry.framePublishPending.set(false); return@post }
+            val now = android.os.SystemClock.elapsedRealtime()
+            val interval = NativeBridgeFramePolicy.intervalMillis(realtimeFrameRequired(entry))
+            val delay = if (entry.lastMatrixAt == 0L) 0L else (interval - (now - entry.lastMatrixAt)).coerceAtLeast(0L)
+            val task = Runnable { publishLatestFrame(entry) }
+            entry.framePublishTask = task
+            main.postDelayed(task, delay)
+        }
+    }
+
+    private fun scheduleSettledFrame(entry: MapEntry) {
+        entry.settledFrameTask?.let(main::removeCallbacks)
+        val task = Runnable {
+            entry.settledFrameTask = null
+            if (!isCurrent(entry)) return@Runnable
+            val quietFor = android.os.SystemClock.elapsedRealtime() - entry.lastCameraMotionAt
+            if (quietFor < NativeBridgeFramePolicy.QUIET_MILLIS) scheduleSettledFrame(entry)
+            else entry.controller.worldWindowForBridge().requestRedraw()
+        }
+        entry.settledFrameTask = task
+        val delay = (NativeBridgeFramePolicy.QUIET_MILLIS -
+            (android.os.SystemClock.elapsedRealtime() - entry.lastCameraMotionAt)).coerceAtLeast(1L)
+        main.postDelayed(task, delay)
+    }
+
+    private fun publishLatestFrame(entry: MapEntry) {
+        try {
+            val frame = entry.latestFrame.takeLatest() ?: return
+            if (!isCurrent(entry)) return
+            val now = android.os.SystemClock.elapsedRealtime()
+            entry.lastMatrixAt = now
+            val width = frame.width; val height = frame.height; val matrixCopy = frame.matrix
+            val allowGroundWork = NativeBridgeFramePolicy.allowGroundWork(
+                realtimeFrameRequired(entry), now, entry.lastCameraMotionAt)
+            if (!isCurrent(entry)) return
+            if (allowGroundWork && entry.cameraAnimator == null && entry.controller.refreshBridgeGroundAnchor()) {
                 // The captured matrix predates the adjusted eye. Publish only a new real frame.
                 main.postDelayed({ if (isCurrent(entry)) entry.controller.worldWindowForBridge().requestRedraw() }, 120L)
-                return@post
+                return
             }
-            entry.controller.refreshModelTerrain()?.let { publishModelTerrainStatus(entry, it) }
+            if (allowGroundWork) entry.controller.refreshModelTerrain()?.let { publishModelTerrainStatus(entry, it) }
             val demRevision = entry.controller.demRevision()
             val sectionNow = android.os.SystemClock.elapsedRealtime()
-            if (demRevision != entry.sectionDemRevision && sectionNow - entry.lastSectionDemAt >= 1000L) {
+            if (allowGroundWork && demRevision != entry.sectionDemRevision && sectionNow - entry.lastSectionDemAt >= 1000L) {
                 entry.sectionDemRevision = demRevision
                 entry.lastSectionDemAt = sectionNow
                 entry.sectionCollection?.afterDemUpdate()
@@ -1293,9 +1361,9 @@ class NativeReactMapHost(
             entry.controller.setBridgeMarkerPresentation(camera.optDouble("zoom", Double.NaN),
                 entry.renderState.optString("annotationSelected").takeIf { id -> id.isNotBlank() && id != "null" })
             syncAutoContourInterval(entry, camera)
-            val matrices = NativeBridgeProjection.standardEcefMatrices(matrixCopy) ?: return@post
-            val viewport = entry.viewport ?: return@post
-            val rect = viewport.optJSONObject("cssRect") ?: return@post
+            val matrices = NativeBridgeProjection.standardEcefMatrices(matrixCopy) ?: return
+            val viewport = entry.viewport ?: return
+            val rect = viewport.optJSONObject("cssRect") ?: return
             val scale = cssScale(entry)
             val x = rect.optDouble("x", 0.0) * scale
             val y = rect.optDouble("y", 0.0) * scale
@@ -1312,14 +1380,32 @@ class NativeReactMapHost(
                 .put("terrainEnabled", entry.controller.isTerrainEnabled())
                 .put("demRevision", entry.controller.demRevision())
                 .put("snapRevision", entry.snapRevision)
-                .put("capturedAt", System.currentTimeMillis())
+                .put("capturedAt", frame.capturedAt)
             emitEvent(entry.id, "renderFrame", value)
-            publishDemCache(entry, camera, width, height)
-            publishSnapGeometry(entry)
+            if (allowGroundWork) {
+                publishDemCache(entry, camera, width, height)
+                publishSnapGeometry(entry)
+            } else scheduleSettledFrame(entry)
+        } finally {
+            entry.framePublishTask = null
+            entry.framePublishPending.set(false)
+            if (isCurrent(entry) && entry.latestFrame.hasPending()) queueLatestFrame(entry)
         }
     }
 
     private fun privateExaggeration(entry: MapEntry): Double = entry.renderExaggeration
+
+    private fun scheduleSnapPublish(entry: MapEntry) {
+        if (entry.snapPublishScheduled) return
+        entry.snapPublishScheduled = true
+        main.postDelayed({
+            entry.snapPublishScheduled = false
+            if (!isCurrent(entry)) return@postDelayed
+            if (!NativeBridgeFramePolicy.allowGroundWork(realtimeFrameRequired(entry),
+                    android.os.SystemClock.elapsedRealtime(), entry.lastCameraMotionAt)) scheduleSnapPublish(entry)
+            else publishSnapGeometry(entry)
+        }, 500L)
+    }
 
     private fun syncTerrainOverlay(entry: MapEntry, settings: JSONObject, zoom: Double) {
         val rawInterval = settings.opt("contourInterval")
@@ -1398,10 +1484,13 @@ class NativeReactMapHost(
         val update = runCatching {
             snap.snapshot(entry.snapRevision, stableBounds, roads, rivers)
         }.getOrNull() ?: return
-        val signature = update.toString()
-        if (signature == entry.snapSignature) return
-        entry.snapSignature = signature
-        emitEvent(entry.id, "snapGeometry", update)
+        // Completed snapshots are immutable and reused by identity. Never walk the
+        // complete road coordinate JSON on the input/render thread just to deduplicate it.
+        if (update === entry.snapPublishedPayload) return
+        entry.snapPublishedPayload = update
+        emitBulkEvent(entry, "snapGeometry", update)
+        // A changed snap revision needs a real matching frame even if the map is now idle.
+        entry.controller.worldWindowForBridge().requestRedraw()
     }
 
     /** Ships a small viewport-local DEM cache sampled from the real native terrain coverage. */
@@ -1490,7 +1579,7 @@ class NativeReactMapHost(
                     if (!isCurrent(entry) || entry.demKey != key) return@launch
                     tiles.addAll(loaded)
                     val latestRevision = entry.controller.demRevision().coerceAtLeast(0)
-                    emitEvent(entry.id, "demCache", JSONObject().put("revision", latestRevision).put("tiles", JSONArray(tiles)))
+                    emitBulkEvent(entry, "demCache", JSONObject().put("revision", latestRevision).put("tiles", JSONArray(tiles)))
                     entry.demRevision = latestRevision
                     entry.controller.worldWindowForBridge().requestRedraw()
                 }
@@ -1698,6 +1787,16 @@ class NativeReactMapHost(
         send("event", mapId, requestId, body)
     }
 
+    /** Only immutable DEM/snap snapshots enter this bounded latest-per-channel encoder. */
+    private fun emitBulkEvent(entry: MapEntry, name: String, value: JSONObject) {
+        val session = sessionId ?: return
+        val token = ++entry.eventEncodeSequence
+        entry.eventEncodeTokens[name] = token
+        val message = JSONObject().put("version", VERSION).put("sessionId", session).put("type", "event")
+            .put("mapId", entry.id).put("payload", JSONObject().put("name", name).put("value", value))
+        entry.eventEncoder?.submit(name, token, message)
+    }
+
     private fun postError(requestId: String?, mapId: String?, code: String, message: String) {
         val session = sessionId ?: return
         val payload = JSONObject().put("code", code).put("message", message)
@@ -1720,6 +1819,12 @@ class NativeReactMapHost(
         shareJobs.values.toList().forEach { it.second.cancel() }
         shareJobs.clear()
         maps.values.toList().forEach { entry ->
+            entry.eventEncoder?.close()
+            entry.eventEncodeTokens.clear()
+            entry.framePublishTask?.let(main::removeCallbacks)
+            entry.settledFrameTask?.let(main::removeCallbacks)
+            entry.framePublishPending.set(false)
+            entry.latestFrame.takeLatest()
             runCatching { entry.cameraAnimator?.cancel() }; entry.cameraAnimator = null
             entry.controller.setBridgeFrameListener(null)
             entry.scope.cancel()

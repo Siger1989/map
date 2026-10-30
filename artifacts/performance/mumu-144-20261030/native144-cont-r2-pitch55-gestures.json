@@ -1,0 +1,10 @@
+{
+  "elapsedMs": 22752,
+  "protocol": "single-pointer-move-16ms-20sec-v3",
+  "input": {
+    "continuous": true,
+    "durationMs": 20001,
+    "moveEvents": 1249,
+    "maximumInputGapMs": 30
+  }
+}
