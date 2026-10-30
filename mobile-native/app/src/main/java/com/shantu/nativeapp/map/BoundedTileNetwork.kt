@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.os.SystemClock
 import android.util.AtomicFile
 import android.util.LruCache
+import earth.worldwind.render.image.ImageSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +16,10 @@ import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -27,6 +32,8 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CopyOnWriteArrayList
+import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
@@ -104,6 +111,7 @@ internal class BoundedTileNetwork(
     private val isValidImage: (ByteArray) -> Boolean = { bytes ->
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also(Bitmap::recycle) != null
     },
+    private val persistentCache: NativePersistentBrowseCache? = null,
     private val sleepBeforeRetry: (Long) -> Unit = { Thread.sleep(it) },
 ) {
     private data class MemoryTile(val bytes: ByteArray, val savedAtMillis: Long)
@@ -140,18 +148,50 @@ internal class BoundedTileNetwork(
     private val receivedBytes = AtomicLong()
     private val queueWaitMs = AtomicLong()
     private val networkMs = AtomicLong()
+    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val refreshLock = Any()
+    private val refreshQueue = ArrayDeque<String>()
+    private val refreshQueued = mutableSetOf<String>()
+    private val refreshCooldown = mutableMapOf<String, Long>()
+    private val refreshFactories = mutableMapOf<String, MutableList<WeakReference<ImageSource.NetworkBoundImageFactory>>>()
+    private val refreshObservers = CopyOnWriteArrayList<(ImageSource.NetworkBoundImageFactory) -> Unit>()
+    private var refreshWorker = false
     private val diskCacheLock = Any()
     private val lifecycleLock=Any()
     @Volatile private var lastStatusAt = 0L
     @Volatile private var closed = false
     @Volatile var cacheOnly = false
-        set(value) { synchronized(lifecycleLock) { field=value } }
+        set(value) {
+            synchronized(lifecycleLock) { field=value }
+            if (value) synchronized(refreshLock) { refreshQueue.clear(); refreshQueued.clear(); refreshFactories.clear() }
+        }
     @Volatile internal var archive: NativeTileArchive? = null
     @Volatile internal var legacyReader: ((String)->ByteArray?)? = null
 
-    suspend fun readCached(url: String): ByteArray? = withContext(Dispatchers.IO) { readCachedBlocking(url) }
+    fun observeRefresh(listener: (ImageSource.NetworkBoundImageFactory) -> Unit): AutoCloseable {
+        refreshObservers += listener
+        return AutoCloseable { refreshObservers.remove(listener) }
+    }
 
-    suspend fun fetch(url: String, bulkDownload: Boolean = false): ByteArray? = withContext(Dispatchers.IO) {
+    suspend fun readCached(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory? = null): ByteArray? = withContext(Dispatchers.IO) {
+        if (closed) return@withContext null
+        if (NativeOfflineDisplayPolicy.snapshot().enabled) {
+            val selected = NativeOfflineDisplayPolicy.readSelectedCache(url)
+            if (selected == null) errors.incrementAndGet() else successes.incrementAndGet()
+            return@withContext selected
+        }
+        memoryEntry(url)?.takeIf { isFresh(it.savedAtMillis) }?.let { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+        val entry = persistentCache?.read(url, allowStale = true)
+        if (entry != null && runCatching { isValidImage(entry.bytes) }.getOrDefault(false)) {
+            if (!entry.isFresh) enqueueRefresh(url, renderedFactory)
+            memory.put(cacheFile(url).name, MemoryTile(entry.bytes, entry.savedAtMillis))
+            diskHits.incrementAndGet(); successes.incrementAndGet()
+            return@withContext entry.bytes
+        }
+        readCachedBlocking(url)?.also { successes.incrementAndGet() }
+    }
+
+    suspend fun fetch(url: String, bulkDownload: Boolean = false, renderedFactory: ImageSource.NetworkBoundImageFactory? = null): ByteArray? = withContext(Dispatchers.IO) {
         try {
             if (closed) {
                 errors.incrementAndGet()
@@ -166,10 +206,17 @@ internal class BoundedTileNetwork(
                 } else successes.incrementAndGet()
                 return@withContext cached
             }
-            readCachedBlocking(url)?.let {
-                successes.incrementAndGet()
-                return@withContext it
+            memoryEntry(url)?.takeIf { isFresh(it.savedAtMillis) }?.let { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+            persistentCache?.read(url, allowStale = true)?.let { entry ->
+                if ((entry.isFresh || !bulkDownload) && runCatching { isValidImage(entry.bytes) }.getOrDefault(false)) {
+                    diskHits.incrementAndGet()
+                    memory.put(cacheFile(url).name, MemoryTile(entry.bytes, entry.savedAtMillis))
+                    if (!entry.isFresh) enqueueRefresh(url, renderedFactory)
+                    successes.incrementAndGet()
+                    return@withContext entry.bytes
+                }
             }
+            readCachedBlocking(url)?.let { successes.incrementAndGet(); return@withContext it }
             if (cacheOnly) return@withContext null
 
             val mine = CompletableFuture<ByteArray?>()
@@ -226,6 +273,10 @@ internal class BoundedTileNetwork(
             legacyReader = null
         }
         closeSignal.complete(Unit)
+        refreshScope.cancel()
+        Thread({ runCatching { persistentCache?.close() } }, "shantu-tile-cache-close").apply { isDaemon = true }.start()
+        synchronized(refreshLock) { refreshQueue.clear(); refreshQueued.clear(); refreshCooldown.clear(); refreshFactories.clear() }
+        refreshObservers.clear()
         inFlight.values.forEach { it.complete(null) }
         inFlight.clear()
     }
@@ -234,11 +285,75 @@ internal class BoundedTileNetwork(
     internal fun tiandituBulkWaiterCountForTest():Int=tiandituBulkWaiters.get()
     internal fun tiandituMapWaiterCountForTest():Int=tiandituMapWaiters.get()
 
+    private fun enqueueRefresh(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory?) {
+        if (closed || cacheOnly || NativeOfflineDisplayPolicy.snapshot().enabled) return
+        synchronized(refreshLock) {
+            if (closed || (refreshCooldown[url] ?: 0L) > SystemClock.elapsedRealtime()) return
+            val existing = refreshFactories[url]
+            if (refreshQueued.contains(url)) {
+                addRefreshFactory(existing, renderedFactory)
+                return
+            }
+            if (refreshQueue.size >= MAX_REFRESH_QUEUE || (refreshFactories.size >= MAX_REFRESH_QUEUE && existing == null)) return
+            val factories = existing ?: mutableListOf<WeakReference<ImageSource.NetworkBoundImageFactory>>().also { refreshFactories[url] = it }
+            addRefreshFactory(factories, renderedFactory)
+            refreshQueued += url
+            refreshQueue.addLast(url)
+            if (!refreshWorker) { refreshWorker = true; refreshScope.launch { drainRefreshQueue() } }
+        }
+    }
+
+    private suspend fun drainRefreshQueue() {
+        try {
+            while (!closed) {
+                val url = synchronized(refreshLock) { if (refreshQueue.isEmpty()) null else refreshQueue.removeFirst() } ?: break
+                var ok = false
+                try {
+                    while (!closed && !cacheOnly && !NativeOfflineDisplayPolicy.snapshot().enabled &&
+                        (mapSemaphore.availablePermits < MAX_MAP_REQUESTS || queuedNetworkRequests.get() > 0)) delay(100)
+                    if (!closed && !cacheOnly && !NativeOfflineDisplayPolicy.snapshot().enabled) ok = fetchSingle(url, false) != null
+                } catch (cancelled: CancellationException) { throw cancelled }
+                catch (_: Exception) { ok = false }
+                synchronized(refreshLock) {
+                    refreshQueued.remove(url)
+                    if (!ok) refreshFactories.remove(url)
+                    if (ok) refreshCooldown.remove(url)
+                    else {
+                        if (refreshCooldown.size >= MAX_REFRESH_COOLDOWN_ENTRIES) refreshCooldown.entries.removeIf { it.value <= SystemClock.elapsedRealtime() }
+                        if (refreshCooldown.size >= MAX_REFRESH_COOLDOWN_ENTRIES) refreshCooldown.remove(refreshCooldown.keys.first())
+                        refreshCooldown[url] = SystemClock.elapsedRealtime() + REFRESH_FAILURE_COOLDOWN_MS
+                    }
+                }
+                if (ok) notifyRefreshed(url)
+            }
+        } finally {
+            synchronized(refreshLock) {
+                refreshWorker = false
+                if (!closed && refreshQueue.isNotEmpty()) { refreshWorker = true; refreshScope.launch { drainRefreshQueue() } }
+            }
+        }
+    }
+
+    private fun addRefreshFactory(factories: MutableList<WeakReference<ImageSource.NetworkBoundImageFactory>>?, factory: ImageSource.NetworkBoundImageFactory?) {
+        if (factories == null || factory == null) return
+        factories.removeIf { it.get() == null }
+        if (factories.any { it.get() === factory } || factories.size >= MAX_REFRESH_FACTORIES_PER_URL) return
+        factories += WeakReference(factory)
+    }
+
+    private fun notifyRefreshed(url: String) {
+        val factories = synchronized(refreshLock) {
+            refreshFactories.remove(url).orEmpty().mapNotNull { it.get() }
+        }
+        factories.forEach { factory -> refreshObservers.forEach { listener -> runCatching { listener(factory) } } }
+    }
+
     private suspend fun fetchSingle(url: String,bulkDownload:Boolean): ByteArray? {
         if (closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted) return null
         val host = runCatching { URL(url).host.lowercase() }.getOrNull()
             ?: return reportAndNull("地图瓦片地址无效")
         val serverClass=serverClass(host)
+        val generationToken = if (!bulkDownload) runCatching { persistentCache?.generationToken() }.getOrNull() else null
         cooldownRemainingMillis(serverClass).takeIf { it > 0L }?.let { remaining ->
             report("${serverLabel(serverClass)}服务器冷却中，约${ceilSeconds(remaining)}秒后可重试")
             return null
@@ -331,8 +446,9 @@ internal class BoundedTileNetwork(
                     if(closed || cacheOnly || !NativeOfflineDisplayPolicy.permitsNetwork(bulkDownload) || Thread.currentThread().isInterrupted)return null
                     val entry = MemoryTile(bytes, System.currentTimeMillis())
                     memory.put(cacheFile.name, entry)
-                    // Disk persistence is opportunistic. An I/O failure never rejects a valid tile.
-                    runCatching { synchronized(diskCacheLock) { writeCacheAtomically(cacheFile, bytes); trimDiskCache() } }
+                }
+                if (!bulkDownload && generationToken != null) {
+                    runCatching { persistentCache?.write(url, bytes, generationToken = generationToken) }
                 }
                 // The network loader cannot know whether WorldWind has drawn this tile.
                 // Rendering/idle status belongs to the map renderer, not this HTTP layer.
@@ -468,41 +584,31 @@ internal class BoundedTileNetwork(
 
     private fun readCachedBlocking(url: String): ByteArray? {
         if (closed) return null
-        legacyReader?.invoke(url)?.takeIf{runCatching{isValidImage(it)}.getOrDefault(false)}?.let{diskHits.incrementAndGet();return it}
-        archive?.read(url)?.let { bytes ->
-            if (runCatching { isValidImage(bytes) }.getOrDefault(false)) {
-                diskHits.incrementAndGet()
-                return bytes
-            }
-        }
         val file = cacheFile(url)
         memory.get(file.name)?.let { cached ->
-            if (isFresh(cached.savedAtMillis)) {
-                memoryHits.incrementAndGet()
-                return cached.bytes
-            }
+            if (isFresh(cached.savedAtMillis)) { memoryHits.incrementAndGet(); return cached.bytes }
             memory.remove(file.name)
-            AtomicFile(file).delete()
-            return null
         }
         val bytes = synchronized(diskCacheLock) {
-            if (!file.isFile || file.length() > MAX_TILE_BYTES) return null
-            val diskAge = System.currentTimeMillis() - file.lastModified()
-            if (diskAge !in 0L..CACHE_TTL_MS) {
-                AtomicFile(file).delete()
-                return null
+            if (!file.isFile || file.length() > MAX_TILE_BYTES) null
+            else {
+                val diskAge = System.currentTimeMillis() - file.lastModified()
+                if (diskAge !in 0L..CACHE_TTL_MS) null
+                else runCatching { AtomicFile(file).openRead().use { it.readBytes() } }.getOrNull()
+                    ?.takeIf { it.size <= MAX_TILE_BYTES && runCatching { isValidImage(it) }.getOrDefault(false) }
             }
-            val cached = runCatching { AtomicFile(file).openRead().use { it.readBytes() } }.getOrNull() ?: return null
-            if (cached.size > MAX_TILE_BYTES || !runCatching { isValidImage(cached) }.getOrDefault(false)) {
-                AtomicFile(file).delete()
-                return null
-            }
-            cached
         }
-        diskHits.incrementAndGet()
-        memory.put(file.name, MemoryTile(bytes, file.lastModified()))
-        return bytes
+        if (bytes != null) {
+            diskHits.incrementAndGet()
+            memory.put(file.name, MemoryTile(bytes, file.lastModified()))
+            return bytes
+        }
+        legacyReader?.invoke(url)?.takeIf { runCatching { isValidImage(it) }.getOrDefault(false) }?.let { diskHits.incrementAndGet(); return it }
+        archive?.read(url)?.takeIf { runCatching { isValidImage(it) }.getOrDefault(false) }?.let { diskHits.incrementAndGet(); return it }
+        return null
     }
+
+    private fun memoryEntry(url: String): MemoryTile? = memory.get(cacheFile(url).name)
 
     private fun isFresh(savedAtMillis: Long): Boolean {
         val age = System.currentTimeMillis() - savedAtMillis
@@ -613,6 +719,10 @@ internal class BoundedTileNetwork(
         const val MAX_TILE_BYTES = 4 * 1024 * 1024
         const val MEMORY_CACHE_BYTES = 12 * 1024 * 1024
         const val MAX_DISK_CACHE_BYTES = 64L * 1024 * 1024
+        const val MAX_REFRESH_QUEUE = 64
+        const val MAX_REFRESH_FACTORIES_PER_URL = 32
+        const val MAX_REFRESH_COOLDOWN_ENTRIES = 256
+        const val REFRESH_FAILURE_COOLDOWN_MS = 30_000L
         const val CACHE_TTL_MS = 24L * 60L * 60L * 1_000L
         const val MAX_QUEUED_NETWORK_REQUESTS = 256
         const val IN_FLIGHT_WAIT_MS = 25_000L

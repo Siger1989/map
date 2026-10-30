@@ -177,10 +177,11 @@ data class NativeCartographyPlan(
  * The host mounts [layers] once beside its basemap and calls [apply] for every imported/runtime settings
  * change. Both primary and comparison WorldWindows use the same API with separate instances.
  */
-class NativeCartographyLayers(
+class NativeCartographyLayers internal constructor(
     private val window: WorldWindow,
     private val tiandituKey: () -> String,
     private val source: TileSource = SharedOpenFreeMapTileSource(),
+    private val sharedNetwork: BoundedTileNetwork? = null,
     private val onImageryStatus: (NativeImageryStatus) -> Unit = {},
 ) : AutoCloseable {
     private val vectorTileBudget = NativeRenderMemoryBudget.vectorTileCount(Runtime.getRuntime().maxMemory())
@@ -211,7 +212,7 @@ class NativeCartographyLayers(
     private var boundaryEnabled = false
     private var closed = false
     private var riverSnapping = false
-    private val raster = TiandituRasterSource(tiandituKey)
+    private val raster = TiandituRasterSource(tiandituKey, sharedNetwork)
 
     init {
         // No vector source may start decoding a world overview before React supplies its selection.
@@ -440,7 +441,7 @@ private fun checkResponseLength(length: Long, limit: Int) {
     check(length == -1L || length in 0..limit.toLong()) { "Map tile response exceeds limit" }
 }
 
-private class TiandituRasterSource(private val keyProvider: () -> String) : AutoCloseable {
+private class TiandituRasterSource(private val keyProvider: () -> String, private val sharedNetwork: BoundedTileNetwork?) : AutoCloseable {
     private val active = ConcurrentHashMap.newKeySet<HttpURLConnection>()
     private val executor = Executors.newFixedThreadPool(4)
     private val requestPermits = Semaphore(4)
@@ -451,22 +452,39 @@ private class TiandituRasterSource(private val keyProvider: () -> String) : Auto
     private fun surface(name: String, layer: String, maxZoom: Int): MercatorTiledSurfaceImage {
         val factory = object : MercatorTileFactory {
             override val contentType = name
-            override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = ImageSource.fromImageFactory(object : ImageSource.NetworkBoundImageFactory {
-                override suspend fun createCachedBitmap(): Bitmap? = null
-                override suspend fun createBitmap(): Bitmap? = withContext(Dispatchers.IO) {
-                    val bytes = fetch(tiandituUrl(layer, x, y, z))
-                    if (bytes.isEmpty()) return@withContext null
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                    require(bounds.outWidth in 1..1024 && bounds.outHeight in 1..1024 && bounds.outWidth.toLong() * bounds.outHeight <= 1_048_576) { "地图注记图片尺寸无效" }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: error("地图注记图片解码失败")
-                }
-            })
+            override fun getImageSource(x: Int, y: Int, z: Int): ImageSource {
+                val url = tiandituUrl(layer, x, y, z)
+                val imageFactory = RasterImageFactory(url)
+                return ImageSource.fromImageFactory(imageFactory)
+            }
         }
-        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, tileSize = 256, maxZoom = maxZoom, minZoom = 0)
+        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, tileSize = 256, maxZoom = maxZoom, minZoom = 1)
     }
 
-    private suspend fun fetch(url: String): ByteArray = requestPermits.withPermit { fetchOne(url) }
+    private suspend fun fetch(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory? = null): ByteArray {
+        if (sharedNetwork != null) return sharedNetwork.fetch(url, renderedFactory = renderedFactory) ?: ByteArray(0)
+        return requestPermits.withPermit { fetchOne(url) }
+    }
+
+    private fun decodeRasterBitmap(bytes: ByteArray): Bitmap {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        require(bounds.outWidth in 1..1024 && bounds.outHeight in 1..1024 && bounds.outWidth.toLong() * bounds.outHeight <= 1_048_576) { "地图注记图片尺寸无效" }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: error("地图注记图片解码失败")
+    }
+
+    private inner class RasterImageFactory(private val url: String) : ImageSource.NetworkBoundImageFactory {
+        override suspend fun createCachedBitmap(): Bitmap? = withContext(Dispatchers.IO) {
+            val bytes = sharedNetwork?.readCached(url, this@RasterImageFactory) ?: return@withContext null
+            decodeRasterBitmap(bytes)
+        }
+
+        override suspend fun createBitmap(): Bitmap? = withContext(Dispatchers.IO) {
+            val bytes = fetch(url, this@RasterImageFactory)
+            if (bytes.isEmpty()) return@withContext null
+            decodeRasterBitmap(bytes)
+        }
+    }
 
     private suspend fun fetchOne(url: String): ByteArray {
         val policy = NativeOfflineDisplayPolicy.snapshot()

@@ -13,18 +13,105 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.SQLiteMode
 import java.nio.file.Files
 import java.io.RandomAccessFile
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
+@SQLiteMode(SQLiteMode.Mode.NATIVE)
 class BoundedTileNetworkTest {
     private val imageBytes = byteArrayOf(11, 22, 33, 44)
+
+    @Test
+    fun persistentReopenAndStaleRefresh() = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        NativePersistentBrowseCache(context).let { cache -> runBlocking { cache.clear() }; cache.close() }
+        val freshUrl = "https://tiles.example.test/0/1/2"
+        val firstCalls = AtomicInteger()
+        val cacheFailure = AtomicReference<String?>()
+        val firstStore = NativePersistentBrowseCache(context, onCacheFailure = { operation, kind -> cacheFailure.set("$operation:$kind") })
+        val token = firstStore.generationToken()
+        assertNotNull("persistent cache generation token is available; storage=${cacheFailure.get()}", token)
+        val first = BoundedTileNetwork(
+            Files.createTempDirectory("browse-cache-first-").toFile(), {},
+            TileHttpClient { firstCalls.incrementAndGet(); TileHttpResponse(200, null, imageBytes) },
+            isValidImage = { true }, persistentCache = firstStore,
+        )
+        assertArrayEquals(imageBytes, first.fetch(freshUrl))
+        assertEquals(1, firstCalls.get())
+        assertEquals("successful response is indexed in persistent cache: failure=${cacheFailure.get()}", 1L, firstStore.stats()?.entries)
+        first.close()
+        firstStore.close()
+
+        val secondCalls = AtomicInteger()
+        val second = BoundedTileNetwork(
+            Files.createTempDirectory("browse-cache-reopen-").toFile(), {},
+            TileHttpClient { secondCalls.incrementAndGet(); TileHttpResponse(200, null, byteArrayOf(9)) },
+            isValidImage = { true }, persistentCache = NativePersistentBrowseCache(context, minFreeBytes = 0),
+        )
+        assertArrayEquals("reopened cache must satisfy the URL without another client request", imageBytes, second.fetch(freshUrl))
+        assertEquals(0, secondCalls.get())
+
+        val staleUrl = "https://tiles.example.test/0/1/3"
+        val staleCache = NativePersistentBrowseCache(context, minFreeBytes = 0)
+        assertTrue(staleCache.write(staleUrl, imageBytes, savedAtMillis = System.currentTimeMillis() - 25L * 60 * 60 * 1000))
+        val refreshStarted = CountDownLatch(1)
+        val refreshCalls = AtomicInteger()
+        val staleNetwork = BoundedTileNetwork(
+            Files.createTempDirectory("browse-cache-stale-").toFile(), {},
+            TileHttpClient { refreshCalls.incrementAndGet(); refreshStarted.countDown(); TileHttpResponse(200, null, imageBytes) },
+            isValidImage = { true }, persistentCache = staleCache,
+        )
+        val staleFactory = TiandituImageFactory(staleNetwork, staleUrl)
+        val refreshedFactory = AtomicReference<earth.worldwind.render.image.ImageSource.NetworkBoundImageFactory?>()
+        val refreshed = CountDownLatch(1)
+        val observer = staleNetwork.observeRefresh { refreshedFactory.set(it); refreshed.countDown() }
+        assertArrayEquals("stale imagery is available immediately", imageBytes, staleNetwork.readCached(staleUrl, staleFactory))
+        assertTrue("stale tile refresh is scheduled", refreshStarted.await(5, TimeUnit.SECONDS))
+        assertTrue("successful refresh notifies render cache observer", refreshed.await(5, TimeUnit.SECONDS))
+        assertEquals(staleFactory, refreshedFactory.get())
+        assertEquals(1, refreshCalls.get())
+        observer.close()
+        second.close(); staleNetwork.close()
+    }
+
+    @Test
+    fun `persistent write failure does not fail valid network response`() = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        val url = "https://tiles.example.test/write-fails"
+        val cache = NativePersistentBrowseCache(context, minFreeBytes = Long.MAX_VALUE)
+        val network = BoundedTileNetwork(
+            Files.createTempDirectory("browse-cache-write-failure-").toFile(), {},
+            TileHttpClient { TileHttpResponse(200, null, imageBytes) }, isValidImage = { true }, persistentCache = cache,
+        )
+        assertArrayEquals(imageBytes, network.fetch(url))
+        assertNull(cache.read(url))
+        network.close()
+    }
+
+    @Test
+    fun `offline cached read never returns unrelated persistent browse entry`() = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        val cache = NativePersistentBrowseCache(context)
+        val selectedUrl = "https://tiles.example.test/selected"
+        val unrelatedUrl = "https://tiles.example.test/not-in-package"
+        assertTrue(cache.write(unrelatedUrl, imageBytes))
+        NativeTileNetworkPool.installOfflinePackageMembership { id, url -> id == "selected-package" && url == selectedUrl }
+        NativeTileNetworkPool.installOfflineReader { url -> if (url == selectedUrl) imageBytes else null }
+        NativeOfflineDisplayPolicy.update(NativeOfflineDisplayPolicyState(enabled = true, packageId = "selected-package", provider = "tianditu"))
+        val network = BoundedTileNetwork(Files.createTempDirectory("browse-cache-offline-").toFile(), {}, isValidImage = { true }, persistentCache = cache)
+        assertNull(network.readCached(unrelatedUrl))
+        assertArrayEquals(imageBytes, network.readCached(selectedUrl))
+        network.close()
+    }
 
     @Test
     fun `sha256 cache names preserve lowercase utf8 digest and unsigned byte encoding`() {
@@ -470,13 +557,11 @@ class BoundedTileNetworkTest {
     }
 
     @Test
-    fun `disk cache survives network owner recreation`() = runBlocking {
-        val (first, directory) = network("reopen") { _, _ -> TileHttpResponse(200, null, imageBytes) }
+    fun `legacy cache directory is read only without persistent cache`() = runBlocking {
+        val directory = Files.createTempDirectory("shantu-reopen-").toFile()
         val url = "https://example.invalid/tile/one"
-        assertArrayEquals(imageBytes, first.fetch(url))
-        assertEquals(1L, first.snapshot().networkRequests)
-        assertEquals(1L, first.snapshot().successes)
-        first.close()
+        val legacyTile = directory.resolve("${sha256Hex(url.toByteArray(Charsets.UTF_8))}.tile").apply { writeBytes(imageBytes) }
+        val savedAt = legacyTile.lastModified()
 
         val calls = AtomicInteger()
         val reopened = BoundedTileNetwork(directory, {}, TileHttpClient { calls.incrementAndGet(); TileHttpResponse(503, null, null) }, { true })
@@ -487,17 +572,16 @@ class BoundedTileNetworkTest {
         assertEquals(0L, reopened.snapshot().networkRequests)
         assertArrayEquals(imageBytes, reopened.fetch(url))
         assertEquals(1L, reopened.snapshot().memoryHits)
+        assertEquals("legacy hit does not refresh its timestamp or rewrite the old file", savedAt, legacyTile.lastModified())
         assertTrue(!reopened.snapshot().toString().contains("example.invalid"))
         reopened.close()
     }
 
     @Test
     fun `expired disk tile is fetched again`() = runBlocking {
-        val (first, directory) = network("expiry") { _, _ -> TileHttpResponse(200, null, imageBytes) }
+        val directory = Files.createTempDirectory("shantu-expiry-").toFile()
         val url = "https://example.invalid/tile/expired"
-        assertArrayEquals(imageBytes, first.fetch(url))
-        first.close()
-        val tileFile = directory.listFiles()!!.single { it.name.endsWith(".tile") }
+        val tileFile = directory.resolve("${sha256Hex(url.toByteArray(Charsets.UTF_8))}.tile").apply { writeBytes(imageBytes) }
         tileFile.setLastModified(System.currentTimeMillis() - 25L * 60L * 60L * 1_000L)
         val replacementBytes = byteArrayOf(55, 66, 77)
         val calls = AtomicInteger()
@@ -513,12 +597,9 @@ class BoundedTileNetworkTest {
 
     @Test
     fun `corrupt disk tile is discarded and refetched`() = runBlocking {
-        val (first, directory) = network("corrupt") { _, _ -> TileHttpResponse(200, null, imageBytes) }
+        val directory = Files.createTempDirectory("shantu-corrupt-").toFile()
         val url = "https://example.invalid/tile/corrupt"
-        assertArrayEquals(imageBytes, first.fetch(url))
-        first.close()
-        val tileFile = directory.listFiles()!!.single { it.name.endsWith(".tile") }
-        tileFile.writeBytes(byteArrayOf(1, 2, 3))
+        val tileFile = directory.resolve("${sha256Hex(url.toByteArray(Charsets.UTF_8))}.tile").apply { writeBytes(byteArrayOf(1, 2, 3)) }
         val replacementBytes = byteArrayOf(88, 99, 111)
         val calls = AtomicInteger()
         val reopened = BoundedTileNetwork(directory, {}, TileHttpClient {

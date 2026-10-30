@@ -52,11 +52,15 @@ internal object NativeTileNetworkPool {
     fun acquire(context:Context,onStatus:(String)->Unit):Lease = acquire(context,onStatus,null)
 
     internal fun acquire(context:Context,onStatus:(String)->Unit,client:TileHttpClient?):Lease = synchronized(lock) {
-        val network=shared ?: (if(client==null) BoundedTileNetwork(context.applicationContext.cacheDir.resolve("shantu-native-map-tiles"),::dispatch)
-            else BoundedTileNetwork(context.applicationContext.cacheDir.resolve("shantu-native-map-tiles"),::dispatch,client,isValidImage={true})).also {
+        val app=context.applicationContext
+        val network=shared ?: run {
+            val persistent=NativePersistentBrowseCache(app)
+            (if(client==null) BoundedTileNetwork(app.cacheDir.resolve("shantu-native-map-tiles"),::dispatch,persistentCache=persistent)
+            else BoundedTileNetwork(app.cacheDir.resolve("shantu-native-map-tiles"),::dispatch,client,isValidImage={true},persistentCache=persistent)).also {
                 val legacy=com.shantu.nativeapp.offlineMaps.NativeLegacyOfflineArchive(context.applicationContext)
                 it.legacyReader={url->legacy.lookupTile(url)?:companionOfflineReader?.invoke(url)};shared=it
             }
+        }
         val id=nextId.incrementAndGet()
         listeners[id]=WeakReference(onStatus)
         references++

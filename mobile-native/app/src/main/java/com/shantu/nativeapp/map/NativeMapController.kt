@@ -93,7 +93,17 @@ class NativeMapController internal constructor(
 
     private val networkLease = if (sharedNetwork == null) NativeTileNetworkPool.acquire(appContext) { message -> reportStatus(message) } else null
     private val network = sharedNetwork ?: checkNotNull(networkLease).network
-    private val cartography = NativeCartographyLayers(worldWindow, { key }) { status ->
+    private val cacheRefreshObserver = network.observeRefresh { factory ->
+        mainHandler.post {
+            if (disposed) return@post
+            val imageSource = ImageSource.fromImageFactory(factory)
+            synchronized(worldWindow.engine.renderResourceCache) {
+                worldWindow.engine.renderResourceCache.remove(imageSource)
+            }
+            worldWindow.requestRedraw()
+        }
+    }
+    private val cartography = NativeCartographyLayers(worldWindow, { key }, sharedNetwork = network) { status ->
         if (status.message.isNotBlank()) reportStatus(status.message)
         imageryStatusListener?.invoke(status)
     }
@@ -157,6 +167,7 @@ class NativeMapController internal constructor(
     private var quality: NativeMapQuality = NativeMapQuality.HIGH
     private var fixedRasterZoom: Int? = null
     private var rasterLabelOpacity = 1f
+    private var legacyRasterLayersVisible = true
     private var terrainEnabled = false
     private var terrainCoverage: NativeTerrariumCoverage? = null
     private var terrainCoverageAttached = false
@@ -171,6 +182,10 @@ class NativeMapController internal constructor(
     @Volatile private var lastFrameStatusAt = 0L
     private var reportedImageCount = -1L
     @Volatile private var bridgeFrameListener: ((DoubleArray, Int, Int) -> Unit)? = null
+    @Volatile private var bridgeCameraMotionListener: ((DoubleArray) -> Unit)? = null
+    @Volatile private var bridgeFrameActivityListener: (() -> Unit)? = null
+    @Volatile private var lastBridgeFrameMatrix: DoubleArray? = null
+    private val bridgeFrameWitnesses = NativeBridgeFrameWitnessQueue<NativeBridgeFrameWitness<*>>()
     private var bridgeCameraConfigured = false
     private var bridgeGroundAnchor: NativeCameraSnapshot? = null
     private var bridgeAnchorElevation: Double? = null
@@ -254,8 +269,9 @@ class NativeMapController internal constructor(
     internal fun setLegacyRasterLayersVisible(visible: Boolean) {
         check(Looper.myLooper() == Looper.getMainLooper())
         if (disposed) return
+        legacyRasterLayersVisible = visible
         baseLayer.isEnabled = visible
-        labelLayer.isEnabled = visible
+        labelLayer.isEnabled = visible && rasterLabelOpacity > 0f
         fixedDetailLayer.renderLayer.isEnabled = visible
         if (!visible && !terrainBasemapEnabled) {
             resetBridgeRasterEvidence()
@@ -295,26 +311,40 @@ class NativeMapController internal constructor(
         worldWindow.engine.frameMetrics=object:earth.worldwind.frame.FrameMetrics{
             override fun beginRendering(rc:earth.worldwind.render.RenderContext){bridgePrintRasterFrameCoverage?.beginFrame()}
             override fun endRendering(rc:earth.worldwind.render.RenderContext){
-                val coverage = bridgePrintRasterFrameCoverage ?: return
-                val candidate = coverage.freezeFrame()
-                rc.offerScreenDrawable(NativePrintFrameWitnessDrawable {
-                    val cache = worldWindow.engine.renderResourceCache
-                    coverage.publishDrawnFrame(candidate, cache.usedCapacity, cache.capacity, cache.entryCount) { source ->
-                        cache[source] is Texture
-                    }
-                }, Double.MAX_VALUE)
+                bridgePrintRasterFrameCoverage?.let { coverage ->
+                    val candidate = coverage.freezeFrame()
+                    rc.offerScreenDrawable(NativePrintFrameWitnessDrawable {
+                        val cache = worldWindow.engine.renderResourceCache
+                        coverage.publishDrawnFrame(candidate, cache.usedCapacity, cache.capacity, cache.entryCount) { source ->
+                            cache[source] is Texture
+                        }
+                    }, Double.MAX_VALUE)
+                }
+                val bridgeWitness = if (bridgeFrameWitnesses.hasPending()) {
+                    check(Looper.myLooper() == Looper.getMainLooper()) { "Bridge frame metadata factories must run on the Android main thread" }
+                    bridgeFrameWitnesses.take()
+                } else null
+                bridgeWitness?.let { witness ->
+                    rc.offerScreenDrawable(NativeBridgeFrameWitnessDrawable { dc ->
+                        witness.draw(dc.modelviewProjection.m.copyOf(), dc.viewport.width, dc.viewport.height)
+                    }, Double.MAX_VALUE)
+                }
                 rc.sortDrawables()
             }
             override fun beginDrawing(dc:earth.worldwind.draw.DrawContext){}
             override fun endDrawing(dc:earth.worldwind.draw.DrawContext){
                 frameDrawn=true
-                runCatching {
-                    bridgeFrameListener?.invoke(
-                        dc.modelviewProjection.m.copyOf(),
-                        worldWindow.engine.viewport.width,
-                        worldWindow.engine.viewport.height,
-                    )
+                val mvp = dc.modelviewProjection.m
+                val previous = lastBridgeFrameMatrix
+                val changed = previous?.contentEquals(mvp) != true
+                val frameListener = bridgeFrameListener
+                val copy = if (changed || frameListener != null) mvp.copyOf() else null
+                if (changed) {
+                    lastBridgeFrameMatrix = copy
+                    copy?.let { matrix -> runCatching { bridgeCameraMotionListener?.invoke(matrix) } }
                 }
+                if (frameListener != null && copy != null) runCatching { frameListener.invoke(copy, dc.viewport.width, dc.viewport.height) }
+                runCatching { bridgeFrameActivityListener?.invoke() }
                 val now=android.os.SystemClock.elapsedRealtime()
                 if(now-lastFrameStatusAt<750)return
                 lastFrameStatusAt=now
@@ -356,6 +386,23 @@ class NativeMapController internal constructor(
     /** Receives the exact WorldWind view-projection matrix after a real rendered frame. */
     internal fun setBridgeFrameListener(listener: ((DoubleArray, Int, Int) -> Unit)?) {
         bridgeFrameListener = listener
+        if (listener == null) {
+            lastBridgeFrameMatrix = null
+            bridgeFrameWitnesses.clear()
+        }
+    }
+    internal fun setBridgeCameraMotionListener(listener: ((DoubleArray) -> Unit)?) {
+        bridgeCameraMotionListener = listener
+        if (listener == null) {
+            lastBridgeFrameMatrix = null
+            bridgeFrameWitnesses.clear()
+        }
+    }
+    internal fun setBridgeFrameActivityListener(listener: (() -> Unit)?) { bridgeFrameActivityListener = listener }
+    internal fun prepareBridgeFrameWitness(factory: () -> NativeBridgeFrameWitness<*>?) {
+        check(Looper.myLooper() == Looper.getMainLooper()) { "Bridge frame metadata must be prepared on the Android main thread" }
+        if (disposed) return
+        bridgeFrameWitnesses.offer(factory)
     }
     internal fun worldWindowForBridge(): WorldWindow = worldWindow
     /** The React camera contract converts zoom using a fixed 45-degree vertical field of view. */
@@ -386,6 +433,7 @@ class NativeMapController internal constructor(
     fun dispose() {
         if (disposed) return
         disposed = true
+        cacheRefreshObserver.close()
         resetBridgeRasterEvidence()
         geology?.close();geology=null
         cartography.close()
@@ -474,7 +522,7 @@ class NativeMapController internal constructor(
         check(Looper.myLooper() == Looper.getMainLooper()) { "Label opacity must be changed on the Android main thread" }
         require(opacity.isFinite() && opacity in 0.0..1.0)
         rasterLabelOpacity = opacity.toFloat()
-        mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; worldWindow.requestRedraw() } }
+        mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f; worldWindow.requestRedraw() } }
     }
 
     /** Updates the shared GPS/heading overlay. Heading must come from trusted sensors or GPS course. */
@@ -542,6 +590,7 @@ class NativeMapController internal constructor(
             baseLayer.clearRenderables()
             labelLayer.clearRenderables()
             labelLayer.opacity = rasterLabelOpacity
+            labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f
             if (custom != null) {
                 if(custom.kind!="online"){
                     val local=com.shantu.nativeapp.offlineMaps.NativeOfflineMapStore(appContext).list().firstOrNull{it.filePath==custom.localFilePath}
@@ -1114,7 +1163,7 @@ class NativeMapController internal constructor(
         transparent: Boolean,
         rasterCallbacks: NativeRasterLoadCallbacks? = null,
     ): MercatorTiledSurfaceImage {
-        val maxZoom = fixedRasterZoom?.coerceIn(1,19) ?: 19
+        val maxZoom = NativeTiandituZoomPolicy.effectiveMaxZoom(layerName, fixedRasterZoom)
         return makeTileSurfaceImage("Tianditu WMTS $layerName", 1, maxZoom, transparent, 256,
             { x, y, z -> tileUrl(layerName, x, y, z) },
             onBaseBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
@@ -1156,7 +1205,7 @@ class NativeMapController internal constructor(
             SOURCE_IMAGERY -> "img"
             else -> return null
         }
-        return NativeRasterDetailProvider("tianditu:$sourceId:$name",1,19,256) { x,y,z ->
+        return NativeRasterDetailProvider("tianditu:$sourceId:$name",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
             TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
                 rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished).createBitmap()
         }
@@ -1192,6 +1241,8 @@ class NativeMapController internal constructor(
             else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
         } else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
         return image.apply {
+            // Keep rendering the closest available source tile when descendants exceed source coverage.
+            useAncestorTileTexture = true
             // Lower screen-space thresholds refine tiles sooner; both modes keep the camera unchanged.
             detailControl = if (quality == NativeMapQuality.HIGH) 0.5 else 1.0
         }
@@ -1218,7 +1269,7 @@ internal data class TiandituImageFactory(
     override suspend fun createCachedBitmap(): Bitmap? {
         onLoadStarted()
         try {
-            return network.readCached(url)?.let { bytes ->
+            return network.readCached(url, this)?.let { bytes ->
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() }
             }
         } finally {
@@ -1229,7 +1280,7 @@ internal data class TiandituImageFactory(
     override suspend fun createBitmap(): Bitmap? {
         onLoadStarted()
         try {
-            return network.fetch(url)?.let { bytes ->
+            return network.fetch(url, renderedFactory = this)?.let { bytes ->
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() }
             }
         } finally {
@@ -1260,7 +1311,7 @@ internal data class NativeRasterImageFactory(
         if (source.datum != NativeRasterDatum.WGS84 || layer.subdivide) return null
         onLoadStarted()
         try {
-            return network.readCached(sourceUrl(outputX, outputY, outputZoom))
+            return network.readCached(sourceUrl(outputX, outputY, outputZoom), this)
                 ?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() } }
         } finally {
             onLoadFinished()
@@ -1317,7 +1368,7 @@ internal data class NativeRasterImageFactory(
     }
 
     private suspend fun fetchSource(x: Int, y: Int, z: Int): Bitmap? =
-        network.fetch(sourceUrl(x, y, z))?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() } }
+        network.fetch(sourceUrl(x, y, z), renderedFactory = this)?.let { bytes -> BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also { onBitmapDecoded() } }
 
     private fun sourceUrl(x: Int, y: Int, z: Int): String {
         val side = 1 shl z
