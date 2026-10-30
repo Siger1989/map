@@ -43,6 +43,15 @@ internal data class NativeRasterDetailPatch(
 
 /** Same 12x12 centre / <=144 current-viewport budget as web RasterDetailPatch. */
 internal object NativeRasterDetailPlan {
+    fun tileSector(tile: NativeRasterDetailTile): Sector {
+        val n = 1 shl tile.z
+        val west = tile.x.toDouble() / n * 360.0 - 180.0
+        val east = (tile.x + 1.0) / n * 360.0 - 180.0
+        val north = latitudeAtTile(tile.y.toDouble(), tile.z)
+        val south = latitudeAtTile((tile.y + 1).toDouble(), tile.z)
+        // WorldWind expects angular spans in its final two arguments, not max coordinates.
+        return Sector.fromDegrees(south, west, north - south, east - west)
+    }
     fun create(longitude:Double,latitude:Double,zoom:Int,bounds:NativeRasterDetailBounds?=null,maxSide:Int=MAX_VIEWPORT_SIDE):NativeRasterDetailPatch {
         require(longitude.isFinite() && latitude.isFinite() && zoom in 0..24)
         val boundedSide=maxSide.coerceIn(1,MAX_VIEWPORT_SIDE)
@@ -223,13 +232,7 @@ internal class NativeRasterDetailLayer(
                             if(tileJobs[tileKey]===self) { tileState.failed(tileKey);removeTileJobIfCurrent(tileKey,self) }
                             b.recycle();bitmap=null;return@withContext
                         }
-                        val n=1 shl tile.z
-                        val west=tile.x.toDouble()/n*360.0-180.0
-                        val east=(tile.x+1.0)/n*360.0-180.0
-                        val north=NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(),tile.z)
-                        val south=NativeRasterDetailPlan.latitudeAtTile((tile.y+1).toDouble(),tile.z)
-                        // WorldWind uses minLatitude, minLongitude, maxLatitude, maxLongitude.
-                        val image=SurfaceImage(Sector.fromDegrees(south,west,north,east),ImageSource.fromBitmap(b))
+                        val image=SurfaceImage(NativeRasterDetailPlan.tileSector(tile),ImageSource.fromBitmap(b))
                         val evicted=tileState.ready(tileKey,b.allocationByteCount.toLong())
                         evicted.forEach(::retireTile)
                         if(tileKey in evicted) { b.recycle();bitmap=null;removeTileJobIfCurrent(tileKey,self);return@withContext }

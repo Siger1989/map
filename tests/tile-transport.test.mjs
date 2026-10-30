@@ -2,6 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fetchMapTile, tileResponseError, TileTransportError } from '../modules/mapSources/tileTransport.ts';
 
+test('private localhost preview uses the app-owned gateway while preserving provider URL and cancellation', async () => {
+  const savedFetch=globalThis.fetch,savedDecoder=globalThis.createImageBitmap;
+  const savedLocation=Object.getOwnPropertyDescriptor(globalThis,'location');
+  const savedPreview=process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW;
+  const calls=[];
+  process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW='1';
+  Object.defineProperty(globalThis,'location',{configurable:true,value:{hostname:'127.0.0.1',origin:'http://127.0.0.1:9174'}});
+  globalThis.createImageBitmap=async()=>({width:256,height:256,close(){}});
+  globalThis.fetch=async(...args)=>{calls.push(args);return new Response(Uint8Array.from([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,1,0,0,0,1,0]));};
+  try {
+    const original='https://t0.tianditu.gov.cn/DataServer?T=vec_w&x=4&y=7&l=8&tk=fixture-preview';
+    await fetchMapTile(original,new AbortController().signal);
+    const endpoint=new URL(calls[0][0]);
+    assert.equal(endpoint.origin,'http://127.0.0.1:9174');assert.equal(endpoint.pathname,'/api/map-tile');
+    assert.equal(endpoint.searchParams.get('url'),original);assert.equal(calls[0][1].referrerPolicy,'no-referrer');
+    assert.ok(calls[0][1].signal instanceof AbortSignal);
+  } finally {
+    globalThis.fetch=savedFetch;globalThis.createImageBitmap=savedDecoder;
+    if(savedPreview===undefined)delete process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW;else process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW=savedPreview;
+    if(savedLocation)Object.defineProperty(globalThis,'location',savedLocation);else delete globalThis.location;
+  }
+});
+
 test('Tianditu browser tiles use HTTPS direct requests and preserve key parameters', async () => {
   const originalFetch = globalThis.fetch;
   const originalDecoder = globalThis.createImageBitmap;

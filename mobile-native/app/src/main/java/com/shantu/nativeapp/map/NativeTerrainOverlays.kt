@@ -35,7 +35,8 @@ internal data class NativeContourSegment(
     val elevationMeters: Int,
 )
 
-internal data class NativeContourLabel(val x: Float, val y: Float, val elevationMeters: Int)
+internal data class NativeContourLabel(val x: Float, val y: Float, val elevationMeters: Int, val rotationDegrees: Float = 0f)
+internal data class NativeContourPath(val elevationMeters: Int, val points: List<Pair<Float, Float>>)
 
 /** CPU-side DEM overlay renderer. Missing DEM values remain transparent and break contour cells. */
 internal object NativeTerrainOverlayMath {
@@ -133,33 +134,47 @@ internal object NativeTerrainOverlayMath {
     /** Joins adjacent cell fragments and places sparse labels along actual major contour paths. */
     fun contourLabels(segments: List<NativeContourSegment>, interval: Int, spacingPixels: Float = 210f): List<NativeContourLabel> {
         require(interval in INTERVALS && spacingPixels.isFinite() && spacingPixels > 0f)
+        return contourLabelsForPaths(contourPaths(segments), interval, spacingPixels)
+    }
+
+    fun contourLabelsForPaths(paths: List<NativeContourPath>, interval: Int, spacingPixels: Float): List<NativeContourLabel> {
+        require(interval in INTERVALS && spacingPixels.isFinite() && spacingPixels > 0f)
         val labels = mutableListOf<NativeContourLabel>()
-        for ((elevation, lines) in segments.filter { isMajor(it.elevationMeters, interval) }.groupBy { it.elevationMeters }) {
-            val components = stitchLevel(lines)
-            for (path in components) {
-                val cumulative = DoubleArray(path.size)
-                for (index in 1 until path.size) {
-                    cumulative[index] = cumulative[index - 1] + kotlin.math.hypot(
-                        (path[index].first - path[index - 1].first).toDouble(),
-                        (path[index].second - path[index - 1].second).toDouble(),
-                    )
-                }
-                val length = cumulative.lastOrNull() ?: 0.0
-                var distance = spacingPixels * 0.5
-                while (distance < length - 18.0) {
-                    val index = cumulative.indexOfFirst { it >= distance }.coerceAtLeast(1)
-                    val fraction = ((distance - cumulative[index - 1]) / (cumulative[index] - cumulative[index - 1]).coerceAtLeast(1e-9)).toFloat()
-                    labels += NativeContourLabel(
-                        path[index - 1].first + (path[index].first - path[index - 1].first) * fraction,
-                        path[index - 1].second + (path[index].second - path[index - 1].second) * fraction,
-                        elevation,
-                    )
-                    distance += spacingPixels
-                }
+        for (contour in paths.filter { isMajor(it.elevationMeters, interval) }) {
+            val path = contour.points
+            val cumulative = DoubleArray(path.size)
+            for (index in 1 until path.size) {
+                cumulative[index] = cumulative[index - 1] + kotlin.math.hypot(
+                    (path[index].first - path[index - 1].first).toDouble(),
+                    (path[index].second - path[index - 1].second).toDouble(),
+                )
+            }
+            val length = cumulative.lastOrNull() ?: 0.0
+            var distance = spacingPixels * 0.5
+            while (distance < length - 18.0) {
+                val index = cumulative.indexOfFirst { it >= distance }.coerceAtLeast(1)
+                val fraction = ((distance - cumulative[index - 1]) / (cumulative[index] - cumulative[index - 1]).coerceAtLeast(1e-9)).toFloat()
+                val dx = path[index].first - path[index - 1].first
+                val dy = path[index].second - path[index - 1].second
+                var rotation = 90f - Math.toDegrees(kotlin.math.atan2(dx.toDouble(), -dy.toDouble())).toFloat()
+                if (rotation > 90f) rotation -= 180f else if (rotation < -90f) rotation += 180f
+                labels += NativeContourLabel(
+                    path[index - 1].first + dx * fraction,
+                    path[index - 1].second + dy * fraction,
+                    contour.elevationMeters,
+                    rotation,
+                )
+                distance += spacingPixels
             }
         }
         return labels
     }
+
+    /** Stitches marching-squares fragments once per contour elevation before path construction. */
+    fun contourPaths(segments: List<NativeContourSegment>): List<NativeContourPath> =
+        segments.groupBy { it.elevationMeters }.flatMap { (elevation, lines) ->
+            stitchLevel(lines).map { NativeContourPath(elevation, it) }
+        }
 
     fun renderElevationColors(values: DoubleArray, size: Int, interval: Int, opacity: Double = 1.0): Bitmap {
         require(size > 0 && values.size == size * size && interval in INTERVALS && opacity.isFinite() && opacity in 0.0..1.0)
@@ -288,7 +303,9 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
     private val sampledTiles = object : LinkedHashMap<TileKey, DoubleArray>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<TileKey, DoubleArray>?): Boolean = size > 16
     }
+    private val contourLayers = mutableListOf<NativeContourLayerRenderable>()
     @Volatile private var closed = false
+    private val stableSampleFunction: suspend (z: Int, x: Int, y: Int) -> DoubleArray? = ::sampleTile
 
     private suspend fun sampleTile(z: Int, x: Int, y: Int): DoubleArray? {
         if (closed) return null
@@ -302,36 +319,34 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
 
     fun close() {
         closed = true
+        contourLayers.forEach { it.close() }
+        contourLayers.clear()
         synchronized(sampledTiles) { sampledTiles.clear() }
     }
 
     fun renderables(options: NativeTerrainOverlayOptions): List<Renderable> = buildList {
         if (options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
-            add(createSurfaceImage("elevation-colors-${options.contourIntervalMeters}-${options.elevationColorsOpacity}", 0, 13) { samples ->
-                NativeTerrainOverlayMath.renderElevationColors(samples, TILE_SIZE, options.contourIntervalMeters, options.elevationColorsOpacity)
-            })
+            add(createSurfaceImage(options.contourIntervalMeters, options.elevationColorsOpacity))
         }
         if (options.contoursEnabled) {
-            add(createSurfaceImage("contours-${options.contourIntervalMeters}", NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters), 13) { samples ->
-                NativeTerrainOverlayMath.renderContours(samples, TILE_SIZE, options.contourIntervalMeters)
-            })
+            val layer = NativeContourLayer(
+                options.contourIntervalMeters,
+                NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters),
+                stableSampleFunction,
+            )
+            NativeContourLayerRenderable(layer).also { contourLayers += it; add(it) }
         }
     }
 
-    private fun createSurfaceImage(
-        styleKey: String,
-        minZoom: Int,
-        maxZoom: Int,
-        render: (DoubleArray) -> Bitmap,
-    ): MercatorTiledSurfaceImage {
+    private fun createSurfaceImage(interval: Int, opacity: Double): MercatorTiledSurfaceImage {
         val factory = object : MercatorTileFactory {
-            override val contentType = "Shantu terrain overlay $styleKey"
+            override val contentType = "Shantu terrain elevation colors $interval $opacity"
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = ImageSource.fromImageFactory(
-                TerrainOverlayImageFactory(::sampleTile, x, y, z, render),
+                TerrainOverlayImageFactory(stableSampleFunction, "elevation-colors", interval, opacity, x, y, z),
             )
         }
         return MercatorTiledImageLayer.buildTiledSurfaceImage(
-            factory, true, tileSize = TILE_SIZE, maxZoom = maxZoom, minZoom = minZoom,
+            factory, true, tileSize = TILE_SIZE, maxZoom = 13, minZoom = 0,
         ).apply { detailControl = 1.0 }
     }
 
@@ -341,17 +356,20 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
     }
 }
 
-private class TerrainOverlayImageFactory(
+internal data class TerrainOverlayImageFactory(
     private val sample: suspend (z: Int, x: Int, y: Int) -> DoubleArray?,
+    private val style: String,
+    private val interval: Int,
+    private val opacity: Double,
     private val x: Int,
     private val y: Int,
     private val z: Int,
-    private val render: (DoubleArray) -> Bitmap,
 ) : ImageSource.NetworkBoundImageFactory {
     override suspend fun createCachedBitmap(): Bitmap? = null
 
     override suspend fun createBitmap(): Bitmap? {
+        if (style != "elevation-colors") return null
         val samples = sample(z, x, y) ?: return null
-        return render(samples)
+        return NativeTerrainOverlayMath.renderElevationColors(samples, NativeTerrainOverlays.TILE_SIZE, interval, opacity)
     }
 }

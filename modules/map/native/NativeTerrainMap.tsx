@@ -517,11 +517,15 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
 
   const cameraFromRuntime = () => runtime.camera ?? parseCamera(runtime.frame?.camera) ?? null;
 
-  const emitCamera = (camera: CameraSnapshot, fromUser = runtime.userInteracting) => {
+  const cameraOriginToken = (value: unknown): number | null =>
+    isRecord(value) && typeof value.cameraSyncToken === 'number' && Number.isSafeInteger(value.cameraSyncToken) && value.cameraSyncToken > 0
+      ? value.cameraSyncToken : null;
+
+  const emitCamera = (camera: CameraSnapshot, originToken: number | null, fromUser = runtime.userInteracting) => {
+    if (runtime.cameraSync.isStaleProgrammatic(originToken)) return;
     const previous = runtime.camera;
     runtime.camera = camera;
-    if (fromUser) runtime.cameraSync.beginUserGesture();
-    const programmatic = runtime.cameraSync.isProgrammatic(camera);
+    const programmatic = runtime.cameraSync.isProgrammatic(camera, originToken);
     const fingerprint = JSON.stringify(camera);
     if (fingerprint === runtime.lastCameraFingerprint) return;
     runtime.lastCameraFingerprint = fingerprint;
@@ -540,6 +544,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
   };
 
   const updateProjection = (rawFrame: NativeProjectionFrame) => {
+    if (runtime.cameraSync.isStaleProgrammatic(cameraOriginToken(rawFrame.camera))) return;
     runtime.frame = rawFrame;
     runtime.drawingGroundHit = invalidateNativeDrawingGroundHit(runtime.drawingGroundHit, parseCamera(rawFrame.camera));
     const snapRevision = (rawFrame as NativeProjectionFrame & { snapRevision?: unknown }).snapRevision;
@@ -555,7 +560,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
       } else if (isRecord(runtime.pendingSnapGeometry) && typeof runtime.pendingSnapGeometry.cameraRevision === 'number' && runtime.pendingSnapGeometry.cameraRevision < snapRevision) runtime.pendingSnapGeometry = null;
     }
     const camera = parseCamera(rawFrame.camera);
-    if (camera) emitCamera(camera);
+    if (camera) emitCamera(camera, cameraOriginToken(rawFrame.camera));
     const frame: ProjectionFrame = {
       matrix: [...rawFrame.viewProjection],
       width: rawFrame.viewport.width / rawFrame.cssScale,
@@ -689,7 +694,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         break;
       case 'camera': {
         const camera = parseCamera(value);
-        if (camera) emitCamera(camera);
+        if (camera) emitCamera(camera, cameraOriginToken(value));
         break;
       }
       case 'status': {
@@ -732,7 +737,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
           annotationPicking: latest.annotationPicking, measurementPicking: latest.measurementPicking,
           sectionEditing: latest.sectionEditing, sectionEnabled: latest.section.enabled,
           sectionItems: latest.sectionItems, annotations: latest.annotations, photos: latest.photos,
-          photoGroups, areaOverlay: latest.areaOverlay, trackOverlay: latest.trackOverlay,
+          photoGroups, areaOverlay: latest.areaOverlay, trackOverlay: latest.trackOverlay, routeOverlay: latest.routeOverlay,
         }, (coordinateValue) => runtime.client && runtime.mapId ? pointFromProjection(runtime.client, runtime.mapId, coordinateValue) : null);
         dispatchNativeTapAction(runtime, action);
         break;
@@ -1401,8 +1406,9 @@ function makeHandle(
       return () => finishWaiter(runtime, waiter, 'cancelled');
     },
     applyCamera: (camera) => {
-      runtime.cameraSync.apply(camera, runtime.camera);
-      fire('applyCamera', camera);
+      if (runtime.userInteracting) return;
+      const cameraSyncToken = runtime.cameraSync.apply(camera, runtime.camera);
+      fire('applyCamera', { ...camera, cameraSyncToken });
     },
     previewTrackNode: (preview) => {
       runtime.previewTrack = preview;

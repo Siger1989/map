@@ -22,6 +22,25 @@ test('single-layer mobile tiles load without OffscreenCanvas or bitmap decoding'
   assert.deepEqual([...new Uint8Array(await renderOvmapTile([layer], 5, 6, 10, new AbortController().signal))], [1, 2, 3]);
 });
 
+test('OVMAP no-tile responses use one parent ancestor cropped to the exact child quadrant', async t => {
+  const saved = { fetch: globalThis.fetch, location: globalThis.location, OffscreenCanvas: globalThis.OffscreenCanvas, createImageBitmap: globalThis.createImageBitmap };
+  t.after(() => { globalThis.fetch=saved.fetch; if(saved.location===undefined)delete globalThis.location;else globalThis.location=saved.location; globalThis.OffscreenCanvas=saved.OffscreenCanvas; globalThis.createImageBitmap=saved.createImageBitmap; });
+  const requests=[];const crops=[];
+  class Canvas { constructor(){this.width=256;this.height=256;} getContext(){return {drawImage:(...args)=>crops.push(args.slice(1))};} async convertToBlob(){return new Blob([new Uint8Array([9])]);} }
+  globalThis.location={origin:'https://app.example.invalid'};globalThis.OffscreenCanvas=Canvas;
+  globalThis.createImageBitmap=async()=>({width:256,height:256,close(){}});
+  globalThis.fetch=async input=>{
+    const endpoint=new URL(String(input)),tile=endpoint.searchParams.get('url');requests.push(tile);
+    if(tile.includes('/5/5/6'))return new Response(null,{status:404});
+    return new Response(new Uint8Array([1,2,3]));
+  };
+  const layer={tiles:['https://tiles.example.invalid/{z}/{x}/{y}.png'],tileSize:256,minzoom:0,maxzoom:18};
+  const result=await renderOvmapTile([layer],5,5,6,new AbortController().signal);
+  assert.deepEqual(requests,['https://tiles.example.invalid/5/5/6.png','https://tiles.example.invalid/4/2/3.png']);
+  assert.deepEqual(crops,[[128,0,128,128,0,0,256,256]]);
+  assert.deepEqual([...new Uint8Array(result)],[9]);
+});
+
 test('mobile composite tiles use the document canvas when OffscreenCanvas is unavailable', async t => {
   const saved = { fetch: globalThis.fetch, OffscreenCanvas: globalThis.OffscreenCanvas, createImageBitmap: globalThis.createImageBitmap, document: globalThis.document };
   t.after(() => Object.assign(globalThis, saved));

@@ -128,7 +128,7 @@ class NativeMapController internal constructor(
     private val markerLayer: RenderableLayer = RenderableLayer("Markers")
     private val terrainCutLayer=NativeTerrainCutLayer().apply { isEnabled = false }
     private val markerDocuments=linkedMapOf<String,org.json.JSONObject>()
-    private var modelDemTimestamp=0L
+    private var modelTerrainStamp: NativeModelTerrainInput.Stamp? = null
     private var bridgeMarkerZoom = Double.NaN
     private var bridgeSelectedMarker: String? = null
     private var markerPresentationKey: String? = null
@@ -141,11 +141,13 @@ class NativeMapController internal constructor(
         markerDocuments.values.toList().forEach(::renderMarker)
     }
     internal fun refreshModelTerrain(): List<NativeMarkerRenderResult>? {
-        val stamp=worldWindow.engine.globe.elevationModel.timestamp
-        if(stamp==modelDemTimestamp)return null
-        modelDemTimestamp=stamp
+        val stamp=modelPlacementRevision()
+        if(stamp==modelTerrainStamp)return null
+        modelTerrainStamp=stamp
         return markerDocuments.values.toList().map(::renderMarker)
     }
+    internal fun modelPlacementRevision()=NativeModelTerrainInput.Stamp(
+        worldWindow.engine.globe.elevationModel.timestamp,terrainEnabled,worldWindow.engine.globe.verticalExaggeration)
     private val positionLayer: RenderableLayer = RenderableLayer("Current position")
     private val photoLayer=NativePhotoLayer()
     internal fun replacePhotos(photos:org.json.JSONArray){photoLayer.replace(photos);worldWindow.requestRedraw()}
@@ -866,18 +868,26 @@ class NativeMapController internal constructor(
         }
     }
 
+    /** One raw-meter placement copy for both visible models and their section intersections. */
+    internal fun modelRenderInput(marker: org.json.JSONObject): org.json.JSONObject {
+        val coordinate=marker.optJSONArray("coordinates")
+        val lat=coordinate?.optDouble(1,Double.NaN) ?: Double.NaN
+        val lon=coordinate?.optDouble(0,Double.NaN) ?: Double.NaN
+        val needsGround=marker.optString("kind")!="pin" || marker.optJSONObject("borehole")?.optDouble("depth",Double.NaN)?.isFinite()==true
+        val liveGround=if(needsGround && terrainEnabled && lat.isFinite() && lat in -90.0..90.0 && lon.isFinite()) getElevation(lat,lon) else null
+        return NativeModelTerrainInput.prepare(marker,terrainEnabled,liveGround)
+    }
+
     /** Renders a complete Web annotation record; unsupported or groundless models are reported explicitly. */
     fun renderMarker(marker: org.json.JSONObject): NativeMarkerRenderResult {
         check(!disposed) { "Map controller is disposed" }
-        val input=org.json.JSONObject(marker.toString())
+        val input=modelRenderInput(marker)
         input.put("_mapZoom", if (bridgeMarkerZoom.isFinite()) bridgeMarkerZoom else org.json.JSONObject.NULL)
         input.put("_selected", marker.optString("id") == bridgeSelectedMarker)
         val markerId=marker.optString("id")
         if(markerId.isNotBlank())markerDocuments[markerId]=org.json.JSONObject(marker.toString())
-        if(input.optString("kind")!="pin" && (!input.has("groundElevation")||input.isNull("groundElevation"))){
-            input.optJSONArray("coordinates")?.let{c->getElevation(c.optDouble(1),c.optDouble(0))?.let{input.put("groundElevation",it)}}
-        }
-        val result = NativeModelRenderer.render(input,NativeTerrainSampler{lat,lon->getElevation(lat,lon)})
+        val result = NativeModelRenderer.render(input,NativeTerrainSampler{sampleLat,sampleLon->
+            if(terrainEnabled)getElevation(sampleLat,sampleLon) else 0.0 })
         val id = result.id ?: return result
         if (result.status != NativeMarkerStatus.INVALID) mainHandler.post {
             if (disposed) return@post
@@ -1384,7 +1394,8 @@ class NativeMapController internal constructor(
                 rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
                 rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
                 rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
-                tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration }) },
+                tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration },
+                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) }) },
             onBaseBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
             onImageLoadStarted = rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
             onImageLoadFinished = rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
@@ -1435,7 +1446,8 @@ class NativeMapController internal constructor(
         return NativeRasterDetailProvider("tianditu:$sourceId:$name",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
             TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
                 rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
-                tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,{ tileDemandGeneration }).createBitmap()
+                tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,{ tileDemandGeneration },
+                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu",name,rawZ,rawX,rawY) }).createBitmap()
         }
     }
 
@@ -1514,12 +1526,37 @@ internal data class TiandituImageFactory(
     override suspend fun createBitmap(): Bitmap? {
         onLoadStarted()
         try {
-            return network.fetch(url, renderedFactory = this, identity = identity, viewId = viewId, generation = generation?.invoke())?.let { bytes ->
+            val bytes = network.fetch(url, renderedFactory = this, identity = identity, viewId = viewId, generation = generation?.invoke())
+                ?: fetchMissingAncestor()
+            return bytes?.let { bytes ->
                 NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() }
             }
         } finally {
             onLoadFinished()
         }
+    }
+
+    private suspend fun fetchMissingAncestor(): ByteArray? {
+        val child = NativeMissingTileFallback.parseTdt(url) ?: return null
+        if (!network.isKnownMissing(url)) return null
+        for (parentZ in child.z - 1 downTo 1) {
+            val shift = child.z - parentZ
+            val parent = NativeMissingTileFallback.TdtTile(child.layer, child.x shr shift, child.y shr shift, parentZ)
+            val parentUrl = NativeMissingTileFallback.tdtUrl(url, parent) ?: return null
+            val parentIdentity = rawIdentityFor?.invoke(parent.x, parent.y, parent.z)
+            val bytes = network.fetch(parentUrl, identity = parentIdentity, viewId = viewId, generation = generation?.invoke())
+            if (bytes == null) {
+                if (network.isKnownMissing(parentUrl)) continue
+                return null
+            }
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            return try {
+                val cropped = NativeMissingTileFallback.cropDescendant(bitmap, child.x, child.y, parentZ, child.z, 256) ?: return null
+                try { NativeMissingTileFallback.bytesForBitmap(cropped) }
+                finally { cropped.recycle() }
+            } finally { bitmap.recycle() }
+        }
+        return null
     }
 
     // ImageSource is a render-cache key. Keep diagnostics credential-free even though the
@@ -1613,8 +1650,34 @@ internal data class NativeRasterImageFactory(
         val urlTile = NativeRasterSourceTileKey.from(z, x, y) ?: return null
         val requestTile = NativeRasterSourceTileKey.requestKey(layer, z, x, y) ?: return null
         val rawIdentity = rawIdentityFor?.invoke(requestTile.x, requestTile.y, requestTile.z) ?: identity
-        return network.fetch(sourceUrl(urlTile.x, urlTile.y, urlTile.z), renderedFactory = this, identity = rawIdentity, viewId = viewId, generation = generation?.invoke())
-            ?.let { bytes -> NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }?.also { onBitmapDecoded() } }
+        val url = sourceUrl(urlTile.x, urlTile.y, urlTile.z)
+        val bytes = network.fetch(url, renderedFactory = this, identity = rawIdentity, viewId = viewId, generation = generation?.invoke())
+            ?: fetchMissingAncestor(urlTile.x, urlTile.y, urlTile.z, url)
+        return bytes?.let { tileBytes -> NativeTileStageTelemetry.measureDecode { BitmapFactory.decodeByteArray(tileBytes, 0, tileBytes.size) }?.also { onBitmapDecoded() } }
+    }
+
+    private suspend fun fetchMissingAncestor(x: Int, y: Int, z: Int, childUrl: String): ByteArray? {
+        if (!network.isKnownMissing(childUrl)) return null
+        for (parentZ in z - 1 downTo layer.minZoom) {
+            val shift = z - parentZ
+            val parentX = x shr shift
+            val parentY = y shr shift
+            val parentUrl = sourceUrl(parentX, parentY, parentZ)
+            val parentRequest = NativeRasterSourceTileKey.requestKey(layer, parentZ, parentX, parentY) ?: return null
+            val parentIdentity = rawIdentityFor?.invoke(parentRequest.x, parentRequest.y, parentRequest.z)
+            val bytes = network.fetch(parentUrl, identity = parentIdentity, viewId = viewId, generation = generation?.invoke())
+            if (bytes == null) {
+                if (network.isKnownMissing(parentUrl)) continue
+                return null
+            }
+            val parent = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            return try {
+                val cropped = NativeMissingTileFallback.cropDescendant(parent, x, y, parentZ, z, layer.tileSize) ?: return null
+                try { NativeMissingTileFallback.bytesForBitmap(cropped) }
+                finally { cropped.recycle() }
+            } finally { parent.recycle() }
+        }
+        return null
     }
 
     private fun sourceUrl(x: Int, y: Int, z: Int): String {

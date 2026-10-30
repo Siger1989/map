@@ -1,6 +1,9 @@
 package com.shantu.nativeapp.map
 
 import android.graphics.Color
+import earth.worldwind.geom.AltitudeMode
+import earth.worldwind.shape.Label
+import earth.worldwind.shape.Path
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -132,6 +135,67 @@ class NativeTerrainOverlaysTest {
         } finally {
             contours.recycle()
         }
+    }
+
+    @Test
+    fun `contour XYZ pixels invert Web Mercator into the correct WGS84 positions`() {
+        val northwest = NativeContourVectorGeometry.tilePixelPosition(1, 1, 0, 0.0, 0.0)
+        assertEquals(0.3515625, northwest.longitude.inDegrees, 1e-8)
+        assertEquals(85.02070774312594, northwest.latitude.inDegrees, 1e-8)
+
+        val center = NativeContourVectorGeometry.tilePixelPosition(1, 1, 0, 128.0, 128.0)
+        assertEquals(90.3515625, center.longitude.inDegrees, 1e-8)
+        assertEquals(66.37275500247456, center.latitude.inDegrees, 1e-8)
+        assertEquals(0.0, center.altitude, 0.0)
+
+        val z = 12
+        val x = 2048
+        val y = 1400
+        val pixelX = 127.25
+        val pixelY = 33.75
+        val sampledPosition = NativeContourVectorGeometry.tilePixelPosition(z, x, y, pixelX, pixelY)
+        assertEquals(x * 256.0 + pixelX + 0.5,
+            (sampledPosition.longitude.inDegrees + 180.0) / 360.0 * (1 shl z) * 256.0, 1e-6)
+        assertEquals(y * 256.0 + pixelY + 0.5,
+            NativeTerrariumMath.mercatorPixelY(sampledPosition.latitude.inDegrees, z), 1e-6)
+    }
+
+    @Test
+    fun `contours build stitched screen width paths and legacy labels instead of raster strokes`() {
+        val size = 256
+        val values = DoubleArray(size * size) { index -> (index / size) * 50.0 }
+        val renderables = NativeContourVectorTileBuilder.build(values, 12, 2048, 1400, 50)
+        val paths = renderables.filterIsInstance<Path>()
+        val labels = renderables.filterIsInstance<Label>()
+
+        // Every contour level spans one connected horizontal path, rather than
+        // creating a separate shape per marching-squares cell edge.
+        assertEquals(size - 1, paths.size)
+        assertTrue(paths.all { it.positions.size == size && it.altitudeMode == AltitudeMode.CLAMP_TO_GROUND && it.isFollowTerrain })
+        assertTrue(paths.any { it.attributes.outlineWidth == NativeContourVectorGeometry.MAJOR_WIDTH })
+        assertTrue(paths.any { it.attributes.outlineWidth == NativeContourVectorGeometry.MINOR_WIDTH })
+        assertTrue(paths.all { kotlin.math.abs(it.attributes.outlineColor.alpha - 0.8f) < 1e-6f })
+        assertTrue(labels.isNotEmpty())
+        assertTrue(labels.all { it.text?.endsWith(" m") == true && it.attributes.scale == 1.0 })
+        assertTrue(labels.all { it.attributes.outlineWidth == 2.8f && !it.attributes.isDepthTest })
+        assertTrue(labels.all { kotlin.math.abs(it.position.latitude.inDegrees) < 90.0 })
+
+        paths.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }
+        labels.forEach { NativeContourVectorTileBuilder.applyScreenDensity(it, 2f) }
+        assertTrue(paths.any { it.attributes.outlineWidth == 2.1f })
+        assertTrue(paths.any { it.attributes.outlineWidth == 0.9f })
+        assertTrue(labels.all { it.attributes.scale == 2.0 })
+    }
+
+    @Test
+    fun `elevation image factory values compare stably for the same overlay tile`() {
+        val sampler: suspend (Int, Int, Int) -> DoubleArray? = { _, _, _ -> null }
+        val first = TerrainOverlayImageFactory(sampler, "elevation-colors", 50, 0.7, 12, 2, 3)
+        val repeated = TerrainOverlayImageFactory(sampler, "elevation-colors", 50, 0.7, 12, 2, 3)
+        val changedStyle = TerrainOverlayImageFactory(sampler, "elevation-colors", 100, 0.7, 12, 2, 3)
+        assertEquals(first, repeated)
+        assertEquals(first.hashCode(), repeated.hashCode())
+        assertFalse(first == changedStyle)
     }
 
     @Test(expected = IllegalArgumentException::class)

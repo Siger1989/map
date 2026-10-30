@@ -2,6 +2,7 @@ import type { AddProtocolAction, Map as LibreMap, RasterTileSource } from 'mapli
 import { warpPlan, type RasterDatum, type WarpPlan } from './coordinates';
 import { SharedTileFetch } from './sharedTileFetch.ts';
 import { fetchDirectRasterTile } from './tileTransport.ts';
+import { fetchWithParentFallback, isKnownNoImageryBytes, isNoImageryResponse, NoImageryTileError } from './noImageryTile.ts';
 import workerUrl from './rasterWarp.worker.ts?worker&url';
 
 let instance = 0;
@@ -33,7 +34,22 @@ export class RasterCoordinates {
   private stats = { started: 0, completed: 0, cancelled: 0, failed: 0, outputHits: 0 };
   private timings: Record<string, { count: number; totalMs: number; maxMs: number }> = {};
   private closed = false;
-  constructor(private map: LibreMap, private localProtocol: AddProtocolAction, private mapScheme = 'shantu-map') {}
+  constructor(private map: LibreMap, private localProtocol: AddProtocolAction, private mapScheme = 'shantu-map') {
+    map.on?.('sourcedata', this.keepProtocolBindings);
+  }
+
+  // A newly added raster can finish its initial TileJSON load after setTiles().
+  // Reapply the binding only when that initial load restored the captured URLs.
+  private keepProtocolBindings = () => {
+    if (this.closed) return;
+    for (const binding of this.bindings.values()) {
+      const {source,tiles}=binding;
+      if (this.map.getSource(source.id)!==source || source.tiles?.length!==tiles.length ||
+        !source.tiles.every((tile,index)=>tile===tiles[index])) continue;
+      source.scheme='xyz';
+      source.setTiles([`${this.scheme}://${binding.id}/{z}/{x}/{y}`]);
+    }
+  };
 
   sync(ids: string[], datum: RasterDatum) {
     const active = new Set(ids.map(id => this.map.getSource(id)).filter(s => s?.type === 'raster'));
@@ -48,7 +64,7 @@ export class RasterCoordinates {
       this.cache.clear(); this.cacheBytes = 0;
       this.inputTiles.clear();
     }
-    if (datum === 'wgs84' || this.closed) return;
+    if (this.closed) return;
     for (const raw of active) {
       const source = raw as RasterTileSource;
       if (this.bindings.has(source) || !source.tiles?.length) continue;
@@ -63,6 +79,36 @@ export class RasterCoordinates {
     const ms = performance.now() - started;
     const entry = this.timings[stage] ??= { count: 0, totalMs: 0, maxMs: 0 };
     entry.count++; entry.totalMs += ms; entry.maxMs = Math.max(entry.maxMs, ms);
+  }
+
+  /** Every raster datum uses the same source-local coverage fallback before reprojection. */
+  private loadRaster(binding: Binding, z: number, x: number, y: number, signal: AbortSignal) {
+    const side = 2 ** z;
+    x = ((x % side) + side) % side;
+    return fetchWithParentFallback({ z, x, y, minZoom: binding.source.minzoom ?? 0, signal,
+      tileKey: (zoom, tileX, tileY) => rasterTileUrl(binding.tiles, zoom, tileX, tileY, binding.scheme),
+      fetchTile: (zoom, tileX, tileY, tileSignal) => {
+        const url = rasterTileUrl(binding.tiles, zoom, tileX, tileY, binding.scheme);
+        return this.inputTiles.request(`${binding.id}\u0000${url}`, tileSignal, async requestSignal => {
+          const response = await this.fetch(url, requestSignal);
+          if (isNoImageryResponse(response)) throw new NoImageryTileError();
+          if (!response.ok) throw Error(`图源瓦片请求失败 (${response.status})`);
+          const bytes = await response.arrayBuffer();
+          if (await isKnownNoImageryBytes(bytes)) throw new NoImageryTileError();
+          requestSignal.throwIfAborted();
+          return bytes;
+        });
+      },
+    });
+  }
+
+  private rememberOutput(key: string, bytes: ArrayBuffer) {
+    this.cacheBytes -= this.cache.get(key)?.byteLength ?? 0;
+    this.cache.set(key, bytes); this.cacheBytes += bytes.byteLength;
+    while (this.cache.size > 48 || this.cacheBytes > 16*1024*1024) {
+      const first = this.cache.keys().next().value!;
+      this.cacheBytes -= this.cache.get(first)!.byteLength; this.cache.delete(first);
+    }
   }
 
   /** Bounded aggregate diagnostics; never exposes provider URLs or credentials. */
@@ -169,6 +215,13 @@ export class RasterCoordinates {
       timeout = setTimeout(() => abort.abort(new DOMException('坐标校正图源请求超时', 'TimeoutError')), 20000);
       const z = Number(match[2]), x = Number(match[3]), y = Number(match[4]);
       if (!Number.isInteger(z) || z < 0 || z > 24 || x >= 2**z || y >= 2**z) throw Error('无效瓦片坐标');
+      if (binding.datum === 'wgs84') {
+        const bytes = await this.loadRaster(binding, z, x, y, abort.signal);
+        abort.signal.throwIfAborted();
+        this.rememberOutput(params.url, bytes);
+        this.stats.completed++;
+        return { data: bytes.slice(0) };
+      }
       const plan = warpPlan(z, x, y, binding.source.tileSize, binding.datum);
       const inputs: { key: string; url: string }[] = [];
       for (let row = 0; row < plan.height; row++) for (let col = 0; col < plan.width; col++) {
@@ -180,11 +233,8 @@ export class RasterCoordinates {
       let tiles: ArrayBuffer[];
       const downloadStart = performance.now();
       try {
-        tiles = await Promise.all(inputs.map(({ key, url }) => this.inputTiles.request(key, abort.signal, async signal => {
-          const response = await this.fetch(url, signal);
-          if (!response.ok) throw Error(`图源瓦片请求失败 (${response.status})`);
-          return response.arrayBuffer();
-        })));
+        tiles = await Promise.all(inputs.map((_, index) => this.loadRaster(binding, z,
+          plan.left + index % plan.width, plan.top + Math.floor(index / plan.width), abort.signal)));
       } catch (error) {
         abort.abort(error);
         throw error;
@@ -202,11 +252,7 @@ export class RasterCoordinates {
         throw error;
       } finally { this.recordTime('warp', warpStart); }
       abort.signal.throwIfAborted();
-      this.cacheBytes -= this.cache.get(params.url)?.byteLength ?? 0;
-      this.cache.set(params.url, bytes); this.cacheBytes += bytes.byteLength;
-      while (this.cache.size > 48 || this.cacheBytes > 16*1024*1024) {
-        const first = this.cache.keys().next().value!; this.cacheBytes -= this.cache.get(first)!.byteLength; this.cache.delete(first);
-      }
+      this.rememberOutput(params.url, bytes);
       this.stats.completed++;
       return { data: bytes.slice(0) };
     } catch (error) {
@@ -223,6 +269,7 @@ export class RasterCoordinates {
   };
   dispose() {
     this.closed = true;
+    this.map.off?.('sourcedata', this.keepProtocolBindings);
     for (const binding of this.bindings.values()) binding.abort.abort();
     this.bindings.clear(); this.cache.clear(); this.cacheBytes = 0;
     this.inputTiles.clear();

@@ -234,9 +234,14 @@ export function createPinnedRequester({
       }
       const mime = String(response.headers['content-type'] ?? '').split(';', 1)[0].trim().toLowerCase();
       const declared = Number(response.headers['content-length']);
+      if ([204, 404, 410].includes(status) || (status === 200 && /(?:^|[,;\s])no-tile(?:$|[,;\s])/i.test(String(response.headers['x-ve-tile-info'] ?? '')))) {
+        response.destroy();
+        settleReject(Object.assign(new Error('Map tile has no imagery'), { noImagery: true }));
+        return;
+      }
       if (status !== 200 || (Number.isFinite(declared) && declared > maxBytes)) {
         response.destroy();
-        settleReject(Object.assign(new Error('Map tile response rejected'), { upstreamStatus: status }));
+        settleReject(Object.assign(new Error('Map tile response rejected'), { upstreamStatus: status, retryAfter: response.headers['retry-after'] }));
         return;
       }
       const chunks = [];
@@ -348,12 +353,20 @@ export async function proxyMapTileRequest(request) {
         'X-Content-Type-Options': 'nosniff',
       },
     });
-  } catch {
+  } catch (error) {
     return new Response('Map tile unavailable', {
-      status: 502,
-      headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' },
+      status: mapTileFailureStatus(error),
+      headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', ...retryHeaders(error) },
     });
   }
+}
+
+function mapTileFailureStatus(error) {
+  return error?.noImagery === true ? 404 : [401,403,429,503].includes(error?.upstreamStatus) ? error.upstreamStatus : 502;
+}
+function retryHeaders(error) {
+  const value = error?.retryAfter;
+  return typeof value === 'string' && value.length <= 128 && !/[\r\n]/.test(value) ? {'Retry-After':value} : {};
 }
 
 export function mapTileVitePlugin() {
@@ -391,10 +404,11 @@ export function mapTileVitePlugin() {
           res.setHeader('Cache-Control', 'private, max-age=300');
           res.setHeader('X-Content-Type-Options', 'nosniff');
           res.end(tile.body);
-        } catch {
-          res.statusCode = 502;
+        } catch (error) {
+          res.statusCode = mapTileFailureStatus(error);
           res.setHeader('Cache-Control', 'no-store');
           res.setHeader('X-Content-Type-Options', 'nosniff');
+          for (const [key,value] of Object.entries(retryHeaders(error))) res.setHeader(key,value);
           res.end('Map tile unavailable');
         }
       });

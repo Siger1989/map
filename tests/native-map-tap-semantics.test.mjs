@@ -97,3 +97,40 @@ test('browse selection prioritizes annotations, routes, track geometry, areas, a
   assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:area-a']), h.state, h.project), { type: 'area', id: 'area-a' });
   assert.deepEqual(interpretNativeTap(h.tap(['shantu-photo:photo-a']), h.state, h.project), { type: 'photo', ids: ['photo-a', 'photo-b'] });
 });
+
+test('geology and other noninteractive native IDs do not block a nearby line fallback', () => {
+  const h = setup({ trackOverlay });
+  const geology = interpretNativeTap(h.tap(['geology:unit-7'], [0.5, 0], { x: 50, y: 2 }), h.state, h.project);
+  assert.equal(geology.type, 'trackLine');
+  assert.equal(geology.point.trackId, 'track-a');
+  const nativeBackdrop = interpretNativeTap(h.tap(['native-terrain:surface'], [0.5, 0], { x: 50, y: 2 }), h.state, h.project);
+  assert.equal(nativeBackdrop.type, 'trackLine');
+
+  const competing = setup({
+    trackOverlay: { visible: true, editing: false, saved: [{ ...track, segments: [[[-1, 0.05], [1, 0.05]]] }], draft: [] },
+    routeOverlay: { route: { coordinates: [[-1, 0], [1, 0]], segments: [{ kind: 'road', coordinates: [[-1, 0], [1, 0]] }] }, start: null, end: null },
+  });
+  assert.deepEqual(interpretNativeTap(competing.tap(['geology:unit-7'], [0.5, 0.02], { x: 50, y: 2 }), competing.state, competing.project), { type: 'route' });
+});
+
+test('geometric fallback requires a nearby native ground hit and preserves exact area picks', () => {
+  const area = { id: 'area-a', visible: true, boundary: [[0, 0], [1, 0], [1, 1], [0, 0]] };
+  const h = setup({ trackOverlay, areaOverlay: { items: [area], selected: null, draft: [] } });
+  assert.deepEqual(interpretNativeTap(h.tap(['geology:unit-7'], null, { x: 50, y: 0 }), h.state, h.project), { type: 'none' });
+  assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:area-a'], [0.5, 0], { x: 50, y: 0 }), h.state, h.project), { type: 'area', id: 'area-a' });
+  const farGround = interpretNativeTap(h.tap(['geology:unit-7'], [0.5, 0.2], { x: 50, y: 2 }), h.state, h.project);
+  assert.deepEqual(farGround, { type: 'mapPick', coordinate: [0.5, 0.2], queryPoint: true });
+});
+
+test('transparent tracks cannot be selected by a native semantic ID', () => {
+  const invisible = { ...track, style: { opacity: 0 } };
+  const h = setup({ trackOverlay: { visible: true, editing: false, saved: [invisible], draft: [] } });
+  assert.deepEqual(interpretNativeTap(h.tap([bridge({ kind: 'track', trackId: 'track-a' })]), h.state, h.project), { type: 'mapPick', coordinate: [0, 0], queryPoint: true });
+});
+
+test('a transparent draft style does not disable a saved track with its own visible style', () => {
+  const h = setup({ trackOverlay: { ...trackOverlay, style: { opacity: 0 }, saved: [{ ...track, style: { opacity: 1 } }] } });
+  const action = interpretNativeTap(h.tap([bridge({ kind: 'track', trackId: 'track-a' })]), h.state, h.project);
+  assert.equal(action.type, 'trackLine');
+  assert.equal(action.point.trackId, 'track-a');
+});

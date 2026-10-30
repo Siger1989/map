@@ -1,3 +1,5 @@
+import { isKnownNoImageryBytes, isNoImageryResponse } from './noImageryTile.ts';
+
 type Store = { get(key: string): Promise<ArrayBuffer | undefined>; put(key: string, bytes: ArrayBuffer, ttlMs?: number): void; forget(key: string): void };
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -15,7 +17,7 @@ function imageMime(bytes: ArrayBuffer): string | undefined {
 export function createCachedTileFetcher(store: Store, fetcher: (url: string, signal: AbortSignal) => Promise<Response>) {
   const stats={hits:0,misses:0,networkRequests:0,stored:0};
   const remember=async(response:Response,key:string,signal:AbortSignal)=>{
-    if(response.status!==200 || /no-store|no-cache|max-age\s*=\s*"?0(?:\D|$)/i.test(response.headers.get('cache-control')??''))return;
+    if(response.status!==200 || isNoImageryResponse(response) || /no-store|no-cache|max-age\s*=\s*"?0(?:\D|$)/i.test(response.headers.get('cache-control')??''))return;
     if(Number(response.headers.get('content-length')??0)>MAX_BYTES)return;
     const clone=response.clone(),reader=clone.body?.getReader();
     if(!reader)return;
@@ -31,6 +33,7 @@ export function createCachedTileFetcher(store: Store, fetcher: (url: string, sig
       if(!size || signal.aborted)return;
       const bytes=new Uint8Array(size);let offset=0;
       for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+      if(await isKnownNoImageryBytes(bytes))return;
       const maxAge=/\bmax-age\s*=\s*"?(\d+)/i.exec(response.headers.get('cache-control')??'');
       const age=Number(response.headers.get('age')??0);
       const remainingTtl=maxAge?Math.max(0,Number(maxAge[1])-(Number.isFinite(age)?Math.max(0,age):0))*1000:undefined;
@@ -57,9 +60,13 @@ export function createCachedTileFetcher(store: Store, fetcher: (url: string, sig
           const bytes=await store.get(key);
           signal.throwIfAborted();
           if(bytes){
-            const mime=imageMime(bytes);
-            if(mime){stats.hits++;return new Response(bytes,{headers:{'Content-Type':mime,'X-Shantu-Browse-Cache':'hit'}});}
-            store.forget(key);
+            if(await isKnownNoImageryBytes(bytes)){
+              store.forget(key);
+            }else{
+              const mime=imageMime(bytes);
+              if(mime){stats.hits++;return new Response(bytes,{headers:{'Content-Type':mime,'X-Shantu-Browse-Cache':'hit'}});}
+              store.forget(key);
+            }
           }
         }
       }catch{signal.throwIfAborted();}

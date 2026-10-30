@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { createTiandituLoader, isTiandituTileUrl, TiandituLoadError } from '../modules/mapSources/tiandituLoader.ts';
 
 const validPng = Uint8Array.from([
   137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82,
   0, 0, 0, 1, 0, 0, 0, 1,
 ]).buffer;
+const noImageryJpeg = await readFile(new URL('./fixtures/tianditu-no-imagery-placeholder.jpg', import.meta.url));
 
 function tile({ host = 't0', layer = 'img', z = 2, x = 1, y = 1, tk = 'fixture-key', extra = '' } = {}) {
   return `https://${host}.tianditu.gov.cn/${layer}_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX=${z}&TILECOL=${x}&TILEROW=${y}&tk=${tk}${extra}`;
@@ -84,6 +86,57 @@ test('accepts strict official Tianditu DataServer URLs used by imported layers',
     dataServerTile().replace('l=4', 'l=20'),
     dataServerTile().replace('&tk=fixture-key', ''),
   ]) assert.equal(isTiandituTileUrl(url), false, url);
+});
+
+test('replaces the known HTTP 200 no-imagery tile with one cropped valid ancestor and forgets its old cache entry', async () => {
+  let cachedPlaceholder = true;
+  const forgotten = [];
+  const stored = [];
+  const cache = {
+    get: async () => { if (cachedPlaceholder) { cachedPlaceholder = false; return noImageryJpeg.buffer.slice(noImageryJpeg.byteOffset, noImageryJpeg.byteOffset + noImageryJpeg.byteLength); } },
+    put: (key, bytes) => stored.push([key, bytes]),
+    forget: key => forgotten.push(key),
+  };
+  const requested = [];
+  const crops = [];
+  const loader = createTiandituLoader({ cache, startIntervalMs: 1, cropTile: async (bytes, x, y, scale) => { crops.push([x, y, scale]); return validPng.slice(0); }, fetcher: async url => {
+    const parsed = new URL(url);
+    const z = Number(parsed.searchParams.get('TILEMATRIX'));
+    requested.push([z, Number(parsed.searchParams.get('TILECOL')), Number(parsed.searchParams.get('TILEROW'))]);
+    return imageResponse({ bytes: z === 18 ? noImageryJpeg.buffer.slice(noImageryJpeg.byteOffset, noImageryJpeg.byteOffset + noImageryJpeg.byteLength) : validPng, headers: { 'Cache-Control': 'max-age=60' } });
+  } });
+  await withImageDecoder(async () => {
+    const bytes = await loader.load(tile({ z: 18, x: 103, y: 219 }), new AbortController().signal);
+    assert.deepEqual([...new Uint8Array(bytes)], [...new Uint8Array(validPng)]);
+  });
+  assert.deepEqual(requested, [[18, 103, 219], [17, 51, 109]]);
+  assert.deepEqual(crops, [[1, 1, 2]]);
+  assert.equal(forgotten.length, 1);
+  assert.equal(stored.length, 1, 'only the valid ancestor is cached');
+  loader.dispose();
+});
+
+test('provider no-tile headers fall back, while authorization failures never do', async () => {
+  const requests = [];
+  const loader = createTiandituLoader({ startIntervalMs: 1, cropTile: async bytes => bytes, fetcher: async url => {
+    const z = Number(new URL(url).searchParams.get('TILEMATRIX'));
+    requests.push(z);
+    return z === 4
+      ? new Response(validPng.slice(0), { status: 200, headers: { 'X-VE-Tile-Info': 'no-tile' } })
+      : imageResponse();
+  } });
+  await withImageDecoder(async () => await loader.load(tile({ z: 4, x: 7, y: 9 }), new AbortController().signal));
+  assert.deepEqual(requests, [4, 3]);
+  assert.equal(loader.snapshot().errors, 0, 'recovered missing imagery is not reported as a failed load');
+  loader.dispose();
+
+  for (const status of [401, 403]) {
+    let calls = 0;
+    const unauthorized = createTiandituLoader({ startIntervalMs: 1, fetcher: async () => { calls++; return new Response(null, { status }); } });
+    await assert.rejects(unauthorized.load(tile({ z: 4, x: 3, y: 5 }), new AbortController().signal), error => error.code === 'unauthorized');
+    assert.equal(calls, 1);
+    unauthorized.dispose();
+  }
 });
 
 test('keeps DataServer and WMTS endpoint identities separate and preserves the DataServer request', async () => {

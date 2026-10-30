@@ -1,3 +1,5 @@
+import { cropRasterTile, fetchWithParentFallback, isKnownNoImageryBytes, isNoImageryResponse, NoImageryTileError } from './noImageryTile.ts';
+
 const TDT_HOST = /^t[0-7]\.tianditu\.gov\.cn$/i;
 const TDT_LAYERS = new Set(['img', 'cia', 'vec', 'cva', 'ter', 'cta', 'ibo', 'iba']);
 const MAX_ZOOM = 19;
@@ -34,10 +36,11 @@ type LoaderOptions = {
   startIntervalMs?: number;
   cooldownFallbackMs?: number;
   now?: () => number;
+  cropTile?: (bytes: ArrayBuffer, childX: number, childY: number, scale: number, signal: AbortSignal) => Promise<ArrayBuffer>;
 };
 
-type ParsedTile = { url: URL; cacheKeyInput: string };
-type Consumer = { signal: AbortSignal; resolve: (bytes: ArrayBuffer) => void; reject: (error: TiandituLoadError) => void; abort: () => void };
+type ParsedTile = { url: URL; cacheKeyInput: string; layer: string; z: number; x: number; y: number };
+type Consumer = { signal: AbortSignal; resolve: (bytes: ArrayBuffer) => void; reject: (error: Error) => void; abort: () => void };
 type CacheReadWaiter = {
   signal: AbortSignal;
   resolve: (acquired: true | 'capacity' | 'timeout') => void;
@@ -167,7 +170,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     }, delay);
   };
 
-  const release = (flight: Flight, error?: TiandituLoadError, bytes?: ArrayBuffer) => {
+  const release = (flight: Flight, error?: TiandituLoadError | NoImageryTileError, bytes?: ArrayBuffer) => {
     if (flight.settled) return;
     if (flight.startedAt !== undefined) addTiming(timings.networkMs, monotonicNow() - flight.startedAt);
     else addTiming(timings.networkQueueMs, monotonicNow() - flight.queuedAt);
@@ -222,10 +225,10 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
       bytes => release(flight, undefined, bytes),
       error => {
         if (flight.settled) return;
-        const safeError = error instanceof TiandituLoadError ? error :
+        const safeError = error instanceof TiandituLoadError || error instanceof NoImageryTileError ? error :
           flight.controller.signal.aborted ? cancelError() : new TiandituLoadError('network', now(), true);
         if (safeError.code === 'cancelled') counters.cancelled++;
-        else counters.errors++;
+        else if (safeError.code !== 'no-imagery') counters.errors++;
         release(flight, safeError);
       },
     );
@@ -390,7 +393,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     }
   };
 
-  const load = async (rawUrl: string, signal: AbortSignal): Promise<ArrayBuffer> => {
+  const loadOne = async (rawUrl: string, signal: AbortSignal): Promise<ArrayBuffer> => {
     assertActive(signal);
     const parsed = parseTiandituTileUrl(rawUrl);
     if (!parsed) throw new TiandituLoadError('invalid-url', 0, false);
@@ -401,6 +404,10 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     const cached = await cacheRead(persistentCache, identity.key, signal, identity.persistent ? 'unavailable' : 'crypto-unavailable');
     assertActive(signal);
     if (cached) {
+      if (await isKnownNoImageryBytes(cached)) {
+        countCacheBypass('known-no-imagery-tile');
+        safeForget(persistentCache, identity.key);
+      } else {
       const cachedImageValid = await isValidImage(cached, signal, disposal.signal, IMAGE_VALIDATION_TIMEOUT_MS);
       assertActive(signal);
       if (cachedImageValid) {
@@ -409,6 +416,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
       }
       countCacheBypass('invalid-cached-image');
       safeForget(persistentCache, identity.key);
+      }
     }
 
     assertActive(signal);
@@ -454,6 +462,10 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     if (signal.aborted) throw cancelError();
     httpStatuses[response.status] = (httpStatuses[response.status] ?? 0) + 1;
     lastResponse = { status: response.status, type: response.headers.get('Content-Type'), cacheControl: response.headers.get('Cache-Control'), age: response.headers.get('Age'), retryAfter: response.headers.get('Retry-After') };
+    if (isNoImageryResponse(response)) {
+      try { void response.body?.cancel().catch(() => {}); } catch { /* Ignore provider-declared missing-tile cleanup errors. */ }
+      throw new NoImageryTileError();
+    }
     if (response.status !== 200) {
       try { void response.body?.cancel().catch(() => {}); } catch { /* Keep the safe HTTP classification. */ }
       const status = response.status;
@@ -477,6 +489,7 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     const valid = await isValidImage(bytes, signal, disposal.signal, IMAGE_VALIDATION_TIMEOUT_MS);
     if (signal.aborted || disposed) throw cancelError();
     if (!valid) throw new TiandituLoadError('invalid-image', 0, false);
+    if (await isKnownNoImageryBytes(bytes)) throw new NoImageryTileError();
     const ttl = responseCacheTtl(response.headers, now());
     if (ttl > 0 && cache && flight.key.startsWith(CACHE_PREFIX) && !disposed) {
       const storageStarted = monotonicNow();
@@ -497,6 +510,17 @@ export function createTiandituLoader(options: LoaderOptions = {}) {
     }
     queue.length = 0;
     cooldownUntil = 0;
+  };
+
+  const load = async (rawUrl: string, signal: AbortSignal): Promise<ArrayBuffer> => {
+    const parsed = parseTiandituTileUrl(rawUrl);
+    if (!parsed) throw new TiandituLoadError('invalid-url', 0, false);
+    return fetchWithParentFallback({
+      z: parsed.z, x: parsed.x, y: parsed.y, minZoom: 0, signal,
+      tileKey: (z, x, y) => parseTiandituTileUrl(tileAt(parsed, z, x, y))?.cacheKeyInput ?? `${parsed.layer}/${z}/${x}/${y}`,
+      fetchTile: (z, x, y, childSignal) => loadOne(tileAt(parsed, z, x, y), childSignal),
+      cropTile: options.cropTile ?? cropRasterTile,
+    });
   };
 
   return { load, snapshot, dispose };
@@ -548,10 +572,24 @@ function parseTiandituTileUrl(rawUrl: string): ParsedTile | undefined {
     normalized.protocol = 'https:';
     normalized.hostname = 't0.tianditu.gov.cn';
     normalized.searchParams.sort();
-    return { url, cacheKeyInput: normalized.toString() };
+    return { url, cacheKeyInput: normalized.toString(), layer, z, x, y };
   } catch {
     return;
   }
+}
+
+function tileAt(parsed: ParsedTile, z: number, x: number, y: number): string {
+  const url = new URL(parsed.url.toString());
+  const setParameter = (name: string, value: number) => {
+    const key = [...url.searchParams.keys()].find(item => item.toUpperCase() === name.toUpperCase()) ?? name;
+    url.searchParams.set(key, String(value));
+  };
+  if (url.pathname === '/DataServer') {
+    setParameter('l', z); setParameter('x', x); setParameter('y', y);
+  } else {
+    setParameter('TILEMATRIX', z); setParameter('TILECOL', x); setParameter('TILEROW', y);
+  }
+  return url.toString();
 }
 
 function parseCoordinate(value: string | undefined): number | undefined {
@@ -774,6 +812,7 @@ function safeMessage(code: string): string {
     case 'cancelled': return '天地图瓦片请求已取消';
     case 'disposed': return '天地图图源已关闭';
     case 'invalid-image': return '天地图返回的瓦片图像无效';
+    case 'no-imagery': return '该级别没有影像，正在使用可用的较低级别';
     case 'oversize': return '天地图瓦片超过大小限制';
     case 'crypto-unavailable': return '瓦片缓存不可用';
     default: return '天地图瓦片暂不可用';

@@ -7,6 +7,17 @@ export const TIANDITU_PROTOCOL = 'shantu-tdt';
 const PREFIX = `${TIANDITU_PROTOCOL}://tile/`;
 let shared: ReturnType<typeof createTiandituLoader> | undefined;
 
+/** Local private preview follows the APK's app-owned tile gateway instead of a browser Referer. */
+function fetchPreviewTile(input: RequestInfo | URL, init?: RequestInit) {
+  const host = globalThis.location?.hostname;
+  if (process.env.NEXT_PUBLIC_SHANTU_APK_PREVIEW === '1' && (host === '127.0.0.1' || host === 'localhost' || host === '[::1]')) {
+    const endpoint = new URL('/api/map-tile', globalThis.location.origin);
+    endpoint.searchParams.set('url', String(input));
+    return globalThis.fetch(endpoint, { ...init, referrerPolicy: 'no-referrer' });
+  }
+  return globalThis.fetch(input, init);
+}
+
 function sharedLoader() {
   if (shared) return shared;
   let cache: { get(key: string): Promise<ArrayBuffer | undefined>; put(key: string, bytes: ArrayBuffer, ttlMs?: number): void; forget(key: string): void } | undefined;
@@ -23,7 +34,7 @@ function sharedLoader() {
       };
     }
   } catch { /* Restricted storage must never prevent online map loading. */ }
-  shared = createTiandituLoader({ cache, fetcher: (input, init) => globalThis.fetch(input, init) });
+  shared = createTiandituLoader({ cache, fetcher: fetchPreviewTile });
   return shared;
 }
 

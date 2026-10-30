@@ -39,6 +39,20 @@ function invoke(request, port, {
   return request(url, host, address, family, port, timeoutMs, 1024, signal);
 }
 
+test('missing tile statuses and provider no-tile headers survive proxy classification', async () => {
+  for (const status of [204, 404, 410, 200]) {
+    await withServer((_req, res) => {
+      res.writeHead(status, { 'Content-Type': 'image/png', ...(status === 200 ? {'X-VE-Tile-Info':'no-tile'} : {}) });
+      res.end(status === 200 ? png : undefined);
+    }, async port => {
+      await assert.rejects(invoke(createPinnedRequester(), port), error => error.noImagery === true);
+    });
+  }
+  await withServer((_req, res) => { res.writeHead(403, {'X-VE-Tile-Info':'no-tile'}); res.end(); }, async port => {
+    await assert.rejects(invoke(createPinnedRequester(), port), error => error.upstreamStatus === 403 && error.noImagery !== true);
+  });
+});
+
 test('pinned HTTP agent reuses an idle connection for the same validated destination', async () => {
   await withServer((_req, res) => {
     res.writeHead(200, { 'Content-Type': 'image/png' });

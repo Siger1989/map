@@ -6,6 +6,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -30,6 +31,42 @@ import java.util.concurrent.atomic.AtomicReference
 @SQLiteMode(SQLiteMode.Mode.NATIVE)
 class BoundedTileNetworkTest {
     private val imageBytes = byteArrayOf(11, 22, 33, 44)
+
+    @Test
+    fun `explicit no coverage is negatively cached while auth denial remains an error`() = runBlocking {
+        val missingCalls = AtomicInteger()
+        val missingUrl = "https://example.test/tiles/18/101/202.png"
+        val missing = BoundedTileNetwork(
+            Files.createTempDirectory("missing-tile-").toFile(), {},
+            TileHttpClient { missingCalls.incrementAndGet(); TileHttpResponse(404, null, null) },
+            isValidImage = { true },
+        )
+        assertNull(missing.fetch(missingUrl))
+        assertTrue(missing.isKnownMissing(missingUrl))
+        assertNull(missing.fetch(missingUrl))
+        assertEquals("recent explicit misses avoid repeated same-tile requests", 1, missingCalls.get())
+        missing.close()
+
+        val deniedUrl = "https://example.test/tiles/18/101/203.png"
+        val denied = BoundedTileNetwork(
+            Files.createTempDirectory("denied-tile-").toFile(), {},
+            TileHttpClient { TileHttpResponse(403, null, null) },
+            isValidImage = { true },
+        )
+        assertNull(denied.fetch(deniedUrl))
+        assertFalse(denied.isKnownMissing(deniedUrl))
+        denied.close()
+
+        val bingUrl = "https://ecn.t3.tiles.virtualearth.net/tiles/a.example.jpeg"
+        val bing = BoundedTileNetwork(
+            Files.createTempDirectory("bing-missing-tile-").toFile(), {},
+            TileHttpClient { TileHttpResponse(200, null, imageBytes, "no-tile") },
+            isValidImage = { true },
+        )
+        assertNull(bing.fetch(bingUrl))
+        assertTrue("Bing no-tile response headers classify a miss even with HTTP 200", bing.isKnownMissing(bingUrl))
+        bing.close()
+    }
 
     @Test
     fun persistentReopenAndStaleRefresh() = runBlocking {

@@ -43,7 +43,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import java.util.concurrent.Future
 
-internal data class TileHttpResponse(val statusCode: Int, val retryAfter: String?, val body: ByteArray?)
+internal data class TileHttpResponse(val statusCode: Int, val retryAfter: String?, val body: ByteArray?, val bingTileInfo: String? = null)
 internal enum class TileCachePolicy { NORMAL, NO_STORE }
 
 /** Per-attempt cancellation hook used to disconnect a live socket when its deadline/last observer ends. */
@@ -128,7 +128,7 @@ private class UrlConnectionTileHttpClient : TileHttpClient {
                 }
                 output.toByteArray()
             } else null
-            TileHttpResponse(code, connection.getHeaderField("Retry-After"), body)
+            TileHttpResponse(code, connection.getHeaderField("Retry-After"), body, connection.getHeaderField("X-VE-Tile-Info"))
         } finally {
             cancellation.clear()
             connection.disconnect()
@@ -200,6 +200,7 @@ internal class BoundedTileNetwork(
     private val uniqueInFlightCount = AtomicInteger()
     private val inFlightLock = Any()
     private val hostCooldownUntilElapsed = ConcurrentHashMap<String, Long>()
+    private val missingTiles = ConcurrentHashMap<String, Long>()
     private val retryAttemptsByGeneration = ConcurrentHashMap<String, AtomicInteger>()
     private val memoryHits = AtomicLong()
     private val diskHits = AtomicLong()
@@ -317,13 +318,15 @@ internal class BoundedTileNetwork(
         @Suppress("UNUSED_VARIABLE") val demandOwner = viewId to generation
         val logicalKey = identity?.cacheKey
         if (NativeOfflineDisplayPolicy.snapshot().enabled) {
-            val selected = NativeOfflineDisplayPolicy.readSelectedCache(url)
+            val selected = NativeOfflineDisplayPolicy.readSelectedCache(url)?.takeIf { acceptCachedTile(url, it, identity) }
             if (selected == null) errors.incrementAndGet() else successes.incrementAndGet()
             return@withContext selected
         }
-        memoryEntry(url, identity)?.takeIf { isFresh(it.savedAtMillis) }?.let { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+        memoryEntry(url, identity)?.takeIf { isFresh(it.savedAtMillis) }?.let {
+            if (acceptCachedTile(url, it.bytes, identity)) { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+        }
         val entry = persistentCache?.read(url, allowStale = true, cacheIdentity = logicalKey)
-        if (entry != null && isValidImageMeasured(entry.bytes)) {
+        if (entry != null && acceptCachedTile(url, entry.bytes, identity) && isValidImageMeasured(entry.bytes)) {
             if (!entry.isFresh) enqueueRefresh(url, renderedFactory, identity, viewId, generation)
             memory.put(cacheFile(url, identity).name, MemoryTile(entry.bytes, entry.savedAtMillis))
             diskHits.incrementAndGet(); successes.incrementAndGet()
@@ -350,16 +353,19 @@ internal class BoundedTileNetwork(
             }
             val offlinePolicy = NativeOfflineDisplayPolicy.snapshot()
             if (offlinePolicy.enabled && !bulkDownload) {
-                val cached = NativeOfflineDisplayPolicy.readSelectedCache(url)
+                val cached = NativeOfflineDisplayPolicy.readSelectedCache(url)?.takeIf { acceptCachedTile(url, it, identity) }
                 if (cached == null) {
                     errors.incrementAndGet()
                     report("当前缓存包缺少此瓦片；离线模式不会联网补取")
                 } else successes.incrementAndGet()
                 return@withContext cached
             }
-            if (!forceNetwork && cachePolicy == TileCachePolicy.NORMAL) memoryEntry(url, identity)?.takeIf { isFresh(it.savedAtMillis) }?.let { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+            if (!forceNetwork && cachePolicy == TileCachePolicy.NORMAL) memoryEntry(url, identity)?.takeIf { isFresh(it.savedAtMillis) }?.let {
+                if (acceptCachedTile(url, it.bytes, identity)) { memoryHits.incrementAndGet(); successes.incrementAndGet(); return@withContext it.bytes }
+            }
+            if (forceNetwork) missingTiles.remove(url) else if (knownMissing(url)) return@withContext null
             if (!forceNetwork && cachePolicy == TileCachePolicy.NORMAL) persistentCache?.read(url, allowStale = true, cacheIdentity = identity?.cacheKey)?.let { entry ->
-                if ((entry.isFresh || !bulkDownload) && isValidImageMeasured(entry.bytes)) {
+                if ((entry.isFresh || !bulkDownload) && acceptCachedTile(url, entry.bytes, identity) && isValidImageMeasured(entry.bytes)) {
                     diskHits.incrementAndGet()
                     memory.put(cacheFile(url, identity).name, MemoryTile(entry.bytes, entry.savedAtMillis))
                     if (!entry.isFresh) enqueueRefresh(url, renderedFactory, identity, viewId, generation)
@@ -452,6 +458,7 @@ internal class BoundedTileNetwork(
         synchronized(lifecycleLock) {
             closed = true
             memory.evictAll()
+            missingTiles.clear()
             archive = null
             legacyReader = null
         }
@@ -668,6 +675,10 @@ internal class BoundedTileNetwork(
                     if (networkPermit == null) return null
                     continue
                 }
+                if (NativeMissingTileFallback.isExplicitMissing(response.statusCode, response.bingTileInfo)) {
+                    rememberMissing(url)
+                    return null
+                }
                 if (response.statusCode !in 200..299) {
                     report("天地图瓦片加载失败（HTTP ${response.statusCode}）；可点重试")
                     if (response.statusCode !in RETRYABLE_HTTP_STATUS || retryBudget.get() >= MAX_ATTEMPTS) {
@@ -690,6 +701,7 @@ internal class BoundedTileNetwork(
                     if (networkPermit == null) return null
                     continue
                 }
+                if (!acceptCachedTile(url, bytes, identity)) return null
                 if (!isValidImageMeasured(bytes)) {
                     report("天地图瓦片图像无效，未写入缓存；可点重试")
                     if (retryBudget.get() >= MAX_ATTEMPTS) return null
@@ -887,7 +899,7 @@ internal class BoundedTileNetwork(
                 val diskAge = System.currentTimeMillis() - file.lastModified()
                 if (diskAge !in 0L..CACHE_TTL_MS) null
                 else runCatching { AtomicFile(file).openRead().use { it.readBytes() } }.getOrNull()
-                    ?.takeIf { it.size <= MAX_TILE_BYTES && isValidImageMeasured(it) }
+                    ?.takeIf { it.size <= MAX_TILE_BYTES && acceptCachedTile(url, it, identity) && isValidImageMeasured(it) }
             }
         }
         if (bytes == null && identity != null) {
@@ -899,7 +911,7 @@ internal class BoundedTileNetwork(
                     val age = System.currentTimeMillis() - legacyFile.lastModified()
                     if (age !in 0L..CACHE_TTL_MS) null
                     else runCatching { AtomicFile(legacyFile).openRead().use { it.readBytes() } }.getOrNull()
-                        ?.takeIf { it.size <= MAX_TILE_BYTES && isValidImageMeasured(it) }
+                        ?.takeIf { it.size <= MAX_TILE_BYTES && acceptCachedTile(url, it, identity) && isValidImageMeasured(it) }
                 }
             }
         }
@@ -909,8 +921,8 @@ internal class BoundedTileNetwork(
             return bytes
         }
         // Keep the existing URL-based selected-package/archive reader path for persisted offline data.
-        legacyReader?.invoke(url)?.takeIf { isValidImageMeasured(it) }?.let { diskHits.incrementAndGet(); return it }
-        archive?.read(url)?.takeIf { isValidImageMeasured(it) }?.let { diskHits.incrementAndGet(); return it }
+        legacyReader?.invoke(url)?.takeIf { acceptCachedTile(url, it, identity) && isValidImageMeasured(it) }?.let { diskHits.incrementAndGet(); return it }
+        archive?.read(url)?.takeIf { acceptCachedTile(url, it, identity) && isValidImageMeasured(it) }?.let { diskHits.incrementAndGet(); return it }
         return null
     }
 
@@ -926,6 +938,36 @@ internal class BoundedTileNetwork(
         return try { isValidImage(bytes) }
         catch (_: Throwable) { false }
         finally { decodeMs.addAndGet(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started).coerceAtLeast(0L)) }
+    }
+
+    /** True only for a recent explicit no-coverage response or a byte-exact known placeholder. */
+    internal fun isKnownMissing(url: String): Boolean = knownMissing(url)
+
+    private fun acceptCachedTile(url: String, bytes: ByteArray, identity: TileRequestIdentity? = null): Boolean {
+        if (!NativeMissingTileFallback.isKnownPlaceholder(bytes)) return true
+        rememberMissing(url)
+        memory.remove(cacheFile(url, identity).name)
+        return false
+    }
+
+    private fun rememberMissing(url: String) {
+        if (closed) return
+        synchronized(missingTiles) {
+            val now = elapsedRealtimeMillis()
+            if ((missingTiles[url] ?: 0L) > now) return
+            if (missingTiles.size >= NativeMissingTileFallback.MAX_NEGATIVE_CACHE_ENTRIES && !missingTiles.containsKey(url)) {
+                val expiredOrOldest = missingTiles.entries.minByOrNull { it.value }?.key
+                if (expiredOrOldest != null) missingTiles.remove(expiredOrOldest)
+            }
+            missingTiles[url] = now + NativeMissingTileFallback.MAX_NEGATIVE_CACHE_MILLIS
+        }
+    }
+
+    private fun knownMissing(url: String): Boolean {
+        val until = missingTiles[url] ?: return false
+        if (elapsedRealtimeMillis() < until) return true
+        missingTiles.remove(url, until)
+        return false
     }
 
     private fun writeCacheAtomically(file: File, bytes: ByteArray) {

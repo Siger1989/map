@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import earth.worldwind.geom.AltitudeMode
 import earth.worldwind.geom.Angle.Companion.degrees
+import earth.worldwind.geom.Offset
+import earth.worldwind.geom.OffsetMode.FRACTION
 import earth.worldwind.geom.Position
 import earth.worldwind.render.Color
 import earth.worldwind.render.Renderable
@@ -116,12 +118,8 @@ internal object NativeModelRenderer {
             val ground = if (marker.has("groundElevation") && !marker.isNull("groundElevation")) marker.optDouble("groundElevation", Double.NaN) else null
             val centerAltitude = if (marker.has("centerAltitude") && !marker.isNull("centerAltitude")) marker.optDouble("centerAltitude", Double.NaN) else null
             if ((ground != null && !ground.isFinite()) || (centerAltitude != null && !centerAltitude.isFinite())) return result(id, NativeMarkerStatus.INVALID, "模型高程无效")
-            val center = when {
-                centerAltitude != null -> centerAltitude
-                ground == null -> return result(id, NativeMarkerStatus.NEEDS_ELEVATION, "缺少真实地面高程或绝对中心高程，模型未绘制")
-                placement == "surface" -> ground + offset - minZ
-                else -> ground - offset - maxZ
-            }
+            val center = modelCenterAltitude(ground, centerAltitude, placement, offset, minZ, maxZ)
+                ?: return result(id, NativeMarkerStatus.NEEDS_ELEVATION, "缺少真实地面高程或绝对中心高程，模型未绘制")
             val effectiveOpacity = if (placement == "underground") min(opacity, 0.45) else opacity
             val color = colorWithOpacity(colorValue, effectiveOpacity)
             val attrs = ShapeAttributes().apply {
@@ -220,12 +218,7 @@ internal object NativeModelRenderer {
         val ground = if (marker.has("groundElevation") && !marker.isNull("groundElevation")) marker.optDouble("groundElevation", Double.NaN) else null
         val absoluteCenter = if (marker.has("centerAltitude") && !marker.isNull("centerAltitude")) marker.optDouble("centerAltitude", Double.NaN) else null
         if ((ground != null && !ground.isFinite()) || (absoluteCenter != null && !absoluteCenter.isFinite())) return null
-        val center = when {
-            absoluteCenter != null -> absoluteCenter
-            ground == null -> return null
-            placement == "surface" -> ground + offset - minZ
-            else -> ground - offset - maxZ
-        }
+        val center = modelCenterAltitude(ground, absoluteCenter, placement, offset, minZ, maxZ) ?: return null
         val vertices = localVertices.map { raw ->
             val local = rotate(raw, heading, pitch, roll)
             val point = localPosition(lat, lon, center + local.z, local.x, local.y)
@@ -241,6 +234,10 @@ internal object NativeModelRenderer {
         val placemark = Placemark(Position(lat.degrees, wrapLongitude(lon).degrees, 0.0), PlacemarkAttributes().apply {
             imageSource = if (mode == "dot") markerDotImage(color) else markerIconImage(icon, color)
             imageScale = if (mode == "dot") 1.0 else 24.0 / 64.0
+            // WorldWind defaults to center anchoring. Our 64 px pin glyph reaches y=62,
+            // so anchor that artwork tip (2 px above the image bottom) to the ground.
+            // The zoomed-out dot is symmetric and stays center-anchored.
+            imageOffset = if (mode == "dot") Offset.center() else Offset(FRACTION, 0.5, FRACTION, 2.0 / 64.0)
             imageColor = Color(1f,1f,1f,(AndroidColor.alpha(color)/255f))
             isDrawLeader = true
             // Ordinary pins must be occluded by terrain and must not remain pickable through hills.
@@ -260,6 +257,27 @@ internal object NativeModelRenderer {
             }
         }
         return NativeMarkerRenderResult(id, NativeMarkerStatus.RENDERED, renderables)
+    }
+
+    /**
+     * Computes the model center from raw, unexaggerated meter values. The WorldWind 2.1.1
+     * Globe applies verticalExaggeration to ABSOLUTE altitude during geodetic conversion,
+     * as it does for terrain. Keep DEM elevation, centerAltitude and offset in raw meters
+     * here; callers must not pre-scale them. An explicit centerAltitude remains authoritative.
+     */
+    internal fun modelCenterAltitude(
+        groundElevation: Double?,
+        centerAltitude: Double?,
+        placement: String,
+        offset: Double,
+        minZ: Double,
+        maxZ: Double,
+    ): Double? = when {
+        centerAltitude != null -> centerAltitude
+        groundElevation == null -> null
+        placement == "surface" -> groundElevation + offset - minZ
+        placement == "underground" -> groundElevation - offset - maxZ
+        else -> null
     }
 
     private fun terrainCutMesh(

@@ -7,6 +7,7 @@ import { moveSegmentsNode } from '../../tracks/editing.ts';
 import { createNavigationCueData } from '../../guidance/navigationCueGeometry.ts';
 import type { TrackOverlay } from '../../tracks/TrackLayer';
 import { createNativeRouteGeometry } from './routes.ts';
+import { trackOutlineFeature } from './overlayStyle.ts';
 
 type Properties = Record<string, unknown>;
 export type NativeSceneGeometry = { routes: FeatureCollection; tracks: FeatureCollection; guidance: FeatureCollection };
@@ -21,7 +22,12 @@ export function createNativeSceneGeometry(props: Pick<TerrainMapProps, 'trackOve
     for (let item of items) {
       if (state.preview?.node.trackId === item.track.id) item = { ...item, track: { ...item.track,
         segments: moveSegmentsNode(item.track.segments, state.preview.node.coordinate, state.preview.coordinate) } };
-      tracks.push(...trackLineFeatures(item, state).map(f => ({ ...f, properties: { ...f.properties,
+      const lines = trackLineFeatures(item, state);
+      tracks.push(...lines.map(f => {
+        const halo = trackOutlineFeature(f);
+        return { ...halo, properties: { ...halo.properties, nativePick: { kind: 'track', trackId: item.track.id } } };
+      }));
+      tracks.push(...lines.map(f => ({ ...f, properties: { ...f.properties,
         nativePick: { kind: 'track', trackId: item.track.id }, role: 'track' } })));
       if (trackRendersNodes(item, state)) {
         const positions = uniqueCoordinates(item.track.nodes?.length ? item.track.nodes.map(point =>

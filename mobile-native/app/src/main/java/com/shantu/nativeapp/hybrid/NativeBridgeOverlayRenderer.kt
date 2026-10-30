@@ -27,6 +27,7 @@ class NativeBridgeOverlayRenderer(
     private val window: WorldWindow,
     private val suppressShareTrackPaths: Boolean = false,
 ) : AutoCloseable {
+    @Volatile private var cssScale = window.context.resources.displayMetrics.density.toDouble()
     val layer = RenderableLayer("React track and navigation geometry")
     private val groups = linkedMapOf<String, List<Renderable>>()
     private val fingerprints = linkedMapOf<String, String>()
@@ -46,7 +47,7 @@ class NativeBridgeOverlayRenderer(
                 val feature = features.optJSONObject(index) ?: continue
                 val id = "$group:$index"
                 next += id
-                val fingerprint = feature.toString()
+                val fingerprint = "${feature}|cssScale=$cssScale"
                 if (fingerprints[id] == fingerprint) continue
                 groups.remove(id)?.forEach(layer::removeRenderable)
                 val role = feature.optJSONObject("properties")?.optString("role")
@@ -67,12 +68,18 @@ class NativeBridgeOverlayRenderer(
         groups.forEach { (id, renderables) -> renderables.forEach { it.isEnabled = zoom >= (minZooms[id] ?: 0.0) } }
     }
 
+    /** Physical native pixels per React CSS pixel; call before sync after viewport scaling changes. */
+    fun setCssScale(scale: Double) {
+        if (!scale.isFinite() || scale <= 0.0 || kotlin.math.abs(scale - cssScale) < 0.0001) return
+        cssScale = scale.coerceIn(0.1, 10.0)
+    }
+
     private fun build(feature: JSONObject): List<Renderable> {
         val geometry = feature.optJSONObject("geometry") ?: return emptyList()
         val properties = feature.optJSONObject("properties") ?: JSONObject()
         val coordinates = geometry.optJSONArray("coordinates") ?: return emptyList()
         val role = properties.optString("role")
-        val color = parseColor(properties.optString("color", "#d0f76b"), properties.optDouble("opacity", 1.0))
+        val color = NativeOverlayStyle.color(properties.optString("color", "#d0f76b"), properties.optDouble("opacity", 1.0))
         val delegate = properties.optJSONObject("nativePick")?.let { "shantu-bridge:$it" }
         val label = properties.optString("label").takeIf { it.isNotBlank() && it != "null" }
         val result = mutableListOf<Renderable>()
@@ -84,9 +91,9 @@ class NativeBridgeOverlayRenderer(
                     imageSource = routePointImage(properties.optString("color", "#e34f4f"))
                     imageColor = Color(1f, 1f, 1f, 1f)
                     labelAttributes.font = Font(12f)
-                    labelAttributes.textColor = parseColor(properties.optString("labelColor", "#ffffff"), 1.0)
-                    labelAttributes.outlineColor = parseColor(properties.optString("labelHaloColor", "#14392e"), 1.0)
-                    labelAttributes.outlineWidth = 2f
+                    labelAttributes.textColor = NativeOverlayStyle.color(properties.optString("labelColor", "#ffffff"), 1.0)
+                    labelAttributes.outlineColor = NativeOverlayStyle.color(properties.optString("labelHaloColor", "#14392e"), 1.0)
+                    labelAttributes.outlineWidth = NativeOverlayStyle.widthInPixels(2.0, cssScale)
                     labelAttributes.textOffset = Offset.topCenter()
                 } else {
                     if (properties.optBoolean("arrow")) imageSource = arrow
@@ -105,9 +112,10 @@ class NativeBridgeOverlayRenderer(
             if (positions.size < 2) return
             if (role != "note") result += Path(positions, ShapeAttributes().apply {
                 isDrawInterior = false; isDrawOutline = true; isDepthTest = true; outlineColor = color
-                outlineWidth = properties.optDouble("width", 2.0).coerceIn(0.1, 40.0).toFloat()
-                if(properties.optJSONArray("dash")!=null) outlineImageSource = if (role == "routeAccess")
-                    ImageSource.fromLineStipple(2, 0x3333.toShort()) else ImageSource.fromLineStipple(1,0x03ff.toShort())
+                outlineWidth = NativeOverlayStyle.widthInPixels(properties.optDouble("width", 2.0), cssScale)
+                properties.optJSONArray("dash")?.let { NativeOverlayStyle.dashStyle(it, properties.optDouble("width", 2.0), cssScale) }?.let { dash ->
+                    outlineImageSource = ImageSource.fromLineStipple(dash.factor, dash.pattern)
+                }
             }).apply { altitudeMode = AltitudeMode.CLAMP_TO_GROUND; pickDelegate = delegate; isFollowTerrain = true }
             if (label != null) point(values.getJSONArray(values.length() / 2))
         }
@@ -121,8 +129,8 @@ class NativeBridgeOverlayRenderer(
                 val positions = (0 until ring.length()).mapNotNull { position(ring.optJSONArray(it) ?: return@mapNotNull null) }
                 if (positions.size >= 3) result += Polygon(positions, ShapeAttributes().apply {
                     isDrawInterior = true; isDrawOutline = true; isDepthTest = true; outlineColor = color
-                    interiorColor = parseColor(properties.optString("color", "#e3bd54"), properties.optDouble("fillOpacity", 0.12))
-                    outlineWidth = properties.optDouble("width", 1.5).toFloat()
+                    interiorColor = NativeOverlayStyle.color(properties.optString("color", "#e3bd54"), properties.optDouble("fillOpacity", 0.12))
+                    outlineWidth = NativeOverlayStyle.widthInPixels(properties.optDouble("width", 1.5), cssScale)
                 }).apply {
                     for (ringIndex in 1 until coordinates.length()) {
                         val hole=coordinates.optJSONArray(ringIndex) ?: continue
@@ -153,10 +161,5 @@ class NativeBridgeOverlayRenderer(
         val lon = value.optDouble(0, Double.NaN); val lat = value.optDouble(1, Double.NaN)
         if (!lon.isFinite() || !lat.isFinite() || lat !in -90.0..90.0) return null
         return Position(lat.degrees, lon.degrees, 0.0)
-    }
-    private fun parseColor(text: String, opacity: Double): Color {
-        val value = runCatching { android.graphics.Color.parseColor(text) }.getOrDefault(android.graphics.Color.rgb(208, 247, 107))
-        return Color(android.graphics.Color.red(value) / 255f, android.graphics.Color.green(value) / 255f,
-            android.graphics.Color.blue(value) / 255f, (android.graphics.Color.alpha(value) / 255f * opacity.coerceIn(0.0, 1.0)).toFloat())
     }
 }

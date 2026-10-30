@@ -15,6 +15,61 @@ const bundled = await build({
 });
 const modules = await Promise.all(bundled.outputFiles.map(file => import(`data:text/javascript;base64,${Buffer.from(file.contents).toString('base64')}`)));
 const { RasterCoordinates } = modules.find(module => module.RasterCoordinates);
+test('WGS84 rasters use source-local parent fallback and preserve 512px output without a warp worker', async () => {
+  const originalBitmap = globalThis.createImageBitmap, originalCanvas = globalThis.OffscreenCanvas;
+  const draws = [], requested = [];
+  const png = Uint8Array.of(137,80,78,71,13,10,26,10).buffer;
+  globalThis.createImageBitmap = async () => ({width:512,height:512,close(){}});
+  globalThis.OffscreenCanvas = class {
+    constructor(width,height) { this.width=width;this.height=height; }
+    getContext() { return {drawImage: (...args) => draws.push(args.slice(1))}; }
+    async convertToBlob() { return new Blob([png]); }
+  };
+  const source={id:'source',type:'raster',tileSize:512,minzoom:9,maxzoom:18,scheme:'xyz',tiles:['https://tiles.example.test/{z}/{x}/{y}.png'],setTiles(tiles){this.tiles=tiles;}};
+  const coordinates=new RasterCoordinates({getSource:()=>source},async()=>({data:png}));
+  coordinates.fetch=async url=>{
+    requested.push(url);
+    const zoom=Number(new URL(url).pathname.split('/')[1]);
+    return zoom>10 ? new Response(null,{status:404}) : new Response(png);
+  };
+  try {
+    coordinates.sync(['source'],'wgs84');
+    assert.match(source.tiles[0],/^shantu-crs-/);
+    const url=source.tiles[0].replace('{z}','12').replace('{x}','4001').replace('{y}','2003');
+    const result=await coordinates.protocol({url},new AbortController());
+    assert.equal(result.data.byteLength,png.byteLength);
+    assert.deepEqual(requested.map(url=>new URL(url).pathname),['/12/4001/2003.png','/11/2000/1001.png','/10/1000/500.png']);
+    assert.deepEqual(draws,[[128,384,128,128,0,0,512,512]]);
+  } finally {coordinates.dispose();globalThis.createImageBitmap=originalBitmap;globalThis.OffscreenCanvas=originalCanvas;}
+});
+
+test('WGS84 authentication errors retain their failure and never request lower levels', async () => {
+  const source={id:'source',type:'raster',minzoom:0,scheme:'xyz',tiles:['https://denied.example.test/{z}/{x}/{y}.png'],setTiles(tiles){this.tiles=tiles;}};
+  const coordinates=new RasterCoordinates({getSource:()=>source},async()=>({data:new ArrayBuffer(1)}));
+  let calls=0;
+  coordinates.fetch=async()=>{calls++;return new Response(null,{status:403});};
+  try {
+    coordinates.sync(['source'],'wgs84');
+    await assert.rejects(coordinates.protocol({url:source.tiles[0].replace('{z}','12').replace('{x}','1').replace('{y}','1')},new AbortController()),/403/);
+    assert.equal(calls,1);
+  } finally {coordinates.dispose();}
+});
+
+test('initial source metadata cannot restore raw URLs over the coverage fallback protocol', () => {
+  const original=['https://late-metadata.example.test/{z}/{x}/{y}.png'];
+  const source={id:'source',type:'raster',minzoom:0,scheme:'xyz',tiles:[...original],setTiles(tiles){this.tiles=tiles;}};
+  let listener;
+  const coordinates=new RasterCoordinates({getSource:()=>source,on:(_event,callback)=>{listener=callback;},off:()=>{}},async()=>({data:new ArrayBuffer(1)}));
+  try {
+    coordinates.sync(['source'],'wgs84');
+    const wrapped=source.tiles[0];
+    source.tiles=[...original];
+    listener();
+    assert.equal(source.tiles[0],wrapped);
+    listener();
+    assert.equal(source.tiles[0],wrapped);
+  } finally {coordinates.dispose();}
+});
 const { SharedTileFetch } = modules.find(module => module.SharedTileFetch);
 const { warpPlan } = modules.find(module => module.warpPlan);
 

@@ -18,12 +18,28 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class NativeModelRendererTest {
+    @Test fun `fresh terrain placement aligns visible mesh and section geometry without changing saved ground`() {
+        val saved=annotation("box", "\"groundElevation\":2400")
+        val prepared=NativeModelTerrainInput.prepare(saved,true,2320.25)
+        val visible=NativeModelRenderer.render(prepared).renderables.first() as TriangleMesh
+        val section=NativeModelRenderer.sectionMesh(prepared)!!
+        assertEquals(2320.25,visible.positions.minOf { it.altitude },1e-6)
+        assertEquals(2320.25,section.vertices.minOf { it.altitudeMeters },1e-6)
+        assertEquals(2400.0,saved.getDouble("groundElevation"),0.0)
+        val flat=NativeModelRenderer.render(NativeModelTerrainInput.prepare(saved,false,null)).renderables.first() as TriangleMesh
+        assertEquals(0.0,flat.positions.minOf { it.altitude },1e-6)
+    }
     @Test fun `pin icons use their marker glyph and drill borehole draws a depth trace`() {
         val pin = NativeModelRenderer.render(annotation("pin", "\"icon\":\"flag\""))
         assertEquals(NativeMarkerStatus.RENDERED, pin.status)
         val mark = pin.renderables.single() as Placemark
         assertNotNull(mark.attributes.imageSource)
         assertEquals(24.0 / 64.0, mark.attributes.imageScale, 0.0)
+        assertEquals(0.5, mark.attributes.imageOffset.x, 0.0)
+        assertEquals(2.0 / 64.0, mark.attributes.imageOffset.y, 0.0)
+        assertEquals(earth.worldwind.geom.OffsetMode.FRACTION, mark.attributes.imageOffset.yUnits)
+        val dot = NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":7")).renderables.single() as Placemark
+        assertEquals(0.5, dot.attributes.imageOffset.y, 0.0)
         val borehole = NativeModelRenderer.render(annotation("pin", """"icon":"drill","borehole":{"depth":80}"""))
         assertEquals(NativeMarkerStatus.RENDERED, borehole.status)
         assertEquals(2, borehole.renderables.size)
@@ -76,6 +92,14 @@ class NativeModelRendererTest {
         assertEquals(112.0, mesh.positions.maxOf { it.altitude }, 1e-6)
         assertEquals(12, result.renderables.filterIsInstance<Path>().size)
         assertEquals(1, result.renderables.filterIsInstance<Placemark>().size)
+    }
+
+    @Test fun `model center preserves surface underground and explicit absolute placement in raw meters`() {
+        assertEquals(112.0, NativeModelRenderer.modelCenterAltitude(100.0, null, "surface", 2.0, -10.0, 10.0)!!, 0.0)
+        assertEquals(88.0, NativeModelRenderer.modelCenterAltitude(100.0, null, "underground", 2.0, -10.0, 10.0)!!, 0.0)
+        assertEquals(150.0, NativeModelRenderer.modelCenterAltitude(100.0, 150.0, "surface", 2.0, -10.0, 10.0)!!, 0.0)
+        assertEquals(null, NativeModelRenderer.modelCenterAltitude(null, null, "surface", 0.0, -5.0, 5.0))
+        assertEquals(null, NativeModelRenderer.modelCenterAltitude(100.0, null, "unknown", 0.0, -5.0, 5.0))
     }
 
     @Test

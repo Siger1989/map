@@ -96,6 +96,7 @@ class NativeReactMapHost(
 
     private data class FrameMetadata(
         val camera: NativeCameraSnapshot,
+        val cameraSyncToken: Long?,
         val eye: NativeBridgeEyeState,
         val cssX: Double,
         val cssY: Double,
@@ -126,6 +127,7 @@ class NativeReactMapHost(
         @Volatile var renderExaggeration: Double = 1.0,
         var renderInteraction: CachedInteractionState = CachedInteractionState(),
         var cameraRevision: Long = 0L,
+        val cameraOrigin: NativeBridgeCameraOrigin = NativeBridgeCameraOrigin(),
         val actualFrameCount: AtomicLong = AtomicLong(),
         val lastActualFrameAt: AtomicLong = AtomicLong(),
         @Volatile var lastMatrixAt: Long = 0L,
@@ -537,6 +539,10 @@ class NativeReactMapHost(
         val preservedCamera = if (sizeChanged && entry.pendingCamera == null &&
             oldRect!!.optDouble("width") > 0 && oldRect.optDouble("height") > 0) cameraJson(entry) else null
         entry.viewport = JSONObject(viewport.toString()).put("cssScale", cssScale)
+        entry.overlayRenderer?.let { overlays ->
+            overlays.setCssScale(cssScale)
+            entry.renderState.optJSONObject("renderGeometry")?.let(overlays::sync)
+        }
         val visible = width > 0 && height > 0
         val params = (entry.container.layoutParams as? FrameLayout.LayoutParams)
             ?: FrameLayout.LayoutParams(1, 1)
@@ -938,7 +944,7 @@ class NativeReactMapHost(
             }
             entry.sectionWasEnabled = enabled
         }
-        val signature = settings.toString() + "|" + (state.optJSONArray("annotations")?.toString() ?: "[]")
+        val signature = settings.toString() + "|" + (state.optJSONArray("annotations")?.toString() ?: "[]") + "|" + entry.controller.modelPlacementRevision()
         if (signature == entry.sectionInput) return
         entry.sectionInput = signature
         if (!settings.optBoolean("enabled")) {
@@ -953,7 +959,7 @@ class NativeReactMapHost(
         val models = JSONArray()
         for (i in 0 until annotations.length()) {
             val model = annotations.optJSONObject(i) ?: continue
-            if (model.optBoolean("visible", true) && model.optString("kind") != "pin") models.put(JSONObject(model.toString()))
+            if (model.optBoolean("visible", true) && model.optString("kind") != "pin") models.put(entry.controller.modelRenderInput(model))
         }
         if (settings.has("survey")) {
             val survey = settings.optJSONObject("survey") ?: settings
@@ -1017,6 +1023,7 @@ class NativeReactMapHost(
 
     private fun runCamera(entry: MapEntry, command: String, payload: JSONObject): JSONObject {
         val controller = entry.controller
+        entry.cameraOrigin.command(command, payload)
         if (command in setOf("zoom", "north", "reset", "viewGesture", "fitRoute", "fitCollection", "previewRoute", "previewNavigation",
                 "focusPoint", "focusCenter", "focusPosition", "followNavigation", "previewTrackNode", "focusRouteGap", "focusRouteIssue")) {
             cancelCameraAnimation(entry)
@@ -1166,7 +1173,7 @@ class NativeReactMapHost(
     private fun cameraJson(entry: MapEntry): JSONObject {
         val camera = entry.controller.cameraSnapshot()
         val height = entry.viewport?.optJSONObject("cssRect")?.optDouble("height", 0.0) ?: 0.0
-        return cameraJson(camera, height)
+        return NativeBridgeCameraOrigin.annotate(cameraJson(camera, height), entry.cameraOrigin.token)
     }
 
     private fun cameraJson(camera: NativeCameraSnapshot, height: Double): JSONObject {
@@ -1451,6 +1458,7 @@ class NativeReactMapHost(
                     entry.lastViewportMismatchSignature = null
                     val metadata = FrameMetadata(
                         camera = entry.controller.cameraSnapshot(),
+                        cameraSyncToken = entry.cameraOrigin.token,
                         eye = NativeBridgeEyeState.from(entry.controller.worldWindowForBridge().engine.camera),
                         cssX = currentRect.optDouble("x", 0.0), cssY = currentRect.optDouble("y", 0.0),
                         cssWidth = currentRect.optDouble("width", 0.0), cssHeight = currentRect.optDouble("height", 0.0),
@@ -1551,7 +1559,8 @@ class NativeReactMapHost(
                     }
                 }
             }
-            val camera = cameraJson(metadata.camera, metadata.nativeHeight / metadata.cssScale)
+            val camera = NativeBridgeCameraOrigin.annotate(
+                cameraJson(metadata.camera, metadata.nativeHeight / metadata.cssScale), metadata.cameraSyncToken)
             entry.controller.setBridgeMarkerPresentation(camera.optDouble("zoom", Double.NaN),
                 entry.renderState.optString("annotationSelected").takeIf { id -> id.isNotBlank() && id != "null" })
             val matrices = NativeBridgeProjection.standardEcefMatrices(matrixCopy) ?: return
@@ -1828,13 +1837,31 @@ class NativeReactMapHost(
         }
     }
 
+    /** Try the exact visible point first; only an empty GPU hit gets the 44 CSS px fallback. */
+    private fun pickTouchObjectIds(entry: MapEntry, x: Float, y: Float, finished: (List<String>) -> Unit) {
+        entry.controller.pickObjectIds(android.graphics.RectF(x, y, x, y)) { exactIds ->
+            if (!isCurrent(entry)) return@pickObjectIds
+            if (exactIds.any { !it.startsWith("geology:") }) {
+                finished(NativePickTouchTarget.normalizeMarkerIds(exactIds,entry.annotationIds))
+                return@pickObjectIds
+            }
+            val bounds = NativePickTouchTarget.centered(x, y, cssScale(entry))
+            entry.controller.pickObjectIds(android.graphics.RectF(bounds.left, bounds.top, bounds.right, bounds.bottom)) { nearbyIds ->
+                if (isCurrent(entry)) finished(NativePickTouchTarget.normalizeMarkerIds(nearbyIds + exactIds,entry.annotationIds))
+            }
+        }
+    }
+
     private fun installTouchBridge(entry: MapEntry) {
         entry.controller.view.setOnTouchListener { _, event ->
             if (!isCurrent(entry)) return@setOnTouchListener false
             markFrameDirty(entry)
             // Stop the old camera target before forwarding the real DOWN to WorldWind.
             // Follow intent and the current heading/pitch are owned by React and stay intact.
-            if (event.actionMasked == MotionEvent.ACTION_DOWN) cancelCameraAnimation(entry)
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                entry.cameraOrigin.beginUserGesture()
+                cancelCameraAnimation(entry)
+            }
             val scale = cssScale(entry)
             val x = event.x / scale; val y = event.y / scale
             val now = android.os.SystemClock.elapsedRealtime()
@@ -1876,7 +1903,7 @@ class NativeReactMapHost(
                     entry.capturedGestureId = if (captureByMode) gestureId else null
                     if (!captureByMode) {
                         val hitCoordinate = entry.controller.unprojectCoordinate(event.x, event.y)?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL
-                        entry.controller.pickObjectIds(android.graphics.RectF(event.x, event.y, event.x, event.y)) { ids ->
+                        pickTouchObjectIds(entry, event.x, event.y) { ids ->
                             if (isCurrent(entry) && entry.gestureSequence == gestureId) emitEvent(entry.id, "hitTest", JSONObject().put("gestureId", gestureId).put("pointerId", pointerId).put("downTime", downTime).put("eventTime", actionTime).put("point", JSONObject().put("x", x).put("y", y)).put("coordinate", hitCoordinate).put("ids", JSONArray(ids)))
                         }
                     }
@@ -1893,7 +1920,7 @@ class NativeReactMapHost(
                         } else {
                                 val tapGesture = entry.gestureSequence
                                 val tapTime = event.eventTime
-                                entry.controller.pickObjectIds(android.graphics.RectF(event.x, event.y, event.x, event.y)) { ids ->
+                                pickTouchObjectIds(entry, event.x, event.y) { ids ->
                                     if (isCurrent(entry) && entry.gestureSequence in tapGesture..(tapGesture + 1)) {
                                         emitEvent(entry.id, "tap", JSONObject()
                                             .put("point", JSONObject().put("x", x).put("y", y))

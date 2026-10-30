@@ -2,6 +2,7 @@ import type { MapSource, OvmapTileLayer } from './types';
 import { SOURCE_ID } from './types';
 import { renderOvmapTemplate } from './ovmapTemplates';
 import { fetchMapTile, tileResponseError } from './tileTransport';
+import { cropRasterTile, fetchWithParentFallback, isKnownNoImageryBytes, isNoImageryResponse, NoImageryTileError } from './noImageryTile.ts';
 
 function outputTileSize(layer: OvmapTileLayer) {
   const size = layer.subdivide ? layer.tileSize / 2 : layer.tileSize;
@@ -43,24 +44,40 @@ function validateTile(layer: OvmapTileLayer, z: number, x: number, y: number) {
 export async function renderOvmapLayerTile(layer: OvmapTileLayer, z: number, x: number, y: number, signal: AbortSignal): Promise<ArrayBuffer> {
   validateTile(layer, z, x, y);
   signal.throwIfAborted();
-  const response = await fetchMapTile(tileAddress(layer, z, x, y), signal);
-  if (!response.ok) throw tileResponseError(response);
-  const bytes = await response.arrayBuffer();
-  signal.throwIfAborted();
-  if (!layer.subdivide) return bytes;
-
-  const size = outputTileSize(layer);
-  const bitmap = await createImageBitmap(new Blob([bytes]));
-  try {
-    signal.throwIfAborted();
-    const halfWidth = bitmap.width / 2, halfHeight = bitmap.height / 2;
-    if (!Number.isInteger(halfWidth) || !Number.isInteger(halfHeight) || halfWidth !== size || halfHeight !== size)
-      throw new Error('父级图源瓦片尺寸与声明不一致');
-    const canvas = tileCanvas(size);
-    canvas.context.drawImage(bitmap, (x % 2) * halfWidth, (y % 2) * halfHeight, halfWidth, halfHeight, 0, 0, size, size);
-    signal.throwIfAborted();
-    return (await canvas.blob()).arrayBuffer();
-  } finally { bitmap.close(); }
+  const fetchRaw = async (tileZ:number,tileX:number,tileY:number,childSignal:AbortSignal) => {
+    const response = await fetchMapTile(tileAddress(layer,tileZ,tileX,tileY),childSignal);
+    if (isNoImageryResponse(response)) {
+      try { void response.body?.cancel().catch(() => {}); } catch { /* Ignore absent-tile body cleanup errors. */ }
+      throw new NoImageryTileError();
+    }
+    if (!response.ok) throw tileResponseError(response);
+    const bytes = await response.arrayBuffer();
+    childSignal.throwIfAborted();
+    if (await isKnownNoImageryBytes(bytes)) throw new NoImageryTileError();
+    return bytes;
+  };
+  const fetchLevel = async (tileZ:number,tileX:number,tileY:number,childSignal:AbortSignal) => {
+    const raw = await fetchRaw(tileZ,tileX,tileY,childSignal);
+    if (!layer.subdivide) return raw;
+    const size = outputTileSize(layer);
+    const bitmap = await createImageBitmap(new Blob([raw]));
+    try {
+      childSignal.throwIfAborted();
+      const halfWidth = bitmap.width / 2, halfHeight = bitmap.height / 2;
+      if (!Number.isInteger(halfWidth) || !Number.isInteger(halfHeight) || halfWidth !== size || halfHeight !== size)
+        throw new Error('父级图源瓦片尺寸与声明不一致');
+      const canvas = tileCanvas(size);
+      canvas.context.drawImage(bitmap, (tileX % 2) * halfWidth, (tileY % 2) * halfHeight, halfWidth, halfHeight, 0, 0, size, size);
+      childSignal.throwIfAborted();
+      return (await canvas.blob()).arrayBuffer();
+    } finally { bitmap.close(); }
+  };
+  return fetchWithParentFallback({
+    z,x,y,minZoom:layer.minzoom,signal,
+    tileKey:(tileZ,tileX,tileY)=>tileAddress(layer,tileZ,tileX,tileY),
+    fetchTile:fetchLevel,
+    cropTile:(bytes,childX,childY,scale,childSignal)=>cropRasterTile(bytes,childX,childY,scale,childSignal,outputTileSize(layer)),
+  });
 }
 
 /** Preserve the historical composite helper for offline callers that still request a whole stack. */

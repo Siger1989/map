@@ -6,6 +6,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeRasterDetailPlanTest {
+    @Test fun `tile sector uses angular spans and preserves actual mercator bounds`() {
+        for (tile in listOf(
+            NativeRasterDetailTile(12, 3231, 1681, 0, 0),
+            NativeRasterDetailTile(4, 2, 12, 0, 0),
+            NativeRasterDetailTile(0, 0, 0, 0, 0),
+        )) {
+            val sector = NativeRasterDetailPlan.tileSector(tile)
+            val side = 1 shl tile.z
+            assertEquals(tile.x.toDouble() / side * 360 - 180, sector.minLongitude.inDegrees, 1e-10)
+            assertEquals((tile.x + 1.0) / side * 360 - 180, sector.maxLongitude.inDegrees, 1e-10)
+            assertEquals(NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(), tile.z), sector.maxLatitude.inDegrees, 1e-10)
+            assertEquals(NativeRasterDetailPlan.latitudeAtTile((tile.y + 1).toDouble(), tile.z), sector.minLatitude.inDegrees, 1e-10)
+        }
+    }
     @Test fun `center fallback is bounded to the original 12 by 12 budget`() {
         val patch=NativeRasterDetailPlan.create(104.06,30.67,19)
         assertEquals(12,patch.width)
