@@ -1,0 +1,156 @@
+{
+  "date": "2026-10-30",
+  "productSourceCommit": "dbde9dc8ffe0a2e39a063326ed240b2520aca325",
+  "branch": "codex/tianditu-loading-20261027",
+  "apkPubliclyDistributed": false,
+  "checks": {
+    "apk": "APK/Shantu-0.2.145-test-private.apk",
+    "bytes": 165116064,
+    "sha256": "b642cb3d7e833692fcce7a794264e4795b35dd9a5e092696c13e4b2eae36f4d9",
+    "crc": "PASS",
+    "zipEntries": 2165,
+    "privateConfigurationMatch": true,
+    "privateCredentialPresent": true,
+    "reactNativeCredentialMatch": true,
+    "react145VersionMarker": true,
+    "seedConfigurationMatch": true,
+    "freshReactAssetsMatched": 1925,
+    "native64BitLibraries": 4,
+    "elf16KiB": "PASS",
+    "baseline142Unchanged": true,
+    "baseline144Unchanged": true,
+    "persistentCacheFeatureInDex": true,
+    "privateMapSourceCount": 39,
+    "fabdemTiles": 473,
+    "repairTiles": 23,
+    "version": "0.2.145-test",
+    "versionCode": 152,
+    "originalSignature": true,
+    "debuggable": false,
+    "zipalign16KiB": true,
+    "launcherAliasPreserved": true,
+    "deliveredApk": "APK/Shantu-0.2.145-test-private.apk",
+    "archiveApk": "交付包/山兔-0.2.145-test-2026-10-30/01-Android-APK/Shantu-0.2.145-test-private.apk"
+  },
+  "nativeTests": {
+    "totals": {
+      "tests": 73,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suites": [
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeBridgeFrameCaptureGateTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeBridgeFramePolicyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeBridgeLatestFrameTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeBridgeTouchPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeMapTouchNavigationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.BoundedTileNetworkTest",
+        "tests": 29,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeBridgeEyeStateTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeBridgeFrameWitnessTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeCartographyLayersTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeImageSourceIdentityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeOfflineDisplayPolicyTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativePersistentBrowseCacheTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeRasterLoadTrackerTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeTiandituZoomPolicyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "typescript": "PASS",
+  "privateReactBuild": "PASS",
+  "optimizedApkBuild": "PASS",
+  "realDeviceAcceptance": "UNVERIFIED",
+  "emulatorStartedThisBatch": false,
+  "independentImageryCacheCoverage": "PARTIAL; see release notes",
+  "harmonyNativePackage": "NOT_DELIVERED",
+  "historicalEvidenceNormalization": {
+    "files": 142,
+    "metricsChanged": false,
+    "traceWrappersPreserveOriginalSamples": true,
+    "credentialScan": "PASS"
+  }
+}

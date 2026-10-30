@@ -7,20 +7,20 @@ Uptime: 524884 Realtime: 524884
                 ------   ------   ------   ------   ------   ------   ------   ------
   Native Heap    30454    30432        0        0    31192    64656    15119    41088
   Dalvik Heap    83938    83888        0        0    85088    69680    45120    24560
- Dalvik Other     8069     5496        0        0    11576                           
-        Stack     4572     4572        0        0     4584                           
-       Ashmem      206      164        0        0      536                           
-    Other dev       18        0       16        0      316                           
-     .so mmap    15133     1212    10640        0    40900                           
-    .jar mmap    11797        0     5544        0    26720                           
-    .apk mmap    44140     5636    15636        0    67932                           
-    .dex mmap    35066    34520       68        0    35692                           
-    .oat mmap     1108        0      524        0     7040                           
-    .art mmap     7346     6796        4        0    19836                           
-   Other mmap      947       36      512        0     2392                           
-      Unknown     8235     8232        0        0     8520                           
+ Dalvik Other     8069     5496        0        0    11576
+        Stack     4572     4572        0        0     4584
+       Ashmem      206      164        0        0      536
+    Other dev       18        0       16        0      316
+     .so mmap    15133     1212    10640        0    40900
+    .jar mmap    11797        0     5544        0    26720
+    .apk mmap    44140     5636    15636        0    67932
+    .dex mmap    35066    34520       68        0    35692
+    .oat mmap     1108        0      524        0     7040
+    .art mmap     7346     6796        4        0    19836
+   Other mmap      947       36      512        0     2392
+      Unknown     8235     8232        0        0     8520
         TOTAL   251029   180984    32944        0   342324   134336    60239    65648
- 
+
  App Summary
                        Pss(KB)                        Rss(KB)
                         ------                         ------
@@ -32,9 +32,9 @@ Uptime: 524884 Realtime: 524884
        Private Other:    14432
               System:    37101
              Unknown:                                   18176
- 
+
            TOTAL PSS:   251029            TOTAL RSS:   342324      TOTAL SWAP (KB):        0
- 
+
  Objects
                Views:       10         ViewRootImpl:        1
          AppContexts:        6           Activities:        1
@@ -43,8 +43,7 @@ Uptime: 524884 Realtime: 524884
        Parcel memory:        7         Parcel count:       30
     Death Recipients:        2      OpenSSL Sockets:        5
             WebViews:        1
- 
+
  SQL
          MEMORY_USED:        0
   PAGECACHE_OVERFLOW:        0          MALLOC_SIZE:        0
- 

@@ -1,2 +1,46 @@
-{"ready": true}
-{"NativeMapController.cameraSnapshot": {"count": 87, "totalMs": 69.66700200000001, "medianMs": 0.448759, "p95Ms": 2.62951, "maxMs": 7.653494}, "NativeBridgeOverlayRenderer.setZoom": {"count": 86, "totalMs": 19.057126, "medianMs": 0.081956, "p95Ms": 0.891753, "maxMs": 2.333714}, "NativeReactMapHost.publishDemCache": {"count": 11, "totalMs": 7.965118, "medianMs": 0.315831, "p95Ms": 3.296249, "maxMs": 3.296249}, "NativeReactMapHost.publishSnapGeometry": {"count": 12, "totalMs": 351.13518, "medianMs": 1.199121, "p95Ms": 190.064665, "maxMs": 190.064665}, "NativeReactMapHost.publishLatestFrame": {"count": 86, "totalMs": 813.8737450000001, "medianMs": 4.72062, "p95Ms": 14.267912, "maxMs": 197.116969}}
+{
+  "diagnostic": true,
+  "instrumented": true,
+  "samples": [
+    {
+      "ready": true
+    },
+    {
+      "NativeMapController.cameraSnapshot": {
+        "count": 87,
+        "totalMs": 69.66700200000001,
+        "medianMs": 0.448759,
+        "p95Ms": 2.62951,
+        "maxMs": 7.653494
+      },
+      "NativeBridgeOverlayRenderer.setZoom": {
+        "count": 86,
+        "totalMs": 19.057126,
+        "medianMs": 0.081956,
+        "p95Ms": 0.891753,
+        "maxMs": 2.333714
+      },
+      "NativeReactMapHost.publishDemCache": {
+        "count": 11,
+        "totalMs": 7.965118,
+        "medianMs": 0.315831,
+        "p95Ms": 3.296249,
+        "maxMs": 3.296249
+      },
+      "NativeReactMapHost.publishSnapGeometry": {
+        "count": 12,
+        "totalMs": 351.13518,
+        "medianMs": 1.199121,
+        "p95Ms": 190.064665,
+        "maxMs": 190.064665
+      },
+      "NativeReactMapHost.publishLatestFrame": {
+        "count": 86,
+        "totalMs": 813.8737450000001,
+        "medianMs": 4.72062,
+        "p95Ms": 14.267912,
+        "maxMs": 197.116969
+      }
+    }
+  ]
+}

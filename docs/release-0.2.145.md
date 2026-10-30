@@ -35,3 +35,5 @@ SHA256：`b642cb3d7e833692fcce7a794264e4795b35dd9a5e092696c13e4b2eae36f4d9`。�
 Android：本轮私人测试APK。HarmonyOS 6.1：原生HAP未生成/未交付，不能把Android APK说成原生鸿蒙包。EXE/DMG未重建，9174网页未切换为本包原生预览。GPS、相机、后台/锁屏、跨应用发送与长时性能继续按真机结果记录。
 
 详细原因、方法和证据：[本批源码与加载排查](native-android/frame-touch-loading-review-20261030.md)。
+
+换电脑接续：[145交接入口](HANDOFF-20261030-145.md)；[脱敏校验摘要](native-android/verification-145-20261030.json)。
