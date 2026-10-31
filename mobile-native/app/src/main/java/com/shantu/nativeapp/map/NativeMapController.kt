@@ -631,7 +631,9 @@ class NativeMapController internal constructor(
     /** Changes detail selection only; the camera and its orientation stay as-is. */
     fun setQuality(value: NativeMapQuality) {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Map quality must be changed on the Android main thread" }
-        if (quality == value || disposed) return
+        if (disposed) return
+        cartography.setRasterQuality(value)
+        if (quality == value) return
         quality = value
         applySelectedSource()
         reportStatus(if (value == NativeMapQuality.HIGH) "地图画质已切换为高清" else "地图画质已切换为标准")
@@ -1563,7 +1565,7 @@ class NativeMapController internal constructor(
             // Keep rendering the closest available source tile when descendants exceed source coverage.
             useAncestorTileTexture = true
             // Lower screen-space thresholds refine tiles sooner; both modes keep the camera unchanged.
-            detailControl = if (quality == NativeMapQuality.HIGH) 0.5 else 1.0
+            detailControl = NativeCartographyRasterQuality.detailControl(quality)
         }
     }
 

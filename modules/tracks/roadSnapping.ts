@@ -19,7 +19,7 @@ export type RoadMatch = {
 export type RoadSnapResult = {
   match: RoadMatch | null;
   section?: Coordinate[] | null;
-  status: 'ready' | 'hidden' | 'loading' | 'unavailable';
+  status: 'ready' | 'hidden' | 'loading' | 'unavailable' | 'no-match' | 'disconnected' | 'limited';
 };
 export type RoadSnapper = (
   point: ScreenPoint,
@@ -27,6 +27,23 @@ export type RoadSnapper = (
   from?: Coordinate,
 ) => RoadSnapResult;
 type Project = (point: Coordinate) => ScreenPoint | null;
+
+/** Classify the real candidate/path result without manufacturing a connection. */
+export function roadSnapResult(
+  match: RoadMatch | null,
+  from: Coordinate | undefined,
+  section?: Coordinate[] | null,
+  pathStatus?: 'ready' | 'disconnected' | 'limited',
+): RoadSnapResult {
+  if (pathStatus === 'limited') return { status: 'limited', match: null };
+  if (pathStatus === 'disconnected') return { status: 'disconnected', match, section: null };
+  return {
+    status: !match ? 'no-match' : from && !section?.length ? 'disconnected' : 'ready',
+    match,
+    section,
+  };
+}
+
 const classes = new Set([
   'motorway',
   'trunk',
@@ -214,14 +231,17 @@ export function roadSection(
 }
 
 export function roadHint(result: RoadSnapResult) {
+  if (result.status === 'limited') return '吸附计算受限 · 放大地图后重试';
+  if (result.status === 'disconnected') return '道路已吸附 · 与上一个点不连通';
+  if (result.status === 'no-match') return '附近没有可吸附道路 · 保留原始点';
   if (result.match)
     return result.match.line.name
       ? `已吸附道路 · ${result.match.line.name}`
       : '已吸附道路 / 小路';
   return {
-    ready: '附近没有可吸附道路 · 自由绘制',
-    hidden: '开启“道路与河流”后可吸附地图道路',
-    loading: '道路数据加载中 · 暂按自由线绘制',
-    unavailable: '道路数据不可用 · 暂按自由线绘制',
+    ready: '附近没有可吸附道路 · 保留原始点',
+    hidden: '道路吸附已关闭 · 保留原始点',
+    loading: '道路数据加载中 · 暂按原始位置',
+    unavailable: '道路数据不可用 · 暂按原始位置',
   }[result.status];
 }

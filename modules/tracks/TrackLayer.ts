@@ -3,6 +3,7 @@ import { resolvedRouteTerminals } from './routeTerminals';
 import { selectedEdgeData, syncSelectedEdges } from './selectedEdgeLayer';
 import { syncTrackNotes } from './trackNotes';
 import { invalidateOverlayData, syncOverlayData, syncPlaceLabelLayerOrder } from '../map/overlayData';
+import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 import {
   syncRouteWarnings,
   type RouteWarning,
@@ -318,11 +319,9 @@ export class TrackLayer {
         paint: {
           'line-color': ['case', ['get', 'selected'], '#ffffff', '#10212b'],
           'line-opacity': ['*', 0.65, ['get', 'opacity']],
-          'line-width': [
-            '+',
-            ['get', 'width'],
-            ['case', ['get', 'selected'], 2, 1],
-          ],
+          'line-width': routeLineWidthExpression([
+            '+', ['get', 'width'], ['case', ['get', 'selected'], 2, 1],
+          ]),
         },
       });
       m.addLayer({
@@ -334,7 +333,7 @@ export class TrackLayer {
         paint: {
           'line-color': ['get', 'color'],
           'line-opacity': ['get', 'opacity'],
-          'line-width': ['get', 'width'],
+          'line-width': routeLineWidthExpression(['get', 'width']),
         },
       });
       m.addLayer({

@@ -15,6 +15,22 @@ export const canStartRingDrag = (x: number, y: number) => {
   return radius >= RING_DEADZONE && radius <= 1.6;
 };
 
+// SVG-space touch displacement. Ignore sub-pixel/near-stationary touch noise,
+// ease in gently, then return to the existing gain for deliberate larger drags.
+const ORBIT_DEADZONE = 1.5;
+const ORBIT_EASE_RANGE = 10;
+const ORBIT_LOW_GAIN = 0.45;
+const ORBIT_FULL_GAIN = 1.35;
+export function shapeOrbitDisplacement(displacement: number) {
+  const magnitude = Math.abs(displacement);
+  if (magnitude <= ORBIT_DEADZONE) return 0;
+  const eased = magnitude - ORBIT_DEADZONE;
+  const shaped = eased <= ORBIT_EASE_RANGE
+    ? ORBIT_LOW_GAIN * eased + ((ORBIT_FULL_GAIN - ORBIT_LOW_GAIN) * eased * eased) / (2 * ORBIT_EASE_RANGE)
+    : ORBIT_LOW_GAIN * ORBIT_EASE_RANGE + ((ORBIT_FULL_GAIN - ORBIT_LOW_GAIN) * ORBIT_EASE_RANGE) / 2 + ORBIT_FULL_GAIN * (eased - ORBIT_EASE_RANGE);
+  return Math.sign(displacement) * shaped;
+}
+
 /** Crossing the centre pauses rotation; re-entry establishes a new angle, not a jump. */
 export function rotateCameraRing(
   previous: { angle: number | null; bearing: number; ringPoint?: { x: number; y: number } },
@@ -101,7 +117,7 @@ export function orbitCamera(
   dy: number,
 ) {
   return {
-    pitch: clampPitch(start.pitch - dy * 1.35),
-    bearing: wrapBearing(start.bearing + dx * 1.35),
+    pitch: clampPitch(start.pitch - shapeOrbitDisplacement(dy)),
+    bearing: wrapBearing(start.bearing + shapeOrbitDisplacement(dx)),
   };
 }

@@ -2,6 +2,7 @@ import type { Map } from 'maplibre-gl';
 import { syncOverlayData } from '../map/overlayData.ts';
 import type { Feature } from 'geojson';
 import type { Coordinate, PlannedRoute } from '../navigation/types';
+import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 export type GuidanceOverlay = {
   coordinates: Coordinate[];
   segments?: PlannedRoute['segments'];
@@ -27,7 +28,7 @@ export class GuidanceLayer {
         source: 'route-guidance',
         filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
         layout: { 'line-join': 'round', 'line-cap': 'butt' },
-        paint: { 'line-color': '#30261d', 'line-width': 9, 'line-dasharray': [5 / 3, 10 / 9] },
+        paint: { 'line-color': '#30261d', 'line-width': routeLineWidthExpression(9), 'line-dasharray': [5 / 3, 10 / 9] },
       });
       m.addLayer({
         id: 'guidance-path',
@@ -35,11 +36,11 @@ export class GuidanceLayer {
         source: 'route-guidance',
         filter: ['all', ['==', '$type', 'LineString'], ['!=', 'kind', 'access']],
         layout: { 'line-join': 'round', 'line-cap': 'butt' },
-        paint: { 'line-color': '#ffb052', 'line-width': 5, 'line-dasharray': [3, 2] },
+        paint: { 'line-color': '#ffb052', 'line-width': routeLineWidthExpression(5), 'line-dasharray': [3, 2] },
       });
       m.addLayer({
         id: 'guidance-access', type: 'line', source: 'route-guidance', filter: ['==', 'kind', 'access'],
-        paint: { 'line-color': '#ffcb65', 'line-width': 4, 'line-dasharray': [2, 2] },
+        paint: { 'line-color': '#ffcb65', 'line-width': routeLineWidthExpression(4), 'line-dasharray': [2, 2] },
       });
       m.addLayer({
         id: 'guidance-target',

@@ -8,6 +8,7 @@ import {
   roadHint,
   roadSection,
   type RoadMatch,
+  type RoadSnapResult,
   type RoadSnapper,
 } from './roadSnapping.ts';
 
@@ -45,6 +46,26 @@ type Options = {
   unproject: (point: ScreenPoint) => Coordinate | null;
   getSnapViewport?: () => SnapViewport | null;
 };
+
+export function blockedSnapHint(
+  status: RoadSnapResult['status'] | undefined,
+  strictNetwork: boolean,
+): string {
+  const subject = strictNetwork ? '河流水系' : '道路';
+  if (!status) return `${subject}吸附能力不可用 · 保留上一点`;
+  if (status === 'loading') return `${subject}数据加载中 · 保留上一点，不连接`;
+  if (status === 'unavailable') return `${subject}数据不可用 · 保留上一点，不连接`;
+  if (status === 'limited') return '吸附计算受限 · 放大地图后重试';
+  if (status === 'hidden') return `${subject}吸附已关闭 · 保留上一点`;
+  if (status === 'disconnected')
+    return strictNetwork
+      ? '水系断点 · 保留上一点，不直线跨越'
+      : '道路不连通 · 保留上一点';
+  return strictNetwork
+    ? '此处没有连通水系 · 放大地图并沿河移动准星，不自动直线跨越'
+    : '附近没有可吸附道路 · 放大地图或把准星移到道路上';
+}
+
 /** Input state is separate from rendering so handoff and exact endpoints can be checked. */
 export class DrawingSession {
   private aim: Coordinate | null = null;
@@ -339,9 +360,7 @@ export class DrawingSession {
             : undefined
         : undefined;
     this.aimHint = blocked
-      ? o.strictNetwork
-        ? '此处没有连通水系 · 放大地图并沿河移动准星，不自动直线跨越'
-        : '目标处没有可吸附道路 · 请放大地图或把准星移到道路上'
+      ? blockedSnapHint(road?.status, !!o.strictNetwork)
       : this.crossing
         ? '跨越断路 · 松手直线连接，下个点继续沿路'
         : this.aimSection

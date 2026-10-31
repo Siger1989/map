@@ -37,6 +37,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.min
 
+/** Keep independently drawn raster annotations at the selected basemap quality. */
+internal object NativeCartographyRasterQuality {
+    fun detailControl(quality: NativeMapQuality): Double = if (quality == NativeMapQuality.HIGH) 0.5 else 1.0
+}
+
 data class NativeCartographySettings(
     val roads: Boolean = false,
     val labels: Boolean = true,
@@ -193,7 +198,7 @@ class NativeCartographyLayers internal constructor(
     private val nativeRoadLayer = NativeRoadVectorLayer(source, vectorTileBudget)
     val roadsLayer: MvtVectorLayer get() = nativeRoadLayer
     private val snapDataLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = minOf(12, vectorTileBudget),
-        maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {}, displayName = "River snapping data")
+        maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {}, displayName = "Road and river snapping data")
     val roadNamesLayer = MvtVectorLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
         maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadNameStyle, displayName = "Road labels")
     val placeLabelsLayer = MvtVectorLayer(source, minZoom = 2, maxZoom = 14, maxLoadedTiles = labelTileBudget,
@@ -215,6 +220,7 @@ class NativeCartographyLayers internal constructor(
     private var labelMode: String? = null
     private var boundaryEnabled = false
     private var closed = false
+    private var roadSnapping = false
     private var riverSnapping = false
     private val raster = TiandituRasterSource(tiandituKey, sharedNetwork, tileIdentityFor, viewId, generation)
 
@@ -262,6 +268,16 @@ class NativeCartographyLayers internal constructor(
     fun imageryRenderedTileCount(): Long = imagery.renderedTileCount()
     fun retryLatestImagery() = imagery.retryLatest()
 
+    fun setRasterQuality(quality: NativeMapQuality) {
+        val detail = NativeCartographyRasterQuality.detailControl(quality)
+        if (raster.detailControl == detail) return
+        raster.detailControl = detail
+        for (layer in listOf(tiandituLabelRenderLayer, tiandituBoundaryRenderLayer)) {
+            for (renderable in layer) if (renderable is MercatorTiledSurfaceImage) renderable.detailControl = detail
+        }
+        window.requestRedraw()
+    }
+
     /** Per-frame presentation only: never invalidates or fetches an MVT tile. */
     fun setViewportStyle(uiZoom: Double, cssScale: Float) {
         // A first/changed style needs one draw even when all source tiles are already cached.
@@ -277,7 +293,17 @@ class NativeCartographyLayers internal constructor(
     internal fun observeSnapTileFetches(observer: (NativeCachedSnapTile) -> Unit): AutoCloseable? =
         (source as? NativeSnapTileCache)?.observe(observer)
 
-    fun snapRoadLayerVisible(): Boolean = !closed && roadsLayer.isEnabled
+    /** True while any bounded visible MVT layer can populate the shared snap cache. */
+    fun snapSourceVisible(): Boolean = !closed && (
+        snapDataLayer.isEnabled || roadsLayer.isEnabled || roadNamesLayer.isEnabled ||
+            placeLabelsLayer.isEnabled || terrainLandWaterLayer.isEnabled
+        )
+
+    internal fun setRoadSnapping(enabled: Boolean) {
+        if (roadSnapping == enabled) return
+        roadSnapping = enabled
+        syncSnapDataLayer()
+    }
 
     internal fun setRiverSnapping(enabled: Boolean) {
         if (riverSnapping == enabled) return
@@ -286,10 +312,14 @@ class NativeCartographyLayers internal constructor(
     }
 
     private fun syncSnapDataLayer() {
-        // Rivers remain available independently of the road display toggle. Fetch the
-        // shared real MVT source without drawing a second road overlay when needed.
-        val enabled = !closed && riverSnapping && !roadsLayer.isEnabled &&
-            !terrainLandWaterLayer.isEnabled && !placeLabelsLayer.isEnabled
+        // Road and river snapping read the shared real MVT source independently of
+        // display toggles. The empty style only populates the bounded cache; it draws
+        // no duplicate roads. Other visible MVT layers already populate this source.
+        val visibleMvtLayerAlreadyFetching = roadsLayer.isEnabled || roadNamesLayer.isEnabled ||
+            placeLabelsLayer.isEnabled || terrainLandWaterLayer.isEnabled
+        val enabled = !closed && NativeSnapDataLayerPolicy.shouldEnable(
+            roadSnapping, riverSnapping, visibleMvtLayerAlreadyFetching,
+        )
         if (snapDataLayer.isEnabled != enabled) {
             snapDataLayer.isEnabled = enabled
             window.requestRedraw()
@@ -322,6 +352,11 @@ class NativeCartographyLayers internal constructor(
             for (field in listOf("name:zh", "name:nonlatin", "name")) rule("mountain_peak") { filter = MvtFilter.has(field); minZoom = 10; paint { text(field) { color(Color(.96f,.93f,.82f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(10 to 11f, 14 to 14f); halo(Color(.07f,.13f,.16f), 1.8f) } } }
         }
     }
+}
+
+internal object NativeSnapDataLayerPolicy {
+    fun shouldEnable(roadSnapping: Boolean, riverSnapping: Boolean, anotherMvtLayerFetching: Boolean): Boolean =
+        (roadSnapping || riverSnapping) && !anotherMvtLayerFetching
 }
 
 /** Memory-bounded MVT source shared by the three independent style layers. */
@@ -458,6 +493,7 @@ private class TiandituRasterSource(
     private val executor = Executors.newFixedThreadPool(4)
     private val requestPermits = Semaphore(4)
     @Volatile private var closed = false
+    var detailControl = NativeCartographyRasterQuality.detailControl(NativeMapQuality.HIGH)
     fun labelImage(layer: String) = surface("天地图 $layer", layer, if (layer == "cva") 19 else 18)
     fun boundaryImage() = surface("天地图全球境界 ibo", "ibo", 18)
 
@@ -471,7 +507,11 @@ private class TiandituRasterSource(
                 return ImageSource.fromImageFactory(imageFactory)
             }
         }
-        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, tileSize = 256, maxZoom = maxZoom, minZoom = 1)
+        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, tileSize = 256, maxZoom = maxZoom, minZoom = 1).apply {
+            // The SDK default is 1.0; leaving it here while the HIGH basemap is
+            // 0.5 selects coarser annotation tiles and magnifies already-rasterized text.
+            detailControl = this@TiandituRasterSource.detailControl
+        }
     }
 
     private suspend fun fetch(url: String, renderedFactory: ImageSource.NetworkBoundImageFactory? = null, identity: TileRequestIdentity? = null, view: String? = null, generation: Long? = null): ByteArray {

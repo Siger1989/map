@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { RouteLayer } from '../modules/navigation/RouteLayer.ts';
 import { validFavorite, parseFavorites, updateFavoriteRouteStyle } from '../modules/navigation/favorites.ts';
 import { DEFAULT_ROUTE_STYLE, resolveRouteStyle, routeColorOptions, routeWidthOptions } from '../modules/navigation/routeStyleControls.ts';
+import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
 
 const place = { name: 'A', coordinates: [103, 30] };
 const route = {
@@ -31,9 +32,9 @@ test('route style reaches planned route features and MapLibre paint expressions'
   assert.equal(feature.properties.routeColor, '#ff7f00');
   assert.equal(feature.properties.routeWidth, 3.5);
   const paint = layers.get('route-path').paint;
-  assert.deepEqual(paint['line-width'], ['coalesce', ['get', 'routeWidth'], 4], 'navigation state never replaces the user-selected route width');
-  assert.deepEqual(layers.get('route-outline').paint['line-width'], ['+', ['coalesce', ['get', 'routeWidth'], 4], 4]);
-  assert.equal(layers.get('route-access').paint['line-width'], 4);
+  assert.deepEqual(paint['line-width'], routeLineWidthExpression(['coalesce', ['get', 'routeWidth'], 4]), 'navigation state never replaces the user-selected route width');
+  assert.deepEqual(layers.get('route-outline').paint['line-width'], routeLineWidthExpression(['+', ['coalesce', ['get', 'routeWidth'], 4], 4]));
+  assert.deepEqual(layers.get('route-access').paint['line-width'], routeLineWidthExpression(4));
   assert.deepEqual(paint['line-color'].at(-1), ['coalesce', ['get', 'color'], ['get', 'routeColor'], '#59dcff']);
   } finally {
     if (oldRequestAnimationFrame === undefined) delete globalThis.requestAnimationFrame;

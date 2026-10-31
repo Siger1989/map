@@ -1,0 +1,180 @@
+{
+  "artifact": {
+    "version": "0.2.160-test",
+    "versionCode": 167,
+    "package": "com.guanyun.weather.shantu.preview",
+    "bytes": 165171888,
+    "sha256": "d2ce77c9bff7092631b70a78aaeece7173510f1321f8228962cacfa4a19f38b5",
+    "originalSignature": true,
+    "certificateSha256": "4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f",
+    "debuggable": false,
+    "launcherAliasPreserved": true,
+    "typeScript": "PASS",
+    "privateReactBuild": "PASS",
+    "optimizedBuild": "PASS",
+    "zipalign16KiB": true,
+    "sourceUnchangedSinceFinalTests": true,
+    "crc": "PASS",
+    "zipEntries": 2165,
+    "privateConfigurationMatch": true,
+    "privateCredentialPresent": true,
+    "reactNativeCredentialMatch": true,
+    "privateMapSourceCount": 39,
+    "seedConfigurationMatch": true,
+    "freshReactAssetsMatched": 1925,
+    "native64BitLibraries": 4,
+    "elf16KiB": "PASS",
+    "fabdemTiles": 473,
+    "repairTiles": 23,
+    "sourceScopeNote": "160 application source fingerprint retained after final directed tests; instrumentation excluded from application source scope",
+    "kotlinDirectedSuites": 5,
+    "magnifierRoiTests": 3,
+    "actualNativeVisual": "PASS_SCOPED_LINE_AND_DRAWING_CASES",
+    "fixedEntryReplaced": true,
+    "localDelivered": true,
+    "externalDownload": "NOT_CREATED_USER_CHOSE_LOCAL_ONLY",
+    "preservedVersions": [
+      "159",
+      "158",
+      "157"
+    ],
+    "nodeTests": 177,
+    "phone": "UNVERIFIED",
+    "fullMainDualMatrix": "UNVERIFIED",
+    "libraryImages": "PIXELS_UNAVAILABLE_ON_THIS_EXECUTOR"
+  },
+  "scope": "Original signed optimized app on dedicated MuMu3; synthetic renderer positions are not GPS. No public APK upload.",
+  "nativeLineRendering": {
+    "poses": 7,
+    "strokePaths": 133,
+    "allWidthChecksPass": true,
+    "stateAndCameraRestored": true,
+    "stages": [
+      {
+        "stage": "forward-z16",
+        "expectedStrokeScale": 1,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "rotated-z14",
+        "expectedStrokeScale": 0.8,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "top-z14",
+        "expectedStrokeScale": 0.8,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "rotated-z14-repeat",
+        "expectedStrokeScale": 0.8,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "bearing0-z14",
+        "expectedStrokeScale": 0.8,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "bearing90-z14",
+        "expectedStrokeScale": 0.8,
+        "strokePaths": 19,
+        "pass": true
+      },
+      {
+        "stage": "forward-z6",
+        "expectedStrokeScale": 0.25,
+        "strokePaths": 19,
+        "pass": true
+      }
+    ]
+  },
+  "actualRoadAndNodeTouch": {
+    "roadDisplayEnabled": false,
+    "roadSnappingEnabled": true,
+    "nodeSnappingEnabled": true,
+    "cachedSourceVertices": 914,
+    "startDraftPoints": 1,
+    "roadDraftPoints": 65,
+    "alongRoadHint": true,
+    "straightCrossingHint": false,
+    "approxMaximumDeviationFromChordMeters": 566.5419543686429,
+    "closedDraftPoints": 67,
+    "endpointClosedExactly": true,
+    "draftRestoredToZero": true,
+    "savedTracksRestoredToZero": true,
+    "magnifierCaptureReplies": 9,
+    "magnifierDrawImage": 9,
+    "heldCapturesHaveTexture": true
+  },
+  "joystick": {
+    "actualAndroidTouch": true,
+    "smallDisplacementCss": [
+      0.5,
+      4,
+      6
+    ],
+    "beforeYawDegrees": [
+      1.168,
+      9.348,
+      14.022
+    ],
+    "afterYawDegrees": [
+      0,
+      3.765,
+      7.553
+    ],
+    "releaseStableAtSeconds": [
+      0.1,
+      0.4,
+      0.8
+    ],
+    "yawRestored": true
+  },
+  "offlineVehicles": {
+    "scope": "Earlier160 app JS fetch blocked, not OS offline. Same offline subsystem unchanged in final build.",
+    "car": "PASS",
+    "motorcycle": "PASS",
+    "coordinatesPerResult": 6,
+    "cleanup": "PASS"
+  },
+  "magnifierComparison": {
+    "scope": "159 versus first160 build, not final APK full performance benchmark.",
+    "moveEvents": 40,
+    "beforeFullCaptureReplies": 52,
+    "beforeDrawImage": 2,
+    "afterRoiCaptureReplies": 23,
+    "afterDrawImage": 22,
+    "fpsMeasured": false,
+    "hostLoadConfound": true
+  },
+  "rasterLabels": {
+    "beforeBaseDetail": 0.5,
+    "beforeCiaDetail": 1,
+    "afterBaseDetail": 0.5,
+    "afterCiaDetail": 0.5,
+    "earlyCoarseParentFrame": "FAIL_TRANSIENT",
+    "settledLosslessFrame": "INSPECTED",
+    "labelSizeAndDensityMayChange": true,
+    "generalLoadingSpeedImprovement": "NOT_MEASURED"
+  },
+  "coldSyntheticCamera": {
+    "initialOriginPose": "FAIL_RETAINED",
+    "samePoseAfterTerrainLoaded": "PASS_2_OF_2",
+    "phoneRootCauseConfirmed": false
+  },
+  "imageAndDeviceLimits": {
+    "libraryImages": "PIXELS_NOT_READ",
+    "phoneVersion": "UNVERIFIED",
+    "phoneFlicker": "UNRESOLVED_UNVERIFIED",
+    "fullMainDualMatrix": "UNVERIFIED",
+    "harmonyos": "NOT_BUILT",
+    "exe": "NOT_REBUILT",
+    "dmg": "NOT_REBUILT"
+  }
+}

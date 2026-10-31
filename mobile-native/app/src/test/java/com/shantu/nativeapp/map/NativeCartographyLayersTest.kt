@@ -9,6 +9,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeCartographyLayersTest {
+    @Test fun `raster annotation and basemap share the selected refinement threshold`() {
+        val standard = NativeCartographyRasterQuality.detailControl(NativeMapQuality.STANDARD)
+        val high = NativeCartographyRasterQuality.detailControl(NativeMapQuality.HIGH)
+        assertTrue(high > 0.0 && high < standard)
+        assertEquals(0.5, high, 0.0)
+        assertEquals(1.0, standard, 0.0)
+    }
     @Test fun `roads labels domestic labels and boundaries remain independent`() {
         val plan = NativeCartographyPlan.resolve(NativeCartographySettings(
             roads = true, labels = false, roadsOpacity = .42f, rasterLabelOpacity = .17f, satellite = true,

@@ -27,9 +27,19 @@ class NativeBridgeOverlayRenderer(
     private val window: WorldWindow,
     private val suppressShareTrackPaths: Boolean = false,
 ) : AutoCloseable {
+    private data class RouteStroke(
+        val path: Path,
+        val baseWidthPixels: Float,
+        val baseWidthCss: Double,
+        val dash: JSONArray?,
+        var dashFactor: Int? = null,
+    )
+
     @Volatile private var cssScale = window.context.resources.displayMetrics.density.toDouble()
+    private var routeWidthScale = 1.0
     val layer = RenderableLayer("React track and navigation geometry")
     private val groups = linkedMapOf<String, List<Renderable>>()
+    private val routeStrokes = linkedMapOf<String, List<RouteStroke>>()
     private val fingerprints = linkedMapOf<String, String>()
     private val minZooms = linkedMapOf<String, Double>()
     private val routePointImages = mutableMapOf<String, ImageSource>()
@@ -52,22 +62,51 @@ class NativeBridgeOverlayRenderer(
                 val fingerprint = "${feature}|cssScale=$cssScale"
                 if (fingerprints[id] == fingerprint) continue
                 groups.remove(id)?.forEach(layer::removeRenderable)
+                routeStrokes.remove(id)
                 val role = feature.optJSONObject("properties")?.optString("role")
                 val rendered = if (suppressShareTrackPaths && role in setOf("track", "shareTrackHalo")) emptyList() else build(feature)
                 groups[id] = rendered
                 fingerprints[id] = fingerprint
                 minZooms[id] = feature.optJSONObject("properties")?.optDouble("minZoom", 0.0) ?: 0.0
+                if (NativeOverlayStyle.scalesRouteWidth(role.orEmpty())) {
+                    val properties = feature.optJSONObject("properties") ?: JSONObject()
+                    val baseWidthCss = properties.optDouble("width", 2.0)
+                    val dash = properties.optJSONArray("dash")?.let { JSONArray(it.toString()) }
+                    routeStrokes[id] = rendered.filterIsInstance<Path>().map { path ->
+                        RouteStroke(path, path.attributes.outlineWidth, baseWidthCss, dash)
+                    }
+                    applyRouteWidthScale(routeWidthScale, routeStrokes[id].orEmpty())
+                }
                 rendered.forEach(layer::addRenderable)
             }
         }
         (groups.keys - next).forEach { id ->
-            groups.remove(id)?.forEach(layer::removeRenderable); fingerprints.remove(id); minZooms.remove(id)
+            groups.remove(id)?.forEach(layer::removeRenderable); fingerprints.remove(id); minZooms.remove(id); routeStrokes.remove(id)
         }
         window.requestRedraw()
     }
 
     fun setZoom(zoom: Double) {
         groups.forEach { (id, renderables) -> renderables.forEach { it.isEnabled = zoom >= (minZooms[id] ?: 0.0) } }
+        val nextScale = NativeOverlayStyle.routeWidthScale(zoom)
+        if (kotlin.math.abs(nextScale - routeWidthScale) > 0.0001) {
+            routeWidthScale = nextScale
+            routeStrokes.values.forEach { applyRouteWidthScale(nextScale, it) }
+        }
+    }
+
+    private fun applyRouteWidthScale(scale: Double, strokes: List<RouteStroke>) {
+        strokes.forEach { stroke ->
+            stroke.path.attributes.outlineWidth = stroke.baseWidthPixels * scale.toFloat()
+            stroke.dash?.let { dash ->
+                NativeOverlayStyle.dashStyle(dash, stroke.baseWidthCss * scale, cssScale)?.let {
+                    if (stroke.dashFactor != it.factor) {
+                        stroke.path.attributes.outlineImageSource = ImageSource.fromLineStipple(it.factor, it.pattern)
+                        stroke.dashFactor = it.factor
+                    }
+                }
+            }
+        }
     }
 
     /** Physical native pixels per React CSS pixel; call before sync after viewport scaling changes. */
@@ -205,7 +244,7 @@ class NativeBridgeOverlayRenderer(
         return source
     }
 
-    fun clear() { layer.clearRenderables(); groups.clear(); fingerprints.clear(); minZooms.clear(); routePointImages.clear(); trackNodeImages.clear(); window.requestRedraw() }
+    fun clear() { layer.clearRenderables(); groups.clear(); routeStrokes.clear(); fingerprints.clear(); minZooms.clear(); routePointImages.clear(); trackNodeImages.clear(); window.requestRedraw() }
     override fun close() { clear() }
     private fun position(value: JSONArray): Position? {
         val lon = value.optDouble(0, Double.NaN); val lat = value.optDouble(1, Double.NaN)

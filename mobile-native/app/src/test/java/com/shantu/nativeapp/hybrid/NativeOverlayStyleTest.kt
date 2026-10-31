@@ -16,6 +16,24 @@ class NativeOverlayStyleTest {
         assertEquals(0.5f, NativeOverlayStyle.widthInPixels(0.5, 1.0), 0.001f)
     }
 
+    @Test fun routeStrokeZoomCurveMatchesTheWebExpressionStopsAndPreservesNearWidth() {
+        val stops = listOf(0.0 to 0.25, 6.0 to 0.25, 10.0 to 0.5, 14.0 to 0.8, 16.0 to 1.0)
+        stops.forEach { (zoom, scale) -> assertEquals(scale, NativeOverlayStyle.routeWidthScale(zoom), 0.0001) }
+        assertEquals(0.375, NativeOverlayStyle.routeWidthScale(8.0), 0.0001)
+        assertEquals(0.9, NativeOverlayStyle.routeWidthScale(15.0), 0.0001)
+        assertEquals(1.0, NativeOverlayStyle.routeWidthScale(20.0), 0.0001)
+        assertEquals(1.0, NativeOverlayStyle.routeWidthScale(Double.NaN), 0.0001)
+    }
+
+    @Test fun zoomScalingOnlyTargetsRouteTrackAndGuidanceStrokeRoles() {
+        listOf("routePath", "routeOutline", "routeAccess", "track", "trackHalo", "selectedEdge",
+            "guidance", "ribbon", "offset-reference").forEach { role ->
+            assertEquals(role, true, NativeOverlayStyle.scalesRouteWidth(role))
+        }
+        listOf("routePoint", "trackNode", "guidanceTarget", "chevron", "note", "warning", "linePoint")
+            .forEach { role -> assertEquals(role, false, NativeOverlayStyle.scalesRouteWidth(role)) }
+    }
+
     @Test fun pointImageScaleKeepsRequestedCssDiameterAcrossViewportScales() {
         assertEquals(0.25, NativeOverlayStyle.imageScaleForCssSize(8.0, 2.0, 64), 0.0001)
         assertEquals(0.375, NativeOverlayStyle.imageScaleForCssSize(8.0, 3.0, 64), 0.0001)

@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { connectTrackNodes } from '../modules/tracks/nodeOperations.ts';
 import { mergeTrackArchives } from '../modules/tracks/mergeArchives.ts';
 import { parseSavedTracks, MAX_SAVED_TRACKS } from '../modules/tracks/drawing.ts';
@@ -13,7 +12,6 @@ import { validateTransfer, mergeData, collectData } from '../modules/outdoor/exc
 import { ANNOTATION_STORAGE } from '../modules/annotations/data.ts';
 import { SECTION_OBJECTS_KEY } from '../modules/section/sectionObjects.ts';
 import { workbenchRegionTree, workbenchLeaves } from '../modules/collections/workbenchTree.ts';
-import { APP_VERSION, APP_VERSION_CODE } from '../config/product.ts';
 import { routeColorSections, sectionElevation } from '../modules/tracks/colorSections.ts';
 import { makeRouteQr, readRouteQr } from '../modules/routeShare/qrCodec.ts';
 import { qrTransfer } from '../modules/routeShare/qrImport.ts';
@@ -30,10 +28,11 @@ const section=()=>{const line=addSurveyStation(newSurveyLine(a,d),b,'stationC');
 const terrain=l=>({key:surveyKey(l),...surveyRange(l),halfWidth:l.halfWidth,columns:5,rows:3,heights:Array.from({length:15},(_,i)=>100+i%5*10),zoom:12,sampledAt:1,source:'合成测试地形'});
 const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
 
-test('100-route limit, displayed version and Android manifest share the intended release values',()=>{
+test('the drawing archive retains the 100-route capacity limit',()=>{
   assert.equal(MAX_SAVED_TRACKS,100);
-  const manifest=readFileSync(new URL('../mobile/android/AndroidManifest.xml',import.meta.url),'utf8');
-  assert.ok(manifest.includes(`android:versionName="${APP_VERSION}"`));assert.ok(manifest.includes(`android:versionCode="${APP_VERSION_CODE}"`));
+  // The active hybrid package gets its version from config/product.ts through
+  // Gradle. Release validation checks the final APK's badging/signature, rather
+  // than this drawing test reading the unused legacy mobile shell manifest.
 });
 test('connect then merge is one archive and one continuous line, without duplicate edges or lost colours/markers',()=>{
   const red=track('red','#ff0000',[a,b]),blue=track('blue','#0000ff',[c,d]);

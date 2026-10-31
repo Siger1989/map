@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import type { ScreenPoint } from './drawing';
+export type MagnifierSubscription = (() => void) & { update?: (point: ScreenPoint) => void };
 export type MagnifierObserver = (
   target: HTMLCanvasElement,
   point: ScreenPoint,
-) => () => void;
+) => MagnifierSubscription;
 export function PointMagnifier({
   point,
   width,
@@ -17,11 +18,41 @@ export function PointMagnifier({
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const latest = useRef(observe);
+  const subscription = useRef<MagnifierSubscription | null>(null);
+  const activeObserver = useRef(observe);
+  const latestPoint = useRef(point);
+  const observedPoint = useRef(point);
   latest.current = observe;
+  latestPoint.current = point;
   useEffect(() => {
     if (!canvas.current) return;
-    return latest.current(canvas.current, point);
-  }, [point.x, point.y]);
+    activeObserver.current = latest.current;
+    subscription.current = latest.current(canvas.current, latestPoint.current);
+    observedPoint.current = latestPoint.current;
+    return () => {
+      subscription.current?.();
+      subscription.current = null;
+    };
+  }, []);
+  useEffect(() => {
+    const current = subscription.current;
+    if (!current || !canvas.current) return;
+    const pointChanged = observedPoint.current.x !== point.x || observedPoint.current.y !== point.y;
+    const observerChanged = activeObserver.current !== latest.current;
+    if (!pointChanged && !observerChanged) return;
+    if (current.update) {
+      // Native captures outlive inline wrapper callbacks; the owning drawing
+      // component still disposes the subscription on real unmount.
+      activeObserver.current = latest.current;
+      if (pointChanged) current.update(point);
+    }
+    else {
+      current();
+      subscription.current = latest.current(canvas.current, point);
+      activeObserver.current = latest.current;
+    }
+    observedPoint.current = point;
+  }, [point.x, point.y, observe]);
   const left = Math.max(
     8,
     Math.min(

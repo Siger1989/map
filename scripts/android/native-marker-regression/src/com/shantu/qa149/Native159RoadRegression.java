@@ -87,6 +87,11 @@ public final class Native159RoadRegression {
         JSONObject plan=new JSONObject();Object cartography=field(field(entry,"controller"),"cartography"),planValue=field(cartography,"plan");
         for(String k:new String[]{"roads","roadNames","placeLabels","tiandituLabels","effectiveBase","rasterLabelOpacity"})plan.put(k,field(planValue,k));
         out.put("cartographyPlan",plan);
+        JSONObject rasterPresentation = new JSONObject().put("quality",String.valueOf(field(field(entry,"controller"),"quality")));
+        rasterPresentation.put("base",surfaceMetrics(field(field(entry,"controller"),"baseLayer")));
+        rasterPresentation.put("legacyLabels",surfaceMetrics(field(field(entry,"controller"),"labelLayer")));
+        rasterPresentation.put("cartographyLabels",surfaceMetrics(field(cartography,"tiandituLabelRenderLayer")));
+        out.put("rasterPresentation",rasterPresentation);
         Object view=field(roads,"viewStyle");
         out.put("styleZoom",field(view,"zoom")).put("styleCssScale",field(view,"cssScale"));
         Object cut=field(roads,"renderCut"), key=field(roads,"groupKey");
@@ -130,6 +135,14 @@ public final class Native159RoadRegression {
     }
     private static JSONObject color(Object value) throws Exception {
         JSONObject c=new JSONObject();for(String k:new String[]{"red","green","blue","alpha"})c.put(k,field(value,k));return c;
+    }
+    private static JSONObject surfaceMetrics(Object layer) throws Exception {
+        JSONArray surfaces=new JSONArray();
+        if(layer instanceof Iterable) for(Object renderable:(Iterable<?>)layer){
+            try { surfaces.put(new JSONObject().put("detailControl",field(renderable,"detailControl"))); }
+            catch(NoSuchFieldException ignored) { }
+        }
+        return new JSONObject().put("enabled",property(layer,"isEnabled","isEnabled")).put("surfaces",surfaces);
     }
     private static void setEnabled(Native149Instrumentation p,Object roads,boolean enabled) throws Exception {
         Field f=findField(roads.getClass(),"isEnabled");p.runOnMainSync(()->{try{f.set(roads,enabled);}catch(Exception e){throw new IllegalStateException(e);}});

@@ -18,6 +18,7 @@ import {
   NAVIGATION_CUE_ROUTE_PROJECTION_LAYER_ID,
   NAVIGATION_CUE_SOURCE_ID,
 } from '../modules/guidance/NavigationCueLayer.ts';
+import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
 
 const arrows = (collection) => collection.features.filter(({ properties }) => properties.role === 'chevron');
 const leads = (collection) => collection.features.filter(({ properties }) => properties.role === 'lead');
@@ -457,10 +458,10 @@ test('cue layer clears on null, gates wide zooms, and keeps stable source/layer 
   assert.ok(map.layers.has(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID));
   assert.ok(map.layers.has(NAVIGATION_CUE_ROUTE_PROJECTION_LAYER_ID));
   assert.equal(map.layers.get(NAVIGATION_CUE_LAYER_ID).type, 'symbol');
-  assert.equal(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).paint['line-width'], 8);
-  assert.equal(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-width'], 4);
-  assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-width'], 4);
-  assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-width'], 8);
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).paint['line-width'], routeLineWidthExpression(8));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-width'], routeLineWidthExpression(4));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-width'], routeLineWidthExpression(4));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-width'], routeLineWidthExpression(8));
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-color'], '#ffd34f');
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-color'], '#65562f');
   assert.equal('line-dasharray' in map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint, false);
@@ -504,7 +505,10 @@ test('rejoin road and outline both use real gaps while access and target styling
   guidance.sync(null);
   const outline = layers.get('guidance-outline');
   const main = layers.get('guidance-path');
-  const pixelPattern = (layer) => layer.paint['line-dasharray'].map((unit) => unit * layer.paint['line-width']);
+  const pixelPattern = (layer) => layer.paint['line-dasharray'].map((unit) => unit * layer.paint['line-width'].at(-1)[1]);
+  assert.deepEqual(outline.paint['line-width'], routeLineWidthExpression(9));
+  assert.deepEqual(main.paint['line-width'], routeLineWidthExpression(5));
+  assert.deepEqual(layers.get('guidance-access').paint['line-width'], routeLineWidthExpression(4));
   assert.deepEqual(pixelPattern(outline), [15, 10]);
   assert.deepEqual(pixelPattern(main), [15, 10], 'the foreground dash and outline gap share pixel boundaries');
   assert.equal(outline.layout['line-cap'], 'butt');

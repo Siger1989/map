@@ -39,6 +39,41 @@ timings, and rendered-pin color counts. These helper outputs are diagnostic evid
 the native screenshots before making a visual acceptance claim. No map-source URLs, API keys,
 or credentials are read or emitted.
 
+## 160 drawing and line diagnostics
+
+The `interactive-preview` loopback bridge also accepts the fixed actions
+`telemetry-start`, `telemetry-snapshot`, `telemetry-stop`, and `snap-targets`.
+It does not accept JavaScript, a URL, or a script path from the caller.
+Telemetry is bounded to 100 samples; it reports input-to-SVG attribute timing,
+capture dimensions/duration/encoded length, and actual magnifier `drawImage`
+counts. These are not application FPS or end-to-end latency. It never saves
+capture data URLs, geographic positions, route contents, or map credentials.
+`snap-targets` only projects cached real MVT geometry to screen coordinates;
+it neither fetches data nor commits a drawing. Use an empty QA-owned draft and
+undo only the points added by the test.
+
+Generate synthetic renderer-only line fixtures from the repository root:
+
+```powershell
+node scripts/android/native-marker-regression/create-line160-fixtures.mjs
+```
+
+An optional `longitude,latitude` argument chooses a public test origin. The
+default `0,0` exposes a currently unresolved tilted-camera round-trip deviation;
+retain that failure separately from successful loaded-ground checks. These
+fixtures never inject GPS or recording positions. Push the generated JSON to
+the target application's external files root, then use
+`-e mode line-position-regression -e fixtureFile qa-line-position.json`.
+`fixtureVersion:160` and every `expectedStrokeScale` are mandatory. Assertions
+retain the requested scale; they do not silently substitute the actual camera
+scale when the requested pose fails. `cameraProbe` may report unavailable fields
+after R8 optimization and must not be interpreted as successful measurement.
+
+`restore-qa-viewport` reads a canonical external-files JSON filename with the
+explicit purpose `restore-native160-qa-view` and a validated camera. It restores
+only a viewport displaced by QA, with no GPS or saved-record write. Do not use
+it to replace a user's active camera without a snapshot from that QA session.
+
 ## Build the helper only
 
 From the repository root:

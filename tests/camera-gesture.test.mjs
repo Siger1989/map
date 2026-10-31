@@ -7,6 +7,8 @@ import {
   canStartRingDrag,
   ringAngle,
   rotateCameraRing,
+  shapeOrbitDisplacement,
+  wrapBearing,
 } from '../modules/controls/cameraGesture.ts';
 
 test('bearing ring accepts its touch band and rejects the centre and distant points', () => {
@@ -44,26 +46,41 @@ test('normal ring motion wraps north and stays independent of pitch', () => {
 test('model drag accepts horizontal, vertical and diagonal camera movement', () => {
   assert.deepEqual(orbitCamera({ pitch: 40, bearing: 0 }, 20, 0), {
     pitch: 40,
-    bearing: 27,
+    bearing: wrapBearing(shapeOrbitDisplacement(20)),
   });
   assert.deepEqual(orbitCamera({ pitch: 40, bearing: 0 }, 0, -20), {
-    pitch: 67,
+    pitch: 40 + shapeOrbitDisplacement(20),
     bearing: 0,
   });
   assert.deepEqual(orbitCamera({ pitch: 40, bearing: 0 }, 20, -20), {
-    pitch: 67,
-    bearing: 27,
+    pitch: 40 + shapeOrbitDisplacement(20),
+    bearing: wrapBearing(shapeOrbitDisplacement(20)),
+  });
+});
+
+test('model drag filters touch jitter and eases small inputs while preserving reversals and large movement', () => {
+  assert.equal(shapeOrbitDisplacement(1), 0, 'sub-deadzone input is ignored');
+  assert.equal(shapeOrbitDisplacement(-1), 0, 'deadzone is symmetric');
+  const small = shapeOrbitDisplacement(4);
+  assert.ok(small > 0 && small < 4 * 1.35 * 0.5, 'small intentional motion has a softer response');
+  assert.equal(shapeOrbitDisplacement(-4), -small, 'changing direction remains symmetric and reversible');
+  const atEaseEnd = shapeOrbitDisplacement(11.5);
+  assert.ok(Math.abs(shapeOrbitDisplacement(12.5) - atEaseEnd - 1.35) < 1e-12, 'full gain resumes smoothly after the low-input range');
+  assert.ok(shapeOrbitDisplacement(40) > 40, 'deliberate large drags retain substantial camera travel');
+  assert.deepEqual(orbitCamera({ pitch: 40, bearing: 10 }, 4, -4), {
+    pitch: 40 + small,
+    bearing: 10 + small,
   });
 });
 
 test('camera drag clamps tilt and wraps direction at north without blocking the other axis', () => {
   assert.deepEqual(orbitCamera({ pitch: 80, bearing: 175 }, 20, -100), {
     pitch: 80,
-    bearing: -158,
+    bearing: wrapBearing(175 + shapeOrbitDisplacement(20)),
   });
   assert.deepEqual(orbitCamera({ pitch: 0, bearing: -175 }, -20, 100), {
     pitch: 0,
-    bearing: 158,
+    bearing: wrapBearing(-175 - shapeOrbitDisplacement(20)),
   });
 });
 
@@ -187,7 +204,7 @@ test('rendered gizmo accepts model drags in the ring deadzone while keeping ring
     svg.dispatchEvent(pointer('pointermove', 1, 65, 71));
     svg.dispatchEvent(pointer('pointerup', 1, 65, 71));
   });
-  assert.deepEqual(calls, [{ pitch: 53.5, bearing: 13.5, phase: 'end' }], 'the model can tilt and rotate from a point inside the ring deadzone');
+  assert.deepEqual(calls, [{ pitch: 40 + shapeOrbitDisplacement(10), bearing: wrapBearing(shapeOrbitDisplacement(10)), phase: 'end' }], 'the model can tilt and rotate from a point inside the ring deadzone');
   assert.equal(svg.hasPointerCapture(1), false, 'pointerup releases capture');
 
   await React.act(async () => ring().dispatchEvent(pointer('pointerdown', 2, 55, 81)));

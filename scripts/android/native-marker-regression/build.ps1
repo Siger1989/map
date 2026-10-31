@@ -18,6 +18,8 @@ if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
     $project = (Resolve-Path -LiteralPath $ProjectRoot).Path
 }
 $helperRoot = (Resolve-Path -LiteralPath $PSScriptRoot).Path
+$assets = Join-Path $helperRoot 'assets'
+$telemetryAsset = Join-Path $assets 'drawing-telemetry.js'
 $androidJar = Join-Path $sdk 'platforms\android-35\android.jar'
 $buildTools = Join-Path $sdk 'build-tools\35.0.0'
 $keyStore = Join-Path $project 'mobile\.build\guanyun-test.jks'
@@ -28,7 +30,7 @@ $apksigner = Join-Path $buildTools 'apksigner.bat'
 $jar = Join-Path $jdk 'bin\jar.exe'
 $javac = Join-Path $jdk 'bin\javac.exe'
 
-foreach ($path in @($androidJar, $keyStore, $aapt, $d8, $zipalign, $apksigner, $jar, $javac)) {
+foreach ($path in @($androidJar, $keyStore, $aapt, $d8, $zipalign, $apksigner, $jar, $javac, $assets, $telemetryAsset)) {
     if (-not (Test-Path -LiteralPath $path)) { throw "Required tool or signing file missing: $path" }
 }
 
@@ -50,7 +52,7 @@ if ($LASTEXITCODE -ne 0) { throw 'd8 failed' }
 $baseApk = Join-Path $buildRoot 'base.apk'
 $alignedApk = Join-Path $buildRoot 'aligned.apk'
 $signedApk = Join-Path $buildRoot 'Native149Instrumentation.apk'
-& $aapt package -f -M (Join-Path $helperRoot 'AndroidManifest.xml') -I $androidJar -F $baseApk
+& $aapt package -f -M (Join-Path $helperRoot 'AndroidManifest.xml') -I $androidJar -A $assets -F $baseApk
 if ($LASTEXITCODE -ne 0) { throw 'aapt failed' }
 & $jar uf $baseApk -C $dex 'classes.dex'
 if ($LASTEXITCODE -ne 0) { throw 'adding classes.dex failed' }

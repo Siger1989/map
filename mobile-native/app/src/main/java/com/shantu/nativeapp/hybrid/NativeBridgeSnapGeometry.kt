@@ -30,7 +30,7 @@ class NativeBridgeSnapGeometry(
         val bounds: List<Double>,
         val enabledRoad: Boolean,
         val enabledRiver: Boolean,
-        val roadLayerVisible: Boolean,
+        val sourceLayerVisible: Boolean,
     )
     private data class SnapshotResult(val payload: JSONObject)
 
@@ -67,17 +67,17 @@ class NativeBridgeSnapGeometry(
         if (!validBounds(bounds) || window.engine.viewport.width <= 0 || window.engine.viewport.height <= 0)
             return response(cameraRevision, if (enabledRoad) Status.LOADING else Status.HIDDEN, emptyList(), if (enabledRiver) Status.LOADING else Status.HIDDEN, emptyList(), "viewport_unavailable")
         val copiedBounds = bounds!!.toList()
-        val roadVisible = cartography.snapRoadLayerVisible()
+        val sourceVisible = cartography.snapSourceVisible()
         val request: SnapshotRequest
         val alreadyCompleted: JSONObject?
         val enqueue: Boolean
         synchronized(stateLock) {
             val key = buildString {
                 append(cameraRevision).append('|').append(copiedBounds.joinToString(","))
-                append('|').append(enabledRoad).append('|').append(enabledRiver).append('|').append(roadVisible)
+                append('|').append(enabledRoad).append('|').append(enabledRiver).append('|').append(sourceVisible)
                 append('|').append(tileGeneration)
             }
-            request = SnapshotRequest(key, cameraRevision, copiedBounds, enabledRoad, enabledRiver, roadVisible)
+            request = SnapshotRequest(key, cameraRevision, copiedBounds, enabledRoad, enabledRiver, sourceVisible)
             latestKey = key
             latestRequest = request
             alreadyCompleted = if (completedKey == key) completedPayload else null
@@ -90,8 +90,8 @@ class NativeBridgeSnapGeometry(
             if (!accepted) synchronized(stateLock) { if (scheduledKey == request.key) scheduledKey = null }
         }
         return response(cameraRevision,
-            if (enabledRoad && roadVisible) Status.LOADING else if (enabledRoad) Status.HIDDEN else Status.HIDDEN,
-            emptyList(), if (enabledRiver) Status.LOADING else Status.HIDDEN, emptyList(), "geometry_processing")
+            if (enabledRoad && sourceVisible) Status.LOADING else Status.HIDDEN,
+            emptyList(), if (enabledRiver && sourceVisible) Status.LOADING else Status.HIDDEN, emptyList(), "geometry_processing")
     }
 
     /** Notify the host that a real vector tile arrived; it may request a fresh revision snapshot. */
@@ -120,19 +120,19 @@ class NativeBridgeSnapGeometry(
         val tiles = try { cartography.cachedSnapTiles(request.bounds) }
             catch (_: Exception) { null }
             ?: return SnapshotResult(response(request.revision,
-                if (request.enabledRoad) Status.BLOCKED else Status.HIDDEN, emptyList(),
-                if (request.enabledRiver) Status.BLOCKED else Status.HIDDEN, emptyList(), "geometry_cache_unavailable"))
+                if (request.enabledRoad && request.sourceLayerVisible) Status.MISSING else Status.HIDDEN, emptyList(),
+                if (request.enabledRiver && request.sourceLayerVisible) Status.MISSING else Status.HIDDEN, emptyList(), "geometry_cache_unavailable"))
         if (tiles.isEmpty()) return SnapshotResult(response(request.revision,
-            if (request.enabledRoad && request.roadLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(),
-            if (request.enabledRiver) Status.LOADING else Status.HIDDEN, emptyList(), "visible_tiles_not_loaded"))
+            if (request.enabledRoad && request.sourceLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(),
+            if (request.enabledRiver && request.sourceLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(), "visible_tiles_not_loaded"))
         val decodedTiles = decodeCached(tiles)
         val roads = if (request.enabledRoad) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, false) else emptyList()
         val rivers = if (request.enabledRiver) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, true) else emptyList()
         val roadStatus = Status.valueOf(NativeSnapGeometryState.status(
-            request.enabledRoad, request.roadLayerVisible, true, decodedTiles.isNotEmpty(), roads.size).uppercase())
+            request.enabledRoad, request.sourceLayerVisible, true, tiles.isNotEmpty(), roads.size).uppercase())
         // River snapping consumes the same real tile cache independently of the road overlay toggle.
         val riverStatus = Status.valueOf(NativeSnapGeometryState.status(
-            request.enabledRiver, true, true, decodedTiles.isNotEmpty(), rivers.size).uppercase())
+            request.enabledRiver, request.sourceLayerVisible, true, tiles.isNotEmpty(), rivers.size).uppercase())
         return SnapshotResult(response(request.revision, roadStatus, roads, riverStatus, rivers))
     }
 
@@ -173,8 +173,8 @@ class NativeBridgeSnapGeometry(
             val request = latestRequest?.takeIf { it.key == key } ?: return
             completedKey = key
             completedPayload = response(request.revision,
-                if (request.enabledRoad && request.roadLayerVisible) Status.BLOCKED else Status.HIDDEN, emptyList(),
-                if (request.enabledRiver) Status.BLOCKED else Status.HIDDEN, emptyList(), "geometry_processing_failed")
+                if (request.enabledRoad && request.sourceLayerVisible) Status.MISSING else Status.HIDDEN, emptyList(),
+                if (request.enabledRiver && request.sourceLayerVisible) Status.MISSING else Status.HIDDEN, emptyList(), "geometry_processing_failed")
             scheduledKey = null
             true
         }
@@ -206,7 +206,9 @@ class NativeBridgeSnapGeometry(
         // The worker owns decoded; avoid blocking lifecycle/main thread waiting for its decode.
     }
 
-    private enum class Status(val value: String) { READY("ready"), LOADING("loading"), HIDDEN("hidden"), BLOCKED("blocked") }
+    private enum class Status(val value: String) {
+        READY("ready"), LOADING("loading"), HIDDEN("hidden"), MISSING("missing"), BLOCKED("blocked")
+    }
 
     private companion object { const val MAX_DECODED_TILES = 24 }
 }
@@ -298,7 +300,8 @@ internal object NativeSnapGeometryExecutors {
 internal object NativeSnapGeometryState {
     fun status(enabled: Boolean, layerVisible: Boolean, viewportKnown: Boolean, cacheAvailable: Boolean, lines: Int): String = when {
         !enabled || !layerVisible -> "hidden"
-        !viewportKnown || !cacheAvailable || lines <= 0 -> "loading"
+        !viewportKnown || !cacheAvailable -> "loading"
+        lines <= 0 -> "missing"
         else -> "ready"
     }
 }

@@ -4,6 +4,7 @@ import type { NavigationCueInput } from './navigationCueGeometry.ts';
 import { createNavigationCueData } from './navigationCueGeometry.ts';
 import { createNavigationCueChevronImage, createNavigationCueLeadImage } from './navigationCueImage.ts';
 import { pathOf, type Path } from './geometry.ts';
+import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 
 export const NAVIGATION_CUE_SOURCE_ID = 'navigation-cues';
 export const NAVIGATION_CUE_OUTLINE_LAYER_ID = 'navigation-cue-outline';
@@ -71,7 +72,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round', visibility: shouldShowRibbon ? 'visible' : 'none' },
         paint: {
           'line-color': '#17382c',
-          'line-width': 8,
+          'line-width': routeLineWidthExpression(8),
           'line-opacity': 0.82,
         },
       });
@@ -86,7 +87,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round', visibility: shouldShowRibbon ? 'visible' : 'none' },
         paint: {
           'line-color': '#39c878',
-          'line-width': 4,
+          'line-width': routeLineWidthExpression(4),
           'line-opacity': 0.98,
         },
       });
@@ -101,7 +102,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#65562f',
-          'line-width': 8,
+          'line-width': routeLineWidthExpression(8),
           'line-opacity': 0.82,
         },
       });
@@ -116,7 +117,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#ffd34f',
-          'line-width': 4,
+          'line-width': routeLineWidthExpression(4),
           'line-opacity': 0.9,
         },
       });

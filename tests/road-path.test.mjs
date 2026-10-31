@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { roadLines, nearestRoad } from '../modules/tracks/roadSnapping.ts';
-import { roadPath } from '../modules/tracks/roadPath.ts';
-import { DrawingSession } from '../modules/tracks/DrawingSession.ts';
+import { roadLines, nearestRoad, roadHint, roadSnapResult } from '../modules/tracks/roadSnapping.ts';
+import { roadPath, roadPathDetailed } from '../modules/tracks/roadPath.ts';
+import { DrawingSession, blockedSnapHint } from '../modules/tracks/DrawingSession.ts';
 import {
   appendVertex,
   appendRoadVertex,
@@ -79,6 +79,53 @@ test('road path rejects inputs above its synchronous point budget', () => {
   const start = match(bend, 0, 0.2),
     end = match(bend, 1, 0.8);
   assert.equal(roadPath(start, end, [overBudget]), null);
+  assert.equal(roadPathDetailed(start, end, [overBudget]).status, 'limited');
+});
+
+test('same source road follows its full curved polyline both ways when the global build is over budget', () => {
+  const coordinates = Array.from({ length: 3105 }, (_, i) => [
+    1 + i * 0.00001,
+    1 + (i % 2 === 0 ? 0 : 0.00002),
+  ]);
+  const longRoad = line('long-source-road', coordinates);
+  const unrelated = [
+    line('unrelated-a', [[8, 8], [8.01, 8], [8.02, 8]]),
+    line('unrelated-b', [[9, 9], [9.01, 9], [9.02, 9]]),
+  ];
+  const roads = [longRoad, ...unrelated];
+  const start = match(longRoad, 100, 0.25),
+    end = match(longRoad, 3000, 0.75);
+  const forward = roadPathDetailed(start, end, roads);
+  assert.equal(forward.status, 'ready');
+  assert.equal(forward.section.length, 2901);
+  assert.deepEqual(forward.section[0], coordinates[101]);
+  assert.deepEqual(forward.section.at(-1), end.coordinate);
+  assert.ok(forward.section.some((point, index) => index > 0 && point[1] !== forward.section[index - 1][1]));
+
+  const reverse = roadPathDetailed(end, start, roads);
+  assert.equal(reverse.status, 'ready');
+  assert.equal(reverse.section.length, forward.section.length);
+  assert.deepEqual(reverse.section[0], coordinates[3000]);
+  assert.deepEqual(reverse.section.at(-1), start.coordinate);
+});
+
+test('same-segment and endpoint fallback removes duplicate vertices', () => {
+  const route = line('limited-same-segment', [[1, 1], [2, 1], [2, 2]]);
+  const sameSegment = roadPathDetailed(match(route, 0, 0.2), match(route, 0, 0.8), [route]);
+  assert.equal(sameSegment.status, 'ready');
+  assert.deepEqual(sameSegment.section, [match(route, 0, 0.8).coordinate]);
+  const toVertex = roadPathDetailed(match(route, 0, 0), match(route, 0, 1), [route]);
+  assert.equal(toVertex.status, 'ready');
+  assert.deepEqual(toVertex.section, [[2, 1]]);
+});
+
+test('bounded global search reports limited separately from a real disconnected network', () => {
+  const a = line('limited-a', [[1, 1], [1.001, 1]]),
+    b = line('limited-b', [[2, 1], [2.001, 1]]),
+    large = line('large-unrelated', Array.from({ length: 3001 }, (_, i) => [10 + i * 0.00001, 10]));
+  assert.equal(roadPathDetailed(match(a, 0, 0), match(b, 0, 1), [a, b, large]).status, 'limited');
+  assert.equal(roadPathDetailed(match(a, 0, 0), match(b, 0, 1), [a, b]).status, 'disconnected');
+  assert.equal(roadPath(match(a, 0, 0), match(b, 0, 1), [a, b, large]), null);
 });
 
 test('road path stops endpoint seam work at its synchronous check budget', () => {
@@ -87,7 +134,9 @@ test('road path stops endpoint seam work at its synchronous check budget', () =>
   );
   const start = match(dense[0], 0, 0.2),
     end = match(dense[0], 0, 0.8);
-  assert.equal(roadPath(start, end, dense), null);
+  assert.deepEqual(roadPath(start, end, dense), [end.coordinate]);
+  const otherLineEnd = match(dense.at(-1), 0, 0.8);
+  assert.equal(roadPathDetailed(start, otherLineEnd, dense).status, 'limited');
 });
 
 test('two selected points retain every bend, forwards and backwards', () => {
@@ -247,7 +296,7 @@ test('connected roads follow curves; disconnected roads cross explicitly and res
   );
   const blocked = {
     ...options,
-    snapRoad: () => ({ status: 'ready', match: null }),
+    snapRoad: () => ({ status: 'no-match', match: null }),
   };
   assert.equal(
     session.input({ type: 'start', point: { x: 250, y: 244 } }, blocked).preview
@@ -258,12 +307,69 @@ test('connected roads follow curves; disconnected roads cross explicitly and res
     session.input({ type: 'end', reason: 'release' }, blocked).vertex,
     undefined,
   );
+  const missing = {
+    ...options,
+    snapRoad: () => ({ status: 'unavailable', match: null }),
+  };
+  const unavailablePreview = session.input(
+    { type: 'start', point: { x: 250, y: 244 } },
+    missing,
+  );
+  assert.equal(unavailablePreview.preview.blocked, true);
+  assert.match(unavailablePreview.hint, /数据不可用/);
+  assert.equal(
+    session.input({ type: 'end', reason: 'release' }, missing).vertex,
+    undefined,
+  );
+  const loading = { ...options, snapRoad: () => ({ status: 'loading', match: null }) };
+  const loadingPreview = session.input(
+    { type: 'start', point: { x: 250, y: 244 } },
+    loading,
+  );
+  assert.equal(loadingPreview.preview.blocked, true);
+  assert.match(loadingPreview.hint, /数据加载中/);
+  assert.equal(session.input({ type: 'end', reason: 'release' }, loading).vertex, undefined);
+  const limited = { ...options, snapRoad: () => roadSnapResult(b, a.coordinate, null, 'limited') };
+  const limitedPreview = session.input(
+    { type: 'start', point: { x: 250, y: 244 } },
+    limited,
+  );
+  assert.equal(limitedPreview.preview.blocked, true);
+  assert.match(limitedPreview.hint, /吸附计算受限/);
+  assert.equal(session.input({ type: 'end', reason: 'release' }, limited).vertex, undefined);
+  assert.match(roadHint({ status: 'unavailable', match: null }), /数据不可用/);
+  assert.match(roadHint({ status: 'ready', match: null }), /附近没有/);
+  assert.match(roadHint({ status: 'no-match', match: null }), /保留原始点/);
+  assert.match(roadHint({ status: 'disconnected', match: b }), /不连通/);
+  assert.match(roadHint({ status: 'limited', match: null }), /计算受限/);
+  assert.match(roadHint({ status: 'hidden', match: null }), /吸附已关闭/);
+  assert.match(blockedSnapHint('loading', false), /道路数据加载中/);
+  assert.match(blockedSnapHint('unavailable', false), /道路数据不可用/);
+  assert.match(blockedSnapHint('limited', false), /吸附计算受限/);
+  assert.match(blockedSnapHint('no-match', false), /没有可吸附道路/);
+  assert.match(blockedSnapHint('disconnected', true), /水系断点/);
   const free = { ...blocked, roadSnapping: false };
   session.input({ type: 'start', point: { x: 250, y: 244 } }, free);
   assert.deepEqual(
     session.input({ type: 'end', reason: 'release' }, free).vertex,
     [2.5, 2],
   );
+});
+test('road snap result distinguishes no match from disconnected while preserving real candidate data', () => {
+  const candidate = match(bend, 2, 0.5),
+    section = [candidate.coordinate];
+  assert.equal(roadSnapResult(null, candidate.coordinate).status, 'no-match');
+  const disconnected = roadSnapResult(candidate, [0, 0], null);
+  assert.equal(disconnected.status, 'disconnected');
+  assert.equal(disconnected.match, candidate);
+  assert.equal(disconnected.section, null);
+  const connected = roadSnapResult(candidate, [0, 0], section);
+  assert.equal(connected.status, 'ready');
+  assert.equal(connected.match, candidate);
+  assert.equal(connected.section, section);
+  const limited = roadSnapResult(candidate, [0, 0], null, 'limited');
+  assert.equal(limited.status, 'limited');
+  assert.equal(limited.match, null);
 });
 test('freehand road snapping does not report a disconnected route as snapped', () => {
   const a = line('freehand-a', [[1, 1], [1, 2]]),

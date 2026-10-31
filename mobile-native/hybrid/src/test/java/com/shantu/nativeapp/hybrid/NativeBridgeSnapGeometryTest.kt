@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.hybrid
 
 import com.shantu.nativeapp.geology.NativeMvtDecoder
+import com.shantu.nativeapp.map.NativeSnapDataLayerPolicy
 import com.shantu.nativeapp.map.NativeCachedSnapTile
 import org.junit.Assert.*
 import org.junit.Test
@@ -122,15 +123,22 @@ class NativeBridgeSnapGeometryTest {
         assertNull(signal.observe {})
     }
 
-    @Test fun requiresAtLeastRealDecodedLinesForReadyAndKeepsEmptyCacheLoading() {
+    @Test fun reportsDisabledLoadingMissingAndReadyGeometrySeparately() {
         assertEquals("hidden", NativeSnapGeometryState.status(enabled = false, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 4))
         assertEquals("hidden", NativeSnapGeometryState.status(enabled = true, layerVisible = false, viewportKnown = true, cacheAvailable = true, lines = 4))
-        // River snapping owns its own visibility flag and can use the shared cache when road rendering is off.
         assertEquals("ready", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 1))
         assertEquals("loading", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = false, cacheAvailable = true, lines = 4))
         assertEquals("loading", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = false, lines = 0))
-        assertEquals("loading", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 0))
+        assertEquals("missing", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 0))
         assertEquals("ready", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 1))
+    }
+
+    @Test fun roadAndRiverSnappingShareBoundedMvtLayerWithoutDuplicatingVisibleRoadLayers() {
+        assertTrue(NativeSnapDataLayerPolicy.shouldEnable(roadSnapping = true, riverSnapping = false, anotherMvtLayerFetching = false))
+        assertTrue(NativeSnapDataLayerPolicy.shouldEnable(roadSnapping = false, riverSnapping = true, anotherMvtLayerFetching = false))
+        assertTrue(NativeSnapDataLayerPolicy.shouldEnable(roadSnapping = true, riverSnapping = true, anotherMvtLayerFetching = false))
+        assertFalse(NativeSnapDataLayerPolicy.shouldEnable(roadSnapping = false, riverSnapping = false, anotherMvtLayerFetching = false))
+        assertFalse(NativeSnapDataLayerPolicy.shouldEnable(roadSnapping = true, riverSnapping = false, anotherMvtLayerFetching = true))
     }
 
     private fun feature(layer: String, clazz: String, name: String, path: List<Pair<Int, Int>>, type: Int = 2) =

@@ -9,6 +9,11 @@ import { startRouteEdit, selectEditNode, toggleEditBranch, appendEditBranch, und
 import { composeTrackOverlay } from '../modules/workbench/trackOverlay.ts';
 import { metresBetween } from '../modules/navigation/types.ts';
 import { profilePreviewIndex, profilePreviewMoves } from '../modules/tracks/profilePreviewGeometry.ts';
+import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
+
+// Route-icon prioritization schedules DOM inspection asynchronously; these
+// geometry/paint tests use a MapLibre-sized container without a browser DOM.
+if (typeof globalThis.requestAnimationFrame !== 'function') globalThis.requestAnimationFrame = () => 1;
 
 // Bundle the actual layer for Node (its MapLibre constructor uses TS parameter properties).
 const result = await build({
@@ -39,6 +44,8 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
   const sources = new Map(),
     layers = new Map();
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id),
     getLayer: (id) => layers.get(id),
     on() {},
@@ -111,6 +118,11 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
   const data = sources.get('manual-tracks').data;
   const selectedEdges = sources.get('manual-track-selection-edge').data;
   assert.equal(layers.get('manual-track-selection-edge').type, 'line', 'selection uses terrain-draped map lines');
+  assert.deepEqual(layers.get('manual-track-line').paint['line-width'], routeLineWidthExpression(['get', 'width']));
+  assert.deepEqual(layers.get('manual-track-outline').paint['line-width'], routeLineWidthExpression([
+    '+', ['get', 'width'], ['case', ['get', 'selected'], 2, 1],
+  ]));
+  assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-width'], routeLineWidthExpression(['get', 'width']));
   assert.deepEqual(selectedEdges.features[0].geometry.coordinates, track.segments, 'selection retains geographic geometry, not projected endpoint chords');
   assert.equal(
     new Set(
@@ -155,6 +167,8 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
 test('an omitted editing flag keeps the legacy default of drawing route nodes', () => {
   const sources = new Map(), layers = new Map();
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id), getLayer: (id) => layers.get(id), on() {},
     addSource(id, spec) { sources.set(id, { ...spec, setData(data) { this.data = structuredClone(data); return Promise.resolve(); }, updateData() { return Promise.resolve(); } }); },
     addLayer(spec) { layers.set(spec.id, spec); }, getStyle: () => ({ layers: [...layers.values()] }), moveLayer() {},
@@ -172,6 +186,8 @@ test('active-node selection patches only changed point features until projection
     handlers = new Map(),
     counts = { project: 0, setData: 0, mainSetData: 0, updateData: 0 };
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id),
     getLayer: (id) => layers.get(id),
     addSource(id, spec) {
@@ -269,6 +285,8 @@ test('active-node selection patches only changed point features until projection
 test('elevation-profile samples follow a dragged route endpoint through cancel, commit, box selection, and undo', () => {
   const sources = new Map(), layers = new Map();
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: id => sources.get(id), getLayer: id => layers.get(id), on() {},
     addSource(id, spec) {
       sources.set(id, { ...spec,
@@ -359,6 +377,8 @@ test('real saved-route branch append/join/undo overlays use stable-ID diff and m
     const sources = new Map(), layers = new Map(), handlers = new Map();
     const counts = { mainSetData: 0, mainDiff: 0, added: 0, removed: 0, project: 0 };
     const map = {
+      getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+      off() {},
       getSource: (id) => sources.get(id), getLayer: (id) => layers.get(id),
       addSource(id, spec) {
         const source = { ...spec,
@@ -414,6 +434,8 @@ test('a stale geometry rejection restores the newest baseline and reapplies the 
   let rejectGeometry;
   let mainDiffCount = 0;
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id), getLayer: (id) => layers.get(id), on() {},
     addSource(id, spec) {
       const source = { ...spec,
@@ -460,10 +482,13 @@ test('a stale geometry rejection restores the newest baseline and reapplies the 
 
 test('route-handle projection cache reuses unchanged snap candidates and expires on camera/style changes', () => {
   const sources = new Map(), layers = new Map(), handlers = new Map();
+  const emit = (type, event) => { for (const handler of handlers.get(type) ?? []) handler(event); };
   let projectCalls = 0;
   let moving = false;
   const terrain = { source: 'dem' };
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id),
     getLayer: (id) => layers.get(id),
     addSource(id, spec) {
@@ -472,7 +497,7 @@ test('route-handle projection cache reuses unchanged snap candidates and expires
     addLayer(spec) { layers.set(spec.id, spec); },
     getStyle: () => ({ layers: [...layers.values()] }),
     moveLayer() {},
-    on(type, handler) { handlers.set(type, handler); },
+    on(type, handler) { handlers.set(type, [...(handlers.get(type) ?? []), handler]); },
     isMoving: () => moving,
     getTerrain: () => terrain,
     project: ([x, y]) => { projectCalls++; return { x: x * 100000, y: y * 100000 }; },
@@ -491,7 +516,7 @@ test('route-handle projection cache reuses unchanged snap candidates and expires
   layer.sync({ ...base, saved: [changedSelected, candidate] });
   assert.equal(projectCalls - callsAfterInitial, 4, 'edited route is reprojected while unchanged candidate handle positions are reused');
 
-  handlers.get('movestart')();
+  emit('movestart');
   moving = true;
   const beforeMoveSync = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate] });
@@ -502,29 +527,29 @@ test('route-handle projection cache reuses unchanged snap candidates and expires
   assert.equal(projectCalls - beforeMoveEndSync, 7, 'the first settled-camera sync reprojects all handles before restoring cache validity');
 
   layers.delete('manual-track-line');
-  handlers.get('styledata')();
+  emit('styledata');
   const beforeStyleSync = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate] });
   assert.equal(projectCalls - beforeStyleSync, 7, 'style rebuild expires projected handle cache');
 
-  handlers.get('sourcedata')({ sourceId: 'unrelated' });
+  emit('sourcedata', { sourceId: 'unrelated' });
   const afterUnrelatedSource = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate], alternativeId: 'unrelated-source' });
   assert.equal(projectCalls, afterUnrelatedSource, 'non-terrain source updates preserve projected handles');
 
-  handlers.get('sourcedata')({ sourceId: 'dem' });
+  emit('sourcedata', { sourceId: 'dem' });
   let beforeInvalidation = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate], alternativeId: 'dem-arrived' });
   assert.equal(projectCalls - beforeInvalidation, 7, 'DEM arrival invalidates projection-dependent handle spacing');
-  handlers.get('resize')();
+  emit('resize');
   beforeInvalidation = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate], alternativeId: 'resized' });
   assert.equal(projectCalls - beforeInvalidation, 7, 'map resize invalidates projected handle spacing');
-  handlers.get('terrain')();
+  emit('terrain');
   beforeInvalidation = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate], alternativeId: 'terrain-changed' });
   assert.equal(projectCalls - beforeInvalidation, 7, 'terrain exaggeration/source changes invalidate projected handles');
-  handlers.get('webglcontextrestored')();
+  emit('webglcontextrestored');
   beforeInvalidation = projectCalls;
   layer.sync({ ...base, saved: [changedSelected, candidate], alternativeId: 'context-restored' });
   assert.equal(projectCalls - beforeInvalidation, 7, 'WebGL context restoration forces fresh projected handles');
@@ -534,6 +559,8 @@ test('real route-node selection and overlay composition use the active-node fast
   const sources = new Map(), layers = new Map(), handlers = new Map();
   let projectCalls = 0, mainSetData = 0, mainUpdates = 0;
   const map = {
+    getContainer: () => ({ clientWidth: 390, clientHeight: 857, querySelectorAll: () => [], addEventListener() {}, removeEventListener() {} }),
+    off() {},
     getSource: (id) => sources.get(id),
     getLayer: (id) => layers.get(id),
     addSource(id, spec) {

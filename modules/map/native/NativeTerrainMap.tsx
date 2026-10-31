@@ -33,6 +33,9 @@ import { interpretNativeTap, nativeAnnotationHit, NativeTapGestureGate } from '.
 import type { NativeTapPick } from './tapSemantics.ts';
 import { invalidateNativeDrawingGroundHit, nativeDrawingCoordinateAt, updateNativeDrawingGroundHit } from './drawingGroundHit.ts';
 import type { NativeDrawingGroundHit } from './drawingGroundHit.ts';
+import { createMagnifierCapturePump } from './magnifierCapture.ts';
+import { magnifierCropWindow } from './magnifierCrop.ts';
+import { nextSnapGeometryState } from './snapGeometryState.ts';
 import type { NativeMapPhoto, NativeMapRenderState, NativeMapViewport, NativeProjectionFrame } from './types.ts';
 import { INITIAL_VIEW } from '../types.ts';
 import { readLastView, saveLastView } from '../lastView.ts';
@@ -41,16 +44,17 @@ import type { CameraSnapshot } from '../../controls/useMapFocusLock.ts';
 import type { Coordinate } from '../../navigation/types.ts';
 import { coordinate } from '../../navigation/types.ts';
 import type { ScreenPoint } from '../../tracks/drawing.ts';
+import type { MagnifierSubscription } from '../../tracks/PointMagnifier.tsx';
 import type { TrackOverlay } from '../../tracks/TrackLayer.ts';
 import type { TrackContinuationHit } from '../../tracks/prepareTrackContinuation.ts';
 import { pickTrackContinuation } from '../../tracks/prepareTrackContinuation.ts';
 import { DRAFT_ID } from '../../tracks/editing.ts';
 import type { TrackRenderReceipt, TrackRenderHandoffResult } from '../../tracks/trackRenderHandoff.ts';
 import type { RoadLine, RoadMatch, RoadSnapResult, RoadSnapper } from '../../tracks/roadSnapping.ts';
-import { nearestRoad } from '../../tracks/roadSnapping.ts';
+import { nearestRoad, roadSnapResult } from '../../tracks/roadSnapping.ts';
 import { riverLines } from '../../tracks/riverSnapping.ts';
 import { roadLines as readRoadLines } from '../../tracks/roadSnapping.ts';
-import { roadPath } from '../../tracks/roadPath.ts';
+import { roadPathDetailed } from '../../tracks/roadPath.ts';
 import type { SnapViewport } from '../../tracks/snapping.ts';
 import type { ProjectionFrame, WatchProjection } from '../../objectTransform/projection.ts';
 import type { VisiblePhoto } from '../../photos/storage.ts';
@@ -379,15 +383,26 @@ function readLines(value: unknown, kind: 'road' | 'river'): RoadLine[] | null {
 
 function applySnapGeometry(runtime: Runtime, value: unknown) {
   if (!isRecord(value)) return;
-  runtime.snapGeometryRevision = Number.isSafeInteger(value.cameraRevision) ? value.cameraRevision as number : null;
+  const previousRevision = runtime.snapGeometryRevision;
+  const incomingRevision = Number.isSafeInteger(value.cameraRevision) ? value.cameraRevision as number : null;
   for (const kind of ['road', 'river'] as const) {
     const source = value[kind];
-    if (!isRecord(source) || !['ready', 'loading', 'hidden', 'blocked'].includes(String(source.status))) continue;
-    const status = source.status as 'ready' | 'loading' | 'hidden' | 'blocked';
+    if (!isRecord(source) || !['ready', 'loading', 'hidden', 'blocked', 'missing'].includes(String(source.status))) continue;
+    const status = source.status as 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing';
     const lines = readLines({ lines: source.lines }, kind);
-    if (kind === 'road') { runtime.roadGeometryStatus = status; runtime.roadLines = status === 'ready' ? lines : null; }
-    else { runtime.riverGeometryStatus = status; runtime.riverLines = status === 'ready' ? lines : null; }
+    if (kind === 'road') {
+      const next = nextSnapGeometryState(previousRevision, runtime.frameSnapRevision, incomingRevision,
+        { status: runtime.roadGeometryStatus ?? 'loading', lines: runtime.roadLines }, status, lines);
+      runtime.roadGeometryStatus = next.status;
+      runtime.roadLines = next.lines;
+    } else {
+      const next = nextSnapGeometryState(previousRevision, runtime.frameSnapRevision, incomingRevision,
+        { status: runtime.riverGeometryStatus ?? 'loading', lines: runtime.riverLines }, status, lines);
+      runtime.riverGeometryStatus = next.status;
+      runtime.riverLines = next.lines;
+    }
   }
+  runtime.snapGeometryRevision = incomingRevision;
 }
 
 type Waiter = { receipt: TrackRenderReceipt; done: (result?: TrackRenderHandoffResult) => void; timer: ReturnType<typeof setTimeout> };
@@ -412,8 +427,8 @@ type Runtime = {
   waiters: Set<Waiter>;
   roadLines: RoadLine[] | null;
   riverLines: RoadLine[] | null;
-  roadGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | null;
-  riverGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | null;
+  roadGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
+  riverGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
   frameSnapRevision: number | null;
   snapGeometryRevision: number | null;
   pendingSnapGeometry: unknown;
@@ -1376,24 +1391,29 @@ function makeHandle(
   const projection = (point: Coordinate) => runtime.client && runtime.mapId ? pointFromProjection(runtime.client, runtime.mapId, point) : null;
   const geometryCoordinate = (point: ScreenPoint) => runtime.client && runtime.mapId ? fromLocalScreen(runtime.client, runtime.mapId, point) : null;
   const roadSnapper = (kind: 'road' | 'river'): RoadSnapper => (point, previous, from) => {
-    const enabled = kind === 'road' ? runtime.props.settings.roads : runtime.props.riverSnapping;
+    const enabled = kind === 'road' ? runtime.props.roadSnapping : runtime.props.riverSnapping;
     if (!enabled) return { status: 'hidden', match: null };
     const geometryStatus = kind === 'road' ? runtime.roadGeometryStatus : runtime.riverGeometryStatus;
     if (geometryStatus === 'hidden') return { status: 'hidden', match: null };
     if (!geometryStatus || geometryStatus === 'loading') return { status: 'loading', match: null };
-    if (geometryStatus === 'blocked') return { status: 'unavailable', match: null };
+    if (geometryStatus === 'blocked' || geometryStatus === 'missing') return { status: 'unavailable', match: null };
     const lines = kind === 'road' ? runtime.roadLines : runtime.riverLines;
     if (!lines) return { status: 'unavailable', match: null };
     if (!runtime.client || !runtime.mapId) return { status: 'unavailable', match: null };
     const project = (coordinateValue: Coordinate) => projection(coordinateValue);
     const match = nearestRoad(point, lines, project, previous);
     let section: Coordinate[] | null | undefined;
+    let pathStatus: 'ready' | 'disconnected' | 'limited' | undefined;
     if (from && match) {
       const screen = project(from);
       const start = screen ? nearestRoad(screen, lines, project) : null;
-      section = start ? roadPath(start, match, lines) : null;
+      const path = start
+        ? roadPathDetailed(start, match, lines)
+        : { status: 'disconnected' as const };
+      pathStatus = path.status;
+      section = path.status === 'ready' ? path.section : null;
     }
-    return { status: match || lines.length ? 'ready' : 'unavailable', match, section };
+    return roadSnapResult(match, from, section, pathStatus);
   };
   const handle: MapHandle = {
     isUserInteracting: () => runtime.userInteracting,
@@ -1637,44 +1657,66 @@ async function buildCurrentState(runtime: Runtime, signal: AbortSignal): Promise
   return state;
 }
 
-function magnify(runtime: Runtime, target: HTMLCanvasElement, point: ScreenPoint, report: (message: string) => void): () => void {
+function magnify(runtime: Runtime, target: HTMLCanvasElement, point: ScreenPoint, report: (message: string) => void): MagnifierSubscription {
   const client = runtime.client, mapId = runtime.mapId;
   if (!client || !mapId || client.capability('capture').status !== 'ready') {
     report('原生地图帧捕获能力未就绪，放大镜没有伪造预览');
     return () => {};
   }
   let disposed = false;
-  let generation = 0;
-  let abort: AbortController | null = null;
+  let latestPoint = point;
   let previousFrame = -1;
+  const pump = createMagnifierCapturePump(async (signal) => {
+    const requestPoint = latestPoint;
+    const capture = await client.request<{
+      dataUrl?: string; mimeType?: string; width?: number; height?: number;
+      cropCssRect?: { x?: number; y?: number; width?: number; height?: number };
+      captureDurationMs?: number;
+    }>(mapId, 'capture', { roiCssRect: { x: requestPoint.x - 48, y: requestPoint.y - 48, width: 96, height: 96 } }, { signal });
+    if (!capture.dataUrl) throw new Error('原生地图帧没有图像数据');
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('原生地图放大镜图像解码失败'));
+      image.src = capture.dataUrl!;
+    });
+    return { image, cropCssRect: capture.cropCssRect };
+  }, (image, latest) => {
+    const context = target.getContext('2d');
+    if (!context) return;
+    const viewport = runtime.viewport?.cssRect;
+    if (!viewport?.width || !viewport.height) return;
+    const crop = image.cropCssRect && [image.cropCssRect.x, image.cropCssRect.y, image.cropCssRect.width, image.cropCssRect.height].every((value) => typeof value === 'number' && Number.isFinite(value)) && image.cropCssRect.width! > 0 && image.cropCssRect.height! > 0
+      ? image.cropCssRect as { x: number; y: number; width: number; height: number }
+      : { x: 0, y: 0, width: viewport.width, height: viewport.height };
+    const span = 32;
+    const window = magnifierCropWindow(latest, crop, span);
+    if (!window) return;
+    const sx = image.image.naturalWidth / crop.width, sy = image.image.naturalHeight / crop.height;
+    context.fillStyle = '#10212b'; context.fillRect(0, 0, target.width, target.height);
+    context.drawImage(image.image,
+      window.source.x * sx, window.source.y * sy,
+      window.source.width * sx, window.source.height * sy,
+      window.destination.x * target.width, window.destination.y * target.height,
+      window.destination.width * target.width, window.destination.height * target.height);
+  }, 125, (error) => {
+    if (disposed) return;
+    const context = target.getContext('2d');
+    if (context) {
+      context.fillStyle = '#10212b'; context.fillRect(0, 0, target.width, target.height);
+      context.fillStyle = '#f2f5ed'; context.font = '12px sans-serif'; context.textAlign = 'center';
+      context.fillText('地图影像重试中', target.width / 2, target.height - 12);
+    }
+    report(`原生地图放大镜失败：${error instanceof Error ? error.message : '未知错误'}`);
+  }, 750);
   const render = () => {
     if (disposed || !runtime.frame || runtime.frame.sequence === previousFrame) return;
     previousFrame = runtime.frame.sequence;
-    const current = ++generation;
-    abort?.abort();
-    abort = new AbortController();
-    void client.request<{ dataUrl?: string; mimeType?: string; width?: number; height?: number }>(mapId, 'capture', { maxDimension: 2048 }, { signal: abort.signal }).then((capture) => {
-      if (disposed || current !== generation || !capture.dataUrl) return;
-      const image = new Image();
-      image.onload = () => {
-        if (disposed || current !== generation) return;
-        const context = target.getContext('2d');
-        if (!context) return;
-        const viewport = runtime.viewport?.cssRect;
-        if (!viewport?.width || !viewport.height) return;
-        const sx = image.naturalWidth / viewport.width, sy = image.naturalHeight / viewport.height;
-        const span = 32;
-        context.fillStyle = '#10212b'; context.fillRect(0, 0, target.width, target.height);
-        try { context.drawImage(image, (point.x - span / 2) * sx, (point.y - span / 2) * sy, span * sx, span * sy, 0, 0, target.width, target.height); }
-        catch { report('原生地图放大镜捕获内容不可用'); }
-      };
-      image.onerror = () => { if (!disposed && current === generation) report('原生地图放大镜图像解码失败'); };
-      image.src = capture.dataUrl;
-    }).catch((error: unknown) => {
-      if (!disposed && current === generation && (error as Error)?.name !== 'AbortError') report(`原生地图放大镜失败：${error instanceof Error ? error.message : '未知错误'}`);
-    });
+    pump.update(latestPoint);
   };
   const unsubscribe = client.subscribe(mapId, 'renderFrame', render);
-  render();
-  return () => { disposed = true; generation++; abort?.abort(); unsubscribe(); };
+  pump.update(point);
+  const stop = (() => { disposed = true; pump.dispose(); unsubscribe(); }) as MagnifierSubscription;
+  stop.update = (next) => { latestPoint = next; pump.update(next); };
+  return stop;
 }

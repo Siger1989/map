@@ -642,7 +642,12 @@ class NativeReactMapHost(
         if (input.optJSONObject("renderGeometry")?.has("routes") == true) {
             if (entry.routeIds.isNotEmpty()) { entry.routeIds.forEach(entry.controller::removeRoute); entry.routeIds.clear() }
         } else if (input.optJSONObject("routeOverlay")?.toString() != previous.optJSONObject("routeOverlay")?.toString()) applyRouteOverlay(entry, input.optJSONObject("routeOverlay") ?: JSONObject())
-        entry.controller.cartographyForBridge().setRiverSnapping(input.optJSONObject("interaction")?.optBoolean("riverSnapping") == true)
+        input.optJSONObject("interaction")?.let { interaction ->
+            entry.controller.cartographyForBridge().apply {
+                setRoadSnapping(interaction.optBoolean("roadSnapping"))
+                setRiverSnapping(interaction.optBoolean("riverSnapping"))
+            }
+        }
         if (input.optJSONObject("renderGeometry") == null && input.optJSONObject("trackOverlay")?.toString() != previous.optJSONObject("trackOverlay")?.toString()) applyTrackOverlay(entry, input.optJSONObject("trackOverlay") ?: JSONObject())
         if (input.optJSONObject("renderGeometry")?.toString() != previous.optJSONObject("renderGeometry")?.toString()) {
             input.optJSONObject("renderGeometry")?.let { entry.overlayRenderer?.sync(it) }
@@ -1315,28 +1320,56 @@ class NativeReactMapHost(
         val entry = requireEntry(mapId)
         val view = entry.controller.view
         require(Build.VERSION.SDK_INT >= 24 && view is SurfaceView) { "当前设备不支持地图帧捕获" }
-        val bitmap = Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        PixelCopy.request(view, bitmap, { result ->
-            if (!isCurrent(entry)) { bitmap.recycle(); return@request }
-            if (result != PixelCopy.SUCCESS) {
+        val roiRequest = payload.optJSONObject("roiCssRect")
+        val roi = if (roiRequest != null && Build.VERSION.SDK_INT >= 26) {
+            NativeMagnifierRoiPolicy.clamp(
+                view.width, view.height, cssScale(entry),
+                roiRequest.optDouble("x", Double.NaN), roiRequest.optDouble("y", Double.NaN),
+                roiRequest.optDouble("width", Double.NaN), roiRequest.optDouble("height", Double.NaN),
+            )
+        } else null
+        if (roiRequest != null && Build.VERSION.SDK_INT >= 26 && roi == null) {
+            postError(requestId, mapId, "capture_roi_invalid", "地图放大镜区域无效或不在当前地图内")
+            return
+        }
+        val bitmap = if (roi != null) Bitmap.createBitmap(roi.widthPx, roi.heightPx, Bitmap.Config.ARGB_8888)
+            else Bitmap.createBitmap(view.width.coerceAtLeast(1), view.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        val captureStartedAt = android.os.SystemClock.elapsedRealtime()
+        val onCopied = PixelCopy.OnPixelCopyFinishedListener { result ->
+            if (!isCurrent(entry)) {
+                bitmap.recycle()
+            } else if (result != PixelCopy.SUCCESS) {
                 bitmap.recycle()
                 postError(requestId, mapId, "capture_failed", "地图帧捕获失败")
-                return@request
-            }
-            val maxDimension = payload.optInt("maxDimension", 2048).coerceIn(64, 2048)
-            val output = if (maxOf(bitmap.width, bitmap.height) > maxDimension) {
-                val factor = maxDimension.toDouble() / maxOf(bitmap.width, bitmap.height)
-                Bitmap.createScaledBitmap(bitmap, (bitmap.width * factor).toInt().coerceAtLeast(1), (bitmap.height * factor).toInt().coerceAtLeast(1), true).also { bitmap.recycle() }
-            } else bitmap
-            val outputWidth = output.width; val outputHeight = output.height
-            val bytes = ByteArrayOutputStream().use { stream -> output.compress(Bitmap.CompressFormat.JPEG, 82, stream); stream.toByteArray() }
-            output.recycle()
-            if (bytes.size > MAX_CAPTURE_BYTES) {
-                postError(requestId, mapId, "capture_too_large", "地图帧超过捕获限制")
             } else {
-                send("result", mapId, requestId, JSONObject().put("dataUrl", "data:image/jpeg;base64," + android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)).put("width", outputWidth).put("height", outputHeight))
+                val maxDimension = payload.optInt("maxDimension", 2048).coerceIn(64, 2048)
+                val output = if (roi == null && maxOf(bitmap.width, bitmap.height) > maxDimension) {
+                    val factor = maxDimension.toDouble() / maxOf(bitmap.width, bitmap.height)
+                    Bitmap.createScaledBitmap(bitmap, (bitmap.width * factor).toInt().coerceAtLeast(1), (bitmap.height * factor).toInt().coerceAtLeast(1), true).also { bitmap.recycle() }
+                } else bitmap
+                val outputWidth = output.width; val outputHeight = output.height
+                val format = if (roi != null) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG
+                val mimeType = if (roi != null) "image/png" else "image/jpeg"
+                val bytes = ByteArrayOutputStream().use { stream ->
+                    if (roi != null) output.compress(format, 100, stream) else output.compress(format, 82, stream)
+                    stream.toByteArray()
+                }
+                output.recycle()
+                if (bytes.size > MAX_CAPTURE_BYTES) {
+                    postError(requestId, mapId, "capture_too_large", "地图帧超过捕获限制")
+                } else {
+                    val response = JSONObject().put("dataUrl", "data:$mimeType;base64," + android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP))
+                        .put("mimeType", mimeType).put("width", outputWidth).put("height", outputHeight)
+                        .put("captureDurationMs", (android.os.SystemClock.elapsedRealtime() - captureStartedAt).coerceAtLeast(0L))
+                    if (roi != null) response.put("cropCssRect", JSONObject()
+                        .put("x", roi.xCss).put("y", roi.yCss).put("width", roi.widthCss).put("height", roi.heightCss))
+                    send("result", mapId, requestId, response)
+                }
             }
-        }, main)
+        }
+        if (roi != null && Build.VERSION.SDK_INT >= 26) {
+            PixelCopy.request(view, Rect(roi.leftPx, roi.topPx, roi.rightPx, roi.bottomPx), bitmap, onCopied, main)
+        } else PixelCopy.request(view, bitmap, onCopied, main)
     }
 
     private fun cancelRequest(payload: JSONObject, requestId: String, mapId: String?) {
@@ -1707,9 +1740,8 @@ class NativeReactMapHost(
         val now = android.os.SystemClock.elapsedRealtime()
         if (!force && now - entry.lastSnapPublishAt < 500L) return
         entry.lastSnapPublishAt = now
-        val settings = entry.renderState.optJSONObject("settings") ?: JSONObject()
         val interaction = entry.renderState.optJSONObject("interaction") ?: JSONObject()
-        val roads = settings.optBoolean("roadsEnabled", settings.optBoolean("roads"))
+        val roads = interaction.optBoolean("roadSnapping")
         val rivers = interaction.optBoolean("riverSnapping")
         // Disabled snapping still publishes its hidden state, but needs no terrain rays.
         val bounds = if (!roads && !rivers) null else runCatching {
