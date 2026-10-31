@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { interpretNativeTap } from '../modules/map/native/tapSemantics.ts';
+import { interpretNativeTap, NativeTapGestureGate } from '../modules/map/native/tapSemantics.ts';
 
 function setup(overrides = {}) {
   const state = {
@@ -34,10 +34,45 @@ test('annotation picking selects the hit annotation before any map or route acti
   assert.deepEqual(interpretNativeTap(h.tap([bridge({ kind: 'route' })]), h.state, h.project), { type: 'route' }, 'a missed annotation pick still resolves route semantics');
 });
 
-test('object picks still dispatch without a ground coordinate and a miss never invents one', () => {
+test('one-pixel GPU annotation IDs outrank expanded-target candidates and saved array order', () => {
+  const h = setup({ annotations: [annotation, { ...annotation, id: 'pin-b' }] });
+  assert.deepEqual(interpretNativeTap({ ...h.tap(['shantu-object:pin-a', 'shantu-object:pin-b']), exactIds: ['shantu-object:pin-b'] }, h.state, h.project), {
+    type: 'annotation', id: 'pin-b',
+  });
+});
+
+test('expanded 44px target selects only an unambiguous marker candidate', () => {
+  const h = setup({ annotations: [annotation, { ...annotation, id: 'pin-b' }] });
+  assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:pin-b'], [0, 0]), h.state, h.project), { type: 'annotation', id: 'pin-b' });
+  assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:pin-b', 'shantu-object:pin-a'], [0, 0]), h.state, h.project), {
+    type: 'mapPick', coordinate: [0, 0], queryPoint: true,
+  }, 'ambiguous rectangle hits must not keep selecting the first saved annotation');
+});
+
+test('native tap completion gate rejects cancelled and previous-gesture IDs', () => {
+  const gate = new NativeTapGestureGate();
+  gate.observe(41); // ACTION_DOWN, then ACTION_UP for this same tap.
+  assert.equal(gate.accepts(41), true);
+  gate.cancel(41); // ACTION_POINTER_DOWN / ACTION_CANCEL arrived before the async pick reply.
+  assert.equal(gate.accepts(41), false);
+  gate.observe(43); // A new ACTION_DOWN has started; delayed IDs from 41 are stale.
+  assert.equal(gate.accepts(41), false);
+  assert.equal(gate.accepts(43), true);
+  gate.observe(41); // A delayed older DOWN must not roll the active gesture back.
+  assert.equal(gate.accepts(41), false);
+  assert.equal(gate.accepts(43), true);
+});
+
+test('object picks work without terrain and a blank miss clears selection without inventing a coordinate', () => {
   const h = setup({ annotations: [annotation] });
   assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:pin-a'], null), h.state, h.project), { type: 'annotation', id: 'pin-a' });
-  assert.deepEqual(interpretNativeTap(h.tap([], null), h.state, h.project), { type: 'none' });
+  assert.deepEqual(interpretNativeTap(h.tap([], null), h.state, h.project), { type: 'clearSelection' });
+  const dualBrowse = setup({ annotationPicking: true });
+  assert.deepEqual(interpretNativeTap(dualBrowse.tap([], null), dualBrowse.state, dualBrowse.project), { type: 'clearSelection' }, 'dual-map browse enables marker hit priority but blank space still clears selection');
+  const placement = setup({ annotationPicking: true, pickingActive: true });
+  assert.deepEqual(interpretNativeTap(placement.tap([], null), placement.state, placement.project), { type: 'none' }, 'active marker placement must retain its workflow');
+  const editing = setup({ trackOverlay: { ...trackOverlay, editing: true } });
+  assert.deepEqual(interpretNativeTap(editing.tap([], null), editing.state, editing.project), { type: 'none' });
 });
 
 test('measurement picking prefers a native track node and suppresses point query', () => {
@@ -116,7 +151,7 @@ test('geology and other noninteractive native IDs do not block a nearby line fal
 test('geometric fallback requires a nearby native ground hit and preserves exact area picks', () => {
   const area = { id: 'area-a', visible: true, boundary: [[0, 0], [1, 0], [1, 1], [0, 0]] };
   const h = setup({ trackOverlay, areaOverlay: { items: [area], selected: null, draft: [] } });
-  assert.deepEqual(interpretNativeTap(h.tap(['geology:unit-7'], null, { x: 50, y: 0 }), h.state, h.project), { type: 'none' });
+  assert.deepEqual(interpretNativeTap(h.tap(['geology:unit-7'], null, { x: 50, y: 0 }), h.state, h.project), { type: 'clearSelection' });
   assert.deepEqual(interpretNativeTap(h.tap(['shantu-object:area-a'], [0.5, 0], { x: 50, y: 0 }), h.state, h.project), { type: 'area', id: 'area-a' });
   const farGround = interpretNativeTap(h.tap(['geology:unit-7'], [0.5, 0.2], { x: 50, y: 2 }), h.state, h.project);
   assert.deepEqual(farGround, { type: 'mapPick', coordinate: [0.5, 0.2], queryPoint: true });

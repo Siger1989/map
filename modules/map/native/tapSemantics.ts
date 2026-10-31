@@ -15,12 +15,15 @@ export type NativeTapPick = {
   point: ScreenPoint;
   coordinate: Coordinate | null;
   ids: string[];
+  /** IDs returned by a one-pixel GPU pick before the 44 CSS px touch fallback. */
+  exactIds?: string[];
   gestureId?: string | number;
   eventTime?: number;
 };
 
 export type NativeTapAction =
   | { type: 'none' }
+  | { type: 'clearSelection' }
   | { type: 'mapPick'; coordinate: Coordinate; queryPoint: boolean }
   | { type: 'annotation'; id: string }
   | { type: 'annotationNavigate'; id: string; slot: 'start' | 'end' }
@@ -51,6 +54,29 @@ export type NativeTapState = {
   routeOverlay?: RouteOverlay;
 };
 
+/** Drops a native pick reply unless it still belongs to the latest uncancelled touch. */
+export class NativeTapGestureGate {
+  private latest: string | number | null = null;
+  private readonly cancelled = new Set<string | number>();
+
+  observe(gestureId: unknown): void {
+    if (typeof gestureId !== 'string' && typeof gestureId !== 'number') return;
+    if (typeof gestureId === 'number' && typeof this.latest === 'number' && gestureId < this.latest) return;
+    this.latest = gestureId;
+  }
+
+  cancel(gestureId: unknown): void {
+    if (typeof gestureId !== 'string' && typeof gestureId !== 'number') return;
+    this.cancelled.add(gestureId);
+    if (this.cancelled.size > 32) this.cancelled.delete(this.cancelled.values().next().value!);
+  }
+
+  accepts(gestureId: unknown): boolean {
+    return (typeof gestureId === 'string' || typeof gestureId === 'number')
+      && gestureId === this.latest && !this.cancelled.has(gestureId);
+  }
+}
+
 type PickMetadata = Record<string, unknown>;
 function metadata(ids: string[]): PickMetadata[] {
   const values: PickMetadata[] = [];
@@ -75,12 +101,29 @@ function readCoordinate(value: unknown): Coordinate | null {
   return [longitude!, latitude!];
 }
 
-function hitAnnotation(ids: string[], annotations: Annotation[]): Annotation | null {
-  const values = metadata(ids);
-  const annotationId = values.find((value) => ['annotation', 'pin', 'model'].includes(String(value.kind)))?.id;
-  const candidates = new Set(ids.map(objectId));
-  if (typeof annotationId === 'string') candidates.add(annotationId);
-  return annotations.find((item) => item.visible && candidates.has(item.id)) ?? null;
+function annotationIds(ids: string[]): string[] {
+  const result: string[] = [];
+  for (const value of metadata(ids)) {
+    if (['annotation', 'pin', 'model'].includes(String(value.kind)) && typeof value.id === 'string') result.push(value.id);
+  }
+  for (const raw of ids) {
+    const id = objectId(raw);
+    if (!id.startsWith('shantu-bridge:')) result.push(id);
+  }
+  return [...new Set(result)];
+}
+
+export function nativeAnnotationHit(ids: string[], exactIds: string[] | undefined, annotations: Annotation[]): Annotation | null {
+  const visible = new Map(annotations.filter((item) => item.visible).map((item) => [item.id, item]));
+  const exact = annotationIds(exactIds ?? []).map((id) => visible.get(id)).filter((item): item is Annotation => !!item);
+  if (exact.length === 1) return exact[0]!;
+  if (exact.length > 1) return null;
+
+  // The expanded target reports every object in its rectangle, not hit-pixel
+  // distances. A single candidate is safe; choosing among several by saved
+  // array order can keep selecting the same unrelated annotation indefinitely.
+  const fallback = annotationIds(ids).map((id) => visible.get(id)).filter((item): item is Annotation => !!item);
+  return fallback.length === 1 ? fallback[0]! : null;
 }
 
 function hitTrackNode(ids: string[]): TrackNode | null {
@@ -215,11 +258,12 @@ export function interpretNativeTap(
 ): NativeTapAction {
   if (state.readOnly || state.drawingActive || state.clickBlocked) return { type: 'none' };
   const ids = tap.ids;
-  const annotation = hitAnnotation(ids, state.annotations);
+  const annotation = nativeAnnotationHit(ids, tap.exactIds, state.annotations);
+  const hasAnnotationCandidate = annotationIds(ids).some((id) => state.annotations.some((item) => item.visible && item.id === id));
   const node = hitTrackNode(ids);
   const trackIds = hitTrackIds(ids, state.trackOverlay);
   const hasSemanticPick = !!hitPhoto(ids, state.photos, state.photoGroups)
-    || !!annotation || !!node || trackIds.length > 0 || hitRoute(ids, state.routeOverlay)
+    || !!annotation || hasAnnotationCandidate || !!node || trackIds.length > 0 || hitRoute(ids, state.routeOverlay)
     || !!hitArea(ids, state.areaOverlay)
     || savedSectionId(ids, state) !== null;
   const nearestLine = () => {
@@ -286,5 +330,7 @@ export function interpretNativeTap(
     const area = hitArea(ids, state.areaOverlay);
     if (area) return { type: 'area', id: area };
   }
-  return tap.coordinate ? { type: 'mapPick', coordinate: tap.coordinate, queryPoint: state.queryOnPick !== false } : { type: 'none' };
+  if (tap.coordinate) return { type: 'mapPick', coordinate: tap.coordinate, queryPoint: state.queryOnPick !== false };
+  if (state.pickingActive || state.measurementPicking || state.sectionEditing || state.trackOverlay.editing) return { type: 'none' };
+  return { type: 'clearSelection' };
 }

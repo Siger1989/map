@@ -131,14 +131,32 @@ class NativeMapController internal constructor(
     private var modelTerrainStamp: NativeModelTerrainInput.Stamp? = null
     private var bridgeMarkerZoom = Double.NaN
     private var bridgeSelectedMarker: String? = null
-    private var markerPresentationKey: String? = null
+    private var bridgeMarkerCssScale = 1.0
+    private val markerPresentation = NativeMarkerPresentationState()
+    private var bridgeMarkerMode: String? = null
+    internal fun setBridgeMarkerCssScale(cssScale: Double) {
+        val safe = cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
+        if (safe == bridgeMarkerCssScale) return
+        bridgeMarkerCssScale = safe
+        setBridgeMarkerPresentation(bridgeMarkerZoom, bridgeSelectedMarker)
+    }
     internal fun setBridgeMarkerPresentation(zoom: Double, selectedId: String?) {
         bridgeMarkerZoom = zoom
         bridgeSelectedMarker = selectedId
-        val key = NativeMarkerPresentation.mode(zoom, false) + "|" + selectedId.orEmpty()
-        if (markerPresentationKey == key) return
-        markerPresentationKey = key
-        markerDocuments.values.toList().forEach(::renderMarker)
+        val update = markerPresentation.update(zoom, bridgeMarkerCssScale)
+        bridgeMarkerMode = update.mode
+        if (!update.resize) return
+        val documents = markerDocuments.values.toList()
+        val rebuild = mutableListOf<org.json.JSONObject>()
+        synchronized(worldWindow.engine.renderResourceCache) {
+            documents.forEach { document ->
+                val rendered = markers[document.optString("id")]
+                if (rendered != null && !NativeModelRenderer.updateMarkerPresentation(
+                        rendered, zoom, bridgeMarkerCssScale, update.mode)) rebuild += document
+            }
+        }
+        rebuild.forEach(::renderMarker)
+        if (documents.isNotEmpty()) worldWindow.requestRedraw()
     }
     internal fun refreshModelTerrain(): List<NativeMarkerRenderResult>? {
         val stamp=modelPlacementRevision()
@@ -884,22 +902,38 @@ class NativeMapController internal constructor(
         val input=modelRenderInput(marker)
         input.put("_mapZoom", if (bridgeMarkerZoom.isFinite()) bridgeMarkerZoom else org.json.JSONObject.NULL)
         input.put("_selected", marker.optString("id") == bridgeSelectedMarker)
+        input.put("_cssScale", bridgeMarkerCssScale)
+        input.put("_markerMode", bridgeMarkerMode ?: NativeMarkerPresentation.mode(bridgeMarkerZoom, false))
         val markerId=marker.optString("id")
         if(markerId.isNotBlank())markerDocuments[markerId]=org.json.JSONObject(marker.toString())
-        val result = NativeModelRenderer.render(input,NativeTerrainSampler{sampleLat,sampleLon->
-            if(terrainEnabled)getElevation(sampleLat,sampleLon) else 0.0 })
+        val previousPresentation = synchronized(worldWindow.engine.renderResourceCache) {
+            markers[markerId]?.filterIsInstance<NativeMarkerPlacemark>()?.firstOrNull()?.snapshotForReplacement()
+        }
+        val result = NativeModelRenderer.render(
+            input,
+            NativeTerrainSampler{sampleLat,sampleLon->if(terrainEnabled)getElevation(sampleLat,sampleLon) else 0.0},
+            previousPresentation,
+        )
         val id = result.id ?: return result
-        if (result.status != NativeMarkerStatus.INVALID) mainHandler.post {
-            if (disposed) return@post
-            markers.remove(id)?.forEach(markerLayer::removeRenderable)
-            val cut=result.terrainCutMesh
-            if(input.optBoolean("terrainCut", input.optString("placement") == "underground")&&result.status==NativeMarkerStatus.RENDERED&&cut!=null)terrainCutLayer.upsert(cut) else terrainCutLayer.remove(id)
-            if (result.status == NativeMarkerStatus.RENDERED) {
-                result.renderables.forEach { it.pickDelegate = "shantu-object:$id" }
-                markers[id] = result.renderables
-                result.renderables.forEach(markerLayer::addRenderable)
+        if (result.status != NativeMarkerStatus.INVALID) {
+            val apply = {
+                if (!disposed) {
+                    synchronized(worldWindow.engine.renderResourceCache) {
+                        markers.remove(id)?.forEach(markerLayer::removeRenderable)
+                        val cut=result.terrainCutMesh
+                        if(input.optBoolean("terrainCut", input.optString("placement") == "underground")&&result.status==NativeMarkerStatus.RENDERED&&cut!=null)terrainCutLayer.upsert(cut) else terrainCutLayer.remove(id)
+                        if (result.status == NativeMarkerStatus.RENDERED) {
+                            result.renderables.forEach { it.pickDelegate = "shantu-object:$id" }
+                            markers[id] = result.renderables
+                            result.renderables.forEach(markerLayer::addRenderable)
+                        }
+                    }
+                    worldWindow.requestRedraw()
+                }
             }
-            worldWindow.requestRedraw()
+            // Camera presentation changes already run on main. Deferring them
+            // could install an old label mode after the next frame resized it.
+            if (Looper.myLooper() == Looper.getMainLooper()) apply() else mainHandler.post { apply() }
         }
         return result
     }
@@ -1108,9 +1142,7 @@ class NativeMapController internal constructor(
                 worldWindow.pickAsync(rect.left,rect.top,if(point)0f else rect.width(),if(point)0f else rect.height(),point).await()
             }
             if(disposed || generation!=pickGeneration)return@launch
-            finished(picked?.objects?.mapNotNull { hit ->
-                (hit.userObject as? String)?.takeIf { it.startsWith("shantu-object:") || it.startsWith("shantu-bridge:") || it.startsWith("geology:") || it.startsWith("shantu-photo:") || it.startsWith("shantu-section:") }?.removePrefix("shantu-object:")
-            }?.distinct() ?: emptyList())
+            finished(NativeRenderedPickResults.objectIds(picked))
             } finally { pendingPickCount-- }
         }
     }

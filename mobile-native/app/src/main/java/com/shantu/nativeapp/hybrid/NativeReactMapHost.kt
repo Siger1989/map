@@ -54,6 +54,29 @@ import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.tan
 
+internal class NativeTapCompletionGate {
+    private var activeGestureId: Long? = null
+    private var releasedTapGestureId: Long? = null
+
+    fun begin(gestureId: Long) {
+        activeGestureId = gestureId
+        releasedTapGestureId = null
+    }
+
+    fun releaseTap(gestureId: Long) {
+        if (activeGestureId == gestureId) releasedTapGestureId = gestureId
+    }
+
+    fun cancel(gestureId: Long) {
+        if (activeGestureId == gestureId) {
+            activeGestureId = null
+            releasedTapGestureId = null
+        }
+    }
+
+    fun accepts(gestureId: Long) = activeGestureId == gestureId && releasedTapGestureId == gestureId
+}
+
 /**
  * WebView-hosted React bridge for the native WorldWind surface. The React tree remains the sole UI
  * owner; this host only mounts map surfaces and transports JSON events/commands.
@@ -151,6 +174,7 @@ class NativeReactMapHost(
         var settledFrameTask: Runnable? = null,
         var touchDown: Pair<Float, Float>? = null,
         var gestureSequence: Long = 0L,
+        val tapCompletionGate: NativeTapCompletionGate = NativeTapCompletionGate(),
         var capturedGestureId: Long? = null,
         var adapterCapturedGesture: Boolean = false,
         val touchNavigation: NativeMapTouchNavigation = NativeMapTouchNavigation(),
@@ -530,6 +554,7 @@ class NativeReactMapHost(
         val clientWidth = viewport.optDouble("clientViewportWidth", Double.NaN)
         val cssScale = if (clientWidth.isFinite() && clientWidth > 0 && root.width > 0) root.width / clientWidth
             else viewport.optDouble("devicePixelRatio", appContext.resources.displayMetrics.density.toDouble()).coerceIn(0.5, 8.0)
+        entry.controller.setBridgeMarkerCssScale(cssScale)
         val x = finite(rect, "x"); val y = finite(rect, "y")
         val width = finite(rect, "width"); val height = finite(rect, "height")
         require(width >= 0 && height >= 0 && width <= 20_000 && height <= 20_000) { "地图视口尺寸无效" }
@@ -1302,18 +1327,12 @@ class NativeReactMapHost(
 
     private fun cancelRequest(payload: JSONObject, requestId: String, mapId: String?) {
         val target = payload.optString("targetRequestId")
-        val entry = mapId?.let(maps::get)
         val share = shareJobs[target]
         val shareCancelled = target.isNotBlank() && share != null && (mapId == null || share.first == mapId)
         if (shareCancelled) { shareJobs.remove(target); share!!.second.cancel() }
-        val cancelled = shareCancelled || if (target.isBlank() || entry == null) false else {
-            var any = false
-            entry.sectionJob?.takeIf { it.isActive }?.let { it.cancel(); any = true }
-            entry.demJob?.takeIf { it.isActive }?.let { it.cancel(); any = true }
-            if (entry.controller.cancelBridgePickRequests()) any = true
-            any
-        }
-        send("result", mapId, requestId, JSONObject().put("cancelled", cancelled).put("targetRequestId", target))
+        // Section and DEM jobs follow render-state ownership; native touch picks follow gesture
+        // ownership. A generic bridge abort has neither owner token and cannot cancel them.
+        send("result", mapId, requestId, JSONObject().put("cancelled", shareCancelled).put("targetRequestId", target))
     }
 
     private fun renderShareMap(mapId: String, payload: JSONObject, requestId: String) {
@@ -1838,16 +1857,17 @@ class NativeReactMapHost(
     }
 
     /** Try the exact visible point first; only an empty GPU hit gets the 44 CSS px fallback. */
-    private fun pickTouchObjectIds(entry: MapEntry, x: Float, y: Float, finished: (List<String>) -> Unit) {
+    private fun pickTouchObjectIds(entry: MapEntry, x: Float, y: Float, finished: (List<String>, List<String>) -> Unit) {
         entry.controller.pickObjectIds(android.graphics.RectF(x, y, x, y)) { exactIds ->
             if (!isCurrent(entry)) return@pickObjectIds
+            val exact = NativePickTouchTarget.normalizeMarkerIds(exactIds, entry.annotationIds)
             if (exactIds.any { !it.startsWith("geology:") }) {
-                finished(NativePickTouchTarget.normalizeMarkerIds(exactIds,entry.annotationIds))
+                finished(exact, exact)
                 return@pickObjectIds
             }
             val bounds = NativePickTouchTarget.centered(x, y, cssScale(entry))
             entry.controller.pickObjectIds(android.graphics.RectF(bounds.left, bounds.top, bounds.right, bounds.bottom)) { nearbyIds ->
-                if (isCurrent(entry)) finished(NativePickTouchTarget.normalizeMarkerIds(nearbyIds + exactIds,entry.annotationIds))
+                if (isCurrent(entry)) finished(NativePickTouchTarget.normalizeMarkerIds(nearbyIds + exactIds, entry.annotationIds), exact)
             }
         }
     }
@@ -1899,12 +1919,13 @@ class NativeReactMapHost(
                 MotionEvent.ACTION_DOWN -> {
                     entry.touchDown = event.x to event.y
                     val gestureId = ++entry.gestureSequence
+                    entry.tapCompletionGate.begin(gestureId)
                     val pointerId = event.getPointerId(0); val downTime = event.downTime; val actionTime = event.eventTime
                     entry.capturedGestureId = if (captureByMode) gestureId else null
                     if (!captureByMode) {
                         val hitCoordinate = entry.controller.unprojectCoordinate(event.x, event.y)?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL
-                        pickTouchObjectIds(entry, event.x, event.y) { ids ->
-                            if (isCurrent(entry) && entry.gestureSequence == gestureId) emitEvent(entry.id, "hitTest", JSONObject().put("gestureId", gestureId).put("pointerId", pointerId).put("downTime", downTime).put("eventTime", actionTime).put("point", JSONObject().put("x", x).put("y", y)).put("coordinate", hitCoordinate).put("ids", JSONArray(ids)))
+                        pickTouchObjectIds(entry, event.x, event.y) { ids, exactIds ->
+                            if (isCurrent(entry) && entry.gestureSequence == gestureId) emitEvent(entry.id, "hitTest", JSONObject().put("gestureId", gestureId).put("pointerId", pointerId).put("downTime", downTime).put("eventTime", actionTime).put("point", JSONObject().put("x", x).put("y", y)).put("coordinate", hitCoordinate).put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds)))
                         }
                     }
                 }
@@ -1920,12 +1941,13 @@ class NativeReactMapHost(
                         } else {
                                 val tapGesture = entry.gestureSequence
                                 val tapTime = event.eventTime
-                                pickTouchObjectIds(entry, event.x, event.y) { ids ->
-                                    if (isCurrent(entry) && entry.gestureSequence in tapGesture..(tapGesture + 1)) {
+                                entry.tapCompletionGate.releaseTap(tapGesture)
+                                pickTouchObjectIds(entry, event.x, event.y) { ids, exactIds ->
+                                    if (isCurrent(entry) && entry.tapCompletionGate.accepts(tapGesture)) {
                                         emitEvent(entry.id, "tap", JSONObject()
                                             .put("point", JSONObject().put("x", x).put("y", y))
                                             .put("coordinates", coordinate?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL)
-                                            .put("ids", JSONArray(ids)).put("gestureId", tapGesture).put("eventTime", tapTime))
+                                            .put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds)).put("gestureId", tapGesture).put("eventTime", tapTime))
                                     }
                                 }
                         }
@@ -1937,6 +1959,7 @@ class NativeReactMapHost(
                 MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_CANCEL -> {
                     val cancelledGesture = entry.gestureSequence
                     entry.gestureSequence++
+                    entry.tapCompletionGate.cancel(cancelledGesture)
                     entry.touchDown = null
                     entry.capturedGestureId = null
                     entry.adapterCapturedGesture = false

@@ -4,6 +4,9 @@ import android.graphics.Color as AndroidColor
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Typeface
+import android.text.TextUtils
+import android.text.TextPaint
 import earth.worldwind.geom.AltitudeMode
 import earth.worldwind.geom.Angle.Companion.degrees
 import earth.worldwind.geom.Offset
@@ -12,7 +15,7 @@ import earth.worldwind.geom.Position
 import earth.worldwind.render.Color
 import earth.worldwind.render.Renderable
 import earth.worldwind.render.image.ArgbImage
-import earth.worldwind.render.image.toImageSource
+import earth.worldwind.render.image.argbImageSource
 import earth.worldwind.shape.Ellipsoid
 import earth.worldwind.shape.Path
 import earth.worldwind.shape.Placemark
@@ -30,6 +33,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import java.util.WeakHashMap
 
 enum class NativeMarkerStatus { RENDERED, HIDDEN, NEEDS_ELEVATION, UNSUPPORTED, INVALID }
 
@@ -56,22 +60,64 @@ internal data class NativeModelSectionVertex(
     val altitudeMeters: Double,
 )
 
+private data class MarkerGlyphPresentation(
+    val icon: String,
+    val color: Int,
+    val title: String,
+    val mode: String,
+    val density: Int,
+    val attributes: PlacemarkAttributes,
+)
+
 /** Builds truthful WorldWind renderables from the complete Web annotation record. */
 internal object NativeModelRenderer {
     private const val EARTH_RADIUS_METERS = 6_371_008.8
     private const val MAX_VERTICES = 65_536
-    // ArgbImage.toImageSource uses the ArgbImage object as its SDK cache key.
-    // Rebuilding identical pixels would otherwise allocate a new GPU texture after
-    // every selection/presentation/DEM refresh and displace visible imagery.
+    // A bounded descriptor cache prevents arbitrary names/custom colors from
+    // retaining pixels indefinitely. The SDK raster factory remains lazy.
     internal const val MAX_MARKER_GLYPHS = 128
     private val markerGlyphs = object : LinkedHashMap<String, earth.worldwind.render.image.ImageSource>(16, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, earth.worldwind.render.image.ImageSource>?) = size > MAX_MARKER_GLYPHS
     }
+    private val placemarkPresentation = WeakHashMap<Placemark, MarkerGlyphPresentation>()
     internal fun cachedMarkerGlyphCount(): Int = synchronized(markerGlyphs) { markerGlyphs.size }
+    internal fun markerImageSource(key: Any, factory: suspend () -> ArgbImage?) = argbImageSource(key, factory)
     private fun markerGlyph(key: String, create: () -> earth.worldwind.render.image.ImageSource) =
         synchronized(markerGlyphs) { markerGlyphs.getOrPut(key, create) }
 
-    fun render(marker: JSONObject, terrainSampler: NativeTerrainSampler? = null): NativeMarkerRenderResult {
+    /** Update one placemark in place; it keeps its last ready image during async texture retrieval. */
+    internal fun updateMarkerPresentation(renderables: List<Renderable>, zoom: Double, cssScale: Double, resolvedMode: String): Boolean {
+        val mode = NativeMarkerPresentation.resolvedMode(zoom, resolvedMode)
+        val density = NativeMarkerPresentation.densityBucket(cssScale)
+        renderables.filterIsInstance<Placemark>().forEach { placemark ->
+            val presentation = synchronized(placemarkPresentation) { placemarkPresentation[placemark] } ?: return@forEach
+            val imageScale = NativeMarkerPresentation.imageScale(zoom, cssScale, density, mode)
+            if (presentation.mode == mode && presentation.density == density) {
+                val nativePlacemark = placemark as? NativeMarkerPlacemark ?: return false
+                nativePlacemark.updateImageScale(zoom, cssScale, imageScale)
+                return@forEach
+            }
+            val source = markerImage(presentation.icon, presentation.color, presentation.title, density, mode)
+            val nextAttributes = PlacemarkAttributes(presentation.attributes).apply {
+                imageSource = source
+                this.imageScale = imageScale
+                imageOffset = if (mode == "dot") Offset.center() else Offset(FRACTION, 0.5, FRACTION, 2.0 / 64.0)
+            }
+            val nativePlacemark = placemark as? NativeMarkerPlacemark ?: return false
+            val fallbackScale = NativeMarkerPresentation.imageScale(zoom, cssScale, presentation.density, presentation.mode)
+            nativePlacemark.updateImagePresentation(nextAttributes, mode, density, fallbackScale)
+            synchronized(placemarkPresentation) {
+                placemarkPresentation[placemark] = presentation.copy(mode = mode, density = density, attributes = nextAttributes)
+            }
+        }
+        return true
+    }
+
+    fun render(
+        marker: JSONObject,
+        terrainSampler: NativeTerrainSampler? = null,
+        previousMarkerPresentation: NativeMarkerFallbackPresentation? = null,
+    ): NativeMarkerRenderResult {
         val id = marker.optString("id").takeIf { it.isNotBlank() && it.length <= 100 }
             ?: return result(null, NativeMarkerStatus.INVALID, "标记编号无效")
         if (!marker.optBoolean("visible", true)) return result(id, NativeMarkerStatus.HIDDEN)
@@ -87,7 +133,7 @@ internal object NativeModelRenderer {
             if (!lat.isFinite() || lat !in -85.0..85.0 || !lon.isFinite()) return result(id, NativeMarkerStatus.INVALID, "标记坐标超出支持范围")
             val colorValue = try { AndroidColor.parseColor(marker.optString("color")) }
             catch (_: IllegalArgumentException) { return result(id, NativeMarkerStatus.INVALID, "标记颜色无效") }
-            if (kind == "pin") return renderPin(marker, id, lat, lon, colorValue)
+            if (kind == "pin") return renderPin(marker, id, lat, lon, colorValue, previousMarkerPresentation)
 
             val width = finiteBound(marker, "width", 0.1, 10_000.0) ?: return result(id, NativeMarkerStatus.INVALID, "模型宽度无效")
             val length = finiteBound(marker, "length", 0.1, 10_000.0) ?: return result(id, NativeMarkerStatus.INVALID, "模型长度无效")
@@ -164,10 +210,29 @@ internal object NativeModelRenderer {
             val renderables = mutableListOf(shape)
             if (kind != "sphere") renderables += edgePaths(modelEdges(kind, footprint), vertices, lat, lon, center, heading, pitch, roll, color, placement!="underground")
             val label = marker.optString("name").take(120)
-            if (label.isNotBlank() && NativeMarkerPresentation.mode(marker.optDouble("_mapZoom", Double.NaN), marker.optBoolean("_selected")) == "label") {
-                renderables += Placemark(Position(lat.degrees, wrapLongitude(lon).degrees, center + maxZ), PlacemarkAttributes().apply {
-                    imageScale = 0.0; isDrawLeader = false; isDepthTest = placement != "underground"
-                }, label).apply { altitudeMode = AltitudeMode.ABSOLUTE; isAlwaysOnTop = placement == "underground" }
+            val mode = NativeMarkerPresentation.resolvedMode(marker.optDouble("_mapZoom", Double.NaN), marker.optString("_markerMode"))
+            if (label.isNotBlank()) {
+                val cssScale = safeCssScale(marker.optDouble("_cssScale", 1.0))
+                val density = NativeMarkerPresentation.densityBucket(cssScale)
+                val icon = marker.optString("icon", "pin").takeIf { it in MARKER_IDS } ?: "pin"
+                val attrs = PlacemarkAttributes().apply {
+                    imageSource = markerImage(icon, colorValue, label, density, mode)
+                    imageScale = NativeMarkerPresentation.imageScale(marker.optDouble("_mapZoom", Double.NaN), cssScale, density, mode)
+                    imageOffset = if (mode == "dot") Offset.center() else Offset(FRACTION, 0.5, FRACTION, 2.0 / 64.0)
+                    isDrawLabel = false
+                    isDrawLeader = false
+                    isDepthTest = placement != "underground"
+                }
+                renderables += NativeMarkerPlacemark(
+                    Position(lat.degrees, wrapLongitude(lon).degrees, center + maxZ), attrs, mode, density,
+                    previousMarkerPresentation,
+                ).apply {
+                    altitudeMode = AltitudeMode.ABSOLUTE
+                    isAlwaysOnTop = placement == "underground"
+                    synchronized(placemarkPresentation) {
+                        placemarkPresentation[this] = MarkerGlyphPresentation(icon, colorValue, label, mode, density, attrs)
+                    }
+                }
             }
             if (terrainMesh != null && terrainIntersection) terrainMesh.intersections.forEach { (a,b) ->
                 renderables += Path(listOf(a,b), ShapeAttributes().apply { isDrawInterior=false;isDrawOutline=true;isDepthTest=placement!="underground";outlineColor=Color(1f,.25f,.12f,1f);outlineWidth=2f }).apply { altitudeMode=AltitudeMode.ABSOLUTE }
@@ -237,24 +302,40 @@ internal object NativeModelRenderer {
         return NativeModelSectionMesh(id, kind, vertices, indices)
     }
 
-    private fun renderPin(marker: JSONObject, id: String, lat: Double, lon: Double, color: Int): NativeMarkerRenderResult {
-        val mode = NativeMarkerPresentation.mode(marker.optDouble("_mapZoom", Double.NaN), marker.optBoolean("_selected"))
-        val title = if (mode == "label") marker.optString("name").ifBlank { marker.optString("note") }.take(120) else ""
+    private fun renderPin(
+        marker: JSONObject,
+        id: String,
+        lat: Double,
+        lon: Double,
+        color: Int,
+        previousMarkerPresentation: NativeMarkerFallbackPresentation?,
+    ): NativeMarkerRenderResult {
+        val mode = NativeMarkerPresentation.resolvedMode(marker.optDouble("_mapZoom", Double.NaN), marker.optString("_markerMode"))
+        val title = marker.optString("name").ifBlank { marker.optString("note").ifBlank { "未命名" } }.take(120)
         val icon = marker.optString("icon", "pin").takeIf { it in MARKER_IDS } ?: "pin"
-        val placemark = Placemark(Position(lat.degrees, wrapLongitude(lon).degrees, 0.0), PlacemarkAttributes().apply {
-            imageSource = if (mode == "dot") markerDotImage(color) else markerIconImage(icon, color)
-            imageScale = if (mode == "dot") 1.0 else 24.0 / 64.0
-            // WorldWind defaults to center anchoring. Our 64 px pin glyph reaches y=62,
-            // so anchor that artwork tip (2 px above the image bottom) to the ground.
-            // The zoomed-out dot is symmetric and stays center-anchored.
+        val cssScale = safeCssScale(marker.optDouble("_cssScale", 1.0))
+        val density = NativeMarkerPresentation.densityBucket(cssScale)
+        val attrs = PlacemarkAttributes().apply {
+            imageSource = markerImage(icon, color, title, density, mode)
+            imageScale = NativeMarkerPresentation.imageScale(marker.optDouble("_mapZoom", Double.NaN), cssScale, density, mode)
+            // WorldWind defaults to center anchoring. Pin/icon/badge art reaches y=62,
+            // so its bottom-center remains tied to the ground. The distance dot is centered.
             imageOffset = if (mode == "dot") Offset.center() else Offset(FRACTION, 0.5, FRACTION, 2.0 / 64.0)
             imageColor = Color(1f,1f,1f,(AndroidColor.alpha(color)/255f))
-            isDrawLeader = true
+            isDrawLabel = false
+            isDrawLeader = false
             // Ordinary pins must be occluded by terrain and must not remain pickable through hills.
             isDepthTest = true
-        }, title).apply {
+        }
+        val placemark = NativeMarkerPlacemark(
+            Position(lat.degrees, wrapLongitude(lon).degrees, 0.0), attrs, mode, density,
+            previousMarkerPresentation,
+        ).apply {
             altitudeMode = AltitudeMode.CLAMP_TO_GROUND
             isAlwaysOnTop = false
+            synchronized(placemarkPresentation) {
+                placemarkPresentation[this] = MarkerGlyphPresentation(icon, color, title, mode, density, attrs)
+            }
         }
         val renderables=mutableListOf<Renderable>(placemark)
         val borehole=marker.optJSONObject("borehole")
@@ -322,25 +403,87 @@ internal object NativeModelRenderer {
         return lower.dropLast(1)+upper.dropLast(1)
     }
 
-    private fun markerDotImage(color: Int): earth.worldwind.render.image.ImageSource = markerGlyph("dot:$color") {
-        val pixels = IntArray(9 * 9) { i ->
-            val distance = kotlin.math.hypot((i % 9 - 4).toDouble(), (i / 9 - 4).toDouble())
-            when { distance <= 2.5 -> color; distance <= 4.5 -> AndroidColor.WHITE; else -> 0 }
+    private fun markerDotImage(color: Int, density: Int): earth.worldwind.render.image.ImageSource = markerGlyph("dot:$color:$density") {
+        val key = "dot:$color:$density"
+        markerImageSource(key) {
+            val size = 9 * density
+            val pixels = IntArray(size * size) { i ->
+                val x = i % size / density.toDouble()
+                val y = i / size / density.toDouble()
+                val distance = kotlin.math.hypot(x - 4.0, y - 4.0)
+                when { distance <= 2.5 -> color; distance <= 4.5 -> AndroidColor.WHITE; else -> 0 }
+            }
+            ArgbImage(size, size, pixels)
         }
-        ArgbImage(9, 9, pixels).toImageSource()
     }
 
-    private fun markerIconImage(icon:String,color:Int):earth.worldwind.render.image.ImageSource = markerGlyph("icon:$icon:$color") {
-        val bitmap=Bitmap.createBitmap(64,64,Bitmap.Config.ARGB_8888);val canvas=Canvas(bitmap)
-        val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=color}
-        val white=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=AndroidColor.WHITE}
-        val border=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=3f;this.color=AndroidColor.WHITE}
-        val path=android.graphics.Path().apply{moveTo(32f,62f);cubicTo(26f,51f,8f,35f,8f,23f);cubicTo(8f,9f,19f,3f,32f,3f);cubicTo(45f,3f,56f,9f,56f,23f);cubicTo(56f,35f,38f,51f,32f,62f);close()}
-        canvas.drawPath(path,fill);canvas.drawCircle(32f,24f,16f,white);canvas.drawCircle(32f,24f,16f,border)
-        drawMarkerGlyph(canvas,icon,color)
-        val pixels=IntArray(64*64);bitmap.getPixels(pixels,0,64,0,0,64,64);bitmap.recycle()
-        ArgbImage(64,64,pixels).toImageSource()
+    private fun markerImage(icon:String,color:Int,title:String,density:Int,mode:String):earth.worldwind.render.image.ImageSource = when (mode) {
+        "label" -> markerBadgeImage(icon,color,title,density)
+        "dot" -> markerDotImage(color,density)
+        else -> markerIconImage(icon,color,density)
     }
+
+    private fun markerIconImage(icon:String,color:Int,density:Int):earth.worldwind.render.image.ImageSource = markerGlyph("icon:$icon:$color:$density") {
+        val key = "icon:$icon:$color:$density"
+        markerImageSource(key) {
+            val bitmap=Bitmap.createBitmap(64*density,64*density,Bitmap.Config.ARGB_8888);val canvas=Canvas(bitmap).apply { scale(density.toFloat(),density.toFloat()) }
+            val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=color}
+            val white=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=AndroidColor.WHITE}
+            val border=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=3f;this.color=AndroidColor.WHITE}
+            val path=android.graphics.Path().apply{moveTo(32f,62f);cubicTo(26f,51f,8f,35f,8f,23f);cubicTo(8f,9f,19f,3f,32f,3f);cubicTo(45f,3f,56f,9f,56f,23f);cubicTo(56f,35f,38f,51f,32f,62f);close()}
+            canvas.drawPath(path,fill);canvas.drawCircle(32f,24f,16f,white);canvas.drawCircle(32f,24f,16f,border)
+            drawMarkerGlyph(canvas,icon,color)
+            val pixels=IntArray(bitmap.width*bitmap.height);bitmap.getPixels(pixels,0,bitmap.width,0,0,bitmap.width,bitmap.height);bitmap.recycle()
+            ArgbImage(64*density,64*density,pixels)
+        }
+    }
+
+    /** One placemark image contains icon, frame and text, so all three share one screen anchor. */
+    private fun markerBadgeImage(icon: String, color: Int, title: String, density: Int): earth.worldwind.render.image.ImageSource =
+        markerGlyph("badge:$icon:$color:$density:$title") {
+            val key = "badge:$icon:$color:$density:$title"
+            markerImageSource(key) {
+            val logicalHeight = 64
+            val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 20f
+                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                this.color = if (AndroidColor.luminance(color) > 0.48f) AndroidColor.rgb(20, 42, 35) else AndroidColor.WHITE
+            }
+            val maxTextWidth = 200f
+            val shownTitle = TextUtils.ellipsize(title, textPaint, maxTextWidth, TextUtils.TruncateAt.END).toString()
+            val textWidth = textPaint.measureText(shownTitle)
+            val logicalWidth = kotlin.math.ceil(40f + textWidth).toInt().coerceIn(64, 240)
+            val bitmap = Bitmap.createBitmap(logicalWidth * density, logicalHeight * density, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap).apply { scale(density.toFloat(), density.toFloat()) }
+            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; this.color = color }
+            val border = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f; this.color = AndroidColor.WHITE }
+            val body = android.graphics.RectF(1f, 1f, logicalWidth - 1f, 38f)
+            canvas.drawRoundRect(body, 6.4f, 6.4f, fill)
+            canvas.drawRoundRect(body, 6.4f, 6.4f, border)
+            val tipX = logicalWidth / 2f
+            val pointer = android.graphics.Path().apply {
+                moveTo(tipX - 8f, 37f); lineTo(tipX + 8f, 37f); lineTo(tipX, 62f); close()
+            }
+            canvas.drawPath(pointer, fill)
+            canvas.drawLine(tipX - 8f, 37f, tipX, 62f, border)
+            canvas.drawLine(tipX, 62f, tipX + 8f, 37f, border)
+            canvas.drawCircle(18f, 20f, 11f, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; this.color = AndroidColor.WHITE })
+            canvas.save()
+            canvas.translate(-0.56f, 6.08f)
+            canvas.scale(0.58f, 0.58f)
+            drawMarkerGlyph(canvas, icon, color)
+            canvas.restore()
+            val metrics = textPaint.fontMetrics
+            val baseline = 20f - (metrics.ascent + metrics.descent) / 2f
+            canvas.drawText(shownTitle, 34f, baseline, textPaint)
+            val pixels = IntArray(bitmap.width * bitmap.height)
+            bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+            bitmap.recycle()
+            ArgbImage(logicalWidth * density, logicalHeight * density, pixels)
+            }
+        }
+
+    private fun safeCssScale(value: Double) = value.takeIf { it.isFinite() && it > 0.0 } ?: 1.0
     private val MARKER_IDS=setOf("pin","flag","star","camp","mountain","water","house","cave","danger","parking","bridge","tree","camera","sample","drill","hospital","food","gate")
     internal fun drawMarkerGlyph(canvas:Canvas,icon:String,color:Int){
         val line=Paint(Paint.ANTI_ALIAS_FLAG).apply{this.color=color;style=Paint.Style.STROKE;strokeWidth=3f;strokeCap=Paint.Cap.ROUND;strokeJoin=Paint.Join.ROUND}

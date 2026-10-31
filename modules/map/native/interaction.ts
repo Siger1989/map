@@ -27,6 +27,7 @@ export type NativeHitTest = {
   point: { x: number; y: number };
   coordinate: Coordinate | null;
   ids: string[];
+  exactIds?: string[];
 };
 export type NativeMapHold = { coordinate: Coordinate; point: { x: number; y: number } };
 export type NativeGestureDetail = {
@@ -299,7 +300,8 @@ function readHitTest(value: unknown): NativeHitTest | null {
   const ids = Array.isArray(value.ids) ? value.ids.filter((id): id is string => typeof id === 'string') : [];
   const coordinate = readCoordinate(value.coordinate);
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isInteger(Number(value.pointerId))) return null;
-  return { gestureId: value.gestureId, pointerId: Number(value.pointerId), ...(Number.isFinite(Number(value.downTime)) ? { downTime: Number(value.downTime) } : {}), ...(Number.isFinite(Number(value.eventTime)) ? { eventTime: Number(value.eventTime) } : {}), point, coordinate, ids };
+  const exactIds = Array.isArray(value.exactIds) ? value.exactIds.filter((id): id is string => typeof id === 'string') : undefined;
+  return { gestureId: value.gestureId, pointerId: Number(value.pointerId), ...(Number.isFinite(Number(value.downTime)) ? { downTime: Number(value.downTime) } : {}), ...(Number.isFinite(Number(value.eventTime)) ? { eventTime: Number(value.eventTime) } : {}), point, coordinate, ids, ...(exactIds ? { exactIds } : {}) };
 }
 function readCoordinate(value: unknown): Coordinate | null {
   if (!Array.isArray(value) || value.length < 2) return null;

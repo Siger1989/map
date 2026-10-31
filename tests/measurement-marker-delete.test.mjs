@@ -44,13 +44,24 @@ test('marker shrink is monotonic, bounded and returns to full size on zoom in', 
   for (let z = 4; z < 16; z++) assert.ok(markerScale(z) < markerScale(z + 1));
   assert.ok(markerScale(10) < .7);
 });
-test('marker labels appear two zoom levels earlier with a one-level icon transition', () => {
+test('marker screen scale uses a continuous bounded curve across zoom levels', () => {
+  assert.equal(markerScale(Number.NaN), 1);
+  assert.equal(markerScale(3), .35);
+  assert.equal(markerScale(16), 1);
+  let previous = markerScale(0);
+  for (let z = .1; z <= 20; z += .1) {
+    const next = markerScale(z);
+    assert.ok(next >= previous);
+    assert.ok(next >= .35 && next <= 1);
+    previous = next;
+  }
+});
+test('marker names hide below raw zoom nine while icon and dot levels remain compact', () => {
   assert.equal(markerPresentation(9, false), 'label');
   assert.equal(markerPresentation(8.999, false), 'icon');
   assert.equal(markerPresentation(8, false), 'icon');
   assert.equal(markerPresentation(7.999, false), 'dot');
-  assert.equal(markerPresentation(7, false), 'dot');
-  assert.equal(markerPresentation(0, true), 'label');
+  assert.equal(markerPresentation(0, true), 'dot');
   assert.equal(markerPresentation(Number.NaN, false), 'label');
   assert.equal(markerPresentation(Number.POSITIVE_INFINITY, false), 'label');
 });

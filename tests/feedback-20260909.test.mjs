@@ -30,12 +30,12 @@ test('two terrain points: inclination is distinct from compass bearing, missing 
   assert.equal(segmentMetrics(a, a).inclination, null);
   assert.equal(segmentMetrics(a, point([0, 0], 200)).inclination, 90);
 });
-test('distant pins and models use common dot/icon states, selected item stays named', () => {
+test('distant pins and models stay compact and selection does not force a remote label', () => {
   assert.equal(markerPresentation(6, false), 'dot');
-  assert.equal(markerPresentation(10.99, false), 'icon');
-  assert.equal(markerPresentation(11, false), 'label');
+  assert.equal(markerPresentation(8.999, false), 'icon');
+  assert.equal(markerPresentation(9, false), 'label');
   assert.equal(markerPresentation(16, false), 'label');
-  assert.equal(markerPresentation(6, true), 'label');
+  assert.equal(markerPresentation(6, true), 'dot');
 });
 test('closest road candidate chosen by distance rather than provider order, empty results fail', () => {
   const stops = [{ name: 'a', coordinates: [0, 0] }];

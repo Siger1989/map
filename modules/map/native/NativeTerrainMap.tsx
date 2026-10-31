@@ -29,9 +29,8 @@ import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProj
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
 import { shouldNotifyNativeMapReady } from './readiness.ts';
-import { interpretNativeTap } from './tapSemantics.ts';
+import { interpretNativeTap, nativeAnnotationHit, NativeTapGestureGate } from './tapSemantics.ts';
 import type { NativeTapPick } from './tapSemantics.ts';
-import { NativeAnnotationNavigation } from './NativeAnnotationNavigation.tsx';
 import { invalidateNativeDrawingGroundHit, nativeDrawingCoordinateAt, updateNativeDrawingGroundHit } from './drawingGroundHit.ts';
 import type { NativeDrawingGroundHit } from './drawingGroundHit.ts';
 import type { NativeMapPhoto, NativeMapRenderState, NativeMapViewport, NativeProjectionFrame } from './types.ts';
@@ -420,6 +419,7 @@ type Runtime = {
   pendingSnapGeometry: unknown;
   userInteracting: boolean;
   touchGesture: NativeFollowGesture | null;
+  tapGestureGate: NativeTapGestureGate;
   drawingGroundHit: NativeDrawingGroundHit | null;
   previewTrack: TrackOverlay['preview'];
   previewTrackOverride: boolean;
@@ -463,7 +463,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     transientGeometry: new NativeTransientGeometry(() => runtimeRef.current?.syncTransientGeometry?.()),
     offlineDisplayPolicy: readNativeOfflineDisplayPolicy(),
     profileNotesPreview: null,
-    userInteracting: false, touchGesture: null, drawingGroundHit: null, previewTrack: null, previewTrackOverride: false, lastCameraFingerprint: '', lastReportedStatus: '', readyNotified: false,
+    userInteracting: false, touchGesture: null, tapGestureGate: new NativeTapGestureGate(), drawingGroundHit: null, previewTrack: null, previewTrackOverride: false, lastCameraFingerprint: '', lastReportedStatus: '', readyNotified: false,
     projectionSyncScheduler: new NativeProjectionSyncScheduler(() => runtimeRef.current?.created === true), syncAbort: null, lastStateFingerprint: '', lastAckedPhotoGroupKey: null,
   };
   const runtime = runtimeRef.current;
@@ -715,6 +715,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         break;
       }
       case 'tap': {
+        if (!isRecord(value) || !runtime.tapGestureGate.accepts(value.gestureId)) break;
         if (!isRecord(value) || !isRecord(value.point)) break;
         const rawCoordinate = value.coordinates ?? value.coordinate;
         const coordinateValue = rawCoordinate == null ? null : readPoint(rawCoordinate);
@@ -725,6 +726,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         const pick: NativeTapPick = {
           point: { x, y }, coordinate: coordinateValue,
           ids: Array.isArray(value.ids) ? value.ids.filter((id): id is string => typeof id === 'string') : [],
+          exactIds: Array.isArray(value.exactIds) ? value.exactIds.filter((id): id is string => typeof id === 'string') : [],
           ...(typeof value.gestureId === 'string' || typeof value.gestureId === 'number' ? { gestureId: value.gestureId } : {}),
           ...(typeof value.eventTime === 'number' && Number.isFinite(value.eventTime) ? { eventTime: value.eventTime } : {}),
         };
@@ -762,6 +764,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         if (!isRecord(value)) break;
         const action = Number(value.action);
         if (action === 0) {
+          runtime.tapGestureGate.observe(value.gestureId);
           runtime.cameraSync.beginUserGesture();
           runtime.cameraPersistence.beginGesture();
           runtime.userInteracting = true;
@@ -795,6 +798,10 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
             runtime.cameraPersistence.endGesture();
           }
         }
+        break;
+      }
+      case 'gestureCancel': {
+        if (isRecord(value)) runtime.tapGestureGate.cancel(value.gestureId);
         break;
       }
       case 'pick':
@@ -878,6 +885,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     let disposed = false;
     const abort = new AbortController();
     runtime.mapId = mapId;
+    runtime.tapGestureGate = new NativeTapGestureGate();
     runtime.element = element;
     let resizeObserver: ResizeObserver | null = null;
     let renderAbort: AbortController | null = null;
@@ -932,7 +940,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
         subscriptions.push(...subscribeNativeProjectionEvents(client, mapId, (name, value) => handleHostEvent(name, value)));
         for (const name of [
           'camera', 'mapReady', 'mapIdle', 'mapPick', 'tap', 'drawingInput',
-          'touch', 'pick', 'objectSelect', 'status', 'renderStateApplied', 'sectionStatus', 'sectionProfile', 'sectionChange',
+          'touch', 'gestureCancel', 'pick', 'objectSelect', 'status', 'renderStateApplied', 'sectionStatus', 'sectionProfile', 'sectionChange',
           'sectionSelect', 'modelTerrainStatus', 'satellite', 'geology', 'roadGeometry', 'riverGeometry', 'snapGeometry', 'capabilityBlocked', 'mapViewport', 'viewCreated',
         ]) subscriptions.push(client.subscribe(mapId, name, (value) => handleHostEvent(name, value)));
         runtime.subscriptions = subscriptions;
@@ -1135,12 +1143,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
 
   useImperativeHandle(ref, () => makeHandle(runtime, report, request), []);
 
-  return <div ref={elementRef} className={`map-canvas${props.className ? ` ${props.className}` : ''}`} data-native-map-id={mapId ?? undefined} data-native-map-ready={isCreated ? 'true' : 'false'}>
-    {isCreated && mapId && runtime.client && props.onAnnotationNavigate && !props.readOnly
-      ? <NativeAnnotationNavigation client={runtime.client} mapId={mapId} annotations={props.annotations}
-          selectedId={props.annotationSelected} onNavigate={(id, slot) => props.onAnnotationNavigate?.(id, slot)} />
-      : null}
-  </div>;
+  return <div ref={elementRef} className={`map-canvas${props.className ? ` ${props.className}` : ''}`} data-native-map-id={mapId ?? undefined} data-native-map-ready={isCreated ? 'true' : 'false'} />;
 });
 
 function isNativeFrame(value: unknown): value is NativeProjectionFrame {
@@ -1174,6 +1177,7 @@ function dispatchNativeTapAction(runtime: Runtime, action: ReturnType<typeof int
   const current = runtime.props;
   switch (action.type) {
     case 'none': return;
+    case 'clearSelection': safeCallback(() => current.onSelectionClear?.()); return;
     case 'mapPick': {
       if (action.queryPoint && current.queryOnPick !== false) {
         const elevation = runtime.client && runtime.mapId ? runtime.client.geometry(runtime.mapId).elevation(action.coordinate) : null;
@@ -1311,8 +1315,8 @@ function resolveNativeDragTarget(runtime: Runtime, hit: NativeHitTest): DragTarg
     return null;
   }
   const objectIds = hit.ids.filter((id) => id.startsWith('shantu-object:')).map((id) => id.slice('shantu-object:'.length));
-  const annotation = current.annotations.find((item) => objectIds.includes(item.id) && item.visible && item.kind === 'pin' && !item.trackAnchor && !item.sectionAnchor);
-  if (annotation) {
+  const annotation = nativeAnnotationHit(hit.ids, hit.exactIds, current.annotations);
+  if (annotation?.kind === 'pin' && !annotation.trackAnchor && !annotation.sectionAnchor) {
     if (current.annotationEditingId && current.annotationEditingId !== annotation.id) return null;
     return { kind: 'annotation', id: annotation.id, coordinate: annotation.coordinates };
   }

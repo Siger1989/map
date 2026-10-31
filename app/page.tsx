@@ -964,6 +964,16 @@ export default function Home() {
     !selectedAnnotation.trackAnchor && !selectedAnnotation.sectionAnchor &&
     annotations.edit && annotationTab === 'position' &&
     (selectedAnnotation.kind !== 'pin' || adjustingPinId === selectedAnnotation.id));
+  const clearObjectSelection = () => {
+    // Actual editing retains its draft. An inactive retained edit must not make
+    // ordinary browsing permanently stick to the previous object.
+    if (annotations.edit && (panel === 'annotations' || annotationPositionEditing)) return;
+    if (!annotations.select(null)) return;
+    setActiveTrackNode(null);
+    setTrackLinePoint(null);
+    tracks.select(null);
+    if (panel === 'annotations') setPanel(null);
+  };
   const changeSection = (next: SectionSettings) => {
     setSectionHistory((history) => [...history.slice(-19), sectionDraft]);
     setSection(next);
@@ -1655,6 +1665,17 @@ export default function Home() {
     }
     return true;
   };
+  const navigateAnnotationTo = (id: string, slot: 'start' | 'end') => {
+    if (!switchFromSection()) return;
+    const item = annotations.items.find(annotation => annotation.id === id && annotation.visible);
+    if (!item) return;
+    navigation.place(slot, {
+      name: item.name || '标记位置',
+      coordinates: [...item.coordinates],
+    });
+    follow.pause();
+    setPanel('route');
+  };
   const placeSearch = (
     <PlaceSearch
       onShare={(place) => openPlaceShareDialog({ place: { name: place.name, coordinates: [...place.coordinates] } })}
@@ -2254,6 +2275,7 @@ export default function Home() {
             }
           }}
           onAnnotationSelect={(id) => {
+            if (!annotations.items.some(item => item.id === id && item.visible)) return;
             if (survey.active && survey.picking) {
               const item = annotations.items.find(
                 (a) => a.id === id && a.visible,
@@ -2307,15 +2329,7 @@ export default function Home() {
             setPanel(null);
           }}
           onAnnotationNavigate={(id, slot) => {
-            if (!switchFromSection()) return;
-            const item = annotations.items.find(annotation => annotation.id === id && annotation.visible);
-            if (!item) return;
-            navigation.place(slot, {
-              name: item.name || '标记位置',
-              coordinates: [...item.coordinates],
-            });
-            follow.pause();
-            setPanel('route');
+            navigateAnnotationTo(id, slot);
           }}
           onMapHold={(value) => {
             if (
@@ -2356,13 +2370,13 @@ export default function Home() {
             }
             if (navigation.pick(coordinates)) setPanel('route');
             else {
-              // A map gesture is part of editing, not a request to leave the marker.
-              if (annotations.edit) return;
-              setActiveTrackNode(null);
-              tracks.select(null);
-              if (annotations.select(null) && panel === 'annotations')
-                setPanel(null);
+              clearObjectSelection();
             }
+          }}
+          onSelectionClear={() => {
+            if (survey.active || measurement.active || editor.session || annotations.picking ||
+              navigation.picking !== null || tracks.drawing || areas.drawing || sectionEditing || featureMove) return;
+            clearObjectSelection();
           }}
         />
         </MapComparisonHost>
@@ -2772,6 +2786,16 @@ export default function Home() {
                   完成调整
                 </button>
               </div>
+              {selectedAnnotation && (
+                <div className="selection-tools-route-actions" aria-label="设置导航起终点">
+                  <button disabled={!!featureMove} onClick={() => navigateAnnotationTo(selectedAnnotation.id, 'start')}>
+                    设为起点
+                  </button>
+                  <button disabled={!!featureMove} onClick={() => navigateAnnotationTo(selectedAnnotation.id, 'end')}>
+                    设为终点
+                  </button>
+                </div>
+              )}
             </div>
           )}
         {markerCamera.input}

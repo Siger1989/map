@@ -1,3 +1,46 @@
+## 2026-10-31 / 0.2.151 原生标记与路线端点回归通过（范围限定）
+
+| 检查 | 状态 | 证据与限制 |
+|---|---|---|
+| 51 Node、31 Kotlin（5 suites）、TSC、私人React、optimized APK build | PASS | fixed/versioned APK相同：165,150,292字节，SHA `60f77e35fd7f4c4d39c6f076ac98409dd9a4d5ca8eec3fd0decb6008e6692689`；最终审计元数据由root补记 |
+| A/B/C、3轮rapid（期望B/实选B）、blank、refocus | PASS | native report 78 steps，用户标记1→1、QA ID剩余0 |
+| 64双向zoom样本、5 pose PNG | PASS（样本） | 64/64 focused；69 PNG中心红A有像素；9.16 fallback icon接后续9.4 label，无149式隔离文字缺口 |
+| trueFollowUp真实native起点/终点按钮、返回/清选/重选、完成调整 | PASS | 18步报告；两个endpoint均填QA-PIN-A，真实touch cleanup后selected为空，QA ID0，原标记1→1 |
+| 151样本白色SDK placeholder | 未观察到（本次样本） | 限初始化/扫级审核截图，不扩展为所有map/config全场景 |
+| 主/双图全功能矩阵、Find X8手机 | UNVERIFIED | 此次范围不覆盖全功能或实体手机 |
+| 聊天私人附件 | NOT_DELIVERED | 没有附件ID/私有下载链接 |
+| helper命名 | legacy identifier | `qa149`/`native149`为复用工具名/设备证据目录，不是APP版本；实际包code158由root独立核验 |
+
+详情见[151原生报告](native-android/marker-navigation-151-20261031.md)与[交接](HANDOFF-20261031-151.md)。150 rapid B→A及白placeholder FAIL历史见[150报告](native-android/marker-navigation-150-20261031.md)，不得覆盖。
+## 2026-10-31 / 0.2.150 原生回归记录
+
+| 检查 | 状态 | 证据与限制 |
+|---|---|---|
+| 51项Node、30项Kotlin（5 suites）、TSC、私人React、optimized APK构建 | PASS | 构建结果仅代表源/构建，不抵消native FAIL |
+| native A/B/C、blank、refocus | PASS | root提供75动作摘要；DOM卡片正确名称与button array正确 |
+| native rapid alternation | FAIL | expected B / actual A；helper `hasStartFlags=false` 是编码问题，不作为应用按钮缺失证据 |
+| native marker image | FAIL | 模拟器显示24px白色SDK default placeholder |
+| 150归档/固定包 | VERSIONED ONLY | 150已存版本化私包；150核验时固定入口仍149，后来更新为151；当前聊天NOT_DELIVERED |
+| 150 React浏览器布局 | PASS（限React） | 390×857与360×780；MapLibre web，不代表WorldWind/GPU/APK |
+
+150和151详细范围见[150原生导航报告](native-android/marker-navigation-150-20261031.md)、[151原生导航报告](native-android/marker-navigation-151-20261031.md)与[151交接](HANDOFF-20261031-151.md)。
+## 2026-10-31 / 0.2.149 原生标记点选与缩放门禁
+
+| 检查 | 状态 | 证据与限制 |
+|---|---|---|
+| 51项Node、28项Kotlin JVM、TSC、私人React及optimized APK、包完整性 | PASS | 仅代表定向逻辑/构建/包核验，不代表原生视觉验收 |
+| GoogleShantuHybrid35安装149、原生地图ready | PASS（启动就绪） | 反复SystemUI/launcher ANR使连续交互观察无效，不能作为持续缩放或点选证据 |
+| MuMu3实际149启动、地形与影像显示 | PASS（有限场景） | 截图 `.openai/native149-gpu/mumu-map.png`；仅确认实际149可正常启动并出图 |
+| MuMu3平移/缩放闪烁样本 | PASS（有限样本） | 6次平移、2次放大、2次缩小，39.525秒/398编码帧；逐帧未见覆盖>70%的黑/白闪屏。不是FPS测试，限已加载区域、无标记，不能外推全部闪烁已解决 |
+| 原生标记输入：A/B/C正确ID、快速交替选B、空白地图清选 | PASS（5项输入断言） | `.openai/native149-gpu/run3/report.json`；原有标记数1，最终1，QA临时ID剩余0 |
+| raw zoom 2–22、43点缩放视觉扫描 | FAIL（转场缺图） | 联系图 `.openai/native149-gpu/zoom-contact.png`：zoom9.16 label模式缺少A，zoom9.4再次出现；149不具备最终视觉验收资格 |
+| 44 CSS px候选/重叠优先级/迟到回调专项视觉、跨姿态marker可见 | IN_PROGRESS | 输入断言不覆盖全部触控候选和视觉转场；需在图片回退修复后复测 |
+| 后续源码UI改动 | PASS（TSC）/未在149包 | 已移除黄色悬浮导航控件、终点放入左上选择卡；修改晚于149构建，尚无150 APK |
+| OPPO Find X8等真实手机、完整主图/双图视觉矩阵 | UNVERIFIED | 模拟器证据不能替代真机或完整矩阵 |
+| 当前聊天私人APK附件 | NOT_DELIVERED | 无附件ID/私有下载链接；当前Windows环境缺Library helpers与hosted-apps/connector |
+
+包身份、SHA、定向验证和未完成项见 [149标记选择报告](native-android/marker-selection-149-20261031.md)、[149发行说明](release-0.2.149.md)及[verification-149](native-android/verification-149-20261031.json)。
+
 ## 2026-10-31 / 148标记信息卡与纹理复用测试交付
 
 | 检查 | 结果 | 证据与限制 |

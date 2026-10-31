@@ -46,6 +46,16 @@ function harness(extra = {}) {
   return { adapter, callbacks, notices, gestures, emit, touch, hit, target };
 }
 
+test('native hit parsing preserves exact GPU IDs separately from expanded candidates for drag resolution', () => {
+  const seen=[];
+  const h=harness({resolveTarget:hit=>{seen.push(hit);return null;}});
+  h.emit('touch',h.touch(0,10,20));
+  h.emit('hitTest',{...h.hit({ids:['shantu-object:a','shantu-object:b']}),exactIds:['shantu-object:b']});
+  assert.deepEqual(seen[0].ids,['shantu-object:a','shantu-object:b']);
+  assert.deepEqual(seen[0].exactIds,['shantu-object:b']);
+  h.adapter.dispose();
+});
+
 test('native hit + real projection preserves FeatureDragBridge callback contract and captures camera', () => {
   const h = harness();
   h.emit('touch', h.touch(0, 10, 20));

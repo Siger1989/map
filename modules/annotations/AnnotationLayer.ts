@@ -39,7 +39,6 @@ export class AnnotationLayer implements CustomLayerInterface {
   private origin = MercatorCoordinate.fromLngLat([103.28, 31.08]);
   constructor(
     private onSelect: (id: string) => void,
-    private onNavigate?: (id: string, slot: 'start' | 'end') => void,
   ) {}
   private syncMarkerScale = () => {
     const zoom = this.map?.getZoom() ?? 16;
@@ -219,42 +218,6 @@ export class AnnotationLayer implements CustomLayerInterface {
       const visual = document.createElement('span');
       visual.className = 'annotation-marker-visual';
       visual.appendChild(body);
-      if (item.kind === 'pin' && this.onNavigate) {
-        const nav = document.createElement('button');
-        nav.type = 'button';
-        nav.className = 'annotation-marker-quick-nav';
-        nav.setAttribute('aria-label', `快速导航到${item.name || '标记'}`);
-        nav.setAttribute('aria-expanded', 'false');
-        nav.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21 11 3l3 7 7 3-18 8Zm7-7 4-2-2-2-2 4Z" fill-rule="evenodd"/></svg>';
-        const menu = document.createElement('span');
-        menu.className = 'annotation-marker-nav-menu';
-        menu.hidden = true;
-        for (const [slot, text] of [['start', '设为起点'], ['end', '设为终点']] as const) {
-          const choice = document.createElement('button');
-          choice.type = 'button';
-          choice.textContent = text;
-          choice.onclick = event => {
-            event.stopPropagation();
-            menu.hidden = true;
-            this.onNavigate?.(item.id, slot);
-          };
-          menu.appendChild(choice);
-        }
-        nav.onpointerdown = event => event.stopPropagation();
-        menu.onpointerdown = event => event.stopPropagation();
-        nav.onclick = event => {
-          event.stopPropagation();
-          const open = menu.hidden;
-          for (const marker of this.markers.values()) {
-            const other = marker.getElement().querySelector<HTMLElement>('.annotation-marker-nav-menu');
-            if (other) other.hidden = true;
-          }
-          menu.hidden = !open;
-          nav.setAttribute('aria-expanded', String(open));
-        };
-        visual.appendChild(nav);
-        visual.appendChild(menu);
-      }
       element.replaceChildren(visual);
       element.style.setProperty('--marker-scale', markerScale(map.getZoom()).toFixed(3));
       element.title = `${item.name} · 点击查看，长按拖动位置`;

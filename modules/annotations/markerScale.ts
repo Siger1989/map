@@ -8,9 +8,11 @@ export function markerScale(zoom: number) {
  * tile level. Labels start at raw zoom 9, two raw levels earlier than before.
  * The displayed source level also depends on the raster sampling profile
  * (for example, raw zoom 8 is about UI level 10 in high mode and 9 in standard).
- * The icon-only transition occupies raw zoom 8 to 9.
+ * Labels show above raw zoom 9, icon badges at zoom 8–9, and compact dots below
+ * zoom 8. Selection never pins a distant label on screen.
  */
 export function markerPresentation(zoom: number, selected: boolean) {
-  if (selected || !Number.isFinite(zoom) || zoom >= 9) return 'label';
+  void selected;
+  if (!Number.isFinite(zoom) || zoom >= 9) return 'label';
   return zoom < 8 ? 'dot' : 'icon';
 }

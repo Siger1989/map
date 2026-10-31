@@ -249,6 +249,8 @@ export type TerrainMapProps = {
   guidanceOverlay?: GuidanceOverlay;
   navigationCues?: NavigationCueInput | null;
   onMapPick: (coordinates: Coordinate) => void;
+  /** Clear a background selection even when the sky/terrain ray has no ground coordinate. */
+  onSelectionClear?: () => void;
   onMapHold?: (hold: MapHold) => void;
   trackOverlay: TrackOverlay;
   areaOverlay: AreaOverlay;
@@ -1139,9 +1141,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
               !latest.current.pickingActive &&
               !latest.current.sectionEditing,
             hit: (point, element) => {
-              if (element instanceof Element &&
-                  element.closest('.annotation-marker-quick-nav, .annotation-marker-nav-menu'))
-                return null;
               if (
                 latest.current.trackOverlay.editing &&
                 !latest.current.drawingActive
@@ -1331,8 +1330,6 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
                     latest.current.annotationPicking)
                 )
                   latest.current.onAnnotationSelect(id);
-              }, (id, slot) => {
-                if (!latest.current.readOnly) latest.current.onAnnotationNavigate?.(id, slot);
               });
               map.addLayer(annotationRef.current);
               if (modelMaskRef.current) {

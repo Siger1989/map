@@ -104,6 +104,9 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
   const [status, setStatus] = useState<[string, string]>(['', '']);
   const [mode, setMode] = useState<'browse' | 'draw'>('browse');
   const [properties, setProperties] = useState<'line' | 'marker' | null>(null);
+  useEffect(() => {
+    if (properties === 'marker' && !children.props.annotationSelected) setProperties(null);
+  }, [children.props.annotationSelected, properties]);
   const [notice, setNotice] = useState('');
   const followTimer = useRef<number | null>(null);
   const lastFollowClick = useRef(0);
@@ -255,6 +258,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
     annotationPicking: mode === 'browse' && !operations?.editingTrack,
     measurementPicking: false,
     onMapPick: coordinates => children.props.onMapPick(coordinates),
+    onSelectionClear: () => children.props.onSelectionClear?.(),
     onRouteSelect: () => {
       setLayerPane(null);
       setProperties(null);
@@ -268,7 +272,7 @@ export function MapComparisonHost({ session, primary, onClose, onUse, children, 
       setLayerPane(null);
       children.props.onDragBegin(target);
     },
-    onAnnotationNavigate: noop,
+    onAnnotationNavigate: (id, slot) => children.props.onAnnotationNavigate?.(id, slot),
     onPhotoSelect: noop,
     collectionPreviewActive: false,
     onCameraChange: value => synchronize(index, value),

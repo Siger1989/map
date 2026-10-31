@@ -17,9 +17,9 @@ test('shows a visible label-mode pin at its real local projected coordinate', ()
   assert.deepEqual({ x: result[0].x, y: result[0].y, id: result[0].annotation.id }, { x: 150, y: 300, id: 'pin-a' });
 });
 
-test('uses the original zoom/selection label threshold and requires a ready DEM sample', () => {
+test('hides distant labels even when selected and requires a ready DEM sample', () => {
   assert.equal(nativeAnnotationNavigationPins([pin], null, { ...frame, camera: { zoom: 8.5 } }, geometry()).length, 0);
-  assert.equal(nativeAnnotationNavigationPins([pin], 'pin-a', { ...frame, camera: { zoom: 4 } }, geometry()).length, 1);
+  assert.equal(nativeAnnotationNavigationPins([pin], 'pin-a', { ...frame, camera: { zoom: 4 } }, geometry()).length, 0);
   assert.equal(nativeAnnotationNavigationPins([pin], null, frame, geometry({ elevation: () => ({ status: 'blocked', reason: 'dem-missing' }) })).length, 0);
   assert.equal(nativeAnnotationNavigationPins([pin], null, { ...frame, terrainEnabled: false }, geometry({ elevation: () => ({ status: 'blocked', reason: 'no-terrain-required' }) })).length, 1);
 });

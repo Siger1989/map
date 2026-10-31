@@ -5,10 +5,14 @@ import earth.worldwind.shape.Path
 import earth.worldwind.shape.Placemark
 import earth.worldwind.shape.TriangleMesh
 import earth.worldwind.geom.AltitudeMode
+import earth.worldwind.render.image.ArgbImage
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,15 +35,110 @@ class NativeModelRendererTest {
             assertEquals(100.0+i,trace.positions.first().altitude,0.0)
         }
     }
-    @Test fun `marker glyph identities isolate style and presentation but stay bounded for custom colors`() {
-        fun image(icon:String,color:String,zoom:Double=12.0)=(NativeModelRenderer.render(annotation("pin", "\"icon\":\"$icon\",\"_mapZoom\":$zoom").put("color",color)).renderables.first() as Placemark).attributes.imageSource
+    @Test fun `marker glyph identities include name style and bounded density`() {
+        fun marker(icon:String,color:String,zoom:Double=12.0,name:String="Model",cssScale:Double=1.0)=annotation("pin", "\"icon\":\"$icon\",\"_mapZoom\":$zoom,\"_cssScale\":$cssScale,\"name\":\"$name\"").put("color",color)
+        fun image(icon:String,color:String,zoom:Double=12.0,name:String="Model",cssScale:Double=1.0)=(NativeModelRenderer.render(marker(icon,color,zoom,name,cssScale)).renderables.first() as Placemark).attributes.imageSource
         org.junit.Assert.assertSame(image("flag","#123456"),image("flag","#123456"))
         org.junit.Assert.assertNotSame(image("flag","#123456"),image("star","#123456"))
         org.junit.Assert.assertNotSame(image("flag","#123456"),image("flag","#123457"))
         org.junit.Assert.assertNotSame(image("flag","#123456"),image("flag","#123456",7.0))
-        org.junit.Assert.assertSame(image("flag","#123456",7.0),image("star","#123456",7.0))
+        org.junit.Assert.assertNotSame(image("flag","#123456",12.0,"营地"),image("flag","#123456",12.0,"观景台"))
+        org.junit.Assert.assertNotSame(image("flag","#123456",12.0,"Model",1.0),image("flag","#123456",12.0,"Model",2.8))
         for(i in 0..NativeModelRenderer.MAX_MARKER_GLYPHS+20)image("flag","#%06x".format(i))
         assertTrue(NativeModelRenderer.cachedMarkerGlyphCount()<=NativeModelRenderer.MAX_MARKER_GLYPHS)
+    }
+
+    @Test fun `badge name and icon share one placemark and retain readable size without texture rebuild`() {
+        val input=annotation("pin", "\"icon\":\"flag\",\"_mapZoom\":12,\"_cssScale\":2.8")
+        val result=NativeModelRenderer.render(input)
+        val marker=result.renderables.filterIsInstance<Placemark>().single()
+        val source=marker.attributes.imageSource
+        val initial=marker.attributes.imageScale
+        assertNotNull(source)
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(result.renderables, 8.9, 2.8, "label"))
+        assertEquals(initial, marker.attributes.imageScale, 0.0001)
+        assertTrue(marker.attributes.imageSource === source)
+        val nativeMarker = marker as NativeMarkerPlacemark
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(result.renderables, 8.0, 2.8, "icon"))
+        val iconSource = marker.attributes.imageSource
+        assertNotSame(source, iconSource)
+        assertSame(source, nativeMarker.selectActiveAttributes(false, true).imageSource)
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(result.renderables, 10.0, 4.2, "label"))
+        assertSame(source, nativeMarker.fallbackImageSourceForTest())
+        assertSame(source, nativeMarker.selectActiveAttributes(false, true).imageSource)
+        val highDensityLabelSource = marker.attributes.imageSource
+        assertNotSame(source, highDensityLabelSource)
+        assertSame(highDensityLabelSource, nativeMarker.selectActiveAttributes(true, true).imageSource)
+        assertNull(nativeMarker.fallbackImageSourceForTest())
+        val distant=NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":3,\"_selected\":true"))
+        assertEquals(1,distant.renderables.filterIsInstance<Placemark>().size)
+        val plain=NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":3"))
+        assertTrue((distant.renderables.single() as Placemark).attributes.imageSource === (plain.renderables.single() as Placemark).attributes.imageSource)
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(distant.renderables,3.0,1.0,"dot"))
+    }
+
+    @Test fun `controller resolved mode overrides a noisy raw zoom in rendered texture`() {
+        val input=annotation("pin", "\"_mapZoom\":8.0,\"_markerMode\":\"label\"")
+        val result=NativeModelRenderer.render(input)
+        val placemark=result.renderables.single() as Placemark
+        assertEquals(NativeMarkerPresentation.imageScale(8.0,1.0,1,"label"),placemark.attributes.imageScale,0.0001)
+    }
+
+    @Test fun `replacement texture selection never exposes an intermediate mode while the latest image loads`() {
+        val rendered = NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":8.5,\"_markerMode\":\"icon\""))
+        val marker = rendered.renderables.single() as NativeMarkerPlacemark
+        val iconSource = marker.attributes.imageSource
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(rendered.renderables, 9.2, 1.0, "label"))
+        val labelSource = marker.attributes.imageSource
+        assertSame(iconSource, marker.selectActiveAttributes(false, true).imageSource)
+        assertTrue(NativeModelRenderer.updateMarkerPresentation(rendered.renderables, 7.0, 1.0, "dot"))
+        val dotSource = marker.attributes.imageSource
+        assertNotSame(labelSource, dotSource)
+        assertSame(iconSource, marker.fallbackImageSourceForTest())
+        assertSame(iconSource, marker.selectActiveAttributes(false, true).imageSource)
+        assertSame(dotSource, marker.selectActiveAttributes(true, true).imageSource)
+    }
+
+    @Test fun `replacement placemark inherits its previous ready glyph without adding a second shape`() {
+        val previous = NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":12"))
+            .renderables.single() as NativeMarkerPlacemark
+        val previousSource = previous.attributes.imageSource
+        val replacementInput = annotation("pin", "\"_mapZoom\":12,\"name\":\"Renamed\"")
+        val replacement = NativeModelRenderer.render(
+            replacementInput,
+            previousMarkerPresentation = previous.snapshotForReplacement(),
+        )
+        val next = replacement.renderables.single() as NativeMarkerPlacemark
+        assertNotSame(previousSource, next.attributes.imageSource)
+        assertSame(previousSource, next.selectActiveAttributes(false, true).imageSource)
+        assertEquals(1, replacement.renderables.filterIsInstance<Placemark>().size)
+    }
+
+    @Test fun `placemark never draws WorldWind default square while every marker texture is missing`() {
+        val marker = NativeModelRenderer.render(annotation("pin", "")).renderables.single() as NativeMarkerPlacemark
+        val source = marker.attributes.imageSource
+        assertTrue(marker.shouldSkipForMissingTexture(source, textureReady = false))
+        assertFalse(marker.shouldSkipForMissingTexture(source, textureReady = true))
+        assertFalse(marker.shouldSkipForMissingTexture(null, textureReady = false))
+    }
+
+    @Test fun `creating many source descriptors does not execute pixel factories and keys compare by value`() {
+        val calls=java.util.concurrent.atomic.AtomicInteger()
+        for(i in 0 until 2000) {
+            NativeModelRenderer.markerImageSource("test-badge-$i") {
+                calls.incrementAndGet()
+                ArgbImage(1,1,intArrayOf(0xffffffff.toInt()))
+            }
+        }
+        val key1="same-icon-name-color-density"
+        val key2=String(key1.toCharArray())
+        val first=NativeModelRenderer.markerImageSource(key1) { calls.incrementAndGet(); ArgbImage(1,1,intArrayOf(1)) }
+        val same=NativeModelRenderer.markerImageSource(key2) { calls.incrementAndGet(); ArgbImage(1,1,intArrayOf(2)) }
+        val different=NativeModelRenderer.markerImageSource("different-name") { calls.incrementAndGet(); ArgbImage(1,1,intArrayOf(3)) }
+        assertEquals(first, same)
+        assertEquals(first.hashCode(), same.hashCode())
+        assertFalse(first == different)
+        assertEquals(0, calls.get())
     }
     @Test fun `fresh terrain placement aligns visible mesh and section geometry without changing saved ground`() {
         val saved=annotation("box", "\"groundElevation\":2400")
@@ -57,12 +156,13 @@ class NativeModelRendererTest {
         assertEquals(NativeMarkerStatus.RENDERED, pin.status)
         val mark = pin.renderables.single() as Placemark
         assertNotNull(mark.attributes.imageSource)
-        assertEquals(24.0 / 64.0, mark.attributes.imageScale, 0.0)
+        assertFalse(mark.attributes.isDrawLabel)
+        assertEquals(40.0 / 64.0, mark.attributes.imageScale, 0.0)
         assertEquals(0.5, mark.attributes.imageOffset.x, 0.0)
         assertEquals(2.0 / 64.0, mark.attributes.imageOffset.y, 0.0)
         assertEquals(earth.worldwind.geom.OffsetMode.FRACTION, mark.attributes.imageOffset.yUnits)
-        val dot = NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":7")).renderables.single() as Placemark
-        assertEquals(0.5, dot.attributes.imageOffset.y, 0.0)
+        val compact = NativeModelRenderer.render(annotation("pin", "\"_mapZoom\":7")).renderables.single() as Placemark
+        assertEquals(0.5, compact.attributes.imageOffset.y, 0.0)
         val borehole = NativeModelRenderer.render(annotation("pin", """"icon":"drill","borehole":{"depth":80}"""))
         assertEquals(NativeMarkerStatus.RENDERED, borehole.status)
         assertEquals(2, borehole.renderables.size)
@@ -115,6 +215,7 @@ class NativeModelRendererTest {
         assertEquals(112.0, mesh.positions.maxOf { it.altitude }, 1e-6)
         assertEquals(12, result.renderables.filterIsInstance<Path>().size)
         assertEquals(1, result.renderables.filterIsInstance<Placemark>().size)
+        assertFalse(result.renderables.filterIsInstance<Placemark>().single().attributes.isDrawLabel)
     }
 
     @Test fun `model center preserves surface underground and explicit absolute placement in raw meters`() {

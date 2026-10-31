@@ -256,66 +256,6 @@
 }
 .annotation-marker.is-point[data-presentation='label'] .annotation-marker-body svg { width: 14px; height: 14px; }
 .annotation-marker.is-point.is-selected[data-presentation='label'] .annotation-marker-body { outline: none; }
-.annotation-marker-quick-nav,
-.annotation-marker-nav-menu { display: none; }
-.annotation-marker.is-point[data-presentation='label'] .annotation-marker-quick-nav {
-  display: grid;
-  position: absolute;
-  top: 0;
-  right: -26px;
-  width: 25px;
-  height: 24px;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  border-radius: 3px;
-  background: var(--marker-color);
-  color: var(--marker-ink, #fff);
-}
-.annotation-marker-quick-nav svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-}
-.annotation-marker.is-point[data-presentation='label'] .annotation-marker-nav-menu:not([hidden]) {
-  display: flex;
-  position: absolute;
-  z-index: 1;
-  right: -26px;
-  bottom: 37px;
-  flex-direction: column;
-  gap: 2px;
-  width: 82px;
-  padding: 3px;
-  border-radius: 4px;
-  background: #fff8df;
-  box-shadow: 0 2px 8px #10212966;
-}
-.native-annotation-navigation-control { width:28px; height:28px; }
-.native-annotation-quick-nav {
-  display:grid; place-items:center; width:28px; height:28px; min-width:28px; min-height:28px;
-  padding:0; border:0; border-radius:4px; background:var(--marker-color); color:var(--marker-ink);
-}
-.native-annotation-quick-nav svg { width:16px; height:16px; fill:currentColor; }
-.native-annotation-nav-menu:not([hidden]) {
-  display:flex; position:absolute; z-index:1; top:32px; left:0; flex-direction:column;
-  gap:2px; width:82px; padding:3px; border-radius:4px;
-  background:var(--ui-surface, #fff8df); box-shadow:0 2px 8px #10212966;
-}
-.native-annotation-nav-menu button {
-  min-height:32px; padding:0 4px; border:0; border-radius:4px;
-  background:var(--ui-raised, #e6f2e8); color:var(--ui-text, #164934); font-size:11px;
-}
-.annotation-marker-nav-menu button {
-  min-height: 34px;
-  padding: 0 4px;
-  border: 0;
-  border-radius: 3px;
-  background: #e6f2e8;
-  color: #164934;
-  font-size: 11px;
-  white-space: nowrap;
-}
 .annotation-location { font-size: 12px; color: #26413f; border: 1px solid #91a59d; border-radius: 6px; padding: 5px; background: #f5f8f0; }
 .annotation-location header { display: flex; align-items: center; justify-content: space-between; }
 .annotation-location header button { min-height: 44px; padding: 0 6px; font-size: 12px; }
