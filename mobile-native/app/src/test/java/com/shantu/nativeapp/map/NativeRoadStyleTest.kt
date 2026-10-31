@@ -24,15 +24,24 @@ class NativeRoadStyleTest {
         assertFalse(NativeRoadStyle.visible(NativeRoadStyle.Group.RIVER, Double.NaN))
     }
 
-    @Test fun `line widths preserve web stops and continuous interpolation`() {
-        assertEquals(.7f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN, 7.0), .0001f)
-        assertEquals(1.25f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN, 9.5), .0001f)
-        assertEquals(5f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN, 19.0), .0001f)
-        assertEquals(3f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 12.0), .0001f)
-        assertEquals(.5f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.LOCAL, 12.0), .0001f)
-        assertEquals(2.1f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.LOCAL, 16.0), .0001f)
+    @Test fun `roads and casing become fine in overview while retaining continuous interpolation`() {
+        for (group in listOf(NativeRoadStyle.Group.MAIN, NativeRoadStyle.Group.MAIN_OUTLINE, NativeRoadStyle.Group.LOCAL, NativeRoadStyle.Group.RAIL)) {
+            val farZoom = if (group == NativeRoadStyle.Group.LOCAL) 12.0 else 9.0
+            val near = NativeRoadStyle.widthCss(group, 16.0)
+            val far = NativeRoadStyle.widthCss(group, farZoom)
+            assertTrue("$group must become visibly finer", far < near * .5f)
+            assertTrue("$group must remain drawable", far > 0f)
+            val below = NativeRoadStyle.widthCss(group, 12.0 - .0001)
+            val above = NativeRoadStyle.widthCss(group, 12.0 + .0001)
+            assertEquals("$group must not jump at a stop", below, above, .001f)
+        }
+        for (zoom in listOf(6.0, 7.0, 10.0, 12.0, 14.0, 16.0)) {
+            val main = NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN, zoom)
+            val casing = NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, zoom)
+            assertTrue(casing > main)
+            assertTrue("casing must not dominate a distant road", casing < main * 2.5f)
+        }
         assertEquals(1.5f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 13.0), .0001f)
-        assertEquals(1.1f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RAIL, 20.0), .0001f)
     }
 
     @Test fun `only highways are yellow while other main roads and paths preserve web palette`() {

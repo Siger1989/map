@@ -15,7 +15,7 @@ import earth.worldwind.render.RenderContext
 import earth.worldwind.render.Renderable
 import earth.worldwind.shape.Path
 
-/** Original cartography.ts rules, evaluated in the UI's CSS/512 zoom convention. */
+/** Native road presentation in the UI's CSS/512 zoom convention; route styling is separate. */
 internal object NativeRoadStyle {
     enum class Group { RIVER, MAIN_OUTLINE, MAIN, LOCAL, RAIL }
     private val major = setOf("motorway", "trunk", "primary", "secondary", "tertiary")
@@ -32,10 +32,12 @@ internal object NativeRoadStyle {
 
     fun widthCss(group: Group, uiZoom: Double): Float = when (group) {
         Group.RIVER -> interpolate(uiZoom, 7.0 to .5f, 13.0 to 1.5f, 16.0 to 3f)
-        Group.MAIN_OUTLINE -> interpolate(uiZoom, 7.0 to 1.8f, 12.0 to 3f, 16.0 to 7f)
-        Group.MAIN -> interpolate(uiZoom, 7.0 to .7f, 12.0 to 1.8f, 16.0 to 5f)
-        Group.LOCAL -> interpolate(uiZoom, 12.0 to .5f, 16.0 to 2.1f)
-        Group.RAIL -> 1.1f
+        // Draped strokes can occupy more screen space on near terrain. Keep the
+        // casing narrow as well as the fill, especially in a distant overview.
+        Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .6f, 10.0 to 1f, 12.0 to 1.4f, 16.0 to 3f)
+        Group.MAIN -> interpolate(uiZoom, 6.0 to .25f, 10.0 to .6f, 12.0 to .85f, 16.0 to 2f)
+        Group.LOCAL -> interpolate(uiZoom, 12.0 to .3f, 16.0 to 1f)
+        Group.RAIL -> interpolate(uiZoom, 9.0 to .32f, 12.0 to .5f, 16.0 to .9f)
     }
 
     private fun interpolate(zoom: Double, vararg stops: Pair<Double, Float>): Float {

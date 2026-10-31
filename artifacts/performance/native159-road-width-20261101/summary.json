@@ -1,0 +1,189 @@
+{
+  "beforeVersion": {
+    "package": "com.guanyun.weather.shantu.preview",
+    "versionName": "0.2.158-test",
+    "versionCode": 165
+  },
+  "afterVersion": {
+    "package": "com.guanyun.weather.shantu.preview",
+    "versionName": "0.2.159-test",
+    "versionCode": 166
+  },
+  "scope": "Actual optimized APKs on dedicated MuMu3; temporary native layer/annotation settings and camera only; user settings, labels choice and GPS not persisted; coordinates omitted",
+  "comparison": [
+    {
+      "stage": "zoom-14",
+      "rawZoom": 14.00000000000018,
+      "styleZoom": 13.999677092140278,
+      "cssScale": 3.21227621483376,
+      "beforePhysicalWidths": {
+        "MAIN_OUTLINE": [
+          16.060345
+        ],
+        "MAIN": [
+          10.920909
+        ],
+        "LOCAL": [
+          4.175544
+        ]
+      },
+      "afterPhysicalWidths": {
+        "MAIN_OUTLINE": [
+          7.0665927
+        ],
+        "MAIN": [
+          4.5771956
+        ],
+        "LOCAL": [
+          2.0877979
+        ]
+      },
+      "cartographyPlan": {
+        "roads": false,
+        "roadNames": false,
+        "placeLabels": false,
+        "tiandituLabels": "cia",
+        "effectiveBase": "tianditu:img",
+        "rasterLabelOpacity": 1
+      }
+    },
+    {
+      "stage": "zoom-10",
+      "rawZoom": 9.99999999999995,
+      "styleZoom": 9.99967709214005,
+      "cssScale": 3.21227621483376,
+      "beforePhysicalWidths": {
+        "MAIN_OUTLINE": [
+          8.094687
+        ],
+        "MAIN": [
+          4.3684673
+        ]
+      },
+      "afterPhysicalWidths": {
+        "MAIN_OUTLINE": [
+          3.2121725
+        ],
+        "MAIN": [
+          1.9272751
+        ]
+      },
+      "cartographyPlan": {
+        "roads": false,
+        "roadNames": false,
+        "placeLabels": false,
+        "tiandituLabels": "cia",
+        "effectiveBase": "tianditu:img",
+        "rasterLabelOpacity": 1
+      }
+    },
+    {
+      "stage": "zoom-7",
+      "rawZoom": 7.000000000000001,
+      "styleZoom": 6.999677092140099,
+      "cssScale": 3.21227621483376,
+      "beforePhysicalWidths": {
+        "MAIN_OUTLINE": [
+          5.782097
+        ],
+        "MAIN": [
+          2.2485933
+        ]
+      },
+      "afterPhysicalWidths": {
+        "MAIN_OUTLINE": [
+          2.2484896
+        ],
+        "MAIN": [
+          1.0840524
+        ]
+      },
+      "cartographyPlan": {
+        "roads": false,
+        "roadNames": false,
+        "placeLabels": false,
+        "tiandituLabels": "cia",
+        "effectiveBase": "tianditu:img",
+        "rasterLabelOpacity": 1
+      }
+    },
+    {
+      "stage": "vector-only-zoom-14",
+      "rawZoom": 14.00000000000018,
+      "styleZoom": 13.999677092140278,
+      "cssScale": 3.21227621483376,
+      "beforePhysicalWidths": {
+        "MAIN_OUTLINE": [
+          16.060345
+        ],
+        "MAIN": [
+          10.920909
+        ],
+        "LOCAL": [
+          4.175544
+        ]
+      },
+      "afterPhysicalWidths": {
+        "MAIN_OUTLINE": [
+          7.0665927
+        ],
+        "MAIN": [
+          4.5771956
+        ],
+        "LOCAL": [
+          2.0877979
+        ]
+      },
+      "cartographyPlan": {
+        "roads": true,
+        "roadNames": true,
+        "placeLabels": true,
+        "effectiveBase": "tianditu:img",
+        "rasterLabelOpacity": 1
+      }
+    },
+    {
+      "stage": "vector-only-zoom-10",
+      "rawZoom": 9.99999999999995,
+      "styleZoom": 9.99967709214005,
+      "cssScale": 3.21227621483376,
+      "beforePhysicalWidths": {
+        "MAIN_OUTLINE": [
+          8.094687
+        ],
+        "MAIN": [
+          4.3684673
+        ]
+      },
+      "afterPhysicalWidths": {
+        "MAIN_OUTLINE": [
+          3.2121725
+        ],
+        "MAIN": [
+          1.9272751
+        ]
+      },
+      "cartographyPlan": {
+        "roads": true,
+        "roadNames": true,
+        "placeLabels": true,
+        "effectiveBase": "tianditu:img",
+        "rasterLabelOpacity": 1
+      }
+    }
+  ],
+  "originalStateAndRevisionRestored": true,
+  "roadsEnabledRestored": true,
+  "typeScript": "PASS",
+  "nativeRoadTests": {
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "rasterAnnotationRoads": "NOT_CONTROLLED_BY_NATIVE_ROAD_WIDTH; existing original-image option retained",
+  "phone": "UNVERIFIED",
+  "fullMainDualMatrix": "UNVERIFIED",
+  "visualInspection": "PASS_SCOPED",
+  "visualScope": "Root inspected actual159 native PNGs for vector-only zoom14/10 and original-annotation zoom7; road thinning observed; original raster roads remain a separate limitation; full label layout and phone unverified"
+}

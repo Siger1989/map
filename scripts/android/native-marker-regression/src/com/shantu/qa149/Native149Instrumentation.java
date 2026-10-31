@@ -75,7 +75,8 @@ public final class Native149Instrumentation extends Instrumentation {
                     : "interactive-preview".equals(mode) ? runInteractivePreview()
                     : "raster-diagnostics".equals(mode) ? runRasterDiagnostics()
                     : "line-position-regression".equals(mode) ? runLinePositionRegression()
-                    : "offline-route-regression".equals(mode) ? Native158OfflineRegression.run(this) : inspect();
+                    : "offline-route-regression".equals(mode) ? Native158OfflineRegression.run(this)
+                    : "road-style-regression".equals(mode) ? Native159RoadRegression.run(this) : inspect();
                 result.putString("qa149_json", report.toString());
             } catch (Throwable error) {
                 rc = Activity.RESULT_CANCELED;
