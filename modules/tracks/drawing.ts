@@ -29,7 +29,7 @@ export type ManualTrack = {
   /** Explicit synthetic fixture; never present generated samples as GPS measurements. */
   simulation?: boolean;
   importFormat?: string;
-  navigationMode?: 'auto' | 'bicycle' | 'pedestrian';
+  navigationMode?: 'auto' | 'bicycle' | 'pedestrian' | 'motorcycle';
   sharedRoute?: {
     stops: { name: string; coordinates: Coordinate }[];
     duration: number | null;
@@ -173,7 +173,7 @@ export function parseSavedTracks(value: string | null): ManualTrack[] {
         sharedRoute.tolerance >= 0
           ? { sharedRoute }
           : {}),
-        ...(['auto', 'bicycle', 'pedestrian'].includes(navigationMode ?? '')
+        ...(['auto', 'bicycle', 'pedestrian', 'motorcycle'].includes(navigationMode ?? '')
           ? { navigationMode }
           : {}),
         ...(Number.isFinite(updatedAt) ? { updatedAt } : {}),

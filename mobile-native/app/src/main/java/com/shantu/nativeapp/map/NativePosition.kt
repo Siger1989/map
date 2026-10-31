@@ -36,14 +36,29 @@ internal object NativePositionPolicy {
 
 /** North-up transparent arrow texture; Placemark rotates it relative to the globe. */
 internal fun nativePositionArrowImage() = ArgbImage(32, 32, IntArray(32 * 32).also { pixels ->
-    for (y in 2..29) {
-        val halfWidth = when {
-            y < 15 -> ((y - 2) * 0.72 + 1).toInt()
-            else -> 4
+    // Use the full texture width for the arrowhead and keep the lower notch visible,
+    // matching the broad location-arrow silhouette used by the web map.
+    val outer = listOf(16 to 1, 31 to 29, 16 to 23, 1 to 29)
+    val inner = listOf(16 to 6, 26 to 26, 16 to 21, 6 to 26)
+    fun contains(x: Double, y: Double, polygon: List<Pair<Int, Int>>): Boolean {
+        var inside = false
+        var j = polygon.lastIndex
+        for (i in polygon.indices) {
+            val (xi, yi) = polygon[i]
+            val (xj, yj) = polygon[j]
+            if ((yi > y) != (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside
+            j = i
         }
-        for (x in (16 - halfWidth).coerceAtLeast(0)..(16 + halfWidth).coerceAtMost(31)) {
-            val edge = x == 16 - halfWidth || x == 16 + halfWidth || y == 2 || y == 29
-            pixels[y * 32 + x] = if (edge) 0xff064a83.toInt() else 0xff168fff.toInt()
+        return inside
+    }
+    for (y in 0 until 32) for (x in 0 until 32) {
+        val px = x + 0.5; val py = y + 0.5
+        if (contains(px, py, outer)) {
+            pixels[y * 32 + x] = if (contains(px, py, inner)) 0xff168fff.toInt() else 0xff064a83.toInt()
         }
     }
 }).toImageSource()
+
+/** Keep the location heading glyph at a stable UI size on high-density hybrid viewports. */
+internal fun nativePositionArrowScale(cssScale: Double): Double =
+    24.0 / 32.0 * (cssScale.takeIf { it.isFinite() && it > 0.0 } ?: 1.0)

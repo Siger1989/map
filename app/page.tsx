@@ -1446,6 +1446,7 @@ export default function Home() {
       guidance.session?.originalRoute,
       navigationSession?.progress,
       navigationCues?.kind,
+      navigationCues?.cameraMode,
     ],
   );
   const savedTrackOverlay = useMemo(() => [...tracks.overlaySaved,

@@ -129,7 +129,7 @@ export function trackNavigation(
       distance,
       duration:
         distance /
-        ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[mode] / 3600),
+        ({ pedestrian: 4000, bicycle: 15000, auto: 40000, motorcycle: 30000 }[mode] / 3600),
       steps: [],
       snapped,
       stops: routeStops,

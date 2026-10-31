@@ -1,5 +1,5 @@
 import { compileOsmGraph } from './osmGraph';
-import { GRAPH_LIMITS, type RoutingBounds } from './types';
+import { GRAPH_LIMITS, type OfflineProfile, type RoutingBounds } from './types';
 import { metresBetween } from '../navigation/types';
 export const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 /** One bounded region request; no automatic retry loop against public infrastructure. */
@@ -7,12 +7,13 @@ export async function downloadGraph(
   name: string,
   bounds: RoutingBounds,
   signal: AbortSignal,
+  profile: OfflineProfile = 'pedestrian',
 ) {
   const [w, s, e, n] = bounds,
     area =
       (metresBetween([w, s], [e, s]) * metresBetween([w, s], [w, n])) / 1e6;
   if (area > GRAPH_LIMITS.maximumAreaKm2)
-    throw new Error('离线步行路网单区最多100km²，请分区下载');
+    throw new Error('离线路网单区最多100km²，请分区下载');
   const bbox = `${s},${w},${n},${e}`;
   const query = `[out:json][timeout:40][maxsize:32000000];way[highway](${bbox})->.roads;( .roads; node(w.roads); rel(bw.roads)[type~"^restriction"];);out body;`;
   const response = await fetch(
@@ -25,7 +26,7 @@ export async function downloadGraph(
   );
   if (!response.ok)
     throw new Error(
-      response.status === 429 || response.status === 504
+      [429, 502, 503, 504].includes(response.status)
         ? '路网服务繁忙，请稍后重试或导入离线路网文件'
         : '路网下载失败，请检查网络',
     );
@@ -35,5 +36,5 @@ export async function downloadGraph(
   if (text.length > GRAPH_LIMITS.bytes)
     throw new Error('道路数据过大，请缩小区域');
   signal.throwIfAborted();
-  return compileOsmGraph(JSON.parse(text), name, bounds, crypto.randomUUID());
+  return compileOsmGraph(JSON.parse(text), name, bounds, crypto.randomUUID(), Date.now(), profile);
 }

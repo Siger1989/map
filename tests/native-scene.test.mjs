@@ -36,3 +36,24 @@ test('hidden tracks stay hidden and drag preview updates only the displayed geom
   assert.deepEqual(track.segments[0][0], [0, 0]);
   assert.equal(createNativeSceneGeometry(props({ ...overlay, visible: false })).tracks.features.length, 0);
 });
+
+test('native cue line widths stay ordinary in forward and top modes', () => {
+  const trackOverlay = state();
+  const input = {
+    coordinates: [[0, 0], [0.01, 0]], position: [0, 20 / 111_320], progress: 0,
+    kind: 'route', cameraMode: 'forward',
+  };
+  const forward = createNativeSceneGeometry({ ...props(trackOverlay), navigationCues: input }).guidance.features;
+  const ribbon = forward.find(feature => feature.properties.role === 'ribbon');
+  const reference = forward.find(feature => feature.properties.role === 'offset-reference');
+  assert.equal(ribbon.properties.width, 4);
+  assert.equal(reference.properties.width, 4);
+  assert.equal(ribbon.properties.closeView, true);
+  assert.equal(reference.properties.closeView, true);
+
+  const top = createNativeSceneGeometry({ ...props(trackOverlay), navigationCues: { ...input, cameraMode: 'top' } }).guidance.features;
+  assert.equal(top.some(feature => feature.properties.role === 'ribbon'), false);
+  const topReference = top.find(feature => feature.properties.role === 'offset-reference');
+  assert.equal(topReference.properties.width, 4);
+  assert.equal(topReference.properties.closeView, false);
+});

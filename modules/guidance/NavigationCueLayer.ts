@@ -71,7 +71,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round', visibility: shouldShowRibbon ? 'visible' : 'none' },
         paint: {
           'line-color': '#17382c',
-          'line-width': ['case', ['==', ['get', 'closeView'], true], 18, 8],
+          'line-width': 8,
           'line-opacity': 0.82,
         },
       });
@@ -86,7 +86,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round', visibility: shouldShowRibbon ? 'visible' : 'none' },
         paint: {
           'line-color': '#39c878',
-          'line-width': ['case', ['==', ['get', 'closeView'], true], 14, 4],
+          'line-width': 4,
           'line-opacity': 0.98,
         },
       });
@@ -101,7 +101,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#65562f',
-          'line-width': ['case', ['==', ['get', 'closeView'], true], 18, 8],
+          'line-width': 8,
           'line-opacity': 0.82,
         },
       });
@@ -116,7 +116,7 @@ export class NavigationCueLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': '#ffd34f',
-          'line-width': ['case', ['==', ['get', 'closeView'], true], 14, 4],
+          'line-width': 4,
           'line-opacity': 0.9,
         },
       });

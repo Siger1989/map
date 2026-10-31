@@ -75,3 +75,21 @@ test('offline browser state skips the network request', async () => {
   assert.equal(route, 'offline route');
   assert.deepEqual(calls, ['offline']);
 });
+
+test('failed offline fallback retains the original connection error', async () => {
+  const network = new NetworkFailure('路线服务网络连接失败或超时。');
+  await assert.rejects(onlineFirstWithOfflineFallback(
+    async () => { throw network; },
+    async () => { throw new Error('没有覆盖起终点的汽车离线路网'); },
+    () => true,
+  ), error => error.cause === network && error.message.includes('连接失败或超时') && error.message.includes('汽车离线路网'));
+});
+
+test('cancelling the offline fallback remains cancellation', async () => {
+  const cancelled = new DOMException('cancelled', 'AbortError');
+  await assert.rejects(onlineFirstWithOfflineFallback(
+    async () => { throw new NetworkFailure('连接失败'); },
+    async () => { throw cancelled; },
+    () => true,
+  ), error => error === cancelled);
+});

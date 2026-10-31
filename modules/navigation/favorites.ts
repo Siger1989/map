@@ -58,7 +58,7 @@ export function validFavorite(value: unknown): value is RouteFavorite {
         ) &&
         r.trackNetwork.reduce((sum, line) => sum + line.length, 0) <=
           120000)) &&
-    ['auto', 'bicycle', 'pedestrian'].includes(r.mode) &&
+    ['auto', 'bicycle', 'pedestrian', 'motorcycle'].includes(r.mode) &&
     finitePositive(r.distance) &&
     finitePositive(r.duration) &&
     finitePositive(r.createdAt) &&

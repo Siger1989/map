@@ -98,7 +98,7 @@ export function JourneyPanel({
       new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16),
     ),
     [speed, setSpeed] = useState(
-      { auto: '50', bicycle: '15', pedestrian: '4' }[mode],
+      { auto: '50', bicycle: '15', pedestrian: '4', motorcycle: '30' }[mode],
     );
   const [retry, setRetry] = useState(0);
   useEffect(() => {

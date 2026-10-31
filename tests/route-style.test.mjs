@@ -31,7 +31,9 @@ test('route style reaches planned route features and MapLibre paint expressions'
   assert.equal(feature.properties.routeColor, '#ff7f00');
   assert.equal(feature.properties.routeWidth, 3.5);
   const paint = layers.get('route-path').paint;
-  assert.deepEqual(paint['line-width'].at(-1), ['coalesce', ['get', 'routeWidth'], 4]);
+  assert.deepEqual(paint['line-width'], ['coalesce', ['get', 'routeWidth'], 4], 'navigation state never replaces the user-selected route width');
+  assert.deepEqual(layers.get('route-outline').paint['line-width'], ['+', ['coalesce', ['get', 'routeWidth'], 4], 4]);
+  assert.equal(layers.get('route-access').paint['line-width'], 4);
   assert.deepEqual(paint['line-color'].at(-1), ['coalesce', ['get', 'color'], ['get', 'routeColor'], '#59dcff']);
   } finally {
     if (oldRequestAnimationFrame === undefined) delete globalThis.requestAnimationFrame;

@@ -39,7 +39,8 @@ New-Item -ItemType Directory -Force -Path $classes, $dex | Out-Null
 
 $env:JAVA_HOME = $jdk
 $env:PATH = "$jdk\bin;$env:PATH"
-& $javac -encoding UTF-8 -source 8 -target 8 -classpath $androidJar -d $classes (Join-Path $helperRoot 'src\com\shantu\qa149\Native149Instrumentation.java')
+$sourceFiles = @(Get-ChildItem -LiteralPath (Join-Path $helperRoot 'src') -Recurse -Filter '*.java' | ForEach-Object { $_.FullName })
+& $javac -encoding UTF-8 -source 8 -target 8 -classpath $androidJar -d $classes @sourceFiles
 if ($LASTEXITCODE -ne 0) { throw 'javac failed' }
 
 $classFiles = @(Get-ChildItem -LiteralPath $classes -Recurse -Filter '*.class' | ForEach-Object { $_.FullName })

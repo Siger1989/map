@@ -54,7 +54,7 @@ export class RouteLayer {
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
           'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#384244', '#102a38'],
-          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 18, ['+', ['coalesce', ['get', 'routeWidth'], 4], 4]],
+          'line-width': ['+', ['coalesce', ['get', 'routeWidth'], 4], 4],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
@@ -74,7 +74,7 @@ export class RouteLayer {
             ['==', ['get', 'navigationState'], 'traveled'], '#8e999b',
             ['coalesce', ['get', 'color'], ['get', 'routeColor'], '#59dcff'],
           ],
-          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, ['coalesce', ['get', 'routeWidth'], 4]],
+          'line-width': ['coalesce', ['get', 'routeWidth'], 4],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },
       });
@@ -85,7 +85,7 @@ export class RouteLayer {
         filter: ['==', 'kind', 'access'],
         paint: {
           'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#8e999b', '#ffcb65'],
-          'line-width': ['case', ['all', ['==', ['get', 'navigationState'], 'traveled'], ['==', ['get', 'navigationClose'], true]], 14, 4],
+          'line-width': 4,
           'line-dasharray': [2, 2],
           'line-opacity': ['coalesce', ['get', 'opacity'], 1],
         },

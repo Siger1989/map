@@ -29,7 +29,7 @@ export function RoutingModeControl({ onOffline }: { onOffline?: () => void }) {
         }}
       >
         <option value="auto">优先离线，缺失时联网</option>
-        <option value="offline">仅离线 · 步行</option>
+        <option value="offline">仅离线 · 对应路网</option>
         <option value="online">在线规划</option>
       </select>
       {error && <small role="alert">{error}</small>}

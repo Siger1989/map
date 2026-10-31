@@ -95,6 +95,6 @@ export async function resolveTrackConnections(route: PlannedRoute, planner: Plan
     return { ...route, coordinates, trackConnections: connections,
       trackNetwork: route.trackNetwork?.map(replace), preferredTrackPath: route.preferredTrackPath && replace(route.preferredTrackPath),
       segments: trackConnectionSegments(coordinates, connections), distance,
-      duration: distance / ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[route.mode] / 3600) };
+      duration: distance / ({ pedestrian: 4000, bicycle: 15000, auto: 40000, motorcycle: 30000 }[route.mode] / 3600) };
   } finally { clearTimeout(timer); signal.removeEventListener('abort', stop); controller.abort(); }
 }

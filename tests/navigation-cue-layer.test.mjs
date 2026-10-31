@@ -313,7 +313,7 @@ test('off-route accuracy reference is bounded and only appears beyond reported u
   'reference coordinates stay finite and normalized across the date line');
 });
 
-test('top mode keeps only normal-width offset references while forward mode restores close cues', () => {
+test('top and forward modes preserve cue geometry without changing cue stroke widths', () => {
   const input = {
     coordinates: [[0, 0], [0.003, 0]], position: [0, 20 / 111_320], progress: 0, kind: 'route',
   };
@@ -336,8 +336,11 @@ test('top mode keeps only normal-width offset references while forward mode rest
   layer.sync(input);
   const roleNames = () => map.sources.get(NAVIGATION_CUE_SOURCE_ID).data.features.map(({ properties }) => properties.role);
   assert.ok(roleNames().includes('ribbon'));
+  assert.equal(map.sources.get(NAVIGATION_CUE_SOURCE_ID).data.features.find(({ properties }) => properties.role === 'ribbon').properties.closeView, true,
+    'forward cue metadata remains intact; it no longer changes stroke width');
   layer.sync({ ...input, cameraMode: 'top' });
   assert.deepEqual(roleNames(), ['offset-reference', 'route-projection']);
+  assert.equal(map.sources.get(NAVIGATION_CUE_SOURCE_ID).data.features[0].properties.closeView, false);
   assert.equal(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).layout.visibility, 'none');
   assert.equal(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).layout.visibility, 'none');
   assert.equal(map.layoutChanges.length, 2);
@@ -454,10 +457,10 @@ test('cue layer clears on null, gates wide zooms, and keeps stable source/layer 
   assert.ok(map.layers.has(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID));
   assert.ok(map.layers.has(NAVIGATION_CUE_ROUTE_PROJECTION_LAYER_ID));
   assert.equal(map.layers.get(NAVIGATION_CUE_LAYER_ID).type, 'symbol');
-  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).paint['line-width'], ['case', ['==', ['get', 'closeView'], true], 18, 8]);
-  assert.deepEqual(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-width'], ['case', ['==', ['get', 'closeView'], true], 14, 4]);
-  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-width'], ['case', ['==', ['get', 'closeView'], true], 14, 4]);
-  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-width'], ['case', ['==', ['get', 'closeView'], true], 18, 8]);
+  assert.equal(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).paint['line-width'], 8);
+  assert.equal(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-width'], 4);
+  assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-width'], 4);
+  assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-width'], 8);
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-color'], '#ffd34f');
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-color'], '#65562f');
   assert.equal('line-dasharray' in map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint, false);

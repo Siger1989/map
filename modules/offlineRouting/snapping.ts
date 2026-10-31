@@ -5,12 +5,12 @@ import {
 } from '../navigation/types.ts';
 import {
   GRAPH_LIMITS,
-  type OfflineGraph,
+  type StoredOfflineGraph,
   type RoutingNode,
-  type RoutingEdge,
+  type StoredRoutingEdge,
 } from './types.ts';
 /** Split only the selected topological edge. Nearby parallel roads never become joined. */
-export function snapOfflineStops(g: OfflineGraph, stops: RoutePlace[]) {
+export function snapOfflineStops(g: StoredOfflineGraph, stops: RoutePlace[]) {
   const nodes = new Map(g.nodes.map((n) => [n.id, n])),
     pairs = new Map<
       string,
@@ -68,7 +68,7 @@ export function snapOfflineStops(g: OfflineGraph, stops: RoutePlace[]) {
     }
     nearest.push(nodes.get(id)!);
   }
-  const edges: RoutingEdge[] = [];
+  const edges: StoredRoutingEdge[] = [];
   for (const edge of g.edges) {
     const pair = pairs.get(
       `${Math.min(edge.from, edge.to)}/${Math.max(edge.from, edge.to)}`,

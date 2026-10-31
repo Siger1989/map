@@ -154,7 +154,7 @@ export function advance(
   const movement = s.last
     ? metresBetween(s.last.coordinates, fix.coordinates)
     : 0;
-  const speed = { pedestrian: 12, bicycle: 30, auto: 80 }[s.route.mode];
+  const speed = { pedestrian: 12, bicycle: 30, auto: 80, motorcycle: 80 }[s.route.mode];
   if (
     s.last &&
     elapsed <= 30 &&

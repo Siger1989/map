@@ -63,7 +63,7 @@ export function createNativeSceneGeometry(props: Pick<TerrainMapProps, 'trackOve
     if (p.role === 'ribbon' && (props.navigationCues?.kind !== 'route' || props.navigationCues.cameraMode === 'top')) continue;
     const color = p.role === 'offset-reference' ? '#ffd34f' : p.role === 'ribbon' ? '#39c878' : p.kind === 'rejoin' ? '#ffd08a' : '#ffffff';
     guidance.push({ ...cue, properties: { ...p, minZoom: 14, color,
-      width: p.closeView ? 14 : 4, opacity: p.role === 'route-projection' ? 0.25 : 0.98,
+      width: 4, opacity: p.role === 'route-projection' ? 0.25 : 0.98,
       pointSize: p.role === 'lead' ? 24 : p.role === 'route-projection' ? 10 : 16,
       arrow: ['chevron', 'rejoin', 'lead'].includes(p.role), rotation: p.bearing,
     } });

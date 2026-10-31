@@ -237,7 +237,7 @@ export function routeOnNetwork(
       distance,
       duration:
         distance /
-        ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[route.mode] / 3600),
+        ({ pedestrian: 4000, bicycle: 15000, auto: 40000, motorcycle: 30000 }[route.mode] / 3600),
       steps: [],
       snapped: [hit.coordinates[0], destination],
       stops: [

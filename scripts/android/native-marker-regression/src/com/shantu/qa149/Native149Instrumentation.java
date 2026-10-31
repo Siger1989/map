@@ -21,6 +21,7 @@ import org.json.JSONTokener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
@@ -31,6 +32,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -71,7 +73,9 @@ public final class Native149Instrumentation extends Instrumentation {
                 String mode = arguments == null ? "inspect" : arguments.getString("mode", "inspect");
                 JSONObject report = "native-regression".equals(mode) ? runRegression()
                     : "interactive-preview".equals(mode) ? runInteractivePreview()
-                    : "raster-diagnostics".equals(mode) ? runRasterDiagnostics() : inspect();
+                    : "raster-diagnostics".equals(mode) ? runRasterDiagnostics()
+                    : "line-position-regression".equals(mode) ? runLinePositionRegression()
+                    : "offline-route-regression".equals(mode) ? Native158OfflineRegression.run(this) : inspect();
                 result.putString("qa149_json", report.toString());
             } catch (Throwable error) {
                 rc = Activity.RESULT_CANCELED;
@@ -591,6 +595,642 @@ public final class Native149Instrumentation extends Instrumentation {
         }
     }
 
+    /** One-shot QA render-state injection. It never touches React storage or saved records. */
+    private JSONObject runLinePositionRegression() throws Exception {
+        attachTarget();
+        SystemClock.sleep(1500L);
+        runId = UUID.randomUUID().toString().replace("-", "");
+        File pictures = getTargetContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        if (pictures == null) throw new IllegalStateException("app external pictures directory unavailable");
+        evidenceDir = new File(pictures, "native-line-position-" + runId);
+        if (!evidenceDir.mkdirs() && !evidenceDir.isDirectory()) throw new IllegalStateException("evidence directory unavailable");
+
+        final JSONObject originalState = new JSONObject(readState().toString());
+        originalCamera = new JSONObject(invokeCameraJson().toString());
+        JSONArray stages = prepareLinePositionStages(readLinePositionFixture(), originalState);
+        JSONArray stageReports = new JSONArray();
+        JSONObject report = new JSONObject().put("mode", "line-position-regression")
+            .put("testState", "RUNNING").put("targetPackage", TARGET_PACKAGE).put("mapId", "main")
+            .put("targetVersion", targetVersionProof()).put("fixtureFile", arguments.getString("fixtureFile"))
+            .put("syntheticPosition", true).put("positionMeaning", "QA合成渲染夹具，非真实定位")
+            .put("headingInjectionScope", "native controller renderer only; no GeoService, React position state, track, or recording writes")
+            .put("evidenceDirectory", evidenceDir.getAbsolutePath()).put("stages", stageReports);
+        final String bannerId = "shantu-line-position-qa-" + runId;
+        boolean bannerAdded = false;
+        Throwable runError = null;
+        String restoreState = "NOT_STARTED";
+        boolean revisionBaselineRestored = false;
+        long originalRevisionBaseline = originalState.optLong("revision", currentRenderRevision());
+        // Reserve a temporary QA-only interval so normal React initialization cannot
+        // race these renderer fixtures. The original revision baseline is restored below.
+        long nextRevision = Math.max(originalRevisionBaseline, currentRenderRevision()) + 100_000L;
+        JSONObject restoreErrorDetails = null;
+        try {
+            setLinePositionQaBanner(bannerId, true);
+            bannerAdded = true;
+            for (int i = 0; i < stages.length(); i++) {
+                JSONObject fixtureStage = stages.getJSONObject(i);
+                String name = fixtureStage.getString("name");
+                JSONObject stageState = new JSONObject(originalState.toString());
+                stageState.put("revision", ++nextRevision);
+                stageState.put("camera", fixtureStage.getJSONObject("camera"));
+                stageState.put("renderGeometry", fixtureStage.getJSONObject("renderGeometry"));
+                JSONObject stagePosition = new JSONObject(fixtureStage.getJSONObject("position").toString());
+                stagePosition.put("timestamp", System.currentTimeMillis());
+                stageState.put("position", stagePosition);
+                stageState.put("positionHeading", fixtureStage.getDouble("positionHeading"));
+                stageState.put("positionNavigating", fixtureStage.getBoolean("positionNavigating"));
+
+                applyRenderStateThroughBridge("main", stageState, "line-position-" + i + "-" + SystemClock.uptimeMillis());
+                if (fixtureStage.getBoolean("qaHeadingGlyph")) applySyntheticHeadingGlyph(stageState, fixtureStage.getDouble("positionHeading"));
+                applyCamera(fixtureStage.getJSONObject("camera"));
+                awaitFrames(2, 10_000L);
+                awaitWebViewDraw();
+                SystemClock.sleep(120L);
+
+                JSONObject actualCamera = safeCameraSnapshot(invokeCameraJson());
+                double cssScale = rendererCssScale();
+                JSONArray pathWidths = inspectLinePositionRendererPaths(cssScale);
+                JSONObject glyph = inspectNativePositionGlyph();
+                JSONObject stageReport = new JSONObject().put("stage", name).put("camera", actualCamera)
+                    .put("cssScale", cssScale).put("selectedAnnotationPresent", !selectedId(stageState).isEmpty())
+                    .put("qaHeadingGlyph", fixtureStage.getBoolean("qaHeadingGlyph"))
+                    .put("rendererPositionProvider", fixtureStage.getBoolean("qaHeadingGlyph") ? "qa-fixture" : "ip")
+                    .put("positionArrowVisible", glyph.optBoolean("positionArrowVisible"))
+                    .put("puckPlacemark", glyph.optJSONObject("puckPlacemark") == null ? JSONObject.NULL : glyph.optJSONObject("puckPlacemark"))
+                    .put("position", safeSyntheticPosition(stagePosition))
+                    .put("positionHeading", fixtureStage.getDouble("positionHeading"))
+                    .put("positionNavigating", fixtureStage.getBoolean("positionNavigating"))
+                    .put("renderRevision", stageState.getLong("revision"))
+                    .put("renderRevisionStillCurrent", currentRenderRevision() == stageState.getLong("revision"))
+                    .put("routeFeatures", safeLineFeatureMetadata(fixtureStage.getJSONObject("renderGeometry").optJSONObject("routes")))
+                    .put("guidanceFeatures", safeLineFeatureMetadata(fixtureStage.getJSONObject("renderGeometry").optJSONObject("guidance")))
+                    .put("nativeRendererPaths", pathWidths).put("screenshot", capture("line-position-" + name));
+                stageReports.put(stageReport);
+            }
+            report.put("testState", "LINE_POSITION_REGRESSION_COMPLETE");
+        } catch (Throwable error) {
+            runError = error;
+            report.put("testState", "LINE_POSITION_REGRESSION_ERROR")
+                .put("errorType", error.getClass().getName()).put("error", safeError(error.getMessage()))
+                .put("errorDetails", errorDetails(error)).put("hostRenderMethods", hostRenderMethodInventory())
+                .put("controllerPositionMethods", controllerPositionMethodInventory());
+        } finally {
+            try {
+                if (bannerAdded) setLinePositionQaBanner(bannerId, false);
+            } catch (Throwable bannerError) {
+                restoreState = "QA_BANNER_REMOVE_FAILED:" + bannerError.getClass().getSimpleName();
+                if (runError == null) runError = bannerError;
+            }
+            try {
+                JSONObject restore = new JSONObject(originalState.toString());
+                restore.put("revision", Math.max(currentRenderRevision(), nextRevision) + 1L);
+                applyRenderStateThroughBridge("main", restore, "line-position-restore-" + SystemClock.uptimeMillis());
+                applyCamera(originalCamera);
+                awaitFrames(2, 10_000L);
+                restoreRevisionBaseline(originalState, originalRevisionBaseline);
+                revisionBaselineRestored = true;
+                restoreState = restoreState.startsWith("QA_BANNER_REMOVE_FAILED")
+                    ? restoreState + ";ORIGINAL_RENDER_STATE_AND_CAMERA_RESTORED;JS_REVISION_BASELINE_RESTORED"
+                    : "ORIGINAL_RENDER_STATE_AND_CAMERA_RESTORED;JS_REVISION_BASELINE_RESTORED";
+            } catch (Throwable error) {
+                restoreErrorDetails = new JSONObject().put("type", error.getClass().getName())
+                    .put("message", safeError(error.getMessage())).put("causes", errorDetails(error));
+                restoreState += ";RESTORE_FAILED:" + error.getClass().getSimpleName();
+                if (runError == null) runError = error;
+            }
+        }
+        boolean cameraRestored = false;
+        try { cameraRestored = cameraMatches(originalCamera, invokeCameraJson()); }
+        catch (Throwable snapshotError) {
+            if (runError == null) runError = snapshotError;
+            if (!restoreState.contains("RESTORE_FAILED")) restoreState += ";RESTORE_CAMERA_SNAPSHOT_FAILED";
+        }
+        report.put("restoreState", restoreState).put("restoredCameraMatchesSnapshot", cameraRestored)
+            .put("renderRevisionBaseline", originalRevisionBaseline)
+            .put("renderRevisionBaselineRestored", revisionBaselineRestored)
+            .put("hostRenderMethods", hostRenderMethodInventory())
+            .put("controllerPositionMethods", controllerPositionMethodInventory());
+        if (restoreErrorDetails != null) report.put("restoreErrorDetails", restoreErrorDetails);
+        String reportPath = new File(evidenceDir, "line-position-regression.json").getAbsolutePath();
+        try (FileOutputStream stream = new FileOutputStream(reportPath)) {
+            stream.write(report.toString(2).getBytes("UTF-8"));
+        }
+        report.put("reportPath", reportPath);
+        if (runError != null && !report.has("errorType"))
+            report.put("testState", "LINE_POSITION_REGRESSION_ERROR").put("errorType", runError.getClass().getName()).put("error", safeError(runError.getMessage()));
+        return report;
+    }
+
+    private JSONObject readLinePositionFixture() throws Exception {
+        String name = arguments == null ? null : arguments.getString("fixtureFile");
+        if (name == null || !name.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,99}\\.json") || name.contains(".."))
+            throw new IllegalArgumentException("fixtureFile must be a JSON filename in app externalFilesDir");
+        File root = getTargetContext().getExternalFilesDir(null);
+        if (root == null) throw new IllegalStateException("app externalFilesDir unavailable");
+        File canonicalRoot = root.getCanonicalFile();
+        File file = new File(canonicalRoot, name).getCanonicalFile();
+        if (!canonicalRoot.equals(file.getParentFile()) || !file.isFile() || file.length() <= 0L || file.length() > 4L * 1024L * 1024L)
+            throw new IllegalArgumentException("fixture file missing, outside app externalFilesDir, or exceeds 4 MiB");
+        StringBuilder text = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
+            char[] buffer = new char[8192]; int read;
+            while ((read = reader.read(buffer)) >= 0) {
+                text.append(buffer, 0, read);
+                if (text.length() > 4 * 1024 * 1024) throw new IllegalArgumentException("fixture JSON exceeds 4 MiB");
+            }
+        }
+        Object parsed = new JSONTokener(text.toString()).nextValue();
+        if (!(parsed instanceof JSONObject)) throw new IllegalArgumentException("fixture root must be an object");
+        return (JSONObject)parsed;
+    }
+
+    private JSONArray prepareLinePositionStages(JSONObject fixture, JSONObject originalState) throws Exception {
+        if (fixture.optInt("version", -1) != 1) throw new IllegalArgumentException("fixture version must be 1");
+        JSONArray input = fixture.optJSONArray("stages");
+        if (input == null || input.length() < 1 || input.length() > 18) throw new IllegalArgumentException("fixture stages must contain 1..18 entries");
+        List<String> seen = new ArrayList<>();
+        JSONArray result = new JSONArray();
+        JSONObject originalGeometry = originalState.optJSONObject("renderGeometry");
+        for (int i = 0; i < input.length(); i++) {
+            JSONObject stage = input.optJSONObject(i);
+            if (stage == null) throw new IllegalArgumentException("stage must be an object");
+            String name = stage.optString("name", "");
+            if (!name.matches("[a-z0-9-]{1,40}") || seen.contains(name)) throw new IllegalArgumentException("stage names must be unique lowercase labels, 1..40 characters");
+            seen.add(name);
+            JSONObject camera = safeRequestedCamera(stage.optJSONObject("camera"));
+            JSONObject position = safeSyntheticPosition(stage.optJSONObject("position"));
+            double heading = stage.optDouble("positionHeading", Double.NaN);
+            if (!Double.isFinite(heading) || heading < 0.0 || heading >= 360.0) throw new IllegalArgumentException("positionHeading must be 0..359.999");
+            if (!stage.has("positionNavigating") || !(stage.opt("positionNavigating") instanceof Boolean))
+                throw new IllegalArgumentException("positionNavigating must be an explicit boolean");
+            if (!stage.has("qaHeadingGlyph") || !(stage.opt("qaHeadingGlyph") instanceof Boolean))
+                throw new IllegalArgumentException("qaHeadingGlyph must be an explicit boolean");
+            JSONObject renderGeometry = mergeLinePositionGeometry(originalGeometry, stage.optJSONObject("renderGeometry"));
+            result.put(new JSONObject().put("name", name).put("camera", camera).put("position", position)
+                .put("positionHeading", heading).put("positionNavigating", stage.getBoolean("positionNavigating"))
+                .put("qaHeadingGlyph", stage.getBoolean("qaHeadingGlyph"))
+                .put("renderGeometry", renderGeometry));
+        }
+        return result;
+    }
+
+    private JSONObject safeRequestedCamera(JSONObject input) throws Exception {
+        if (input == null) throw new IllegalArgumentException("stage camera is required");
+        JSONArray center = input.optJSONArray("center");
+        if (center == null || center.length() != 2) throw new IllegalArgumentException("camera.center must be [longitude,latitude]");
+        double lon = center.getDouble(0), lat = center.getDouble(1);
+        double zoom = input.optDouble("zoom", Double.NaN), pitch = input.optDouble("pitch", Double.NaN);
+        double bearing = input.optDouble("bearing", Double.NaN);
+        if (!Double.isFinite(lon) || lon < -180 || lon > 180 || !Double.isFinite(lat) || lat < -85 || lat > 85 ||
+            !Double.isFinite(zoom) || zoom < 0 || zoom > 24 || !Double.isFinite(pitch) || pitch < 0 || pitch > 85 ||
+            !Double.isFinite(bearing) || Math.abs(bearing) > 360)
+            throw new IllegalArgumentException("camera contains an out-of-range value");
+        return new JSONObject().put("center", new JSONArray().put(lon).put(lat)).put("zoom", zoom)
+            .put("pitch", pitch).put("bearing", normalizeBearing(bearing));
+    }
+
+    private JSONObject safeSyntheticPosition(JSONObject input) throws Exception {
+        if (input == null || !input.optBoolean("qaSynthetic", false) || !"ip".equals(input.optString("provider")) ||
+            !"qa".equals(input.optString("source")))
+            throw new IllegalArgumentException("position must explicitly identify provider=ip, source=qa, qaSynthetic=true");
+        JSONArray coordinates = input.optJSONArray("coordinates");
+        if (coordinates == null || coordinates.length() < 2) throw new IllegalArgumentException("synthetic position.coordinates is required");
+        double lon = coordinates.getDouble(0), lat = coordinates.getDouble(1);
+        double accuracy = input.optDouble("accuracy", 5.0), speed = input.optDouble("speed", 0.0);
+        double course = input.optDouble("heading", 0.0);
+        long timestamp = input.optLong("timestamp", 0L);
+        if (!Double.isFinite(lon) || lon < -180 || lon > 180 || !Double.isFinite(lat) || lat < -85 || lat > 85 ||
+            !Double.isFinite(accuracy) || accuracy < 0 || accuracy > 100_000 || !Double.isFinite(speed) || speed < 0 || speed > 150 ||
+            !Double.isFinite(course) || course < 0 || course >= 360)
+            throw new IllegalArgumentException("synthetic position contains an out-of-range value");
+        return new JSONObject().put("coordinates", new JSONArray().put(lon).put(lat)).put("accuracy", accuracy)
+            .put("timestamp", timestamp).put("provider", "ip").put("source", "qa").put("qaSynthetic", true)
+            .put("speed", speed).put("heading", course);
+    }
+
+    private JSONObject mergeLinePositionGeometry(JSONObject original, JSONObject fixtureGeometry) throws Exception {
+        if (fixtureGeometry == null || !fixtureGeometry.has("routes")) throw new IllegalArgumentException("stage renderGeometry.routes is required");
+        JSONObject merged = original == null ? new JSONObject() : new JSONObject(original.toString());
+        JSONArray keys = fixtureGeometry.names();
+        if (keys == null) throw new IllegalArgumentException("renderGeometry is empty");
+        for (int i = 0; i < keys.length(); i++) {
+            String key = keys.getString(i);
+            if (!"routes".equals(key) && !"guidance".equals(key)) throw new IllegalArgumentException("fixture may override only routes/guidance render geometry");
+            merged.put(key, sanitizeLineFeatureCollection(fixtureGeometry.optJSONObject(key), key));
+        }
+        return merged;
+    }
+
+    private JSONObject sanitizeLineFeatureCollection(JSONObject collection, String group) throws Exception {
+        if (collection == null || !"FeatureCollection".equals(collection.optString("type")))
+            throw new IllegalArgumentException(group + " must be a FeatureCollection");
+        JSONArray input = collection.optJSONArray("features");
+        if (input == null || input.length() > 2000) throw new IllegalArgumentException(group + " feature count invalid");
+        JSONArray output = new JSONArray();
+        for (int i = 0; i < input.length(); i++) {
+            JSONObject feature = input.optJSONObject(i);
+            JSONObject geometry = feature == null ? null : feature.optJSONObject("geometry");
+            JSONObject properties = feature == null ? null : feature.optJSONObject("properties");
+            if (geometry == null || properties == null) throw new IllegalArgumentException(group + " feature geometry/properties required");
+            String type = geometry.optString("type");
+            JSONArray coordinates = geometry.optJSONArray("coordinates");
+            if (!("LineString".equals(type) || "Point".equals(type)) || coordinates == null)
+                throw new IllegalArgumentException(group + " supports only Point/LineString features");
+            validateCoordinates(type, coordinates);
+            JSONObject safeProperties = sanitizeLineProperties(properties, group);
+            output.put(new JSONObject().put("type", "Feature").put("geometry", new JSONObject(geometry.toString()))
+                .put("properties", safeProperties));
+        }
+        return new JSONObject().put("type", "FeatureCollection").put("features", output);
+    }
+
+    private void validateCoordinates(String type, JSONArray coordinates) throws Exception {
+        if ("Point".equals(type)) { validateCoordinatePair(coordinates); return; }
+        if (coordinates.length() < 2 || coordinates.length() > 20_000) throw new IllegalArgumentException("LineString coordinate count invalid");
+        for (int i = 0; i < coordinates.length(); i++) validateCoordinatePair(coordinates.getJSONArray(i));
+    }
+
+    private void validateCoordinatePair(JSONArray pair) throws Exception {
+        if (pair.length() < 2) throw new IllegalArgumentException("coordinate pair must contain longitude/latitude");
+        double lon = pair.getDouble(0), lat = pair.getDouble(1);
+        if (!Double.isFinite(lon) || lon < -180 || lon > 180 || !Double.isFinite(lat) || lat < -85 || lat > 85)
+            throw new IllegalArgumentException("fixture coordinate out of range");
+    }
+
+    private JSONObject sanitizeLineProperties(JSONObject input, String group) throws Exception {
+        String role = input.optString("role", "");
+        List<String> allowedRoles = "routes".equals(group)
+            ? java.util.Arrays.asList("routePath", "routeOutline", "routeAccess", "routePoint")
+            : java.util.Arrays.asList("ribbon", "offset-reference", "route-projection", "chevron", "lead", "rejoin", "guidance", "guidanceTarget");
+        if (!allowedRoles.contains(role)) throw new IllegalArgumentException("unsupported fixture role in " + group);
+        JSONObject result = new JSONObject().put("role", role);
+        String[] keys = {"color", "width", "routeWidth", "routeColor", "opacity", "kind", "navigationState",
+            "navigationClose", "closeView", "selected", "pointSize", "minZoom", "arrow", "rotation", "bearing",
+            "dash", "label", "name", "labelColor", "labelHaloColor", "slot"};
+        for (String key : keys) if (input.has(key)) {
+            Object value = input.opt(key);
+            if (value instanceof String && ((String)value).matches("(?i).*https?://.*"))
+                throw new IllegalArgumentException("fixture metadata must not contain URLs");
+            if ("color".equals(key) || "routeColor".equals(key) || "labelColor".equals(key) || "labelHaloColor".equals(key)) {
+                if (!(value instanceof String) || !((String)value).matches("#[0-9a-fA-F]{3,8}"))
+                    throw new IllegalArgumentException("fixture colors must be hexadecimal");
+            }
+            result.put(key, value);
+        }
+        return result;
+    }
+
+    private void applyRenderState(String mapId, JSONObject state, String requestId) throws Exception {
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        runOnMainSync(() -> { try {
+            Method method = host.getClass().getDeclaredMethod("applyRenderState", String.class, JSONObject.class, String.class);
+            method.setAccessible(true); method.invoke(host, mapId, state, requestId);
+        } catch (Throwable failure) { error.set(failure); } });
+        if (error.get() != null) throw new IllegalStateException("render state apply failed", error.get());
+    }
+
+    /** Apply through the same public, session-checked bridge entry point used by the WebView. */
+    private void applyRenderStateThroughBridge(String mapId, JSONObject state, String requestId) throws Exception {
+        Object sessionValue = fieldValue(host, "sessionId");
+        String session = sessionValue instanceof String ? (String)sessionValue : "";
+        if (session.isEmpty()) throw new IllegalStateException("native bridge session unavailable; render state left untouched");
+        JSONObject request = new JSONObject().put("version", 1).put("sessionId", session).put("command", "renderState")
+            .put("mapId", mapId).put("requestId", requestId).put("payload", state);
+        String script = "(()=>{const bridge=window.ShantuNativeMap;if(!bridge||typeof bridge.postMessage!=='function')throw new Error('native JS bridge unavailable');bridge.postMessage(" +
+            JSONObject.quote(request.toString()) + ");return 'sent'})()";
+        String sent = evalJs(script);
+        if (!"sent".equals(sent)) throw new IllegalStateException("native JS bridge did not accept render state request");
+        long expected = state.getLong("revision");
+        long deadline = SystemClock.elapsedRealtime() + 5_000L;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            long applied = currentRenderRevision();
+            if (applied == expected) return;
+            if (applied > expected) throw new IllegalStateException("bridge render state superseded; expectedRevision=" + expected + ", actualRevision=" + applied);
+            SystemClock.sleep(20L);
+        }
+        throw new IllegalStateException("bridge render state was not applied; expectedRevision=" + expected + ", actualRevision=" + currentRenderRevision());
+    }
+
+    /** Names and parameter types only; deliberately excludes arguments, fields, and state data. */
+    private JSONObject hostRenderMethodInventory() throws Exception {
+        JSONArray signatures = new JSONArray();
+        if (host == null) return new JSONObject().put("available", false).put("signatures", signatures);
+        try {
+            List<String> seen = new ArrayList<>();
+            for (Class<?> type = host.getClass(); type != null; type = type.getSuperclass()) {
+                for (Method method : type.getDeclaredMethods()) {
+                    String name = method.getName();
+                    if (!(name.contains("applyRenderState") || name.contains("applyPosition") || name.contains("handleMessage") || name.contains("dispatch"))) continue;
+                    StringBuilder signature = new StringBuilder(name).append('(');
+                    Class<?>[] parameters = method.getParameterTypes();
+                    for (int i = 0; i < parameters.length; i++) {
+                        if (i > 0) signature.append(',');
+                        signature.append(parameters[i].getName());
+                    }
+                    signature.append("):").append(method.getReturnType().getName());
+                    String value = signature.toString();
+                    if (!seen.contains(value)) { seen.add(value); signatures.put(value); }
+                    if (signatures.length() >= 40) break;
+                }
+                if (signatures.length() >= 40) break;
+            }
+            return new JSONObject().put("available", true).put("runtimeHostClass", host.getClass().getName()).put("signatures", signatures);
+        } catch (Throwable error) {
+            return new JSONObject().put("available", false).put("inspectionErrorType", error.getClass().getName()).put("signatures", signatures);
+        }
+    }
+
+    /** Method signatures only, for diagnosing an R8-stripped or renamed native motion API. */
+    private JSONObject controllerPositionMethodInventory() throws Exception {
+        JSONArray signatures = new JSONArray();
+        if (entry == null) return new JSONObject().put("available", false).put("signatures", signatures);
+        try {
+            Object controller = fieldValue(entry, "controller");
+            List<String> seen = new ArrayList<>();
+            for (Class<?> type = controller.getClass(); type != null; type = type.getSuperclass()) {
+                for (Method method : type.getDeclaredMethods()) {
+                    Class<?>[] parameters = method.getParameterTypes();
+                    boolean positionSetter = method.getName().contains("setPosition");
+                    boolean nativePositionArg = parameters.length == 1 && parameters[0].getSimpleName().contains("NativePositionState");
+                    if (!positionSetter && !nativePositionArg) continue;
+                    StringBuilder signature = new StringBuilder(method.getName()).append('(');
+                    for (int i = 0; i < parameters.length; i++) {
+                        if (i > 0) signature.append(',');
+                        signature.append(parameters[i].getName());
+                    }
+                    signature.append("):").append(method.getReturnType().getName());
+                    String value = signature.toString();
+                    if (!seen.contains(value)) { seen.add(value); signatures.put(value); }
+                    if (signatures.length() >= 40) break;
+                }
+                if (signatures.length() >= 40) break;
+            }
+            return new JSONObject().put("available", true).put("runtimeControllerClass", controller.getClass().getName()).put("signatures", signatures);
+        } catch (Throwable error) {
+            return new JSONObject().put("available", false).put("inspectionErrorType", error.getClass().getName()).put("signatures", signatures);
+        }
+    }
+
+    private void applyPosition(Object mapEntry, JSONObject state) throws Exception {
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        runOnMainSync(() -> { try {
+            Method method = host.getClass().getDeclaredMethod("applyPosition", mapEntry.getClass(), JSONObject.class);
+            method.setAccessible(true); method.invoke(host, mapEntry, state);
+        } catch (Throwable failure) { error.set(failure); } });
+        if (error.get() != null) throw new IllegalStateException("synthetic QA position apply failed", error.get());
+    }
+
+    /** Injects only an ephemeral native motion heading. The React position remains provider=ip/source=qa. */
+    private void applySyntheticHeadingGlyph(JSONObject state, double headingDegrees) throws Exception {
+        JSONObject position = state.getJSONObject("position");
+        JSONArray coordinates = position.getJSONArray("coordinates");
+        double longitude = coordinates.getDouble(0), latitude = coordinates.getDouble(1);
+        long now = System.currentTimeMillis();
+        Object controller = fieldValue(entry, "controller");
+        Method setPosition = null;
+        for (Method method : controller.getClass().getMethods()) {
+            if ("setPosition".equals(method.getName()) && method.getParameterTypes().length == 1) {
+                setPosition = method; break;
+            }
+        }
+        if (setPosition == null) throw new NoSuchMethodException("controller.setPosition(state)");
+        final Method positionMethod = setPosition;
+        Class<?> stateClass = positionMethod.getParameterTypes()[0];
+        Constructor<?> stateConstructor = positionDataConstructor(stateClass, true);
+        Class<?>[] stateTypes = stateConstructor.getParameterTypes();
+        Class<?> fixClass = stateTypes[0];
+        Constructor<?> fixConstructor = positionDataConstructor(fixClass, false);
+        Class<?>[] fixTypes = fixConstructor.getParameterTypes();
+        Object[] fixArguments = new Object[fixTypes.length];
+        int coordinateIndex = 0, optionalNumberIndex = 0;
+        for (int i = 0; i < fixTypes.length; i++) {
+            Class<?> type = fixTypes[i];
+            if (type == double.class) fixArguments[i] = new double[]{latitude, longitude, 5.0}[coordinateIndex++];
+            else if (type == long.class) fixArguments[i] = now;
+            else if (type == String.class) fixArguments[i] = "qa-fixture";
+            else if (type == Double.class) fixArguments[i] = new Double[]{3.0, headingDegrees, 5.0}[optionalNumberIndex++];
+            else throw new IllegalStateException("unsupported optimized QA fix parameter: " + type.getName());
+        }
+        Object fix = fixConstructor.newInstance(fixArguments);
+        Object[] stateArguments = new Object[stateTypes.length];
+        for (int i = 0; i < stateTypes.length; i++) {
+            Class<?> type = stateTypes[i];
+            if (i == 0) stateArguments[i] = fix;
+            else if (type == long.class) stateArguments[i] = now;
+            else if (type == Double.class || type == Long.class) stateArguments[i] = null;
+            else if (type.isEnum()) stateArguments[i] = type.getSimpleName().contains("DirectionMode") ? enumConstant(type, "FREE", 0) : null;
+            else if (type == int.class) stateArguments[i] = 0; // null heading source after enum unboxing; the QA course lives in the fix.
+            else throw new IllegalStateException("unsupported optimized QA position parameter: " + type.getName());
+        }
+        Object nativeState = stateConstructor.newInstance(stateArguments);
+        runOnMainSync(() -> {
+            try { positionMethod.invoke(controller, nativeState); }
+            catch (Throwable error) { throw new IllegalStateException("native QA heading injection failed", error); }
+        });
+    }
+
+    private static Constructor<?> positionDataConstructor(Class<?> type, boolean state) throws Exception {
+        Constructor<?> best = null;
+        for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+            Class<?>[] parameters = constructor.getParameterTypes();
+            if (parameters.length < 2 || (state ? !parameters[0].getSimpleName().contains("NativePositionFix") : parameters[0] != double.class)) continue;
+            boolean defaultMask = false;
+            for (Class<?> parameter : parameters) if (parameter.getSimpleName().contains("DefaultConstructorMarker")) defaultMask = true;
+            if (!defaultMask && (best == null || parameters.length < best.getParameterTypes().length)) best = constructor;
+        }
+        if (best == null) throw new NoSuchMethodException(type.getName() + " optimized position constructor");
+        best.setAccessible(true);
+        return best;
+    }
+
+    private static Constructor<?> constructorWithArity(Class<?> type, int arity) throws Exception {
+        for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+            if (constructor.getParameterTypes().length == arity) {
+                constructor.setAccessible(true); return constructor;
+            }
+        }
+        throw new NoSuchMethodException(type.getName() + " constructor arity " + arity);
+    }
+
+    private static Object enumConstant(Class<?> type, String expectedName, int fallbackOrdinal) throws Exception {
+        if (!type.isEnum()) throw new IllegalArgumentException(type.getName() + " is not an enum");
+        Object[] constants = type.getEnumConstants();
+        for (Object constant : constants) if (expectedName.equals(((Enum<?>)constant).name())) return constant;
+        if (fallbackOrdinal >= 0 && fallbackOrdinal < constants.length) return constants[fallbackOrdinal];
+        throw new IllegalArgumentException("native QA enum constant unavailable");
+    }
+
+    private JSONObject inspectNativePositionGlyph() throws Exception {
+        Object controller = fieldValue(entry, "controller");
+        Object visibleValue = null;
+        try { visibleValue = fieldValue(controller, "positionArrowVisible"); }
+        catch (NoSuchFieldException legacyHost) { /* Older installed APK has no explicit glyph flag. */ }
+        JSONObject puck = null;
+        Object renderables;
+        try { renderables = fieldValue(controller, "positionRenderables"); }
+        catch (NoSuchFieldException optimizedLegacyHost) { renderables = fieldValue(controller, "positionLayer"); }
+        if (renderables instanceof Iterable) for (Object renderable : (Iterable<?>)renderables) {
+            if (renderable == null || !hasTypeSimpleName(renderable.getClass(), "Placemark")) continue;
+            Object attributes = fieldValue(renderable, "attributes");
+            if (visibleValue == null) visibleValue = reflectedProperty(attributes, "imageSource", "getImageSource") != null;
+            Object scale = reflectedProperty(attributes, "imageScaleX", "getImageScaleX");
+            Object scaleY = reflectedProperty(attributes, "imageScaleY", "getImageScaleY");
+            JSONObject data = new JSONObject();
+            if (scale instanceof Number) data.put("imageScale", ((Number)scale).doubleValue());
+            if (scaleY instanceof Number) data.put("imageScaleY", ((Number)scaleY).doubleValue());
+            try {
+                Object rotation = reflectedProperty(renderable, "imageRotation", "getImageRotation");
+                Double degrees = angleDegrees(rotation);
+                if (degrees != null) data.put("imageRotationDegrees", degrees);
+            } catch (ReflectiveOperationException ignored) { }
+            puck = data;
+            break;
+        }
+        return new JSONObject().put("positionArrowVisible", Boolean.TRUE.equals(visibleValue))
+            .put("puckPlacemark", puck == null ? JSONObject.NULL : puck);
+    }
+
+    private static boolean hasTypeSimpleName(Class<?> type, String name) {
+        for (Class<?> current = type; current != null; current = current.getSuperclass())
+            if (name.equals(current.getSimpleName())) return true;
+        return false;
+    }
+
+    private static Double angleDegrees(Object angle) throws Exception {
+        if (angle instanceof Number) return ((Number)angle).doubleValue();
+        if (angle == null) return null;
+        Object value = reflectedProperty(angle, "degrees", "getDegrees");
+        return value instanceof Number ? ((Number)value).doubleValue() : null;
+    }
+
+    private void restoreRevisionBaseline(JSONObject originalState, long baseline) throws Exception {
+        JSONObject restoredState = new JSONObject(originalState.toString()).put("revision", baseline);
+        runOnMainSync(() -> {
+            try {
+                setFieldValue(entry, "renderState", restoredState);
+                setFieldValue(entry, "renderRevision", Long.valueOf(baseline));
+            } catch (Throwable error) { throw new IllegalStateException("render revision baseline restore failed", error); }
+        });
+        if (currentRenderRevision() != baseline) throw new IllegalStateException("render revision baseline did not restore");
+    }
+
+    private void setLinePositionQaBanner(String id, boolean visible) throws Exception {
+        String script = visible
+            ? "(()=>{if(document.getElementById(" + JSONObject.quote(id) + "))throw new Error('QA banner id collision');const e=document.createElement('div');e.id=" + JSONObject.quote(id) + ";e.textContent='合成渲染夹具，非真实定位';e.setAttribute('aria-label','合成渲染夹具，非真实定位');e.style.cssText='position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:4px 8px;background:#7a271a;color:#fff;font:14px sans-serif;pointer-events:none';(document.body||document.documentElement).appendChild(e);return 'added'})()"
+            : "(()=>{const e=document.getElementById(" + JSONObject.quote(id) + ");if(e)e.remove();return 'removed'})()";
+        evalJs(script);
+    }
+
+    private JSONObject safeCameraSnapshot(JSONObject camera) throws Exception {
+        JSONObject out = new JSONObject();
+        JSONArray center = camera.optJSONArray("center");
+        if (center != null && center.length() >= 2) out.put("center", new JSONArray().put(center.optDouble(0)).put(center.optDouble(1)));
+        for (String key : new String[]{"zoom", "rangeMeters", "pitch", "bearing", "roll"})
+            if (camera.has(key) && camera.opt(key) instanceof Number) out.put(key, camera.optDouble(key));
+        return out;
+    }
+
+    private boolean cameraMatches(JSONObject expected, JSONObject actual) throws Exception {
+        JSONObject a = safeCameraSnapshot(expected), b = safeCameraSnapshot(actual);
+        for (String key : new String[]{"pitch", "bearing", "roll", "rangeMeters"})
+            if (a.has(key) && b.has(key) && Math.abs(a.optDouble(key) - b.optDouble(key)) > 0.5) return false;
+        if (a.has("zoom") && b.has("zoom") && Math.abs(a.optDouble("zoom") - b.optDouble("zoom")) > 0.02) return false;
+        JSONArray ac = a.optJSONArray("center"), bc = b.optJSONArray("center");
+        if (ac != null && bc != null && (Math.abs(ac.optDouble(0) - bc.optDouble(0)) > 0.00001 || Math.abs(ac.optDouble(1) - bc.optDouble(1)) > 0.00001)) return false;
+        return true;
+    }
+
+    private double rendererCssScale() throws Exception {
+        Object renderer = fieldValue(entry, "overlayRenderer");
+        Object value = fieldValue(renderer, "cssScale");
+        if (!(value instanceof Number) || !Double.isFinite(((Number)value).doubleValue())) throw new IllegalStateException("native renderer cssScale unavailable");
+        return ((Number)value).doubleValue();
+    }
+
+    private long currentRenderRevision() throws Exception {
+        Object value = fieldValue(entry, "renderRevision");
+        if (!(value instanceof Number)) throw new IllegalStateException("native render revision unavailable");
+        return ((Number)value).longValue();
+    }
+
+    private JSONArray inspectLinePositionRendererPaths(double cssScale) throws Exception {
+        Object renderer = fieldValue(entry, "overlayRenderer");
+        Object groupsObject = fieldValue(renderer, "groups");
+        if (!(groupsObject instanceof Map)) throw new IllegalStateException("native renderer groups unavailable");
+        JSONObject renderGeometry = readState().optJSONObject("renderGeometry");
+        if (renderGeometry == null) throw new IllegalStateException("native renderGeometry unavailable after apply");
+        JSONArray result = new JSONArray();
+        for (Map.Entry<?,?> group : ((Map<?,?>)groupsObject).entrySet()) {
+            String id = String.valueOf(group.getKey());
+            int split = id.lastIndexOf(':');
+            if (split <= 0) continue;
+            String groupName = id.substring(0, split);
+            if (!"routes".equals(groupName) && !"guidance".equals(groupName) && !"tracks".equals(groupName)) continue;
+            int featureIndex;
+            try { featureIndex = Integer.parseInt(id.substring(split + 1)); } catch (NumberFormatException ignored) { continue; }
+            JSONObject collection = renderGeometry.optJSONObject(groupName);
+            if (collection == null) continue;
+            JSONArray features = collection.optJSONArray("features");
+            JSONObject feature = features == null ? null : features.optJSONObject(featureIndex);
+            JSONObject properties = feature == null ? null : feature.optJSONObject("properties");
+            if (!(group.getValue() instanceof List)) continue;
+            int renderableIndex = 0;
+            for (Object renderable : (List<?>)group.getValue()) {
+                if (renderable == null || !isNativePath(renderable)) { renderableIndex++; continue; }
+                Object attributes = fieldValue(renderable, "attributes");
+                Object outlineWidth = reflectedProperty(attributes, "outlineWidth", "getOutlineWidth");
+                if (!(outlineWidth instanceof Number)) throw new IllegalStateException("Path.attributes.outlineWidth unavailable");
+                double actualWidth = ((Number)outlineWidth).doubleValue();
+                double cssWidth = properties == null ? Double.NaN : properties.optDouble("width", Double.NaN);
+                JSONObject item = new JSONObject().put("group", groupName).put("featureIndex", featureIndex)
+                    .put("renderableIndex", renderableIndex).put("outlineWidthPx", actualWidth).put("cssScale", cssScale);
+                if (properties != null) {
+                    item.put("role", properties.optString("role", ""));
+                    for (String key : new String[]{"navigationClose", "closeView", "navigationState", "selected"})
+                        if (properties.has(key)) item.put(key, properties.opt(key));
+                    if (Double.isFinite(cssWidth)) item.put("cssWidth", cssWidth).put("expectedOutlineWidthPx", cssWidth * cssScale)
+                        .put("matchesCssScale", Math.abs(actualWidth - cssWidth * cssScale) <= Math.max(0.2, cssScale * 0.05));
+                }
+                result.put(item);
+                renderableIndex++;
+            }
+        }
+        return result;
+    }
+
+    private JSONObject safeLineFeatureMetadata(JSONObject collection) throws Exception {
+        JSONArray out = new JSONArray();
+        if (collection == null) return new JSONObject().put("features", out);
+        JSONArray features = collection.optJSONArray("features");
+        if (features == null) return new JSONObject().put("features", out);
+        for (int i = 0; i < features.length(); i++) {
+            JSONObject feature = features.optJSONObject(i);
+            JSONObject p = feature == null ? null : feature.optJSONObject("properties");
+            if (p == null) continue;
+            JSONObject item = new JSONObject().put("role", p.optString("role", ""));
+            for (String key : new String[]{"width", "routeWidth", "navigationClose", "closeView", "navigationState", "selected", "minZoom"})
+                if ((p.has(key) && p.opt(key) instanceof Number) || (p.has(key) && p.opt(key) instanceof Boolean)) item.put(key, p.opt(key));
+            out.put(item);
+        }
+        return new JSONObject().put("features", out);
+    }
+
+    private static boolean isNativePath(Object value) {
+        for (Class<?> type = value.getClass(); type != null; type = type.getSuperclass())
+            if ("Path".equals(type.getSimpleName())) return true;
+        return false;
+    }
+
+    private static Object reflectedProperty(Object owner, String field, String getter) throws Exception {
+        try { return fieldValue(owner, field); } catch (ReflectiveOperationException ignored) { }
+        for (Class<?> type = owner.getClass(); type != null; type = type.getSuperclass()) {
+            try { Method method = type.getDeclaredMethod(getter); method.setAccessible(true); return method.invoke(owner); }
+            catch (NoSuchMethodException ignored) { }
+        }
+        throw new NoSuchFieldException(owner.getClass().getName() + "." + field);
+    }
+
     private JSONObject runRegression() throws Exception {
         attachTarget();
         runId = UUID.randomUUID().toString().replace("-", "");
@@ -1082,6 +1722,7 @@ public final class Native149Instrumentation extends Instrumentation {
         return new JSONObject(evalJs(script));
     }
     private static Object fieldValue(Object object,String name)throws Exception { for(Class<?> t=object.getClass();t!=null;t=t.getSuperclass())try{Field f=t.getDeclaredField(name);f.setAccessible(true);return f.get(object);}catch(NoSuchFieldException ignored){} throw new NoSuchFieldException(object.getClass().getName()+"."+name); }
+    private static void setFieldValue(Object object,String name,Object value)throws Exception { for(Class<?> t=object.getClass();t!=null;t=t.getSuperclass())try{Field f=t.getDeclaredField(name);f.setAccessible(true);f.set(object,value);return;}catch(NoSuchFieldException ignored){} throw new NoSuchFieldException(object.getClass().getName()+"."+name); }
     private static List<Field> allFields(Class<?> type){List<Field> out=new ArrayList<>();for(Class<?> t=type;t!=null;t=t.getSuperclass())for(Field f:t.getDeclaredFields())out.add(f);return out;}
     private static void collectWebViews(View view,List<WebView> out){if(view instanceof WebView)out.add((WebView)view);if(view instanceof ViewGroup){ViewGroup g=(ViewGroup)view;for(int i=0;i<g.getChildCount();i++)collectWebViews(g.getChildAt(i),out);}}
 }

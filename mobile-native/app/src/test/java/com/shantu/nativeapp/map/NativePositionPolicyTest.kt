@@ -28,13 +28,14 @@ class NativePositionPolicyTest {
     }
 
     @Test fun `rejects noisy course and accepts north and wraparound courses`() {
-        val base = NativePositionFix(30.0, 120.0, 4.0, 1000, speedMetersPerSecond = 2.0)
+        val base = NativePositionFix(30.0, 120.0, 4.0, 1000, speedMetersPerSecond = 2.0, courseAccuracyDegrees = 5.0)
         fun present(course: Double, speed: Double = 2.0, accuracy: Double = 4.0) = NativePositionPolicy.present(NativePositionState(base.copy(courseDegrees = course, speedMetersPerSecond = speed, accuracyMeters = accuracy), 1100, mode = NativeDirectionMode.FREE))
         assertEquals(0.0, present(0.0).headingDegrees!!, 0.0)
         assertEquals(180.0, present(180.0).headingDegrees!!, 0.0)
         assertEquals(359.0, present(359.0).headingDegrees!!, 0.0)
         assertNull(present(10.0, speed = 0.2).headingDegrees)
         assertNull(present(10.0, accuracy = 40.0).headingDegrees)
+        assertNull(NativePositionPolicy.present(NativePositionState(base.copy(courseDegrees = 90.0, courseAccuracyDegrees = null), 1100)).headingDegrees)
     }
 
     @Test fun `route direction cannot be passed or substituted for missing heading`() {

@@ -32,7 +32,7 @@ export function fixSpeed(a: PositionFix | null, b: PositionFix | null, mode: Tra
   const seconds = (b.timestamp - a.timestamp) / 1000;
   if (seconds < 1 || seconds > 20) return null;
   const speed = metresBetween(a.coordinates, b.coordinates) / seconds;
-  return speed <= { auto: 80, bicycle: 30, pedestrian: 12 }[mode] ? speed * 3.6 : null;
+  return speed <= { auto: 80, bicycle: 30, pedestrian: 12, motorcycle: 80 }[mode] ? speed * 3.6 : null;
 }
 
 export function clockDuration(seconds: number) {

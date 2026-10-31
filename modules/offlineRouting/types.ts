@@ -1,24 +1,43 @@
 import type { Coordinate } from '../navigation/types';
 export type RoutingBounds = [number, number, number, number];
+export type OfflineProfile = 'pedestrian' | 'motorcar' | 'motorcycle';
 export type RoutingNode = { id: number; point: Coordinate };
 export type RoutingEdge = {
   from: number;
   to: number;
+  /** OSM way identity is required to evaluate via-node turn restrictions. */
+  wayId: number;
   metres: number;
   name: string;
 };
+export type LegacyRoutingEdge = Omit<RoutingEdge, 'wayId'>;
+export type StoredRoutingEdge = RoutingEdge | LegacyRoutingEdge;
+export type TurnRestriction = {
+  viaNodeId: number;
+  fromWayId: number;
+  toWayId: number;
+  kind: 'no' | 'only';
+};
 export type OfflineGraph = {
   format: 'shantu-offline-routing';
-  version: 1;
+  version: 2;
   id: string;
   name: string;
   bounds: RoutingBounds;
   createdAt: number;
   nodes: RoutingNode[];
   edges: RoutingEdge[];
+  turnRestrictions: TurnRestriction[];
   attribution: string;
-  profile: 'pedestrian';
+  profile: OfflineProfile;
 };
+export type LegacyPedestrianGraph = Omit<OfflineGraph, 'version' | 'edges' | 'turnRestrictions'> & {
+  version: 1;
+  profile: 'pedestrian';
+  edges: LegacyRoutingEdge[];
+  turnRestrictions?: never;
+};
+export type StoredOfflineGraph = OfflineGraph | LegacyPedestrianGraph;
 export type GraphManifest = Pick<
   OfflineGraph,
   'id' | 'name' | 'bounds' | 'createdAt' | 'attribution' | 'profile'

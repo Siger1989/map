@@ -144,6 +144,9 @@ export function routeBounds(segments: Coordinate[][]) {
   ] as [Coordinate, Coordinate];
 }
 export function externalLegs(data: ShareRoute) {
+  const mode = data.mode;
+  // This external provider has no verified motorcycle link contract.
+  if (mode === 'motorcycle') return [];
   return data.stops.slice(1).map((to, i) => {
     const from = data.stops[i];
     const value = (p: RoutePlace) =>
@@ -151,7 +154,7 @@ export function externalLegs(data: ShareRoute) {
     const params = new URLSearchParams({
       from: value(from),
       to: value(to),
-      mode: { auto: 'car', bicycle: 'ride', pedestrian: 'walk' }[data.mode],
+      mode: { auto: 'car', bicycle: 'ride', pedestrian: 'walk' }[mode],
       coordinate: 'wgs84',
       src: 'Shantu',
       callnative: '1',

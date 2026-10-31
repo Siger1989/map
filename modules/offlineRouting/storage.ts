@@ -1,7 +1,7 @@
 import { validateGraph } from './engine.ts';
 import {
   GRAPH_LIMITS,
-  type OfflineGraph,
+  type StoredOfflineGraph,
   type GraphManifest,
 } from './types.ts';
 const DB = 'shantu-offline-routing-v1';
@@ -28,7 +28,7 @@ export async function listGraphs(): Promise<GraphManifest[]> {
     db.close();
   }
 }
-export async function loadGraph(id: string): Promise<OfflineGraph> {
+export async function loadGraph(id: string): Promise<StoredOfflineGraph> {
   const db = await open();
   try {
     return await new Promise((resolve, reject) => {
@@ -46,11 +46,11 @@ export async function loadGraph(id: string): Promise<OfflineGraph> {
     db.close();
   }
 }
-export async function saveGraph(input: OfflineGraph) {
+export async function saveGraph(input: StoredOfflineGraph) {
   const graph = validateGraph(input),
     bytes = new TextEncoder().encode(JSON.stringify(graph));
   if (bytes.length > GRAPH_LIMITS.bytes)
-    throw new Error('单个离线路网不能超过24MB');
+    throw new Error('单个离线路网不能超过24MiB');
   const existing = await listGraphs();
   if (
     existing.length >= GRAPH_LIMITS.packages &&

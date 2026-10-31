@@ -1,0 +1,4033 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-31T13:28:21Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 21487210,
+  "lat": 52.5201551,
+  "lon": 13.4048173,
+  "tags": {
+    "TMC:cid_58:tabcd_1:Class": "Point",
+    "TMC:cid_58:tabcd_1:Direction": "negative",
+    "TMC:cid_58:tabcd_1:LCLversion": "9.00",
+    "TMC:cid_58:tabcd_1:LocationCode": "21547",
+    "TMC:cid_58:tabcd_1:NextLocationCode": "21548",
+    "TMC:cid_58:tabcd_1:PrevLocationCode": "32735"
+  }
+},
+{
+  "type": "node",
+  "id": 29221504,
+  "lat": 52.5200437,
+  "lon": 13.4046280
+},
+{
+  "type": "node",
+  "id": 29221506,
+  "lat": 52.5199179,
+  "lon": 13.4048107,
+  "tags": {
+    "TMC:cid_58:tabcd_1:Class": "Point",
+    "TMC:cid_58:tabcd_1:Direction": "positive",
+    "TMC:cid_58:tabcd_1:LCLversion": "9.00",
+    "TMC:cid_58:tabcd_1:LocationCode": "21547",
+    "TMC:cid_58:tabcd_1:NextLocationCode": "21548",
+    "TMC:cid_58:tabcd_1:PrevLocationCode": "32735"
+  }
+},
+{
+  "type": "node",
+  "id": 171440822,
+  "lat": 52.5188001,
+  "lon": 13.4030070
+},
+{
+  "type": "node",
+  "id": 174969323,
+  "lat": 52.5190049,
+  "lon": 13.4041296
+},
+{
+  "type": "node",
+  "id": 174969324,
+  "lat": 52.5192689,
+  "lon": 13.4045609
+},
+{
+  "type": "node",
+  "id": 196741111,
+  "lat": 52.5222125,
+  "lon": 13.4087419
+},
+{
+  "type": "node",
+  "id": 275525459,
+  "lat": 52.5211559,
+  "lon": 13.4055409
+},
+{
+  "type": "node",
+  "id": 341340973,
+  "lat": 52.5198274,
+  "lon": 13.4049676,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "mapillary": "150669286931681",
+    "survey:date": "2017-09-04",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 341340986,
+  "lat": 52.5193794,
+  "lon": 13.4037577
+},
+{
+  "type": "node",
+  "id": 662338385,
+  "lat": 52.5211536,
+  "lon": 13.4042270
+},
+{
+  "type": "node",
+  "id": 662338387,
+  "lat": 52.5208370,
+  "lon": 13.4046740
+},
+{
+  "type": "node",
+  "id": 662338388,
+  "lat": 52.5211339,
+  "lon": 13.4055889
+},
+{
+  "type": "node",
+  "id": 662338389,
+  "lat": 52.5210675,
+  "lon": 13.4054506,
+  "tags": {
+    "barrier": "gate"
+  }
+},
+{
+  "type": "node",
+  "id": 768074068,
+  "lat": 52.5219109,
+  "lon": 13.4087211,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "gtfs:stop_id": "de:11000:900100031::4",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "local_ref": "24",
+    "name": "S+U Alexanderplatz/Memhardstraße",
+    "public_transport": "stop_position",
+    "shelter": "yes",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1157325158,
+  "lat": 52.5202327,
+  "lon": 13.4050932
+},
+{
+  "type": "node",
+  "id": 1157325174,
+  "lat": 52.5208475,
+  "lon": 13.4038873,
+  "tags": {
+    "crossing": "unmarked",
+    "crossing:buffer_marking": "right",
+    "crossing:island": "no",
+    "crossing:markings": "no",
+    "highway": "crossing",
+    "mapillary": "3954788534602601",
+    "tactile_paving": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1395098660,
+  "lat": 52.5206129,
+  "lon": 13.4058902
+},
+{
+  "type": "node",
+  "id": 1827996414,
+  "lat": 52.5203426,
+  "lon": 13.4056292,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "gtfs:stop_id": "de:11000:900100515::4",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "stop_position",
+    "ref:BVG": "107173",
+    "shelter": "yes",
+    "tactile_paving": "no",
+    "website": "https://qr.bvg.de/h107173"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996417,
+  "lat": 52.5208735,
+  "lon": 13.4062637,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "check_date:shelter": "2023-12-24",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "stop_position",
+    "ref:BVG": "107309",
+    "shelter": "yes",
+    "tactile_paving": "no",
+    "website": "https://qr.bvg.de/h107309"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996421,
+  "lat": 52.5200133,
+  "lon": 13.4049874
+},
+{
+  "type": "node",
+  "id": 1827996431,
+  "lat": 52.5201379,
+  "lon": 13.4052142,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "image": "http://storage6.openstreetcam.org/files/photo/2017/10/17/lth/941433_6c638_36.jpg",
+    "survey:date": "2017-10-17",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996436,
+  "lat": 52.5201920,
+  "lon": 13.4051452,
+  "tags": {
+    "railway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996440,
+  "lat": 52.5202136,
+  "lon": 13.4051176,
+  "tags": {
+    "railway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996455,
+  "lat": 52.5202692,
+  "lon": 13.4050466,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996501,
+  "lat": 52.5205709,
+  "lon": 13.4060789,
+  "tags": {
+    "button_operated": "yes",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996511,
+  "lat": 52.5206248,
+  "lon": 13.4060067,
+  "tags": {
+    "railway": "crossing",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996522,
+  "lat": 52.5206646,
+  "lon": 13.4059533
+},
+{
+  "type": "node",
+  "id": 1827996525,
+  "lat": 52.5206443,
+  "lon": 13.4059805,
+  "tags": {
+    "railway": "crossing",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996550,
+  "lat": 52.5206975,
+  "lon": 13.4059093,
+  "tags": {
+    "button_operated": "yes",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 1827996574,
+  "lat": 52.5207386,
+  "lon": 13.4059920
+},
+{
+  "type": "node",
+  "id": 1827996603,
+  "lat": 52.5208770,
+  "lon": 13.4059901
+},
+{
+  "type": "node",
+  "id": 1841260109,
+  "lat": 52.5202596,
+  "lon": 13.4051916
+},
+{
+  "type": "node",
+  "id": 1841260112,
+  "lat": 52.5202727,
+  "lon": 13.4051729
+},
+{
+  "type": "node",
+  "id": 1841260117,
+  "lat": 52.5206261,
+  "lon": 13.4058731
+},
+{
+  "type": "node",
+  "id": 1865536623,
+  "lat": 52.5201339,
+  "lon": 13.4047797
+},
+{
+  "type": "node",
+  "id": 2121324855,
+  "lat": 52.5187821,
+  "lon": 13.4043672
+},
+{
+  "type": "node",
+  "id": 2121324867,
+  "lat": 52.5193476,
+  "lon": 13.4049948
+},
+{
+  "type": "node",
+  "id": 2121324874,
+  "lat": 52.5193920,
+  "lon": 13.4057591
+},
+{
+  "type": "node",
+  "id": 2291894367,
+  "lat": 52.5203672,
+  "lon": 13.4039793,
+  "tags": {
+    "access": "yes",
+    "addr:city": "Berlin",
+    "addr:housenumber": "3",
+    "addr:postcode": "10178",
+    "addr:street": "Spandauer Straße",
+    "amenity": "parking_entrance",
+    "charge": "2.50 EUR/hour",
+    "fee": "yes",
+    "maxheight": "2.1",
+    "name": "City Quartier Dom-Aquarée",
+    "parking": "underground",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 2298016645,
+  "lat": 52.5211803,
+  "lon": 13.4075099
+},
+{
+  "type": "node",
+  "id": 2381159806,
+  "lat": 52.5184593,
+  "lon": 13.4037018
+},
+{
+  "type": "node",
+  "id": 2381159815,
+  "lat": 52.5186685,
+  "lon": 13.4037371
+},
+{
+  "type": "node",
+  "id": 2381159833,
+  "lat": 52.5187857,
+  "lon": 13.4038087
+},
+{
+  "type": "node",
+  "id": 2381159840,
+  "lat": 52.5188178,
+  "lon": 13.4031143
+},
+{
+  "type": "node",
+  "id": 2381159841,
+  "lat": 52.5188229,
+  "lon": 13.4038425
+},
+{
+  "type": "node",
+  "id": 2381159844,
+  "lat": 52.5189091,
+  "lon": 13.4034204
+},
+{
+  "type": "node",
+  "id": 2381159845,
+  "lat": 52.5189522,
+  "lon": 13.4040197
+},
+{
+  "type": "node",
+  "id": 2381159847,
+  "lat": 52.5189991,
+  "lon": 13.4051376
+},
+{
+  "type": "node",
+  "id": 2381159848,
+  "lat": 52.5190246,
+  "lon": 13.4037245
+},
+{
+  "type": "node",
+  "id": 2381159849,
+  "lat": 52.5190675,
+  "lon": 13.4049012
+},
+{
+  "type": "node",
+  "id": 2381159850,
+  "lat": 52.5190744,
+  "lon": 13.4043960
+},
+{
+  "type": "node",
+  "id": 2381159851,
+  "lat": 52.5190926,
+  "lon": 13.4046349
+},
+{
+  "type": "node",
+  "id": 2381159853,
+  "lat": 52.5190855,
+  "lon": 13.4038582
+},
+{
+  "type": "node",
+  "id": 2381159854,
+  "lat": 52.5191156,
+  "lon": 13.4052090
+},
+{
+  "type": "node",
+  "id": 2381159855,
+  "lat": 52.5191336,
+  "lon": 13.4039923
+},
+{
+  "type": "node",
+  "id": 2381159856,
+  "lat": 52.5191355,
+  "lon": 13.4044175
+},
+{
+  "type": "node",
+  "id": 2381159857,
+  "lat": 52.5192092,
+  "lon": 13.4042636
+},
+{
+  "type": "node",
+  "id": 2381159858,
+  "lat": 52.5194156,
+  "lon": 13.4052097
+},
+{
+  "type": "node",
+  "id": 2381159859,
+  "lat": 52.5194872,
+  "lon": 13.4051986
+},
+{
+  "type": "node",
+  "id": 2381159860,
+  "lat": 52.5194916,
+  "lon": 13.4047657
+},
+{
+  "type": "node",
+  "id": 2656298207,
+  "lat": 52.5186593,
+  "lon": 13.4064700
+},
+{
+  "type": "node",
+  "id": 2915590925,
+  "lat": 52.5202856,
+  "lon": 13.4043076,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "bus_stop",
+    "lit": "no",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "stop_position",
+    "ref:BVG": "107318",
+    "shelter": "no",
+    "tactile_paving": "yes",
+    "website": "https://qr.bvg.de/h107318"
+  }
+},
+{
+  "type": "node",
+  "id": 3182529370,
+  "lat": 52.5206982,
+  "lon": 13.4063021
+},
+{
+  "type": "node",
+  "id": 3182529377,
+  "lat": 52.5192021,
+  "lon": 13.4060269
+},
+{
+  "type": "node",
+  "id": 3792411115,
+  "lat": 52.5203486,
+  "lon": 13.4049452
+},
+{
+  "type": "node",
+  "id": 3792411118,
+  "lat": 52.5200361,
+  "lon": 13.4044413,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792411126,
+  "lat": 52.5197460,
+  "lon": 13.4048677
+},
+{
+  "type": "node",
+  "id": 3792411129,
+  "lat": 52.5198427,
+  "lon": 13.4049994,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792411135,
+  "lat": 52.5200926,
+  "lon": 13.4052720,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792411146,
+  "lat": 52.5198265,
+  "lon": 13.4046354,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 3792411150,
+  "lat": 52.5199175,
+  "lon": 13.4045973,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792411151,
+  "lat": 52.5199661,
+  "lon": 13.4044854
+},
+{
+  "type": "node",
+  "id": 3792411153,
+  "lat": 52.5203210,
+  "lon": 13.4049805,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418560,
+  "lat": 52.5199390,
+  "lon": 13.4051993,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418562,
+  "lat": 52.5203119,
+  "lon": 13.4047085,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418564,
+  "lat": 52.5203295,
+  "lon": 13.4047433
+},
+{
+  "type": "node",
+  "id": 3792418574,
+  "lat": 52.5198075,
+  "lon": 13.4049262
+},
+{
+  "type": "node",
+  "id": 3792418580,
+  "lat": 52.5198097,
+  "lon": 13.4049922
+},
+{
+  "type": "node",
+  "id": 3792418584,
+  "lat": 52.5200628,
+  "lon": 13.4044043
+},
+{
+  "type": "node",
+  "id": 3792418585,
+  "lat": 52.5202210,
+  "lon": 13.4045289,
+  "tags": {
+    "railway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418589,
+  "lat": 52.5198521,
+  "lon": 13.4046833,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "image": "http://storage6.openstreetcam.org/files/photo/2017/10/12/lth/938043_1dbcb_22.jpg",
+    "survey:date": "2017-10-12",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418592,
+  "lat": 52.5202973,
+  "lon": 13.4046233
+},
+{
+  "type": "node",
+  "id": 3792418594,
+  "lat": 52.5197626,
+  "lon": 13.4048332
+},
+{
+  "type": "node",
+  "id": 3792418606,
+  "lat": 52.5200664,
+  "lon": 13.4053056
+},
+{
+  "type": "node",
+  "id": 3792418616,
+  "lat": 52.5202804,
+  "lon": 13.4046464,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418617,
+  "lat": 52.5202921,
+  "lon": 13.4050929,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418618,
+  "lat": 52.5201537,
+  "lon": 13.4052463
+},
+{
+  "type": "node",
+  "id": 3792418621,
+  "lat": 52.5199628,
+  "lon": 13.4050528
+},
+{
+  "type": "node",
+  "id": 3792418625,
+  "lat": 52.5202464,
+  "lon": 13.4050756,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418629,
+  "lat": 52.5198778,
+  "lon": 13.4051631,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418630,
+  "lat": 52.5201795,
+  "lon": 13.4044469,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "mapillary": "259756269167127",
+    "survey:date": "2017-06-13",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418640,
+  "lat": 52.5202107,
+  "lon": 13.4044060,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418641,
+  "lat": 52.5199050,
+  "lon": 13.4051286,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418642,
+  "lat": 52.5199423,
+  "lon": 13.4045647,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "flush",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418643,
+  "lat": 52.5197957,
+  "lon": 13.4049019,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418760,
+  "lat": 52.5201897,
+  "lon": 13.4044671,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418763,
+  "lat": 52.5201594,
+  "lon": 13.4051867,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418765,
+  "lat": 52.5198012,
+  "lon": 13.4047503,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418767,
+  "lat": 52.5202412,
+  "lon": 13.4045688,
+  "tags": {
+    "railway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418771,
+  "lat": 52.5201305,
+  "lon": 13.4043501
+},
+{
+  "type": "node",
+  "id": 3792418776,
+  "lat": 52.5198591,
+  "lon": 13.4050334,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418780,
+  "lat": 52.5202657,
+  "lon": 13.4046168,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418781,
+  "lat": 52.5201422,
+  "lon": 13.4043731,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3792418788,
+  "lat": 52.5203028,
+  "lon": 13.4048519
+},
+{
+  "type": "node",
+  "id": 3792418791,
+  "lat": 52.5199815,
+  "lon": 13.4045132,
+  "tags": {
+    "button_operated": "no",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "highway": "crossing",
+    "mapillary": "896326147578832",
+    "survey:date": "2017-09-04",
+    "tactile_paving": "yes",
+    "traffic_signals:sound": "yes",
+    "traffic_signals:vibration": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3867910438,
+  "lat": 52.5205012,
+  "lon": 13.4043455,
+  "tags": {
+    "bench": "no",
+    "bin": "yes",
+    "bus": "yes",
+    "departures_board": "timetable",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "stop_position",
+    "ref:BVG": "106835",
+    "shelter": "no",
+    "tactile_paving": "no",
+    "website": "https://qr.bvg.de/h106835"
+  }
+},
+{
+  "type": "node",
+  "id": 3867922469,
+  "lat": 52.5202185,
+  "lon": 13.4055613
+},
+{
+  "type": "node",
+  "id": 3867922470,
+  "lat": 52.5202413,
+  "lon": 13.4042567
+},
+{
+  "type": "node",
+  "id": 3867922472,
+  "lat": 52.5203225,
+  "lon": 13.4041473
+},
+{
+  "type": "node",
+  "id": 3867922474,
+  "lat": 52.5204325,
+  "lon": 13.4045205
+},
+{
+  "type": "node",
+  "id": 4036910494,
+  "lat": 52.5194592,
+  "lon": 13.4039173,
+  "tags": {
+    "description": "Pegelpunkt Mitte (westl. Spandauer Straße)",
+    "display": "no",
+    "man_made": "monitoring_station",
+    "monitoring:bicycle": "yes",
+    "recording": "yes",
+    "recording:manually": "yes",
+    "ref": "Q0901901"
+  }
+},
+{
+  "type": "node",
+  "id": 4036910495,
+  "lat": 52.5202612,
+  "lon": 13.4043397,
+  "tags": {
+    "description": "Pegelpunkt Mitte (nördl. Karl-Liebknecht-Straße)",
+    "display": "no",
+    "man_made": "monitoring_station",
+    "monitoring:bicycle": "yes",
+    "monitoring:traffic": "bicycle",
+    "recording": "yes",
+    "recording:manually": "yes",
+    "ref": "Q0901902"
+  }
+},
+{
+  "type": "node",
+  "id": 4036963789,
+  "lat": 52.5195584,
+  "lon": 13.4037547,
+  "tags": {
+    "description": "Pegelpunkt Mitte (westl. Spandauer Straße)",
+    "display": "no",
+    "man_made": "monitoring_station",
+    "monitoring:bicycle": "yes",
+    "recording": "yes",
+    "recording:manually": "yes",
+    "ref": "Q0901901"
+  }
+},
+{
+  "type": "node",
+  "id": 4036963790,
+  "lat": 52.5203445,
+  "lon": 13.4045590,
+  "tags": {
+    "description": "Pegelpunkt Mitte (nördl. Karl-Liebknecht-Straße)",
+    "display": "no",
+    "man_made": "monitoring_station",
+    "monitoring:bicycle": "yes",
+    "monitoring:traffic": "bicycle",
+    "recording": "yes",
+    "recording:manually": "yes",
+    "ref": "Q0901902"
+  }
+},
+{
+  "type": "node",
+  "id": 4554486919,
+  "lat": 52.5223503,
+  "lon": 13.4090264
+},
+{
+  "type": "node",
+  "id": 4673135650,
+  "lat": 52.5202059,
+  "lon": 13.4044991
+},
+{
+  "type": "node",
+  "id": 4825494724,
+  "lat": 52.5210730,
+  "lon": 13.4035905
+},
+{
+  "type": "node",
+  "id": 5372980370,
+  "lat": 52.5213330,
+  "lon": 13.4034930
+},
+{
+  "type": "node",
+  "id": 5436103281,
+  "lat": 52.5197145,
+  "lon": 13.4065655
+},
+{
+  "type": "node",
+  "id": 5446414921,
+  "lat": 52.5205478,
+  "lon": 13.4060336,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 5446414922,
+  "lat": 52.5207241,
+  "lon": 13.4059629,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 5518191501,
+  "lat": 52.5215218,
+  "lon": 13.4036955
+},
+{
+  "type": "node",
+  "id": 5518191503,
+  "lat": 52.5208011,
+  "lon": 13.4047707
+},
+{
+  "type": "node",
+  "id": 5518191504,
+  "lat": 52.5208011,
+  "lon": 13.4048840
+},
+{
+  "type": "node",
+  "id": 5716796931,
+  "lat": 52.5211333,
+  "lon": 13.4037594
+},
+{
+  "type": "node",
+  "id": 6437011116,
+  "lat": 52.5199846,
+  "lon": 13.4050242
+},
+{
+  "type": "node",
+  "id": 6437013423,
+  "lat": 52.5214770,
+  "lon": 13.4080832
+},
+{
+  "type": "node",
+  "id": 6447810043,
+  "lat": 52.5212364,
+  "lon": 13.4073686
+},
+{
+  "type": "node",
+  "id": 6447810045,
+  "lat": 52.5205022,
+  "lon": 13.4061708
+},
+{
+  "type": "node",
+  "id": 6447810046,
+  "lat": 52.5205562,
+  "lon": 13.4062743
+},
+{
+  "type": "node",
+  "id": 6448068510,
+  "lat": 52.5199637,
+  "lon": 13.4052505
+},
+{
+  "type": "node",
+  "id": 6448068511,
+  "lat": 52.5185747,
+  "lon": 13.4071750
+},
+{
+  "type": "node",
+  "id": 6448068514,
+  "lat": 52.5192750,
+  "lon": 13.4061987
+},
+{
+  "type": "node",
+  "id": 6448068518,
+  "lat": 52.5190624,
+  "lon": 13.4064919
+},
+{
+  "type": "node",
+  "id": 6449731027,
+  "lat": 52.5185172,
+  "lon": 13.4066739
+},
+{
+  "type": "node",
+  "id": 6565432170,
+  "lat": 52.5183982,
+  "lon": 13.4068326
+},
+{
+  "type": "node",
+  "id": 6795935365,
+  "lat": 52.5201280,
+  "lon": 13.4048551
+},
+{
+  "type": "node",
+  "id": 9213873348,
+  "lat": 52.5216971,
+  "lon": 13.4085152
+},
+{
+  "type": "node",
+  "id": 9213873349,
+  "lat": 52.5216636,
+  "lon": 13.4084502
+},
+{
+  "type": "node",
+  "id": 9288041061,
+  "lat": 52.5197302,
+  "lon": 13.4049236
+},
+{
+  "type": "node",
+  "id": 9288041063,
+  "lat": 52.5191065,
+  "lon": 13.4058174
+},
+{
+  "type": "node",
+  "id": 9288041064,
+  "lat": 52.5195254,
+  "lon": 13.4052101
+},
+{
+  "type": "node",
+  "id": 9288041069,
+  "lat": 52.5188580,
+  "lon": 13.4028376
+},
+{
+  "type": "node",
+  "id": 9288041071,
+  "lat": 52.5189031,
+  "lon": 13.4029610
+},
+{
+  "type": "node",
+  "id": 9288041072,
+  "lat": 52.5197810,
+  "lon": 13.4047851
+},
+{
+  "type": "node",
+  "id": 9288041073,
+  "lat": 52.5192991,
+  "lon": 13.4038158
+},
+{
+  "type": "node",
+  "id": 9659538307,
+  "lat": 52.5188634,
+  "lon": 13.4032720
+},
+{
+  "type": "node",
+  "id": 9659538308,
+  "lat": 52.5189645,
+  "lon": 13.4035751
+},
+{
+  "type": "node",
+  "id": 9659538309,
+  "lat": 52.5184132,
+  "lon": 13.4068126
+},
+{
+  "type": "node",
+  "id": 9659552131,
+  "lat": 52.5194146,
+  "lon": 13.4047231
+},
+{
+  "type": "node",
+  "id": 9659552132,
+  "lat": 52.5193522,
+  "lon": 13.4046628
+},
+{
+  "type": "node",
+  "id": 9659552133,
+  "lat": 52.5193040,
+  "lon": 13.4052287
+},
+{
+  "type": "node",
+  "id": 9659552134,
+  "lat": 52.5191996,
+  "lon": 13.4052220
+},
+{
+  "type": "node",
+  "id": 9659552135,
+  "lat": 52.5190580,
+  "lon": 13.4051844
+},
+{
+  "type": "node",
+  "id": 9659552136,
+  "lat": 52.5190468,
+  "lon": 13.4049934
+},
+{
+  "type": "node",
+  "id": 9659552137,
+  "lat": 52.5190863,
+  "lon": 13.4047667
+},
+{
+  "type": "node",
+  "id": 9659552213,
+  "lat": 52.5185045,
+  "lon": 13.4037087
+},
+{
+  "type": "node",
+  "id": 9659552214,
+  "lat": 52.5185557,
+  "lon": 13.4037106
+},
+{
+  "type": "node",
+  "id": 9659552215,
+  "lat": 52.5188691,
+  "lon": 13.4038938
+},
+{
+  "type": "node",
+  "id": 9659552216,
+  "lat": 52.5190346,
+  "lon": 13.4042210
+},
+{
+  "type": "node",
+  "id": 9659552217,
+  "lat": 52.5190881,
+  "lon": 13.4045113
+},
+{
+  "type": "node",
+  "id": 9659552218,
+  "lat": 52.5192085,
+  "lon": 13.4044844
+},
+{
+  "type": "node",
+  "id": 9659552219,
+  "lat": 52.5192506,
+  "lon": 13.4044475
+},
+{
+  "type": "node",
+  "id": 9659552220,
+  "lat": 52.5191661,
+  "lon": 13.4040948
+},
+{
+  "type": "node",
+  "id": 9891678211,
+  "lat": 52.5221425,
+  "lon": 13.4085974
+},
+{
+  "type": "node",
+  "id": 9891678213,
+  "lat": 52.5223825,
+  "lon": 13.4090909
+},
+{
+  "type": "node",
+  "id": 9891723319,
+  "lat": 52.5211199,
+  "lon": 13.4064860
+},
+{
+  "type": "node",
+  "id": 10053209432,
+  "lat": 52.5207635,
+  "lon": 13.4034863
+},
+{
+  "type": "node",
+  "id": 10053209434,
+  "lat": 52.5202234,
+  "lon": 13.4042215
+},
+{
+  "type": "node",
+  "id": 10053209435,
+  "lat": 52.5208947,
+  "lon": 13.4039878
+},
+{
+  "type": "node",
+  "id": 10053209446,
+  "lat": 52.5206643,
+  "lon": 13.4036181
+},
+{
+  "type": "node",
+  "id": 10053209447,
+  "lat": 52.5205766,
+  "lon": 13.4037346
+},
+{
+  "type": "node",
+  "id": 10053209448,
+  "lat": 52.5214012,
+  "lon": 13.4033225
+},
+{
+  "type": "node",
+  "id": 10053209449,
+  "lat": 52.5213260,
+  "lon": 13.4034199
+},
+{
+  "type": "node",
+  "id": 10053209450,
+  "lat": 52.5211053,
+  "lon": 13.4037048
+},
+{
+  "type": "node",
+  "id": 10053209451,
+  "lat": 52.5205698,
+  "lon": 13.4044257
+},
+{
+  "type": "node",
+  "id": 10053209453,
+  "lat": 52.5212479,
+  "lon": 13.4028431
+},
+{
+  "type": "node",
+  "id": 10177997414,
+  "lat": 52.5207777,
+  "lon": 13.4060708
+},
+{
+  "type": "node",
+  "id": 10178016317,
+  "lat": 52.5207818,
+  "lon": 13.4057964
+},
+{
+  "type": "node",
+  "id": 10188332726,
+  "lat": 52.5211128,
+  "lon": 13.4073787
+},
+{
+  "type": "node",
+  "id": 10188332728,
+  "lat": 52.5203231,
+  "lon": 13.4057662
+},
+{
+  "type": "node",
+  "id": 10196222619,
+  "lat": 52.5207058,
+  "lon": 13.4065600
+},
+{
+  "type": "node",
+  "id": 10309476546,
+  "lat": 52.5205732,
+  "lon": 13.4042511
+},
+{
+  "type": "node",
+  "id": 10555644971,
+  "lat": 52.5205847,
+  "lon": 13.4044534
+},
+{
+  "type": "node",
+  "id": 10555644972,
+  "lat": 52.5205896,
+  "lon": 13.4044628
+},
+{
+  "type": "node",
+  "id": 10555644973,
+  "lat": 52.5206412,
+  "lon": 13.4043284
+},
+{
+  "type": "node",
+  "id": 10555644974,
+  "lat": 52.5206591,
+  "lon": 13.4043661
+},
+{
+  "type": "node",
+  "id": 10555644976,
+  "lat": 52.5207398,
+  "lon": 13.4041958
+},
+{
+  "type": "node",
+  "id": 10555644977,
+  "lat": 52.5207670,
+  "lon": 13.4042483
+},
+{
+  "type": "node",
+  "id": 10555644978,
+  "lat": 52.5207565,
+  "lon": 13.4042279
+},
+{
+  "type": "node",
+  "id": 10555644979,
+  "lat": 52.5207624,
+  "lon": 13.4042394
+},
+{
+  "type": "node",
+  "id": 10561637030,
+  "lat": 52.5195726,
+  "lon": 13.4053459
+},
+{
+  "type": "node",
+  "id": 10561637031,
+  "lat": 52.5195180,
+  "lon": 13.4056745
+},
+{
+  "type": "node",
+  "id": 10651746550,
+  "lat": 52.5195117,
+  "lon": 13.4036711
+},
+{
+  "type": "node",
+  "id": 10676931969,
+  "lat": 52.5209059,
+  "lon": 13.4059450,
+  "tags": {
+    "barrier": "bollard",
+    "bollard": "foldable"
+  }
+},
+{
+  "type": "node",
+  "id": 10731473048,
+  "lat": 52.5197835,
+  "lon": 13.4056617,
+  "tags": {
+    "access": "private",
+    "barrier": "gate",
+    "colour": "green",
+    "height": "1.8",
+    "locked": "yes",
+    "material": "metal"
+  }
+},
+{
+  "type": "node",
+  "id": 10731473049,
+  "lat": 52.5197905,
+  "lon": 13.4056373
+},
+{
+  "type": "node",
+  "id": 10731473050,
+  "lat": 52.5197226,
+  "lon": 13.4055813
+},
+{
+  "type": "node",
+  "id": 10731473051,
+  "lat": 52.5197551,
+  "lon": 13.4056082
+},
+{
+  "type": "node",
+  "id": 10814123052,
+  "lat": 52.5206043,
+  "lon": 13.4063662
+},
+{
+  "type": "node",
+  "id": 10878363779,
+  "lat": 52.5188234,
+  "lon": 13.4027431
+},
+{
+  "type": "node",
+  "id": 11204975433,
+  "lat": 52.5201611,
+  "lon": 13.4048290
+},
+{
+  "type": "node",
+  "id": 11204975435,
+  "lat": 52.5201631,
+  "lon": 13.4048063
+},
+{
+  "type": "node",
+  "id": 11232443404,
+  "lat": 52.5200125,
+  "lon": 13.4052387
+},
+{
+  "type": "node",
+  "id": 11236075608,
+  "lat": 52.5207475,
+  "lon": 13.4058424,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236075609,
+  "lat": 52.5206767,
+  "lon": 13.4059372,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236075610,
+  "lat": 52.5206557,
+  "lon": 13.4059652,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236075611,
+  "lat": 52.5206140,
+  "lon": 13.4060211,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236296724,
+  "lat": 52.5202231,
+  "lon": 13.4051054,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236296725,
+  "lat": 52.5201789,
+  "lon": 13.4051618,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236296727,
+  "lat": 52.5202471,
+  "lon": 13.4045803,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236296728,
+  "lat": 52.5202081,
+  "lon": 13.4045033,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11236442437,
+  "lat": 52.5183471,
+  "lon": 13.4068818,
+  "tags": {
+    "barrier": "kerb",
+    "kerb": "lowered",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11257772004,
+  "lat": 52.5202705,
+  "lon": 13.4044209
+},
+{
+  "type": "node",
+  "id": 11257772007,
+  "lat": 52.5202681,
+  "lon": 13.4044161
+},
+{
+  "type": "node",
+  "id": 11357387529,
+  "lat": 52.5195927,
+  "lon": 13.4034969
+},
+{
+  "type": "node",
+  "id": 11357387530,
+  "lat": 52.5191091,
+  "lon": 13.4025514
+},
+{
+  "type": "node",
+  "id": 11374124693,
+  "lat": 52.5205981,
+  "lon": 13.4044775
+},
+{
+  "type": "node",
+  "id": 11374124694,
+  "lat": 52.5205950,
+  "lon": 13.4044723
+},
+{
+  "type": "node",
+  "id": 11374124695,
+  "lat": 52.5206306,
+  "lon": 13.4044327
+},
+{
+  "type": "node",
+  "id": 11394452586,
+  "lat": 52.5183663,
+  "lon": 13.4068633
+},
+{
+  "type": "node",
+  "id": 11663153819,
+  "lat": 52.5196489,
+  "lon": 13.4039169
+},
+{
+  "type": "node",
+  "id": 11688908868,
+  "lat": 52.5204340,
+  "lon": 13.4041115
+},
+{
+  "type": "node",
+  "id": 11688980269,
+  "lat": 52.5203803,
+  "lon": 13.4040052
+},
+{
+  "type": "node",
+  "id": 11732225637,
+  "lat": 52.5217361,
+  "lon": 13.4083664,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "gtfs:stop_id": "de:11000:900100031::7",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "local_ref": "26",
+    "name": "S+U Alexanderplatz/Memhardstraße",
+    "public_transport": "stop_position",
+    "shelter": "yes",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11732225639,
+  "lat": 52.5218173,
+  "lon": 13.4085309,
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "gtfs:stop_id": "de:11000:900100003::12",
+    "highway": "bus_stop",
+    "lit": "yes",
+    "local_ref": "25",
+    "name": "S+U Alexanderplatz/Memhardstraße",
+    "public_transport": "stop_position",
+    "shelter": "yes",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12229525107,
+  "lat": 52.5190245,
+  "lon": 13.4050684
+},
+{
+  "type": "node",
+  "id": 12229525108,
+  "lat": 52.5190561,
+  "lon": 13.4043020
+},
+{
+  "type": "node",
+  "id": 12229525109,
+  "lat": 52.5189820,
+  "lon": 13.4040800
+},
+{
+  "type": "node",
+  "id": 12229525110,
+  "lat": 52.5189139,
+  "lon": 13.4039553
+},
+{
+  "type": "node",
+  "id": 12229525111,
+  "lat": 52.5187369,
+  "lon": 13.4037729
+},
+{
+  "type": "node",
+  "id": 12229525112,
+  "lat": 52.5186170,
+  "lon": 13.4037202
+},
+{
+  "type": "node",
+  "id": 12913047864,
+  "lat": 52.5193148,
+  "lon": 13.4058678
+},
+{
+  "type": "node",
+  "id": 12913047865,
+  "lat": 52.5190782,
+  "lon": 13.4062047
+},
+{
+  "type": "node",
+  "id": 12914264714,
+  "lat": 52.5204072,
+  "lon": 13.4040585
+},
+{
+  "type": "node",
+  "id": 12914264717,
+  "lat": 52.5205535,
+  "lon": 13.4039536
+},
+{
+  "type": "node",
+  "id": 12914264738,
+  "lat": 52.5207148,
+  "lon": 13.4040633
+},
+{
+  "type": "node",
+  "id": 12914264739,
+  "lat": 52.5201233,
+  "lon": 13.4048605
+},
+{
+  "type": "node",
+  "id": 12914264742,
+  "lat": 52.5205690,
+  "lon": 13.4043374
+},
+{
+  "type": "node",
+  "id": 13313285539,
+  "lat": 52.5192837,
+  "lon": 13.4059117
+},
+{
+  "type": "node",
+  "id": 13332003539,
+  "lat": 52.5210997,
+  "lon": 13.4038043
+},
+{
+  "type": "node",
+  "id": 13332003541,
+  "lat": 52.5210055,
+  "lon": 13.4038390
+},
+{
+  "type": "node",
+  "id": 13332003542,
+  "lat": 52.5209968,
+  "lon": 13.4039416
+},
+{
+  "type": "node",
+  "id": 13332003543,
+  "lat": 52.5209691,
+  "lon": 13.4038878
+},
+{
+  "type": "node",
+  "id": 13332003550,
+  "lat": 52.5206630,
+  "lon": 13.4043742
+},
+{
+  "type": "node",
+  "id": 13332003551,
+  "lat": 52.5206674,
+  "lon": 13.4043830
+},
+{
+  "type": "node",
+  "id": 13332003552,
+  "lat": 52.5206646,
+  "lon": 13.4043773
+},
+{
+  "type": "node",
+  "id": 13332003553,
+  "lat": 52.5212814,
+  "lon": 13.4035619
+},
+{
+  "type": "node",
+  "id": 13332003554,
+  "lat": 52.5212555,
+  "lon": 13.4035109
+},
+{
+  "type": "node",
+  "id": 14234774606,
+  "lat": 52.5207644,
+  "lon": 13.4042433
+},
+{
+  "type": "way",
+  "id": 4773465,
+  "nodes": [
+    21487210,
+    11204975435,
+    3792418616,
+    3792418592,
+    4036963790,
+    3867910438,
+    10309476546
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "track",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:segregated": "yes",
+    "cycleway:right:surface": "paving_stones",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "tertiary",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "30",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "parking:right:restriction": "no_stopping",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 4790828,
+  "nodes": [
+    29221506,
+    1827996421
+  ],
+  "tags": {
+    "bus:lanes": "yes|yes|yes|designated",
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "advisory",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:width": "1.5",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "4",
+    "lanes:bus": "1",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through|none",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 16873017,
+  "nodes": [
+    9288041073,
+    2381159855,
+    174969323
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "segregated": "no",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 24913519,
+  "nodes": [
+    3792411151,
+    11663153819,
+    4036963789,
+    10651746550
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "share_busway",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:245,1022-10",
+    "cycleway:right:width": "4",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "3",
+    "lanes:psv": "1",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:left": "no",
+    "parking:right": "lane",
+    "parking:right:fee": "yes",
+    "parking:right:fee:conditional": "no @ (00:00-09:00)",
+    "parking:right:markings": "no",
+    "parking:right:orientation": "parallel",
+    "parking:right:zone": "29",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 24913523,
+  "nodes": [
+    21487210,
+    1865536623,
+    29221504
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "advisory",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:width": "1.5",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 24915070,
+  "nodes": [
+    1827996421,
+    12914264739,
+    6795935365,
+    21487210
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "advisory",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1.5",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|left|through",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 51912365,
+  "nodes": [
+    5518191501,
+    662338385,
+    662338387,
+    5518191503,
+    5518191504,
+    662338389,
+    662338388
+  ],
+  "tags": {
+    "highway": "service",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 72157174,
+  "nodes": [
+    1827996421,
+    1827996431,
+    3792418618,
+    1827996414
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "share_busway",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:245,1022-10",
+    "cycleway:right:width": "4",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 100113532,
+  "nodes": [
+    1157325158,
+    1841260112,
+    1841260109
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "postal_code": "10178",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 113595955,
+  "nodes": [
+    275525459,
+    662338388,
+    10676931969,
+    1827996603
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "name": "Rosenstraße",
+    "name:etymology:wikidata": "Q1228185",
+    "name:etymology:wikipedia": "de:Dirne",
+    "postal_code": "10178",
+    "smoothness": "bad",
+    "surface": "sett"
+  }
+},
+{
+  "type": "way",
+  "id": 156364561,
+  "nodes": [
+    29221504,
+    29221506
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "advisory",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1.5",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left;through|through",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 171826984,
+  "nodes": [
+    1827996414,
+    5446414921,
+    1827996501,
+    3182529370,
+    6447810043,
+    11732225637,
+    11732225639,
+    768074068
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "share_busway",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:245,1022-10",
+    "cycleway:right:width": "4",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 171826985,
+  "nodes": [
+    1827996417,
+    10177997414,
+    1827996574,
+    5446414922,
+    1827996550,
+    3792418617,
+    1827996455,
+    11204975433,
+    21487210
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:bicycle": "designated",
+    "cycleway:right:lane": "exclusive",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:237",
+    "cycleway:right:width": "1.5",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lane_markings": "yes",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through;right",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 171826987,
+  "nodes": [
+    11236296724,
+    1827996440,
+    1827996436,
+    11236296725
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 173278835,
+  "nodes": [
+    1827996522,
+    1841260117,
+    1395098660
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 202156994,
+  "nodes": [
+    341340986,
+    4036910494,
+    3792411146,
+    3792418589,
+    29221506
+  ],
+  "tags": {
+    "access:lanes": "yes|yes|yes|no|yes",
+    "bus:lanes": "no|no|no|designated|no",
+    "cycleway:left": "no",
+    "cycleway:right": "share_busway",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:245,1022-10",
+    "cycleway:right:width": "4",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "5",
+    "lanes:psv": "1",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through|none|right",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 202157002,
+  "nodes": [
+    11688908868,
+    2915590925,
+    4036910495,
+    3792418640,
+    3792418630,
+    29221504
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "track",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:segregated": "yes",
+    "cycleway:right:surface": "paving_stones",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "tertiary",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "parking:right:reason": "turn_lane",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|through;right",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 202157018,
+  "nodes": [
+    2381159858,
+    2121324867,
+    174969324,
+    9659552219,
+    2381159857,
+    9659552220,
+    2381159855,
+    2381159853,
+    2381159848,
+    9659538308,
+    2381159844,
+    9659538307,
+    2381159840,
+    171440822
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "segregated": "no",
+    "smoothness": "good",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 202157023,
+  "nodes": [
+    2381159850,
+    2381159856,
+    9659552218,
+    174969324,
+    9659552132,
+    9659552131,
+    2381159860,
+    3792411126
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "segregated": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 202157026,
+  "nodes": [
+    2381159806,
+    9659552213,
+    9659552214,
+    12229525112,
+    2381159815,
+    12229525111,
+    2381159833,
+    2381159841,
+    9659552215,
+    12229525110,
+    2381159845,
+    12229525109,
+    174969323,
+    9659552216,
+    12229525108,
+    2381159850,
+    9659552217,
+    2381159851,
+    9659552137,
+    2381159849,
+    9659552136,
+    12229525107,
+    2381159847
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 229531161,
+  "nodes": [
+    2381159847,
+    9659552135,
+    2381159854,
+    9659552134,
+    9659552133,
+    2381159858,
+    2381159859,
+    9288041064
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "yes",
+    "segregated": "no",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 284493291,
+  "nodes": [
+    2121324874,
+    10561637031,
+    3792418629,
+    3792418641,
+    3792418621,
+    6437011116,
+    1827996421
+  ],
+  "tags": {
+    "bicycle:lanes": "yes|yes|yes|designated|yes",
+    "cycleway:lanes": "no|no|no|lane|no",
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "exclusive",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1.5",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lane_markings": "yes",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "note": "Übergeordnete Straße, Stufe I",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left|left|through|through|right",
+    "vehicle:lanes": "yes|yes|yes|no|yes",
+    "width:lanes": "|||1.5|",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 312392974,
+  "nodes": [
+    3792418606,
+    6447810045,
+    6447810046,
+    10814123052,
+    10196222619,
+    10188332726,
+    2298016645,
+    6437013423,
+    9213873349,
+    9213873348
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "noname": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 375901768,
+  "nodes": [
+    3792418765,
+    3792418589,
+    3792411150
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 375901769,
+  "nodes": [
+    3792411118,
+    3792418584,
+    3792418771,
+    3792418781
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 375901774,
+  "nodes": [
+    3792418776,
+    3792418641,
+    3792418560
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 375901775,
+  "nodes": [
+    3792418562,
+    3792418564
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 375901776,
+  "nodes": [
+    3792418765,
+    9288041072,
+    3792418594,
+    3792411126,
+    9288041061,
+    9288041064,
+    9288041063,
+    2656298207,
+    6449731027,
+    9659538309,
+    6565432170,
+    11394452586,
+    11236442437
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 375901779,
+  "nodes": [
+    3792418781,
+    3792418630,
+    3792418760
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 375901784,
+  "nodes": [
+    3792418594,
+    3792418643
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 375901786,
+  "nodes": [
+    3792411115,
+    3792418788,
+    3792418564
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "postal_code": "10178",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 383505794,
+  "nodes": [
+    3867922474,
+    12914264742
+  ],
+  "tags": {
+    "bench": "no",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "platform",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "platform",
+    "shelter": "no",
+    "tactile_paving": "no",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 383505798,
+  "nodes": [
+    3867922470,
+    3867922472
+  ],
+  "tags": {
+    "bench": "no",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "platform",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "platform",
+    "shelter": "no",
+    "tactile_paving": "yes",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 383505799,
+  "nodes": [
+    10188332728,
+    3867922469
+  ],
+  "tags": {
+    "bench": "yes",
+    "bin": "yes",
+    "bus": "yes",
+    "highway": "platform",
+    "lit": "yes",
+    "name": "Spandauer Straße/Marienkirche",
+    "public_transport": "platform",
+    "shelter": "yes",
+    "tactile_paving": "no",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "way",
+  "id": 473149642,
+  "nodes": [
+    4673135650,
+    11257772007,
+    11257772004
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 557076767,
+  "nodes": [
+    5372980370,
+    13332003553,
+    5716796931,
+    13332003539,
+    13332003542,
+    10555644977,
+    13332003551,
+    11374124695,
+    11374124693,
+    11374124694
+  ],
+  "tags": {
+    "covered": "yes",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 561326926,
+  "nodes": [
+    10555644971,
+    10053209451,
+    3792418564
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "intermediate",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 606078072,
+  "nodes": [
+    29221506,
+    341340973,
+    3792418580,
+    10561637030,
+    2121324874
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "lane",
+    "cycleway:right:buffer:both": "no",
+    "cycleway:right:lane": "exclusive",
+    "cycleway:right:marking:both": "dashed_line",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1.5",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lane_markings": "yes",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "note": "Übergeordnete Straße, Stufe I",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:reason": "dual_carriage",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "intermediate",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 687804449,
+  "nodes": [
+    3792418606,
+    5436103281
+  ],
+  "tags": {
+    "highway": "pedestrian",
+    "lit": "yes",
+    "noname": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 687804450,
+  "nodes": [
+    3792418606,
+    11232443404,
+    6448068510
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "noname": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 687804451,
+  "nodes": [
+    6448068511,
+    6448068518,
+    6448068514,
+    10731473050,
+    6448068510
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1006720290,
+  "nodes": [
+    10878363779,
+    9288041069,
+    9288041071,
+    9288041073,
+    9288041072
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1079045029,
+  "nodes": [
+    9891678213,
+    4554486919,
+    196741111,
+    9891678211,
+    9891723319,
+    1827996603
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1094398062,
+  "nodes": [
+    174969323,
+    2121324855
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "segregated": "no",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1097921378,
+  "nodes": [
+    10053209434,
+    3867922470
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1097921384,
+  "nodes": [
+    10053209453,
+    10053209432,
+    10053209446,
+    10053209447,
+    11688980269,
+    10053209434,
+    3792418771
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1097921385,
+  "nodes": [
+    10053209451,
+    10555644973,
+    10555644976,
+    10053209435,
+    13332003543,
+    13332003541,
+    10053209450,
+    13332003554,
+    10053209449,
+    10053209448
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1112464598,
+  "nodes": [
+    1827996603,
+    10178016317,
+    3792411115
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1127592486,
+  "nodes": [
+    12914264738,
+    1157325174,
+    4825494724
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "track",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:segregated": "yes",
+    "cycleway:right:surface": "paving_stones",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "tertiary",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "30",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:left": "no",
+    "parking:left:reason": "dual_carriage",
+    "parking:right": "lane",
+    "parking:right:fee": "yes",
+    "parking:right:fee:conditional": "no @ (00:00-09:00)",
+    "parking:right:orientation": "parallel",
+    "parking:right:zone": "29",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080495,
+  "nodes": [
+    11374124694,
+    10555644972
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080496,
+  "nodes": [
+    10555644972,
+    10555644971
+  ],
+  "tags": {
+    "handrail": "no",
+    "highway": "steps",
+    "incline": "down",
+    "lit": "yes",
+    "ramp": "separate",
+    "ramp:wheelchair": "separate",
+    "step_count": "2",
+    "surface": "paving_stones",
+    "tactile_paving": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080497,
+  "nodes": [
+    10555644974,
+    10555644972
+  ],
+  "tags": {
+    "highway": "footway",
+    "incline": "up",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080498,
+  "nodes": [
+    10555644973,
+    10555644974
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "intermediate",
+    "surface": "sett"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080499,
+  "nodes": [
+    13332003550,
+    10555644974
+  ],
+  "tags": {
+    "handrail": "no",
+    "highway": "steps",
+    "incline": "down",
+    "lit": "yes",
+    "ramp": "separate",
+    "ramp:wheelchair": "separate",
+    "step_count": "2",
+    "surface": "paving_stones",
+    "tactile_paving": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080500,
+  "nodes": [
+    10555644976,
+    10555644978
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080501,
+  "nodes": [
+    10555644978,
+    10555644979
+  ],
+  "tags": {
+    "handrail": "yes",
+    "highway": "steps",
+    "incline": "up",
+    "lit": "yes",
+    "ramp": "separate",
+    "ramp:wheelchair": "separate",
+    "step_count": "3",
+    "surface": "paving_stones",
+    "tactile_paving": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1132080502,
+  "nodes": [
+    10555644979,
+    14234774606,
+    10555644977
+  ],
+  "tags": {
+    "highway": "footway",
+    "layer": "-1",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1153889959,
+  "nodes": [
+    10731473048,
+    10731473049,
+    10731473051,
+    10731473050
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "sett"
+  }
+},
+{
+  "type": "way",
+  "id": 1212782018,
+  "nodes": [
+    10178016317,
+    11236075608
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212782019,
+  "nodes": [
+    11236075608,
+    1827996550,
+    11236075609
+  ],
+  "tags": {
+    "button_operated": "yes",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212782020,
+  "nodes": [
+    11236075610,
+    1827996525,
+    1827996511,
+    11236075611
+  ],
+  "tags": {
+    "button_operated": "yes",
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212782022,
+  "nodes": [
+    11236075609,
+    1827996522,
+    11236075610
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793334,
+  "nodes": [
+    3792411115,
+    3792411153
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793335,
+  "nodes": [
+    3792411135,
+    3792418606
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793336,
+  "nodes": [
+    3792418763,
+    1827996431,
+    3792411135
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793337,
+  "nodes": [
+    3792411153,
+    1827996455,
+    3792418625
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793338,
+  "nodes": [
+    3792418625,
+    1157325158,
+    11236296724
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793339,
+  "nodes": [
+    11236296725,
+    3792418763
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793340,
+  "nodes": [
+    3792418643,
+    3792418574,
+    341340973,
+    3792411129
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793341,
+  "nodes": [
+    3792411129,
+    3792418776
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793342,
+  "nodes": [
+    3792418560,
+    6448068510
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "primary",
+    "is_sidepath:of:name": "Karl-Liebknecht-Straße",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793343,
+  "nodes": [
+    3792418642,
+    3792418791,
+    3792411118
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793344,
+  "nodes": [
+    3792411150,
+    3792418642
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "is_sidepath": "yes",
+    "is_sidepath:of": "secondary",
+    "is_sidepath:of:name": "Spandauer Straße",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793345,
+  "nodes": [
+    3792418780,
+    3792418616,
+    3792418562
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793346,
+  "nodes": [
+    11236296728,
+    3792418585,
+    3792418767,
+    11236296727
+  ],
+  "tags": {
+    "crossing": "traffic_signals",
+    "crossing:island": "no",
+    "crossing:markings": "dashes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "asphalt",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793347,
+  "nodes": [
+    3792418760,
+    4673135650,
+    11236296728
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1212793348,
+  "nodes": [
+    11236296727,
+    3792418780
+  ],
+  "tags": {
+    "footway": "traffic_island",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1224670641,
+  "nodes": [
+    3792418584,
+    11357387529,
+    11357387530
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "good",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1257266496,
+  "nodes": [
+    2291894367,
+    11688980269,
+    12914264714,
+    11688908868
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "driveway",
+    "surface": "sett"
+  }
+},
+{
+  "type": "way",
+  "id": 1395044139,
+  "nodes": [
+    12913047864,
+    2121324874
+  ],
+  "tags": {
+    "cycleway:both": "lane",
+    "cycleway:both:buffer:both": "no",
+    "cycleway:both:lane": "advisory",
+    "cycleway:both:marking:left": "double_dashed_line",
+    "cycleway:both:marking:right": "no",
+    "cycleway:both:oneway": "yes",
+    "cycleway:both:surface": "asphalt",
+    "cycleway:both:surface:colour": "none",
+    "cycleway:both:traffic_sign": "none",
+    "cycleway:both:width": "2",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lane_markings": "yes",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "note": "Übergeordnete Straße, Stufe I",
+    "parking:both": "no",
+    "postal_code": "10178",
+    "sidewalk:both": "separate",
+    "smoothness": "good",
+    "source:cycleway:both:width": "Luftbild 2025",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 1395044141,
+  "nodes": [
+    12913047865,
+    3182529377,
+    13313285539,
+    12913047864
+  ],
+  "tags": {
+    "cycleway:both": "lane",
+    "cycleway:both:buffer:both": "no",
+    "cycleway:both:lane": "advisory",
+    "cycleway:both:marking:left": "double_dashed_line",
+    "cycleway:both:marking:right": "no",
+    "cycleway:both:oneway": "yes",
+    "cycleway:both:surface": "asphalt",
+    "cycleway:both:surface:colour": "none",
+    "cycleway:both:traffic_sign": "none",
+    "cycleway:both:width": "2",
+    "foot": "use_sidepath",
+    "highway": "secondary",
+    "lane_markings": "yes",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "note": "Übergeordnete Straße, Stufe I",
+    "parking:left": "separate",
+    "parking:right": "no",
+    "postal_code": "10178",
+    "sidewalk:both": "separate",
+    "smoothness": "good",
+    "source:cycleway:both:width": "Luftbild 2025",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 1395176407,
+  "nodes": [
+    12914264717,
+    11688908868
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "track",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:segregated": "yes",
+    "cycleway:right:surface": "paving_stones",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "tertiary",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "30",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:left": "no",
+    "parking:left:reason": "dual_carriage",
+    "parking:right": "lane",
+    "parking:right:fee": "no",
+    "parking:right:orientation": "parallel",
+    "parking:right:restriction:conditional": "loading_only @ (07:00-23:00)",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "good",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "turn:lanes": "left;through|through;right",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 1395176411,
+  "nodes": [
+    10309476546,
+    12914264738
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "track",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:segregated": "yes",
+    "cycleway:right:surface": "paving_stones",
+    "cycleway:right:surface:colour": "red",
+    "cycleway:right:traffic_sign": "none",
+    "cycleway:right:width": "1",
+    "dual_carriageway": "yes",
+    "foot": "use_sidepath",
+    "highway": "tertiary",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "30",
+    "name": "Spandauer Straße",
+    "name:etymology:wikidata": "Q158083",
+    "oneway": "yes",
+    "parking:left": "no",
+    "parking:left:reason": "dual_carriage",
+    "parking:right": "lane",
+    "parking:right:fee": "no",
+    "parking:right:orientation": "parallel",
+    "parking:right:restriction:conditional": "loading_only @ (Mo-Fr 07:00-23:00)",
+    "postal_code": "10178",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q2306673",
+    "wikipedia": "de:Spandauer Straße"
+  }
+},
+{
+  "type": "way",
+  "id": 1395686814,
+  "nodes": [
+    29221504,
+    3792418791,
+    3792411151
+  ],
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "share_busway",
+    "cycleway:right:oneway": "yes",
+    "cycleway:right:surface": "asphalt",
+    "cycleway:right:surface:colour": "none",
+    "cycleway:right:traffic_sign": "DE:245,1022-10",
+    "cycleway:right:width": "4",
+    "foot": "use_sidepath",
+    "highway": "primary",
+    "lanes": "3",
+    "lanes:psv": "1",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Karl-Liebknecht-Straße",
+    "name:etymology:wikidata": "Q75886",
+    "oneway": "yes",
+    "parking:both": "no",
+    "ref": "B 2;B 5",
+    "sidewalk:left": "no",
+    "sidewalk:right": "separate",
+    "smoothness": "excellent",
+    "source:cycleway:right:width": "infra3D 2021/22",
+    "surface": "asphalt",
+    "wikidata": "Q551773",
+    "wikimedia_commons": "Category:Karl-Liebknecht-Straße (Berlin-Mitte)",
+    "wikipedia": "en:Karl-Liebknecht-Straße",
+    "zone:traffic": "DE:urban"
+  }
+},
+{
+  "type": "way",
+  "id": 1453705204,
+  "nodes": [
+    13332003552,
+    13332003551
+  ],
+  "tags": {
+    "covered": "yes",
+    "highway": "footway",
+    "lit": "yes",
+    "smoothness": "excellent",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1453705205,
+  "nodes": [
+    13332003550,
+    13332003552
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "paving_stones"
+  }
+}
+
+  ]
+}

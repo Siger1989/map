@@ -5,7 +5,7 @@ import type { GuidanceSession } from './session';
 import { freshFix } from './session.ts';
 import { fixSpeed } from '../rally/roadbook.ts';
 
-const MAX_SPEED_MPS = { auto: 80, bicycle: 30, pedestrian: 12 } as const;
+const MAX_SPEED_MPS = { auto: 80, bicycle: 30, pedestrian: 12, motorcycle: 80 } as const;
 
 /** Only use a fresh device fix. Network/IP estimates are not motion telemetry. */
 export function isTelemetryFix(fix: PositionFix | null, now: number): fix is PositionFix {

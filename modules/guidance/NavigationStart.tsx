@@ -115,7 +115,7 @@ export function NavigationStart({
   const preview=prepared.route, selectedDistance=preview.distance, selectionError=prepared.error;
   const roadReady=routeChoice==='original' || !!plans[previewKey];
   const originalPreview=routeChoice==='original'?prepared.route:source.route;
-  const routeOptions=[{id:'original',coordinates:originalPreview.coordinates,segments:originalPreview.segments,opacity:originalPreview.displayOpacity,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0'} as const)[route.mode]}))];
+  const routeOptions=[{id:'original',coordinates:originalPreview.coordinates,segments:originalPreview.segments,opacity:originalPreview.displayOpacity,color:choice?.color??'#c2513f'},...Object.entries(plans).map(([id,route])=>({id,coordinates:route.coordinates,color:({pedestrian:'#287d53',bicycle:'#287bbe',auto:'#9056b0',motorcycle:'#a66c29'} as const)[route.mode]}))];
   const start = async () => {
     if(!roadReady || busy || selectionError)return;
     const abort = new AbortController();

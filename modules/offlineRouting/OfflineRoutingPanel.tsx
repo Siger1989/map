@@ -9,7 +9,7 @@ import {
   saveGraph,
   verifyGraph,
 } from './storage';
-import { GRAPH_LIMITS, type GraphManifest } from './types';
+import { GRAPH_LIMITS, type GraphManifest, type OfflineProfile } from './types';
 import { validateGraph } from './engine';
 import { saveFile } from '../dataTransfer/download';
 import { RoutingModeControl } from './RoutingModeControl';
@@ -24,6 +24,7 @@ export function OfflineRoutingPanel({
   onShow: (points: Coordinate[]) => void;
 }) {
   const [packages, setPackages] = useState<GraphManifest[]>([]),
+    [profile, setProfile] = useState<OfflineProfile>('pedestrian'),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
   const task = useRef<AbortController | null>(null),
@@ -63,12 +64,22 @@ export function OfflineRoutingPanel({
   };
   return (
     <section className="offline-routing-panel" aria-label="离线导航引擎">
-      <strong>离线导航引擎 · 步行</strong>
+      <strong>离线导航引擎</strong>
       <RoutingModeControl />
       <p>
         下载「{name}
-        」周边路网；离线计算起终点与途经点，地图选点或搜索已下载道路名。
+        」周边OSM路网；离线计算起终点与途经点，地图选点或搜索已下载道路名。
       </p>
+      <label className="routing-mode-control">
+        离线路网类型
+        <select aria-label="离线路网类型" value={profile} onChange={(e) => setProfile(e.target.value as OfflineProfile)}>
+          <option value="pedestrian">步行</option>
+          <option value="motorcar">驾车</option>
+          <option value="motorcycle">摩托车</option>
+        </select>
+      </label>
+      <small>汽车和摩托车分别生成路网；仅按 OSM 已标注的通行、单向与已知转向限制规划。</small>
+      <small>车辆离线只规划起点到终点；距道路不超过120米的虚线接入按步行估算，仅作位置提示，不表示汽车或摩托车可以驶过该段。</small>
       <div className="outdoor-actions">
         <button
           disabled={busy}
@@ -78,6 +89,7 @@ export function OfflineRoutingPanel({
                 name,
                 planBounds(points),
                 signal,
+                profile,
               );
               signal.throwIfAborted();
               const saved = await saveGraph(graph);
@@ -103,7 +115,7 @@ export function OfflineRoutingPanel({
             if (file)
               void run(async (signal) => {
                 if (file.size > GRAPH_LIMITS.bytes)
-                  throw new Error('路网文件不能超过24MB');
+                  throw new Error('路网文件不能超过24MiB');
                 const graph = validateGraph(JSON.parse(await file.text()));
                 signal.throwIfAborted();
                 await saveGraph(graph);
@@ -116,7 +128,7 @@ export function OfflineRoutingPanel({
         <article className="trip-package" key={p.id}>
           <strong>{p.name}</strong>
           <small>
-            {p.nodes}节点 · {(p.bytes / 1048576).toFixed(1)}MB ·{' '}
+            {p.profile === 'pedestrian' ? '步行' : p.profile === 'motorcar' ? '驾车' : '摩托车'} · {p.nodes}节点 · {p.bytes < 1048576 ? `${(p.bytes / 1024).toFixed(1)}KB` : `${(p.bytes / 1048576).toFixed(1)}MB`} ·{' '}
             {new Date(p.createdAt).toLocaleDateString()}
           </small>
           <div className="outdoor-actions">
@@ -171,7 +183,7 @@ export function OfflineRoutingPanel({
         </article>
       ))}
       <small>
-        公开步行道路；高难度山径、禁行和条件不明路段不参与计算。驾车/骑行需在线规划。区域最多100km²，不能替代现场通行判断。
+        条件通行规则与不支持的复杂转向关系会保守排除涉及道路。OSM 未标注或未覆盖的中国本地限行、禁摩、施工及临时管制无法保证识别；路线和预计时间仅供参考，不替代交通标志、现场判断或在线规划。
       </small>
       <small>© OpenStreetMap contributors · ODbL 1.0</small>
       {message && <p role="status">{message}</p>}

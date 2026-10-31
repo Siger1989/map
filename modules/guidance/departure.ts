@@ -68,7 +68,7 @@ export function referenceDeparture(
   const distance = metresBetween(origin, target);
   if (!Number.isFinite(distance) || distance < 1)
     throw new Error('当前位置已在路线起点附近。');
-  const seconds = distance / ({ auto: 12, bicycle: 4, pedestrian: 1.2 }[original.mode]);
+  const seconds = distance / ({ auto: 12, bicycle: 4, pedestrian: 1.2, motorcycle: 8 }[original.mode]);
   const approach: PlannedRoute = {
     mode: original.mode,
     coordinates: [origin, target],

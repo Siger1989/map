@@ -220,7 +220,7 @@ export function readRouteQr(text: string): RouteQr {
     if (
       typeof v.n !== 'string' ||
       v.n.length > 80 ||
-      !['auto', 'bicycle', 'pedestrian'].includes(v.m) ||
+      !['auto', 'bicycle', 'pedestrian', 'motorcycle'].includes(v.m) ||
       !TOLERANCES.includes(v.t) ||
       (v.d !== null && (!Number.isFinite(v.d) || v.d < 0)) ||
       !Array.isArray(v.s) ||

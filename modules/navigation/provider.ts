@@ -11,6 +11,7 @@ import { normalizePlaceName } from './placeName.ts';
 import { normalizeRegion } from '../collections/regions.ts';
 import { connectRoadAccess, nearestRoadPlaces } from './roadAccess.ts';
 import { tryOfflineRoute } from '../offlineRouting/provider.ts';
+import { routingMode } from '../offlineRouting/preferences.ts';
 import {
   defaultPlaceSearchSource,
   searchPlacesDetailed,
@@ -73,7 +74,13 @@ export async function onlineFirstWithOfflineFallback<T>(
     return await online();
   } catch (error) {
     if (!(error instanceof NetworkFailure)) throw error;
-    return offline();
+    try {
+      return await offline();
+    } catch (fallbackError) {
+      if (!(fallbackError instanceof Error)) throw fallbackError;
+      if (fallbackError.name === 'AbortError') throw fallbackError;
+      throw new Error(`${error.message} 离线规划也未完成：${fallbackError.message}`, { cause: error });
+    }
   }
 }
 
@@ -281,6 +288,19 @@ export async function planRoute(
   signal: AbortSignal,
   via: RoutePlace[] = [],
 ) {
+  const preference = routingMode();
+  if (mode === 'motorcycle' || preference === 'offline') {
+    const stops = [start, ...via, end];
+    if (stops.length > MAX_ROUTE_STOPS || !stops.every(p => p && coordinate(p.coordinates)))
+      throw new Error('地点无效，请重新选择起终点。');
+    if (stops.slice(1).some((p, i) => metresBetween(stops[i].coordinates, p.coordinates) < 20))
+      throw new Error('相邻地点太近，请间隔至少20米。');
+    if (mode === 'motorcycle' && preference === 'online')
+      throw new Error('摩托车当前使用已下载的摩托车路网，请选择离线或自动；不会改用汽车或自行车方案。');
+    const local = await tryOfflineRoute(stops, mode, signal, 'offline');
+    if (local) return local;
+    throw new Error('没有覆盖起终点的对应离线路网，请先下载。');
+  }
   // Validate the requested places before making a network call.
   routeURL(start, end, mode, via);
   const stops = [start, ...via, end];

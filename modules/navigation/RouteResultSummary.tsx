@@ -49,7 +49,7 @@ export function RouteResultSummary({ route, start, end, mode, loading, planningE
       <nav className="route-summary-actions" aria-label="路线管理操作">
         <label className="route-mode-select">导航方式
           <select aria-label="当前导航方式" value={mode} onChange={(event) => onModeChange(event.target.value as PlannedRoute['mode'])}>
-            <option value="auto">驾车</option><option value="bicycle">骑行</option><option value="pedestrian">步行</option>
+            <option value="auto">驾车</option><option value="motorcycle">摩托车（离线）</option><option value="bicycle">骑行</option><option value="pedestrian">步行</option>
           </select>
         </label>
         {onPreview && <button type="button" onClick={onPreview}>第一人称预览</button>}

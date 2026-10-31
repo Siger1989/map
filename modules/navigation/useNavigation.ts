@@ -243,11 +243,11 @@ export function useNavigation() {
         invalidate(false);
         return;
       }
-      if (routeRef.current.geometryKind === 'track') {
+      if (routeRef.current.geometryKind === 'track' && value !== 'motorcycle') {
         request.current?.abort();
         request.current = null;
         const source = routeRef.current;
-        const duration = source.distance / ({ pedestrian: 4000, bicycle: 15000, auto: 40000 }[value] / 3600);
+        const duration = source.distance / ({ pedestrian: 4000, bicycle: 15000, auto: 40000, motorcycle: 30000 }[value] / 3600);
         const updated = { ...source, mode: value, duration, createdAt: Date.now() };
         routeRef.current = updated;
         setRoute(updated);

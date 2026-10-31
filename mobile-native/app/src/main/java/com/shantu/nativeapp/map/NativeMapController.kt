@@ -143,6 +143,10 @@ class NativeMapController internal constructor(
         if (safe == bridgeMarkerCssScale) return
         bridgeMarkerCssScale = safe
         setBridgeMarkerPresentation(bridgeMarkerZoom, bridgeSelectedMarker)
+        if (positionArrowVisible) {
+            positionRenderables.filterIsInstance<Placemark>().forEach { it.attributes.imageScale = nativePositionArrowScale(safe) }
+            worldWindow.requestRedraw()
+        }
     }
     internal fun setBridgeMarkerPresentation(zoom: Double, selectedId: String?) {
         bridgeMarkerZoom = zoom
@@ -586,12 +590,14 @@ class NativeMapController internal constructor(
     }
 
     /** Updates the shared GPS/heading overlay. Heading must come from trusted sensors or GPS course. */
+    private var positionArrowVisible = false
     fun setPosition(state: NativePositionState) {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Position updates must run on the Android main thread" }
         if (disposed) return
         val presentation = NativePositionPolicy.present(state)
         positionLayer.clearRenderables()
         positionRenderables = emptyList()
+        positionArrowVisible = false
         val fix = state.fix
         if (!presentation.visible || fix == null) { worldWindow.requestRedraw(); return }
         val lat = fix.latitude; val lon = fix.longitude
@@ -607,9 +613,10 @@ class NativeMapController internal constructor(
         val ringAttrs = ShapeAttributes().apply { isDrawInterior = false; isDrawOutline = true; outlineColor = Color(0.78f, 0.83f, 0.81f, 0.55f); outlineWidth = 1.5f; isDepthTest = true }
         val ringPath = Path(ring, ringAttrs).apply { altitudeMode = AltitudeMode.CLAMP_TO_GROUND }
         val heading = presentation.headingDegrees
+        positionArrowVisible = heading != null
         val puck = Placemark(Position(lat.degrees, lon.degrees, 0.0), PlacemarkAttributes().apply {
             if (heading != null) imageSource = nativePositionArrowImage()
-            imageScale = if (heading != null) 1.35 else 9.0
+            imageScale = if (heading != null) nativePositionArrowScale(bridgeMarkerCssScale) else 9.0
             imageColor = Color(0.18f, 0.76f, 1f, 1f); isDrawLeader = false; isDepthTest = true
         }, if (heading == null) "当前位置" else "当前位置，方向可信").apply {
             altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = false

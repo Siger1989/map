@@ -1,5 +1,5 @@
 export type Coordinate = [number, number];
-export type TravelMode = 'auto' | 'bicycle' | 'pedestrian';
+export type TravelMode = 'auto' | 'bicycle' | 'pedestrian' | 'motorcycle';
 export type RouteStyle = { color: string; width: number };
 export type RoutePlace = {
   name: string;
@@ -61,6 +61,7 @@ export type RouteOverlay = {
 export type Endpoint = 'start' | 'end' | number;
 export const TRAVEL_MODES: { id: TravelMode; label: string }[] = [
   { id: 'auto', label: '驾车' },
+  { id: 'motorcycle', label: '摩托车（离线）' },
   { id: 'bicycle', label: '骑行' },
   { id: 'pedestrian', label: '步行' },
 ];
