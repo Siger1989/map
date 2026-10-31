@@ -13,11 +13,32 @@ internal object NativeOverlayStyle {
         return (width * scale).toFloat()
     }
 
+    /** WorldWind imageScale multiplies source bitmap pixels; convert a CSS diameter once. */
+    fun imageScaleForCssSize(cssSize: Double, cssScale: Double, sourcePixels: Int): Double {
+        val pixels = sourcePixels.coerceAtLeast(1)
+        return widthInPixels(cssSize, cssScale).toDouble() / pixels
+    }
+
+    fun emphasizedPointCssSize(cssSize: Double, selected: Boolean, active: Boolean): Double {
+        val size = cssSize.takeIf { it.isFinite() }?.coerceIn(0.1, 40.0) ?: 8.0
+        return when {
+            active -> maxOf(size, 16.0)
+            selected -> maxOf(size, 10.0)
+            else -> size
+        }
+    }
+
     fun color(cssColor: String, opacity: Double): earth.worldwind.render.Color {
         val rgba = parseCssColor(cssColor)
         val safeOpacity = opacity.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 1.0
         val alpha = (rgba[3] * safeOpacity).toFloat()
         return earth.worldwind.render.Color(rgba[0].toFloat(), rgba[1].toFloat(), rgba[2].toFloat(), alpha)
+    }
+
+    fun androidColor(cssColor: String): Int {
+        val parsed = parseCssColor(cssColor)
+        fun channel(index: Int) = (parsed[index].coerceIn(0f, 1f) * 255f + 0.5f).toInt()
+        return AndroidColor.argb(channel(3), channel(0), channel(1), channel(2))
     }
 
     /** A 16-bit repeating stipple approximating MapLibre's dash lengths while retaining their ratio. */

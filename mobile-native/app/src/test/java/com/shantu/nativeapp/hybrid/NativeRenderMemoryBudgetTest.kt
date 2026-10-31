@@ -5,6 +5,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeRenderMemoryBudgetTest {
+    @Test fun renderBudgetUsesDeviceMemoryWithoutPreallocatingOrChangingLowRamFallback() {
+        assertEquals(256L * MIB, NativeRenderMemoryBudget.textureCapacityBytes(512L * MIB, 4096L * MIB))
+        assertEquals(512L * MIB, NativeRenderMemoryBudget.textureCapacityBytes(512L * MIB, 16384L * MIB))
+        assertEquals(192L * MIB, NativeRenderMemoryBudget.textureCapacityBytes(512L * MIB, 16384L * MIB, true))
+        assertEquals(512L * MIB, NativeRenderMemoryBudget.textureCapacityBytes(Long.MAX_VALUE, Long.MAX_VALUE))
+    }
     @Test
     fun `contour geometry holds the measured working set within a bounded heap share`() {
         assertEquals(128L * MIB, NativeRenderMemoryBudget.contourCapacityBytes(512L * MIB))

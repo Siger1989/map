@@ -16,9 +16,14 @@ internal object NativeRenderMemoryBudget {
      * frame, causing an unending decode/upload loop and larger transient bitmap peaks.
      * Each surface remains bounded; smaller secondary/share viewports use only what they need.
      */
-    fun textureCapacityBytes(maxHeapBytes: Long): Long {
+    fun textureCapacityBytes(maxHeapBytes: Long, physicalMemoryBytes: Long = 0L, lowRamDevice: Boolean = false): Long {
         val heap = maxHeapBytes.coerceAtLeast(0L)
-        return (heap / 2L).coerceIn(MIN_TEXTURE_BYTES, MAX_TEXTURE_BYTES)
+        val fallback = (heap / 2L).coerceIn(MIN_TEXTURE_BYTES, MAX_TEXTURE_BYTES)
+        // GPU textures/buffers are not the Java heap. A fixed 192 MiB ceiling can
+        // evict the visible imagery cut on high resolution phones even while idle.
+        // Use a conservative physical-memory share, without preallocating it.
+        if (physicalMemoryBytes <= 0L || lowRamDevice) return fallback
+        return maxOf(fallback, physicalMemoryBytes / 16L).coerceAtMost(512L * MIB)
     }
 
     /**

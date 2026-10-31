@@ -33,6 +33,8 @@ class NativeBridgeOverlayRenderer(
     private val fingerprints = linkedMapOf<String, String>()
     private val minZooms = linkedMapOf<String, Double>()
     private val routePointImages = mutableMapOf<String, ImageSource>()
+    private val trackNodeImages = linkedMapOf<String, ImageSource>()
+    private val trackNodeImageSize = 64
     private val arrow = ImageSource.fromBitmap(Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { bitmap ->
         Canvas(bitmap).drawPath(android.graphics.Path().apply { moveTo(32f, 5f); lineTo(56f, 52f); lineTo(32f, 40f); lineTo(8f, 52f); close() },
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE })
@@ -85,8 +87,21 @@ class NativeBridgeOverlayRenderer(
         val result = mutableListOf<Renderable>()
         fun point(value: JSONArray, text: String? = label) {
             val position = position(value) ?: return
+            val isTrackNode = role == "trackNode"
+            val selected = isTrackNode && properties.optBoolean("selected")
+            val active = isTrackNode && properties.optBoolean("active")
+            val nodeCssSize = NativeOverlayStyle.emphasizedPointCssSize(
+                properties.optDouble("pointSize", 8.0), selected, active,
+            )
             val placemark = Placemark(position, PlacemarkAttributes().apply {
-                imageScale = if (role == "routePoint") 1.0 else if (properties.optBoolean("arrow")) properties.optDouble("pointSize", 16.0) / 64.0 else properties.optDouble("pointSize", 8.0)
+                imageScale = when {
+                    role == "routePoint" -> 1.0
+                    isTrackNode -> NativeOverlayStyle.imageScaleForCssSize(nodeCssSize, cssScale, trackNodeImageSize)
+                    properties.optBoolean("arrow") -> NativeOverlayStyle.imageScaleForCssSize(
+                        properties.optDouble("pointSize", 16.0), cssScale, 64,
+                    )
+                    else -> properties.optDouble("pointSize", 8.0)
+                }
                 if (role == "routePoint") {
                     imageSource = routePointImage(properties.optString("color", "#e34f4f"))
                     imageColor = Color(1f, 1f, 1f, 1f)
@@ -95,11 +110,19 @@ class NativeBridgeOverlayRenderer(
                     labelAttributes.outlineColor = NativeOverlayStyle.color(properties.optString("labelHaloColor", "#14392e"), 1.0)
                     labelAttributes.outlineWidth = NativeOverlayStyle.widthInPixels(2.0, cssScale)
                     labelAttributes.textOffset = Offset.topCenter()
+                } else if (isTrackNode) {
+                    imageSource = trackNodeImage(properties.optString("color", "#d0f76b"), selected, active)
+                    imageColor = Color(1f, 1f, 1f, 1f)
                 } else {
                     if (properties.optBoolean("arrow")) imageSource = arrow
                     imageColor = color
                 }
-                isDrawLeader = false; isDepthTest = true
+                if (isTrackNode) imageOffset = Offset.center()
+                isDrawLeader = false
+                // Editing handles are controls attached to terrain. Do not let the terrain
+                // depth buffer erase them when the clamped placemark and DEM surface differ
+                // by a fraction of a rendered depth step.
+                isDepthTest = !isTrackNode
             }, text ?: "").apply {
                 altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = false
                 pickDelegate = delegate
@@ -155,7 +178,34 @@ class NativeBridgeOverlayRenderer(
         })
     }
 
-    fun clear() { layer.clearRenderables(); groups.clear(); fingerprints.clear(); minZooms.clear(); routePointImages.clear(); window.requestRedraw() }
+    private fun trackNodeImage(color: String, selected: Boolean, active: Boolean): ImageSource {
+        val key = "$color|selected=$selected|active=$active"
+        trackNodeImages[key]?.let { return it }
+        val source = ImageSource.fromBitmap(Bitmap.createBitmap(trackNodeImageSize, trackNodeImageSize, Bitmap.Config.ARGB_8888).also { bitmap ->
+            val canvas = Canvas(bitmap)
+            val center = trackNodeImageSize / 2f
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+            if (selected || active) {
+                paint.color = NativeOverlayStyle.androidColor(if (active) "#fff3a0" else "#ffffff")
+                canvas.drawCircle(center, center, 29f, paint)
+            }
+            paint.color = NativeOverlayStyle.androidColor("#14392e")
+            canvas.drawCircle(center, center, 23f, paint)
+            paint.color = NativeOverlayStyle.androidColor(color)
+            canvas.drawCircle(center, center, 18f, paint)
+            if (active) {
+                paint.color = NativeOverlayStyle.androidColor("#fff3a0")
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 3f
+                canvas.drawCircle(center, center, 12f, paint)
+            }
+        })
+        trackNodeImages[key] = source
+        while (trackNodeImages.size > 128) trackNodeImages.remove(trackNodeImages.keys.first())
+        return source
+    }
+
+    fun clear() { layer.clearRenderables(); groups.clear(); fingerprints.clear(); minZooms.clear(); routePointImages.clear(); trackNodeImages.clear(); window.requestRedraw() }
     override fun close() { clear() }
     private fun position(value: JSONArray): Position? {
         val lon = value.optDouble(0, Double.NaN); val lat = value.optDouble(1, Double.NaN)

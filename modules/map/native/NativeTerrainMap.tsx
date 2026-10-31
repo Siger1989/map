@@ -546,7 +546,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
   const updateProjection = (rawFrame: NativeProjectionFrame) => {
     if (runtime.cameraSync.isStaleProgrammatic(cameraOriginToken(rawFrame.camera))) return;
     runtime.frame = rawFrame;
-    runtime.drawingGroundHit = invalidateNativeDrawingGroundHit(runtime.drawingGroundHit, parseCamera(rawFrame.camera));
+    runtime.drawingGroundHit = invalidateNativeDrawingGroundHit(runtime.drawingGroundHit, parseCamera(rawFrame.camera), rawFrame);
     const snapRevision = (rawFrame as NativeProjectionFrame & { snapRevision?: unknown }).snapRevision;
     if (typeof snapRevision === 'number' && Number.isSafeInteger(snapRevision)) {
       runtime.frameSnapRevision = snapRevision;
@@ -752,9 +752,11 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
             ? { x: value.groundPoint.x as number, y: value.groundPoint.y as number } : value.groundPoint === null ? null : undefined;
           const coordinateValue = readPoint(value.coordinate);
           const pointerCount = Number.isInteger(value.pointerCount) ? value.pointerCount as number : undefined;
+          const hasGroundFrameSequence = Object.prototype.hasOwnProperty.call(value, 'groundFrameSequence');
           runtime.drawingGroundHit = updateNativeDrawingGroundHit(runtime.drawingGroundHit, {
             type: typeof value.type === 'string' ? value.type : '', point, groundPoint, coordinate: coordinateValue, pointerCount,
-          }, latest.drawingActive && !latest.readOnly, parseCamera(runtime.frame?.camera));
+            ...(hasGroundFrameSequence ? { groundFrameSequence: typeof value.groundFrameSequence === 'number' ? value.groundFrameSequence : null } : {}),
+          }, latest.drawingActive && !latest.readOnly, parseCamera(runtime.frame?.camera), runtime.frame);
         }
         const input = normalizeDrawingInput(value);
         if (input && !latest.readOnly) safeCallback(() => latest.onDrawingInput(input));
@@ -1568,7 +1570,8 @@ function makeHandle(
       fire('applyCamera', nativePreviewNavigationCamera(runtime.camera ?? INITIAL_VIEW, coordinates, path, forward, height, zoom, usableRect));
       return true;
     },
-    toCoordinate: (point) => nativeDrawingCoordinateAt(runtime.drawingGroundHit, point, runtime.props.drawingActive && !runtime.props.readOnly, parseCamera(runtime.frame?.camera)) ?? geometryCoordinate(point),
+    toCoordinate: (point) => nativeDrawingCoordinateAt(runtime.drawingGroundHit, point, runtime.props.drawingActive && !runtime.props.readOnly,
+      parseCamera(runtime.frame?.camera), 1.5, runtime.frame) ?? geometryCoordinate(point),
     stop: () => { fire('stop', {}); },
     toScreen: (coordinateValue) => projection(coordinateValue),
     getSnapViewport: (): SnapViewport | null => {

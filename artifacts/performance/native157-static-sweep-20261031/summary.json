@@ -1,0 +1,213 @@
+{
+  "device": "MuMu dedicated instance 3",
+  "phoneReproduced": false,
+  "phone157Verified": false,
+  "contours": "Existing user setting retained; not forced off",
+  "scope": "10 static poses, 8 seconds each; late-half counters; not full visual or phone acceptance",
+  "runs": [
+    {
+      "version": {
+        "package": "com.guanyun.weather.shantu.preview",
+        "versionName": "0.2.156-test",
+        "versionCode": 163
+      },
+      "testState": "RASTER_DIAGNOSTICS_COMPLETE",
+      "cameraRestoreState": "ORIGINAL_CAMERA_RESTORED",
+      "annotationCountUnchanged": true,
+      "stages": [
+        {
+          "pose": "sweep-z9-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 15,
+          "lastRenderCacheUsedBytes": 31485952,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z11-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 49434624,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z13-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 8,
+          "lastRenderCacheUsedBytes": 85680128,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z15-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 2,
+          "lastRenderCacheUsedBytes": 98250752,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z17-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 107835392,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z9-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 181354496,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z11-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 166842368,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z13-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 8,
+          "lastRenderCacheUsedBytes": 189321216,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z15-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 4,
+          "lastRenderCacheUsedBytes": 161341440,
+          "renderCacheCapacityBytes": 201326592
+        },
+        {
+          "pose": "sweep-z17-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 4,
+          "lastRenderCacheUsedBytes": 170962944,
+          "renderCacheCapacityBytes": 201326592
+        }
+      ]
+    },
+    {
+      "version": {
+        "package": "com.guanyun.weather.shantu.preview",
+        "versionName": "0.2.157-test",
+        "versionCode": 164
+      },
+      "testState": "RASTER_DIAGNOSTICS_COMPLETE",
+      "cameraRestoreState": "ORIGINAL_CAMERA_RESTORED",
+      "annotationCountUnchanged": true,
+      "stages": [
+        {
+          "pose": "sweep-z9-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 4,
+          "lastRenderCacheUsedBytes": 30724096,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z11-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 49434624,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z13-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 14,
+          "lastRenderCacheUsedBytes": 85680128,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z15-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 105914368,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z17-p0",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 115499008,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z9-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 208842752,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z11-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 234680320,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z13-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 12,
+          "lastRenderCacheUsedBytes": 232448000,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z15-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 4,
+          "lastRenderCacheUsedBytes": 166060032,
+          "renderCacheCapacityBytes": 258203648
+        },
+        {
+          "pose": "sweep-z17-p55",
+          "durationSeconds": 8,
+          "validLateSamples": 5,
+          "lateRasterDecodeDelta": 0,
+          "lateActualFrameDelta": 0,
+          "lastRenderCacheUsedBytes": 185303040,
+          "renderCacheCapacityBytes": 258203648
+        }
+      ]
+    }
+  ]
+}

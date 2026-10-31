@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.map
 
 import android.content.Context
+import android.app.ActivityManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
@@ -85,8 +86,11 @@ class NativeMapController internal constructor(
     private val encodedKey = URLEncoder.encode(key, "UTF-8")
     private val bridgeRasterLoads = NativeRasterLoadTracker()
     @Volatile private var bridgePrintRasterFrameCoverage: NativePrintRasterFrameCoverage? = null
+    private val memoryManager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+    private val physicalMemory = ActivityManager.MemoryInfo().also { memoryManager?.getMemoryInfo(it) }.totalMem
     private val worldWindow = WorldWindow(context, renderResourceCache = RenderResourceCache(
-        context, capacity = NativeRenderMemoryBudget.textureCapacityBytes(Runtime.getRuntime().maxMemory()),
+        context, capacity = NativeRenderMemoryBudget.textureCapacityBytes(
+            Runtime.getRuntime().maxMemory(), physicalMemory, memoryManager?.isLowRamDevice == true),
     ))
     val view: View get() = worldWindow
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -1190,7 +1194,36 @@ class NativeMapController internal constructor(
     internal fun setTileDemandDrawingFocus(xPx: Double?, yPx: Double?) {
         check(Looper.myLooper() == Looper.getMainLooper())
         val next = if (xPx != null && yPx != null && xPx.isFinite() && yPx.isFinite()) TileScreenPoint(xPx, yPx) else null
+        if (next != null && drawingFocus != null) {
+            val remaining = 50L - (android.os.SystemClock.uptimeMillis() - lastDrawingFocusAt)
+            if (remaining > 0L) {
+                pendingDrawingFocus = next
+                if (!drawingFocusUpdatePosted) {
+                    drawingFocusUpdatePosted = true
+                    mainHandler.postDelayed(drawingFocusUpdate, remaining)
+                }
+                return
+            }
+        }
+        mainHandler.removeCallbacks(drawingFocusUpdate)
+        drawingFocusUpdatePosted = false
+        pendingDrawingFocus = null
+        commitDrawingFocus(next)
+    }
+
+    private var lastDrawingFocusAt = 0L
+    private var pendingDrawingFocus: TileScreenPoint? = null
+    private var drawingFocusUpdatePosted = false
+    private val drawingFocusUpdate = Runnable {
+        drawingFocusUpdatePosted = false
+        val next = pendingDrawingFocus
+        pendingDrawingFocus = null
+        if (!disposed && next != null) commitDrawingFocus(next)
+    }
+
+    private fun commitDrawingFocus(next: TileScreenPoint?) {
         if (drawingFocus == next) return
+        lastDrawingFocusAt = android.os.SystemClock.uptimeMillis()
         drawingFocus = next
         terrainOverlayRenderer?.setViewportStyle(terrainOverlayUiZoom, terrainOverlayCssScale, tileDemandFocusPx())
         refreshTileDemand(forceGeneration = true)

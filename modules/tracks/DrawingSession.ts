@@ -1,4 +1,4 @@
-import type { Coordinate } from '../navigation/types';
+import { metresBetween, type Coordinate } from '../navigation/types.ts';
 import { MAX_TRACK_POINTS, pullTip, trackDistance, type ScreenPoint } from './drawing.ts';
 import { aimPoint, handlePoint, nearHandle } from './precision.ts';
 import { isValidSnapViewport, ProjectedSnapGrid, sameNode, SnapCandidateIndex, type SnapViewport } from './snapping.ts';
@@ -64,6 +64,7 @@ export class DrawingSession {
     points: Coordinate[];
     path: string;
     travelled: number;
+    distanceMetres: number;
     snap: Coordinate | null;
     road: RoadMatch | null;
     snapCandidateSource: Coordinate[];
@@ -171,6 +172,7 @@ export class DrawingSession {
           points: [o.anchor],
           path: `M ${tip.x} ${tip.y}`,
           travelled: 0,
+          distanceMetres: 0,
           snap: null,
           road: null,
           snapCandidateSource: o.candidates,
@@ -203,7 +205,7 @@ export class DrawingSession {
           preview: {
             kind: 'ink',
             tip: s.sample,
-            distanceMetres: trackDistance([s.points]),
+            distanceMetres: s.distanceMetres,
             finger,
             path: s.path,
             snapped: false,
@@ -215,7 +217,7 @@ export class DrawingSession {
         ? o.snapRoad?.(
             tip,
             s.road,
-            o.strictNetwork ? s.points.at(-1) : undefined,
+            o.strictNetwork ? s.points.at(-1) : s.road?.coordinate,
           )
         : undefined;
       let roadMatch = road?.match ?? null;
@@ -231,18 +233,16 @@ export class DrawingSession {
             kind: 'ink',
             finger,
             tip: s.sample,
-            distanceMetres: trackDistance([s.points]),
+            distanceMetres: s.distanceMetres,
             path: s.path,
             snapped: false,
             blocked: true,
           },
         };
-      if (
-        s.road &&
-        roadMatch &&
-        s.road.line.id === roadMatch.line.id &&
-        !section
-      )
+      // A road candidate without a route section is not a successful snap from
+      // the current road point. Keep normal freehand ink available, but do not
+      // draw a straight segment and report it as road-following.
+      if (s.road && roadMatch && !section)
         roadMatch = null;
       const output = roadMatch?.screen ?? tip;
       if (Math.hypot(output.x - s.sample.x, output.y - s.sample.y) >= 2) {
@@ -253,6 +253,7 @@ export class DrawingSession {
           for (const next of points) {
             const screen = o.project(next);
             if (!screen) continue;
+            s.distanceMetres += metresBetween(s.points.at(-1)!, next);
             s.points.push(next);
             s.sample = screen;
             s.path += ` L ${screen.x.toFixed(1)} ${screen.y.toFixed(1)}`;
@@ -285,7 +286,11 @@ export class DrawingSession {
         preview: {
           kind: 'ink',
           finger,
-          distanceMetres: trackDistance([s.snap ? [...s.points, s.snap] : s.points]),
+          distanceMetres:
+            s.distanceMetres +
+            (s.snap && metresBetween(s.points.at(-1)!, s.snap) > 0.01
+              ? metresBetween(s.points.at(-1)!, s.snap)
+              : 0),
           tip: snap?.screen ?? output,
           path:
             s.path +

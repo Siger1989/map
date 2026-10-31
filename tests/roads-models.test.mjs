@@ -150,6 +150,39 @@ test('freehand commits road-snapped coordinates throughout the stroke and can le
       1.3,
   );
 });
+test('freehand road snapping asks for a section from the last road match', () => {
+  const session = new DrawingSession();
+  const first = nearestRoad({ x: 108, y: 162 }, [line], project);
+  const second = nearestRoad({ x: 108, y: 224 }, [line], project);
+  const receivedFrom = [];
+  const options = {
+    mode: 'freehand',
+    anchor: [1.08, 1],
+    length: 48,
+    width: 800,
+    height: 800,
+    candidates: [],
+    snapping: false,
+    roadSnapping: true,
+    project,
+    unproject: ({ x, y }) => [x / 100, y / 100],
+    snapRoad: (point, previous, from) => {
+      receivedFrom.push(from);
+      return {
+        status: 'ready',
+        match: receivedFrom.length === 1 ? first : second,
+        ...(previous && receivedFrom.length > 1 ? { section: [second.coordinate] } : {}),
+      };
+    },
+  };
+  session.input({ type: 'start', point: { x: 108, y: 148 } }, options);
+  session.input({ type: 'move', point: { x: 108, y: 210 } }, options);
+  const moved = session.input({ type: 'move', point: { x: 108, y: 272 } }, options);
+  assert.deepEqual(receivedFrom[0], undefined);
+  assert.deepEqual(receivedFrom[1], first.coordinate);
+  assert.equal(moved.preview.snapped, true);
+  assert.ok(moved.preview.path.includes(`L ${second.screen.x.toFixed(1)} ${second.screen.y.toFixed(1)}`));
+});
 test('road snapping off makes no road queries; missing roads stay freehand', () => {
   const session = new DrawingSession();
   const options = {

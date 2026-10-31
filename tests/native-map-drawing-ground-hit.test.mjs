@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { DrawingSession } from '../modules/tracks/DrawingSession.ts';
 import { aimPoint } from '../modules/tracks/precision.ts';
-import { invalidateNativeDrawingGroundHit, nativeDrawingCoordinateAt, updateNativeDrawingGroundHit } from '../modules/map/native/drawingGroundHit.ts';
+import { drawingProjectionKey, invalidateNativeDrawingGroundHit, nativeDrawingCoordinateAt, updateNativeDrawingGroundHit } from '../modules/map/native/drawingGroundHit.ts';
 
 const camera = { center: [103, 31], zoom: 12, pitch: 55, bearing: 25 };
 const start = { type: 'start', point: { x: 100, y: 200 }, coordinate: [103.001, 31.002], pointerCount: 1 };
@@ -20,6 +20,53 @@ test('stale, cancelled, multi-touch, and camera-changed drawing hits are discard
   assert.equal(updateNativeDrawingGroundHit(hit, { type: 'move', point: start.point, coordinate: start.coordinate, pointerCount: 2 }, true, camera), null);
   assert.equal(updateNativeDrawingGroundHit(hit, { type: 'cancel' }, true, camera), null);
   assert.equal(invalidateNativeDrawingGroundHit(hit, { ...camera, zoom: 13 }), null);
+});
+
+test('native drawing ground hit expires when its projection, viewport, terrain or DEM stamp changes', () => {
+  const frame = {
+    sequence: 20,
+    viewProjection: Array(16).fill(0), inverseViewProjection: Array(16).fill(0),
+    viewport: { x: 12, y: 24, width: 780, height: 1600 }, cssScale: 2,
+    terrainEnabled: true, verticalExaggeration: 1.5, demRevision: 7,
+  };
+  const hit = updateNativeDrawingGroundHit(null, start, true, camera, frame);
+  assert.ok(hit);
+  assert.equal(drawingProjectionKey(frame), hit.projectionKey);
+  assert.deepEqual(nativeDrawingCoordinateAt(hit, start.point, true, camera, 1.5, frame), start.coordinate);
+
+  const changes = [
+    { ...frame, sequence: frame.sequence + 1 },
+    { ...frame, verticalExaggeration: 2 },
+    { ...frame, terrainEnabled: false },
+    { ...frame, demRevision: 8 },
+    { ...frame, cssScale: 3 },
+    { ...frame, viewport: { ...frame.viewport, y: 30 } },
+    { ...frame, viewProjection: [...frame.viewProjection.slice(0, 15), 1] },
+  ];
+  for (const changed of changes) {
+    assert.notEqual(drawingProjectionKey(changed), hit.projectionKey);
+    assert.equal(invalidateNativeDrawingGroundHit(hit, camera, changed), null);
+    assert.equal(nativeDrawingCoordinateAt(hit, start.point, true, camera, 1.5, changed), null);
+  }
+});
+
+test('ground hit sequence accepts matching frames, rejects interleaved frames, and keeps unstamped legacy hosts compatible', () => {
+  const frame = {
+    sequence: 41,
+    viewProjection: Array(16).fill(0), inverseViewProjection: Array(16).fill(0),
+    viewport: { x: 0, y: 0, width: 780, height: 1600 }, cssScale: 2,
+    terrainEnabled: true, verticalExaggeration: 1, demRevision: 3,
+  };
+  const matching = updateNativeDrawingGroundHit(null, { ...start, groundFrameSequence: 41 }, true, camera, frame);
+  assert.ok(matching);
+  assert.deepEqual(nativeDrawingCoordinateAt(matching, start.point, true, camera, 1.5, frame), start.coordinate);
+
+  const newerFrame = { ...frame, sequence: 42 };
+  assert.equal(invalidateNativeDrawingGroundHit(matching, camera, newerFrame), null);
+  assert.equal(updateNativeDrawingGroundHit(matching, { ...start, type: 'move', groundFrameSequence: 41 }, true, camera, newerFrame), null);
+  assert.equal(updateNativeDrawingGroundHit(matching, { ...start, type: 'move', groundFrameSequence: null }, true, camera, newerFrame), null);
+  assert.equal(updateNativeDrawingGroundHit(matching, { ...start, type: 'move' }, true, camera, newerFrame)?.projectionKey,
+    drawingProjectionKey(newerFrame));
 });
 
 test('production point DrawingSession commits the real aim hit when DEM projection has no sample', () => {

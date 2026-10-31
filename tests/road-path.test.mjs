@@ -265,3 +265,34 @@ test('connected roads follow curves; disconnected roads cross explicitly and res
     [2.5, 2],
   );
 });
+test('freehand road snapping does not report a disconnected route as snapped', () => {
+  const a = line('freehand-a', [[1, 1], [1, 2]]),
+    b = line('freehand-b', [[2, 1], [2, 2]]),
+    first = match(a, 0, 0.62),
+    second = match(b, 0, 0.62);
+  const session = new DrawingSession();
+  const options = {
+    mode: 'freehand',
+    anchor: [1, 1],
+    length: 48,
+    width: 800,
+    height: 800,
+    candidates: [],
+    snapping: false,
+    roadSnapping: true,
+    project,
+    unproject: (p) => [p.x / 100, p.y / 100],
+    snapRoad: (_point, previous, from) => ({
+      status: 'ready',
+      match: previous ? second : first,
+      ...(previous ? { section: null } : {}),
+    }),
+  };
+  session.input({ type: 'start', point: { x: 100, y: 148 } }, options);
+  session.input({ type: 'move', point: { x: 100, y: 210 } }, options);
+  const moved = session.input({ type: 'move', point: { x: 100, y: 272 } }, options);
+  assert.equal(moved.preview.snapped, false);
+  const stroke = session.input({ type: 'end', reason: 'release' }, options).stroke;
+  assert.deepEqual(stroke.at(-1), [1, 2.24]);
+  assert.notDeepEqual(stroke.at(-1), second.coordinate);
+});

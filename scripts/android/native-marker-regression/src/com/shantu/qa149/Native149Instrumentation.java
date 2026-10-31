@@ -376,7 +376,7 @@ public final class Native149Instrumentation extends Instrumentation {
             JSONObject originalCenter = originalCamera.optJSONObject("center");
             JSONArray originalCenterArray = originalCamera.optJSONArray("center");
             if (originalCenter == null && originalCenterArray == null) throw new IllegalStateException("original camera center unavailable");
-            RasterStage[] plan = arguments != null && "true".equals(arguments.getString("rasterExtended")) ? new RasterStage[] {
+            RasterStage[] plan = arguments != null && "true".equals(arguments.getString("rasterSweep")) ? rasterSweepPlan(originalBearing) : arguments != null && "true".equals(arguments.getString("rasterExtended")) ? new RasterStage[] {
                 new RasterStage("zoom6-pitch55-original-bearing", 6.0, 55.0, originalBearing, 15),
                 new RasterStage("zoom6-pitch55-bearing-plus90", 6.0, 55.0, originalBearing + 90.0, 8),
                 new RasterStage("zoom6-pitch55-original-bearing-return", 6.0, 55.0, originalBearing, 8),
@@ -464,6 +464,13 @@ public final class Native149Instrumentation extends Instrumentation {
         try (FileOutputStream stream = new FileOutputStream(jsonPath)) { stream.write(report.toString(2).getBytes("UTF-8")); }
         report.put("reportPath", jsonPath);
         return report;
+    }
+
+    private RasterStage[] rasterSweepPlan(double bearing) {
+        List<RasterStage> stages = new ArrayList<>();
+        for (double pitch : new double[]{0, 55}) for (int zoom : new int[]{9,11,13,15,17})
+            stages.add(new RasterStage("sweep-z"+zoom+"-p"+(int)pitch, zoom, pitch, bearing, 8));
+        return stages.toArray(new RasterStage[0]);
     }
 
     private static final class RasterStage {

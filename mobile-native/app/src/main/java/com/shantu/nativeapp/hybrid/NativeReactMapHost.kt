@@ -103,7 +103,6 @@ class NativeReactMapHost(
     @Volatile private var activeBrowserCacheMapId: String? = null
     @Volatile private var hostResumed = false
     private var closed = false
-    private var matrixSequence = 0L
 
     private data class CachedInteractionState(
         val drawingActive: Boolean = false,
@@ -135,6 +134,7 @@ class NativeReactMapHost(
         val capturedAt: Long,
     )
     private data class RenderedFrame(val metadata: FrameMetadata, val matrix: DoubleArray, val width: Int, val height: Int)
+    private data class PublishedRenderFrame(val sequence: Long, val metadata: FrameMetadata)
 
     private data class MapEntry(
         val id: String,
@@ -174,6 +174,9 @@ class NativeReactMapHost(
         var settledFrameTask: Runnable? = null,
         var touchDown: Pair<Float, Float>? = null,
         var gestureSequence: Long = 0L,
+        var drawingMoveCoalescer: NativeDrawingInputCoalescer<NativeDrawingMove>? = null,
+        var renderFrameSequence: Long = 0L,
+        var lastPublishedRenderFrame: PublishedRenderFrame? = null,
         val tapCompletionGate: NativeTapCompletionGate = NativeTapCompletionGate(),
         var capturedGestureId: Long? = null,
         var adapterCapturedGesture: Boolean = false,
@@ -521,6 +524,9 @@ class NativeReactMapHost(
     private fun removeMapEntry(mapId: String, entry: MapEntry) {
         if (maps[mapId] !== entry) return
         entry.disposed = true
+        entry.drawingMoveCoalescer?.discard()
+        entry.drawingMoveCoalescer = null
+        entry.lastPublishedRenderFrame = null
         shareJobs.entries.filter { it.value.first == mapId }.toList().forEach { (id, item) -> shareJobs.remove(id); item.second.cancel() }
         maps.remove(mapId)
         entry.eventEncoder?.close()
@@ -549,6 +555,7 @@ class NativeReactMapHost(
 
     private fun setViewport(mapId: String, payload: JSONObject, requestId: String) {
         val entry = requireEntry(mapId)
+        entry.drawingMoveCoalescer?.discard()
         val viewport = payload.optJSONObject("mapViewport") ?: payload.optJSONObject("viewport") ?: payload
         val rect = viewport.optJSONObject("cssRect") ?: viewport.optJSONObject("rect") ?: viewport
         val clientWidth = viewport.optDouble("clientViewportWidth", Double.NaN)
@@ -612,6 +619,7 @@ class NativeReactMapHost(
         val nextRenderExaggeration = effectiveSettings.optDouble("exaggeration", 1.0).takeIf { it.isFinite() } ?: 1.0
         val nextRenderInteraction = CachedInteractionState.from(input.optJSONObject("interaction"))
         if (entry.renderInteraction.drawingActive && !nextRenderInteraction.drawingActive) {
+            entry.drawingMoveCoalescer?.discard()
             entry.controller.setTileDemandDrawingFocus(null, null)
         }
         val selectedMarker = input.optString("annotationSelected").takeIf { it.isNotBlank() && it != "null" }
@@ -1596,8 +1604,9 @@ class NativeReactMapHost(
             val x = metadata.cssX * metadata.cssScale
             val y = metadata.cssY * metadata.cssScale
             entry.overlayRenderer?.setZoom(camera.optDouble("zoom", 0.0))
+            val sequence = ++entry.renderFrameSequence
             val value = JSONObject()
-                .put("sequence", ++matrixSequence)
+                .put("sequence", sequence)
                 .put("camera", camera)
                 .put("viewProjection", doubleArrayJson(matrices.first))
                 .put("inverseViewProjection", doubleArrayJson(matrices.second))
@@ -1609,6 +1618,7 @@ class NativeReactMapHost(
                 .put("demRevision", metadata.demRevision)
                 .put("snapRevision", metadata.snapRevision)
                 .put("capturedAt", metadata.capturedAt)
+            entry.lastPublishedRenderFrame = PublishedRenderFrame(sequence, metadata)
             emitEvent(entry.id, "renderFrame", value)
             if (allowGroundWork) {
                 syncAutoContourInterval(entry, camera)
@@ -1883,6 +1893,9 @@ class NativeReactMapHost(
     }
 
     private fun installTouchBridge(entry: MapEntry) {
+        entry.drawingMoveCoalescer = NativeDrawingInputCoalescer(
+            NativeChoreographerFrameScheduler(),
+        ) { move -> processDrawingMove(entry, move) }
         entry.controller.view.setOnTouchListener { _, event ->
             if (!isCurrent(entry)) return@setOnTouchListener false
             markFrameDirty(entry)
@@ -1913,6 +1926,12 @@ class NativeReactMapHost(
                     .put("touchSlop", ViewConfiguration.get(appContext).scaledTouchSlop / scale))
             }
             val interaction = entry.renderInteraction
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN,
+                MotionEvent.ACTION_POINTER_DOWN,
+                MotionEvent.ACTION_CANCEL -> entry.drawingMoveCoalescer?.discard()
+                MotionEvent.ACTION_UP -> if (interaction.drawingActive) entry.drawingMoveCoalescer?.flush()
+            }
             // Picking flags select what a tap means; they must not disable ordinary pan/zoom.
             val captureByMode = interaction.drawingActive
             val capturePointer = entry.touchNavigation.capture(event,
@@ -1988,29 +2007,88 @@ class NativeReactMapHost(
                     else -> null
                 }
                 if (type != null) {
-                    val groundPoint: JSONObject?
-                    val coordinate: JSONArray?
-                    if (type == "start" || type == "move") {
-                        val scale = cssScale(entry)
-                        val cssWidth = entry.controller.view.width / scale
-                        val cssHeight = entry.controller.view.height / scale
-                        val aimX = x.coerceIn(8.0, (cssWidth - 8.0).coerceAtLeast(8.0))
-                        val aimY = (y - 44.0).coerceIn(8.0, (cssHeight - 8.0).coerceAtLeast(8.0))
-                        entry.controller.setTileDemandDrawingFocus(aimX * scale, aimY * scale)
-                        groundPoint = JSONObject().put("x", aimX).put("y", aimY)
-                        coordinate = entry.controller.unprojectCoordinate((aimX * scale).toFloat(), (aimY * scale).toFloat())
-                            ?.let { JSONArray().put(it.second).put(it.first) }
+                    if (type == "move") {
+                        val pointers = (0 until event.pointerCount).map { pointer ->
+                            NativeDrawingPointer(
+                                id = event.getPointerId(pointer),
+                                x = (event.getX(pointer) / scale).toDouble(),
+                                y = (event.getY(pointer) / scale).toDouble(),
+                            )
+                        }
+                        entry.drawingMoveCoalescer?.offer(
+                            NativeDrawingMove(
+                                cssX = x.toDouble(), cssY = y.toDouble(), cssScale = scale.toDouble(),
+                                pointerCount = event.pointerCount, pointers = pointers,
+                                eventTime = event.eventTime, gestureSequence = entry.gestureSequence,
+                            ),
+                        )
                     } else {
-                        entry.controller.setTileDemandDrawingFocus(null, null)
-                        groundPoint = null
-                        coordinate = null
+                        val groundPoint: JSONObject?
+                        val coordinate: JSONArray?
+                        if (type == "start") {
+                            val cssWidth = entry.controller.view.width / scale
+                            val cssHeight = entry.controller.view.height / scale
+                            val aimX = x.coerceIn(8.0, (cssWidth - 8.0).coerceAtLeast(8.0))
+                            val aimY = (y - 44.0).coerceIn(8.0, (cssHeight - 8.0).coerceAtLeast(8.0))
+                            entry.controller.setTileDemandDrawingFocus(aimX * scale, aimY * scale)
+                            groundPoint = JSONObject().put("x", aimX).put("y", aimY)
+                            coordinate = entry.controller.unprojectCoordinate((aimX * scale).toFloat(), (aimY * scale).toFloat())
+                                ?.let { JSONArray().put(it.second).put(it.first) }
+                        } else {
+                            entry.controller.setTileDemandDrawingFocus(null, null)
+                            groundPoint = null
+                            coordinate = null
+                        }
+                        val reason: Any = when (type) { "end" -> "release"; "cancel" -> "pointer-cancel"; else -> JSONObject.NULL }
+                        val input = JSONObject().put("type", type)
+                            .put("point", JSONObject().put("x", x).put("y", y))
+                            .put("groundPoint", groundPoint ?: JSONObject.NULL)
+                            .put("pointers", pointersPayload())
+                            .put("coordinate", coordinate ?: JSONObject.NULL)
+                            .put("pointerCount", event.pointerCount)
+                            .put("eventTime", event.eventTime)
+                            .put("reason", reason)
+                        if (type == "start") input.put("groundFrameSequence", currentGroundFrameSequence(entry) ?: JSONObject.NULL)
+                        emitEvent(entry.id, "drawingInput", input)
                     }
-                    val reason: Any = when (type) { "end" -> "release"; "cancel" -> "pointer-cancel"; else -> JSONObject.NULL }
-                    emitEvent(entry.id, "drawingInput", JSONObject().put("type", type).put("point", JSONObject().put("x", x).put("y", y)).put("groundPoint", groundPoint ?: JSONObject.NULL).put("pointers", pointersPayload()).put("coordinate", coordinate ?: JSONObject.NULL).put("pointerCount", event.pointerCount).put("eventTime", event.eventTime).put("reason", reason))
                 }
             }
             capturePointer
         }
+    }
+
+    private fun processDrawingMove(entry: MapEntry, move: NativeDrawingMove) {
+        if (!isCurrent(entry) || entry.gestureSequence != move.gestureSequence ||
+            !entry.renderInteraction.drawingActive || entry.touchNavigation.isNavigating || move.pointerCount != 1) return
+        val scale = move.cssScale
+        val cssWidth = entry.controller.view.width / scale
+        val cssHeight = entry.controller.view.height / scale
+        val aimX = move.cssX.coerceIn(8.0, (cssWidth - 8.0).coerceAtLeast(8.0))
+        val aimY = (move.cssY - 44.0).coerceIn(8.0, (cssHeight - 8.0).coerceAtLeast(8.0))
+        entry.controller.setTileDemandDrawingFocus(aimX * scale, aimY * scale)
+        val groundPoint = JSONObject().put("x", aimX).put("y", aimY)
+        val coordinate = entry.controller.unprojectCoordinate((aimX * scale).toFloat(), (aimY * scale).toFloat())
+            ?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL
+        val pointers = JSONArray().also { array ->
+            move.pointers.forEach { pointer ->
+                array.put(JSONObject().put("id", pointer.id).put("x", pointer.x).put("y", pointer.y))
+            }
+        }
+        emitEvent(entry.id, "drawingInput", JSONObject()
+            .put("type", "move")
+            .put("point", JSONObject().put("x", move.cssX).put("y", move.cssY))
+            .put("groundPoint", groundPoint)
+            .put("pointers", pointers)
+            .put("coordinate", coordinate)
+            .put("groundFrameSequence", currentGroundFrameSequence(entry) ?: JSONObject.NULL)
+            .put("pointerCount", move.pointerCount)
+            .put("eventTime", move.eventTime)
+            .put("reason", JSONObject.NULL))
+    }
+
+    private fun currentGroundFrameSequence(entry: MapEntry): Long? {
+        val frame = entry.lastPublishedRenderFrame ?: return null
+        return frame.sequence.takeIf { frameMetadataMatchesCurrent(entry, frame.metadata) }
     }
 
     private fun cameraJsonOrNull(entry: MapEntry): JSONObject? = runCatching { cameraJson(entry) }.getOrNull()

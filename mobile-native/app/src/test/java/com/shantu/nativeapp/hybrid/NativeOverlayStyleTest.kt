@@ -16,6 +16,26 @@ class NativeOverlayStyleTest {
         assertEquals(0.5f, NativeOverlayStyle.widthInPixels(0.5, 1.0), 0.001f)
     }
 
+    @Test fun pointImageScaleKeepsRequestedCssDiameterAcrossViewportScales() {
+        assertEquals(0.25, NativeOverlayStyle.imageScaleForCssSize(8.0, 2.0, 64), 0.0001)
+        assertEquals(0.375, NativeOverlayStyle.imageScaleForCssSize(8.0, 3.0, 64), 0.0001)
+        assertEquals(16.0, NativeOverlayStyle.imageScaleForCssSize(8.0, 2.0, 0), 0.0001)
+    }
+
+    @Test fun selectedAndActiveTrackNodesGetLegibleNativeSizesWithoutChangingSavedPointSize() {
+        assertEquals(8.0, NativeOverlayStyle.emphasizedPointCssSize(8.0, false, false), 0.0)
+        assertEquals(10.0, NativeOverlayStyle.emphasizedPointCssSize(8.0, true, false), 0.0)
+        assertEquals(16.0, NativeOverlayStyle.emphasizedPointCssSize(8.0, true, true), 0.0)
+        assertEquals(22.0, NativeOverlayStyle.emphasizedPointCssSize(22.0, false, true), 0.0)
+    }
+
+    @Test fun nodeIconSupportsCssColorSyntaxForItsBitmap() {
+        val color = NativeOverlayStyle.androidColor("rgba(255, 64, 0, 0.5)")
+        assertEquals(128, android.graphics.Color.alpha(color))
+        assertEquals(255, android.graphics.Color.red(color))
+        assertEquals(64, android.graphics.Color.green(color))
+    }
+
     @Test fun rgbaAlphaAndFeatureOpacityAreMultiplied() {
         val color = NativeOverlayStyle.color("rgba(255, 64, 0, 0.5)", 0.4)
         assertEquals(1f, color.red, 0.001f)
