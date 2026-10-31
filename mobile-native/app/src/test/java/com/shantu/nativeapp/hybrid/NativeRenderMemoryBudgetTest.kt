@@ -5,6 +5,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativeRenderMemoryBudgetTest {
+    @Test
+    fun `contour geometry holds the measured working set within a bounded heap share`() {
+        assertEquals(128L * MIB, NativeRenderMemoryBudget.contourCapacityBytes(512L * MIB))
+        assertEquals(64L * MIB, NativeRenderMemoryBudget.contourCapacityBytes(256L * MIB))
+        assertEquals(8L * MIB, NativeRenderMemoryBudget.contourCapacityBytes(Long.MIN_VALUE))
+        assertEquals(128L * MIB, NativeRenderMemoryBudget.contourCapacityBytes(Long.MAX_VALUE))
+    }
+
     @Test fun highDetailObliqueWorkingSetFitsWithoutUnboundedGrowth() {
         // Two real 390x857/high/pitch55 views used 113,876,992 and 170,078,208 bytes.
         // Fitting only the first view regressed into an endless decode cycle in the second.

@@ -10,6 +10,13 @@ the version of the target application.
 
 - `inspect`: read-only activity, map, camera, source ID, annotation-count, selection-ID, and
   visible-control inspection.
+- `raster-diagnostics`: read-only native camera/cache/network counter sampling over long-far
+  tilt and bearing stages. It takes only first/last screenshots per stage, records one-second
+  camera and allowlisted numeric diagnostic snapshots, includes target package/versionCode,
+  and restores the exact starting camera in `finally`. It does not add markers or edit
+  annotation storage. Diagnostic output excludes URL, host, path, source, key, and token
+  fields; if the guarded host inspection method is unavailable, the report records that
+  limitation without substituting synthetic frames or network requests.
 - `native-regression`: temporarily appends three UUID-based QA pins through the target app's
   real WebView storage events; waits for the actual native screenshot to show all three pin
   colors; sends touchscreen MotionEvents; checks actual GPU pick IDs and selected IDs;
@@ -55,6 +62,7 @@ folder name printed by the helper build (for example, `build-<generated-id>`):
 ```powershell
 adb -s <serial> install -r 'scripts\android\native-marker-regression\<generated-build-folder>\Native149Instrumentation.apk'
 adb -s <serial> shell am instrument -w -e mode inspect com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
+adb -s <serial> shell am instrument -w -e mode raster-diagnostics com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
 adb -s <serial> shell am instrument -w -e mode native-regression com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
 adb -s <serial> shell am instrument -w -e mode native-regression -e pickOnly true com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
 adb -s <serial> shell am instrument -w -e mode native-regression -e followUp true com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
@@ -62,3 +70,9 @@ adb -s <serial> shell am instrument -w -e mode native-regression -e followUp tru
 
 Instrumentation output is returned under `qa149_json`. Pull only the reported target-app
 evidence directory when needed; it is separate from this source tree.
+
+## Interactive native APK preview
+
+Use `-e mode interactive-preview` after forwarding `adb -s DEVICE forward tcp:23458 tcp:23458`. The helper keeps the actual APK open and accepts bounded real touch events on Android loopback only. Start `python preview-server.py --adb ADB_PATH --serial DEVICE --port 9174` with Python/imageio-ffmpeg available, then open the localhost preview. Current video/touch dimensions assume MuMu 1256x2760; adapt both before using another size. Only `stop` finishes the instrumentation. This is a development preview, not a product service or phone FPS result.
+
+`-e rasterExtended true` extends `raster-diagnostics` to zoom6/10 with 35/55/75-degree poses.

@@ -201,6 +201,8 @@ class NativeMapController internal constructor(
     private var terrainBasemapRenderer: NativeTerrainBasemap? = null
     private var terrainBasemapEnabled = false
     private var terrainOverlayRenderer: NativeTerrainOverlays? = null
+    private var terrainOverlayUiZoom = Double.NaN
+    private var terrainOverlayCssScale = 1f
     private var terrainOverlayOptions = NativeTerrainOverlayOptions(false, false)
     private var appliedTerrainOverlayOptions: NativeTerrainOverlayOptions? = null
     private var terrainOverlayGeneration = 0
@@ -758,7 +760,9 @@ class NativeMapController internal constructor(
         terrainOverlayRenderer?.close()
         terrainOverlayRenderer = null
         if (options.contoursEnabled || options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
-            val renderer = NativeTerrainOverlays(ensureTerrainCoverage())
+            val renderer = NativeTerrainOverlays(ensureTerrainCoverage()).apply {
+                setViewportStyle(terrainOverlayUiZoom, terrainOverlayCssScale, tileDemandFocusPx())
+            }
             renderer.renderables(options).forEach(terrainOverlayLayer::addRenderable)
             terrainOverlayRenderer = renderer
         } else if (!terrainEnabled && !terrainBasemapEnabled) {
@@ -771,6 +775,15 @@ class NativeMapController internal constructor(
         require(delta.isFinite())
         mutateCamera { look ->
             look.range = (look.range / 2.0.pow(delta)).coerceIn(80.0, 40_000_000.0)
+        }
+    }
+
+    internal fun setTerrainOverlayViewportStyle(uiZoom: Double, cssScale: Float) {
+        if (!uiZoom.isFinite() || !cssScale.isFinite() || cssScale <= 0f) return
+        terrainOverlayUiZoom = uiZoom
+        terrainOverlayCssScale = cssScale
+        if (terrainOverlayRenderer?.setViewportStyle(uiZoom, cssScale, tileDemandFocusPx()) == true) {
+            worldWindow.requestRedraw()
         }
     }
 
@@ -1020,14 +1033,7 @@ class NativeMapController internal constructor(
         }
         require(points.size >= 3) { "An area requires at least three vertices" }
         val ring = if (points.first() == points.last()) points else points + points.first()
-        val area = Polygon(ring, ShapeAttributes().apply {
-            isDrawInterior = true
-            isDrawOutline = true
-            interiorColor = toWorldWindColor(color)
-            outlineColor = toWorldWindColor(color)
-            outlineWidth = width
-            isDepthTest = true
-        }).apply {
+        val area = Polygon(ring, NativeAreaStyle.attributes(color, width)).apply {
             altitudeMode = AltitudeMode.CLAMP_TO_GROUND
             isFollowTerrain = true
             pickDelegate = "shantu-object:$id"
@@ -1186,6 +1192,7 @@ class NativeMapController internal constructor(
         val next = if (xPx != null && yPx != null && xPx.isFinite() && yPx.isFinite()) TileScreenPoint(xPx, yPx) else null
         if (drawingFocus == next) return
         drawingFocus = next
+        terrainOverlayRenderer?.setViewportStyle(terrainOverlayUiZoom, terrainOverlayCssScale, tileDemandFocusPx())
         refreshTileDemand(forceGeneration = true)
     }
 

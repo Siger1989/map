@@ -616,6 +616,12 @@ class NativeReactMapHost(
         }
         val selectedMarker = input.optString("annotationSelected").takeIf { it.isNotBlank() && it != "null" }
         entry.controller.setBridgeMarkerPresentation(cameraJson(entry).optDouble("zoom", Double.NaN), selectedMarker)
+        entry.controller.cartographyForBridge().setViewportStyle(
+            cameraJson(entry).optDouble("zoom", Double.NaN),
+            (entry.viewport?.optDouble("cssScale", 1.0) ?: 1.0).toFloat())
+        entry.controller.setTerrainOverlayViewportStyle(
+            cameraJson(entry).optDouble("zoom", Double.NaN),
+            (entry.viewport?.optDouble("cssScale", 1.0) ?: 1.0).toFloat())
         val source = input.optJSONObject("mapSource")
         val sourceChanged = source?.toString() != previous.optJSONObject("mapSource")?.toString()
         if (effectiveSettings.toString() != previousEffectiveSettings.toString() || sourceChanged) {
@@ -1582,6 +1588,10 @@ class NativeReactMapHost(
                 cameraJson(metadata.camera, metadata.nativeHeight / metadata.cssScale), metadata.cameraSyncToken)
             entry.controller.setBridgeMarkerPresentation(camera.optDouble("zoom", Double.NaN),
                 entry.renderState.optString("annotationSelected").takeIf { id -> id.isNotBlank() && id != "null" })
+            entry.controller.cartographyForBridge().setViewportStyle(
+                camera.optDouble("zoom", Double.NaN), metadata.cssScale.toFloat())
+            entry.controller.setTerrainOverlayViewportStyle(
+                camera.optDouble("zoom", Double.NaN), metadata.cssScale.toFloat())
             val matrices = NativeBridgeProjection.standardEcefMatrices(matrixCopy) ?: return
             val x = metadata.cssX * metadata.cssScale
             val y = metadata.cssY * metadata.cssScale

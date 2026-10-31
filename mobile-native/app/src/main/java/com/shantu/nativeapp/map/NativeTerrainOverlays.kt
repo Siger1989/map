@@ -304,8 +304,24 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<TileKey, DoubleArray>?): Boolean = size > 16
     }
     private val contourLayers = mutableListOf<NativeContourLayerRenderable>()
+    private var uiZoom = Double.NaN
+    private var cssScale = 1f
+    private var priorityFocus: TileScreenPoint? = null
     @Volatile private var closed = false
     private val stableSampleFunction: suspend (z: Int, x: Int, y: Int) -> DoubleArray? = ::sampleTile
+
+    fun setViewportStyle(zoom: Double, scale: Float, focus: TileScreenPoint?): Boolean {
+        if (!zoom.isFinite() || !scale.isFinite() || scale <= 0f) return false
+        uiZoom = zoom
+        cssScale = scale
+        priorityFocus = focus
+        var changed = false
+        contourLayers.forEach {
+            changed = it.setViewportStyle(zoom, scale) || changed
+            changed = it.setPriorityFocus(focus) || changed
+        }
+        return changed
+    }
 
     private suspend fun sampleTile(z: Int, x: Int, y: Int): DoubleArray? {
         if (closed) return null
@@ -334,7 +350,12 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
                 NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters),
                 stableSampleFunction,
             )
-            NativeContourLayerRenderable(layer).also { contourLayers += it; add(it) }
+            NativeContourLayerRenderable(layer).also {
+                it.setViewportStyle(uiZoom, cssScale)
+                it.setPriorityFocus(priorityFocus)
+                contourLayers += it
+                add(it)
+            }
         }
     }
 

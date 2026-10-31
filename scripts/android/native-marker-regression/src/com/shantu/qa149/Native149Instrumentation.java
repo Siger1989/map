@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.graphics.RectF;
 import android.view.MotionEvent;
@@ -20,6 +21,14 @@ import org.json.JSONTokener;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.InvocationHandler;
@@ -60,7 +69,9 @@ public final class Native149Instrumentation extends Instrumentation {
             int rc = Activity.RESULT_OK;
             try {
                 String mode = arguments == null ? "inspect" : arguments.getString("mode", "inspect");
-                JSONObject report = "native-regression".equals(mode) ? runRegression() : inspect();
+                JSONObject report = "native-regression".equals(mode) ? runRegression()
+                    : "interactive-preview".equals(mode) ? runInteractivePreview()
+                    : "raster-diagnostics".equals(mode) ? runRasterDiagnostics() : inspect();
                 result.putString("qa149_json", report.toString());
             } catch (Throwable error) {
                 rc = Activity.RESULT_CANCELED;
@@ -78,6 +89,256 @@ public final class Native149Instrumentation extends Instrumentation {
         worker.start();
     }
 
+    private long previewDownTime;
+    private long previewLastInput;
+    private float previewX, previewY;
+    private int previewWidth, previewHeight;
+
+    /** Loopback-only input bridge for the user's live view of the installed APK. */
+    private JSONObject runInteractivePreview() throws Exception {
+        attachTarget();
+        // Explicit diagnostic recovery only: allow the UI to respond after a contour OOM.
+        // This is never enabled by the normal preview or by the product application.
+        if (argumentEnabled("pauseContours")) {
+            runOnMainSync(() -> {
+                try {
+                    Object controller = fieldValue(entry, "controller");
+                    Object options = fieldValue(controller, "terrainOverlayOptions");
+                    Method method = controller.getClass().getDeclaredMethod("setTerrainOverlay", boolean.class, boolean.class, int.class, double.class);
+                    method.setAccessible(true);
+                    method.invoke(controller, false,
+                        Boolean.TRUE.equals(fieldValue(options, "elevationColorsEnabled")),
+                        ((Number)fieldValue(options, "contourIntervalMeters")).intValue(),
+                        ((Number)fieldValue(options, "elevationColorsOpacity")).doubleValue());
+                } catch (Exception error) { throw new IllegalStateException("explicit contour recovery failed", error); }
+            });
+        }
+        android.util.DisplayMetrics metrics = getTargetContext().getResources().getDisplayMetrics();
+        previewWidth = metrics.widthPixels;
+        previewHeight = metrics.heightPixels;
+        Bitmap initialScreen = getUiAutomation().takeScreenshot();
+        if (initialScreen != null) {
+            previewWidth = initialScreen.getWidth();
+            previewHeight = initialScreen.getHeight();
+            initialScreen.recycle();
+        }
+        boolean stop = false;
+        long commands = 0;
+        try (ServerSocket server = new ServerSocket(23458, 8, InetAddress.getByName("127.0.0.1"))) {
+            server.setSoTimeout(1000);
+            Bundle ready = new Bundle();
+            ready.putString("interactive_preview", "READY");
+            ready.putInt("width", previewWidth);
+            ready.putInt("height", previewHeight);
+            sendStatus(1, ready);
+            while (!stop) {
+                if (previewDownTime != 0 && SystemClock.uptimeMillis() - previewLastInput > 30_000L) previewCancel();
+                try (Socket socket = server.accept()) {
+                    socket.setSoTimeout(5000);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"));
+                    String line;
+                    while ((line = previewReadLine(reader)) != null) {
+                        JSONObject reply;
+                        try {
+                            JSONObject request = new JSONObject(line);
+                            String action = request.getString("action");
+                            stop = "stop".equals(action);
+                            if ("inspect".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("targetVersion", targetVersionProof())
+                                    .put("camera", invokeCameraJson()).put("diagnostics", inspectDiagnosticsCounters())
+                                    .put("annotationCount", annotationCount(readState()))
+                                    .put("visibleControls", readVisibleControls()).put("contours", contourCounters());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush();
+                                continue;
+                            }
+                            previewCommand(action, request);
+                            commands++;
+                            reply = new JSONObject().put("ok", true).put("action", action)
+                                .put("width", previewWidth).put("height", previewHeight);
+                        } catch (Exception error) {
+                            previewCancel();
+                            reply = new JSONObject().put("ok", false).put("error", safeError(error.getMessage()));
+                        }
+                        writer.write(reply.toString());
+                        writer.newLine();
+                        writer.flush();
+                        if (stop) break;
+                    }
+                } catch (SocketTimeoutException idle) {
+                    // A disconnected browser must not finish instrumentation and kill its target app.
+                } catch (java.io.IOException disconnected) {
+                    // Keep serving fresh local connections after a page reload or transport interruption.
+                }
+            }
+        } finally { previewCancel(); }
+        return new JSONObject().put("mode", "interactive-preview").put("testState", "STOPPED_BY_COMMAND")
+            .put("commands", commands);
+    }
+
+    private static String previewReadLine(BufferedReader reader) throws Exception {
+        StringBuilder line = new StringBuilder();
+        int ch;
+        while ((ch = reader.read()) != -1) {
+            if (ch == '\n') return line.toString();
+            if (ch != '\r') line.append((char)ch);
+            if (line.length() > 4096) throw new java.io.IOException("preview command exceeds 4096 characters");
+        }
+        return line.length() == 0 ? null : line.toString();
+    }
+
+    private JSONArray contourCounters() throws Exception {
+        JSONArray out = new JSONArray();
+        Object renderer = fieldValue(fieldValue(entry, "controller"), "terrainOverlayRenderer");
+        if (renderer == null) return out;
+        Object wrappers = fieldValue(renderer, "contourLayers");
+        if (!(wrappers instanceof Iterable)) return out;
+        for (Object wrapper : (Iterable<?>)wrappers) {
+            Object layer = fieldValue(wrapper, "layer");
+            JSONObject values = numericObjectFields(layer);
+            for (String key : new String[]{"generationQueue", "priorityQueue", "tiles", "contentCache", "pendingFetches", "backoff", "viewStyle"}) {
+                try {
+                    Object child = fieldValue(layer, key);
+                    if (child != null) values.put(key, numericObjectFields(child));
+                } catch (ReflectiveOperationException absent) { }
+            }
+            try {
+                Object cachedTiles = fieldValue(layer, "liveContent");
+                Object cut = fieldValue(layer, "renderCut");
+                JSONArray tileStats = new JSONArray();
+                if (cachedTiles instanceof Map) for (Map.Entry<?,?> item : ((Map<?,?>)cachedTiles).entrySet()) {
+                    Object content = item.getValue();
+                    JSONObject tile = numericObjectFields(content);
+                    String key = String.valueOf(item.getKey());
+                    if (key.matches("[-0-9/,.: ]{1,80}")) tile.put("key", key);
+                    tile.put("inCut", cut instanceof java.util.Collection && ((java.util.Collection<?>)cut).contains(content));
+                    try {
+                        Object batch = fieldValue(content, "batch");
+                        if (batch != null) tile.put("batch", numericObjectFields(fieldValue(batch, "tileData")));
+                    } catch (ReflectiveOperationException absent) { }
+                    tileStats.put(tile);
+                }
+                values.put("tileStats", tileStats);
+            } catch (ReflectiveOperationException absent) { }
+            out.put(values);
+        }
+        return out;
+    }
+
+    /** Numeric fields and collection sizes only; never serializes sources, URLs or callbacks. */
+    private JSONObject numericObjectFields(Object owner) throws Exception {
+        JSONObject out = new JSONObject();
+        if (owner instanceof Map) out.put("size", ((Map<?,?>)owner).size());
+        if (owner instanceof java.util.Collection) out.put("size", ((java.util.Collection<?>)owner).size());
+        if (owner.getClass().getName().startsWith("java.")) return out;
+        for (Field field : allFields(owner.getClass())) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+            field.setAccessible(true);
+            Object value = field.get(owner);
+            if (value instanceof Number || value instanceof Boolean) out.put(field.getName(), value);
+            else if (value instanceof Map) out.put(field.getName()+"Count", ((Map<?,?>)value).size());
+            else if (value instanceof java.util.Collection) out.put(field.getName()+"Count", ((java.util.Collection<?>)value).size());
+            else if (value != null && value.getClass().isArray()) out.put(field.getName()+"Length", java.lang.reflect.Array.getLength(value));
+        }
+        return out;
+    }
+
+    private float previewCoordinate(JSONObject request, String key, float fallback, int limit) throws Exception {
+        double value = request.has(key) ? request.getDouble(key) : fallback;
+        if (!Double.isFinite(value) || value < 0 || value >= limit) throw new IllegalArgumentException("invalid " + key);
+        return (float)value;
+    }
+
+    private void previewCommand(String action, JSONObject request) throws Exception {
+        if ("cancel".equals(action) || "stop".equals(action)) { previewCancel(); return; }
+        if ("key".equals(action)) {
+            if (request.getInt("code") != android.view.KeyEvent.KEYCODE_BACK) throw new IllegalArgumentException("only Back is supported");
+            previewCancel(); sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); return;
+        }
+        if (!("down".equals(action) || "move".equals(action) || "up".equals(action) ||
+            "tap".equals(action) || "swipe".equals(action) || "pinch".equals(action)))
+            throw new IllegalArgumentException("unsupported preview action");
+        float x = previewCoordinate(request, "x", previewX, previewWidth);
+        float y = previewCoordinate(request, "y", previewY, previewHeight);
+        if ("tap".equals(action)) {
+            previewCancel(); previewBegin(x, y); SystemClock.sleep(35); previewSingle(MotionEvent.ACTION_UP, x, y); previewDownTime = 0; return;
+        }
+        if ("swipe".equals(action)) {
+            float x2 = previewCoordinate(request, "x2", x, previewWidth);
+            float y2 = previewCoordinate(request, "y2", y, previewHeight);
+            int duration = request.optInt("duration", 250);
+            if (duration < 50 || duration > 2000) throw new IllegalArgumentException("duration must be 50..2000ms");
+            previewCancel(); previewBegin(x, y);
+            int steps = Math.max(2, duration / 16);
+            for (int i = 1; i <= steps; i++) {
+                SystemClock.sleep(duration / steps);
+                previewSingle(MotionEvent.ACTION_MOVE, x + (x2 - x) * i / steps, y + (y2 - y) * i / steps);
+            }
+            previewSingle(MotionEvent.ACTION_UP, x2, y2); previewDownTime = 0; return;
+        }
+        if ("pinch".equals(action)) { previewPinch(x, y, request.getDouble("factor")); return; }
+        if ("down".equals(action)) { previewCancel(); previewBegin(x, y); return; }
+        if (previewDownTime == 0) throw new IllegalStateException("gesture has no down event");
+        previewSingle("move".equals(action) ? MotionEvent.ACTION_MOVE : MotionEvent.ACTION_UP, x, y);
+        if ("up".equals(action)) previewDownTime = 0;
+    }
+
+    private void previewBegin(float x, float y) {
+        previewDownTime = SystemClock.uptimeMillis();
+        previewSingle(MotionEvent.ACTION_DOWN, x, y);
+    }
+
+    private void previewSingle(int action, float x, float y) {
+        long now = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(previewDownTime, now, action, x, y, 0);
+        event.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        try { sendPointerSync(event); }
+        finally { event.recycle(); }
+        previewX = x; previewY = y; previewLastInput = now;
+    }
+
+    private void previewCancel() {
+        if (previewDownTime != 0) {
+            try { previewSingle(MotionEvent.ACTION_CANCEL, previewX, previewY); }
+            finally { previewDownTime = 0; }
+        }
+    }
+
+    private void previewPinch(float x, float y, double factor) throws Exception {
+        if (!Double.isFinite(factor) || factor < .25 || factor > 4) throw new IllegalArgumentException("factor must be .25..4");
+        float available = Math.min(Math.min(x, previewWidth - 1 - x), Math.min(y, previewHeight - 1 - y));
+        float start = Math.min(Math.min(previewWidth, previewHeight) * .16f, available / (float)Math.max(1, factor));
+        if (start < 8) throw new IllegalArgumentException("pinch center is too near an edge");
+        previewCancel(); previewBegin(x - start, y);
+        try {
+            previewMulti(MotionEvent.ACTION_POINTER_DOWN | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), x, y, start);
+            for (int i = 1; i <= 14; i++) {
+                SystemClock.sleep(16);
+                previewMulti(MotionEvent.ACTION_MOVE, x, y, start * (1 + ((float)factor - 1) * i / 14));
+            }
+            float end = start * (float)factor;
+            previewMulti(MotionEvent.ACTION_POINTER_UP | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), x, y, end);
+            previewSingle(MotionEvent.ACTION_UP, x - end, y);
+            previewDownTime = 0;
+        } finally { previewCancel(); }
+    }
+
+    private void previewMulti(int action, float centerX, float centerY, float radius) {
+        MotionEvent.PointerProperties[] properties = new MotionEvent.PointerProperties[2];
+        MotionEvent.PointerCoords[] coords = new MotionEvent.PointerCoords[2];
+        for (int i = 0; i < 2; i++) {
+            properties[i] = new MotionEvent.PointerProperties(); properties[i].id = i;
+            properties[i].toolType = MotionEvent.TOOL_TYPE_FINGER;
+            coords[i] = new MotionEvent.PointerCoords(); coords[i].x = centerX + (i == 0 ? -radius : radius);
+            coords[i].y = centerY; coords[i].pressure = 1; coords[i].size = 1;
+        }
+        long now = SystemClock.uptimeMillis();
+        MotionEvent event = MotionEvent.obtain(previewDownTime, now, action, 2, properties, coords,
+            0, 0, 1, 1, 0, 0, android.view.InputDevice.SOURCE_TOUCHSCREEN, 0);
+        try { sendPointerSync(event); } finally { event.recycle(); }
+        previewX = centerX - radius; previewY = centerY; previewLastInput = now;
+    }
+
     private JSONObject inspect() throws Exception {
         attachTarget();
         JSONObject state = readState();
@@ -88,6 +349,239 @@ public final class Native149Instrumentation extends Instrumentation {
         out.put("visibleControlsSpace", "css-pixels").put("visibleControls", readVisibleControls());
         out.put("testState", "INSPECT_READY");
         return out;
+    }
+
+    /** Read-only native raster/cache diagnostic sweep; does not touch annotation storage. */
+    private JSONObject runRasterDiagnostics() throws Exception {
+        attachTarget();
+        runId = UUID.randomUUID().toString().replace("-", "");
+        evidenceDir = new File(getTargetContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "native149-raster-" + runId);
+        if (!evidenceDir.mkdirs() && !evidenceDir.isDirectory()) throw new IllegalStateException("evidence directory unavailable");
+
+        originalCamera = invokeCameraJson();
+        JSONObject initialState = readState();
+        int initialAnnotationCount = annotationCount(initialState);
+        JSONObject report = new JSONObject();
+        JSONArray stages = new JSONArray();
+        report.put("mode", "raster-diagnostics").put("targetPackage", TARGET_PACKAGE).put("mapId", "main")
+            .put("targetVersion", targetVersionProof()).put("initialCamera", originalCamera)
+            .put("initialAnnotationCount", initialAnnotationCount)
+            .put("evidenceDirectory", evidenceDir.getAbsolutePath())
+            .put("diagnosticScope", "allowlisted numeric cache/network counters only; URL-free");
+        String testState = "RASTER_DIAGNOSTICS_COMPLETE";
+        String restoreState = "NOT_STARTED";
+        Throwable runError = null;
+        try {
+            double originalBearing = originalCamera.optDouble("bearing", 0.0);
+            JSONObject originalCenter = originalCamera.optJSONObject("center");
+            JSONArray originalCenterArray = originalCamera.optJSONArray("center");
+            if (originalCenter == null && originalCenterArray == null) throw new IllegalStateException("original camera center unavailable");
+            RasterStage[] plan = arguments != null && "true".equals(arguments.getString("rasterExtended")) ? new RasterStage[] {
+                new RasterStage("zoom6-pitch55-original-bearing", 6.0, 55.0, originalBearing, 15),
+                new RasterStage("zoom6-pitch55-bearing-plus90", 6.0, 55.0, originalBearing + 90.0, 8),
+                new RasterStage("zoom6-pitch55-original-bearing-return", 6.0, 55.0, originalBearing, 8),
+                new RasterStage("zoom10-pitch35-original-bearing", 10.0, 35.0, originalBearing, 15),
+                new RasterStage("zoom10-pitch55-original-bearing", 10.0, 55.0, originalBearing, 20),
+                new RasterStage("zoom10-pitch55-bearing-plus90", 10.0, 55.0, originalBearing + 90.0, 12),
+                new RasterStage("zoom10-pitch55-original-bearing-return", 10.0, 55.0, originalBearing, 12),
+                new RasterStage("zoom10-pitch75-original-bearing", 10.0, 75.0, originalBearing, 20)
+            } : new RasterStage[] {
+                new RasterStage("zoom6-pitch0-original-bearing", 6.0, 0.0, originalBearing, 8),
+                new RasterStage("zoom6-pitch15-original-bearing", 6.0, 15.0, originalBearing, 15),
+                new RasterStage("zoom6-pitch15-bearing-plus45", 6.0, 15.0, originalBearing + 45.0, 6),
+                new RasterStage("zoom6-pitch15-bearing-plus90", 6.0, 15.0, originalBearing + 90.0, 6),
+                new RasterStage("zoom6-pitch15-bearing-plus180", 6.0, 15.0, originalBearing + 180.0, 6),
+                new RasterStage("zoom6-pitch15-original-bearing-return", 6.0, 15.0, originalBearing, 6),
+                new RasterStage("zoom8-pitch15-original-bearing", 8.0, 15.0, originalBearing, 10),
+                new RasterStage("zoom8-pitch15-bearing-plus90", 8.0, 15.0, originalBearing + 90.0, 6),
+                new RasterStage("zoom8-pitch15-original-bearing-return", 8.0, 15.0, originalBearing, 6)
+            };
+            for (int i = 0; i < plan.length; i++) {
+                RasterStage stage = plan[i];
+                JSONObject pose = new JSONObject(originalCamera.toString())
+                    .put("zoom", stage.zoom).put("pitch", stage.pitch).put("bearing", normalizeBearing(stage.bearing));
+                // Keep the exact initial center; some camera snapshots encode it as an object, others as an array.
+                if (originalCenter != null) pose.put("center", new JSONObject(originalCenter.toString()));
+                else pose.put("center", new JSONArray(originalCenterArray.toString()));
+                applyCamera(pose);
+                awaitFrames(2, 10_000L);
+
+                JSONObject stageReport = new JSONObject().put("name", stage.name).put("requestedCamera", pose)
+                    .put("durationSeconds", stage.durationSeconds).put("samples", new JSONArray());
+                stageReport.put("firstScreenshot", capture("raster-" + i + "-first"));
+                long stageStart = SystemClock.elapsedRealtime();
+                long nextSampleAt = stageStart;
+                int sampleIndex = 0;
+                while (true) {
+                    long now = SystemClock.elapsedRealtime();
+                    long elapsed = now - stageStart;
+                    if (elapsed > stage.durationSeconds * 1000L) break;
+                    if (now < nextSampleAt) SystemClock.sleep(nextSampleAt - now);
+                    long sampleAt = SystemClock.elapsedRealtime();
+                    JSONObject sample = new JSONObject().put("sampleIndex", sampleIndex++)
+                        .put("elapsedMs", sampleAt - stageStart).put("camera", invokeCameraJson())
+                        .put("diagnostics", inspectDiagnosticsCounters());
+                    stageReport.getJSONArray("samples").put(sample);
+                    nextSampleAt = stageStart + (sampleIndex * 1000L);
+                    if (nextSampleAt > stageStart + stage.durationSeconds * 1000L) break;
+                }
+                stageReport.put("actualDurationMs", SystemClock.elapsedRealtime() - stageStart)
+                    .put("lastScreenshot", capture("raster-" + i + "-last"));
+                stages.put(stageReport);
+            }
+        } catch (Throwable error) {
+            testState = "RASTER_DIAGNOSTICS_ERROR";
+            runError = error;
+        } finally {
+            try {
+                applyCamera(originalCamera);
+                awaitFrames(2, 10_000L);
+                restoreState = "ORIGINAL_CAMERA_RESTORED";
+                report.put("restoredCameraScreenshot", capture("raster-restored-camera"));
+            } catch (Throwable restoreError) {
+                restoreState = "CAMERA_RESTORE_FAILED:" + restoreError.getClass().getSimpleName();
+                if (runError == null) runError = restoreError;
+                testState = "RASTER_DIAGNOSTICS_ERROR";
+            }
+        }
+        JSONObject finalCamera = new JSONObject();
+        int finalAnnotationCount = -1;
+        try { finalCamera = invokeCameraJson(); }
+        catch (Throwable cameraSnapshotError) {
+            if (runError == null) runError = cameraSnapshotError;
+            testState = "RASTER_DIAGNOSTICS_ERROR";
+        }
+        try { finalAnnotationCount = annotationCount(readState()); }
+        catch (Throwable stateReadError) {
+            if (runError == null) runError = stateReadError;
+            testState = "RASTER_DIAGNOSTICS_ERROR";
+        }
+        report.put("stages", stages).put("testState", testState).put("cameraRestoreState", restoreState)
+            .put("finalCamera", finalCamera).put("finalAnnotationCount", finalAnnotationCount)
+            .put("annotationCountUnchanged", finalAnnotationCount >= 0 && finalAnnotationCount == initialAnnotationCount);
+        if (runError != null) report.put("errorType", runError.getClass().getName()).put("error", safeError(runError.getMessage()));
+        String jsonPath = new File(evidenceDir, "raster-diagnostics.json").getAbsolutePath();
+        try (FileOutputStream stream = new FileOutputStream(jsonPath)) { stream.write(report.toString(2).getBytes("UTF-8")); }
+        report.put("reportPath", jsonPath);
+        return report;
+    }
+
+    private static final class RasterStage {
+        final String name; final double zoom; final double pitch; final double bearing; final int durationSeconds;
+        RasterStage(String name, double zoom, double pitch, double bearing, int durationSeconds) {
+            this.name = name; this.zoom = zoom; this.pitch = pitch; this.bearing = bearing; this.durationSeconds = durationSeconds;
+        }
+    }
+
+    private static double normalizeBearing(double bearing) {
+        double normalized = bearing % 360.0;
+        return normalized < 0.0 ? normalized + 360.0 : normalized;
+    }
+
+    private JSONObject targetVersionProof() throws Exception {
+        android.content.pm.PackageInfo info = getTargetContext().getPackageManager().getPackageInfo(TARGET_PACKAGE, 0);
+        long code = android.os.Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+        return new JSONObject().put("package", TARGET_PACKAGE).put("versionName", info.versionName == null ? JSONObject.NULL : info.versionName)
+            .put("versionCode", code);
+    }
+
+    private JSONObject inspectDiagnosticsCounters() throws Exception {
+        AtomicReference<Object> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        AtomicReference<Boolean> methodFound = new AtomicReference<>(false);
+        runOnMainSync(() -> {
+            try {
+                if (Looper.myLooper() != Looper.getMainLooper()) throw new IllegalStateException("diagnostics call is not on main looper");
+                Method method = host.getClass().getDeclaredMethod("inspectMapDiagnosticsOnMain");
+                methodFound.set(true);
+                method.setAccessible(true);
+                result.set(method.invoke(host));
+            } catch (Throwable error) { failure.set(error); }
+        });
+        JSONObject out = new JSONObject().put("mainThread", true).put("methodAvailable", methodFound.get());
+        if (failure.get() != null) {
+            out.put("diagnosticsErrorType", failure.get().getClass().getName())
+                .put("availableMethodNames", diagnosticsMethodNames());
+            return out;
+        }
+        Object value = result.get();
+        if (value instanceof JSONObject) out.put("counters", safeDiagnosticsObject((JSONObject)value));
+        else if (value instanceof Map) out.put("counters", safeDiagnosticsMap((Map<?, ?>)value));
+        else out.put("resultType", value == null ? "null" : value.getClass().getName()).put("counters", new JSONObject());
+        return out;
+    }
+
+    private JSONArray diagnosticsMethodNames() {
+        JSONArray names = new JSONArray();
+        for (Method method : host.getClass().getDeclaredMethods())
+            if ("inspectMapDiagnosticsOnMain".equals(method.getName())) names.put(method.getName());
+        return names;
+    }
+
+    private JSONObject safeDiagnosticsObject(JSONObject raw) throws JSONException {
+        JSONObject safe = new JSONObject();
+        java.util.Iterator<String> keys = raw.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            Object filtered = safeDiagnosticsValue(key, raw.opt(key));
+            if (filtered != null) safe.put(key, filtered);
+        }
+        return safe;
+    }
+
+    private JSONObject safeDiagnosticsMap(Map<?, ?> raw) throws JSONException {
+        JSONObject safe = new JSONObject();
+        for (Map.Entry<?, ?> entry : raw.entrySet()) {
+            if (!(entry.getKey() instanceof String)) continue;
+            String key = (String)entry.getKey();
+            Object filtered = safeDiagnosticsValue(key, entry.getValue());
+            if (filtered != null) safe.put(key, filtered);
+        }
+        return safe;
+    }
+
+    private Object safeDiagnosticsValue(String key, Object value) throws JSONException {
+        if (value == null || value == JSONObject.NULL) return null;
+        if (isAllowedDiagnosticScalar(key)) return (value instanceof Number || value instanceof Boolean) ? value : null;
+        if ("maps".equals(key) && value instanceof JSONArray) {
+            JSONArray input = (JSONArray)value, output = new JSONArray();
+            for (int i = 0; i < input.length(); i++) {
+                Object item = input.opt(i);
+                if (item instanceof JSONObject) output.put(safeDiagnosticsObject((JSONObject)item));
+                else if (item instanceof Map) output.put(safeDiagnosticsMap((Map<?, ?>)item));
+            }
+            return output;
+        }
+        if (("network".equals(key) || "tileStages".equals(key)) && value instanceof JSONObject)
+            return safeDiagnosticsObject((JSONObject)value);
+        if (("network".equals(key) || "tileStages".equals(key)) && value instanceof Map)
+            return safeDiagnosticsMap((Map<?, ?>)value);
+        if ("decodeDurationBucketCounts".equals(key) && value instanceof JSONArray) {
+            JSONArray input = (JSONArray)value, output = new JSONArray();
+            for (int i = 0; i < input.length(); i++) {
+                Object item = input.opt(i);
+                if (item instanceof Number || item instanceof Boolean) output.put(item);
+            }
+            return output;
+        }
+        return null;
+    }
+
+    private boolean isAllowedDiagnosticScalar(String key) {
+        // Explicit numeric/boolean fields from inspectMapDiagnosticsOnMain; names and identifiers are excluded.
+        switch (key) {
+            case "available": case "heapMaxBytes": case "heapUsedBytes": case "mapCount":
+            case "actualFrames": case "lastFrameAgeMs": case "rasterBitmapDecodes":
+            case "renderCacheCapacityBytes": case "renderCacheUsedBytes": case "renderCacheEntries":
+            case "decodedImages": case "decodeNanos": case "decodeFailures": case "completedFrames": case "perTileDrawCount":
+            case "requests": case "successes": case "errors": case "rateLimits": case "memoryHits": case "diskHits":
+            case "retries": case "cancellations": case "decodeValidationMs": case "receivedBytes": case "queued":
+            case "active": case "queueWaitMs": case "networkMs": case "pendingCacheWriteBytes": case "droppedCacheWrites":
+            case "completedCacheWrites": case "failedCacheWrites": case "activeBackground":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private JSONObject runRegression() throws Exception {

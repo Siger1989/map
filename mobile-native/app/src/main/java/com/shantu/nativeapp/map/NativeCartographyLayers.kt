@@ -8,9 +8,7 @@ import earth.worldwind.layer.RenderableLayer
 import earth.worldwind.layer.mercator.MercatorTileFactory
 import earth.worldwind.layer.mercator.MercatorTiledImageLayer
 import earth.worldwind.layer.mercator.MercatorTiledSurfaceImage
-import earth.worldwind.layer.mvt.DefaultMvtStyle
 import earth.worldwind.layer.mvt.MvtFilter
-import earth.worldwind.layer.mvt.MvtGeometryType
 import earth.worldwind.layer.mvt.MvtRuleBasedStyle
 import earth.worldwind.layer.mvt.MvtStyle
 import earth.worldwind.layer.mvt.MvtVectorLayer
@@ -19,7 +17,6 @@ import earth.worldwind.layer.source.TileBlob
 import earth.worldwind.layer.source.TileSource
 import earth.worldwind.render.Color
 import earth.worldwind.render.image.ImageSource
-import earth.worldwind.shape.ShapeAttributes
 import com.shantu.nativeapp.data.NativeRuntimeSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -193,8 +190,8 @@ class NativeCartographyLayers internal constructor(
     /** Real OpenFreeMap land/water polygons over the native DEM-backed dark base surface. */
     val terrainLandWaterLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = vectorTileBudget,
         maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = NativeTerrainLandWaterStyle, displayName = "Terrain land and water")
-    val roadsLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = vectorTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadStyle, displayName = "Roads and waterways")
+    private val nativeRoadLayer = NativeRoadVectorLayer(source, vectorTileBudget)
+    val roadsLayer: MvtVectorLayer get() = nativeRoadLayer
     private val snapDataLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = minOf(12, vectorTileBudget),
         maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {}, displayName = "River snapping data")
     val roadNamesLayer = MvtVectorLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
@@ -265,6 +262,13 @@ class NativeCartographyLayers internal constructor(
     fun imageryRenderedTileCount(): Long = imagery.renderedTileCount()
     fun retryLatestImagery() = imagery.retryLatest()
 
+    /** Per-frame presentation only: never invalidates or fetches an MVT tile. */
+    fun setViewportStyle(uiZoom: Double, cssScale: Float) {
+        // A first/changed style needs one draw even when all source tiles are already cached.
+        // Ignore matrix-roundoff zoom jitter so a frame callback cannot sustain its own redraw loop.
+        if (!closed && nativeRoadLayer.setViewportStyle(uiZoom, cssScale)) window.requestRedraw()
+    }
+
     /** Read-only snapshot of real MVT responses already fetched for the requested visible bounds. */
     internal fun cachedSnapTiles(boundsWgs84: List<Double>): List<NativeCachedSnapTile>? =
         (source as? NativeSnapTileCache)?.visibleTiles(boundsWgs84)
@@ -305,12 +309,7 @@ class NativeCartographyLayers internal constructor(
         const val TIANDITU_ATTRIBUTION = "© 国家基础地理信息中心 · 天地图"
         private const val OPENFREEMAP_TEMPLATE = "https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf"
 
-        val roadStyle: MvtStyle = object : MvtStyle {
-            override fun styleFor(layerName: String, geometryType: MvtGeometryType, properties: Map<String, Any?>): ShapeAttributes? =
-                if (layerName in setOf("transportation", "waterway")) DefaultMvtStyle.styleFor(layerName, geometryType, properties) else null
-            override fun zOrderFor(layerName: String, geometryType: MvtGeometryType, properties: Map<String, Any?>): Int =
-                if (layerName in setOf("transportation", "waterway")) DefaultMvtStyle.zOrderFor(layerName, geometryType, properties) else Int.MIN_VALUE
-        }
+        val roadStyle: MvtStyle = NativeRoadStyle.style
 
         val roadNameStyle: MvtRuleBasedStyle = mvtStyle {
             rule("transportation_name") { filter = MvtFilter.has("ref"); minZoom = 8; paint { text("ref") { placement = earth.worldwind.layer.mvt.MvtStyleRule.LabelPlacement.LINE; color(Color(.96f,.96f,.86f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(8 to 9f, 13 to 12f); halo(Color(.08f,.14f,.18f), 1.7f) } } }

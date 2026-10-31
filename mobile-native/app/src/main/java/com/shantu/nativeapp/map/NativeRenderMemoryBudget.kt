@@ -3,6 +3,14 @@ package com.shantu.nativeapp.map
 /** Pure heap-derived limits shared by native render surfaces and vector layers. */
 internal object NativeRenderMemoryBudget {
     /**
+     * Dense 30 m contour tiles measured about 4-5 MiB each; 32 MiB retained only
+     * six of a 24-tile view and continuously rebuilt the same visible geometry.
+     * Bound CPU geometry by a quarter of the heap, independently of the GPU cache.
+     */
+    fun contourCapacityBytes(maxHeapBytes: Long): Long =
+        (maxHeapBytes.coerceAtLeast(0L) / 4L).coerceIn(8L * MIB, 128L * MIB)
+
+    /**
      * A ceiling, not a preallocation. The high-detail oblique viewport can use over 160 MiB
      * of live textures at 390x857. Dividing the heap by 6/12 evicted visible tiles on every
      * frame, causing an unending decode/upload loop and larger transient bitmap peaks.
