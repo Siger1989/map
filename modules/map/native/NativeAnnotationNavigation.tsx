@@ -27,6 +27,21 @@ export function NativeAnnotationNavigation({ client, mapId, annotations, selecte
   useEffect(() => {
     if (openId && !annotations.some((item) => item.id === openId && item.visible && item.kind === 'pin')) setOpenId(null);
   }, [annotations, openId]);
+  useEffect(() => { setOpenId(null); }, [selectedId, mapId]);
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest('.native-annotation-navigation-control')) setOpenId(null);
+    };
+    const close = () => setOpenId(null);
+    const unsubscribe = client.subscribe(mapId, 'touch', close);
+    window.addEventListener('pointerdown', closeOutside, true);
+    window.addEventListener('blur', close);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('pointerdown', closeOutside, true);
+      window.removeEventListener('blur', close);
+    };
+  }, [client, mapId]);
 
   const pins = useMemo(() => nativeAnnotationNavigationPins(annotations, selectedId, frame, {
     elevation: (coordinate) => client.geometry(mapId).elevation(coordinate),
@@ -42,28 +57,26 @@ export function NativeAnnotationNavigation({ client, mapId, annotations, selecte
   const overlayStyle: CSSProperties = { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 4 };
 
   return <div className="native-annotation-navigation-overlay" style={overlayStyle} aria-label="标记快速导航">
-    {pins.map(({ annotation, x, y, scale }) => {
+    {pins.map(({ annotation, x, y }) => {
       const expanded = openId === annotation.id;
+      // Native glyph/text own the area above the ground anchor. Do not size a
+      // WebView hit region using an invisible duplicate of that label: its text
+      // metrics differ from WorldWind and can put navigation over the glyph.
       const markerStyle: CSSProperties = {
-        position: 'absolute', left: x, top: y, transform: 'translate(-50%, -100%)',
-        pointerEvents: 'none', maxWidth: 'min(180px, 55vw)', '--marker-color': annotation.color,
-        '--marker-ink': isLight(annotation.color) ? '#17352b' : '#fff', '--marker-scale': scale.toFixed(3),
+        position: 'absolute', left: x, top: y + 12, transform: 'translateX(-50%)',
+        pointerEvents: 'none', '--marker-color': annotation.color,
+        '--marker-ink': isLight(annotation.color) ? '#17352b' : '#fff',
       } as CSSProperties;
-      return <div key={annotation.id} className={`annotation-marker is-point${annotation.id === selectedId ? ' is-selected' : ''}`}
-        data-presentation="label" data-annotation-id={annotation.id} style={markerStyle}>
-        <span className="annotation-marker-visual">
-          <span className="annotation-marker-body" aria-hidden="true">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-7.1 8-13A8 8 0 1 0 4 9c0 5.9 8 13 8 13Zm0-10.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" fill="currentColor"/></svg>
-            <span className="annotation-marker-name">{annotation.name || '未命名'}</span>
-          </span>
-          <button type="button" className="annotation-marker-quick-nav" data-native-map-ui
+      return <div key={annotation.id} className="native-annotation-navigation-control"
+        data-annotation-id={annotation.id} style={markerStyle}>
+          <button type="button" className="native-annotation-quick-nav" data-native-map-ui
             aria-label={`快速导航到${annotation.name || '标记'}`} aria-expanded={expanded}
             style={{ pointerEvents: 'auto' }}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => { event.stopPropagation(); setOpenId(expanded ? null : annotation.id); }}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21 11 3l3 7 7 3-18 8Zm7-7 4-2-2-2-2 4Z" fillRule="evenodd"/></svg>
           </button>
-          <span className="annotation-marker-nav-menu" data-native-map-ui hidden={!expanded} style={{ pointerEvents: expanded ? 'auto' : 'none' }}
+          <span className="native-annotation-nav-menu" data-native-map-ui hidden={!expanded} style={{ pointerEvents: expanded ? 'auto' : 'none' }}
             onPointerDown={(event) => event.stopPropagation()}>
             {(['start', 'end'] as const).map((slot) => <button type="button" key={slot} data-native-map-ui
               onPointerDown={(event) => event.stopPropagation()}
@@ -71,7 +84,6 @@ export function NativeAnnotationNavigation({ client, mapId, annotations, selecte
               {slot === 'start' ? '设为起点' : '设为终点'}
             </button>)}
           </span>
-        </span>
       </div>;
     })}
   </div>;

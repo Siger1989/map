@@ -18,6 +18,29 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class NativeModelRendererTest {
+    @Test fun `repeated terrain and selection redraws retain one icon identity while the borehole depth trace updates`() {
+        var glyph: earth.worldwind.render.image.ImageSource? = null
+        for(i in 0 until 100) {
+            val marker=annotation("pin", "\"icon\":\"drill\",\"borehole\":{\"depth\":80},\"_mapZoom\":12")
+                .put("groundElevation",100.0+i).put("_selected",i%2==0)
+            val rendered=NativeModelRenderer.render(marker)
+            val pin=rendered.renderables.first() as Placemark
+            assertEquals(AltitudeMode.CLAMP_TO_GROUND,pin.altitudeMode)
+            if(glyph==null)glyph=pin.attributes.imageSource else org.junit.Assert.assertSame(glyph,pin.attributes.imageSource)
+            val trace=rendered.renderables[1] as Path
+            assertEquals(100.0+i,trace.positions.first().altitude,0.0)
+        }
+    }
+    @Test fun `marker glyph identities isolate style and presentation but stay bounded for custom colors`() {
+        fun image(icon:String,color:String,zoom:Double=12.0)=(NativeModelRenderer.render(annotation("pin", "\"icon\":\"$icon\",\"_mapZoom\":$zoom").put("color",color)).renderables.first() as Placemark).attributes.imageSource
+        org.junit.Assert.assertSame(image("flag","#123456"),image("flag","#123456"))
+        org.junit.Assert.assertNotSame(image("flag","#123456"),image("star","#123456"))
+        org.junit.Assert.assertNotSame(image("flag","#123456"),image("flag","#123457"))
+        org.junit.Assert.assertNotSame(image("flag","#123456"),image("flag","#123456",7.0))
+        org.junit.Assert.assertSame(image("flag","#123456",7.0),image("star","#123456",7.0))
+        for(i in 0..NativeModelRenderer.MAX_MARKER_GLYPHS+20)image("flag","#%06x".format(i))
+        assertTrue(NativeModelRenderer.cachedMarkerGlyphCount()<=NativeModelRenderer.MAX_MARKER_GLYPHS)
+    }
     @Test fun `fresh terrain placement aligns visible mesh and section geometry without changing saved ground`() {
         val saved=annotation("box", "\"groundElevation\":2400")
         val prepared=NativeModelTerrainInput.prepare(saved,true,2320.25)

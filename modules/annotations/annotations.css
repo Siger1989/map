@@ -291,8 +291,21 @@
   background: #fff8df;
   box-shadow: 0 2px 8px #10212966;
 }
-.native-annotation-navigation-overlay .annotation-marker-body { visibility: hidden; }
-.native-annotation-navigation-overlay .annotation-marker-visual::after { display: none !important; }
+.native-annotation-navigation-control { width:28px; height:28px; }
+.native-annotation-quick-nav {
+  display:grid; place-items:center; width:28px; height:28px; min-width:28px; min-height:28px;
+  padding:0; border:0; border-radius:4px; background:var(--marker-color); color:var(--marker-ink);
+}
+.native-annotation-quick-nav svg { width:16px; height:16px; fill:currentColor; }
+.native-annotation-nav-menu:not([hidden]) {
+  display:flex; position:absolute; z-index:1; top:32px; left:0; flex-direction:column;
+  gap:2px; width:82px; padding:3px; border-radius:4px;
+  background:var(--ui-surface, #fff8df); box-shadow:0 2px 8px #10212966;
+}
+.native-annotation-nav-menu button {
+  min-height:32px; padding:0 4px; border:0; border-radius:4px;
+  background:var(--ui-raised, #e6f2e8); color:var(--ui-text, #164934); font-size:11px;
+}
 .annotation-marker-nav-menu button {
   min-height: 34px;
   padding: 0 4px;

@@ -1,0 +1,132 @@
+{
+  "platform": "isolated browser shared React UI, not native GPU acceptance",
+  "flows": [
+    {
+      "width": 390,
+      "height": 857,
+      "name": "有海拔标记",
+      "kind": "pin",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 324
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    },
+    {
+      "width": 390,
+      "height": 857,
+      "name": "无海拔标记",
+      "kind": "pin",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 363
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    },
+    {
+      "width": 390,
+      "height": 857,
+      "name": "有海拔模型",
+      "kind": "box",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 86
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    },
+    {
+      "width": 360,
+      "height": 780,
+      "name": "有海拔标记",
+      "kind": "pin",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 324
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    },
+    {
+      "width": 360,
+      "height": 780,
+      "name": "无海拔标记",
+      "kind": "pin",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 363
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    },
+    {
+      "width": 360,
+      "height": 780,
+      "name": "有海拔模型",
+      "kind": "box",
+      "summary": {
+        "x": 8,
+        "y": 52,
+        "width": 276,
+        "height": 93
+      },
+      "detail": {
+        "x": 8,
+        "y": 56,
+        "width": 220,
+        "height": 86
+      },
+      "firstTap": true,
+      "detailsAndReturn": true,
+      "selectionCleared": true
+    }
+  ],
+  "titleHitTestUnobscured": true
+}

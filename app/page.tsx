@@ -960,6 +960,10 @@ export default function Home() {
   const selectedPose = selectedAnnotation
     ? editorPose(selectedAnnotation)
     : null;
+  const annotationPositionEditing = !!(selectedAnnotation && selectedPose &&
+    !selectedAnnotation.trackAnchor && !selectedAnnotation.sectionAnchor &&
+    annotations.edit && annotationTab === 'position' &&
+    (selectedAnnotation.kind !== 'pin' || adjustingPinId === selectedAnnotation.id));
   const changeSection = (next: SectionSettings) => {
     setSectionHistory((history) => [...history.slice(-19), sectionDraft]);
     setSection(next);
@@ -2697,7 +2701,7 @@ export default function Home() {
           selectionName &&
           (!activeTrackNode || selectedAnnotation) &&
           !linePoint &&
-          !selectedPose &&
+          !annotationPositionEditing &&
           !tracks.drawing &&
           !annotations.picking &&
           navigation.picking === null &&
@@ -2712,7 +2716,7 @@ export default function Home() {
                   {featureMove
                     ? '正在调整位置 · 松手确认，双指取消'
                     : selectedAnnotation
-                      ? '长按模型后拖动 · 松手保存'
+                      ? `长按${selectedAnnotation.kind === 'pin' ? '标记' : '模型'}后拖动 · 松手保存`
                       : '点选节点出圈，再拖动调整'}
                 </span>
                 {selectedAnnotation && featureMove && (
@@ -2967,7 +2971,7 @@ export default function Home() {
         {!guidance.active && (position.directionError || (position.direction === 'motion' && motionHeading.status) || (position.showStatus && displayedFix?.provider === 'ip') ||
           (!guidance.active &&
             (position.locationError || position.locating))) &&
-          !panel && !tracks.drawing && !branchEditing && (
+          !panel && !selectedAnnotation && !tracks.drawing && !branchEditing && (
             <div className="position-status glass" role="status" data-error={!!position.locationError || !!position.directionError}>
               <span>
                 {position.locationError ||
@@ -3805,12 +3809,8 @@ export default function Home() {
               annotations.edit &&
               annotationTab === 'position')) &&
           (selectedAnnotation &&
-          !selectedAnnotation.trackAnchor &&
-          !selectedAnnotation.sectionAnchor &&
           selectedPose &&
-          annotations.edit &&
-          annotationTab === 'position' &&
-          (selectedAnnotation.kind !== 'pin' || adjustingPinId === selectedAnnotation.id) ? (
+          annotationPositionEditing ? (
             <ObjectGizmo
               key={`annotation-gizmo:${selectedAnnotation.id}`}
               name={selectedAnnotation.name || '标记'}

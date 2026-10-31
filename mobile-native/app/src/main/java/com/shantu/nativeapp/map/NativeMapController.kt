@@ -144,7 +144,7 @@ class NativeMapController internal constructor(
         val stamp=modelPlacementRevision()
         if(stamp==modelTerrainStamp)return null
         modelTerrainStamp=stamp
-        return markerDocuments.values.toList().map(::renderMarker)
+        return markerDocuments.values.toList().filter(NativeModelTerrainInput::needsTerrainRefresh).map(::renderMarker)
     }
     internal fun modelPlacementRevision()=NativeModelTerrainInput.Stamp(
         worldWindow.engine.globe.elevationModel.timestamp,terrainEnabled,worldWindow.engine.globe.verticalExaggeration)
@@ -873,7 +873,7 @@ class NativeMapController internal constructor(
         val coordinate=marker.optJSONArray("coordinates")
         val lat=coordinate?.optDouble(1,Double.NaN) ?: Double.NaN
         val lon=coordinate?.optDouble(0,Double.NaN) ?: Double.NaN
-        val needsGround=marker.optString("kind")!="pin" || marker.optJSONObject("borehole")?.optDouble("depth",Double.NaN)?.isFinite()==true
+        val needsGround=NativeModelTerrainInput.needsTerrainRefresh(marker)
         val liveGround=if(needsGround && terrainEnabled && lat.isFinite() && lat in -90.0..90.0 && lon.isFinite()) getElevation(lat,lon) else null
         return NativeModelTerrainInput.prepare(marker,terrainEnabled,liveGround)
     }

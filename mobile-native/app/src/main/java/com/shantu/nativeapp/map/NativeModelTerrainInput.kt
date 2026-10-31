@@ -6,6 +6,13 @@ import org.json.JSONObject
 internal object NativeModelTerrainInput {
     data class Stamp(val elevationRevision: Long, val terrainEnabled: Boolean, val exaggeration: Double)
 
+    /** Ordinary pins follow the SDK terrain directly; only meshes and real depth traces need rebuilding. */
+    fun needsTerrainRefresh(saved: JSONObject): Boolean {
+        if (saved.optString("kind") != "pin") return true
+        val depth = saved.optJSONObject("borehole")?.optDouble("depth", Double.NaN) ?: return false
+        return saved.optString("icon") == "drill" && depth.isFinite() && depth in 0.1..12_000.0
+    }
+
     fun prepare(saved: JSONObject, terrainEnabled: Boolean, liveGroundMeters: Double?): JSONObject {
         val render = JSONObject(saved.toString())
         // Pins clamp through the SDK; their optional borehole uses the same visible ground.

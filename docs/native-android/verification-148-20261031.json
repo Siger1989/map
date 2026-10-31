@@ -1,0 +1,80 @@
+{
+  "version": "0.2.148-test",
+  "versionCode": 155,
+  "package": "com.guanyun.weather.shantu.preview",
+  "bytes": 165151696,
+  "sha256": "aba800f908ceaecc66e585f493af0f8db7c2d8dcc51b280e890a2ab4b358f845",
+  "originalSignature": true,
+  "certificateSha256": "4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f",
+  "debuggable": false,
+  "launcherAliasPreserved": true,
+  "typeScript": "PASS",
+  "privateReactBuild": "PASS",
+  "optimizedBuild": "PASS",
+  "zipalign16KiB": true,
+  "sourceUnchangedSinceFinalTests": true,
+  "crc": "PASS",
+  "zipEntries": 2165,
+  "privateConfigurationMatch": true,
+  "privateCredentialPresent": true,
+  "reactNativeCredentialMatch": true,
+  "privateMapSourceCount": 39,
+  "seedConfigurationMatch": true,
+  "freshReactAssetsMatched": 1925,
+  "native64BitLibraries": 4,
+  "elf16KiB": "PASS",
+  "fabdemTiles": 473,
+  "repairTiles": 23,
+  "deliveredApk": "APK/Shantu-0.2.148-test-private.apk",
+  "archiveApk": "交付包/山兔-0.2.148-test-2026-10-31/01-Android-APK/Shantu-0.2.148-test-private.apk",
+  "fixedApk": "APK/山兔手机.apk",
+  "fixedApkMatches148": true,
+  "baseline147Unchanged": true,
+  "baseline142OriginalBytesPreserved": true,
+  "branch": "codex/tianditu-loading-20261027",
+  "baselineCommit": "0e3b8f052b5178a09b13410b133d67dd7555f669",
+  "nodeDirectedTests": {
+    "files": 4,
+    "tests": 32,
+    "failures": 0,
+    "skipped": 0
+  },
+  "androidDirectedTests": {
+    "suites": 3,
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "sharedReactBrowserUI": {
+    "sizes": [
+      "390x857",
+      "360x780"
+    ],
+    "markerCases": 6,
+    "firstSelectionDetailsReturn": "PASS",
+    "nameUnobscured": "PASS"
+  },
+  "isolatedNativeNavigationDOM": {
+    "sizes": [
+      "390x857",
+      "360x780"
+    ],
+    "anchorHitRegionSeparated": "PASS",
+    "explicitNavigationAndOutsideClose": "PASS",
+    "nativePicking": "NOT_TESTED"
+  },
+  "emulatorStarted": false,
+  "unrealOperated": false,
+  "physicalDeviceAttached": false,
+  "liveTileStressTest": false,
+  "publishedPrivateApk": false,
+  "deviceTouchAcceptance": "UNVERIFIED",
+  "deviceMapFlickerAcceptance": "UNVERIFIED",
+  "nativeVisualMatrix": "UNVERIFIED",
+  "fullFeatureAcceptance": "UNVERIFIED",
+  "harmonyNativePackage": "NOT_DELIVERED",
+  "ordinaryPinsRebuiltForDem": false,
+  "sharedMarkerGlyphLimit": 128,
+  "fixedDetailRetirementIssueIndependent": true
+}

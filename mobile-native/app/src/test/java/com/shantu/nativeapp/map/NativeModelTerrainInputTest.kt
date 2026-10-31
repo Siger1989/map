@@ -13,6 +13,17 @@ class NativeModelTerrainInputTest {
     private fun saved()=JSONObject().put("kind","box").put("groundElevation",2400.0)
         .put("offset",5.0).put("placement","surface").put("centerAltitude",2500.0)
 
+    @Test fun `DEM changes leave ordinary SDK clamped pins alone while refreshing meshes and real boreholes`() {
+        val pin=JSONObject().put("kind","pin").put("icon","pin").put("groundElevation",2400.0)
+        assertFalse(NativeModelTerrainInput.needsTerrainRefresh(pin))
+        assertFalse(NativeModelTerrainInput.needsTerrainRefresh(JSONObject(pin.toString()).put("groundElevation",JSONObject.NULL)))
+        val drill=JSONObject(pin.toString()).put("icon","drill").put("borehole",JSONObject().put("depth",80.0))
+        assertTrue(NativeModelTerrainInput.needsTerrainRefresh(drill))
+        assertFalse(NativeModelTerrainInput.needsTerrainRefresh(JSONObject(drill.toString()).put("icon","flag")))
+        assertFalse(NativeModelTerrainInput.needsTerrainRefresh(JSONObject(drill.toString()).put("borehole",JSONObject().put("depth",JSONObject.NULL))))
+        for(kind in listOf("box","sphere","cylinder","prism"))assertTrue(NativeModelTerrainInput.needsTerrainRefresh(saved().put("kind",kind)))
+    }
+
     @Test fun `current raw DEM replaces stale render ground without rewriting saved or explicit placement`() {
         val saved=saved()
         val render=NativeModelTerrainInput.prepare(saved,true,2320.25)

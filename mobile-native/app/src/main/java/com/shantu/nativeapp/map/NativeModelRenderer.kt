@@ -60,6 +60,16 @@ internal data class NativeModelSectionVertex(
 internal object NativeModelRenderer {
     private const val EARTH_RADIUS_METERS = 6_371_008.8
     private const val MAX_VERTICES = 65_536
+    // ArgbImage.toImageSource uses the ArgbImage object as its SDK cache key.
+    // Rebuilding identical pixels would otherwise allocate a new GPU texture after
+    // every selection/presentation/DEM refresh and displace visible imagery.
+    internal const val MAX_MARKER_GLYPHS = 128
+    private val markerGlyphs = object : LinkedHashMap<String, earth.worldwind.render.image.ImageSource>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, earth.worldwind.render.image.ImageSource>?) = size > MAX_MARKER_GLYPHS
+    }
+    internal fun cachedMarkerGlyphCount(): Int = synchronized(markerGlyphs) { markerGlyphs.size }
+    private fun markerGlyph(key: String, create: () -> earth.worldwind.render.image.ImageSource) =
+        synchronized(markerGlyphs) { markerGlyphs.getOrPut(key, create) }
 
     fun render(marker: JSONObject, terrainSampler: NativeTerrainSampler? = null): NativeMarkerRenderResult {
         val id = marker.optString("id").takeIf { it.isNotBlank() && it.length <= 100 }
@@ -312,15 +322,15 @@ internal object NativeModelRenderer {
         return lower.dropLast(1)+upper.dropLast(1)
     }
 
-    private fun markerDotImage(color: Int): earth.worldwind.render.image.ImageSource {
+    private fun markerDotImage(color: Int): earth.worldwind.render.image.ImageSource = markerGlyph("dot:$color") {
         val pixels = IntArray(9 * 9) { i ->
             val distance = kotlin.math.hypot((i % 9 - 4).toDouble(), (i / 9 - 4).toDouble())
             when { distance <= 2.5 -> color; distance <= 4.5 -> AndroidColor.WHITE; else -> 0 }
         }
-        return ArgbImage(9, 9, pixels).toImageSource()
+        ArgbImage(9, 9, pixels).toImageSource()
     }
 
-    private fun markerIconImage(icon:String,color:Int):earth.worldwind.render.image.ImageSource {
+    private fun markerIconImage(icon:String,color:Int):earth.worldwind.render.image.ImageSource = markerGlyph("icon:$icon:$color") {
         val bitmap=Bitmap.createBitmap(64,64,Bitmap.Config.ARGB_8888);val canvas=Canvas(bitmap)
         val fill=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=color}
         val white=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.FILL;this.color=AndroidColor.WHITE}
@@ -329,7 +339,7 @@ internal object NativeModelRenderer {
         canvas.drawPath(path,fill);canvas.drawCircle(32f,24f,16f,white);canvas.drawCircle(32f,24f,16f,border)
         drawMarkerGlyph(canvas,icon,color)
         val pixels=IntArray(64*64);bitmap.getPixels(pixels,0,64,0,0,64,64);bitmap.recycle()
-        return ArgbImage(64,64,pixels).toImageSource()
+        ArgbImage(64,64,pixels).toImageSource()
     }
     private val MARKER_IDS=setOf("pin","flag","star","camp","mountain","water","house","cave","danger","parking","bridge","tree","camera","sample","drill","hospital","food","gate")
     internal fun drawMarkerGlyph(canvas:Canvas,icon:String,color:Int){

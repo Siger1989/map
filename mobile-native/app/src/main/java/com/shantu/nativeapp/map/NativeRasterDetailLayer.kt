@@ -124,6 +124,12 @@ internal class NativeRasterDetailLayer(
     private val tileRank:(providerIdentity:String,z:Int,x:Int,y:Int)->Double?,
 ) : AutoCloseable {
     val renderLayer=RenderableLayer("Fixed raster detail")
+    private val sceneMutation=NativeRasterDetailSceneMutation<SurfaceImage,ImageSource>(
+        renderMonitor=window.engine.renderResourceCache,
+        addRenderable=renderLayer::addRenderable,
+        removeRenderable={ renderLayer.removeRenderable(it) },
+        removeTexture={ imageSource -> window.engine.renderResourceCache.remove(imageSource) },
+    )
     private val main=Handler(Looper.getMainLooper())
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.IO)
     private var activeJob:kotlinx.coroutines.Job?=null
@@ -131,7 +137,7 @@ internal class NativeRasterDetailLayer(
     private var fixedZoom:Int?=null
     private var lastPatchKey:String?=null
     private var generation=0
-    private data class TileImage(val bitmap:Bitmap,val renderable:SurfaceImage)
+    private data class TileImage(val bitmap:Bitmap,val imageSource:ImageSource,val renderable:SurfaceImage)
     private val tileImages=linkedMapOf<String,TileImage>()
     private val tileJobs=linkedMapOf<String,kotlinx.coroutines.Job>()
     private var tileState=NativeRasterDetailTileState(4L*1024L*1024L)
@@ -232,11 +238,28 @@ internal class NativeRasterDetailLayer(
                             if(tileJobs[tileKey]===self) { tileState.failed(tileKey);removeTileJobIfCurrent(tileKey,self) }
                             b.recycle();bitmap=null;return@withContext
                         }
-                        val image=SurfaceImage(NativeRasterDetailPlan.tileSector(tile),ImageSource.fromBitmap(b))
-                        val evicted=tileState.ready(tileKey,b.allocationByteCount.toLong())
-                        evicted.forEach(::retireTile)
-                        if(tileKey in evicted) { b.recycle();bitmap=null;removeTileJobIfCurrent(tileKey,self);return@withContext }
-                        tileImages[tileKey]=TileImage(b,image);renderLayer.addRenderable(image)
+                        val imageSource=ImageSource.fromBitmap(b)
+                        val image=SurfaceImage(NativeRasterDetailPlan.tileSector(tile),imageSource)
+                        val tileImage=TileImage(b,imageSource,image)
+                        var rejectedByBudget=false
+                        val installed=sceneMutation.addIfCurrent(image, {
+                            !closed && generation==mine && provider?.identity==source.identity &&
+                                tileKey in tileState.pendingKeys() && tileJobs[tileKey]===self
+                        }) {
+                            val evicted=tileState.ready(tileKey,b.allocationByteCount.toLong())
+                            evicted.filter { it!=tileKey }.forEach(::retireTile)
+                            if(tileKey in evicted) {
+                                rejectedByBudget=true
+                                false
+                            } else {
+                                tileImages[tileKey]=tileImage
+                                true
+                            }
+                        }
+                        if(!installed) {
+                            if(!rejectedByBudget)tileState.failed(tileKey)
+                            b.recycle();bitmap=null;removeTileJobIfCurrent(tileKey,self);return@withContext
+                        }
                         bitmap=null // ownership moved to the resident image cache
                         removeTileJobIfCurrent(tileKey,self);window.requestRedraw()
                         val allReady=visible.all(tileState::contains)
@@ -308,15 +331,20 @@ internal class NativeRasterDetailLayer(
     }
 
     private fun clearImage() {
-        renderLayer.clearRenderables()
+        val retired=tileImages.values.toList()
+        tileImages.clear()
+        sceneMutation.retireAll(retired.map { it.renderable to it.imageSource })
+        retired.forEach { retire(it.bitmap) }
         window.requestRedraw()
-        tileImages.values.forEach { retire(it.bitmap) };tileImages.clear()
         tileState.clear()
     }
 
     private fun key(source:String,tile:NativeRasterDetailTile)="$source/${tile.z}/${tile.x}/${tile.y}"
     private fun removeTileJobIfCurrent(key:String,job:kotlinx.coroutines.Job) { if(tileJobs[key]===job)tileJobs.remove(key) }
-    private fun retireTile(key:String) { tileImages.remove(key)?.let { retire(it.bitmap);renderLayer.clearRenderables();tileImages.values.forEach { retained -> renderLayer.addRenderable(retained.renderable) } } }
+    private fun retireTile(key:String) { tileImages.remove(key)?.let { image ->
+        sceneMutation.retire(image.renderable,image.imageSource)
+        retire(image.bitmap)
+    } }
     private fun cancelTileJobs() { tileJobs.values.forEach { it.cancel() };tileJobs.clear();tileState.cancelPending() }
 
     private fun warpTile(fetched:Bitmap,tile:NativeRasterDetailTile,tileSize:Int):Bitmap {
@@ -341,10 +369,9 @@ internal class NativeRasterDetailLayer(
         window.removeOnAttachStateChangeListener(attachmentListener)
         activeJob?.cancel();activeJob=null
         scope.cancel()
-        renderLayer.clearRenderables()
-        tileImages.values.forEach { retire(it.bitmap) };tileImages.clear();cancelTileJobs()
+        cancelTileJobs()
+        clearImage()
         provider=null
-        window.requestRedraw()
     }
 
     private companion object {
