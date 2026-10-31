@@ -1,3 +1,5 @@
+> **2026-10-31当前接续入口**：[157安全同步交接](HANDOFF-20261031-SOURCE-SYNC.md)。当前实际分支为`codex/tianditu-loading-20261027`，157/code164使用保留React业务的`:hybrid`原生球形地图包；构建按该交接的JDK17/compileSdk37/optimized命令与本机私密配置进行。下方其它分支、旧安装链接及曾经授权上传凭据的记载均为历史，不是当前操作授权。真实Key/Token/原签名私钥/私人APK不上传GitHub；历史已存在的敏感记录仅报告，不在本轮改写。
+
 > **2026-10-12 搜索分支同步补充：** 本轮下载目标为 `codex/place-address-search-20261011` 的主agent核对后的精确SHA，按 [W697接续](search-github-handoff-20261012.md) 建独立checkout，保留已有工作区、用户数据和本机私有配置。用户本轮明确禁止上传密钥、env与签名，因此本分支取消了 `.env.local`/测试jks跟踪；下文2026-09-24凭据同步条目仅为存量历史，本轮不继续采用。源码下载不更新APK/EXE，不改变认证权限。
 
 # 换电脑继续开发
@@ -15,7 +17,7 @@
 安装 Git 和 Node.js 24，然后在你希望保存项目的目录打开终端：
 
 ```sh
-git clone --branch codex/rollback-ui-0235-20260921 https://github.com/Siger1989/map.git
+git clone --branch codex/tianditu-loading-20261027 https://github.com/Siger1989/map.git
 cd map
 npm ci
 npm run dev

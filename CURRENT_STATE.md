@@ -1,3 +1,5 @@
+> **2026-10-31 / 安全源码同步与完整接续**：当前157/code164；产品实现`d9eb222e4b5faed2636e07e223406f9e41d1407d`，开工源码/交付说明HEAD `06930be99273cf0f937e92afa760a2d8c0588837`，分支`codex/tianditu-loading-20261027`、公开仓库`Siger1989/map`。本轮仅文档/安全同步，未改功能或出新包；原有源码已在远端，未发现遗漏的必需未跟踪源码。路由provider与141来源逐字一致，在线三模式保留；网络失败可回退仅步行离线，真机失败链未诊断。7项路由逻辑检查PASS。临时外网157已完整回读校验，本轮Range206可达，上海2026-11-01 06:52:32计划到期，不是永久链接/聊天附件。当前文档旧随机地址省略，历史不改；历史仍可取回`.env.local`/JKS旧记录，本轮不删除/轮换/强推。私人配置、签名、APK、数据与本机证据原位保留，源码同步不等于全量备份。详见[安全同步交接](docs/HANDOFF-20261031-SOURCE-SYNC.md)；最终同步SHA以实际远端核对为准。
+
 > **157外网交付补充（用户本轮明确授权）**：用户在手机外网请求含私人天地图的下载地址；已建立只开放这个已审计APK的临时HTTPS单文件下载通道，使用随机不可枚举路径，支持HEAD/Range，根目录和其它路径404，最长12小时后关闭。地址只提供当前用户，不写源码/公开文档或公开Release；不是把凭据包发布到公共仓库。本机完整外网回读校验结果记录`.openai/private157-external-download-proof.json`，存在PASS记录后才称完整下载一致。临时服务依赖本机持续在线，不能冒称永久网盘链接或手机已安装。
 
 > **2026-10-31 / 手机156反馈FAIL，157私人试修包已本机提供**：用户确认156静止、3D倾斜/关闭等高线及部分2D高度仍清晰模糊交替；不能沿用旧模拟器样本称手机已解决。157/code164修复节点显式图标/中心锚点/CSS倍率、地面命中同帧校验、MOVE按显示帧合并/抬手flush、瓦片焦点20Hz、长线长度增量和道路真实分段/A*复用。GPU预算由统一192MiB上限改非低内存设备物理内存1/16与旧预算取大、封顶512MiB；此项是试修，真机闪烁根因未坐实。31项Node、17项Kotlin、TSC/fresh私人React/optimized/完整性通过；额外28项行为PASS、旧外壳manifest版本断言1项FAIL已说明。MuMu157三点真实画线节点可见/接在线段上，临时点全部撤销；不代表全部选中拖动通过。APK165167188字节，SHA256 `751ddf8dedaaf3ce15d4fc7ccc72f3266384230c85bf7f3f760a757250b16f79`，版本化/固定/交付目录一致、156保留。手机待复测，不公开私人包。详见[157交接](docs/HANDOFF-20261031-157.md)和[157交付记录](docs/release-0.2.157.md)。
@@ -301,12 +303,12 @@
 
 # 2026-10-03 08:03 / 0.2.104-test 已打包交付
 
-10:02重发：原链接已到期，用户要求重新发。新链接 https://cakes-career-susan-archived.trycloudflare.com/d04b7129fb1f7a3a0278811660722a392908/Shantu-0.2.104-test-standalone.apk ，北京时间2026-10-03 12:01:55到期，电脑须在线。同一0.2.104安装包，完整外网下载SHA/字节与Range206再次PASS；报告 `.openai/apk-02104-r2-public-verified.json`。仅重开两小时单APK下载，未重新构建或改源码。
+10:02重发：原链接已到期，用户要求重新发。新链接 历史临时下载地址（已省略，原有效期记录保留） ，北京时间2026-10-03 12:01:55到期，电脑须在线。同一0.2.104安装包，完整外网下载SHA/字节与Range206再次PASS；报告 `.openai/apk-02104-r2-public-verified.json`。仅重开两小时单APK下载，未重新构建或改源码。
 
 用户要求“打包apk并且发我”。已将下述蓝线选择/改名/换位修复打入 `APK/Shantu-0.2.104-test-standalone.apk`，versionCode111，原包名/签名，66,089,776字节，SHA256 `686a9bc38bdea2509f493bc563f3be13d20558da3a1222c246acad0552f54c12`。
 
 - PASS：最终stage `mobile/.build/apk-20261003-075923`，aapt版本/包名、v2/v3签名、zipalign、CRC、1910assets、496地形PNG、38私有种子、1365概览；Key配置一致性仅布尔。沿用上轮55定向测试、tsc与390/360实际交互验收，本轮仅同步网页/原生版本号并构建。
-- 临时手机下载：https://proc-calendar-boxing-reproduced.trycloudflare.com/541fa3f1cc90af4214fc499e8221f198b1f5/Shantu-0.2.104-test-standalone.apk ，北京时间2026-10-03 10:00:37到期，电脑须在线。外网完整下载SHA/字节与Range206核验PASS；`.openai/apk-02104-public-verified.json`。
+- 临时手机下载：历史临时下载地址（已省略，原有效期记录保留） ，北京时间2026-10-03 10:00:37到期，电脑须在线。外网完整下载SHA/字节与Range206核验PASS；`.openai/apk-02104-public-verified.json`。
 - 首次误版本stage075704被拒绝交付，旧103已原签名恢复且SHA完全相同；详情 `docs/release-0.2.104-local.md`。没有丢失旧版本安装包。
 - 未commit/push、未公开含Key的Release。Android真机触控/键盘/覆盖安装待验证，鸿蒙原生仍未交付。9291预览、3108 API保留。
 
@@ -332,7 +334,7 @@
 - 新包APK/Shantu-0.2.103-test-standalone.apk，code110，66,085,680字节；SHA256 55f4c2c5cfb82674eef621d34e8741e6494c7a6f2d43a15af13a4c8b31bdd0eb。精确stage mobile/.build/apk-20261003-003241；原签名/zipalign/CRC/1910assets/496地形PNG/38私有种子/1365概览/Key一致性核验PASS，报告.openai/package-02103-*.json，详情docs/release-0.2.103-local.md。真实Android手感与覆盖安装未验证，HarmonyOS6.1原生未交付。仍未commit/push或公开含Key包。
 
 
-临时手机下载：[https://readily-dogs-portal-perfectly.trycloudflare.com/600792556517b9c6a3281434f39df800abc7/Shantu-0.2.103-test-standalone.apk](https://readily-dogs-portal-perfectly.trycloudflare.com/600792556517b9c6a3281434f39df800abc7/Shantu-0.2.103-test-standalone.apk)，北京时间2026-10-03 02:35到期，电脑须在线。外网完整下载SHA/字节数与Range206核验PASS，报告.openai/apk-02103-public-verified.json。单APK能力路径，两小时自动结束；未改变系统代理配置。
+临时手机下载：历史临时下载地址（已省略，原有效期记录保留），北京时间2026-10-03 02:35到期，电脑须在线。外网完整下载SHA/字节数与Range206核验PASS，报告.openai/apk-02103-public-verified.json。单APK能力路径，两小时自动结束；未改变系统代理配置。
 
 ---
 # 最新本机交付：0.2.102 可见节点拉直 / 平移保点（2026-10-02 23:28）
@@ -342,7 +344,7 @@
 - 源码：`visibleNodeMove.ts` / `routeEdit.ts` / `editing.ts` / `TrackLayer.ts` / `SegmentHandleCache.ts` / `TerrainMap.tsx` / `FeatureDragBridge.ts` / `app/page.tsx`。相机实姿态与DEM资源revision分别处理，双图共用一次手势的控制区间。连续重复GPS点不当成固定分叉锚。
 - 验证：107/107定向测试、tsc、相关diff check PASS。新9293合成5800点轨迹实际复现平移补点，修复后390、360双图拉长/平移无新增中间句柄，zoom分别保持14.04、13.88；390主动放大15.04才显示更多点；360下图继续拖动同步，两次撤销退出。截图 `artifacts/screenshots/visible-node-edit-20261002/`，日志 `.openai/visible-edit-final-*.log`。测试tab/服务关闭，测试改动撤销，用户9291存档未清空/未手动刷新。
 - APK：`APK/Shantu-0.2.102-test-standalone.apk`，0.2.102-test/code109，包名com.guanyun.weather.shantu.preview，66,085,680字节，SHA256 `86a99b099942604a1d93b1d1644862607bec91b3de69940dc3de7c50091e7d5e`。暂存 `mobile/.build/apk-20261002-232325`。原证书、zipalign、CRC、1910assets、496地形PNG、1365概览、38私有种子和preview/production Key配置一致性全部PASS；Key不输出。
-- 临时[手机下载](https://explorer-knock-melbourne-penetration.trycloudflare.com/0b3d3ad25a435fcaefa3269d36b09f02e0d3/Shantu-0.2.102-test-standalone.apk)，2026-10-03 01:25北京时间到期。整包外网下载hash/长度与Range206核验PASS；单APK能力路径2小时自动退出。报告 `.openai/apk-02102-public-verified.json`。
+- 临时历史临时下载地址（已省略，原有效期记录保留），2026-10-03 01:25北京时间到期。整包外网下载hash/长度与Range206核验PASS；单APK能力路径2小时自动退出。报告 `.openai/apk-02102-public-verified.json`。
 - 实机Android手感/帧率、覆盖安装、GPS/后台尚未验证；极高俯仰/不可靠地理边界会保守全投影。HarmonyOS6.1原生包未交付。没有宣布全软件无bug或真机不卡顿。
 - 工作目录D:\天气地图，分支codex/rollback-ui-0235-20260921，HEAD仍ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe；已有大量本地工作完整保留。未新增commit/push或公开含Key APK；详情 `docs/release-0.2.102-local.md`。
 
@@ -358,7 +360,7 @@
 
 最终APK/Shantu-0.2.101-test-standalone.apk，versionCode108，com.guanyun.weather.shantu.preview，66,081,584字节，SHA256 fe6d96a55c9d2f7df43ef55ed461d22fd30d72a11b9a255a41e4aa51db2709d6；暂存mobile/.build/apk-20261002-191436。原证书v2/v3、zipalign、CRC、1910资源、496地形PNG、38私有图源、1365概览与预览/production天地图Key一致性PASS。核验.openai/package-02101-{integrity,config-check}.json及02101相关日志。
 
-手机单APK随机链接：https://pump-acceptance-tee-alpha.trycloudflare.com/e4f993c7de4a436d404efecafd4648eda4fd/Shantu-0.2.101-test-standalone.apk；2026-10-02 21:17:31北京时间到期，电脑须在线。命令级既有代理下整包外网SHA/大小与Range206核验PASS，报告.openai/apk-02101-public-verified.json；未更改持久网络配置，不保证所有手机网络可直连。下载PID36580、隧道包装24736/cloudflared34464按2小时结束。分支仍codex/rollback-ui-0235-20260921、HEAD ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe，保留所有旧本地工作，未新增提交/推送/合入main或公开含Key产物；HarmonyOS6.1原生仍未交付，既有架构预算失败单列。
+手机单APK随机链接：历史临时下载地址（已省略，原有效期记录保留） 21:17:31北京时间到期，电脑须在线。命令级既有代理下整包外网SHA/大小与Range206核验PASS，报告.openai/apk-02101-public-verified.json；未更改持久网络配置，不保证所有手机网络可直连。下载PID36580、隧道包装24736/cloudflared34464按2小时结束。分支仍codex/rollback-ui-0235-20260921、HEAD ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe，保留所有旧本地工作，未新增提交/推送/合入main或公开含Key产物；HarmonyOS6.1原生仍未交付，既有架构预算失败单列。
 
 # 2026-10-02 / 0.2.100 私有 APK：双图分叉优化交付
 
@@ -366,7 +368,7 @@
 
 最终APK：APK/Shantu-0.2.100-test-standalone.apk，66,081,584字节，SHA256 01399a95fd98c7a2b8ba6734c030b81a4ffada3a05daf25ead9fbff1a944c7f6，暂存mobile/.build/apk-20261002-183833。v2/v3原签名、包名/版本、zipalign、CRC、1910资源一致、496地形PNG像素/元数据、38种子字节、1365概览及预览/production Key一致性均PASS。沿用同一最终功能源码的126项测试、tsc、两尺寸完整分叉流程及1200随机对照证据；打包阶段只更新版本，重新完整构建。主agent在9292最终暂存网页再次检查390/360双图渲染与390绘制/暂停/退出，无横向溢出，截图artifacts/screenshots/branch-performance-20261002/apk-02100-dual-{390,360}.jpg。临时9292已关闭；用户原9174存储和9291合成测试预览保留。
 
-手机临时链接：https://syracuse-salaries-craig-assessing.trycloudflare.com/c74e12ec14ed1eaee72fd7e8bde3f43d1ee0/Shantu-0.2.100-test-standalone.apk；2026-10-02 20:40:55北京时间到期、电脑须在线。只开放随机路径的单个APK，GET/HEAD/Range；服务器PID38140、隧道包装38792/cloudflared3444按2小时结束。本机直连整包核验60秒超时，随后仅命令级既有代理重试：外网整包SHA/大小和Range206核验PASS，报告.openai/apk-02100-public-verified.json，未更改持久网络配置。该证据不保证每部手机网络都可直连。
+手机临时链接：历史临时下载地址（已省略，原有效期记录保留） 20:40:55北京时间到期、电脑须在线。只开放随机路径的单个APK，GET/HEAD/Range；服务器PID38140、隧道包装38792/cloudflared3444按2小时结束。本机直连整包核验60秒超时，随后仅命令级既有代理重试：外网整包SHA/大小和Range206核验PASS，报告.openai/apk-02100-public-verified.json，未更改持久网络配置。该证据不保证每部手机网络都可直连。
 
 真实Android覆盖安装、触控/帧率/GPS/后台记录及温升仍待真机确认，HarmonyOS6.1原生包未交付；既有架构行数预算失败继续单列。没有把JS模拟性能提升称为真机帧率提升。
 
@@ -392,7 +394,7 @@
 
 最终交付：0.2.99-test/code106，66081584字节，SHA256 f31713ebbf02a233e8c0f67b556162399c186773f83babd00bb2bb9732c13020；暂存apk-20261002-122020。v2/v3签名与已有证书4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f一致；CRC、1910资源、496地形PNG像素、38私有种子、1365概览及预览/生产天地图Key一致性PASS。主agent用最终暂存资源再次复核390/360图纸可见与保存分享入口，截图survey-final-apk-{390,360}-0299.png。独立9287现在服务该最终stage（进程26040），原9174不变。既有架构8处行数预算失败仍单列，未顺手重构。
 
-单APK随机手机链接整包外网核验PASS、Range206 PASS，哈希与最终包一致；2026-10-02 14:22:46北京时间到期，电脑须在线。URL：https://surround-doc-sounds-equality.trycloudflare.com/cce4351d35f7dfa4e41b7839a9434c3bc4d1/Shantu-0.2.99-test-standalone.apk。元数据.openai/apk-0299-r3-public-verified.json；本机回环下载进程9492、隧道包装25952/cloudflared28584，2小时自动结束。没有公开GitHub分发含Key产物。
+单APK随机手机链接整包外网核验PASS、Range206 PASS，哈希与最终包一致；2026-10-02 14:22:46北京时间到期，电脑须在线。URL：历史临时下载地址（已省略，原有效期记录保留）
 
 # 2026-10-02 / 0.2.98 私有APK：双图编辑与手机反馈修复
 

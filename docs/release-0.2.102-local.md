@@ -21,7 +21,7 @@
 
 完整重新构建：`mobile/.build/apk-20261002-232325`；日志 `.openai/build-0.2.102-local.log`。`APK/Shantu-0.2.102-test-standalone.apk`，66,085,680字节，SHA256 `86a99b099942604a1d93b1d1644862607bec91b3de69940dc3de7c50091e7d5e`。独立核验包名/code109、原证书v2/v3、zipalign、CRC、1910项assets、496地形PNG像素/metadata、1365概览瓦片、38私有图源种子与Key/版本一致性均PASS。证书SHA256 `4a941b9dda8cfe6af755949ad690a5e2d4969557f99a2efe67c55637623e6f9f`。报告 `.openai/package-02102-integrity.json`、`.openai/package-02102-config-check.json` 和 `.openai/02102-*.log`。
 
-临时[手机下载链接](https://explorer-knock-melbourne-penetration.trycloudflare.com/0b3d3ad25a435fcaefa3269d36b09f02e0d3/Shantu-0.2.102-test-standalone.apk)，北京时间2026-10-03 01:25到期；只暴露这一安装包，随机路径、2小时自动失效。本机代理路径整包200下载66,085,680字节及SHA256一致、Range206共16字节验证PASS，报告 `.openai/apk-02102-public-verified.json`；不等于已验证所有手机网络直连。下载服务PID17368、tunnel wrapper8548、cloudflared12376会按时退出。
+临时历史临时下载地址（已省略，原有效期记录保留），北京时间2026-10-03 01:25到期；只暴露这一安装包，随机路径、2小时自动失效。本机代理路径整包200下载66,085,680字节及SHA256一致、Range206共16字节验证PASS，报告 `.openai/apk-02102-public-verified.json`；不等于已验证所有手机网络直连。下载服务PID17368、tunnel wrapper8548、cloudflared12376会按时退出。
 
 ## 平台与交付边界
 

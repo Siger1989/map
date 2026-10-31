@@ -16,8 +16,8 @@
 
 首次075704构建发现Android清单未同步版本，误命名旧103，已拒绝交付并保留为 `.openai/rejected-075704-version-mismatch.apk`。原103使用原003241/aligned.apk和原签名恢复，恢复后的SHA与原 `55f4c2c5cfb82674eef621d34e8741e6494c7a6f2d43a15af13a4c8b31bdd0eb` 完全一致。修正清单后完整重建为上述075923 stage，不复用误版本包。
 
-临时下载：[Shantu-0.2.104-test-standalone.apk](https://proc-calendar-boxing-reproduced.trycloudflare.com/541fa3f1cc90af4214fc499e8221f198b1f5/Shantu-0.2.104-test-standalone.apk)。北京时间2026-10-03 10:00:37到期，电脑须在线。仅开放该随机路径APK，两小时自动结束；完整外网下载的字节数/SHA与本机一致，Range206通过，报告 `.openai/apk-02104-public-verified.json`。本地server PID28220、wrapper42168、tunnel10120；未改变系统代理。
+临时下载：历史临时下载地址（已省略，原有效期记录保留）。北京时间2026-10-03 10:00:37到期，电脑须在线。仅开放该随机路径APK，两小时自动结束；完整外网下载的字节数/SHA与本机一致，Range206通过，报告 `.openai/apk-02104-public-verified.json`。本地server PID28220、wrapper42168、tunnel10120；未改变系统代理。
 
 工作目录D:\天气地图，分支codex/rollback-ui-0235-20260921；保留现有未提交修改，未提交/推送或发布含Key的公共Release。真实Android手指操作、键盘、安全区和覆盖安装仍待用户试机；HarmonyOS6.1原生包未交付。
 
-2026-10-03 10:02用户要求重发，以上8:00下载地址已到期。新链接：[0.2.104 APK](https://cakes-career-susan-archived.trycloudflare.com/d04b7129fb1f7a3a0278811660722a392908/Shantu-0.2.104-test-standalone.apk)，北京时间12:01:55到期。复用同一APK并重新完成外网完整下载SHA/字节、Range206核验，报告 `.openai/apk-02104-r2-public-verified.json`；server20320、wrapper19312、tunnel6140均按新到期时间自动结束，无源码修改/重打包。
+2026-10-03 10:02用户要求重发，以上8:00下载地址已到期。新链接：历史临时下载地址（已省略，原有效期记录保留），北京时间12:01:55到期。复用同一APK并重新完成外网完整下载SHA/字节、Range206核验，报告 `.openai/apk-02104-r2-public-verified.json`；server20320、wrapper19312、tunnel6140均按新到期时间自动结束，无源码修改/重打包。

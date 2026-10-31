@@ -39,4 +39,4 @@
 
 工作目录D:\天气地图；分支codex/rollback-ui-0235-20260921，HEAD ec47ec0aa5f23cba6dfa2dd576197a82b6f34efe。原有大量本地修改保留，未新增commit/push或公开含Key APK。
 
-临时手机下载：[https://readily-dogs-portal-perfectly.trycloudflare.com/600792556517b9c6a3281434f39df800abc7/Shantu-0.2.103-test-standalone.apk](https://readily-dogs-portal-perfectly.trycloudflare.com/600792556517b9c6a3281434f39df800abc7/Shantu-0.2.103-test-standalone.apk)，北京时间2026-10-03 02:35到期，电脑须在线。外网完整下载SHA/字节数与Range206核验PASS，报告.openai/apk-02103-public-verified.json。单APK能力路径，两小时自动结束；未改变系统代理配置。
+临时手机下载：历史临时下载地址（已省略，原有效期记录保留），北京时间2026-10-03 02:35到期，电脑须在线。外网完整下载SHA/字节数与Range206核验PASS，报告.openai/apk-02103-public-verified.json。单APK能力路径，两小时自动结束；未改变系统代理配置。
