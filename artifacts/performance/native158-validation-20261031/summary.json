@@ -1,0 +1,1312 @@
+{
+  "productCommit": "eee2b0a6d4788c07cad396aab366ad26b35b70a1",
+  "branch": "codex/tianditu-loading-20261027",
+  "apk": {
+    "version": "0.2.158-test",
+    "versionCode": 165,
+    "package": "com.guanyun.weather.shantu.preview",
+    "bytes": 165170172,
+    "sha256": "fa2c19efcfff002ac0806ea3508486fcfcd96d10924fa415d97a883cfa109107",
+    "originalSignature": true,
+    "privateMapSourceCount": 39,
+    "freshReactAssetsMatched": 1925,
+    "elf16KiB": "PASS",
+    "zipalign16KiB": true,
+    "preserved157": true
+  },
+  "software": {
+    "typeScript": "PASS",
+    "nodeTests": 53,
+    "kotlinTests": 12,
+    "skipped": 0,
+    "failed": 0
+  },
+  "nativeRenderer": {
+    "scope": "Actual original-signature optimized APKs on dedicated MuMu3; production-code geometry fixtures and native-only synthetic position, not real GPS or recording state; coordinates and user state omitted",
+    "beforeVersion": {
+      "package": "com.guanyun.weather.shantu.preview",
+      "versionName": "0.2.157-test",
+      "versionCode": 164
+    },
+    "afterVersion": {
+      "package": "com.guanyun.weather.shantu.preview",
+      "versionName": "0.2.158-test",
+      "versionCode": 165
+    },
+    "before": [
+      {
+        "stage": "plain-z14",
+        "zoom": 14.000000000000313,
+        "pitch": 0,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": false,
+        "puckPlacemark": null
+      },
+      {
+        "stage": "near-z16",
+        "zoom": 15.999999999999009,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "near-z15",
+        "zoom": 14.999999999999659,
+        "pitch": 43.999999999999986,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z14",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z13",
+        "zoom": 12.999999999999988,
+        "pitch": 44,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z12",
+        "zoom": 12.00000000000007,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z10",
+        "zoom": 10.000000000000046,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "follow-z16",
+        "zoom": 15.999999999999009,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 18,
+            "outlineWidthPx": 57.82097244262695,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 14,
+            "outlineWidthPx": 44.971866607666016,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "top-z12",
+        "zoom": 12.00000000000007,
+        "pitch": 0,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "recording-shape",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "paused-shape",
+        "zoom": 14.000000000000313,
+        "pitch": 44,
+        "bearing": 89.99999999999234,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 1.35,
+          "imageScaleY": 1.35,
+          "imageRotationDegrees": 270
+        }
+      },
+      {
+        "stage": "no-heading",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": false,
+        "puckPlacemark": null
+      }
+    ],
+    "after": [
+      {
+        "stage": "plain-z14",
+        "zoom": 14.000000000000313,
+        "pitch": 0,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": false,
+        "puckPlacemark": null
+      },
+      {
+        "stage": "near-z16",
+        "zoom": 15.999999999999009,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "near-z15",
+        "zoom": 14.999999999999659,
+        "pitch": 43.999999999999986,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z14",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z13",
+        "zoom": 12.999999999999988,
+        "pitch": 44,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z12",
+        "zoom": 12.00000000000007,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "far-z10",
+        "zoom": 10.000000000000046,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "follow-z16",
+        "zoom": 15.999999999999009,
+        "pitch": 44.00000000000001,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "ribbon",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "top-z12",
+        "zoom": 12.00000000000007,
+        "pitch": 0,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          },
+          {
+            "group": "guidance",
+            "role": "offset-reference",
+            "cssWidth": 4,
+            "outlineWidthPx": 12.849104881286621,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "recording-shape",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "paused-shape",
+        "zoom": 14.000000000000313,
+        "pitch": 44,
+        "bearing": 89.99999999999234,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 270
+        }
+      },
+      {
+        "stage": "no-heading",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": false,
+        "puckPlacemark": null
+      }
+    ],
+    "freshDirectionChecks": [
+      {
+        "stage": "recording-shape",
+        "zoom": 13.999999999999988,
+        "pitch": 43.999999999999986,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 45
+        }
+      },
+      {
+        "stage": "paused-shape",
+        "zoom": 14.000000000000313,
+        "pitch": 44,
+        "bearing": 89.99999999999234,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": true,
+        "headingGlyphVisible": true,
+        "puckPlacemark": {
+          "imageScale": 2.4092071611253196,
+          "imageScaleY": 2.4092071611253196,
+          "imageRotationDegrees": 270
+        }
+      },
+      {
+        "stage": "no-heading",
+        "zoom": 14.000000000000313,
+        "pitch": 43.99999999999999,
+        "bearing": 0,
+        "cssScale": 3.21227621483376,
+        "routePaths": [
+          {
+            "group": "routes",
+            "role": "routeOutline",
+            "cssWidth": 6,
+            "outlineWidthPx": 19.273656845092773,
+            "matchesCssScale": true
+          },
+          {
+            "group": "routes",
+            "role": "routePath",
+            "cssWidth": 2,
+            "outlineWidthPx": 6.4245524406433105,
+            "matchesCssScale": true
+          }
+        ],
+        "headingGlyphRequested": false,
+        "headingGlyphVisible": false,
+        "puckPlacemark": {
+          "imageScale": 9,
+          "imageScaleY": 9,
+          "imageRotationDegrees": 0
+        }
+      }
+    ],
+    "originalStateAndCameraRestored": true
+  },
+  "offlineUi": {
+    "scope": "应用内window.fetch拦截并设置navigator.onLine=false；操作系统和NativeMap网络未断开",
+    "endpointInput": "通过地图桥接客户端合成touch gate与tap事件注入fixture坐标；不是GPS，也不是用户在屏幕上的真实地图触摸",
+    "modes": [
+      {
+        "mode": "auto",
+        "routingSource": "offline",
+        "distanceMeters": 59.082520346099834,
+        "coordinateCount": 6,
+        "nativeRoutePathPresent": true,
+        "routeSummaryVisible": true,
+        "applicationFetchRejectCount": 0
+      },
+      {
+        "mode": "motorcycle",
+        "routingSource": "offline",
+        "distanceMeters": 59.082520346099834,
+        "coordinateCount": 6,
+        "nativeRoutePathPresent": true,
+        "routeSummaryVisible": true,
+        "applicationFetchRejectCount": 0
+      }
+    ],
+    "cleanup": "browser-restored;qa-graphs-removed;qa-route-ui-cleared;camera-restore-requested",
+    "sourceFixture": "tests/fixtures/offline-routing/berlin-small-osm.json"
+  },
+  "recordingUi": {
+    "basicStartPauseCancel": "OBSERVED",
+    "course": "UNVERIFIED_REAL_MOVEMENT",
+    "startupTransientError": "OBSERVED_UNDIAGNOSED",
+    "qaSessionCancelled": true
+  },
+  "deviceOffline": "NOT_EXECUTED_ADB_OFFLINE_AFTER_EMULATOR_NETWORK_COMMAND",
+  "deviceNetworkRestored": {
+    "wifi": 1,
+    "mobileData": 1
+  },
+  "phone": "UNVERIFIED",
+  "fullMainDualMatrix": "UNVERIFIED",
+  "external158": "NOT_CREATED_PENDING_SCOPE_AUTHORIZATION"
+}
