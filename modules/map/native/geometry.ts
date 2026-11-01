@@ -29,10 +29,13 @@ type TerrainRaySample = {
 /** Revisioned, bounded native DEM samples used only when the host supplied real terrain data. */
 export class NativeDemCache {
   private revisionValue = -1;
+  private dataVersionValue = 0;
   private tiles: NativeDemTile[] = [];
   private smallestCellSpacingMeters = Number.POSITIVE_INFINITY;
 
   get revision() { return this.revisionValue; }
+  /** Same camera revision can receive refreshed terrain tiles; projection caches need both. */
+  get dataVersion() { return this.dataVersionValue; }
 
   replace(revision: number, tiles: readonly NativeDemTile[]): boolean {
     if (!Number.isSafeInteger(revision) || revision < 0 || revision < this.revisionValue) return false;
@@ -42,6 +45,7 @@ export class NativeDemCache {
       .sort((a, b) => tileResolution(b) - tileResolution(a));
     this.smallestCellSpacingMeters = Math.min(...this.tiles.map(tileCellSpacingMeters));
     this.revisionValue = revision;
+    this.dataVersionValue++;
     return true;
   }
 
@@ -50,6 +54,7 @@ export class NativeDemCache {
     this.tiles = [];
     this.smallestCellSpacingMeters = Number.POSITIVE_INFINITY;
     this.revisionValue = revision;
+    this.dataVersionValue++;
     return true;
   }
 

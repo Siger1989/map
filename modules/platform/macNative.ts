@@ -116,6 +116,12 @@ export async function macClipboardWrite(text: string) {
 }
 
 export async function writeClipboard(text: string) {
+  const android = typeof window === 'undefined' ? undefined :
+    (window as unknown as { GuanyunNative?: { clipboardWrite?: (text: string) => boolean } }).GuanyunNative;
+  if (typeof android?.clipboardWrite === 'function') {
+    if (!android.clipboardWrite(text)) throw new Error('Android 剪贴板写入失败');
+    return;
+  }
   if (isMacNativeSupported()) {
     if (!await macClipboardWrite(text)) throw new Error('macOS 剪贴板写入失败');
     return;

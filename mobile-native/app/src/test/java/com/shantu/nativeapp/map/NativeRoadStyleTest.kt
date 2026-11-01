@@ -44,6 +44,31 @@ class NativeRoadStyleTest {
         assertEquals(1.5f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 13.0), .0001f)
     }
 
+    @Test fun `vector roads fade and narrow at distance while close zoom and river styling remain`() {
+        val mainAt10 = NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.MAIN, 10.0)
+        val outlineAt10 = NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.MAIN_OUTLINE, 10.0)
+        assertEquals(.42f, mainAt10.widthCss, .0001f)
+        assertEquals(.68f, outlineAt10.widthCss, .0001f)
+        assertEquals(.68f, mainAt10.opacityScale, .0001f)
+        assertEquals(.68f, outlineAt10.opacityScale, .0001f)
+
+        val localAt12 = NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.LOCAL, 12.0)
+        val railAt12 = NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.RAIL, 12.0)
+        assertEquals(.24f, localAt12.widthCss, .0001f)
+        assertEquals(.76f, localAt12.opacityScale, .0001f)
+        assertEquals(.4f, railAt12.widthCss, .0001f)
+        assertEquals(.84f, railAt12.opacityScale, .0001f)
+
+        for (group in listOf(NativeRoadStyle.Group.MAIN, NativeRoadStyle.Group.MAIN_OUTLINE,
+                NativeRoadStyle.Group.LOCAL, NativeRoadStyle.Group.RAIL)) {
+            assertEquals(1f, NativeRoadStyle.opacityScale(group, 16.0), .0001f)
+        }
+        val river = NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.RIVER, 10.0)
+        assertEquals(NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 10.0), river.widthCss, .0001f)
+        assertEquals(1f, river.opacityScale, .0001f)
+        assertEquals(2f, NativeRoadStyle.currentZoomStyle(NativeRoadStyle.Group.MAIN, 16.0).widthCss, .0001f)
+    }
+
     @Test fun `only highways are yellow while other main roads and paths preserve web palette`() {
         fun road(roadClass: String) = NativeRoadStyle.style.styleFor(
             "transportation", MvtGeometryType.LINESTRING, mapOf("class" to roadClass),

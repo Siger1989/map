@@ -513,7 +513,7 @@
 .selection-tools.is-annotation {
   top: calc(52px + var(--safe-top));
   bottom: auto;
-  width: min(360px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
+  width: min(300px, calc(100% - var(--edge-left) - var(--edge-right) - 46px));
   padding: 8px;
 }
 .selection-tools.is-annotation strong {

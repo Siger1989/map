@@ -1,0 +1,138 @@
+{
+  "version": "0.2.161-test",
+  "versionCode": 168,
+  "sha256": "9067da62082202c63855d11a08679e0c2bd88b84759d64cec4a430f196b86da7",
+  "bytes": 165175092,
+  "device": "Dedicated MuMu3 Android emulator; not OPPO Find X8",
+  "physicalPhone": "UNVERIFIED on 161; user-reported 160 any-two-source dual freezes remains FAIL",
+  "scope": "Private trial with original identity, registered Tianditu and 39 source seeds; no public APK/tunnel",
+  "artifactIntegrity": {
+    "originalSignature": true,
+    "debuggable": false,
+    "crc": "PASS",
+    "zipalign16KiB": true,
+    "elf16KiB": "PASS",
+    "privateConfigurationMatch": true,
+    "privateMapSourceCount": 39,
+    "freshReactAssetsMatched": 1925,
+    "fabdemTiles": 473,
+    "repairTiles": 23,
+    "native64BitLibraries": 4
+  },
+  "dualScenarios": [
+    {
+      "scenario": "guard-sustained",
+      "elapsedSeconds": 179.81,
+      "complete": true,
+      "oom": 0,
+      "fatal": 0,
+      "mmapFailures": 0,
+      "distinctRenderCachesEverySample": 1,
+      "dualMapSamples": 5,
+      "heapSamplePeakMiB": 150.2,
+      "heapSettledMiB": 87.1,
+      "settledMapCount": 1,
+      "networkSettledQueued": 0,
+      "networkSettledActive": 0,
+      "contourBuild": {
+        "completedBatches": 26,
+        "maximumLogicalVertices": 53788,
+        "maximumVboBytes": 4303040,
+        "budgetRejections": 1,
+        "refinedTiles": 1,
+        "maxLevelRejections": 0,
+        "refinementDeferred": 0,
+        "lastRejectedSourceLevel": 7
+      }
+    },
+    {
+      "scenario": "guard-no-contours",
+      "elapsedSeconds": 117.38,
+      "complete": true,
+      "oom": 0,
+      "fatal": 0,
+      "mmapFailures": 0,
+      "distinctRenderCachesEverySample": 1,
+      "dualMapSamples": 3,
+      "heapSamplePeakMiB": 197.4,
+      "heapSettledMiB": 53.3,
+      "settledMapCount": 1,
+      "networkSettledQueued": 0,
+      "networkSettledActive": 0,
+      "contourBuild": {
+        "completedBatches": 26,
+        "maximumLogicalVertices": 53788,
+        "maximumVboBytes": 4303040,
+        "budgetRejections": 1,
+        "refinedTiles": 1,
+        "maxLevelRejections": 0,
+        "refinementDeferred": 0,
+        "lastRejectedSourceLevel": 7
+      }
+    }
+  ],
+  "oldCandidate": {
+    "sha256": "9ba4d5a04944976c1d1ba1772b62acbd6c5f1d3681fe129f909cf8622b4d0811",
+    "result": "FAIL: caught large-array OOM during 178-second sustained dual test; not delivered",
+    "failedAllocationBytes": 147236880,
+    "failureStackCaptured": false,
+    "separateActiveSamplesLink": "FloatList/IntList -> MvtBatchedLineTile -> NativeContourLayer; not unique physical-phone diagnosis"
+  },
+  "directedChecks": {
+    "nodeTestsPassed": 104,
+    "kotlinUniqueSuites": 9,
+    "kotlinUniqueTests": 80,
+    "kotlinNote": "49 original directed + 34 contour/cache directed, 3 shared-cache tests overlap",
+    "typescript": "PASS",
+    "privateReact": "PASS",
+    "optimized": "PASS"
+  },
+  "uiAndDrawing": {
+    "coordinateCard": "PASS on unchanged 161 React/clipboard source at earlier candidate; actual 391x834 and 360x779; not full UI matrix",
+    "nodeDrag": "PASS 20 small MOVE, 6 fast MOVE, exact node snap, undo, save/exit/reenter on earlier 161 source; not phone FPS",
+    "realRoadCurve": "LIMITED: pure indexed match tests pass; one native road-end probe did not establish continuous committed curve",
+    "linePoses": {
+      "result": "PASS within native renderer fixture scope",
+      "poses": 7,
+      "strokeChecks": 130,
+      "widthFactors": [
+        1,
+        0.7,
+        0.3,
+        0.12
+      ],
+      "cameraRestored": true,
+      "revisionRestored": true,
+      "qaScope": "Synthetic renderer-only geometry; no GPS, React position, saved track or recording writes",
+      "rootViewedScreenshots": [
+        "top-z14",
+        "top-z10"
+      ],
+      "caveats": [
+        "Raster-embedded large road/label at far zoom remains; app cannot individually style pixels",
+        "Close synthetic route endpoints overlap at far zoom; endpoint label decluttering not claimed"
+      ]
+    },
+    "restoredIdle": {
+      "singleMap": true,
+      "contours": true,
+      "frameDelta5Seconds": 0,
+      "queued": 0,
+      "active": 0,
+      "qaDraftAndSavedRoutes": 0,
+      "existingAnnotationPreserved": true
+    }
+  },
+  "limitations": [
+    "Emulator runs do not establish physical-phone flicker or responsiveness acceptance",
+    "CPU contour limit is per tile; no claim all CPU geometry caches are shared",
+    "Raster-baked labels/roads cannot individually resize; SDK MVT cross-layer text collisions remain",
+    "HarmonyOS 6.1 native package not delivered",
+    "No full main/dual UI and system-service regression claim"
+  ],
+  "localDelivery": {
+    "versionedFixedArchiveSha256Match": true,
+    "previous160Preserved": true,
+    "scope": "Local private trial only; no external tunnel or public release"
+  }
+}

@@ -26,7 +26,21 @@ export type RoadSnapper = (
   previous: RoadMatch | null,
   from?: Coordinate,
 ) => RoadSnapResult;
-type Project = (point: Coordinate) => ScreenPoint | null;
+export type RoadProject = (point: Coordinate) => ScreenPoint | null;
+export type ProjectedRoadSegment = {
+  readonly order: number;
+  readonly lineIndex: number;
+  readonly line: RoadLine;
+  readonly index: number;
+  readonly a: Coordinate;
+  readonly b: Coordinate;
+  readonly screenA: ScreenPoint;
+  readonly screenB: ScreenPoint;
+};
+export interface ProjectedRoadSegmentIndex {
+  readonly lines: RoadLine[];
+  candidatesAt(point: ScreenPoint, radius: number): readonly ProjectedRoadSegment[];
+}
 
 /** Classify the real candidate/path result without manufacturing a connection. */
 export function roadSnapResult(
@@ -131,58 +145,82 @@ const finite = (p: ScreenPoint | null): p is ScreenPoint =>
 export function nearestRoad(
   point: ScreenPoint,
   lines: RoadLine[],
-  project: Project,
+  project: RoadProject,
   previous: RoadMatch | null = null,
+  projectedIndex?: ProjectedRoadSegmentIndex,
 ): RoadMatch | null {
   let best: RoadMatch | null = null,
     score = Infinity;
-  for (const line of lines) {
+  const consider = (
+    line: RoadLine,
+    index: number,
+    a: Coordinate,
+    b: Coordinate,
+    sa: ScreenPoint | null,
+    sb: ScreenPoint | null,
+  ) => {
     const locked = line.id === previous?.line.id;
     const radius = locked ? ROAD_RELEASE_RADIUS : ROAD_SNAP_RADIUS;
-    for (let index = 0; index < line.coordinates.length - 1; index++) {
-      const a = line.coordinates[index],
-        b = line.coordinates[index + 1];
-      const sa = project(a),
-        sb = project(b);
-      if (!finite(sa) || !finite(sb)) continue;
+    if (!finite(sa) || !finite(sb)) return;
+    if (
+      point.x < Math.min(sa.x, sb.x) - radius ||
+      point.x > Math.max(sa.x, sb.x) + radius ||
+      point.y < Math.min(sa.y, sb.y) - radius ||
+      point.y > Math.max(sa.y, sb.y) + radius
+    )
+      return;
+    const dx = sb.x - sa.x,
+      dy = sb.y - sa.y;
+    if (dx * dx + dy * dy < 0.01) return;
+    // Refine the geographic fraction after projection: pitched maps are not affine.
+    let low = 0,
+      high = 1;
+    const distance = (t: number) => {
+      const screen = project(interpolate(a, b, t));
+      return finite(screen)
+        ? Math.hypot(screen.x - point.x, screen.y - point.y)
+        : Infinity;
+    };
+    for (let iteration = 0; iteration < 18; iteration++) {
+      const left = low + (high - low) / 3,
+        right = high - (high - low) / 3;
+      if (distance(left) < distance(right)) high = right;
+      else low = left;
+    }
+    const fractions = [0, 1, (low + high) / 2];
+    const fraction = fractions.reduce((best, t) =>
+      distance(t) < distance(best) ? t : best,
+    );
+    const position =
+      fraction === 0 ? a : fraction === 1 ? b : interpolate(a, b, fraction);
+    const screen = project(position);
+    if (!finite(screen)) return;
+    const d = Math.hypot(screen.x - point.x, screen.y - point.y);
+    const candidateScore = d * (locked ? 0.8 : 1);
+    if (d <= radius && candidateScore < score) {
+      score = candidateScore;
+      best = { line, index, fraction, coordinate: position, screen };
+    }
+  };
+  if (projectedIndex?.lines === lines) {
+    for (const segment of projectedIndex.candidatesAt(point, ROAD_RELEASE_RADIUS)) {
+      if (lines[segment.lineIndex] !== segment.line) continue;
+      // Geometry arrays may be edited in place. Fall back safely if a returned
+      // candidate no longer describes its source segment.
       if (
-        point.x < Math.min(sa.x, sb.x) - radius ||
-        point.x > Math.max(sa.x, sb.x) + radius ||
-        point.y < Math.min(sa.y, sb.y) - radius ||
-        point.y > Math.max(sa.y, sb.y) + radius
-      )
-        continue;
-      const dx = sb.x - sa.x,
-        dy = sb.y - sa.y;
-      if (dx * dx + dy * dy < 0.01) continue;
-      // Refine the geographic fraction after projection: pitched maps are not affine.
-      let low = 0,
-        high = 1;
-      const distance = (t: number) => {
-        const screen = project(interpolate(a, b, t));
-        return finite(screen)
-          ? Math.hypot(screen.x - point.x, screen.y - point.y)
-          : Infinity;
-      };
-      for (let iteration = 0; iteration < 18; iteration++) {
-        const left = low + (high - low) / 3,
-          right = high - (high - low) / 3;
-        if (distance(left) < distance(right)) high = right;
-        else low = left;
+        segment.line.coordinates[segment.index] !== segment.a ||
+        segment.line.coordinates[segment.index + 1] !== segment.b
+      ) {
+        return nearestRoad(point, lines, project, previous);
       }
-      const fractions = [0, 1, (low + high) / 2];
-      const fraction = fractions.reduce((best, t) =>
-        distance(t) < distance(best) ? t : best,
-      );
-      const position =
-        fraction === 0 ? a : fraction === 1 ? b : interpolate(a, b, fraction);
-      const screen = project(position);
-      if (!finite(screen)) continue;
-      const d = Math.hypot(screen.x - point.x, screen.y - point.y);
-      const candidateScore = d * (locked ? 0.8 : 1);
-      if (d <= radius && candidateScore < score) {
-        score = candidateScore;
-        best = { line, index, fraction, coordinate: position, screen };
+      consider(segment.line, segment.index, segment.a, segment.b, segment.screenA, segment.screenB);
+    }
+  } else {
+    for (const line of lines) {
+      for (let index = 0; index < line.coordinates.length - 1; index++) {
+        const a = line.coordinates[index],
+          b = line.coordinates[index + 1];
+        consider(line, index, a, b, project(a), project(b));
       }
     }
   }
@@ -193,7 +231,7 @@ export function nearestRoad(
 export function roadSection(
   previous: RoadMatch,
   next: RoadMatch,
-  project: Project,
+  project: RoadProject,
 ): Coordinate[] | null {
   if (previous.line.id !== next.line.id) return null;
   const from = previous.index + previous.fraction,

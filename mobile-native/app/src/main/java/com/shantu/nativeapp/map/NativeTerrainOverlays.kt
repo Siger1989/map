@@ -80,70 +80,96 @@ internal object NativeTerrainOverlayMath {
     }
 
     /** Marching squares over one bounded tile; cells touching nodata are deliberately omitted. */
-    fun contourSegments(values: DoubleArray, size: Int, interval: Int): List<NativeContourSegment> {
+    fun contourSegments(
+        values: DoubleArray,
+        size: Int,
+        interval: Int,
+        ensureActive: () -> Unit = {},
+    ): List<NativeContourSegment> {
         require(size >= 2 && values.size == size * size && interval in INTERVALS)
         val segments = ArrayList<NativeContourSegment>()
         var candidates = 0
-        for (y in 0 until size - 1) for (x in 0 until size - 1) {
-            val v0 = values[y * size + x]
-            val v1 = values[y * size + x + 1]
-            val v2 = values[(y + 1) * size + x + 1]
-            val v3 = values[(y + 1) * size + x]
-            if (!v0.isFinite() || !v1.isFinite() || !v2.isFinite() || !v3.isFinite()) continue
-            val minimum = minOf(v0, v1, v2, v3)
-            val maximum = maxOf(v0, v1, v2, v3)
-            var level = ceil(minimum / interval) * interval
-            val last = floor(maximum / interval) * interval
-            while (level <= last) {
-                if (++candidates > MAX_LEVEL_CANDIDATES) throw IllegalArgumentException("地形等高线瓦片计算超出单瓦片预算")
-                val intersections = ArrayList<Pair<Int, Pair<Float, Float>>>(4)
-                edgeIntersection(v0, v1, level)?.let { intersections += 0 to (x + it).toFloat().let { px -> px to y.toFloat() } }
-                edgeIntersection(v1, v2, level)?.let { intersections += 1 to (x + 1f to y + it) }
-                edgeIntersection(v3, v2, level)?.let { intersections += 2 to (x + it).toFloat().let { px -> px to (y + 1f) } }
-                edgeIntersection(v0, v3, level)?.let { intersections += 3 to (x.toFloat() to y + it) }
-                if (intersections.size == 2) {
-                    val a=intersections[0].second;val b=intersections[1].second
-                    if(a!=b)segments += segment(a,b,level.toInt())
-                } else if (intersections.size == 4) {
-                    // Bilinear asymptotic decider. The arithmetic center average is not enough for
-                    // asymmetric saddles; Q selects which diagonal phase reaches the saddle.
-                    val cornerZeroHigh = v0 >= level
-                    val f0 = v0 - level
-                    val f1 = v1 - level
-                    val f2 = v2 - level
-                    val f3 = v3 - level
-                    val determinant = f0 * f2 - f1 * f3
-                    val centerHigh = when {
-                        determinant == 0.0 -> true // deterministic tie, matching the legacy high-center rule
-                        cornerZeroHigh -> determinant > 0.0
-                        else -> determinant < 0.0
+        for (y in 0 until size - 1) {
+            ensureActive()
+            for (x in 0 until size - 1) {
+                val v0 = values[y * size + x]
+                val v1 = values[y * size + x + 1]
+                val v2 = values[(y + 1) * size + x + 1]
+                val v3 = values[(y + 1) * size + x]
+                if (!v0.isFinite() || !v1.isFinite() || !v2.isFinite() || !v3.isFinite()) continue
+                val minimum = minOf(v0, v1, v2, v3)
+                val maximum = maxOf(v0, v1, v2, v3)
+                var level = ceil(minimum / interval) * interval
+                val last = floor(maximum / interval) * interval
+                while (level <= last) {
+                    if (++candidates > MAX_LEVEL_CANDIDATES) throw IllegalArgumentException("地形等高线瓦片计算超出单瓦片预算")
+                    val intersections = ArrayList<Pair<Int, Pair<Float, Float>>>(4)
+                    edgeIntersection(v0, v1, level)?.let { intersections += 0 to (x + it).toFloat().let { px -> px to y.toFloat() } }
+                    edgeIntersection(v1, v2, level)?.let { intersections += 1 to (x + 1f to y + it) }
+                    edgeIntersection(v3, v2, level)?.let { intersections += 2 to (x + it).toFloat().let { px -> px to (y + 1f) } }
+                    edgeIntersection(v0, v3, level)?.let { intersections += 3 to (x.toFloat() to y + it) }
+                    if (intersections.size == 2) {
+                        val a=intersections[0].second;val b=intersections[1].second
+                        if(a!=b) {
+                            NativeContourGeometryBudget.ensureSegmentCapacity(segments.size)
+                            segments += segment(a,b,level.toInt())
+                        }
+                    } else if (intersections.size == 4) {
+                        // Bilinear asymptotic decider. The arithmetic center average is not enough for
+                        // asymmetric saddles; Q selects which diagonal phase reaches the saddle.
+                        val cornerZeroHigh = v0 >= level
+                        val f0 = v0 - level
+                        val f1 = v1 - level
+                        val f2 = v2 - level
+                        val f3 = v3 - level
+                        val determinant = f0 * f2 - f1 * f3
+                        val centerHigh = when {
+                            determinant == 0.0 -> true // deterministic tie, matching the legacy high-center rule
+                            cornerZeroHigh -> determinant > 0.0
+                            else -> determinant < 0.0
+                        }
+                        val edges = intersections.associate { it.first to it.second }
+                        val pairs = if (centerHigh == cornerZeroHigh) listOf(0 to 1, 2 to 3) else listOf(0 to 3, 1 to 2)
+                        val additionCount = pairs.count { (a, b) -> edges.getValue(a) != edges.getValue(b) }
+                        NativeContourGeometryBudget.ensureSegmentCapacity(segments.size, additionCount)
+                        pairs.forEach { (a, b) ->
+                            val from=edges.getValue(a);val to=edges.getValue(b)
+                            if(from!=to) segments += segment(from,to,level.toInt())
+                        }
                     }
-                    val edges = intersections.associate { it.first to it.second }
-                    val pairs = if (centerHigh == cornerZeroHigh) listOf(0 to 1, 2 to 3) else listOf(0 to 3, 1 to 2)
-                    pairs.forEach { (a, b) ->
-                        val from=edges.getValue(a);val to=edges.getValue(b)
-                        if(from!=to)segments += segment(from,to,level.toInt())
-                    }
+                    level += interval
                 }
-                level += interval
             }
         }
         return segments
     }
 
     /** Joins adjacent cell fragments and places sparse labels along actual major contour paths. */
-    fun contourLabels(segments: List<NativeContourSegment>, interval: Int, spacingPixels: Float = 210f): List<NativeContourLabel> {
+    fun contourLabels(
+        segments: List<NativeContourSegment>,
+        interval: Int,
+        spacingPixels: Float = 210f,
+        ensureActive: () -> Unit = {},
+    ): List<NativeContourLabel> {
         require(interval in INTERVALS && spacingPixels.isFinite() && spacingPixels > 0f)
-        return contourLabelsForPaths(contourPaths(segments), interval, spacingPixels)
+        return contourLabelsForPaths(contourPaths(segments, ensureActive), interval, spacingPixels, ensureActive)
     }
 
-    fun contourLabelsForPaths(paths: List<NativeContourPath>, interval: Int, spacingPixels: Float): List<NativeContourLabel> {
+    fun contourLabelsForPaths(
+        paths: List<NativeContourPath>,
+        interval: Int,
+        spacingPixels: Float,
+        ensureActive: () -> Unit = {},
+    ): List<NativeContourLabel> {
         require(interval in INTERVALS && spacingPixels.isFinite() && spacingPixels > 0f)
         val labels = mutableListOf<NativeContourLabel>()
-        for (contour in paths.filter { isMajor(it.elevationMeters, interval) }) {
+        for (contour in paths) {
+            ensureActive()
+            if (!isMajor(contour.elevationMeters, interval)) continue
             val path = contour.points
             val cumulative = DoubleArray(path.size)
             for (index in 1 until path.size) {
+                if ((index and 255) == 0) ensureActive()
                 cumulative[index] = cumulative[index - 1] + kotlin.math.hypot(
                     (path[index].first - path[index - 1].first).toDouble(),
                     (path[index].second - path[index - 1].second).toDouble(),
@@ -152,6 +178,7 @@ internal object NativeTerrainOverlayMath {
             val length = cumulative.lastOrNull() ?: 0.0
             var distance = spacingPixels * 0.5
             while (distance < length - 18.0) {
+                ensureActive()
                 val index = cumulative.indexOfFirst { it >= distance }.coerceAtLeast(1)
                 val fraction = ((distance - cumulative[index - 1]) / (cumulative[index] - cumulative[index - 1]).coerceAtLeast(1e-9)).toFloat()
                 val dx = path[index].first - path[index - 1].first
@@ -171,10 +198,25 @@ internal object NativeTerrainOverlayMath {
     }
 
     /** Stitches marching-squares fragments once per contour elevation before path construction. */
-    fun contourPaths(segments: List<NativeContourSegment>): List<NativeContourPath> =
-        segments.groupBy { it.elevationMeters }.flatMap { (elevation, lines) ->
-            stitchLevel(lines).map { NativeContourPath(elevation, it) }
+    fun contourPaths(
+        segments: List<NativeContourSegment>,
+        ensureActive: () -> Unit = {},
+    ): List<NativeContourPath> {
+        val grouped = LinkedHashMap<Int, MutableList<NativeContourSegment>>()
+        segments.forEachIndexed { index, segment ->
+            if ((index and 255) == 0) ensureActive()
+            grouped.getOrPut(segment.elevationMeters) { mutableListOf() } += segment
         }
+        val paths = ArrayList<NativeContourPath>()
+        grouped.forEach { (elevation, lines) ->
+            ensureActive()
+            stitchLevel(lines, ensureActive).forEach { points ->
+                ensureActive()
+                paths += NativeContourPath(elevation, points)
+            }
+        }
+        return paths
+    }
 
     fun renderElevationColors(values: DoubleArray, size: Int, interval: Int, opacity: Double = 1.0): Bitmap {
         require(size > 0 && values.size == size * size && interval in INTERVALS && opacity.isFinite() && opacity in 0.0..1.0)
@@ -225,10 +267,14 @@ internal object NativeTerrainOverlayMath {
         return bitmap
     }
 
-    private fun stitchLevel(lines: List<NativeContourSegment>): List<List<Pair<Float, Float>>> {
+    private fun stitchLevel(
+        lines: List<NativeContourSegment>,
+        ensureActive: () -> Unit = {},
+    ): List<List<Pair<Float, Float>>> {
         fun key(x: Float, y: Float) = (x.roundToInt().toLong() shl 32) xor (y.roundToInt().toLong() and 0xffffffffL)
         val adjacency = HashMap<Long, MutableList<Int>>()
         lines.forEachIndexed { index, line ->
+            if ((index and 255) == 0) ensureActive()
             adjacency.getOrPut(key(line.x1, line.y1)) { mutableListOf() } += index
             adjacency.getOrPut(key(line.x2, line.y2)) { mutableListOf() } += index
         }
@@ -238,7 +284,9 @@ internal object NativeTerrainOverlayMath {
             val points = mutableListOf<Pair<Float, Float>>()
             var point = start
             var edge = initial
+            var traversed = 0
             while (!used[edge]) {
+                if ((traversed++ and 255) == 0) ensureActive()
                 used[edge] = true
                 val line = lines[edge]
                 val a = key(line.x1, line.y1)

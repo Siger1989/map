@@ -18,7 +18,7 @@ import {
   NAVIGATION_CUE_ROUTE_PROJECTION_LAYER_ID,
   NAVIGATION_CUE_SOURCE_ID,
 } from '../modules/guidance/NavigationCueLayer.ts';
-import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
 
 const arrows = (collection) => collection.features.filter(({ properties }) => properties.role === 'chevron');
 const leads = (collection) => collection.features.filter(({ properties }) => properties.role === 'lead');
@@ -462,6 +462,10 @@ test('cue layer clears on null, gates wide zooms, and keeps stable source/layer 
   assert.deepEqual(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-width'], routeLineWidthExpression(4));
   assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-width'], routeLineWidthExpression(4));
   assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-width'], routeLineWidthExpression(8));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OUTLINE_LAYER_ID).paint['line-opacity'], routeLineOpacityExpression(0.82));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_RIBBON_LAYER_ID).paint['line-opacity'], routeLineOpacityExpression(0.98));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-opacity'], routeLineOpacityExpression(0.9));
+  assert.deepEqual(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-opacity'], routeLineOpacityExpression(0.82));
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint['line-color'], '#ffd34f');
   assert.equal(map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_OUTLINE_LAYER_ID).paint['line-color'], '#65562f');
   assert.equal('line-dasharray' in map.layers.get(NAVIGATION_CUE_OFFSET_REFERENCE_LAYER_ID).paint, false);

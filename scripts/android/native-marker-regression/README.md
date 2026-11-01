@@ -64,7 +64,7 @@ retain that failure separately from successful loaded-ground checks. These
 fixtures never inject GPS or recording positions. Push the generated JSON to
 the target application's external files root, then use
 `-e mode line-position-regression -e fixtureFile qa-line-position.json`.
-`fixtureVersion:160` and every `expectedStrokeScale` are mandatory. Assertions
+`fixtureVersion:160` (legacy schema name) and every positive `expectedStrokeScale` no greater than 1 are mandatory; 161 far-zoom fixtures include 0.12. Assertions
 retain the requested scale; they do not silently substitute the actual camera
 scale when the requested pose fails. `cameraProbe` may report unavailable fields
 after R8 optimization and must not be interpreted as successful measurement.

@@ -159,4 +159,21 @@ test('the shared search hook applies source, city, near and paging consistently 
   }));
   assert.match(document.querySelector('#route-search').textContent, /Replacement First Page/);
   assert.doesNotMatch(document.querySelector('#route-search').textContent, /Stale Page Result|Stale Suggestion|Stale page warning/);
+
+  const callCountBeforeCoordinates = globalThis.__placeSearchCalls.length;
+  await React.act(async () => root.render(React.createElement(App, { query: '39.9042, 116.4074' })));
+  await React.act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
+  assert.equal(globalThis.__placeSearchCalls.length, callCountBeforeCoordinates,
+    'valid decimal coordinates are resolved locally without a geocoder request');
+  for (const id of ['map-search', 'route-search']) {
+    assert.deepEqual(snapshots[id].places[0].coordinates, [116.4074, 39.9042]);
+    assert.equal(snapshots[id].places[0].coordinateSystem, 'WGS84');
+    assert.equal(snapshots[id].busy, false);
+  }
+  await React.act(async () => root.render(React.createElement(App, { query: '91, 200' })));
+  await React.act(async () => new Promise((resolve) => setTimeout(resolve, 520)));
+  assert.equal(globalThis.__placeSearchCalls.length, callCountBeforeCoordinates,
+    'coordinate-looking invalid input is reported locally instead of sent to a geocoder');
+  assert.match(snapshots['map-search'].error, /纬度需在/);
+  assert.deepEqual(snapshots['map-search'].places, []);
 });

@@ -22,7 +22,6 @@ import earth.worldwind.layer.mercator.MercatorTileFactory
 import earth.worldwind.layer.mercator.MercatorTiledSurfaceImage
 import earth.worldwind.render.Color
 import earth.worldwind.render.Renderable
-import earth.worldwind.render.RenderResourceCache
 import earth.worldwind.render.AFLevel
 import earth.worldwind.render.Texture
 import earth.worldwind.render.image.ImageSource
@@ -88,10 +87,11 @@ class NativeMapController internal constructor(
     @Volatile private var bridgePrintRasterFrameCoverage: NativePrintRasterFrameCoverage? = null
     private val memoryManager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     private val physicalMemory = ActivityManager.MemoryInfo().also { memoryManager?.getMemoryInfo(it) }.totalMem
-    private val worldWindow = WorldWindow(context, renderResourceCache = RenderResourceCache(
-        context, capacity = NativeRenderMemoryBudget.textureCapacityBytes(
+    private val renderCacheLease = NativeRenderResourceCachePool.acquire(
+        appContext, NativeRenderMemoryBudget.textureCapacityBytes(
             Runtime.getRuntime().maxMemory(), physicalMemory, memoryManager?.isLowRamDevice == true),
-    ))
+    )
+    private val worldWindow = WorldWindow(context, renderResourceCache = renderCacheLease.resource)
     val view: View get() = worldWindow
     private val mainHandler = Handler(Looper.getMainLooper())
     private val pickScope = CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
@@ -197,6 +197,7 @@ class NativeMapController internal constructor(
     private var areaDraftRenderables: List<Renderable> = emptyList()
     private val areaVertexImageCache = linkedMapOf<Int, ImageSource>()
     private var selectedSourceId: String? = null
+    private var builtinRasterDatum: NativeRasterDatum = NativeRasterDatum.WGS84
     private var selectedSource: NativeMapSourceSelection? = null
     private var customSource: NativeMapSource? = null
     private var quality: NativeMapQuality = NativeMapQuality.HIGH
@@ -514,6 +515,7 @@ class NativeMapController internal constructor(
         // Avoid queueEvent here: the host may already have paused the GLSurfaceView and
         // Android is then allowed to drop queued GL-thread work during destruction.
         worldWindow.onPause()
+        renderCacheLease.close()
     }
 
     fun setSource(id: String) {
@@ -533,6 +535,14 @@ class NativeMapController internal constructor(
         applySelectedSource()
         refreshTileDemand(forceGeneration = true)
         reportStatus("已选择内置${selectedSource?.name}图源，等待首屏瓦片请求")
+    }
+
+    /** Apply the explicit raster datum only to built-in Tianditu tiles. Business coordinates stay WGS84. */
+    fun setBuiltinRasterDatum(value: NativeRasterDatum) {
+        check(Looper.myLooper() == Looper.getMainLooper()) { "Raster datum must be changed on the Android main thread" }
+        if (disposed || builtinRasterDatum == value) return
+        builtinRasterDatum = value
+        if (customSource == null && selectedSourceId?.let { it in SOURCE_IDS } == true) applySelectedSource()
     }
 
     /** Select a validated private/user raster source without changing the camera. */
@@ -1467,16 +1477,29 @@ class NativeMapController internal constructor(
         layerName: String,
         transparent: Boolean,
         rasterCallbacks: NativeRasterLoadCallbacks? = null,
+        datum: NativeRasterDatum = builtinRasterDatum,
     ): MercatorTiledSurfaceImage {
         val maxZoom = NativeTiandituZoomPolicy.effectiveMaxZoom(layerName, fixedRasterZoom)
         return makeTileSurfaceImage("Tianditu WMTS $layerName", 1, maxZoom, transparent, 256,
             { x, y, z -> tileUrl(layerName, x, y, z) },
-            { x, y, z -> TiandituImageFactory(network, tileUrl(layerName, x, y, z),
-                rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
-                rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
-                rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
-                tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration },
-                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) }) },
+            { x, y, z ->
+                if (datum == NativeRasterDatum.WGS84) TiandituImageFactory(network, tileUrl(layerName, x, y, z),
+                    rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
+                    rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
+                    rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
+                    tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration },
+                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) })
+                else NativeRasterImageFactory.tianditu(
+                    network = network, layer = layerName, outputX = x, outputY = y, outputZoom = z,
+                    datum = datum, tileUrl = ::tileUrl,
+                    onBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
+                    onLoadStarted = rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
+                    onLoadFinished = rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
+                    identity = tileIdentityAndRegister("tianditu", layerName, z, x, y, "raster-warp-${datum.name.lowercase()}"),
+                    viewId = tileViewId, generation = { tileDemandGeneration },
+                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) },
+                )
+            },
             onBaseBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
             onImageLoadStarted = rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
             onImageLoadFinished = rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
@@ -1524,11 +1547,21 @@ class NativeMapController internal constructor(
             SOURCE_IMAGERY -> "img"
             else -> return null
         }
-        return NativeRasterDetailProvider("tianditu:$sourceId:$name",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
-            TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
+        val datumSuffix = if (builtinRasterDatum == NativeRasterDatum.WGS84) "" else ":${builtinRasterDatum.name.lowercase()}"
+        return NativeRasterDetailProvider("tianditu:$sourceId:$name$datumSuffix",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
+            if (builtinRasterDatum == NativeRasterDatum.WGS84) TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
                 rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
                 tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,{ tileDemandGeneration },
                 rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu",name,rawZ,rawX,rawY) }).createBitmap()
+            else NativeRasterImageFactory.tianditu(
+                network = network, layer = name, outputX = x, outputY = y, outputZoom = z,
+                datum = builtinRasterDatum, tileUrl = ::tileUrl,
+                onBitmapDecoded = rasterCallbacks.onBitmapDecoded,
+                onLoadStarted = rasterCallbacks.onLoadStarted, onLoadFinished = rasterCallbacks.onLoadFinished,
+                identity = tileIdentityAndRegister("tianditu",name,z,x,y,"raster-warp-${builtinRasterDatum.name.lowercase()}"),
+                viewId = tileViewId, generation = { tileDemandGeneration },
+                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu",name,rawZ,rawX,rawY) },
+            ).createBitmap()
         }
     }
 
@@ -1650,25 +1683,50 @@ internal data class TiandituImageFactory(
 }
 
 /** Custom rasters share the bounded network/cache path; datum conversion is applied to pixels before display. */
-internal data class NativeRasterImageFactory(
+internal class NativeRasterImageFactory private constructor(
     private val network: BoundedTileNetwork,
-    private val source: NativeMapSource,
-    private val layerIndex: Int,
+    private val source: NativeMapSource?,
+    private val layerIndex: Int?,
+    private val tdtLayer: String?,
+    private val tdtUrl: ((layer: String, x: Int, y: Int, z: Int) -> String)?,
+    private val datumOverride: NativeRasterDatum?,
     private val outputX: Int,
     private val outputY: Int,
     private val outputZoom: Int,
-    private val onBitmapDecoded: () -> Unit = NO_RASTER_DECODE_CALLBACK,
-    private val onLoadStarted: () -> Unit = NO_RASTER_LOAD_CALLBACK,
-    private val onLoadFinished: () -> Unit = NO_RASTER_LOAD_CALLBACK,
-    private val identity: TileRequestIdentity? = null,
-    private val viewId: String? = null,
-    private val generation: (() -> Long?)? = null,
-    private val rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)? = null,
+    private val onBitmapDecoded: () -> Unit,
+    private val onLoadStarted: () -> Unit,
+    private val onLoadFinished: () -> Unit,
+    private val identity: TileRequestIdentity?,
+    private val viewId: String?,
+    private val generation: (() -> Long?)?,
+    private val rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)?,
 ) : ImageSource.NetworkBoundImageFactory {
-    private val layer = source.layers[layerIndex]
+    constructor(
+        network: BoundedTileNetwork,
+        source: NativeMapSource,
+        layerIndex: Int,
+        outputX: Int,
+        outputY: Int,
+        outputZoom: Int,
+        onBitmapDecoded: () -> Unit = NO_RASTER_DECODE_CALLBACK,
+        onLoadStarted: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+        onLoadFinished: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+        identity: TileRequestIdentity? = null,
+        viewId: String? = null,
+        generation: (() -> Long?)? = null,
+        rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)? = null,
+    ) : this(network, source, layerIndex, null, null, null, outputX, outputY, outputZoom,
+        onBitmapDecoded, onLoadStarted, onLoadFinished, identity, viewId, generation, rawIdentityFor)
+
+    private val layer = source?.layers?.get(layerIndex!!)
+    private val datum = datumOverride ?: source?.datum ?: NativeRasterDatum.WGS84
+    private val outputTileSize = layer?.outputTileSize ?: 256
+    private val inputTileSize = layer?.tileSize ?: 256
+    private val minSourceZoom = layer?.minZoom ?: 1
+    private val subdivide = layer?.subdivide ?: false
 
     override suspend fun createCachedBitmap(): Bitmap? {
-        if (source.datum != NativeRasterDatum.WGS84 || layer.subdivide) return null
+        if (datum != NativeRasterDatum.WGS84 || subdivide) return null
         onLoadStarted()
         try {
             return network.readCached(sourceUrl(outputX, outputY, outputZoom), this, identity, viewId, generation?.invoke())
@@ -1688,18 +1746,17 @@ internal data class NativeRasterImageFactory(
     }
 
     private suspend fun createBitmapTracked(): Bitmap? {
-        if (source.datum == NativeRasterDatum.WGS84 && !layer.subdivide) {
+        if (datum == NativeRasterDatum.WGS84 && !subdivide) {
             return fetchSource(outputX, outputY, outputZoom)
         }
 
-        if (source.datum == NativeRasterDatum.WGS84 && layer.subdivide) {
+        if (datum == NativeRasterDatum.WGS84 && subdivide) {
             val parent = fetchSource(outputX, outputY, outputZoom) ?: return null
-            return try { NativeRasterProjection.cropSubdivided(parent, outputX, outputY, layer.outputTileSize) }
+            return try { NativeRasterProjection.cropSubdivided(parent, outputX, outputY, outputTileSize) }
             finally { parent.recycle() }
         }
 
-        val outputTileSize = layer.outputTileSize
-        val plan = NativeRasterProjection.plan(outputZoom, outputX, outputY, outputTileSize, source.datum)
+        val plan = NativeRasterProjection.plan(outputZoom, outputX, outputY, outputTileSize, datum)
         val mosaic = Bitmap.createBitmap(plan.width * outputTileSize, plan.height * outputTileSize, Bitmap.Config.ARGB_8888)
         try {
             val canvas = Canvas(mosaic)
@@ -1707,7 +1764,7 @@ internal data class NativeRasterImageFactory(
             for (row in 0 until plan.height) for (column in 0 until plan.width) {
                 val logicalX = plan.left + column
                 val logicalY = plan.top + row
-                val fetched = if (layer.subdivide) {
+                val fetched = if (subdivide) {
                     val parent = fetchSource(Math.floorMod(logicalX, worldTiles), logicalY, outputZoom) ?: return null
                     try {
                         NativeRasterProjection.cropSubdivided(parent, logicalX, logicalY, outputTileSize)
@@ -1729,7 +1786,9 @@ internal data class NativeRasterImageFactory(
 
     private suspend fun fetchSource(x: Int, y: Int, z: Int): Bitmap? {
         val urlTile = NativeRasterSourceTileKey.from(z, x, y) ?: return null
-        val requestTile = NativeRasterSourceTileKey.requestKey(layer, z, x, y) ?: return null
+        val requestTile = if (layer != null) NativeRasterSourceTileKey.requestKey(layer, z, x, y)
+            else NativeRasterSourceTileKey.from(z, x, y) ?: return null
+        if (requestTile == null) return null
         val rawIdentity = rawIdentityFor?.invoke(requestTile.x, requestTile.y, requestTile.z) ?: identity
         val url = sourceUrl(urlTile.x, urlTile.y, urlTile.z)
         val bytes = network.fetch(url, renderedFactory = this, identity = rawIdentity, viewId = viewId, generation = generation?.invoke())
@@ -1739,12 +1798,14 @@ internal data class NativeRasterImageFactory(
 
     private suspend fun fetchMissingAncestor(x: Int, y: Int, z: Int, childUrl: String): ByteArray? {
         if (!network.isKnownMissing(childUrl)) return null
-        for (parentZ in z - 1 downTo layer.minZoom) {
+        for (parentZ in z - 1 downTo minSourceZoom) {
             val shift = z - parentZ
             val parentX = x shr shift
             val parentY = y shr shift
             val parentUrl = sourceUrl(parentX, parentY, parentZ)
-            val parentRequest = NativeRasterSourceTileKey.requestKey(layer, parentZ, parentX, parentY) ?: return null
+            val parentRequest = if (layer != null) NativeRasterSourceTileKey.requestKey(layer, parentZ, parentX, parentY)
+                else NativeRasterSourceTileKey.from(parentZ, parentX, parentY) ?: return null
+            if (parentRequest == null) return null
             val parentIdentity = rawIdentityFor?.invoke(parentRequest.x, parentRequest.y, parentRequest.z)
             val bytes = network.fetch(parentUrl, identity = parentIdentity, viewId = viewId, generation = generation?.invoke())
             if (bytes == null) {
@@ -1753,7 +1814,7 @@ internal data class NativeRasterImageFactory(
             }
             val parent = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
             return try {
-                val cropped = NativeMissingTileFallback.cropDescendant(parent, x, y, parentZ, z, layer.tileSize) ?: return null
+                val cropped = NativeMissingTileFallback.cropDescendant(parent, x, y, parentZ, z, inputTileSize) ?: return null
                 try { NativeMissingTileFallback.bytesForBitmap(cropped) }
                 finally { cropped.recycle() }
             } finally { parent.recycle() }
@@ -1763,17 +1824,41 @@ internal data class NativeRasterImageFactory(
 
     private fun sourceUrl(x: Int, y: Int, z: Int): String {
         val side = 1 shl z
-        return source.tileUrl(layerIndex, Math.floorMod(x, side), y, z)
+        val wrappedX = Math.floorMod(x, side)
+        return if (source != null) source.tileUrl(layerIndex!!, wrappedX, y, z)
+        else tdtUrl!!.invoke(tdtLayer!!, wrappedX, y, z)
     }
 
     // Avoid data-class output of NativeMapSource/template/token values.
     override fun toString() = "NativeRasterImageFactory"
 
-    private fun sourceIdentity() = NativeImageSourceIdentity(network, source, identity, outputFallbackKey(), onBitmapDecoded, onLoadStarted, onLoadFinished, generation)
+    private fun sourceIdentity() = NativeImageSourceIdentity(network, source ?: tdtUrl!!, identity, outputFallbackKey(), onBitmapDecoded, onLoadStarted, onLoadFinished, generation)
     override fun equals(other: Any?) = other is NativeRasterImageFactory && sourceIdentity() == other.sourceIdentity()
     override fun hashCode() = sourceIdentity().hashCode()
 
-    private fun outputFallbackKey() = "${source.id}:$layerIndex:$outputZoom:$outputX:$outputY:${source.format}:${layer.tileSize}:${layer.scheme}"
+    private fun outputFallbackKey() = "${source?.id ?: "tianditu"}:${layerIndex ?: tdtLayer}:$outputZoom:$outputX:$outputY:${datum.name}:$inputTileSize:${layer?.scheme ?: "WMTS"}"
+
+    companion object {
+        fun tianditu(
+            network: BoundedTileNetwork,
+            layer: String,
+            outputX: Int,
+            outputY: Int,
+            outputZoom: Int,
+            datum: NativeRasterDatum,
+            tileUrl: (layer: String, x: Int, y: Int, z: Int) -> String,
+            onBitmapDecoded: () -> Unit = NO_RASTER_DECODE_CALLBACK,
+            onLoadStarted: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+            onLoadFinished: () -> Unit = NO_RASTER_LOAD_CALLBACK,
+            identity: TileRequestIdentity? = null,
+            viewId: String? = null,
+            generation: (() -> Long?)? = null,
+            rawIdentityFor: ((x: Int, y: Int, z: Int) -> TileRequestIdentity?)? = null,
+        ) = NativeRasterImageFactory(
+            network, null, null, layer, tileUrl, datum, outputX, outputY, outputZoom,
+            onBitmapDecoded, onLoadStarted, onLoadFinished, identity, viewId, generation, rawIdentityFor,
+        )
+    }
 }
 
 /** Disk cache is capped at 64 MiB; memory cache at 12 MiB; map rendering retains two reserved requests. */

@@ -289,6 +289,8 @@ class NativeReactMapHost(
                 .put("demRevision", entry.controller.demRevision())
                 .put("demJobActive", entry.demJob?.isActive == true)
                 .put("terrainEnabled", entry.controller.isTerrainEnabled())
+                .put("contoursEnabled", entry.renderState.optJSONObject("settings")?.optBoolean("contours") == true)
+                .put("rasterTileSize", entry.controller.currentCustomSource()?.tileSize ?: 256)
                 .put("attached", window.isAttachedToWindow))
         }
         val network = poolSnapshot
@@ -300,6 +302,7 @@ class NativeReactMapHost(
             .put("heapUsedBytes", runtime.totalMemory() - runtime.freeMemory())
             .put("mapCount", maps.size)
             .put("maps", mapsJson)
+            .put("contourBuild", JSONObject(com.shantu.nativeapp.map.NativeContourGeometryTelemetry.snapshot()))
             .put("tileStages", stages?.let {
                 JSONObject().put("scope", "process")
                     .put("decodedImages", it.decodedImages).put("decodeNanos", it.decodedNanos)
@@ -734,6 +737,20 @@ class NativeReactMapHost(
             tiandituConfigured = privateConfig.optString("tiandituKey").isNotBlank(),
         )
         val tdt = sourceId.startsWith("tianditu-") && !settings.optBoolean("offlineBasemap")
+        val tiandituDatumKey = com.shantu.nativeapp.map.NativeCartographySelection.rasterDatumKey(
+            customSourceId = null,
+            satellite = settings.optBoolean("satellite", false),
+            offlineBasemap = settings.optBoolean("offlineBasemap"),
+            satelliteProvider = settings.optString("satelliteProvider", "sentinel"),
+            imageryMode = settings.optString("imageryMode", "detail"),
+            tiandituBase = selectedBase,
+        )
+        val tiandituRasterDatum = if (tdt && !activeCustom) {
+            com.shantu.nativeapp.map.NativeRasterDatumOverride.resolve(
+                settings.optJSONObject("rasterDatums")?.optString(tiandituDatumKey),
+            )
+        } else com.shantu.nativeapp.map.NativeRasterDatum.WGS84
+        if (tdt && !activeCustom) map.setBuiltinRasterDatum(tiandituRasterDatum)
         if (!activeCustom && tdt) {
             val desired = when (sourceId) {
                 "tianditu-vector" -> NativeMapController.SOURCE_VECTOR
@@ -780,6 +797,7 @@ class NativeReactMapHost(
             tiandituBoundaries = settings.optBoolean("tiandituBoundaries"),
             offlineBasemap = settings.optBoolean("offlineBasemap") || sourceId == "offline",
             sourceId = sourceId,
+            tiandituRasterDatum = tiandituRasterDatum,
         )
         val explicitBase = activeCustom || sourceId != "terrain"
         map.configureCartography(cartographySettings, activeCustom, explicitBase, boundedRasterCap)

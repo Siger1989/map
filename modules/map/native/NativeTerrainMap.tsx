@@ -36,6 +36,7 @@ import type { NativeDrawingGroundHit } from './drawingGroundHit.ts';
 import { createMagnifierCapturePump } from './magnifierCapture.ts';
 import { magnifierCropWindow } from './magnifierCrop.ts';
 import { nextSnapGeometryState } from './snapGeometryState.ts';
+import { ProjectedPointIndex } from './projectedPointIndex.ts';
 import type { NativeMapPhoto, NativeMapRenderState, NativeMapViewport, NativeProjectionFrame } from './types.ts';
 import { INITIAL_VIEW } from '../types.ts';
 import { readLastView, saveLastView } from '../lastView.ts';
@@ -52,6 +53,7 @@ import { DRAFT_ID } from '../../tracks/editing.ts';
 import type { TrackRenderReceipt, TrackRenderHandoffResult } from '../../tracks/trackRenderHandoff.ts';
 import type { RoadLine, RoadMatch, RoadSnapResult, RoadSnapper } from '../../tracks/roadSnapping.ts';
 import { nearestRoad, roadSnapResult } from '../../tracks/roadSnapping.ts';
+import { ProjectedRoadIndex } from '../../tracks/projectedRoadIndex.ts';
 import { riverLines } from '../../tracks/riverSnapping.ts';
 import { roadLines as readRoadLines } from '../../tracks/roadSnapping.ts';
 import { roadPathDetailed } from '../../tracks/roadPath.ts';
@@ -898,6 +900,9 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     if (!mapId || !elementRef.current) return;
     const element = elementRef.current;
     const generation = ++runtime.generation;
+    runtime.roadLines = null; runtime.riverLines = null;
+    runtime.roadGeometryStatus = 'loading'; runtime.riverGeometryStatus = 'loading';
+    runtime.snapGeometryRevision = null; runtime.frameSnapRevision = null; runtime.pendingSnapGeometry = null;
     runtime.lastAckedPhotoGroupKey = null;
     let disposed = false;
     const abort = new AbortController();
@@ -1362,24 +1367,37 @@ function isNativeHitOccupied(runtime: Runtime, hit: NativeHitTest): boolean {
   return runtime.props.annotations.some((item) => item.visible && ids.includes(item.id));
 }
 
+function projectionSnapshotKey(runtime: Runtime): string {
+  // Use the same effective frame/DEM as projectNativeLocal, including frames
+  // filtered out of UI camera sync by stale-token handling.
+  const frame = runtime.client && runtime.mapId ? runtime.client.cameraFrame(runtime.mapId) : null;
+  const dem = runtime.client && runtime.mapId ? runtime.client.demCache(runtime.mapId) : null;
+  return frame ? JSON.stringify([runtime.generation, frame.viewProjection, frame.viewport, frame.cssScale, frame.demRevision, dem?.revision, dem?.dataVersion, frame.verticalExaggeration, frame.terrainEnabled, frame.clipDepth]) : '';
+}
+const nodeProjectionCache = new WeakMap<Runtime, {
+  tracks: TrackOverlay['saved']; selectedId: TrackOverlay['selectedId']; connecting: TrackOverlay['connecting'];
+  snapTargets: TrackOverlay['snapTargets']; projection: string; index: ProjectedPointIndex<TrackNode>;
+}>();
+const roadProjectionCaches = new WeakMap<Runtime, Partial<Record<'road' | 'river', { projection: string; index: ProjectedRoadIndex }>>>();
+
 function snapNativeTrackNode(runtime: Runtime, target: DragTarget, point: ScreenPoint): TrackNode | null {
   const current = runtime.props;
   if (target.kind !== 'track' || !current.nodeSnapping || !current.trackOverlay.editing || !runtime.client || !runtime.mapId) return null;
   if (!current.trackOverlay.visible) return null;
-  let nearest: { node: TrackNode; distance: number } | null = null;
-  for (const track of current.trackOverlay.saved) {
-    if (track.hidden || track.source === 'recorded' || track.samples !== undefined) continue;
-    if (track.id !== current.trackOverlay.selectedId && !current.trackOverlay.connecting && !current.trackOverlay.snapTargets) continue;
-    const positions = track.nodes?.length ? track.nodes : track.segments.flat();
-    for (const coordinateValue of positions) {
-      if (track.id === target.node.trackId && coordinateValue[0] === target.node.coordinate[0] && coordinateValue[1] === target.node.coordinate[1]) continue;
-      const projected = pointFromProjection(runtime.client, runtime.mapId, coordinateValue);
-      if (!projected) continue;
-      const distance = Math.hypot(projected.x - point.x, projected.y - point.y);
-      if (distance <= 14 && (!nearest || distance < nearest.distance)) nearest = { node: { trackId: track.id, coordinate: coordinateValue }, distance };
+  const overlay = current.trackOverlay, projection = projectionSnapshotKey(runtime);
+  let cache = nodeProjectionCache.get(runtime);
+  if (!cache || cache.tracks !== overlay.saved || cache.selectedId !== overlay.selectedId || cache.connecting !== overlay.connecting || cache.snapTargets !== overlay.snapTargets || cache.projection !== projection) {
+    const nodes: TrackNode[] = [];
+    for (const track of overlay.saved) {
+      if (track.hidden || track.source === 'recorded' || track.samples !== undefined) continue;
+      if (track.id !== overlay.selectedId && !overlay.connecting && !overlay.snapTargets) continue;
+      for (const coordinate of track.nodes?.length ? track.nodes : track.segments.flat()) nodes.push({ trackId: track.id, coordinate });
     }
+    cache = { tracks: overlay.saved, selectedId: overlay.selectedId, connecting: overlay.connecting, snapTargets: overlay.snapTargets, projection,
+      index: new ProjectedPointIndex(nodes, node => pointFromProjection(runtime.client!, runtime.mapId!, node.coordinate)) };
+    nodeProjectionCache.set(runtime, cache);
   }
-  return nearest?.node ?? null;
+  return cache.index.nearest(point, 14, node => !(node.trackId === target.node.trackId && node.coordinate[0] === target.node.coordinate[0] && node.coordinate[1] === target.node.coordinate[1]));
 }
 
 function makeHandle(
@@ -1401,12 +1419,20 @@ function makeHandle(
     if (!lines) return { status: 'unavailable', match: null };
     if (!runtime.client || !runtime.mapId) return { status: 'unavailable', match: null };
     const project = (coordinateValue: Coordinate) => projection(coordinateValue);
-    const match = nearestRoad(point, lines, project, previous);
+    const projectionKey = projectionSnapshotKey(runtime);
+    let caches = roadProjectionCaches.get(runtime);
+    if (!caches) { caches = {}; roadProjectionCaches.set(runtime, caches); }
+    let cache = caches[kind];
+    if (!cache || cache.index.lines !== lines || cache.projection !== projectionKey) {
+      cache = { projection: projectionKey, index: new ProjectedRoadIndex(lines, project) };
+      caches[kind] = cache;
+    }
+    const match = nearestRoad(point, lines, project, previous, cache.index);
     let section: Coordinate[] | null | undefined;
     let pathStatus: 'ready' | 'disconnected' | 'limited' | undefined;
     if (from && match) {
       const screen = project(from);
-      const start = screen ? nearestRoad(screen, lines, project) : null;
+      const start = screen ? nearestRoad(screen, lines, project, null, cache.index) : null;
       const path = start
         ? roadPathDetailed(start, match, lines)
         : { status: 'disconnected' as const };

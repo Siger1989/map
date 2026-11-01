@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeout
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -81,6 +82,85 @@ class NativeTerrainOverlaysTest {
 
         val noData = DoubleArray(size * size) { Double.NaN }
         assertTrue(NativeTerrainOverlayMath.contourSegments(noData, size, 30).isEmpty())
+    }
+
+    @Test
+    fun `segment budget reports the first over-limit request`() {
+        val error = try {
+            val height = 30.0 * (NativeContourGeometryBudget.MAX_SEGMENTS + 1)
+            NativeTerrainOverlayMath.contourSegments(doubleArrayOf(0.0, 0.0, height, height), 2, 30)
+            null
+        } catch (failure: NativeContourGeometryBudgetExceeded) {
+            failure
+        }
+        assertTrue("expected a typed geometry budget exception", error != null)
+        val segmentFailure = requireNotNull(error)
+        assertEquals("segments", segmentFailure.resource)
+        assertEquals(65_536L, segmentFailure.limit)
+        assertEquals(65_537L, segmentFailure.requested)
+
+        val size = 16
+        val ramp = DoubleArray(size * size) { index -> (index / size) * 50.0 }
+        val ordinarySegments = NativeTerrainOverlayMath.contourSegments(ramp, size, 50)
+        val paths = NativeTerrainOverlayMath.contourPaths(ordinarySegments)
+        assertEquals(225, ordinarySegments.size)
+        assertEquals(15, paths.size)
+        assertTrue(paths.all { it.points.size == size })
+        assertEquals(285L, NativeContourGeometryBudget.preflight(paths))
+        assertEquals(5_242_880L,
+            NativeContourGeometryBudget.MAX_LOGICAL_VERTICES.toLong() *
+                NativeContourGeometryBudget.FLOATS_PER_LOGICAL_VERTEX * 4L)
+    }
+
+    @Test
+    fun `geometry preflight bounds SDK vertices without allocating a large point list`() {
+        val points = object : AbstractList<Pair<Float, Float>>() {
+            override val size = NativeContourGeometryBudget.MAX_LOGICAL_VERTICES - 2
+            override fun get(index: Int): Pair<Float, Float> = error("preflight must use only path size")
+        }
+        val error = try {
+            NativeContourGeometryBudget.preflight(listOf(NativeContourPath(50, points)))
+            null
+        } catch (failure: NativeContourGeometryBudgetExceeded) {
+            failure
+        }
+        assertTrue("expected a typed geometry budget exception", error != null)
+        val preflightFailure = requireNotNull(error)
+        assertEquals("logical vertices", preflightFailure.resource)
+        assertEquals(65_537L, preflightFailure.requested)
+    }
+
+    @Test
+    fun `contour row and path loops check cancellation`() {
+        val values = DoubleArray(16 * 16) { Double.NaN }
+        val cancellation = CancellationException("cancel contour rows")
+        var rowsChecked = 0
+        val rowFailure = try {
+            NativeTerrainOverlayMath.contourSegments(values, 16, 50) {
+                if (++rowsChecked == 3) throw cancellation
+            }
+            null
+        } catch (failure: CancellationException) {
+            failure
+        }
+        assertSame(cancellation, rowFailure)
+        assertEquals(3, rowsChecked)
+
+        val paths = listOf(
+            NativeContourPath(50, listOf(0f to 0f, 1f to 0f)),
+            NativeContourPath(100, listOf(0f to 1f, 1f to 1f)),
+        )
+        var pathsChecked = 0
+        val pathFailure = try {
+            NativeContourGeometryBudget.preflight(paths) {
+                if (++pathsChecked == 2) throw cancellation
+            }
+            null
+        } catch (failure: CancellationException) {
+            failure
+        }
+        assertSame(cancellation, pathFailure)
+        assertEquals(2, pathsChecked)
     }
 
     @Test
@@ -357,7 +437,9 @@ class NativeTerrainOverlaysTest {
     @Test
     fun `contours batch every stitched vertex with legacy color width and labels without per path objects`() {
         val size = 256
-        val values = DoubleArray(size * size) { index -> (index / size) * 50.0 }
+        // Preserve a dense full-width fixture while remaining below the expanded-vertex
+        // budget (endpoint padding counts too, so 255 x 256 points would exceed it).
+        val values = DoubleArray(size * size) { index -> (index / size) * 40.0 }
         val renderables = NativeContourVectorTileBuilder.build(values, 12, 2048, 1400, 50)
         val batches = renderables.filterIsInstance<MvtBatchedLineTile>()
         val labels = renderables.filterIsInstance<Label>()

@@ -83,6 +83,15 @@ export function PlaceSearch({
         setSelectedPlace(null);
         onOpen();
         setOpen(true);
+        if (search.isCoordinateQuery && search.places.length === 1) {
+          const place = search.places[0]!;
+          setSelectedPlace(place);
+          setListExpanded(false);
+          setFiltersOpen(false);
+          input?.blur();
+          onSelect(place);
+          return;
+        }
         search.searchNow();
       }}>
         <input
@@ -180,7 +189,7 @@ export function PlaceSearch({
             />
             {query.trim().length === 1 && <p>请再输入一个字以开始搜索。</p>}
           </div>
-          <SearchFooter loadedCount={search.places.length} hasMore={!!search.next} busy={search.busy} onLoadMore={search.loadMore} source={search.source} />
+          {!search.isCoordinateQuery && <SearchFooter loadedCount={search.places.length} hasMore={!!search.next} busy={search.busy} onLoadMore={search.loadMore} source={search.source} />}
           </>}
         </dialog>
       </FloatingSearch>}

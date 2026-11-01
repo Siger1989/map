@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.map
 
 import earth.worldwind.layer.mvt.MvtGeometryType
+import earth.worldwind.layer.mvt.MvtExpression
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -84,6 +85,26 @@ class NativeCartographyLayersTest {
         assertTrue(custom.satelliteUnderlay)
     }
 
+    @Test fun `built in TDT raster datum honors only explicit overrides without changing source identity`() {
+        assertEquals(NativeRasterDatum.WGS84, NativeRasterDatumOverride.resolve(null))
+        assertEquals(NativeRasterDatum.WGS84, NativeRasterDatumOverride.resolve("auto"))
+        assertEquals(NativeRasterDatum.WGS84, NativeRasterDatumOverride.resolve("unknown"))
+        assertEquals(NativeRasterDatum.GCJ02, NativeRasterDatumOverride.resolve("GCJ02"))
+        assertEquals(NativeRasterDatum.BD09, NativeRasterDatumOverride.resolve("bd09"))
+
+        val settings = NativeCartographySettings(
+            sourceId = "tianditu-imagery", satelliteProvider = "tianditu", tiandituBase = "img",
+            tiandituRasterDatum = NativeRasterDatum.GCJ02,
+        )
+        val plan = NativeCartographyPlan.resolve(settings)
+        assertEquals("tianditu-imagery", settings.sourceId)
+        assertEquals("tianditu:img", plan.effectiveBase)
+        assertEquals(NativeRasterDatum.GCJ02, settings.tiandituRasterDatum)
+        assertEquals("tianditu:vec", NativeCartographySelection.rasterDatumKey(null, false, false, "tianditu", "detail", "vec"))
+        assertEquals("tianditu:img", NativeCartographySelection.rasterDatumKey(null, false, false, "tianditu", "detail", "img"))
+        assertEquals("tianditu:ter", NativeCartographySelection.rasterDatumKey(null, false, false, "tianditu", "detail", "ter"))
+    }
+
     @Test fun `fixed raster zoom preserves auto sentinel and clamps offline caps`() {
         assertNull(NativeRasterZoomPolicy.resolve(-1, null, 0, 24))
         assertEquals(18, NativeRasterZoomPolicy.resolve(20, 18, 0, 24))
@@ -134,8 +155,14 @@ class NativeCartographyLayersTest {
         val roadName = NativeCartographyLayers.roadNameStyle.firstMatching("transportation_name", MvtGeometryType.LINESTRING, 14, mapOf("name:zh" to "公路"))
         assertNotNull(roadName)
         assertEquals("name:zh", roadName!!.paint.textField)
+        assertEquals(11.5f * .84f, roadName.paint.textSize!!.evaluate(MvtExpression.EvalContext(14.0, emptyMap()))!!, .0001f)
+        val roadRef = NativeCartographyLayers.roadNameStyle.firstMatching("transportation_name", MvtGeometryType.LINESTRING, 8, mapOf("ref" to "G318"))
+        assertNotNull(roadRef)
+        assertEquals(9f * .84f, roadRef!!.paint.textSize!!.evaluate(MvtExpression.EvalContext(8.0, emptyMap()))!!, .0001f)
         val placeName = NativeCartographyLayers.placeLabelStyle.firstMatching("place", MvtGeometryType.POINT, 8, mapOf("name:nonlatin" to "Mountain"))
         assertNotNull(placeName)
         assertEquals("name:nonlatin", placeName!!.paint.textField)
+        assertEquals(14f * .84f, placeName.paint.textSize!!.evaluate(MvtExpression.EvalContext(8.0, emptyMap()))!!, .0001f)
+        assertNull(NativeCartographyLayers.placeLabelStyle.firstMatching("place", MvtGeometryType.POINT, 2, mapOf("name:zh" to "村落")))
     }
 }

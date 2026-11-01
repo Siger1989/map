@@ -170,6 +170,27 @@ public final class Native149Instrumentation extends Instrumentation {
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
                             }
+                            if ("selection-panel".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("panel", inspectSelectedCoordinatePanel());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush();
+                                continue;
+                            }
+                            if ("thread-stacks".equals(action)) {
+                                JSONArray threads = new JSONArray();
+                                for (Map.Entry<Thread, StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet()) {
+                                    boolean appFrame = false;
+                                    for (StackTraceElement frame : stack.getValue()) if (frame.getClassName().startsWith("earth.worldwind.") || frame.getClassName().startsWith("com.shantu.") || frame.getClassName().startsWith("com.guanyun.")) appFrame = true;
+                                    if (!appFrame) continue;
+                                    JSONArray frames = new JSONArray(); int count = 0;
+                                    for (StackTraceElement frame : stack.getValue()) {
+                                        if (++count > 80) break;
+                                        frames.put(new JSONObject().put("class", frame.getClassName()).put("method", frame.getMethodName()).put("line", frame.getLineNumber()));
+                                    }
+                                    threads.put(new JSONObject().put("thread", stack.getKey().getName().replaceAll("https?://\\S+", "[redacted]")).put("state", stack.getKey().getState().name()).put("frames", frames));
+                                }
+                                reply = new JSONObject().put("ok", true).put("timeMillis", System.currentTimeMillis()).put("threads", threads);
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             previewCommand(action, request);
                             commands++;
                             reply = new JSONObject().put("ok", true).put("action", action)
@@ -512,6 +533,7 @@ public final class Native149Instrumentation extends Instrumentation {
 
     private JSONObject inspectDiagnosticsCounters() throws Exception {
         AtomicReference<Object> result = new AtomicReference<>();
+        java.util.concurrent.atomic.AtomicInteger uniqueRenderCaches = new java.util.concurrent.atomic.AtomicInteger(-1);
         AtomicReference<Throwable> failure = new AtomicReference<>();
         AtomicReference<Boolean> methodFound = new AtomicReference<>(false);
         runOnMainSync(() -> {
@@ -521,9 +543,20 @@ public final class Native149Instrumentation extends Instrumentation {
                 methodFound.set(true);
                 method.setAccessible(true);
                 result.set(method.invoke(host));
+                try {
+                    Object mounted = fieldValue(host, "maps");
+                    java.util.Set<Object> caches = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Object, Boolean>());
+                    if (mounted instanceof Map) for (Object mapEntry : ((Map<?, ?>)mounted).values()) {
+                        Object controller = fieldValue(mapEntry, "controller");
+                        Object window = fieldValue(controller, "worldWindow");
+                        caches.add(fieldValue(fieldValue(window, "engine"), "renderResourceCache"));
+                    }
+                    uniqueRenderCaches.set(caches.size());
+                } catch (Throwable unavailable) { /* Keep ordinary counters usable on older runtimes. */ }
             } catch (Throwable error) { failure.set(error); }
         });
         JSONObject out = new JSONObject().put("mainThread", true).put("methodAvailable", methodFound.get());
+        out.put("distinctRenderCaches", uniqueRenderCaches.get());
         if (failure.get() != null) {
             out.put("diagnosticsErrorType", failure.get().getClass().getName())
                 .put("availableMethodNames", diagnosticsMethodNames());
@@ -577,9 +610,9 @@ public final class Native149Instrumentation extends Instrumentation {
             }
             return output;
         }
-        if (("network".equals(key) || "tileStages".equals(key)) && value instanceof JSONObject)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key)) && value instanceof JSONObject)
             return safeDiagnosticsObject((JSONObject)value);
-        if (("network".equals(key) || "tileStages".equals(key)) && value instanceof Map)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key)) && value instanceof Map)
             return safeDiagnosticsMap((Map<?, ?>)value);
         if ("decodeDurationBucketCounts".equals(key) && value instanceof JSONArray) {
             JSONArray input = (JSONArray)value, output = new JSONArray();
@@ -603,6 +636,10 @@ public final class Native149Instrumentation extends Instrumentation {
             case "retries": case "cancellations": case "decodeValidationMs": case "receivedBytes": case "queued":
             case "active": case "queueWaitMs": case "networkMs": case "pendingCacheWriteBytes": case "droppedCacheWrites":
             case "completedCacheWrites": case "failedCacheWrites": case "activeBackground":
+            case "contoursEnabled": case "rasterTileSize": case "terrainEnabled":
+            case "completedBatches": case "maximumLogicalVertices": case "maximumVboBytes":
+            case "budgetRejections": case "refinedTiles": case "maxLevelRejections":
+            case "refinementDeferred": case "lastRejectedSourceLevel":
                 return true;
             default:
                 return false;
@@ -815,8 +852,8 @@ public final class Native149Instrumentation extends Instrumentation {
             if (!(stage.opt("expectedStrokeScale") instanceof Number))
                 throw new IllegalArgumentException("expectedStrokeScale must be explicitly provided by the QA fixture");
             double expectedStrokeScale = stage.optDouble("expectedStrokeScale", Double.NaN);
-            if (!Double.isFinite(expectedStrokeScale) || expectedStrokeScale < 0.2 || expectedStrokeScale > 1.0)
-                throw new IllegalArgumentException("expectedStrokeScale must be finite and within 0.2..1.0");
+            if (!Double.isFinite(expectedStrokeScale) || expectedStrokeScale <= 0.0 || expectedStrokeScale > 1.0)
+                throw new IllegalArgumentException("expectedStrokeScale must be finite and within 0 < scale <= 1.0");
             JSONObject renderGeometry = mergeLinePositionGeometry(originalGeometry, stage.optJSONObject("renderGeometry"));
             result.put(new JSONObject().put("name", name).put("camera", camera).put("position", position)
                 .put("positionHeading", heading).put("positionNavigating", stage.getBoolean("positionNavigating"))
@@ -1838,6 +1875,31 @@ public final class Native149Instrumentation extends Instrumentation {
             + "return JSON.stringify({exists:true,visible,text,rect:{x:r.x,y:r.y,width:r.width,height:r.height},style:{display:s.display,visibility:s.visibility,opacity:s.opacity,zIndex:s.zIndex,clipPath:s.clipPath,transform:s.transform,overflow:s.overflow,position:s.position},ancestorChain:chain,elementFromPointCenter:centerHit,elementFromPointTitle:titleHit,buttons,hasStart:buttons.some(b=>b.text.includes('设为起点')),hasEnd:buttons.some(b=>b.text.includes('设为终点'))})})()";
         return new JSONObject(evalJs(script));
     }
+    /** Fixed, read-only selected-card/clipboard probe; never executes caller-supplied JavaScript. */
+    private JSONObject inspectSelectedCoordinatePanel() throws Exception {
+        String script = "(()=>{const e=document.querySelector('.selection-tools.is-annotation'),info=e?.querySelector('.annotation-coordinate-info');"
+            + "const rect=n=>{if(!n)return null;const r=n.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};"
+            + "const style=n=>{if(!n)return null;const s=getComputedStyle(n);return{fontSize:s.fontSize,padding:s.padding,margin:s.margin,borderRadius:s.borderRadius,color:s.color,backgroundColor:s.backgroundColor,minHeight:s.minHeight}};"
+            + "return JSON.stringify({exists:!!e,coordinateInfoExists:!!info,cardRect:rect(e),infoRect:rect(info),cardStyle:style(e),copyRect:rect(info?.querySelector('button')),copyStyle:style(info?.querySelector('button')),values:info?.querySelector('.annotation-coordinate-info-values')?.textContent||'',status:info?.querySelector('[role=status]')?.textContent||'',scrollHeight:e?.scrollHeight||0,clientHeight:e?.clientHeight||0,viewport:{width:innerWidth,height:innerHeight}})})()";
+        JSONObject out = new JSONObject(evalJs(script));
+        java.util.concurrent.atomic.AtomicReference<String> text = new java.util.concurrent.atomic.AtomicReference<>("");
+        runOnMainSync(() -> {
+            android.content.ClipboardManager manager = (android.content.ClipboardManager)getTargetContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            android.content.ClipData clip = manager == null ? null : manager.getPrimaryClip();
+            if (clip != null && clip.getItemCount() > 0) text.set(String.valueOf(clip.getItemAt(0).coerceToText(getTargetContext())));
+        });
+        out.put("clipboardText", text.get());
+        JSONObject state = readState();
+        String selected = state.optString("annotationSelected");
+        JSONArray annotations = state.optJSONArray("annotations");
+        if (annotations != null) for (int i=0; i<annotations.length(); i++) {
+            JSONObject annotation = annotations.optJSONObject(i);
+            if (annotation != null && annotation.optBoolean("visible", true) && !out.has("firstAnnotationCoordinates")) out.put("firstAnnotationCoordinates", annotation.optJSONArray("coordinates"));
+            if (annotation != null && selected.equals(annotation.optString("id"))) out.put("selectedCoordinates", annotation.optJSONArray("coordinates"));
+        }
+        return out;
+    }
+
     private JSONObject inspectGizmoDomRect() throws Exception {
         String script = "(()=>{const visible=e=>{if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};"
             + "const e=document.querySelector('.home-camera-control .camera-gizmo')||document.querySelector('.camera-gizmo'),target=e||document.querySelector('.camera-gizmo svg');"
@@ -1871,6 +1933,22 @@ public final class Native149Instrumentation extends Instrumentation {
             }
         }
         out.put("draftPoints", draftPoints).put("savedTrackCount", tracks == null || tracks.optJSONArray("saved") == null ? 0 : tracks.optJSONArray("saved").length());
+        out.put("editing", tracks != null && tracks.optBoolean("editing"));
+        out.put("movableDraft", tracks != null && "draft".equals(tracks.optString("movableTrackId")));
+        out.put("firstDraftPoint", firstDraftPoint == null ? JSONObject.NULL : firstDraftPoint)
+            .put("lastDraftPoint", lastDraftPoint == null ? JSONObject.NULL : lastDraftPoint);
+        JSONObject preview = tracks == null ? null : tracks.optJSONObject("preview");
+        out.put("nodePreview", preview == null ? JSONObject.NULL : preview);
+        JSONArray savedTracks = tracks == null ? null : tracks.optJSONArray("saved");
+        JSONArray savedHead = new JSONArray();
+        if (savedTracks != null && savedTracks.length() == 1) {
+            JSONObject track = savedTracks.optJSONObject(0);
+            JSONArray segments = track == null ? null : track.optJSONArray("segments");
+            if (segments != null) for (int i=0;i<segments.length() && savedHead.length()<3;i++) {
+                JSONArray segment = segments.optJSONArray(i); if (segment != null) for(int j=0;j<segment.length() && savedHead.length()<3;j++) savedHead.put(segment.optJSONArray(j));
+            }
+        }
+        out.put("singleSavedTrackHead", savedHead);
         out.put("draftEndpointsEqual", draftPoints > 1 && firstDraftPoint != null && lastDraftPoint != null &&
             Math.abs(firstDraftPoint.optDouble(0) - lastDraftPoint.optDouble(0)) < 1e-10 &&
             Math.abs(firstDraftPoint.optDouble(1) - lastDraftPoint.optDouble(1)) < 1e-10);

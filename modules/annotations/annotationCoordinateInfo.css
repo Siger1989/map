@@ -1,0 +1,63 @@
+.annotation-coordinate-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--ui-ink);
+  font-size: 12px;
+}
+.annotation-coordinate-info > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+.annotation-coordinate-info > header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+.selection-tools .annotation-coordinate-info > header button {
+  min-width: 52px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--ui-field);
+  color: var(--ui-ink);
+  font-size: 11px;
+}
+.annotation-coordinate-info > header button:disabled { opacity: .65; }
+.annotation-coordinate-info-values {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.selection-tools.is-annotation .annotation-coordinate-info span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.annotation-coordinate-info-values span:last-child { grid-column: 1 / -1; }
+.annotation-coordinate-info > small {
+  color: var(--ui-muted);
+  font-size: 10px;
+  line-height: 12px;
+}
+.annotation-coordinate-info > small:empty { display: none; }
+.annotation-coordinate-info[data-preview='true'] { border-style: dashed; }

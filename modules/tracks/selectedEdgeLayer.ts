@@ -5,7 +5,7 @@ import { DRAFT_ID, moveSegmentsNode } from './editing.ts';
 import { selectedEdges } from './selectionDetails.ts';
 import { normalizeTrackStyle } from './style.ts';
 import { syncOverlayData } from '../map/overlayData.ts';
-import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 
 /** Geographic edges let MapLibre drape selection on the same terrain as the route. */
 export function selectedEdgeData(state: TrackOverlay): FeatureCollection {
@@ -34,7 +34,11 @@ export function syncSelectedEdges(map: Map, state: TrackOverlay) {
   if (!map.getLayer(id)) map.addLayer({
     id, type: 'line', source: id,
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#fff3a0', 'line-width': routeLineWidthExpression(['get', 'width']) },
+    paint: {
+      'line-color': '#fff3a0',
+      'line-width': routeLineWidthExpression(['get', 'width']),
+      'line-opacity': routeLineOpacityExpression(1),
+    },
   });
   syncOverlayData(map, id, selectedEdgeData(state));
 }

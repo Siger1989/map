@@ -27,6 +27,16 @@ final class NativeBridge {
     @JavascriptInterface public String archiveFinish(String token, boolean share) { return archive.finish(token, share); }
     @JavascriptInterface public void archiveCancel(String token) { archive.transfer.cancel(token); }
     @JavascriptInterface public void cancelMapTile(String requestId) { MapTileProxy.cancel(requestId); }
+    /** Foreground bundled UI only; clipboard writes require no additional Android permission. */
+    @JavascriptInterface public boolean clipboardWrite(String text) {
+        if (!activity.trustedForeground() || text == null || text.length() > 1024 * 1024) return false;
+        try {
+            android.content.ClipboardManager clipboard = (android.content.ClipboardManager)activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+            if (clipboard == null) return false;
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("山兔", text));
+            return true;
+        } catch (RuntimeException failure) { return false; }
+    }
     @JavascriptInterface public boolean locationPermissionGranted() { return position.locationPermissionGranted(); }
     @JavascriptInterface public String locationState() { return position.snapshot(); }
     @JavascriptInterface public void locate(String mode) { activity.runOnUiThread(() -> position.start(mode)); }

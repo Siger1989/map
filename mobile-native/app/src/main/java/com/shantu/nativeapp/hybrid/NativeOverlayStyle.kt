@@ -8,28 +8,40 @@ internal object NativeOverlayStyle {
     data class Dash(val factor: Int, val pattern: Short)
 
     private val routeWidthZoomStops = listOf(
-        0.0 to 0.25, 6.0 to 0.25, 10.0 to 0.5, 14.0 to 0.8, 16.0 to 1.0,
+        0.0 to 0.12, 6.0 to 0.12, 10.0 to 0.3, 14.0 to 0.7, 16.0 to 1.0,
+    )
+    private val routeOpacityZoomStops = listOf(
+        0.0 to 0.35, 6.0 to 0.35, 10.0 to 0.55, 14.0 to 0.85, 16.0 to 1.0,
     )
     private val zoomScaledLineRoles = setOf(
         "routePath", "routeOutline", "routeAccess", "track", "trackHalo", "selectedEdge",
         "guidance", "ribbon", "offset-reference",
     )
 
-    fun routeWidthScale(zoom: Double): Double {
+    private fun scaleAtZoom(zoom: Double, stops: List<Pair<Double, Double>>): Double {
         if (!zoom.isFinite()) return 1.0
-        if (zoom <= routeWidthZoomStops.first().first) return routeWidthZoomStops.first().second
-        for (index in 1 until routeWidthZoomStops.size) {
-            val (rightZoom, rightScale) = routeWidthZoomStops[index]
-            val (leftZoom, leftScale) = routeWidthZoomStops[index - 1]
+        if (zoom <= stops.first().first) return stops.first().second
+        for (index in 1 until stops.size) {
+            val (rightZoom, rightScale) = stops[index]
+            val (leftZoom, leftScale) = stops[index - 1]
             if (zoom <= rightZoom) {
                 val ratio = (zoom - leftZoom) / (rightZoom - leftZoom)
                 return leftScale + (rightScale - leftScale) * ratio
             }
         }
-        return routeWidthZoomStops.last().second
+        return stops.last().second
     }
 
-    fun scalesRouteWidth(role: String): Boolean = role in zoomScaledLineRoles
+    fun routeWidthScale(zoom: Double): Double = scaleAtZoom(zoom, routeWidthZoomStops)
+
+    fun routeOpacityScale(zoom: Double): Double = scaleAtZoom(zoom, routeOpacityZoomStops)
+
+    fun routeFeatureOpacity(baseOpacity: Double, zoom: Double): Double {
+        val safeOpacity = baseOpacity.takeIf { it.isFinite() }?.coerceIn(0.0, 1.0) ?: 1.0
+        return safeOpacity * routeOpacityScale(zoom)
+    }
+
+    fun scalesRouteAppearance(role: String): Boolean = role in zoomScaledLineRoles
 
     fun widthInPixels(cssWidth: Double, cssScale: Double): Float {
         val width = cssWidth.takeIf { it.isFinite() }?.coerceIn(0.1, 40.0) ?: 2.0

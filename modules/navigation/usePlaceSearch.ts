@@ -5,6 +5,7 @@ import {
   type SearchPageToken,
 } from './provider';
 import type { Coordinate, RoutePlace } from './types';
+import { formatCoordinateQuery, parseCoordinateQuery } from '../coordinates/coordinateQuery.ts';
 
 export type DetailedPlaceSearch = Awaited<ReturnType<typeof searchPlacesDetailed>>;
 
@@ -54,25 +55,37 @@ export function usePlaceSearch({
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [busyKey, setBusyKey] = useState('');
   const [revision, setRevision] = useState(0);
+  const coordinateInput = composing ? { status: 'not-coordinate' as const } : parseCoordinateQuery(query);
   const nearRef = useRef(near);
   const requestRef = useRef<AbortController | null>(null);
   const pageRequestRef = useRef<AbortController | null>(null);
   const pageLoadingRef = useRef(false);
   const searchKey = JSON.stringify([query, enabled, composing, source, city, nationwide, revision]);
   const currentResponse = response?.key === searchKey ? response : null;
-  const places = currentResponse?.places ?? [];
+  const coordinatePlace: RoutePlace | null = enabled && coordinateInput.status === 'valid'
+    ? {
+        name: '坐标位置',
+        detail: `WGS84 · ${formatCoordinateQuery(coordinateInput.coordinate)}`,
+        coordinates: coordinateInput.coordinate,
+        precision: 'unknown',
+        coordinateSystem: 'WGS84',
+      }
+    : null;
+  const places = coordinatePlace ? [coordinatePlace] : currentResponse?.places ?? [];
   const suggestions = currentResponse?.suggestions ?? [];
   const warnings = currentResponse?.warnings ?? [];
-  const error = currentResponse?.error ?? '';
+  const error = enabled && coordinateInput.status === 'invalid'
+    ? coordinateInput.error
+    : currentResponse?.error ?? '';
   const next = currentResponse?.next;
-  const busy = busyKey === searchKey;
+  const busy = coordinateInput.status !== 'not-coordinate' ? false : busyKey === searchKey;
 
   useEffect(() => {
     nearRef.current = near;
   }, [near]);
 
   useEffect(() => {
-    if (!enabled || composing || query.trim().length < 2) return;
+    if (!enabled || composing || query.trim().length < 2 || coordinateInput.status !== 'not-coordinate') return;
 
     const controller = new AbortController();
     requestRef.current = controller;
@@ -124,7 +137,7 @@ export function usePlaceSearch({
       pageRequestRef.current = null;
       pageLoadingRef.current = false;
     };
-  }, [query, enabled, composing, source, city, nationwide, revision, searchKey]);
+  }, [query, enabled, composing, source, city, nationwide, revision, searchKey, coordinateInput.status]);
 
   const searchNow = () => setRevision((value) => value + 1);
   const loadMore = async () => {
@@ -188,6 +201,7 @@ export function usePlaceSearch({
     nationwide,
     setNationwide,
     places,
+    isCoordinateQuery: enabled && !composing && coordinateInput.status !== 'not-coordinate',
     suggestions,
     warnings,
     error,

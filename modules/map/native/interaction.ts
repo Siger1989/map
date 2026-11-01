@@ -3,6 +3,7 @@ import type { TrackNode } from '../../tracks/editing.ts';
 import type { DragTarget, FeatureMove } from '../FeatureDragBridge.ts';
 import type { NativeMapBridgeClient, NativeMapEventHandler } from './client.ts';
 import { projectNativeLocal, unprojectNativeLocal } from './localGeometry.ts';
+import { createLatestFrameValue } from './latestFrameValue.ts';
 
 export const NATIVE_MAP_GESTURE_EVENT = 'shantu:native-map-gesture';
 const HOLD_MS = 480;
@@ -56,6 +57,9 @@ export type NativeMapInteractionOptions = {
   snap?: (target: DragTarget, point: { x: number; y: number }) => TrackNode | null;
   occupied?: (hit: NativeHitTest) => boolean;
   dispatchGesture?: (detail: NativeGestureDetail) => void;
+  /** Optional animation-frame scheduler for deterministic hosts and tests. */
+  requestFrame?: (callback: FrameRequestCallback) => number;
+  cancelFrame?: (frame: number) => void;
 };
 
 type Pending = {
@@ -88,8 +92,16 @@ export class NativeMapInteractionAdapter {
   private capturedGesture: string | number | null = null;
   private suppressClickUntil = 0;
   private started = false;
+  private readonly moveFrame: ReturnType<typeof createLatestFrameValue<{ pending: Pending; point: { x: number; y: number } }>>;
 
-  constructor(options: NativeMapInteractionOptions) { this.options = options; }
+  constructor(options: NativeMapInteractionOptions) {
+    this.options = options;
+    this.moveFrame = createLatestFrameValue(
+      ({ pending, point }) => this.previewAt(pending, point),
+      options.requestFrame,
+      options.cancelFrame,
+    );
+  }
 
   start(): void {
     if (this.started) return;
@@ -133,12 +145,11 @@ export class NativeMapInteractionAdapter {
       if (!this.options.enabled()) { this.cancel(touch, pointerId); return; }
       const distance = Math.hypot(point.x - pending.point.x, point.y - pending.point.y);
       if (!pending.active && distance > MOVE_CANCEL_PX) { this.cancel(touch, pointerId); return; }
-      if (pending.active) this.previewAt(pending, point);
+      if (pending.active) this.moveFrame.push({ pending, point });
       return;
     }
     if (touch.action === 1) {
-      if (pending.active) this.previewAt(pending, point);
-      if (pending.active) this.finish(true, touch, pointerId);
+      if (pending.active) this.finish(true, touch, pointerId, point);
       else {
         pending.released = true;
         this.clearTimer();
@@ -222,12 +233,15 @@ export class NativeMapInteractionAdapter {
     this.options.onDragPreview(pending.last);
   }
 
-  private finish(commit: boolean, touch: NativeRawTouch, pointerId: number): void {
+  private finish(commit: boolean, touch: NativeRawTouch, pointerId: number, finalPoint: { x: number; y: number }): void {
     const pending = this.pending;
     if (!pending) return;
     this.clearTimer();
     if (pending.active) {
       this.suppressClickUntil = Date.now() + 600;
+      // ACTION_UP carries the final actual coordinate. Consume it synchronously so
+      // a queued MOVE cannot commit a stale point after release.
+      this.moveFrame.flush({ pending, point: finalPoint });
       if (commit && pending.last && this.options.enabled()) this.options.onDragCommit(pending.last);
       this.options.onDragPreview(null);
       this.capture(pending.gestureId, false);
@@ -240,6 +254,7 @@ export class NativeMapInteractionAdapter {
   private cancel(touch: Partial<NativeRawTouch>, pointerId: number): void {
     const pending = this.pending;
     this.clearTimer();
+    this.moveFrame.cancel();
     if (pending?.active) {
       this.options.onDragPreview(null);
       if (this.capturedGesture !== null) this.capture(this.capturedGesture, false);

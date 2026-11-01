@@ -49,6 +49,8 @@ import { defaultRouteName } from '@/modules/navigation/routeName';
 import { samePlannedRoute } from '@/modules/navigation/routeVisibility';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
 import { annotationSharePlace } from '@/modules/annotations/share';
+import { AnnotationCoordinateInfo } from '@/modules/annotations/AnnotationCoordinateInfo';
+import { useAnnotationCoordinateElevation } from '@/modules/annotations/useAnnotationCoordinateElevation';
 import { RasterLevelControl } from '@/modules/cartography/RasterLevelControl';
 import { basemapConfiguration } from '@/modules/cartography/basemaps';
 import { usesSentinel, usesTianditu, SENTINEL_MAXZOOM, SENTINEL_NAME } from '@/modules/cartography/sentinel';
@@ -952,6 +954,11 @@ export default function Home() {
   const mapSections = useMemo(() => sections.items.filter(s => !s.settings.survey), [sections.items]);
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
+  );
+  const selectedCoordinatePreview = !!(featureMove?.target.kind === 'annotation' && featureMove.target.id === selectedAnnotation?.id);
+  const selectedCoordinateSampler = useCallback((point: Coordinate) => map.current?.groundElevation(point) ?? null, []);
+  const selectedCoordinateElevation = useAnnotationCoordinateElevation(
+    selectedAnnotation?.id, selectedAnnotation?.coordinates, selectedCoordinatePreview, selectedCoordinateSampler,
   );
   useEffect(() => {
     if (adjustingPinId && selectedAnnotation?.id !== adjustingPinId)
@@ -2734,16 +2741,14 @@ export default function Home() {
                       ? `长按${selectedAnnotation.kind === 'pin' ? '标记' : '模型'}后拖动 · 松手保存`
                       : '点选节点出圈，再拖动调整'}
                 </span>
-                {selectedAnnotation && featureMove && (
-                  <span>
-                    经度 {selectedAnnotation.coordinates[0].toFixed(6)} · 纬度{' '}
-                    {selectedAnnotation.coordinates[1].toFixed(6)}
-                    {featureMove?.target.kind === 'annotation'
-                      ? '（预览）'
-                      : ''}
-                  </span>
-                )}
               </div>
+              <AnnotationCoordinateInfo
+                annotationId={selectedAnnotation.id}
+                coordinates={selectedAnnotation.coordinates}
+                elevation={selectedCoordinateElevation.elevation}
+                elevationStatus={selectedCoordinateElevation.status}
+                preview={selectedCoordinatePreview}
+              />
               {(selectedAnnotation ? annotations.error : tracks.error) && (
                 <p role="alert">
                   {selectedAnnotation ? annotations.error : tracks.error}

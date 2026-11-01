@@ -9,7 +9,7 @@ import { startRouteEdit, selectEditNode, toggleEditBranch, appendEditBranch, und
 import { composeTrackOverlay } from '../modules/workbench/trackOverlay.ts';
 import { metresBetween } from '../modules/navigation/types.ts';
 import { profilePreviewIndex, profilePreviewMoves } from '../modules/tracks/profilePreviewGeometry.ts';
-import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
 
 // Route-icon prioritization schedules DOM inspection asynchronously; these
 // geometry/paint tests use a MapLibre-sized container without a browser DOM.
@@ -123,6 +123,9 @@ test('DEM colours reach the real map source in edit mode; hit targets remain ori
     '+', ['get', 'width'], ['case', ['get', 'selected'], 2, 1],
   ]));
   assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-width'], routeLineWidthExpression(['get', 'width']));
+  assert.deepEqual(layers.get('manual-track-line').paint['line-opacity'], routeLineOpacityExpression(['get', 'opacity']));
+  assert.deepEqual(layers.get('manual-track-outline').paint['line-opacity'], routeLineOpacityExpression(['*', 0.65, ['get', 'opacity']]));
+  assert.deepEqual(layers.get('manual-track-selection-edge').paint['line-opacity'], routeLineOpacityExpression(1));
   assert.deepEqual(selectedEdges.features[0].geometry.coordinates, track.segments, 'selection retains geographic geometry, not projected endpoint chords');
   assert.equal(
     new Set(

@@ -55,6 +55,8 @@ data class NativeCartographySettings(
     val tiandituBoundaries: Boolean = false,
     val offlineBasemap: Boolean = false,
     val sourceId: String = "tianditu-imagery",
+    /** Explicit datum override for built-in Tianditu raster layers; default keeps legacy WGS84 behavior. */
+    val tiandituRasterDatum: NativeRasterDatum = NativeRasterDatum.WGS84,
 ) {
     companion object {
         fun fromRuntime(s: NativeRuntimeSettings) = NativeCartographySettings(
@@ -106,6 +108,15 @@ object NativeCartographySelection {
         !offlineBasemap && satelliteProvider == "tianditu" -> "tianditu:${tiandituBase.takeIf { it in setOf("vec", "img", "ter") } ?: "vec"}"
         satellite -> imageryMode
         else -> "terrain"
+    }
+}
+
+/** Resolve only the explicit user override. Missing/unknown values preserve the existing WGS84 default. */
+internal object NativeRasterDatumOverride {
+    fun resolve(value: String?): NativeRasterDatum = when (value?.lowercase()) {
+        "gcj02" -> NativeRasterDatum.GCJ02
+        "bd09" -> NativeRasterDatum.BD09
+        else -> NativeRasterDatum.WGS84
     }
 }
 
@@ -234,6 +245,7 @@ class NativeCartographyLayers internal constructor(
         val effectiveSettings = if (activeCustomSource) settings.copy(sourceId = "custom") else settings
         val next = NativeCartographyPlan.resolve(effectiveSettings)
         plan = next
+        val rasterDatumChanged = raster.setDatum(effectiveSettings.tiandituRasterDatum)
         imagery.apply(
             requestedBase = if (activeCustomSource) "custom" else next.effectiveBase,
             showOverview = next.satelliteUnderlay,
@@ -248,16 +260,16 @@ class NativeCartographyLayers internal constructor(
         placeLabelsLayer.isEnabled = next.placeLabels
         placeLabelsLayer.opacity = next.roadsOpacity
         syncSnapDataLayer()
-        if (labelMode != next.tiandituLabels) {
+        if (labelMode != next.tiandituLabels || rasterDatumChanged) {
             tiandituLabelRenderLayer.clearRenderables()
-            next.tiandituLabels?.let { mode -> tiandituLabelRenderLayer.addRenderable(raster.labelImage(mode)) }
+            next.tiandituLabels?.let { mode -> tiandituLabelRenderLayer.addRenderable(raster.labelImage(mode, effectiveSettings.tiandituRasterDatum)) }
             labelMode = next.tiandituLabels
         }
         tiandituLabelRenderLayer.isEnabled = next.tiandituLabels != null
         tiandituLabelRenderLayer.opacity = next.rasterLabelOpacity
-        if (boundaryEnabled != next.tiandituBoundaries) {
+        if (boundaryEnabled != next.tiandituBoundaries || rasterDatumChanged) {
             tiandituBoundaryRenderLayer.clearRenderables()
-            if (next.tiandituBoundaries) tiandituBoundaryRenderLayer.addRenderable(raster.boundaryImage())
+            if (next.tiandituBoundaries) tiandituBoundaryRenderLayer.addRenderable(raster.boundaryImage(effectiveSettings.tiandituRasterDatum))
             boundaryEnabled = next.tiandituBoundaries
         }
         tiandituBoundaryRenderLayer.isEnabled = next.tiandituBoundaries
@@ -338,18 +350,20 @@ class NativeCartographyLayers internal constructor(
         const val ATTRIBUTION = "OpenFreeMap © OpenMapTiles · Data from OpenStreetMap contributors"
         const val TIANDITU_ATTRIBUTION = "© 国家基础地理信息中心 · 天地图"
         private const val OPENFREEMAP_TEMPLATE = "https://tiles.openfreemap.org/planet/{z}/{x}/{y}.pbf"
+        private const val VECTOR_LABEL_SCALE = .84f
+        private fun labelPx(value: Float) = value * VECTOR_LABEL_SCALE
 
         val roadStyle: MvtStyle = NativeRoadStyle.style
 
         val roadNameStyle: MvtRuleBasedStyle = mvtStyle {
-            rule("transportation_name") { filter = MvtFilter.has("ref"); minZoom = 8; paint { text("ref") { placement = earth.worldwind.layer.mvt.MvtStyleRule.LabelPlacement.LINE; color(Color(.96f,.96f,.86f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(8 to 9f, 13 to 12f); halo(Color(.08f,.14f,.18f), 1.7f) } } }
-            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("transportation_name") { filter = MvtFilter.has(field); minZoom = 12; paint { text(field) { placement = earth.worldwind.layer.mvt.MvtStyleRule.LabelPlacement.LINE; color(Color(.96f,.96f,.86f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(12 to 10f, 16 to 13f); halo(Color(.08f,.14f,.18f), 1.8f) } } }
+            rule("transportation_name") { filter = MvtFilter.has("ref"); minZoom = 8; paint { text("ref") { placement = earth.worldwind.layer.mvt.MvtStyleRule.LabelPlacement.LINE; color(Color(.96f,.96f,.86f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(8 to labelPx(9f), 13 to labelPx(12f)); halo(Color(.08f,.14f,.18f), labelPx(1.7f)) } } }
+            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("transportation_name") { filter = MvtFilter.has(field); minZoom = 12; paint { text(field) { placement = earth.worldwind.layer.mvt.MvtStyleRule.LabelPlacement.LINE; color(Color(.96f,.96f,.86f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(12 to labelPx(10f), 16 to labelPx(13f)); halo(Color(.08f,.14f,.18f), labelPx(1.8f)) } } }
         }
 
         val placeLabelStyle: MvtRuleBasedStyle = mvtStyle {
-            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("place") { filter = MvtFilter.has(field); minZoom = 3; paint { text(field) { color(Color(.96f,.96f,.90f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(3 to 12f, 8 to 14f, 13 to 17f); halo(Color(.07f,.13f,.16f), 2f) } } }
-            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("water_name") { filter = MvtFilter.has(field); minZoom = 7; paint { text(field) { color(Color(.55f,.82f,.94f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(7 to 10f, 13 to 13f); halo(Color(.07f,.13f,.16f), 1.6f) } } }
-            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("mountain_peak") { filter = MvtFilter.has(field); minZoom = 10; paint { text(field) { color(Color(.96f,.93f,.82f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(10 to 11f, 14 to 14f); halo(Color(.07f,.13f,.16f), 1.8f) } } }
+            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("place") { filter = MvtFilter.has(field); minZoom = 3; paint { text(field) { color(Color(.96f,.96f,.90f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(3 to labelPx(12f), 8 to labelPx(14f), 13 to labelPx(17f)); halo(Color(.07f,.13f,.16f), labelPx(2f)) } } }
+            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("water_name") { filter = MvtFilter.has(field); minZoom = 7; paint { text(field) { color(Color(.55f,.82f,.94f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(7 to labelPx(10f), 13 to labelPx(13f)); halo(Color(.07f,.13f,.16f), labelPx(1.6f)) } } }
+            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("mountain_peak") { filter = MvtFilter.has(field); minZoom = 10; paint { text(field) { color(Color(.96f,.93f,.82f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(10 to labelPx(11f), 14 to labelPx(14f)); halo(Color(.07f,.13f,.16f), labelPx(1.8f)) } } }
         }
     }
 }
@@ -493,17 +507,34 @@ private class TiandituRasterSource(
     private val executor = Executors.newFixedThreadPool(4)
     private val requestPermits = Semaphore(4)
     @Volatile private var closed = false
+    @Volatile private var datum = NativeRasterDatum.WGS84
     var detailControl = NativeCartographyRasterQuality.detailControl(NativeMapQuality.HIGH)
-    fun labelImage(layer: String) = surface("天地图 $layer", layer, if (layer == "cva") 19 else 18)
-    fun boundaryImage() = surface("天地图全球境界 ibo", "ibo", 18)
+    fun setDatum(value: NativeRasterDatum): Boolean {
+        if (datum == value) return false
+        datum = value
+        return true
+    }
+    fun labelImage(layer: String, datum: NativeRasterDatum = this.datum) = surface("天地图 $layer", layer, if (layer == "cva") 19 else 18, datum)
+    fun boundaryImage(datum: NativeRasterDatum = this.datum) = surface("天地图全球境界 ibo", "ibo", 18, datum)
 
-    private fun surface(name: String, layer: String, maxZoom: Int): MercatorTiledSurfaceImage {
+    private fun surface(name: String, layer: String, maxZoom: Int, datum: NativeRasterDatum): MercatorTiledSurfaceImage {
         val factory = object : MercatorTileFactory {
             override val contentType = name
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource {
                 val url = tiandituUrl(layer, x, y, z)
-                val identity = tileIdentityFor("tianditu", layer, z, x, y, "raster")
-                val imageFactory = RasterImageFactory(url, identity, viewId(), generation)
+                val identity = tileIdentityFor("tianditu", layer, z, x, y, if (datum == NativeRasterDatum.WGS84) "raster" else "raster-warp-${datum.name.lowercase()}")
+                val imageFactory = if (datum == NativeRasterDatum.WGS84) {
+                    RasterImageFactory(url, identity, viewId(), generation)
+                } else {
+                    NativeRasterImageFactory.tianditu(
+                        network = checkNotNull(sharedNetwork) { "Explicit Tianditu datum correction requires the shared tile network" },
+                        layer = layer, outputX = x, outputY = y, outputZoom = z, datum = datum,
+                        tileUrl = ::tiandituUrl,
+                        identity = identity,
+                        rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityFor("tianditu", layer, rawZ, rawX, rawY, "raster") },
+                        viewId = viewId(), generation = generation,
+                    )
+                }
                 return ImageSource.fromImageFactory(imageFactory)
             }
         }

@@ -27,6 +27,9 @@ import earth.worldwind.util.LevelSet
 import earth.worldwind.util.Tile
 import earth.worldwind.util.TileFactory
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
 import java.util.Collections
 import java.util.IdentityHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -120,6 +123,7 @@ internal class NativeContourLayer(
         NativeContourVectorGeometry.MAX_PREPARED_TILES, maxPendingFetches,
     ) { if (!closed) WorldWind.requestRedraw() }
     private val prepared = Collections.newSetFromMap(IdentityHashMap<NativeContourTileContent, Boolean>())
+    private val forcedRefinements = NativeContourRefinementState<TileRequest>()
     private val labelCollision = NativeContourLabelCollision()
     private val cartesian = Vec3()
     private val screen = Vec3()
@@ -155,13 +159,22 @@ internal class NativeContourLayer(
     override fun render(rc: RenderContext) {
         // Below the UI threshold, keep the bounded resident/pending content for a later return.
         // Do not confuse this whole-layer decision with the mixed source levels in a tilted view.
-        if (!closed && !rc.isPickMode && visibleAtUiZoom()) super.render(rc)
+        if (!closed && !rc.isPickMode && visibleAtUiZoom()) {
+            forcedRefinements.advanceFrame()
+            super.render(rc)
+        }
     }
 
-    override fun effectiveDetailControl(rc: RenderContext, tile: Tile): Double =
+    override fun effectiveDetailControl(rc: RenderContext, tile: Tile): Double {
         // LevelSet.levelOffset only suppresses fetches; it does not force subdivision. Without
         // this, an SSE leaf below z7 can remain a permanent blank despite a visible UI layer.
-        if (tile.level.levelNumber < NativeContourVectorGeometry.SOURCE_MIN_ZOOM) 0.0 else detailControl
+        val z = tile.level.levelNumber
+        if (z < NativeContourVectorGeometry.SOURCE_MIN_ZOOM) return 0.0
+        // Keep the original interval and DEM. An oversized coarse tile is calculated
+        // as smaller real tiles instead of assembling one enormous SDK float array.
+        val key = TileRequest(z, tile.column, SlippyTiles.latToTileY(tile.sector.centroidLatitude.inDegrees, z))
+        return if (z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM && forcedRefinements.shouldRefine(key)) 0.0 else detailControl
+    }
 
     /** Clone configuration only; every copy owns a fresh SDK tile cache, scope and fetch jobs. */
     override fun clone(): NativeContourLayer = NativeContourLayer(interval, minimumZoom, loadSamples).also { copy ->
@@ -191,8 +204,21 @@ internal class NativeContourLayer(
                 if (closed) return@withPermit null
                 val samples = loadSamples(z, x, sourceY) ?: return@withPermit null
                 if (closed) return@withPermit null
-                val content = NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval) {
-                    permit.close()
+                val buildContext = currentCoroutineContext()
+                val content = try {
+                    NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval,
+                        ensureActive = {
+                            buildContext.ensureActive()
+                            if (closed) throw CancellationException("Contour layer closed")
+                        },
+                        releasePrepared = { permit.close() },
+                    )
+                } catch (budget: NativeContourGeometryBudgetExceeded) {
+                    val canSubdivide = z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM
+                    val refined = canSubdivide && forcedRefinements.requestRefinement(TileRequest(z, x, sourceY)) { !closed }
+                    NativeContourGeometryTelemetry.rejected(z, refined, !canSubdivide)
+                    if (refined && !closed) WorldWind.requestRedraw()
+                    return@withPermit null
                 }
                 synchronized(prepared) {
                     if (closed) return@withPermit null
@@ -270,6 +296,7 @@ internal class NativeContourLayer(
 
     override fun closeSource() {
         closed = true
+        forcedRefinements.clear()
         generationQueue.close()
         synchronized(prepared) {
             prepared.forEach { it.admitted() }
@@ -335,14 +362,17 @@ internal object NativeContourVectorTileBuilder {
         }
     }
 
-    fun build(values: DoubleArray, z: Int, x: Int, y: Int, interval: Int, releasePrepared: () -> Unit = {}): NativeContourTileContent {
+    fun build(values: DoubleArray, z: Int, x: Int, y: Int, interval: Int,
+        ensureActive: () -> Unit = {}, releasePrepared: () -> Unit = {},
+    ): NativeContourTileContent {
         require(values.isNotEmpty())
         val size = kotlin.math.sqrt(values.size.toDouble()).toInt()
         require(size >= 2 && size * size == values.size)
-        val segments = NativeTerrainOverlayMath.contourSegments(values, size, interval)
+        val segments = NativeTerrainOverlayMath.contourSegments(values, size, interval, ensureActive)
         if (segments.isEmpty()) return NativeContourTileContent(emptyList(), null, 0, 0, Sector(), 256, releasePrepared)
-        val paths = NativeTerrainOverlayMath.contourPaths(segments)
-        val labels = NativeTerrainOverlayMath.contourLabelsForPaths(paths, interval, NativeContourVectorGeometry.LABEL_SPACING_PIXELS)
+        val paths = NativeTerrainOverlayMath.contourPaths(segments, ensureActive)
+        val logicalVertices = NativeContourGeometryBudget.preflight(paths, ensureActive)
+        val labels = NativeTerrainOverlayMath.contourLabelsForPaths(paths, interval, NativeContourVectorGeometry.LABEL_SPACING_PIXELS, ensureActive)
         val output = ArrayList<Renderable>(1 + labels.size)
         val features = ArrayList<MvtBatchedLineTile.BatchLineFeature>(paths.size)
         var minLatitude = Double.POSITIVE_INFINITY
@@ -352,6 +382,7 @@ internal object NativeContourVectorTileBuilder {
         var sourcePointCount = 0
         val lineAttributes = HashMap<Int, ShapeAttributes>()
         for (contour in paths) {
+            ensureActive()
             if (contour.points.size < 2) continue
             val attributes = lineAttributes.getOrPut(contour.elevationMeters) {
                 ShapeAttributes().apply {
@@ -381,6 +412,7 @@ internal object NativeContourVectorTileBuilder {
             isPickEnabled = false
             assemble(null) // Pure degree-space assembly off the UI thread; frees source coordinate arrays.
         }
+        NativeContourGeometryTelemetry.accepted(logicalVertices)
         output += batch
         labels.forEach { point ->
                 val attributes = TextAttributes().apply {

@@ -1,6 +1,6 @@
 import type { Map } from 'maplibre-gl';
 import { syncOverlayData } from '../map/overlayData.ts';
-import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 import { metresBetween, type Coordinate, type RouteOverlay } from './types.ts';
 import { createRouteFeatures } from './routeFeatures.ts';
 import type { ScreenPoint } from '../tracks/drawing';
@@ -56,7 +56,7 @@ export class RouteLayer {
         paint: {
           'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#384244', '#102a38'],
           'line-width': routeLineWidthExpression(['+', ['coalesce', ['get', 'routeWidth'], 4], 4]),
-          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+          'line-opacity': routeLineOpacityExpression(['coalesce', ['get', 'opacity'], 1]),
         },
       });
       m.addLayer({
@@ -76,7 +76,7 @@ export class RouteLayer {
             ['coalesce', ['get', 'color'], ['get', 'routeColor'], '#59dcff'],
           ],
           'line-width': routeLineWidthExpression(['coalesce', ['get', 'routeWidth'], 4]),
-          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+          'line-opacity': routeLineOpacityExpression(['coalesce', ['get', 'opacity'], 1]),
         },
       });
       m.addLayer({
@@ -88,7 +88,7 @@ export class RouteLayer {
           'line-color': ['case', ['==', ['get', 'navigationState'], 'traveled'], '#8e999b', '#ffcb65'],
           'line-width': routeLineWidthExpression(4),
           'line-dasharray': [2, 2],
-          'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+          'line-opacity': routeLineOpacityExpression(['coalesce', ['get', 'opacity'], 1]),
         },
       });
       m.addLayer({

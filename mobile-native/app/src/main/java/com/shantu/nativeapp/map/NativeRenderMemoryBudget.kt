@@ -14,7 +14,8 @@ internal object NativeRenderMemoryBudget {
      * A ceiling, not a preallocation. The high-detail oblique viewport can use over 160 MiB
      * of live textures at 390x857. Dividing the heap by 6/12 evicted visible tiles on every
      * frame, causing an unending decode/upload loop and larger transient bitmap peaks.
-     * Each surface remains bounded; smaller secondary/share viewports use only what they need.
+     * Concurrent surfaces share this one bounded process cache through the SDK's EGL factory;
+     * mounting a comparison or share surface must not multiply the texture budget.
      */
     fun textureCapacityBytes(maxHeapBytes: Long, physicalMemoryBytes: Long = 0L, lowRamDevice: Boolean = false): Long {
         val heap = maxHeapBytes.coerceAtLeast(0L)

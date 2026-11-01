@@ -17,21 +17,35 @@ class NativeOverlayStyleTest {
     }
 
     @Test fun routeStrokeZoomCurveMatchesTheWebExpressionStopsAndPreservesNearWidth() {
-        val stops = listOf(0.0 to 0.25, 6.0 to 0.25, 10.0 to 0.5, 14.0 to 0.8, 16.0 to 1.0)
+        val stops = listOf(0.0 to 0.12, 6.0 to 0.12, 10.0 to 0.3, 14.0 to 0.7, 16.0 to 1.0)
         stops.forEach { (zoom, scale) -> assertEquals(scale, NativeOverlayStyle.routeWidthScale(zoom), 0.0001) }
-        assertEquals(0.375, NativeOverlayStyle.routeWidthScale(8.0), 0.0001)
-        assertEquals(0.9, NativeOverlayStyle.routeWidthScale(15.0), 0.0001)
+        assertEquals(0.21, NativeOverlayStyle.routeWidthScale(8.0), 0.0001)
+        assertEquals(0.85, NativeOverlayStyle.routeWidthScale(15.0), 0.0001)
         assertEquals(1.0, NativeOverlayStyle.routeWidthScale(20.0), 0.0001)
         assertEquals(1.0, NativeOverlayStyle.routeWidthScale(Double.NaN), 0.0001)
+    }
+
+    @Test fun routeOpacityCurveMatchesWebStopsAndComposesFromOriginalAlphaOnZoomRoundTrips() {
+        val stops = listOf(0.0 to 0.35, 6.0 to 0.35, 10.0 to 0.55, 14.0 to 0.85, 16.0 to 1.0)
+        stops.forEach { (zoom, scale) -> assertEquals(scale, NativeOverlayStyle.routeOpacityScale(zoom), 0.0001) }
+        assertEquals(0.45, NativeOverlayStyle.routeOpacityScale(8.0), 0.0001)
+        assertEquals(0.925, NativeOverlayStyle.routeOpacityScale(15.0), 0.0001)
+        val zoomSequence = listOf(6.0, 10.0, 14.0, 16.0, 6.0, 16.0)
+        zoomSequence.forEach { zoom ->
+            assertEquals(0.4 * NativeOverlayStyle.routeOpacityScale(zoom), NativeOverlayStyle.routeFeatureOpacity(0.4, zoom), 0.0001)
+        }
+        assertEquals(0.4, NativeOverlayStyle.routeFeatureOpacity(0.4, 16.0), 0.0001)
+        assertEquals(0.14, NativeOverlayStyle.routeFeatureOpacity(0.4, 6.0), 0.0001)
+        assertEquals(0.35, NativeOverlayStyle.routeFeatureOpacity(Double.NaN, 6.0), 0.0001)
     }
 
     @Test fun zoomScalingOnlyTargetsRouteTrackAndGuidanceStrokeRoles() {
         listOf("routePath", "routeOutline", "routeAccess", "track", "trackHalo", "selectedEdge",
             "guidance", "ribbon", "offset-reference").forEach { role ->
-            assertEquals(role, true, NativeOverlayStyle.scalesRouteWidth(role))
+            assertEquals(role, true, NativeOverlayStyle.scalesRouteAppearance(role))
         }
         listOf("routePoint", "trackNode", "guidanceTarget", "chevron", "note", "warning", "linePoint")
-            .forEach { role -> assertEquals(role, false, NativeOverlayStyle.scalesRouteWidth(role)) }
+            .forEach { role -> assertEquals(role, false, NativeOverlayStyle.scalesRouteAppearance(role)) }
     }
 
     @Test fun pointImageScaleKeepsRequestedCssDiameterAcrossViewportScales() {
@@ -60,6 +74,17 @@ class NativeOverlayStyleTest {
         assertEquals(64f / 255f, color.green, 0.001f)
         assertEquals(0f, color.blue, 0.001f)
         assertEquals(0.2f, color.alpha, 0.001f)
+    }
+
+    @Test fun routeZoomFadeMultipliesOriginalCssAlphaWithoutCumulativeMutation() {
+        val cssColor = "rgba(255, 64, 0, 0.5)"
+        val baseOpacity = 0.6
+        val near = NativeOverlayStyle.color(cssColor, NativeOverlayStyle.routeFeatureOpacity(baseOpacity, 16.0))
+        val far = NativeOverlayStyle.color(cssColor, NativeOverlayStyle.routeFeatureOpacity(baseOpacity, 6.0))
+        val nearAgain = NativeOverlayStyle.color(cssColor, NativeOverlayStyle.routeFeatureOpacity(baseOpacity, 16.0))
+        assertEquals(0.3f, near.alpha, 0.001f)
+        assertEquals(0.105f, far.alpha, 0.001f)
+        assertEquals(near.alpha, nearAgain.alpha, 0.001f)
     }
 
     @Test fun cssEightDigitHexAndPercentageChannelsAreSupported() {

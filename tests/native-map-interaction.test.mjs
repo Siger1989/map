@@ -3,7 +3,8 @@ import test from 'node:test';
 import { NativeMapInteractionAdapter } from '../modules/map/native/interaction.ts';
 
 function harness(extra = {}) {
-  const handlers = new Map(), callbacks = [], notices = [], gestures = [];
+  const handlers = new Map(), callbacks = [], notices = [], gestures = [], frames = new Map();
+  let nextFrame = 1;
   const ready = (value) => ({ status: 'ready', value });
   const client = {
     isReady: true,
@@ -22,18 +23,20 @@ function harness(extra = {}) {
       };
     },
   };
-  const target = { kind: 'track', node: { trackId: 'draft', coordinate: [1, 2] } };
+  const target = extra.target ?? { kind: 'track', node: { trackId: 'draft', coordinate: [1, 2] } };
   const adapter = new NativeMapInteractionAdapter({
     client,
     mapId: 'main',
     enabled: () => true,
-    resolveTarget: (hit) => extra.resolveTarget ? extra.resolveTarget(hit) : hit.ids.includes('track-node') ? target : null,
+    resolveTarget: (hit) => extra.resolveTarget ? extra.resolveTarget(hit) : hit.ids.includes(extra.hitId ?? 'track-node') ? target : null,
     onDragBegin: (value) => callbacks.push(['begin', value]),
     onDragPreview: (value) => callbacks.push(['preview', value]),
     onDragCommit: (value) => callbacks.push(['commit', value]),
     onMapHold: (value) => callbacks.push(['hold', value]),
     ...(extra.direct === undefined ? { direct: () => true } : { direct: extra.direct }),
     dispatchGesture: (detail) => gestures.push(detail),
+    requestFrame(callback) { const id = nextFrame++; frames.set(id, callback); return id; },
+    cancelFrame(id) { frames.delete(id); },
   });
   adapter.start();
   const emit = (name, value) => [...(handlers.get(`main:${name}`) ?? [])].forEach((listener) => listener(value, { requestId: 'r' }));
@@ -43,7 +46,12 @@ function harness(extra = {}) {
   const hit = ({ gestureId = 7, pointerId = 0, x = 10, y = 20, ids = ['track-node'], coordinate = [1, 2] } = {}) => ({
     gestureId, pointerId, downTime: 100, eventTime: 100, point: { x, y }, ids, coordinate,
   });
-  return { adapter, callbacks, notices, gestures, emit, touch, hit, target };
+  const flushFrames = () => {
+    const callbacks = [...frames.values()];
+    frames.clear();
+    callbacks.forEach((callback) => callback(16));
+  };
+  return { adapter, callbacks, notices, gestures, emit, touch, hit, target, frames, flushFrames };
 }
 
 test('native hit parsing preserves exact GPU IDs separately from expanded candidates for drag resolution', () => {
@@ -73,6 +81,79 @@ test('native hit + real projection preserves FeatureDragBridge callback contract
   assert.deepEqual(h.notices.at(-1), { mapId: 'main', command: 'gestureCapture', payload: { gestureId: 7, enabled: false } });
   assert.deepEqual(h.gestures.map(({ phase }) => phase), ['start', 'end']);
   h.adapter.dispose();
+});
+
+test('native node and annotation drags consume only the latest MOVE once per animation frame', () => {
+  const cases = [
+    { name: 'node', target: { kind: 'track', node: { trackId: 'draft', coordinate: [1, 2] } }, hitId: 'track-node', down: [10, 20], moves: [[20, 30], [35, 45], [50, 60]], expected: [5, 6] },
+    { name: 'annotation', target: { kind: 'annotation', id: 'pin-a', coordinate: [3, 4] }, hitId: 'annotation', down: [30, 40], moves: [[40, 50], [55, 65], [80, 90]], expected: [8, 9] },
+  ];
+  for (const item of cases) {
+    const h = harness({ target: item.target, hitId: item.hitId });
+    h.emit('touch', h.touch(0, ...item.down));
+    h.emit('hitTest', h.hit({ x: item.down[0], y: item.down[1], coordinate: item.target.kind === 'track' ? item.target.node.coordinate : item.target.coordinate, ids: [item.hitId] }));
+    for (const [x, y] of item.moves) h.emit('touch', h.touch(2, x, y));
+    assert.equal(h.callbacks.filter(([kind]) => kind === 'preview').length, 1,
+      `${item.name}: intermediate MOVE callbacks should wait for the frame`);
+    assert.equal(h.frames.size, 1, `${item.name}: multiple MOVE events schedule one frame`);
+    h.flushFrames();
+    const previews = h.callbacks.filter(([kind, value]) => kind === 'preview' && value);
+    assert.equal(previews.length, 2, `${item.name}: only one preview is consumed for the frame`);
+    assert.deepEqual(previews.at(-1)[1].coordinate, item.expected, `${item.name}: use the newest MOVE coordinate`);
+    h.adapter.dispose();
+  }
+});
+
+test('native ACTION_UP flushes its final point synchronously before one commit', () => {
+  const h = harness();
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('hitTest', h.hit());
+  h.emit('touch', h.touch(2, 25, 40));
+  assert.equal(h.frames.size, 1);
+  h.emit('touch', h.touch(1, 40, 50, { eventTime: 180 }));
+  const finalPreview = h.callbacks.findIndex(([kind, move]) => kind === 'preview' && move?.coordinate[0] === 4 && move?.coordinate[1] === 5);
+  const commit = h.callbacks.findIndex(([kind, move]) => kind === 'commit' && move?.coordinate[0] === 4 && move?.coordinate[1] === 5);
+  assert.ok(finalPreview >= 0 && finalPreview < commit, 'the final ACTION_UP point is previewed before commit');
+  assert.equal(h.callbacks.filter(([kind]) => kind === 'commit').length, 1);
+  assert.equal(h.frames.size, 0, 'the queued frame is canceled when the final point is flushed');
+  h.flushFrames();
+  assert.equal(h.callbacks.filter(([kind]) => kind === 'commit').length, 1, 'no late frame can commit a second time');
+  h.adapter.dispose();
+});
+
+test('native cancellation and dispose discard queued MOVE work without late preview or commit', () => {
+  for (const endWithDispose of [false, true]) {
+    const h = harness();
+    h.emit('touch', h.touch(0, 10, 20));
+    h.emit('hitTest', h.hit());
+    h.emit('touch', h.touch(2, 30, 40));
+    assert.equal(h.frames.size, 1);
+    if (endWithDispose) h.adapter.dispose();
+    else h.emit('touch', h.touch(3, 30, 40));
+    const previewsAtEnd = h.callbacks.filter(([kind]) => kind === 'preview').length;
+    h.flushFrames();
+    assert.equal(h.callbacks.filter(([kind]) => kind === 'preview').length, previewsAtEnd);
+    assert.equal(h.callbacks.some(([kind]) => kind === 'commit'), false);
+    if (!endWithDispose) h.adapter.dispose();
+  }
+});
+
+test('ordinary taps and pans never schedule drag preview frames', () => {
+  const tap = harness({ direct: () => false });
+  tap.emit('touch', tap.touch(0, 10, 20));
+  tap.emit('hitTest', tap.hit());
+  tap.emit('touch', tap.touch(1, 10, 20, { eventTime: 140 }));
+  assert.equal(tap.frames.size, 0);
+  assert.equal(tap.callbacks.length, 0);
+  tap.adapter.dispose();
+
+  const pan = harness({ direct: () => false });
+  pan.emit('touch', pan.touch(0, 10, 20));
+  pan.emit('hitTest', pan.hit());
+  pan.emit('touch', pan.touch(2, 21, 30));
+  assert.equal(pan.frames.size, 0);
+  assert.equal(pan.callbacks.some(([kind]) => kind === 'preview' || kind === 'commit'), false);
+  pan.adapter.dispose();
 });
 
 test('stale hit results are ignored and a second finger cancels preview without commit', () => {

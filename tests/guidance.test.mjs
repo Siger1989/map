@@ -14,7 +14,7 @@ import {
 } from '../modules/guidance/geometry.ts';
 import { metresBetween } from '../modules/navigation/types.ts';
 import { GuidanceLayer } from '../modules/guidance/GuidanceLayer.ts';
-import { routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../modules/map/zoomLineWidth.ts';
 import { validateRejoinEndpoints } from '../modules/guidance/rejoin.ts';
 const route = (
   points = [
@@ -309,6 +309,9 @@ test('return path has its own source and is removed on stop without modifying th
   assert.deepEqual(layers.get('guidance-outline').paint['line-width'], routeLineWidthExpression(9));
   assert.deepEqual(layers.get('guidance-path').paint['line-width'], routeLineWidthExpression(5));
   assert.deepEqual(layers.get('guidance-access').paint['line-width'], routeLineWidthExpression(4));
+  for (const id of ['guidance-outline', 'guidance-path', 'guidance-access']) {
+    assert.deepEqual(layers.get(id).paint['line-opacity'], routeLineOpacityExpression(1));
+  }
   layer.sync(null);
   assert.equal(sources.get('route-guidance').data.features.length, 0);
 });

@@ -53,6 +53,7 @@ public final class Native160DrawingProbe {
 
         Object controller = field(entry, "controller");
         Method project = projectMethod(controller.getClass());
+        JSONObject diagnostics = projectionDiagnostics(parent, entry, controller, project, lines);
         Method scaleMethod = parent.getClass().getDeclaredMethod("rendererCssScale");
         scaleMethod.setAccessible(true);
         Object scaleValue = scaleMethod.invoke(parent);
@@ -62,6 +63,7 @@ public final class Native160DrawingProbe {
 
         Candidate bestBent = null;
         Candidate bestFallback = null;
+        double minX=Double.POSITIVE_INFINITY,minY=Double.POSITIVE_INFINITY,maxX=Double.NEGATIVE_INFINITY,maxY=Double.NEGATIVE_INFINITY;
         int checked = Math.min(lines.length(), MAX_LINES), projectedCount = 0, safeCount = 0;
         for (int sampleLine = 0; sampleLine < checked; sampleLine++) {
             int lineIndex = sampleLine * lines.length() / checked;
@@ -75,6 +77,7 @@ public final class Native160DrawingProbe {
             for (int index = 0; index < sourceCount; index += stride) {
                 ProjectedPoint point = projectCoordinate(controller, project, coordinates.optJSONArray(index), index, cssScale);
                 if (point != null) projectedCount++;
+                if (point != null) { minX=Math.min(minX,point.x);minY=Math.min(minY,point.y);maxX=Math.max(maxX,point.x);maxY=Math.max(maxY,point.y); }
                 if (insideSafeViewport(point)) safeCount++;
                 sampled.add(point);
             }
@@ -109,12 +112,39 @@ public final class Native160DrawingProbe {
         }
 
         Candidate chosen = bestBent != null ? bestBent : bestFallback;
-        if (chosen == null) return noMatch("no-road-path-inside-safe-viewport").put("projectedSamples", projectedCount).put("safeSamples", safeCount);
+        if (chosen == null) return noMatch("no-road-path-inside-safe-viewport").put("projectedSamples", projectedCount).put("safeSamples", safeCount)
+            .put("cssScale",cssScale).put("projectedBoundsCss",projectedCount==0?JSONObject.NULL:new JSONArray().put(minX).put(minY).put(maxX).put(maxY)).put("projectionDiagnostics",diagnostics);
         return new JSONObject().put("status", "ready")
             .put("start", pointJson(chosen.start))
             .put("control", pointJson(chosen.control))
             .put("end", pointJson(chosen.end))
             .put("sourceVertexCount", chosen.sourceVertexCount);
+    }
+
+    private static JSONObject projectionDiagnostics(Native149Instrumentation parent,Object entry,Object controller,Method project,JSONArray lines) {
+        JSONObject result=new JSONObject();
+        try {
+            Object maps=field(field(parent,"host"),"maps");
+            result.put("isCurrentMainEntry",maps instanceof java.util.Map && ((java.util.Map<?,?>)maps).get("main")==entry);
+            result.put("controllerDisposed",field(controller,"disposed"));
+            android.view.View view=(android.view.View)field(controller,"worldWindow");
+            result.put("viewSizePx",new JSONArray().put(view.getWidth()).put(view.getHeight()));
+            result.put("viewport",field(entry,"viewport"));
+            Method snapshot=controller.getClass().getDeclaredMethod("cameraSnapshot");snapshot.setAccessible(true);
+            Object camera=snapshot.invoke(controller);
+            double lat=((Number)field(camera,"latitude")).doubleValue(),lon=((Number)field(camera,"longitude")).doubleValue();
+            Object center=project.invoke(controller,lat,lon);
+            result.put("cameraCenterScreenPx",center==null?JSONObject.NULL:new JSONArray().put(pairValue(center,"getFirst","first")).put(pairValue(center,"getSecond","second")));
+            double west=Double.POSITIVE_INFINITY,east=Double.NEGATIVE_INFINITY,south=Double.POSITIVE_INFINITY,north=Double.NEGATIVE_INFINITY;
+            int count=0;
+            for(int i=0;i<lines.length();i++) {
+                JSONArray coords=lines.getJSONObject(i).optJSONArray("coordinates");if(coords==null)continue;
+                for(int j=0;j<coords.length();j++){JSONArray p=coords.optJSONArray(j);if(p==null)continue;double x=p.optDouble(0,Double.NaN)-lon,y=p.optDouble(1,Double.NaN)-lat;if(!Double.isFinite(x)||!Double.isFinite(y))continue;west=Math.min(west,x);east=Math.max(east,x);south=Math.min(south,y);north=Math.max(north,y);count++;}
+            }
+            result.put("roadCoordinateCount",count);
+            result.put("roadBoundsRelativeToCameraDegrees",count==0?JSONObject.NULL:new JSONArray().put(west).put(south).put(east).put(north));
+        } catch(Throwable error){try{result.put("errorType",error.getClass().getSimpleName());}catch(Throwable ignored){}}
+        return result;
     }
 
     private static ProjectedPoint projectCoordinate(Object controller, Method project, JSONArray coordinate, int index, double cssScale) {

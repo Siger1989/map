@@ -3,7 +3,7 @@ import { resolvedRouteTerminals } from './routeTerminals';
 import { selectedEdgeData, syncSelectedEdges } from './selectedEdgeLayer';
 import { syncTrackNotes } from './trackNotes';
 import { invalidateOverlayData, syncOverlayData, syncPlaceLabelLayerOrder } from '../map/overlayData';
-import { routeLineWidthExpression } from '../map/zoomLineWidth.ts';
+import { routeLineOpacityExpression, routeLineWidthExpression } from '../map/zoomLineWidth.ts';
 import {
   syncRouteWarnings,
   type RouteWarning,
@@ -318,7 +318,7 @@ export class TrackLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['case', ['get', 'selected'], '#ffffff', '#10212b'],
-          'line-opacity': ['*', 0.65, ['get', 'opacity']],
+          'line-opacity': routeLineOpacityExpression(['*', 0.65, ['get', 'opacity']]),
           'line-width': routeLineWidthExpression([
             '+', ['get', 'width'], ['case', ['get', 'selected'], 2, 1],
           ]),
@@ -332,7 +332,7 @@ export class TrackLayer {
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': ['get', 'color'],
-          'line-opacity': ['get', 'opacity'],
+          'line-opacity': routeLineOpacityExpression(['get', 'opacity']),
           'line-width': routeLineWidthExpression(['get', 'width']),
         },
       });

@@ -18,6 +18,7 @@ import earth.worldwind.shape.Path
 /** Native road presentation in the UI's CSS/512 zoom convention; route styling is separate. */
 internal object NativeRoadStyle {
     enum class Group { RIVER, MAIN_OUTLINE, MAIN, LOCAL, RAIL }
+    data class CurrentZoomStyle(val widthCss: Float, val opacityScale: Float)
     private val major = setOf("motorway", "trunk", "primary", "secondary", "tertiary")
     private val local = setOf("minor", "service", "track", "path")
     private const val CASING_LAYER = "shantu-main-road-outline"
@@ -34,11 +35,23 @@ internal object NativeRoadStyle {
         Group.RIVER -> interpolate(uiZoom, 7.0 to .5f, 13.0 to 1.5f, 16.0 to 3f)
         // Draped strokes can occupy more screen space on near terrain. Keep the
         // casing narrow as well as the fill, especially in a distant overview.
-        Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .6f, 10.0 to 1f, 12.0 to 1.4f, 16.0 to 3f)
-        Group.MAIN -> interpolate(uiZoom, 6.0 to .25f, 10.0 to .6f, 12.0 to .85f, 16.0 to 2f)
-        Group.LOCAL -> interpolate(uiZoom, 12.0 to .3f, 16.0 to 1f)
-        Group.RAIL -> interpolate(uiZoom, 9.0 to .32f, 12.0 to .5f, 16.0 to .9f)
+        // At close zooms preserve the previous widths and retain continuous interpolation.
+        Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+        Group.MAIN -> interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+        Group.LOCAL -> interpolate(uiZoom, 12.0 to .24f, 16.0 to 1f)
+        Group.RAIL -> interpolate(uiZoom, 9.0 to .25f, 12.0 to .4f, 16.0 to .9f)
     }
+
+    /** Fade only controllable vector strokes at distant zooms; river color/strength stays intact. */
+    fun opacityScale(group: Group, uiZoom: Double): Float = when (group) {
+        Group.RIVER -> 1f
+        Group.MAIN, Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .56f, 10.0 to .68f, 12.0 to .8f, 16.0 to 1f)
+        Group.LOCAL -> interpolate(uiZoom, 12.0 to .76f, 16.0 to 1f)
+        Group.RAIL -> interpolate(uiZoom, 9.0 to .78f, 12.0 to .84f, 16.0 to 1f)
+    }
+
+    fun currentZoomStyle(group: Group, uiZoom: Double): CurrentZoomStyle =
+        CurrentZoomStyle(widthCss(group, uiZoom), opacityScale(group, uiZoom))
 
     private fun interpolate(zoom: Double, vararg stops: Pair<Double, Float>): Float {
         if (!zoom.isFinite() || zoom <= stops.first().first) return stops.first().second
@@ -147,12 +160,22 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
         for (renderable in content) {
             val group = renderable.getUserProperty<NativeRoadStyle.Group>(groupKey) ?: continue
             if (!NativeRoadStyle.visible(group, current.zoom)) continue
-            val width = NativeRoadStyle.widthCss(group, current.zoom) * current.cssScale
-            when (renderable) {
-                is MvtBatchedLineTile -> renderable.widthScale = width
-                is Path -> renderable.attributes.outlineWidth = width
+            val style = NativeRoadStyle.currentZoomStyle(group, current.zoom)
+            val width = style.widthCss * current.cssScale
+            val baseOpacity = opacity
+            try {
+                // MvtBatchedLineTile and Path multiply the active layer opacity at draw time.
+                // Apply a temporary per-group factor so roads can fade independently of names,
+                // which live in separate cartography layers and share the user's base opacity.
+                opacity = baseOpacity * style.opacityScale
+                when (renderable) {
+                    is MvtBatchedLineTile -> renderable.widthScale = width
+                    is Path -> renderable.attributes.outlineWidth = width
+                }
+                renderable.render(rc)
+            } finally {
+                opacity = baseOpacity
             }
-            renderable.render(rc)
         }
     }
 }
