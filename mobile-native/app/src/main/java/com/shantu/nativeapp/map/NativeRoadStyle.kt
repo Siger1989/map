@@ -17,9 +17,16 @@ import earth.worldwind.shape.Path
 
 /** Native road presentation in the UI's CSS/512 zoom convention; route styling is separate. */
 internal object NativeRoadStyle {
-    enum class Group { RIVER, MAIN_OUTLINE, MAIN, LOCAL, RAIL }
+    enum class Group {
+        RIVER,
+        MAIN_OUTLINE, MAIN,
+        PRIMARY_OUTLINE, PRIMARY,
+        SECONDARY_OUTLINE, SECONDARY,
+        TERTIARY_OUTLINE, TERTIARY,
+        LOCAL, RAIL,
+    }
     data class CurrentZoomStyle(val widthCss: Float, val opacityScale: Float)
-    private val major = setOf("motorway", "trunk", "primary", "secondary", "tertiary")
+    private val backbone = setOf("motorway", "trunk")
     private val local = setOf("minor", "service", "track", "path")
     private const val CASING_LAYER = "shantu-main-road-outline"
 
@@ -27,8 +34,20 @@ internal object NativeRoadStyle {
     fun visible(group: Group, uiZoom: Double): Boolean = uiZoom.isFinite() && when (group) {
         Group.RIVER -> true
         Group.MAIN_OUTLINE, Group.MAIN -> uiZoom >= 6.0
-        Group.LOCAL -> uiZoom >= 12.0
+        Group.PRIMARY_OUTLINE, Group.PRIMARY,
+        Group.SECONDARY_OUTLINE, Group.SECONDARY,
+        Group.TERTIARY_OUTLINE, Group.TERTIARY,
+        Group.LOCAL -> densityFactor(group, uiZoom) > 0f
         Group.RAIL -> uiZoom >= 9.0
+    }
+
+    /** Smooth density ramp, keyed only to UI zoom and applied at draw time to cached groups. */
+    fun densityFactor(group: Group, uiZoom: Double): Float = when (group) {
+        Group.PRIMARY_OUTLINE, Group.PRIMARY -> smoothstep(uiZoom, 9.5, 11.0)
+        Group.SECONDARY_OUTLINE, Group.SECONDARY -> smoothstep(uiZoom, 10.5, 12.0)
+        Group.TERTIARY_OUTLINE, Group.TERTIARY -> smoothstep(uiZoom, 12.0, 13.5)
+        Group.LOCAL -> smoothstep(uiZoom, 13.5, 15.0)
+        else -> 1f
     }
 
     fun widthCss(group: Group, uiZoom: Double): Float = when (group) {
@@ -37,7 +56,13 @@ internal object NativeRoadStyle {
         // casing narrow as well as the fill, especially in a distant overview.
         // At close zooms preserve the previous widths and retain continuous interpolation.
         Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+        Group.PRIMARY_OUTLINE -> interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
+        Group.SECONDARY_OUTLINE, Group.TERTIARY_OUTLINE ->
+            interpolate(uiZoom, 6.0 to .4f, 10.0 to .68f, 12.0 to 1.05f, 16.0 to 3f)
         Group.MAIN -> interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+        Group.PRIMARY -> interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
+        Group.SECONDARY, Group.TERTIARY ->
+            interpolate(uiZoom, 6.0 to .18f, 10.0 to .42f, 12.0 to .66f, 16.0 to 2f)
         Group.LOCAL -> interpolate(uiZoom, 12.0 to .24f, 16.0 to 1f)
         Group.RAIL -> interpolate(uiZoom, 9.0 to .25f, 12.0 to .4f, 16.0 to .9f)
     }
@@ -45,8 +70,12 @@ internal object NativeRoadStyle {
     /** Fade only controllable vector strokes at distant zooms; river color/strength stays intact. */
     fun opacityScale(group: Group, uiZoom: Double): Float = when (group) {
         Group.RIVER -> 1f
-        Group.MAIN, Group.MAIN_OUTLINE -> interpolate(uiZoom, 6.0 to .56f, 10.0 to .68f, 12.0 to .8f, 16.0 to 1f)
-        Group.LOCAL -> interpolate(uiZoom, 12.0 to .76f, 16.0 to 1f)
+        Group.MAIN, Group.MAIN_OUTLINE,
+        Group.PRIMARY_OUTLINE, Group.PRIMARY,
+        Group.SECONDARY_OUTLINE, Group.SECONDARY,
+        Group.TERTIARY_OUTLINE, Group.TERTIARY ->
+            interpolate(uiZoom, 6.0 to .56f, 10.0 to .68f, 12.0 to .8f, 16.0 to 1f) * densityFactor(group, uiZoom)
+        Group.LOCAL -> interpolate(uiZoom, 12.0 to .76f, 16.0 to 1f) * densityFactor(group, uiZoom)
         Group.RAIL -> interpolate(uiZoom, 9.0 to .78f, 12.0 to .84f, 16.0 to 1f)
     }
 
@@ -61,6 +90,13 @@ internal object NativeRoadStyle {
             if (zoom <= end) return previous + (value - previous) * ((zoom - start) / (end - start)).toFloat()
         }
         return stops.last().second
+    }
+
+    private fun smoothstep(zoom: Double, start: Double, end: Double): Float {
+        if (!zoom.isFinite() || zoom <= start) return 0f
+        if (zoom >= end) return 1f
+        val t = ((zoom - start) / (end - start)).toFloat()
+        return t * t * (3f - 2f * t)
     }
 
     // Unit-width strokes are baked once. The render hook applies the actual CSS width and density.
@@ -80,7 +116,17 @@ internal object NativeRoadStyle {
         }
         rule("transportation") {
             geometryType = MvtGeometryType.LINESTRING
-            filter = MvtFilter.`in`("class", "primary", "secondary", "tertiary")
+            filter = MvtFilter.eq("class", "primary")
+            paint { line(Color(0xe3 / 255f, 0xde / 255f, 0xd1 / 255f, .85f), 1f) }
+        }
+        rule("transportation") {
+            geometryType = MvtGeometryType.LINESTRING
+            filter = MvtFilter.eq("class", "secondary")
+            paint { line(Color(0xe3 / 255f, 0xde / 255f, 0xd1 / 255f, .85f), 1f) }
+        }
+        rule("transportation") {
+            geometryType = MvtGeometryType.LINESTRING
+            filter = MvtFilter.eq("class", "tertiary")
             paint { line(Color(0xe3 / 255f, 0xde / 255f, 0xd1 / 255f, .85f), 1f) }
         }
         rule("transportation") {
@@ -106,12 +152,18 @@ internal object NativeRoadStyle {
             }
             if (layer.name != "transportation") continue
             val mainLines = mutableListOf<MvtFeature>()
+            val primaryLines = mutableListOf<MvtFeature>()
+            val secondaryLines = mutableListOf<MvtFeature>()
+            val tertiaryLines = mutableListOf<MvtFeature>()
             val localLines = mutableListOf<MvtFeature>()
             val railLines = mutableListOf<MvtFeature>()
             for (feature in layer.features) {
                 if (feature.type != MvtGeometryType.LINESTRING) continue
                 when (feature.toProperties(layer)["class"] as? String) {
-                    in major -> mainLines += feature
+                    in backbone -> mainLines += feature
+                    "primary" -> primaryLines += feature
+                    "secondary" -> secondaryLines += feature
+                    "tertiary" -> tertiaryLines += feature
                     in local -> localLines += feature
                     "rail" -> railLines += feature
                 }
@@ -119,6 +171,18 @@ internal object NativeRoadStyle {
             if (mainLines.isNotEmpty()) {
                 grouped.getValue(Group.MAIN_OUTLINE) += layer.copy(name = CASING_LAYER, features = mainLines)
                 grouped.getValue(Group.MAIN) += layer.copy(features = mainLines)
+            }
+            if (primaryLines.isNotEmpty()) {
+                grouped.getValue(Group.PRIMARY_OUTLINE) += layer.copy(name = CASING_LAYER, features = primaryLines)
+                grouped.getValue(Group.PRIMARY) += layer.copy(features = primaryLines)
+            }
+            if (secondaryLines.isNotEmpty()) {
+                grouped.getValue(Group.SECONDARY_OUTLINE) += layer.copy(name = CASING_LAYER, features = secondaryLines)
+                grouped.getValue(Group.SECONDARY) += layer.copy(features = secondaryLines)
+            }
+            if (tertiaryLines.isNotEmpty()) {
+                grouped.getValue(Group.TERTIARY_OUTLINE) += layer.copy(name = CASING_LAYER, features = tertiaryLines)
+                grouped.getValue(Group.TERTIARY) += layer.copy(features = tertiaryLines)
             }
             if (localLines.isNotEmpty()) grouped.getValue(Group.LOCAL) += layer.copy(features = localLines)
             if (railLines.isNotEmpty()) grouped.getValue(Group.RAIL) += layer.copy(features = railLines)
@@ -133,6 +197,9 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
     maxConcurrentFetches = 2, maxConcurrentAssembly = 1,
     style = NativeRoadStyle.style, displayName = "Roads and waterways",
 ) {
+    // Keep coarse coverage until every selected child is ready; stop progressive parent/child overlap.
+    override val progressiveRefinement get() = false
+
     private data class ViewStyle(val zoom: Double, val cssScale: Float)
     @Volatile private var viewStyle = ViewStyle(Double.NaN, 1f)
     private val groupKey = Any()

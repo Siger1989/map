@@ -111,3 +111,9 @@ evidence directory when needed; it is separate from this source tree.
 Use `-e mode interactive-preview` after forwarding `adb -s DEVICE forward tcp:23458 tcp:23458`. The helper keeps the actual APK open and accepts bounded real touch events on Android loopback only. Start `python preview-server.py --adb ADB_PATH --serial DEVICE --port 9174` with Python/imageio-ffmpeg available, then open the localhost preview. Current video/touch dimensions assume MuMu 1256x2760; adapt both before using another size. Only `stop` finishes the instrumentation. This is a development preview, not a product service or phone FPS result.
 
 `-e rasterExtended true` extends `raster-diagnostics` to zoom6/10 with 35/55/75-degree poses.
+
+## Ordinary-road density (162)
+
+`-e mode road-density-regression -e fixtureFile qa-native162-roads.json` accepts a local `poses` array with validated camera objects. Default coverage is Chengdu zoom 8/9/10/11/12/15 and mountain 8/10/11/12/15; each pose records road-layer ON/OFF/ON PNGs, render-cut groups and parent/child overlap. Temporary vector annotation settings preserve the selected base source, and full renderState/camera/layer/contour/revision values restore in `finally`. No GPS or saved-record writes.
+
+A separate cold near fixture may set `requireMatrixCoverage:false`, `isolation:false`, `minimumWarmupMs:10000`, and one `city-z15` pose. It avoids comparing a streaming source12 overview with source14 near detail. `captureUnsettled` and pending counts are mandatory evidence; the helper never automatically establishes visual acceptance or a fully drained network. Raw PNGs and reports stay private.

@@ -1,0 +1,149 @@
+{
+  "version": "0.2.162-test",
+  "versionCode": 169,
+  "sha256": "ab0f9839f21ab22fc19a1a71e8846c06f1d5aaa3eaa008a132da3a04f7e227ae",
+  "bytes": 165175096,
+  "baseline": {
+    "version": "0.2.161-test",
+    "versionCode": 168,
+    "sha256": "9067da62082202c63855d11a08679e0c2bd88b84759d64cec4a430f196b86da7",
+    "sourceCommit": "4a383a712a73521ded43bf75959b1fd7e5fe649b"
+  },
+  "scope": "Actual native WorldWind on dedicated MuMu3; ordinary road density, not navigation stroke width; original user photograph version unknown",
+  "originalLibraryPhoto": "Unavailable to this executor; parent description is not pixel inspection",
+  "changes": {
+    "roadClasses": "motorway/trunk retain old threshold; primary9.5-11, secondary10.5-12, tertiary12-13.5, local13.5-15 smoothstep; zero factor skips batch",
+    "zoomConvention": "Native camera/UI CSS512 zoom; visible map-level gauge is approximately two levels higher",
+    "sourceGeometry": "Unmodified decoded MVT features and independent snapping source/cache retained",
+    "coverage": "SDK progressiveRefinement=false retains one complete fallback cut; no parent/child double drawing",
+    "unchanged": [
+      "User source and annotation selections",
+      "Stored markers/tracks/drafts",
+      "Base widths/colors and original alpha curves multiplied by fade",
+      "Rail/water strategy",
+      "SDK dependency",
+      "Unreal",
+      "External download/public APK settings"
+    ]
+  },
+  "matchedChengduOverview": {
+    "nativeCameraZoom": 9,
+    "visibleMapLevelApprox": 11,
+    "sameSourceTileKeys": true,
+    "sourceZooms": [
+      10
+    ],
+    "beforeSourceRoadSegments": 7718,
+    "afterSourceRoadSegmentsRetained": 7718,
+    "afterSelectedRoadSegments": 3488,
+    "skippedPrimarySegments": 1681,
+    "skippedSecondarySegments": 2549,
+    "selectedSegmentReductionPercent": 54.81,
+    "note": "Feature segments in matched loaded tile cut, not unique streets; MAIN casing not counted twice",
+    "rootViewedFullResolutionBeforeAndAfter": true,
+    "whitePixelPaletteFit": {
+      "beforePixels": 8567,
+      "afterPixels": 405,
+      "reductionPercent": 95.27,
+      "roi": [
+        180,
+        250,
+        1010,
+        2440
+      ],
+      "method": "ON/OFF/ON stable-pixel isolation; least-residual alpha compositing fit to actual white/gold/cyan/rail/local/casing palette; alpha>=0.1 and residual squared<=12",
+      "limitation": "Auxiliary pale-stroke estimate, not a count of streets; earlier broad brightness heuristic also counted gold/cyan edges and is not a white-road acceptance metric"
+    }
+  },
+  "nearDetailColdStart": {
+    "nativeCameraZoom": 15,
+    "sourceZooms": [
+      14
+    ],
+    "beforeAllRoadSegments": 726,
+    "afterAllRoadSegments": 726,
+    "beforeLocalSegments": 546,
+    "afterLocalSegments": 546,
+    "whiteRoadPixelReference": 424374,
+    "whiteRoadPixelCandidate": 424632,
+    "relativePixelChangePercent": 0.06,
+    "rootViewedFullResolution": true,
+    "note": "Independent cold runs avoid comparing a source12 overview against fully loaded source14 near data"
+  },
+  "matrix": {
+    "cityNativeZooms": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      15
+    ],
+    "mountainNativeZooms": [
+      8,
+      10,
+      11,
+      12,
+      15
+    ],
+    "beforeCaptures": 37,
+    "afterCaptures": 37,
+    "finalCaptureUnsettled": 0,
+    "finalAncestorOverlapMax": 0,
+    "beforeAncestorOverlapMax": 21,
+    "restoration": {
+      "renderStateAndRevision": true,
+      "terrainOverlayOptions": true,
+      "layerFlags": true,
+      "camera": true,
+      "sourceId": true
+    },
+    "networkFullyDrainedAtEveryPose": false,
+    "note": "Render-cut stability is required; pending network queue is recorded and must not be represented as zero/full loading",
+    "rootViewedFinalAllPosesContactSheet": true
+  },
+  "checks": {
+    "nativeKotlinSuites": 2,
+    "nativeKotlinTests": 17,
+    "nativeKotlin": "PASS",
+    "typescript": "PASS",
+    "privateReact": "PASS",
+    "optimized": "PASS",
+    "originalSignature": true,
+    "installedHashMatches": true,
+    "registeredPrivateTianditu": true,
+    "privateSourceCount": 39,
+    "reactAssetsMatched": 1925,
+    "crc": "PASS",
+    "zipalignAndElf16KiB": "PASS"
+  },
+  "excludedCandidates": [
+    {
+      "sha256": "29dbcb727d93236091820bff6f231082809c4abfda6e90b5120c2b2ea7e2d1d8",
+      "reason": "FAIL road-cover gaps with no coarse ancestor fallback"
+    },
+    {
+      "sha256": "66798f6a16520ab6a6082ff860b77018c7335a205cf3c65b893cdb7df9d159db",
+      "reason": "Incomplete density change at visible approx11; primary not separately filtered"
+    }
+  ],
+  "limits": [
+    "Physical-phone acceptance pending; original screenshot source/version not identified",
+    "Raster-baked roads cannot be selectively removed; existing vector/clear-label mode is the separable option, never switched silently",
+    "Full main/dual UI and GPS/background/share acceptance not claimed",
+    "Phone flicker and HarmonyOS native delivery not established by this density change"
+  ],
+  "localDelivery": {
+    "matchingVersionedFixedArchiveCopies": 3,
+    "old161And160Preserved": true,
+    "privateOnly": true,
+    "publicApkOrTunnelCreated": false
+  },
+  "restoredInteractivePreview": {
+    "originalCameraRestored": true,
+    "originalRoadsOffRestored": true,
+    "annotationDraftAndSavedRouteCountsUnchanged": true,
+    "currentPidOomCount": 0,
+    "currentPidFatalCount": 0
+  }
+}

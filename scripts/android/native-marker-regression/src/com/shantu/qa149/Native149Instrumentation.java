@@ -77,6 +77,7 @@ public final class Native149Instrumentation extends Instrumentation {
                     : "line-position-regression".equals(mode) ? runLinePositionRegression()
                     : "offline-route-regression".equals(mode) ? Native158OfflineRegression.run(this)
                     : "road-style-regression".equals(mode) ? Native159RoadRegression.run(this)
+                    : "road-density-regression".equals(mode) ? Native162RoadDensityRegression.run(this)
                     : "restore-qa-viewport".equals(mode) ? restoreQaViewport() : inspect();
                 result.putString("qa149_json", report.toString());
             } catch (Throwable error) {
