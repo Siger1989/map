@@ -377,13 +377,14 @@ export class DrawingSession {
             })
             .join('')
         : '';
+    const selectedTip = snap?.screen ?? road?.match?.screen ?? aim;
     return {
       hint:
         this.aimHint ||
-        (road?.match
-          ? roadHint(road)
-          : snap
-            ? '已吸附节点 · 松手定点'
+        (snap
+          ? '已吸附节点 · 松手定点'
+          : road?.match
+            ? roadHint(road)
             : road
               ? roadHint(road)
               : ''),
@@ -391,7 +392,7 @@ export class DrawingSession {
         kind: 'aim',
         distanceMetres: !blocked && from && this.aim
           ? trackDistance([[from, ...(this.aimSection ?? [this.aim])]]) : 0,
-        tip: road?.match?.screen ?? snap?.screen ?? aim,
+        tip: selectedTip,
         finger,
         path,
         blocked,

@@ -1,0 +1,22 @@
+{
+  "candidate": "C13 datum correction applied",
+  "apkSha256": "8eebe379da81bce712794b1c17052983fd509a69cd41fe2dcfbcf272bc0b779b",
+  "device": "MuMu3",
+  "physicalPhoneVerified": false,
+  "measurementStatus": "MEASURED_STABLE_FRAME",
+  "sampleCount": 5,
+  "coordinatesReturned": false,
+  "samePublishedFrameSequence": true,
+  "matrixStable": true,
+  "viewportStable": true,
+  "cameraStable": true,
+  "verticalExaggeration": 1,
+  "jsVsNativeMeshCssPxRange": [
+    0.005455202427868715,
+    0.06067291996657612
+  ],
+  "comparison": "Same five input coordinates and camera as C12; input coordinates retained locally only.",
+  "previousC12MaxErrorCssPx": 4.732898004837019,
+  "roadInteractionAcceptance": "IN_PROGRESS",
+  "scope": "This measures actual installed C13 JS projection against the native rendered terrain mesh. It is not a full drawing or phone acceptance."
+}

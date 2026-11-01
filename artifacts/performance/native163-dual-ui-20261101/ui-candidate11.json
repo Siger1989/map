@@ -1,0 +1,134 @@
+{
+  "reportDate": "2026-11-02",
+  "scope": "C11 targeted native UI and navigation interaction regression; not a full release gate",
+  "candidate": {
+    "label": "C11",
+    "version": "0.2.163-test",
+    "versionCode": 170,
+    "apkSha256": "7bdf0513e31881b623208711379ccae48c1db19e4014e6e5a5d83d3a251d17bd",
+    "apkBytes": 165193360
+  },
+  "environment": {
+    "deviceClass": "MuMu3 emulator",
+    "physicalPhoneVerified": false,
+    "appDataCleared": false,
+    "originalUiPreflight": {
+      "annotationCount": 1,
+      "activeDrawing": false,
+      "draftPointCount": 0,
+      "savedTrackCount": 0,
+      "activeSelection": false
+    }
+  },
+  "viewports": [
+    {
+      "cssWidth": 390,
+      "cssHeight": 857,
+      "result": "PASS",
+      "markerWorkflow": {
+        "actualTouchSelection": true,
+        "coordinateClipboardRoundTrip": true,
+        "pasteSearchSamePoint": true,
+        "actualRepick": true,
+        "deleteCancelPreserved": true,
+        "confirmedDeleteOnlyQaMarker": true
+      },
+      "comparisonMenu": {
+        "fiveCategoriesRetainedInOrder": true,
+        "publicLibraryLastOptionScrollableAndTouchable": true,
+        "selectedNativeSourceMatched": true,
+        "decodedRasterTileCount": 1,
+        "originalSourceRestored": true
+      },
+      "xAlignment": {
+        "layerWindowPaddingTopCssPx": 4.0,
+        "propertiesWindowPaddingTopCssPx": 4.0,
+        "layerTopInsetCssPx": 4.932037,
+        "propertiesTopInsetCssPx": 4.932068,
+        "topInsetDeltaCssPx": 3.1E-05,
+        "rightInsetDeltaCssPx": 0.0,
+        "toleranceCssPx": 0.5,
+        "layerActualTouchAndClose": true,
+        "propertiesActualTouchAndClose": true
+      },
+      "cleanup": {
+        "originalAnnotationCount": 1,
+        "finalAnnotationCount": 1,
+        "qaMarkersRemaining": 0,
+        "cameraRestored": true,
+        "selectionRestored": true,
+        "clipboardRestored": true,
+        "comparisonModeRestored": true
+      }
+    },
+    {
+      "cssWidth": 360,
+      "cssHeight": 780,
+      "result": "PASS",
+      "markerWorkflow": {
+        "actualTouchSelection": true,
+        "coordinateClipboardRoundTrip": true,
+        "pasteSearchSamePoint": true,
+        "actualRepick": true,
+        "deleteCancelPreserved": true,
+        "confirmedDeleteOnlyQaMarker": true
+      },
+      "comparisonMenu": {
+        "fiveCategoriesRetainedInOrder": true,
+        "publicLibraryLastOptionScrollableAndTouchable": true,
+        "selectedNativeSourceMatched": true,
+        "decodedRasterTileCount": 1,
+        "originalSourceRestored": true
+      },
+      "xAlignment": {
+        "layerWindowPaddingTopCssPx": 4.0,
+        "propertiesWindowPaddingTopCssPx": 4.0,
+        "layerTopInsetCssPx": 4.932037,
+        "propertiesTopInsetCssPx": 4.932007,
+        "topInsetDeltaCssPx": 3.1E-05,
+        "rightInsetDeltaCssPx": 0.0,
+        "toleranceCssPx": 0.5,
+        "layerActualTouchAndClose": true,
+        "propertiesActualTouchAndClose": true
+      },
+      "cleanup": {
+        "originalAnnotationCount": 1,
+        "finalAnnotationCount": 1,
+        "qaMarkersRemaining": 0,
+        "cameraRestored": true,
+        "selectionRestored": true,
+        "clipboardRestored": true,
+        "comparisonModeRestored": true
+      }
+    }
+  ],
+  "navigation390": {
+    "result": "PASS",
+    "routeEnteredAndPlannedThroughActualUi": true,
+    "uniqueOfflineQaGraphMatched": true,
+    "nativeRoutePathPresent": true,
+    "firstPersonOnThroughCompactControl": true,
+    "returnToTopViewThroughCompactControl": true,
+    "guidanceEndedThroughOriginalUi": true,
+    "routeAndGuidanceCleared": true,
+    "qaGraphRemoved": true,
+    "originalCameraDirectionFollowAndPreferencesRestored": true,
+    "positionWaiting": true,
+    "motionFollowVerified": false,
+    "trackCountBeforeAndAfter": 0,
+    "draftRemaining": false,
+    "selectionUnchanged": true,
+    "annotationCountAfter": 1
+  },
+  "visualReview": {
+    "screenshotsCapturedForAllQaStates": true,
+    "rootReviewOfC11Screenshots": "pending"
+  },
+  "limits": [
+    "One public-library raster tile decoded per UI run; complete source loading was not measured.",
+    "MuMu3 results do not establish physical-phone behavior.",
+    "Navigation used an isolated offline QA graph and did not inject GPS; movement follow is unverified.",
+    "This UI/navigation run does not clear the separate dual-map stability/P0 gate.",
+    "No private map source names, URLs, keys, marker values, coordinates, screenshots, absolute paths, or raw logs are included."
+  ]
+}

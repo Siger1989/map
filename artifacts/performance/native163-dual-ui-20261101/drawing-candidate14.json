@@ -1,0 +1,146 @@
+{
+  "candidate": "C14",
+  "apkSha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c",
+  "device": "MuMu3",
+  "physicalPhoneVerified": false,
+  "helperSha256": "2D89F37B3A5152252681C7D473832BE53ACA8787797F466E4176E32096AE419A",
+  "roadOnly": {
+    "testState": "PASS",
+    "nodeEnabledForThisTest": false,
+    "defaultPreferenceChangedForDelivery": false,
+    "realSourceFeatures": 2,
+    "realSharedNodeGapMeters": 0,
+    "sourceVertices": 31,
+    "freshSourceZoomHistogram": {
+      "14": 10
+    },
+    "snapshotMatchedBeforeTouch": true,
+    "multitouchPass": true,
+    "geometry": {
+      "draftPointCount": 57,
+      "draftCoordinateCount": 57,
+      "allDraftVerticesGroundProjected": true,
+      "draftSegmentCount": 15,
+      "maxDeviationFromSelectedSameRoadCssPx": 0.011842648013114111,
+      "sameRoadWithinReleaseRadius": true,
+      "exactTargetPathToleranceCssPx": 3,
+      "exactTargetPathWithinTolerance": true,
+      "draftStartEndpointDistanceCssPx": 0.011290144322515542,
+      "draftEndEndpointDistanceCssPx": 0.011842648013114111,
+      "draftStartEndpointGroundDistanceMeters": 0.07634028353711066,
+      "draftEndEndpointGroundDistanceMeters": 0.09209126868229722,
+      "draftStartCommittedAtTarget": true,
+      "draftEndCommittedAtTarget": true,
+      "targetEndpointToleranceCssPx": 3,
+      "maxDeviationFromEndpointChordCssPx": 22.87901544767176,
+      "retainsCurve": true,
+      "sourcePathLengthMeters": 1105.2459965440228,
+      "draftPathLengthMeters": 1105.2617475291706,
+      "draftToSourcePathLengthRatio": 1.0000142511126004,
+      "maxAllowedPathLengthRatio": 1.25,
+      "routeLengthWithinBudget": true,
+      "sourceProgressStartMeters": 0.07634100799317403,
+      "sourceProgressEndMeters": 1105.245996956467,
+      "sourceProgressBacktrackThresholdMeters": 1,
+      "sourceProgressBacktrackCount": 0,
+      "maxSourceProgressBacktrackMeters": 0,
+      "sourceProgressMonotonic": true,
+      "maxCrossTrackFromSourceMeters": 0.09209127366703627,
+      "draftSegmentGapMeters": 0,
+      "maxDraftSegmentGapMeters": 0,
+      "sameSourceLineAnchored": false,
+      "sameNativeRoadSnapshotChain": true,
+      "sameRoadName": false,
+      "roadNamePresent": false,
+      "differentRoadNamesAtConnection": false,
+      "matchingRoadLevel": 0,
+      "connectedNodeWithinReleaseRadius": true,
+      "nearestConnectedNodeDraftDistanceCssPx": 0,
+      "firstLineDraftPoints": 28,
+      "secondLineDraftPoints": 29,
+      "sourceVertexCount": 31,
+      "freshDownAfterMultitouch": true,
+      "freshDownCreatedQaAnchor": true,
+      "groundProjectionWithinTolerance": true
+    },
+    "continuationStatusAudit": {
+      "continuationStageCount": 14,
+      "outcomeCounts": {
+        "ready": 14
+      },
+      "rejectedOutcomeCounts": {},
+      "unresolvedContinuationStageCount": 0,
+      "allContinuationStagesAccepted": true,
+      "allContinuationStagesRoadReady": true
+    },
+    "rootViewedLosslessScreenshot": true
+  },
+  "nodeEnabled": {
+    "originalExactRoadEndpointTestState": "FAIL",
+    "expectedNodeMagnetContractVerified": true,
+    "actualFinalPointExactlyReusedExistingDraftNode": true,
+    "finalHint": "已吸附节点 · 松手定点",
+    "finalHintVisible": true,
+    "allContinuationHintsKnown": true,
+    "outcomeCounts": {
+      "node": 9,
+      "ready": 5
+    },
+    "unresolvedContinuationStages": 0,
+    "distanceToRoadTargetCssPx": 12.515958481977531,
+    "nodeRadiusCssPx": 14,
+    "roadTargetIsNotTheChosenNode": true,
+    "interpretation": "The exact-road endpoint assertion remains FAIL with node snapping enabled because the existing 14px node-priority contract selects an earlier draft node. Actual node reuse and visible node hint agree. This does not relabel the original strict report as PASS."
+  },
+  "samplingCorrection": {
+    "waitForActualSnapOutcome": true,
+    "exactDefaultInstructionIsPendingOnly": true,
+    "unknownOrLimitedStillRejected": true,
+    "limitMs": 1000,
+    "observedTransitions": [
+      {
+        "stage": "after-anchor-tap",
+        "finalOutcome": "ready",
+        "samples": [
+          {
+            "elapsedMs": 68,
+            "rawHint": "准星定点 · 松手连接 · 双指控图",
+            "visible": true
+          },
+          {
+            "elapsedMs": 184,
+            "rawHint": "已吸附道路 / 小路",
+            "visible": true
+          }
+        ]
+      },
+      {
+        "stage": "continuation-point-2",
+        "finalOutcome": "ready",
+        "samples": [
+          {
+            "elapsedMs": 65,
+            "rawHint": "准星定点 · 松手连接 · 双指控图",
+            "visible": true
+          },
+          {
+            "elapsedMs": 166,
+            "rawHint": "整段沿道路连接 · 松手确认",
+            "visible": true
+          }
+        ]
+      }
+    ],
+    "earlierUnknownFailReportsRetained": true
+  },
+  "cleanup": {
+    "method": "real-ui-undo",
+    "roadOnlyDraftAfter": 0,
+    "nodeDraftAfter": 0,
+    "savedTracksAfter": 0,
+    "roadFalseNodeTrueBrowseRestored": true
+  },
+  "oldWebSameRoadReference": "COMPLETED_ACTUAL_EQUAL_15_WGS_WAYPOINTS",
+  "rawCoordinatesAndScreenshots": "LOCAL_ONLY",
+  "oldWebReferenceArtifact": "web-reference-c14.json"
+}

@@ -12,6 +12,7 @@ import earth.worldwind.globe.projection.EquirectangularProjection
 import earth.worldwind.globe.terrain.Terrain
 import earth.worldwind.layer.mercator.MercatorSector
 import earth.worldwind.layer.mercator.SlippyTiles
+import earth.worldwind.layer.TiledVectorLayer
 import earth.worldwind.layer.mvt.MvtBatchedLineTile
 import earth.worldwind.render.RenderContext
 import earth.worldwind.shape.Label
@@ -21,7 +22,9 @@ import earth.worldwind.util.LruMemoryCache
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.withTimeout
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.CancellationException
 import org.junit.Assert.assertEquals
@@ -82,6 +85,96 @@ class NativeTerrainOverlaysTest {
 
         val noData = DoubleArray(size * size) { Double.NaN }
         assertTrue(NativeTerrainOverlayMath.contourSegments(noData, size, 30).isEmpty())
+    }
+
+    @Test
+    fun `exact contour endpoint identity keeps nearby separate segments apart`() {
+        val segments = listOf(
+            NativeContourSegment(0f, 0f, 1.1f, 0f, 30),
+            NativeContourSegment(1.4f, 0f, 2f, 0f, 30),
+        )
+
+        val paths = NativeTerrainOverlayMath.contourPaths(segments)
+
+        assertEquals(2, paths.size)
+        assertTrue(paths.all { it.points.size == 2 })
+        assertSegmentMultisetExactlyOnce(segments, paths)
+    }
+
+    @Test
+    fun `exact shared endpoints stitch once and closed loops consume every edge`() {
+        val sharedEndpoint = listOf(
+            NativeContourSegment(0f, 0f, 1f, 1f, 30),
+            NativeContourSegment(1f, 1f, 2f, 0f, 30),
+        )
+        val sharedPaths = NativeTerrainOverlayMath.contourPaths(sharedEndpoint)
+        assertEquals(1, sharedPaths.size)
+        assertEquals(3, sharedPaths.single().points.size)
+        assertSegmentMultisetExactlyOnce(sharedEndpoint, sharedPaths)
+
+        val closedLoop = listOf(
+            NativeContourSegment(0f, 0f, 1f, 0f, 30),
+            NativeContourSegment(1f, 0f, 1f, 1f, 30),
+            NativeContourSegment(1f, 1f, 0f, 1f, 30),
+            NativeContourSegment(0f, 1f, 0f, 0f, 30),
+        )
+        val loopPaths = NativeTerrainOverlayMath.contourPaths(closedLoop)
+        assertEquals(1, loopPaths.size)
+        assertEquals(loopPaths.single().points.first(), loopPaths.single().points.last())
+        assertSegmentMultisetExactlyOnce(closedLoop, loopPaths)
+    }
+
+    @Test
+    fun `neighboring marching cells produce bit-identical shared crossings and preserve every segment`() {
+        val samples = doubleArrayOf(
+            0.0, 0.0, 0.0,
+            100.0, 100.0, 100.0,
+            100.0, 100.0, 100.0,
+        )
+        val segments = NativeTerrainOverlayMath.contourSegments(samples, 3, 30)
+
+        assertEquals(6, segments.size)
+        val paths = NativeTerrainOverlayMath.contourPaths(segments)
+        assertEquals(3, paths.size)
+        assertTrue(paths.all { it.points.size == 3 })
+        assertSegmentMultisetExactlyOnce(segments, paths)
+    }
+
+    private data class ExactPointBits(val x: Int, val y: Int)
+    private data class ExactSegmentBits(val elevation: Int, val first: ExactPointBits, val second: ExactPointBits)
+
+    private fun exactPointBits(x: Float, y: Float): ExactPointBits = ExactPointBits(
+        java.lang.Float.floatToRawIntBits(if (x == 0f) 0f else x),
+        java.lang.Float.floatToRawIntBits(if (y == 0f) 0f else y),
+    )
+
+    private fun compareExactPoints(a: ExactPointBits, b: ExactPointBits): Int {
+        val xOrder = Integer.compareUnsigned(a.x, b.x)
+        return if (xOrder != 0) xOrder else Integer.compareUnsigned(a.y, b.y)
+    }
+
+    private fun exactSegmentBits(elevation: Int, a: ExactPointBits, b: ExactPointBits): ExactSegmentBits =
+        if (compareExactPoints(a, b) <= 0) ExactSegmentBits(elevation, a, b) else ExactSegmentBits(elevation, b, a)
+
+    private fun assertSegmentMultisetExactlyOnce(
+        input: List<NativeContourSegment>,
+        output: List<NativeContourPath>,
+    ) {
+        val expected = mutableMapOf<ExactSegmentBits, Int>()
+        input.forEach { segment ->
+            val key = exactSegmentBits(segment.elevationMeters,
+                exactPointBits(segment.x1, segment.y1), exactPointBits(segment.x2, segment.y2))
+            expected[key] = expected.getOrDefault(key, 0) + 1
+        }
+        val actual = mutableMapOf<ExactSegmentBits, Int>()
+        output.forEach { path ->
+            path.points.zipWithNext().forEach { (a, b) ->
+                val key = exactSegmentBits(path.elevationMeters,
+                    exactPointBits(a.first, a.second), exactPointBits(b.first, b.second))
+                actual[key] = actual.getOrDefault(key, 0) + 1
+            }
+        }
+        assertEquals("stitching must preserve every input segment exactly once without adding edges", expected, actual)
     }
 
     @Test
@@ -284,6 +377,42 @@ class NativeTerrainOverlaysTest {
     }
 
     @Test
+    fun `two panes lease one identical assembled contour tile and close independently`() {
+        val x = 120
+        val y = 76
+        val samples = DoubleArray(16) { (it / 4) * 50.0 }
+        val before = NativeContourSharedGeometryStore.process.snapshot()
+        val first = NativeContourLayer(50, 10) { _, _, _ -> samples.copyOf() }
+        val second = NativeContourLayer(50, 10) { _, _, _ -> samples.copyOf() }
+        val context = selectionContext(8, insideTile(8, x, y))
+        try {
+            first.setViewportStyle(12.0, 1f)
+            second.setViewportStyle(12.0, 1f)
+            awaitCachedTiles(first, context, 1)
+            val firstContent = cachedContourContent(first)
+            awaitCachedTiles(second, context, 1)
+            val secondContent = cachedContourContent(second)
+
+            assertSame(firstContent.geometry, secondContent.geometry)
+            assertEquals(NativeContourGeometryStore.Snapshot(before.activeGeometryEntries + 1,
+                before.activeLeases + 2), NativeContourSharedGeometryStore.process.snapshot())
+
+            // The SDK skips eviction callbacks if a layer never stored a latest RenderContext.
+            clearLatestRenderContext(first)
+            clearLatestRenderContext(second)
+            first.close()
+            assertEquals(NativeContourGeometryStore.Snapshot(before.activeGeometryEntries + 1,
+                before.activeLeases + 1), NativeContourSharedGeometryStore.process.snapshot())
+
+            second.close()
+            assertEquals(before, NativeContourSharedGeometryStore.process.snapshot())
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
     fun `30 meter contours request the SDK center leaf z10 at UI zoom 11 point 9`() {
         val requested = java.util.concurrent.ConcurrentLinkedQueue<Triple<Int, Int, Int>>()
         val layer = NativeContourLayer(30, 11) { z, x, y ->
@@ -322,7 +451,10 @@ class NativeTerrainOverlaysTest {
         val layer = NativeContourLayer(30, 11) { _, _, _ -> null }
         val label = Label(earth.worldwind.geom.Position.fromDegrees(0.0, 0.0, 0.0), "4350 m",
             earth.worldwind.shape.TextAttributes().apply { font = earth.worldwind.render.Font(11f) })
-        val content = NativeContourTileContent(listOf(label), null, 0, 0, Sector(), 256)
+        val geometry = NativeContourSharedGeometry(listOf(label), null, 0, 0, Sector(), 256)
+        val store = NativeContourGeometryStore<NativeContourGeometryKey, NativeContourSharedGeometry>()
+        val lease = store.acquireOrCreate(NativeContourGeometryKey.fromSamples(8, 800, 410, 30, doubleArrayOf(1.0))) { geometry }
+        val content = NativeContourTileContent(lease)
         val context = selectionContext(10, insideTile(10, 800, 410)).apply {
             densityFactor = 9f
             // Reject the point before text/GPU allocation; the production styling branch still runs.
@@ -335,7 +467,15 @@ class NativeTerrainOverlaysTest {
                 NativeContourTileContent::class.java).apply { isAccessible = true }.invoke(layer, context, content)
             assertEquals(3.2, label.attributes.scale, 1e-6)
             assertEquals(11f, label.attributes.font.size, 0f)
-        } finally { layer.close() }
+            content.discard(context)
+            // A late SDK cut can race layer close; released wrappers must quietly skip drawing.
+            NativeContourLayer::class.java.getDeclaredMethod("renderTileContent", RenderContext::class.java,
+                NativeContourTileContent::class.java).apply { isAccessible = true }.invoke(layer, context, content)
+            assertEquals(3.2, label.attributes.scale, 1e-6)
+        } finally {
+            content.discard(context)
+            layer.close()
+        }
     }
 
     @Test
@@ -350,6 +490,32 @@ class NativeTerrainOverlaysTest {
             layer.setViewportStyle(8.0, 1f)
             awaitCachedTiles(layer, context, 1)
             assertEquals(listOf(Triple(7, 100, 52)), requested.toList())
+        } finally { layer.close() }
+    }
+
+    @Test
+    fun `maximum source z13 leaf is observed without creating a z14 request`() {
+        val requested = java.util.concurrent.ConcurrentLinkedQueue<Int>()
+        val layer = NativeContourLayer(30, 11) { z, _, _ ->
+            requested += z
+            DoubleArray(16) { 0.0 }
+        }
+        val x = SlippyTiles.lonToTileX(102.89, NativeContourVectorGeometry.SOURCE_MAX_ZOOM)
+        val y = SlippyTiles.latToTileY(31.0085, NativeContourVectorGeometry.SOURCE_MAX_ZOOM)
+        val context = selectionContext(NativeContourVectorGeometry.SOURCE_MAX_ZOOM,
+            insideTile(NativeContourVectorGeometry.SOURCE_MAX_ZOOM, x, y))
+        try {
+            layer.setViewportStyle(12.0, 1f)
+            assertEquals(NativeContourVectorGeometry.SOURCE_MAX_ZOOM + 2,
+                NativeContourVectorGeometry.levelSet().numLevels)
+            awaitCachedTiles(layer, context, 1)
+            assertEquals(listOf(NativeContourVectorGeometry.SOURCE_MAX_ZOOM), requested.toList())
+            val visited = NativeContourLayer::class.java.getDeclaredField("visitedThisFrame")
+                .apply { isAccessible = true }.get(layer) as Set<*>
+            val visitedLevels = visited.mapNotNull { request -> request?.let { tileRequest ->
+                tileRequest.javaClass.getDeclaredField("z").apply { isAccessible = true }.getInt(tileRequest)
+            } }
+            assertTrue(NativeContourVectorGeometry.SOURCE_MAX_ZOOM in visitedLevels)
         } finally { layer.close() }
     }
 
@@ -401,7 +567,9 @@ class NativeTerrainOverlaysTest {
             assertEquals(sourceSector.minLongitude.inDegrees, tile.sector.minLongitude.inDegrees, 1e-9)
             assertEquals(sourceSector.maxLongitude.inDegrees, tile.sector.maxLongitude.inDegrees, 1e-9)
         }
-        assertTrue(tile.level.isLastLevel)
+        assertEquals(NativeContourVectorGeometry.SOURCE_MAX_ZOOM, tile.level.levelNumber)
+        assertFalse(tile.level.isLastLevel) // A sentinel level lets the real source leaf be observed.
+        assertEquals(NativeContourVectorGeometry.SOURCE_MAX_ZOOM + 1, levels.lastLevel.levelNumber)
     }
 
     @Test
@@ -492,12 +660,14 @@ class NativeTerrainOverlaysTest {
             assertEquals(2, queue.activeCount)
             assertFalse(far.isCompleted)
             assertFalse(outside.isCompleted)
-            val content = NativeContourVectorTileBuilder.build(DoubleArray(16) { 0.0 }, 8, 128, 90, 50) {
-                centerPermit.close()
-            }
+            val geometry = NativeContourVectorTileBuilder.build(DoubleArray(16) { 0.0 }, 8, 128, 90, 50)
+            val store = NativeContourGeometryStore<NativeContourGeometryKey, NativeContourSharedGeometry>()
+            val key = NativeContourGeometryKey.fromSamples(8, 128, 90, 50, DoubleArray(16) { 0.0 })
+            val content = NativeContourTileContent(store.acquireOrCreate(key) { geometry }) { centerPermit.close() }
             assertEquals(2, queue.activeCount) // Finished geometry still owns its admission slot.
             content.admitted()
             content.admitted()
+            content.discard(null)
             assertEquals(1, queue.activeCount)
             assertEquals(listOf("far"), queue.dispatch { ranks[it] })
             val farPermit = withTimeout(1_000) { requireNotNull(far.await()) }
@@ -525,6 +695,85 @@ class NativeTerrainOverlaysTest {
             withTimeout(1_000) { requireNotNull(next.await()) }.close()
             assertEquals(0, queue.registeredCount)
         } finally { queue.close() }
+    }
+
+    @Test
+    fun `contour queue prunes only unvisited pending misses before dispatch and leaves active work alone`() = runBlocking {
+        val queue = NativeContourPriorityQueue<String>(capacity = 1, maximumRequests = 4)
+        val active = async(start = CoroutineStart.UNDISPATCHED) { queue.acquire("active-io") }
+        val stale = async(start = CoroutineStart.UNDISPATCHED) { queue.acquire("old-offscreen") }
+        val visible = async(start = CoroutineStart.UNDISPATCHED) { queue.acquire("current-visible") }
+        val invalidated = mutableListOf<String>()
+        try {
+            assertEquals(listOf("active-io"), queue.dispatch { 0.0 })
+            val activePermit = withTimeout(1_000) { requireNotNull(active.await()) }
+            assertEquals(1, queue.activeCount)
+            assertEquals(2, queue.pendingCount)
+
+            // A null rank is not permission to do background work. The SDK traversal has only
+            // retained current-visible, so remove old-offscreen before ranking/dispatch.
+            assertEquals(listOf("old-offscreen"),
+                queue.removePendingNotIn(setOf("current-visible"), invalidated::add))
+            assertEquals(listOf("old-offscreen"), invalidated)
+            assertEquals(null, withTimeout(1_000) { stale.await() })
+            assertEquals(1, queue.activeCount) // active IO is neither canceled nor released
+            assertEquals(1, queue.pendingCount)
+            assertTrue(queue.dispatch { null }.isEmpty()) // Active permit still owns the sole slot.
+            activePermit.close()
+            assertEquals(listOf("current-visible"), queue.dispatch { null })
+            val visiblePermit = withTimeout(1_000) { requireNotNull(visible.await()) }
+            assertEquals(1, queue.activeCount)
+            visiblePermit.close()
+            assertEquals(0, queue.registeredCount)
+        } finally { queue.close() }
+    }
+
+    @Test
+    fun `camera change prunes queued offscreen work while active loads and cached visible content survive`() = runBlocking {
+        val holdNonresidentWork = AtomicBoolean(false)
+        val releaseActiveLoads = CompletableDeferred<Unit>()
+        val layer = NativeContourLayer(50, 10) { _, _, _ ->
+            if (holdNonresidentWork.get()) releaseActiveLoads.await()
+            DoubleArray(16) { (it / 4) * 50.0 }
+        }
+        val visibleX = 120
+        val visibleY = 76
+        val visibleContext = selectionContext(8, insideTile(8, visibleX, visibleY))
+        val priorityQueue = contourQueue(layer)
+        try {
+            layer.setViewportStyle(12.0, 1f)
+            awaitCachedTiles(layer, visibleContext, 1)
+            val resident = cachedContourContent(layer)
+
+            holdNonresidentWork.set(true)
+            val northwest = SlippyTiles.tileToSector(8, 128, 80)
+            val southeast = SlippyTiles.tileToSector(8, 131, 83)
+            val region = Sector.fromDegrees(southeast.minLatitude.inDegrees + 1e-7,
+                northwest.minLongitude.inDegrees + 1e-7,
+                northwest.maxLatitude.inDegrees - southeast.minLatitude.inDegrees - 2e-7,
+                southeast.maxLongitude.inDegrees - northwest.minLongitude.inDegrees - 2e-7)
+            val offscreenContext = selectionContext(8, region)
+            val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+            do {
+                layer.render(offscreenContext)
+                if (priorityQueue.activeCount == 2 && priorityQueue.pendingCount > 0) break
+                Thread.sleep(10)
+            } while (System.nanoTime() < deadline)
+            assertEquals(2, priorityQueue.activeCount)
+            assertTrue(priorityQueue.pendingCount > 0)
+
+            // Return to the previously loaded tile. Only queued, no-permit misses outside this
+            // actual SDK cut should be invalidated; the two active jobs remain untouched.
+            layer.render(visibleContext)
+            assertEquals(0, priorityQueue.pendingCount)
+            assertEquals(2, priorityQueue.activeCount)
+            layer.render(visibleContext) // SDK drains invalidations before the next selection.
+            assertEquals(2, layer.pendingTileCount) // Only the two active loads remain in the SDK map.
+            assertEquals(1, layer.loadedTileCount)
+            assertSame(resident, cachedContourContent(layer))
+            releaseActiveLoads.complete(Unit)
+        } finally { layer.close() }
+        Unit
     }
 
     @Test
@@ -561,6 +810,23 @@ class NativeTerrainOverlaysTest {
         val lonMargin = tile.deltaLongitude.inDegrees * 1e-5
         return Sector.fromDegrees(tile.minLatitude.inDegrees + latMargin, tile.minLongitude.inDegrees + lonMargin,
             tile.deltaLatitude.inDegrees - 2 * latMargin, tile.deltaLongitude.inDegrees - 2 * lonMargin)
+    }
+
+    private fun cachedContourContent(layer: NativeContourLayer): NativeContourTileContent {
+        val field = TiledVectorLayer::class.java.getDeclaredField("liveContent").apply { isAccessible = true }
+        val contents = field.get(layer) as Map<*, *>
+        return contents.values.single() as NativeContourTileContent
+    }
+
+    private fun contourQueue(layer: NativeContourLayer): NativeContourPriorityQueue<*> =
+        NativeContourLayer::class.java.getDeclaredField("generationQueue").apply { isAccessible = true }
+            .get(layer) as NativeContourPriorityQueue<*>
+
+    private fun clearLatestRenderContext(layer: NativeContourLayer) {
+        TiledVectorLayer::class.java.getDeclaredField("latestRc").apply {
+            isAccessible = true
+            set(layer, null)
+        }
     }
 
     private fun selectionContext(idealSourceZoom: Int, visibleSector: Sector): RenderContext {

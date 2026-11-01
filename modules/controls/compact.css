@@ -25,7 +25,8 @@
   gap: var(--map-ui-gap);
   font-size: var(--map-ui-font);
 }
-.observatory .control-popover {
+/* Comparison layers set their own heading inset, matching the property card. */
+.observatory .control-popover:not(:where(.comparison-layer-window)) {
   padding: 0 4px 4px !important;
 }
 .observatory .control-popover .dock-heading {

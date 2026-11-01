@@ -1,4 +1,4 @@
-import { Navigation, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, Map as MapIcon, PersonStanding } from 'lucide-react';
+import { Navigation, RefreshCw, LocateFixed, ChevronDown, ChevronUp, ArrowLeft, ArrowUp, CornerUpLeft, CornerUpRight, Undo2, Flag, PersonStanding } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { formatDistance, TRAVEL_MODES } from '../navigation/types';
 import type { GuidanceState } from './useGuidance';
@@ -34,7 +34,6 @@ export function GuidanceCard({
   displayPanel,
   onCloseDisplay,
   cameraMode = 'top',
-  onCameraModeChange,
   viewNotice,
   cameraWaiting = false,
   positionAssessment,
@@ -54,7 +53,6 @@ export function GuidanceCard({
   displayPanel?: ReactNode;
   onCloseDisplay?: () => void;
   cameraMode?: 'forward' | 'top';
-  onCameraModeChange?: (mode: 'forward' | 'top') => void;
   viewNotice?: string;
   cameraWaiting?: boolean;
   positionAssessment?: { kind: 'uncertain' | 'parallel' | 'away'; message: string };
@@ -161,6 +159,15 @@ export function GuidanceCard({
             <span className="guidance-mode-tag">{TRAVEL_MODES.find(m => m.id === s.route.mode)?.label}</span>
           </button>}
           <div className="guidance-header-actions">
+            {!displayPanel && !s.arrived && onFirstPerson && <button
+              className="guidance-first-person"
+              type="button"
+              aria-label={cameraMode === 'forward' ? `切回俯视导航${cameraWaiting ? ' · 等待定位' : ''}` : '开启第一人称导航'}
+              title={cameraMode === 'forward' ? `切回俯视导航${cameraWaiting ? ' · 等待定位' : ''}` : '开启第一人称导航'}
+              aria-pressed={cameraMode === 'forward'}
+              data-waiting={cameraWaiting}
+              onClick={onFirstPerson}
+            ><PersonStanding size={15} /><span>{cameraMode === 'forward' ? '切回俯视' : '第一人称'}</span></button>}
             {displayPanel ? <button aria-label="返回导航详情" title="返回导航详情" onClick={onCloseDisplay}><ArrowLeft size={18} /></button> : compact && <button className="guidance-expand" aria-label={expanded ? '收起导航详情' : '展开导航详情'} title={expanded ? '收起导航详情' : '展开导航详情'} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>}
           </div>
         </div>
@@ -239,18 +246,9 @@ export function GuidanceCard({
           </p>
         )}
           <div className="guidance-actions">
-            {onFirstPerson && <button className="guidance-first-person" aria-label="第一人称模式"
-              aria-pressed={cameraMode === 'forward'} data-waiting={cameraWaiting}
-              onClick={onFirstPerson}><PersonStanding size={15} />{cameraMode === 'forward' ? cameraWaiting ? '第一人称等待定位' : '第一人称已开启' : '开启第一人称'}</button>}
             {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
-            {onCameraModeChange && <button
-              className="guidance-camera-mode"
-              type="button"
-              aria-pressed={cameraMode === 'forward'}
-              onClick={() => onCameraModeChange(cameraMode === 'forward' ? 'top' : 'forward')}
-            >{cameraMode === 'forward' ? <><MapIcon size={15} />切换俯视</> : <><ArrowUp size={15} />切换前视</>}</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '继续导航'}

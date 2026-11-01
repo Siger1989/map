@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Star } from 'lucide-react';
 import type { ComparisonChoice } from './choices';
 import {
@@ -11,6 +11,7 @@ import {
   type ComparisonSourceGroupName,
 } from './comparisonSourceGroups';
 import { readFavoriteSourceKeys, subscribeFavoriteSourceKeys, writeFavoriteSourceKeys } from '../mapSources/favorites';
+import { sourcePopupPlacement } from './sourcePopupPlacement';
 
 type Props = {
   side: string;
@@ -25,8 +26,10 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
   const [open, setOpen] = useState(false);
   const [favoriteKeys, setFavoriteKeys] = useState(readFavoriteSourceKeys);
   const [openGroups, setOpenGroups] = useState(readComparisonSourceOpenGroups);
+  const [popupLayout, setPopupLayout] = useState<{ side: 'above' | 'below'; maxHeight: number } | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const popup = useRef<HTMLDivElement>(null);
   const optionRefs = useRef(new Map<string, HTMLButtonElement>());
   const groups = useMemo(() => comparisonSourceGroups(choices, favoriteKeys), [choices, favoriteKeys]);
   const selected = choices.find(item => item.id === selectedId) ?? choices[0];
@@ -34,6 +37,42 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
 
   useEffect(() => subscribeFavoriteSourceKeys(setFavoriteKeys), []);
   useEffect(() => subscribeComparisonSourceOpenGroups(setOpenGroups), []);
+  useLayoutEffect(() => {
+    if (!open) { setPopupLayout(null); return; }
+    const measure = () => {
+      const popupNode = popup.current;
+      const triggerNode = trigger.current;
+      const ui = root.current?.closest<HTMLElement>('.map-comparison-ui');
+      if (!popupNode || !triggerNode || !ui) return;
+      const uiRect = ui.getBoundingClientRect();
+      const triggerRect = triggerNode.getBoundingClientRect();
+      const style = getComputedStyle(ui);
+      const visual = window.visualViewport;
+      const safeTop = Math.max(uiRect.top + (Number.parseFloat(style.paddingTop) || 0) + 8, visual?.offsetTop ?? 0);
+      const safeBottom = Math.min(
+        uiRect.bottom - (Number.parseFloat(style.paddingBottom) || 0) - 8,
+        visual ? visual.offsetTop + visual.height : window.innerHeight,
+      );
+      const placement = sourcePopupPlacement({
+        triggerTop: triggerRect.top,
+        triggerBottom: triggerRect.bottom,
+        safeTop,
+        safeBottom,
+        contentHeight: popupNode.scrollHeight,
+        preferredMaxHeight: Math.min(window.innerHeight * 0.48, 480),
+      });
+      setPopupLayout(current => current?.side === placement.side && current.maxHeight === placement.maxHeight ? current : placement);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('resize', measure);
+    window.visualViewport?.addEventListener('scroll', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('scroll', measure);
+    };
+  }, [open, openGroups, choices.length, favoriteKeys.length]);
   useEffect(() => {
     if (!open) return;
     const outside = (event: Event) => {
@@ -102,7 +141,15 @@ export function ComparisonSourceSelector({ side, pane, choices, selectedId, onSe
       onKeyDown={onTriggerKeyDown} onClick={() => setOpen(value => !value)}>
       <span>{selected?.name ?? '选择图源'}</span><span aria-hidden="true">⌄</span>
     </button>
-    {open && <div className="comparison-source-popup" role="dialog" aria-label={`${side}方图源选择`} onKeyDown={onPopupKeyDown}>
+    {open && <div
+      ref={popup}
+      className="comparison-source-popup"
+      data-placement={popupLayout?.side ?? (pane === 1 ? 'above' : 'below')}
+      style={popupLayout ? { maxHeight: `${popupLayout.maxHeight}px` } : undefined}
+      role="dialog"
+      aria-label={`${side}方图源选择`}
+      onKeyDown={onPopupKeyDown}
+    >
       {COMPARISON_SOURCE_GROUP_ORDER.map(name => {
         const group = groups.find(item => item.name === name);
         if (!group) return null;

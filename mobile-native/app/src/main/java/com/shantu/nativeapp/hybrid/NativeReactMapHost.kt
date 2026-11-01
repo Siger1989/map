@@ -48,6 +48,9 @@ import kotlinx.coroutines.coroutineScope
 import com.shantu.nativeapp.map.NativeCartographySettings
 import com.shantu.nativeapp.map.NativeBrowserCacheFallback
 import com.shantu.nativeapp.map.NativeTileNetworkPool
+import earth.worldwind.globe.geoid.AbstractEGM96Geoid
+import earth.worldwind.globe.geoid.EGM96Geoid
+import earth.worldwind.geom.Angle
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.ln
@@ -215,6 +218,11 @@ class NativeReactMapHost(
         val demSamplingGate: NativeBridgeDemSamplingGate = NativeBridgeDemSamplingGate(),
         var demKey: String? = null,
         var demRetryAfterAt: Long = 0L,
+        var demPlanCount: Long = 0L,
+        var demPlanNanos: Long = 0L,
+        var demPlanMaxNanos: Long = 0L,
+        var demCancelledJobs: Long = 0L,
+        var groundWorkDeferrals: Long = 0L,
         var contourAuto: Boolean = false,
         var contourIntervalMeters: Int = 30,
         var cameraAnimator: ValueAnimator? = null,
@@ -283,11 +291,15 @@ class NativeReactMapHost(
                 .put("actualFrames", entry.actualFrameCount.get())
                 .put("lastFrameAgeMs", if (lastFrame > 0L) (android.os.SystemClock.elapsedRealtime() - lastFrame).coerceAtLeast(0L) else JSONObject.NULL)
                 .put("rasterBitmapDecodes", entry.controller.bridgeRasterTileSnapshot())
+                .put("tileDemand", JSONObject(entry.controller.tileDemandPerformanceSnapshot()))
                 .put("renderCacheCapacityBytes", cache.capacity)
                 .put("renderCacheUsedBytes", cache.usedCapacity)
                 .put("renderCacheEntries", cache.entryCount)
                 .put("demRevision", entry.controller.demRevision())
                 .put("demJobActive", entry.demJob?.isActive == true)
+                .put("demPlanCount", entry.demPlanCount).put("demPlanNanos", entry.demPlanNanos)
+                .put("demPlanMaxNanos", entry.demPlanMaxNanos).put("demCancelledJobs", entry.demCancelledJobs)
+                .put("groundWorkDeferrals", entry.groundWorkDeferrals)
                 .put("terrainEnabled", entry.controller.isTerrainEnabled())
                 .put("contoursEnabled", entry.renderState.optJSONObject("settings")?.optBoolean("contours") == true)
                 .put("rasterTileSize", entry.controller.currentCustomSource()?.tileSize ?: 256)
@@ -303,6 +315,9 @@ class NativeReactMapHost(
             .put("mapCount", maps.size)
             .put("maps", mapsJson)
             .put("contourBuild", JSONObject(com.shantu.nativeapp.map.NativeContourGeometryTelemetry.snapshot()))
+            .put("contourSharedGeometry", com.shantu.nativeapp.map.NativeContourSharedGeometryStore.process.snapshot().let {
+                JSONObject().put("activeGeometryEntries", it.activeGeometryEntries).put("activeLeases", it.activeLeases)
+            })
             .put("tileStages", stages?.let {
                 JSONObject().put("scope", "process")
                     .put("decodedImages", it.decodedImages).put("decodeNanos", it.decodedNanos)
@@ -1502,7 +1517,7 @@ class NativeReactMapHost(
 
     private fun queueFrameCapture(entry: MapEntry) {
         if (!isCurrent(entry) || !entry.frameCaptureGate.hasPending() || entry.frameCaptureTask != null || entry.frameWitnessPending) return
-        val interval = NativeBridgeFramePolicy.intervalMillis(realtimeFrameRequired(entry))
+        val interval = frameIntervalMillis(entry)
         val now = android.os.SystemClock.elapsedRealtime()
         val task = Runnable {
             entry.frameCaptureTask = null
@@ -1515,7 +1530,7 @@ class NativeReactMapHost(
                 return@Runnable
             }
             val captureAt = android.os.SystemClock.elapsedRealtime()
-            if (!entry.frameCaptureGate.isDue(captureAt, NativeBridgeFramePolicy.intervalMillis(realtimeFrameRequired(entry)))) {
+            if (!entry.frameCaptureGate.isDue(captureAt, frameIntervalMillis(entry))) {
                 queueFrameCapture(entry)
                 return@Runnable
             }
@@ -1569,11 +1584,16 @@ class NativeReactMapHost(
         main.postDelayed(task, entry.frameCaptureGate.delayUntilDue(now, interval))
     }
 
-    private fun realtimeFrameRequired(entry: MapEntry): Boolean {
+    private fun frameIntervalMillis(entry: MapEntry): Long = NativeBridgeFramePolicy.intervalMillis(
+        realtimeTaskRequired(entry), comparison = maps.size > 1 || entry.id != "main")
+
+    // Comparison needs fresh projection matrices, but browsing it is not an editing task.
+    // Keep heavy ground planning quiet during camera motion just as in the single map.
+    private fun realtimeTaskRequired(entry: MapEntry): Boolean {
         val state = entry.renderState
         val interaction = state.optJSONObject("interaction")
         fun activeId(key: String) = state.optString(key).let { it.isNotBlank() && it != "null" }
-        return maps.size > 1 || entry.id != "main" || entry.cameraAnimator != null ||
+        return entry.cameraAnimator != null ||
             state.optBoolean("positionNavigating") || entry.renderInteraction.drawingActive ||
             interaction?.optBoolean("pickingActive") == true || interaction?.optBoolean("annotationPicking") == true ||
             interaction?.optBoolean("measurementPicking") == true || activeId("annotationEditingId") ||
@@ -1586,7 +1606,7 @@ class NativeReactMapHost(
         main.post {
             if (!isCurrent(entry)) { entry.framePublishPending.set(false); return@post }
             val now = android.os.SystemClock.elapsedRealtime()
-            val interval = NativeBridgeFramePolicy.intervalMillis(realtimeFrameRequired(entry))
+            val interval = frameIntervalMillis(entry)
             val delay = if (entry.lastMatrixAt == 0L) 0L else (interval - (now - entry.lastMatrixAt)).coerceAtLeast(0L)
             val task = Runnable { publishLatestFrame(entry) }
             entry.framePublishTask = task
@@ -1617,10 +1637,11 @@ class NativeReactMapHost(
             entry.lastMatrixAt = now
             val metadata = frame.metadata
             val width = frame.width; val height = frame.height; val matrixCopy = frame.matrix
-            val realtimeTask = realtimeFrameRequired(entry)
+            val realtimeTask = realtimeTaskRequired(entry)
             val groundWorkCadenceAllows = NativeBridgeFramePolicy.allowGroundWork(realtimeTask, now, entry.lastCameraMotionAt)
             val currentMatchesFrame = groundWorkCadenceAllows && frameMetadataMatchesCurrent(entry, metadata)
             val allowGroundWork = groundWorkCadenceAllows && currentMatchesFrame
+            if (!groundWorkCadenceAllows) entry.groundWorkDeferrals++
             if (!isCurrent(entry)) return
             if (allowGroundWork && entry.cameraAnimator == null && entry.controller.refreshBridgeGroundAnchor()) {
                 // The captured matrix predates the adjusted eye. Publish only a new real frame.
@@ -1704,7 +1725,7 @@ class NativeReactMapHost(
         main.postDelayed({
             entry.snapPublishScheduled = false
             if (!isCurrent(entry)) return@postDelayed
-            if (!NativeBridgeFramePolicy.allowGroundWork(realtimeFrameRequired(entry),
+            if (!NativeBridgeFramePolicy.allowGroundWork(realtimeTaskRequired(entry),
                     android.os.SystemClock.elapsedRealtime(), entry.lastCameraMotionAt)) scheduleSnapPublish(entry)
             else publishSnapGeometry(entry)
         }, 500L)
@@ -1803,6 +1824,8 @@ class NativeReactMapHost(
         if (!lon.isFinite() || !lat.isFinite() || !zoom.isFinite() || width <= 0 || height <= 0) return
         val now = android.os.SystemClock.elapsedRealtime()
         val engine = entry.controller.worldWindowForBridge().engine
+        val geoid = engine.globe.geoid
+        val geoidCacheScheme = "${geoid.displayName}/${System.identityHashCode(geoid)}/offset-cm-v1"
         if (engine.viewport.width != width || engine.viewport.height != height) return
         val terrainEnabled = entry.controller.isTerrainEnabled()
         val exaggeration = privateExaggeration(entry)
@@ -1825,6 +1848,8 @@ class NativeReactMapHost(
         // New viewport inputs supersede the old job. Same-view DEM revision changes are held
         // pending by the gate above, avoiding repeated terrain rays while that job is active.
         entry.demSamplingGate.begin(inputKey, geometryKey, now)
+        val planStartedAt = android.os.SystemClock.elapsedRealtimeNanos()
+        entry.demPlanCount++
         val footprint = try {
             buildList<NativeBridgeDemPlan.GroundPoint> {
                 for (row in 0..4) for (column in 0..4) {
@@ -1841,6 +1866,10 @@ class NativeReactMapHost(
             entry.demRetryAfterAt = now + NativeBridgeDemSamplingGate.PARTIAL_RETRY_MILLIS
             entry.demSamplingGate.finish(inputKey, now, NativeBridgeDemSamplingGate.PARTIAL_RETRY_MILLIS)
             return
+        } finally {
+            val elapsed = android.os.SystemClock.elapsedRealtimeNanos() - planStartedAt
+            entry.demPlanNanos += elapsed
+            entry.demPlanMaxNanos = maxOf(entry.demPlanMaxNanos, elapsed)
         }
         val plan = NativeBridgeDemPlan.plan(zoom, NativeBridgeDemPlan.GroundPoint(lon, lat), footprint) ?: run {
             entry.demRetryAfterAt = now + NativeBridgeDemSamplingGate.PARTIAL_RETRY_MILLIS
@@ -1854,31 +1883,57 @@ class NativeReactMapHost(
             return
         }
         entry.demKey = key
+        if (entry.demJob?.isActive == true) entry.demCancelledJobs++
         entry.demJob?.cancel()
         entry.controller.prepareBridgeDemCoverage()
         entry.demJob = entry.scope.launch {
             var gateSettled = false
             try {
+                if (entry.controller.worldWindowForBridge().engine.globe.geoid !== geoid) return@launch
+                if (geoid is AbstractEGM96Geoid) {
+                    val egm96 = geoid as? EGM96Geoid ?: return@launch
+                    try {
+                        egm96.awaitDataLoaded()
+                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                        throw cancelled
+                    } catch (_: Throwable) {
+                        return@launch
+                    }
+                    // awaitDataLoaded joins the SDK job but does not rethrow its failure.
+                    // The bound standard EGM96.dat has 13.61m at its north-pole first cell;
+                    // the SDK returns 0 there before loading, so fail closed on a mismatch.
+                    val northPoleOffset = synchronized(geoid) {
+                        egm96.getOffset(Angle.fromDegrees(90.0), Angle.fromDegrees(0.0))
+                    }
+                    if (!NativeBridgeEgm96Readiness.isLoadedByNorthPoleOffset(northPoleOffset)) return@launch
+                }
                 val tiles = mutableListOf<JSONObject>()
                 val batches = listOf(plan.tiles.take(1)) + plan.tiles.drop(1).chunked(4)
                 for (batch in batches) {
                     val loaded = withContext(Dispatchers.IO) { coroutineScope {
                         batch.map { tile -> async {
                             val tileId = "${tile.z}/${tile.x}/${tile.y}"
-                            val cacheKey = "$tileId/$DEM_TILE_SIZE"
+                            val cacheKey = "$tileId/$DEM_TILE_SIZE/$geoidCacheScheme"
                             entry.demTileCache.get(cacheKey, android.os.SystemClock.elapsedRealtime())?.let { return@async it }
                             val source = try { entry.controller.sampleBridgeDemTile(tile.z, tile.x, tile.y, DEM_TILE_SIZE) }
                             catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
                             catch (_: Throwable) { null } ?: return@async null
                             val grid = NativeBridgeDemGrid.fromMercatorPixels(tile.z, tile.x, tile.y, source, DEM_TILE_SIZE) ?: return@async null
+                            val geoidOffsets = synchronized(geoid) {
+                                NativeBridgeDemGrid.encodeGeoidOffsetsCm(grid) { latitude, longitude ->
+                                    geoid.getOffset(Angle.fromDegrees(latitude), Angle.fromDegrees(longitude)).toDouble()
+                                }
+                            } ?: return@async null
                             val heights = JSONArray().also { out -> grid.heights.forEach { out.put(it ?: JSONObject.NULL) } }
                             // Published grid objects are immutable; only the containing tile list grows.
                             JSONObject().put("id", tileId).put("west", grid.west).put("south", grid.south).put("east", grid.east).put("north", grid.north)
                                 .put("width", grid.width).put("height", grid.height).put("heights", heights)
+                                .put("geoidOffsetCmBase64", geoidOffsets)
                                 .also { entry.demTileCache.put(cacheKey, it, android.os.SystemClock.elapsedRealtime()) }
                         } }.awaitAll().filterNotNull()
                     } }
                     if (!isCurrent(entry) || entry.demKey != key) return@launch
+                    if (entry.controller.worldWindowForBridge().engine.globe.geoid !== geoid) return@launch
                     tiles.addAll(loaded)
                     val latestRevision = entry.controller.demRevision().coerceAtLeast(0)
                     emitBulkEvent(entry, "demCache", JSONObject().put("revision", latestRevision).put("tiles", JSONArray(tiles)))

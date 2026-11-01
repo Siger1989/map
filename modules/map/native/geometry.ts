@@ -15,6 +15,7 @@ const ECCENTRICITY_SQUARED = 1 - (SEMI_MINOR * SEMI_MINOR) / (SEMI_MAJOR * SEMI_
 const MAX_DEM_CELLS = 1_000_000;
 const MAX_DEM_BATCH_CELLS = 4_000_000;
 const MAX_DEM_TILES = 256;
+const MAX_GEOID_OFFSET_CM = 12_000;
 const DEPTH_EPSILON = 1e-7;
 const MAX_TERRAIN_BRACKET_STEPS = 256;
 const MAX_TERRAIN_ROOT_ITERATIONS = 24;
@@ -23,14 +24,17 @@ const TERRAIN_RESIDUAL_TOLERANCE_METERS = 0.75;
 type TerrainRaySample = {
   geo: { longitude: number; latitude: number; altitudeMeters: number };
   ground: number;
+  ellipsoidGround: number;
   residual: number;
 };
+
+type CachedDemTile = Omit<NativeDemTile, 'geoidOffsetCmBase64'> & { geoidOffsetsCm: Int16Array | null };
 
 /** Revisioned, bounded native DEM samples used only when the host supplied real terrain data. */
 export class NativeDemCache {
   private revisionValue = -1;
   private dataVersionValue = 0;
-  private tiles: NativeDemTile[] = [];
+  private tiles: CachedDemTile[] = [];
   private smallestCellSpacingMeters = Number.POSITIVE_INFINITY;
 
   get revision() { return this.revisionValue; }
@@ -39,9 +43,11 @@ export class NativeDemCache {
 
   replace(revision: number, tiles: readonly NativeDemTile[]): boolean {
     if (!Number.isSafeInteger(revision) || revision < 0 || revision < this.revisionValue) return false;
-    if (tiles.length > MAX_DEM_TILES || tiles.some((tile) => !validDemTile(tile)) ||
-      tiles.reduce((sum, tile) => sum + tile.width * tile.height, 0) > MAX_DEM_BATCH_CELLS) return false;
-    this.tiles = tiles.map((tile) => ({ ...tile, heights: [...tile.heights] }))
+    if (tiles.length > MAX_DEM_TILES ||
+      tiles.reduce((sum, tile) => sum + (Number.isSafeInteger(tile?.width * tile?.height) ? tile.width * tile.height : MAX_DEM_BATCH_CELLS + 1), 0) > MAX_DEM_BATCH_CELLS) return false;
+    const prepared = tiles.map(prepareDemTile);
+    if (prepared.some((tile) => tile === null)) return false;
+    this.tiles = prepared.filter((tile): tile is CachedDemTile => tile !== null)
       .sort((a, b) => tileResolution(b) - tileResolution(a));
     this.smallestCellSpacingMeters = Math.min(...this.tiles.map(tileCellSpacingMeters));
     this.revisionValue = revision;
@@ -65,6 +71,20 @@ export class NativeDemCache {
       if (lon < tile.west || lon > tile.east || latitude < tile.south || latitude > tile.north) continue;
       const value = bilinear(tile, lon, latitude);
       if (value !== null) return value;
+    }
+    return null;
+  }
+
+  /** Source height plus the optional host-sampled geoid offset; business elevation remains [sample]. */
+  sampleEllipsoidHeight(longitude: number, latitude: number): number | null {
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
+    const lon = wrapLongitude(longitude);
+    for (const tile of this.tiles) {
+      if (lon < tile.west || lon > tile.east || latitude < tile.south || latitude > tile.north) continue;
+      const raw = bilinear(tile, lon, latitude);
+      if (raw === null) continue;
+      const offset = tile.geoidOffsetsCm ? bilinearGeoidOffset(tile, lon, latitude) : 0;
+      if (offset !== null) return raw + offset;
     }
     return null;
   }
@@ -152,10 +172,11 @@ export function projectWgs84(
   if (!validFrame(frame)) return blocked('camera-matrix-or-viewport-invalid');
   const terrainEnabled = frame.terrainEnabled !== false;
   const factualElevation = frame.demRevision <= dem.revision ? dem.sample(coordinate[0], coordinate[1]) : null;
+  const ellipsoidElevation = frame.demRevision <= dem.revision ? dem.sampleEllipsoidHeight(coordinate[0], coordinate[1]) : null;
   if (terrainEnabled && altitudeMeters === undefined && frame.demRevision > dem.revision) return blocked('dem-cache-stale');
-  if (terrainEnabled && altitudeMeters === undefined && (factualElevation === null || !Number.isFinite(factualElevation))) return blocked('dem-sample-unavailable');
+  if (terrainEnabled && altitudeMeters === undefined && (factualElevation === null || ellipsoidElevation === null || !Number.isFinite(ellipsoidElevation))) return blocked('dem-sample-unavailable');
   const displayElevation = terrainEnabled
-    ? (altitudeMeters ?? factualElevation!) * (altitudeMeters === undefined ? (frame.verticalExaggeration ?? 1) : 1)
+    ? (altitudeMeters === undefined ? ellipsoidElevation! * (frame.verticalExaggeration ?? 1) : altitudeMeters)
     : 0;
   const world = wgs84ToEcef(coordinate[0], coordinate[1], displayElevation);
   if (!world) return blocked('coordinate-invalid');
@@ -212,7 +233,11 @@ export function unprojectWgs84(
     const geo = ecefToWgs84(...point);
     if (!geo) return null;
     const ground = dem.sample(geo.longitude, geo.latitude);
-    return ground === null ? null : { geo, ground, residual: geo.altitudeMeters - ground * (frame.verticalExaggeration ?? 1) };
+    const ellipsoidGround = dem.sampleEllipsoidHeight(geo.longitude, geo.latitude);
+    return ground === null || ellipsoidGround === null ? null : {
+      geo, ground, ellipsoidGround,
+      residual: geo.altitudeMeters - ellipsoidGround * (frame.verticalExaggeration ?? 1),
+    };
   };
   let t = tEllipsoid;
   let fallbackReason = 'terrain-intersection-unresolved';
@@ -326,13 +351,42 @@ function validFrame(frame: NativeProjectionFrame) {
     (frame.verticalExaggeration === undefined || Number.isFinite(frame.verticalExaggeration) && frame.verticalExaggeration > 0 && frame.verticalExaggeration <= 100) &&
     (frame.clipDepth === 'minusOneToOne' || frame.clipDepth === 'zeroToOne');
 }
-function validDemTile(tile: NativeDemTile) {
-  return !!tile && typeof tile.id === 'string' && tile.id.length <= 256 &&
-    [tile.west, tile.south, tile.east, tile.north].every(Number.isFinite) &&
-    tile.west >= -180 && tile.east <= 180 && tile.east > tile.west && tile.south >= -90 && tile.north <= 90 && tile.north > tile.south &&
-    Number.isInteger(tile.width) && Number.isInteger(tile.height) && tile.width >= 2 && tile.height >= 2 &&
-    tile.width * tile.height <= MAX_DEM_CELLS && tile.heights.length === tile.width * tile.height &&
-    tile.heights.every((value) => value === null || (Number.isFinite(value) && Math.abs(value) <= 12_000));
+function prepareDemTile(tile: NativeDemTile): CachedDemTile | null {
+  if (!tile || typeof tile.id !== 'string' || tile.id.length > 256 ||
+    ![tile.west, tile.south, tile.east, tile.north].every(Number.isFinite) ||
+    !(tile.west >= -180 && tile.east <= 180 && tile.east > tile.west && tile.south >= -90 && tile.north <= 90 && tile.north > tile.south &&
+      Number.isInteger(tile.width) && Number.isInteger(tile.height) && tile.width >= 2 && tile.height >= 2 &&
+      tile.width * tile.height <= MAX_DEM_CELLS && Array.isArray(tile.heights) && tile.heights.length === tile.width * tile.height &&
+      tile.heights.every((value) => value === null || (Number.isFinite(value) && Math.abs(value) <= 12_000)))) return null;
+  let geoidOffsetsCm: Int16Array | null = null;
+  if (tile.geoidOffsetCmBase64 !== undefined) {
+    geoidOffsetsCm = decodeGeoidOffsetsCm(tile.geoidOffsetCmBase64, tile.width * tile.height);
+    if (!geoidOffsetsCm) return null;
+  }
+  const { geoidOffsetCmBase64: _encoded, ...rawTile } = tile;
+  return { ...rawTile, heights: [...tile.heights], geoidOffsetsCm };
+}
+
+function decodeGeoidOffsetsCm(encoded: string, cellCount: number): Int16Array | null {
+  if (typeof encoded !== 'string') return null;
+  const byteCount = cellCount * 2;
+  const expectedBase64Length = 4 * Math.ceil(byteCount / 3);
+  if (encoded.length !== expectedBase64Length || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)) return null;
+  try {
+    const binary = atob(encoded);
+    if (binary.length !== byteCount || btoa(binary) !== encoded) return null;
+    const offsets = new Int16Array(cellCount);
+    for (let index = 0; index < cellCount; index++) {
+      const low = binary.charCodeAt(index * 2);
+      const high = binary.charCodeAt(index * 2 + 1);
+      const value = (low | (high << 8)) << 16 >> 16;
+      if (Math.abs(value) > MAX_GEOID_OFFSET_CM) return null;
+      offsets[index] = value;
+    }
+    return offsets;
+  } catch {
+    return null;
+  }
 }
 function tileResolution(tile: NativeDemTile) {
   return tile.width * tile.height / ((tile.east - tile.west) * (tile.north - tile.south));
@@ -355,6 +409,22 @@ function bilinear(tile: NativeDemTile, longitude: number, latitude: number): num
   const bottomRight = tile.heights[y1 * tile.width + x1];
   if (topLeft === null || topLeft === undefined || topRight === null || topRight === undefined ||
     bottomLeft === null || bottomLeft === undefined || bottomRight === null || bottomRight === undefined) return null;
+  const tx = x - x0, ty = y - y0;
+  const top = topLeft * (1 - tx) + topRight * tx;
+  const bottom = bottomLeft * (1 - tx) + bottomRight * tx;
+  return top * (1 - ty) + bottom * ty;
+}
+
+function bilinearGeoidOffset(tile: CachedDemTile, longitude: number, latitude: number): number | null {
+  const offsets = tile.geoidOffsetsCm;
+  if (!offsets) return 0;
+  const x = (longitude - tile.west) / (tile.east - tile.west) * (tile.width - 1);
+  const y = (tile.north - latitude) / (tile.north - tile.south) * (tile.height - 1);
+  const x0 = Math.floor(x), y0 = Math.floor(y), x1 = Math.min(tile.width - 1, x0 + 1), y1 = Math.min(tile.height - 1, y0 + 1);
+  const topLeft = offsets[y0 * tile.width + x0]! / 100;
+  const topRight = offsets[y0 * tile.width + x1]! / 100;
+  const bottomLeft = offsets[y1 * tile.width + x0]! / 100;
+  const bottomRight = offsets[y1 * tile.width + x1]! / 100;
   const tx = x - x0, ty = y - y0;
   const top = topLeft * (1 - tx) + topRight * tx;
   const bottom = bottomLeft * (1 - tx) + bottomRight * tx;

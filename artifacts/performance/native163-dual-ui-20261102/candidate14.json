@@ -1,0 +1,636 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "C14 controlled native map P0 QA summary",
+  "candidate": {
+    "appVersion": "0.2.163-test",
+    "versionCode": 170,
+    "sha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c"
+  },
+  "conditions": {
+    "deviceClass": "MuMu3 emulator",
+    "physicalPhoneAcceptance": false,
+    "targetCamera": {
+      "zoom": 12,
+      "pitch": 55,
+      "bearing": 25
+    },
+    "terrainEnabled": true,
+    "contoursEnabled": true,
+    "persistentPreviewCapture": "active and observed during both runs",
+    "dedicatedTestRecording": false,
+    "diskCacheCleared": false,
+    "singleLoops": 4,
+    "dualLoops": 4,
+    "dualSourcesDistinct": true,
+    "dualHeterosourceIdleSeconds": 120,
+    "dualCloseSettleSeconds": 20,
+    "dualClosedTailSeconds": 60,
+    "singleQuietTailSeconds": 60
+  },
+  "outcomes": {
+    "singleInteraction": "PASS",
+    "dualHeterosourceInteraction": "PASS",
+    "staticQueueConvergence": "PASS",
+    "dualCloseReturnsToOneMap": "PASS",
+    "resourceHeadroom": "FAIL_TO_DEMONSTRATE_SAFE_MARGIN",
+    "capturedTargetPidCrashWindow": "PASS_NO_MATCHING_FATAL_OOM_ANR_OR_NATIVE_EXIT",
+    "physicalPhoneAcceptance": "BLOCKED_NOT_TESTED"
+  },
+  "resourceHeadroomNote": "Valid Java heap sample peaked at 503.86 MiB of 512 MiB; this is not an OOM or heap-limit crossing, but leaves little measured margin. Dual run also logged blocking GC. PSS peaked at 753.49 MiB.",
+  "single": {
+    "role": "candidate-single",
+    "sampleCount": 246,
+    "elapsedSeconds": 151.19,
+    "memory": {
+      "pssMiB": {
+        "first": 171.18,
+        "peak": 648.38,
+        "last": 422.66
+      },
+      "javaHeapUsedMiB": {
+        "validPeak": 410.73,
+        "validLast": 186.37,
+        "invalidSamples": 1,
+        "validSamples": 245,
+        "reportedMaxMiB": 512.0,
+        "inconsistentNonAtomicMaximumMiB": 234.12,
+        "gcCounterStableSamples": 245,
+        "gcCounterChangedOrUnavailableSamples": 1,
+        "tupleRule": "valid only when committed is stable, GC count is observed unchanged across the read, and 0 <= used <= committed <= max; this remains a sampled approximation, not an atomic VM snapshot"
+      },
+      "nativeHeapAllocatedMiB": {
+        "first": 19.25,
+        "peak": 165.18,
+        "last": 116.83
+      }
+    },
+    "phases": {
+      "active": {
+        "markerSpanSeconds": 50.92,
+        "sampledCpuWallSeconds": 50.78,
+        "cpuPercentOfOneCoreWeighted": 142.44,
+        "sampleCount": 68
+      },
+      "tailRecovery": {
+        "phase": "afterIdle",
+        "markerSpanSeconds": 70.14,
+        "pssMiB": {
+          "first": 421.17,
+          "peak": 423.47,
+          "last": 422.66
+        },
+        "pssDropMiB": -1.49,
+        "validJavaTupleSampleCount": 131,
+        "javaHeapUsedMiB": {
+          "first": 181.91,
+          "peak": 186.37,
+          "last": 186.37
+        },
+        "javaHeapUsedDropMiB": -4.45
+      }
+    },
+    "mainThread": {
+      "delaySampleCount": 245,
+      "maxDispatchDelayMs": 336.0,
+      "over400msCount": 0,
+      "snapshotTimeoutCount": 1,
+      "snapshotUnavailableCount": 1
+    },
+    "cpu": {
+      "markerSpanSeconds": 50.92,
+      "sampledCpuWallSeconds": 50.78,
+      "cpuPercentOfOneCoreWeighted": 142.44,
+      "sampleCount": 68
+    },
+    "hwui": {
+      "availableSampleCount": 246,
+      "runCumulativeReportedFrameCount": 663,
+      "runCumulativeOver50msCount": 528,
+      "runCumulativeOver100msCount": 269,
+      "activeReportedFrameCountDelta": 660,
+      "activeOver50msCountDelta": 525,
+      "activeOver100msCountDelta": 268,
+      "runMeanTotalMs": 101.45,
+      "runMaxTotalMs": 424.75,
+      "countersAreCumulativeSnapshots": true,
+      "scope": "Android Window FrameMetrics/HWUI only; not WorldWind GL/GPU time or FPS"
+    },
+    "sharedRenderCache": {
+      "identityDeduplicated": true,
+      "uniqueCacheCountMax": 1,
+      "logicalCapacityMiB": 246.24,
+      "logicalUsedPeakMiB": 246.19,
+      "notSummedAcrossMapWindows": true
+    },
+    "contourAssembly": {
+      "source": "numeric contour telemetry from saved phase/loop checkpoints",
+      "checkpointCount": 15,
+      "processAssemblyMaximumActiveSlots": 1,
+      "processAssemblyWaitsCumulativeAtLatestCheckpoint": 152,
+      "processAssemblyQueuedRequestsMaximumAtCheckpoints": 1,
+      "completedBatchesLatestCheckpoint": 160,
+      "budgetRejectionsLatestCheckpoint": 12,
+      "checkpointScopeNotContinuousQueueHighWater": true
+    },
+    "logcat": {
+      "available": true,
+      "coverageComplete": true,
+      "targetProcessResolved": true,
+      "sampleWindowOnly": true,
+      "targetProcessLineCount": 112,
+      "targetProcessStartCountInWindow": 0,
+      "additionalTargetProcessStartsInWindow": 0,
+      "mainThreadGcAttributionRule": "Linux main-thread TID equals resolved process PID; raw identifiers omitted",
+      "eventCounts": {
+        "gcRelatedTargetProcessLines": 102,
+        "blockingGcLines": 0,
+        "blockingGcLinesOnMainThreadTid": 0,
+        "blockingGcDurationObservationCount": 0,
+        "blockingGcMaximumReportedDurationMs": null,
+        "blockingGcReportedDurationsTotalMs": null,
+        "fatalJava": 0,
+        "outOfMemory": 0,
+        "anr": 0,
+        "nativeCrashOrExit": 0
+      },
+      "zeroCountsMeanNoMatchingEntriesInCapturedWindowOnly": true
+    }
+  },
+  "dual": {
+    "role": "candidate-dual",
+    "sampleCount": 513,
+    "elapsedSeconds": 296.77,
+    "memory": {
+      "pssMiB": {
+        "first": 179.4,
+        "peak": 753.49,
+        "last": 464.75
+      },
+      "javaHeapUsedMiB": {
+        "validPeak": 503.86,
+        "validLast": 226.66,
+        "invalidSamples": 1,
+        "validSamples": 512,
+        "reportedMaxMiB": 512.0,
+        "inconsistentNonAtomicMaximumMiB": 272.51,
+        "gcCounterStableSamples": 512,
+        "gcCounterChangedOrUnavailableSamples": 1,
+        "tupleRule": "valid only when committed is stable, GC count is observed unchanged across the read, and 0 <= used <= committed <= max; this remains a sampled approximation, not an atomic VM snapshot"
+      },
+      "nativeHeapAllocatedMiB": {
+        "first": 18.57,
+        "peak": 148.92,
+        "last": 126.5
+      }
+    },
+    "phases": {
+      "active": {
+        "markerSpanSeconds": 49.8,
+        "sampledCpuWallSeconds": 50.01,
+        "cpuPercentOfOneCoreWeighted": 132.97,
+        "sampleCount": 70
+      },
+      "tailRecovery": {
+        "phase": "afterDualClose",
+        "markerSpanSeconds": 80.29,
+        "pssMiB": {
+          "first": 538.87,
+          "peak": 736.12,
+          "last": 464.75
+        },
+        "pssDropMiB": 74.11,
+        "validJavaTupleSampleCount": 147,
+        "javaHeapUsedMiB": {
+          "first": 285.88,
+          "peak": 475.43,
+          "last": 226.66
+        },
+        "javaHeapUsedDropMiB": 59.22
+      }
+    },
+    "mainThread": {
+      "delaySampleCount": 512,
+      "maxDispatchDelayMs": 263.0,
+      "over400msCount": 0,
+      "snapshotTimeoutCount": 1,
+      "snapshotUnavailableCount": 1
+    },
+    "cpu": {
+      "markerSpanSeconds": 49.8,
+      "sampledCpuWallSeconds": 50.01,
+      "cpuPercentOfOneCoreWeighted": 132.97,
+      "sampleCount": 70
+    },
+    "hwui": {
+      "availableSampleCount": 513,
+      "runCumulativeReportedFrameCount": 655,
+      "runCumulativeOver50msCount": 438,
+      "runCumulativeOver100msCount": 193,
+      "activeReportedFrameCountDelta": 638,
+      "activeOver50msCountDelta": 424,
+      "activeOver100msCountDelta": 181,
+      "runMeanTotalMs": 89.37,
+      "runMaxTotalMs": 799.96,
+      "countersAreCumulativeSnapshots": true,
+      "scope": "Android Window FrameMetrics/HWUI only; not WorldWind GL/GPU time or FPS"
+    },
+    "sharedRenderCache": {
+      "identityDeduplicated": true,
+      "uniqueCacheCountMax": 1,
+      "logicalCapacityMiB": 246.24,
+      "logicalUsedPeakMiB": 246.21,
+      "notSummedAcrossMapWindows": true
+    },
+    "contourAssembly": {
+      "source": "numeric contour telemetry from saved phase/loop checkpoints",
+      "checkpointCount": 17,
+      "processAssemblyMaximumActiveSlots": 1,
+      "processAssemblyWaitsCumulativeAtLatestCheckpoint": 87,
+      "processAssemblyQueuedRequestsMaximumAtCheckpoints": 3,
+      "completedBatchesLatestCheckpoint": 42,
+      "budgetRejectionsLatestCheckpoint": 20,
+      "checkpointScopeNotContinuousQueueHighWater": true
+    },
+    "logcat": {
+      "available": true,
+      "coverageComplete": true,
+      "targetProcessResolved": true,
+      "sampleWindowOnly": true,
+      "targetProcessLineCount": 136,
+      "targetProcessStartCountInWindow": 0,
+      "additionalTargetProcessStartsInWindow": 0,
+      "mainThreadGcAttributionRule": "Linux main-thread TID equals resolved process PID; raw identifiers omitted",
+      "eventCounts": {
+        "gcRelatedTargetProcessLines": 90,
+        "blockingGcLines": 24,
+        "blockingGcLinesOnMainThreadTid": 3,
+        "blockingGcDurationObservationCount": 8,
+        "blockingGcMaximumReportedDurationMs": 145.365,
+        "blockingGcReportedDurationsTotalMs": 1017.095,
+        "fatalJava": 0,
+        "outOfMemory": 0,
+        "anr": 0,
+        "nativeCrashOrExit": 0
+      },
+      "zeroCountsMeanNoMatchingEntriesInCapturedWindowOnly": true
+    }
+  },
+  "staticCheckpoints": {
+    "single": {
+      "20s": {
+        "mapCount": 1,
+        "javaUsedMiB": 183.81,
+        "frameAgeMs": [
+          30027
+        ],
+        "completedContourBatches": 160,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 152,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 32,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 107.62,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "40s": {
+        "mapCount": 1,
+        "javaUsedMiB": 185.13,
+        "frameAgeMs": [
+          50064
+        ],
+        "completedContourBatches": 160,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 152,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 32,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 107.62,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "60s": {
+        "mapCount": 1,
+        "javaUsedMiB": 186.45,
+        "frameAgeMs": [
+          70083
+        ],
+        "completedContourBatches": 160,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 152,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 32,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 107.62,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      }
+    },
+    "dualHeterosource": {
+      "20s": {
+        "mapCount": 2,
+        "javaUsedMiB": 278.23,
+        "frameAgeMs": [
+          32119,
+          33906
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "40s": {
+        "mapCount": 2,
+        "javaUsedMiB": 279.58,
+        "frameAgeMs": [
+          52161,
+          53949
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "60s": {
+        "mapCount": 2,
+        "javaUsedMiB": 280.91,
+        "frameAgeMs": [
+          72197,
+          73984
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "80s": {
+        "mapCount": 2,
+        "javaUsedMiB": 282.27,
+        "frameAgeMs": [
+          92218,
+          94005
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "100s": {
+        "mapCount": 2,
+        "javaUsedMiB": 283.6,
+        "frameAgeMs": [
+          112257,
+          114044
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "120s": {
+        "mapCount": 2,
+        "javaUsedMiB": 284.97,
+        "frameAgeMs": [
+          132280,
+          134067
+        ],
+        "completedContourBatches": 32,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 75,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 32,
+        "sharedGeometryLeases": 64,
+        "contour": {
+          "liveContent": 32,
+          "renderCut": 16,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 115.89,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      }
+    },
+    "afterDualClose": {
+      "20s": {
+        "mapCount": 1,
+        "javaUsedMiB": 239.4,
+        "frameAgeMs": [
+          33069
+        ],
+        "completedContourBatches": 42,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 87,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 28,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 119.17,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "40s": {
+        "mapCount": 1,
+        "javaUsedMiB": 240.74,
+        "frameAgeMs": [
+          53098
+        ],
+        "completedContourBatches": 42,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 87,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 28,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 119.17,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      },
+      "60s": {
+        "mapCount": 1,
+        "javaUsedMiB": 226.75,
+        "frameAgeMs": [
+          73115
+        ],
+        "completedContourBatches": 42,
+        "assemblyActiveSlots": 0,
+        "assemblyWaits": 87,
+        "assemblyQueuedRequests": 0,
+        "sharedGeometryEntries": 35,
+        "sharedGeometryLeases": 35,
+        "contour": {
+          "liveContent": 35,
+          "renderCut": 28,
+          "inFlight": 0,
+          "generationPending": 0,
+          "generationActive": 0,
+          "tileCacheMiB": 119.17,
+          "tileCapacityMiB": 128.0
+        },
+        "networkQueue": {
+          "queued": 0,
+          "active": 0,
+          "errors": 0
+        }
+      }
+    }
+  },
+  "sourceProof": {
+    "differentSourceLabelsVisible": true,
+    "screenshotRetainedLocally": true,
+    "sourceNamesAndUrlsOmitted": true
+  },
+  "previewCaptureCaveat": "The persistent preview capture process was observed active during C14 single and dual runs, so the pair is internally matched. Historical earlier baseline captures did not record that process state per run and are not compared here.",
+  "logcatAttributionValidation": {
+    "singleTargetProcessResolved": true,
+    "dualTargetProcessResolved": true,
+    "targetProcessIdentityDifferentAcrossRuns": true,
+    "processIdsOmittedFromArtifact": true
+  },
+  "limitations": [
+    "Memory samples are bounded and sampled, not atomic VM snapshots; only consistent committed/GC-count tuples contribute to Java peak.",
+    "Shared render cache figures are identity-deduplicated across map windows.",
+    "HWUI FrameMetrics are not WorldWind GL/GPU timing or FPS.",
+    "Log event counts cover only the resolved target PID window; no events outside that window are inferred.",
+    "MuMu3 results do not establish behavior on the user phone.",
+    "A separate same-source dual attempt was intentionally aborted after its source-label precondition failed; it is excluded from the paired result, but its captured GC/memory observations remain in private evidence."
+  ]
+}

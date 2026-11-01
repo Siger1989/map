@@ -1,0 +1,57 @@
+{
+  "candidate": "C13",
+  "apkSha256": "8eebe379da81bce712794b1c17052983fd509a69cd41fe2dcfbcf272bc0b779b",
+  "device": "MuMu3",
+  "physicalPhoneVerified": false,
+  "testState": "FAIL",
+  "productMode": "points",
+  "nodeSnappingEnabled": true,
+  "roadSnappingEnabled": true,
+  "realSourceFeatures": 2,
+  "sourceChainVertexCount": 31,
+  "sourceChainSharedGapMeters": 0,
+  "multitouch": true,
+  "freshDownAfterMultitouch": true,
+  "freshSnapshotBeforeTouch": true,
+  "sourceZoomHistogram": {
+    "14": 10
+  },
+  "geometry": {
+    "draftPointCount": 46,
+    "allDraftVerticesGroundProjected": true,
+    "maxDeviationFromSelectedSameRoadCssPx": 7.70861854916151e-05,
+    "draftStartEndpointDistanceCssPx": 0.011298933728682447,
+    "draftEndEndpointDistanceCssPx": 12.52605784775141,
+    "draftStartCommittedAtTarget": true,
+    "draftEndCommittedAtTarget": false,
+    "sourcePathLengthMeters": 1105.2459965440228,
+    "draftPathLengthMeters": 1019.5538249296201,
+    "draftToSourcePathLengthRatio": 0.9224677837491814,
+    "sourceProgressBacktrackCount": 0,
+    "maxSourceProgressBacktrackMeters": 0,
+    "sameNativeRoadSnapshotChain": true,
+    "connectedNodeWithinReleaseRadius": true
+  },
+  "continuationStatusAudit": {
+    "continuationStageCount": 14,
+    "outcomeCounts": {
+      "ready": 13,
+      "unknown": 1
+    },
+    "rejectedOutcomeCounts": {
+      "unknown": 1
+    },
+    "unresolvedContinuationStageCount": 1,
+    "allContinuationStagesAccepted": false,
+    "allContinuationStagesRoadReady": false
+  },
+  "endpointDiagnosis": "The actual final coordinate exactly reused an earlier committed draft node; that node lies within the existing 14 CSS pixel node snap radius of the aim. Node priority was preserved, but the displayed road hint and road preview tip did not show the chosen node. C14 corrects the display only.",
+  "gate": "Original strict FAIL retained. The outcome is not relabeled a complete road PASS. Independent road-only and unambiguous node interaction checks remain required.",
+  "cleanup": {
+    "method": "real-ui-undo",
+    "finalDraftPoints": 0,
+    "savedTracksAfter": 0,
+    "cameraRestored": true
+  },
+  "rawCoordinatesAndScreenshots": "LOCAL_ONLY"
+}

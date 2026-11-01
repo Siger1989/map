@@ -1,0 +1,158 @@
+{
+  "reportDate": "2026-11-02",
+  "scope": "C14 targeted native UI/navigation interaction; not a full release gate",
+  "candidate": {
+    "label": "C14",
+    "version": "0.2.163-test",
+    "versionCode": 170,
+    "apkSha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c"
+  },
+  "qaHelper": {
+    "sha256": "7047065794493870340660CC89BA4DCBA042A75C6EA2F72433FE7D4F2D4F0F76",
+    "closeWait": "DOM absence is polled until absent or timeout"
+  },
+  "environment": {
+    "deviceClass": "MuMu3 emulator",
+    "physicalPhoneVerified": false,
+    "appDataCleared": false,
+    "preflight": {
+      "annotationCount": 1,
+      "activeSelection": false,
+      "activeDrawing": false,
+      "draftPointCount": 0,
+      "savedTrackCount": 0
+    }
+  },
+  "historical390": {
+    "status": "ERROR preserved",
+    "layerCloseReported": false,
+    "diagnostic": "The QA called !waitForDom(selector); waitForDom returns immediately while the element exists, so this did not wait for DOM removal.",
+    "productCloseFailureEstablished": false,
+    "cleanupSucceeded": true,
+    "annotationCountAfter": 1,
+    "qaMarkersRemaining": 0
+  },
+  "viewportsAfterWaitFix": [
+    {
+      "cssWidth": 390,
+      "cssHeight": 857,
+      "result": "PASS",
+      "markerWorkflow": {
+        "actualTouchSelection": true,
+        "coordinateClipboardRoundTrip": true,
+        "pasteSearchSamePoint": true,
+        "actualRepick": true,
+        "deleteCancelPreserved": true,
+        "confirmedDeleteOnlyQaMarker": true
+      },
+      "comparisonMenu": {
+        "fiveCategoriesRetainedInOrder": true,
+        "publicLibraryLastOptionScrollableAndTouchable": true,
+        "selectedNativeSourceMatched": true,
+        "decodedRasterTileCount": 1,
+        "originalSourceRestored": true
+      },
+      "xAlignment": {
+        "layerWindowPaddingTopCssPx": 4.0,
+        "propertiesWindowPaddingTopCssPx": 4.0,
+        "layerTopInsetCssPx": 4.932037,
+        "propertiesTopInsetCssPx": 4.932068,
+        "topInsetDeltaCssPx": 3.1E-05,
+        "rightInsetDeltaCssPx": 0.0,
+        "toleranceCssPx": 0.5,
+        "layerActualTouchAndClosed": true,
+        "propertiesActualTouchAndClosed": true
+      },
+      "cleanup": {
+        "originalAnnotationCount": 1,
+        "finalAnnotationCount": 1,
+        "qaMarkersRemaining": 0,
+        "sourceRestored": true,
+        "cameraRestored": true,
+        "selectionRestored": true,
+        "clipboardRestored": true,
+        "comparisonModeRestored": true
+      }
+    },
+    {
+      "cssWidth": 360,
+      "cssHeight": 780,
+      "result": "PASS",
+      "markerWorkflow": {
+        "actualTouchSelection": true,
+        "coordinateClipboardRoundTrip": true,
+        "pasteSearchSamePoint": true,
+        "actualRepick": true,
+        "deleteCancelPreserved": true,
+        "confirmedDeleteOnlyQaMarker": true
+      },
+      "comparisonMenu": {
+        "fiveCategoriesRetainedInOrder": true,
+        "publicLibraryLastOptionScrollableAndTouchable": true,
+        "selectedNativeSourceMatched": true,
+        "decodedRasterTileCount": 1,
+        "originalSourceRestored": true
+      },
+      "xAlignment": {
+        "layerWindowPaddingTopCssPx": 4.0,
+        "propertiesWindowPaddingTopCssPx": 4.0,
+        "layerTopInsetCssPx": 4.932037,
+        "propertiesTopInsetCssPx": 4.932007,
+        "topInsetDeltaCssPx": 3.1E-05,
+        "rightInsetDeltaCssPx": 0.0,
+        "toleranceCssPx": 0.5,
+        "layerActualTouchAndClosed": true,
+        "propertiesActualTouchAndClosed": true
+      },
+      "cleanup": {
+        "originalAnnotationCount": 1,
+        "finalAnnotationCount": 1,
+        "qaMarkersRemaining": 0,
+        "sourceRestored": true,
+        "cameraRestored": true,
+        "selectionRestored": true,
+        "clipboardRestored": true,
+        "comparisonModeRestored": true
+      }
+    }
+  ],
+  "navigation390": {
+    "overallScope": "LIMITED",
+    "routeUiEndpointsSelectedByActualTouch": true,
+    "qaRouteUiPlanned": true,
+    "uniqueOfflineQaGraphMatched": true,
+    "nativeRoutePathPresent": true,
+    "firstPersonOnThroughCompactControl": true,
+    "returnToTopViewThroughCompactControl": true,
+    "guidanceEndedThroughOriginalUi": true,
+    "routeAndGuidanceCleared": true,
+    "qaGraphRemoved": true,
+    "originalCameraDirectionFollowAndPreferencesRestored": true,
+    "trackCountBeforeAndAfter": 0,
+    "draftRemaining": false,
+    "selectionUnchanged": true,
+    "annotationCountAfter": 1,
+    "carOfflineCoverageWarningObserved": true,
+    "carOfflineCoverageVerified": false,
+    "warningCauseEstablished": false,
+    "positionWaiting": true,
+    "gpsInjected": false,
+    "motionFollowVerified": false
+  },
+  "visualReview": {
+    "rootReviewedLosslessScreenshots": true,
+    "reviewedStates": [
+      "390 marker card",
+      "390 comparison layer window X",
+      "390 compact first-person on"
+    ]
+  },
+  "limits": [
+    "One public-library raster tile decoded per UI run; complete source loading was not measured.",
+    "The navigation screenshot displayed a car offline-coverage warning for endpoints/via points. QA route path and UI flow do not establish coverage; its cause is unresolved.",
+    "MuMu3 results do not establish physical-phone behavior.",
+    "Navigation used an isolated offline QA graph and did not inject GPS; movement follow is unverified.",
+    "This UI/navigation run does not clear the separate dual-map stability/P0 gate.",
+    "No private source names, URLs, keys, marker values, coordinates, screenshots, absolute paths, or raw logs are included."
+  ]
+}

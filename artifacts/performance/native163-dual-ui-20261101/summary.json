@@ -1,0 +1,84 @@
+{
+  "candidate": "C14 private installable candidate, P0 not fully closed",
+  "version": "0.2.163-test",
+  "versionCode": 170,
+  "bytes": 165194340,
+  "sha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c",
+  "privateRegisteredTiandituPreserved": true,
+  "originalPackageAndSignature": true,
+  "allEightItemsComplete": false,
+  "physicalPhoneVerified": false,
+  "items": [
+    {
+      "item": 1,
+      "scope": "Dual first-3D/joystick freeze and phone exit",
+      "status": "PARTIAL_P0_NOT_CLOSED",
+      "pass": "C14 actual single/dual four loops; distinct sources; 120s static geometry convergence and close20+60s falloff; no matching target-window OOM/FATAL/ANR/exit",
+      "failOrUnverified": "Java valid peak503.86/512MiB, blockingGC up145.365ms; safe margin not demonstrated; phone unverified"
+    },
+    {
+      "item": 2,
+      "scope": "Lower source menu bounded scrolling and final public library choice",
+      "status": "PASS_DIRECTED_TWO_SIZES",
+      "limit": "Selected native source matched and one tile decoded per size; full source/network not accepted"
+    },
+    {
+      "item": 3,
+      "scope": "Two-finger pan/pinch/end and fresh single DOWN drawing",
+      "status": "PASS_NATIVE_INPUT",
+      "evidence": "All pointers ended; residual point count0; freshDOWN created anchor and completed57-point curved route"
+    },
+    {
+      "item": 4,
+      "scope": "Real curved road and cross-feature shared node, actual old-Web reference",
+      "status": "PASS_SCOPED_GEOMETRY",
+      "limit": "Native15 input waypoints, 57points, ratio1.000014, no backtrack; legacy15 input waypoints actual reference completed; node-on exact-road endpoint FAIL retained as expected node-priority selection"
+    },
+    {
+      "item": 5,
+      "scope": "Compact first-person navigation control",
+      "status": "PASS_UI_ONLY_LIMITED",
+      "unverified": "No GPS/motion; vehicle offline coverage warning remains, not full driving navigation acceptance"
+    },
+    {
+      "item": 6,
+      "scope": "Marker first-card deletion confirm/cancel",
+      "status": "PASS_TWO_SIZES_QA_ONLY"
+    },
+    {
+      "item": 7,
+      "scope": "Compact exact coordinate clipboard/paste search",
+      "status": "PASS_TWO_SIZES"
+    },
+    {
+      "item": 8,
+      "scope": "Consistent X inset/size and real touch closure",
+      "status": "PASS_TWO_SIZES",
+      "note": "Old erroneous inverse-presence QA report retained; actual disappearance polling fresh tests passed"
+    }
+  ],
+  "sourceTests": {
+    "freshNode": 66,
+    "nativeTestsOnUnchangedC13Source": 87,
+    "nativeSuites": 11,
+    "typeScript": "PASS",
+    "privateReactAndOptimized": "PASS",
+    "sourceFingerprintFiles": 1100
+  },
+  "artifacts": {
+    "build": "candidate14-build.json",
+    "ui": "ui-candidate14.json",
+    "drawing": "drawing-candidate14.json",
+    "web": "web-reference-c14.json",
+    "finalC14P0": "../native163-dual-ui-20261102/candidate14.json"
+  },
+  "delivery": {
+    "localOnly": true,
+    "versionedFixedArchiveMatch": true,
+    "prior162Preserved": true,
+    "privateApkPublished": false,
+    "externalDownloadCreated": false,
+    "status": "INSTALLABLE_PRIVATE_CANDIDATE_WITH_KNOWN_MEMORY_RISK_NOT_STABLE_RELEASE"
+  },
+  "harmonyNativeDelivered": false
+}

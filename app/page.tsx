@@ -474,6 +474,7 @@ export default function Home() {
   );
   const [annotationTab, setAnnotationTab] = useState<MarkerTab>('basic');
   const [adjustingPinId, setAdjustingPinId] = useState<string | null>(null);
+  const [confirmDeleteAnnotationId, setConfirmDeleteAnnotationId] = useState<string | null>(null);
   const [sectionHistory, setSectionHistory] = useState<SectionSettings[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<SectionProfileData | null>(
@@ -955,6 +956,7 @@ export default function Home() {
   const selectedAnnotation = annotationOverlay.find(
     (item) => item.id === annotations.selected,
   );
+  useEffect(() => setConfirmDeleteAnnotationId(null), [panel, selectedAnnotation?.id]);
   const selectedCoordinatePreview = !!(featureMove?.target.kind === 'annotation' && featureMove.target.id === selectedAnnotation?.id);
   const selectedCoordinateSampler = useCallback((point: Coordinate) => map.current?.groundElevation(point) ?? null, []);
   const selectedCoordinateElevation = useAnnotationCoordinateElevation(
@@ -2732,16 +2734,33 @@ export default function Home() {
               className={`selection-tools glass${selectedAnnotation ? ' is-annotation' : ''}`}
               aria-label="选中对象编辑工具"
             >
-              <div role="status">
-                <strong>{selectionName}</strong>
-                <span>
-                  {featureMove
-                    ? '正在调整位置 · 松手确认，双指取消'
-                    : selectedAnnotation
-                      ? `长按${selectedAnnotation.kind === 'pin' ? '标记' : '模型'}后拖动 · 松手保存`
-                      : '点选节点出圈，再拖动调整'}
-                </span>
+              <div className="selection-tools-heading">
+                <div role="status">
+                  <strong>{selectionName}</strong>
+                  <span>
+                    {featureMove
+                      ? '正在调整位置 · 松手确认，双指取消'
+                      : selectedAnnotation
+                        ? `长按${selectedAnnotation.kind === 'pin' ? '标记' : '模型'}后拖动 · 松手保存`
+                        : '点选节点出圈，再拖动调整'}
+                  </span>
+                </div>
+                {selectedAnnotation && <button
+                  className="selection-tools-delete"
+                  type="button"
+                  aria-label="删除标记"
+                  title="删除标记"
+                  disabled={!!featureMove}
+                  onClick={() => setConfirmDeleteAnnotationId(selectedAnnotation.id)}
+                >删除</button>}
               </div>
+              {selectedAnnotation && confirmDeleteAnnotationId === selectedAnnotation.id && <div className="selection-tools-delete-confirm" role="alertdialog" aria-label="确认删除标记">
+                <span>删除“{selectionName}”？</span>
+                <button type="button" onClick={() => setConfirmDeleteAnnotationId(null)}>取消</button>
+                <button type="button" className="is-danger" onClick={() => {
+                  if (annotations.remove(selectedAnnotation.id)) setConfirmDeleteAnnotationId(null);
+                }}>确认删除</button>
+              </div>}
               <AnnotationCoordinateInfo
                 annotationId={selectedAnnotation.id}
                 coordinates={selectedAnnotation.coordinates}
@@ -2754,7 +2773,7 @@ export default function Home() {
                   {selectedAnnotation ? annotations.error : tracks.error}
                 </p>
               )}
-              <div>
+              <div className="selection-tools-actions">
                 <button
                   disabled={!!featureMove}
                   onClick={() =>
@@ -2985,7 +3004,6 @@ export default function Home() {
               guidance={guidance}
               following={follow.following}
               cameraMode={navigationCameraMode}
-              onCameraModeChange={changeNavigationCameraMode}
               onStop={stopNavigation}
               onFollow={resumeNavigation}
               onShow={() => {

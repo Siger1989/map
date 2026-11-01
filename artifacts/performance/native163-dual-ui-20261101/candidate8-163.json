@@ -1,0 +1,289 @@
+{
+  "analysisType": "C8 four-loop single-vs-dual MuMu scenario with contour generation and post-close sampling",
+  "candidate": {
+    "label": "C8",
+    "version": "0.2.163-test",
+    "versionCode": 170,
+    "sha256PrefixVerifiedByRoot": "1e2ddc7"
+  },
+  "conditions": {
+    "device": "dedicated MuMu3",
+    "targetPose": {
+      "nativeZoom": 12,
+      "pitchDegrees": 55,
+      "bearingDegrees": 25
+    },
+    "terrainEnabled": true,
+    "contourIntervalMeters": 30,
+    "actualContourGeneration": true,
+    "reportedLoopsPerRun": 4,
+    "freshAppProcess": true,
+    "retainedDiskCache": true,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "captureEvidence": "same always-on 9174 preview capture environment; no per-run encoder snapshot for A8 or B8",
+    "previewCapture": {
+      "type": "adb screenrecord H.264 to FFmpeg MJPEG",
+      "size": "872x1920",
+      "bitRateBitsPerSecond": 8000000,
+      "segmentLimitSeconds": 180,
+      "ffmpegThreads": 1
+    },
+    "physicalPhone": false
+  },
+  "singleA8": {
+    "elapsedSeconds": 152.183,
+    "sampleCount": 255,
+    "validJavaHeapTuples": 255,
+    "invalidJavaHeapTuples": 0,
+    "javaHeapValidity": "committed before/after match, no ART GC-count change observed, bounds valid; Runtime counters remain approximate and non-atomic",
+    "memoryMiB": {
+      "pssFirstPeakLast": [
+        182.19,
+        744.97,
+        453.45
+      ],
+      "javaHeapFirstPeakLast": [
+        54.09,
+        496.13,
+        220.94
+      ],
+      "javaHeapMaximum": 512.0,
+      "nativeAllocatedFirstPeakLast": [
+        23.35,
+        170.78,
+        115.72
+      ],
+      "identityDeduplicatedRrcLogicalFirstPeakLast": [
+        23.0,
+        244.38,
+        209.89
+      ]
+    },
+    "interactionAndTail": {
+      "loopEndSeconds": 69.686,
+      "zeroInputTailSeconds": 60.154,
+      "tailPssFirstPeakLastMiB": [
+        451.7,
+        455.59,
+        453.45
+      ],
+      "tailJavaHeapFirstPeakLastMiB": [
+        216.15,
+        220.94,
+        220.94
+      ],
+      "tailCpuPercentOfOneCore": 6.62,
+      "tailMainDispatchDelayMaxMs": 1,
+      "tailFinalMapFrameAgeMs": 69810,
+      "tailContourBatches": [
+        190,
+        190
+      ],
+      "tailGenerationActivePending": [
+        0,
+        0
+      ],
+      "tailSdkInFlight": 0,
+      "tailSharedGeometryEntriesLeases": [
+        38,
+        38
+      ],
+      "tailContourResidentCut": [
+        38,
+        32
+      ],
+      "tailCacheBytes": [
+        125015320,
+        125015320
+      ]
+    },
+    "targetLog": {
+      "lines": 264,
+      "gcRelated": 103,
+      "blockedAllocationWaiterRows": 12,
+      "mainThreadBlockedAllocationEvents": 1,
+      "maxMainBlockedAllocationMs": 122.77,
+      "fatalOomAnrSignalDeathMatches": 0,
+      "exitInfoForSampledPid": "not present in captured exit-info snapshot"
+    }
+  },
+  "dualB8": {
+    "elapsedSeconds": 189.963,
+    "sampleCount": 295,
+    "validJavaHeapTuples": 294,
+    "invalidJavaHeapTuples": 1,
+    "invalidReason": "ART GC-count changed 109 to 110 during heap read",
+    "javaHeapValidity": "valid rows also have matching committed counters and bounds; Runtime counters remain approximate and non-atomic",
+    "memoryMiB": {
+      "pssFirstPeakLast": [
+        182.94,
+        744.64,
+        488.44
+      ],
+      "javaHeapFirstPeakLast": [
+        56.54,
+        495.39,
+        226.23
+      ],
+      "javaHeapMaximum": 512.0,
+      "nativeAllocatedFirstPeakLast": [
+        17.02,
+        183.16,
+        123.99
+      ],
+      "identityDeduplicatedRrcLogicalFirstPeakLast": [
+        12.79,
+        246.62,
+        229.18
+      ]
+    },
+    "sharedRenderResourceCache": {
+      "uniqueIdentityCount": 1,
+      "logicalCapacityBytes": 258203648,
+      "sampledLogicalUsePeakBytes": 258601218,
+      "note": "single identity, not summed across windows; sampled logical use exceeded nominal capacity by 397570 bytes (~0.38 MiB), an accounting/snapshot observation, not physical-allocation proof"
+    },
+    "interactionAndClose": {
+      "dualModeReadySeconds": 14.193,
+      "loopEndSeconds": 85.133,
+      "dualCloseSeconds": 109.7,
+      "postClose20Seconds": {
+        "durationSeconds": 20.121,
+        "pssFirstPeakLastMiB": [
+          504.95,
+          711.28,
+          485.51
+        ],
+        "javaHeapFirstPeakLastMiB": [
+          271.26,
+          424.21,
+          220.88
+        ],
+        "nativeAllocatedFirstPeakLastMiB": [
+          112.51,
+          124.14,
+          123.31
+        ],
+        "processCpuPercentOfOneCore": 76.54,
+        "mainDispatchDelayMaxMs": 265,
+        "mainDispatchDelayAtLeast400ms": 0,
+        "mapFramesFirstLast": [
+          1175,
+          1259
+        ]
+      },
+      "postCloseSteady60Seconds": {
+        "durationSeconds": 60.138,
+        "pssFirstPeakLastMiB": [
+          485.92,
+          488.78,
+          488.44
+        ],
+        "javaHeapFirstPeakLastMiB": [
+          221.38,
+          226.23,
+          226.23
+        ],
+        "nativeAllocatedFirstPeakLastMiB": [
+          123.48,
+          124.11,
+          123.99
+        ],
+        "processCpuPercentOfOneCore": 7.11,
+        "mainDispatchDelayMaxMs": 2,
+        "mainDispatchDelayAtLeast400ms": 0,
+        "mapFramesFirstLast": [
+          1259,
+          1259
+        ],
+        "finalMapFrameAgeMs": 68259,
+        "contourBatchesFirstLast": [
+          65,
+          65
+        ],
+        "generationActivePending": [
+          0,
+          0
+        ],
+        "sdkInFlight": 0,
+        "assemblyActiveQueued": [
+          0,
+          0
+        ],
+        "residentAndRenderCutFirstLast": [
+          40,
+          40
+        ],
+        "sharedGeometryEntriesLeasesFirstLast": [
+          40,
+          40
+        ],
+        "contourCacheBytesFirstLast": [
+          131238480,
+          131238480
+        ]
+      }
+    },
+    "targetLog": {
+      "targetPidLines": 414,
+      "gcRelated": 101,
+      "waitForGcBlockedRowsIncludingOtherWaiters": 53,
+      "mainThreadBlockedAllocationEvents": 5,
+      "maxMainBlockedAllocationMs": 128.907,
+      "sumMainBlockedAllocationMs": 382.526,
+      "fatalOomAnrSignalDeathKillMatches": 0,
+      "exitInfoForSampledPid": "not present in captured exit-info snapshot"
+    }
+  },
+  "scenarioComparison": {
+    "sameDeclaredPoseAndFourLoops": true,
+    "actualPostLoopCameraPosesDiffer": true,
+    "A8vsB8": {
+      "pssPeakMiB": [
+        744.97,
+        744.64
+      ],
+      "javaHeapPeakMiB": [
+        496.13,
+        495.39
+      ],
+      "nativeAllocatedPeakMiB": [
+        170.78,
+        183.16
+      ],
+      "lastPssMiB": [
+        453.45,
+        488.44
+      ],
+      "lastJavaHeapMiB": [
+        220.94,
+        226.23
+      ],
+      "cpuPercentOneCoreFullRun": [
+        69.93,
+        86.64
+      ]
+    },
+    "interpretation": "The sampled PSS/Java peaks are close, while B8 native-allocated peak and final process footprint are higher. Durations, extra dual open/close phases, actual camera drift, peak timing and cache state differ, so this is not an isolated causal memory delta. Each run shows a static 60-second contour/render tail. B8's first 20 seconds after close still had frame-count changes and high CPU; its following 60-second tail was quiet."
+  },
+  "sdkPendingUploadReview": {
+    "sourceVersion": "WorldWind 2.1.1 source tree",
+    "findings": [
+      "MvtBatchedLineTile.releaseRenderResources removes only its VBO/EBO RenderResourceCache keys; it does not cancel entries in the current Frame UploadQueue.",
+      "RenderContext.offerGLBufferUpload wraps the existing vertex/element arrays in NumericArray and queues them; UploadQueue entries retain both array and BufferObject until processUploads recycles them or Frame.recycle clears the queue.",
+      "BasicFrameController.drawFrame processes queued uploads before drawable submission; Frame.recycle calls clearUploads. This establishes a possible short render-to-GL-frame retention window after a tile's cache keys are removed.",
+      "No A8/B8 counter measured queued upload bytes or release-time queue depth, and the static tails were stable. The source path is a bounded transient possibility, not evidence that uploads caused the sampled peaks or the reported phone crash."
+    ],
+    "productionChanged": false
+  },
+  "limits": [
+    "MuMu only; no physical-phone acceptance.",
+    "A8 Java heap sample peak was 496.13/512 MiB and B8 495.39/512 MiB; these are sampled transient used values, not post-GC retained heap.",
+    "No sampled tuple exceeded reported Java max; approximate Runtime counters do not prove absence of OOM risk.",
+    "No target-PID OOM/FATAL/ANR/signal/death entries in captured windows is not proof of phone stability or a unique cause.",
+    "Persistent preview capture was present in the environment; no per-run encoder snapshot was recorded for A8/B8.",
+    "Android Window FrameMetrics measure HWUI, not WorldWind GL/GPU time; map frame count/frame age are output cadence, not FPS.",
+    "No source budget, contour detail, style, interval or cache capacity changed for C8."
+  ]
+}

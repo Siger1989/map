@@ -69,14 +69,16 @@ export function AnnotationCoordinateInfo({
     <section className="annotation-coordinate-info" aria-label="标记坐标信息" data-preview={preview || undefined}>
       <header>
         <strong>{preview ? '预览坐标 · WGS84' : '坐标 · WGS84'}</strong>
-        <button type="button" onClick={copy} disabled={copyState === 'copying'} aria-label="复制 Google Maps 格式坐标">
-          <Clipboard size={13} aria-hidden="true" />
-          <span>{copyState === 'copying' ? '复制中' : '复制'}</span>
-        </button>
       </header>
       <div className="annotation-coordinate-info-values">
         <span>纬 {coordinates[1].toFixed(6)}°</span>
         <span>经 {coordinates[0].toFixed(6)}°</span>
+        <button type="button" onClick={copy} disabled={copyState === 'copying'} aria-label="复制 Google Maps 格式坐标">
+          <Clipboard size={13} aria-hidden="true" />
+          <span>{copyState === 'copying' ? '复制中' : '复制坐标'}</span>
+        </button>
+      </div>
+      <div className="annotation-coordinate-info-elevation">
         <span>{elevationMessage(elevation, elevationStatus)}</span>
       </div>
       <small role="status" aria-live="polite">

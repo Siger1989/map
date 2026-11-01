@@ -43,7 +43,7 @@ data class NativeGeologyUnit(val key:String,val name:String,val age:String,val l
 data class NativeGeologyState(val source:NativeGeologySource=NativeGeologySource.WORLD,val status:NativeGeologyStatus=NativeGeologyStatus.OFF,val message:String="",val units:List<NativeGeologyUnit> = emptyList(),val selected:NativeGeologyUnit?=null,val legendImage:ByteArray?=null,val opacity:Double=.85,val attribution:String="")
 data class NativeMvtFeature(val layer:String,val type:Int,val extent:Int,val properties:Map<String,String>,val paths:List<List<Pair<Int,Int>>>)
 
-/** Small bounded protobuf/MVT decoder for the actual Macrostrat `units` and `lines` layer schema. */
+/** Small bounded shared protobuf/MVT decoder for geology and native road-snap geometry. */
 internal object NativeMvtDecoder {
     fun decode(bytes:ByteArray):List<NativeMvtFeature> {
         require(bytes.size <= 4*1024*1024) { "MVT payload size invalid" }
@@ -64,7 +64,7 @@ internal object NativeMvtDecoder {
         val tp=Pb(tags);val tagInts=mutableListOf<Int>();while(tp.more())tagInts+=tp.varint(0).toInt()
         val props=tagInts.chunked(2).mapNotNull { pair -> if(pair.size==2&&pair[0] in keys.indices&&pair[1] in values.indices)keys[pair[0]] to values[pair[1]] else null }.toMap()
         val gp=Pb(geom);var x=0;var y=0;var command=0;var left=0;var path=mutableListOf<Pair<Int,Int>>();val paths=mutableListOf<List<Pair<Int,Int>>>()
-        while(gp.more()) { if(left==0){val c=gp.varint(0).toInt();command=c and 7;left=c shr 3;if(command==7){if(path.isNotEmpty()){if(path.size>=3&&path.first()!=path.last())path+=path.first();paths+=path};path=mutableListOf();left=0;continue};if(command !in setOf(1,2)||left>100000)return null}
+        while(gp.more()) { if(left==0){val c=gp.varint(0).toInt();command=c and 7;left=c shr 3;if(command==7){if(path.isNotEmpty()){if(path.size>=3&&path.first()!=path.last())path+=path.first();paths+=path};path=mutableListOf();left=0;continue};if(command !in setOf(1,2)||left>100000)return null;if(command==1&&path.isNotEmpty()){paths+=path;path=mutableListOf()}}
             if(command==1||command==2){x+=zig(gp.varint(0).toInt());y+=zig(gp.varint(0).toInt());path+=x to y;left--}
         }
         if(path.isNotEmpty())paths+=path

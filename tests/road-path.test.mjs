@@ -355,6 +355,37 @@ test('connected roads follow curves; disconnected roads cross explicitly and res
     [2.5, 2],
   );
 });
+
+test('points preview and release use the selected nearby node over a road match at the aim', () => {
+  const node = [2.62, 2], roadCoordinate = [2.5, 2];
+  const projectPoint = ([x, y]) => ({ x: x * 100, y: y * 100 });
+  const roadLine = line('near-aim', [[2, 2], [3, 2]]);
+  const roadMatch = { line: roadLine, index: 0, fraction: 0.5, coordinate: roadCoordinate, screen: projectPoint(roadCoordinate) };
+  const options = {
+    mode: 'points', anchor: null, lastVertex: [2, 2], width: 800, height: 800, length: 48,
+    candidates: [node], snapping: true, roadSnapping: true, project: projectPoint,
+    unproject: () => roadCoordinate,
+    snapRoad: () => ({ status: 'ready', match: roadMatch, section: [roadCoordinate] }),
+  };
+  const session = new DrawingSession();
+  const preview = session.input({ type: 'start', point: { x: 250, y: 244 } }, options);
+  assert.equal(Math.hypot(projectPoint(node).x - roadMatch.screen.x, projectPoint(node).y - roadMatch.screen.y), 12);
+  assert.deepEqual(preview.preview.tip, projectPoint(node));
+  assert.equal(preview.hint, '已吸附节点 · 松手定点');
+  const released = session.input({ type: 'end', reason: 'release' }, options);
+  assert.deepEqual(released.vertex, node);
+  assert.equal(released.section, undefined);
+
+  const roadOnly = new DrawingSession();
+  const roadPreview = roadOnly.input({ type: 'start', point: { x: 250, y: 244 } }, {
+    ...options, candidates: [], snapping: false,
+  });
+  assert.deepEqual(roadPreview.preview.tip, roadMatch.screen);
+  assert.equal(roadPreview.hint, '整段沿道路连接 · 松手确认');
+  const roadRelease = roadOnly.input({ type: 'end', reason: 'release' }, { ...options, candidates: [], snapping: false });
+  assert.deepEqual(roadRelease.vertex, roadCoordinate);
+  assert.deepEqual(roadRelease.section, [roadCoordinate]);
+});
 test('road snap result distinguishes no match from disconnected while preserving real candidate data', () => {
   const candidate = match(bend, 2, 0.5),
     section = [candidate.coordinate];

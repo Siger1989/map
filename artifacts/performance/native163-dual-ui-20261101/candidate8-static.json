@@ -1,0 +1,127 @@
+{
+  "analysisType": "offline_matched_static_single_map_comparison",
+  "candidate": "C8 installed candidate, compared against pre-exact-stitch C7 static run A6",
+  "sameView": {
+    "nativeZoom": 12,
+    "pitchDegrees": 55,
+    "bearingDegrees": 25,
+    "mapCount": 1,
+    "gestureCount": 0,
+    "terrainEnabled": true,
+    "contourIntervalMeters": 30,
+    "contoursGenerated": true
+  },
+  "sampling": {
+    "periodMs": 500,
+    "a6ElapsedMs": 100556,
+    "a7ElapsedMs": 100308,
+    "a6SampleCount": 178,
+    "a7SampleCount": 180,
+    "steadyTailTargetSeconds": 60,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": "inferred for A6/A7 from the always-on preview server; no per-run encoder snapshot was saved",
+    "previewCaptureAudit": {
+      "encoder": "adb screenrecord H.264",
+      "width": 872,
+      "height": 1920,
+      "bitRateBitsPerSecond": 8000000,
+      "segmentTimeLimitSeconds": 180,
+      "ffmpegThreads": 1,
+      "transport": "MJPEG"
+    }
+  },
+  "staticWorkComparison": {
+    "a6PreExactStitch": {
+      "generationQueueSequenceReadyToSteady6": [77, 445],
+      "activeCountRange": [2, 2],
+      "pendingCountRange": [15, 18],
+      "sdkInFlightCountRange": [17, 20],
+      "residentAndRenderCutCountRange": [21, 24],
+      "contourCacheUsedBytesRange": [113738424, 127600736],
+      "sourceZoomDistributionAtReadyAndCheckpoints": {"13": 23},
+      "sameTileKeyContentInstanceReplacementsAcrossSevenAdjacentPairs": [3, 2, 2, 2, 3, 2, 2],
+      "replacementTotal": 16
+    },
+    "a7C8ExactStitch": {
+      "generationQueueSequenceReadyToSteady6": [62, 62],
+      "activeCountRange": [0, 0],
+      "pendingCountRange": [0, 0],
+      "sdkInFlightCountRange": [0, 0],
+      "residentAndRenderCutCountRange": [36, 36],
+      "contourCacheUsedBytesRange": [117109032, 117109032],
+      "sourceZoomDistributionAtReadyAndCheckpoints": {"12": 2, "13": 34},
+      "sameTileKeyContentInstanceReplacementsAcrossSevenAdjacentPairs": [0, 0, 0, 0, 0, 0, 0],
+      "replacementTotal": 0,
+      "finalMapFrameAgeMs": 43838
+    },
+    "interpretation": "Observed contour generation and frame work become quiescent after initial tile loading in A7. Diagnostic contentInstance is wrapper identity only; no per-geometry hash was exposed."
+  },
+  "processMemory": {
+    "units": "PSS in KiB; Java and native heap in MiB",
+    "a6": {
+      "pssSamples": 178,
+      "pssKiBFirstPeakLast": [178851, 458383, 425273],
+      "javaHeapValidSamples": 177,
+      "javaHeapInvalidSamples": 1,
+      "javaHeapInvalidReason": "one sample rejected because approximate ART GC count changed during the heap read",
+      "javaHeapMiBFirstPeakLast": [53.22, 208.90, 185.15],
+      "javaHeapMaximumMiB": 512,
+      "nativeHeapAllocatedMiBFirstPeakLast": [21.53, 133.60, 123.51],
+      "renderResourceCache": {
+        "identityDeduplicatedCacheCount": 1,
+        "logicalCapacityBytes": 258203648,
+        "logicalUsedMiBFirstPeakLast": [27.65, 210.06, 201.70]
+      },
+      "steadyTail60s": {
+        "pssMiBFirstPeakLast": [407.49, 447.64, 415.31],
+        "javaHeapMiBFirstPeakLast": [173.75, 208.90, 185.15],
+        "weightedProcessCpuPercentOfOneCore": 167.74
+      }
+    },
+    "a7": {
+      "pssSamples": 180,
+      "pssKiBFirstPeakLast": [183889, 502097, 464730],
+      "javaHeapValidSamples": 180,
+      "javaHeapInvalidSamples": 0,
+      "javaHeapMiBFirstPeakLast": [61.94, 234.20, 205.39],
+      "javaHeapMaximumMiB": 512,
+      "nativeHeapAllocatedMiBFirstPeakLast": [15.45, 148.03, 148.00],
+      "renderResourceCache": {
+        "identityDeduplicatedCacheCount": 1,
+        "logicalCapacityBytes": 258203648,
+        "logicalUsedMiBFirstPeakLast": [12.56, 229.51, 229.51]
+      },
+      "steadyTail60s": {
+        "pssMiBFirstPeakLast": [444.98, 454.01, 453.84],
+        "javaHeapMiBFirstPeakLast": [194.47, 205.39, 205.39],
+        "weightedProcessCpuPercentOfOneCore": 7.54
+      }
+    },
+    "wholeProcessComparison": "A7 did not show a lower whole-process peak: PSS peak was 42.69 MiB higher and valid Java heap peak was 25.30 MiB higher than A6. The A7 static tail had much less measured process CPU and stable contour cache/queues, but whole-process memory rose during the tail; ownership is not established."
+  },
+  "responsivenessAndFrames": {
+    "mainDispatchMaximumDelayMs": {"a6": 252, "a7": 190},
+    "mainDispatchSamplesAtOrAbove400ms": {"a6": 0, "a7": 0},
+    "unavailableMapSnapshots": {"a6": 2, "a7": 0},
+    "actualMapFrameCountFirstLastDelta": {"a6": [19, 918, 899], "a7": [11, 252, 241]},
+    "frameAgeLastMs": {"a6": 9, "a7": 43838},
+    "frameInterpretation": "Actual map frame counts are output counts during these runs, not GPU FPS. Android Window FrameMetrics is HWUI-only and is not WorldWind GL/GPU timing. Graphics PSS reported zero and does not establish zero GPU usage."
+  },
+  "targetProcessLogWindow": {
+    "a6TargetPidLines": 161,
+    "a6GcRelatedLines": 159,
+    "a7TargetPidLines": 39,
+    "a7GcRelatedLines": 23,
+    "targetPidFatalOomAnrSignalOrDeathMatches": 0,
+    "matchingApplicationExitInfoForSampledProcess": 0,
+    "a6HarnessNote": "instrumentation output contains a generic Process crashed string; the sampled target PID has no matching fatal/OOM/ANR/signal/death line or exit-info record, so this harness message is unclassified",
+    "a7HarnessNote": "instrumentation ended with STOPPED_BY_COMMAND"
+  },
+  "limitations": [
+    "This is one same-view MuMu static comparison, not a physical-phone run or dual-map result.",
+    "The persistent preview encoder load for these historical A6/A7 runs is inferred from the always-on server and its audited loop; no per-run encoder process snapshot was saved.",
+    "Heap samples are guarded by committed-value equality and unchanged approximate ART GC counters; this is not an atomic heap snapshot.",
+    "The contour snapshots expose content wrapper identity and tile level aggregates, not a stable geometry hash or full owner trace.",
+    "A7 is not a whole-process low-memory pass: its observed PSS and Java heap peaks exceed A6 despite stable contour work. No unique phone crash cause or phone stability claim follows from this comparison."
+  ]
+}

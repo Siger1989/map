@@ -1,0 +1,1291 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "native162 paired map UI telemetry baseline",
+  "units": {
+    "memory": "MiB = 1024*1024 bytes",
+    "duration": "seconds",
+    "cpu": "percent of one core"
+  },
+  "conditions": {
+    "environment": "controlled MuMu3 emulator run",
+    "appVersionName": "0.2.162-test",
+    "appVersionCode": 169,
+    "targetCamera": {
+      "zoom": 12,
+      "pitch": 55,
+      "bearing": 25
+    },
+    "basemapType": "Tianditu",
+    "terrainEnabled": true,
+    "contoursEnabled": true,
+    "sameFourLoopInputReported": true,
+    "recordedLoopCount": 4,
+    "diskCacheCleared": false,
+    "freshProcessEachRun": true,
+    "physicalPhoneTest": false,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "persistentPreviewCaptureEvidence": "inferred_for_historical_run_from_same_always_on_preview_server; not recorded per run",
+    "persistentPreviewCaptureObservedDuringC7A5": true
+  },
+  "single": {
+    "kind": "single",
+    "freshProcess": true,
+    "capturePeriodMs": 500,
+    "sampleCount": 278,
+    "startAndEnd": {
+      "firstSampleElapsedMs": 575,
+      "lastSampleElapsedMs": 222781,
+      "firstSampleMemory": {
+        "pssMiB": 223.3,
+        "javaHeapUsedMiB": 79.92,
+        "nativeHeapAllocatedMiB": 46.29
+      },
+      "runPeak": {
+        "pssMiB": {
+          "first": 223.3,
+          "peak": 572.29,
+          "last": 463.42
+        },
+        "javaHeapPssMiB": {
+          "first": 81.73,
+          "peak": 337.7,
+          "last": 245.77
+        },
+        "nativeHeapPssMiB": {
+          "first": 49.29,
+          "peak": 172.51,
+          "last": 122.03
+        },
+        "javaHeapUsedMiB": {
+          "first": 79.92,
+          "peak": 341.38,
+          "last": 244.62
+        },
+        "nativeHeapAllocatedMiB": {
+          "first": 46.29,
+          "peak": 158.06,
+          "last": 93.62
+        }
+      },
+      "normalStopRequested": true,
+      "javaHeapMaxMiB": 512.0
+    },
+    "cameraAtInitial": {
+      "zoom": 11.999,
+      "pitch": 55.0,
+      "bearing": 25.0
+    },
+    "cameraAtReady": {
+      "zoom": 11.999,
+      "pitch": 55.0,
+      "bearing": 25.0
+    },
+    "cameraAtEnd": {
+      "zoom": 11.978,
+      "pitch": 55.0,
+      "bearing": 25.0
+    },
+    "loopCapture": {
+      "recordedLoopCount": 4,
+      "loopAngles": [
+        {
+          "before": {
+            "zoom": 11.999,
+            "pitch": 55.0,
+            "bearing": 25.0
+          },
+          "during": {
+            "zoom": 11.999,
+            "pitch": 62.052,
+            "bearing": 33.779
+          },
+          "after": {
+            "zoom": 11.984,
+            "pitch": 55.0,
+            "bearing": 25.0
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.984,
+            "pitch": 55.0,
+            "bearing": 25.0
+          },
+          "during": {
+            "zoom": 11.984,
+            "pitch": 62.052,
+            "bearing": 33.779
+          },
+          "after": {
+            "zoom": 11.98,
+            "pitch": 55.0,
+            "bearing": 25.0
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.98,
+            "pitch": 55.0,
+            "bearing": 25.0
+          },
+          "during": {
+            "zoom": 11.98,
+            "pitch": 62.052,
+            "bearing": 33.779
+          },
+          "after": {
+            "zoom": 11.978,
+            "pitch": 55.0,
+            "bearing": 25.0
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.978,
+            "pitch": 55.0,
+            "bearing": 25.0
+          },
+          "during": {
+            "zoom": 11.978,
+            "pitch": 62.052,
+            "bearing": 33.779
+          },
+          "after": {
+            "zoom": 11.978,
+            "pitch": 55.0,
+            "bearing": 25.0
+          }
+        }
+      ],
+      "ranges": {
+        "during": {
+          "zoom": {
+            "min": 11.978,
+            "max": 11.999
+          },
+          "pitch": {
+            "min": 62.052,
+            "max": 62.052
+          },
+          "bearing": {
+            "min": 33.779,
+            "max": 33.779
+          }
+        },
+        "after": {
+          "zoom": {
+            "min": 11.978,
+            "max": 11.984
+          },
+          "pitch": {
+            "min": 55.0,
+            "max": 55.0
+          },
+          "bearing": {
+            "min": 25.0,
+            "max": 25.0
+          }
+        }
+      }
+    },
+    "mapAndCache": {
+      "mapCountAtReady": 1,
+      "distinctRenderCachesAtReady": 1,
+      "terrainEnabledAllMaps": true,
+      "contoursEnabledAllMaps": true,
+      "actualFramesAtInitial": [
+        3
+      ],
+      "actualFramesAtReady": [
+        371
+      ],
+      "frameAgeMsAtReady": [
+        9
+      ],
+      "rrcUsedBytesAtInitial": 5058560,
+      "rrcUsedBytesAtReady": 226750464,
+      "rrcCapacityBytes": 258203648
+    },
+    "contourAtEnd": {
+      "completedBatchesCumulativeAtEnd": 981,
+      "budgetRejectionsCumulativeAtEnd": 4,
+      "refinedTilesCumulativeAtEnd": 4,
+      "maxLevelRejectionsCumulativeAtEnd": 0,
+      "visibleRenderCutCountAtEnd": 21,
+      "liveContentCountAtEnd": 21,
+      "inFlightAtEnd": 34,
+      "residentByteWeightAtEnd": 115776392,
+      "residentBudgetBytes": 134217728
+    },
+    "phases": [
+      {
+        "name": "startupAndWarmup",
+        "startMs": 53,
+        "endMs": 10078,
+        "durationSeconds": 10.03,
+        "sampleCount": 11,
+        "memory": {
+          "pssMiB": {
+            "first": 223.3,
+            "peak": 455.85,
+            "last": 391.32
+          },
+          "javaHeapPssMiB": {
+            "first": 81.73,
+            "peak": 226.36,
+            "last": 164.43
+          },
+          "nativeHeapPssMiB": {
+            "first": 49.29,
+            "peak": 131.51,
+            "last": 131.01
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 79.92,
+            "peak": 172.14,
+            "last": 163.75
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 46.29,
+            "peak": 127.06,
+            "last": 127.06
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 216.3,
+        "mainSnapshot": {
+          "availableCount": 7,
+          "unavailableReasons": {
+            "timeout": 4
+          },
+          "maxDispatchDelayMs": 315,
+          "over50ms": 7,
+          "over100ms": 6,
+          "delaySampleCount": 7
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 10,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time"
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 30,
+            "observedSeconds": 7.31,
+            "outputsPerSecond": 4.1
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 472,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 174.74
+        },
+        "javaHeapTupleCounts": {
+          "valid": 7,
+          "invalid": 4
+        }
+      },
+      {
+        "name": "readyToActive",
+        "startMs": 10078,
+        "endMs": 30113,
+        "durationSeconds": 20.04,
+        "sampleCount": 33,
+        "memory": {
+          "pssMiB": {
+            "first": 476.12,
+            "peak": 567.62,
+            "last": 501.34
+          },
+          "javaHeapPssMiB": {
+            "first": 234.33,
+            "peak": 326.18,
+            "last": 267.55
+          },
+          "nativeHeapPssMiB": {
+            "first": 145.14,
+            "peak": 149.87,
+            "last": 136.68
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 188.76,
+            "peak": 278.63,
+            "last": 196.99
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 126.85,
+            "peak": 135.3,
+            "last": 119.42
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 201.16,
+        "mainSnapshot": {
+          "availableCount": 32,
+          "unavailableReasons": {
+            "timeout": 1
+          },
+          "maxDispatchDelayMs": 131,
+          "over50ms": 1,
+          "over100ms": 1,
+          "delaySampleCount": 32
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 33,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 0,
+          "droppedReports": 0,
+          "over50ms": 0,
+          "over100ms": 0,
+          "meanTotalMs": null,
+          "meanDrawMs": null,
+          "maxTotalMsRunToEnd": 258.52972
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 288,
+            "observedSeconds": 18.52,
+            "outputsPerSecond": 15.55
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 277,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 224.29
+        },
+        "javaHeapTupleCounts": {
+          "valid": 20,
+          "invalid": 13
+        }
+      },
+      {
+        "name": "activeFourLoops",
+        "startMs": 30113,
+        "endMs": 213028,
+        "durationSeconds": 182.91,
+        "sampleCount": 217,
+        "memory": {
+          "pssMiB": {
+            "first": 509.91,
+            "peak": 572.29,
+            "last": 471.91
+          },
+          "javaHeapPssMiB": {
+            "first": 260.48,
+            "peak": 337.7,
+            "last": 251.96
+          },
+          "nativeHeapPssMiB": {
+            "first": 150.65,
+            "peak": 172.51,
+            "last": 124.39
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 149.82,
+            "peak": 341.38,
+            "last": 250.99
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 136.69,
+            "peak": 158.06,
+            "last": 102.33
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 187.07,
+        "mainSnapshot": {
+          "availableCount": 182,
+          "unavailableReasons": {
+            "timeout": 35
+          },
+          "maxDispatchDelayMs": 399,
+          "over50ms": 161,
+          "over100ms": 151,
+          "delaySampleCount": 182
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 217,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 611,
+          "droppedReports": 0,
+          "over50ms": 602,
+          "over100ms": 572,
+          "meanTotalMs": 306.64,
+          "meanDrawMs": 0.49,
+          "maxTotalMsRunToEnd": 559.47009
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 940,
+            "observedSeconds": 181.77,
+            "outputsPerSecond": 5.17
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 562,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 240.96
+        },
+        "javaHeapTupleCounts": {
+          "valid": 149,
+          "invalid": 68
+        }
+      },
+      {
+        "name": "idleRecovery",
+        "startMs": 213028,
+        "endMs": 223089,
+        "durationSeconds": 10.06,
+        "sampleCount": 17,
+        "memory": {
+          "pssMiB": {
+            "first": 458.69,
+            "peak": 541.96,
+            "last": 463.42
+          },
+          "javaHeapPssMiB": {
+            "first": 224.08,
+            "peak": 309.07,
+            "last": 245.77
+          },
+          "nativeHeapPssMiB": {
+            "first": 139.04,
+            "peak": 140.92,
+            "last": 122.03
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 223.39,
+            "peak": 307.9,
+            "last": 244.62
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 105.95,
+            "peak": 116.18,
+            "last": 93.62
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 197.75,
+        "mainSnapshot": {
+          "availableCount": 17,
+          "unavailableReasons": {},
+          "maxDispatchDelayMs": 25,
+          "over50ms": 0,
+          "over100ms": 0,
+          "delaySampleCount": 17
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 17,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 0,
+          "droppedReports": 0,
+          "over50ms": 0,
+          "over100ms": 0,
+          "meanTotalMs": null,
+          "meanDrawMs": null,
+          "maxTotalMsRunToEnd": 559.47009
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 155,
+            "observedSeconds": 9.65,
+            "outputsPerSecond": 16.07
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 161,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 239.92
+        },
+        "javaHeapTupleCounts": {
+          "valid": 14,
+          "invalid": 3
+        },
+        "javaHeapCloseRecovery": {
+          "validSampleCount": 14,
+          "firstValidUsedMiB": 223.39,
+          "lastValidUsedMiB": 244.62,
+          "postCloseOrIdleWindowSeconds": 10.06
+        }
+      }
+    ],
+    "windowFrameMetricsOverall": {
+      "available": true,
+      "frameReportsAtEnd": 612,
+      "droppedReportsAtEnd": 0,
+      "over50msAtEnd": 603,
+      "over100msAtEnd": 573,
+      "maxTotalMsAtEnd": 559.47009,
+      "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU FPS"
+    },
+    "limitations": {
+      "diskCacheCleared": false,
+      "warmupFinite": true,
+      "physicalPhoneTest": false,
+      "logcatCrashAttributionIncluded": true,
+      "processCpuPercentBasis": "CPU milliseconds delta divided by wall milliseconds; percent of one core and can exceed 100",
+      "nativeFrameOutputMeaning": "actual frame counter increments per active map divided by observed seconds; output rate, not GPU FPS",
+      "renderResourceCache": "same-identity windows are deduplicated; never sum dual per-window rows",
+      "sampleScope": "Process-local instrumentation samples plus reflected target map-host counters; no logcat/process-exit attribution included",
+      "logcatAttributionScope": "Captured logcat entries filtered to this run sample window and resolved target app PID; missing/incomplete logs are not treated as zero-event evidence.",
+      "dedicatedTestRecording": false,
+      "persistentPreviewCapture": true,
+      "persistentPreviewCaptureEvidence": "inferred_for_historical_run_from_same_always_on_preview_server; not recorded per run"
+    },
+    "recoveryAfterIdle": {
+      "durationSeconds": 10.06,
+      "pssMiBDropFromPhaseStart": -4.73,
+      "javaHeapUsedMiBDropFromPhaseStart": -21.23,
+      "nativeHeapAllocatedMiBDropFromPhaseStart": 12.33
+    },
+    "javaHeapValidation": {
+      "tupleRule": "valid only when 0 <= javaUsedBytes <= javaCommittedBytes <= javaMaxBytes in the same recorded sample",
+      "sampledJavaHeapMaxMiB": 512.0,
+      "validSampleCount": 190,
+      "invalidSampleCount": 88,
+      "invalidReasons": {
+        "negativeUsed": 0,
+        "negativeCommitted": 0,
+        "invalidMaximum": 0,
+        "usedGreaterThanCommitted": 88,
+        "committedGreaterThanMaximum": 0,
+        "usedGreaterThanMaximum": 0
+      },
+      "peakValidJavaHeapUsedMiB": 341.38,
+      "maximumInconsistentNonAtomicObservedJavaHeapUsedMiB": 336.43,
+      "inconsistentSampleInterpretation": "Separate Runtime totalMemory/freeMemory reads can produce internally inconsistent tuples; the raw maximum is retained only as an inconsistent observation and is not evidence of actual heap-limit exceedance or OOM."
+    },
+    "logcatCrashAttribution": {
+      "available": true,
+      "coverageComplete": true,
+      "targetProcessResolved": true,
+      "sampleWindowOnly": true,
+      "targetProcessLineCount": 489,
+      "eventCounts": {
+        "fatalJava": 0,
+        "outOfMemory": 0,
+        "anr": 0,
+        "nativeCrashOrExit": 0
+      },
+      "interpretation": "Counts include matching entries in the captured sample window attributed to the resolved app process or explicit target-PID system events. Zero means no matching events in these logs, not proof of absence outside captured logs."
+    }
+  },
+  "dual": {
+    "kind": "dual",
+    "freshProcess": true,
+    "capturePeriodMs": 500,
+    "sampleCount": 266,
+    "startAndEnd": {
+      "firstSampleElapsedMs": 274,
+      "lastSampleElapsedMs": 238696,
+      "firstSampleMemory": {
+        "pssMiB": 193.19,
+        "javaHeapUsedMiB": 72.25,
+        "nativeHeapAllocatedMiB": 19.63
+      },
+      "runPeak": {
+        "pssMiB": {
+          "first": 193.19,
+          "peak": 905.13,
+          "last": 600.28
+        },
+        "javaHeapPssMiB": {
+          "first": 77.81,
+          "peak": 512.28,
+          "last": 355.36
+        },
+        "nativeHeapPssMiB": {
+          "first": 23.95,
+          "peak": 371.14,
+          "last": 145.91
+        },
+        "javaHeapUsedMiB": {
+          "first": 72.25,
+          "peak": 444.3,
+          "last": 352.51
+        },
+        "nativeHeapAllocatedMiB": {
+          "first": 19.63,
+          "peak": 301.07,
+          "last": 50.72
+        }
+      },
+      "normalStopRequested": true,
+      "javaHeapMaxMiB": 512.0
+    },
+    "cameraAtInitial": {
+      "zoom": 12.0,
+      "pitch": 55.0,
+      "bearing": 25.0
+    },
+    "cameraAtReady": {
+      "zoom": 12.0,
+      "pitch": 55.0,
+      "bearing": 25.0
+    },
+    "cameraAtEnd": {
+      "zoom": 11.928,
+      "pitch": 55.302,
+      "bearing": 25.303
+    },
+    "loopCapture": {
+      "recordedLoopCount": 4,
+      "loopAngles": [
+        {
+          "before": {
+            "zoom": 12.0,
+            "pitch": 55.0,
+            "bearing": 25.0
+          },
+          "during": {
+            "zoom": 11.995,
+            "pitch": 61.575,
+            "bearing": 31.623
+          },
+          "after": {
+            "zoom": 11.972,
+            "pitch": 54.681,
+            "bearing": 24.678
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.972,
+            "pitch": 54.681,
+            "bearing": 24.678
+          },
+          "during": {
+            "zoom": 11.971,
+            "pitch": 61.256,
+            "bearing": 31.301
+          },
+          "after": {
+            "zoom": 11.952,
+            "pitch": 54.682,
+            "bearing": 24.678
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.952,
+            "pitch": 54.682,
+            "bearing": 24.678
+          },
+          "during": {
+            "zoom": 11.947,
+            "pitch": 61.733,
+            "bearing": 31.782
+          },
+          "after": {
+            "zoom": 11.94,
+            "pitch": 54.839,
+            "bearing": 24.837
+          }
+        },
+        {
+          "before": {
+            "zoom": 11.94,
+            "pitch": 54.839,
+            "bearing": 24.837
+          },
+          "during": {
+            "zoom": 11.931,
+            "pitch": 61.891,
+            "bearing": 31.94
+          },
+          "after": {
+            "zoom": 11.928,
+            "pitch": 55.302,
+            "bearing": 25.303
+          }
+        }
+      ],
+      "ranges": {
+        "during": {
+          "zoom": {
+            "min": 11.931,
+            "max": 11.995
+          },
+          "pitch": {
+            "min": 61.256,
+            "max": 61.891
+          },
+          "bearing": {
+            "min": 31.301,
+            "max": 31.94
+          }
+        },
+        "after": {
+          "zoom": {
+            "min": 11.928,
+            "max": 11.972
+          },
+          "pitch": {
+            "min": 54.681,
+            "max": 55.302
+          },
+          "bearing": {
+            "min": 24.678,
+            "max": 25.303
+          }
+        }
+      }
+    },
+    "mapAndCache": {
+      "mapCountAtReady": 2,
+      "distinctRenderCachesAtReady": 1,
+      "terrainEnabledAllMaps": true,
+      "contoursEnabledAllMaps": true,
+      "actualFramesAtInitial": [
+        3
+      ],
+      "actualFramesAtReady": [
+        453,
+        358
+      ],
+      "frameAgeMsAtReady": [
+        190,
+        182
+      ],
+      "rrcUsedBytesAtInitial": 5033984,
+      "rrcUsedBytesAtReady": 254582784,
+      "rrcCapacityBytes": 258203648
+    },
+    "contourAtEnd": {
+      "completedBatchesCumulativeAtEnd": 1236,
+      "budgetRejectionsCumulativeAtEnd": 112,
+      "refinedTilesCumulativeAtEnd": 88,
+      "maxLevelRejectionsCumulativeAtEnd": 24,
+      "visibleRenderCutCountAtEnd": 19,
+      "liveContentCountAtEnd": 19,
+      "inFlightAtEnd": 73,
+      "residentByteWeightAtEnd": 105496552,
+      "residentBudgetBytes": 134217728
+    },
+    "phases": [
+      {
+        "name": "startupAndDualWarmup",
+        "startMs": 37,
+        "endMs": 17501,
+        "durationSeconds": 17.46,
+        "sampleCount": 19,
+        "memory": {
+          "pssMiB": {
+            "first": 193.19,
+            "peak": 706.36,
+            "last": 670.06
+          },
+          "javaHeapPssMiB": {
+            "first": 77.81,
+            "peak": 476.42,
+            "last": 402.97
+          },
+          "nativeHeapPssMiB": {
+            "first": 23.95,
+            "peak": 164.63,
+            "last": 164.63
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 72.25,
+            "peak": 346.8,
+            "last": 282.33
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 19.63,
+            "peak": 153.94,
+            "last": 153.94
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 219.71,
+        "mainSnapshot": {
+          "availableCount": 16,
+          "unavailableReasons": {
+            "timeout": 3
+          },
+          "maxDispatchDelayMs": 378,
+          "over50ms": 12,
+          "over100ms": 10,
+          "delaySampleCount": 16
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 19,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time"
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 113,
+            "observedSeconds": 16.11,
+            "outputsPerSecond": 7.01
+          },
+          {
+            "windowOrdinal": 2,
+            "frameCountDelta": 8,
+            "observedSeconds": 3.77,
+            "outputsPerSecond": 2.12
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 668,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 221.45
+        },
+        "javaHeapTupleCounts": {
+          "valid": 7,
+          "invalid": 12
+        }
+      },
+      {
+        "name": "readyToActive",
+        "startMs": 17501,
+        "endMs": 37544,
+        "durationSeconds": 20.04,
+        "sampleCount": 27,
+        "memory": {
+          "pssMiB": {
+            "first": 696.82,
+            "peak": 807.48,
+            "last": 617.74
+          },
+          "javaHeapPssMiB": {
+            "first": 425.62,
+            "peak": 509.46,
+            "last": 290.26
+          },
+          "nativeHeapPssMiB": {
+            "first": 168.42,
+            "peak": 251.21,
+            "last": 229.51
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 424.33,
+            "peak": 434.88,
+            "last": 288.69
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 134.73,
+            "peak": 222.28,
+            "last": 220.49
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 161.47,
+        "mainSnapshot": {
+          "availableCount": 27,
+          "unavailableReasons": {},
+          "maxDispatchDelayMs": 325,
+          "over50ms": 3,
+          "over100ms": 2,
+          "delaySampleCount": 27
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 27,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 5,
+          "droppedReports": 0,
+          "over50ms": 4,
+          "over100ms": 4,
+          "meanTotalMs": 280.8,
+          "meanDrawMs": 0.81,
+          "maxTotalMsRunToEnd": 722.665067
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 319,
+            "observedSeconds": 19.63,
+            "outputsPerSecond": 16.25
+          },
+          {
+            "windowOrdinal": 2,
+            "frameCountDelta": 330,
+            "observedSeconds": 19.63,
+            "outputsPerSecond": 16.81
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 317,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 243.04
+        },
+        "javaHeapTupleCounts": {
+          "valid": 18,
+          "invalid": 9
+        }
+      },
+      {
+        "name": "activeFourLoops",
+        "startMs": 37544,
+        "endMs": 207821,
+        "durationSeconds": 170.28,
+        "sampleCount": 179,
+        "memory": {
+          "pssMiB": {
+            "first": 631.81,
+            "peak": 905.13,
+            "last": 704.62
+          },
+          "javaHeapPssMiB": {
+            "first": 313.29,
+            "peak": 512.2,
+            "last": 388.32
+          },
+          "nativeHeapPssMiB": {
+            "first": 218.73,
+            "peak": 371.14,
+            "last": 219.98
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 310.53,
+            "peak": 444.3,
+            "last": 394.88
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 203.98,
+            "peak": 301.07,
+            "last": 133.89
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 192.82,
+        "mainSnapshot": {
+          "availableCount": 146,
+          "unavailableReasons": {
+            "timeout": 33
+          },
+          "maxDispatchDelayMs": 398,
+          "over50ms": 135,
+          "over100ms": 125,
+          "delaySampleCount": 146
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 179,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 606,
+          "droppedReports": 0,
+          "over50ms": 508,
+          "over100ms": 474,
+          "meanTotalMs": 247.99,
+          "meanDrawMs": 0.51,
+          "maxTotalMsRunToEnd": 722.665067
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 927,
+            "observedSeconds": 169.19,
+            "outputsPerSecond": 5.48
+          },
+          {
+            "windowOrdinal": 2,
+            "frameCountDelta": 923,
+            "observedSeconds": 169.19,
+            "outputsPerSecond": 5.46
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 1252,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 246.23
+        },
+        "javaHeapTupleCounts": {
+          "valid": 73,
+          "invalid": 106
+        }
+      },
+      {
+        "name": "idleBeforeClose",
+        "startMs": 207821,
+        "endMs": 218042,
+        "durationSeconds": 10.22,
+        "sampleCount": 9,
+        "memory": {
+          "pssMiB": {
+            "first": 725.97,
+            "peak": 828.03,
+            "last": 728.78
+          },
+          "javaHeapPssMiB": {
+            "first": 425.87,
+            "peak": 512.28,
+            "last": 426.74
+          },
+          "nativeHeapPssMiB": {
+            "first": 203.24,
+            "peak": 217.88,
+            "last": 205.82
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 423.44,
+            "peak": 423.44,
+            "last": 416.83
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 131.21,
+            "peak": 142.15,
+            "last": 110.8
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 152.08,
+        "mainSnapshot": {
+          "availableCount": 9,
+          "unavailableReasons": {},
+          "maxDispatchDelayMs": 214,
+          "over50ms": 5,
+          "over100ms": 5,
+          "delaySampleCount": 9
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 9,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 0,
+          "droppedReports": 0,
+          "over50ms": 0,
+          "over100ms": 0,
+          "meanTotalMs": null,
+          "meanDrawMs": null,
+          "maxTotalMsRunToEnd": 722.665067
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 139,
+            "observedSeconds": 8.36,
+            "outputsPerSecond": 16.62
+          },
+          {
+            "windowOrdinal": 2,
+            "frameCountDelta": 138,
+            "observedSeconds": 8.36,
+            "outputsPerSecond": 16.51
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 207,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 233.36
+        },
+        "javaHeapTupleCounts": {
+          "valid": 4,
+          "invalid": 5
+        }
+      },
+      {
+        "name": "afterDualClose",
+        "startMs": 218042,
+        "endMs": 238902,
+        "durationSeconds": 20.86,
+        "sampleCount": 32,
+        "memory": {
+          "pssMiB": {
+            "first": 688.19,
+            "peak": 704.11,
+            "last": 600.28
+          },
+          "javaHeapPssMiB": {
+            "first": 390.02,
+            "peak": 426.81,
+            "last": 355.36
+          },
+          "nativeHeapPssMiB": {
+            "first": 200.47,
+            "peak": 227.02,
+            "last": 145.91
+          },
+          "graphicsPssMiB": {
+            "first": 0.0,
+            "peak": 0.0,
+            "last": 0.0
+          },
+          "javaHeapUsedMiB": {
+            "first": 371.54,
+            "peak": 432.69,
+            "last": 352.51
+          },
+          "nativeHeapAllocatedMiB": {
+            "first": 108.23,
+            "peak": 108.23,
+            "last": 50.72
+          }
+        },
+        "processCpuPercentOfOneCoreWeighted": 185.01,
+        "mainSnapshot": {
+          "availableCount": 31,
+          "unavailableReasons": {
+            "timeout": 1
+          },
+          "maxDispatchDelayMs": 182,
+          "over50ms": 1,
+          "over100ms": 1,
+          "delaySampleCount": 31
+        },
+        "windowFrameMetrics": {
+          "availableSamples": 32,
+          "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU time",
+          "reportedFrames": 3,
+          "droppedReports": 0,
+          "over50ms": 3,
+          "over100ms": 2,
+          "meanTotalMs": 369.27,
+          "meanDrawMs": 1.03,
+          "maxTotalMsRunToEnd": 722.665067
+        },
+        "nativeFrameOutputCounters": [
+          {
+            "windowOrdinal": 1,
+            "frameCountDelta": 399,
+            "observedSeconds": 20.43,
+            "outputsPerSecond": 19.53
+          }
+        ],
+        "maximumObservedLastFrameAgeMs": 195,
+        "sharedRenderResourceCache": {
+          "uniqueCacheCountMax": 1,
+          "identityDeduplicated": true,
+          "logicalCapacityMiB": 246.24,
+          "logicalUsedMiBPeak": 241.88
+        },
+        "javaHeapTupleCounts": {
+          "valid": 23,
+          "invalid": 9
+        },
+        "javaHeapCloseRecovery": {
+          "validSampleCount": 23,
+          "firstValidUsedMiB": 371.54,
+          "lastValidUsedMiB": 352.51,
+          "postCloseOrIdleWindowSeconds": 20.86
+        }
+      }
+    ],
+    "windowFrameMetricsOverall": {
+      "available": true,
+      "frameReportsAtEnd": 626,
+      "droppedReportsAtEnd": 0,
+      "over50msAtEnd": 524,
+      "over100msAtEnd": 487,
+      "maxTotalMsAtEnd": 722.665067,
+      "scope": "Android Window FrameMetrics/HWUI; not WorldWind GLSurfaceView/GPU FPS"
+    },
+    "limitations": {
+      "diskCacheCleared": false,
+      "warmupFinite": true,
+      "physicalPhoneTest": false,
+      "logcatCrashAttributionIncluded": true,
+      "processCpuPercentBasis": "CPU milliseconds delta divided by wall milliseconds; percent of one core and can exceed 100",
+      "nativeFrameOutputMeaning": "actual frame counter increments per active map divided by observed seconds; output rate, not GPU FPS",
+      "renderResourceCache": "same-identity windows are deduplicated; never sum dual per-window rows",
+      "sampleScope": "Process-local instrumentation samples plus reflected target map-host counters; no logcat/process-exit attribution included",
+      "logcatAttributionScope": "Captured logcat entries filtered to this run sample window and resolved target app PID; missing/incomplete logs are not treated as zero-event evidence.",
+      "dedicatedTestRecording": false,
+      "persistentPreviewCapture": true,
+      "persistentPreviewCaptureEvidence": "inferred_for_historical_run_from_same_always_on_preview_server; not recorded per run"
+    },
+    "recoveryAfterDualClose": {
+      "durationSeconds": 20.86,
+      "pssMiBDropFromPhaseStart": 87.91,
+      "javaHeapUsedMiBDropFromPhaseStart": 19.03,
+      "nativeHeapAllocatedMiBDropFromPhaseStart": 57.51
+    },
+    "javaHeapValidation": {
+      "tupleRule": "valid only when 0 <= javaUsedBytes <= javaCommittedBytes <= javaMaxBytes in the same recorded sample",
+      "sampledJavaHeapMaxMiB": 512.0,
+      "validSampleCount": 125,
+      "invalidSampleCount": 141,
+      "invalidReasons": {
+        "negativeUsed": 0,
+        "negativeCommitted": 0,
+        "invalidMaximum": 0,
+        "usedGreaterThanCommitted": 141,
+        "committedGreaterThanMaximum": 0,
+        "usedGreaterThanMaximum": 5
+      },
+      "peakValidJavaHeapUsedMiB": 444.3,
+      "maximumInconsistentNonAtomicObservedJavaHeapUsedMiB": 513.02,
+      "inconsistentSampleInterpretation": "Separate Runtime totalMemory/freeMemory reads can produce internally inconsistent tuples; the raw maximum is retained only as an inconsistent observation and is not evidence of actual heap-limit exceedance or OOM."
+    },
+    "logcatCrashAttribution": {
+      "available": true,
+      "coverageComplete": true,
+      "targetProcessResolved": true,
+      "sampleWindowOnly": true,
+      "targetProcessLineCount": 3899,
+      "eventCounts": {
+        "fatalJava": 0,
+        "outOfMemory": 0,
+        "anr": 0,
+        "nativeCrashOrExit": 0
+      },
+      "interpretation": "Counts include matching entries in the captured sample window attributed to the resolved app process or explicit target-PID system events. Zero means no matching events in these logs, not proof of absence outside captured logs."
+    }
+  },
+  "comparison": {
+    "peakPssDeltaMiB": 332.85,
+    "peakJavaHeapUsedDeltaMiB": 102.92,
+    "peakNativeHeapAllocatedDeltaMiB": 143.02,
+    "caveat": "fresh processes and same intended setup; finite warmup and residual camera-angle drift mean this is a controlled paired baseline, not phone acceptance or unique-crash attribution",
+    "peakJavaHeapUsedDefinition": "Difference between each run maximum valid same-sample Runtime tuple (0 <= used <= committed <= max); inconsistent tuples excluded."
+  },
+  "javaHeapSamplingConsistency": {
+    "runtimeGcCounterBracketRecorded": false,
+    "committedBeforeFreeCommittedAfterBoundsChecked": true,
+    "atomicVmHeapSnapshot": false,
+    "interpretation": "Historical valid/bounded Java heap tuples required stable committed size and used bounds, but did not bracket the read with ART GC count. A GC between freeMemory and the second totalMemory could not be identified; these readings are observational bounds, not atomic or proven GC-free tuples."
+  },
+  "limitations": [
+    "Historical Java heap tuples did not record ART GC count before/after; committed/free/committed checks do not prove that no GC overlapped the read or form an atomic VM snapshot."
+  ]
+}

@@ -237,6 +237,17 @@ class NativeMapController internal constructor(
     @Volatile private var tileDemandDirty = true
     private val tileViewId = "map-${java.util.UUID.randomUUID()}"
     private val tileDemandPostPending = AtomicBoolean(false)
+    private var tileDemandReplans = 0L
+    private var tileDemandNanos = 0L
+    private var tileDemandMaxNanos = 0L
+    private var tileDemandBatchReplans = 0L
+    private var tileDemandRankCalculations = 0L
+    private var tileDemandGeometryReuses = 0L
+    internal fun tileDemandPerformanceSnapshot(): Map<String, Long> = mapOf(
+        "replans" to tileDemandReplans, "totalNanos" to tileDemandNanos, "maxNanos" to tileDemandMaxNanos,
+        "batchReplans" to tileDemandBatchReplans, "rankCalculations" to tileDemandRankCalculations,
+        "geometryReuses" to tileDemandGeometryReuses)
+
     private val namespaceHashes = object : LinkedHashMap<String, String>(64, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean = size > MAX_NAMESPACE_HASHES
     }
@@ -403,9 +414,10 @@ class NativeMapController internal constructor(
                 if (frameListener != null && copy != null) runCatching { frameListener.invoke(copy, dc.viewport.width, dc.viewport.height) }
                 runCatching { bridgeFrameActivityListener?.invoke() }
                 val demandMatrix = mvp.copyOf()
+                val demandWidth = dc.viewport.width; val demandHeight = dc.viewport.height
                 if (tileDemandPostPending.compareAndSet(false, true)) mainHandler.post {
                     tileDemandPostPending.set(false)
-                    refreshTileDemand(projectionMatrix = demandMatrix)
+                    refreshTileDemand(projectionMatrix = demandMatrix, projectionWidth = demandWidth, projectionHeight = demandHeight)
                 }
                 val now=android.os.SystemClock.elapsedRealtime()
                 if(now-lastFrameStatusAt<750)return
@@ -1297,23 +1309,34 @@ class NativeMapController internal constructor(
         return identity?.let(::tileProjectedRank)
     }
 
-    internal fun tileProjectedRank(identity: TileRequestIdentity): Double? {
+    internal fun tileProjectedRank(identity: TileRequestIdentity): Double? = tileProjectedRank(identity, null)
+
+    private fun tileProjectionPoint(latitude: Double, longitude: Double, batch: NativeTileProjectionBatch?): TileScreenPoint? =
+        if (batch != null) batch.project(latitude, longitude)
+        else projectCoordinate(latitude, longitude)?.let { TileScreenPoint(it.first, it.second) }
+
+    private fun tileProjectedRank(identity: TileRequestIdentity, batch: NativeTileProjectionBatch?): Double? {
         val geographicCorners = synchronized(tileFootprints) { tileFootprints[identity] } ?: return null
         val corners = geographicCorners.mapNotNull { (lon, lat) ->
-            projectCoordinate(lat, lon)?.let { TileScreenPoint(it.first, it.second) }
+            tileProjectionPoint(lat, lon, batch)
         }
         val cornerHull = TileProjectedPriority.convexHull(corners)
         val polygon = if (corners.size == 4 && cornerHull.size >= 3) cornerHull else {
             val geographicGrid = TileProjectedPriority.mercatorGrid(identity.z, identity.x, identity.y, segmentsPerSide = 3) ?: return null
             TileProjectedPriority.convexHull(geographicGrid.mapNotNull { (lon, lat) ->
-                projectCoordinate(lat, lon)?.let { TileScreenPoint(it.first, it.second) }
+                tileProjectionPoint(lat, lon, batch)
             })
         }
         if (!TileProjectedPriority.intersectsViewport(polygon, view.width.toDouble(), view.height.toDouble())) return null
         return TileProjectedPriority.distanceToQuad(tileDemandFocusPx(), polygon).takeIf(Double::isFinite)
     }
 
-    private fun refreshTileDemand(forceGeneration: Boolean = false, projectionMatrix: DoubleArray? = null) {
+    private fun refreshTileDemand(
+        forceGeneration: Boolean = false,
+        projectionMatrix: DoubleArray? = null,
+        projectionWidth: Int = 0,
+        projectionHeight: Int = 0,
+    ) {
         if (Looper.myLooper() != Looper.getMainLooper() || disposed) return
         val camera = cameraSnapshot()
         val focus = tileDemandFocusPx()
@@ -1322,26 +1345,56 @@ class NativeMapController internal constructor(
             .map { java.lang.Double.doubleToLongBits(it) } + (projectionMatrix ?: doubleArrayOf()).map { java.lang.Double.doubleToLongBits(it) }
         val cameraChanged = signature != lastTileDemandSignature
         if (!forceGeneration && !cameraChanged && !tileDemandDirty) return
-        if (forceGeneration || cameraChanged) tileDemandGeneration++
-        lastTileDemandSignature = signature
-        tileDemandDirty = false
-        val visible = view.visibility == View.VISIBLE && view.width > 0 && view.height > 0
-        val registeredIdentities = synchronized(tileFootprints) { tileFootprints.keys.toList() }
-        val activeIdentities = ArrayList<TileRequestIdentity>(registeredIdentities.size)
-        val inactiveIdentities = LinkedHashSet<TileRequestIdentity>()
-        if (visible) {
-            val visibilityState = snapshotTileLayerVisibilityState()
-            registeredIdentities.forEach { identity ->
-                if (NativeTileLayerVisibility.isActive(identity, visibilityState)) activeIdentities += identity
-                else inactiveIdentities += identity
+        val startedAt = android.os.SystemClock.elapsedRealtimeNanos()
+        tileDemandReplans++
+        try {
+            if (forceGeneration || cameraChanged) tileDemandGeneration++
+            lastTileDemandSignature = signature
+            tileDemandDirty = false
+            val visible = view.visibility == View.VISIBLE && view.width > 0 && view.height > 0
+            val viewport = worldWindow.engine.viewport
+            // The draw-frame matrix already contains the expensive camera/terrain transform.
+            // Reuse it for all rank points instead of recomputing that transform per corner.
+            // A resized viewport waits for a matching frame; explicit pre-frame updates retain
+            // the existing SDK projection path.
+            val batch = if (visible && projectionMatrix?.size == 16 && projectionMatrix.all(Double::isFinite) &&
+                projectionWidth == view.width && projectionHeight == view.height &&
+                viewport.width == projectionWidth && viewport.height == projectionHeight) {
+                NativeTileProjectionBatch(projectionMatrix, viewport, worldWindow.engine.globe)
+            } else null
+            if (batch != null) tileDemandBatchReplans++
+            val registeredIdentities = synchronized(tileFootprints) { tileFootprints.keys.toList() }
+            val activeIdentities = ArrayList<TileRequestIdentity>(registeredIdentities.size)
+            val inactiveIdentities = LinkedHashSet<TileRequestIdentity>()
+            if (visible) {
+                val visibilityState = snapshotTileLayerVisibilityState()
+                registeredIdentities.forEach { identity ->
+                    if (NativeTileLayerVisibility.isActive(identity, visibilityState)) activeIdentities += identity
+                    else inactiveIdentities += identity
+                }
+            } else inactiveIdentities.addAll(registeredIdentities)
+            // Basemap, labels and DEM can share the exact same mercator footprint. Their
+            // credentials/layer identities stay distinct for requests, but rank geometry need
+            // only be projected once per XYZ in this immutable frame.
+            val rankByGeometry = HashMap<Triple<Int, Int, Int>, Double?>()
+            val ranks = LinkedHashMap<TileRequestIdentity, Double>()
+            activeIdentities.forEach { identity ->
+                val key = Triple(identity.z, identity.x, identity.y)
+                val rank = if (rankByGeometry.containsKey(key)) {
+                    tileDemandGeometryReuses++
+                    rankByGeometry[key]
+                } else {
+                    tileDemandRankCalculations++
+                    tileProjectedRank(identity, batch).also { rankByGeometry[key] = it }
+                }
+                if (rank != null) ranks[identity] = rank
             }
-        } else {
-            inactiveIdentities.addAll(registeredIdentities)
+            network.updateViewDemand(TileViewDemand(tileViewId, tileDemandGeneration, visible, ranks, inactiveIdentities))
+        } finally {
+            val elapsed = android.os.SystemClock.elapsedRealtimeNanos() - startedAt
+            tileDemandNanos += elapsed
+            tileDemandMaxNanos = maxOf(tileDemandMaxNanos, elapsed)
         }
-        val ranks = if (!visible) emptyMap() else activeIdentities.asSequence().mapNotNull { identity ->
-                tileProjectedRank(identity)?.let { identity to it }
-            }.toMap()
-        network.updateViewDemand(TileViewDemand(tileViewId, tileDemandGeneration, visible, ranks, inactiveIdentities))
     }
 
     private fun snapshotTileLayerVisibilityState(): NativeTileLayerVisibilityState {

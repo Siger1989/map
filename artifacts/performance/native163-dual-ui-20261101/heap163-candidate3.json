@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "evidence": "offline HPROF array histogram and bounded reference walk",
+  "scenario": "dual map with terrain and contours enabled, after a pinch round trip",
+  "heapState": "heap dump reflects live objects after dump-triggered garbage collection; Java heap used immediately before and after capture was 270695056 bytes",
+  "arrayDataBytes": {
+    "float": { "count": 7321, "bytes": 160163728, "approxMiB": 152.7 },
+    "int": { "count": 3412, "bytes": 30180572, "approxMiB": 28.8 },
+    "byte": { "count": 34429, "bytes": 28549466, "approxMiB": 27.2 },
+    "double": { "count": 189120, "bytes": 17666376, "approxMiB": 16.9 },
+    "short": { "count": 48, "bytes": 5663288, "approxMiB": 5.4 },
+    "objectReferenceArrays": { "count": 7067, "bytes": 2118036, "approxMiB": 2.0 }
+  },
+  "largeLineGeometry": {
+    "thresholdBytes": 65536,
+    "floatArrayCount": 43,
+    "referencedArrayDataBytes": 156808960,
+    "approxMiB": 149.5,
+    "shareOfAllFloatArrayData": 0.9791,
+    "arraysWithContourContentCacheReferenceChain": 42,
+    "chainReferencedArrayDataBytes": 156741680,
+    "chainApproxMiB": 149.4,
+    "referenceChain": [
+      "LruMemoryCache.Entry.value",
+      "NativeContourTileContent.batch",
+      "MvtBatchedLineTile.tileData",
+      "MvtBatchedLineTile.TileData vertex buffer"
+    ]
+  },
+  "r8Interpretation": "The build mapping shows MvtBatchedLineTile.TileData is represented by the runtime class androidx.profileinstaller.DeviceProfileWriter after horizontal class merging; the HPROF field label mDiagnostics is therefore a merged runtime slot and must not be interpreted as profile-installer payload.",
+  "limitations": [
+    "Array byte totals are element count multiplied by element width; they exclude array headers, alignment, and other object overhead.",
+    "Reference paths are bounded and do not constitute a complete dominator or retained-size analysis.",
+    "This post-GC heap snapshot does not measure the transient heap peak or establish the cause of phone-side performance symptoms."
+  ]
+}

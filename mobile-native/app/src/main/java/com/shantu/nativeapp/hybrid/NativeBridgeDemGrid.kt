@@ -6,11 +6,33 @@ import kotlin.math.sinh
 import kotlin.math.tan
 import kotlin.math.PI
 import kotlin.math.sqrt
+import kotlin.math.roundToInt
+import java.util.Base64
 
 /** Reprojects a real Web-Mercator DEM raster into the lon/lat regular grid consumed by React. */
 internal object NativeBridgeDemGrid {
     data class Grid(val west: Double, val south: Double, val east: Double, val north: Double,
         val width: Int, val height: Int, val heights: List<Double?>)
+
+    /** Encodes offsets sampled at the same north-to-south grid nodes as [heights]. */
+    fun encodeGeoidOffsetsCm(grid: Grid, offsetAt: (latitude: Double, longitude: Double) -> Double): String? {
+        val bytes = ByteArray(grid.width * grid.height * 2)
+        var byteIndex = 0
+        for (row in 0 until grid.height) {
+            val latitude = grid.north + (grid.south - grid.north) * row / (grid.height - 1)
+            for (column in 0 until grid.width) {
+                val longitude = grid.west + (grid.east - grid.west) * column / (grid.width - 1)
+                val meters = offsetAt(latitude, longitude)
+                if (!meters.isFinite() || meters !in -120.0..120.0) return null
+                val centimeters = (meters * 100.0).roundToInt()
+                // EGM96 offsets are within this physical range; reject corrupt/unexpected geoid data.
+                if (centimeters !in -12_000..12_000) return null
+                bytes[byteIndex++] = (centimeters and 0xff).toByte()
+                bytes[byteIndex++] = ((centimeters ushr 8) and 0xff).toByte()
+            }
+        }
+        return Base64.getEncoder().encodeToString(bytes)
+    }
 
     fun fromMercatorPixels(z: Int, x: Int, y: Int, pixels: DoubleArray, size: Int = 64): Grid? {
         val pixelSize = sqrt(pixels.size.toDouble()).toInt()
@@ -46,4 +68,13 @@ internal object NativeBridgeDemGrid {
         }
         return Grid(west, south, east, north, size, size, result)
     }
+}
+
+/** Readiness probe for the SDK's bundled standard EGM96 grid, not for arbitrary Geoid implementations. */
+internal object NativeBridgeEgm96Readiness {
+    private const val NORTH_POLE_OFFSET_METERS = 13.61f
+    private const val TOLERANCE_METERS = 0.01f
+
+    fun isLoadedByNorthPoleOffset(offsetMeters: Float): Boolean =
+        offsetMeters.isFinite() && kotlin.math.abs(offsetMeters - NORTH_POLE_OFFSET_METERS) <= TOLERANCE_METERS
 }

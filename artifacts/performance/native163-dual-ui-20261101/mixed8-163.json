@@ -1,0 +1,131 @@
+{
+  "analysisType": "standalone C8 mixed-source two-loop dual-map run with about 20 seconds after secondary close",
+  "candidate": {
+    "label": "C8",
+    "version": "0.2.163-test",
+    "versionCode": 170,
+    "sha256PrefixVerifiedByRoot": "1e2ddc7"
+  },
+  "conditions": {
+    "device": "dedicated MuMu3",
+    "mapCountDuringDual": 2,
+    "terrainEnabled": true,
+    "contourIntervalMeters": 30,
+    "actualContourGeneration": true,
+    "reportedLoops": 2,
+    "freshAppProcess": true,
+    "retainedDiskCache": true,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "captureEvidence": "same always-on preview service environment, no per-run encoder snapshot",
+    "physicalPhone": false,
+    "sourceControls": "root confirmed main Tianditu satellite and lower Open Road Terrain; explicit lowerOpenRoadLabel assertion passed"
+  },
+  "sampling": {
+    "elapsedSeconds": 114.152,
+    "sampleCount": 171,
+    "samplePeriodMs": 500,
+    "validJavaHeapTuples": 171,
+    "invalidJavaHeapTuples": 0,
+    "heapValidation": "matching committed counters, no ART GC-count change observed, bounds valid; Runtime values remain approximate/non-atomic",
+    "dualReadySeconds": 14.984,
+    "activeStartSeconds": 35.018,
+    "idleSeconds": 84.179,
+    "secondaryClosedSeconds": 94.214,
+    "postCloseSampledSeconds": 19.938
+  },
+  "memoryMiB": {
+    "pssFirstPeakLast": [
+      215.0,
+      788.3,
+      460.03
+    ],
+    "javaHeapFirstPeakLast": [
+      86.34,
+      459.79,
+      208.32
+    ],
+    "javaHeapMaximum": 512.0,
+    "nativeAllocatedFirstPeakLast": [
+      24.27,
+      173.66,
+      128.54
+    ],
+    "identityDeduplicatedRrcLogicalFirstPeakLast": [
+      27.35,
+      246.24,
+      215.55
+    ],
+    "rrc": {
+      "uniqueCacheIdentityCount": 1,
+      "logicalCapacityBytes": 258203648,
+      "peakLogicalUsedBytes": 258199810,
+      "notSummedAcrossPanes": true
+    }
+  },
+  "performance": {
+    "fullRun": {
+      "weightedProcessCpuPercentOfOneCore": 109.66,
+      "mainDispatchDelayMaxMs": 348,
+      "mainDispatchDelayAtLeast400ms": 0,
+      "unavailableMapSnapshots": 5
+    },
+    "activePhase": {
+      "durationSeconds": 49.161,
+      "weightedProcessCpuPercentOfOneCore": 152.56,
+      "mainDispatchDelayMaxMs": 348,
+      "unavailableMapSnapshots": 2
+    },
+    "postClose20s": {
+      "weightedProcessCpuPercentOfOneCore": 57.77,
+      "mainDispatchDelayMaxMs": 86,
+      "mainDispatchDelayAtLeast400ms": 0,
+      "mapFramesFirstLast": [
+        609,
+        699
+      ],
+      "contourBatchesFirstLast": [
+        123,
+        141
+      ],
+      "generationActivePending": [
+        0,
+        0
+      ],
+      "sdkInFlight": 0,
+      "assemblyActiveQueued": [
+        0,
+        0
+      ],
+      "sharedGeometryEntriesLeasesFinal": [
+        38,
+        38
+      ],
+      "residentRenderCutFinal": [
+        38,
+        38
+      ],
+      "contourCacheBytesFinal": 124666288,
+      "mapFrameAgeFinalMs": 12288
+    }
+  },
+  "targetProcessLogWindow": {
+    "targetPidLines": 214,
+    "gcRelatedLines": 117,
+    "blockedAllocationWaiterRowsIncludingOtherThreads": 20,
+    "mainThreadBlockedAllocationEvents": 5,
+    "maxMainBlockedAllocationMs": 88.638,
+    "sumMainBlockedAllocationMs": 261.406,
+    "fatalOomAnrSignalDeathKillMatches": 0,
+    "exitInfoForSampledPid": "not present in captured exit-info snapshot",
+    "instrumentationSummary": "generic Process crashed string was present, but no matching target-PID crash/death/exit evidence; unresolved instrumentation text, not classified as an app crash"
+  },
+  "limitations": [
+    "This is a separate two-loop mixed-source sample, not part of the four-loop A8/B8 pair and not combined with their values.",
+    "The post-close interval is only 19.94 seconds and is not fully settled: contour batches rose 123→141 and map frame count 609→699, despite queue and SDK in-flight counts being zero in the final snapshot.",
+    "MuMu only; no physical-phone acceptance or unique phone crash cause is established.",
+    "Java heap peak is a transient sample, not a post-GC retained-heap measure; unchanged GC count is not an atomic snapshot.",
+    "Persistent preview capture was part of the environment; no per-run encoder snapshot was captured.",
+    "HWUI metrics do not represent WorldWind GL/GPU time or FPS."
+  ]
+}

@@ -87,6 +87,7 @@ val prepareSharedCadJni by tasks.registering(Sync::class) {
 
 val prepareHybridContractTests by tasks.registering(Sync::class) {
     from(rootProject.file("app/src/test/java")) {
+        include("com/shantu/nativeapp/geology/NativeMvtDecoderTest.kt")
         include("com/shantu/nativeapp/map/NativeOfflineDisplayPolicyTest.kt")
         include("com/shantu/nativeapp/map/BoundedTileNetworkTest.kt")
         include("com/shantu/nativeapp/map/TileRequestQueuePolicyTest.kt")
@@ -119,6 +120,10 @@ val prepareHybridContractTests by tasks.registering(Sync::class) {
         include("com/shantu/nativeapp/map/NativeRenderedPickResultsTest.kt")
         include("com/shantu/nativeapp/map/NativeAreaStyleTest.kt")
         include("com/shantu/nativeapp/map/NativeRoadStyleTest.kt")
+        include("com/shantu/nativeapp/map/NativeTileProjectionBatchTest.kt")
+        include("com/shantu/nativeapp/map/NativeSharedRawTileStoreTest.kt")
+        include("com/shantu/nativeapp/map/NativeContourProcessBudgetTest.kt")
+        include("com/shantu/nativeapp/map/NativeContourGeometryStoreTest.kt")
         include("com/shantu/nativeapp/map/NativeModelTerrainTest.kt")
         include("com/shantu/nativeapp/map/NativePositionPolicyTest.kt")
     }

@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "standalone mixed-source native dual-map run summary",
+  "conditions": {
+    "candidateAppVersion": "0.2.163-test",
+    "role": "mixed-source-dual-two-loop",
+    "reportedLoops": 2,
+    "diskCacheCleared": false,
+    "physicalPhoneTest": false,
+    "visibleMixedSourceControls": {
+      "mainTiandituSatelliteVisible": true,
+      "secondaryOpenRoadTerrainVisible": true
+    },
+    "sourceIdentityConfirmedBy": "visible UI control labels; no source identifiers retained",
+    "closeReturnedToSingleMap": true,
+    "closePhaseMarkerPresent": true,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "persistentPreviewCaptureEvidence": "inferred_for_historical_run_from_same_always_on_preview_server; not recorded per run",
+    "persistentPreviewCaptureObservedDuringC7A5": true
+  },
+  "run": {
+    "role": "mixed-source-dual-two-loop",
+    "freshProcess": true,
+    "sampleCount": 165,
+    "elapsedSeconds": 115.14,
+    "memory": {
+      "pssMiB": {
+        "first": 194.53,
+        "peak": 728.73,
+        "last": 457.23
+      },
+      "javaHeapUsedMiB": {
+        "validPeak": 488.73,
+        "validLast": 213.29,
+        "invalidSamples": 0,
+        "validSamples": 165,
+        "reportedMaxMiB": 512.0,
+        "inconsistentNonAtomicMaximumMiB": null,
+        "tupleRule": "legacy committed/free/committed bounds only; GC overlap was not observable, so not an atomic or proven GC-free snapshot",
+        "gcCounterStableSamples": null,
+        "gcCounterChangedOrUnavailableSamples": null
+      },
+      "nativeHeapAllocatedMiB": {
+        "first": 30.29,
+        "peak": 146.13,
+        "last": 122.19
+      }
+    },
+    "phases": {
+      "active": {
+        "markerSpanSeconds": 51.16,
+        "sampledCpuWallSeconds": 50.98,
+        "cpuPercentOfOneCoreWeighted": 172.94,
+        "sampleCount": 63
+      },
+      "tailRecovery": {
+        "phase": "afterDualClose",
+        "markerSpanSeconds": 20.3,
+        "pssMiB": {
+          "first": 473.48,
+          "peak": 521.19,
+          "last": 457.23
+        },
+        "pssDropMiB": 16.25,
+        "validJavaTupleSampleCount": 33,
+        "javaHeapUsedMiB": {
+          "first": 259.8,
+          "peak": 291.23,
+          "last": 213.29
+        },
+        "javaHeapUsedDropMiB": 46.5
+      }
+    },
+    "mainThread": {
+      "delaySampleCount": 162,
+      "maxDispatchDelayMs": 357.0,
+      "over400msCount": 0,
+      "snapshotTimeoutCount": 3,
+      "snapshotUnavailableCount": 3
+    },
+    "cpu": {
+      "markerSpanSeconds": 51.16,
+      "sampledCpuWallSeconds": 50.98,
+      "cpuPercentOfOneCoreWeighted": 172.94,
+      "sampleCount": 63
+    },
+    "hwui": {
+      "availableSampleCount": 165,
+      "runCumulativeReportedFrameCount": 279,
+      "runCumulativeOver50msCount": 278,
+      "runCumulativeOver100msCount": 267,
+      "activeReportedFrameCountDelta": 265,
+      "activeOver50msCountDelta": 265,
+      "activeOver100msCountDelta": 256,
+      "runMeanTotalMs": 220.23,
+      "runMaxTotalMs": 736.38,
+      "countersAreCumulativeSnapshots": true,
+      "scope": "Android Window FrameMetrics/HWUI only; not WorldWind GL/GPU time or FPS"
+    },
+    "sharedRenderCache": {
+      "identityDeduplicated": true,
+      "uniqueCacheCountMax": 1,
+      "logicalCapacityMiB": 246.24,
+      "logicalUsedPeakMiB": 244.77,
+      "notSummedAcrossMapWindows": true
+    },
+    "contourAssembly": {
+      "source": "numeric contour telemetry from saved phase/loop checkpoints",
+      "checkpointCount": 11,
+      "processAssemblyMaximumActiveSlots": 1,
+      "processAssemblyWaitsCumulativeAtLatestCheckpoint": 521,
+      "processAssemblyQueuedRequestsMaximumAtCheckpoints": 3,
+      "completedBatchesLatestCheckpoint": 323,
+      "budgetRejectionsLatestCheckpoint": 77,
+      "checkpointScopeNotContinuousQueueHighWater": true
+    },
+    "logcat": {
+      "available": true,
+      "coverageComplete": true,
+      "targetProcessResolved": true,
+      "sampleWindowOnly": true,
+      "targetProcessLineCount": 272,
+      "targetProcessStartCountInWindow": 0,
+      "additionalTargetProcessStartsInWindow": 0,
+      "mainThreadGcAttributionRule": "Linux main-thread TID equals resolved process PID; raw identifiers omitted",
+      "eventCounts": {
+        "gcRelatedTargetProcessLines": 231,
+        "blockingGcLines": 18,
+        "blockingGcLinesOnMainThreadTid": 3,
+        "blockingGcDurationObservationCount": 6,
+        "blockingGcMaximumReportedDurationMs": 147.786,
+        "blockingGcReportedDurationsTotalMs": 326.693,
+        "fatalJava": 0,
+        "outOfMemory": 0,
+        "anr": 0,
+        "nativeCrashOrExit": 0
+      },
+      "zeroCountsMeanNoMatchingEntriesInCapturedWindowOnly": true
+    }
+  },
+  "limitations": [
+    "This two-loop mixed-source run is standalone and is not combined with the four-loop paired comparison.",
+    "Java heap peaks include only valid same-sample tuples; inconsistent reads are not heap-limit or OOM evidence.",
+    "Shared render cache is identity-deduplicated and never summed across map windows.",
+    "PSS includes non-Java and shared-process accounting; subtracting Java heap does not identify a specific native allocation source.",
+    "GC/crash counts are limited to the captured sample window and resolved target app process; missing or incomplete logs are not a zero-event pass.",
+    "HWUI FrameMetrics are not WorldWind GL/GPU time or FPS; native frame-counter deltas are output counts only.",
+    "MuMu controlled evidence does not establish physical-phone behavior or unique crash causality.",
+    "C4 shared contour-geometry entry/lease counts were not captured in this run; the subsequent corrected helper proof must be reported separately.",
+    "Historical Java heap tuples did not record ART GC count before/after; committed/free/committed checks do not prove that no GC overlapped the read or form an atomic VM snapshot."
+  ],
+  "contourGeometrySharingTelemetry": {
+    "reported": false,
+    "reason": "The C4 mixed run inspection did not expose the object-valued shared-geometry snapshot; missing is unknown, not zero.",
+    "separateProofPending": true
+  },
+  "javaHeapSamplingConsistency": {
+    "runtimeGcCounterBracketRecorded": false,
+    "committedBeforeFreeCommittedAfterBoundsChecked": true,
+    "atomicVmHeapSnapshot": false,
+    "interpretation": "Historical valid/bounded Java heap tuples required stable committed size and used bounds, but did not bracket the read with ART GC count. A GC between freeMemory and the second totalMemory could not be identified; these readings are observational bounds, not atomic or proven GC-free tuples."
+  }
+}

@@ -64,7 +64,10 @@ internal object NativeContourVectorGeometry {
         // whose floor becomes row -1. A geographic copy gives an exact zero
         // boundary difference; the factory restores MercatorSector before refinement.
         return LevelSet(world, Sector(world), Location(world.deltaLatitude, world.deltaLongitude),
-            SOURCE_MAX_ZOOM + 1, SOURCE_TILE_SIZE, SOURCE_TILE_SIZE, SOURCE_MIN_ZOOM)
+        // Keep one non-source sentinel level so effectiveDetailControl can observe current z13
+        // leaves. The layer returns an effectively infinite detail factor there, preserving the
+        // same terminal source level without ever requesting fabricated z14 data.
+        SOURCE_MAX_ZOOM + 2, SOURCE_TILE_SIZE, SOURCE_TILE_SIZE, SOURCE_MIN_ZOOM)
     }
 
     val tileFactory = object : TileFactory {
@@ -115,15 +118,21 @@ internal class NativeContourLayer(
     private val interval = intervalMeters.also { require(it in NativeTerrainOverlayMath.INTERVALS) }
     @Volatile private var closed = false
     private data class ViewStyle(val zoom: Double, val cssScale: Float, val focusPx: TileScreenPoint? = null)
-    private data class TileRequest(val z: Int, val x: Int, val sourceY: Int)
+    /** Keeps the XYZ sample row and the SDK's cache/invalidation row together. */
+    private data class TileRequest(val z: Int, val x: Int, val sourceY: Int, val sdkRow: Int)
     @Volatile private var viewStyle = ViewStyle(Double.NaN, 1f)
-    // The SDK's completed-results channel is unbounded. Admission happens before sampling,
-    // in actual screen-focus order, and stays held until the render thread admits the result.
+    // The SDK's completed-results channel is unbounded. The local queue stays bounded through
+    // content admission; a separate process lane bounds only concurrent DEM/geometry assembly.
     private val generationQueue = NativeContourPriorityQueue<TileRequest>(
         NativeContourVectorGeometry.MAX_PREPARED_TILES, maxPendingFetches,
     ) { if (!closed) WorldWind.requestRedraw() }
+    // Tracks each pane's wrapper until eviction/close even when the SDK has no latest RenderContext.
+    private val owned = Collections.newSetFromMap(IdentityHashMap<NativeContourTileContent, Boolean>())
     private val prepared = Collections.newSetFromMap(IdentityHashMap<NativeContourTileContent, Boolean>())
     private val forcedRefinements = NativeContourRefinementState<TileRequest>()
+    // Filled only by the SDK's current visible quadtree walk. Pending, unstarted jobs outside
+    // this set are obsolete; active work and resident content are deliberately unaffected.
+    private val visitedThisFrame = linkedSetOf<TileRequest>()
     private val labelCollision = NativeContourLabelCollision()
     private val cartesian = Vec3()
     private val screen = Vec3()
@@ -157,22 +166,31 @@ internal class NativeContourLayer(
     private fun visibleAtUiZoom(): Boolean = viewStyle.zoom.isFinite() && viewStyle.zoom >= minimumZoom
 
     override fun render(rc: RenderContext) {
-        // Below the UI threshold, keep the bounded resident/pending content for a later return.
-        // Do not confuse this whole-layer decision with the mixed source levels in a tilted view.
-        if (!closed && !rc.isPickMode && visibleAtUiZoom()) {
-            forcedRefinements.advanceFrame()
-            super.render(rc)
+        if (closed || rc.isPickMode) return
+        // UI-hidden contours have no current SDK selection. Drop only queued, not-yet-permitted
+        // requests so they cannot consume admission slots until the user returns to this layer.
+        if (!visibleAtUiZoom()) {
+            pruneUnvisitedPending(emptySet())
+            return
         }
+        forcedRefinements.advanceFrame()
+        super.render(rc)
     }
 
     override fun effectiveDetailControl(rc: RenderContext, tile: Tile): Double {
+        val z = tile.level.levelNumber
+        val key = TileRequest(z, tile.column,
+            SlippyTiles.latToTileY(tile.sector.centroidLatitude.inDegrees, z), tile.row)
+        visitedThisFrame += key
         // LevelSet.levelOffset only suppresses fetches; it does not force subdivision. Without
         // this, an SSE leaf below z7 can remain a permanent blank despite a visible UI layer.
-        val z = tile.level.levelNumber
         if (z < NativeContourVectorGeometry.SOURCE_MIN_ZOOM) return 0.0
+        // z13 used to be the SDK terminal level, bypassing this hook. Its sentinel child level is
+        // never reached: a huge detail factor reproduces the old terminal behavior while exposing
+        // the real z13 tile to the current-view visit set.
+        if (z >= NativeContourVectorGeometry.SOURCE_MAX_ZOOM) return Double.POSITIVE_INFINITY
         // Keep the original interval and DEM. An oversized coarse tile is calculated
         // as smaller real tiles instead of assembling one enormous SDK float array.
-        val key = TileRequest(z, tile.column, SlippyTiles.latToTileY(tile.sector.centroidLatitude.inDegrees, z))
         return if (z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM && forcedRefinements.shouldRefine(key)) 0.0 else detailControl
     }
 
@@ -197,38 +215,72 @@ internal class NativeContourLayer(
         // grows from north to south. Derive the source row from the actual sector
         // instead of flipping an SDK row whose convention may change by version.
         val sourceY = SlippyTiles.latToTileY(sector.centroidLatitude.inDegrees, z)
-        val permit = generationQueue.acquire(TileRequest(z, x, sourceY)) ?: return null
+        val request = TileRequest(z, x, sourceY, y)
+        val permit = generationQueue.acquire(request) ?: return null
         var handedOff = false
+        var unhandedContent: NativeContourTileContent? = null
         try {
             return semaphore.withPermit {
                 if (closed) return@withPermit null
-                val samples = loadSamples(z, x, sourceY) ?: return@withPermit null
-                if (closed) return@withPermit null
-                val buildContext = currentCoroutineContext()
-                val content = try {
-                    NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval,
-                        ensureActive = {
-                            buildContext.ensureActive()
-                            if (closed) throw CancellationException("Contour layer closed")
-                        },
-                        releasePrepared = { permit.close() },
-                    )
-                } catch (budget: NativeContourGeometryBudgetExceeded) {
-                    val canSubdivide = z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM
-                    val refined = canSubdivide && forcedRefinements.requestRefinement(TileRequest(z, x, sourceY)) { !closed }
-                    NativeContourGeometryTelemetry.rejected(z, refined, !canSubdivide)
-                    if (refined && !closed) WorldWind.requestRedraw()
+                // This suspends fairly across panes before samples/geometry are allocated, but
+                // releases as soon as assembly returns. A prepared result may wait for contentWeight
+                // in a hidden layer without monopolizing the process-wide CPU assembly lane.
+                val content = NativeContourProcessBudget.process.withAssemblyPermit {
+                    if (closed) return@withAssemblyPermit null
+                    val samples = loadSamples(z, x, sourceY) ?: return@withAssemblyPermit null
+                    if (closed) return@withAssemblyPermit null
+                    val buildContext = currentCoroutineContext()
+                    try {
+                        val key = NativeContourGeometryKey.fromSamples(z, x, sourceY, interval, samples)
+                        buildContext.ensureActive()
+                        if (closed) throw CancellationException("Contour layer closed")
+                        val lease = NativeContourSharedGeometryStore.process.acquireOrCreate(key) {
+                            NativeContourVectorTileBuilder.build(samples, z, x, sourceY, interval) {
+                                buildContext.ensureActive()
+                                if (closed) throw CancellationException("Contour layer closed")
+                            }
+                        }
+                        try {
+                            NativeContourTileContent(lease) { permit.close() }
+                        } catch (failure: Throwable) {
+                            lease.release()
+                            throw failure
+                        }
+                    } catch (budget: NativeContourGeometryBudgetExceeded) {
+                        val canSubdivide = z < NativeContourVectorGeometry.SOURCE_MAX_ZOOM
+                        val refined = canSubdivide && forcedRefinements.requestRefinement(request) { !closed }
+                        NativeContourGeometryTelemetry.rejected(z, refined, !canSubdivide)
+                        if (refined && !closed) WorldWind.requestRedraw()
+                        return@withAssemblyPermit null
+                    }
+                } ?: return@withPermit null
+                unhandedContent = content
+                val retained = synchronized(prepared) {
+                    if (closed) false else {
+                        try {
+                            owned += content
+                            prepared += content
+                            true
+                        } catch (failure: Throwable) {
+                            owned.remove(content)
+                            prepared.remove(content)
+                            throw failure
+                        }
+                    }
+                }
+                if (!retained) {
+                    content.discard(latestRc)
+                    unhandedContent = null
                     return@withPermit null
                 }
-                synchronized(prepared) {
-                    if (closed) return@withPermit null
-                    prepared += content
-                    handedOff = true
-                }
+                handedOff = true
+                unhandedContent = null
                 content
             }
         } finally {
-            if (!handedOff) permit.close()
+            if (!handedOff) {
+                try { unhandedContent?.discard(latestRc) } finally { permit.close() }
+            }
         }
     }
 
@@ -239,11 +291,28 @@ internal class NativeContourLayer(
     }
 
     override fun beginFrame(rc: RenderContext) {
+        visitedThisFrame.clear()
         labelCollision.beginFrame()
+    }
+
+    override fun endFrame(rc: RenderContext) {
+        // The SDK invokes effectiveDetailControl only after its private isVisible check. Prune
+        // after traversal so parents and leaves in this actual cut remain eligible, then award
+        // permits only to requests still represented by that cut.
+        pruneUnvisitedPending(visitedThisFrame)
         dispatchGeneration(rc)
     }
 
-    override fun endFrame(rc: RenderContext) { dispatchGeneration(rc) }
+    private fun pruneUnvisitedPending(visited: Set<TileRequest>) {
+        if (closed) return
+        generationQueue.removePendingNotIn(visited) { tile ->
+            // SDK requestTile starts a job only after contentFor misses and deduplicates the same
+            // tileKey in inFlight. Thus this exact cache key cannot also be resident while its
+            // coroutine waits here. drainInvalidations removes/cancels only that SDK job next
+            // frame; permit-owning work and all unrelated resident tiles remain untouched.
+            invalidateTile(tile.z, tile.x, tile.sdkRow)
+        }
+    }
 
     private fun dispatchGeneration(rc: RenderContext) {
         if (closed || generationQueue.pendingCount == 0 ||
@@ -274,33 +343,44 @@ internal class NativeContourLayer(
 
     override fun renderTileContent(rc: RenderContext, content: NativeContourTileContent) {
         if (rc.isPickMode) return // Contours are visual overlays, not pick targets.
-        content.forEach { renderable ->
-            NativeContourVectorTileBuilder.applyScreenDensity(renderable, viewStyle.cssScale)
-            if (renderable is Label) {
-                rc.geographicToCartesian(renderable.position, AltitudeMode.CLAMP_TO_GROUND, cartesian)
-                if (!rc.projectWithDepth(cartesian, 0.0, screen)) return@forEach
-                val density = viewStyle.cssScale.coerceAtLeast(0.1f)
-                val width = (renderable.text.orEmpty().length * NativeContourVectorGeometry.LABEL_SIZE * 0.62f + 10f) * density
-                val height = 22f * density
-                if (screen.x < rc.viewport.x || screen.x > rc.viewport.x + rc.viewport.width ||
-                    screen.y < rc.viewport.y || screen.y > rc.viewport.y + rc.viewport.height ||
-                    !labelCollision.accept(screen.x.toFloat(), screen.y.toFloat(), width, height)) return@forEach
+        val geometry = content.geometryIfActive() ?: return
+        synchronized(geometry.renderLock) {
+            // Close/eviction may win between taking the snapshot and entering this lock.
+            if (!content.ownsGeometry(geometry)) return
+            val cssScale = viewStyle.cssScale
+            geometry.renderables.forEach { renderable ->
+                NativeContourVectorTileBuilder.applyScreenDensity(renderable, cssScale)
+                if (renderable is Label) {
+                    rc.geographicToCartesian(renderable.position, AltitudeMode.CLAMP_TO_GROUND, cartesian)
+                    if (!rc.projectWithDepth(cartesian, 0.0, screen)) return@forEach
+                    val density = cssScale.coerceAtLeast(0.1f)
+                    val width = (renderable.text.orEmpty().length * NativeContourVectorGeometry.LABEL_SIZE * 0.62f + 10f) * density
+                    val height = 22f * density
+                    if (screen.x < rc.viewport.x || screen.x > rc.viewport.x + rc.viewport.width ||
+                        screen.y < rc.viewport.y || screen.y > rc.viewport.y + rc.viewport.height ||
+                        !labelCollision.accept(screen.x.toFloat(), screen.y.toFloat(), width, height)) return@forEach
+                }
+                renderable.render(rc)
             }
-            renderable.render(rc)
         }
     }
 
     override fun onContentEvicted(rc: RenderContext, content: NativeContourTileContent) {
-        content.batch?.releaseRenderResources(rc)
+        synchronized(prepared) { owned.remove(content) }
+        content.admitted()
+        content.releaseGeometry(rc)
     }
 
     override fun closeSource() {
         closed = true
+        visitedThisFrame.clear()
         forcedRefinements.clear()
         generationQueue.close()
         synchronized(prepared) {
-            prepared.forEach { it.admitted() }
+            val outstanding = owned.toList()
+            owned.clear()
             prepared.clear()
+            outstanding.forEach { it.discard(latestRc) }
         }
     }
 }
@@ -313,18 +393,58 @@ internal class NativeContourLayerRenderable(private val layer: NativeContourLaye
     fun close() = layer.close()
 }
 
-/** A tile owns one shared line buffer, rather than one heavyweight SDK Path per contour. */
-internal class NativeContourTileContent(
-    private val renderables: List<Renderable>,
+/** One lease-shared tile geometry with one batched line buffer instead of one Path per contour. */
+internal class NativeContourSharedGeometry(
+    val renderables: List<Renderable>,
     val batch: MvtBatchedLineTile?,
     val sourcePathCount: Int,
     val sourcePointCount: Int,
     val geometryBounds: Sector,
     val byteWeight: Int,
-    private val releasePrepared: () -> Unit = {},
 ) : List<Renderable> by renderables {
-    private val released = AtomicBoolean(false)
-    fun admitted() { if (released.compareAndSet(false, true)) releasePrepared() }
+    /** SDK batch and Label style fields are mutable per frame; panes serialize their use here. */
+    val renderLock = Any()
+}
+
+internal object NativeContourSharedGeometryStore {
+    val process = NativeContourGeometryStore<NativeContourGeometryKey, NativeContourSharedGeometry>()
+}
+
+internal class NativeContourTileContent(
+    private val geometryLease: NativeContourGeometryStore.Lease<NativeContourSharedGeometry>,
+    private val releasePrepared: () -> Unit = {},
+) : AbstractList<Renderable>() {
+    private val cachedByteWeight = geometryLease.value.byteWeight
+    override val size: Int get() = geometryLease.value.renderables.size
+    override fun get(index: Int): Renderable = geometryLease.value.renderables[index]
+    val geometry get() = geometryLease.value
+    val batch get() = geometry.batch
+    val sourcePathCount get() = geometry.sourcePathCount
+    val sourcePointCount get() = geometry.sourcePointCount
+    val geometryBounds get() = geometry.geometryBounds
+    // The SDK may finish admitting an already-queued result while close is racing; keep only this scalar.
+    val byteWeight get() = cachedByteWeight
+    private val admissionReleased = AtomicBoolean(false)
+    private val geometryReleased = AtomicBoolean(false)
+
+    fun admitted() { if (admissionReleased.compareAndSet(false, true)) releasePrepared() }
+    fun releaseGeometry(rc: RenderContext? = null): Boolean {
+        val shared = geometryLease.valueIfActive() ?: return false
+        synchronized(shared.renderLock) {
+            if (!geometryReleased.compareAndSet(false, true)) return false
+            // Release under the same lock as rendering; this local is the only temporary strong reference.
+            val last = geometryLease.release()
+            if (last && rc != null) shared.batch?.releaseRenderResources(rc)
+            return last
+        }
+    }
+    fun geometryIfActive(): NativeContourSharedGeometry? = geometryLease.valueIfActive()
+    fun ownsGeometry(value: NativeContourSharedGeometry): Boolean =
+        !geometryReleased.get() && geometryLease.valueIfActive() === value
+    fun discard(rc: RenderContext?) {
+        admitted()
+        releaseGeometry(rc)
+    }
 }
 
 /** Screen-space collision is independent of data density: all contour lines remain rendered. */
@@ -363,13 +483,13 @@ internal object NativeContourVectorTileBuilder {
     }
 
     fun build(values: DoubleArray, z: Int, x: Int, y: Int, interval: Int,
-        ensureActive: () -> Unit = {}, releasePrepared: () -> Unit = {},
-    ): NativeContourTileContent {
+        ensureActive: () -> Unit = {},
+    ): NativeContourSharedGeometry {
         require(values.isNotEmpty())
         val size = kotlin.math.sqrt(values.size.toDouble()).toInt()
         require(size >= 2 && size * size == values.size)
         val segments = NativeTerrainOverlayMath.contourSegments(values, size, interval, ensureActive)
-        if (segments.isEmpty()) return NativeContourTileContent(emptyList(), null, 0, 0, Sector(), 256, releasePrepared)
+        if (segments.isEmpty()) return NativeContourSharedGeometry(emptyList(), null, 0, 0, Sector(), 256)
         val paths = NativeTerrainOverlayMath.contourPaths(segments, ensureActive)
         val logicalVertices = NativeContourGeometryBudget.preflight(paths, ensureActive)
         val labels = NativeTerrainOverlayMath.contourLabelsForPaths(paths, interval, NativeContourVectorGeometry.LABEL_SPACING_PIXELS, ensureActive)
@@ -443,6 +563,6 @@ internal object NativeContourVectorTileBuilder {
         val geometryBounds = if (sourcePointCount == 0) Sector() else Sector.fromDegrees(
             minLatitude, minLongitude, maxLatitude - minLatitude, maxLongitude - minLongitude,
         )
-        return NativeContourTileContent(output, batch, features.size, sourcePointCount, geometryBounds, byteWeight, releasePrepared)
+        return NativeContourSharedGeometry(output, batch, features.size, sourcePointCount, geometryBounds, byteWeight)
     }
 }

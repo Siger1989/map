@@ -27,6 +27,19 @@ export type RoadSnapper = (
   from?: Coordinate,
 ) => RoadSnapResult;
 export type RoadProject = (point: Coordinate) => ScreenPoint | null;
+
+/** Rebind a continuing match to the current snapshot when its anchor is exact. */
+export function reuseRoadMatchAtCoordinate(
+  previous: RoadMatch | null,
+  from: Coordinate | undefined,
+  linesById: ReadonlyMap<string, RoadLine>,
+): RoadMatch | null {
+  if (!previous || !from || previous.coordinate[0] !== from[0] || previous.coordinate[1] !== from[1]) return null;
+  const line = linesById.get(previous.line.id);
+  if (!line) return null;
+  return line === previous.line ? previous : { ...previous, line };
+}
+
 export type ProjectedRoadSegment = {
   readonly order: number;
   readonly lineIndex: number;

@@ -51,12 +51,14 @@ import type { TrackContinuationHit } from '../../tracks/prepareTrackContinuation
 import { pickTrackContinuation } from '../../tracks/prepareTrackContinuation.ts';
 import { DRAFT_ID } from '../../tracks/editing.ts';
 import type { TrackRenderReceipt, TrackRenderHandoffResult } from '../../tracks/trackRenderHandoff.ts';
-import type { RoadLine, RoadMatch, RoadSnapResult, RoadSnapper } from '../../tracks/roadSnapping.ts';
+import { roadSection, type RoadLine, type RoadMatch, type RoadSnapResult, type RoadSnapper } from '../../tracks/roadSnapping.ts';
 import { nearestRoad, roadSnapResult } from '../../tracks/roadSnapping.ts';
+import { emptyNativeRoadSnapAnchorState, rememberNativeRoadSnapCandidate, resolveNativeRoadSnapAnchor, type NativeRoadSnapAnchorState } from './roadSnapAnchor.ts';
 import { ProjectedRoadIndex } from '../../tracks/projectedRoadIndex.ts';
 import { riverLines } from '../../tracks/riverSnapping.ts';
 import { roadLines as readRoadLines } from '../../tracks/roadSnapping.ts';
 import { roadPathDetailed } from '../../tracks/roadPath.ts';
+import { directSharedVertexRoadSection } from '../../tracks/directRoadContinuation.ts';
 import type { SnapViewport } from '../../tracks/snapping.ts';
 import type { ProjectionFrame, WatchProjection } from '../../objectTransform/projection.ts';
 import type { VisiblePhoto } from '../../photos/storage.ts';
@@ -1378,7 +1380,7 @@ const nodeProjectionCache = new WeakMap<Runtime, {
   tracks: TrackOverlay['saved']; selectedId: TrackOverlay['selectedId']; connecting: TrackOverlay['connecting'];
   snapTargets: TrackOverlay['snapTargets']; projection: string; index: ProjectedPointIndex<TrackNode>;
 }>();
-const roadProjectionCaches = new WeakMap<Runtime, Partial<Record<'road' | 'river', { projection: string; index: ProjectedRoadIndex }>>>();
+const roadProjectionCaches = new WeakMap<Runtime, Partial<Record<'road' | 'river', { projection: string; index: ProjectedRoadIndex; linesById: Map<string, RoadLine> }>>>();
 
 function snapNativeTrackNode(runtime: Runtime, target: DragTarget, point: ScreenPoint): TrackNode | null {
   const current = runtime.props;
@@ -1408,38 +1410,59 @@ function makeHandle(
   const fire = (command: string, payload?: unknown) => { void request(command, payload).catch(() => {}); };
   const projection = (point: Coordinate) => runtime.client && runtime.mapId ? pointFromProjection(runtime.client, runtime.mapId, point) : null;
   const geometryCoordinate = (point: ScreenPoint) => runtime.client && runtime.mapId ? fromLocalScreen(runtime.client, runtime.mapId, point) : null;
-  const roadSnapper = (kind: 'road' | 'river'): RoadSnapper => (point, previous, from) => {
-    const enabled = kind === 'road' ? runtime.props.roadSnapping : runtime.props.riverSnapping;
-    if (!enabled) return { status: 'hidden', match: null };
-    const geometryStatus = kind === 'road' ? runtime.roadGeometryStatus : runtime.riverGeometryStatus;
-    if (geometryStatus === 'hidden') return { status: 'hidden', match: null };
-    if (!geometryStatus || geometryStatus === 'loading') return { status: 'loading', match: null };
-    if (geometryStatus === 'blocked' || geometryStatus === 'missing') return { status: 'unavailable', match: null };
-    const lines = kind === 'road' ? runtime.roadLines : runtime.riverLines;
-    if (!lines) return { status: 'unavailable', match: null };
-    if (!runtime.client || !runtime.mapId) return { status: 'unavailable', match: null };
-    const project = (coordinateValue: Coordinate) => projection(coordinateValue);
-    const projectionKey = projectionSnapshotKey(runtime);
-    let caches = roadProjectionCaches.get(runtime);
-    if (!caches) { caches = {}; roadProjectionCaches.set(runtime, caches); }
-    let cache = caches[kind];
-    if (!cache || cache.index.lines !== lines || cache.projection !== projectionKey) {
-      cache = { projection: projectionKey, index: new ProjectedRoadIndex(lines, project) };
-      caches[kind] = cache;
-    }
-    const match = nearestRoad(point, lines, project, previous, cache.index);
-    let section: Coordinate[] | null | undefined;
-    let pathStatus: 'ready' | 'disconnected' | 'limited' | undefined;
-    if (from && match) {
-      const screen = project(from);
-      const start = screen ? nearestRoad(screen, lines, project, null, cache.index) : null;
-      const path = start
-        ? roadPathDetailed(start, match, lines)
-        : { status: 'disconnected' as const };
-      pathStatus = path.status;
-      section = path.status === 'ready' ? path.section : null;
-    }
-    return roadSnapResult(match, from, section, pathStatus);
+  const roadSnapper = (kind: 'road' | 'river'): RoadSnapper => {
+    let anchorState: NativeRoadSnapAnchorState = emptyNativeRoadSnapAnchorState();
+    const clearAnchor = () => { anchorState = emptyNativeRoadSnapAnchorState(); };
+    return (point, previous, from) => {
+      const enabled = kind === 'road' ? runtime.props.roadSnapping : runtime.props.riverSnapping;
+      if (!enabled) { clearAnchor(); return { status: 'hidden', match: null }; }
+      const geometryStatus = kind === 'road' ? runtime.roadGeometryStatus : runtime.riverGeometryStatus;
+      if (geometryStatus === 'hidden') { clearAnchor(); return { status: 'hidden', match: null }; }
+      if (!geometryStatus || geometryStatus === 'loading') { clearAnchor(); return { status: 'loading', match: null }; }
+      if (geometryStatus === 'blocked' || geometryStatus === 'missing') { clearAnchor(); return { status: 'unavailable', match: null }; }
+      const lines = kind === 'road' ? runtime.roadLines : runtime.riverLines;
+      if (!lines) { clearAnchor(); return { status: 'unavailable', match: null }; }
+      if (!runtime.client || !runtime.mapId) { clearAnchor(); return { status: 'unavailable', match: null }; }
+      const project = (coordinateValue: Coordinate) => projection(coordinateValue);
+      const projectionKey = projectionSnapshotKey(runtime);
+      let caches = roadProjectionCaches.get(runtime);
+      if (!caches) { caches = {}; roadProjectionCaches.set(runtime, caches); }
+      let cache = caches[kind];
+      if (!cache || cache.index.lines !== lines || cache.projection !== projectionKey) {
+        cache = { projection: projectionKey, index: new ProjectedRoadIndex(lines, project), linesById: new Map(lines.map((line) => [line.id, line])) };
+        caches[kind] = cache;
+      }
+      const anchor = resolveNativeRoadSnapAnchor(
+        anchorState, kind, runtime.generation, from, previous, cache.linesById, project, projectionKey.length > 0,
+      );
+      anchorState = anchor.state;
+      const match = nearestRoad(point, lines, project, anchor.previous, cache.index);
+      let section: Coordinate[] | null | undefined;
+      let pathStatus: 'ready' | 'disconnected' | 'limited' | undefined;
+      if (from && match) {
+        const screen = project(from);
+        const start = anchor.start ?? (screen ? nearestRoad(screen, lines, project, null, cache.index) : null);
+        let path = start
+          ? start.line.id === match.line.id
+            ? (() => {
+                const section = roadSection(start, match, project);
+                return section ? { status: 'ready' as const, section } : { status: 'disconnected' as const };
+              })()
+            : roadPathDetailed(start, match, lines)
+          : { status: 'disconnected' as const };
+        if (kind === 'road' && start && path.status === 'limited') {
+          // A crowded viewport may exceed the full graph budget even when the
+          // actual continuation is just two live roads sharing one exact vertex.
+          const sharedSection = directSharedVertexRoadSection(start, match, cache.linesById);
+          if (sharedSection) path = { status: 'ready', section: sharedSection };
+        }
+        pathStatus = path.status;
+        section = path.status === 'ready' ? path.section : null;
+      }
+      const result = roadSnapResult(match, from, section, pathStatus);
+      anchorState = rememberNativeRoadSnapCandidate(anchorState, kind, runtime.generation, result.match, anchor.trackCandidate);
+      return result;
+    };
   };
   const handle: MapHandle = {
     isUserInteracting: () => runtime.userInteracting,

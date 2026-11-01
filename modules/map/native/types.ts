@@ -129,8 +129,10 @@ export type NativeDemTile = {
   north: number;
   width: number;
   height: number;
-  /** Row-major, north-to-south meters above the WGS84 ellipsoid; null means no-data. */
+  /** Raw source elevations in meters, row-major north-to-south; null means no-data. */
   heights: Array<number | null>;
+  /** Optional row-major signed Int16 centimeters, little-endian and base64 encoded. */
+  geoidOffsetCmBase64?: string;
 };
 
 export type NativeMapHello = {

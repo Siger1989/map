@@ -106,6 +106,80 @@ test('DEM cache samples only covered finite terrain and rejects stale updates/no
   assert.equal(cache.sample(0.5, 0.5), null);
 });
 
+test('optional signed-centimeter geoid grid corrects surface projection while elevation stays raw', () => {
+  const cache = new NativeDemCache();
+  const tile = { id: 'offset-grid', west: -1, south: -1, east: 1, north: 1, width: 2, height: 2,
+    heights: [50, 50, 50, 50], geoidOffsetCmBase64: offsetsBase64([-1234, 5678, 0, -1]) };
+  assert.equal(cache.replace(1, [tile]), true);
+  assert.equal(cache.sample(-1, 1), 50);
+  assert.equal(cache.sampleEllipsoidHeight(-1, 1), 37.66);
+  assert.equal(cache.sampleEllipsoidHeight(1, 1), 106.78);
+  assert.ok(Math.abs(cache.sampleEllipsoidHeight(0, 0) - 61.1075) < 1e-12);
+
+  const frame = frameFor([
+    1 / 6378137, 0, 0, 0,
+    0, 1 / 6378137, 0, 0,
+    0, 0, 1 / 6378137, 0,
+    -1, 0, 0, 1,
+  ]);
+  frame.terrainEnabled = true;
+  frame.demRevision = 1;
+  frame.verticalExaggeration = 3;
+  const projected = projectWgs84([-1, 1], frame, cache);
+  const explicitEquivalent = projectWgs84([-1, 1], frame, cache, 37.66 * 3);
+  assert.equal(projected.status, 'ready');
+  assert.equal(projected.value.elevationMeters, 50);
+  assert.ok(Math.abs(projected.value.x - explicitEquivalent.value.x) < 1e-10);
+  assert.ok(Math.abs(projected.value.y - explicitEquivalent.value.y) < 1e-10);
+
+  const explicit = projectWgs84([-1, 1], frame, cache, 75);
+  const legacy = new NativeDemCache();
+  assert.equal(legacy.replace(1, [{ ...tile, geoidOffsetCmBase64: undefined }]), true);
+  const explicitLegacy = projectWgs84([-1, 1], frame, legacy, 75);
+  assert.deepEqual([explicit.value.x, explicit.value.y], [explicitLegacy.value.x, explicitLegacy.value.y]);
+  assert.equal(explicit.value.elevationMeters, 50);
+  assert.equal(legacy.sampleEllipsoidHeight(-1, 1), legacy.sample(-1, 1));
+});
+
+test('terrain unprojection intersects offset-corrected surface and still returns raw elevation', () => {
+  const raw = syntheticSteepSlopeDem();
+  const offset = new NativeDemCache();
+  const rawTiles = [
+    { id: 'synthetic-north', west: 102.65899658203125, south: 31.0552869290102, east: 103.00506591796875, north: 31.351291407790587 },
+    { id: 'synthetic-south', west: 102.65899658203125, south: 30.75363814621857, east: 103.00506591796875, north: 31.0505809842175 },
+  ].map((bounds) => ({ ...bounds, width: 64, height: 64,
+    heights: Array.from({ length: 64 * 64 }, (_, index) => {
+      const row = Math.floor(index / 64);
+      return 4200 + 600 * Math.sin((bounds.north - (bounds.north - bounds.south) * row / 63 - 30.98) * Math.PI * 63 + 0.8);
+    }),
+    geoidOffsetCmBase64: offsetsBase64(Array(64 * 64).fill(5000)),
+  }));
+  assert.equal(offset.replace(1, rawTiles), true);
+  const frame = steepNativeFrame();
+  const target = [102.9, 31];
+  const projected = projectWgs84(target, frame, offset);
+  const ground = unprojectWgs84({ x: projected.value.x, y: projected.value.y }, frame, offset);
+  assert.equal(ground.status, 'ready');
+  const longitudeErrorMeters = Math.abs(ground.value.coordinate[0] - target[0]) * 111_320 * Math.cos(target[1] * Math.PI / 180);
+  const latitudeErrorMeters = Math.abs(ground.value.coordinate[1] - target[1]) * 111_320;
+  assert.ok(Math.hypot(longitudeErrorMeters, latitudeErrorMeters) < 2);
+  assert.ok(Math.abs(ground.value.elevationMeters - raw.sample(...target)) < 1);
+});
+
+test('invalid geoid encoding, length, or physical range rejects the whole cache replacement', () => {
+  const cache = new NativeDemCache();
+  const valid = { id: 'kept', west: -1, south: -1, east: 1, north: 1, width: 2, height: 2, heights: [7, 7, 7, 7] };
+  assert.equal(cache.replace(1, [valid]), true);
+  for (const geoidOffsetCmBase64 of ['!!!!', 'AA==', offsetsBase64([0, 0, 0, 12001])]) {
+    assert.equal(cache.replace(2, [{ ...valid, geoidOffsetCmBase64 }]), false);
+    assert.equal(cache.revision, 1);
+    assert.equal(cache.sample(0, 0), 7);
+  }
+  const nodata = { ...valid, heights: [7, null, 7, 7], geoidOffsetCmBase64: offsetsBase64([100, 100, 100, 100]) };
+  assert.equal(cache.replace(2, [nodata]), true);
+  assert.equal(cache.sampleEllipsoidHeight(0, 0), null);
+});
+
 test('unprojection reports blocked when native DEM cache is missing/stale', () => {
   const dem = new NativeDemCache();
   const frame = {
@@ -257,6 +331,12 @@ function frameFor(viewProjection) {
     viewport: { x: 400, y: 100, width: 200, height: 100 },
     cssScale: 2, clipDepth: 'minusOneToOne', demRevision: 0, capturedAt: 1,
   };
+}
+function offsetsBase64(values) {
+  const bytes = new Uint8Array(values.length * 2);
+  const view = new DataView(bytes.buffer);
+  values.forEach((value, index) => view.setInt16(index * 2, value, true));
+  return Buffer.from(bytes).toString('base64');
 }
 function identity() { return [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]; }
 function multiply(a, b) {

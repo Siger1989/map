@@ -27,14 +27,21 @@ internal object NativeContourGeometryTelemetry {
         }
     }
 
-    fun snapshot(): Map<String, Long> = mapOf(
-        "completedBatches" to completed.get(),
-        "maximumLogicalVertices" to maximumLogicalVertices.get(),
-        "maximumVboBytes" to maximumLogicalVertices.get() * NativeContourGeometryBudget.FLOATS_PER_LOGICAL_VERTEX * 4L,
-        "budgetRejections" to rejected.get(),
-        "refinedTiles" to refined.get(),
-        "maxLevelRejections" to maxLevelRejected.get(),
-        "refinementDeferred" to refinementDeferred.get(),
-        "lastRejectedSourceLevel" to lastRejectedLevel.get(),
-    )
+    fun snapshot(): Map<String, Long> {
+        val processBudget = NativeContourProcessBudget.process.snapshot()
+        return mapOf(
+            "completedBatches" to completed.get(),
+            "maximumLogicalVertices" to maximumLogicalVertices.get(),
+            "maximumVboBytes" to maximumLogicalVertices.get() * NativeContourGeometryBudget.FLOATS_PER_LOGICAL_VERTEX * 4L,
+            "budgetRejections" to rejected.get(),
+            "refinedTiles" to refined.get(),
+            "maxLevelRejections" to maxLevelRejected.get(),
+            "refinementDeferred" to refinementDeferred.get(),
+            "lastRejectedSourceLevel" to lastRejectedLevel.get(),
+            "processAssemblyActiveSlots" to processBudget.activeSlots.toLong(),
+            "processAssemblyMaximumActiveSlots" to processBudget.maximumActiveSlots.toLong(),
+            "processAssemblyWaits" to processBudget.waits,
+            "processAssemblyQueuedRequests" to processBudget.queuedRequests.toLong(),
+        )
+    }
 }

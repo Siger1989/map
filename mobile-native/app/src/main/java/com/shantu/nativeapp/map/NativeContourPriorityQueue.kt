@@ -49,10 +49,27 @@ internal class NativeContourPriorityQueue<K>(
         }
     }
 
+    /** Remove work that has not started and is absent from the current SDK traversal. */
+    fun removePendingNotIn(visited: Set<K>, onRemoved: (K) -> Unit = {}): List<K> {
+        val removed = synchronized(lock) {
+            if (closed) return emptyList()
+            pending.values.filter { it.key !in visited }.also { stale ->
+                stale.forEach { pending.remove(it.id) }
+            }
+        }
+        removed.forEach { request ->
+            // Invalidate before waking the SDK coroutine: its null result is stale and will be
+            // discarded by TiledVectorLayer's invalidation epoch on the next render drain.
+            onRemoved(request.key)
+            request.ready.complete(null)
+        }
+        if (removed.isNotEmpty()) onWorkChanged()
+        return removed.map { it.key }
+    }
+
     /**
-     * Called only with render-thread projection ranks. New arrivals outside this snapshot wait
-     * for the next frame; visible foreground wins, then old off-screen requests can finish so
-     * they cannot permanently occupy the SDK's bounded 128-job window after a camera change.
+     * Called after the current SDK traversal has registered its misses. Only visited keys are
+     * eligible; null/off-screen ranks are never promoted into background generation work.
      */
     fun dispatch(rank: (K) -> Double?): List<K> {
         val snapshot = synchronized(lock) {

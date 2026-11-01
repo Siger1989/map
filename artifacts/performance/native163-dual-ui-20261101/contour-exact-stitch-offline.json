@@ -1,0 +1,41 @@
+{
+  "analysisType": "offline_exact_endpoint_stitch_comparison",
+  "intervalMeters": 30,
+  "sourceZoom": 12,
+  "representativeLatitudeBandDegrees": 31,
+  "candidateArrayCount": 32,
+  "candidateSampleCount": 2097152,
+  "acceptedGeometryCandidateCount": 17,
+  "geometryBudgetRejectedCandidateCount": 15,
+  "candidateArrayOwnership": "unknown; arrays are not attributed to XYZ tiles or live layers",
+  "comparison": {
+    "onlyChangedPolicy": "offline stitch clone changed roundToInt endpoint keys to normalized Float raw-bit x/y keys",
+    "inputSegmentsPreservedExactlyOnce": true,
+    "roundedNodeKey": {
+      "pathCount": 73039,
+      "pointCount": 596974,
+      "logicalVertexCount": 816091,
+      "labelCount": 275,
+      "estimatedSdkAndAppContentWeightBytes": 76539888
+    },
+    "exactFloatNodeKey": {
+      "pathCount": 2316,
+      "pointCount": 526251,
+      "logicalVertexCount": 533199,
+      "labelCount": 339,
+      "estimatedSdkAndAppContentWeightBytes": 55704184
+    },
+    "estimatedContentWeightReductionBytes": 20835704,
+    "estimatedContentWeightReductionFraction": 0.2722
+  },
+  "weightEstimate": "MvtBatchedLineTile pre-assembly estimate (104 bytes per point) plus per-feature, label and fixed app weights; not a Java heap or peak temporary allocation measurement",
+  "previewCaptureConditions": {
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": "not_applicable_offline_analysis"
+  },
+  "runtimeEvidence": {
+    "c8RuntimeSamplesIncluded": false,
+    "deviceAcceptance": "not tested",
+    "phoneCrashCausality": "not established"
+  }
+}

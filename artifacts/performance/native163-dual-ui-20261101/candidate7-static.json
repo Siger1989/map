@@ -1,0 +1,187 @@
+{
+  "version": "0.2.163-test",
+  "versionCode": 170,
+  "candidate": "C7",
+  "apkSha256": "c54ec7adb6b3af71e93fa8ed49b53e27b78ccf54f449021ad132a69b931f9846",
+  "status": "FAIL_QUIESCENCE",
+  "conditions": {
+    "device": "dedicated MuMu3",
+    "gestureLoops": 0,
+    "mapCount": 1,
+    "terrain": true,
+    "contours": true,
+    "intervalMeters": 30,
+    "sameCameraAcrossCheckpoints": true,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "captureEvidence": "Active screenrecord observed during C7 A5 and B5; same persistent server for A6",
+    "captureSize": "872x1920",
+    "captureBitRate": 8000000,
+    "encoderCycleSeconds": 180,
+    "decoderThreads": 1,
+    "freshAppProcess": true,
+    "retainedDiskCache": true
+  },
+  "checkpoints": [
+    {
+      "label": "ready",
+      "completedBatches": 45,
+      "sharedGeometry": {
+        "activeGeometryEntries": 23,
+        "activeLeases": 23
+      },
+      "residentCount": 23,
+      "renderCutCount": 23,
+      "allResidentsInCut": true,
+      "residentBytes": 124174896,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 16,
+      "sdkInFlight": 18,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": null,
+      "sameKeyWeightChangesSincePreviousCheckpoint": null
+    },
+    {
+      "label": "idle",
+      "completedBatches": 97,
+      "sharedGeometry": {
+        "activeGeometryEntries": 22,
+        "activeLeases": 22
+      },
+      "residentCount": 22,
+      "renderCutCount": 22,
+      "allResidentsInCut": true,
+      "residentBytes": 118360600,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 17,
+      "sdkInFlight": 19,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 3,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady1",
+      "completedBatches": 149,
+      "sharedGeometry": {
+        "activeGeometryEntries": 22,
+        "activeLeases": 22
+      },
+      "residentCount": 22,
+      "renderCutCount": 22,
+      "allResidentsInCut": true,
+      "residentBytes": 119552720,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 17,
+      "sdkInFlight": 19,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 2,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady2",
+      "completedBatches": 201,
+      "sharedGeometry": {
+        "activeGeometryEntries": 21,
+        "activeLeases": 21
+      },
+      "residentCount": 21,
+      "renderCutCount": 21,
+      "allResidentsInCut": true,
+      "residentBytes": 113738424,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 18,
+      "sdkInFlight": 20,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 2,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady3",
+      "completedBatches": 255,
+      "sharedGeometry": {
+        "activeGeometryEntries": 23,
+        "activeLeases": 23
+      },
+      "residentCount": 23,
+      "renderCutCount": 23,
+      "allResidentsInCut": true,
+      "residentBytes": 124174896,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 16,
+      "sdkInFlight": 18,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 2,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady4",
+      "completedBatches": 309,
+      "sharedGeometry": {
+        "activeGeometryEntries": 24,
+        "activeLeases": 24
+      },
+      "residentCount": 24,
+      "renderCutCount": 24,
+      "allResidentsInCut": true,
+      "residentBytes": 127600736,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 15,
+      "sdkInFlight": 17,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 3,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady5",
+      "completedBatches": 359,
+      "sharedGeometry": {
+        "activeGeometryEntries": 22,
+        "activeLeases": 22
+      },
+      "residentCount": 22,
+      "renderCutCount": 22,
+      "allResidentsInCut": true,
+      "residentBytes": 119552720,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 17,
+      "sdkInFlight": 19,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 2,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    },
+    {
+      "label": "steady6",
+      "completedBatches": 414,
+      "sharedGeometry": {
+        "activeGeometryEntries": 24,
+        "activeLeases": 24
+      },
+      "residentCount": 24,
+      "renderCutCount": 24,
+      "allResidentsInCut": true,
+      "residentBytes": 127600736,
+      "capacityBytes": 134217728,
+      "lowWaterBytes": 100663296,
+      "generationActive": 2,
+      "generationPending": 15,
+      "sdkInFlight": 17,
+      "sameKeyContentReplacementsSincePreviousCheckpoint": 2,
+      "sameKeyWeightChangesSincePreviousCheckpoint": 0
+    }
+  ],
+  "finding": "A fixed camera still has outstanding generation work and same tile keys returning with different content instances of identical weight. This is consistent with resident eviction/rebuild; it is not a unique physical-phone crash diagnosis.",
+  "limitations": [
+    "Checkpoint instances are private helper identities, not geometry hashes or direct per-key eviction events.",
+    "The candidate did not settle; completion of the sampler is not stability acceptance.",
+    "B5 ended after loop2 because the QA worker concurrently iterated an SDK HashMap. Its failed run is not a qualified dual pair and is not an app crash.",
+    "The helper now reads SDK content on the actual Choreographer/main thread. No production APK change separates B5 and A6.",
+    "Preview encoding overhead and restart phase have not been isolated; MuMu results are not physical-phone acceptance."
+  ]
+}

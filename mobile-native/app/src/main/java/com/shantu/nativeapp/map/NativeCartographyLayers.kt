@@ -28,7 +28,6 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
-import java.util.LinkedHashMap
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -342,6 +341,9 @@ class NativeCartographyLayers internal constructor(
         if (closed) return
         closed = true
         terrainLandWaterLayer.close(); roadsLayer.close(); snapDataLayer.close(); roadNamesLayer.close(); placeLabelsLayer.close()
+        // MvtVectorLayer closes its TileSource. The shared adapter's close is intentionally
+        // non-owning; release this map's process-pool lease only after all five layers stop.
+        (source as? SharedOpenFreeMapTileSource)?.release()
         raster.close(); imagery.close()
         tiandituLabelRenderLayer.clearRenderables(); tiandituBoundaryRenderLayer.clearRenderables()
     }
@@ -380,84 +382,85 @@ private interface NativeSnapTileCache {
     fun observe(observer: (NativeCachedSnapTile) -> Unit): AutoCloseable
 }
 
+/** The SDK closes a TileSource once per MVT layer; this adapter deliberately does not own the lease. */
 private class SharedOpenFreeMapTileSource : TileSource, NativeSnapTileCache {
-    private val executor = Executors.newFixedThreadPool(2)
-    private val requestPermits = Semaphore(2)
-    private val active = ConcurrentHashMap.newKeySet<HttpURLConnection>()
-    private val snapObservers = java.util.concurrent.CopyOnWriteArraySet<(NativeCachedSnapTile) -> Unit>()
-    private val cache = object : LinkedHashMap<String, TileBlob>(80, .75f, true) {
-        private var bytes = 0
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, TileBlob>?): Boolean {
-            if (size <= MAX_CACHED_TILES && bytes <= MAX_CACHE_BYTES) return false
-            eldest?.let { bytes -= it.value.bytes.size }
-            return true
-        }
-        fun clearTiles() { synchronized(this) { clear(); bytes = 0 } }
-        fun putTile(key: String, value: TileBlob) { synchronized(this) { remove(key)?.let { bytes -= it.bytes.size }; bytes += value.bytes.size; put(key, value) } }
-    }
-    @Volatile private var closed = false
+    private val leaseBundle = NativeOpenFreeMapRawTilePool.acquireLease()
+    private val core = leaseBundle.first
+    private val lease = leaseBundle.second
+    private val released = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    override suspend fun tryReadCachedTile(z: Int, x: Int, y: Int): TileBlob? = synchronized(cache) { cache["$z/$x/$y"] }
+    override suspend fun tryReadCachedTile(z: Int, x: Int, y: Int): TileBlob? =
+        lease.cached(key(identity(), z, x, y))
+
+    override suspend fun fetchTile(z: Int, x: Int, y: Int, previousEtag: String?, previousLastModified: String?): TileBlob? =
+        lease.fetch(key(identity(), z, x, y))
 
     override fun visibleTiles(boundsWgs84: List<Double>): List<NativeCachedSnapTile> {
         require(boundsWgs84.size == 4 && boundsWgs84.all(Double::isFinite))
         val (west, south, east, north) = boundsWgs84
         require(west >= -180 && east <= 180 && south >= -85.051129 && north <= 85.051129 && west <= east && south <= north)
-        return synchronized(cache) {
-            cache.entries.mapNotNull { (key, blob) ->
-                if (blob.bytes.isEmpty()) return@mapNotNull null
-                val parts = key.split('/'); if (parts.size != 3) return@mapNotNull null
-                val z = parts[0].toIntOrNull() ?: return@mapNotNull null
-                val x = parts[1].toIntOrNull() ?: return@mapNotNull null
-                val y = parts[2].toIntOrNull() ?: return@mapNotNull null
-                if (z !in 0..14) return@mapNotNull null
-                val n = 1 shl z
-                val tileWest = x.toDouble() / n * 360.0 - 180.0
-                val tileEast = (x + 1.0) / n * 360.0 - 180.0
-                fun latitude(row: Double): Double = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(Math.PI * (1 - 2 * row / n))))
-                val tileNorth = latitude(y.toDouble()); val tileSouth = latitude(y + 1.0)
-                if (tileEast < west || tileWest > east || tileNorth < south || tileSouth > north) null
-                else NativeCachedSnapTile(z, x, y, blob.bytes.copyOf(), blob)
-            }
+        val current = identity()
+        return lease.cachedEntries().mapNotNull { (key, blob) ->
+            if (key.identity != current || blob.bytes.isEmpty()) return@mapNotNull null
+            if (key.z !in 0..14) return@mapNotNull null
+            val n = 1 shl key.z
+            val tileWest = key.x.toDouble() / n * 360.0 - 180.0
+            val tileEast = (key.x + 1.0) / n * 360.0 - 180.0
+            fun latitude(row: Double): Double = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(Math.PI * (1 - 2 * row / n))))
+            val tileNorth = latitude(key.y.toDouble()); val tileSouth = latitude(key.y + 1.0)
+            if (tileEast < west || tileWest > east || tileNorth < south || tileSouth > north) null
+            else NativeCachedSnapTile(key.z, key.x, key.y, blob.bytes.copyOf(), blob)
         }
-    }
-    override fun observe(observer: (NativeCachedSnapTile) -> Unit): AutoCloseable {
-        snapObservers += observer
-        return AutoCloseable { snapObservers -= observer }
-    }
-    override suspend fun fetchTile(z: Int, x: Int, y: Int, previousEtag: String?, previousLastModified: String?): TileBlob? {
-        require(!closed && z in 0..14 && x in 0 until (1 shl z) && y in 0 until (1 shl z))
-        val key = "$z/$x/$y"
-        val policy = NativeOfflineDisplayPolicy.snapshot()
-        val url = if (policy.enabled) NativeOfflineDisplayPolicy.selectedOpenFreeMapTileUrl(z, x, y)
-            ?: run { NativeOfflineDisplayPolicy.reportMissingOpenFreeMapTemplate(); return TileBlob.EMPTY }
-        else "https://tiles.openfreemap.org/planet/latest/$z/$x/$y.pbf"
-        if (policy.enabled) {
-            val bytes = NativeOfflineDisplayPolicy.readSelectedCache(url) ?: return TileBlob.EMPTY
-            val cached = TileBlob(bytes, null, null, "application/vnd.mapbox-vector-tile")
-            synchronized(cache) { cache.putTile(key, cached) }
-            if (bytes.isNotEmpty()) {
-                val loaded = NativeCachedSnapTile(z, x, y, bytes.copyOf(), cached)
-                snapObservers.forEach { observer -> runCatching { observer(loaded) } }
-            }
-            return cached
-        }
-        synchronized(cache) { cache[key]?.let { return it } }
-        val blob = requestPermits.withPermit { fetch(url) }
-        synchronized(cache) { cache.putTile(key, blob) }
-        if (blob.bytes.isNotEmpty()) {
-            val loaded = NativeCachedSnapTile(z, x, y, blob.bytes.copyOf(), blob)
-            snapObservers.forEach { observer -> runCatching { observer(loaded) } }
-        }
-        return blob
     }
 
-    private suspend fun fetch(url: String): TileBlob {
-        if (NativeOfflineDisplayPolicy.snapshot().enabled) {
+    @Synchronized override fun observe(observer: (NativeCachedSnapTile) -> Unit): AutoCloseable {
+        if (released.get()) return AutoCloseable { }
+        return lease.observe { key, blob ->
+            val current = identity()
+            if (key.identity == current && blob.bytes.isNotEmpty()) {
+                observer(NativeCachedSnapTile(key.z, key.x, key.y, blob.bytes.copyOf(), blob))
+            }
+        }
+    }
+
+    /** Called once by NativeCartographyLayers after its MVT layers close. */
+    @Synchronized
+    fun release() {
+        if (!released.compareAndSet(false, true)) return
+        NativeOpenFreeMapRawTilePool.release(core, lease)
+    }
+
+    override fun close() = Unit
+
+    private fun identity() = NativeOpenFreeMapRawSourceIdentity.from(NativeOfflineDisplayPolicy.snapshot())
+    private fun key(identity: NativeOpenFreeMapRawSourceIdentity, z: Int, x: Int, y: Int) = NativeOpenFreeMapRawTileKey(identity, z, x, y)
+}
+
+private class NativeOpenFreeMapRawCore {
+    val executor = Executors.newFixedThreadPool(2)
+    val requestPermits = Semaphore(2)
+    val active = ConcurrentHashMap.newKeySet<HttpURLConnection>()
+    val store = NativeSharedRawTileStore<NativeOpenFreeMapRawTileKey>(loader = ::load)
+
+    private suspend fun load(key: NativeOpenFreeMapRawTileKey): TileBlob? {
+        val identity = key.identity
+        val url = if (identity.enabled) {
+            val current = NativeOfflineDisplayPolicy.snapshot()
+            if (identity != NativeOpenFreeMapRawSourceIdentity.from(current)) return null
+            NativeOfflineDisplayPolicy.selectedOpenFreeMapTileUrl(key.z, key.x, key.y)
+                ?: run { NativeOfflineDisplayPolicy.reportMissingOpenFreeMapTemplate(); return TileBlob.EMPTY }
+        } else "https://tiles.openfreemap.org/planet/latest/${key.z}/${key.x}/${key.y}.pbf"
+
+        if (identity.enabled) {
             val bytes = NativeOfflineDisplayPolicy.readSelectedCache(url) ?: return TileBlob.EMPTY
+            if (identity != NativeOpenFreeMapRawSourceIdentity.from(NativeOfflineDisplayPolicy.snapshot())) return null
             return TileBlob(bytes, null, null, "application/vnd.mapbox-vector-tile")
         }
-        return suspendCancellableCoroutine { cont ->
+        if (identity != NativeOpenFreeMapRawSourceIdentity.from(NativeOfflineDisplayPolicy.snapshot())) return null
+        return requestPermits.withPermit { fetch(url) }
+    }
+
+    private suspend fun fetch(url: String): TileBlob = suspendCancellableCoroutine { cont ->
         val connection = AtomicReference<HttpURLConnection?>(); val future = AtomicReference<Future<*>?>()
         val task = executor.submit {
             try {
@@ -478,18 +481,34 @@ private class SharedOpenFreeMapTileSource : TileSource, NativeSnapTileCache {
         }
         future.set(task); if (!cont.isActive) task.cancel(true)
         cont.invokeOnCancellation { connection.get()?.disconnect(); future.get()?.cancel(true) }
-        }
     }
 
-    override fun close() {
-        if (closed) return
-        closed = true; active.toList().forEach { it.disconnect() }; executor.shutdownNow()
-        snapObservers.clear()
-        synchronized(cache) { cache.clearTiles() }
-    }
+    fun close() { active.toList().forEach { it.disconnect() }; executor.shutdownNow() }
 
-    companion object { private const val MAX_TILE_BYTES = 4 * 1024 * 1024; private const val MAX_CACHE_BYTES = 32 * 1024 * 1024; private const val MAX_CACHED_TILES = 256 }
+    companion object { private const val MAX_TILE_BYTES = 4 * 1024 * 1024 }
 }
+
+private object NativeOpenFreeMapRawTilePool {
+    private var current: NativeOpenFreeMapRawCore? = null
+
+    @Synchronized fun acquireLease(): Pair<NativeOpenFreeMapRawCore, NativeSharedRawTileStore<NativeOpenFreeMapRawTileKey>.Lease> {
+        val core = current ?: NativeOpenFreeMapRawCore().also { current = it }
+        return core to core.store.acquire()
+    }
+
+    @Synchronized fun release(core: NativeOpenFreeMapRawCore, lease: NativeSharedRawTileStore<NativeOpenFreeMapRawTileKey>.Lease) {
+        lease.close()
+        if (current !== core || core.store.snapshot().owners != 0) return
+        current = null
+        core.close()
+    }
+
+    @Synchronized fun numericSnapshot(): NativeSharedRawTileStore.Snapshot? = current?.store?.snapshot()
+}
+
+/** URL-free raw MVT pool counters for the bounded performance probe. */
+internal fun nativeOpenFreeMapRawTileSnapshot(): NativeSharedRawTileStore.Snapshot? =
+    NativeOpenFreeMapRawTilePool.numericSnapshot()
 
 private const val MAX_RASTER_BYTES = 4 * 1024 * 1024
 private fun checkResponseLength(length: Long, limit: Int) {

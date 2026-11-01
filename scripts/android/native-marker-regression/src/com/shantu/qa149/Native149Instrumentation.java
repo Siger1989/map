@@ -78,6 +78,8 @@ public final class Native149Instrumentation extends Instrumentation {
                     : "offline-route-regression".equals(mode) ? Native158OfflineRegression.run(this)
                     : "road-style-regression".equals(mode) ? Native159RoadRegression.run(this)
                     : "road-density-regression".equals(mode) ? Native162RoadDensityRegression.run(this)
+                    : "native163-ui-regression".equals(mode) ? Native163UiRegression.run(this)
+                    : "native163-drawing-regression".equals(mode) ? Native163DrawingRegression.run(this)
                     : "restore-qa-viewport".equals(mode) ? restoreQaViewport() : inspect();
                 result.putString("qa149_json", report.toString());
             } catch (Throwable error) {
@@ -132,6 +134,7 @@ public final class Native149Instrumentation extends Instrumentation {
         boolean stop = false;
         long commands = 0;
         Native160Telemetry telemetry = new Native160Telemetry(this);
+        Native163PerfProbe perf = new Native163PerfProbe(this);
         try (ServerSocket server = new ServerSocket(23458, 8, InetAddress.getByName("127.0.0.1"))) {
             server.setSoTimeout(1000);
             Bundle ready = new Bundle();
@@ -152,10 +155,43 @@ public final class Native149Instrumentation extends Instrumentation {
                             JSONObject request = new JSONObject(line);
                             String action = request.getString("action");
                             stop = "stop".equals(action);
+                            if ("native163-drawing-regression".equals(action) || "native163-ui-regression".equals(action)) {
+                                if ("native163-ui-regression".equals(action) && request.has("expectedCssWidth")) {
+                                    int width = request.getInt("expectedCssWidth");
+                                    if (width != 360 && width != 390) throw new IllegalArgumentException("expectedCssWidth must be 360 or 390");
+                                    if (arguments == null) arguments = new Bundle();
+                                    arguments.putInt("expectedCssWidth", width);
+                                }
+                                reply = new JSONObject().put("ok", true).put("regression", "native163-drawing-regression".equals(action)
+                                    ? Native163DrawingRegression.run(this) : Native163UiRegression.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("native163-nav-regression".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("navigation", Native163NavigationRegression.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("projection-proof".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("projection", Native163ProjectionProbe.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("heap-capture".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("heapCapture", captureQaHeap());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("snap-targets".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("targets", Native160DrawingProbe.targets(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
+                            }
+                            if ("native163-projection-alignment".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("comparison",
+                                    Native163DrawingRegression.compareProjection(this, request.optJSONArray("coordinates")));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush();
+                                continue;
+                            }
+                            if (action.startsWith("perf-")) {
+                                reply = new JSONObject().put("ok", true).put("performance", perf.action(action, request));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("telemetry-start".equals(action) || "telemetry-stop".equals(action) || "telemetry-snapshot".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("telemetry", telemetry.action(action));
@@ -166,6 +202,7 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("targetVersion", targetVersionProof())
                                     .put("camera", invokeCameraJson()).put("diagnostics", inspectDiagnosticsCounters())
                                     .put("annotationCount", annotationCount(readState()))
+                                    .put("renderStateHasAnnotations", readState().optJSONArray("annotations") != null)
                                     .put("visibleControls", readVisibleControls()).put("contours", contourCounters())
                                     .put("gizmoDom", inspectGizmoDomRect()).put("drawingMagnifier", inspectDrawingMagnifier());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
@@ -179,7 +216,7 @@ public final class Native149Instrumentation extends Instrumentation {
                             if ("thread-stacks".equals(action)) {
                                 JSONArray threads = new JSONArray();
                                 for (Map.Entry<Thread, StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet()) {
-                                    boolean appFrame = false;
+                                    boolean appFrame = stack.getKey().getName().equals("main") || stack.getKey().getName().startsWith("GLThread");
                                     for (StackTraceElement frame : stack.getValue()) if (frame.getClassName().startsWith("earth.worldwind.") || frame.getClassName().startsWith("com.shantu.") || frame.getClassName().startsWith("com.guanyun.")) appFrame = true;
                                     if (!appFrame) continue;
                                     JSONArray frames = new JSONArray(); int count = 0;
@@ -198,7 +235,8 @@ public final class Native149Instrumentation extends Instrumentation {
                                 .put("width", previewWidth).put("height", previewHeight);
                         } catch (Exception error) {
                             previewCancel();
-                            reply = new JSONObject().put("ok", false).put("error", safeError(error.getMessage()));
+                            reply = new JSONObject().put("ok", false).put("error", safeError(error.getMessage()))
+                                .put("errorType", error.getClass().getName()).put("causes", errorDetails(error));
                         }
                         writer.write(reply.toString());
                         writer.newLine();
@@ -211,7 +249,7 @@ public final class Native149Instrumentation extends Instrumentation {
                     // Keep serving fresh local connections after a page reload or transport interruption.
                 }
             }
-        } finally { previewCancel(); telemetry.action("telemetry-stop"); }
+        } finally { previewCancel(); telemetry.action("telemetry-stop"); perf.action("perf-stop", null); }
         return new JSONObject().put("mode", "interactive-preview").put("testState", "STOPPED_BY_COMMAND")
             .put("commands", commands);
     }
@@ -227,7 +265,39 @@ public final class Native149Instrumentation extends Instrumentation {
         return line.length() == 0 ? null : line.toString();
     }
 
+    /** Private diagnostic only: a heap dump can collect garbage and is never a performance sample. */
+    private JSONObject captureQaHeap() throws Exception {
+        JSONObject version = targetVersionProof();
+        if (!"0.2.163-test".equals(version.optString("versionName")))
+            throw new IllegalStateException("heap capture requires the explicit 163 QA target");
+        File directory = new File(getTargetContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "native163-heap");
+        if (!directory.mkdirs() && !directory.isDirectory()) throw new IllegalStateException("private heap directory unavailable");
+        if (directory.getUsableSpace() < 1024L * 1024L * 1024L) throw new IllegalStateException("insufficient private diagnostic space");
+        File destination = new File(directory, "heap-" + UUID.randomUUID().toString() + ".hprof");
+        Runtime runtime = Runtime.getRuntime();
+        long before = runtime.totalMemory() - runtime.freeMemory();
+        long started = SystemClock.elapsedRealtime();
+        android.os.Debug.dumpHprofData(destination.getAbsolutePath());
+        return new JSONObject().put("file", destination.getAbsolutePath()).put("bytes", destination.length())
+            .put("elapsedMs", SystemClock.elapsedRealtime() - started).put("javaUsedBeforeBytes", before)
+            .put("javaUsedAfterBytes", runtime.totalMemory() - runtime.freeMemory())
+            .put("collectionMayHideTransientAllocations", true).put("performanceMeasurement", false);
+    }
+
     private JSONArray contourCounters() throws Exception {
+        // WorldWindow assembles SDK render cuts and drains content on Choreographer/main.
+        // Reading liveContent on the instrumentation worker races that HashMap iteration.
+        AtomicReference<JSONArray> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try { result.set(contourCountersOnMain()); }
+            catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("main contour snapshot unavailable", failure.get());
+        return result.get();
+    }
+
+    private JSONArray contourCountersOnMain() throws Exception {
         JSONArray out = new JSONArray();
         Object renderer = fieldValue(fieldValue(entry, "controller"), "terrainOverlayRenderer");
         if (renderer == null) return out;
@@ -249,6 +319,8 @@ public final class Native149Instrumentation extends Instrumentation {
                 if (cachedTiles instanceof Map) for (Map.Entry<?,?> item : ((Map<?,?>)cachedTiles).entrySet()) {
                     Object content = item.getValue();
                     JSONObject tile = numericObjectFields(content);
+                    // Private-only instance tag distinguishes a retained tile from an evict/rebuild.
+                    tile.put("contentInstance", System.identityHashCode(content));
                     String key = String.valueOf(item.getKey());
                     if (key.matches("[-0-9/,.: ]{1,80}")) tile.put("key", key);
                     tile.put("inCut", cut instanceof java.util.Collection && ((java.util.Collection<?>)cut).contains(content));
@@ -385,6 +457,7 @@ public final class Native149Instrumentation extends Instrumentation {
         JSONObject out = new JSONObject();
         out.put("mode", "inspect").put("targetPackage", TARGET_PACKAGE).put("mapId", "main");
         out.put("sourceId", sourceId(state)).put("camera", invokeCameraJson()).put("annotationCount", annotationCount(state));
+        out.put("renderStateHasAnnotations", state.optJSONArray("annotations") != null);
         out.put("selectedAnnotationId", selectedId(state)).put("nativeWorldWindAttached", findWorldWindow() != null);
         out.put("visibleControlsSpace", "css-pixels").put("visibleControls", readVisibleControls());
         out.put("testState", "INSPECT_READY");
@@ -611,9 +684,9 @@ public final class Native149Instrumentation extends Instrumentation {
             }
             return output;
         }
-        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key)) && value instanceof JSONObject)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key)) && value instanceof JSONObject)
             return safeDiagnosticsObject((JSONObject)value);
-        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key)) && value instanceof Map)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key)) && value instanceof Map)
             return safeDiagnosticsMap((Map<?, ?>)value);
         if ("decodeDurationBucketCounts".equals(key) && value instanceof JSONArray) {
             JSONArray input = (JSONArray)value, output = new JSONArray();
@@ -629,6 +702,9 @@ public final class Native149Instrumentation extends Instrumentation {
     private boolean isAllowedDiagnosticScalar(String key) {
         // Explicit numeric/boolean fields from inspectMapDiagnosticsOnMain; names and identifiers are excluded.
         switch (key) {
+            case "demPlanCount": case "demPlanNanos": case "demPlanMaxNanos": case "demCancelledJobs": case "groundWorkDeferrals":
+            case "replans": case "totalNanos": case "maxNanos": case "batchReplans": case "rankCalculations": case "geometryReuses":
+            case "rawBytes": case "rawTiles": case "hits": case "misses": case "fetches": case "deduplicated": case "inFlight": case "owners": case "evictions":
             case "available": case "heapMaxBytes": case "heapUsedBytes": case "mapCount":
             case "actualFrames": case "lastFrameAgeMs": case "rasterBitmapDecodes":
             case "renderCacheCapacityBytes": case "renderCacheUsedBytes": case "renderCacheEntries":
@@ -638,6 +714,9 @@ public final class Native149Instrumentation extends Instrumentation {
             case "active": case "queueWaitMs": case "networkMs": case "pendingCacheWriteBytes": case "droppedCacheWrites":
             case "completedCacheWrites": case "failedCacheWrites": case "activeBackground":
             case "contoursEnabled": case "rasterTileSize": case "terrainEnabled":
+            case "processAssemblyActiveSlots": case "processAssemblyMaximumActiveSlots": case "processAssemblyWaits": case "processAssemblyQueuedRequests":
+            case "activeGeometryEntries": case "activeLeases":
+            case "processPreparedActiveSlots": case "processPreparedMaximumActiveSlots": case "processPreparedWaits": case "processPreparedQueuedRequests":
             case "completedBatches": case "maximumLogicalVertices": case "maximumVboBytes":
             case "budgetRejections": case "refinedTiles": case "maxLevelRejections":
             case "refinementDeferred": case "lastRejectedSourceLevel":
@@ -1582,7 +1661,8 @@ public final class Native149Instrumentation extends Instrumentation {
 
     private JSONObject readState() throws Exception { return (JSONObject)fieldValue(entry, "renderState"); }
     private String selectedId(JSONObject state) { String id = state.optString("annotationSelected", ""); return id.isEmpty() || "null".equals(id) ? "" : id; }
-    private int annotationCount(JSONObject state) { JSONArray array = state.optJSONArray("annotations"); return array == null ? 0 : array.length(); }
+    // An early bridge state without this field is unknown, not a confirmed empty user store.
+    private int annotationCount(JSONObject state) { JSONArray array = state.optJSONArray("annotations"); return array == null ? -1 : array.length(); }
     private String sourceId(JSONObject state) { JSONObject source = state.optJSONObject("mapSource"); return source == null ? "" : source.optString("id", ""); }
     private JSONObject invokeCameraJson() throws Exception {
         AtomicReference<JSONObject> out = new AtomicReference<>(); AtomicReference<Throwable> error = new AtomicReference<>();
@@ -1903,9 +1983,9 @@ public final class Native149Instrumentation extends Instrumentation {
 
     private JSONObject inspectGizmoDomRect() throws Exception {
         String script = "(()=>{const visible=e=>{if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0};"
-            + "const e=document.querySelector('.home-camera-control .camera-gizmo')||document.querySelector('.camera-gizmo'),target=e||document.querySelector('.camera-gizmo svg');"
+            + "const candidates=[...document.querySelectorAll('.camera-gizmo')],e=candidates.find(visible),target=e||candidates[0];"
             + "const rect=n=>{if(!n)return null;const r=n.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};"
-            + "const svg=e&&e.querySelector('svg');return JSON.stringify({exists:!!target,visible:visible(target),target:target===e?'camera-gizmo':'camera-gizmo-svg',rect:rect(target),svgRect:rect(svg)})})()";
+            + "const svg=e&&e.querySelector('svg');return JSON.stringify({exists:!!target,visible:visible(target),target:target===e?'camera-gizmo':'camera-gizmo-svg',rect:rect(target),svgRect:rect(svg),modelRect:rect(e&&e.querySelector('.camera-model')),ringRect:rect(e&&e.querySelector('.camera-ring')),candidates:candidates.map(n=>({visible:visible(n),rect:rect(n)}))})})()";
         return new JSONObject(evalJs(script));
     }
     private JSONObject inspectDrawingMagnifier() throws Exception {

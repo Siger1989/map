@@ -29,6 +29,87 @@ class NativeBridgeSnapGeometryTest {
         assertEquals("Creek", rivers.single().name)
     }
 
+    @Test fun decodedMultilinestringComponentsReachSnapGeometryWithoutFalseConnector() {
+        val tile = NativeCachedSnapTile(0, 0, 0, multiLineMvtTile(), Any())
+        val features = NativeMvtDecoder.decode(tile.bytes)
+        val lines = NativeSnapGeometryDecoder.lines(
+            listOf(tile to features), listOf(-180.0, -85.0, 180.0, 85.0), false)
+
+        assertEquals(2, lines.size)
+        assertEquals(listOf(2, 3), lines.map { it.coordinates.size }.sorted())
+        assertTrue(lines.all { it.name == "Multi trail" })
+    }
+
+    @Test fun snapTileSelectionUsesOnlyFinestAvailableSourceZoomBeforeApplyingTileLimit() {
+        val fineBounds = tileInteriorBounds(14, 8192, 8192)
+        val fine = NativeCachedSnapTile(14, 8192, 8192, byteArrayOf(14), Any())
+        val coarse = NativeCachedSnapTile(9, 256, 256, byteArrayOf(9), Any())
+
+        val selected = NativeSnapTileSelector.select(listOf(coarse, fine), fineBounds, maxTiles = 24)
+
+        assertEquals(14, selected.sourceZoom)
+        assertEquals(listOf(fine), selected.tiles)
+        assertTrue(selected.coverageComplete)
+    }
+
+    @Test fun snapTileSelectionRanksFinestTilesBeforeTheTwentyFourTileLimitIndependentOfLruOrder() {
+        val bounds = boundsAcrossTileColumns(14, 1000, 1029, row = 8192)
+        val fine = (1000..1029).map { NativeCachedSnapTile(14, it, 8192, byteArrayOf(it.toByte()), Any()) }
+        val coarse = NativeCachedSnapTile(9, 31, 256, byteArrayOf(9), Any())
+
+        val selected = NativeSnapTileSelector.select(listOf(coarse) + fine.reversed(), bounds, maxTiles = 24)
+        val reversed = NativeSnapTileSelector.select(fine + coarse, bounds, maxTiles = 24)
+
+        assertEquals(14, selected.sourceZoom)
+        assertEquals(24, selected.tiles.size)
+        assertTrue(selected.tiles.all { it.z == 14 })
+        assertEquals(selected.tiles.map { it.x }, reversed.tiles.map { it.x })
+        assertEquals(1014, selected.tiles.first().x)
+        assertFalse(selected.coverageComplete)
+    }
+
+    @Test fun snapTileSelectionCentersAndBreaksTiesByStableYThenX() {
+        val bounds = boundsAcrossTileColumns(4, 3, 4, row = 7)
+        val right = NativeCachedSnapTile(4, 4, 7, byteArrayOf(1), Any())
+        val left = NativeCachedSnapTile(4, 3, 7, byteArrayOf(2), Any())
+
+        val selected = NativeSnapTileSelector.select(listOf(right, left, left), bounds, maxTiles = 2)
+
+        assertEquals(listOf(left, right), selected.tiles)
+        assertTrue(selected.coverageComplete)
+        assertEquals(listOf(left), NativeSnapTileSelector.select(listOf(right, left), bounds, 1).tiles)
+    }
+
+    @Test fun snapTileSelectionReportsPartialCoverageAndFallsBackWhenNoFinerCacheExists() {
+        val bounds = boundsAcrossTileColumns(4, 3, 4, row = 7)
+        val onlyLeft = NativeCachedSnapTile(4, 3, 7, byteArrayOf(1), Any())
+        val partial = NativeSnapTileSelector.select(listOf(onlyLeft), bounds, maxTiles = 24)
+
+        assertEquals(4, partial.sourceZoom)
+        assertFalse(partial.coverageComplete)
+
+        val coarseBounds = tileInteriorBounds(9, 256, 256)
+        val coarse = NativeCachedSnapTile(9, 256, 256, byteArrayOf(9), Any())
+        val fallback = NativeSnapTileSelector.select(listOf(coarse), coarseBounds, maxTiles = 24)
+        assertEquals(9, fallback.sourceZoom)
+        assertEquals(listOf(coarse), fallback.tiles)
+        assertTrue(fallback.coverageComplete)
+    }
+
+    @Test fun realDecoderSelectsFineRoadBeforeCoarseFeatureCanExhaustPointBudget() {
+        val bounds = tileInteriorBounds(14, 8192, 8192)
+        val coarse = NativeCachedSnapTile(9, 256, 256, singleRoadMvtTile("coarse", 6000, 1, 64), Any())
+        val fine = NativeCachedSnapTile(14, 8192, 8192, singleRoadMvtTile("fine", 2, 1000, 1000), Any())
+        val selected = NativeSnapTileSelector.select(listOf(coarse, fine), bounds, maxTiles = 24)
+        val decoded = selected.tiles.map { tile ->
+            tile to NativeMvtDecoder.decode(tile.bytes).filter(NativeSnapGeometryDecoder::accepts)
+        }
+        val lines = NativeSnapGeometryDecoder.lines(decoded, bounds, false)
+
+        assertEquals(listOf("fine"), lines.map { it.name })
+        assertEquals(listOf(2), lines.map { it.coordinates.size })
+    }
+
     @Test fun rejectsWrongSourceLayersClassesPolygonsAndLinesOutsideViewport() {
         val tile = NativeCachedSnapTile(0, 0, 0, byteArrayOf(1), Any())
         val decoded = listOf(tile to listOf(
@@ -149,6 +230,60 @@ class NativeBridgeSnapGeometryTest {
         val road = layer("transportation", listOf("path" to "Test trail" to "1", "rail" to "Ignored" to "0"))
         val river = layer("waterway", listOf("river" to "Creek" to "0"))
         return bytesField(3, road) + bytesField(3, river)
+    }
+
+    /** Encodes two line components; the second MoveTo delta is relative to the first line's end. */
+    private fun multiLineMvtTile(): ByteArray {
+        val keys = listOf("class", "name")
+        val values = listOf("path", "Multi trail")
+        val tags = listOf(0, 0, 1, 1).flatMap(::varint).toByteArray()
+        val geometry = listOf(
+            9, zig(10), zig(20),
+            18, zig(5), zig(0), zig(0), zig(5),
+            9, zig(85), zig(75),
+            10, zig(10), zig(0),
+        ).flatMap(::varint).toByteArray()
+        val feature = bytesField(2, tags) + varint(24) + varint(2) + bytesField(4, geometry)
+        var layer = bytesField(1, "transportation".toByteArray()) + bytesField(2, feature)
+        keys.forEach { layer += bytesField(3, it.toByteArray()) }
+        values.forEach { value -> layer += bytesField(4, bytesField(1, value.toByteArray())) }
+        layer += varint(40) + varint(4096)
+        layer += varint(120) + varint(2)
+        return bytesField(3, layer)
+    }
+
+    private fun singleRoadMvtTile(name: String, pointCount: Int, startX: Int, startY: Int): ByteArray {
+        val keys = listOf("class", "name")
+        val values = listOf("path", name)
+        val tags = listOf(0, 0, 1, 1).flatMap(::varint).toByteArray()
+        val geometry = buildList {
+            add(9); add(zig(startX)); add(zig(startY))
+            if (pointCount > 1) {
+                add(((pointCount - 1) shl 3) or 2)
+                repeat(pointCount - 1) { add(zig(1)); add(zig(0)) }
+            }
+        }.flatMap(::varint).toByteArray()
+        val feature = bytesField(2, tags) + varint(24) + varint(2) + bytesField(4, geometry)
+        var layer = bytesField(1, "transportation".toByteArray()) + bytesField(2, feature)
+        keys.forEach { layer += bytesField(3, it.toByteArray()) }
+        values.forEach { value -> layer += bytesField(4, bytesField(1, value.toByteArray())) }
+        layer += varint(40) + varint(4096)
+        layer += varint(120) + varint(2)
+        return bytesField(3, layer)
+    }
+
+    private fun tileInteriorBounds(z: Int, x: Int, y: Int): List<Double> {
+        val n = 1 shl z
+        fun longitude(tx: Double) = tx / n * 360.0 - 180.0
+        fun latitude(ty: Double) = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(Math.PI * (1.0 - 2.0 * ty / n))))
+        return listOf(longitude(x + .2), latitude(y + .8), longitude(x + .8), latitude(y + .2))
+    }
+
+    private fun boundsAcrossTileColumns(z: Int, westX: Int, eastX: Int, row: Int): List<Double> {
+        val n = 1 shl z
+        fun longitude(tx: Double) = tx / n * 360.0 - 180.0
+        fun latitude(ty: Double) = Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(Math.PI * (1.0 - 2.0 * ty / n))))
+        return listOf(longitude(westX + .2), latitude(row + .8), longitude(eastX + .8), latitude(row + .2))
     }
 
     private fun layer(name: String, rows: List<Pair<Pair<String, String>, String>>): ByteArray {

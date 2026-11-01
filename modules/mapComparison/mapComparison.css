@@ -1,7 +1,7 @@
 /* Two equal map canvases; toolbar space is outside each map's projection viewport. */
 .observatory.home-map { overflow: clip; }
 .observatory.home-map[data-comparing='true'] {
-  --compare-top: calc(var(--home-top) + 32px);
+  --compare-top: calc(var(--home-top) + 36px);
   --compare-half: calc((100% - var(--compare-top) - var(--home-bottom) - 44px) / 2);
 }
 .observatory.home-map[data-comparing='true'] > :not(.map-canvas):not(.map-comparison-ui) { display: none !important; }
@@ -32,7 +32,7 @@
 }
 .map-comparison-heading {
   display: flex; align-items: center; gap: 4px; padding: 0 8px 0 10px; min-width: 0;
-  height: 32px; flex: 0 0 32px; background: var(--ui-surface); pointer-events: auto;
+  height: 36px; flex: 0 0 36px; background: var(--ui-surface); pointer-events: auto;
 }
 .map-comparison-heading strong { font-size: 14px; }
 .map-comparison-heading > strong { flex-shrink: 0; }
@@ -42,6 +42,7 @@
 .observatory.home-map .map-comparison-heading .place-search button { width: 32px; height: 32px; min-height: 32px; padding: 0; }
 .map-comparison-heading .map-comparison-live { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; flex: none; }
 .map-comparison-ui .map-comparison-heading .map-comparison-heading-icon { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+.map-comparison-ui .map-comparison-heading .map-comparison-heading-icon[aria-label='退出双图源对比'] { width: 36px; min-width: 36px; height: 36px; min-height: 36px; }
 .map-comparison-drawing { position: absolute; inset: 32px 0 0; pointer-events: none; overflow: hidden; isolation: isolate; }
 .map-comparison-drawing .track-drawing { inset: 0; }
 .map-comparison-drawing-mode { position: absolute; bottom: calc(44px + var(--home-bottom) + 2px); left: 112px; right: 92px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; pointer-events: auto; background: var(--ui-surface); border-radius: var(--ui-radius-control); }
@@ -68,11 +69,12 @@
 .comparison-source-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .comparison-source-popup {
   position: absolute; z-index: 32; top: calc(100% + 2px); left: 0; width: min(250px, calc(100vw - 16px));
-  max-height: min(48dvh, var(--comparison-source-popup-max-height, calc(100dvh - 120px)));
+  max-height: min(48dvh, calc(100dvh - 120px));
   overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box; padding: 3px;
   border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-surface); color: var(--ui-ink);
   box-shadow: var(--ui-shadow); pointer-events: auto;
 }
+.comparison-source-popup[data-placement='above'] { top: auto; bottom: calc(100% + 2px); }
 .comparison-source-group { overflow: hidden; border-radius: 4px; }
 .comparison-source-group + .comparison-source-group { margin-top: 2px; }
 .comparison-source-group-0 { background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface)); }
@@ -96,8 +98,6 @@
   background: transparent; color: var(--ui-accent);
 }
 .comparison-source-popup :is(button):focus-visible { outline: 2px solid var(--ui-accent); outline-offset: -2px; }
-.comparison-source-picker[data-pane='0'] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - 72px - var(--home-bottom, 0px)); }
-.comparison-source-picker[data-pane='1'] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - var(--compare-half, 40dvh) - 72px - var(--home-bottom, 0px)); }
 .map-comparison-ui button {
   min-height: 36px; min-width: 36px; flex-shrink: 0; padding: 0 8px; border: 0;
   border-radius: var(--ui-radius-control); background: var(--ui-raised); color: var(--ui-ink);
@@ -211,7 +211,6 @@ html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison
   font-size: 13px;
 }
 @media (orientation: landscape) {
-  .comparison-source-picker[data-pane] { --comparison-source-popup-max-height: calc(100dvh - var(--compare-top, 48px) - 72px - var(--home-bottom, 0px)); }
   html[data-ui-theme] .observatory.home-map[data-comparing='true'] .map-comparison-ui .map-comparison-editor-slot {
     --compare-editor-max-height: calc(100dvh - var(--compare-top) - 32px - var(--home-bottom) - 44px - 16px);
     width: min(200px, calc(50vw - 104px));

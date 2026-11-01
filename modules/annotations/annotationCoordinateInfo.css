@@ -24,8 +24,23 @@
   font-size: 12px;
   font-weight: 600;
 }
-.selection-tools .annotation-coordinate-info > header button {
-  min-width: 52px;
+.annotation-coordinate-info-values {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.annotation-coordinate-info-values > span { white-space: nowrap; }
+.selection-tools.is-annotation .annotation-coordinate-info span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.selection-tools .annotation-coordinate-info-values button {
+  min-width: 0;
   min-height: 28px;
   display: inline-flex;
   align-items: center;
@@ -38,22 +53,9 @@
   background: var(--ui-field);
   color: var(--ui-ink);
   font-size: 11px;
+  white-space: nowrap;
 }
-.annotation-coordinate-info > header button:disabled { opacity: .65; }
-.annotation-coordinate-info-values {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 6px;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-}
-.selection-tools.is-annotation .annotation-coordinate-info span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  margin: 0;
-}
-.annotation-coordinate-info-values span:last-child { grid-column: 1 / -1; }
+.annotation-coordinate-info-elevation { min-width: 0; font-size: 11px; font-variant-numeric: tabular-nums; }
 .annotation-coordinate-info > small {
   color: var(--ui-muted);
   font-size: 10px;

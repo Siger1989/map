@@ -1,0 +1,210 @@
+{
+  "analysisType": "offline single-map C8 run with four interaction loops and 60-second zero-input tail",
+  "candidate": "C8 installed candidate 0.2.163-test/code170; SHA prefix verified by root as 1e2ddc7; this artifact is single-only, not a pair",
+  "conditions": {
+    "device": "dedicated MuMu3",
+    "mapCount": 1,
+    "targetPose": {
+      "nativeZoom": 12,
+      "pitchDegrees": 55,
+      "bearingDegrees": 25
+    },
+    "terrainEnabled": true,
+    "contourIntervalMeters": 30,
+    "contoursGenerated": true,
+    "reportedInputLoops": 4,
+    "diskCacheCleared": false,
+    "freshAppProcess": true,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "persistentPreviewEvidence": "observed during C7 A5; for this run same always-on preview service is the established environment, but this artifact has no per-run encoder snapshot",
+    "previewCapture": {
+      "type": "adb screenrecord H.264 to FFmpeg MJPEG",
+      "size": "872x1920",
+      "bitRateBitsPerSecond": 8000000,
+      "segmentLimitSeconds": 180,
+      "ffmpegThreads": 1
+    }
+  },
+  "sampling": {
+    "periodMs": 500,
+    "elapsedMs": 152183,
+    "sampleCount": 255,
+    "steadyTail": {
+      "startAtSeconds": 92.025,
+      "endAtSeconds": 152.179,
+      "durationSeconds": 60.154,
+      "sampleCount": 112
+    }
+  },
+  "memory": {
+    "units": "MiB = 1024*1024 bytes; PSS in MiB after KiB conversion",
+    "validHeapRule": "javaSnapshotConsistent=true, gc-count unchanged across read, committed before=after, free>=0, 0<=used<=max; Runtime values remain approximate, not atomic",
+    "validHeapSamples": 255,
+    "invalidHeapSamples": 0,
+    "javaHeapMaximumMiB": 512.0,
+    "fullRun": {
+      "pssFirstPeakLastMiB": [
+        182.19,
+        744.97,
+        453.45
+      ],
+      "javaHeapFirstPeakLastMiB": [
+        54.09,
+        496.13,
+        220.94
+      ],
+      "nativeAllocatedFirstPeakLastMiB": [
+        23.35,
+        170.78,
+        115.72
+      ],
+      "identityDeduplicatedRrcLogicalFirstPeakLastMiB": [
+        23.0,
+        244.38,
+        209.89
+      ]
+    },
+    "steadyTail": {
+      "pssFirstPeakLastMiB": [
+        451.7,
+        455.59,
+        453.45
+      ],
+      "javaHeapFirstPeakLastMiB": [
+        216.15,
+        220.94,
+        220.94
+      ],
+      "nativeAllocatedFirstPeakLastMiB": [
+        115.18,
+        115.8,
+        115.72
+      ],
+      "identityDeduplicatedRrcLogicalFirstPeakLastMiB": [
+        209.89,
+        209.89,
+        209.89
+      ]
+    },
+    "peakContext": {
+      "atSeconds": 36.743,
+      "during": "interaction loop 2",
+      "javaHeapPeakMiB": 496.13,
+      "javaHeapMaxMiB": 512.0,
+      "pssPeakMiB": 744.97,
+      "warning": "high sampled peak close to runtime maximum; no sampled tuple exceeded max, but Runtime counters are approximate"
+    }
+  },
+  "contourAndFrames": {
+    "ready": {
+      "completedBatches": 36,
+      "assemblyActive": 0,
+      "assemblyQueued": 0,
+      "generationActive": 0,
+      "generationPending": 0,
+      "sdkInFlight": 0,
+      "resident": 36,
+      "renderCut": 36,
+      "contourCacheBytes": 117109032,
+      "sharedGeometryEntries": 36,
+      "sharedGeometryLeases": 36
+    },
+    "afterFourLoops": {
+      "completedBatches": 190,
+      "assemblyActive": 0,
+      "assemblyQueued": 0,
+      "generationActive": 0,
+      "generationPending": 0,
+      "sdkInFlight": 0,
+      "resident": 38,
+      "renderCut": 32,
+      "contourCacheBytes": 125015320,
+      "sharedGeometryEntries": 38,
+      "sharedGeometryLeases": 38
+    },
+    "steadyTail": {
+      "completedBatchesFirstLast": [
+        190,
+        190
+      ],
+      "residentFirstLast": [
+        38,
+        38
+      ],
+      "renderCutFirstLast": [
+        32,
+        32
+      ],
+      "contourCacheBytesFirstLast": [
+        125015320,
+        125015320
+      ],
+      "sharedGeometryEntriesFirstLast": [
+        38,
+        38
+      ],
+      "generationActivePending": [
+        0,
+        0
+      ],
+      "sdkInFlight": 0,
+      "assemblyActiveQueued": [
+        0,
+        0
+      ],
+      "decodedImagesFirstLast": [
+        1924,
+        1924
+      ],
+      "mapFrameCountFirstLast": [
+        809,
+        809
+      ],
+      "mapFrameAgeFirstLastMs": [
+        10345,
+        69810
+      ]
+    },
+    "note": "Six retained entries were outside the final render cut; these are bounded retained cache entries, not continuing generation. Frame counts/age are output cadence evidence, not GPU FPS."
+  },
+  "responsivenessAndCpu": {
+    "fullRun": {
+      "processCpuMs": 106151,
+      "wallMs": 151804,
+      "weightedPercentOfOneCore": 69.93,
+      "mainDispatchDelayMaxMs": 244,
+      "mainDispatchDelayAtLeast400Ms": 0,
+      "mapSnapshotsUnavailable": 0
+    },
+    "steadyTail": {
+      "processCpuMs": 3973,
+      "wallMs": 60003,
+      "weightedPercentOfOneCore": 6.62,
+      "mainDispatchDelayMaxMs": 1,
+      "mainDispatchDelayAtLeast400Ms": 0,
+      "mapSnapshotsUnavailable": 0
+    },
+    "hwuiFrameMetrics": "Window FrameMetrics are HWUI-only and do not measure WorldWind GL/GPU time."
+  },
+  "targetProcessLogWindow": {
+    "targetPidLines": 264,
+    "gcRelatedLines": 103,
+    "waitingForBlockingGcLines": 24,
+    "parsedBlockedAllocationEvents": 12,
+    "mainThreadBlockedAllocationEvents": 1,
+    "maxMainBlockedAllocationMs": 122.77,
+    "fatalException": 0,
+    "oom": 0,
+    "anr": 0,
+    "fatalSignal": 0,
+    "targetProcessKillOrDeathLine": 0,
+    "exitInfo": "captured exit-info file has no record matching the sampled run's target PID; not a verified exit reason"
+  },
+  "comparisonLimits": {
+    "A5": "Earlier C7 single A5 had a 60-second tail that was not quiescent: batches rose 403→697, queue active=2/pending 15–20 and SDK in-flight 17–22. A8 C8 tail was quiescent. The runs differ by candidate and do not support causal memory comparison.",
+    "A2": "May be compared only as contextual C8-vs-C7 behavior, not a matched estimate; preserve source, cache residency and loop timing differences.",
+    "pairedRun": "B8 is still running at analysis time; no paired C8 summary is produced yet.",
+    "acceptance": "MuMu-only evidence; no physical-phone acceptance or unique phone crash cause is established."
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "candidate": "C12 before datum correction",
+  "apkSha256": "5af68d780eafd2f4f63b9f117c42fe1b93c7ef5ba2021e490462bbb1508d4165",
+  "device": "MuMu3",
+  "physicalPhoneVerified": false,
+  "measurementStatus": "MEASURED_STABLE_FRAME",
+  "samePublishedFrameSequence": true,
+  "matrixStable": true,
+  "viewportStable": true,
+  "cameraStable": true,
+  "sampleCount": 5,
+  "coordinatesReturned": false,
+  "verticalExaggeration": 1,
+  "geoidOffsetMetersRange": [
+    -42.99800491333008,
+    -42.9930419921875
+  ],
+  "jsVsNativeMeshCssPxRange": [
+    4.640016466086141,
+    4.732898004837019
+  ],
+  "rawHeightSdkVsJsMaxCssPx": 2.3954989752551522e-08,
+  "rawPlusGeoidCalculationVsNativeMeshCssPxRange": [
+    0.005645587921065318,
+    0.06096630159536545
+  ],
+  "inference": "Bridge projection omitted the same geoid offset used by the rendered native terrain. Same-frame corrected calculation nearly matches the actual mesh.",
+  "c13ApplicationRuntimeAcceptance": "NOT_YET_VERIFIED"
+}

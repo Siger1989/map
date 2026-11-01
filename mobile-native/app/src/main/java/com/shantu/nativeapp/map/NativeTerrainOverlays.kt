@@ -271,8 +271,10 @@ internal object NativeTerrainOverlayMath {
         lines: List<NativeContourSegment>,
         ensureActive: () -> Unit = {},
     ): List<List<Pair<Float, Float>>> {
-        fun key(x: Float, y: Float) = (x.roundToInt().toLong() shl 32) xor (y.roundToInt().toLong() and 0xffffffffL)
-        val adjacency = HashMap<Long, MutableList<Int>>()
+        data class NodeKey(val xBits: Int, val yBits: Int)
+        fun coordinateBits(value: Float) = java.lang.Float.floatToRawIntBits(if (value == 0f) 0f else value)
+        fun key(x: Float, y: Float) = NodeKey(coordinateBits(x), coordinateBits(y))
+        val adjacency = HashMap<NodeKey, MutableList<Int>>()
         lines.forEachIndexed { index, line ->
             if ((index and 255) == 0) ensureActive()
             adjacency.getOrPut(key(line.x1, line.y1)) { mutableListOf() } += index
@@ -280,7 +282,7 @@ internal object NativeTerrainOverlayMath {
         }
         val used = BooleanArray(lines.size)
         val paths = mutableListOf<List<Pair<Float, Float>>>()
-        fun trace(start: Long, initial: Int) {
+        fun trace(start: NodeKey, initial: Int) {
             val points = mutableListOf<Pair<Float, Float>>()
             var point = start
             var edge = initial

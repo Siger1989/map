@@ -9,6 +9,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.PI
 import kotlin.math.atan
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.ln
 import kotlin.math.sinh
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.ExecutorService
@@ -125,7 +128,8 @@ class NativeBridgeSnapGeometry(
         if (tiles.isEmpty()) return SnapshotResult(response(request.revision,
             if (request.enabledRoad && request.sourceLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(),
             if (request.enabledRiver && request.sourceLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(), "visible_tiles_not_loaded"))
-        val decodedTiles = decodeCached(tiles)
+        val selection = NativeSnapTileSelector.select(tiles, request.bounds, MAX_DECODED_TILES)
+        val decodedTiles = decodeCached(selection.tiles)
         val roads = if (request.enabledRoad) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, false) else emptyList()
         val rivers = if (request.enabledRiver) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, true) else emptyList()
         val roadStatus = Status.valueOf(NativeSnapGeometryState.status(
@@ -133,16 +137,13 @@ class NativeBridgeSnapGeometry(
         // River snapping consumes the same real tile cache independently of the road overlay toggle.
         val riverStatus = Status.valueOf(NativeSnapGeometryState.status(
             request.enabledRiver, request.sourceLayerVisible, true, tiles.isNotEmpty(), rivers.size).uppercase())
-        return SnapshotResult(response(request.revision, roadStatus, roads, riverStatus, rivers))
+        return SnapshotResult(response(request.revision, roadStatus, roads, riverStatus, rivers, selection = selection))
     }
 
     private fun decodeCached(tiles: List<NativeCachedSnapTile>): List<Pair<NativeCachedSnapTile, List<NativeMvtFeature>>> {
-        // visibleTiles returns cache entries in LRU order, so prefer the most recently fetched
-        // subset when a low zoom exposes more tiles than the per-map snap budget.
-        val boundedTiles = tiles.takeLast(MAX_DECODED_TILES)
-        val active = boundedTiles.map { "${it.z}/${it.x}/${it.y}" }.toSet()
+        val active = tiles.map { "${it.z}/${it.x}/${it.y}" }.toSet()
         decoded.keys.filter { it !in active }.toList().forEach(decoded::remove)
-        return boundedTiles.mapNotNull { tile ->
+        return tiles.mapNotNull { tile ->
             val key = "${tile.z}/${tile.x}/${tile.y}"
             val cached = decoded[key]
             val features = if (cached?.token === tile.cacheToken) cached.features else
@@ -185,10 +186,17 @@ class NativeBridgeSnapGeometry(
         b[0] >= -180 && b[2] <= 180 && b[1] >= -85.051129 && b[3] <= 85.051129 && b[0] <= b[2] && b[1] <= b[3]
 
     private fun response(revision: Long, roadStatus: Status, roads: List<NativeSnapLine>, riverStatus: Status,
-        rivers: List<NativeSnapLine>, reason: String? = null) = JSONObject().put("cameraRevision", revision)
+        rivers: List<NativeSnapLine>, reason: String? = null, selection: NativeSnapTileSelection? = null) = JSONObject().put("cameraRevision", revision)
         .put("road", JSONObject().put("status", roadStatus.value).put("lines", linesJson(roads)))
         .put("river", JSONObject().put("status", riverStatus.value).put("lines", linesJson(rivers)))
-        .apply { if (reason != null) put("reason", reason) }
+        .apply {
+            if (reason != null) put("reason", reason)
+            if (selection != null) {
+                put("sourceZoom", selection.sourceZoom ?: JSONObject.NULL)
+                put("selectedTileCount", selection.tiles.size)
+                put("coverageComplete", selection.coverageComplete)
+            }
+        }
 
     private fun linesJson(lines: List<NativeSnapLine>) = JSONArray().also { array -> lines.forEach { line ->
         array.put(JSONObject().put("id", line.id).put("name", line.name).put("level", line.level)
@@ -211,6 +219,75 @@ class NativeBridgeSnapGeometry(
     }
 
     private companion object { const val MAX_DECODED_TILES = 24 }
+}
+
+/** Selects one source resolution so cached parent/child road copies are never emitted together. */
+internal data class NativeSnapTileSelection(
+    val sourceZoom: Int?,
+    val tiles: List<NativeCachedSnapTile>,
+    val coverageComplete: Boolean,
+)
+
+internal object NativeSnapTileSelector {
+    private const val MAX_SOURCE_ZOOM = 14
+    private const val MAX_MERCATOR_LATITUDE = 85.051129
+
+    /** Highest available source level first, then tiles nearest the viewport center, then stable XYZ order. */
+    fun select(tiles: List<NativeCachedSnapTile>, bounds: List<Double>, maxTiles: Int): NativeSnapTileSelection {
+        require(bounds.size == 4 && bounds.all(Double::isFinite) && bounds[0] <= bounds[2] && bounds[1] <= bounds[3])
+        require(maxTiles > 0)
+        val candidates = tiles.asSequence()
+            .filter { it.z in 0..MAX_SOURCE_ZOOM && it.x in 0 until (1 shl it.z) && it.y in 0 until (1 shl it.z) }
+            .filter { intersectsBounds(it, bounds) }
+            .distinctBy { "${it.z}/${it.x}/${it.y}" }
+            .toList()
+        val highestZoom = candidates.maxOfOrNull { it.z } ?: return NativeSnapTileSelection(null, emptyList(), false)
+        val centerX = ((bounds[0] + bounds[2]) / 2.0 + 180.0) / 360.0
+        val centerY = (mercatorY(bounds[1]) + mercatorY(bounds[3])) / 2.0
+        val selected = candidates.asSequence()
+            .filter { it.z == highestZoom }
+            .sortedWith(compareBy<NativeCachedSnapTile> {
+                val n = 1 shl it.z
+                val dx = (it.x + 0.5) / n - centerX
+                val dy = (it.y + 0.5) / n - centerY
+                dx * dx + dy * dy
+            }.thenBy { it.y }.thenBy { it.x })
+            .take(maxTiles)
+            .toList()
+        val expected = expectedTileKeys(bounds, highestZoom, maxTiles)
+        val selectedKeys = selected.mapTo(mutableSetOf()) { "${it.z}/${it.x}/${it.y}" }
+        return NativeSnapTileSelection(highestZoom, selected, expected != null && selectedKeys == expected)
+    }
+
+    /** Null means more tiles intersect the viewport than the bounded selection can prove complete. */
+    private fun expectedTileKeys(bounds: List<Double>, zoom: Int, maxTiles: Int): Set<String>? {
+        val n = 1 shl zoom
+        val minX = ceil((bounds[0] + 180.0) / 360.0 * n - 1.0).toInt().coerceIn(0, n - 1)
+        val maxX = floor((bounds[2] + 180.0) / 360.0 * n).toInt().coerceIn(0, n - 1)
+        val minY = ceil(mercatorY(bounds[3]) * n - 1.0).toInt().coerceIn(0, n - 1)
+        val maxY = floor(mercatorY(bounds[1]) * n).toInt().coerceIn(0, n - 1)
+        val width = (maxX - minX + 1).coerceAtLeast(0)
+        val height = (maxY - minY + 1).coerceAtLeast(0)
+        if (width.toLong() * height > maxTiles) return null
+        return buildSet(width * height) {
+            for (y in minY..maxY) for (x in minX..maxX) add("$zoom/$x/$y")
+        }
+    }
+
+    private fun intersectsBounds(tile: NativeCachedSnapTile, bounds: List<Double>): Boolean {
+        val n = 1 shl tile.z
+        val west = tile.x.toDouble() / n * 360.0 - 180.0
+        val east = (tile.x + 1.0) / n * 360.0 - 180.0
+        fun latitude(row: Double) = Math.toDegrees(atan(sinh(PI * (1.0 - 2.0 * row / n))))
+        val north = latitude(tile.y.toDouble())
+        val south = latitude(tile.y + 1.0)
+        return !(east < bounds[0] || west > bounds[2] || north < bounds[1] || south > bounds[3])
+    }
+
+    private fun mercatorY(latitude: Double): Double {
+        val radians = Math.toRadians(latitude.coerceIn(-MAX_MERCATOR_LATITUDE, MAX_MERCATOR_LATITUDE))
+        return 0.5 - ln((1.0 + kotlin.math.sin(radians)) / (1.0 - kotlin.math.sin(radians))) / (4.0 * PI)
+    }
 }
 
 internal data class NativeSnapLine(val id: String, val name: String, val level: Int, val coordinates: List<Pair<Double, Double>>)

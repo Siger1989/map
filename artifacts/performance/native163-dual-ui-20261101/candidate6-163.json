@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "controlled native map contour assembly comparison",
+  "units": {
+    "memory": "MiB = 1024*1024 bytes",
+    "duration": "seconds",
+    "cpu": "percent of one core"
+  },
+  "conditions": {
+    "candidateAppVersion": "0.2.163-test",
+    "baselineAppVersion": "0.2.162-test",
+    "targetCamera": {
+      "zoom": 12,
+      "pitch": 55,
+      "bearing": 25
+    },
+    "terrainAndContoursEnabled": true,
+    "reportedLoopsPerRun": 4,
+    "diskCacheCleared": false,
+    "physicalPhoneTest": false,
+    "dedicatedTestRecording": false,
+    "persistentPreviewCapture": true,
+    "persistentPreviewCaptureEvidence": "inferred_for_historical_run_from_same_always_on_preview_server; not recorded per run",
+    "persistentPreviewCaptureObservedDuringC7A5": true
+  },
+  "baseline162": {
+    "single": {
+      "role": "baseline162-single",
+      "memory": {
+        "pssPeakMiB": 572.29,
+        "pssLastMiB": 463.42,
+        "javaHeapValidPeakMiB": 341.38,
+        "javaHeapValidLastMiB": 244.62,
+        "javaHeapMaxMiB": 512.0,
+        "javaHeapInvalidSamples": 88,
+        "nativeHeapAllocatedPeakMiB": 158.06
+      },
+      "active": {
+        "markerSpanSeconds": 182.91,
+        "cpuPercentOfOneCoreWeighted": 187.07
+      },
+      "tailRecovery": {
+        "phaseDurationSeconds": 10.06,
+        "pssDropMiB": -4.73,
+        "validJavaHeapDropMiB": -21.23
+      },
+      "logcat": {
+        "available": true,
+        "coverageComplete": true,
+        "targetProcessResolved": true,
+        "sampleWindowOnly": true,
+        "targetProcessLineCount": 489,
+        "eventCounts": {
+          "fatalJava": 0,
+          "outOfMemory": 0,
+          "anr": 0,
+          "nativeCrashOrExit": 0
+        },
+        "interpretation": "Counts include matching entries in the captured sample window attributed to the resolved app process or explicit target-PID system events. Zero means no matching events in these logs, not proof of absence outside captured logs."
+      }
+    },
+    "dual": {
+      "role": "baseline162-dual",
+      "memory": {
+        "pssPeakMiB": 905.13,
+        "pssLastMiB": 600.28,
+        "javaHeapValidPeakMiB": 444.3,
+        "javaHeapValidLastMiB": 352.51,
+        "javaHeapMaxMiB": 512.0,
+        "javaHeapInvalidSamples": 141,
+        "nativeHeapAllocatedPeakMiB": 301.07
+      },
+      "active": {
+        "markerSpanSeconds": 170.28,
+        "cpuPercentOfOneCoreWeighted": 192.82
+      },
+      "tailRecovery": {
+        "phaseDurationSeconds": 20.86,
+        "pssDropMiB": 87.91,
+        "validJavaHeapDropMiB": 19.03
+      },
+      "logcat": {
+        "available": true,
+        "coverageComplete": true,
+        "targetProcessResolved": true,
+        "sampleWindowOnly": true,
+        "targetProcessLineCount": 3899,
+        "eventCounts": {
+          "fatalJava": 0,
+          "outOfMemory": 0,
+          "anr": 0,
+          "nativeCrashOrExit": 0
+        },
+        "interpretation": "Counts include matching entries in the captured sample window attributed to the resolved app process or explicit target-PID system events. Zero means no matching events in these logs, not proof of absence outside captured logs."
+      }
+    }
+  },
+  "candidate163": {
+    "single": {
+      "role": "candidate-single",
+      "freshProcess": true,
+      "sampleCount": 124,
+      "elapsedSeconds": 78.77,
+      "memory": {
+        "pssMiB": {
+          "first": 167.76,
+          "peak": 593.03,
+          "last": 480.01
+        },
+        "javaHeapUsedMiB": {
+          "validPeak": 404.66,
+          "validLast": 264.41,
+          "invalidSamples": 0,
+          "validSamples": 124,
+          "reportedMaxMiB": 512.0,
+          "inconsistentNonAtomicMaximumMiB": null,
+          "gcCounterStableSamples": 124,
+          "gcCounterChangedOrUnavailableSamples": 0,
+          "tupleRule": "valid only when committed is stable, GC count is observed unchanged across the read, and 0 <= used <= committed <= max; this remains a sampled approximation, not an atomic VM snapshot"
+        },
+        "nativeHeapAllocatedMiB": {
+          "first": 15.09,
+          "peak": 133.72,
+          "last": 95.82
+        }
+      },
+      "phases": {
+        "active": {
+          "markerSpanSeconds": 38.53,
+          "sampledCpuWallSeconds": 38.11,
+          "cpuPercentOfOneCoreWeighted": 145.83,
+          "sampleCount": 59
+        },
+        "tailRecovery": {
+          "phase": "afterIdle",
+          "markerSpanSeconds": 10.06,
+          "pssMiB": {
+            "first": 457.54,
+            "peak": 497.83,
+            "last": 480.01
+          },
+          "pssDropMiB": -22.47,
+          "validJavaTupleSampleCount": 18,
+          "javaHeapUsedMiB": {
+            "first": 245.17,
+            "peak": 264.41,
+            "last": 264.41
+          },
+          "javaHeapUsedDropMiB": -19.24
+        }
+      },
+      "mainThread": {
+        "delaySampleCount": 124,
+        "maxDispatchDelayMs": 221.0,
+        "over400msCount": 0,
+        "snapshotTimeoutCount": 0,
+        "snapshotUnavailableCount": 0
+      },
+      "cpu": {
+        "markerSpanSeconds": 38.53,
+        "sampledCpuWallSeconds": 38.11,
+        "cpuPercentOfOneCoreWeighted": 145.83,
+        "sampleCount": 59
+      },
+      "hwui": {
+        "availableSampleCount": 124,
+        "runCumulativeReportedFrameCount": 752,
+        "runCumulativeOver50msCount": 241,
+        "runCumulativeOver100msCount": 19,
+        "activeReportedFrameCountDelta": 749,
+        "activeOver50msCountDelta": 239,
+        "activeOver100msCountDelta": 17,
+        "runMeanTotalMs": 47.08,
+        "runMaxTotalMs": 328.96,
+        "countersAreCumulativeSnapshots": true,
+        "scope": "Android Window FrameMetrics/HWUI only; not WorldWind GL/GPU time or FPS"
+      },
+      "sharedRenderCache": {
+        "identityDeduplicated": true,
+        "uniqueCacheCountMax": 1,
+        "logicalCapacityMiB": 246.24,
+        "logicalUsedPeakMiB": 240.77,
+        "notSummedAcrossMapWindows": true
+      },
+      "contourAssembly": {
+        "source": "numeric contour telemetry from saved phase/loop checkpoints",
+        "checkpointCount": 15,
+        "processAssemblyMaximumActiveSlots": 1,
+        "processAssemblyWaitsCumulativeAtLatestCheckpoint": 417,
+        "processAssemblyQueuedRequestsMaximumAtCheckpoints": 1,
+        "completedBatchesLatestCheckpoint": 412,
+        "budgetRejectionsLatestCheckpoint": 4,
+        "checkpointScopeNotContinuousQueueHighWater": true
+      },
+      "logcat": {
+        "available": true,
+        "coverageComplete": true,
+        "targetProcessResolved": true,
+        "sampleWindowOnly": true,
+        "targetProcessLineCount": 176,
+        "targetProcessStartCountInWindow": 0,
+        "additionalTargetProcessStartsInWindow": 0,
+        "mainThreadGcAttributionRule": "Linux main-thread TID equals resolved process PID; raw identifiers omitted",
+        "eventCounts": {
+          "gcRelatedTargetProcessLines": 170,
+          "blockingGcLines": 0,
+          "blockingGcLinesOnMainThreadTid": 0,
+          "blockingGcDurationObservationCount": 0,
+          "blockingGcMaximumReportedDurationMs": null,
+          "blockingGcReportedDurationsTotalMs": null,
+          "fatalJava": 0,
+          "outOfMemory": 0,
+          "anr": 0,
+          "nativeCrashOrExit": 0
+        },
+        "zeroCountsMeanNoMatchingEntriesInCapturedWindowOnly": true
+      }
+    },
+    "dual": {
+      "role": "candidate-dual",
+      "freshProcess": true,
+      "sampleCount": 228,
+      "elapsedSeconds": 160.87,
+      "memory": {
+        "pssMiB": {
+          "first": 156.23,
+          "peak": 730.92,
+          "last": 417.87
+        },
+        "javaHeapUsedMiB": {
+          "validPeak": 505.32,
+          "validLast": 184.84,
+          "invalidSamples": 1,
+          "validSamples": 227,
+          "reportedMaxMiB": 512.0,
+          "inconsistentNonAtomicMaximumMiB": 223.84,
+          "gcCounterStableSamples": 227,
+          "gcCounterChangedOrUnavailableSamples": 1,
+          "tupleRule": "valid only when committed is stable, GC count is observed unchanged across the read, and 0 <= used <= committed <= max; this remains a sampled approximation, not an atomic VM snapshot"
+        },
+        "nativeHeapAllocatedMiB": {
+          "first": 18.99,
+          "peak": 145.92,
+          "last": 87.17
+        }
+      },
+      "phases": {
+        "active": {
+          "markerSpanSeconds": 95.05,
+          "sampledCpuWallSeconds": 95.23,
+          "cpuPercentOfOneCoreWeighted": 160.41,
+          "sampleCount": 121
+        },
+        "tailRecovery": {
+          "phase": "afterDualClose",
+          "markerSpanSeconds": 20.16,
+          "pssMiB": {
+            "first": 515.87,
+            "peak": 542.92,
+            "last": 417.87
+          },
+          "pssDropMiB": 98.0,
+          "validJavaTupleSampleCount": 36,
+          "javaHeapUsedMiB": {
+            "first": 294.09,
+            "peak": 314.71,
+            "last": 184.84
+          },
+          "javaHeapUsedDropMiB": 109.25
+        }
+      },
+      "mainThread": {
+        "delaySampleCount": 226,
+        "maxDispatchDelayMs": 331.0,
+        "over400msCount": 0,
+        "snapshotTimeoutCount": 2,
+        "snapshotUnavailableCount": 2
+      },
+      "cpu": {
+        "markerSpanSeconds": 95.05,
+        "sampledCpuWallSeconds": 95.23,
+        "cpuPercentOfOneCoreWeighted": 160.41,
+        "sampleCount": 121
+      },
+      "hwui": {
+        "availableSampleCount": 228,
+        "runCumulativeReportedFrameCount": 573,
+        "runCumulativeOver50msCount": 568,
+        "runCumulativeOver100msCount": 541,
+        "activeReportedFrameCountDelta": 555,
+        "activeOver50msCountDelta": 554,
+        "activeOver100msCountDelta": 528,
+        "runMeanTotalMs": 195.71,
+        "runMaxTotalMs": 690.24,
+        "countersAreCumulativeSnapshots": true,
+        "scope": "Android Window FrameMetrics/HWUI only; not WorldWind GL/GPU time or FPS"
+      },
+      "sharedRenderCache": {
+        "identityDeduplicated": true,
+        "uniqueCacheCountMax": 1,
+        "logicalCapacityMiB": 246.24,
+        "logicalUsedPeakMiB": 246.07,
+        "notSummedAcrossMapWindows": true
+      },
+      "contourAssembly": {
+        "source": "numeric contour telemetry from saved phase/loop checkpoints",
+        "checkpointCount": 17,
+        "processAssemblyMaximumActiveSlots": 1,
+        "processAssemblyWaitsCumulativeAtLatestCheckpoint": 445,
+        "processAssemblyQueuedRequestsMaximumAtCheckpoints": 3,
+        "completedBatchesLatestCheckpoint": 242,
+        "budgetRejectionsLatestCheckpoint": 82,
+        "checkpointScopeNotContinuousQueueHighWater": true
+      },
+      "logcat": {
+        "available": true,
+        "coverageComplete": true,
+        "targetProcessResolved": true,
+        "sampleWindowOnly": true,
+        "targetProcessLineCount": 288,
+        "targetProcessStartCountInWindow": 0,
+        "additionalTargetProcessStartsInWindow": 0,
+        "mainThreadGcAttributionRule": "Linux main-thread TID equals resolved process PID; raw identifiers omitted",
+        "eventCounts": {
+          "gcRelatedTargetProcessLines": 251,
+          "blockingGcLines": 27,
+          "blockingGcLinesOnMainThreadTid": 3,
+          "blockingGcDurationObservationCount": 9,
+          "blockingGcMaximumReportedDurationMs": 157.206,
+          "blockingGcReportedDurationsTotalMs": 1247.925,
+          "fatalJava": 0,
+          "outOfMemory": 0,
+          "anr": 0,
+          "nativeCrashOrExit": 0
+        },
+        "zeroCountsMeanNoMatchingEntriesInCapturedWindowOnly": true
+      }
+    }
+  },
+  "logcatAttributionValidation": {
+    "singleTargetProcessResolved": true,
+    "dualTargetProcessResolved": true,
+    "targetProcessIdentityDifferentAcrossRuns": true,
+    "processIdsOmittedFromArtifact": true
+  },
+  "candidateMinusBaseline": {
+    "singlePssPeakMiB": 20.74,
+    "dualPssPeakMiB": -174.21,
+    "singleValidJavaHeapPeakMiB": 63.28,
+    "dualValidJavaHeapPeakMiB": 61.02,
+    "singleActiveSpanSeconds": -144.38,
+    "dualActiveSpanSeconds": -75.23,
+    "singleActiveWeightedCpuPercentPoints": -41.24,
+    "dualActiveWeightedCpuPercentPoints": -32.41
+  },
+  "limitations": [
+    "Java heap peaks include only valid same-sample tuples; inconsistent reads are not heap-limit or OOM evidence.",
+    "Shared render cache is identity-deduplicated and never summed across map windows.",
+    "Active marker spans differ between runs; weighted CPU is normalized per sampled wall time, not total work for an identical-duration interval.",
+    "HWUI FrameMetrics are not WorldWind GL/GPU time or FPS; native frame-counter deltas are output counts only.",
+    "GC/crash counts are limited to the captured sample time window and resolved target app PID; missing or incomplete logs are not a zero-event pass.",
+    "Assembly queue high-water is only the maximum among saved checkpoints unless continuous counters explicitly provide a lifetime maximum.",
+    "MuMu controlled evidence does not establish physical-phone behavior or unique crash causality."
+  ]
+}
