@@ -51,6 +51,19 @@ coordinates. This helper does not change the production APK or its settings.
 
 ## Modes
 
+The interactive-only `vector-diagnostic-mask` action accepts `mode: all | no-labels | none`.
+It temporarily changes the four cartography MVT layers' enabled flags on the main thread,
+retaining their original values by object identity. `all` restores those original values;
+it does not enable a layer that was originally disabled. Responses report each original/current
+flag and the snapshot cost. `vector-traversal-snapshot` also reports `enabled` so a run can
+detect a later business-state update overriding the diagnostic mask. Errors fail the command.
+Use only on the dedicated simulator, restore `all` in the test's `finally`, and restart the
+target from its saved fixture when finished. No business settings, raw tile cache or user data
+are changed. Disabled-layer runs are attribution experiments, never a product fix or visual
+acceptance. Wait for both maps to settle and keep method/stack sampling and video off for timing.
+The helper calls each actual WorldWindow's retained `requestRedraw` method; optimized builds
+may remove the global WorldWind static convenience method, so reflecting that method is unsafe.
+
 - `inspect`: read-only activity, map, camera, source ID, annotation-count, selection-ID, and
   visible-control inspection.
 - `raster-diagnostics`: read-only native camera/cache/network counter sampling over long-far

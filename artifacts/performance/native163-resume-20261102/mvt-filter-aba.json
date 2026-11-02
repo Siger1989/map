@@ -1,0 +1,333 @@
+{
+  "description": "C23 baseline / C25 layer-payload filtering / C23 reverse check; native emulator only",
+  "fixedPrivateApkReplaced": false,
+  "phoneAccepted": false,
+  "testsPassed": 34,
+  "candidateSha256": "8dcbba6b07ee76f14535076c7c753c0d450a2b1f3bbdc2064763b0c65fdc4a09",
+  "rows": [
+    {
+      "case": "filter-A1-c23-static",
+      "mode": "static",
+      "mapFrames": {
+        "ShantuMap/frame/120122002": {
+          "count": 109,
+          "totalMs": 601.88,
+          "p50Ms": 1.36,
+          "p95Ms": 34.13,
+          "maxMs": 58.53,
+          "over50Count": 2,
+          "over100Count": 0,
+          "over100TotalMs": 0
+        },
+        "ShantuMap/frame/24920173": {
+          "count": 120,
+          "totalMs": 3149.89,
+          "p50Ms": 11.79,
+          "p95Ms": 110.38,
+          "maxMs": 135.42,
+          "over50Count": 22,
+          "over100Count": 10,
+          "over100TotalMs": 1154.94
+        }
+      },
+      "totalPreparationMs": 3751.77,
+      "maxPreparationMs": 135.42,
+      "framesOver100ms": 10,
+      "timeInFramesOver100ms": 1154.94,
+      "traceWindowSeconds": 12.01500000001397,
+      "inputWallSeconds": 0,
+      "postTraceHeapMiB": 161.28,
+      "postVisualHeapMiB": 161.57,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        651472,
+        651472
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.0003229075172006546,
+        "pitch": 5.157828297797096e-08,
+        "bearing": 0.00033918861436177394
+      }
+    },
+    {
+      "case": "filter-A1-c23-motion",
+      "mode": "motion",
+      "mapFrames": {
+        "ShantuMap/frame/120122002": {
+          "count": 294,
+          "totalMs": 1315.92,
+          "p50Ms": 1.78,
+          "p95Ms": 13.88,
+          "maxMs": 112.65,
+          "over50Count": 4,
+          "over100Count": 2,
+          "over100TotalMs": 224.21
+        },
+        "ShantuMap/frame/227415347": {
+          "count": 186,
+          "totalMs": 3760.52,
+          "p50Ms": 11.12,
+          "p95Ms": 75.43,
+          "maxMs": 360.78,
+          "over50Count": 13,
+          "over100Count": 6,
+          "over100TotalMs": 1317.38
+        }
+      },
+      "totalPreparationMs": 5076.44,
+      "maxPreparationMs": 360.78,
+      "framesOver100ms": 8,
+      "timeInFramesOver100ms": 1541.59,
+      "traceWindowSeconds": 13.453000000037719,
+      "inputWallSeconds": 8.936999999918044,
+      "postTraceHeapMiB": 200.59,
+      "postVisualHeapMiB": 200.85,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        420767,
+        420767
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.0003229076317357027,
+        "pitch": 3.4340288834755484e-08,
+        "bearing": 0.0002259324205908797
+      }
+    },
+    {
+      "case": "filter-B1-c25-static",
+      "mode": "static",
+      "mapFrames": {
+        "ShantuMap/frame/120122002": {
+          "count": 78,
+          "totalMs": 496.93,
+          "p50Ms": 1.58,
+          "p95Ms": 38.01,
+          "maxMs": 101.14,
+          "over50Count": 2,
+          "over100Count": 1,
+          "over100TotalMs": 101.14
+        },
+        "ShantuMap/frame/262391370": {
+          "count": 80,
+          "totalMs": 1636.28,
+          "p50Ms": 10.75,
+          "p95Ms": 81.83,
+          "maxMs": 266.97,
+          "over50Count": 8,
+          "over100Count": 2,
+          "over100TotalMs": 405.64
+        }
+      },
+      "totalPreparationMs": 2133.21,
+      "maxPreparationMs": 266.97,
+      "framesOver100ms": 3,
+      "timeInFramesOver100ms": 506.78,
+      "traceWindowSeconds": 12.0,
+      "inputWallSeconds": 0,
+      "postTraceHeapMiB": 199.39,
+      "postVisualHeapMiB": 199.68,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        240102,
+        240102
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.00032290763172593273,
+        "pitch": 3.4342214405569393e-08,
+        "bearing": 0.0002259406688835952
+      }
+    },
+    {
+      "case": "filter-B1-c25-motion",
+      "mode": "motion",
+      "mapFrames": {
+        "ShantuMap/frame/120122002": {
+          "count": 270,
+          "totalMs": 896.68,
+          "p50Ms": 1.37,
+          "p95Ms": 11.5,
+          "maxMs": 103.34,
+          "over50Count": 3,
+          "over100Count": 1,
+          "over100TotalMs": 103.34
+        },
+        "ShantuMap/frame/24920173": {
+          "count": 160,
+          "totalMs": 5402.0,
+          "p50Ms": 14.0,
+          "p95Ms": 178.87,
+          "maxMs": 496.79,
+          "over50Count": 21,
+          "over100Count": 12,
+          "over100TotalMs": 2867.6
+        }
+      },
+      "totalPreparationMs": 6298.68,
+      "maxPreparationMs": 496.79,
+      "framesOver100ms": 13,
+      "timeInFramesOver100ms": 2970.94,
+      "traceWindowSeconds": 16.625,
+      "inputWallSeconds": 12.141000000061467,
+      "postTraceHeapMiB": 209.35,
+      "postVisualHeapMiB": 209.66,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        415007,
+        415007
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.0003229076317357027,
+        "pitch": 3.4340288834755484e-08,
+        "bearing": 0.0002259324205908797
+      }
+    },
+    {
+      "case": "filter-A2-c23-static",
+      "mode": "static",
+      "mapFrames": {
+        "ShantuMap/frame/47221859": {
+          "count": 130,
+          "totalMs": 959.15,
+          "p50Ms": 1.42,
+          "p95Ms": 34.27,
+          "maxMs": 183.27,
+          "over50Count": 3,
+          "over100Count": 2,
+          "over100TotalMs": 306.56
+        },
+        "ShantuMap/frame/31737376": {
+          "count": 139,
+          "totalMs": 3577.14,
+          "p50Ms": 8.73,
+          "p95Ms": 117.99,
+          "maxMs": 499.04,
+          "over50Count": 16,
+          "over100Count": 10,
+          "over100TotalMs": 1973.3
+        }
+      },
+      "totalPreparationMs": 4536.29,
+      "maxPreparationMs": 499.04,
+      "framesOver100ms": 12,
+      "timeInFramesOver100ms": 2279.86,
+      "traceWindowSeconds": 12.0,
+      "inputWallSeconds": 0,
+      "postTraceHeapMiB": 212.64,
+      "postVisualHeapMiB": 212.93,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        288995,
+        288995
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.0003229075172006546,
+        "pitch": 5.157828297797096e-08,
+        "bearing": 0.00033918861436177394
+      }
+    },
+    {
+      "case": "filter-A2-c23-motion",
+      "mode": "motion",
+      "mapFrames": {
+        "ShantuMap/frame/120122002": {
+          "count": 294,
+          "totalMs": 1405.54,
+          "p50Ms": 1.72,
+          "p95Ms": 15.19,
+          "maxMs": 104.9,
+          "over50Count": 6,
+          "over100Count": 1,
+          "over100TotalMs": 104.9
+        },
+        "ShantuMap/frame/107356292": {
+          "count": 204,
+          "totalMs": 4246.92,
+          "p50Ms": 7.76,
+          "p95Ms": 116.15,
+          "maxMs": 375.32,
+          "over50Count": 17,
+          "over100Count": 11,
+          "over100TotalMs": 2038.08
+        }
+      },
+      "totalPreparationMs": 5652.46,
+      "maxPreparationMs": 375.32,
+      "framesOver100ms": 12,
+      "timeInFramesOver100ms": 2142.98,
+      "traceWindowSeconds": 15.795999999972992,
+      "inputWallSeconds": 11.327999999979511,
+      "postTraceHeapMiB": 182.58,
+      "postVisualHeapMiB": 182.84,
+      "rawMvtInFlightAfterVisual": 0,
+      "annotationCount": 1,
+      "buffer": [
+        702107,
+        702107
+      ],
+      "preEntryCameraDelta": {
+        "center": 0.0,
+        "zoom": 0.0003229075172006546,
+        "pitch": 5.157828297797096e-08,
+        "bearing": 0.00033918861436177394
+      }
+    }
+  ],
+  "jvmMicrobenchmark": {
+    "payloadBytes": [
+      122830,
+      26577,
+      10290,
+      42754
+    ],
+    "decodedFeatureCounts": [
+      357,
+      15,
+      45,
+      199
+    ],
+    "runs": [
+      {
+        "filtered": false,
+        "nanosPerFourLayers": 3196813,
+        "allocatedBytesPerFourLayers": 4254003
+      },
+      {
+        "filtered": true,
+        "nanosPerFourLayers": 1160047,
+        "allocatedBytesPerFourLayers": 2101800
+      },
+      {
+        "filtered": false,
+        "nanosPerFourLayers": 2389235,
+        "allocatedBytesPerFourLayers": 4253848
+      },
+      {
+        "filtered": true,
+        "nanosPerFourLayers": 1148871,
+        "allocatedBytesPerFourLayers": 2101802
+      },
+      {
+        "filtered": false,
+        "nanosPerFourLayers": 2386266,
+        "allocatedBytesPerFourLayers": 4253848
+      },
+      {
+        "filtered": true,
+        "nanosPerFourLayers": 1125005,
+        "allocatedBytesPerFourLayers": 2101800
+      }
+    ],
+    "sink": 674520,
+    "phonePerformance": false
+  }
+}

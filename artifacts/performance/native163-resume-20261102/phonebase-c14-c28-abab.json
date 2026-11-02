@@ -1,0 +1,122 @@
+{
+  "scope": "Dedicated MuMu original 163 C14 versus C28; warm cache; not phone/FPS acceptance",
+  "cases": [
+    {
+      "case": "phonebase-A1-c14-large",
+      "inputSeconds": 8.5,
+      "mainStateMs": {
+        "running": 4199.02,
+        "sleeping": 3586.52,
+        "runnable": 714.45
+      },
+      "choreographer": {
+        "count": 460,
+        "totalMs": 3097.8,
+        "p95Ms": 15.62,
+        "maxMs": 80.88,
+        "over50Count": 2,
+        "over100Count": 0
+      },
+      "priorityMs": 1584.63,
+      "actualDraws": [
+        336,
+        213
+      ],
+      "mainDistinctCamera": 137,
+      "auxCommandCount": 137,
+      "mainEventMaxGapMs": 233.9,
+      "auxEventMaxGapMs": 391.5,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    },
+    {
+      "case": "phonebase-B1-c28-large",
+      "inputSeconds": 8.906,
+      "mainStateMs": {
+        "running": 4613.93,
+        "runnable": 1069.46,
+        "sleeping": 3185.35
+      },
+      "choreographer": {
+        "count": 465,
+        "totalMs": 5041.01,
+        "p95Ms": 25.0,
+        "maxMs": 142.3,
+        "over50Count": 6,
+        "over100Count": 1
+      },
+      "priorityMs": 208.61,
+      "actualDraws": [
+        288,
+        203
+      ],
+      "mainDistinctCamera": 153,
+      "auxCommandCount": 153,
+      "mainEventMaxGapMs": 296.3,
+      "auxEventMaxGapMs": 361.4,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    },
+    {
+      "case": "phonebase-A2-c14-large",
+      "inputSeconds": 8.609,
+      "mainStateMs": {
+        "running": 3924.07,
+        "runnable": 1089.16,
+        "sleeping": 3562.32
+      },
+      "choreographer": {
+        "count": 464,
+        "totalMs": 3375.93,
+        "p95Ms": 17.75,
+        "maxMs": 116.39,
+        "over50Count": 4,
+        "over100Count": 2
+      },
+      "priorityMs": 1086.71,
+      "actualDraws": [
+        326,
+        253
+      ],
+      "mainDistinctCamera": 138,
+      "auxCommandCount": 138,
+      "mainEventMaxGapMs": 370.1,
+      "auxEventMaxGapMs": 348.6,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    },
+    {
+      "case": "phonebase-B2-c28-large",
+      "inputSeconds": 8.672,
+      "mainStateMs": {
+        "running": 4461.2,
+        "sleeping": 3535.68,
+        "runnable": 675.12
+      },
+      "choreographer": {
+        "count": 465,
+        "totalMs": 4681.64,
+        "p95Ms": 22.89,
+        "maxMs": 103.2,
+        "over50Count": 2,
+        "over100Count": 1
+      },
+      "priorityMs": 153.51,
+      "actualDraws": [
+        282,
+        213
+      ],
+      "mainDistinctCamera": 159,
+      "auxCommandCount": 159,
+      "mainEventMaxGapMs": 436.5,
+      "auxEventMaxGapMs": 483.2,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    }
+  ],
+  "gate": "FAIL: no repeatable whole-drag improvement; do not deliver"
+}

@@ -30,6 +30,63 @@ import java.util.concurrent.atomic.AtomicReference
 @Config(sdk = [35])
 @SQLiteMode(SQLiteMode.Mode.NATIVE)
 class BoundedTileNetworkTest {
+    @Test fun priorityWorkWakesBothViewsBeforeTransportButNotForCachedTiles() = runBlocking {
+        val callbacks = AtomicInteger()
+        val calls = AtomicInteger()
+        lateinit var tiles: BoundedTileNetwork
+        tiles = BoundedTileNetwork(Files.createTempDirectory("priority-work-").toFile(), {},
+            TileHttpClient {
+                assertEquals("both shared-view callbacks precede HTTP", (calls.get() + 1) * 2, callbacks.get())
+                assertTrue(tiles.hasPendingTransportWork())
+                calls.incrementAndGet()
+                TileHttpResponse(200, null, imageBytes)
+            }, isValidImage = { true })
+        val first = tiles.observePriorityWork { assertTrue(tiles.hasPendingTransportWork()); callbacks.incrementAndGet() }
+        val second = tiles.observePriorityWork { callbacks.incrementAndGet() }
+        try {
+            assertFalse(tiles.hasPendingTransportWork())
+            val identity = TileRequestIdentity("source", "img", 3, 2, 1, "style", "account")
+            val url = "https://example.invalid/priority"
+            assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main"))
+            assertFalse(tiles.hasPendingTransportWork())
+            assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main"))
+            assertEquals("memory hits must not wake expensive ranking", 2, callbacks.get())
+            assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main", forceNetwork = true))
+            assertEquals("a previously known identity wakes both views again", 4, callbacks.get())
+            assertFalse(tiles.hasPendingTransportWork())
+        } finally { first.close(); second.close(); tiles.close() }
+    }
+
+    @Test fun priorityWorkObserverRemovalAndFailureCannotStrandAdmission() = runBlocking {
+        val (tiles, _) = network("priority-observer-close") { _, _ -> TileHttpResponse(200, null, imageBytes) }
+        val calls = AtomicInteger()
+        val removed = tiles.observePriorityWork { calls.incrementAndGet() }
+        removed.close()
+        val throwing = tiles.observePriorityWork { error("diagnostic observer failure") }
+        try {
+            assertArrayEquals(imageBytes, tiles.fetch("https://example.invalid/priority-close", viewId = "main"))
+            assertEquals(0, calls.get())
+            assertFalse(tiles.hasPendingTransportWork())
+        } finally { throwing.close(); tiles.close() }
+    }
+    @Test fun priorityWorkIgnoresBulkButWakesPromotableRefresh() = runBlocking {
+        val (tiles, _) = network("priority-bulk") { _, _ -> TileHttpResponse(200, null, imageBytes) }
+        val calls = AtomicInteger()
+        val observer = tiles.observePriorityWork { calls.incrementAndGet() }
+        try {
+            val identity = TileRequestIdentity("source", "img", 3, 2, 1, "style", "account")
+            val url = "https://example.invalid/priority-bulk"
+            assertArrayEquals(imageBytes, tiles.fetch(url, bulkDownload = true, identity = identity,
+                viewId = "main", forceNetwork = true))
+            assertEquals(0, calls.get())
+            assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity,
+                forceNetwork = true))
+            assertEquals(0, calls.get())
+            assertArrayEquals(imageBytes, tiles.fetch(url, identity = identity, viewId = "main",
+                forceNetwork = true, backgroundRequest = true))
+            assertEquals(1, calls.get())
+        } finally { observer.close(); tiles.close() }
+    }
     private val imageBytes = byteArrayOf(11, 22, 33, 44)
 
     @Test

@@ -9,6 +9,7 @@ import android.graphics.Color as AndroidColor
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.os.Trace
 import android.view.View
 import earth.worldwind.WorldWindow
 import earth.worldwind.geom.AltitudeMode
@@ -105,7 +106,20 @@ class NativeMapController internal constructor(
         appContext, NativeRenderMemoryBudget.textureCapacityBytes(
             Runtime.getRuntime().maxMemory(), physicalMemory, memoryManager?.isLowRamDevice == true),
     )
-    private val worldWindow = WorldWindow(context, renderResourceCache = renderCacheLease.resource)
+    // Coarse system-trace spans only: no method sampling, geometry change, or per-frame strings.
+    private val frameTraceName = "ShantuMap/frame/${System.identityHashCode(this)}"
+    private val drawTraceName = "ShantuMap/draw/${System.identityHashCode(this)}"
+    private val worldWindow = object : WorldWindow(context, renderResourceCache = renderCacheLease.resource) {
+        override fun renderFrame(frame: earth.worldwind.frame.Frame) {
+            Trace.beginSection(frameTraceName)
+            try { super.renderFrame(frame) } finally { Trace.endSection() }
+        }
+
+        override fun onDrawFrame(unused: javax.microedition.khronos.opengles.GL10) {
+            Trace.beginSection(drawTraceName)
+            try { super.onDrawFrame(unused) } finally { Trace.endSection() }
+        }
+    }
     val view: View get() = worldWindow
     private val mainHandler = Handler(Looper.getMainLooper())
     private val pickScope = CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
@@ -238,6 +252,7 @@ class NativeMapController internal constructor(
     @Volatile private var bridgeFrameActivityListener: (() -> Unit)? = null
     @Volatile private var lastBridgeFrameMatrix: DoubleArray? = null
     private val bridgeFrameWitnesses = NativeBridgeFrameWitnessQueue<NativeBridgeFrameWitness<*>>()
+    private var bridgeFramePreparationListener: ((DoubleArray) -> NativeBridgeFrameWitness<*>?)? = null
     private var bridgeCameraConfigured = false
     private var bridgeGroundAnchor: NativeCameraSnapshot? = null
     private var bridgeAnchorElevation: Double? = null
@@ -253,6 +268,13 @@ class NativeMapController internal constructor(
     private val tileDemandFrames = NativeTileDemandFrameCoalescer<NativeTileDemandFrame>()
     private val tileDemandDrainPosted = AtomicBoolean(false)
     private val tileDemandUrgentWakePosted = AtomicBoolean(false)
+    private val tilePriorityIdleGate = NativeTilePriorityIdleGate()
+    private val priorityWorkObserver = network.observePriorityWork {
+        if (tilePriorityIdleGate.consumeWake()) {
+            tileDemandFrames.requestUrgent()
+            wakeTileDemandDrainIfUrgent()
+        }
+    }
     @Volatile private var tileDemandViewWasHidden = false
     private var tileDemandReplans = 0L
     private var tileDemandNanos = 0L
@@ -498,7 +520,9 @@ class NativeMapController internal constructor(
                             }
                         }, Double.MAX_VALUE)
                     }
-                    val bridgeWitness = if (bridgeFrameWitnesses.hasPending()) {
+                    val bridgeWitness = if (!rc.isPickMode && bridgeFramePreparationListener != null) {
+                        bridgeFramePreparationListener?.invoke(rc.modelviewProjection.m)
+                    } else if (!rc.isPickMode && bridgeFrameWitnesses.hasPending()) {
                         check(Looper.myLooper() == Looper.getMainLooper()) { "Bridge frame metadata factories must run on the Android main thread" }
                         bridgeFrameWitnesses.take()
                     } else null
@@ -596,6 +620,11 @@ class NativeMapController internal constructor(
         if (disposed) return
         bridgeFrameWitnesses.offer(factory)
     }
+    /** Captures metadata in the frame already being prepared, without requesting a duplicate frame. */
+    internal fun setBridgeFramePreparationListener(listener: ((DoubleArray) -> NativeBridgeFrameWitness<*>?)?) {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        bridgeFramePreparationListener = listener
+    }
     internal fun worldWindowForBridge(): WorldWindow = worldWindow
     /** The React camera contract converts zoom using a fixed 45-degree vertical field of view. */
     internal fun configureBridgeCameraScale() {
@@ -623,6 +652,8 @@ class NativeMapController internal constructor(
     }
 
     fun dispose() {
+        bridgeFramePreparationListener = null
+        bridgeFrameWitnesses.clear()
         if (disposed) return
         disposed = true
         mainHandler.removeCallbacks(tileDemandDrainRunnable)
@@ -630,6 +661,7 @@ class NativeMapController internal constructor(
         tileDemandFrames.dispose()
         network.removeViewDemand(tileViewId)
         cacheRefreshObserver.close()
+        priorityWorkObserver.close()
         resetBridgeRasterEvidence()
         geology?.close();geology=null
         cartography.close()
@@ -1500,6 +1532,11 @@ class NativeMapController internal constructor(
             worldWindow.requestRedraw()
             return
         }
+        // With no HTTP work there is nothing to prioritize. Keep the last demand/signature;
+        // a new transfer wakes this planner, while source/visibility/footprint changes bypass it.
+        if (tilePriorityIdleGate.shouldDefer(visibleNow && !forceGeneration && !tileDemandDirty) {
+                network.hasPendingTransportWork()
+            }) return
         val snapshotStartedAt = android.os.SystemClock.elapsedRealtimeNanos()
         val camera = cameraSnapshot()
         tileDemandCameraSnapshotCalls++

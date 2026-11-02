@@ -1,9 +1,12 @@
 package com.shantu.nativeapp.map
 
+import android.os.Trace
+import earth.worldwind.layer.mvt.MvtTile
 import earth.worldwind.layer.mvt.MvtStyle
 import earth.worldwind.layer.mvt.MvtVectorLayer
 import earth.worldwind.layer.source.TileSource
 import earth.worldwind.render.RenderContext
+import earth.worldwind.render.Renderable
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -36,6 +39,9 @@ internal open class NativeTimedMvtLayer(
     private val renderCount = AtomicLong()
     private val renderTotalNanos = AtomicLong()
     private val renderMaxNanos = AtomicLong()
+    private val renderTraceName = "ShantuMvt/$metricPrefix/render"
+    private val labelTraceName = "ShantuMvt/$metricPrefix/labels"
+    private val assemblyTraceName = "ShantuMvt/$metricPrefix/assemble"
 
     override fun render(rc: RenderContext) {
         // Preserve SDK pick and visibility gating, while excluding pick/disabled frames from the
@@ -46,11 +52,23 @@ internal open class NativeTimedMvtLayer(
         }
 
         val startedAt = System.nanoTime()
+        Trace.beginSection(renderTraceName)
         try {
             super.render(rc)
         } finally {
+            Trace.endSection()
             recordRender(System.nanoTime() - startedAt)
         }
+    }
+
+    override fun endFrame(rc: RenderContext) {
+        Trace.beginSection(labelTraceName)
+        try { super.endFrame(rc) } finally { Trace.endSection() }
+    }
+
+    override fun toRenderables(key: TileKey, tile: MvtTile): List<Renderable> {
+        Trace.beginSection(assemblyTraceName)
+        return try { super.toRenderables(key, tile) } finally { Trace.endSection() }
     }
 
     /** Called only by an explicit diagnostics snapshot, never from the render loop. */

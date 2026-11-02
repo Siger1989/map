@@ -37,6 +37,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,6 +63,8 @@ public final class Native149Instrumentation extends Instrumentation {
     private String runId;
     private File evidenceDir;
     private Bundle arguments;
+    // Identity hashes only: no retained SDK tile arrays and no tile coordinates in reports.
+    private final Map<Integer, Map<String, Integer>> vectorSubtreeIdentities = new java.util.HashMap<>();
 
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); this.arguments = arguments; start(); }
     @Override public void onStart() {
@@ -137,6 +140,9 @@ public final class Native149Instrumentation extends Instrumentation {
         Native160Telemetry telemetry = new Native160Telemetry(this);
         Native163PerfProbe perf = new Native163PerfProbe(this);
         Native163MethodTrace methodTrace = new Native163MethodTrace(getTargetContext());
+        // Scoped to this interactive server only: do not retain closed map windows beyond teardown.
+        IdentityHashMap<Object, Boolean> vectorDiagnosticOriginal = new IdentityHashMap<>();
+        IdentityHashMap<Object, Boolean> groundDiagnosticOriginal = new IdentityHashMap<>();
         try (ServerSocket server = new ServerSocket(23458, 8, InetAddress.getByName("127.0.0.1"))) {
             server.setSoTimeout(1000);
             Bundle ready = new Bundle();
@@ -220,9 +226,30 @@ public final class Native149Instrumentation extends Instrumentation {
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
                             }
+                            if ("vector-traversal-snapshot".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("vectorTraversal", inspectVectorTraversal());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("camera-bridge-probe".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("bridgeSync", cameraBridgeProbe(request.getString("mode")));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("ground-diagnostic-mask".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("groundDiagnosticMask",
+                                    applyGroundDiagnosticMask(request.getBoolean("browseOnly"), groundDiagnosticOriginal));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            } else if ("vector-diagnostic-mask".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("vectorDiagnosticMask",
+                                    applyVectorDiagnosticMask(request.getString("mode"), vectorDiagnosticOriginal));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("thread-stacks".equals(action)) {
                                 JSONArray threads = new JSONArray();
-                                for (Map.Entry<Thread, StackTraceElement[]> stack : Thread.getAllStackTraces().entrySet()) {
+                                long captureStarted = SystemClock.elapsedRealtimeNanos();
+                                Thread mainThread = Looper.getMainLooper().getThread();
+                                Map<Thread, StackTraceElement[]> captured = request.optBoolean("mainOnly", false)
+                                    ? Collections.singletonMap(mainThread, mainThread.getStackTrace()) : Thread.getAllStackTraces();
+                                for (Map.Entry<Thread, StackTraceElement[]> stack : captured.entrySet()) {
                                     boolean appFrame = stack.getKey().getName().equals("main") || stack.getKey().getName().startsWith("GLThread");
                                     for (StackTraceElement frame : stack.getValue()) if (frame.getClassName().startsWith("earth.worldwind.") || frame.getClassName().startsWith("com.shantu.") || frame.getClassName().startsWith("com.guanyun.")) appFrame = true;
                                     if (!appFrame) continue;
@@ -233,7 +260,8 @@ public final class Native149Instrumentation extends Instrumentation {
                                     }
                                     threads.put(new JSONObject().put("thread", stack.getKey().getName().replaceAll("https?://\\S+", "[redacted]")).put("state", stack.getKey().getState().name()).put("frames", frames));
                                 }
-                                reply = new JSONObject().put("ok", true).put("timeMillis", System.currentTimeMillis()).put("threads", threads);
+                                reply = new JSONObject().put("ok", true).put("timeMillis", System.currentTimeMillis()).put("threads", threads)
+                                    .put("captureAndEncodeNanos", SystemClock.elapsedRealtimeNanos() - captureStarted);
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             previewCommand(action, request);
@@ -256,7 +284,11 @@ public final class Native149Instrumentation extends Instrumentation {
                     // Keep serving fresh local connections after a page reload or transport interruption.
                 }
             }
-        } finally { methodTrace.close(); previewCancel(); telemetry.action("telemetry-stop"); perf.action("perf-stop", null); }
+        } finally {
+            vectorDiagnosticOriginal.clear();
+            groundDiagnosticOriginal.clear();
+            methodTrace.close(); previewCancel(); telemetry.action("telemetry-stop"); perf.action("perf-stop", null);
+        }
         return new JSONObject().put("mode", "interactive-preview").put("testState", "STOPPED_BY_COMMAND")
             .put("commands", commands);
     }
@@ -1643,6 +1675,167 @@ public final class Native149Instrumentation extends Instrumentation {
         return report;
     }
 
+    private JSONObject inspectVectorTraversal() throws Exception {
+        AtomicReference<JSONObject> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                long started = SystemClock.elapsedRealtimeNanos();
+                JSONArray rows = new JSONArray();
+                java.util.Set<Integer> active = new java.util.HashSet<>();
+                Map<?, ?> mounted = (Map<?, ?>) fieldValue(host, "maps");
+                int mapIndex = 0;
+                for (Object mapEntry : mounted.values()) {
+                    Object controller = fieldValue(mapEntry, "controller");
+                    Object cartography = fieldValue(controller, "cartography");
+                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
+                        Object layer = fieldValue(cartography, name);
+                        boolean enabled = Boolean.TRUE.equals(fieldValue(layer, "isEnabled"));
+                        Object cache = fieldValue(layer, "subtreeCache");
+                        Map<?, ?> entries = (Map<?, ?>) fieldValue(cache, "entries");
+                        Map<String, Integer> now = new java.util.HashMap<>();
+                        for (Map.Entry<?, ?> item : entries.entrySet()) {
+                            now.put(String.valueOf(item.getKey()), System.identityHashCode(fieldValue(item.getValue(), "value")));
+                        }
+                        int id = System.identityHashCode(layer); active.add(id);
+                        Map<String, Integer> previous = vectorSubtreeIdentities.put(id, now);
+                        int changed = 0, added = 0, removed = 0;
+                        if (previous != null) {
+                            for (Map.Entry<String, Integer> item : now.entrySet()) {
+                                Integer old = previous.get(item.getKey());
+                                if (old == null) added++; else if (!old.equals(item.getValue())) changed++;
+                            }
+                            for (String key : previous.keySet()) if (!now.containsKey(key)) removed++;
+                        }
+                        rows.put(new JSONObject().put("mapIndex", mapIndex).put("layer", name)
+                            .put("enabled", enabled)
+                            .put("subtreeCapacity", fieldValue(cache, "capacity")).put("subtreeUsed", fieldValue(cache, "usedCapacity"))
+                            .put("cachedChildGroups", entries.size()).put("loadedContentTiles", ((Map<?, ?>)fieldValue(layer, "liveContent")).size())
+                            .put("pendingTiles", ((Map<?, ?>)fieldValue(layer, "inFlight")).size())
+                            .put("hasPriorSnapshot", previous != null).put("sameKeyGroupReplacements", changed)
+                            .put("addedGroups", added).put("removedGroups", removed));
+                    }
+                    mapIndex++;
+                }
+                vectorSubtreeIdentities.keySet().retainAll(active);
+                result.set(new JSONObject().put("rows", rows).put("snapshotNanos", SystemClock.elapsedRealtimeNanos() - started)
+                    .put("readOnly", true).put("countsAreLowerBoundsBetweenSnapshots", true));
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("vector traversal inspection failed", failure.get());
+        return result.get();
+    }
+
+    /** Counts native publication and actual JavaScript receipt; retains no camera coordinates. */
+    private JSONObject cameraBridgeProbe(String mode) throws Exception {
+        if (!"start".equals(mode) && !"snapshot".equals(mode) && !"stop".equals(mode)) throw new IllegalArgumentException("invalid camera bridge probe mode");
+        AtomicReference<JSONArray> rows = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                JSONArray out = new JSONArray();
+                for (Map.Entry<?, ?> item : ((Map<?, ?>)fieldValue(host, "maps")).entrySet()) {
+                    Object entry = item.getValue();
+                    out.put(new JSONObject().put("mapId", item.getKey()).put("publishedFrames", fieldValue(entry, "renderFrameSequence"))
+                        .put("lastPublishAt", fieldValue(entry, "lastMatrixAt")).put("witnessPending", fieldValue(entry, "frameWitnessPending")));
+                }
+                rows.set(out);
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("bridge native counter read failed", failure.get());
+        String script = "(()=>{const mode=" + JSONObject.quote(mode) + ";let p=window.__qaCameraBridgeProbe;"
+            + "if(mode==='start'){if(p)window.removeEventListener('shantu:native-map',p.listener);"
+            + "p={started:performance.now(),counts:{},lastCamera:{}};p.listener=(e)=>{const d=e.detail;if(!d||typeof d!=='object')return;"
+            + "const id=d.mapId;if(id!=='main'&&id!=='aux-1')return;const kind=d.type==='event'?(d.payload?.name||'event'):d.type;"
+            + "if(!['renderFrame','cameraFrame','result','error','touch'].includes(kind))return;const key=id+':'+kind;"
+            + "const t=performance.now();const v=p.counts[key]||(p.counts[key]={count:0,maxGapMs:0,last:null});"
+            + "if(v.last!==null)v.maxGapMs=Math.max(v.maxGapMs,t-v.last);v.last=t;v.count++;"
+            + "if(kind==='renderFrame'||kind==='cameraFrame'){const c=d.payload?.value?.camera;if(c){"
+            + "const fp=JSON.stringify({center:c.center,zoom:c.zoom,pitch:c.pitch,bearing:c.bearing,detailZoom:c.detailZoom});"
+            + "if(fp!==p.lastCamera[id]){v.distinctCameraCount=(v.distinctCameraCount||0)+1;p.lastCamera[id]=fp;}"
+            + "if(c.cameraSyncToken!==null&&c.cameraSyncToken!==undefined)v.programmaticFrames=(v.programmaticFrames||0)+1;}}};"
+            + "window.__qaCameraBridgeProbe=p;window.addEventListener('shantu:native-map',p.listener);}"
+            + "if(!p)return JSON.stringify({active:false});const result={elapsedMs:performance.now()-p.started,counts:p.counts};"
+            + "if(mode==='stop'){window.removeEventListener('shantu:native-map',p.listener);delete window.__qaCameraBridgeProbe;}return JSON.stringify(result);})()";
+        return new JSONObject().put("native", rows.get()).put("javascript", new JSONObject(evalJs(script)));
+    }
+
+    /** Diagnostic only: removes the browse-selection flag from the host's realtime task decision. */
+    private JSONObject applyGroundDiagnosticMask(boolean browseOnly, IdentityHashMap<Object, Boolean> originals) throws Exception {
+        AtomicReference<JSONObject> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                JSONArray rows = new JSONArray();
+                for (Map.Entry<?, ?> item : ((Map<?, ?>)fieldValue(host, "maps")).entrySet()) {
+                    Object entry = item.getValue();
+                    JSONObject state = (JSONObject)fieldValue(entry, "renderState");
+                    JSONObject interaction = state.optJSONObject("interaction");
+                    if (interaction == null) throw new IllegalStateException("missing interaction");
+                    if (!originals.containsKey(interaction)) originals.put(interaction, interaction.optBoolean("annotationPicking"));
+                    boolean target = !browseOnly && originals.get(interaction);
+                    interaction.put("annotationPicking", target);
+                    rows.put(new JSONObject().put("mapId", item.getKey()).put("annotationPicking", interaction.getBoolean("annotationPicking")));
+                }
+                result.set(new JSONObject().put("browseOnly", browseOnly).put("maps", rows));
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("ground diagnostic mask failed", failure.get());
+        return result.get();
+    }
+
+    /** Temporarily changes only the four cartography MVT render-layer enabled flags. */
+    private JSONObject applyVectorDiagnosticMask(String mode, IdentityHashMap<Object, Boolean> originalStates) throws Exception {
+        if (!"all".equals(mode) && !"no-labels".equals(mode) && !"none".equals(mode))
+            throw new IllegalArgumentException("vector-diagnostic-mask mode must be all, no-labels, or none");
+        AtomicReference<JSONObject> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                long started = SystemClock.elapsedRealtimeNanos();
+                JSONArray mapsJson = new JSONArray();
+                Map<?, ?> mounted = (Map<?, ?>)fieldValue(host, "maps");
+                if (mounted == null) throw new IllegalStateException("native maps map is null");
+                if (mounted.isEmpty()) throw new IllegalStateException("no mounted maps for vector diagnostic mask");
+                int mapIndex = 0;
+                for (Object mapEntry : mounted.values()) {
+                    Object controller = fieldValue(mapEntry, "controller");
+                    Object cartography = fieldValue(controller, "cartography");
+                    JSONArray layerRows = new JSONArray();
+                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
+                        Object layer = fieldValue(cartography, name);
+                        Boolean original = originalStates.get(layer);
+                        if (original == null && !originalStates.containsKey(layer)) {
+                            Object initial = fieldValue(layer, "isEnabled");
+                            if (!(initial instanceof Boolean)) throw new IllegalStateException(name + ".isEnabled is not Boolean");
+                            original = (Boolean)initial;
+                            originalStates.put(layer, original);
+                        }
+                        boolean target;
+                        if ("none".equals(mode)) target = false;
+                        else if ("no-labels".equals(mode) && ("timedRoadNamesLayer".equals(name) || "timedPlaceLabelsLayer".equals(name))) target = false;
+                        else target = originalStates.get(layer);
+                        setFieldValue(layer, "isEnabled", Boolean.valueOf(target));
+                        Object observed = fieldValue(layer, "isEnabled");
+                        if (!(observed instanceof Boolean) || ((Boolean)observed).booleanValue() != target)
+                            throw new IllegalStateException(name + ".isEnabled did not take requested value");
+                        layerRows.put(new JSONObject().put("layer", name)
+                            .put("originalIsEnabled", originalStates.get(layer).booleanValue())
+                            .put("currentIsEnabled", ((Boolean)observed).booleanValue()));
+                    }
+                    Object window = fieldValue(controller, "worldWindow");
+                    window.getClass().getMethod("requestRedraw").invoke(window);
+                    mapsJson.put(new JSONObject().put("mapIndex", mapIndex++).put("layers", layerRows));
+                }
+                result.set(new JSONObject().put("mode", mode).put("maps", mapsJson)
+                    .put("snapshotNanos", SystemClock.elapsedRealtimeNanos() - started));
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("vector diagnostic mask failed", failure.get());
+        if (result.get() == null) throw new IllegalStateException("vector diagnostic mask produced no result");
+        return result.get();
+    }
+
     private void attachTarget() throws Exception {
         Intent launch = getTargetContext().getPackageManager().getLaunchIntentForPackage(TARGET_PACKAGE);
         if (launch == null) throw new IllegalStateException("target launch intent missing");
@@ -1702,7 +1895,14 @@ public final class Native149Instrumentation extends Instrumentation {
     }
     private Object findWorldWindow() throws Exception {
         Object controller = fieldValue(entry, "controller");
-        for (Field f : allFields(controller.getClass())) if ("earth.worldwind.WorldWindow".equals(f.getType().getName())) { f.setAccessible(true); return f.get(controller); }
+        for (Field f : allFields(controller.getClass())) {
+            for (Class<?> type = f.getType(); type != null; type = type.getSuperclass()) {
+                if ("earth.worldwind.WorldWindow".equals(type.getName())) {
+                    f.setAccessible(true);
+                    return f.get(controller);
+                }
+            }
+        }
         return null;
     }
     private String markerMode() throws Exception { Object value=fieldValue(fieldValue(entry,"controller"),"bridgeMarkerMode"); return value==null?"":String.valueOf(value); }

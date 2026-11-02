@@ -1,0 +1,20 @@
+{
+  "version": "0.2.164-test",
+  "sha256": "af4de929bbb997714a8968f237ffb02fe5fddd0b11fa847b27ff5cc1a55f1607",
+  "installedHashMatches": true,
+  "coldStartReady": true,
+  "dualDragEvents": {
+    "main:touch": 113,
+    "main:renderFrame": 87,
+    "aux-1:result": 73,
+    "aux-1:renderFrame": 64
+  },
+  "bothViewsPublishAfterResume": true,
+  "nearProjectionSameFramePass": true,
+  "projectionSampleCount": 5,
+  "projectionMaxSameHeightErrorCssPx": 2.0809742601803804e-05,
+  "targetFatalLog": false,
+  "restoredOriginalSingleMap": true,
+  "physicalPhoneVerified": false,
+  "performanceAccepted": false
+}

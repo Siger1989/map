@@ -233,6 +233,7 @@ internal class BoundedTileNetwork(
     private val refreshEntries = mutableMapOf<String, RefreshEntry>()
     private val refreshFactories = mutableMapOf<String, MutableList<WeakReference<ImageSource.NetworkBoundImageFactory>>>()
     private val refreshObservers = CopyOnWriteArrayList<(ImageSource.NetworkBoundImageFactory) -> Unit>()
+    private val priorityWorkObservers = CopyOnWriteArrayList<() -> Unit>()
     private val viewDemands = ConcurrentHashMap<String, TileViewDemand>()
     private val closedViewLock = Any()
     private val closedViewTombstones = LinkedHashMap<String, Unit>()
@@ -289,6 +290,16 @@ internal class BoundedTileNetwork(
             inactiveIdentities = snapshot.inactiveIdentities.toSet(),
         )
         permitScheduler.onDemandChanged()
+    }
+
+    /** Cached reads need no HTTP priority projection; active and queued traffic share both panes. */
+    internal fun hasPendingTransportWork(): Boolean =
+        queuedNetworkRequests.get() > 0 || permitScheduler.activeCount() > 0
+
+    /** Called before admission, outside scheduler locks; listeners must enqueue rather than block. */
+    internal fun observePriorityWork(listener: () -> Unit): AutoCloseable {
+        priorityWorkObservers += listener
+        return AutoCloseable { priorityWorkObservers.remove(listener) }
     }
 
     fun removeViewDemand(viewId: String) {
@@ -472,6 +483,7 @@ internal class BoundedTileNetwork(
         Thread({ runCatching { persistentCache?.close() } }, "shantu-tile-cache-close").apply { isDaemon = true }.start()
         synchronized(refreshLock) { refreshQueue.clear(); refreshQueued.clear(); refreshCooldown.clear(); refreshEntries.clear(); refreshFactories.clear() }
         refreshObservers.clear()
+        priorityWorkObservers.clear()
         synchronized(inFlightLock) {
             inFlight.values.forEach { it.result.complete(null); it.job?.cancel() }
             inFlight.clear()
@@ -753,7 +765,14 @@ internal class BoundedTileNetwork(
     private suspend fun acquireNetworkPermit(request: TilePendingRequest): TileRequestPermitScheduler.TileRequestPermit? {
         if (closed) return null
         queuedNetworkRequests.incrementAndGet()
-        return try { permitScheduler.acquire(request) }
+        return try {
+            // A known tile can miss the cache after its viewport moved while the queue was idle.
+            // Wake current-view ranking even when its footprint was registered long ago.
+            if (request.viewId != null && (!request.background || request.allowForegroundPromotion)) {
+                priorityWorkObservers.forEach { observer -> runCatching { observer() } }
+            }
+            permitScheduler.acquire(request)
+        }
         finally { queuedNetworkRequests.decrementAndGet() }
     }
 

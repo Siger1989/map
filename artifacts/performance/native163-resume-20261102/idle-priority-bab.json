@@ -1,0 +1,33 @@
+{
+  "scope": "Dedicated MuMu warm large pan; not phone acceptance or FPS",
+  "overallGate": "NOT_PROVEN",
+  "cases": [
+    {
+      "case": "idle-B1-c27-large",
+      "inputWindowSeconds": 8.375,
+      "mainCpuMs": 3151.49,
+      "priorityMs": 128.31,
+      "priorityReplans": 16,
+      "mainFrameMaxGapMs": 231.4,
+      "auxFrameMaxGapMs": 291.7
+    },
+    {
+      "case": "idle-A2-c26-large",
+      "inputWindowSeconds": 8.343,
+      "mainCpuMs": 2555.0,
+      "priorityMs": 512.33,
+      "priorityReplans": 159,
+      "mainFrameMaxGapMs": 396,
+      "auxFrameMaxGapMs": 323.3
+    },
+    {
+      "case": "idle-B2-c27-large",
+      "inputWindowSeconds": 8.453,
+      "mainCpuMs": 4284.01,
+      "priorityMs": 145.15,
+      "priorityReplans": 16,
+      "mainFrameMaxGapMs": 285.6,
+      "auxFrameMaxGapMs": 286.1
+    }
+  ]
+}

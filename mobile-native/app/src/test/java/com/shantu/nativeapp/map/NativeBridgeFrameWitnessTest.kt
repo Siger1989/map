@@ -8,6 +8,13 @@ import org.junit.Test
 class NativeBridgeFrameWitnessTest {
     private data class Metadata(val camera: String, val viewport: String)
 
+    @Test fun repeatedGlPresentationOfTheSameFramePublishesOnce() {
+        var delivered = 0
+        val witness = NativeBridgeFrameWitness(Metadata("same-camera", "same-viewport")) { _, _, _, _ -> delivered++ }
+        repeat(3) { witness.draw(doubleArrayOf(1.0), 400, 800) }
+        assertEquals(1, delivered)
+    }
+
     @Test fun delayedDrawKeepsItsCapturedMetadataWhenANewerCaptureArrives() {
         val queue = NativeBridgeFrameWitnessQueue<NativeBridgeFrameWitness<Metadata>>()
         val draws = mutableListOf<Triple<Metadata, DoubleArray, Pair<Int, Int>>>()

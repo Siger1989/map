@@ -166,6 +166,7 @@ class NativeReactMapHost(
         @Volatile var frameCaptureTask: Runnable? = null,
         @Volatile var frameWitnessPending: Boolean = false,
         @Volatile var lastRenderedMatrix: DoubleArray? = null,
+        var lastPreparedMatrix: DoubleArray? = null,
         @Volatile var lastCameraMotionAt: Long = 0L,
         @Volatile var capturedDemRevision: Long = Long.MIN_VALUE,
         @Volatile var capturedSnapRevision: Long = Long.MIN_VALUE,
@@ -247,7 +248,12 @@ class NativeReactMapHost(
     fun onHostResume() = onMain {
         if (!closed) {
             hostResumed = true
-            maps.values.forEach { it.controller.onResume() }
+            maps.values.forEach {
+                // Pausing the GL surface may discard a prepared but undrawn witness.
+                it.lastPreparedMatrix = null
+                it.controller.onResume()
+                markFrameDirty(it)
+            }
         }
     }
 
@@ -544,7 +550,7 @@ class NativeReactMapHost(
         activeBrowserCacheMapId = mapId
         container.addView(controller.view, FrameLayout.LayoutParams(-1, -1))
         root.addView(container, FrameLayout.LayoutParams(1, 1))
-        controller.setBridgeCameraMotionListener { mvp -> onCameraMatrixChanged(entry, mvp) }
+        controller.setBridgeFramePreparationListener { mvp -> prepareCameraFrame(entry, mvp) }
         controller.setBridgeFrameActivityListener { onNativeFrameActivity(entry) }
         installTouchBridge(entry)
         if (hostResumed) controller.onResume()
@@ -586,7 +592,7 @@ class NativeReactMapHost(
         entry.framePublishPending.set(false)
         entry.latestFrame.takeLatest()
         entry.controller.setBridgeFrameListener(null)
-        entry.controller.setBridgeCameraMotionListener(null)
+        entry.controller.setBridgeFramePreparationListener(null)
         entry.controller.setBridgeFrameActivityListener(null)
         entry.scope.cancel()
         entry.sectionJob?.cancel()
@@ -1529,13 +1535,8 @@ class NativeReactMapHost(
             (cssRect.optDouble("height", 0.0) * scale).toInt().coerceAtLeast(1)
     }
 
-    private fun onCameraMatrixChanged(entry: MapEntry, mvp: DoubleArray) {
-        entry.lastRenderedMatrix = mvp
-        entry.lastCameraMotionAt = android.os.SystemClock.elapsedRealtime()
-        main.post { if (isCurrent(entry)) markFrameDirty(entry) }
-    }
-
     private fun onRenderedFrame(entry: MapEntry, metadata: FrameMetadata, mvp: DoubleArray, width: Int, height: Int) {
+        entry.lastRenderedMatrix = mvp
         entry.latestFrame.offer(RenderedFrame(metadata, mvp, width, height))
         queueLatestFrame(entry)
     }
@@ -1546,73 +1547,83 @@ class NativeReactMapHost(
         queueFrameCapture(entry)
     }
 
+    /** Request a trailing sample only if an actual frame did not consume the dirty state first. */
     private fun queueFrameCapture(entry: MapEntry) {
         if (!isCurrent(entry) || !entry.frameCaptureGate.hasPending() || entry.frameCaptureTask != null || entry.frameWitnessPending) return
-        val interval = frameIntervalMillis(entry)
         val now = android.os.SystemClock.elapsedRealtime()
         val task = Runnable {
             entry.frameCaptureTask = null
-            if (!isCurrent(entry)) return@Runnable
-            val viewport = entry.viewport ?: return@Runnable
-            val rect = viewport.optJSONObject("cssRect") ?: return@Runnable
+            if (!isCurrent(entry) || !entry.frameCaptureGate.hasPending()) return@Runnable
+            if (!entry.frameCaptureGate.isDue(android.os.SystemClock.elapsedRealtime(), frameIntervalMillis(entry))) {
+                queueFrameCapture(entry)
+                return@Runnable
+            }
+            val rect = entry.viewport?.optJSONObject("cssRect") ?: return@Runnable
             if (rect.optDouble("width") <= 0.0 || rect.optDouble("height") <= 0.0) return@Runnable
             if (entry.controller.view.width <= 0 || entry.controller.view.height <= 0) {
                 entry.nativeSizePendingCheck = true
                 return@Runnable
             }
-            val captureAt = android.os.SystemClock.elapsedRealtime()
-            if (!entry.frameCaptureGate.isDue(captureAt, frameIntervalMillis(entry))) {
-                queueFrameCapture(entry)
-                return@Runnable
-            }
-            entry.frameCaptureGate.markAttempt(captureAt)
-            entry.frameWitnessPending = true
-            entry.controller.prepareBridgeFrameWitness {
-                try {
-                    if (entry.disposed) return@prepareBridgeFrameWitness null
-                    val currentViewport = entry.viewport ?: return@prepareBridgeFrameWitness null
-                    val currentRect = currentViewport.optJSONObject("cssRect") ?: return@prepareBridgeFrameWitness null
-                    if (currentRect.optDouble("width") <= 0.0 || currentRect.optDouble("height") <= 0.0 ||
-                        entry.controller.view.width <= 0 || entry.controller.view.height <= 0) {
-                        entry.nativeSizePendingCheck = currentRect.optDouble("width") > 0.0 && currentRect.optDouble("height") > 0.0
-                        return@prepareBridgeFrameWitness null
-                    }
-                    val (expectedWidth, expectedHeight) = expectedNativeViewport(entry, currentRect)
-                    val engineViewport = entry.controller.worldWindowForBridge().engine.viewport
-                    if (engineViewport.width != expectedWidth || engineViewport.height != expectedHeight) {
-                        entry.viewportMismatchPendingCheck = true
-                        return@prepareBridgeFrameWitness null
-                    }
-                    entry.viewportMismatchPendingCheck = false
-                    entry.nativeSizePendingCheck = false
-                    entry.lastViewportMismatchSignature = null
-                    val metadata = FrameMetadata(
-                        camera = entry.controller.cameraSnapshot(),
-                        cameraSyncToken = entry.cameraOrigin.token,
-                        eye = NativeBridgeEyeState.from(entry.controller.worldWindowForBridge().engine.camera),
-                        cssX = currentRect.optDouble("x", 0.0), cssY = currentRect.optDouble("y", 0.0),
-                        cssWidth = currentRect.optDouble("width", 0.0), cssHeight = currentRect.optDouble("height", 0.0),
-                        cssScale = cssScale(entry), nativeWidth = engineViewport.width, nativeHeight = engineViewport.height,
-                        terrainEnabled = entry.controller.isTerrainEnabled(),
-                        exaggeration = entry.renderExaggeration, demRevision = entry.controller.demRevision(),
-                        snapRevision = entry.snapRevision, capturedAt = System.currentTimeMillis(),
-                    )
-                    entry.frameCaptureGate.markCaptured(android.os.SystemClock.elapsedRealtime())
-                    entry.frameCaptureTask?.let(main::removeCallbacks)
-                    entry.frameCaptureTask = null
-                    entry.capturedDemRevision = metadata.demRevision
-                    entry.capturedSnapRevision = metadata.snapRevision
-                    NativeBridgeFrameWitness(metadata) { captured, mvp, width, height ->
-                        if (!entry.disposed) onRenderedFrame(entry, captured, mvp, width, height)
-                    }
-                } finally {
-                    entry.frameWitnessPending = false
-                }
-            }
             entry.controller.worldWindowForBridge().requestRedraw()
         }
         entry.frameCaptureTask = task
-        main.postDelayed(task, entry.frameCaptureGate.delayUntilDue(now, interval))
+        main.postDelayed(task, entry.frameCaptureGate.delayUntilDue(now, frameIntervalMillis(entry)))
+    }
+
+    /** Bind camera metadata to this real RenderContext instead of rendering another copy to capture it. */
+    private fun prepareCameraFrame(entry: MapEntry, mvp: DoubleArray): NativeBridgeFrameWitness<*>? {
+        if (!isCurrent(entry)) return null
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (entry.lastPreparedMatrix?.contentEquals(mvp) != true) {
+            entry.lastPreparedMatrix = mvp.copyOf()
+            entry.lastCameraMotionAt = now
+            entry.frameCaptureGate.markDirty()
+        }
+        if (!entry.frameCaptureGate.isDue(now, frameIntervalMillis(entry))) {
+            queueFrameCapture(entry)
+            return null
+        }
+        entry.frameCaptureGate.markAttempt(now)
+        entry.frameWitnessPending = true
+        try {
+            val currentViewport = entry.viewport ?: return null
+            val currentRect = currentViewport.optJSONObject("cssRect") ?: return null
+            if (currentRect.optDouble("width") <= 0.0 || currentRect.optDouble("height") <= 0.0 ||
+                entry.controller.view.width <= 0 || entry.controller.view.height <= 0) {
+                entry.nativeSizePendingCheck = currentRect.optDouble("width") > 0.0 && currentRect.optDouble("height") > 0.0
+                return null
+            }
+            val (expectedWidth, expectedHeight) = expectedNativeViewport(entry, currentRect)
+            val engineViewport = entry.controller.worldWindowForBridge().engine.viewport
+            if (engineViewport.width != expectedWidth || engineViewport.height != expectedHeight) {
+                entry.viewportMismatchPendingCheck = true
+                return null
+            }
+            entry.viewportMismatchPendingCheck = false
+            entry.nativeSizePendingCheck = false
+            entry.lastViewportMismatchSignature = null
+            val metadata = FrameMetadata(
+                camera = entry.controller.cameraSnapshot(),
+                cameraSyncToken = entry.cameraOrigin.token,
+                eye = NativeBridgeEyeState.from(entry.controller.worldWindowForBridge().engine.camera),
+                cssX = currentRect.optDouble("x", 0.0), cssY = currentRect.optDouble("y", 0.0),
+                cssWidth = currentRect.optDouble("width", 0.0), cssHeight = currentRect.optDouble("height", 0.0),
+                cssScale = cssScale(entry), nativeWidth = engineViewport.width, nativeHeight = engineViewport.height,
+                terrainEnabled = entry.controller.isTerrainEnabled(),
+                exaggeration = entry.renderExaggeration, demRevision = entry.controller.demRevision(),
+                snapRevision = entry.snapRevision, capturedAt = System.currentTimeMillis(),
+            )
+            entry.frameCaptureGate.markCaptured(android.os.SystemClock.elapsedRealtime())
+            entry.frameCaptureTask?.let(main::removeCallbacks)
+            entry.frameCaptureTask = null
+            entry.capturedDemRevision = metadata.demRevision
+            entry.capturedSnapRevision = metadata.snapRevision
+            return NativeBridgeFrameWitness(metadata) { captured, mvp, width, height ->
+                if (!entry.disposed) onRenderedFrame(entry, captured, mvp, width, height)
+            }
+        } finally {
+            entry.frameWitnessPending = false
+        }
     }
 
     private fun frameIntervalMillis(entry: MapEntry): Long = NativeBridgeFramePolicy.intervalMillis(
@@ -2313,7 +2324,7 @@ class NativeReactMapHost(
             entry.latestFrame.takeLatest()
             runCatching { entry.cameraAnimator?.cancel() }; entry.cameraAnimator = null
             entry.controller.setBridgeFrameListener(null)
-            entry.controller.setBridgeCameraMotionListener(null)
+            entry.controller.setBridgeFramePreparationListener(null)
             entry.controller.setBridgeFrameActivityListener(null)
             entry.scope.cancel()
             entry.sectionJob?.cancel()

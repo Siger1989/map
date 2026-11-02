@@ -1,0 +1,48 @@
+{
+  "version": "0.2.164-test",
+  "versionCode": 171,
+  "package": "com.guanyun.weather.shantu.preview",
+  "sha256": "af4de929bbb997714a8968f237ffb02fe5fddd0b11fa847b27ff5cc1a55f1607",
+  "bytes": 165210728,
+  "originalSignature": true,
+  "privateTiandituPresent": true,
+  "privateSourceCount": 39,
+  "freshReactAssetCount": 1925,
+  "nativeLibrariesUnchangedFrom163": 8,
+  "sourceFingerprintsMatch": true,
+  "zipCrcAndAlignment": "PASS",
+  "nativeTests": [
+    {
+      "suite": "com.shantu.nativeapp.hybrid.NativeBridgeFrameCaptureGateTest",
+      "tests": 3
+    },
+    {
+      "suite": "com.shantu.nativeapp.hybrid.NativeBridgeFramePolicyTest",
+      "tests": 3
+    },
+    {
+      "suite": "com.shantu.nativeapp.map.BoundedTileNetworkTest",
+      "tests": 3
+    },
+    {
+      "suite": "com.shantu.nativeapp.map.NativeBridgeFrameWitnessTest",
+      "tests": 3
+    },
+    {
+      "suite": "com.shantu.nativeapp.map.NativeTilePriorityIdleGateTest",
+      "tests": 3
+    },
+    {
+      "suite": "com.shantu.nativeapp.map.TileRequestPermitSchedulerTest",
+      "tests": 7
+    },
+    {
+      "suite": "com.shantu.nativeapp.map.TileRequestQueuePolicyTest",
+      "tests": 10
+    }
+  ],
+  "performanceGate": "NOT_PROVEN; user explicitly requested this trial despite unstable whole-drag improvement",
+  "physicalPhoneVerified": false,
+  "publicApkPublished": false,
+  "prior163Sha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c"
+}

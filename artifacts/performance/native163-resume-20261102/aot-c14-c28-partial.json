@@ -1,0 +1,93 @@
+{
+  "scope": "Dedicated MuMu original 163 C14 versus C28; warm cache; cmd package compile speed after each install; not phone/FPS acceptance",
+  "cases": [
+    {
+      "case": "aot-A1-c14-large",
+      "inputSeconds": 9.219,
+      "mainStateMs": {
+        "running": 4953.94,
+        "sleeping": 3228.25,
+        "runnable": 991.35
+      },
+      "choreographer": {
+        "count": 465,
+        "totalMs": 4736.0,
+        "p95Ms": 24.8,
+        "maxMs": 86.92,
+        "over50Count": 3,
+        "over100Count": 0
+      },
+      "priorityMs": 1164.87,
+      "actualDraws": [
+        324,
+        234
+      ],
+      "mainDistinctCamera": 133,
+      "auxCommandCount": 133,
+      "mainEventMaxGapMs": 601.4,
+      "auxEventMaxGapMs": 606.3,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    },
+    {
+      "case": "aot-B1-c28-large",
+      "inputSeconds": 8.735,
+      "mainStateMs": {
+        "running": 2897.7,
+        "runnable": 783.8,
+        "sleeping": 5024.83
+      },
+      "choreographer": {
+        "count": 468,
+        "totalMs": 3209.27,
+        "p95Ms": 16.87,
+        "maxMs": 88.89,
+        "over50Count": 7,
+        "over100Count": 0
+      },
+      "priorityMs": 187.14,
+      "actualDraws": [
+        313,
+        240
+      ],
+      "mainDistinctCamera": 152,
+      "auxCommandCount": 152,
+      "mainEventMaxGapMs": 279.4,
+      "auxEventMaxGapMs": 283.8,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    },
+    {
+      "case": "aot-A2-c14-large",
+      "inputSeconds": 8.703,
+      "mainStateMs": {
+        "running": 4568.23,
+        "sleeping": 3301.49,
+        "runnable": 794.17
+      },
+      "choreographer": {
+        "count": 467,
+        "totalMs": 4243.6,
+        "p95Ms": 21.05,
+        "maxMs": 84.18,
+        "over50Count": 6,
+        "over100Count": 0
+      },
+      "priorityMs": 913.59,
+      "actualDraws": [
+        324,
+        241
+      ],
+      "mainDistinctCamera": 133,
+      "auxCommandCount": 133,
+      "mainEventMaxGapMs": 546.1,
+      "auxEventMaxGapMs": 369.2,
+      "bufferIntact": true,
+      "hostQuietBefore": true,
+      "hostQuietAfter": true
+    }
+  ],
+  "status": "PARTIAL 3/4: stopped for user-requested 164 trial packaging; not performance acceptance"
+}

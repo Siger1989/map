@@ -3,14 +3,18 @@ package com.shantu.nativeapp.map
 import earth.worldwind.draw.DrawContext
 import earth.worldwind.draw.Drawable
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** A render-prepared immutable payload bound to the GL frame that consumes it. */
 internal class NativeBridgeFrameWitness<T : Any>(
     val metadata: T,
     private val onDraw: (T, DoubleArray, Int, Int) -> Unit,
 ) {
-    fun draw(modelviewProjection: DoubleArray, width: Int, height: Int) =
-        onDraw(metadata, modelviewProjection, width, height)
+    private val published = AtomicBoolean(false)
+    fun draw(modelviewProjection: DoubleArray, width: Int, height: Int) {
+        // WorldWind may draw its current frame more than once. It is still the same snapshot.
+        if (published.compareAndSet(false, true)) onDraw(metadata, modelviewProjection, width, height)
+    }
 }
 
 /** Single-slot handoff; once taken, later captures cannot mutate an already-bound frame. */
