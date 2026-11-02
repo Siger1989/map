@@ -6,6 +6,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.SurfaceView
@@ -17,6 +18,7 @@ import android.view.animation.LinearInterpolator
 import com.shantu.nativeapp.map.NativeCameraSnapshot
 import com.shantu.nativeapp.map.NativeDirectionMode
 import com.shantu.nativeapp.map.NativeMapController
+import com.shantu.nativeapp.map.NativeMapFrameCostTelemetry
 import com.shantu.nativeapp.map.NativeMapQuality
 import com.shantu.nativeapp.map.NativeMapSource
 import com.shantu.nativeapp.map.NativeMapSourceCatalog
@@ -97,6 +99,7 @@ class NativeReactMapHost(
     private val appContext = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
     private val maps = linkedMapOf<String, MapEntry>()
+    private val hostCommandCostTelemetry = NativeMapFrameCostTelemetry()
     private val shareJobs = linkedMapOf<String, Pair<String, Job>>()
     private val shareScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val assets = NativeReactAssetStore(appContext)
@@ -278,6 +281,7 @@ class NativeReactMapHost(
         val runtime = Runtime.getRuntime()
         val mapsJson = JSONArray()
         val poolSnapshot = maps.values.firstOrNull()?.controller?.loadingSnapshot()
+        val rawMvtSnapshot = com.shantu.nativeapp.map.nativeOpenFreeMapRawTileSnapshot()
         maps.values.forEach { entry ->
             val cache = entry.controller.worldWindowForBridge().engine.renderResourceCache
             val window = entry.controller.worldWindowForBridge()
@@ -300,6 +304,10 @@ class NativeReactMapHost(
                 .put("demPlanCount", entry.demPlanCount).put("demPlanNanos", entry.demPlanNanos)
                 .put("demPlanMaxNanos", entry.demPlanMaxNanos).put("demCancelledJobs", entry.demCancelledJobs)
                 .put("groundWorkDeferrals", entry.groundWorkDeferrals)
+                .put("frameCostWallNanos", JSONObject().apply {
+                    entry.controller.frameCostWallNanosSnapshot().forEach { (name, value) -> put(name, value ?: JSONObject.NULL) }
+                })
+                .put("cartographyFrameCostWallNanos", JSONObject(entry.controller.cartographyForBridge().frameCostSnapshot()))
                 .put("terrainEnabled", entry.controller.isTerrainEnabled())
                 .put("contoursEnabled", entry.renderState.optJSONObject("settings")?.optBoolean("contours") == true)
                 .put("rasterTileSize", entry.controller.currentCustomSource()?.tileSize ?: 256)
@@ -310,6 +318,16 @@ class NativeReactMapHost(
         val decodeBuckets = JSONArray().apply { stages?.decodeDurationBuckets?.forEach { put(it) } }
         return JSONObject()
             .put("available", true)
+            .put("hostCommandWallNanos", JSONObject().apply {
+                hostCommandCostTelemetry.hostCommandSnapshot().forEach { (name, value) -> put(name, value) }
+            })
+            .put("rawMvt", rawMvtSnapshot?.let {
+                JSONObject().put("available", true)
+                    .put("rawBytes", it.rawBytes).put("rawTiles", it.rawTiles)
+                    .put("hits", it.hits).put("misses", it.misses).put("fetches", it.fetches)
+                    .put("deduplicated", it.deduplicated).put("inFlight", it.inFlight)
+                    .put("owners", it.owners).put("evictions", it.evictions)
+            } ?: JSONObject().put("available", false))
             .put("heapMaxBytes", runtime.maxMemory())
             .put("heapUsedBytes", runtime.totalMemory() - runtime.freeMemory())
             .put("mapCount", maps.size)
@@ -389,8 +407,16 @@ class NativeReactMapHost(
             send("result", mapId, requestId, JSONObject().put("applied", true))
             return
         }
+        val timedHostCommand = when (command) {
+            "create" -> NativeMapFrameCostTelemetry.HostCommand.CREATE
+            "mapViewport" -> NativeMapFrameCostTelemetry.HostCommand.MAP_VIEWPORT
+            "renderState", "setRenderState" -> NativeMapFrameCostTelemetry.HostCommand.RENDER_STATE
+            else -> null
+        }
+        val hostCommandStartedAt = if (timedHostCommand != null) SystemClock.elapsedRealtimeNanos() else 0L
         try {
-            when (command) {
+            try {
+                when (command) {
                 "cachedTileResponse" -> {
                     val accepted = mapId != null && maps.containsKey(mapId) &&
                         browserCacheFallback?.acceptResponse(currentSession, mapId, payload) == true
@@ -417,7 +443,12 @@ class NativeReactMapHost(
                 "getElevation" -> getElevation(requireMapId(mapId), payload, requestId)
                 "capture" -> capture(requireMapId(mapId), payload, requestId)
                 "cancel" -> cancelRequest(payload, requestId, mapId)
-                else -> postError(requestId, mapId, "unknown_command", "未知的地图命令")
+                    else -> postError(requestId, mapId, "unknown_command", "未知的地图命令")
+                }
+            } finally {
+                if (timedHostCommand != null) {
+                    hostCommandCostTelemetry.recordHostCommand(timedHostCommand, SystemClock.elapsedRealtimeNanos() - hostCommandStartedAt)
+                }
             }
         } catch (e: IllegalArgumentException) {
             postError(requestId, mapId, "invalid_payload", e.message?.takeIf(::safeMessage) ?: "地图参数无效")

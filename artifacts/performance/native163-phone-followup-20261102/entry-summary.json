@@ -1,0 +1,490 @@
+{
+  "targetPhone": "163; entrance still FAIL/unverified after changes",
+  "device": "dedicated MuMu3; not phone acceptance",
+  "nativeAppConfigurations": "C14 baseline; C16 scheduling; C17 stage counters; C18 background MVT pick payload disabled. All diagnostic variants keep private assets.",
+  "cacheScope": "cold: original browse and HTTP tile folders preserved by rename; warm-disk: same test cache, fresh process; OpenFreeMap MVT retains only process-memory cache, so not fully warm across layers",
+  "observations": [
+    {
+      "case": "entry-C14-cold",
+      "firstObservedDualNativeFrameSeconds": 3.125,
+      "firstFrameMetricIsObservedUpperBound": true,
+      "mainDelayP95Ms": 251,
+      "mainDelayMaxMs": 265,
+      "mainSnapshotTimeouts": 2,
+      "validJavaPeakMiB": 338.7140197753906,
+      "observedGcCountDelta": 22,
+      "rasterNetworkRequestsDelta": 228,
+      "rasterDiskHitsDelta": 0,
+      "rasterMemoryHitsDelta": 71,
+      "exitTapAndInspectSeconds": 1.625,
+      "entryToConfirmedExitSeconds": 21.78100000001723,
+      "exitSucceeded": true,
+      "annotationCount": 1,
+      "terrainAndContours": [
+        {
+          "terrain": true,
+          "contours": true
+        },
+        {
+          "terrain": true,
+          "contours": true
+        }
+      ]
+    },
+    {
+      "case": "entry-C14-warm-disk",
+      "firstObservedDualNativeFrameSeconds": 2.452999999979511,
+      "firstFrameMetricIsObservedUpperBound": true,
+      "mainDelayP95Ms": 98,
+      "mainDelayMaxMs": 233,
+      "mainSnapshotTimeouts": 2,
+      "validJavaPeakMiB": 369.10762786865234,
+      "observedGcCountDelta": 13,
+      "rasterNetworkRequestsDelta": 19,
+      "rasterDiskHitsDelta": 239,
+      "rasterMemoryHitsDelta": 78,
+      "exitTapAndInspectSeconds": 0.9369999999762513,
+      "entryToConfirmedExitSeconds": 21.06199999997625,
+      "exitSucceeded": true,
+      "annotationCount": 1,
+      "terrainAndContours": [
+        {
+          "terrain": true,
+          "contours": true
+        },
+        {
+          "terrain": true,
+          "contours": true
+        }
+      ]
+    },
+    {
+      "case": "entry-C16-cold",
+      "firstObservedDualNativeFrameSeconds": 3.2189999999827705,
+      "firstFrameMetricIsObservedUpperBound": true,
+      "mainDelayP95Ms": 93,
+      "mainDelayMaxMs": 204,
+      "mainSnapshotTimeouts": 2,
+      "validJavaPeakMiB": 330.43609619140625,
+      "observedGcCountDelta": 22,
+      "rasterNetworkRequestsDelta": 236,
+      "rasterDiskHitsDelta": 0,
+      "rasterMemoryHitsDelta": 76,
+      "exitTapAndInspectSeconds": 1.202999999979511,
+      "entryToConfirmedExitSeconds": 21.39100000000326,
+      "exitSucceeded": true,
+      "annotationCount": 1,
+      "terrainAndContours": [
+        {
+          "terrain": true,
+          "contours": true
+        },
+        {
+          "terrain": true,
+          "contours": true
+        }
+      ]
+    },
+    {
+      "case": "entry-C16-warm-disk",
+      "firstObservedDualNativeFrameSeconds": 1.8440000000409782,
+      "firstFrameMetricIsObservedUpperBound": true,
+      "mainDelayP95Ms": 186,
+      "mainDelayMaxMs": 261,
+      "mainSnapshotTimeouts": 0,
+      "validJavaPeakMiB": 402.27825927734375,
+      "observedGcCountDelta": 33,
+      "rasterNetworkRequestsDelta": 9,
+      "rasterDiskHitsDelta": 245,
+      "rasterMemoryHitsDelta": 79,
+      "exitTapAndInspectSeconds": 0.9839999999967404,
+      "entryToConfirmedExitSeconds": 21.14100000000326,
+      "exitSucceeded": true,
+      "annotationCount": 1,
+      "terrainAndContours": [
+        {
+          "terrain": true,
+          "contours": true
+        },
+        {
+          "terrain": true,
+          "contours": true
+        }
+      ]
+    },
+    {
+      "case": "entry-C16-warm-early-exit",
+      "firstObservedDualNativeFrameSeconds": 1.2040000000270084,
+      "firstFrameMetricIsObservedUpperBound": true,
+      "mainDelayP95Ms": 148,
+      "mainDelayMaxMs": 148,
+      "mainSnapshotTimeouts": 0,
+      "validJavaPeakMiB": 100.15367126464844,
+      "observedGcCountDelta": 0,
+      "rasterNetworkRequestsDelta": 0,
+      "rasterDiskHitsDelta": 43,
+      "rasterMemoryHitsDelta": 34,
+      "exitTapAndInspectSeconds": 1.4369999999762513,
+      "entryToConfirmedExitSeconds": 4.172000000020489,
+      "exitSucceeded": true,
+      "annotationCount": 1,
+      "terrainAndContours": [
+        {
+          "terrain": true,
+          "contours": true
+        },
+        {
+          "terrain": true,
+          "contours": true
+        }
+      ]
+    }
+  ],
+  "inputReadinessBoundary": "Real exit tap is tested at about 20s, or about 2s in early-exit case. Does not measure earliest map-pan responsiveness. Main dispatch delay is a passive proxy, not touch latency.",
+  "newOriginalCachesRestored": true,
+  "rawEvidencePrivate": true,
+  "webComparison": "Historical Web141 exists; matched current comparison pending",
+  "stageTimingComparisons": [
+    {
+      "case": "entry-C17-warm-timing",
+      "firstObservedDualNativeFrameSeconds": 2.4380000000237487,
+      "mainDelayP95Ms": 39,
+      "mainDelayMaxMs": 215,
+      "mainSnapshotTimeouts": 1,
+      "validJavaPeakMiB": 470.4083251953125,
+      "observedGcCountDelta": 11,
+      "hostCommandDelta": {
+        "createCount": 1,
+        "createTotalNanos": 22149746,
+        "mapViewportCount": 2,
+        "mapViewportTotalNanos": 2853162,
+        "renderStateCount": 2,
+        "renderStateTotalNanos": 42723301
+      },
+      "frameCost": [
+        {
+          "mapRole": "main",
+          "delta": {
+            "sdkRenderPreparationCount": 116,
+            "sdkRenderPreparationTotalNanos": 939707839,
+            "sdkDrawSubmissionCount": 118,
+            "sdkDrawSubmissionTotalNanos": 475797357
+          },
+          "lifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 620093447,
+            "sdkDrawSubmissionMaxNanos": 138612054
+          },
+          "preEntryLifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 620093447,
+            "sdkDrawSubmissionMaxNanos": 138612054
+          },
+          "firstSdkDrawAfterCreateNanos": 1029483765
+        },
+        {
+          "mapRole": "aux",
+          "delta": {
+            "sdkRenderPreparationCount": 128,
+            "sdkRenderPreparationTotalNanos": 2654871378,
+            "sdkDrawSubmissionCount": 128,
+            "sdkDrawSubmissionTotalNanos": 537621270
+          },
+          "lifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 277529548,
+            "sdkDrawSubmissionMaxNanos": 144299589
+          },
+          "preEntryLifetimeMaxNanos": {},
+          "firstSdkDrawAfterCreateNanos": 1006607339
+        }
+      ],
+      "rawMvtBefore": {
+        "available": true,
+        "rawBytes": 16546257,
+        "rawTiles": 55,
+        "hits": 0,
+        "misses": 55,
+        "fetches": 55,
+        "deduplicated": 0,
+        "inFlight": 0,
+        "owners": 1,
+        "evictions": 0
+      },
+      "rawMvtAfter": {
+        "available": true,
+        "rawBytes": 20116474,
+        "rawTiles": 69,
+        "hits": 110,
+        "misses": 69,
+        "fetches": 69,
+        "deduplicated": 0,
+        "inFlight": 0,
+        "owners": 2,
+        "evictions": 0
+      },
+      "exitSucceeded": true,
+      "exitTapAndInspectSeconds": 1.0320000000065193
+    },
+    {
+      "case": "entry-C18-warm-timing",
+      "firstObservedDualNativeFrameSeconds": 1.702999999979511,
+      "mainDelayP95Ms": 72,
+      "mainDelayMaxMs": 302,
+      "mainSnapshotTimeouts": 0,
+      "validJavaPeakMiB": 467.1319580078125,
+      "observedGcCountDelta": 12,
+      "hostCommandDelta": {
+        "createCount": 1,
+        "createTotalNanos": 27030423,
+        "mapViewportCount": 2,
+        "mapViewportTotalNanos": 1850389,
+        "renderStateCount": 2,
+        "renderStateTotalNanos": 55051464
+      },
+      "frameCost": [
+        {
+          "mapRole": "main",
+          "delta": {
+            "sdkRenderPreparationCount": 128,
+            "sdkRenderPreparationTotalNanos": 741643797,
+            "sdkDrawSubmissionCount": 128,
+            "sdkDrawSubmissionTotalNanos": 636329047
+          },
+          "lifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 678543053,
+            "sdkDrawSubmissionMaxNanos": 334438309
+          },
+          "preEntryLifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 678543053,
+            "sdkDrawSubmissionMaxNanos": 334438309
+          },
+          "firstSdkDrawAfterCreateNanos": 1721929225
+        },
+        {
+          "mapRole": "aux",
+          "delta": {
+            "sdkRenderPreparationCount": 126,
+            "sdkRenderPreparationTotalNanos": 2107822943,
+            "sdkDrawSubmissionCount": 126,
+            "sdkDrawSubmissionTotalNanos": 728683027
+          },
+          "lifetimeMaxNanos": {
+            "sdkRenderPreparationMaxNanos": 213306952,
+            "sdkDrawSubmissionMaxNanos": 174457989
+          },
+          "preEntryLifetimeMaxNanos": {},
+          "firstSdkDrawAfterCreateNanos": 704742908
+        }
+      ],
+      "rawMvtBefore": {
+        "available": true,
+        "rawBytes": 16546257,
+        "rawTiles": 55,
+        "hits": 0,
+        "misses": 55,
+        "fetches": 55,
+        "deduplicated": 0,
+        "inFlight": 0,
+        "owners": 1,
+        "evictions": 0
+      },
+      "rawMvtAfter": {
+        "available": true,
+        "rawBytes": 20116474,
+        "rawTiles": 69,
+        "hits": 103,
+        "misses": 76,
+        "fetches": 69,
+        "deduplicated": 7,
+        "inFlight": 0,
+        "owners": 2,
+        "evictions": 0
+      },
+      "exitSucceeded": true,
+      "exitTapAndInspectSeconds": 0.8589999999967404
+    }
+  ],
+  "stageTimingScope": "Single run per candidate on existing raster disk cache, fresh APK process; raw MVT process cache cold on startup. Per-map max is lifetime, main peak may predate entry. SDK draw includes driver waits, not GPU timing. First SDK draw can occur before a visible positive-size viewport; do not call it first visible imagery. Poll-observed frame is an upper bound, not full image readiness. Samples include two-second pre-entry baseline and exit.",
+  "stageTimingConclusion": "C18 is insufficient: aux render preparation decreased in this pair, but main dispatch max increased 215 to 302 ms; Java peak 470.41 to 467.13 MiB and GC 11 to 12. No phone improvement or resolved P0 claim.",
+  "layerAttributionC19": {
+    "environmentChange": "Dedicated MuMu3 process was found stopped; restarted same instance without data reset. No cause established. Not a controlled speed comparison with C17/C18.",
+    "case": "entry-C19-warm-timing",
+    "frames": [
+      {
+        "frameCostWallNanos": {
+          "delta": {
+            "sdkRenderPreparationCount": 136,
+            "sdkRenderPreparationTotalNanos": 1091548403,
+            "sdkDrawSubmissionCount": 138,
+            "sdkDrawSubmissionTotalNanos": 892527854
+          },
+          "lifetimeMax": {
+            "sdkRenderPreparationMaxNanos": 1415132857,
+            "sdkDrawSubmissionMaxNanos": 489612514
+          },
+          "preEntryMax": {
+            "sdkRenderPreparationMaxNanos": 1415132857,
+            "sdkDrawSubmissionMaxNanos": 489612514
+          }
+        },
+        "cartographyFrameCostWallNanos": {
+          "delta": {
+            "terrainLandWaterCount": 0,
+            "terrainLandWaterTotalNanos": 0,
+            "roadsCount": 136,
+            "roadsTotalNanos": 160103529,
+            "snapDataCount": 0,
+            "snapDataTotalNanos": 0,
+            "roadNamesCount": 0,
+            "roadNamesTotalNanos": 0,
+            "placeLabelsCount": 0,
+            "placeLabelsTotalNanos": 0
+          },
+          "lifetimeMax": {
+            "terrainLandWaterMaxNanos": 0,
+            "roadsMaxNanos": 743336385,
+            "snapDataMaxNanos": 0,
+            "roadNamesMaxNanos": 0,
+            "placeLabelsMaxNanos": 0
+          },
+          "preEntryMax": {
+            "terrainLandWaterMaxNanos": 0,
+            "roadsMaxNanos": 743336385,
+            "snapDataMaxNanos": 0,
+            "roadNamesMaxNanos": 0,
+            "placeLabelsMaxNanos": 0
+          }
+        }
+      },
+      {
+        "frameCostWallNanos": {
+          "delta": {
+            "sdkRenderPreparationCount": 137,
+            "sdkRenderPreparationTotalNanos": 3657660031,
+            "sdkDrawSubmissionCount": 138,
+            "sdkDrawSubmissionTotalNanos": 1253542039
+          },
+          "lifetimeMax": {
+            "sdkRenderPreparationMaxNanos": 535014316,
+            "sdkDrawSubmissionMaxNanos": 235443328
+          },
+          "preEntryMax": {}
+        },
+        "cartographyFrameCostWallNanos": {
+          "delta": {
+            "terrainLandWaterCount": 134,
+            "terrainLandWaterTotalNanos": 419934209,
+            "roadsCount": 134,
+            "roadsTotalNanos": 284174652,
+            "snapDataCount": 0,
+            "snapDataTotalNanos": 0,
+            "roadNamesCount": 134,
+            "roadNamesTotalNanos": 658954570,
+            "placeLabelsCount": 134,
+            "placeLabelsTotalNanos": 1200587531
+          },
+          "lifetimeMax": {
+            "terrainLandWaterMaxNanos": 134135011,
+            "roadsMaxNanos": 93664965,
+            "snapDataMaxNanos": 0,
+            "roadNamesMaxNanos": 88776207,
+            "placeLabelsMaxNanos": 63452681
+          },
+          "preEntryMax": {}
+        }
+      }
+    ],
+    "validJavaPeakMiB": 463.43609619140625,
+    "mainDelayMaxMs": 337,
+    "timeouts": 0,
+    "observedGcCountDelta": 12,
+    "exitSucceeded": true
+  },
+  "encodedDemCandidateC20": {
+    "sha256": "586550da5b170f7975d8e404a033e7871fb9327f3f3d73986aa62f2007c3d565",
+    "metrics": [
+      {
+        "case": "entry-C20-warm-timing",
+        "scope": "whole recorded window; valid Java samples only; max delay excludes timeouts",
+        "validJavaPeakMiB": 364.06471252441406,
+        "mainDelayMaxMs": 298,
+        "mainDelayP95Ms": 175,
+        "mainSnapshotTimeouts": 0,
+        "observedGcCountDelta": 10,
+        "exitSucceeded": true,
+        "firstObservedDualNativeFrameSeconds": 1.8119999999762513
+      },
+      {
+        "case": "entry-C20-motion",
+        "scope": "whole recorded window; valid Java samples only; max delay excludes timeouts",
+        "validJavaPeakMiB": 439.26861572265625,
+        "mainDelayMaxMs": 142,
+        "mainDelayP95Ms": 84,
+        "mainSnapshotTimeouts": 1,
+        "observedGcCountDelta": 23,
+        "motionWallSeconds": 25.59399999998277,
+        "closedMapCount": 1,
+        "closedHeapMiB": 207.4006805419922,
+        "closedNetworkActive": 0,
+        "closedNetworkQueued": 0,
+        "contourGenerationExercised": false,
+        "markerSelectionPanelObservedAfterMotion": true
+      }
+    ],
+    "conclusion": "One entrance pair shows lower sampled peak, but main delays remain. Motion contains one unavailable main-thread snapshot; not a flow/pass acceptance. Marker selection observed after gestures; no record deletion or intentional marker move. Camera/count/single-map/WM restored. Phone P0 unresolved."
+  },
+  "boundsScanCandidateC21": {
+    "sha256": "e0845f9316af97abfac62333ff44c8e717e02352ed5df3efc16a542fc43fa4e1",
+    "validJavaPeakMiB": 382.6558609008789,
+    "mainDelayMaxMs": 226,
+    "mainSnapshotTimeouts": 0,
+    "observedGcCountDelta": 12,
+    "maps": [
+      {
+        "viewWidthPx": 1256,
+        "viewHeightPx": 1108,
+        "frameCostWallNanos": {
+          "sdkRenderPreparationCount": 243,
+          "sdkRenderPreparationTotalNanos": 8931476909,
+          "sdkRenderPreparationMaxNanos": 1663885218,
+          "sdkDrawSubmissionCount": 244,
+          "sdkDrawSubmissionTotalNanos": 3376976644,
+          "sdkDrawSubmissionMaxNanos": 452322885,
+          "firstActualDrawAfterCreateNanos": 1355792761,
+          "terrainBoundsMemoHits": 504,
+          "terrainBoundsMemoMisses": 13164,
+          "terrainBoundsMemoEntries": 41
+        }
+      },
+      {
+        "viewWidthPx": 1256,
+        "viewHeightPx": 1108,
+        "frameCostWallNanos": {
+          "sdkRenderPreparationCount": 135,
+          "sdkRenderPreparationTotalNanos": 3650719443,
+          "sdkRenderPreparationMaxNanos": 254275884,
+          "sdkDrawSubmissionCount": 135,
+          "sdkDrawSubmissionTotalNanos": 728452660,
+          "sdkDrawSubmissionMaxNanos": 274353420,
+          "firstActualDrawAfterCreateNanos": 773728587,
+          "terrainBoundsMemoHits": 2783,
+          "terrainBoundsMemoMisses": 7697,
+          "terrainBoundsMemoEntries": 34
+        }
+      }
+    ],
+    "mainPreEntryFrameCostWallNanos": {
+      "sdkRenderPreparationCount": 115,
+      "sdkRenderPreparationTotalNanos": 7373047337,
+      "sdkRenderPreparationMaxNanos": 1663885218,
+      "sdkDrawSubmissionCount": 115,
+      "sdkDrawSubmissionTotalNanos": 2224675810,
+      "sdkDrawSubmissionMaxNanos": 452322885,
+      "firstActualDrawAfterCreateNanos": 1355792761,
+      "terrainBoundsMemoHits": 431,
+      "terrainBoundsMemoMisses": 12511,
+      "terrainBoundsMemoEntries": 105
+    },
+    "exitSucceeded": true,
+    "restoration": "original camera/annotation count/single map/1256x2760/density515 verified",
+    "conclusion": "Real memo hits confirmed; one group 226 ms max delay and 382.66 MiB peak, no timeout, but aux preparation still3.651s. No P0 resolution claim. Each native view1256x1108, no full-phone-height hidden native view in this sample."
+  }
+}

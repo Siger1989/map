@@ -7,7 +7,6 @@ import earth.worldwind.layer.mvt.MvtFeature
 import earth.worldwind.layer.mvt.MvtLayer
 import earth.worldwind.layer.mvt.MvtRuleBasedStyle
 import earth.worldwind.layer.mvt.MvtTile
-import earth.worldwind.layer.mvt.MvtVectorLayer
 import earth.worldwind.layer.mvt.mvtStyle
 import earth.worldwind.layer.source.TileSource
 import earth.worldwind.render.Color
@@ -206,10 +205,10 @@ internal object NativeRoadStyle {
 }
 
 /** One SDK tile cache/source; its cached content contains independently drawable style groups. */
-internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtVectorLayer(
+internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : NativeTimedMvtLayer(
     source, minZoom = 0, maxZoom = 14, maxLoadedTiles = tileBudget,
     maxConcurrentFetches = 2, maxConcurrentAssembly = 1,
-    style = NativeRoadStyle.style, displayName = "Roads and waterways",
+    style = NativeRoadStyle.style, displayName = "Roads and waterways", metricPrefix = "roads",
 ) {
     // Keep coarse coverage until every selected child is ready; stop progressive parent/child overlap.
     override val progressiveRefinement get() = false

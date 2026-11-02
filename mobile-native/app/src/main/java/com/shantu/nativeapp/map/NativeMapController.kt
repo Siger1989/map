@@ -8,6 +8,7 @@ import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.View
 import earth.worldwind.WorldWindow
 import earth.worldwind.geom.AltitudeMode
@@ -86,6 +87,13 @@ class NativeMapController internal constructor(
     sharedNetwork: BoundedTileNetwork? = null,
     private val onStatus: (String) -> Unit,
 ) {
+    // Capture before initializing WorldWindow/layers so first-draw latency includes construction.
+    private val controllerCreatedAtNanos = SystemClock.elapsedRealtimeNanos()
+    private val frameCostTelemetry = NativeMapFrameCostTelemetry()
+    // FrameMetrics callbacks are serialized per stage by WorldWind; keep timestamps as primitives
+    // so the per-frame instrumentation does not allocate.
+    private var renderPreparationStartedAtNanos = 0L
+    private var drawSubmissionStartedAtNanos = 0L
     private val appContext = context.applicationContext
     private val key = tiandituKey.trim()
     private val encodedKey = URLEncoder.encode(key, "UTF-8")
@@ -367,6 +375,7 @@ class NativeMapController internal constructor(
     val centerLongitude: Double get() = cameraSnapshot().longitude
 
     internal fun loadingSnapshot() = network.snapshot()
+    internal fun frameCostWallNanosSnapshot(): Map<String, Long?> = frameCostTelemetry.frameSnapshot()
     /** Successful base-image bitmap decodes for this controller's current source generation. */
     internal fun bridgeRasterTileSnapshot(): Long = bridgeRasterLoads.decodedTiles()
     /** This map's selected source work, including its requests queued in the shared network pool. */
@@ -474,30 +483,46 @@ class NativeMapController internal constructor(
         }
         worldWindow.engine.cameraFromLookAt(initial)
         worldWindow.engine.frameMetrics=object:earth.worldwind.frame.FrameMetrics{
-            override fun beginRendering(rc:earth.worldwind.render.RenderContext){bridgePrintRasterFrameCoverage?.beginFrame()}
-            override fun endRendering(rc:earth.worldwind.render.RenderContext){
-                bridgePrintRasterFrameCoverage?.let { coverage ->
-                    val candidate = coverage.freezeFrame()
-                    rc.offerScreenDrawable(NativePrintFrameWitnessDrawable {
-                        val cache = worldWindow.engine.renderResourceCache
-                        coverage.publishDrawnFrame(candidate, cache.usedCapacity, cache.capacity, cache.entryCount) { source ->
-                            cache[source] is Texture
-                        }
-                    }, Double.MAX_VALUE)
-                }
-                val bridgeWitness = if (bridgeFrameWitnesses.hasPending()) {
-                    check(Looper.myLooper() == Looper.getMainLooper()) { "Bridge frame metadata factories must run on the Android main thread" }
-                    bridgeFrameWitnesses.take()
-                } else null
-                bridgeWitness?.let { witness ->
-                    rc.offerScreenDrawable(NativeBridgeFrameWitnessDrawable { dc ->
-                        witness.draw(dc.modelviewProjection.m.copyOf(), dc.viewport.width, dc.viewport.height)
-                    }, Double.MAX_VALUE)
-                }
-                rc.sortDrawables()
+            override fun beginRendering(rc:earth.worldwind.render.RenderContext){
+                renderPreparationStartedAtNanos = SystemClock.elapsedRealtimeNanos()
+                bridgePrintRasterFrameCoverage?.beginFrame()
             }
-            override fun beginDrawing(dc:earth.worldwind.draw.DrawContext){}
+            override fun endRendering(rc:earth.worldwind.render.RenderContext){
+                try {
+                    bridgePrintRasterFrameCoverage?.let { coverage ->
+                        val candidate = coverage.freezeFrame()
+                        rc.offerScreenDrawable(NativePrintFrameWitnessDrawable {
+                            val cache = worldWindow.engine.renderResourceCache
+                            coverage.publishDrawnFrame(candidate, cache.usedCapacity, cache.capacity, cache.entryCount) { source ->
+                                cache[source] is Texture
+                            }
+                        }, Double.MAX_VALUE)
+                    }
+                    val bridgeWitness = if (bridgeFrameWitnesses.hasPending()) {
+                        check(Looper.myLooper() == Looper.getMainLooper()) { "Bridge frame metadata factories must run on the Android main thread" }
+                        bridgeFrameWitnesses.take()
+                    } else null
+                    bridgeWitness?.let { witness ->
+                        rc.offerScreenDrawable(NativeBridgeFrameWitnessDrawable { dc ->
+                            witness.draw(dc.modelviewProjection.m.copyOf(), dc.viewport.width, dc.viewport.height)
+                        }, Double.MAX_VALUE)
+                    }
+                    rc.sortDrawables()
+                } finally {
+                    val startedAt = renderPreparationStartedAtNanos
+                    renderPreparationStartedAtNanos = 0L
+                    if (startedAt > 0L) frameCostTelemetry.recordSdkRenderPreparation(SystemClock.elapsedRealtimeNanos() - startedAt)
+                }
+            }
+            override fun beginDrawing(dc:earth.worldwind.draw.DrawContext){
+                drawSubmissionStartedAtNanos = SystemClock.elapsedRealtimeNanos()
+            }
             override fun endDrawing(dc:earth.worldwind.draw.DrawContext){
+                val drawEndedAtNanos = SystemClock.elapsedRealtimeNanos()
+                val drawStartedAt = drawSubmissionStartedAtNanos
+                drawSubmissionStartedAtNanos = 0L
+                if (drawStartedAt > 0L) frameCostTelemetry.recordSdkDrawSubmission(drawEndedAtNanos - drawStartedAt)
+                frameCostTelemetry.recordFirstActualDrawAfterCreate(drawEndedAtNanos - controllerCreatedAtNanos)
                 frameDrawn=true
                 NativeTileStageTelemetry.recordRenderedFrame()
                 val mvp = dc.modelviewProjection.m

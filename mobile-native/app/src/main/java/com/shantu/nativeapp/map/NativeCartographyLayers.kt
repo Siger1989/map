@@ -203,18 +203,27 @@ class NativeCartographyLayers internal constructor(
     private val labelTileBudget = vectorTileBudget
 
     /** Real OpenFreeMap land/water polygons over the native DEM-backed dark base surface. */
-    val terrainLandWaterLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = vectorTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = NativeTerrainLandWaterStyle, displayName = "Terrain land and water")
+    private val timedTerrainLayer = NativeTimedMvtLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = vectorTileBudget,
+        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = NativeTerrainLandWaterStyle,
+        displayName = "Terrain land and water", metricPrefix = "terrainLandWater")
     private val nativeRoadLayer = NativeRoadVectorLayer(source, vectorTileBudget)
     val roadsLayer: MvtVectorLayer get() = nativeRoadLayer
-    private val snapDataLayer = MvtVectorLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = minOf(12, vectorTileBudget),
-        maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {}, displayName = "Road and river snapping data")
-    val roadNamesLayer = MvtVectorLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadNameStyle, displayName = "Road labels")
-    val placeLabelsLayer = MvtVectorLayer(source, minZoom = 2, maxZoom = 14, maxLoadedTiles = labelTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = placeLabelStyle, displayName = "Place labels")
+    private val snapDataLayer = NativeTimedMvtLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = minOf(12, vectorTileBudget),
+        maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {},
+        displayName = "Road and river snapping data", metricPrefix = "snapData")
+    private val timedRoadNamesLayer = NativeTimedMvtLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
+        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadNameStyle,
+        displayName = "Road labels", metricPrefix = "roadNames")
+    private val timedPlaceLabelsLayer = NativeTimedMvtLayer(source, minZoom = 2, maxZoom = 14, maxLoadedTiles = labelTileBudget,
+        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = placeLabelStyle,
+        displayName = "Place labels", metricPrefix = "placeLabels")
+    val terrainLandWaterLayer: MvtVectorLayer get() = timedTerrainLayer
+    val roadNamesLayer: MvtVectorLayer get() = timedRoadNamesLayer
+    val placeLabelsLayer: MvtVectorLayer get() = timedPlaceLabelsLayer
     val tiandituLabelRenderLayer = RenderableLayer("Tianditu raster annotations")
     val tiandituBoundaryRenderLayer = RenderableLayer("Tianditu global boundaries")
+    private val timedMvtLayers: List<NativeTimedMvtLayer> =
+        listOf(timedTerrainLayer, nativeRoadLayer, snapDataLayer, timedRoadNamesLayer, timedPlaceLabelsLayer)
     private val imagery = NativeImageryBasemap(
         window.context, window, onImageryStatus, sharedNetwork,
         tileIdentityFor = { source, z, x, y, style -> tileIdentityFor(source, "imagery", z, x, y, style) },
@@ -224,7 +233,8 @@ class NativeCartographyLayers internal constructor(
     val baseRenderLayer: RenderableLayer get() = imagery.baseRenderLayer
     /** Mount below the controller's standard TDT/custom base for the bundled historical overview. */
     val underlayRenderLayer: RenderableLayer get() = imagery.underlayLayer
-    val layers: List<Layer> = listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer, placeLabelsLayer, tiandituLabelRenderLayer, tiandituBoundaryRenderLayer)
+    val layers: List<Layer> = listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer,
+        placeLabelsLayer, tiandituLabelRenderLayer, tiandituBoundaryRenderLayer)
     var plan: NativeCartographyPlan = NativeCartographyPlan.resolve(NativeCartographySettings())
         private set
     private var labelMode: String? = null
@@ -235,6 +245,13 @@ class NativeCartographyLayers internal constructor(
     private val raster = TiandituRasterSource(tiandituKey, sharedNetwork, tileIdentityFor, viewId, generation)
 
     init {
+        // These MVT layers are backgrounds, not business pick targets: the bridge consumes String
+        // delegates for app objects, while snapping reads the shared raw MVT cache independently.
+        // Keep SDK per-feature pick payloads and pick draws off. Re-enable explicitly if a future
+        // feature-state or vector-feature inspection flow needs them.
+        listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer, placeLabelsLayer).forEach {
+            it.isPickEnabled = false
+        }
         // No vector source may start decoding a world overview before React supplies its selection.
         layers.forEach { it.isEnabled = false }
     }
@@ -278,6 +295,11 @@ class NativeCartographyLayers internal constructor(
     fun imageryStatus(): NativeImageryStatus = imagery.status()
     fun imageryRenderedTileCount(): Long = imagery.renderedTileCount()
     fun retryLatestImagery() = imagery.retryLatest()
+
+    /** Explicit diagnostics snapshot; counters measure normal MVT render calls in monotonic wall ns. */
+    fun frameCostSnapshot(): Map<String, Long> = buildMap(timedMvtLayers.size * 3) {
+        timedMvtLayers.forEach { it.appendFrameCost(this) }
+    }
 
     fun setRasterQuality(quality: NativeMapQuality) {
         val detail = NativeCartographyRasterQuality.detailControl(quality)

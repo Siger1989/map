@@ -71,7 +71,8 @@ public final class Native149Instrumentation extends Instrumentation {
             int rc = Activity.RESULT_OK;
             try {
                 String mode = arguments == null ? "inspect" : arguments.getString("mode", "inspect");
-                JSONObject report = "native-regression".equals(mode) ? runRegression()
+                JSONObject report = "native163-cache-scope".equals(mode) ? Native163CacheScope.run(this, arguments)
+                    : "native-regression".equals(mode) ? runRegression()
                     : "interactive-preview".equals(mode) ? runInteractivePreview()
                     : "raster-diagnostics".equals(mode) ? runRasterDiagnostics()
                     : "line-position-regression".equals(mode) ? runLinePositionRegression()
@@ -135,6 +136,7 @@ public final class Native149Instrumentation extends Instrumentation {
         long commands = 0;
         Native160Telemetry telemetry = new Native160Telemetry(this);
         Native163PerfProbe perf = new Native163PerfProbe(this);
+        Native163MethodTrace methodTrace = new Native163MethodTrace(getTargetContext());
         try (ServerSocket server = new ServerSocket(23458, 8, InetAddress.getByName("127.0.0.1"))) {
             server.setSoTimeout(1000);
             Bundle ready = new Bundle();
@@ -176,6 +178,11 @@ public final class Native149Instrumentation extends Instrumentation {
                             }
                             if ("heap-capture".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("heapCapture", captureQaHeap());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("method-trace-start".equals(action) || "method-trace-stop".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("methodTrace",
+                                    "method-trace-start".equals(action) ? methodTrace.start(request.optInt("intervalUs", 10000)) : methodTrace.stop());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("snap-targets".equals(action)) {
@@ -249,7 +256,7 @@ public final class Native149Instrumentation extends Instrumentation {
                     // Keep serving fresh local connections after a page reload or transport interruption.
                 }
             }
-        } finally { previewCancel(); telemetry.action("telemetry-stop"); perf.action("perf-stop", null); }
+        } finally { methodTrace.close(); previewCancel(); telemetry.action("telemetry-stop"); perf.action("perf-stop", null); }
         return new JSONObject().put("mode", "interactive-preview").put("testState", "STOPPED_BY_COMMAND")
             .put("commands", commands);
     }
@@ -684,9 +691,9 @@ public final class Native149Instrumentation extends Instrumentation {
             }
             return output;
         }
-        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key)) && value instanceof JSONObject)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key) || "hostCommandWallNanos".equals(key) || "frameCostWallNanos".equals(key) || "cartographyFrameCostWallNanos".equals(key)) && value instanceof JSONObject)
             return safeDiagnosticsObject((JSONObject)value);
-        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key)) && value instanceof Map)
+        if (("network".equals(key) || "tileStages".equals(key) || "contourBuild".equals(key) || "contourSharedGeometry".equals(key) || "tileDemand".equals(key) || "rawMvt".equals(key) || "hostCommandWallNanos".equals(key) || "frameCostWallNanos".equals(key) || "cartographyFrameCostWallNanos".equals(key)) && value instanceof Map)
             return safeDiagnosticsMap((Map<?, ?>)value);
         if ("decodeDurationBucketCounts".equals(key) && value instanceof JSONArray) {
             JSONArray input = (JSONArray)value, output = new JSONArray();
@@ -704,8 +711,21 @@ public final class Native149Instrumentation extends Instrumentation {
         switch (key) {
             case "demPlanCount": case "demPlanNanos": case "demPlanMaxNanos": case "demCancelledJobs": case "groundWorkDeferrals":
             case "replans": case "totalNanos": case "maxNanos": case "batchReplans": case "rankCalculations": case "geometryReuses":
+            case "terrainLandWaterCount": case "terrainLandWaterTotalNanos": case "terrainLandWaterMaxNanos":
+            case "roadsCount": case "roadsTotalNanos": case "roadsMaxNanos":
+            case "snapDataCount": case "snapDataTotalNanos": case "snapDataMaxNanos":
+            case "roadNamesCount": case "roadNamesTotalNanos": case "roadNamesMaxNanos":
+            case "placeLabelsCount": case "placeLabelsTotalNanos": case "placeLabelsMaxNanos":
+            case "createCount": case "createTotalNanos": case "createMaxNanos":
+            case "mapViewportCount": case "mapViewportTotalNanos": case "mapViewportMaxNanos":
+            case "renderStateCount": case "renderStateTotalNanos": case "renderStateMaxNanos":
+            case "sdkRenderPreparationCount": case "sdkRenderPreparationTotalNanos": case "sdkRenderPreparationMaxNanos":
+            case "sdkDrawSubmissionCount": case "sdkDrawSubmissionTotalNanos": case "sdkDrawSubmissionMaxNanos":
+            case "firstActualDrawAfterCreateNanos":
+            case "terrainBoundsMemoHits": case "terrainBoundsMemoMisses": case "terrainBoundsMemoEntries":
             case "rawBytes": case "rawTiles": case "hits": case "misses": case "fetches": case "deduplicated": case "inFlight": case "owners": case "evictions":
             case "available": case "heapMaxBytes": case "heapUsedBytes": case "mapCount":
+            case "viewWidthPx": case "viewHeightPx": case "attached":
             case "actualFrames": case "lastFrameAgeMs": case "rasterBitmapDecodes":
             case "renderCacheCapacityBytes": case "renderCacheUsedBytes": case "renderCacheEntries":
             case "decodedImages": case "decodeNanos": case "decodeFailures": case "completedFrames": case "perTileDrawCount":

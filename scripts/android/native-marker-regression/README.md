@@ -6,6 +6,36 @@ does not use WebView debugging/CDP. The helper's package/class/environment names
 historical `qa149` / `Native149Instrumentation` identifier; that legacy tooling name is not
 the version of the target application.
 
+## Reversible cache-scope isolation (dedicated simulator only)
+
+`native163-cache-scope` is an Instrumentation-only mode before this helper calls
+`attachTarget` or `startActivitySync`; it calls neither. It requires the platform `Application`, no live Activity, no `GLThread`, and
+no known map tile/snap worker threads. If the safety check is unavailable or an app/map thread
+is active, it refuses to move anything. Only two fixed sibling directories are in scope:
+`files/shantu-map-browse-cache` and `cache/shantu-native-map-tiles`.
+
+Use a new session ID containing only ASCII letters, digits, `_` or `-` (1–48 characters):
+the MuMu3 image spoofs a phone model, so its adb serial must first be matched on the host to
+the dedicated MuMu3 instance. Only after that host-side check, add
+`-e confirmedDedicatedEmulator true`; the helper also requires `Build.SUPPORTED_ABIS` to contain
+`x86_64`. This flag is not for a physical phone and must not be passed there.
+
+```powershell
+adb -s <verified-mumu3-serial> shell am instrument -w -e mode native163-cache-scope -e confirmedDedicatedEmulator true -e action isolate -e sessionId coldA com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
+# Run the isolated cold-cache QA flow, then stop/close the target app before restoring.
+adb -s <verified-mumu3-serial> shell am instrument -w -e mode native163-cache-scope -e confirmedDedicatedEmulator true -e action restore -e sessionId coldA com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
+```
+
+Existing directories are renamed to sibling `.qa-isolated-<sessionId>` names. A line-oriented,
+recoverable manifest is kept under the target app's private external Documents directory; it
+records only the two fixed labels, initial existence, direct-child counts, session, and state.
+Restore returns original directories and renames any newly generated caches to
+`.qa-generated-<sessionId>` so neither set is removed. Missing original directories remain
+missing after restore. Reusing a session with an existing manifest is refused. The report emits
+only state/counts; it never enumerates tile names or reads tile contents, URLs, keys, records,
+offline data, or WebView storage. Review the helper and the manifest before running; do not run
+this mode on a production phone or while the map is open.
+
 ## Optional short thread-stack diagnosis
 
 The interactive socket accepts `{"action":"perf-start","stackSampling":true}`.
@@ -130,3 +160,19 @@ Use `-e mode interactive-preview` after forwarding `adb -s DEVICE forward tcp:23
 `-e mode road-density-regression -e fixtureFile qa-native162-roads.json` accepts a local `poses` array with validated camera objects. Default coverage is Chengdu zoom 8/9/10/11/12/15 and mountain 8/10/11/12/15; each pose records road-layer ON/OFF/ON PNGs, render-cut groups and parent/child overlap. Temporary vector annotation settings preserve the selected base source, and full renderState/camera/layer/contour/revision values restore in `finally`. No GPS or saved-record writes.
 
 A separate cold near fixture may set `requireMatrixCoverage:false`, `isolation:false`, `minimumWarmupMs:10000`, and one `city-z15` pose. It avoids comparing a streaming source12 overview with source14 near detail. `captureUnsettled` and pending counts are mandatory evidence; the helper never automatically establishes visual acceptance or a fully drained network. Raw PNGs and reports stay private.
+
+
+## Bounded ART method attribution (not a benchmark)
+
+The interactive socket accepts `{"action":"method-trace-start","intervalUs":10000}` and
+`{"action":"method-trace-stop"}`. Sampling intervals must be 5,000–100,000 microseconds.
+The helper uses a 16 MiB buffer, requires 64 MiB available storage, saves a unique trace under
+the target app's private external Documents directory, and stops after at most 30 seconds or
+when the interactive session closes. This is helper-only; it is not shipped in the product.
+
+Sampling suspends app threads and may materially change GC, scheduling and frame timing.
+Use it for coarse attribution, keep the exact optimized APK's R8 mapping for method names,
+and repeat timing with ART and QA periodic sampling disabled. System traces need a checked
+non-overflowing buffer. Concurrent GC duration is not main-thread pause, and GL submission
+is not GPU execution time. Keep raw traces private; they can contain runtime or user context.
+Do not disable platform security or use this helper to turn an optimized APK into a debug build.

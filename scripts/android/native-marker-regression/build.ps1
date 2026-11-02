@@ -45,8 +45,11 @@ $sourceFiles = @(Get-ChildItem -LiteralPath (Join-Path $helperRoot 'src') -Recur
 & $javac -encoding UTF-8 -source 8 -target 8 -classpath $androidJar -d $classes @sourceFiles
 if ($LASTEXITCODE -ne 0) { throw 'javac failed' }
 
-$classFiles = @(Get-ChildItem -LiteralPath $classes -Recurse -Filter '*.class' | ForEach-Object { $_.FullName })
-& $d8 --min-api 23 --lib $androidJar --output $dex @classFiles
+# Keep d8.bat below cmd.exe's argument-length limit as the QA helper gains nested classes.
+$classesJar = Join-Path $buildRoot 'classes.jar'
+& $jar cf $classesJar -C $classes '.'
+if ($LASTEXITCODE -ne 0) { throw 'packing compiled classes failed' }
+& $d8 --min-api 23 --lib $androidJar --output $dex $classesJar
 if ($LASTEXITCODE -ne 0) { throw 'd8 failed' }
 
 $baseApk = Join-Path $buildRoot 'base.apk'

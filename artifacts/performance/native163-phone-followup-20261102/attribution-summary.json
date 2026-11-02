@@ -1,0 +1,94 @@
+{
+  "target": "Phone 163 dual-map lag remains FAIL; MuMu is diagnostic evidence only",
+  "protocol": "C19-C20-C19, fresh app process, existing raster disk cache, single map settled for 5 consecutive inspections with raster network and raw MVT in-flight zero. Same selected sources/annotation count; intended same view with small native camera round-trip drift; 12-second no-gesture entrance. Existing preview screenrecord remains running. Not cold cache, no first-visible-image or drag-readiness acceptance.",
+  "sameCamera": false,
+  "sameAnnotationCount": true,
+  "observations": [
+    {
+      "case": "entry-C19-system-only",
+      "artMethodSampling": false,
+      "qaPerfSampling": false,
+      "systemTraceEnabled": true,
+      "traceEntriesInBuffer": 1029581,
+      "traceEntriesWritten": 1029581,
+      "mainScheduledMilliseconds": {
+        "running": 2097.77,
+        "sleeping": 8967.75,
+        "runnable": 908.5
+      },
+      "auxRenderPreparationCount": 144,
+      "auxRenderPreparationTotalMs": 3100.56,
+      "auxRenderPreparationMaxMs": 269.82,
+      "auxGlSubmissionTotalMs": 687.34,
+      "gcCycles": 12,
+      "mainGcRelatedSectionMs": 257.43,
+      "preEntryReady": true,
+      "exitMapCount": 2
+    },
+    {
+      "case": "entry-C20-system-only",
+      "artMethodSampling": false,
+      "qaPerfSampling": false,
+      "systemTraceEnabled": true,
+      "traceEntriesInBuffer": 1191981,
+      "traceEntriesWritten": 1191981,
+      "mainScheduledMilliseconds": {
+        "running": 1990.48,
+        "sleeping": 8862.26,
+        "runnable": 1125.47
+      },
+      "auxRenderPreparationCount": 147,
+      "auxRenderPreparationTotalMs": 5714.21,
+      "auxRenderPreparationMaxMs": 478.28,
+      "auxGlSubmissionTotalMs": 900.17,
+      "gcCycles": 4,
+      "mainGcRelatedSectionMs": 330.77,
+      "preEntryReady": true,
+      "exitMapCount": 2
+    },
+    {
+      "case": "entry-C19-system-reverse",
+      "artMethodSampling": false,
+      "qaPerfSampling": false,
+      "systemTraceEnabled": true,
+      "traceEntriesInBuffer": 993022,
+      "traceEntriesWritten": 993022,
+      "mainScheduledMilliseconds": {
+        "running": 2143.74,
+        "sleeping": 8708.68,
+        "runnable": 1105.52
+      },
+      "auxRenderPreparationCount": 162,
+      "auxRenderPreparationTotalMs": 3999.45,
+      "auxRenderPreparationMaxMs": 393.68,
+      "auxGlSubmissionTotalMs": 868.11,
+      "gcCycles": 11,
+      "mainGcRelatedSectionMs": 171.61,
+      "preEntryReady": true,
+      "exitMapCount": 1
+    }
+  ],
+  "decision": "C20 encoding and C21/C22 terrain memo experiments isolated outside active source; no demonstrated stable entrance-lag benefit. Active production source and installed diagnostic APK returned to C19. C18 unused background MVT picking is common to these comparisons, not a proven phone-lag fix.",
+  "diagnosticApkSha256": "0b1ce637cff3f514869d3f62bbeaea200117c20e2b36b4f359cec4f8ccac49b0",
+  "fixedPrivateApkSha256": "054a3cc8bc2a5c171a6b3a40e22e0915c4e0a53e304232d898a38851f1df862c",
+  "artMethodTraceLimits": "20-second ART trace had substantial observer effect and ring-buffer loss. R8 optimized method names may represent merged/inlined code; absent exact C19 mapping, do not attribute fine method names. Use coarse render/assembly/encoding thread paths only. Not a benchmark.",
+  "systemTraceLimits": "GC sections can nest; concurrent GC duration is not main-thread pause. Runnable time is scheduler wait, sleeping includes ordinary idle. GL submission duration is not GPU time. Preview encoding is substantial extra emulator load and is not a phone cause.",
+  "emulatorExit": "User explicitly denied manual closure. shell.log.1 at 2026-11-02 10:46:54.350 says commitDataRequest - system requesting shutdown, followed by orderly stop; origin of request unresolved, not proof of app crash/OOM.",
+  "restoration": {
+    "cameraRestored": true,
+    "annotationCountUnchanged": true,
+    "singleMap": true,
+    "interactiveReady": true,
+    "wm": "Physical size: 1256x2760",
+    "density": "Physical density: 515"
+  },
+  "nextAcceptance": "Attribute the actual long main render callbacks with tracing OFF for benchmark, exact mapping for diagnostic traces; single scoped native change; compare fixed cold/warm entrance, first visible imagery and continuous real gestures without reducing quality. No phone-ready claim or replacement APK until benefit is demonstrated.",
+  "cameraDrift": {
+    "centerDelta": 0,
+    "maximumZoomDelta": 0.0012916305119112792,
+    "maximumBearingDeltaDegrees": 0.0009286185959780369,
+    "maximumPitchDeltaDegrees": 1.3966120349095945e-07,
+    "exactSameCamera": false,
+    "strictCausalBenchmark": false
+  }
+}
