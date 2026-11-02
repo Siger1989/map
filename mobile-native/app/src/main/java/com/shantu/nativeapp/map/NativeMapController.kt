@@ -50,6 +50,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 private val NO_RASTER_DECODE_CALLBACK: () -> Unit = {}
 private val NO_RASTER_LOAD_CALLBACK: () -> Unit = {}
 
+private data class NativeTileDemandFrame(
+    val matrix: DoubleArray,
+    val width: Int,
+    val height: Int,
+)
+
 /** Serializable view state. Range is eye-to-look-at distance in meters. */
 data class NativeCameraSnapshot(
     val latitude: Double,
@@ -236,17 +242,108 @@ class NativeMapController internal constructor(
     private var drawingFocus: TileScreenPoint? = null
     @Volatile private var tileDemandDirty = true
     private val tileViewId = "map-${java.util.UUID.randomUUID()}"
-    private val tileDemandPostPending = AtomicBoolean(false)
+    private val tileDemandFrames = NativeTileDemandFrameCoalescer<NativeTileDemandFrame>()
+    private val tileDemandDrainPosted = AtomicBoolean(false)
+    private val tileDemandUrgentWakePosted = AtomicBoolean(false)
+    @Volatile private var tileDemandViewWasHidden = false
     private var tileDemandReplans = 0L
     private var tileDemandNanos = 0L
     private var tileDemandMaxNanos = 0L
+    private var tileDemandCameraSnapshotCalls = 0L
+    private var tileDemandCameraSnapshotNanos = 0L
     private var tileDemandBatchReplans = 0L
     private var tileDemandRankCalculations = 0L
     private var tileDemandGeometryReuses = 0L
     internal fun tileDemandPerformanceSnapshot(): Map<String, Long> = mapOf(
         "replans" to tileDemandReplans, "totalNanos" to tileDemandNanos, "maxNanos" to tileDemandMaxNanos,
         "batchReplans" to tileDemandBatchReplans, "rankCalculations" to tileDemandRankCalculations,
-        "geometryReuses" to tileDemandGeometryReuses)
+        "geometryReuses" to tileDemandGeometryReuses,
+        "cameraSnapshotCalls" to tileDemandCameraSnapshotCalls, "cameraSnapshotNanos" to tileDemandCameraSnapshotNanos)
+
+    private val tileDemandDrainRunnable = Runnable {
+        tileDemandDrainPosted.set(false)
+        if (disposed) return@Runnable
+        drainTileDemandFrames()
+    }
+
+    private fun postTileDemandDrain(delayMs: Long = 0L) {
+        if (disposed || !tileDemandDrainPosted.compareAndSet(false, true)) return
+        mainHandler.postDelayed(tileDemandDrainRunnable, delayMs.coerceAtLeast(0L))
+    }
+
+    private fun wakeTileDemandDrain() {
+        if (disposed) return
+        mainHandler.removeCallbacks(tileDemandDrainRunnable)
+        tileDemandDrainPosted.set(false)
+        postTileDemandDrain()
+    }
+
+    private fun wakeTileDemandDrainIfUrgent() {
+        if (!tileDemandFrames.hasUrgentWork() || disposed) return
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            wakeTileDemandDrain()
+        } else if (tileDemandUrgentWakePosted.compareAndSet(false, true)) {
+            mainHandler.post {
+                tileDemandUrgentWakePosted.set(false)
+                wakeTileDemandDrain()
+            }
+        }
+    }
+
+    private fun drainTileDemandFrames() {
+        if (disposed) return
+        if (!isTileDemandViewVisible()) {
+            tileDemandFrames.clearPending()
+            tileDemandViewWasHidden = true
+            refreshTileDemand(forceGeneration = true)
+            return
+        }
+        val latest = tileDemandFrames.latestFrame() ?: return
+        if (latest.width != view.width || latest.height != view.height) {
+            // Do not pair an MVP with a later viewport. Keep the request pending for the next real frame.
+            tileDemandFrames.deferUntilNextFrame()
+            worldWindow.requestRedraw()
+            return
+        }
+        val poll = tileDemandFrames.poll(android.os.SystemClock.uptimeMillis())
+        when (poll) {
+            is NativeTileDemandFrameCoalescer.Poll.Ready -> {
+                val frame = poll.value.frame
+                val viewport = worldWindow.engine.viewport
+                if (frame.width != view.width || frame.height != view.height ||
+                    viewport.width != frame.width || viewport.height != frame.height) {
+                    tileDemandFrames.deferUntilNextFrame(poll.value.forceGeneration)
+                    worldWindow.requestRedraw()
+                    return
+                }
+                tileDemandViewWasHidden = false
+                refreshTileDemand(
+                    forceGeneration = poll.value.forceGeneration,
+                    projectionMatrix = frame.matrix,
+                    projectionWidth = frame.width,
+                    projectionHeight = frame.height,
+                )
+            }
+            is NativeTileDemandFrameCoalescer.Poll.Wait -> postTileDemandDrain(poll.delayMs)
+            NativeTileDemandFrameCoalescer.Poll.AwaitFrame -> worldWindow.requestRedraw()
+            NativeTileDemandFrameCoalescer.Poll.Idle -> Unit
+        }
+    }
+
+    private fun isTileDemandViewVisible(): Boolean = view.isShown && view.width > 0 && view.height > 0
+
+    private fun offerTileDemandFrame(matrix: DoubleArray, width: Int, height: Int) {
+        if (disposed) return
+        val previous = tileDemandFrames.latestFrame()
+        if (tileDemandViewWasHidden) {
+            tileDemandFrames.requestUrgent(forceGeneration = true)
+        } else if (previous == null || previous.width != width || previous.height != height) {
+            // A new/changed viewport is not a camera-only rank refresh and must bypass the cadence.
+            tileDemandFrames.requestUrgent(forceGeneration = previous != null)
+        }
+        tileDemandFrames.offer(NativeTileDemandFrame(matrix.copyOf(), width, height))
+        if (tileDemandFrames.hasUrgentWork()) wakeTileDemandDrainIfUrgent() else postTileDemandDrain()
+    }
 
     private val namespaceHashes = object : LinkedHashMap<String, String>(64, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean = size > MAX_NAMESPACE_HASHES
@@ -332,6 +429,7 @@ class NativeMapController internal constructor(
     internal fun setLegacyRasterLayersVisible(visible: Boolean) {
         check(Looper.myLooper() == Looper.getMainLooper())
         if (disposed) return
+        if (legacyRasterLayersVisible == visible) return
         legacyRasterLayersVisible = visible
         baseLayer.isEnabled = visible
         labelLayer.isEnabled = visible && rasterLabelOpacity > 0f
@@ -413,12 +511,7 @@ class NativeMapController internal constructor(
                 }
                 if (frameListener != null && copy != null) runCatching { frameListener.invoke(copy, dc.viewport.width, dc.viewport.height) }
                 runCatching { bridgeFrameActivityListener?.invoke() }
-                val demandMatrix = mvp.copyOf()
-                val demandWidth = dc.viewport.width; val demandHeight = dc.viewport.height
-                if (tileDemandPostPending.compareAndSet(false, true)) mainHandler.post {
-                    tileDemandPostPending.set(false)
-                    refreshTileDemand(projectionMatrix = demandMatrix, projectionWidth = demandWidth, projectionHeight = demandHeight)
-                }
+                offerTileDemandFrame(mvp, dc.viewport.width, dc.viewport.height)
                 val now=android.os.SystemClock.elapsedRealtime()
                 if(now-lastFrameStatusAt<750)return
                 lastFrameStatusAt=now
@@ -507,6 +600,9 @@ class NativeMapController internal constructor(
     fun dispose() {
         if (disposed) return
         disposed = true
+        mainHandler.removeCallbacks(tileDemandDrainRunnable)
+        tileDemandDrainPosted.set(false)
+        tileDemandFrames.dispose()
         network.removeViewDemand(tileViewId)
         cacheRefreshObserver.close()
         resetBridgeRasterEvidence()
@@ -607,7 +703,9 @@ class NativeMapController internal constructor(
     fun setRasterLabelOpacity(opacity: Double) {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Label opacity must be changed on the Android main thread" }
         require(opacity.isFinite() && opacity in 0.0..1.0)
-        rasterLabelOpacity = opacity.toFloat()
+        val nextOpacity = opacity.toFloat()
+        if (rasterLabelOpacity == nextOpacity) return
+        rasterLabelOpacity = nextOpacity
         mainHandler.post { if (!disposed) { labelLayer.opacity = rasterLabelOpacity; labelLayer.isEnabled = legacyRasterLayersVisible && rasterLabelOpacity > 0f; refreshTileDemand(forceGeneration = true); worldWindow.requestRedraw() } }
     }
 
@@ -1220,7 +1318,20 @@ class NativeMapController internal constructor(
     internal fun currentTileDemandGeneration(): Long = tileDemandGeneration
     internal fun tileDemandViewId(): String = tileViewId
     internal fun tileStageTelemetrySnapshot(): NativeTileStageSnapshot = NativeTileStageTelemetry.snapshot()
-    internal fun refreshTileViewDemand() = refreshTileDemand()
+    internal fun refreshTileViewDemand() {
+        if (disposed) return
+        if (!isTileDemandViewVisible()) {
+            if (!tileDemandViewWasHidden) refreshTileDemand(forceGeneration = true)
+            return
+        }
+        if (tileDemandViewWasHidden) {
+            refreshTileDemand(forceGeneration = true)
+        } else {
+            // Host state updates often accompany camera events. Use the next rendered MVP;
+            // never fall back to per-corner SDK projection from this no-frame notification.
+            worldWindow.requestRedraw()
+        }
+    }
 
     internal fun setTileDemandDrawingFocus(xPx: Double?, yPx: Double?) {
         check(Looper.myLooper() == Looper.getMainLooper())
@@ -1267,11 +1378,17 @@ class NativeMapController internal constructor(
     internal fun tileIdentityAndRegister(source: String, layer: String, z: Int, x: Int, y: Int, style: String = "default", credential: String = key): TileRequestIdentity? {
         val corners = TileProjectedPriority.mercatorCorners(z, x, y) ?: return null
         val identity = tileIdentity(source, layer, z, x, y, style, credential)
+        var changed = false
         synchronized(tileFootprints) {
             if (tileFootprints[identity] != corners) {
                 tileFootprints[identity] = corners
                 tileDemandDirty = true
+                changed = true
             }
+        }
+        if (changed) {
+            tileDemandFrames.requestUrgent()
+            wakeTileDemandDrainIfUrgent()
         }
         return identity
     }
@@ -1338,10 +1455,33 @@ class NativeMapController internal constructor(
         projectionHeight: Int = 0,
     ) {
         if (Looper.myLooper() != Looper.getMainLooper() || disposed) return
+        val visibleNow = isTileDemandViewVisible()
+        if (projectionMatrix == null && visibleNow) {
+            if (forceGeneration || tileDemandDirty) tileDemandFrames.requestUrgent(forceGeneration)
+            worldWindow.requestRedraw()
+            if (tileDemandFrames.latestFrame() != null) {
+                if (tileDemandFrames.hasUrgentWork()) wakeTileDemandDrainIfUrgent() else postTileDemandDrain()
+            }
+            return
+        }
+        if (!visibleNow) {
+            tileDemandFrames.clearPending()
+            mainHandler.removeCallbacks(tileDemandDrainRunnable)
+            tileDemandDrainPosted.set(false)
+            tileDemandViewWasHidden = true
+        }
+        if (visibleNow && (projectionMatrix?.size != 16 || projectionWidth != view.width || projectionHeight != view.height)) {
+            tileDemandFrames.requestUrgent(forceGeneration)
+            worldWindow.requestRedraw()
+            return
+        }
+        val snapshotStartedAt = android.os.SystemClock.elapsedRealtimeNanos()
         val camera = cameraSnapshot()
+        tileDemandCameraSnapshotCalls++
+        tileDemandCameraSnapshotNanos += android.os.SystemClock.elapsedRealtimeNanos() - snapshotStartedAt
         val focus = tileDemandFocusPx()
         val signature = listOf(camera.latitude, camera.longitude, camera.rangeMeters, camera.headingDegrees, camera.pitchDegrees,
-            camera.rollDegrees, view.width.toDouble(), view.height.toDouble(), focus.x, focus.y, if (view.visibility == View.VISIBLE) 1.0 else 0.0)
+            camera.rollDegrees, view.width.toDouble(), view.height.toDouble(), focus.x, focus.y, if (visibleNow) 1.0 else 0.0)
             .map { java.lang.Double.doubleToLongBits(it) } + (projectionMatrix ?: doubleArrayOf()).map { java.lang.Double.doubleToLongBits(it) }
         val cameraChanged = signature != lastTileDemandSignature
         if (!forceGeneration && !cameraChanged && !tileDemandDirty) return
@@ -1351,12 +1491,12 @@ class NativeMapController internal constructor(
             if (forceGeneration || cameraChanged) tileDemandGeneration++
             lastTileDemandSignature = signature
             tileDemandDirty = false
-            val visible = view.visibility == View.VISIBLE && view.width > 0 && view.height > 0
+            val visible = visibleNow
             val viewport = worldWindow.engine.viewport
             // The draw-frame matrix already contains the expensive camera/terrain transform.
             // Reuse it for all rank points instead of recomputing that transform per corner.
-            // A resized viewport waits for a matching frame; explicit pre-frame updates retain
-            // the existing SDK projection path.
+            // Visible requests always have a matching actual-frame MVP. Invisible views need no
+            // projected ranks and publish an empty demand immediately.
             val batch = if (visible && projectionMatrix?.size == 16 && projectionMatrix.all(Double::isFinite) &&
                 projectionWidth == view.width && projectionHeight == view.height &&
                 viewport.width == projectionWidth && viewport.height == projectionHeight) {

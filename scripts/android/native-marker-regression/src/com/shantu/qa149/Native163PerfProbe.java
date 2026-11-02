@@ -46,6 +46,11 @@ public final class Native163PerfProbe {
     private static final long SAMPLE_PERIOD_MS = 500L;
     private static final long MAX_DURATION_MS = 15L * 60L * 1000L;
     private static final int MAX_SAMPLES = 1800;
+    private static final long STACK_SAMPLE_PERIOD_MS = 50L;
+    private static final long STACK_MAX_DURATION_MS = 60L * 1000L;
+    private static final int STACK_MAX_SAMPLES = 1200;
+    private static final int STACK_MAX_THREADS = 4;
+    private static final int STACK_MAX_FRAMES_PER_THREAD = 32;
     private static final int MAX_MARKS = 128;
     private static final Object LOCK = new Object();
     private static Probe current;
@@ -67,7 +72,7 @@ public final class Native163PerfProbe {
 
     /** Fixed action entry for the loopback QA bridge; it does not accept arbitrary code or paths. */
     public JSONObject action(String action, JSONObject request) {
-        if ("perf-start".equals(action)) return start(parent, host, window);
+        if ("perf-start".equals(action)) return start(parent, host, window, request);
         if ("perf-mark".equals(action)) return mark(request == null ? null : request.optString("label", null));
         if ("perf-snapshot".equals(action)) return snapshot();
         if ("perf-stop".equals(action)) return stop();
@@ -76,6 +81,11 @@ public final class Native163PerfProbe {
 
     /** Starts one sampler. A repeated start returns the existing run summary. */
     public static JSONObject start(Instrumentation parent, Object host, Window window) {
+        return start(parent, host, window, null);
+    }
+
+    /** Starts the regular sampler; high-frequency thread stacks require an explicit opt-in. */
+    public static JSONObject start(Instrumentation parent, Object host, Window window, JSONObject request) {
         if (parent == null || host == null) return error("parent_and_host_required");
         synchronized (LOCK) {
             if (current != null && current.isRunning()) {
@@ -83,7 +93,8 @@ public final class Native163PerfProbe {
                 catch (Throwable failure) { return error("snapshot_failed:" + failure.getClass().getSimpleName()); }
             }
             try {
-                current = new Probe(parent, host, window);
+                boolean stackSampling = request != null && request.optBoolean("stackSampling", false);
+                current = new Probe(parent, host, window, stackSampling);
                 current.start();
                 return current.summary();
             } catch (Exception failure) {
@@ -133,6 +144,20 @@ public final class Native163PerfProbe {
         private final Window window;
         private final Handler main = new Handler(Looper.getMainLooper());
         private final AtomicBoolean mapSnapshotPending = new AtomicBoolean();
+        private final boolean stackSamplingRequested;
+        private final AtomicLong stackSampleCount = new AtomicLong();
+        private final AtomicLong stackMissedIntervals = new AtomicLong();
+        private final AtomicLong stackDroppedSamples = new AtomicLong();
+        private final AtomicLong stackSampleErrors = new AtomicLong();
+        private final AtomicLong stackTotalWorkNs = new AtomicLong();
+        private final AtomicLong stackMaxWorkNs = new AtomicLong();
+        private final AtomicLong stackLastWorkNs = new AtomicLong();
+        private final AtomicLong stackMaxGapMs = new AtomicLong();
+        private volatile ScheduledExecutorService stackSampler;
+        private volatile boolean stackSamplingActive;
+        private volatile String stackSamplingStopReason = "not_requested";
+        private volatile long stackStartedElapsedMs;
+        private volatile long lastStackSampleElapsedMs;
         private HandlerThread frameThread;
         private Handler frameHandler;
         private final ScheduledExecutorService sampler = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -157,10 +182,11 @@ public final class Native163PerfProbe {
         private long previousSampleCpu = startedCpu;
         private Window.OnFrameMetricsAvailableListener frameListener;
 
-        Probe(Instrumentation instrumentation, Object host, Window window) throws Exception {
+        Probe(Instrumentation instrumentation, Object host, Window window, boolean stackSamplingRequested) throws Exception {
             this.instrumentation = instrumentation;
             this.host = host;
             this.window = window;
+            this.stackSamplingRequested = stackSamplingRequested;
             File external = instrumentation.getTargetContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
             if (external == null) throw new IllegalStateException("app_external_files_unavailable");
             File directory = new File(external, "native163-perf");
@@ -172,11 +198,17 @@ public final class Native163PerfProbe {
 
         void start() throws Exception {
             installFrameMetrics();
+            if (stackSamplingRequested) {
+                stackSamplingActive = true;
+                stackSamplingStopReason = "running";
+                stackStartedElapsedMs = elapsed();
+            }
             // Optimized release merges the SDK frame hook type; collect actual frame counts
             // and Window/HWUI metrics without attempting to mutate its private hook.
             append(record("start").put("periodMs", SAMPLE_PERIOD_MS).put("maximumDurationMs", MAX_DURATION_MS)
-                .put("frameMetrics", frameSummary.descriptor()));
+                .put("frameMetrics", frameSummary.descriptor()).put("stackSampling", stackSamplingSummary()));
             sampler.scheduleWithFixedDelay(this::sampleSafely, 0L, SAMPLE_PERIOD_MS, TimeUnit.MILLISECONDS);
+            if (stackSamplingRequested) scheduleStackSampling();
         }
 
         boolean isRunning() { return running; }
@@ -205,7 +237,7 @@ public final class Native163PerfProbe {
             return new JSONObject().put("available", true).put("running", running)
                 .put("sampleCount", sampleCount).put("maximumSamples", MAX_SAMPLES)
                 .put("elapsedMs", elapsed()).put("maximumDurationMs", MAX_DURATION_MS)
-                .put("file", outputFile.getAbsolutePath());
+                .put("file", outputFile.getAbsolutePath()).put("stackSampling", stackSamplingSummary());
         }
 
         JSONObject stop() throws Exception {
@@ -213,12 +245,13 @@ public final class Native163PerfProbe {
                 stopReason = "requested";
                 running = false;
                 sampler.shutdownNow();
+                stopStackSampling("probe_stopped");
                 uninstallFrameMetrics();
                 restoreNativeFrameMetrics();
-                append(record("stop").put("reason", stopReason));
+                append(record("stop").put("reason", stopReason).put("stackSampling", stackSamplingSummary()));
                 closeWriter();
             }
-            return summary().put("frameMetrics", frameSummary.snapshot());
+            return summary().put("frameMetrics", frameSummary.snapshot()).put("stackSampling", stackSamplingSummary());
         }
 
         private void installFrameMetrics() {
@@ -265,9 +298,10 @@ public final class Native163PerfProbe {
                 stopReason = "duration_or_sample_limit";
                 running = false;
                 sampler.shutdown();
+                stopStackSampling("probe_duration_or_sample_limit");
                 uninstallFrameMetrics();
                 restoreNativeFrameMetrics();
-                try { append(record("stop").put("reason", stopReason)); }
+                try { append(record("stop").put("reason", stopReason).put("stackSampling", stackSamplingSummary())); }
                 catch (Throwable ignored) { }
                 closeWriter();
                 return;
@@ -281,6 +315,124 @@ public final class Native163PerfProbe {
                 try { append(record("sample_error").put("errorType", failure.getClass().getSimpleName())); }
                 catch (Throwable ignored) { }
             }
+        }
+
+        private void scheduleStackSampling() {
+            if (!stackSamplingRequested || !stackSamplingActive || !running) return;
+            stackSampler = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "shantu-native163-stack-sampler");
+                thread.setDaemon(true);
+                return thread;
+            });
+            stackSampler.scheduleWithFixedDelay(this::sampleStacksSafely, 0L,
+                STACK_SAMPLE_PERIOD_MS, TimeUnit.MILLISECONDS);
+        }
+
+        private void sampleStacksSafely() {
+            if (!running || !stackSamplingActive) return;
+            long sampleElapsed = elapsed();
+            if (sampleElapsed - stackStartedElapsedMs >= STACK_MAX_DURATION_MS) {
+                stopStackSampling("duration_limit");
+                return;
+            }
+            if (stackSampleCount.get() >= STACK_MAX_SAMPLES) {
+                stopStackSampling("sample_limit");
+                return;
+            }
+            long now = SystemClock.elapsedRealtime();
+            long previous = lastStackSampleElapsedMs;
+            long missedSincePrevious = 0L;
+            if (previous > 0L) {
+                long gap = Math.max(0L, now - previous);
+                stackMaxGapMs.accumulateAndGet(gap, Math::max);
+                if (gap > (STACK_SAMPLE_PERIOD_MS * 3L) / 2L) {
+                    missedSincePrevious = Math.max(1L, (gap / STACK_SAMPLE_PERIOD_MS) - 1L);
+                    stackMissedIntervals.addAndGet(missedSincePrevious);
+                }
+            }
+            lastStackSampleElapsedMs = now;
+            long workStartedNs = SystemClock.elapsedRealtimeNanos();
+            try {
+                JSONArray threads = new JSONArray();
+                int selected = 0;
+                for (Map.Entry<Thread, StackTraceElement[]> item : Thread.getAllStackTraces().entrySet()) {
+                    Thread thread = item.getKey();
+                    String name = thread.getName();
+                    if (!"main".equals(name) && !name.startsWith("GLThread")) continue;
+                    if (selected >= STACK_MAX_THREADS) break;
+                    selected++;
+                    StackTraceElement[] trace = item.getValue();
+                    JSONArray frames = new JSONArray();
+                    int limit = Math.min(trace.length, STACK_MAX_FRAMES_PER_THREAD);
+                    for (int i = 0; i < limit; i++) {
+                        StackTraceElement frame = trace[i];
+                        frames.put(new JSONObject().put("class", frame.getClassName())
+                            .put("method", frame.getMethodName()).put("line", frame.getLineNumber()));
+                    }
+                    threads.put(new JSONObject().put("thread", name).put("state", thread.getState().name())
+                        .put("frameCount", trace.length).put("framesTruncated", trace.length > limit)
+                        .put("frames", frames));
+                }
+                long captureNs = Math.max(0L, SystemClock.elapsedRealtimeNanos() - workStartedNs);
+                long captureMs = captureNs / 1_000_000L;
+                long sequence = stackSampleCount.get() + 1L;
+                JSONObject sample = record("thread_stack_sample")
+                    .put("sequence", sequence).put("requestedPeriodMs", STACK_SAMPLE_PERIOD_MS)
+                    .put("missedIntervalsSincePrevious", missedSincePrevious)
+                    .put("captureDurationMs", captureMs).put("captureDurationNs", captureNs)
+                    .put("threadCount", threads.length())
+                    .put("threads", threads);
+                if (!running || !stackSamplingActive) {
+                    stackDroppedSamples.incrementAndGet();
+                    return;
+                }
+                if (!appendStackSample(sample)) {
+                    stackDroppedSamples.incrementAndGet();
+                    stackSampleErrors.incrementAndGet();
+                    return;
+                }
+                long totalWorkNs = Math.max(0L, SystemClock.elapsedRealtimeNanos() - workStartedNs);
+                stackTotalWorkNs.addAndGet(totalWorkNs);
+                stackMaxWorkNs.accumulateAndGet(totalWorkNs, Math::max);
+                stackLastWorkNs.set(totalWorkNs);
+                stackSampleCount.incrementAndGet();
+                if (stackSampleCount.get() >= STACK_MAX_SAMPLES) stopStackSampling("sample_limit");
+            } catch (Throwable failure) {
+                stackSampleErrors.incrementAndGet();
+                if (stackSampleErrors.get() <= 5L) {
+                    try { append(record("thread_stack_sample_error").put("errorType", failure.getClass().getSimpleName())); }
+                    catch (Throwable ignored) { }
+                }
+            }
+        }
+
+        private void stopStackSampling(String reason) {
+            stackSamplingActive = false;
+            if (stackSamplingRequested && ("running".equals(stackSamplingStopReason) || "not_requested".equals(stackSamplingStopReason)))
+                stackSamplingStopReason = reason;
+            ScheduledExecutorService active = stackSampler;
+            stackSampler = null;
+            if (active != null) active.shutdownNow();
+        }
+
+        private JSONObject stackSamplingSummary() throws Exception {
+            long count = stackSampleCount.get();
+            long totalNs = stackTotalWorkNs.get();
+            return new JSONObject().put("requested", stackSamplingRequested)
+                .put("enabled", stackSamplingRequested && stackSamplingActive)
+                .put("running", stackSamplingRequested && stackSamplingActive && running)
+                .put("periodMs", stackSamplingRequested ? STACK_SAMPLE_PERIOD_MS : JSONObject.NULL)
+                .put("sampleCount", count).put("maxSamples", stackSamplingRequested ? STACK_MAX_SAMPLES : 0)
+                .put("maxDurationMs", stackSamplingRequested ? STACK_MAX_DURATION_MS : 0)
+                .put("missedIntervals", stackMissedIntervals.get()).put("droppedSamples", stackDroppedSamples.get())
+                .put("sampleErrors", stackSampleErrors.get())
+                .put("lastSampleWorkMs", stackLastWorkNs.get() / 1_000_000.0)
+                .put("meanSampleWorkMs", count == 0L ? 0.0 : (double) totalNs / count / 1_000_000.0)
+                .put("maxSampleWorkMs", stackMaxWorkNs.get() / 1_000_000.0)
+                .put("maxObservedGapMs", stackMaxGapMs.get()).put("stopReason", stackSamplingStopReason)
+                .put("scope", "background snapshots of main and GLThread stacks; at most 4 threads and 32 frames each")
+                .put("missedIntervalDefinition", "approximate start gaps over 75ms; fixed-delay sampling avoids catch-up bursts")
+                .put("interpretation", "diagnostic stack samples, not FPS; sampling and JSONL writes add measurement overhead");
         }
 
         private JSONObject collectSample(long now) throws Exception {
@@ -515,6 +667,15 @@ public final class Native163PerfProbe {
                 if (active == null) return;
                 try { active.write(row.toString()); active.newLine(); active.flush(); }
                 catch (Exception ignored) { }
+            }
+        }
+
+        private boolean appendStackSample(JSONObject row) {
+            synchronized (writerLock) {
+                BufferedWriter active = writer;
+                if (active == null) return false;
+                try { active.write(row.toString()); active.newLine(); active.flush(); return true; }
+                catch (Exception ignored) { return false; }
             }
         }
 

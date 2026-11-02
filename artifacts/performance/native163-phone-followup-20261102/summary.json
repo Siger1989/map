@@ -1,0 +1,233 @@
+{
+  "phoneVersion": "0.2.163-test",
+  "phoneDualMapAcceptance": "FAIL (user report)",
+  "delivery": "Existing local C14 APK unchanged; C16 emulator-only diagnostic",
+  "nativeComparison": [
+    {
+      "case": "feedback-C14-controlled",
+      "dualActiveSeconds": 30.269,
+      "demandSeconds": 10.818512512,
+      "replans": 776,
+      "rankCalculations": 122648,
+      "mainDelayP95Ms": 206,
+      "mainDelayMaxMs": 251,
+      "timeouts": 0,
+      "heapPeakMiB": 469.993408203125,
+      "nativeFramesAdvanced": [
+        565,
+        485
+      ],
+      "networkActiveAfter": 0,
+      "networkQueuedAfter": 0
+    },
+    {
+      "case": "feedback-C15-controlled",
+      "dualActiveSeconds": 22.181,
+      "demandSeconds": 2.700546394,
+      "replans": 249,
+      "rankCalculations": 38123,
+      "mainDelayP95Ms": 104,
+      "mainDelayMaxMs": 142,
+      "timeouts": 0,
+      "heapPeakMiB": 505.689453125,
+      "nativeFramesAdvanced": [
+        617,
+        540
+      ],
+      "networkActiveAfter": 0,
+      "networkQueuedAfter": 0
+    },
+    {
+      "case": "feedback-C16-controlled",
+      "dualActiveSeconds": 25.772,
+      "demandSeconds": 2.17067479,
+      "replans": 253,
+      "rankCalculations": 39097,
+      "mainDelayP95Ms": 196,
+      "mainDelayMaxMs": 270,
+      "timeouts": 0,
+      "heapPeakMiB": 470.1539611816406,
+      "nativeFramesAdvanced": [
+        651,
+        571
+      ],
+      "networkActiveAfter": 0,
+      "networkQueuedAfter": 0
+    }
+  ],
+  "comparisonScope": {
+    "sameInputScript": true,
+    "sameOriginalCameraFixture": true,
+    "stackSampling": false,
+    "previewCaptureRunning": true,
+    "coldDownloadTest": false,
+    "generatedContourBatches": 0,
+    "demandCounterWindow": "dual-ready snapshot to second-loop after snapshot",
+    "latencyAndHeapWindow": "dual-active to dual-idle marks",
+    "notIsolatedCausalBenchmark": true,
+    "phonePerformanceVerified": false
+  },
+  "kotlinTests": [
+    {
+      "name": "com.shantu.nativeapp.map.NativeRoadStyleTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.NativeTileDemandFrameCoalescerTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.NativeTileLayerVisibilityTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.NativeTileProjectionBatchTest",
+      "tests": "4",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.TileProjectedPriorityTest",
+      "tests": "6",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.TileRequestPermitSchedulerTest",
+      "tests": "7",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.TileRequestQueuePolicyTest",
+      "tests": "10",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "candidateIntegrity": {
+    "candidate": "C16 native-only diagnostic",
+    "sha256": "842a4049af08b0fdc844544c6558ee43b2990a046eb44b6e8073f0441dced909",
+    "bytes": 165194340,
+    "applicationAssetsAndLibrariesByteIdenticalToC14ExceptRegeneratedDexopt": true,
+    "originalSignature": true,
+    "privateTiandituPresent": true,
+    "fixedEntryReplaced": false,
+    "sourceFingerprintsMatch": true,
+    "zipCrcAndAlignment": "PASS",
+    "physicalPhoneVerified": false
+  },
+  "openIssues": [
+    "Repeated GC and main-thread stalls remain; optimization is partial",
+    "Physical-phone verification pending"
+  ],
+  "nearNativeFollowup": {
+    "case": "feedback-C16-near",
+    "activeLoops": 2,
+    "activeSeconds": 24.329,
+    "activeMainDelayP95Ms": 203,
+    "activeMainDelayMaxMs": 339,
+    "activeSnapshotTimeouts": 0,
+    "wholeSessionValidJavaPeakMiB": 501.38934326171875,
+    "dualIdleSnapshots": [
+      {
+        "seconds": 20,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      },
+      {
+        "seconds": 40,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      },
+      {
+        "seconds": 60,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      },
+      {
+        "seconds": 80,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      },
+      {
+        "seconds": 100,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      },
+      {
+        "seconds": 120,
+        "maps": 2,
+        "contourBatches": 35,
+        "contourSharedGeometry": {
+          "activeGeometryEntries": 34,
+          "activeLeases": 63
+        },
+        "networkActive": 0,
+        "networkQueued": 0
+      }
+    ],
+    "afterClose20Plus60Seconds": {
+      "maps": 1,
+      "contourSharedGeometry": {
+        "activeGeometryEntries": 32,
+        "activeLeases": 32
+      },
+      "networkActive": 0,
+      "networkQueued": 0
+    },
+    "notPhoneAcceptance": true
+  },
+  "restoration": {
+    "cameraRestored": true,
+    "annotationCountUnchanged": true,
+    "singleMap": true,
+    "interactiveReady": true,
+    "wm": "Physical size: 1256x2760",
+    "density": "Physical density: 515"
+  },
+  "fixedC14ApkStillUnchanged": true
+}

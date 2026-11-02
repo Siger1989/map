@@ -6,6 +6,19 @@ does not use WebView debugging/CDP. The helper's package/class/environment names
 historical `qa149` / `Native149Instrumentation` identifier; that legacy tooling name is not
 the version of the target application.
 
+## Optional short thread-stack diagnosis
+
+The interactive socket accepts `{"action":"perf-start","stackSampling":true}`.
+Ordinary `perf-start` keeps this option off. The extra daemon samples main/GLThread
+stacks with a 50 ms fixed delay, at most 1,200 samples or 60 seconds, and reports
+capture/write work, approximate missed intervals, errors and stop reason in the
+existing private JSONL and `perf-snapshot`/`perf-stop` result. At most four threads
+and 32 frames per thread are retained. These are diagnostic stacks, not FPS.
+Stack capture can pause or otherwise perturb the target; turn it off for timing
+comparisons. In the 163 follow-up it averaged 16.11 ms of work per capture, so the
+sampled run is used for call-path attribution only. Do not publish raw dumps or
+coordinates. This helper does not change the production APK or its settings.
+
 ## Modes
 
 - `inspect`: read-only activity, map, camera, source ID, annotation-count, selection-ID, and

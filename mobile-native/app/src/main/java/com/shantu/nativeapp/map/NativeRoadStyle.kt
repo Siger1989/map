@@ -26,6 +26,7 @@ internal object NativeRoadStyle {
         LOCAL, RAIL,
     }
     data class CurrentZoomStyle(val widthCss: Float, val opacityScale: Float)
+    data class GroupPresentation(val visible: Boolean, val physicalWidth: Float, val opacityScale: Float)
     private val backbone = setOf("motorway", "trunk")
     private val local = setOf("minor", "service", "track", "path")
     private const val CASING_LAYER = "shantu-main-road-outline"
@@ -81,6 +82,19 @@ internal object NativeRoadStyle {
 
     fun currentZoomStyle(group: Group, uiZoom: Double): CurrentZoomStyle =
         CurrentZoomStyle(widthCss(group, uiZoom), opacityScale(group, uiZoom))
+
+    /** Build the immutable per-view style table outside the per-tile render loop. */
+    fun presentationSnapshot(uiZoom: Double, cssScale: Float): List<GroupPresentation> {
+        require(uiZoom.isFinite() && cssScale.isFinite() && cssScale > 0f)
+        return Group.entries.map { group ->
+            val zoomStyle = currentZoomStyle(group, uiZoom)
+            GroupPresentation(
+                visible = visible(group, uiZoom),
+                physicalWidth = zoomStyle.widthCss * cssScale,
+                opacityScale = zoomStyle.opacityScale,
+            )
+        }
+    }
 
     private fun interpolate(zoom: Double, vararg stops: Pair<Double, Float>): Float {
         if (!zoom.isFinite() || zoom <= stops.first().first) return stops.first().second
@@ -200,8 +214,12 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
     // Keep coarse coverage until every selected child is ready; stop progressive parent/child overlap.
     override val progressiveRefinement get() = false
 
-    private data class ViewStyle(val zoom: Double, val cssScale: Float)
-    @Volatile private var viewStyle = ViewStyle(Double.NaN, 1f)
+    private data class ViewStyle(
+        val zoom: Double,
+        val cssScale: Float,
+        val groups: List<NativeRoadStyle.GroupPresentation>,
+    )
+    @Volatile private var viewStyle = ViewStyle(Double.NaN, 1f, emptyList())
     private val groupKey = Any()
 
     /** Called with the same native-frame camera zoom and CSS scale used by the retained React UI. */
@@ -213,7 +231,7 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
             NativeRoadStyle.Group.entries.all {
                 NativeRoadStyle.visible(it, previous.zoom) == NativeRoadStyle.visible(it, uiZoom)
             }) return false
-        viewStyle = ViewStyle(uiZoom, cssScale)
+        viewStyle = ViewStyle(uiZoom, cssScale, NativeRoadStyle.presentationSnapshot(uiZoom, cssScale))
         return true
     }
 
@@ -226,9 +244,8 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
         val current = viewStyle
         for (renderable in content) {
             val group = renderable.getUserProperty<NativeRoadStyle.Group>(groupKey) ?: continue
-            if (!NativeRoadStyle.visible(group, current.zoom)) continue
-            val style = NativeRoadStyle.currentZoomStyle(group, current.zoom)
-            val width = style.widthCss * current.cssScale
+            val style = current.groups.getOrNull(group.ordinal) ?: continue
+            if (!style.visible) continue
             val baseOpacity = opacity
             try {
                 // MvtBatchedLineTile and Path multiply the active layer opacity at draw time.
@@ -236,8 +253,8 @@ internal class NativeRoadVectorLayer(source: TileSource, tileBudget: Int) : MvtV
                 // which live in separate cartography layers and share the user's base opacity.
                 opacity = baseOpacity * style.opacityScale
                 when (renderable) {
-                    is MvtBatchedLineTile -> renderable.widthScale = width
-                    is Path -> renderable.attributes.outlineWidth = width
+                    is MvtBatchedLineTile -> renderable.widthScale = style.physicalWidth
+                    is Path -> renderable.attributes.outlineWidth = style.physicalWidth
                 }
                 renderable.render(rc)
             } finally {

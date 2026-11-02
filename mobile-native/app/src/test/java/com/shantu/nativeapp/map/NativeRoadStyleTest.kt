@@ -101,6 +101,48 @@ class NativeRoadStyleTest {
         assertEquals(.94f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.LOCAL, 15.0), .0001f)
     }
 
+    @Test fun `per-view presentation snapshot exactly matches zoom rules and physical scale`() {
+        val zooms = listOf(5.99, 6.0, 9.5, 9.5001, 10.75, 12.0, 13.5001, 15.0, 16.0)
+        val scales = listOf(.75f, 1f, 2.625f)
+        for (zoom in zooms) for (scale in scales) {
+            val snapshot = NativeRoadStyle.presentationSnapshot(zoom, scale)
+            assertEquals(NativeRoadStyle.Group.entries.size, snapshot.size)
+            for (group in NativeRoadStyle.Group.entries) {
+                val actual = snapshot[group.ordinal]
+                val expected = NativeRoadStyle.currentZoomStyle(group, zoom)
+                assertEquals("$group visible at $zoom", NativeRoadStyle.visible(group, zoom), actual.visible)
+                assertEquals("$group physical width at $zoom/$scale", expected.widthCss * scale, actual.physicalWidth, .0001f)
+                assertEquals("$group opacity at $zoom", expected.opacityScale, actual.opacityScale, .0001f)
+            }
+        }
+    }
+
+    @Test fun `two panes keep independent style snapshots and threshold changes are immediate`() {
+        val upper = NativeRoadStyle.presentationSnapshot(9.5, 2f)
+        val lower = NativeRoadStyle.presentationSnapshot(9.5001, 3f)
+        assertNotSame(upper, lower)
+        assertNotSame(upper[NativeRoadStyle.Group.PRIMARY.ordinal], lower[NativeRoadStyle.Group.PRIMARY.ordinal])
+        assertFalse(upper[NativeRoadStyle.Group.PRIMARY.ordinal].visible)
+        assertTrue(lower[NativeRoadStyle.Group.PRIMARY.ordinal].visible)
+        assertEquals(
+            NativeRoadStyle.widthCss(NativeRoadStyle.Group.PRIMARY, 9.5001) * 3f,
+            lower[NativeRoadStyle.Group.PRIMARY.ordinal].physicalWidth,
+            .0001f,
+        )
+    }
+
+    @Test fun `presentation snapshots reject invalid zoom and CSS scale`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            NativeRoadStyle.presentationSnapshot(Double.NaN, 1f)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            NativeRoadStyle.presentationSnapshot(10.0, Float.NaN)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            NativeRoadStyle.presentationSnapshot(10.0, 0f)
+        }
+    }
+
     @Test fun `only highways are yellow and other road groups preserve their colors`() {
         fun road(roadClass: String) = NativeRoadStyle.style.styleFor(
             "transportation", MvtGeometryType.LINESTRING, mapOf("class" to roadClass),
