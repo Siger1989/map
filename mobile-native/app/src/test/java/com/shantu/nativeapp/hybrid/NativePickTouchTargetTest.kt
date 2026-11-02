@@ -1,6 +1,8 @@
 package com.shantu.nativeapp.hybrid
 
+import com.shantu.nativeapp.map.NativeMarkerPresentation
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NativePickTouchTargetTest {
@@ -41,6 +43,21 @@ class NativePickTouchTargetTest {
         val bounds = NativePickTouchTarget.centered(50f, 70f, 1.0)
         assertEquals(44f, bounds.right - bounds.left, 0.001f)
         assertEquals(44f, bounds.bottom - bounds.top, 0.001f)
+    }
+
+    @Test fun pickTargetStaysFortyFourCssPixelsWhileBadgeShrinksAcrossZoomAndDeviceScale() {
+        for (cssScale in listOf(1.0, 1.5, 2.0, 3.0)) {
+            val bucket = NativeMarkerPresentation.densityBucket(cssScale)
+            val target = NativePickTouchTarget.centered(100f, 100f, cssScale)
+            assertEquals(44.0, (target.right - target.left) / cssScale, 0.001)
+            assertEquals(44.0, (target.bottom - target.top) / cssScale, 0.001)
+
+            val largeZoomCssSize = NativeMarkerPresentation.imageScale(16.0, cssScale, bucket, "label") *
+                64.0 * bucket / cssScale
+            val smallZoomCssSize = NativeMarkerPresentation.imageScale(4.0, cssScale, bucket, "label") *
+                64.0 * bucket / cssScale
+            assertTrue(smallZoomCssSize < largeZoomCssSize)
+        }
     }
 
 }

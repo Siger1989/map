@@ -2,7 +2,7 @@ package com.shantu.nativeapp.map
 
 import kotlin.math.abs
 
-/** Per-map symbol state: camera noise cannot repeatedly rebuild label/icon/dot textures. */
+/** Per-map symbol state: keep one composite badge texture and resize it as zoom changes. */
 internal class NativeMarkerPresentationState {
     data class Update(val mode: String, val rebuild: Boolean, val resize: Boolean)
     private var mode: String? = null
@@ -17,7 +17,8 @@ internal class NativeMarkerPresentationState {
         val resize = rebuild || !scale.isFinite() || abs(nextScale - scale) > 0.00001
         mode = nextMode
         density = nextDensity
-        scale = nextScale
+        // Keep the last applied scale so sub-threshold camera changes accumulate.
+        if (resize) scale = nextScale
         return Update(nextMode, rebuild, resize)
     }
 }

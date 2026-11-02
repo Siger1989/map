@@ -1,0 +1,102 @@
+{
+  "baseCommit": "020866166ea9795520253a0b6d8fc0086b23a945",
+  "branch": "codex/marker-zoom-20261102",
+  "status": "isolated-source-candidate; not merged or visually accepted",
+  "sourceAndTestSha256": {
+    "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMarkerPresentation.kt": "8e5d340aa089d5497f3b0388cf0c7a828fe5f59f30fc958bb69041f79bcf34cc",
+    "mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMarkerPresentationState.kt": "862b2feb2a05783a736a7195c29b9b187bed76bc8458c86093925c757dbee539",
+    "mobile-native/app/src/test/java/com/shantu/nativeapp/hybrid/NativeMarkerPresentationTest.kt": "c2cc3902b996ea174260e0db91adcfcd0301847c6fba71bab92323836056fe9a",
+    "mobile-native/app/src/test/java/com/shantu/nativeapp/hybrid/NativePickTouchTargetTest.kt": "1842d1aa87fad80eb7bb2a8ae28061a03fef92b283116a7fce12a25311f22fdc",
+    "mobile-native/app/src/test/java/com/shantu/nativeapp/map/NativeMarkerPresentationStateTest.kt": "c35714166b8fd395c0db162d4a0aef6bbc10bbc5aab637e94779a4d1ab6d0614",
+    "mobile-native/app/src/test/java/com/shantu/nativeapp/map/NativeModelRendererTest.kt": "70e9b232186c3cc9ec9f07bbe35acf3af22329678a6a9d83fb3dc1ad984d69eb"
+  },
+  "kotlin": {
+    "status": "PASS",
+    "tests": 35,
+    "suites": [
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeMarkerPresentationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "timestamp": "2026-11-02T08:23:12.835Z"
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativePickTouchTargetTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "timestamp": "2026-11-02T08:23:12.841Z"
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeMarkerPresentationStateTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "timestamp": "2026-11-02T08:23:01.394Z"
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeModelRendererTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "timestamp": "2026-11-02T08:23:01.807Z"
+      },
+      {
+        "name": "com.shantu.nativeapp.map.NativeRenderedPickResultsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "timestamp": "2026-11-02T08:23:12.858Z"
+      }
+    ],
+    "log": ".openai/marker-zoom-kotlin-final.log",
+    "logSha256": "57638c172e1eb8cd54f93d803f98d2cfb219184ac16acab2a8a7de558281c68e",
+    "runner": "JVM/Robolectric; dedicated ASCII build output; offline; one worker; no APK"
+  },
+  "node": {
+    "status": "PASS",
+    "tests": 27,
+    "files": [
+      "tests/native-map-tap-semantics.test.mjs",
+      "tests/native-map-interaction.test.mjs"
+    ],
+    "log": ".openai/marker-zoom-node.log",
+    "logSha256": "d25bbe38845197a05640804f34d5e1e89ac4f352a883e4a84541c17c90e4e316"
+  },
+  "priorAttempts": [
+    {
+      "log": ".openai/marker-zoom-kotlin.log",
+      "status": "FAILED_CLASS_LOADING",
+      "details": "All five classes ClassNotFoundException with Unicode build output; no assertions executed."
+    },
+    {
+      "log": ".openai/marker-zoom-kotlin-ascii.log",
+      "status": "FAILED_2_OF_35",
+      "details": "Pre-fix state bytecode and legacy compact-dot anchor expectation; corrected and stable sources recompiled without incrementality for final run."
+    }
+  ],
+  "review": {
+    "status": "code review completed",
+    "findingsResolved": [
+      "Accumulate small zoom deltas against last applied scale."
+    ],
+    "visualAcceptance": false
+  },
+  "apkSha256": null,
+  "device": null,
+  "notVerified": [
+    "actual native gradual zoom and label-frame binding",
+    "threshold flicker and residue",
+    "390x857 and 360x780 real touch",
+    "dense markers selection/cancel/blank taps",
+    "near appearance and name readability",
+    "dual-map performance and continuous interaction"
+  ],
+  "integrationOwner": "main coordinator; no automatic merge, package or publication"
+}
