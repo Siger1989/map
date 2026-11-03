@@ -214,9 +214,7 @@ class NativeCartographyLayers internal constructor(
     private val timedRoadNamesLayer = NativeTimedMvtLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
         maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadNameStyle,
         displayName = "Road labels", metricPrefix = "roadNames")
-    private val timedPlaceLabelsLayer = NativeTimedMvtLayer(source, minZoom = 2, maxZoom = 14, maxLoadedTiles = labelTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = placeLabelStyle,
-        displayName = "Place labels", metricPrefix = "placeLabels")
+    private val timedPlaceLabelsLayer = NativePlaceLabelLayer(source, labelTileBudget)
     val terrainLandWaterLayer: MvtVectorLayer get() = timedTerrainLayer
     val roadNamesLayer: MvtVectorLayer get() = timedRoadNamesLayer
     val placeLabelsLayer: MvtVectorLayer get() = timedPlaceLabelsLayer
