@@ -66,6 +66,24 @@ class NativeViewportTileDemandTest {
         assertNull(demand.rankForRetained(NativeViewportTileKey(10, 5, 3), 1.0))
     }
 
+    @Test fun incompleteTraversalKeepsLastCompleteDemandForBackgroundDecodeChecks() {
+        val demand = NativeViewportTileDemand(maxZoom = 14)
+        val old = NativeViewportTileKey(12, 7, 4)
+        val current = NativeViewportTileKey(10, 4, 3)
+        demand.beginFrame()
+        demand.mark(old.z, old.x, old.sdkRow)
+        demand.endFrame()
+        assertTrue(demand.isRetained(old))
+
+        demand.beginFrame()
+        demand.mark(current.z, current.x, current.sdkRow)
+        assertTrue("a partial frame must not cancel still-needed background work", demand.isRetained(old))
+        assertTrue(!demand.isRetained(current))
+        demand.endFrame()
+        assertTrue(demand.isRetained(current))
+        assertTrue(!demand.isRetained(old))
+    }
+
     @Test fun retainedProjectionFallbackWaitsBehindProjectedCenterThenStillGetsAdmitted() = runBlocking {
         val demand = NativeViewportTileDemand(maxZoom = 14)
         val center = NativeViewportTileKey(10, 1, 1)

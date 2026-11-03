@@ -296,7 +296,7 @@ class NativeCartographyLayers internal constructor(
     fun imageryRenderedTileCount(): Long = imagery.renderedTileCount()
     fun retryLatestImagery() = imagery.retryLatest()
 
-    /** Explicit diagnostics snapshot; counters measure normal MVT render calls in monotonic wall ns. */
+    /** Explicit diagnostics snapshot: normal-render wall ns and bounded predecode queue counts. */
     fun frameCostSnapshot(): Map<String, Long> = buildMap(timedMvtLayers.size * 3) {
         timedMvtLayers.forEach { it.appendFrameCost(this) }
     }

@@ -10,6 +10,10 @@ import earth.worldwind.render.RenderContext
 import earth.worldwind.render.Renderable
 import earth.worldwind.util.Tile
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.job
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
@@ -60,6 +64,19 @@ internal open class NativeTimedMvtLayer(
         capacity = viewportCapacity,
         maximumRequests = maxPendingFetches,
     ) { onViewportWorkChanged() }
+    private val decodeCapacity = maxConcurrentAssembly.coerceAtLeast(1)
+    private val decodeQueue = NativeViewportTileQueue<NativeViewportTileKey>(decodeCapacity, maxPendingFetches) {
+        onViewportWorkChanged()
+    }
+    private val decodePermits = ConcurrentHashMap<Job, NativeViewportTileQueue.Permit>()
+    private val predecodeDroppedCount = AtomicLong()
+
+    init {
+        this.source = NativeMvtPredecodeSource.wrap(source,
+            checkNeeded = { z, x, sourceY -> ensureDecodeStillNeeded(sourceKey(z, x, sourceY)) },
+            beforeCachedDecode = { z, x, sourceY -> awaitCachedDecode(sourceKey(z, x, sourceY)) },
+        )
+    }
 
     override fun render(rc: RenderContext) {
         // Preserve SDK pick and visibility gating, while excluding pick/disabled frames from the
@@ -105,13 +122,16 @@ internal open class NativeTimedMvtLayer(
     }
 
     override suspend fun loadTileContent(z: Int, x: Int, y: Int, sector: earth.worldwind.geom.Sector): List<Renderable>? {
-        val permit = viewportQueue.acquire(NativeViewportTileKey(z, x, y))
+        val key = NativeViewportTileKey(z, x, y)
+        val requestJob = currentCoroutineContext().job
+        val permit = viewportQueue.acquire(key)
             ?: throw CancellationException("MVT tile is no longer in the active viewport demand")
         try {
             return super.loadTileContent(z, x, y, sector)
         } finally {
-            // Permit covers fetch, decode, and renderable assembly only. Holding it through cache
-            // admission can deadlock when the count-weighted SDK path skips contentWeight().
+            // Ownership follows this SDK coroutine, not tile coordinates: an invalidated tile's
+            // old CPU work may overlap a replacement job for the same key.
+            decodePermits.remove(requestJob)?.close()
             permit.close()
         }
     }
@@ -119,6 +139,39 @@ internal open class NativeTimedMvtLayer(
     /** Drop only not-yet-started viewport requests; active tile work finishes and may enter cache. */
     fun discardPendingViewportWork() {
         viewportQueue.removePendingNotIn(emptySet()) { key -> invalidateTile(key.z, key.x, key.sdkRow) }
+        pruneDecodeWork(emptySet())
+    }
+
+    private fun sourceKey(z: Int, x: Int, sourceY: Int) = NativeViewportTileKey(z, x, (1 shl z) - 1 - sourceY)
+
+    private fun ensureDecodeStillNeeded(key: NativeViewportTileKey) {
+        if (!viewportClosed.get() && isEnabled && viewportDemand.isRetained(key)) return
+        predecodeDroppedCount.incrementAndGet()
+        if (!viewportClosed.get()) invalidateTile(key.z, key.x, key.sdkRow)
+        throw CancellationException("MVT tile became obsolete before decode")
+    }
+
+    private suspend fun awaitCachedDecode(key: NativeViewportTileKey) {
+        ensureDecodeStillNeeded(key)
+        val permit = decodeQueue.acquire(key)
+            ?: throw CancellationException("MVT decode request was removed from viewport demand")
+        try {
+            // Re-check after suspension: the camera may have changed while raw bytes waited.
+            ensureDecodeStillNeeded(key)
+            check(decodePermits.putIfAbsent(currentCoroutineContext().job, permit) == null) {
+                "Duplicate cached decode admission for one SDK request"
+            }
+        } catch (failure: Throwable) {
+            permit.close()
+            throw failure
+        }
+    }
+
+    private fun pruneDecodeWork(retained: Set<NativeViewportTileKey>) {
+        decodeQueue.removePendingNotIn(retained) { key ->
+            predecodeDroppedCount.incrementAndGet()
+            invalidateTile(key.z, key.x, key.sdkRow)
+        }
     }
 
     private fun onViewportWorkChanged() {
@@ -130,12 +183,15 @@ internal open class NativeTimedMvtLayer(
     }
 
     override fun close() {
-        if (viewportClosed.compareAndSet(false, true)) viewportQueue.close()
+        if (viewportClosed.compareAndSet(false, true)) {
+            viewportQueue.close()
+            decodeQueue.close()
+        }
         super.close()
     }
 
     override fun clone(): NativeTimedMvtLayer = NativeTimedMvtLayer(
-        source = source,
+        source = NativeMvtPredecodeSource.unwrap(source),
         minZoom = minZoom,
         maxZoom = sourceMaximumZoom,
         maxLoadedTiles = maxLoadedTiles,
@@ -152,21 +208,27 @@ internal open class NativeTimedMvtLayer(
     private fun finishViewportFrame(rc: RenderContext) {
         val retained = viewportDemand.endFrame()
         viewportQueue.removePendingNotIn(retained) { key -> invalidateTile(key.z, key.x, key.sdkRow) }
-        if (viewportClosed.get() || viewportQueue.pendingCount == 0 || viewportQueue.activeCount >= viewportCapacity) return
-        // The SDK starts its fetch coroutine before it calls our suspended load hook. Let delayed
-        // coroutine starts register on a later frame so the complete current traversal can compete.
-        if (viewportQueue.registeredCount < pendingTileCount) return
+        pruneDecodeWork(retained)
+        if (viewportClosed.get()) return
+        // Loading admission waits for the complete SDK batch. Cached bytes compete separately
+        // before decode; network results are checked but never hold HTTP slots waiting here.
+        val dispatchLoading = viewportQueue.pendingCount > 0 && viewportQueue.activeCount < viewportCapacity &&
+            viewportQueue.registeredCount >= pendingTileCount
+        val dispatchDecode = decodeQueue.pendingCount > 0 && decodeQueue.activeCount < decodeCapacity
+        if (!dispatchLoading && !dispatchDecode) return
 
         val projection = runCatching {
             NativeTileProjectionBatch(rc.modelviewProjection.m, rc.viewport, rc.globe)
         }.getOrNull()
         val focus = TileScreenPoint(rc.viewport.width / 2.0, rc.viewport.height / 2.0)
         val rankCache = HashMap<NativeViewportTileKey, Double?>()
-        viewportQueue.dispatch { key ->
+        val rank: (NativeViewportTileKey) -> Double? = { key ->
             rankCache.getOrPut(key) {
                 viewportDemand.rankForRetained(key, projectedRank(key, projection, focus, rc))
             }
         }
+        if (dispatchDecode) decodeQueue.dispatch(rank)
+        if (dispatchLoading) viewportQueue.dispatch(rank)
     }
 
     private fun projectedRank(
@@ -200,6 +262,9 @@ internal open class NativeTimedMvtLayer(
         destination["${metricPrefix}Count"] = renderCount.get()
         destination["${metricPrefix}TotalNanos"] = renderTotalNanos.get()
         destination["${metricPrefix}MaxNanos"] = renderMaxNanos.get()
+        destination["${metricPrefix}CachedDecodePending"] = decodeQueue.pendingCount.toLong()
+        destination["${metricPrefix}CachedDecodeActive"] = decodeQueue.activeCount.toLong()
+        destination["${metricPrefix}PredecodeDroppedCount"] = predecodeDroppedCount.get()
     }
 
     private fun recordRender(elapsedNanos: Long) {

@@ -8,13 +8,12 @@ internal data class NativeViewportTileKey(val z: Int, val x: Int, val sdkRow: In
 /** Records exact tile identities visited by the SDK's current frame traversal. */
 internal class NativeViewportTileDemand(private val maxZoom: Int) {
     private val frame = LinkedHashSet<NativeViewportTileKey>()
-    private var retained = emptySet<NativeViewportTileKey>()
+    @Volatile private var retained = emptySet<NativeViewportTileKey>()
 
     init { require(maxZoom in 0..29) }
 
     fun beginFrame() {
         frame.clear()
-        retained = emptySet()
     }
 
     fun mark(z: Int, x: Int, sdkRow: Int) {
@@ -25,6 +24,9 @@ internal class NativeViewportTileDemand(private val maxZoom: Int) {
     }
 
     fun endFrame(): Set<NativeViewportTileKey> = frame.toSet().also { retained = it }
+
+    /** Published only after a complete traversal; background reads never see a half-built frame. */
+    fun isRetained(key: NativeViewportTileKey): Boolean = key in retained
 
     /** Off-screen projection is uncertain here; keep the key eligible after ordinary finite ranks. */
     fun rankForRetained(key: NativeViewportTileKey, projectedRank: Double?): Double? {
