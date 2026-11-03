@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.Trace;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.view.View;
@@ -30,6 +31,9 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
@@ -159,6 +163,9 @@ public final class Native149Instrumentation extends Instrumentation {
                     String line;
                     while ((line = previewReadLine(reader)) != null) {
                         JSONObject reply;
+                        boolean swipeAction = false;
+                        long commandStartedElapsedRealtimeNanos = 0L;
+                        long commandEndedElapsedRealtimeNanos = 0L;
                         try {
                             JSONObject request = new JSONObject(line);
                             String action = request.getString("action");
@@ -216,10 +223,15 @@ public final class Native149Instrumentation extends Instrumentation {
                                     .put("camera", invokeCameraJson()).put("diagnostics", inspectDiagnosticsCounters())
                                     .put("annotationCount", annotationCount(readState()))
                                     .put("renderStateHasAnnotations", readState().optJSONArray("annotations") != null)
+                                    .put("sceneIdentity", inspectSceneIdentity())
                                     .put("visibleControls", readVisibleControls()).put("contours", contourCounters())
                                     .put("gizmoDom", inspectGizmoDomRect()).put("drawingMagnifier", inspectDrawingMagnifier());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
+                            }
+                            if ("restore-qa-viewport".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("viewportRestore", restoreInteractiveQaViewport(request));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("selection-panel".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("panel", inspectSelectedCoordinatePanel());
@@ -264,10 +276,19 @@ public final class Native149Instrumentation extends Instrumentation {
                                     .put("captureAndEncodeNanos", SystemClock.elapsedRealtimeNanos() - captureStarted);
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
-                            previewCommand(action, request);
+                            swipeAction = "swipe".equals(action);
+                            if (swipeAction) commandStartedElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+                            try {
+                                previewCommand(action, request);
+                            } finally {
+                                if (swipeAction) commandEndedElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+                            }
                             commands++;
                             reply = new JSONObject().put("ok", true).put("action", action)
                                 .put("width", previewWidth).put("height", previewHeight);
+                            if (swipeAction) reply.put("acceptedSwipeDurationMs", request.optInt("duration", 250))
+                                .put("commandStartedElapsedRealtimeNanos", commandStartedElapsedRealtimeNanos)
+                                .put("commandEndedElapsedRealtimeNanos", commandEndedElapsedRealtimeNanos);
                         } catch (Exception error) {
                             previewCancel();
                             reply = new JSONObject().put("ok", false).put("error", safeError(error.getMessage()))
@@ -419,13 +440,18 @@ public final class Native149Instrumentation extends Instrumentation {
             float y2 = previewCoordinate(request, "y2", y, previewHeight);
             int duration = request.optInt("duration", 250);
             if (duration < 50 || duration > 2000) throw new IllegalArgumentException("duration must be 50..2000ms");
-            previewCancel(); previewBegin(x, y);
-            int steps = Math.max(2, duration / 16);
-            for (int i = 1; i <= steps; i++) {
-                SystemClock.sleep(duration / steps);
-                previewSingle(MotionEvent.ACTION_MOVE, x + (x2 - x) * i / steps, y + (y2 - y) * i / steps);
+            Trace.beginSection("ShantuQa/swipe");
+            try {
+                previewCancel(); previewBegin(x, y);
+                int steps = Math.max(2, duration / 16);
+                for (int i = 1; i <= steps; i++) {
+                    SystemClock.sleep(duration / steps);
+                    previewSingle(MotionEvent.ACTION_MOVE, x + (x2 - x) * i / steps, y + (y2 - y) * i / steps);
+                }
+                previewSingle(MotionEvent.ACTION_UP, x2, y2); previewDownTime = 0; return;
+            } finally {
+                Trace.endSection();
             }
-            previewSingle(MotionEvent.ACTION_UP, x2, y2); previewDownTime = 0; return;
         }
         if ("pinch".equals(action)) { previewPinch(x, y, request.getDouble("factor")); return; }
         if ("down".equals(action)) { previewCancel(); previewBegin(x, y); return; }
@@ -496,11 +522,145 @@ public final class Native149Instrumentation extends Instrumentation {
         JSONObject out = new JSONObject();
         out.put("mode", "inspect").put("targetPackage", TARGET_PACKAGE).put("mapId", "main");
         out.put("sourceId", sourceId(state)).put("camera", invokeCameraJson()).put("annotationCount", annotationCount(state));
+        out.put("sceneIdentity", inspectSceneIdentity());
         out.put("renderStateHasAnnotations", state.optJSONArray("annotations") != null);
         out.put("selectedAnnotationId", selectedId(state)).put("nativeWorldWindAttached", findWorldWindow() != null);
         out.put("visibleControlsSpace", "css-pixels").put("visibleControls", readVisibleControls());
         out.put("testState", "INSPECT_READY");
         return out;
+    }
+
+    /** Stable, URL-free identity of each map's active source and allowlisted rendering settings. */
+    private JSONArray inspectSceneIdentity() throws Exception {
+        AtomicReference<JSONArray> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                Object entriesObject = fieldValue(host, "maps");
+                if (!(entriesObject instanceof Map)) throw new IllegalStateException("native map entries unavailable");
+                Map<?, ?> entries = (Map<?, ?>)entriesObject;
+                List<String> mapIds = new ArrayList<>();
+                for (Object key : entries.keySet()) if (key instanceof String) mapIds.add((String)key);
+                Collections.sort(mapIds);
+                JSONArray maps = new JSONArray();
+                for (String mapId : mapIds) {
+                    JSONObject identity = new JSONObject().put("mapId", mapId);
+                    JSONObject state = null;
+                    try {
+                        Object mapEntry = entries.get(mapId);
+                        Object stateValue = mapEntry == null ? null : fieldValue(mapEntry, "renderState");
+                        if (stateValue instanceof JSONObject) state = (JSONObject)stateValue;
+                    } catch (Throwable unreadableState) { /* report each identity component as unavailable below */ }
+                    try {
+                        if (state == null) throw new IllegalStateException("render state unavailable");
+                        JSONObject sourceIdentity = renderStateSourceIdentity(state);
+                        java.util.Iterator<String> keys = sourceIdentity.keys();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            identity.put(key, sourceIdentity.get(key));
+                        }
+                    } catch (Throwable unreadableSource) {
+                        identity.put("sourceKind", "unavailable").put("sourceId", JSONObject.NULL)
+                            .put("sourceBasis", "unavailable").put("builtinSelection", "unavailable");
+                    }
+                    try {
+                        if (state == null) throw new IllegalStateException("render state unavailable");
+                        JSONObject digestInput = renderLayerSettings(state);
+                        if (digestInput == null) throw new IllegalStateException("render settings unavailable");
+                        identity.put("renderLayerSettingsSha256", sha256(canonicalJson(digestInput)));
+                    } catch (Throwable unreadableSettings) {
+                        identity.put("renderLayerSettingsSha256", "unavailable");
+                    }
+                    maps.put(identity);
+                }
+                result.set(maps);
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("scene identity unavailable", failure.get());
+        return result.get() == null ? new JSONArray() : result.get();
+    }
+
+    private JSONObject renderLayerSettings(JSONObject state) throws JSONException {
+        JSONObject settings = state.optJSONObject("settings");
+        if (settings == null) return null;
+        JSONObject selected = new JSONObject();
+        String[] keys = {"terrain", "exaggeration", "satellite", "satelliteEnabled", "satelliteProvider",
+            "offlineBasemap", "imageryMode", "tiandituBase", "tiandituLabels", "tiandituBoundaries",
+            "labelsEnabled", "labels", "roadsEnabled", "roads", "roadsOpacity", "rasterLevel",
+            "offlineMaxZoom", "rasterQuality", "geologyEnabled", "geologySource", "geologyOpacity",
+            "contours", "contourInterval", "elevationColors", "elevationColorsOpacity", "rasterDatums"};
+        for (String key : keys) if (settings.has(key)) selected.put(key, settings.get(key));
+        JSONObject section = state.optJSONObject("section");
+        selected.put("sectionEnabled", section != null && section.optBoolean("enabled", false));
+        return selected;
+    }
+
+    private String sha256(String value) throws NoSuchAlgorithmException {
+        byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte b : digest) hex.append(String.format(java.util.Locale.ROOT, "%02x", b & 0xff));
+        return hex.toString();
+    }
+
+    private JSONObject renderStateSourceIdentity(JSONObject state) throws JSONException {
+        JSONObject customSource = state.optJSONObject("mapSource");
+        String customId = customSource == null ? "" : customSource.optString("id", "");
+        if (!customId.isEmpty() && !"null".equals(customId)) {
+            return new JSONObject().put("sourceKind", "custom").put("sourceId", customId)
+                .put("sourceBasis", "render-state-mapSource");
+        }
+        JSONObject settings = state.optJSONObject("settings");
+        if (settings == null) {
+            return new JSONObject().put("sourceKind", "unavailable").put("sourceId", JSONObject.NULL)
+                .put("sourceBasis", "unavailable").put("builtinSelection", "unavailable");
+        }
+        boolean satellite = settings.optBoolean("satellite", false);
+        JSONObject selection = new JSONObject()
+            .put("satellite", satellite)
+            .put("offlineBasemap", settings.optBoolean("offlineBasemap", false))
+            .put("satelliteProvider", settings.optString("satelliteProvider", "sentinel"))
+            .put("imageryMode", settings.optString("imageryMode", "detail"))
+            .put("tiandituBase", settings.optString("tiandituBase", satellite ? "img" : "vec"));
+        return new JSONObject().put("sourceKind", "builtin").put("sourceId", JSONObject.NULL)
+            .put("sourceBasis", "render-state-settings").put("builtinSelection", selection);
+    }
+
+    private String canonicalJson(Object value) throws JSONException {
+        if (value == JSONObject.NULL || value == null) return "null";
+        if (value instanceof JSONObject) {
+            JSONObject object = (JSONObject)value;
+            List<String> keys = new ArrayList<>();
+            java.util.Iterator<String> iterator = object.keys();
+            while (iterator.hasNext()) keys.add(iterator.next());
+            Collections.sort(keys);
+            StringBuilder json = new StringBuilder("{");
+            for (String key : keys) {
+                if (json.length() > 1) json.append(',');
+                json.append(JSONObject.quote(key)).append(':').append(canonicalJson(object.get(key)));
+            }
+            return json.append('}').toString();
+        }
+        if (value instanceof JSONArray) {
+            JSONArray array = (JSONArray)value;
+            StringBuilder json = new StringBuilder("[");
+            for (int i = 0; i < array.length(); i++) {
+                if (i > 0) json.append(',');
+                json.append(canonicalJson(array.get(i)));
+            }
+            return json.append(']').toString();
+        }
+        if (value instanceof String) return JSONObject.quote((String)value);
+        return String.valueOf(value);
+    }
+
+    /** Restore a validated view pose within the already-running interactive-preview session. */
+    private JSONObject restoreInteractiveQaViewport(JSONObject request) throws Exception {
+        if (!"restore-native160-qa-view".equals(request.optString("purpose")))
+            throw new IllegalArgumentException("explicit QA viewport restoration purpose required");
+        JSONObject camera = safeRequestedCamera(request.optJSONObject("camera"));
+        applyCamera(camera);
+        awaitFrames(2, 10_000L);
+        return new JSONObject().put("requested", camera).put("actual", invokeCameraJson()).put("gpsWritten", false);
     }
 
     /** Read-only native raster/cache diagnostic sweep; does not touch annotation storage. */
