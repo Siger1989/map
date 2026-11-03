@@ -25,6 +25,7 @@ import { advanceNativeFollowGesture, beginNativeFollowGesture, type NativeFollow
 import { installNativeBrowserCacheBridge } from './browserCacheBridge.ts';
 import { NativeCameraSync } from './cameraSync.ts';
 import { NativeCameraPersistence } from './cameraPersistence.ts';
+import { createCameraSummaryPublisher } from '../cameraUpdates.ts';
 import { NativeProjectionSyncScheduler, nativePhotoGroupKey, subscribeNativeProjectionEvents } from './projectionSyncScheduler.ts';
 import { NativeInitializationRetry } from './initializationRetry.ts';
 import { serializeNativeMapPhoto } from './photoWire.ts';
@@ -421,6 +422,7 @@ type Runtime = {
   camera: CameraSnapshot | null;
   cameraSync: NativeCameraSync;
   cameraPersistence: NativeCameraPersistence;
+  cameraSummaryPublisher: ReturnType<typeof createCameraSummaryPublisher>;
   frame: NativeProjectionFrame | null;
   stateRevision: number;
   generation: number;
@@ -468,7 +470,13 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
   const runtimeRef = useRef<Runtime | null>(null);
   if (!runtimeRef.current) runtimeRef.current = {
     client: null, mapId: null, created: false, hostCreated: false, viewport: null, viewportFingerprint: '', viewportAbort: null,
-    camera: null, cameraSync: new NativeCameraSync(), cameraPersistence: new NativeCameraPersistence(
+    camera: null, cameraSync: new NativeCameraSync(), cameraSummaryPublisher: createCameraSummaryPublisher((summary) => {
+      const current = runtimeRef.current;
+      if (!current) return;
+      const latest = current.props;
+      safeCallback(() => latest.onView(summary.view));
+      safeCallback(() => latest.onCenter?.(summary.center));
+    }), cameraPersistence: new NativeCameraPersistence(
       () => runtimeRef.current?.mapId === 'main' && runtimeRef.current?.props.persistCamera !== false,
       (camera) => {
         const current = runtimeRef.current;
@@ -551,8 +559,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     const latest = runtime.props;
     if (!programmatic) safeCallback(() => latest.onCameraChange?.(camera));
     const view: ViewState = { bearing: camera.bearing, pitch: camera.pitch, zoom: camera.zoom };
-    safeCallback(() => latest.onView(view));
-    safeCallback(() => latest.onCenter?.(camera.center));
+    runtime.cameraSummaryPublisher.push({ view, center: camera.center });
     if (fromUser && previous) {
       const pitchChanged = Math.abs(camera.pitch - previous.pitch) > 0.01;
       const bearingChanged = Math.abs(((camera.bearing - previous.bearing + 540) % 360) - 180) > 0.01;
@@ -817,6 +824,11 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
           if (action === 1 || action === 3) {
             runtime.userInteracting = false;
             runtime.cameraPersistence.endGesture();
+            const camera = runtime.camera;
+            if (camera) runtime.cameraSummaryPublisher.flush({
+              view: { bearing: camera.bearing, pitch: camera.pitch, zoom: camera.zoom },
+              center: camera.center,
+            });
           }
         }
         break;
@@ -1100,6 +1112,7 @@ export const NativeTerrainMap = forwardRef<MapHandle, TerrainMapProps>(function 
     return () => {
       disposed = true;
       abort.abort();
+      runtime.cameraSummaryPublisher.cancel();
       runtime.cameraPersistence.flush();
       initializationRetry.cancel();
       if (retryTimer) clearTimeout(retryTimer);
