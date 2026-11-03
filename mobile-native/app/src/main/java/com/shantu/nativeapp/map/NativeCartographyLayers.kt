@@ -268,12 +268,12 @@ class NativeCartographyLayers internal constructor(
             baseSelectionAllowed = activeCustomSource || baseSelectionAllowed,
             maxRasterZoom = maxRasterZoom,
         )
-        terrainLandWaterLayer.isEnabled = next.effectiveBase == "terrain" || next.effectiveBase == "offline"
-        roadsLayer.isEnabled = next.roads
+        setVectorLayerEnabled(timedTerrainLayer, next.effectiveBase == "terrain" || next.effectiveBase == "offline")
+        setVectorLayerEnabled(nativeRoadLayer, next.roads)
         roadsLayer.opacity = next.roadsOpacity
-        roadNamesLayer.isEnabled = next.roadNames
+        setVectorLayerEnabled(timedRoadNamesLayer, next.roadNames)
         roadNamesLayer.opacity = next.roadsOpacity
-        placeLabelsLayer.isEnabled = next.placeLabels
+        setVectorLayerEnabled(timedPlaceLabelsLayer, next.placeLabels)
         placeLabelsLayer.opacity = next.roadsOpacity
         syncSnapDataLayer()
         if (labelMode != next.tiandituLabels || rasterDatumChanged) {
@@ -344,6 +344,13 @@ class NativeCartographyLayers internal constructor(
         syncSnapDataLayer()
     }
 
+    private fun setVectorLayerEnabled(layer: NativeTimedMvtLayer, enabled: Boolean) {
+        layer.isEnabled = enabled
+        // Disabled layers may never reach SDK endFrame. Also catches jobs registering just after
+        // this transition via the layer's work-change callback; started work and cache survive.
+        if (!enabled) layer.discardPendingViewportWork()
+    }
+
     private fun syncSnapDataLayer() {
         // Road and river snapping read the shared real MVT source independently of
         // display toggles. The empty style only populates the bounded cache; it draws
@@ -354,7 +361,7 @@ class NativeCartographyLayers internal constructor(
             roadSnapping, riverSnapping, visibleMvtLayerAlreadyFetching,
         )
         if (snapDataLayer.isEnabled != enabled) {
-            snapDataLayer.isEnabled = enabled
+            setVectorLayerEnabled(snapDataLayer, enabled)
             window.requestRedraw()
         }
     }

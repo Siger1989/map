@@ -321,7 +321,11 @@ internal class NativeContourLayer(
         // Otherwise the first edge coroutine could win before the centre job even registers.
         if (generationQueue.registeredCount < pendingTileCount) return
         val focus = viewStyle.focusPx ?: TileScreenPoint(rc.viewport.width / 2.0, rc.viewport.height / 2.0)
-        generationQueue.dispatch { tile -> projectedPriority(rc, tile, focus) }
+        generationQueue.dispatch { tile ->
+            // Traversal pruning, not a corner projection, decides whether work is still needed.
+            // Terrain near the horizon can remain SDK-visible even when its projected hull fails.
+            projectedPriority(rc, tile, focus)?.takeIf { it.isFinite() && it >= 0.0 } ?: Double.MAX_VALUE
+        }
     }
 
     private fun projectedPriority(rc: RenderContext, tile: TileRequest, focus: TileScreenPoint): Double? {

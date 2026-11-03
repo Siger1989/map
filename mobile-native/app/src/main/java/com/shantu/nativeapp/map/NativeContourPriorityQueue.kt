@@ -75,8 +75,12 @@ internal class NativeContourPriorityQueue<K>(
         val snapshot = synchronized(lock) {
             if (closed || active.size >= capacity) return emptyList() else pending.values.toList()
         }
-        val ranked = snapshot.map { request ->
-            request to (rank(request.key)?.takeIf { it.isFinite() && it >= 0.0 } ?: Double.POSITIVE_INFINITY)
+        // Invalid/off-screen ranks stay pending. They can become dispatchable after a later
+        // camera update, and must not consume a generation permit in the meantime.
+        val ranked = snapshot.mapNotNull { request ->
+            val value = rank(request.key)?.takeIf { it.isFinite() && it >= 0.0 }
+                ?: return@mapNotNull null
+            request to value
         }.sortedWith(compareBy<Pair<Request<K>, Double>> { it.second }.thenBy { it.first.id })
         val selected = mutableListOf<Pair<Request<K>, Permit>>()
         synchronized(lock) {
