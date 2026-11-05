@@ -125,7 +125,9 @@ class NativeMapController internal constructor(
             try { super.onDrawFrame(unused) } finally { Trace.endSection() }
         }
     }
+    private val editingGestureController = NativeEditingWorldWindowController(worldWindow).also { worldWindow.controller = it }
     val view: View get() = worldWindow
+    internal fun setEditingGestureNavigation(enabled: Boolean) = editingGestureController.setEditingGestureNavigation(enabled)
     private val mainHandler = Handler(Looper.getMainLooper())
     private val pickScope = CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
     private var pickGeneration = 0

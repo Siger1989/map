@@ -4,6 +4,7 @@ import type { DragTarget, FeatureMove } from '../FeatureDragBridge.ts';
 import type { NativeMapBridgeClient, NativeMapEventHandler } from './client.ts';
 import { projectNativeLocal, unprojectNativeLocal } from './localGeometry.ts';
 import { createLatestFrameValue } from './latestFrameValue.ts';
+import type { NativeEditCoordinateSnap } from './editSnapping.ts';
 
 export const NATIVE_MAP_GESTURE_EVENT = 'shantu:native-map-gesture';
 const HOLD_MS = 480;
@@ -55,6 +56,8 @@ export type NativeMapInteractionOptions = {
   onMapHold?: (hold: NativeMapHold) => void;
   direct?: (target: DragTarget) => boolean;
   snap?: (target: DragTarget, point: { x: number; y: number }) => TrackNode | null;
+  /** Network matches are coordinates, never user-route nodes or a request to join another track. */
+  snapCoordinate?: (target: DragTarget, point: { x: number; y: number }) => NativeEditCoordinateSnap | null;
   occupied?: (hit: NativeHitTest) => boolean;
   dispatchGesture?: (detail: NativeGestureDetail) => void;
   /** Optional animation-frame scheduler for deterministic hosts and tests. */
@@ -229,7 +232,13 @@ export class NativeMapInteractionAdapter {
     const coordinate = unprojectNativeLocal(this.options.client, this.options.mapId, aim);
     if (!coordinate) return;
     const snappedNode = this.options.snap?.(pending.target, aim) ?? undefined;
-    pending.last = { target: pending.target, coordinate: snappedNode?.coordinate ?? coordinate, ...(snappedNode ? { snappedNode } : {}) };
+    const snappedCoordinate = snappedNode ? null : this.options.snapCoordinate?.(pending.target, aim);
+    pending.last = {
+      target: pending.target,
+      coordinate: snappedNode?.coordinate ?? snappedCoordinate?.coordinate ?? coordinate,
+      ...(snappedNode ? { snappedNode } : {}),
+      ...(snappedCoordinate ? { snapHint: snappedCoordinate.hint } : {}),
+    };
     this.options.onDragPreview(pending.last);
   }
 

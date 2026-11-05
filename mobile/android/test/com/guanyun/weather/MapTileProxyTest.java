@@ -107,6 +107,14 @@ public final class MapTileProxyTest {
             throw new AssertionError("mixed address set accepted");
         } catch(MapTileProxy.TileException expected) { }
         check(!attemptedMixed[0],"private address blocks fallback before any socket attempt");
+        final int[] missingAttempts={0};
+        try {
+            MapTileProxy.tryAddresses(new InetAddress[] {first,second},System.nanoTime()+MapTileProxy.TIMEOUT_MS*1_000_000L,(address,attemptDeadline)->{
+                missingAttempts[0]++;throw new MapTileProxy.TileException(404,"missing","Tile coverage unavailable");
+            });
+            throw new AssertionError("explicit missing tile accepted");
+        } catch(MapTileProxy.TileException expected) { check(MapTileProxy.isMissingTile(expected),"missing result classification"); }
+        check(missingAttempts[0]==1,"explicit missing coverage is not retried against each DNS address");
         check("image/png".equals(MapTileProxy.imageMime(new byte[] {(byte)137,80,78,71,13,10,26,10})), "PNG signature");
         check("image/jpeg".equals(MapTileProxy.imageMime(new byte[] {(byte)255,(byte)216,(byte)255})), "JPEG signature");
         check(MapTileProxy.imageMime("not an image".getBytes(StandardCharsets.US_ASCII)) == null, "reject non-image");
@@ -132,6 +140,27 @@ public final class MapTileProxyTest {
         String redirect = "HTTP/1.1 302 Found\r\nLocation: ../tile.png?sig=hidden\r\nContent-Length: 0\r\n\r\n";
         MapTileProxy.UpstreamResponse redirected = MapTileProxy.parseResponse(new ByteArrayInputStream(redirect.getBytes(StandardCharsets.US_ASCII)));
         check(redirected.status==302 && "../tile.png?sig=hidden".equals(redirected.location) && redirected.tile==null, "redirect response parsing");
+
+        for (int status : new int[] {204,404,410}) {
+            String response="HTTP/1.1 "+status+" Test\r\nContent-Length: 0\r\n\r\n";
+            try { MapTileProxy.parseResponse(new ByteArrayInputStream(response.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("accepted explicit missing tile status"); }
+            catch (MapTileProxy.TileException expected) {
+                check(expected.status==status && MapTileProxy.isMissingTile(expected),"explicit missing status is retained and not treated as transport failure: "+status);
+            }
+        }
+        String bingNoTile="HTTP/1.1 200 OK\r\nX-VE-Tile-Info: no-tile\r\nContent-Length: 0\r\n\r\n";
+        MapTileProxy.UpstreamResponse noTile=MapTileProxy.parseResponse(new ByteArrayInputStream(bingNoTile.getBytes(StandardCharsets.US_ASCII)));
+        check(noTile.status==200 && noTile.missing && noTile.tile==null,"Bing no-tile header is explicit missing coverage");
+
+        String http500="HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\n\r\n";
+        try { MapTileProxy.parseResponse(new ByteArrayInputStream(http500.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("accepted HTTP 500"); }
+        catch (MapTileProxy.TileException expected) {
+            check(expected.status==500 && "http".equals(expected.diagnostic),"upstream HTTP code is preserved");
+            check(MapTileProxy.publicFailureMessage(expected).contains("HTTP 500"),"safe status message includes actual HTTP code");
+            check(!MapTileProxy.publicFailureMessage(expected).contains("tiles.example"),"safe status message excludes tile URL");
+        }
+        check("图源连接超时".equals(MapTileProxy.publicFailureMessage(new MapTileProxy.TileException(502,"timeout","private details"))),
+            "network error summary is categorized without exception details");
 
         ByteArrayOutputStream chunked = new ByteArrayOutputStream();
         chunked.write("HTTP/1.1 200 OK\r\nContent-Type: image/png; charset=binary\r\nTransfer-Encoding: chunked\r\n\r\n8\r\n".getBytes(StandardCharsets.US_ASCII));
@@ -176,7 +205,7 @@ public final class MapTileProxyTest {
         catch (MapTileProxy.TileException expected) { check("format".equals(expected.diagnostic),"bad chunk diagnostic category"); }
         String httpError="HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\n\r\n";
         try { MapTileProxy.parseResponse(new ByteArrayInputStream(httpError.getBytes(StandardCharsets.US_ASCII))); throw new AssertionError("accepted HTTP error"); }
-        catch (MapTileProxy.TileException expected) { check("upstream_http".equals(expected.diagnostic),"HTTP status diagnostic category"); }
+        catch (MapTileProxy.TileException expected) { check(expected.status==403 && "http".equals(expected.diagnostic),"HTTP status diagnostic category"); }
 
         InetAddress loopback=InetAddress.getByName("127.0.0.1");
         ServerSocket keepAliveServer=new ServerSocket(0,2,loopback);

@@ -530,6 +530,14 @@ private class SharedOpenFreeMapTileSource : TileSource, NativeSnapTileCache {
     private fun key(identity: NativeOpenFreeMapRawSourceIdentity, z: Int, x: Int, y: Int) = NativeOpenFreeMapRawTileKey(identity, z, x, y)
 }
 
+/** Small Canvas consumers share the same raw payloads and request leases as the main map. */
+internal class NativeFloatingVectorSource : AutoCloseable {
+    private val source = SharedOpenFreeMapTileSource()
+    suspend fun read(z: Int, x: Int, y: Int): ByteArray? =
+        (source.tryReadCachedTile(z, x, y) ?: source.fetchTile(z, x, y, null, null))?.bytes
+    override fun close() = source.release()
+}
+
 private class NativeOpenFreeMapRawCore {
     val executor = Executors.newFixedThreadPool(2)
     val requestPermits = Semaphore(2)

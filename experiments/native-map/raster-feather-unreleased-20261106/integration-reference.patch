@@ -1,0 +1,273 @@
+diff --git a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeImageryBasemap.kt b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeImageryBasemap.kt
+index 1cc713e..8c1a705 100644
+--- a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeImageryBasemap.kt
++++ b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeImageryBasemap.kt
+@@ -75,6 +75,7 @@ class NativeImageryBasemap internal constructor(
+     private var latestJob: Job? = null
+     private var currentStatus = NativeImageryStatus()
+     private val renderedTileCount = AtomicLong()
++    private val selectedFeatherBacking = NativeRasterFeatherBackingStore()
+     private val callbackOwner = NativeCallbackOwner(this)
+     private val identityToken = Any()
+     private val generationForFactories: () -> Long? = run {
+@@ -134,14 +135,15 @@ class NativeImageryBasemap internal constructor(
+         val expected = generation
+         underlayLayer.clearRenderables()
+         baseRenderLayer.clearRenderables()
++        selectedFeatherBacking.clear()
+         if (underlay) underlayLayer.addRenderable(overview)
+         val active = when (sourceId) {
+-            "sentinel-detail" -> surface("EOxCloudless Sentinel-2 2025", rasterZoomCap ?: 14) { x, y, z ->
++            "sentinel-detail" -> surface("EOxCloudless Sentinel-2 2025", rasterZoomCap ?: 14, trackSelected = true) { x, y, z ->
+                 val url = SENTINEL_TILE.replace("{z}", z.toString()).replace("{y}", y.toString()).replace("{x}", x.toString())
+                 val identity = tileIdentityFor("sentinel-eox", z, x, y, "s2cloudless-2025-jpg")
+                 ImageSource.fromImageFactory(RemoteImageryFactory(http, url, sentinelLoadedCallback, sharedNetwork, identity, viewId(), generationForFactories))
+             }.also { publish(NativeImageryStatus(sourceId, false, null, "Sentinel-2 2025 少云合成影像；非实时，等待瓦片", SENTINEL_ATTRIBUTION)) }
+-            "sentinel-latest" -> surface("NASA GIBS VIIRS latest available UTC day", rasterZoomCap ?: 9) { x, y, z ->
++            "sentinel-latest" -> surface("NASA GIBS VIIRS latest available UTC day", rasterZoomCap ?: 9, trackSelected = true) { x, y, z ->
+                 val identity = tileIdentityFor("nasa-gibs-viirs", z, x, y, latestDate ?: "gibs-latest")
+                 ImageSource.fromImageFactory(LatestGibsTileFactory(callbackOwner, sharedNetwork ?: identityToken, identityToken, x, y, z, identity))
+             }.also { beginLatestCheck(expected) }
+@@ -164,6 +166,7 @@ class NativeImageryBasemap internal constructor(
+     fun status(): NativeImageryStatus = currentStatus
+     /** Successful imagery bitmap fetches for readiness checks; never includes capability/date probes. */
+     fun renderedTileCount(): Long = renderedTileCount.get()
++    fun rasterFeatherCounters(): Map<String, Long> = selectedFeatherBacking.snapshotCounters()
+ 
+     private fun onSentinelTileLoaded() {
+         renderedTileCount.incrementAndGet()
+@@ -244,12 +247,13 @@ class NativeImageryBasemap internal constructor(
+     internal suspend fun fetchLatestTileForFactory(x: Int, y: Int, z: Int, identity: TileRequestIdentity?): Bitmap? =
+         fetchLatestTile(x, y, z, identity, viewId(), demandGeneration())
+ 
+-    private fun surface(name: String, maxZoom: Int, source: (x: Int, y: Int, z: Int) -> ImageSource): MercatorTiledSurfaceImage {
++    private fun surface(name: String, maxZoom: Int, trackSelected: Boolean = false, source: (x: Int, y: Int, z: Int) -> ImageSource): MercatorTiledSurfaceImage {
+         val factory = object : MercatorTileFactory {
+             override val contentType = name
+             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = source(x, y, z)
+         }
+-        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory, true, minZoom = 0, maxZoom = maxZoom, tileSize = 256)
++        return NativeRasterFeatherMercatorSurfaceImage.build(factory, true, minZoom = 0, maxZoom = maxZoom,
++            tileSize = 256, allowFeather = true, backing = if (trackSelected) selectedFeatherBacking else null)
+     }
+ 
+     private fun publish(status: NativeImageryStatus) { currentStatus = status; onStatus(status) }
+@@ -259,6 +263,7 @@ class NativeImageryBasemap internal constructor(
+         callbackOwner.detach()
+         closed = true; generation++; main.removeCallbacks(viewportTick); scope.cancel(); http.close()
+         underlayLayer.clearRenderables(); baseRenderLayer.clearRenderables()
++        selectedFeatherBacking.clear()
+         underlayLayer.isEnabled = false; baseRenderLayer.isEnabled = false; latestDate = null
+     }
+ 
+diff --git a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMapController.kt b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMapController.kt
+index 3315707..2fb2140 100644
+--- a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMapController.kt
++++ b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeMapController.kt
+@@ -125,7 +125,9 @@ class NativeMapController internal constructor(
+             try { super.onDrawFrame(unused) } finally { Trace.endSection() }
+         }
+     }
++    private val editingGestureController = NativeEditingWorldWindowController(worldWindow).also { worldWindow.controller = it }
+     val view: View get() = worldWindow
++    internal fun setEditingGestureNavigation(enabled: Boolean) = editingGestureController.setEditingGestureNavigation(enabled)
+     private val mainHandler = Handler(Looper.getMainLooper())
+     private val pickScope = CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+     private var pickGeneration = 0
+@@ -160,7 +162,9 @@ class NativeMapController internal constructor(
+     @Volatile private var imageryStatusListener: ((NativeImageryStatus) -> Unit)? = null
+     private val skyLayer = ClearDaySkyLayer()
+     private val baseLayer: RenderableLayer = RenderableLayer("Tianditu base")
+-    private val fixedDetailLayer=NativeRasterDetailLayer(worldWindow,network,::reportStatus,::tileDemandFocusPx,::currentTileDemandGeneration,::fixedDetailTileRank)
++    private val rasterFeatherBacking = NativeRasterFeatherBackingStore()
++    private val fixedDetailLayer=NativeRasterDetailLayer(worldWindow,network,::reportStatus,::tileDemandFocusPx,::currentTileDemandGeneration,::fixedDetailTileRank,
++        featherBacking = rasterFeatherBacking)
+     private val terrainBackgroundLayer = BackgroundLayer(
+         ImageSource.fromBitmap(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565).apply { eraseColor(0xFF203B3F.toInt()) }),
+         ImageOptions(ImageConfig.RGB_565),
+@@ -411,6 +415,9 @@ class NativeMapController internal constructor(
+     internal fun frameCostWallNanosSnapshot(): Map<String, Long?> = frameCostTelemetry.frameSnapshot()
+     /** Successful base-image bitmap decodes for this controller's current source generation. */
+     internal fun bridgeRasterTileSnapshot(): Long = bridgeRasterLoads.decodedTiles()
++    internal fun rasterFeatherDiagnostics(): Map<String, Long> = rasterFeatherBacking.snapshotCounters().toMutableMap().apply {
++        cartography.imageryRasterFeatherCounters().forEach { (key, value) -> put("selectedImagery_$key", value) }
++    }
+     /** This map's selected source work, including its requests queued in the shared network pool. */
+     internal fun bridgeRasterPendingLoads(): Int = bridgeRasterLoads.pendingLoads()
+     /** Enables exact visible-tile accounting for an isolated print renderer only. */
+@@ -679,6 +686,7 @@ class NativeMapController internal constructor(
+         cartography.close()
+         pickGeneration++;pickScope.cancel()
+         fixedDetailLayer.close()
++        synchronized(worldWindow.engine.renderResourceCache) { rasterFeatherBacking.clear() }
+         networkLease?.close()
+         terrainOverlayGeneration++
+         terrainBasemapRenderer?.close(); terrainBasemapRenderer = null
+@@ -845,6 +853,7 @@ class NativeMapController internal constructor(
+         }
+         mainHandler.post {
+             if (disposed) return@post
++            synchronized(worldWindow.engine.renderResourceCache) { rasterFeatherBacking.clear() }
+             baseLayer.clearRenderables()
+             labelLayer.clearRenderables()
+             labelLayer.opacity = rasterLabelOpacity
+@@ -1878,7 +1887,8 @@ class NativeMapController internal constructor(
+             val coverage = bridgePrintRasterFrameCoverage
+             if (coverage != null) NativePrintTrackedMercatorSurfaceImage.build(factory, coverage, transparent, maxZoom, minZoom, tileSize)
+             else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
+-        } else MercatorTiledImageLayer.buildTiledSurfaceImage(factory, transparent, tileSize = tileSize, maxZoom = maxZoom, minZoom = minZoom)
++        } else NativeRasterFeatherMercatorSurfaceImage.build(factory, transparent, maxZoom, minZoom, tileSize,
++            backing = if (!transparent) rasterFeatherBacking else null)
+         return image.apply {
+             // Keep rendering the closest available source tile when descendants exceed source coverage.
+             useAncestorTileTexture = true
+diff --git a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterDetailLayer.kt b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterDetailLayer.kt
+index 183a9ee..6a229d3 100644
+--- a/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterDetailLayer.kt
++++ b/mobile-native/app/src/main/java/com/shantu/nativeapp/map/NativeRasterDetailLayer.kt
+@@ -122,6 +122,7 @@ internal class NativeRasterDetailLayer(
+     private val focusPx:()->TileScreenPoint,
+     private val demandGeneration:()->Long,
+     private val tileRank:(providerIdentity:String,z:Int,x:Int,y:Int)->Double?,
++    private val featherBacking:NativeRasterFeatherBackingStore?=null,
+ ) : AutoCloseable {
+     val renderLayer=RenderableLayer("Fixed raster detail")
+     private val sceneMutation=NativeRasterDetailSceneMutation<SurfaceImage,ImageSource>(
+@@ -137,7 +138,8 @@ internal class NativeRasterDetailLayer(
+     private var fixedZoom:Int?=null
+     private var lastPatchKey:String?=null
+     private var generation=0
+-    private data class TileImage(val bitmap:Bitmap,val imageSource:ImageSource,val renderable:SurfaceImage)
++    private data class TileImage(val bitmap:Bitmap,val imageSource:ImageSource,
++        val renderable:NativeRasterFeatherSurfaceImage,val tile:NativeRasterDetailTile,val sourceIdentity:String)
+     private val tileImages=linkedMapOf<String,TileImage>()
+     private val tileJobs=linkedMapOf<String,kotlinx.coroutines.Job>()
+     private var tileState=NativeRasterDetailTileState(4L*1024L*1024L)
+@@ -239,8 +241,9 @@ internal class NativeRasterDetailLayer(
+                             b.recycle();bitmap=null;return@withContext
+                         }
+                         val imageSource=ImageSource.fromBitmap(b)
+-                        val image=SurfaceImage(NativeRasterDetailPlan.tileSector(tile),imageSource)
+-                        val tileImage=TileImage(b,imageSource,image)
++                        val image=NativeRasterFeatherSurfaceImage(NativeRasterDetailPlan.tileSector(tile),imageSource,
++                            tile.z,tile.x,tile.y,featherBacking)
++                        val tileImage=TileImage(b,imageSource,image,tile,source.identity)
+                         var rejectedByBudget=false
+                         val installed=sceneMutation.addIfCurrent(image, {
+                             !closed && generation==mine && provider?.identity==source.identity &&
+@@ -253,6 +256,7 @@ internal class NativeRasterDetailLayer(
+                                 false
+                             } else {
+                                 tileImages[tileKey]=tileImage
++                                refreshFeatherNeighbors(source.identity,tile)
+                                 true
+                             }
+                         }
+@@ -286,28 +290,37 @@ internal class NativeRasterDetailLayer(
+     private object NativeRasterDetailWarp {
+         private val lock=Any()
+         fun toGeographicLatitude(bitmap:Bitmap,patch:NativeRasterDetailPatch):Bitmap = synchronized(lock) {
+-            val width=bitmap.width;val height=bitmap.height
+-            if(height<=1)return@synchronized bitmap
+-            val source=IntArray(width*height);bitmap.getPixels(source,0,width,0,0,width,height)
+-            val outputRow=IntArray(width)
+-            val n=1 shl patch.z
+-            val sourceTop=patch.top.toDouble()
+-            val sourceSpan=patch.height.toDouble()
+-            for(y in 0 until height) {
+-                val latitude=patch.north+(patch.south-patch.north)*y/(height-1.0)
+-                val clamped=latitude.coerceIn(-85.05112878,85.05112878)
+-                val mercY=(1.0-asinh(tan(Math.toRadians(clamped)))/Math.PI)/2.0*n
+-                val sourceY=((mercY-sourceTop)/sourceSpan*height).coerceIn(0.0,height-1.0)
+-                val y0=floor(sourceY).toInt();val y1=min(height-1,y0+1);val fy=sourceY-y0
+-                for(x in 0 until width) {
+-                    val c0=source[y0*width+x];val c1=source[y1*width+x]
+-                    fun channel(a:Int,b:Int)=((a*(1.0-fy)+b*fy).toInt()).coerceIn(0,255)
+-                    outputRow[x]=Color.argb(channel(Color.alpha(c0),Color.alpha(c1)),channel(Color.red(c0),Color.red(c1)),
+-                        channel(Color.green(c0),Color.green(c1)),channel(Color.blue(c0),Color.blue(c1)))
++            // Copy while holding the existing warp lock: waiting jobs do not each retain a second bitmap.
++            val output=if(bitmap.isMutable && bitmap.config==Bitmap.Config.ARGB_8888)bitmap
++                else bitmap.copy(Bitmap.Config.ARGB_8888,true) ?: error("Unable to allocate mutable detail tile")
++            output.setHasAlpha(bitmap.hasAlpha())
++            try {
++                val width=bitmap.width;val height=bitmap.height
++                if(height<=1)return@synchronized output
++                val source=IntArray(width*height);bitmap.getPixels(source,0,width,0,0,width,height)
++                val outputRow=IntArray(width)
++                val n=1 shl patch.z
++                val sourceTop=patch.top.toDouble()
++                val sourceSpan=patch.height.toDouble()
++                for(y in 0 until height) {
++                    val latitude=patch.north+(patch.south-patch.north)*y/(height-1.0)
++                    val clamped=latitude.coerceIn(-85.05112878,85.05112878)
++                    val mercY=(1.0-asinh(tan(Math.toRadians(clamped)))/Math.PI)/2.0*n
++                    val sourceY=((mercY-sourceTop)/sourceSpan*height).coerceIn(0.0,height-1.0)
++                    val y0=floor(sourceY).toInt();val y1=min(height-1,y0+1);val fy=sourceY-y0
++                    for(x in 0 until width) {
++                        val c0=source[y0*width+x];val c1=source[y1*width+x]
++                        fun channel(a:Int,b:Int)=((a*(1.0-fy)+b*fy).toInt()).coerceIn(0,255)
++                        outputRow[x]=Color.argb(channel(Color.alpha(c0),Color.alpha(c1)),channel(Color.red(c0),Color.red(c1)),
++                            channel(Color.green(c0),Color.green(c1)),channel(Color.blue(c0),Color.blue(c1)))
++                    }
++                    output.setPixels(outputRow,0,width,0,y,width,1)
+                 }
+-                bitmap.setPixels(outputRow,0,width,0,y,width,1)
++                output
++            } catch(error:Throwable) {
++                if(output!==bitmap && !output.isRecycled)output.recycle()
++                throw error
+             }
+-            bitmap
+         }
+     }
+ 
+@@ -337,6 +350,7 @@ internal class NativeRasterDetailLayer(
+         retired.forEach { retire(it.bitmap) }
+         window.requestRedraw()
+         tileState.clear()
++        featherBacking?.clear()
+     }
+ 
+     private fun key(source:String,tile:NativeRasterDetailTile)="$source/${tile.z}/${tile.x}/${tile.y}"
+@@ -344,16 +358,35 @@ internal class NativeRasterDetailLayer(
+     private fun retireTile(key:String) { tileImages.remove(key)?.let { image ->
+         sceneMutation.retire(image.renderable,image.imageSource)
+         retire(image.bitmap)
++        refreshFeatherNeighbors(image.sourceIdentity,image.tile)
+     } }
+     private fun cancelTileJobs() { tileJobs.values.forEach { it.cancel() };tileJobs.clear();tileState.cancelPending() }
+ 
+     private fun warpTile(fetched:Bitmap,tile:NativeRasterDetailTile,tileSize:Int):Bitmap {
+-        val normalized=if(fetched.width!=tileSize||fetched.height!=tileSize)Bitmap.createScaledBitmap(fetched,tileSize,tileSize,true) else fetched
+-        val n=1 shl tile.z
+-        val patch=NativeRasterDetailPatch(tile.z,tile.x,tile.y,1,1,false,tile.x.toDouble()/n*360.0-180.0,
+-            NativeRasterDetailPlan.latitudeAtTile((tile.y+1).toDouble(),tile.z),(tile.x+1.0)/n*360.0-180.0,
+-            NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(),tile.z),listOf(tile))
+-        return NativeRasterDetailWarp.toGeographicLatitude(normalized,patch)
++        val sized=if(fetched.width!=tileSize||fetched.height!=tileSize)Bitmap.createScaledBitmap(fetched,tileSize,tileSize,true) else fetched
++        var output:Bitmap?=null
++        try {
++            val n=1 shl tile.z
++            val patch=NativeRasterDetailPatch(tile.z,tile.x,tile.y,1,1,false,tile.x.toDouble()/n*360.0-180.0,
++                NativeRasterDetailPlan.latitudeAtTile((tile.y+1).toDouble(),tile.z),(tile.x+1.0)/n*360.0-180.0,
++                NativeRasterDetailPlan.latitudeAtTile(tile.y.toDouble(),tile.z),listOf(tile))
++            output=NativeRasterDetailWarp.toGeographicLatitude(sized,patch)
++            return output
++        } finally { if(sized!==fetched && sized!==output && !sized.isRecycled)sized.recycle() }
++    }
++
++    /** Only arrival/eviction changes this small frontier; no per-frame bitmap or tile-set rebuild. */
++    private fun refreshFeatherNeighbors(source:String,tile:NativeRasterDetailTile) {
++        val side=1 shl tile.z
++        fun at(x:Int,y:Int):TileImage? = if(y !in 0 until side)null
++            else tileImages["$source/${tile.z}/${Math.floorMod(x,side)}/$y"]
++        fun refresh(x:Int,y:Int) {
++            val image=at(x,y) ?: return
++            image.renderable.featherEdges=NativeRasterFeatherPolicy.fixedEdges(
++                at(x-1,y)!=null,at(x,y+1)!=null,at(x+1,y)!=null,at(x,y-1)!=null)
++        }
++        refresh(tile.x,tile.y);refresh(tile.x-1,tile.y);refresh(tile.x+1,tile.y)
++        refresh(tile.x,tile.y-1);refresh(tile.x,tile.y+1)
+     }
+ 
+     private fun retire(bitmap:Bitmap?) {

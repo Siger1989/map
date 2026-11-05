@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { DEFAULT_APPEARANCE, parseAppearance, THEME_KEY, themeTokens, type Appearance } from './theme';
 import './appearance.css';
+import { AppColorPicker } from './AppColorPicker';
 const Context = createContext<{ settings: Appearance; dark: boolean; save: (next: Appearance) => void; message: string } | null>(null);
 export function AppearanceProvider({children}: {children: ReactNode}) {
   const [settings,setSettings] = useState(DEFAULT_APPEARANCE);
@@ -27,7 +28,7 @@ export function AppearanceProvider({children}: {children: ReactNode}) {
     try { localStorage.setItem(THEME_KEY,JSON.stringify(next)); setMessage('已保存，立即生效'); }
     catch { setMessage('当前已预览，存储不可用；重新打开后恢复默认'); }
   };
-  return <Context.Provider value={{settings,dark,save,message}}>{children}</Context.Provider>;
+  return <Context.Provider value={{settings,dark,save,message}}>{children}<AppColorPicker /></Context.Provider>;
 }
 export function useAppearance() {
   const value = useContext(Context);

@@ -159,4 +159,85 @@ class NativeMapTouchNavigationTest {
         assertTrue(sent.isEmpty())
         assertTrue(router.isNavigating)
     }
+
+    @Test fun denseScreenPanToleratesSpanJitterWithoutRestartingTheCamera() {
+        val router = NativeMapTouchNavigation(density = 4f, touchSlopPx = 32f)
+        val sent = mutableListOf<Sample>()
+        fun route(action: Int, vararg points: Pair<Float, Float>): Boolean {
+            val motion = event(action, *points)
+            return try { router.capture(motion, true) { sent += record(it) } } finally { motion.recycle() }
+        }
+        route(MotionEvent.ACTION_DOWN, 120f to 240f)
+        route(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
+            120f to 240f, 320f to 240f)
+        assertTrue(route(MotionEvent.ACTION_MOVE, 120f to 260f, 320f to 260f))
+        val starts = sent.count { it.action == MotionEvent.ACTION_DOWN }
+        for (step in 1..8) {
+            val jitter = if (step % 2 == 0) 4f else 12f
+            assertTrue(route(MotionEvent.ACTION_MOVE, (120f - jitter) to (260f + step * 20f),
+                (320f + jitter) to (260f + step * 20f)))
+            assertEquals(220f, sent.last().x, 0.01f)
+            assertEquals(260f + step * 20f, sent.last().y, 0.01f)
+        }
+        assertEquals(starts, sent.count { it.action == MotionEvent.ACTION_DOWN })
+    }
+
+    @Test fun slowDenseScreenPanSeedsTheActualOriginalCentroidWithoutThrowingAwayEarlySteps() {
+        val router = NativeMapTouchNavigation(density = 4f, touchSlopPx = 32f)
+        val sent = mutableListOf<Sample>()
+        fun route(action: Int, vararg points: Pair<Float, Float>): Boolean {
+            val motion = event(action, *points)
+            return try { router.capture(motion, true) { sent += record(it) } } finally { motion.recycle() }
+        }
+        route(MotionEvent.ACTION_DOWN, 120f to 240f)
+        route(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT),
+            120f to 240f, 320f to 240f)
+        for (step in 1..3) assertFalse(route(MotionEvent.ACTION_MOVE, 120f to (240f + 2f * step), 320f to (240f + 2f * step)))
+        assertTrue(route(MotionEvent.ACTION_MOVE, 120f to 248f, 320f to 248f))
+        assertEquals(MotionEvent.ACTION_DOWN, sent[sent.size - 2].action)
+        assertEquals(220f, sent[sent.size - 2].x, 0.01f)
+        assertEquals(240f, sent[sent.size - 2].y, 0.01f)
+        assertEquals(248f, sent.last().y, 0.01f)
+    }
+
+    @Test fun rotationAfterPanReturnsToNativeRecognizersInsteadOfSwallowingTheRotation() {
+        val router = NativeMapTouchNavigation()
+        val sent = mutableListOf<Sample>()
+        fun route(action: Int, vararg points: Pair<Float, Float>): Boolean {
+            val motion = event(action, *points)
+            return try { router.capture(motion, true) { sent += record(it) } } finally { motion.recycle() }
+        }
+        route(MotionEvent.ACTION_DOWN, 30f to 60f)
+        route(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 30f to 60f, 80f to 60f)
+        assertTrue(route(MotionEvent.ACTION_MOVE, 30f to 70f, 80f to 70f))
+        val angle = Math.toRadians(20.0)
+        val dx = (25 * kotlin.math.cos(angle)).toFloat()
+        val dy = (25 * kotlin.math.sin(angle)).toFloat()
+        assertFalse(route(MotionEvent.ACTION_MOVE, (55f - dx) to (70f - dy), (55f + dx) to (70f + dy)))
+        assertEquals(listOf(MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN),
+            sent.takeLast(3).map { it.action })
+    }
+
+    @Test fun editingProfileStartsBeforeCameraDispatchAndEndsAfterCancelOrFinalUp() {
+        val router = NativeMapTouchNavigation()
+        val changes = mutableListOf<String>()
+        fun route(action: Int, vararg points: Pair<Float, Float>): Boolean {
+            val motion = event(action, *points)
+            return try {
+                router.capture(motion, true, { changes += "profile:$it" }) { changes += "camera:${it.actionMasked}" }
+            } finally { motion.recycle() }
+        }
+        route(MotionEvent.ACTION_DOWN, 30f to 60f)
+        route(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 30f to 60f, 80f to 60f)
+        assertEquals(listOf("profile:false", "profile:true", "camera:3", "camera:0"), changes)
+        route(MotionEvent.ACTION_MOVE, 30f to 70f, 80f to 70f)
+        route(MotionEvent.ACTION_CANCEL, 30f to 70f, 80f to 70f)
+        assertEquals(listOf("camera:3", "profile:false"), changes.takeLast(2))
+        route(MotionEvent.ACTION_DOWN, 30f to 60f)
+        route(MotionEvent.ACTION_POINTER_DOWN or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 30f to 60f, 80f to 60f)
+        route(MotionEvent.ACTION_POINTER_UP or (1 shl MotionEvent.ACTION_POINTER_INDEX_SHIFT), 30f to 60f, 80f to 60f)
+        assertEquals("camera:0", changes.last())
+        route(MotionEvent.ACTION_UP, 30f to 60f)
+        assertEquals("profile:false", changes.last())
+    }
 }

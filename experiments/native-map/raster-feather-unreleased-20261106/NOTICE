@@ -1,0 +1,13 @@
+Shantu raster-edge feathering, local research adaptation.
+
+The terrain texture batch loop, surface-image setup and tiled image traversal are
+adapted from WorldWind Kotlin 2.1.1 (earth.worldwind:worldwind-android:2.1.1),
+Copyright WorldWind Kotlin contributors, under the Apache License, Version 2.0.
+The upstream source classifier remains unchanged in the isolated local SDK repository.
+The Apache License is retained at worldwind-labels/LICENSE.
+
+Modifications: optional per-texture four-edge feather masks and premultiplied RGBA pair interpolation; preserve
+upstream four-texture batching, shadow receiver state, pick behavior, RGB565 base
+textures and cached ancestor resources. No imagery source pixels are blurred or
+rewritten by this GPU effect. Conservative boundaries without a cached backing stay
+opaque. This does not repair mosaics whose color discontinuities are inside a source image.

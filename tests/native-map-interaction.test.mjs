@@ -34,6 +34,8 @@ function harness(extra = {}) {
     onDragCommit: (value) => callbacks.push(['commit', value]),
     onMapHold: (value) => callbacks.push(['hold', value]),
     ...(extra.direct === undefined ? { direct: () => true } : { direct: extra.direct }),
+    ...(extra.snap ? { snap: extra.snap } : {}),
+    ...(extra.snapCoordinate ? { snapCoordinate: extra.snapCoordinate } : {}),
     dispatchGesture: (detail) => gestures.push(detail),
     requestFrame(callback) { const id = nextFrame++; frames.set(id, callback); return id; },
     cancelFrame(id) { frames.delete(id); },
@@ -53,6 +55,60 @@ function harness(extra = {}) {
   };
   return { adapter, callbacks, notices, gestures, emit, touch, hit, target, frames, flushFrames };
 }
+
+test('native editing network snap reaches preview and final commit without masquerading as a track node', () => {
+  const calls = [];
+  const h = harness({ snapCoordinate(target, point) {
+    calls.push(point);
+    return { coordinate: [point.x / 20, point.y / 20], hint: '已吸附道路 · 测试路' };
+  } });
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('hitTest', h.hit());
+  h.emit('touch', h.touch(2, 40, 50));
+  h.flushFrames();
+  const preview = h.callbacks.filter(([type]) => type === 'preview').at(-1)[1];
+  assert.deepEqual(preview.coordinate, [2, 2.5]);
+  assert.equal(preview.snapHint, '已吸附道路 · 测试路');
+  assert.equal(preview.snappedNode, undefined);
+  h.emit('touch', h.touch(1, 60, 70));
+  const committed = h.callbacks.find(([type]) => type === 'commit')[1];
+  assert.deepEqual(committed.coordinate, [3, 3.5], 'UP recomputes at the real final location');
+  assert.equal(committed.snappedNode, undefined);
+  assert.deepEqual(calls, [{ x: 40, y: 50 }, { x: 60, y: 70 }]);
+  h.adapter.dispose();
+});
+
+test('real node joins retain priority over network snapping', () => {
+  const node = { trackId: 'other-saved-track', coordinate: [7, 8] };
+  const h = harness({ snap: () => node, snapCoordinate() { assert.fail('network must not replace an actual node join'); } });
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('hitTest', h.hit());
+  h.emit('touch', h.touch(1, 40, 50));
+  const committed = h.callbacks.find(([type]) => type === 'commit')[1];
+  assert.equal(committed.snappedNode, node);
+  assert.deepEqual(committed.coordinate, [7, 8]);
+  assert.equal(committed.snapHint, undefined);
+  h.adapter.dispose();
+});
+
+test('loading network data and turning snapping off during a drag commit the final raw ground position', () => {
+  let enabled = true;
+  const h = harness({ snapCoordinate: () => enabled ? { coordinate: null, hint: '道路数据加载中 · 暂按原始位置' } : null });
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('hitTest', h.hit());
+  h.emit('touch', h.touch(2, 40, 50));
+  h.flushFrames();
+  const preview = h.callbacks.filter(([type]) => type === 'preview').at(-1)[1];
+  assert.deepEqual(preview.coordinate, [4, 5]);
+  assert.match(preview.snapHint, /加载中/);
+  enabled = false;
+  h.emit('touch', h.touch(1, 60, 70));
+  const committed = h.callbacks.find(([type]) => type === 'commit')[1];
+  assert.deepEqual(committed.coordinate, [6, 7]);
+  assert.equal(committed.snappedNode, undefined);
+  assert.equal(committed.snapHint, undefined);
+  h.adapter.dispose();
+});
 
 test('native hit parsing preserves exact GPU IDs separately from expanded candidates for drag resolution', () => {
   const seen=[];

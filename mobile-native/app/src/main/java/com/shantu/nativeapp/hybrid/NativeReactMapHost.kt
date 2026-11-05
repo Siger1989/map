@@ -526,7 +526,9 @@ class NativeReactMapHost(
         controller.addBridgeOverlayLayer(overlays.layer)
         val snap = NativeBridgeSnapGeometry(controller.worldWindowForBridge(), controller.cartographyForBridge())
         val entry = MapEntry(mapId, controller, container, ownerToken = requestedOwner, ownerGeneration = requestedGeneration,
-            sectionLayer = section, overlayRenderer = overlays, snapGeometry = snap)
+            sectionLayer = section, overlayRenderer = overlays, snapGeometry = snap,
+            touchNavigation = NativeMapTouchNavigation(appContext.resources.displayMetrics.density,
+                ViewConfiguration.get(container.context).scaledTouchSlop.toFloat()))
         val mapSession = sessionId
         entry.eventEncoder = NativeBridgeEventEncoder({ channel, token, encoded ->
             main.post {
@@ -1631,17 +1633,22 @@ class NativeReactMapHost(
 
     // Comparison needs fresh projection matrices, but browsing it is not an editing task.
     // Keep heavy ground planning quiet during camera motion just as in the single map.
-    private fun realtimeTaskRequired(entry: MapEntry): Boolean {
+    private fun realtimeTaskRequired(entry: MapEntry, includeEditing: Boolean = true): Boolean {
         val state = entry.renderState
         val interaction = state.optJSONObject("interaction")
         fun activeId(key: String) = state.optString(key).let { it.isNotBlank() && it != "null" }
         return entry.cameraAnimator != null ||
-            state.optBoolean("positionNavigating") || entry.renderInteraction.drawingActive ||
+            state.optBoolean("positionNavigating") || (includeEditing && entry.renderInteraction.drawingActive) ||
             interaction?.optBoolean("pickingActive") == true || interaction?.optBoolean("annotationPicking") == true ||
             interaction?.optBoolean("measurementPicking") == true || activeId("annotationEditingId") ||
-            state.optJSONObject("trackOverlay")?.optBoolean("editing") == true ||
+            (includeEditing && state.optJSONObject("trackOverlay")?.optBoolean("editing") == true) ||
             state.optBoolean("sectionEditing") || state.optJSONObject("section")?.optBoolean("enabled") == true
     }
+
+    // A two-finger camera gesture still publishes the real matrix at the editing cadence.
+    // Ground/snap preparation can settle after motion, as it does in ordinary browsing.
+    private fun realtimeGroundTaskRequired(entry: MapEntry): Boolean =
+        realtimeTaskRequired(entry, includeEditing = !entry.touchNavigation.isNavigating)
 
     private fun queueLatestFrame(entry: MapEntry) {
         if (!entry.framePublishPending.compareAndSet(false, true)) return
@@ -1679,7 +1686,7 @@ class NativeReactMapHost(
             entry.lastMatrixAt = now
             val metadata = frame.metadata
             val width = frame.width; val height = frame.height; val matrixCopy = frame.matrix
-            val realtimeTask = realtimeTaskRequired(entry)
+            val realtimeTask = realtimeGroundTaskRequired(entry)
             val groundWorkCadenceAllows = NativeBridgeFramePolicy.allowGroundWork(realtimeTask, now, entry.lastCameraMotionAt)
             val currentMatchesFrame = groundWorkCadenceAllows && frameMetadataMatchesCurrent(entry, metadata)
             val allowGroundWork = groundWorkCadenceAllows && currentMatchesFrame
@@ -1767,7 +1774,7 @@ class NativeReactMapHost(
         main.postDelayed({
             entry.snapPublishScheduled = false
             if (!isCurrent(entry)) return@postDelayed
-            if (!NativeBridgeFramePolicy.allowGroundWork(realtimeTaskRequired(entry),
+            if (!NativeBridgeFramePolicy.allowGroundWork(realtimeGroundTaskRequired(entry),
                     android.os.SystemClock.elapsedRealtime(), entry.lastCameraMotionAt)) scheduleSnapPublish(entry)
             else publishSnapGeometry(entry)
         }, 500L)
@@ -1819,7 +1826,13 @@ class NativeReactMapHost(
     private fun publishSnapGeometry(entry: MapEntry, force: Boolean = false) {
         val snap = entry.snapGeometry ?: return
         val now = android.os.SystemClock.elapsedRealtime()
-        if (!force && now - entry.lastSnapPublishAt < 500L) return
+        if (!force && now - entry.lastSnapPublishAt < 500L) {
+            // A road/rivers toggle can land inside this window after an earlier
+            // hidden snapshot advanced snapRevision. Preserve a trailing publish
+            // so the editor never waits indefinitely for another camera/tile event.
+            scheduleSnapPublish(entry)
+            return
+        }
         entry.lastSnapPublishAt = now
         val interaction = entry.renderState.optJSONObject("interaction") ?: JSONObject()
         val roads = interaction.optBoolean("roadSnapping")
@@ -2087,7 +2100,8 @@ class NativeReactMapHost(
             // Picking flags select what a tap means; they must not disable ordinary pan/zoom.
             val captureByMode = interaction.drawingActive
             val capturePointer = entry.touchNavigation.capture(event,
-                captureByMode || entry.capturedGestureId == entry.gestureSequence) { cameraEvent ->
+                captureByMode || entry.capturedGestureId == entry.gestureSequence,
+                { entry.controller.setEditingGestureNavigation(it) }) { cameraEvent ->
                 entry.controller.view.onTouchEvent(cameraEvent)
             }
             if (NativeBridgeTouchPolicy.shouldClearGroundAnchor(

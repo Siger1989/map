@@ -11,6 +11,8 @@ export type FeatureMove = {
   target: DragTarget;
   coordinate: Coordinate;
   snappedNode?: TrackNode;
+  /** Road/river matching feedback for the current preview; never persisted as route data. */
+  snapHint?: string;
 };
 type Options = {
   enabled: () => boolean;

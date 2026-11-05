@@ -47,7 +47,7 @@ final class OfflineStore {
     static JSONObject read(File f) throws Exception { try(InputStream in=new android.util.AtomicFile(f).openRead()){return new JSONObject(new String(DataTransport.readLimited(in,12*1024*1024),StandardCharsets.UTF_8));} }
     static void write(File f,byte[] bytes) throws Exception { android.util.AtomicFile a=new android.util.AtomicFile(f);FileOutputStream out=null;try{out=a.startWrite();out.write(bytes);a.finishWrite(out);}catch(Exception e){if(out!=null)a.failWrite(out);throw e;} }
     static synchronized void save(Context c,JSONObject state) throws Exception {
-        JSONObject lean=new JSONObject();for(String key:new String[]{"id","name","provider","total","done","bytes","state","error"})if(state.has(key))lean.put(key,state.get(key));
+        JSONObject lean=new JSONObject();for(String key:new String[]{"id","name","provider","total","done","missing","bytes","state","error"})if(state.has(key))lean.put(key,state.get(key));
         write(new File(root(c),hash(state.getString("id"))+".progress"),lean.toString().getBytes(StandardCharsets.UTF_8));
     }
     static synchronized String begin(Context c,String id,String name,int total){
@@ -117,7 +117,18 @@ final class OfflineStore {
         if(!canCommit.getAsBoolean())throw new InterruptedIOException("下载已暂停");write(f,data);bytes.addAndGet(data.length);return true;
     }
     static synchronized String verify(Context c,String id) {
-        try{JSONObject task=readTask(c,id);JSONArray urls=task.getJSONArray("urls");int done=0;long bytes=0;for(int i=0;i<urls.length();i++){File f=tile(c,urls.getString(i));if(f.isFile()&&f.length()>0){done++;bytes+=f.length();}}task.put("done",done).put("bytes",bytes).put("total",urls.length());save(c,task);task.remove("urls");return task.toString();}catch(Exception e){return "{}";}
+        try{
+            JSONObject task=readTask(c,id);JSONArray urls=task.getJSONArray("urls");int done=0;long bytes=0;
+            for(int i=0;i<urls.length();i++){File f=tile(c,urls.getString(i));if(f.isFile()&&f.length()>0){done++;bytes+=f.length();}}
+            JSONObject previous=null;try{previous=read(new File(root(c),hash(id)+".progress"));}catch(Exception ignored){}
+            boolean complete=done==urls.length();int missing=complete||previous==null?0:previous.optInt("missing",0);String state=complete?"complete":"paused";String error="";
+            if(!complete){
+                if(missing>0)error="完整性检查：已保存 "+done+" / "+urls.length()+" 项，最近检查发现 "+missing+" 项图源无覆盖；可继续补齐";
+                else {error=previous==null?"":previous.optString("error","");if(error.isEmpty())error="完整性检查：已保存 "+done+" / "+urls.length()+" 项；缓存未完整，可继续补齐";}
+            }
+            task.put("done",done).put("bytes",bytes).put("total",urls.length()).put("missing",missing).put("state",state).put("error",error);
+            save(c,task);task.remove("urls");return task.toString();
+        }catch(Exception e){return "{}";}
     }
     static synchronized boolean has(Context c,String url) {try{File f=tile(c,url);return f.isFile()&&f.length()>0;}catch(Exception e){return false;} }
     static synchronized boolean remove(Context c,String id) {

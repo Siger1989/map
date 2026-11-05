@@ -1,7 +1,7 @@
 # Native marker regression helper
 
 This Java Instrumentation helper targets the existing private release package
-`com.guanyun.weather.shantu.preview`. It does not build or modify that application APK and
+`com.shantu.oldengine` in the current isolated checkout. It does not build or modify that application APK and
 does not use WebView debugging/CDP. The helper's package/class/environment names retain the
 historical `qa149` / `Native149Instrumentation` identifier; that legacy tooling name is not
 the version of the target application.
@@ -50,6 +50,15 @@ sampled run is used for call-path attribution only. Do not publish raw dumps or
 coordinates. This helper does not change the production APK or its settings.
 
 ## Modes
+
+The current interactive helper adds `editing-pan-response`, `route-edit-snap-regression`,
+`offline-download-regression`, and `floating-navigation-regression`. Navigation regression
+also exercises the floating window when its bridge exists. Floating QA requires actual
+location/overlay permissions before running and uses real touches/Home/return/close; it
+does not inject GPS or count missing permission/unknown window bounds as PASS. Offline QA
+downloads only its uniquely named public research samples and removes only those tasks.
+Failed helper runs remain as evidence; the final APK/version and successful cleanup must
+be identified separately. `ui-overview` is read-only screenshot metadata, not UI acceptance.
 
 The interactive-only `vector-diagnostic-mask` action accepts `mode: all | no-labels | none`.
 It temporarily changes the four cartography MVT layers' enabled flags on the main thread,

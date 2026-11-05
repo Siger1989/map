@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.172-test",
+  "code": 179,
+  "package": "com.shantu.oldengine",
+  "engine": "WorldWind 2.1.1 (existing old engine)",
+  "filamentIntegrated": false,
+  "bytes": 165253351,
+  "sha256": "dac7554b8bc4717803a5e90cb18df893a04b72ae7e3a4a13496498670ee331c4",
+  "privateSeedsByteIdentical": true,
+  "freshWebAssetsExact": true,
+  "nativeSoCount": 8,
+  "nativeSoUnchangedFrom168": true,
+  "featherIntegrated": false,
+  "featherDeferredReason": "171 visual FAIL; original imagery rendering restored, draft isolated outside source set",
+  "baselineRasterSourceUnchanged": true,
+  "featherClassesAbsent": true,
+  "typescript": "PASS",
+  "nodeTests": 31,
+  "nativeTests": 24,
+  "emulator": {
+    "host": "MuMu",
+    "api": 32,
+    "abi": "x86_64",
+    "isPhysicalPhone": false,
+    "navigation": {
+      "360": {
+        "status": "PASS",
+        "color": "PASS",
+        "floating": "PASS",
+        "cleanup": true
+      },
+      "390": {
+        "status": "PASS",
+        "color": "PASS",
+        "floating": "PASS",
+        "cleanup": true
+      }
+    },
+    "editSnap": {
+      "status": "PASS",
+      "roadOn": true,
+      "roadOff": true,
+      "sameRouteNode": true,
+      "cleanup": true
+    },
+    "pan": {
+      "measurement": "camera response after actual 1 CSS pixel input steps; not FPS/display latency",
+      "oldFirstResponseCssPx": [
+        22,
+        null
+      ],
+      "newFirstResponseCssPx": [
+        5,
+        5
+      ],
+      "noDraftPointsCreated": true,
+      "cameraRestored": true
+    },
+    "offline": {
+      "status": "PASS",
+      "levels": [
+        {
+          "zoom": 14,
+          "downloaded": 1,
+          "verified": 1,
+          "readStatus": 200,
+          "cleanup": "PASS"
+        },
+        {
+          "zoom": 19,
+          "downloaded": 1,
+          "verified": 1,
+          "readStatus": 200,
+          "cleanup": "PASS"
+        }
+      ]
+    },
+    "dual": [
+      {
+        "cycle": 1,
+        "duringMaps": 2,
+        "duringHeap": 447707904,
+        "retention": {
+          "watched": 2,
+          "live": 1,
+          "disposedRetained": 0,
+          "mountedMaps": 1,
+          "forcedCollection": true,
+          "performanceMeasurement": false
+        }
+      },
+      {
+        "cycle": 2,
+        "duringMaps": 2,
+        "duringHeap": 471354856,
+        "retention": {
+          "watched": 3,
+          "live": 1,
+          "disposedRetained": 0,
+          "mountedMaps": 1,
+          "forcedCollection": true,
+          "performanceMeasurement": false
+        }
+      },
+      {
+        "cycle": 3,
+        "duringMaps": 2,
+        "duringHeap": 492381216,
+        "retention": {
+          "watched": 4,
+          "live": 1,
+          "disposedRetained": 0,
+          "mountedMaps": 1,
+          "forcedCollection": true,
+          "performanceMeasurement": false
+        }
+      }
+    ],
+    "finalLogErrors": {
+      "FATAL EXCEPTION": 0,
+      "OutOfMemoryError": 0,
+      "ANR in com.shantu.oldengine": 0
+    },
+    "installedSha256": "dac7554b8bc4717803a5e90cb18df893a04b72ae7e3a4a13496498670ee331c4",
+    "finalDraftPoints": 0
+  },
+  "privateDownloadFullHashVerified": true,
+  "formal166Sha256Unchanged": "89082cdea45b2224987eb75b9da104182ba020748c0b2a45d68f01f64c355d58",
+  "physicalPhoneAcceptance": "UNVERIFIED",
+  "harmonyNative": "NOT_DELIVERED",
+  "knownLimits": [
+    "floating map is 2D; no background automatic rerouting or voice",
+    "user original 292 tiles not verified",
+    "prior complex intersection drawing/routing budget limits remain",
+    "main-directory preview unchanged; no claim that it is version172"
+  ]
+}

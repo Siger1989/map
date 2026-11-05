@@ -339,6 +339,7 @@ export function RouteDetails({
 export function RouteEditToolbar({
   session,
   snapName,
+  snapHint,
   error,
   onBack,
   onSave,
@@ -365,6 +366,7 @@ export function RouteEditToolbar({
 }: {
   session: RouteEditSession;
   snapName?: string;
+  snapHint?: string;
   error: string;
   onBack: (name?: string) => void;
   onSave: (name?: string) => void;
@@ -489,8 +491,10 @@ export function RouteEditToolbar({
           </button>
         </div>
         <p className="route-edit-status" role="status">
-          {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 点“退出框选”恢复点选` : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}` : snapName
+          {boxMode ? `框选${boxMode === 'add' ? '加选' : '减选'} · 已选${selectedCount}点 · 点“退出框选”恢复点选` : snapName
             ? `松手拼合：${snapName}`
+            : snapHint ? snapHint
+            : selectedCount ? `已选${selectedCount}点 · ${selectedCount === 1 ? '修改点颜色/备注' : '修改两端都选中的相连线段'}`
             : session.sources.some((s) => s.id !== session.original.id)
               ? '已拼合 · 保存后成为一条路线，可撤销'
               : branch

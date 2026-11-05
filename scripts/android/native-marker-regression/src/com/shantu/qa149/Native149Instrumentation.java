@@ -180,6 +180,18 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("navigation", Native163NavigationRegression.run(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
+                            if ("editing-pan-response".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("panResponse", Native163DrawingRegression.runPanResponse(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("offline-download-regression".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("offlineDownload", Native170OfflineDownloadRegression.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("route-edit-snap-regression".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("routeEditSnap", Native170RouteEditSnapRegression.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("projection-proof".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("projection", Native163ProjectionProbe.run(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
@@ -202,6 +214,10 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("targets", Native160DrawingProbe.targets(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
+                            }
+                            if ("floating-navigation-regression".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("floatingNavigation", Native171FloatingNavigationRegression.run(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("native163-projection-alignment".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("comparison",
@@ -227,6 +243,12 @@ public final class Native149Instrumentation extends Instrumentation {
                                     .put("gizmoDom", inspectGizmoDomRect()).put("drawingMagnifier", inspectDrawingMagnifier());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush();
                                 continue;
+                            }
+                            if ("ui-overview".equals(action)) {
+                                String script = "(()=>{const selectors=['#map-control-panel','.control-popover','.map-layer-panel','.track-tools','.route-edit-toolbar','.pin-editor','.marker-workspace','.guidance-card','.collection-workbench','.record-console','.selection-tools','.survey-tools','.area-tools','[role=dialog]','dialog[open]'];const panels=[];const seen=new Set();for(const selector of selectors)for(const e of document.querySelectorAll(selector)){if(seen.has(e))continue;seen.add(e);const s=getComputedStyle(e),r=e.getBoundingClientRect();if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0||r.width<=0||r.height<=0||r.bottom<=0||r.top>=innerHeight)continue;panels.push({selector,title:e.getAttribute('aria-label')||e.querySelector('h2,h3,header strong')?.textContent?.trim()||'',x:r.x,y:r.y,width:r.width,height:r.height})}return JSON.stringify({viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},panels})})()";
+                                reply = new JSONObject().put("ok", true).put("targetVersion", targetVersionProof())
+                                    .put("ui", new JSONObject(evalJs(script))).put("visibleControls", readVisibleControls());
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("selection-panel".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("panel", inspectSelectedCoordinatePanel());
@@ -762,6 +784,16 @@ public final class Native149Instrumentation extends Instrumentation {
 
     private Object safeDiagnosticsValue(String key, Object value) throws JSONException {
         if (value == null || value == JSONObject.NULL) return null;
+        if ("rasterFeather".equals(key) && value instanceof JSONObject) {
+            JSONObject input = (JSONObject)value, safe = new JSONObject();
+            java.util.Iterator<String> names = input.keys();
+            while (names.hasNext()) {
+                String name = names.next();
+                String scalar = name.startsWith("selectedImagery_") ? name.substring(16) : name;
+                if (isAllowedFeatherScalar(scalar) && input.opt(name) instanceof Number) safe.put(name, input.opt(name));
+            }
+            return safe;
+        }
         if (isAllowedDiagnosticScalar(key)) return (value instanceof Number || value instanceof Boolean) ? value : null;
         if ("maps".equals(key) && value instanceof JSONArray) {
             JSONArray input = (JSONArray)value, output = new JSONArray();
@@ -824,6 +856,16 @@ public final class Native149Instrumentation extends Instrumentation {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    private boolean isAllowedFeatherScalar(String key) {
+        switch (key) {
+            case "preparedFrames": case "drawnFrames": case "preparedSequence": case "drawnSequence":
+            case "visibleLeaves": case "lodBoundaryChildren": case "lodFeatherChildren": case "fixedFeatherChildren":
+            case "missingParentChildren": case "queuedPairs": case "drawnPairs": case "totalQueuedPairs": case "totalDrawnPairs":
+                return true;
+            default: return false;
         }
     }
 

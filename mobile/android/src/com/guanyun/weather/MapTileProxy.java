@@ -157,9 +157,11 @@ final class MapTileProxy {
         final String location;
         final Tile tile;
         final boolean reusable;
+        final boolean missing;
         PooledConnection pooled;
-        UpstreamResponse(int status, String location, Tile tile) { this(status,location,tile,false); }
-        UpstreamResponse(int status, String location, Tile tile, boolean reusable) { this.status=status; this.location=location; this.tile=tile; this.reusable=reusable; }
+        UpstreamResponse(int status, String location, Tile tile) { this(status,location,tile,false,false); }
+        UpstreamResponse(int status, String location, Tile tile, boolean reusable) { this(status,location,tile,reusable,false); }
+        UpstreamResponse(int status, String location, Tile tile, boolean reusable, boolean missing) { this.status=status; this.location=location; this.tile=tile; this.reusable=reusable; this.missing=missing; }
     }
     interface PinnedAttempt { UpstreamResponse run(InetAddress address,long attemptDeadline) throws IOException; }
 
@@ -234,10 +236,11 @@ final class MapTileProxy {
             UpstreamResponse response = request(target, deadline, control);
             if (control != null) control.check();
             if (response.tile != null) return response.tile;
+            if (response.missing) throw new TileException(response.status,"missing","Tile coverage unavailable");
             if (!isRedirect(response.status) || response.location == null || response.location.isEmpty() || hop==MAX_REDIRECTS)
-                throw new TileException(502, "upstream_http", "Map tile unavailable");
+                throw new TileException(response.status, "redirect", "Tile redirect unavailable");
             try { current = resolveRedirect(current,response.location); }
-            catch (IOException error) { throw new TileException(502, "upstream_http", "Invalid tile redirect"); }
+            catch (IOException error) { throw new TileException(response.status, "redirect", "Invalid tile redirect"); }
         }
         throw new TileException(502, "upstream_http", "Map tile unavailable");
     }
@@ -274,6 +277,7 @@ final class MapTileProxy {
             try { return attempt.run(addresses[i],attemptDeadline); }
             catch (IOException error) {
                 if (error instanceof TileException && "cancelled".equals(((TileException) error).diagnostic)) throw error;
+                if (error instanceof TileException && "missing".equals(((TileException) error).diagnostic)) throw error;
                 lastFailure=error;
             }
         }
@@ -481,7 +485,11 @@ final class MapTileProxy {
             headers.put(name, value);
         }
         if (isRedirect(status)) return new UpstreamResponse(status, headers.get("location"), null);
-        if (status != 200) throw new TileException(status==401||status==403||status==429?status:502,"upstream_http","Upstream status unavailable");
+        if (status == 204 || status == 404 || status == 410)
+            throw new TileException(status,"missing","Tile coverage unavailable");
+        if (status != 200) throw new TileException(status,"http","Tile provider returned HTTP status");
+        if ("no-tile".equalsIgnoreCase(headers.get("x-ve-tile-info")))
+            return new UpstreamResponse(status,null,null,false,true);
         boolean hasLength = headers.containsKey("content-length");
         boolean hasTransfer = headers.containsKey("transfer-encoding");
         if (hasLength && hasTransfer) throw formatError("Ambiguous tile body framing");
@@ -531,6 +539,31 @@ final class MapTileProxy {
     }
 
     private static TileException formatError(String message) { return new TileException(502,"format",message); }
+
+    static boolean isMissingTile(Throwable error) {
+        return error instanceof TileException && "missing".equals(((TileException)error).diagnostic);
+    }
+
+    /** A URL/key-free message safe to store in the offline task progress snapshot. */
+    static String publicFailureMessage(Throwable error) {
+        if (error instanceof TileException) {
+            TileException tile=(TileException)error;
+            switch(tile.diagnostic) {
+                case "http": return "图源HTTP请求失败（HTTP "+tile.status+"）";
+                case "upstream_http": return "图源HTTP响应不可用";
+                case "timeout": return "图源连接超时";
+                case "tls": return "图源安全连接失败";
+                case "dns": return "图源域名解析失败";
+                case "connect": return "无法连接图源服务器";
+                case "format": return "图源响应不是有效图片";
+                case "blocked": return "图源地址未通过安全校验";
+                case "redirect": return "图源重定向不可用（HTTP "+tile.status+"）";
+                case "missing": return "图源未提供此瓦片";
+                default: return "图源请求失败";
+            }
+        }
+        return "图源网络请求失败";
+    }
 
     static boolean isRedirect(int status) { return status==301 || status==302 || status==303 || status==307 || status==308; }
     static String resolveRedirect(String current,String location) throws IOException {

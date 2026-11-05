@@ -69,23 +69,72 @@ public final class OfflineDownloadService extends Service {
         task=OfflineStore.readTask(this,r.id);JSONArray urls=task.getJSONArray("urls");int total=urls.length(),done=0;long bytes=0;
         boolean[] cached=new boolean[total];for(int i=0;i<total;i++){if(!owns(r)||r.stop.get())return;File f=OfflineStore.tile(this,urls.getString(i));cached[i]=f.isFile()&&f.length()>0;if(cached[i]){done++;bytes+=f.length();}}
         synchronized(r){if(r.stop.get())return;r.state="running";r.message="下载进行中";}task.put("done",done).put("bytes",bytes).put("total",total).put("state","running").put("error","");checkpoint(r,task,true);
-        AtomicInteger cursor=new AtomicInteger();AtomicInteger completed=new AtomicInteger(done);AtomicLong totalBytes=new AtomicLong(bytes);AtomicReference<Throwable> fatal=new AtomicReference<>();final JSONObject currentTask=task;
-        pool=Executors.newFixedThreadPool(16);for(int w=0;w<16;w++){pool.submit(()->{for(int index;(index=cursor.getAndIncrement())<total&&!r.stop.get();){if(cached[index])continue;fetchOne(r,urls.optString(index),currentTask,total,completed,totalBytes,fatal);}});}
+        AtomicInteger cursor=new AtomicInteger();AtomicInteger completed=new AtomicInteger(done);AtomicInteger missing=new AtomicInteger();AtomicLong totalBytes=new AtomicLong(bytes);AtomicReference<Throwable> fatal=new AtomicReference<>();final JSONObject currentTask=task;
+        task.put("missing",0);
+        pool=Executors.newFixedThreadPool(16);for(int w=0;w<16;w++){pool.submit(()->{for(int index;(index=cursor.getAndIncrement())<total&&!r.stop.get();){if(cached[index])continue;fetchOne(r,urls.optString(index),currentTask,total,completed,missing,totalBytes,fatal);}});}
         pool.shutdown();try{if(!pool.awaitTermination(Long.MAX_VALUE,TimeUnit.DAYS))throw new IOException("worker timeout");}catch(InterruptedException e){Thread.currentThread().interrupt();requestStop(r);pool.shutdownNow();pool.awaitTermination(20,TimeUnit.SECONDS);}
         if(fatal.get()!=null){Throwable e=fatal.get();synchronized(r){if(!"cancelled".equals(r.state)&&!"paused".equals(r.state)){r.state="paused";r.message="下载暂停："+(e.getMessage()==null?"连接或存储异常":e.getMessage());}}}
-        if(r.state.equals("running")){if(r.stop.get()){if(r.state.equals("running"))r.state="paused";}else if(completed.get()>=total){r.state="complete";r.message="缓存完成";}}
-        synchronized(task){task.put("done",completed.get()).put("bytes",totalBytes.get()).put("state",r.state).put("error",r.message);}checkpoint(r,task,true);
+        if(r.state.equals("running")){if(r.stop.get()){if(r.state.equals("running"))r.state="paused";}else if(completed.get()>=total){r.state="complete";r.message="缓存完成";}else{r.state="paused";r.message=missing.get()>0?"缓存未完整：已保存 "+completed.get()+" / "+total+" 项，"+missing.get()+" 项图源无覆盖；可继续补齐":"缓存未完整：已保存 "+completed.get()+" / "+total+" 项，可继续补齐";}}
+        synchronized(task){task.put("done",completed.get()).put("missing",missing.get()).put("bytes",totalBytes.get()).put("state",r.state).put("error",r.message);}checkpoint(r,task,true);
     }catch(Exception e){if(!r.stop.get()){r.state="paused";r.message="下载暂停："+(e.getMessage()==null?"连接或存储异常":e.getMessage());}if(task!=null)try{synchronized(task){task.put("state",r.state).put("error",r.message);}checkpoint(r,task,true);}catch(Exception ignored){}}
     finally{if(pool!=null&&!pool.isTerminated()){pool.shutdownNow();try{pool.awaitTermination(20,TimeUnit.SECONDS);}catch(InterruptedException e){Thread.currentThread().interrupt();}}
         finish(r);
     }}
-    private void fetchOne(Run r,String url,JSONObject task,int total,AtomicInteger done,AtomicLong bytes,AtomicReference<Throwable> fatal){int retries=0;while(!r.stop.get()&&fatal.get()==null&&owns(r)){
-        String request="offline:"+r.generation+":"+r.sequence.incrementAndGet();r.requests.add(request);if(r.stop.get()){r.requests.remove(request);MapTileProxy.cancel(request);return;}
-        try{byte[] data=OfflineStore.download(this,url,request);r.requests.remove(request);if(!owns(r)||r.stop.get())return;boolean wrote=OfflineStore.commit(this,url,data,bytes,()->owns(r)&&!r.stop.get());if(wrote){if(!owns(r)||r.stop.get())return;int n=done.incrementAndGet();synchronized(task){task.put("done",n).put("bytes",bytes.get()).put("state","running").put("error","");}synchronized(r){if(!owns(r)||r.stop.get())return;r.state="running";r.message="下载进行中";}checkpoint(r,task,false);notifyProgress(r,n+"/"+total+" 项 · "+(n*100/Math.max(1,total))+"%",n,total,false);PowerManager.WakeLock wake=r.wake;if(wake!=null&&wake.isHeld())wake.acquire(10*60*1000L);}return;
-        }catch(Exception e){r.requests.remove(request);if(r.stop.get())return;int status=e instanceof MapTileProxy.TileException?((MapTileProxy.TileException)e).status:0;if(status==401||status==403||status==429){fatal.compareAndSet(null,new IOException("图源授权或访问频率受限（HTTP "+status+"）"));requestStop(r,"paused","下载暂停：图源授权或访问频率受限");return;}String message=e.getMessage()==null?"连接中断":e.getMessage();if(message.contains("8 GB")||message.contains("存储")){fatal.compareAndSet(null,e);requestStop(r,"paused","下载暂停："+message);return;}
-            if(r.stop.get()||!owns(r))return;retries++;synchronized(r){if(r.stop.get())return;r.state="waiting";r.message="等待网络恢复，已下载内容保留";}try{synchronized(task){task.put("state","waiting").put("error",r.message);}}catch(JSONException ignored){}checkpoint(r,task,false);notifyProgress(r,"等待网络恢复",done.get(),total,false);if(retries>=10){fatal.compareAndSet(null,new IOException("资源持续不可用，已暂停；稍后继续补齐"));requestStop(r,"paused","资源持续不可用，已暂停；稍后继续补齐");return;}try{Thread.sleep(Math.min(60,5*retries)*1000L);}catch(InterruptedException interrupted){Thread.currentThread().interrupt();return;}
+    private void fetchOne(Run r,String url,JSONObject task,int total,AtomicInteger done,AtomicInteger missing,AtomicLong bytes,AtomicReference<Throwable> fatal){
+        int retries=0;
+        while(!r.stop.get()&&fatal.get()==null&&owns(r)){
+            String request="offline:"+r.generation+":"+r.sequence.incrementAndGet();r.requests.add(request);
+            if(r.stop.get()){r.requests.remove(request);MapTileProxy.cancel(request);return;}
+            try{
+                byte[] data=OfflineStore.download(this,url,request);r.requests.remove(request);
+                if(!owns(r)||r.stop.get())return;
+                boolean wrote=OfflineStore.commit(this,url,data,bytes,()->owns(r)&&!r.stop.get());
+                if(wrote){
+                    if(!owns(r)||r.stop.get())return;
+                    int n=done.incrementAndGet();
+                    synchronized(task){task.put("done",n).put("bytes",bytes.get()).put("state","running").put("error","");}
+                    synchronized(r){if(!owns(r)||r.stop.get())return;r.state="running";r.message="下载进行中";}
+                    checkpoint(r,task,false);notifyProgress(r,n+"/"+total+" 项 · "+(n*100/Math.max(1,total))+"%",n,total,false);
+                    PowerManager.WakeLock wake=r.wake;if(wake!=null&&wake.isHeld())wake.acquire(10*60*1000L);
+                }
+                return;
+            }catch(Exception e){
+                r.requests.remove(request);if(r.stop.get())return;
+                if(isMissingTile(e)){
+                    int count=missing.incrementAndGet();
+                    try{synchronized(task){task.put("missing",count);}}catch(JSONException ignored){}
+                    checkpoint(r,task,false);
+                    notifyProgress(r,"已保存 "+done.get()+" / "+total+" 项 · 图源无覆盖 "+count+" 项",done.get(),total,false);
+                    return;
+                }
+                int status=e instanceof MapTileProxy.TileException?((MapTileProxy.TileException)e).status:0;
+                if(status==401||status==403||status==429){
+                    String summary=publicFailureMessage(e);
+                    fatal.compareAndSet(null,new IOException(summary));
+                    requestStop(r,"paused",summary+"；已保存内容保留，可继续补齐");
+                    return;
+                }
+                String message=e.getMessage()==null?"连接中断":e.getMessage();
+                if(message.contains("8 GB")||message.contains("存储")){
+                    fatal.compareAndSet(null,e);requestStop(r,"paused","下载暂停："+message);return;
+                }
+                if(r.stop.get()||!owns(r))return;
+                retries++;
+                String summary=publicFailureMessage(e);
+                synchronized(r){if(r.stop.get())return;r.state="waiting";r.message="等待网络恢复；"+summary+"，已下载内容保留";}
+                try{synchronized(task){task.put("state","waiting").put("error",r.message);}}catch(JSONException ignored){}
+                checkpoint(r,task,false);notifyProgress(r,"等待网络恢复",done.get(),total,false);
+                if(retries>=10){
+                    String exhausted=summary+"；已重试10次，已保存 "+done.get()+" / "+total+" 项，任务暂停；可继续补齐";
+                    fatal.compareAndSet(null,new IOException(exhausted));requestStop(r,"paused",exhausted);return;
+                }
+                try{Thread.sleep(Math.min(60,5*retries)*1000L);}catch(InterruptedException interrupted){Thread.currentThread().interrupt();return;}
+            }
         }
-    }}
+    }
+
+    static boolean isMissingTile(Throwable error){return MapTileProxy.isMissingTile(error);}
+    static String publicFailureMessage(Throwable error){return MapTileProxy.publicFailureMessage(error);}
     private void finish(Run r){boolean current;synchronized(LOCK){current=active==r&&busyId.equals(r.id)&&generation==r.generation&&!r.done;if(current)r.done=true;}if(current)try{OfflineStore.status(this,r.id,r.state,r.message);}catch(Exception ignored){}if(current)stopForeground(STOP_FOREGROUND_REMOVE);if(r.wake!=null&&r.wake.isHeld())try{r.wake.release();}catch(Exception ignored){}int stopId=r.latestStartId;if(current)synchronized(OfflineStore.class){synchronized(LOCK){if(active==r&&busyId.equals(r.id)&&generation==r.generation){active=null;ownerService=null;busyId="";running=false;}}}stopSelfResult(stopId);}
     @Override public void onTimeout(int id,int type){Run r=active;if(r!=null&&owns(r))requestStop(r,"paused","系统后台时限已到，请返回应用继续");stopForeground(STOP_FOREGROUND_REMOVE);if(r!=null)stopSelfResult(r.latestStartId);}
     @Override public IBinder onBind(Intent intent){return null;}

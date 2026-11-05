@@ -508,6 +508,232 @@ public final class Native163DrawingRegression {
         return report;
     }
 
+    /** Reports actual camera response to small real inputs; deliberately has no new-version speed assertion. */
+    public static JSONObject runPanResponse(Native149Instrumentation parent) throws Exception {
+        try { return runPanResponseChecked(parent); }
+        catch (Throwable error) {
+            JSONObject report = new JSONObject().put("schemaVersion", 2).put("test", "editor-two-finger-pan-response")
+                .put("testState", "ERROR").put("gpsWritten", false).put("savedRouteWrites", false);
+            putPanProbeFailure(report, "failure", error, "precondition", "runPanResponseChecked");
+            return report;
+        }
+    }
+
+    private static JSONObject runPanResponseChecked(Native149Instrumentation parent) throws Exception {
+        JSONObject report = new JSONObject().put("schemaVersion", 2).put("test", "editor-two-finger-pan-response")
+            .put("gpsWritten", false).put("savedRouteWrites", false).put("userDraftOverwrite", false)
+            .put("measurement", "native-main-thread-camera-after-real-MotionEvent; not display latency or phone acceptance");
+        if (parent == null) return report.put("testState", "PRECONDITION_BLOCKED").put("reason", "instrumentation-unavailable");
+        if (!targetAlreadyAttached(parent)) panProbeCall(parent, "attach", "attachTarget");
+        JSONObject state = (JSONObject)panProbeCall(parent, "precondition-state", "readState");
+        JSONObject probe = (JSONObject)panProbeCall(parent, "precondition-draft", "inspectDrawingMagnifier");
+        JSONObject interaction = state.optJSONObject("interaction"), overlay = state.optJSONObject("trackOverlay");
+        int savedTracks = probe.optInt("savedTrackCount", -1);
+        String movable = overlay == null ? "unknown" : overlay.optString("movableTrackId", "");
+        String selected = overlay == null ? "unknown" : overlay.optString("selectedId", "");
+        String annotation = state.optString("annotationSelected", "");
+        boolean drawing = probe.optBoolean("native_drawingActive", interaction != null && interaction.optBoolean("drawingActive"));
+        boolean emptySelection = selected.isEmpty() || "null".equals(selected) || "draft".equals(selected);
+        boolean freshDraft = movable.isEmpty() || "null".equals(movable) || "draft".equals(movable);
+        boolean noAnnotation = annotation.isEmpty() || "null".equals(annotation);
+        if (!drawing || probe.optInt("draftPoints", -1) != 0 || draftPointCount(state) != 0 || savedTracks < 0 ||
+            overlay == null || overlay.optJSONArray("draft") == null || overlay.optJSONArray("saved") == null ||
+            overlay.optBoolean("connecting") || !freshDraft || !emptySelection || !noAnnotation) {
+            return report.put("testState", "PRECONDITION_BLOCKED")
+                .put("reason", "requires-active-empty-drawing-draft-no-route-edit-or-selected-feature");
+        }
+        JSONObject originalCamera = (JSONObject)panProbeCall(parent, "initial-camera", "invokeCameraJson");
+        View view = (View)panProbeCall(parent, "map-view", "worldWindowView");
+        double scale = rendererCssScale(parent);
+        int[] origin = new int[2]; parent.runOnMainSync(() -> view.getLocationOnScreen(origin));
+        if (!Double.isFinite(scale) || scale <= 0 || view.getWidth() / scale < 240 || view.getHeight() / scale < 320)
+            return report.put("testState", "PRECONDITION_BLOCKED").put("reason", "map-viewport-too-small-or-unknown");
+        JSONObject pose = new JSONObject().put("center", new JSONArray().put(104.0668).put(30.5728))
+            .put("zoom", 16.0).put("pitch", 0.0).put("bearing", 0.0);
+        report.put("requestedResearchCamera", pose).put("viewport", captureCssViewport(parent, view, scale))
+            .put("density", view.getResources().getDisplayMetrics().density)
+            .put("touchSlopPx", android.view.ViewConfiguration.get(view.getContext()).getScaledTouchSlop())
+            .put("initialSavedTracks", savedTracks).put("roadSnapping", interaction != null && interaction.optBoolean("roadSnapping"))
+            .put("riverSnapping", interaction != null && interaction.optBoolean("riverSnapping"));
+        JSONArray cases = new JSONArray(); report.put("cases", cases);
+        boolean untouchedDraft = true, cameraRestored = false, cleanupOk = false;
+        try {
+            report.put("initialCameraStability", awaitPanProbeStable(parent, "initial-camera-stability"));
+            for (boolean jitter : new boolean[]{false, true}) {
+                String stage = jitter ? "jitter" : "parallel";
+                panProbeCall(parent, stage + "/apply-camera", "applyCamera", pose);
+                panProbeCall(parent, stage + "/await-frames", "awaitFrames", 2, 10_000L);
+                JSONObject stableBefore = awaitPanProbeStable(parent, stage + "/before-input");
+                JSONObject result = measurePanResponse(parent, view, origin, scale, jitter).put("cameraStabilityBefore", stableBefore);
+                cases.put(result);
+                if (result.optInt("draftPointsAfter", -1) != 0) {
+                    untouchedDraft = false;
+                    throw new IllegalStateException("two-finger-input-created-draft-data");
+                }
+            }
+            report.put("testState", "MEASURED");
+        } catch (Throwable error) {
+            report.put("testState", "ERROR");
+            putPanProbeFailure(report, "failure", error, "measurement", "runPanResponseChecked");
+        } finally {
+            try {
+                JSONObject after = (JSONObject)panProbeCall(parent, "draft-cleanup/check", "inspectDrawingMagnifier");
+                if (after.optInt("draftPoints", -1) != 0) untouchedDraft = false;
+                JSONObject cleanup = clearQaDraft(parent, scale, savedTracks);
+                report.put("qaDraftCleanup", cleanup); cleanupOk = cleanup.optInt("finalDraftPoints", -1) == 0;
+            } catch (Throwable error) { putPanProbeFailure(report, "cleanupFailure", error, "draft-cleanup", "clearQaDraft"); }
+            try { report.put("beforeRestoreCameraStability", awaitPanProbeStable(parent, "restore/before-apply")); }
+            catch (Throwable error) {
+                putPanProbeFailure(report, "beforeRestoreStabilityFailure", error, "restore/before-apply", "awaitPanProbeStable");
+                report.put("testState", "ERROR");
+            }
+            try {
+                panProbeCall(parent, "restore/apply-camera", "applyCamera", originalCamera);
+                panProbeCall(parent, "restore/await-frames", "awaitFrames", 2, 10_000L);
+                report.put("restoredCameraStability", awaitPanProbeStable(parent, "restore/after-apply"));
+                JSONObject restored = (JSONObject)panProbeCall(parent, "restore/verify-camera", "invokeCameraJson");
+                cameraRestored = panCameraDistance(originalCamera, restored) <= 0.1 &&
+                    Math.abs(cameraZoom(originalCamera) - cameraZoom(restored)) <= 0.001 &&
+                    Math.abs(originalCamera.optDouble("pitch") - restored.optDouble("pitch")) <= 0.001 &&
+                    Math.abs(originalCamera.optDouble("bearing") - restored.optDouble("bearing")) <= 0.001;
+            } catch (Throwable error) { putPanProbeFailure(report, "cameraRestoreFailure", error, "restore", "runPanResponseChecked"); }
+            report.put("cameraRestored", cameraRestored).put("noDraftPointsCreated", untouchedDraft)
+                .put("strictCleanupEmptyDraft", cleanupOk);
+            if (!cameraRestored || !cleanupOk || !untouchedDraft) report.put("testState", "FAIL");
+        }
+        return report;
+    }
+
+    private static JSONObject measurePanResponse(Native149Instrumentation parent, View view, int[] origin, double scale,
+        boolean jitter) throws Exception {
+        String scenario = jitter ? "jitter" : "parallel";
+        JSONObject before = (JSONObject)panProbeCall(parent, scenario + "/initial-camera", "invokeCameraJson");
+        double lat = before.getJSONArray("center").getDouble(1);
+        double metersPerCssPixel = 40075016.6856 * Math.cos(Math.toRadians(lat)) / (512.0 * Math.pow(2.0, cameraZoom(before)));
+        if (!Double.isFinite(metersPerCssPixel) || metersPerCssPixel <= 0) throw new IllegalStateException("camera-scale-unavailable");
+        double cx = view.getWidth() / scale * 0.5, cy = view.getHeight() / scale * 0.5;
+        ScreenPoint first = new ScreenPoint(origin[0] + (cx - 24) * scale, origin[1] + cy * scale);
+        ScreenPoint second = new ScreenPoint(origin[0] + (cx + 24) * scale, origin[1] + cy * scale);
+        long downTime = SystemClock.uptimeMillis(), started = SystemClock.elapsedRealtime();
+        int pointers = 0, firstNumerical = -1, firstQuarterPixel = -1;
+        JSONArray samples = new JSONArray(); JSONObject previous = before;
+        String stage = scenario + "/down", operation = "Instrumentation.sendPointerSync";
+        PanProbeFailure inputFailure = null;
+        try {
+            pointers = 1; injectSingle(parent, MotionEvent.ACTION_DOWN, downTime, first);
+            stage = scenario + "/pointer-down";
+            pointers = 2; injectMulti(parent, MotionEvent.ACTION_POINTER_DOWN | (1 << MotionEvent.ACTION_POINTER_INDEX_SHIFT), downTime, first, second);
+            for (int i = 1; i <= 24; i++) {
+                SystemClock.sleep(16L);
+                double radial = jitter && i > 4 ? (i % 2 == 0 ? 1.5 : -1.5) : 0.0;
+                first = new ScreenPoint(origin[0] + (cx - 24 - radial) * scale, origin[1] + (cy + i) * scale);
+                second = new ScreenPoint(origin[0] + (cx + 24 + radial) * scale, origin[1] + (cy + i) * scale);
+                long sentAt = SystemClock.elapsedRealtimeNanos();
+                stage = scenario + "/step-" + i + "/move";
+                operation = "Instrumentation.sendPointerSync";
+                injectMulti(parent, MotionEvent.ACTION_MOVE, downTime, first, second);
+                long deliveredAt = SystemClock.elapsedRealtimeNanos();
+                // invokeCameraJson itself marshals the real controller read to Android's main thread.
+                JSONObject camera = (JSONObject)panProbeCall(parent, scenario + "/step-" + i + "/camera", "invokeCameraJson");
+                long readAt = SystemClock.elapsedRealtimeNanos();
+                stage = scenario + "/step-" + i + "/measure";
+                operation = "Native163DrawingRegression.measurePanResponse";
+                double totalMeters = panCameraDistance(before, camera), stepMeters = panCameraDistance(previous, camera);
+                if (firstNumerical < 0 && totalMeters > 0.001) firstNumerical = i;
+                if (firstQuarterPixel < 0 && totalMeters / metersPerCssPixel >= 0.25) firstQuarterPixel = i;
+                samples.put(new JSONObject().put("inputCumulativeCssPx", i).put("inputStepCssPx", 1)
+                    .put("radialJitterPerFingerCssPx", radial).put("elapsedMs", SystemClock.elapsedRealtime() - started)
+                    .put("sendPointerSyncMs", (deliveredAt - sentAt) / 1e6).put("cameraSnapshotMs", (readAt - deliveredAt) / 1e6)
+                    .put("centerStepMeters", stepMeters).put("centerTotalMeters", totalMeters)
+                    .put("centerStepEquivalentCssPx", stepMeters / metersPerCssPixel)
+                    .put("centerTotalEquivalentCssPx", totalMeters / metersPerCssPixel).put("camera", camera));
+                previous = camera;
+            }
+            // End the real input stream with CANCEL. Unlike UP, the SDK's active pan
+            // cancellation does not start fling; no reflection into optimized SDK methods.
+            stage = scenario + "/cancel";
+            operation = "Instrumentation.sendPointerSync";
+            injectMulti(parent, MotionEvent.ACTION_CANCEL, downTime, first, second); pointers = 0;
+        } catch (Throwable error) {
+            inputFailure = error instanceof PanProbeFailure ? (PanProbeFailure)error :
+                new PanProbeFailure(stage, operation, "input-failed", error);
+            throw inputFailure;
+        } finally {
+            try {
+                if (pointers == 2) injectMulti(parent, MotionEvent.ACTION_CANCEL, downTime, first, second);
+                else if (pointers == 1) injectSingle(parent, MotionEvent.ACTION_CANCEL, downTime, first);
+            } catch (Throwable error) {
+                PanProbeFailure cancellation = new PanProbeFailure(scenario + "/finally-cancel", operation, "cancel-failed", error);
+                if (inputFailure != null) inputFailure.addSuppressed(cancellation); else throw cancellation;
+            }
+        }
+        JSONObject stableAfter = awaitPanProbeStable(parent, scenario + "/after-cancel");
+        JSONObject afterProbe = (JSONObject)panProbeCall(parent, scenario + "/final-draft", "inspectDrawingMagnifier");
+        return new JSONObject().put("name", jitter ? "parallel-with-small-span-jitter" : "parallel-one-css-pixel-steps")
+            .put("sampleCount", samples.length()).put("cameraBefore", before).put("metersPerCssPixelAtStart", metersPerCssPixel)
+            .put("firstNumericalResponseAtCssPx", firstNumerical < 0 ? JSONObject.NULL : firstNumerical)
+            .put("firstQuarterPixelResponseAtCssPx", firstQuarterPixel < 0 ? JSONObject.NULL : firstQuarterPixel)
+            .put("responseThresholdEquivalentCssPx", 0.25).put("samples", samples)
+            .put("termination", "real-two-pointer-ACTION_CANCEL").put("cameraStabilityAfter", stableAfter)
+            .put("draftPointsAfter", afterProbe.optInt("draftPoints", -1));
+    }
+
+    private static double panCameraDistance(JSONObject a, JSONObject b) throws Exception {
+        JSONArray ac = a.getJSONArray("center"), bc = b.getJSONArray("center");
+        return centerDistanceMeters(ac.getDouble(0), ac.getDouble(1), bc.getDouble(0), bc.getDouble(1));
+    }
+
+    private static JSONObject awaitPanProbeStable(Native149Instrumentation parent, String stage) throws Exception {
+        long started = SystemClock.elapsedRealtime(), deadline = started + 3_000L;
+        JSONObject anchor = (JSONObject)panProbeCall(parent, stage + "/camera", "invokeCameraJson");
+        int stableIntervals = 0, samples = 1;
+        double largestStepMeters = 0.0;
+        JSONObject previous = anchor;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            SystemClock.sleep(80L);
+            JSONObject camera = (JSONObject)panProbeCall(parent, stage + "/camera", "invokeCameraJson");
+            samples++;
+            largestStepMeters = Math.max(largestStepMeters, panCameraDistance(previous, camera));
+            boolean stable = panCameraDistance(anchor, camera) <= 0.05 &&
+                Math.abs(cameraZoom(anchor) - cameraZoom(camera)) <= 0.0001 &&
+                Math.abs(anchor.optDouble("pitch") - camera.optDouble("pitch")) <= 0.001 &&
+                Math.abs(anchor.optDouble("bearing") - camera.optDouble("bearing")) <= 0.001;
+            if (stable) stableIntervals++; else { stableIntervals = 0; anchor = camera; }
+            previous = camera;
+            if (stableIntervals >= 3) return new JSONObject().put("stable", true).put("samples", samples)
+                .put("windowIntervals", 3).put("minimumIntervalMs", 80).put("centerToleranceMeters", 0.05)
+                .put("elapsedMs", SystemClock.elapsedRealtime() - started).put("largestObservedStepMeters", largestStepMeters)
+                .put("method", "Native149Instrumentation.invokeCameraJson");
+        }
+        throw new PanProbeFailure(stage, "Native149Instrumentation.invokeCameraJson", "camera-not-stable-within-3000ms", null);
+    }
+
+    private static final class PanProbeFailure extends Exception {
+        final String stage, method, reason;
+        PanProbeFailure(String stage, String method, String reason, Throwable cause) {
+            super(reason, cause); this.stage = stage; this.method = method; this.reason = reason;
+        }
+    }
+
+    private static Object panProbeCall(Native149Instrumentation parent, String stage, String method, Object... args) throws Exception {
+        try { return call(parent, method, args); }
+        catch (Throwable error) { throw new PanProbeFailure(stage, "Native149Instrumentation." + method, "operation-failed", error); }
+    }
+
+    private static void putPanProbeFailure(JSONObject output, String key, Throwable error, String stage, String method) throws Exception {
+        PanProbeFailure known = error instanceof PanProbeFailure ? (PanProbeFailure)error : null;
+        JSONArray causes = new JSONArray(), suppressed = new JSONArray();
+        for (Throwable cause = error; cause != null && causes.length() < 8; cause = cause.getCause()) causes.put(cause.getClass().getName());
+        for (Throwable failure : error.getSuppressed()) {
+            JSONObject detail = new JSONObject();
+            putPanProbeFailure(detail, "failure", failure, stage + "/cleanup", method);
+            suppressed.put(detail.getJSONObject("failure"));
+        }
+        output.put(key, new JSONObject().put("stage", known == null ? stage : known.stage)
+            .put("method", known == null ? method : known.method).put("reasonCode", known == null ? "operation-failed" : known.reason)
+            .put("causeClasses", causes).put("suppressed", suppressed));
+    }
+
     /** Read-only same-frame comparison of the live JS MapHandle and rendered native terrain. */
     public static JSONObject compareProjection(Native149Instrumentation parent, JSONArray coordinates) throws Exception {
         JSONObject report = new JSONObject().put("mode", "native163-projection-comparison")

@@ -16,6 +16,7 @@ class NativeReactActivity : MainActivity() {
     private var overlay: NativeReactOverlay? = null
     private var content: WebView? = null
     private var mapSurfaceRoot: FrameLayout? = null
+    private var floatingNavigation: FloatingNavigationBridge? = null
 
     override fun createContentRoot(): FrameLayout = object : FrameLayout(this) {
         override fun dispatchTouchEvent(event: MotionEvent): Boolean {
@@ -69,24 +70,40 @@ class NativeReactActivity : MainActivity() {
                 maps?.handleMessage(json)
             }
         }, "ShantuNativeMap")
+        floatingNavigation = FloatingNavigationBridge(this, content).also {
+            content.addJavascriptInterface(it, FloatingNavigationBridge.JS_NAME)
+        }
     }
 
-    override fun onContentPageStarted(url: String?) { maps?.invalidateSession() }
+    override fun onContentPageStarted(url: String?) { floatingNavigation?.onPageStarted(url); maps?.invalidateSession() }
     override fun onContentInsets(keyboardVisible: Boolean) { overlay?.setImeVisible(keyboardVisible) }
     override fun onResume() {
         super.onResume()
+        floatingNavigation?.onHostResume()
         maps?.onHostResume()
         // A permission/system sheet can reject region updates while backgrounded.
         // Re-publish current DOM geometry even when the layout did not change.
         if (trustedForeground()) content?.evaluateJavascript(
             "window.dispatchEvent(new Event('shantu:native-map-resume'))", null)
+        if (trustedForeground()) content?.evaluateJavascript(
+            "window.dispatchEvent(new Event('shantu:floating-navigation'))", null)
     }
-    override fun onPause() { maps?.onHostPause(); super.onPause() }
+    override fun onPause() { floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        floatingNavigation?.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        floatingNavigation?.onActivityResult(requestCode)
+    }
     override fun onDestroy() {
+        floatingNavigation?.close(); floatingNavigation = null
         maps?.close(); maps = null
         overlay?.close(); overlay = null
         mapSurfaceRoot = null
-        content?.removeJavascriptInterface("ShantuNativeMap"); content = null
+        content?.removeJavascriptInterface("ShantuNativeMap")
+        content?.removeJavascriptInterface(FloatingNavigationBridge.JS_NAME); content = null
         super.onDestroy()
     }
 }

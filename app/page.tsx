@@ -65,6 +65,7 @@ import { useNavigation } from '@/modules/navigation/useNavigation';
 import { useSearchQuickNavigation } from '@/modules/navigation/useSearchQuickNavigation';
 import { createSearchNavigationDraft } from '@/modules/navigation/searchNavigationDraft';
 import { useGuidance } from '@/modules/guidance/useGuidance';
+import { useFloatingNavigation } from '@/modules/guidance/useFloatingNavigation';
 import { navigationStartPlace } from '@/modules/guidance/routeStart';
 import { RouteDisconnectedError, RouteEndpointRequiredError, trackNavigation } from '@/modules/guidance/savedRoute';
 import { useGuidanceWorkflow } from '@/modules/workbench/useGuidanceWorkflow';
@@ -360,6 +361,7 @@ export default function Home() {
     position.fix,
     position.locationError,
   );
+  const floatingNavigation = useFloatingNavigation(guidance.session);
   useEffect(() => {
     if (!guidance.active) searchNavigationDraft.clear();
   }, [guidance.active, searchNavigationDraft]);
@@ -1784,6 +1786,7 @@ export default function Home() {
     <RouteEditToolbar
       session={editor.session}
       snapName={featureMove?.snappedNode ? tracks.saved.find(t => t.id === featureMove.snappedNode!.trackId)?.name : undefined}
+      snapHint={featureMove?.snapHint}
       snapping={tracks.snapping}
       roadSnapping={tracks.roadSnapping}
       riverSnapping={tracks.riverSnapping}
@@ -2972,6 +2975,7 @@ export default function Home() {
           <>
           {guidance.session && <GuidanceProgressRail session={guidance.session} />}
           <GuidanceCard
+              floatingNavigation={floatingNavigation}
               positionAssessment={guidance.session?.positionAssessment}
               displayPanel={navigationDisplayOpen && !panel && !quickAdd && !measurement.active
                 ? <RouteDisplaySettings display={routeDisplay} embedded navigating onClose={() => setNavigationDisplayOpen(false)} /> : undefined}

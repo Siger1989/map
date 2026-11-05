@@ -206,6 +206,13 @@ public final class Native163NavigationRegression {
                     .put("topPressedOff", !top.optBoolean("pressed"))
                     .put("positionWaiting", waiting));
 
+                if ("true".equals(String.valueOf(callParent("evalJs", "Boolean(window.ShantuFloatingNavigation)")))) {
+                    failedStage = "floating-navigation";
+                    JSONObject floating = Native171FloatingNavigationRegression.run(parent);
+                    report.put("floatingNavigation", floating);
+                    if (!"PASS".equals(floating.optString("testState")))
+                        throw new IllegalStateException("floating-navigation-regression-" + floating.optString("testState"));
+                }
                 failedStage = "end-guidance-ui";
                 endGuidanceThroughUi();
                 boolean routeCleared = waitForRouteAndGuidanceClear(8_000L);
@@ -423,10 +430,10 @@ public final class Native163NavigationRegression {
             throw new IllegalStateException("real route planner did not produce the QA offline route");
         }
 
-        /** Opens the real select popups and chooses options through their observed native accessibility bounds. */
+        /** Uses the shared in-app color picker and the existing native width select through real touches. */
         private JSONObject testRouteStyleControls() throws Exception {
             JSONObject evidence = new JSONObject().put("status", "RUNNING");
-            String colorSelector = ".route-style-quick-controls select[aria-label='路线颜色']";
+            String colorSelector = ".route-style-quick-controls input[type='color'][aria-label='路线颜色']";
             String widthSelector = ".route-style-quick-controls select[aria-label='路线粗细']";
             try {
                 captureScreenshot("route-style-controls-before");
@@ -437,27 +444,34 @@ public final class Native163NavigationRegression {
                 JSONObject nativeBefore = nativeRouteStyle();
                 evidence.put("nativeBefore", nativeBefore);
 
-                JSONObject colorChoice = differentOption(colorSelector);
-                if (colorChoice == null || colorChoice.optString("value").isEmpty() || colorChoice.optString("text").isEmpty())
-                    throw new IllegalStateException("no alternate route color option");
-                String color = colorChoice.getString("value");
-                evidence.put("requestedColorOption", colorChoice);
-                failedStage = "route-style-color-tap-select";
-                progress("before-open-route-color-select");
-                tapControlCenter(colorSelector);
-                failedStage = "route-style-color-await-native-option";
-                JSONObject colorOption = awaitNativeOption(colorChoice.getString("text"), 3_000L);
-                evidence.put("nativeColorOption", colorOption);
-                captureScreenshot("route-style-color-options-open");
-                failedStage = "route-style-color-tap-native-option";
-                tapNativeOption(colorOption);
+                JSONObject colorBefore = before.optJSONObject("color");
+                if (colorBefore == null || !nativeBefore.optString("color").equalsIgnoreCase(colorBefore.optString("value")))
+                    throw new IllegalStateException("route color input and native route style are not synchronized before selection");
+                String previousColor = colorBefore.optString("value");
+                String color = "#e41a1c".equalsIgnoreCase(previousColor) ? "#377eb8" : "#e41a1c";
+                String colorLabel = "#e41a1c".equalsIgnoreCase(color) ? "红" : "蓝";
+                evidence.put("requestedColor", new JSONObject().put("value", color).put("label", colorLabel));
+                failedStage = "route-style-color-tap-input";
+                progress("before-open-route-color-picker");
+                tapControlCenter(colorSelector, "color-input");
+                failedStage = "route-style-color-await-picker";
+                JSONObject pickerOpen = awaitColorPicker(true, color, 3_000L);
+                evidence.put("colorPickerOpened", pickerOpen);
+                captureScreenshot("route-style-color-picker-open");
+                failedStage = "route-style-color-tap-palette-option";
+                tapControlCenter(".app-color-picker button[data-color='" + color + "']", "color-picker-option");
+                failedStage = "route-style-color-await-picker-close";
+                JSONObject pickerClosed = awaitColorPicker(false, color, 3_000L);
+                evidence.put("colorPickerClosedAfterSelection", pickerClosed);
                 nativeSelectPopupObserved = false;
                 failedStage = "route-style-color-verify-dom-native";
                 JSONObject colorDom = awaitRouteStyleDom(colorSelector, widthSelector, color, null, 4_000L);
-                boolean colorFocusFramePass = recordSingleFocusFrame(colorDom, "color");
-                evidence.put("afterColor", colorDom).put("nativeAfterColor", awaitNativeRouteStyle(color, null, 4_000L))
+                JSONObject nativeAfterColor = awaitNativeRouteStyle(color, null, 4_000L);
+                boolean colorFocusFramePass = recordColorFocusFrame(colorDom, "color");
+                evidence.put("afterColor", colorDom).put("nativeAfterColor", nativeAfterColor)
                     .put("colorSingleFocusFramePass", colorFocusFramePass);
                 captureScreenshot("route-style-color-selected");
+                if (pickerClosed.optBoolean("visible")) throw new IllegalStateException("shared color picker remained open after selection");
                 progress("after-select-route-color");
 
                 JSONObject widthChoice = differentOption(widthSelector);
@@ -467,7 +481,7 @@ public final class Native163NavigationRegression {
                 evidence.put("requestedWidthOption", widthChoice);
                 failedStage = "route-style-width-tap-select";
                 progress("before-open-route-width-select");
-                tapControlCenter(widthSelector);
+                tapControlCenter(widthSelector, "width-select");
                 failedStage = "route-style-width-await-native-option";
                 JSONObject widthOption = awaitNativeOption(widthChoice.getString("text"), 3_000L);
                 evidence.put("nativeWidthOption", widthOption);
@@ -488,9 +502,76 @@ public final class Native163NavigationRegression {
                     failedStage = "route-style-focus-frame";
                     throw new IllegalStateException("route style controls do not show exactly one outer focus frame");
                 }
+                JSONObject customEvidence = new JSONObject().put("status", "RUNNING");
+                evidence.put("customAndCancel", customEvidence);
+                String customColor = "#12ab34";
+                failedStage = "route-style-custom-reopen-picker";
+                tapControlCenter(colorSelector, "custom-reopen-color-input");
+                customEvidence.put("paletteOpened", awaitColorPicker(true, null, 3_000L));
+                callParent("awaitWebViewDraw");
+                failedStage = "route-style-custom-enter-mode";
+                tapControlCenter(".app-color-custom", "custom-mode-button");
+                failedStage = "route-style-custom-await-hex-input";
+                JSONObject customInput = awaitCustomColorInput(3_000L);
+                customEvidence.put("customInput", customInput);
+                callParent("awaitWebViewDraw");
+                JSONObject pickerGeometry = customInput.optJSONObject("picker");
+                if (pickerGeometry == null || pickerGeometry.optDouble("height", Double.MAX_VALUE) > 200.5) {
+                    customEvidence.put("status", "FAIL").put("pickerHeightLimitPx", 200);
+                    throw new IllegalStateException("shared color picker exceeded 200px height");
+                }
+                customEvidence.put("pickerHeightLimitPx", 200).put("pickerHeightPass", true);
+                captureScreenshot("route-style-custom-color-input");
+                failedStage = "route-style-custom-focus-hex-input";
+                tapControlCenter(".app-color-picker input[aria-label='自定义颜色值']", "custom-hex-input");
+                JSONObject focusedInput = awaitCustomColorInputFocused(3_000L);
+                customEvidence.put("focusedInputBeforeTyping", focusedInput);
+                if (!focusedInput.optBoolean("activeElement")) throw new IllegalStateException("custom HEX field did not receive focus");
+                callParent("awaitWebViewDraw");
+                JSONObject focusedAfterDraw = customColorInputState();
+                customEvidence.put("focusedInputAfterWebViewDraw", focusedAfterDraw);
+                if (!focusedAfterDraw.optBoolean("activeElement")) throw new IllegalStateException("custom HEX field lost focus before keyboard input");
+                customEvidence.put("keyboardTextRequested", "12ab34");
+                failedStage = "route-style-custom-type-hex";
+                parent.sendStringSync("12ab34");
+                customEvidence.put("afterKeyboardInput", customColorInputState());
+                failedStage = "route-style-custom-await-auto-close";
+                JSONObject customPickerClosed;
+                try {
+                    customPickerClosed = awaitColorPicker(false, null, 3_000L);
+                } catch (Throwable closeFailure) {
+                    customEvidence.put("afterKeyboardInput", customColorInputState())
+                        .put("inputFailureType", closeFailure.getClass().getSimpleName());
+                    throw closeFailure;
+                }
+                customEvidence.put("pickerClosedAfterValidHex", customPickerClosed);
+                failedStage = "route-style-custom-verify-dom-native";
+                JSONObject customDom = awaitRouteStyleDom(colorSelector, widthSelector, customColor, null, 4_000L);
+                JSONObject customNative = awaitNativeRouteStyle(customColor, null, 4_000L);
+                customEvidence.put("afterCustomInput", customDom).put("nativeAfterCustomInput", customNative)
+                    .put("routeInputValueLengthAfterApply", customDom.optJSONObject("color").optString("value").length())
+                    .put("closedAutomatically", !customPickerClosed.optBoolean("visible"));
+                captureScreenshot("route-style-custom-color-applied");
+
+                failedStage = "route-style-cancel-reopen-picker";
+                tapControlCenter(colorSelector, "cancel-reopen-color-input");
+                customEvidence.put("pickerReopenedForCancel", awaitColorPicker(true, null, 3_000L));
+                callParent("awaitWebViewDraw");
+                failedStage = "route-style-cancel-tap-close";
+                tapControlCenter(".app-color-picker button[aria-label='关闭颜色选择']", "cancel-color-picker-close");
+                failedStage = "route-style-cancel-await-close";
+                JSONObject cancelledPicker = awaitColorPicker(false, null, 3_000L);
+                failedStage = "route-style-cancel-verify-unchanged";
+                JSONObject afterCancel = awaitRouteStyleDom(colorSelector, widthSelector, customColor, null, 4_000L);
+                JSONObject nativeAfterCancel = awaitNativeRouteStyle(customColor, null, 4_000L);
+                customEvidence.put("pickerClosedByX", cancelledPicker).put("afterCancel", afterCancel)
+                    .put("nativeAfterCancel", nativeAfterCancel).put("selectionUnchanged", true)
+                    .put("status", "PASS");
+                captureScreenshot("route-style-custom-color-cancel");
                 evidence.put("status", "PASS");
-                steps.put(new JSONObject().put("step", "route-color-and-width-selected-through-native-controls")
+                steps.put(new JSONObject().put("step", "route-color-and-width-selected-through-real-controls")
                     .put("colorChangedByTouch", true).put("widthChangedByTouch", true)
+                    .put("customHexAppliedAndClosed", true).put("cancelPreservedColor", true)
                     .put("domAndNativeStyleSynchronized", true));
                 progress("after-route-style-controls");
                 return evidence;
@@ -512,11 +593,10 @@ public final class Native163NavigationRegression {
                 "const rect=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};" +
                 "const outline=e=>{const s=getComputedStyle(e);return{style:s.outlineStyle,width:s.outlineWidth,color:s.outlineColor,offset:s.outlineOffset,boxShadow:s.boxShadow,backgroundColor:s.backgroundColor,borderStyle:s.borderStyle,borderWidth:s.borderWidth}};" +
                 "const doubleOutline=e=>{const p=outline(e?.closest('label')),c=outline(e);return p.style!=='none'&&parseFloat(p.width)>0&&c.style!=='none'&&parseFloat(c.width)>0};" +
-                "const label=e=>e?.closest('label');const swatch=document.querySelector('.route-style-quick-controls label:first-child i');" +
-                "const hex=()=>{const m=getComputedStyle(swatch).backgroundColor.match(/[\\d.]+/g);return m&&m.length>=3?'#'+m.slice(0,3).map(v=>Math.round(Number(v)).toString(16).padStart(2,'0')).join(''):''};" +
+                "const label=e=>e?.closest('label');const hit=e=>{if(!e)return null;const r=e.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)};" +
                 "return JSON.stringify({found:!!color&&!!width,visible:[color,width].every(e=>{if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0})," +
-                "color:{value:color?.value||'',options:color?Array.from(color.options,o=>({value:o.value,text:(o.textContent||'').trim()})):[],rect:color?rect(color):null,labelRect:color?rect(label(color)):null,parentOutline:color?outline(label(color)):null,selectOutline:color?outline(color):null,doubleOutline:doubleOutline(color),swatch:hex()}," +
-                "width:{value:width?.value||'',options:width?Array.from(width.options,o=>({value:o.value,text:(o.textContent||'').trim()})):[],rect:width?rect(width):null,labelRect:width?rect(label(width)):null,parentOutline:width?outline(label(width)):null,selectOutline:width?outline(width):null,doubleOutline:doubleOutline(width)}})})()";
+                "color:{tag:color?.tagName||'',type:color?.type||'',value:color?.value||'',rect:color?rect(color):null,labelRect:color?rect(label(color)):null,parentOutline:color?outline(label(color)):null,controlOutline:color?outline(color):null,hitTag:hit(color)?.tagName||''}," +
+                "width:{tag:width?.tagName||'',value:width?.value||'',options:width?Array.from(width.options,o=>({value:o.value,text:(o.textContent||'').trim()})):[],rect:width?rect(width):null,labelRect:width?rect(label(width)):null,parentOutline:width?outline(label(width)):null,selectOutline:width?outline(width):null,doubleOutline:doubleOutline(width)}})})()";
             return new JSONObject(domString(script));
         }
 
@@ -526,13 +606,13 @@ public final class Native163NavigationRegression {
             return new JSONObject(value);
         }
 
-        private void tapControlCenter(String selector) throws Exception {
-            JSONObject rect = new JSONObject(domString("(()=>{const e=document.querySelector(" + q(selector) + ");if(!e)return JSON.stringify({found:false});const r=e.getBoundingClientRect(),s=getComputedStyle(e),x=r.left+r.width/2,y=r.top+r.height/2,h=document.elementFromPoint(x,y);return JSON.stringify({found:true,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,hit:h===e||e.contains(h),hitTag:h?.tagName||'',hitClass:typeof h?.className==='string'?h.className:'',selectTag:e.tagName,selectClass:typeof e.className==='string'?e.className:'',rect:{x:r.x,y:r.y,width:r.width,height:r.height},x,y})})()"));
+        private void tapControlCenter(String selector, String evidenceKey) throws Exception {
+            JSONObject rect = new JSONObject(domString("(()=>{const e=document.querySelector(" + q(selector) + ");if(!e)return JSON.stringify({found:false});const r=e.getBoundingClientRect(),s=getComputedStyle(e),x=r.left+r.width/2,y=r.top+r.height/2,h=document.elementFromPoint(x,y),l=e.matches('input[type=color]')&&e.closest('label'),hit=h===e||e.contains(h)||(!!l&&l.contains(h));return JSON.stringify({found:true,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,hit,hitThroughLabel:!!l&&l.contains(h),hitTag:h?.tagName||'',hitClass:typeof h?.className==='string'?h.className:'',selectTag:e.tagName,selectClass:typeof e.className==='string'?e.className:'',rect:{x:r.x,y:r.y,width:r.width,height:r.height},x,y})})()"));
             int[] origin = new int[2];
             parent.runOnMainSync(() -> webView.getLocationOnScreen(origin));
             float injectedX = origin[0] + (float)rect.optDouble("x", 0) * (float)cssScale;
             float injectedY = origin[1] + (float)rect.optDouble("y", 0) * (float)cssScale;
-            put("routeStyleHitEvidence-" + (selector.contains("路线颜色") ? "color" : "width"), new JSONObject()
+            put("routeStyleHitEvidence-" + evidenceKey, new JSONObject()
                 .put("staticStage", failedStage).put("cssScale", cssScale)
                 .put("webViewOriginScreen", new JSONArray().put(origin[0]).put(origin[1]))
                 .put("webViewSizePx", new JSONArray().put(webView.getWidth()).put(webView.getHeight()))
@@ -540,10 +620,68 @@ public final class Native163NavigationRegression {
                 .put("injectedScreenPx", new JSONArray().put(injectedX).put(injectedY))
                 .put("found", rect.optBoolean("found")).put("visible", rect.optBoolean("visible"))
                 .put("hit", rect.optBoolean("hit")).put("hitTag", rect.optString("hitTag")).put("hitClass", rect.optString("hitClass"))
-                .put("selectTag", rect.optString("selectTag")).put("selectClass", rect.optString("selectClass")));
+                .put("hitThroughLabel", rect.optBoolean("hitThroughLabel"))
+                .put("elementTag", rect.optString("selectTag")).put("elementClass", rect.optString("selectClass")));
             if (!rect.optBoolean("found") || !rect.optBoolean("visible") || !rect.optBoolean("hit"))
-                throw new IllegalStateException("route style select is not visible and hit-testable: " + selector);
+                throw new IllegalStateException("route style control is not visible and hit-testable: " + selector);
             callParent("tap", injectedX, injectedY);
+        }
+
+        private JSONObject awaitColorPicker(boolean expectedVisible, String targetColor, long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
+            String target = targetColor == null ? "null" : q(targetColor);
+            String script = "(()=>{const e=document.querySelector('dialog.app-color-picker,.app-color-picker[role=dialog],.app-color-picker');if(!e)return JSON.stringify({found:false,visible:false,targetOptionVisible:false});const s=getComputedStyle(e),r=e.getBoundingClientRect();const visible=s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0;const target=" + target + ";const targetOptionVisible=target!==null&&Array.from(e.querySelectorAll('button[data-color]')).some(b=>{const q=b.getBoundingClientRect(),z=getComputedStyle(b);return b.dataset.color.toLowerCase()===target.toLowerCase()&&z.display!=='none'&&z.visibility!=='hidden'&&q.width>0&&q.height>0});return JSON.stringify({found:true,visible,targetOptionVisible,tag:e.tagName,rect:{x:r.x,y:r.y,width:r.width,height:r.height}})})()";
+            while (SystemClock.elapsedRealtime() < end) {
+                last = new JSONObject(domString(script));
+                if (last.optBoolean("visible") == expectedVisible && (!expectedVisible || targetColor == null || last.optBoolean("targetOptionVisible"))) return last;
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException(expectedVisible ? "shared color picker did not open" : "shared color picker did not close");
+        }
+
+        private JSONObject awaitCustomColorInput(long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
+            String script = "(()=>{const e=document.querySelector('.app-color-picker input[aria-label=\"自定义颜色值\"]'),p=document.querySelector('.app-color-picker');if(!e||!p)return JSON.stringify({found:false,visible:false});const s=getComputedStyle(e),r=e.getBoundingClientRect(),pr=p.getBoundingClientRect(),h=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);return JSON.stringify({found:true,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,hit:h===e||e.contains(h),tag:e.tagName,type:e.type,rect:{x:r.x,y:r.y,width:r.width,height:r.height},cssCenter:[r.left+r.width/2,r.top+r.height/2],picker:{x:pr.x,y:pr.y,width:pr.width,height:pr.height}})})()";
+            while (SystemClock.elapsedRealtime() < end) {
+                last = new JSONObject(domString(script));
+                if (last.optBoolean("found") && last.optBoolean("visible") && last.optBoolean("hit")) return last;
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException("custom HEX input did not become visible and hit-testable");
+        }
+
+        private JSONObject customColorInputState() throws Exception {
+            String script = "(()=>{const e=document.querySelector('.app-color-picker input[aria-label=\"自定义颜色值\"]'),p=document.querySelector('.app-color-picker');" +
+                "const r=e?.getBoundingClientRect(),s=e&&getComputedStyle(e);return JSON.stringify({pickerVisible:!!p&&(()=>{const z=getComputedStyle(p),q=p.getBoundingClientRect();return z.display!=='none'&&z.visibility!=='hidden'&&q.width>0&&q.height>0})()," +
+                "inputFound:!!e,inputVisible:!!e&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,activeElement:!!e&&document.activeElement===e," +
+                "inputValueLength:e?(e.value||'').length:-1,rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null})})()";
+            return new JSONObject(domString(script));
+        }
+
+        private JSONObject awaitCustomColorInputFocused(long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
+            while (SystemClock.elapsedRealtime() < end) {
+                last = customColorInputState();
+                if (last.optBoolean("inputFound") && last.optBoolean("inputVisible") && last.optBoolean("activeElement")) return last;
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException("custom HEX field did not become the active visible input");
+        }
+
+        private boolean recordColorFocusFrame(JSONObject probe, String control) throws Exception {
+            JSONObject item = probe.optJSONObject(control), parentOutline = item == null ? null : item.optJSONObject("parentOutline");
+            JSONObject controlOutline = item == null ? null : item.optJSONObject("controlOutline");
+            boolean parentRing = parentOutline != null && "solid".equals(parentOutline.optString("style")) &&
+                Math.abs(parseCssPixels(parentOutline.optString("width")) - 2.0) < 0.01 && "-2px".equals(parentOutline.optString("offset"));
+            boolean noInnerOutline = controlOutline != null && ("none".equals(controlOutline.optString("style")) ||
+                parseCssPixels(controlOutline.optString("width")) == 0.0);
+            boolean noShadow = controlOutline != null && "none".equals(controlOutline.optString("boxShadow"));
+            item.put("singleOuterFocusRing", parentRing).put("noInnerOutline", noInnerOutline).put("noInnerShadow", noShadow)
+                .put("controlBackgroundAllowed", true).put("controlBorderAllowed", true);
+            return parentRing && noInnerOutline && noShadow;
         }
 
         private boolean recordSingleFocusFrame(JSONObject probe, String control) throws Exception {
@@ -722,7 +860,7 @@ public final class Native163NavigationRegression {
                 last = routeStyleControlProbe(colorSelector, widthSelector);
                 JSONObject actual = last.optJSONObject("color");
                 JSONObject actualWidth = last.optJSONObject("width");
-                boolean colorMatches = actual != null && color.equalsIgnoreCase(actual.optString("value")) && color.equalsIgnoreCase(actual.optString("swatch"));
+                boolean colorMatches = actual != null && color.equalsIgnoreCase(actual.optString("value"));
                 boolean widthMatches = width == null || (actualWidth != null && Double.compare(Double.parseDouble(width), Double.parseDouble(actualWidth.optString("value", "NaN"))) == 0);
                 if (colorMatches && widthMatches) return last;
                 SystemClock.sleep(80L);
@@ -871,7 +1009,7 @@ public final class Native163NavigationRegression {
         }
 
         private void scrollEndNavigationButtonIntoView() throws Exception {
-            String expression = "(()=>{const c=document.querySelector('.guidance-card .guidance-content'),b=c?.querySelector('.guidance-actions button:last-child');if(!c||!b)return JSON.stringify({found:false});const cr=c.getBoundingClientRect(),br=b.getBoundingClientRect(),s=getComputedStyle(c),x=br.left+br.width/2,y=br.top+br.height/2,h=document.elementFromPoint(x,y);return JSON.stringify({found:true,container:{x:cr.x,y:cr.y,width:cr.width,height:cr.height,scrollHeight:c.scrollHeight,clientHeight:c.clientHeight,scrollTop:c.scrollTop},button:{x:br.x,y:br.y,width:br.width,height:br.height,top:br.top,bottom:br.bottom},fullyVisible:br.top>=cr.top&&br.bottom<=cr.bottom,hit:h===b||h?.closest('button')===b,overflowY:s.overflowY})})()";
+            String expression = "(()=>{const c=document.querySelector('.guidance-card .guidance-content'),b=Array.from(c?.querySelectorAll('.guidance-actions button')||[]).find(e=>e.textContent.trim()==='结束导航');if(!c||!b)return JSON.stringify({found:false});const cr=c.getBoundingClientRect(),br=b.getBoundingClientRect(),s=getComputedStyle(c),x=br.left+br.width/2,y=br.top+br.height/2,h=document.elementFromPoint(x,y);return JSON.stringify({found:true,container:{x:cr.x,y:cr.y,width:cr.width,height:cr.height,scrollHeight:c.scrollHeight,clientHeight:c.clientHeight,scrollTop:c.scrollTop},button:{x:br.x,y:br.y,width:br.width,height:br.height,top:br.top,bottom:br.bottom},fullyVisible:br.top>=cr.top&&br.bottom<=cr.bottom,hit:h===b||h?.closest('button')===b,overflowY:s.overflowY})})()";
             long deadline = SystemClock.elapsedRealtime() + 8_000L;
             while (SystemClock.elapsedRealtime() < deadline) {
                 JSONObject probe = new JSONObject(domString(expression));
@@ -902,6 +1040,47 @@ public final class Native163NavigationRegression {
                 SystemClock.sleep(100L);
             }
             return false;
+        }
+
+        private JSONObject closeSharedColorPickerThroughUi() throws Exception {
+            JSONObject result = new JSONObject().put("status", "RUNNING");
+            String stage = "inspect";
+            try {
+                boolean visible = domBoolean("(()=>{const e=document.querySelector('.app-color-picker');if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0})()");
+                result.put("wasVisible", visible);
+                if (!visible) return result.put("status", "PASS");
+
+                stage = "dismiss-keyboard-if-custom-input-focused";
+                boolean customInputFocused = domBoolean("document.activeElement===document.querySelector('.app-color-picker input[aria-label=\"自定义颜色值\"]')");
+                result.put("customInputFocusedAtCleanup", customInputFocused);
+                if (customInputFocused) {
+                    parent.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+                    callParent("awaitWebViewDraw");
+                }
+                if (!domBoolean("(()=>{const e=document.querySelector('.app-color-picker');if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0})()"))
+                    return result.put("closedByKeyboardBack", true).put("status", "PASS");
+
+                stage = "return-from-custom-mode";
+                boolean customMode = domBoolean("!!document.querySelector('.app-color-picker input[aria-label=\"自定义颜色值\"]')");
+                if (customMode) {
+                    tapControlCenter(".app-color-picker button[aria-label='返回常用颜色']", "cleanup-color-picker-return");
+                    result.put("returnedToPalette", true);
+                    long end = SystemClock.elapsedRealtime() + 3_000L;
+                    while (SystemClock.elapsedRealtime() < end && !domBoolean("!!document.querySelector('.app-color-picker button[aria-label=\"关闭颜色选择\"]')"))
+                        SystemClock.sleep(80L);
+                }
+
+                stage = "tap-close-button";
+                if (!domBoolean("!!document.querySelector('.app-color-picker button[aria-label=\"关闭颜色选择\"]')"))
+                    throw new IllegalStateException("shared color picker close button unavailable");
+                tapControlCenter(".app-color-picker button[aria-label='关闭颜色选择']", "cleanup-color-picker-close");
+                JSONObject closed = awaitColorPicker(false, null, 3_000L);
+                return result.put("closedByRealButton", true).put("closedState", closed).put("status", "PASS");
+            } catch (Throwable error) {
+                result.put("status", "FAIL").put("failedStage", stage)
+                    .put("errorType", error.getClass().getSimpleName()).put("exceptionEvidence", exceptionEvidence(error));
+                return result;
+            }
         }
 
         private void setAutoRecordThroughUi(boolean enabled) throws Exception {
@@ -992,6 +1171,15 @@ public final class Native163NavigationRegression {
             JSONObject result = new JSONObject();
             String cleanupStage = "start";
             try {
+                JSONObject pickerCleanup = closeSharedColorPickerThroughUi();
+                result.put("colorPickerCleanup", pickerCleanup)
+                    .put("sharedColorPickerClosedThroughUi", "PASS".equals(pickerCleanup.optString("status")));
+            } catch (Throwable error) {
+                putError(result, "colorPickerCleanupError", error);
+                try { result.put("colorPickerCleanupExceptionEvidence", exceptionEvidence(error)); }
+                catch (JSONException ignored) { }
+            }
+            try {
                 cleanupStage = "end-guidance";
                 boolean hadGuidance = guidanceStarted || guidanceActivityEvidence((JSONObject)callParent("readState")).optBoolean("active");
                 if (hadGuidance) endGuidanceThroughUi();
@@ -999,6 +1187,8 @@ public final class Native163NavigationRegression {
                 result.put("guidanceEndedThroughUi", routeCleared);
             } catch (Throwable error) { putError(result, "guidanceCleanupError", error); }
             try {
+                if (!result.optBoolean("sharedColorPickerClosedThroughUi"))
+                    throw new IllegalStateException("route UI cleanup skipped because shared color picker remains open");
                 if (nativeSelectPopupObserved) {
                     cleanupStage = "dismiss-confirmed-native-select-popup";
                     boolean dismissed = parent.getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
@@ -1097,6 +1287,7 @@ public final class Native163NavigationRegression {
             return state.optBoolean("guidanceEndedThroughUi") && state.optBoolean("directionRestored") &&
                 state.optBoolean("followIntentRestored") && state.optBoolean("cameraRestored") &&
                 state.optBoolean("routingModeRestored") && state.optBoolean("samplingPreferenceRestored") &&
+                state.optBoolean("sharedColorPickerClosedThroughUi") &&
                 state.optBoolean("qaGraphRemoved") && state.optBoolean("clipboardRestored") &&
                 state.optBoolean("routeAndGuidanceClear") && state.optBoolean("recordingStillIdle") &&
                 state.optBoolean("trackCountUnchanged") && state.optBoolean("selectionUnchanged") &&
