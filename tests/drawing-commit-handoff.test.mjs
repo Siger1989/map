@@ -104,6 +104,7 @@ async function mount(t, { enabled = true } = {}) {
     saved: [{ id: 'track-a', segments }], draft: [], visible: true, style, nodes: [],
   }));
   const waitCallbacks = [[], []];
+  let magnifyCalls = 0;
   let currentEnabled = enabled;
   let commitSerial = 0;
   let mounted = true;
@@ -132,7 +133,7 @@ async function mount(t, { enabled = true } = {}) {
       lastVertex: [0, 0],
       toCoordinate: (point) => [point.x, point.y],
       toScreen: (point) => ({ x: point[0] * 10, y: point[1] * 10 }),
-      magnify: () => () => {},
+      magnify: () => { magnifyCalls += 1; return () => {}; },
       onAnchor() {},
       onVertex(point) {
         const oldLine = accepted[index][0];
@@ -161,6 +162,7 @@ async function mount(t, { enabled = true } = {}) {
   t.after(unmount);
   return {
     React, act, host, refs, maps, accepted, overlays, waitCallbacks,
+    get magnifyCalls() { return magnifyCalls; },
     get commitSerial() { return commitSerial; },
     async render() { await render(); },
     unmount,
@@ -188,6 +190,16 @@ function pendingPaths(host, index) {
 function assertNoHandoffListeners(map) {
   for (const event of ['render', 'movestart', 'resize', 'remove']) assert.equal(map.count(event), 0, `${event} listener should be removed`);
 }
+
+test('drawing aim keeps its reticle without subscribing to the map magnifier', async (t) => {
+  const f = await mount(t);
+
+  await f.act(async () => f.refs[0].current.input({ type: 'move', point: { x: 160, y: 250 } }));
+
+  assert.equal(f.host.querySelectorAll('.point-magnifier').length, 0);
+  assert.equal(f.magnifyCalls, 0, 'drawing aim does not request native map capture');
+  assert.ok(f.host.querySelector('.track-drawing circle'), 'drawing reticle remains visible');
+});
 
 test('both overlays show accepted geometry in the same commit and each worker render clears only its own ink', async (t) => {
   const f = await mount(t);

@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.geology
 
 import com.shantu.nativeapp.map.NativeOfflineDisplayPolicy
+import com.shantu.nativeapp.map.NativeCallbackOwner
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -183,6 +184,7 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
     val renderLayer=RenderableLayer("Geology vectors")
     val cloudRenderLayer=RenderableLayer("Geology cloud WMTS")
     private val scope=CoroutineScope(SupervisorJob()+Dispatchers.Main.immediate)
+    private val callbackOwner=NativeCallbackOwner(this)
     private val cached=linkedMapOf<String,List<Renderable>>()
     private val featureUnits=linkedMapOf<String,NativeGeologyUnit>()
     private val requested=mutableSetOf<String>()
@@ -205,7 +207,25 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
     private fun requestVisibleWorldTiles(){if(!enabled||source!=NativeGeologySource.WORLD||closed)return;val cam=window.engine.camera;val altitude=cam.position.altitude.coerceAtLeast(100.0);val fov=cam.fieldOfView.inDegrees.coerceIn(5.0,120.0);val width=window.engine.viewport.width.coerceAtLeast(1);val groundWidth=2*altitude*kotlin.math.tan(Math.toRadians(fov/2))*width.toDouble()/window.engine.viewport.height.coerceAtLeast(1);val z=kotlin.math.floor(kotlin.math.ln((40_075_016.0/groundWidth.coerceAtLeast(1.0))/256.0)/kotlin.math.ln(2.0)+4).toInt().coerceIn(0,5);val n=1 shl z;val lat=cam.position.latitude.inDegrees.coerceIn(-85.0,85.0);val lon=cam.position.longitude.inDegrees;val cx=(((lon+180)/360*n).toInt()).coerceIn(0,n-1);val sinLat=kotlin.math.sin(Math.toRadians(lat));val cy=((.5-kotlin.math.ln((1+sinLat)/(1-sinLat))/(4*PI))*n).toInt().coerceIn(0,n-1);val radius=if(z<2)0 else 1;val visible=buildSet{for(dy in -radius..radius)for(dx in -radius..radius){val xx=Math.floorMod(cx+dx,n);val yy=cy+dy;if(yy in 0 until n)add("$z/$xx/$yy")}};cached.keys.filter{it !in visible}.forEach{key->cached.remove(key)?.forEach(renderLayer::removeRenderable)};val retained=cached.values.flatten().mapNotNull{it.pickDelegate?.toString()?.removePrefix("geology:")}.toSet();featureUnits.keys.filter{it !in retained}.toList().forEach(featureUnits::remove);visible.filter{it !in cached&&it !in requested}.forEach{key->requested+=key;val parts=key.split('/').map(String::toInt);val generation=poll;scope.launch{try{val features=loadWorldTile(parts[0],parts[1],parts[2]);if(!enabled||source!=NativeGeologySource.WORLD||generation!=poll)return@launch;drawWorldTile(key,features,parts[0],parts[1],parts[2])}catch(_:CancellationException){}catch(_:Exception){if(enabled&&generation==poll)publish(state.copy(status=NativeGeologyStatus.ERROR,message="世界地质数据请求失败，点击重试"))}finally{requested.remove(key)}}}}
     private suspend fun loadWorldTile(z:Int,x:Int,y:Int):List<NativeMvtFeature>{val b=cancellableHttp(URL("https://tiles.macrostrat.org/carto/$z/$x/$y.mvt"));return NativeMvtDecoder.decode(b)}
     private fun requestCloudMetadata(){if(cloudMetadata!=null||!enabled||source!=NativeGeologySource.GEO_CLOUD_200K)return;val client=cloud?:run{publish(state.copy(status=NativeGeologyStatus.AUTHORIZATION,message="尚未配置地质云授权，请在设置中添加已获授权的服务凭据"));return};val generation=poll;scope.launch{try{val meta=client.capabilities();if(!enabled||generation!=poll)return@launch;cloudMetadata=meta;cloudRenderLayer.clearRenderables();val raster=buildCloudSurface(meta,client);cloudRenderLayer.addRenderable(raster);cloudRenderLayer.opacity=opacity.toFloat();window.requestRedraw();val legend=if(meta.hasLegend)client.legend(meta)else null;publish(state.copy(status=NativeGeologyStatus.LOADING,message="授权通过，等待当前视口原图瓦片",attribution=meta.attribution,legendImage=legend));}catch(_:CancellationException){}catch(e:NativeGeologyAuthorizationException){if(generation==poll)publish(state.copy(status=NativeGeologyStatus.AUTHORIZATION,message=e.message.orEmpty()))}catch(_:Exception){if(generation==poll)publish(state.copy(status=NativeGeologyStatus.ERROR,message="地质云WMTS服务读取失败，可重试"))}}}
-    private fun buildCloudSurface(meta:CloudMetadata,client:NativeGeologyCloudClient):MercatorTiledSurfaceImage { val factory=object:MercatorTileFactory{override val contentType="Geocloud WMTS ${meta.layer}";override fun getImageSource(x:Int,y:Int,z:Int):ImageSource=ImageSource.fromImageFactory(CloudRasterImageFactory(meta,client,x,y,z){main.post{if(enabled&&source==NativeGeologySource.GEO_CLOUD_200K&&state.status==NativeGeologyStatus.LOADING)publish(state.copy(status=NativeGeologyStatus.READY,message="已加载地质云原图瓦片"))}})};return MercatorTiledImageLayer.buildTiledSurfaceImage(factory,true,tileSize=256,maxZoom=16,minZoom=0) }
+    private fun buildCloudSurface(meta:CloudMetadata,client:NativeGeologyCloudClient):MercatorTiledSurfaceImage {
+        val owner=callbackOwner
+        val onLoaded:()->Unit={owner.get()?.onCloudRasterTileLoaded()}
+        val factory=object:MercatorTileFactory {
+            override val contentType="Geocloud WMTS ${meta.layer}"
+            override fun getImageSource(x:Int,y:Int,z:Int):ImageSource=
+                ImageSource.fromImageFactory(CloudRasterImageFactory(meta,client,x,y,z,onLoaded))
+        }
+        return MercatorTiledImageLayer.buildTiledSurfaceImage(factory,true,tileSize=256,maxZoom=16,minZoom=0)
+    }
+    private fun onCloudRasterTileLoaded() {
+        val owner=callbackOwner
+        main.post {
+            owner.get()?.let { layer ->
+                if(layer.enabled&&layer.source==NativeGeologySource.GEO_CLOUD_200K&&layer.state.status==NativeGeologyStatus.LOADING)
+                    layer.publish(layer.state.copy(status=NativeGeologyStatus.READY,message="已加载地质云原图瓦片"))
+            }
+        }
+    }
     private fun drawWorldTile(tileKey:String,fs:List<NativeMvtFeature>,z:Int,x:Int,y:Int){val items=mutableListOf<Renderable>();val unitKeys=mutableSetOf<String>();fs.filter{it.layer=="units"&&it.type==3}.forEach{feature->val unit=geologyUnit(feature.properties);unitKeys+=unit.key;featureUnits[unit.key]=unit;val paths=feature.paths.map{ring->ring.map{(px,py)->tilePosition(z,x,y,px,py,feature.extent)}};if(paths.isEmpty())return@forEach;val rgb=parseColor(unit.color);val attrs=ShapeAttributes().apply{isDepthTest=true;isDrawInterior=true;isDrawOutline=true;interiorColor=Color(rgb[0],rgb[1],rgb[2],(.85*opacity).toFloat());outlineColor=Color(.16f,.18f,.22f,.5f);outlineWidth=.65f};val outerRings=paths.filter{it.size>=4&&ringArea(it)<0};val holes=paths.filter{it.size>=4&&ringArea(it)>0};outerRings.forEach{outer->val polygon=Polygon(outer,attrs).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND};holes.filter{pointInRing(it.first(),outer)}.forEach(polygon::addBoundary);polygon.pickDelegate="geology:${unit.key}";items+=polygon}}
         fs.filter{it.layer=="lines"&&it.type==2}.forEach{feature->val unit=geologyUnit(feature.properties);unitKeys+=unit.key;featureUnits[unit.key]=unit;feature.paths.forEach{line->if(line.size>=2){val color=if(feature.properties["type"].orEmpty().contains("fault",true))Color(.55f,.09f,.15f,1f) else Color(.14f,.24f,.44f,1f);val path=Path(line.map{(px,py)->tilePosition(z,x,y,px,py,feature.extent)},ShapeAttributes().apply{isDepthTest=true;isDrawInterior=false;isDrawOutline=true;outlineColor=color;outlineWidth=1.6f}).apply{altitudeMode=AltitudeMode.CLAMP_TO_GROUND;pickDelegate="geology:${unit.key}"};items+=path}}}
         cached[tileKey]=items;items.forEach(renderLayer::addRenderable);window.requestRedraw();val allUnits=(state.units+unitKeys.mapNotNull(featureUnits::get)).distinctBy{it.key};publish(state.copy(status=if(allUnits.isEmpty())NativeGeologyStatus.EMPTY else NativeGeologyStatus.READY,units=allUnits,attribution="Macrostrat · CC BY 4.0 · Chorlton / Geological Survey of Canada (2007), world overview, source coverage through zoom 5"))}
@@ -214,7 +234,7 @@ class NativeGeologyLayer(private val window:WorldWindow,private val onState:(Nat
     private fun pointInRing(p:Position,ring:List<Position>):Boolean{var inside=false;var j=ring.lastIndex;for(i in ring.indices){val a=ring[i];val b=ring[j];if((a.latitude.inDegrees>p.latitude.inDegrees)!=(b.latitude.inDegrees>p.latitude.inDegrees)&&p.longitude.inDegrees<(b.longitude.inDegrees-a.longitude.inDegrees)*(p.latitude.inDegrees-a.latitude.inDegrees)/(b.latitude.inDegrees-a.latitude.inDegrees)+a.longitude.inDegrees)inside=!inside;j=i};return inside}
     private fun parseColor(s:String):FloatArray{val n=s.removePrefix("#").toLongOrNull(16)?:0xa8b5be;return floatArrayOf(((n shr 16)and 255)/255f,((n shr 8)and 255)/255f,(n and 255)/255f,1f)}
     private fun publish(s:NativeGeologyState){state=s;onState(s)}
-    override fun close(){closed=true;main.removeCallbacks(viewportTick);poll++;enabled=false;scope.cancel();cloud?.close();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cached.clear();requested.clear();featureUnits.clear()}
+    override fun close(){callbackOwner.detach();closed=true;main.removeCallbacks(viewportTick);poll++;enabled=false;scope.cancel();cloud?.close();renderLayer.clearRenderables();cloudRenderLayer.clearRenderables();cached.clear();requested.clear();featureUnits.clear()}
 }
 
 internal suspend fun cancellableHttp(url:URL):ByteArray {

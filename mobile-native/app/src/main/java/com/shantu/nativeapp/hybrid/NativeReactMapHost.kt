@@ -2045,7 +2045,12 @@ class NativeReactMapHost(
         ) { move -> processDrawingMove(entry, move) }
         entry.controller.view.setOnTouchListener { _, event ->
             if (!isCurrent(entry)) return@setOnTouchListener false
-            markFrameDirty(entry)
+            // Ink-only motion changes the React preview, not the native camera. Navigation,
+            // pointer handoff and gesture boundaries keep their existing frame-dirty entry.
+            val drawingOnlyMove = event.actionMasked == MotionEvent.ACTION_MOVE &&
+                event.pointerCount == 1 && entry.renderInteraction.drawingActive &&
+                !entry.touchNavigation.isNavigating
+            if (!drawingOnlyMove) markFrameDirty(entry)
             // Stop the old camera target before forwarding the real DOWN to WorldWind.
             // Follow intent and the current heading/pitch are owned by React and stay intact.
             if (event.actionMasked == MotionEvent.ACTION_DOWN) {

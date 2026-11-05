@@ -30,6 +30,8 @@ class NativeTileDemandFrameCoalescerTest {
         coalescer.poll(10)
         coalescer.offer(Frame(2, 390, 857))
         coalescer.requestUrgent(forceGeneration = true)
+        // A later focus-only priority update must not erase the pending source/visibility force.
+        coalescer.requestUrgent()
 
         val ready = coalescer.poll(11) as NativeTileDemandFrameCoalescer.Poll.Ready
         assertEquals(2, ready.value.frame.id)

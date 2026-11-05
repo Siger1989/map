@@ -9,6 +9,7 @@ import earth.worldwind.layer.mercator.MercatorTileFactory
 import earth.worldwind.layer.mercator.MercatorTiledImageLayer
 import earth.worldwind.layer.mercator.MercatorTiledSurfaceImage
 import earth.worldwind.layer.mvt.MvtFilter
+import earth.worldwind.layer.mvt.MvtExpression
 import earth.worldwind.layer.mvt.MvtRuleBasedStyle
 import earth.worldwind.layer.mvt.MvtStyle
 import earth.worldwind.layer.mvt.MvtVectorLayer
@@ -16,6 +17,7 @@ import earth.worldwind.layer.mvt.mvtStyle
 import earth.worldwind.layer.source.TileBlob
 import earth.worldwind.layer.source.TileSource
 import earth.worldwind.render.Color
+import earth.worldwind.render.RenderContext
 import earth.worldwind.render.image.ImageSource
 import com.shantu.nativeapp.data.NativeRuntimeSettings
 import kotlinx.coroutines.CancellationException
@@ -211,19 +213,14 @@ class NativeCartographyLayers internal constructor(
     private val snapDataLayer = NativeTimedMvtLayer(source, minZoom = 0, maxZoom = 14, maxLoadedTiles = minOf(12, vectorTileBudget),
         maxConcurrentFetches = 1, maxConcurrentAssembly = 1, style = mvtStyle {},
         displayName = "Road and river snapping data", metricPrefix = "snapData")
-    private val timedRoadNamesLayer = NativeTimedMvtLayer(source, minZoom = 3, maxZoom = 14, maxLoadedTiles = labelTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = roadNameStyle,
-        displayName = "Road labels", metricPrefix = "roadNames")
-    private val timedPlaceLabelsLayer = NativeTimedMvtLayer(source, minZoom = 2, maxZoom = 14, maxLoadedTiles = labelTileBudget,
-        maxConcurrentFetches = 2, maxConcurrentAssembly = 1, style = placeLabelStyle,
-        displayName = "Place labels", metricPrefix = "placeLabels")
+    private val timedLabelLayer = NativeTimedLabelLayer(source, labelTileBudget, labelStyleFor(true, true))
     val terrainLandWaterLayer: MvtVectorLayer get() = timedTerrainLayer
-    val roadNamesLayer: MvtVectorLayer get() = timedRoadNamesLayer
-    val placeLabelsLayer: MvtVectorLayer get() = timedPlaceLabelsLayer
+    val roadNamesLayer: MvtVectorLayer get() = timedLabelLayer
+    val placeLabelsLayer: MvtVectorLayer get() = timedLabelLayer
     val tiandituLabelRenderLayer = RenderableLayer("Tianditu raster annotations")
     val tiandituBoundaryRenderLayer = RenderableLayer("Tianditu global boundaries")
     private val timedMvtLayers: List<NativeTimedMvtLayer> =
-        listOf(timedTerrainLayer, nativeRoadLayer, snapDataLayer, timedRoadNamesLayer, timedPlaceLabelsLayer)
+        listOf(timedTerrainLayer, nativeRoadLayer, snapDataLayer, timedLabelLayer)
     private val imagery = NativeImageryBasemap(
         window.context, window, onImageryStatus, sharedNetwork,
         tileIdentityFor = { source, z, x, y, style -> tileIdentityFor(source, "imagery", z, x, y, style) },
@@ -234,10 +231,11 @@ class NativeCartographyLayers internal constructor(
     /** Mount below the controller's standard TDT/custom base for the bundled historical overview. */
     val underlayRenderLayer: RenderableLayer get() = imagery.underlayLayer
     val layers: List<Layer> = listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer,
-        placeLabelsLayer, tiandituLabelRenderLayer, tiandituBoundaryRenderLayer)
+        tiandituLabelRenderLayer, tiandituBoundaryRenderLayer)
     var plan: NativeCartographyPlan = NativeCartographyPlan.resolve(NativeCartographySettings())
         private set
     private var labelMode: String? = null
+    private var vectorLabelRulesMode = VectorLabelRulesMode(roadNames = true, placeLabels = true)
     private var boundaryEnabled = false
     private var closed = false
     private var roadSnapping = false
@@ -249,7 +247,7 @@ class NativeCartographyLayers internal constructor(
         // delegates for app objects, while snapping reads the shared raw MVT cache independently.
         // Keep SDK per-feature pick payloads and pick draws off. Re-enable explicitly if a future
         // feature-state or vector-feature inspection flow needs them.
-        listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer, placeLabelsLayer).forEach {
+        listOf(terrainLandWaterLayer, roadsLayer, snapDataLayer, roadNamesLayer).forEach {
             it.isPickEnabled = false
         }
         // No vector source may start decoding a world overview before React supplies its selection.
@@ -271,10 +269,13 @@ class NativeCartographyLayers internal constructor(
         setVectorLayerEnabled(timedTerrainLayer, next.effectiveBase == "terrain" || next.effectiveBase == "offline")
         setVectorLayerEnabled(nativeRoadLayer, next.roads)
         roadsLayer.opacity = next.roadsOpacity
-        setVectorLayerEnabled(timedRoadNamesLayer, next.roadNames)
-        roadNamesLayer.opacity = next.roadsOpacity
-        setVectorLayerEnabled(timedPlaceLabelsLayer, next.placeLabels)
-        placeLabelsLayer.opacity = next.roadsOpacity
+        val nextVectorLabelRulesMode = VectorLabelRulesMode(next.roadNames, next.placeLabels)
+        if (nextVectorLabelRulesMode != vectorLabelRulesMode) {
+            vectorLabelRulesMode = nextVectorLabelRulesMode
+            timedLabelLayer.requestRuleStyle(labelStyleFor(next.roadNames, next.placeLabels))
+        }
+        setVectorLayerEnabled(timedLabelLayer, next.roadNames || next.placeLabels)
+        timedLabelLayer.opacity = next.roadsOpacity
         syncSnapDataLayer()
         if (labelMode != next.tiandituLabels || rasterDatumChanged) {
             tiandituLabelRenderLayer.clearRenderables()
@@ -328,8 +329,7 @@ class NativeCartographyLayers internal constructor(
 
     /** True while any bounded visible MVT layer can populate the shared snap cache. */
     fun snapSourceVisible(): Boolean = !closed && (
-        snapDataLayer.isEnabled || roadsLayer.isEnabled || roadNamesLayer.isEnabled ||
-            placeLabelsLayer.isEnabled || terrainLandWaterLayer.isEnabled
+        snapDataLayer.isEnabled || roadsLayer.isEnabled || roadNamesLayer.isEnabled || terrainLandWaterLayer.isEnabled
         )
 
     internal fun setRoadSnapping(enabled: Boolean) {
@@ -355,8 +355,7 @@ class NativeCartographyLayers internal constructor(
         // Road and river snapping read the shared real MVT source independently of
         // display toggles. The empty style only populates the bounded cache; it draws
         // no duplicate roads. Other visible MVT layers already populate this source.
-        val visibleMvtLayerAlreadyFetching = roadsLayer.isEnabled || roadNamesLayer.isEnabled ||
-            placeLabelsLayer.isEnabled || terrainLandWaterLayer.isEnabled
+        val visibleMvtLayerAlreadyFetching = roadsLayer.isEnabled || roadNamesLayer.isEnabled || terrainLandWaterLayer.isEnabled
         val enabled = !closed && NativeSnapDataLayerPolicy.shouldEnable(
             roadSnapping, riverSnapping, visibleMvtLayerAlreadyFetching,
         )
@@ -369,9 +368,9 @@ class NativeCartographyLayers internal constructor(
     override fun close() {
         if (closed) return
         closed = true
-        terrainLandWaterLayer.close(); roadsLayer.close(); snapDataLayer.close(); roadNamesLayer.close(); placeLabelsLayer.close()
+        terrainLandWaterLayer.close(); roadsLayer.close(); snapDataLayer.close(); roadNamesLayer.close()
         // MvtVectorLayer closes its TileSource. The shared adapter's close is intentionally
-        // non-owning; release this map's process-pool lease only after all five layers stop.
+        // non-owning; release this map's process-pool lease only after all four layers stop.
         (source as? SharedOpenFreeMapTileSource)?.release()
         raster.close(); imagery.close()
         tiandituLabelRenderLayer.clearRenderables(); tiandituBoundaryRenderLayer.clearRenderables()
@@ -392,10 +391,76 @@ class NativeCartographyLayers internal constructor(
         }
 
         val placeLabelStyle: MvtRuleBasedStyle = mvtStyle {
-            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("place") { filter = MvtFilter.has(field); minZoom = 3; paint { text(field) { color(Color(.96f,.96f,.90f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(3 to labelPx(12f), 8 to labelPx(14f), 13 to labelPx(17f)); halo(Color(.07f,.13f,.16f), labelPx(2f)) } } }
+            for (field in listOf("name:zh", "name:nonlatin", "name")) rule("place") { filter = MvtFilter.has(field); minZoom = 3; paint { text(field) { color(Color(.96f,.96f,.90f)); size = placeLabelSize(); halo(Color(.07f,.13f,.16f), labelPx(2f)) } } }
             for (field in listOf("name:zh", "name:nonlatin", "name")) rule("water_name") { filter = MvtFilter.has(field); minZoom = 7; paint { text(field) { color(Color(.55f,.82f,.94f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(7 to labelPx(10f), 13 to labelPx(13f)); halo(Color(.07f,.13f,.16f), labelPx(1.6f)) } } }
             for (field in listOf("name:zh", "name:nonlatin", "name")) rule("mountain_peak") { filter = MvtFilter.has(field); minZoom = 10; paint { text(field) { color(Color(.96f,.93f,.82f)); size = earth.worldwind.layer.mvt.MvtZoomInterp.floats(10 to labelPx(11f), 14 to labelPx(14f)); halo(Color(.07f,.13f,.16f), labelPx(1.8f)) } } }
         }
+
+        private val noVectorLabelStyle = MvtRuleBasedStyle(emptyList())
+        private val roadNamesOnlyStyle = MvtRuleBasedStyle(roadNameStyle.rules)
+        private val placeLabelsOnlyStyle = MvtRuleBasedStyle(placeLabelStyle.rules)
+        private val roadAndPlaceLabelsStyle = MvtRuleBasedStyle(roadNameStyle.rules + placeLabelStyle.rules)
+
+        internal fun labelStyleFor(roadNames: Boolean, placeLabels: Boolean): MvtRuleBasedStyle = when {
+            roadNames && placeLabels -> roadAndPlaceLabelsStyle
+            roadNames -> roadNamesOnlyStyle
+            placeLabels -> placeLabelsOnlyStyle
+            else -> noVectorLabelStyle
+        }
+
+        private fun placeLabelSize(): MvtExpression<Float> {
+            fun ramp(globe: Float, regional: Float, local: Float) = earth.worldwind.layer.mvt.MvtZoomInterp.floats(
+                3 to labelPx(globe), 8 to labelPx(regional), 13 to labelPx(local),
+            )
+            fun sizeFor(property: String, fallback: MvtExpression<Float>) = MvtExpression.Match(
+                MvtExpression.Get(property),
+                listOf(
+                    MvtExpression.Match.Branch(listOf("country", "continent"), ramp(14f, 16f, 18f)),
+                    MvtExpression.Match.Branch(listOf("state", "province", "region"), ramp(13f, 15f, 17f)),
+                    MvtExpression.Match.Branch(listOf("city", "capital"), ramp(12f, 14f, 17f)),
+                    MvtExpression.Match.Branch(listOf("town"), ramp(10.5f, 12f, 14f)),
+                    MvtExpression.Match.Branch(listOf("village", "hamlet", "suburb", "neighbourhood", "quarter"), ramp(9f, 10.5f, 12f)),
+                ),
+                fallback,
+            )
+            val default = ramp(10f, 11f, 13f)
+            return sizeFor("class", sizeFor("kind", sizeFor("subclass", default)))
+        }
+    }
+}
+
+private data class VectorLabelRulesMode(val roadNames: Boolean, val placeLabels: Boolean)
+
+/** Applies restyles at the SDK render-thread frame boundary before evicting cached label geometry. */
+private class NativeTimedLabelLayer(
+    source: TileSource,
+    maxLoadedTiles: Int,
+    initialStyle: MvtRuleBasedStyle,
+) : NativeTimedMvtLayer(
+    source = source,
+    minZoom = 2,
+    maxZoom = 14,
+    maxLoadedTiles = maxLoadedTiles,
+    maxConcurrentFetches = 4,
+    maxConcurrentAssembly = 2,
+    style = initialStyle,
+    displayName = "Road and place labels",
+    metricPrefix = "labels",
+) {
+    private val pendingStyle = AtomicReference<MvtRuleBasedStyle?>(null)
+
+    fun requestRuleStyle(next: MvtRuleBasedStyle) {
+        pendingStyle.set(next)
+    }
+
+    override fun beginFrame(rc: RenderContext) {
+        pendingStyle.getAndSet(null)?.let { next ->
+            if (style !== next) {
+                style = next
+                clearContent()
+            }
+        }
+        super.beginFrame(rc)
     }
 }
 

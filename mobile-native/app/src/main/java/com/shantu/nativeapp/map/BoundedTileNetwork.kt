@@ -100,6 +100,37 @@ internal fun tiandituTileUrl(layer: String, x: Int, y: Int, z: Int, encodedKey: 
         "&LAYER=$layer&STYLE=default&TILEMATRIXSET=w&TILEMATRIX=$z&TILEROW=$y&TILECOL=$x&FORMAT=tiles&tk=$encodedKey"
 }
 
+/** Validate tile bytes without allocating a full-resolution bitmap before the display decoder runs. */
+internal fun isValidRasterTileImage(bytes: ByteArray): Boolean {
+    if (bytes.isEmpty()) return false
+
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return false
+
+    // Still run a real pixel decode: bounds-only probing is insufficient. Like the original full
+    // decoder, Android may tolerate partial image data; this is not a strict file-integrity check.
+    // Cap validation output near 64x64 while keeping inSampleSize at Android's power-of-two values.
+    var sampleSize = 1
+    while (((bounds.outWidth.toLong() + sampleSize - 1) / sampleSize) *
+        ((bounds.outHeight.toLong() + sampleSize - 1) / sampleSize) > RASTER_VALIDATION_MAX_PIXELS
+    ) {
+        if (sampleSize > (1 shl 29)) return false
+        sampleSize = sampleSize shl 1
+    }
+
+    val sampled = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize
+        inPreferredConfig = Bitmap.Config.RGB_565
+        inScaled = false
+    }
+    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, sampled) ?: return false
+    return try { bitmap.width > 0 && bitmap.height > 0 }
+    finally { bitmap.recycle() }
+}
+
+private const val RASTER_VALIDATION_MAX_PIXELS = 64L * 64L
+
 private class UrlConnectionTileHttpClient : TileHttpClient {
     override fun execute(url: String): TileHttpResponse = execute(url, TileRequestCancellation())
 
@@ -146,9 +177,7 @@ internal class BoundedTileNetwork(
     private val directory: File,
     private val onStatus: (String) -> Unit,
     private val client: TileHttpClient = UrlConnectionTileHttpClient(),
-    private val isValidImage: (ByteArray) -> Boolean = { bytes ->
-        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.also(Bitmap::recycle) != null
-    },
+    private val isValidImage: (ByteArray) -> Boolean = ::isValidRasterTileImage,
     private val persistentCache: NativePersistentBrowseCache? = null,
     private val elapsedRealtimeMillis: () -> Long = SystemClock::elapsedRealtime,
     private val waitForCooldownMillis: suspend (Long) -> Unit = { delay(it) },

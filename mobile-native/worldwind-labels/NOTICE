@@ -1,0 +1,29 @@
+WorldWind Kotlin 2.1.1 Android label review
+
+Original source: earth.worldwind:worldwind-android:2.1.1, published by the
+WorldWind Kotlin project, https://github.com/WorldWindEarth/WorldWindKotlin .
+The original publication POM identifies Eugene Maksymenko as developer and
+declares Apache License, Version 2.0. The complete original source archive,
+an upstream copy of LICENSE is retained here. The reproducible build retains
+the checksum-verified original POM, module metadata, AAR and source archive
+under its isolated .openai build directory. Generated build-manifest.json
+records the source URLs, original hashes, local source fingerprint and patch.
+
+Local changes, 2026-11-05, for isolated Shantu Android research review:
+- MvtLabelCollider.kt: Android physical text bounds, real text anchor,
+  terrain-consistent projection and independent per-repeat line collision.
+- MvtCurvedLineLabel.kt: shared prepare/draw snapshot, displayed-terrain
+  projection, perspective-correct segment mapping and per-repeat validity.
+- AndroidMvtLabelMetrics.kt and MvtLabelCollisionMath.kt: new measurement and
+  bounds helpers, provided under Apache License, Version 2.0. The visible
+  repeat iterator in MvtLabelCollisionMath is adapted from the above
+  WorldWind 2.1.1 MvtCurvedTextPlacer arc-length algorithm; it retains its
+  middle-waypoint phase, repeat spacing and GlyphRun representation, while
+  skipping offscreen repeat indices and using Double arc-length arithmetic.
+- The metrics LRU is capped at 4096 entries; texts over 256 UTF-16 units are
+  measured but not cached. Text content and road geometry are not changed.
+- Upside-down, excessively curved or inaccurately projected name repeats are
+  omitted independently; other valid repeats of the same feature remain.
+
+No Ovital source code or binary implementation is included in this patch.
+This patch alone is not an installed or visually validated APK.

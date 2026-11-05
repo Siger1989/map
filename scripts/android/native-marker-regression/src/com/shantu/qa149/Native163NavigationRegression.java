@@ -15,6 +15,7 @@ import android.view.MotionEvent;
 import android.view.WindowInsets;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.webkit.WebView;
 
 import org.json.JSONArray;
@@ -65,6 +66,10 @@ public final class Native163NavigationRegression {
         private JSONObject originalCamera;
         private JSONObject originalState;
         private JSONObject graphFixture;
+        private JSONObject lastNativeOptionScan;
+        private int originalUiAutomationFlags;
+        private boolean uiAutomationServiceInfoCaptured;
+        private boolean nativeSelectPopupObserved;
         private String originalRoutingMode;
         private String originalSamplingRaw;
         private boolean originalSamplingNative;
@@ -93,6 +98,7 @@ public final class Native163NavigationRegression {
             try {
                 failedStage = "attach";
                 if (parent == null) throw new IllegalArgumentException("parent instrumentation required");
+                configureUiAutomationAccessibility();
                 initializeScreenshotDirectory();
                 progress("before-attach");
                 boolean existingTargetReused = targetAlreadyAttached(parent);
@@ -153,6 +159,10 @@ public final class Native163NavigationRegression {
                 steps.put(new JSONObject().put("step", "real-route-ui-coordinate-input-and-plan")
                     .put("bothCoordinateResultsSelectedByTouch", true).put("offlineRouteAndNativePath", true));
 
+                failedStage = "route-style-controls";
+                JSONObject styleEvidence = testRouteStyleControls();
+                report.put("routeStyleControls", styleEvidence);
+
                 failedStage = "start-guidance";
                 tapButton(".route-summary", "开始导航");
                 JSONObject startEvidence = awaitGuidanceStart();
@@ -160,9 +170,16 @@ public final class Native163NavigationRegression {
                 report.put("guidanceStart", startEvidence);
 
                 failedStage = "compact-follow";
+                callParent("awaitWebViewDraw");
                 JSONObject follow = readFollowStatusInCard();
-                if (!follow.optBoolean("pressed")) tapElement(".guidance-card .guidance-follow-status");
-                awaitFollowIntent(true, 4_000L);
+                JSONObject followEvidence = new JSONObject().put("before", follow).put("status", "RUNNING");
+                report.put("compactFollow", followEvidence);
+                if (!follow.optBoolean("pressed")) tapFollowStatus(followEvidence);
+                JSONObject followAfter = awaitFollowIntent(true, 4_000L, followEvidence);
+                followEvidence.put("after", followAfter).put("status", "PASS");
+                steps.put(new JSONObject().put("step", "compact-follow-resumed-through-real-touch")
+                    .put("alreadyFollowing", follow.optBoolean("pressed"))
+                    .put("followPressedAfter", followAfter.optBoolean("pressed")));
 
                 failedStage = "first-person-toggle";
                 progress("before-first-person-toggle");
@@ -203,6 +220,8 @@ public final class Native163NavigationRegression {
                 put("errorType", error.getClass().getSimpleName());
                 if (error instanceof PreconditionBlocked) put("blockedReason", ((PreconditionBlocked)error).getMessage());
                 else put("error", safeMessage(error));
+                put("exceptionEvidence", exceptionEvidence(error));
+                if (lastNativeOptionScan != null) put("lastNativeOptionScan", lastNativeOptionScan);
                 try { captureScreenshot("failure-" + safeScreenshotStage(failedStage)); }
                 catch (Throwable captureError) { put("failureScreenshotErrorType", captureError.getClass().getSimpleName()); }
             } finally {
@@ -404,6 +423,344 @@ public final class Native163NavigationRegression {
             throw new IllegalStateException("real route planner did not produce the QA offline route");
         }
 
+        /** Opens the real select popups and chooses options through their observed native accessibility bounds. */
+        private JSONObject testRouteStyleControls() throws Exception {
+            JSONObject evidence = new JSONObject().put("status", "RUNNING");
+            String colorSelector = ".route-style-quick-controls select[aria-label='路线颜色']";
+            String widthSelector = ".route-style-quick-controls select[aria-label='路线粗细']";
+            try {
+                captureScreenshot("route-style-controls-before");
+                JSONObject before = routeStyleControlProbe(colorSelector, widthSelector);
+                evidence.put("before", before);
+                if (!before.optBoolean("found") || !before.optBoolean("visible"))
+                    throw new IllegalStateException("route style controls are missing or not visible");
+                JSONObject nativeBefore = nativeRouteStyle();
+                evidence.put("nativeBefore", nativeBefore);
+
+                JSONObject colorChoice = differentOption(colorSelector);
+                if (colorChoice == null || colorChoice.optString("value").isEmpty() || colorChoice.optString("text").isEmpty())
+                    throw new IllegalStateException("no alternate route color option");
+                String color = colorChoice.getString("value");
+                evidence.put("requestedColorOption", colorChoice);
+                failedStage = "route-style-color-tap-select";
+                progress("before-open-route-color-select");
+                tapControlCenter(colorSelector);
+                failedStage = "route-style-color-await-native-option";
+                JSONObject colorOption = awaitNativeOption(colorChoice.getString("text"), 3_000L);
+                evidence.put("nativeColorOption", colorOption);
+                captureScreenshot("route-style-color-options-open");
+                failedStage = "route-style-color-tap-native-option";
+                tapNativeOption(colorOption);
+                nativeSelectPopupObserved = false;
+                failedStage = "route-style-color-verify-dom-native";
+                JSONObject colorDom = awaitRouteStyleDom(colorSelector, widthSelector, color, null, 4_000L);
+                boolean colorFocusFramePass = recordSingleFocusFrame(colorDom, "color");
+                evidence.put("afterColor", colorDom).put("nativeAfterColor", awaitNativeRouteStyle(color, null, 4_000L))
+                    .put("colorSingleFocusFramePass", colorFocusFramePass);
+                captureScreenshot("route-style-color-selected");
+                progress("after-select-route-color");
+
+                JSONObject widthChoice = differentOption(widthSelector);
+                if (widthChoice == null || widthChoice.optString("value").isEmpty() || widthChoice.optString("text").isEmpty())
+                    throw new IllegalStateException("no alternate route width option");
+                String width = widthChoice.getString("value");
+                evidence.put("requestedWidthOption", widthChoice);
+                failedStage = "route-style-width-tap-select";
+                progress("before-open-route-width-select");
+                tapControlCenter(widthSelector);
+                failedStage = "route-style-width-await-native-option";
+                JSONObject widthOption = awaitNativeOption(widthChoice.getString("text"), 3_000L);
+                evidence.put("nativeWidthOption", widthOption);
+                captureScreenshot("route-style-width-options-open");
+                failedStage = "route-style-width-tap-native-option";
+                tapNativeOption(widthOption);
+                nativeSelectPopupObserved = false;
+                failedStage = "route-style-width-verify-dom-native";
+                JSONObject selected = awaitRouteStyleDom(colorSelector, widthSelector, color, width, 4_000L);
+                JSONObject nativeSelected = awaitNativeRouteStyle(color, width, 4_000L);
+                selected.put("nativeRouteStyle", nativeSelected);
+                boolean widthFocusFramePass = recordSingleFocusFrame(selected, "width");
+                evidence.put("afterColorAndWidth", selected);
+                evidence.put("colorSingleFocusFramePass", colorFocusFramePass)
+                    .put("widthSingleFocusFramePass", widthFocusFramePass);
+                captureScreenshot("route-style-color-and-width-selected");
+                if (!colorFocusFramePass || !widthFocusFramePass) {
+                    failedStage = "route-style-focus-frame";
+                    throw new IllegalStateException("route style controls do not show exactly one outer focus frame");
+                }
+                evidence.put("status", "PASS");
+                steps.put(new JSONObject().put("step", "route-color-and-width-selected-through-native-controls")
+                    .put("colorChangedByTouch", true).put("widthChangedByTouch", true)
+                    .put("domAndNativeStyleSynchronized", true));
+                progress("after-route-style-controls");
+                return evidence;
+            } catch (Throwable failure) {
+                evidence.put("status", "FAIL").put("failedAction", failedStage)
+                    .put("errorType", failure.getClass().getSimpleName()).put("error", safeMessage(failure))
+                    .put("exceptionEvidence", exceptionEvidence(failure));
+                if (lastNativeOptionScan != null) evidence.put("lastNativeOptionScan", lastNativeOptionScan);
+                report.put("routeStyleControls", evidence);
+                steps.put(new JSONObject().put("step", "route-color-and-width-real-control-test")
+                    .put("status", "FAIL").put("failedAction", failedStage));
+                if (failure instanceof Exception) throw (Exception)failure;
+                throw new IllegalStateException("route style control test failed", failure);
+            }
+        }
+
+        private JSONObject routeStyleControlProbe(String colorSelector, String widthSelector) throws Exception {
+            String script = "(()=>{const color=document.querySelector(" + q(colorSelector) + "),width=document.querySelector(" + q(widthSelector) + ");" +
+                "const rect=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height}};" +
+                "const outline=e=>{const s=getComputedStyle(e);return{style:s.outlineStyle,width:s.outlineWidth,color:s.outlineColor,offset:s.outlineOffset,boxShadow:s.boxShadow,backgroundColor:s.backgroundColor,borderStyle:s.borderStyle,borderWidth:s.borderWidth}};" +
+                "const doubleOutline=e=>{const p=outline(e?.closest('label')),c=outline(e);return p.style!=='none'&&parseFloat(p.width)>0&&c.style!=='none'&&parseFloat(c.width)>0};" +
+                "const label=e=>e?.closest('label');const swatch=document.querySelector('.route-style-quick-controls label:first-child i');" +
+                "const hex=()=>{const m=getComputedStyle(swatch).backgroundColor.match(/[\\d.]+/g);return m&&m.length>=3?'#'+m.slice(0,3).map(v=>Math.round(Number(v)).toString(16).padStart(2,'0')).join(''):''};" +
+                "return JSON.stringify({found:!!color&&!!width,visible:[color,width].every(e=>{if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0})," +
+                "color:{value:color?.value||'',options:color?Array.from(color.options,o=>({value:o.value,text:(o.textContent||'').trim()})):[],rect:color?rect(color):null,labelRect:color?rect(label(color)):null,parentOutline:color?outline(label(color)):null,selectOutline:color?outline(color):null,doubleOutline:doubleOutline(color),swatch:hex()}," +
+                "width:{value:width?.value||'',options:width?Array.from(width.options,o=>({value:o.value,text:(o.textContent||'').trim()})):[],rect:width?rect(width):null,labelRect:width?rect(label(width)):null,parentOutline:width?outline(label(width)):null,selectOutline:width?outline(width):null,doubleOutline:doubleOutline(width)}})})()";
+            return new JSONObject(domString(script));
+        }
+
+        private JSONObject differentOption(String selector) throws Exception {
+            String script = "(()=>{const e=document.querySelector(" + q(selector) + ");if(!e)return JSON.stringify({});const o=Array.from(e.options).find(x=>x.value!==e.value);return JSON.stringify(o?{value:o.value,text:(o.textContent||'').trim()}:{})})()";
+            String value = domString(script);
+            return new JSONObject(value);
+        }
+
+        private void tapControlCenter(String selector) throws Exception {
+            JSONObject rect = new JSONObject(domString("(()=>{const e=document.querySelector(" + q(selector) + ");if(!e)return JSON.stringify({found:false});const r=e.getBoundingClientRect(),s=getComputedStyle(e),x=r.left+r.width/2,y=r.top+r.height/2,h=document.elementFromPoint(x,y);return JSON.stringify({found:true,visible:s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,hit:h===e||e.contains(h),hitTag:h?.tagName||'',hitClass:typeof h?.className==='string'?h.className:'',selectTag:e.tagName,selectClass:typeof e.className==='string'?e.className:'',rect:{x:r.x,y:r.y,width:r.width,height:r.height},x,y})})()"));
+            int[] origin = new int[2];
+            parent.runOnMainSync(() -> webView.getLocationOnScreen(origin));
+            float injectedX = origin[0] + (float)rect.optDouble("x", 0) * (float)cssScale;
+            float injectedY = origin[1] + (float)rect.optDouble("y", 0) * (float)cssScale;
+            put("routeStyleHitEvidence-" + (selector.contains("路线颜色") ? "color" : "width"), new JSONObject()
+                .put("staticStage", failedStage).put("cssScale", cssScale)
+                .put("webViewOriginScreen", new JSONArray().put(origin[0]).put(origin[1]))
+                .put("webViewSizePx", new JSONArray().put(webView.getWidth()).put(webView.getHeight()))
+                .put("cssRect", rect.optJSONObject("rect")).put("cssCenter", new JSONArray().put(rect.optDouble("x")).put(rect.optDouble("y")))
+                .put("injectedScreenPx", new JSONArray().put(injectedX).put(injectedY))
+                .put("found", rect.optBoolean("found")).put("visible", rect.optBoolean("visible"))
+                .put("hit", rect.optBoolean("hit")).put("hitTag", rect.optString("hitTag")).put("hitClass", rect.optString("hitClass"))
+                .put("selectTag", rect.optString("selectTag")).put("selectClass", rect.optString("selectClass")));
+            if (!rect.optBoolean("found") || !rect.optBoolean("visible") || !rect.optBoolean("hit"))
+                throw new IllegalStateException("route style select is not visible and hit-testable: " + selector);
+            callParent("tap", injectedX, injectedY);
+        }
+
+        private boolean recordSingleFocusFrame(JSONObject probe, String control) throws Exception {
+            JSONObject item = probe.optJSONObject(control), parentOutline = item == null ? null : item.optJSONObject("parentOutline");
+            JSONObject selectOutline = item == null ? null : item.optJSONObject("selectOutline");
+            boolean parentRing = parentOutline != null && "solid".equals(parentOutline.optString("style")) &&
+                Math.abs(parseCssPixels(parentOutline.optString("width")) - 2.0) < 0.01 && "-2px".equals(parentOutline.optString("offset"));
+            boolean noInnerOutline = selectOutline != null && ("none".equals(selectOutline.optString("style")) ||
+                parseCssPixels(selectOutline.optString("width")) == 0.0);
+            boolean noShadow = selectOutline != null && "none".equals(selectOutline.optString("boxShadow"));
+            boolean noBackground = selectOutline != null && isTransparentCss(selectOutline.optString("backgroundColor"));
+            boolean noBorder = selectOutline != null && ("none".equals(selectOutline.optString("borderStyle")) ||
+                parseCssPixels(selectOutline.optString("borderWidth")) == 0.0);
+            item.put("singleOuterFocusRing", parentRing).put("noInnerOutline", noInnerOutline)
+                .put("noInnerShadow", noShadow).put("noInnerBackground", noBackground).put("noInnerBorder", noBorder);
+            return parentRing && noInnerOutline && noShadow && noBackground && noBorder;
+        }
+
+        private double parseCssPixels(String value) {
+            if (value == null || !value.endsWith("px")) return Double.NaN;
+            try { return Double.parseDouble(value.substring(0, value.length() - 2)); }
+            catch (NumberFormatException ignored) { return Double.NaN; }
+        }
+
+        private boolean isTransparentCss(String value) {
+            if (value == null) return false;
+            String normalized = value.toLowerCase(java.util.Locale.ROOT).replace(" ", "");
+            return "transparent".equals(normalized) || "rgba(0,0,0,0)".equals(normalized) ||
+                "rgba(0,0,0,0.0)".equals(normalized);
+        }
+
+        private JSONObject awaitNativeOption(String text, long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            while (SystemClock.elapsedRealtime() < end) {
+                lastNativeOptionScan = scanNativeOptions(text);
+                JSONObject option = lastNativeOptionScan.optJSONObject("option");
+                if (option != null) return option;
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException("NATIVE_SELECT_OPTION_NOT_FOUND");
+        }
+
+        private JSONObject scanNativeOptions(String text) throws Exception {
+            JSONObject scan = new JSONObject().put("stage", failedStage)
+                .put("targetLabel", safeOptionLabel(text));
+            JSONArray visibleLabels = new JSONArray();
+            JSONArray rootClasses = new JSONArray(), windowsEvidence = new JSONArray();
+            int[] rootCount = {0}, targetNodeCount = {0}, visibleTargetCount = {0};
+            JSONObject found = null;
+            AccessibilityNodeInfo activeRoot = parent.getUiAutomation().getRootInActiveWindow();
+            scan.put("activeRootPresent", activeRoot != null);
+            String activeRootClass = safeClassName(activeRoot);
+            if (!activeRootClass.isEmpty()) rootClasses.put(activeRootClass);
+            if (activeRootClass.contains("Popup")) nativeSelectPopupObserved = true;
+            found = optionInRoot(activeRoot, text, -1, rootCount, targetNodeCount, visibleTargetCount, visibleLabels);
+            List<AccessibilityWindowInfo> windows = parent.getUiAutomation().getWindows();
+            scan.put("windowCount", windows == null ? 0 : windows.size());
+            if (windows != null) for (AccessibilityWindowInfo window : windows) {
+                if (window == null) continue;
+                AccessibilityNodeInfo windowRoot = window.getRoot();
+                String windowRootClass = safeClassName(windowRoot);
+                if (!windowRootClass.isEmpty()) rootClasses.put(windowRootClass);
+                if (windowRootClass.contains("Popup")) nativeSelectPopupObserved = true;
+                windowsEvidence.put(new JSONObject().put("type", window.getType()).put("rootClass", windowRootClass));
+                JSONObject option = optionInRoot(windowRoot, text, window.getType(), rootCount,
+                    targetNodeCount, visibleTargetCount, visibleLabels);
+                if (found == null) found = option;
+            }
+            if (found != null || visibleTargetCount[0] > 0) nativeSelectPopupObserved = true;
+            scan.put("rootsScanned", rootCount[0]).put("targetNodeCount", targetNodeCount[0])
+                .put("visibleTargetCount", visibleTargetCount[0]).put("visibleSafeOptionLabels", visibleLabels)
+                .put("rootClasses", rootClasses).put("windows", windowsEvidence)
+                .put("nativeSelectPopupObserved", nativeSelectPopupObserved);
+            if (found != null) scan.put("option", found);
+            return scan;
+        }
+
+        private String safeClassName(AccessibilityNodeInfo node) {
+            if (node == null || node.getClassName() == null) return "";
+            String value = node.getClassName().toString();
+            return value.matches("[A-Za-z0-9_.$]{1,160}") ? value : "[other-class]";
+        }
+
+        private void configureUiAutomationAccessibility() throws Exception {
+            android.app.UiAutomation automation = parent.getUiAutomation();
+            AccessibilityServiceInfo current = automation.getServiceInfo();
+            if (current == null) throw new IllegalStateException("UI_AUTOMATION_SERVICE_INFO_UNAVAILABLE");
+            originalUiAutomationFlags = current.flags;
+            uiAutomationServiceInfoCaptured = true;
+            AccessibilityServiceInfo configured = current;
+            configured.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS |
+                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS |
+                AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS;
+            automation.setServiceInfo(configured);
+            report.put("uiAutomationAccessibilityConfigured", true)
+                .put("uiAutomationFlagsAdded", new JSONArray()
+                    .put(AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS)
+                    .put(AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS)
+                    .put(AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS));
+        }
+
+        private void restoreUiAutomationAccessibility(JSONObject target) {
+            if (!uiAutomationServiceInfoCaptured) return;
+            try {
+                AccessibilityServiceInfo current = parent.getUiAutomation().getServiceInfo();
+                if (current == null) throw new IllegalStateException("UI_AUTOMATION_SERVICE_INFO_UNAVAILABLE");
+                current.flags = originalUiAutomationFlags;
+                parent.getUiAutomation().setServiceInfo(current);
+                target.put("uiAutomationServiceInfoRestored", true);
+                uiAutomationServiceInfoCaptured = false;
+            } catch (Throwable error) {
+                putError(target, "uiAutomationServiceInfoRestoreError", error);
+                try { target.put("uiAutomationServiceInfoRestoreExceptionEvidence", exceptionEvidence(error)); }
+                catch (JSONException ignored) { }
+            }
+        }
+
+        private JSONObject optionInRoot(AccessibilityNodeInfo root, String text, int windowType,
+            int[] rootCount, int[] targetNodeCount, int[] visibleTargetCount, JSONArray visibleLabels) throws Exception {
+            if (root == null) return null;
+            rootCount[0]++;
+            collectVisibleSafeOptionLabels(root, visibleLabels);
+            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(text);
+            if (nodes == null) return null;
+            targetNodeCount[0] += nodes.size();
+            JSONObject found = null;
+            for (AccessibilityNodeInfo node : nodes) {
+                if (node == null || !node.isVisibleToUser()) continue;
+                CharSequence label = node.getText();
+                if (label == null || !text.equals(label.toString().trim())) continue;
+                Rect rect = new Rect(); node.getBoundsInScreen(rect);
+                if (rect.isEmpty()) continue;
+                visibleTargetCount[0]++;
+                if (found == null) found = new JSONObject().put("text", safeOptionLabel(label.toString().trim()))
+                    .put("boundsScreen", new JSONObject().put("left", rect.left).put("top", rect.top)
+                        .put("right", rect.right).put("bottom", rect.bottom))
+                    .put("windowType", windowType);
+            }
+            return found;
+        }
+
+        private void collectVisibleSafeOptionLabels(AccessibilityNodeInfo root, JSONArray labels) throws Exception {
+            String[] allowed = {"红", "蓝", "绿", "紫", "橙", "粉", "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"};
+            for (String allowedLabel : allowed) {
+                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(allowedLabel);
+                if (nodes == null) continue;
+                for (AccessibilityNodeInfo node : nodes) {
+                    if (node == null || !node.isVisibleToUser()) continue;
+                    CharSequence value = node.getText();
+                    if (value == null || !allowedLabel.equals(value.toString().trim())) continue;
+                    boolean duplicate = false;
+                    for (int i = 0; i < labels.length(); i++) if (allowedLabel.equals(labels.optString(i))) duplicate = true;
+                    if (!duplicate) labels.put(allowedLabel);
+                }
+                }
+        }
+
+        private String safeOptionLabel(String value) {
+            if (value == null) return "";
+            String safe = value.trim();
+            return safe.matches("[红蓝绿紫橙粉]") || safe.matches("(?:0\\.5|[1-5](?:\\.5)?)") || safe.matches("#[0-9a-fA-F]{6}")
+                ? safe : "[other-option]";
+        }
+
+        private void tapNativeOption(JSONObject option) throws Exception {
+            JSONObject rect = option.optJSONObject("boundsScreen");
+            if (rect == null) throw new IllegalStateException("native select option has no observed screen bounds");
+            callParent("tap", (float)((rect.getDouble("left") + rect.getDouble("right")) / 2),
+                (float)((rect.getDouble("top") + rect.getDouble("bottom")) / 2));
+        }
+
+        private JSONObject awaitRouteStyleDom(String colorSelector, String widthSelector, String color, String width, long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
+            while (SystemClock.elapsedRealtime() < end) {
+                last = routeStyleControlProbe(colorSelector, widthSelector);
+                JSONObject actual = last.optJSONObject("color");
+                JSONObject actualWidth = last.optJSONObject("width");
+                boolean colorMatches = actual != null && color.equalsIgnoreCase(actual.optString("value")) && color.equalsIgnoreCase(actual.optString("swatch"));
+                boolean widthMatches = width == null || (actualWidth != null && Double.compare(Double.parseDouble(width), Double.parseDouble(actualWidth.optString("value", "NaN"))) == 0);
+                if (colorMatches && widthMatches) return last;
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException("route style DOM value or color swatch did not update: " + last);
+        }
+
+        private JSONObject nativeRouteStyle() throws Exception {
+            JSONObject state = (JSONObject)callParent("readState");
+            JSONObject geometry = state.optJSONObject("renderGeometry");
+            JSONObject routes = geometry == null ? null : geometry.optJSONObject("routes");
+            JSONArray features = routes == null ? null : routes.optJSONArray("features");
+            if (features != null) for (int i = 0; i < features.length(); i++) {
+                JSONObject feature = features.optJSONObject(i), properties = feature == null ? null : feature.optJSONObject("properties");
+                if (properties != null && "routePath".equals(properties.optString("role")))
+                    return new JSONObject().put("color", properties.optString("color", properties.optString("routeColor")))
+                        .put("width", properties.optDouble("width", properties.optDouble("routeWidth", Double.NaN)));
+            }
+            throw new IllegalStateException("native render geometry has no routePath style");
+        }
+
+        private JSONObject awaitNativeRouteStyle(String color, String width, long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
+            while (SystemClock.elapsedRealtime() < end) {
+                try {
+                    last = nativeRouteStyle();
+                    boolean colorMatches = color.equalsIgnoreCase(last.optString("color"));
+                    boolean widthMatches = width == null || Math.abs(Double.parseDouble(width) - last.optDouble("width", Double.NaN)) < 0.0001;
+                    if (colorMatches && widthMatches) return last;
+                } catch (IllegalStateException waitingForRenderGeometry) {
+                    // A bridge revision may briefly publish before the route feature geometry.
+                }
+                SystemClock.sleep(80L);
+            }
+            throw new IllegalStateException("native route render style did not synchronize: " + last);
+        }
+
         private JSONObject awaitGuidanceStart() throws Exception {
             long end = SystemClock.elapsedRealtime() + 15_000L;
             while (SystemClock.elapsedRealtime() < end) {
@@ -454,16 +811,45 @@ public final class Native163NavigationRegression {
         }
 
         private JSONObject readFollowStatusInCard() throws Exception {
-            return new JSONObject(domString("(()=>{const b=document.querySelector('.guidance-card .guidance-follow-status');return JSON.stringify({found:!!b,pressed:b?.getAttribute('aria-pressed')==='true',text:(b?.innerText||'').trim()})})()"));
+            String script = "(()=>{const b=document.querySelector('.guidance-card .guidance-follow-status'),c=document.querySelector('.guidance-card');" +
+                "const r=b?.getBoundingClientRect(),s=b&&getComputedStyle(b),x=r?r.left+r.width/2:0,y=r?r.top+r.height/2:0,h=b?document.elementFromPoint(x,y):null;" +
+                "const safe=new Set(['请先退出当前选点或编辑任务。','等待准确定位，当前可手动查看路线。','正在重新获取准确定位，恢复后继续跟随','等待定位','正在获取当前位置…','等待当前位置…']);" +
+                "const hints=Array.from(c?.querySelectorAll('[role=status],.guidance-inline-status,.guidance-compact-state')||[]).filter(e=>{const z=getComputedStyle(e),q=e.getBoundingClientRect();return z.display!=='none'&&z.visibility!=='hidden'&&q.width>0&&q.height>0}).map(e=>(e.innerText||e.textContent||'').trim()).filter(Boolean).map(t=>safe.has(t)?t:'[other-status]');" +
+                "return JSON.stringify({found:!!b,pressed:b?.getAttribute('aria-pressed')==='true',text:(b?.innerText||'').trim(),visible:!!b&&s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0,hit:!!b&&(h===b||b.contains(h)),hitTag:h?.tagName||'',hitClass:typeof h?.className==='string'?h.className:'',buttonClass:b?.className||'',rect:r?{x:r.x,y:r.y,width:r.width,height:r.height}:null,cssCenter:[x,y],safeNavigationNotices:[...new Set(hints)]})})()";
+            return new JSONObject(domString(script));
         }
 
-        private void awaitFollowIntent(boolean expected, long timeout) throws Exception {
+        private void tapFollowStatus(JSONObject evidence) throws Exception {
+            JSONObject point = readFollowStatusInCard();
+            if (!point.optBoolean("found") || !point.optBoolean("visible") || !point.optBoolean("hit"))
+                throw new IllegalStateException("FOLLOW_CONTROL_NOT_VISIBLE_OR_HIT_TESTABLE");
+            JSONObject rect = point.optJSONObject("rect");
+            if (rect == null) throw new IllegalStateException("FOLLOW_CONTROL_RECT_UNAVAILABLE");
+            int[] origin = new int[2];
+            parent.runOnMainSync(() -> webView.getLocationOnScreen(origin));
+            float x = origin[0] + (float)point.getJSONArray("cssCenter").getDouble(0) * (float)cssScale;
+            float y = origin[1] + (float)point.getJSONArray("cssCenter").getDouble(1) * (float)cssScale;
+            JSONObject tap = new JSONObject().put("cssScale", cssScale)
+                .put("webViewOriginScreen", new JSONArray().put(origin[0]).put(origin[1]))
+                .put("webViewSizePx", new JSONArray().put(webView.getWidth()).put(webView.getHeight()))
+                .put("cssRect", rect).put("cssCenter", point.getJSONArray("cssCenter"))
+                .put("injectedScreenPx", new JSONArray().put(x).put(y))
+                .put("hit", point.optBoolean("hit")).put("hitTag", point.optString("hitTag"))
+                .put("hitClass", point.optString("hitClass"));
+            evidence.put("tap", tap);
+            callParent("tap", x, y);
+        }
+
+        private JSONObject awaitFollowIntent(boolean expected, long timeout, JSONObject evidence) throws Exception {
             long end = SystemClock.elapsedRealtime() + timeout;
+            JSONObject last = new JSONObject();
             while (SystemClock.elapsedRealtime() < end) {
-                JSONObject state = readFollowStatusInCard();
-                if (state.optBoolean("found") && state.optBoolean("pressed") == expected) return;
+                last = readFollowStatusInCard();
+                evidence.put("lastObserved", last);
+                if (last.optBoolean("found") && last.optBoolean("pressed") == expected) return last;
                 SystemClock.sleep(80L);
             }
+            evidence.put("status", "FAIL").put("expectedPressed", expected).put("lastObserved", last);
             throw new IllegalStateException("continue-navigation button did not update its pressed state");
         }
 
@@ -604,23 +990,56 @@ public final class Native163NavigationRegression {
 
         private JSONObject cleanup() {
             JSONObject result = new JSONObject();
+            String cleanupStage = "start";
             try {
+                cleanupStage = "end-guidance";
                 boolean hadGuidance = guidanceStarted || guidanceActivityEvidence((JSONObject)callParent("readState")).optBoolean("active");
                 if (hadGuidance) endGuidanceThroughUi();
                 boolean routeCleared = !hadGuidance || waitForRouteAndGuidanceClear(8_000L);
                 result.put("guidanceEndedThroughUi", routeCleared);
             } catch (Throwable error) { putError(result, "guidanceCleanupError", error); }
             try {
-                if (routePanelOpened && domBoolean("!!document.querySelector('#map-control-panel .route-panel')")) {
+                if (nativeSelectPopupObserved) {
+                    cleanupStage = "dismiss-confirmed-native-select-popup";
+                    boolean dismissed = parent.getUiAutomation().performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK);
+                    if (!dismissed) {
+                        long now = SystemClock.uptimeMillis();
+                        parent.getUiAutomation().injectInputEvent(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK, 0), true);
+                        parent.getUiAutomation().injectInputEvent(new KeyEvent(now + 20L, now + 20L, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK, 0), true);
+                    }
+                    result.put("confirmedNativeSelectPopupDismissRequested", true)
+                        .put("nativeSelectPopupDismissGlobalActionAccepted", dismissed);
+                    SystemClock.sleep(300L);
+                    nativeSelectPopupObserved = false;
+                }
+                cleanupStage = "inspect-route-ui";
+                boolean routePanelVisible = domBoolean("(()=>{const e=document.querySelector('#map-control-panel .route-panel:not(.route-summary)');if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0})()");
+                boolean summaryVisible = routeSummaryVisible();
+                result.put("routePanelVisibleBeforeCleanup", routePanelVisible).put("routeSummaryVisibleBeforeCleanup", summaryVisible);
+                if (routePanelOpened && (routePanelVisible || summaryVisible)) {
                     JSONObject state = (JSONObject)callParent("readState");
                     JSONObject overlay = state.optJSONObject("routeOverlay");
-                    if (hasActiveRoute(overlay)) {
-                        if (!domBoolean("document.querySelector('.route-summary-details-toggle')?.getAttribute('aria-expanded')==='true'")) tapButton(".route-summary", "详情");
+                    if (hasActiveRoute(overlay) || summaryVisible) {
+                        cleanupStage = "expand-route-summary-details";
+                        if (!domBoolean("document.querySelector('.route-summary-details-toggle')?.getAttribute('aria-expanded')==='true'")) {
+                            tapButton(".route-summary", "详情");
+                            waitForVisible(".route-summary-detail", 5_000L, "route summary details did not expand");
+                        }
+                        cleanupStage = "cancel-route-summary";
                         tapButton(".route-summary-detail", "取消路线");
+                        cleanupStage = "wait-route-summary-clear";
+                        if (!waitForRouteSummaryHidden(8_000L)) throw new IllegalStateException("route summary did not close after cancel action");
+                        if (!waitForRouteAndGuidanceClear(8_000L)) throw new IllegalStateException("route state did not clear after cancel action");
                     }
-                    tapButton(".home-bottom-nav", "路线");
+                    cleanupStage = "close-route-planner-if-still-open";
+                    boolean plannerStillVisible = domBoolean("(()=>{const e=document.querySelector('#map-control-panel .route-panel:not(.route-summary)');if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&r.width>0&&r.height>0})()");
+                    if (plannerStillVisible) tapButton(".home-bottom-nav", "路线");
                 }
-            } catch (Throwable error) { putError(result, "routeUiCleanupError", error); }
+            } catch (Throwable error) {
+                putError(result, "routeUiCleanupError", error);
+                try { result.put("routeUiCleanupStage", cleanupStage).put("routeUiCleanupExceptionEvidence", exceptionEvidence(error)); }
+                catch (JSONException ignored) { }
+            }
             try { ensureDirectionRestored(); result.put("directionRestored", true); }
             catch (Throwable error) { putError(result, "directionRestoreError", error); }
             try { restoreFollowIntent(); result.put("followIntentRestored", true); }
@@ -642,12 +1061,17 @@ public final class Native163NavigationRegression {
             try { restoreClipboard(); result.put("clipboardRestored", true); }
             catch (Throwable error) { putError(result, "clipboardRestoreError", error); }
             try {
+                restoreUiAutomationAccessibility(result);
+            } catch (Throwable error) { putError(result, "uiAutomationServiceInfoRestoreError", error); }
+            try {
                 JSONObject finalState = (JSONObject)callParent("readState");
                 JSONObject route = finalState.optJSONObject("routeOverlay");
-                boolean noRoute = !hasActiveRoute(route);
+                boolean summaryStillVisible = routeSummaryVisible();
+                boolean noRoute = !hasActiveRoute(route) && !summaryStillVisible;
                 boolean noGuidance = !guidanceActivityEvidence(finalState).optBoolean("active");
                 boolean noRecord = finalState.optJSONObject("trackOverlay") == null || !hasLiveRecording(finalState.optJSONObject("trackOverlay").optJSONArray("saved"));
-                result.put("routeAndGuidanceClear", noRoute && noGuidance).put("recordingStillIdle", noRecord)
+                result.put("routeSummaryVisibleAfterCleanup", summaryStillVisible)
+                    .put("routeAndGuidanceClear", noRoute && noGuidance).put("recordingStillIdle", noRecord)
                     .put("trackCountAfter", trackCount(finalState)).put("trackCountUnchanged", originalTrackCount < 0 || originalTrackCount == trackCount(finalState))
                     .put("selectionUnchanged", selectedId(finalState).equals(selectedId(originalState)));
             } catch (Throwable error) { putError(result, "finalStateError", error); }
@@ -676,6 +1100,7 @@ public final class Native163NavigationRegression {
                 state.optBoolean("qaGraphRemoved") && state.optBoolean("clipboardRestored") &&
                 state.optBoolean("routeAndGuidanceClear") && state.optBoolean("recordingStillIdle") &&
                 state.optBoolean("trackCountUnchanged") && state.optBoolean("selectionUnchanged") &&
+                (!uiAutomationServiceInfoCaptured || state.optBoolean("uiAutomationServiceInfoRestored")) &&
                 (!samplingTemporarilyChanged || state.optBoolean("autoRecordRestoredThroughUi"));
         }
 
@@ -848,6 +1273,19 @@ public final class Native163NavigationRegression {
             throw new IllegalStateException("temporary panel did not close");
         }
 
+        private boolean routeSummaryVisible() throws Exception {
+            return domBoolean("(()=>{const e=document.querySelector('#map-control-panel .route-summary');if(!e)return false;const s=getComputedStyle(e),r=e.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0})()");
+        }
+
+        private boolean waitForRouteSummaryHidden(long timeout) throws Exception {
+            long end = SystemClock.elapsedRealtime() + timeout;
+            while (SystemClock.elapsedRealtime() < end) {
+                if (!routeSummaryVisible()) return true;
+                SystemClock.sleep(100L);
+            }
+            return false;
+        }
+
         private void setAutoRecordThroughUiRestore() throws Exception {
             JSONObject policy = originalSamplingRaw == null ? null : new JSONObject(originalSamplingRaw);
             boolean desired = policy != null && policy.optBoolean("recordOnNavigation", false);
@@ -919,6 +1357,23 @@ public final class Native163NavigationRegression {
 
         private String safeMessage(Throwable error) {
             return error.getClass().getSimpleName();
+        }
+
+        private JSONObject exceptionEvidence(Throwable error) {
+            JSONArray causes = new JSONArray(), frames = new JSONArray();
+            try {
+                Throwable current = error;
+                for (int depth = 0; current != null && depth < 6; depth++, current = current.getCause())
+                    causes.put(current.getClass().getName());
+                StackTraceElement[] trace = error == null ? new StackTraceElement[0] : error.getStackTrace();
+                for (int i = 0; i < trace.length && i < 6; i++) {
+                    StackTraceElement frame = trace[i];
+                    frames.put(new JSONObject().put("class", frame.getClassName()).put("method", frame.getMethodName()).put("line", frame.getLineNumber()));
+                }
+                return new JSONObject().put("causes", causes).put("topFrames", frames);
+            } catch (JSONException ignored) {
+                return new JSONObject();
+            }
         }
 
         private void initializeScreenshotDirectory() throws Exception {

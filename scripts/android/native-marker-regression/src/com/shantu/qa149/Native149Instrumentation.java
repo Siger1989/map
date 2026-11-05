@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Isolated inspection/native-input QA helper for the installed private release APK. */
 public final class Native149Instrumentation extends Instrumentation {
-    private static final String TARGET_PACKAGE = "com.guanyun.weather.shantu.preview";
+    private static final String TARGET_PACKAGE = "com.shantu.oldengine";
     private static final String ACTIVITY_CLASS = "com.guanyun.weather.NativeReactActivity";
     private static final String HOST_CLASS = "com.shantu.nativeapp.hybrid.NativeReactMapHost";
     private static final String STORAGE_KEY = "guanyun.annotations.v1";
@@ -65,6 +65,8 @@ public final class Native149Instrumentation extends Instrumentation {
     private Bundle arguments;
     // Identity hashes only: no retained SDK tile arrays and no tile coordinates in reports.
     private final Map<Integer, Map<String, Integer>> vectorSubtreeIdentities = new java.util.HashMap<>();
+    // Weak references only: this diagnostic must not itself retain closed map windows.
+    private final List<java.lang.ref.WeakReference<Object>> controllerRetention = new ArrayList<>();
 
     @Override public void onCreate(Bundle arguments) { super.onCreate(arguments); this.arguments = arguments; start(); }
     @Override public void onStart() {
@@ -186,6 +188,11 @@ public final class Native149Instrumentation extends Instrumentation {
                                 reply = new JSONObject().put("ok", true).put("heapCapture", captureQaHeap());
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
+                            if ("retention-watch".equals(action) || "retention-snapshot".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("retention",
+                                    controllerRetentionSnapshot("retention-watch".equals(action), request.optBoolean("collect", false)));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
                             if ("method-trace-start".equals(action) || "method-trace-stop".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("methodTrace",
                                     "method-trace-start".equals(action) ? methodTrace.start(request.optInt("intervalUs", 10000)) : methodTrace.stop());
@@ -232,6 +239,14 @@ public final class Native149Instrumentation extends Instrumentation {
                             }
                             if ("camera-bridge-probe".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("bridgeSync", cameraBridgeProbe(request.getString("mode")));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("qa-camera".equals(action)) {
+                                if (!"com.shantu.oldengine".equals(getTargetContext().getPackageName()))
+                                    throw new IllegalStateException("camera fixture requires the isolated target");
+                                JSONObject camera = safeRequestedCamera(request.getJSONObject("camera"));
+                                applyCamera(camera); awaitFrames(2, 10000L);
+                                reply = new JSONObject().put("ok", true).put("camera", invokeCameraJson()).put("gpsWritten", false);
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("ground-diagnostic-mask".equals(action)) {
@@ -305,10 +320,44 @@ public final class Native149Instrumentation extends Instrumentation {
     }
 
     /** Private diagnostic only: a heap dump can collect garbage and is never a performance sample. */
+    private JSONObject controllerRetentionSnapshot(boolean watch, boolean collect) throws Exception {
+        if (!"com.shantu.oldengine".equals(getTargetContext().getPackageName()))
+            throw new IllegalStateException("retention probe requires the isolated target");
+        if (collect) { System.gc(); System.runFinalization(); System.gc(); }
+        AtomicReference<JSONObject> result = new AtomicReference<>();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        runOnMainSync(() -> {
+            try {
+                Map<?,?> maps = (Map<?,?>)fieldValue(host, "maps");
+                if (watch) for (Object mapEntry : maps.values()) {
+                    Object controller = fieldValue(mapEntry, "controller");
+                    boolean present = false;
+                    for (java.lang.ref.WeakReference<Object> reference : controllerRetention)
+                        if (reference.get() == controller) present = true;
+                    if (!present) controllerRetention.add(new java.lang.ref.WeakReference<>(controller));
+                }
+                int live = 0, disposed = 0;
+                for (java.lang.ref.WeakReference<Object> reference : controllerRetention) {
+                    Object controller = reference.get();
+                    if (controller != null) {
+                        live++;
+                        if (Boolean.TRUE.equals(fieldValue(controller, "disposed"))) disposed++;
+                    }
+                }
+                result.set(new JSONObject().put("watched", controllerRetention.size()).put("live", live)
+                    .put("disposedRetained", disposed).put("mountedMaps", maps.size())
+                    .put("forcedCollection", collect).put("performanceMeasurement", false));
+            } catch (Throwable error) { failure.set(error); }
+        });
+        if (failure.get() != null) throw new IllegalStateException("retention snapshot failed", failure.get());
+        return result.get();
+    }
+
+    /** Private diagnostic only: a heap dump can collect garbage and is never a performance sample. */
     private JSONObject captureQaHeap() throws Exception {
         JSONObject version = targetVersionProof();
-        if (!"0.2.163-test".equals(version.optString("versionName")))
-            throw new IllegalStateException("heap capture requires the explicit 163 QA target");
+        if (!"com.shantu.oldengine".equals(getTargetContext().getPackageName()))
+            throw new IllegalStateException("heap capture requires the isolated old-engine QA target");
         File directory = new File(getTargetContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "native163-heap");
         if (!directory.mkdirs() && !directory.isDirectory()) throw new IllegalStateException("private heap directory unavailable");
         if (directory.getUsableSpace() < 1024L * 1024L * 1024L) throw new IllegalStateException("insufficient private diagnostic space");
@@ -1688,8 +1737,10 @@ public final class Native149Instrumentation extends Instrumentation {
                 for (Object mapEntry : mounted.values()) {
                     Object controller = fieldValue(mapEntry, "controller");
                     Object cartography = fieldValue(controller, "cartography");
-                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
-                        Object layer = fieldValue(cartography, name);
+                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedLabelLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
+                        Object layer;
+                        try { layer = fieldValue(cartography, name); } catch (NoSuchFieldException absentInOtherBuild) { continue; }
+                        if (layer == null) continue;
                         boolean enabled = Boolean.TRUE.equals(fieldValue(layer, "isEnabled"));
                         Object cache = fieldValue(layer, "subtreeCache");
                         Map<?, ?> entries = (Map<?, ?>) fieldValue(cache, "entries");
@@ -1707,13 +1758,24 @@ public final class Native149Instrumentation extends Instrumentation {
                             }
                             for (String key : previous.keySet()) if (!now.containsKey(key)) removed++;
                         }
-                        rows.put(new JSONObject().put("mapIndex", mapIndex).put("layer", name)
+                        JSONObject row = new JSONObject().put("mapIndex", mapIndex).put("layer", name)
                             .put("enabled", enabled)
                             .put("subtreeCapacity", fieldValue(cache, "capacity")).put("subtreeUsed", fieldValue(cache, "usedCapacity"))
                             .put("cachedChildGroups", entries.size()).put("loadedContentTiles", ((Map<?, ?>)fieldValue(layer, "liveContent")).size())
                             .put("pendingTiles", ((Map<?, ?>)fieldValue(layer, "inFlight")).size())
                             .put("hasPriorSnapshot", previous != null).put("sameKeyGroupReplacements", changed)
-                            .put("addedGroups", added).put("removedGroups", removed));
+                            .put("addedGroups", added).put("removedGroups", removed);
+                        try {
+                            Object collider = fieldValue(layer, "labelCollider");
+                            long[] stats = new long[11];
+                            java.lang.reflect.Method copy = collider.getClass().getMethod("copyLineLayoutStatistics", long[].class);
+                            copy.setAccessible(true); copy.invoke(collider, (Object) stats);
+                            JSONArray values = new JSONArray(); for (long value : stats) values.put(value);
+                            row.put("lineLayoutStatistics", values);
+                        } catch (NoSuchMethodException upstreamSdk) {
+                            row.put("lineLayoutStatisticsAvailable", false);
+                        }
+                        rows.put(row);
                     }
                     mapIndex++;
                 }
@@ -1802,8 +1864,10 @@ public final class Native149Instrumentation extends Instrumentation {
                     Object controller = fieldValue(mapEntry, "controller");
                     Object cartography = fieldValue(controller, "cartography");
                     JSONArray layerRows = new JSONArray();
-                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
-                        Object layer = fieldValue(cartography, name);
+                    for (String name : new String[]{"timedTerrainLayer", "nativeRoadLayer", "timedLabelLayer", "timedRoadNamesLayer", "timedPlaceLabelsLayer"}) {
+                        Object layer;
+                        try { layer = fieldValue(cartography, name); } catch (NoSuchFieldException absentInOtherBuild) { continue; }
+                        if (layer == null) continue;
                         Boolean original = originalStates.get(layer);
                         if (original == null && !originalStates.containsKey(layer)) {
                             Object initial = fieldValue(layer, "isEnabled");
@@ -1813,7 +1877,7 @@ public final class Native149Instrumentation extends Instrumentation {
                         }
                         boolean target;
                         if ("none".equals(mode)) target = false;
-                        else if ("no-labels".equals(mode) && ("timedRoadNamesLayer".equals(name) || "timedPlaceLabelsLayer".equals(name))) target = false;
+                        else if ("no-labels".equals(mode) && ("timedLabelLayer".equals(name) || "timedRoadNamesLayer".equals(name) || "timedPlaceLabelsLayer".equals(name))) target = false;
                         else target = originalStates.get(layer);
                         setFieldValue(layer, "isEnabled", Boolean.valueOf(target));
                         Object observed = fieldValue(layer, "isEnabled");

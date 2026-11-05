@@ -35,4 +35,33 @@ class NativeTilePriorityIdleGateTest {
             true
         })
     }
+    @Test fun idleFocusUpdatesWakeTheLatestRealFrameWithoutForcingGeneration() {
+        val gate = NativeTilePriorityIdleGate()
+        val frames = NativeTileDemandFrameCoalescer<String>()
+        frames.offer("last actual MVP")
+        frames.poll(10)
+        repeat(20) {
+            assertTrue(gate.shouldDefer(true) { false })
+            assertEquals(NativeTileDemandFrameCoalescer.Poll.Idle, frames.poll(11))
+        }
+        // The first transport admission wakes the idle planner without needing another map draw.
+        assertTrue(gate.consumeWake())
+        frames.requestUrgent()
+        val ready = frames.poll(11) as NativeTileDemandFrameCoalescer.Poll.Ready
+        assertEquals("last actual MVP", ready.value.frame)
+        assertFalse(ready.value.forceGeneration)
+        assertFalse(gate.consumeWake())
+    }
+
+    @Test fun existingTransportWorkReplansFocusWithoutWaitingForCameraCadence() {
+        val gate = NativeTilePriorityIdleGate()
+        val frames = NativeTileDemandFrameCoalescer<String>()
+        frames.offer("last actual MVP")
+        frames.poll(10)
+        assertFalse(gate.shouldDefer(true) { true })
+        frames.requestUrgent()
+        val ready = frames.poll(11) as NativeTileDemandFrameCoalescer.Poll.Ready
+        assertEquals("last actual MVP", ready.value.frame)
+        assertFalse(ready.value.forceGeneration)
+    }
 }

@@ -14,7 +14,7 @@ import type { TrackStyle } from './style';
 import type { DrawingMode } from './draft';
 import { DrawingSession, type DrawingPreview } from './DrawingSession';
 import { handlePoint } from './precision';
-import { PointMagnifier, type MagnifierObserver } from './PointMagnifier';
+import type { MagnifierObserver } from './PointMagnifier';
 import type { RoadSnapper } from './roadSnapping';
 import { riverHint } from './riverSnapping';
 import type { SnapViewport } from './snapping';
@@ -285,9 +285,6 @@ export const TrackDrawing = forwardRef<
           </g>
         )}
       </svg>
-      {preview?.kind === 'aim' && (
-        <PointMagnifier point={preview.tip} {...size} observe={p.magnify} />
-      )}
       {p.distanceSegments && distanceTip && size.width > 0 && (
         <output className="track-draw-distance" aria-label="画线累计长度" style={{
           width: labelWidth,

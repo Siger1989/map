@@ -162,7 +162,43 @@ class NativeCartographyLayersTest {
         val placeName = NativeCartographyLayers.placeLabelStyle.firstMatching("place", MvtGeometryType.POINT, 8, mapOf("name:nonlatin" to "Mountain"))
         assertNotNull(placeName)
         assertEquals("name:nonlatin", placeName!!.paint.textField)
-        assertEquals(14f * .84f, placeName.paint.textSize!!.evaluate(MvtExpression.EvalContext(8.0, emptyMap()))!!, .0001f)
-        assertNull(NativeCartographyLayers.placeLabelStyle.firstMatching("place", MvtGeometryType.POINT, 2, mapOf("name:zh" to "村落")))
+        assertEquals(11f * .84f, placeName.paint.textSize!!.evaluate(MvtExpression.EvalContext(8.0, emptyMap()))!!, .0001f)
+        assertNull("Preserve the existing z3 floor; category hierarchy must not expose extra global labels",
+            NativeCartographyLayers.placeLabelStyle.firstMatching("place", MvtGeometryType.POINT, 2, mapOf("name:zh" to "村落")))
+    }
+
+    @Test fun `combined label style modes preserve separate road and place switches`() {
+        val both = NativeCartographyLayers.labelStyleFor(roadNames = true, placeLabels = true)
+        val roadsOnly = NativeCartographyLayers.labelStyleFor(roadNames = true, placeLabels = false)
+        val placesOnly = NativeCartographyLayers.labelStyleFor(roadNames = false, placeLabels = true)
+        val neither = NativeCartographyLayers.labelStyleFor(roadNames = false, placeLabels = false)
+        val road = Triple("transportation_name", MvtGeometryType.LINESTRING, mapOf("ref" to "G318"))
+        val place = Triple("place", MvtGeometryType.POINT, mapOf("name:zh" to "城镇"))
+
+        assertEquals(NativeCartographyLayers.roadNameStyle.rules + NativeCartographyLayers.placeLabelStyle.rules, both.rules)
+        assertNotNull(both.firstMatching(road.first, road.second, 8, road.third))
+        assertNotNull(both.firstMatching(place.first, place.second, 8, place.third))
+        assertNotNull(roadsOnly.firstMatching(road.first, road.second, 8, road.third))
+        assertNull(roadsOnly.firstMatching(place.first, place.second, 8, place.third))
+        assertNull(placesOnly.firstMatching(road.first, road.second, 8, road.third))
+        assertNotNull(placesOnly.firstMatching(place.first, place.second, 8, place.third))
+        assertTrue(neither.rules.isEmpty())
+    }
+
+    @Test fun `place label sizes follow class tiers and retain kind and subclass fallbacks`() {
+        val rule = NativeCartographyLayers.placeLabelStyle.firstMatching(
+            "place", MvtGeometryType.POINT, 8, mapOf("name:zh" to "城市"),
+        )!!
+        val size = rule.paint.textSize!!
+        fun at(properties: Map<String, Any?>) = size.evaluate(MvtExpression.EvalContext(8.0, properties))!!
+
+        val country = at(mapOf("class" to "country"))
+        val province = at(mapOf("class" to "province"))
+        val city = at(mapOf("class" to "city"))
+        val town = at(mapOf("class" to "town"))
+        val village = at(mapOf("class" to "village"))
+        assertTrue(country > province && province > city && city > town && town > village)
+        assertEquals(12f * .84f, at(mapOf("kind" to "town")), .0001f)
+        assertEquals(10.5f * .84f, at(mapOf("subclass" to "village")), .0001f)
     }
 }

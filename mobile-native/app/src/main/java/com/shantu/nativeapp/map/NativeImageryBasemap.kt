@@ -1,6 +1,7 @@
 package com.shantu.nativeapp.map
 
 import android.content.Context
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Handler
@@ -74,7 +75,18 @@ class NativeImageryBasemap internal constructor(
     private var latestJob: Job? = null
     private var currentStatus = NativeImageryStatus()
     private val renderedTileCount = AtomicLong()
-    private val sentinelLoadedCallback: () -> Unit = { onSentinelTileLoaded() }
+    private val callbackOwner = NativeCallbackOwner(this)
+    private val identityToken = Any()
+    private val generationForFactories: () -> Long? = run {
+        val owner = callbackOwner
+        val callback: () -> Long? = { owner.get()?.demandGeneration?.invoke() }
+        callback
+    }
+    private val sentinelLoadedCallback: () -> Unit = run {
+        val owner = callbackOwner
+        val callback: () -> Unit = { owner.get()?.onSentinelTileLoaded() }
+        callback
+    }
     private val viewportTick = object : Runnable {
         override fun run() {
             if (closed) return
@@ -89,11 +101,11 @@ class NativeImageryBasemap internal constructor(
         }
     }
 
-    private val overview = surface("EOxCloudless 2025 bundled overview z0-5", 5) { x, y, z ->
-        ImageSource.fromImageFactory(object : ImageSource.NetworkBoundImageFactory {
-            override suspend fun createCachedBitmap(): Bitmap? = readOverview(x, y, z)
-            override suspend fun createBitmap(): Bitmap? = readOverview(x, y, z)
-        })
+    private val overview = run {
+        val assets = context.assets
+        surface("EOxCloudless 2025 bundled overview z0-5", 5) { x, y, z ->
+            ImageSource.fromImageFactory(OverviewImageFactory(assets, x, y, z))
+        }
     }
     init { underlayLayer.isEnabled = false; baseRenderLayer.isEnabled = false; main.postDelayed(viewportTick, VIEWPORT_CHECK_MILLIS) }
 
@@ -127,11 +139,11 @@ class NativeImageryBasemap internal constructor(
             "sentinel-detail" -> surface("EOxCloudless Sentinel-2 2025", rasterZoomCap ?: 14) { x, y, z ->
                 val url = SENTINEL_TILE.replace("{z}", z.toString()).replace("{y}", y.toString()).replace("{x}", x.toString())
                 val identity = tileIdentityFor("sentinel-eox", z, x, y, "s2cloudless-2025-jpg")
-                ImageSource.fromImageFactory(RemoteImageryFactory(http, url, sentinelLoadedCallback, sharedNetwork, identity, viewId(), demandGeneration))
+                ImageSource.fromImageFactory(RemoteImageryFactory(http, url, sentinelLoadedCallback, sharedNetwork, identity, viewId(), generationForFactories))
             }.also { publish(NativeImageryStatus(sourceId, false, null, "Sentinel-2 2025 少云合成影像；非实时，等待瓦片", SENTINEL_ATTRIBUTION)) }
             "sentinel-latest" -> surface("NASA GIBS VIIRS latest available UTC day", rasterZoomCap ?: 9) { x, y, z ->
                 val identity = tileIdentityFor("nasa-gibs-viirs", z, x, y, latestDate ?: "gibs-latest")
-                ImageSource.fromImageFactory(LatestGibsTileFactory(x, y, z, identity))
+                ImageSource.fromImageFactory(LatestGibsTileFactory(callbackOwner, sharedNetwork ?: identityToken, identityToken, x, y, z, identity))
             }.also { beginLatestCheck(expected) }
             else -> null
         }
@@ -229,10 +241,8 @@ class NativeImageryBasemap internal constructor(
         return data?.let(::decodeImageryTile)?.also { renderedTileCount.incrementAndGet() }
     }
 
-    private fun readOverview(x: Int, y: Int, z: Int): Bitmap? {
-        if (z !in 0..5 || x !in 0 until (1 shl z) || y !in 0 until (1 shl z)) return null
-        return runCatching { context.assets.open("basemaps/satellite-overview-v1/$z/$x/$y.jpg").use { BitmapFactory.decodeStream(it) } }.getOrNull()
-    }
+    internal suspend fun fetchLatestTileForFactory(x: Int, y: Int, z: Int, identity: TileRequestIdentity?): Bitmap? =
+        fetchLatestTile(x, y, z, identity, viewId(), demandGeneration())
 
     private fun surface(name: String, maxZoom: Int, source: (x: Int, y: Int, z: Int) -> ImageSource): MercatorTiledSurfaceImage {
         val factory = object : MercatorTileFactory {
@@ -246,6 +256,7 @@ class NativeImageryBasemap internal constructor(
 
     override fun close() {
         if (closed) return
+        callbackOwner.detach()
         closed = true; generation++; main.removeCallbacks(viewportTick); scope.cancel(); http.close()
         underlayLayer.clearRenderables(); baseRenderLayer.clearRenderables()
         underlayLayer.isEnabled = false; baseRenderLayer.isEnabled = false; latestDate = null
@@ -265,16 +276,6 @@ class NativeImageryBasemap internal constructor(
         override fun hashCode() = stableKey().hashCode()
     }
 
-    private inner class LatestGibsTileFactory(private val x: Int, private val y: Int, private val z: Int, private val identity: TileRequestIdentity?) : ImageSource.NetworkBoundImageFactory {
-        override suspend fun createCachedBitmap(): Bitmap? = null
-        override suspend fun createBitmap(): Bitmap? = fetchLatestTile(x, y, z, identity, viewId(), demandGeneration())
-        override fun toString() = "GibsLatestTileFactory"
-        private fun stableKey() = NativeImageSourceIdentity(sharedNetwork ?: this@NativeImageryBasemap, this@NativeImageryBasemap,
-            identity, "$z/$x/$y", NO_IMAGERY_STAGE_CALLBACK, NO_IMAGERY_STAGE_CALLBACK, NO_IMAGERY_STAGE_CALLBACK, demandGeneration)
-        override fun equals(other: Any?) = other is NativeImageryBasemap.LatestGibsTileFactory && stableKey() == other.stableKey()
-        override fun hashCode() = stableKey().hashCode()
-    }
-
     companion object {
         const val EOX_ATTRIBUTION = "EOxCloudless by EOX IT Services GmbH · Contains modified Copernicus Sentinel data 2025 · CC BY-NC-SA 4.0"
         const val SENTINEL_ATTRIBUTION = "EOxCloudless https://cloudless.eox.at by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2025) · CC BY-NC-SA 4.0"
@@ -288,6 +289,41 @@ class NativeImageryBasemap internal constructor(
         private const val LATEST_VIEWPORT_COOLDOWN_MILLIS = 30 * 1000L
         private const val VIEWPORT_CHECK_MILLIS = 5 * 1000L
     }
+}
+
+private class OverviewImageFactory(
+    private val assets: AssetManager,
+    private val x: Int,
+    private val y: Int,
+    private val z: Int,
+) : ImageSource.NetworkBoundImageFactory {
+    override suspend fun createCachedBitmap(): Bitmap? = readOverview(assets, x, y, z)
+    override suspend fun createBitmap(): Bitmap? = readOverview(assets, x, y, z)
+}
+
+private fun readOverview(assets: AssetManager, x: Int, y: Int, z: Int): Bitmap? {
+    if (z !in 0..5 || x !in 0 until (1 shl z) || y !in 0 until (1 shl z)) return null
+    return runCatching {
+        assets.open("basemaps/satellite-overview-v1/$z/$x/$y.jpg").use { BitmapFactory.decodeStream(it) }
+    }.getOrNull()
+}
+
+private class LatestGibsTileFactory(
+    private val owner: NativeCallbackOwner<NativeImageryBasemap>,
+    private val networkKey: Any,
+    private val identityToken: Any,
+    private val x: Int,
+    private val y: Int,
+    private val z: Int,
+    private val identity: TileRequestIdentity?,
+) : ImageSource.NetworkBoundImageFactory {
+    override suspend fun createCachedBitmap(): Bitmap? = null
+    override suspend fun createBitmap(): Bitmap? = owner.get()?.fetchLatestTileForFactory(x, y, z, identity)
+    override fun toString() = "GibsLatestTileFactory"
+    private fun stableKey() = NativeImageSourceIdentity(networkKey, identityToken,
+        identity, "$z/$x/$y", NO_IMAGERY_STAGE_CALLBACK, NO_IMAGERY_STAGE_CALLBACK, NO_IMAGERY_STAGE_CALLBACK, null)
+    override fun equals(other: Any?) = other is LatestGibsTileFactory && stableKey() == other.stableKey()
+    override fun hashCode() = stableKey().hashCode()
 }
 
 internal data class NativeSatelliteProbeTile(val z: Int, val x: Int, val y: Int, val pixelX: Double, val pixelY: Double)

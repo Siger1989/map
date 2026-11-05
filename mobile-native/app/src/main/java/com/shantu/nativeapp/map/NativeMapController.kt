@@ -98,6 +98,11 @@ class NativeMapController internal constructor(
     private val appContext = context.applicationContext
     private val key = tiandituKey.trim()
     private val encodedKey = URLEncoder.encode(key, "UTF-8")
+    private val callbackOwner = NativeCallbackOwner(this)
+    private val rasterGeneration: () -> Long? = callbackOwner.let { owner -> { owner.get()?.tileDemandGeneration } }
+    private val rasterTileUrl: (String, Int, Int, Int) -> String = encodedKey.let { token ->
+        { layer, x, y, z -> tiandituTileUrl(layer, x, y, z, token) }
+    }
     private val bridgeRasterLoads = NativeRasterLoadTracker()
     @Volatile private var bridgePrintRasterFrameCoverage: NativePrintRasterFrameCoverage? = null
     private val memoryManager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
@@ -138,13 +143,19 @@ class NativeMapController internal constructor(
             worldWindow.requestRedraw()
         }
     }
-    private val cartography = NativeCartographyLayers(
-        worldWindow, { key }, sharedNetwork = network,
-        tileIdentityFor = { source, layer, z, x, y, style -> tileIdentityAndRegister(source, layer, z, x, y, style) },
-        viewId = { tileViewId }, generation = { tileDemandGeneration },
-    ) { status ->
-        if (status.message.isNotBlank()) reportStatus(status.message)
-        imageryStatusListener?.invoke(status)
+    private val cartography = run {
+        val owner = callbackOwner
+        val sourceKey = key
+        NativeCartographyLayers(
+            worldWindow, { sourceKey }, sharedNetwork = network,
+            tileIdentityFor = { source, layer, z, x, y, style -> owner.get()?.tileIdentityAndRegister(source, layer, z, x, y, style) },
+            viewId = { owner.get()?.tileViewId }, generation = rasterGeneration,
+        ) { status ->
+            owner.get()?.let { controller ->
+                if (status.message.isNotBlank()) controller.reportStatus(status.message)
+                controller.imageryStatusListener?.invoke(status)
+            }
+        }
     }
     @Volatile private var imageryStatusListener: ((NativeImageryStatus) -> Unit)? = null
     private val skyLayer = ClearDaySkyLayer()
@@ -656,6 +667,7 @@ class NativeMapController internal constructor(
         bridgeFrameWitnesses.clear()
         if (disposed) return
         disposed = true
+        callbackOwner.detach()
         mainHandler.removeCallbacks(tileDemandDrainRunnable)
         tileDemandDrainPosted.set(false)
         tileDemandFrames.dispose()
@@ -925,13 +937,17 @@ class NativeMapController internal constructor(
             terrainOverlayOptions.elevationColorsEnabled && terrainOverlayOptions.elevationColorsOpacity > 0.0)
             NativeTerrainOverlays.ATTRIBUTION else null
 
-    private fun ensureTerrainCoverage(): NativeTerrariumCoverage = terrainCoverage
-        ?: NativeTerrariumCoverage(
+    private fun ensureTerrainCoverage(): NativeTerrariumCoverage = terrainCoverage ?: run {
+        val owner = callbackOwner
+        NativeTerrariumCoverage(
             appContext, network,
-            tileIdentityFor = { z, x, y -> tileIdentityAndRegister("public-terrain-dem", "terrarium", z, x, y, "rgb-encoding-v1", "public") },
-            viewId = { if (terrainEnabled || terrainBasemapEnabled || terrainOverlayOptions.contoursEnabled || terrainOverlayOptions.elevationColorsEnabled) tileViewId else null },
-            demandGeneration = { tileDemandGeneration },
+            tileIdentityFor = { z, x, y -> owner.get()?.tileIdentityAndRegister("public-terrain-dem", "terrarium", z, x, y, "rgb-encoding-v1", "public") },
+            viewId = { owner.get()?.let { controller ->
+                if (controller.terrainEnabled || controller.terrainBasemapEnabled || controller.terrainOverlayOptions.contoursEnabled || controller.terrainOverlayOptions.elevationColorsEnabled) controller.tileViewId else null
+            } },
+            demandGeneration = rasterGeneration,
         ).also { terrainCoverage = it }
+    }
 
     private fun syncTerrainAttachment() {
         val coverage = if (terrainEnabled) ensureTerrainCoverage() else terrainCoverage
@@ -1425,7 +1441,16 @@ class NativeMapController internal constructor(
         lastDrawingFocusAt = android.os.SystemClock.uptimeMillis()
         drawingFocus = next
         terrainOverlayRenderer?.setViewportStyle(terrainOverlayUiZoom, terrainOverlayCssScale, tileDemandFocusPx())
-        refreshTileDemand(forceGeneration = true)
+        // Moving the pen changes priority, not visible coverage. Arm the existing admission wake
+        // before checking HTTP work, so an idle map does not redraw/replan for every pen sample.
+        if (tilePriorityIdleGate.shouldDefer(isTileDemandViewVisible() && !tileDemandDirty) {
+                network.hasPendingTransportWork()
+            }) return
+        // Reuse the latest real frame immediately when work exists. Do not replace an already
+        // pending source/visibility force flag; requestUrgent preserves it in the coalescer.
+        tileDemandFrames.requestUrgent()
+        if (tileDemandFrames.latestFrame() == null) worldWindow.requestRedraw()
+        wakeTileDemandDrainIfUrgent()
     }
 
     internal fun tileIdentity(source: String, layer: String, z: Int, x: Int, y: Int, style: String = "default", credential: String = key): TileRequestIdentity =
@@ -1728,6 +1753,11 @@ class NativeMapController internal constructor(
         mainHandler.post { if (!disposed) onStatus(message) }
     }
 
+    private fun rawRasterIdentity(source: String, layer: String, style: String = "default", credential: String = key): (Int, Int, Int) -> TileRequestIdentity? {
+        val owner = callbackOwner
+        return { x, y, z -> owner.get()?.tileIdentityAndRegister(source, layer, z, x, y, style, credential) }
+    }
+
     private fun makeTileSurfaceImage(
         layerName: String,
         transparent: Boolean,
@@ -1742,17 +1772,17 @@ class NativeMapController internal constructor(
                     rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
                     rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
                     rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
-                    tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, { tileDemandGeneration },
-                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) })
+                    tileIdentityAndRegister("tianditu", layerName, z, x, y), tileViewId, rasterGeneration,
+                    rawIdentityFor = rawRasterIdentity("tianditu", layerName))
                 else NativeRasterImageFactory.tianditu(
                     network = network, layer = layerName, outputX = x, outputY = y, outputZoom = z,
-                    datum = datum, tileUrl = ::tileUrl,
+                    datum = datum, tileUrl = rasterTileUrl,
                     onBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
                     onLoadStarted = rasterCallbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
                     onLoadFinished = rasterCallbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
                     identity = tileIdentityAndRegister("tianditu", layerName, z, x, y, "raster-warp-${datum.name.lowercase()}"),
-                    viewId = tileViewId, generation = { tileDemandGeneration },
-                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu", layerName, rawZ, rawX, rawY) },
+                    viewId = tileViewId, generation = rasterGeneration,
+                    rawIdentityFor = rawRasterIdentity("tianditu", layerName),
                 )
             },
             onBaseBitmapDecoded = rasterCallbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
@@ -1773,8 +1803,8 @@ class NativeMapController internal constructor(
                     callbacks?.onBitmapDecoded ?: NO_RASTER_DECODE_CALLBACK,
                     callbacks?.onLoadStarted ?: NO_RASTER_LOAD_CALLBACK,
                     callbacks?.onLoadFinished ?: NO_RASTER_LOAD_CALLBACK,
-                    tileIdentity(source.id, "raster-$layerIndex", z, x, y, styleNamespace, source.token), tileViewId, { tileDemandGeneration },
-                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister(source.id, "raster-$layerIndex", rawZ, rawX, rawY, styleNamespace, source.token) }) },
+                    tileIdentity(source.id, "raster-$layerIndex", z, x, y, styleNamespace, source.token), tileViewId, rasterGeneration,
+                    rawIdentityFor = rawRasterIdentity(source.id, "raster-$layerIndex", styleNamespace, source.token)) },
                 trackPrintFrameCoverage = callbacks != null && bridgePrintRasterFrameCoverage != null,
             )
         }
@@ -1791,8 +1821,8 @@ class NativeMapController internal constructor(
                     network,custom,0,x,y,z,rasterCallbacks.onBitmapDecoded,
                     rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
                     tileIdentity(custom.id,"raster-0",z,x,y,styleNamespace,custom.token),
-                    tileViewId,{ tileDemandGeneration },
-                    rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister(custom.id,"raster-0",rawZ,rawX,rawY,styleNamespace,custom.token) },
+                    tileViewId,rasterGeneration,
+                    rawIdentityFor = rawRasterIdentity(custom.id,"raster-0",styleNamespace,custom.token),
                 ).createBitmap()
             }
         }
@@ -1806,16 +1836,16 @@ class NativeMapController internal constructor(
         return NativeRasterDetailProvider("tianditu:$sourceId:$name$datumSuffix",1,NativeTiandituZoomPolicy.sourceMaxZoom(name),256) { x,y,z ->
             if (builtinRasterDatum == NativeRasterDatum.WGS84) TiandituImageFactory(network,tileUrl(name,x,y,z),rasterCallbacks.onBitmapDecoded,
                 rasterCallbacks.onLoadStarted,rasterCallbacks.onLoadFinished,
-                tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,{ tileDemandGeneration },
-                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu",name,rawZ,rawX,rawY) }).createBitmap()
+                tileIdentityAndRegister("tianditu",name,z,x,y),tileViewId,rasterGeneration,
+                rawIdentityFor = rawRasterIdentity("tianditu",name)).createBitmap()
             else NativeRasterImageFactory.tianditu(
                 network = network, layer = name, outputX = x, outputY = y, outputZoom = z,
-                datum = builtinRasterDatum, tileUrl = ::tileUrl,
+                datum = builtinRasterDatum, tileUrl = rasterTileUrl,
                 onBitmapDecoded = rasterCallbacks.onBitmapDecoded,
                 onLoadStarted = rasterCallbacks.onLoadStarted, onLoadFinished = rasterCallbacks.onLoadFinished,
                 identity = tileIdentityAndRegister("tianditu",name,z,x,y,"raster-warp-${builtinRasterDatum.name.lowercase()}"),
-                viewId = tileViewId, generation = { tileDemandGeneration },
-                rawIdentityFor = { rawX, rawY, rawZ -> tileIdentityAndRegister("tianditu",name,rawZ,rawX,rawY) },
+                viewId = tileViewId, generation = rasterGeneration,
+                rawIdentityFor = rawRasterIdentity("tianditu",name),
             ).createBitmap()
         }
     }

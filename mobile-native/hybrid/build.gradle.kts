@@ -10,6 +10,9 @@ plugins {
 
 // Runtime probes stay isolated. Delivery reuses the existing personal app identity and key.
 val personalDelivery = providers.gradleProperty("hybridDelivery").map(String::toBoolean).getOrElse(false)
+val isolatedOldEngine = providers.gradleProperty("isolatedOldEngine").map(String::toBoolean).getOrElse(false)
+check(!(personalDelivery && isolatedOldEngine)) { "Choose the existing personal app or the isolated old-engine app, never both." }
+val usePersonalSignature = personalDelivery || isolatedOldEngine
 val signingIdentity = rootProject.file("../config/android-standalone-signing.json").readText()
 fun identityField(name: String): String = Regex("\"$name\"\\s*:\\s*\"([^\"]+)\"").find(signingIdentity)?.groupValues?.get(1)
     ?: error("Missing personal Android signing identity field: $name")
@@ -18,7 +21,7 @@ val personalSigningKey = providers.environmentVariable("GUANYUN_SIGNING_KEY").or
 val productIdentity = rootProject.file("../config/product.ts").readText()
 val personalVersionName = Regex("APP_VERSION = '([^']+)'").find(productIdentity)?.groupValues?.get(1) ?: error("Missing app version")
 val personalVersionCode = Regex("APP_VERSION_CODE = ([0-9]+)").find(productIdentity)?.groupValues?.get(1)?.toInt() ?: error("Missing app version code")
-if (personalDelivery) {
+if (usePersonalSignature) {
     check(personalSigningKey.isFile) { "The existing personal Android signing key is unavailable; refusing a replacement identity." }
     val keyStore = KeyStore.getInstance("JKS").apply {
         personalSigningKey.inputStream().use { load(it, "android".toCharArray()) }
@@ -54,6 +57,12 @@ val prepareHybridAssets by tasks.registering(Sync::class) {
     }
     from(file("$buildStage/app/generated/nativeTerrainAssets"))
     from(rootProject.file("../public/industry"))
+    if (isolatedOldEngine) {
+        from(rootProject.file("worldwind-labels")) {
+            include("LICENSE", "NOTICE")
+            into("licenses/worldwind-labels")
+        }
+    }
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     into(mergedAssets)
     outputs.cacheIf { false }
@@ -109,6 +118,8 @@ val prepareHybridContractTests by tasks.registering(Sync::class) {
         include("com/shantu/nativeapp/map/NativeModelTerrainInputTest.kt")
         include("com/shantu/nativeapp/map/NativeBrowserCacheFallbackTest.kt")
         include("com/shantu/nativeapp/map/NativeImageSourceIdentityTest.kt")
+        include("com/shantu/nativeapp/map/NativeCallbackOwnerTest.kt")
+        include("com/shantu/nativeapp/map/NativeImageryBasemapTest.kt")
         include("com/shantu/nativeapp/map/NativeRasterLoadTrackerTest.kt")
         include("com/shantu/nativeapp/map/NativePrintRasterFrameCoverageTest.kt")
         include("com/shantu/nativeapp/map/NativeBridgeFrameWitnessTest.kt")
@@ -138,15 +149,15 @@ android {
     compileSdk = 37
     ndkVersion = "28.2.13676358"
     defaultConfig {
-        applicationId = if (personalDelivery) identityField("package") else "com.shantu.hybridprobe"
+        applicationId = if (isolatedOldEngine) "com.shantu.oldengine" else if (personalDelivery) identityField("package") else "com.shantu.hybridprobe"
         minSdk = 26
         targetSdk = 35
-        versionCode = if (personalDelivery) personalVersionCode else 1
-        versionName = if (personalDelivery) personalVersionName else "0.1.0-hybrid-internal"
-        manifestPlaceholders["hybridApplicationLabel"] = if (personalDelivery) identityField("applicationLabel") else "山兔·混合验证"
+        versionCode = if (usePersonalSignature) personalVersionCode else 1
+        versionName = if (usePersonalSignature) personalVersionName else "0.1.0-hybrid-internal"
+        manifestPlaceholders["hybridApplicationLabel"] = if (isolatedOldEngine) "山兔·优化" else if (personalDelivery) identityField("applicationLabel") else "山兔·混合验证"
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64") }
     }
-    if (personalDelivery) {
+    if (usePersonalSignature) {
         signingConfigs.create("personal") {
             storeFile = personalSigningKey
             storePassword = "android"
@@ -164,7 +175,8 @@ android {
             getDefaultProguardFile("proguard-android-optimize.txt"),
             file("proguard-optimized.pro"),
         )
-        if (personalDelivery) signingConfig = signingConfigs.getByName("personal")
+        if (isolatedOldEngine) proguardFiles(file("proguard-label-diagnostics.pro"))
+        if (usePersonalSignature) signingConfig = signingConfigs.getByName("personal")
     }
     sourceSets["main"].apply {
         java.srcDir("../app/src/main/java")
@@ -187,7 +199,8 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 tasks.named("preBuild").configure {
     dependsOn(prepareHybridAssets, prepareSharedCadJni)
 }
-tasks.matching { it.name == "preDebugUnitTestBuild" || it.name == "compileDebugUnitTestKotlin" || it.name == "compileDebugUnitTestJavaWithJavac" }
+tasks.matching { it.name in setOf("preDebugUnitTestBuild", "compileDebugUnitTestKotlin", "compileDebugUnitTestJavaWithJavac",
+    "preOptimizedUnitTestBuild", "compileOptimizedUnitTestKotlin", "compileOptimizedUnitTestJavaWithJavac") }
     .configureEach { dependsOn(prepareHybridContractTests) }
 dependencies {
     implementation("androidx.core:core:1.15.0")

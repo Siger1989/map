@@ -1,0 +1,154 @@
+{
+  "package": "com.shantu.oldengine",
+  "version": "0.2.168-test",
+  "versionCode": 175,
+  "apkSha256": "0dd7d4c0bf4cb252d57dec777a9b4414da84f1e861f1a200c49aa3e14efb8848",
+  "apkBytes": 165232715,
+  "device": "MuMu Android 12 / API32, 512 MiB Java heap",
+  "phoneVerification": false,
+  "userReport167": "User reports single and dual map feel smoother; drawing remains slow without road or river snap.",
+  "navigation": {
+    "390x857": {
+      "testState": "PASS",
+      "cleanupPassed": true,
+      "styleStatus": "PASS",
+      "nativeColor": "#e41a1c",
+      "nativeWidth": 0.5,
+      "singleColorFocusFrame": true,
+      "singleWidthFocusFrame": true,
+      "firstPersonCameraTogglePass": true,
+      "realGpsMotionVerified": false
+    },
+    "360x780": {
+      "testState": "PASS",
+      "cleanupPassed": true,
+      "styleStatus": "PASS",
+      "nativeColor": "#e41a1c",
+      "nativeWidth": 0.5,
+      "singleColorFocusFrame": true,
+      "singleWidthFocusFrame": true,
+      "firstPersonCameraTogglePass": true,
+      "realGpsMotionVerified": false
+    }
+  },
+  "idleDrawing": {
+    "167": {
+      "inputEvents": 308,
+      "durationMs": 33201.5,
+      "roadSnap": false,
+      "riverSnap": false,
+      "nodeSnap": true,
+      "startPoints": 0,
+      "endPoints": 4,
+      "captureReplies": 127,
+      "tileReplans": 144,
+      "rankCalculations": 126576,
+      "actualBaseMapFrames": 257,
+      "cameraStationary": true,
+      "cssSize": "390x857",
+      "stackSampling": true
+    },
+    "168": {
+      "inputEvents": 308,
+      "durationMs": 14351.39999999851,
+      "roadSnap": false,
+      "riverSnap": false,
+      "nodeSnap": true,
+      "startPoints": 0,
+      "endPoints": 4,
+      "captureReplies": 0,
+      "tileReplans": 0,
+      "rankCalculations": 0,
+      "actualBaseMapFrames": 11,
+      "cameraStationary": true,
+      "cssSize": "390x857",
+      "stackSampling": false
+    },
+    "limitations": "Cache state and stack sampling differ. Counts demonstrate removal of repeated idle work, not a phone speed percentage or map FPS."
+  },
+  "dualMap": {
+    "166": {
+      "cycles": 3,
+      "closedControllersRetained": [
+        1,
+        1,
+        1
+      ],
+      "liveControllers": [
+        2,
+        2,
+        2
+      ],
+      "mountedMaps": [
+        1,
+        1,
+        1
+      ],
+      "scope": "Weak reference collection probe after short dual-map cycles, not long-term phone acceptance."
+    },
+    "167": {
+      "cycles": 3,
+      "closedControllersRetained": [
+        0,
+        0,
+        0
+      ],
+      "liveControllers": [
+        1,
+        1,
+        1
+      ],
+      "mountedMaps": [
+        1,
+        1,
+        1
+      ],
+      "scope": "Weak reference collection probe after short dual-map cycles, not long-term phone acceptance."
+    },
+    "168": {
+      "cycles": 3,
+      "closedControllersRetained": [
+        0,
+        0,
+        0
+      ],
+      "liveControllers": [
+        1,
+        1,
+        1
+      ],
+      "mountedMaps": [
+        1,
+        1,
+        1
+      ],
+      "scope": "Weak reference collection probe after short dual-map cycles, not long-term phone acceptance.",
+      "fatalOomSignalMatches": 0
+    }
+  },
+  "roadSnapComplex": {
+    "testState": "FAIL",
+    "multitouchPass": true,
+    "residualPointerDidNotDraw": true,
+    "qaDraftCleaned": true,
+    "savedTracksAfter": 0,
+    "analysis": "First anchor reported loading; small steps re-snapped to committed node; actual endpoint belongs to another road. 3348 snapshot vertices exceed existing 3000 graph budget. No proof this is caused by the drawing refresh change. Complex continuation remains unverified/failed."
+  },
+  "roadSnapNear": {
+    "testState": "FAIL",
+    "cameraZoom": 16,
+    "roadSnap": true,
+    "nodeSnap": false,
+    "multitouchPass": true,
+    "draftPoints": 26,
+    "startAtTarget": true,
+    "endAtTarget": true,
+    "maxDeviationCssPx": 0.1518065191901692,
+    "pathLengthRatio": 1.0003848085847602,
+    "gapMeters": 0,
+    "monotonic": true,
+    "sameSourceLineAnchored": false,
+    "cleanupDraftPoints": 0,
+    "scope": "Physical geometry matches target but strict source-anchor assertion fails. Not counted as full road-continuation PASS."
+  }
+}

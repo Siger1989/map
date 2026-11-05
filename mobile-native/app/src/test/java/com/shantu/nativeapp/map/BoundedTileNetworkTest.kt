@@ -1,5 +1,7 @@
 package com.shantu.nativeapp.map
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -18,6 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.SQLiteMode
+import org.robolectric.annotation.GraphicsMode
 import java.nio.file.Files
 import java.io.RandomAccessFile
 import java.net.URL
@@ -88,6 +91,54 @@ class BoundedTileNetworkTest {
         } finally { observer.close(); tiles.close() }
     }
     private val imageBytes = byteArrayOf(11, 22, 33, 44)
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `sampled validation preserves supported formats and platform decode validity`() {
+        val png = encodedTestImage(Bitmap.CompressFormat.PNG)
+        val jpeg = encodedTestImage(Bitmap.CompressFormat.JPEG)
+        assertTrue("PNG remains supported", isValidRasterTileImage(png))
+        assertTrue("JPEG remains supported", isValidRasterTileImage(jpeg))
+        assertFalse("random bytes are not accepted as an image", isValidRasterTileImage(imageBytes))
+
+        // Keep complete PNG chunks and valid checksums, but replace compressed image data with
+        // invalid zlib bytes. Android may still return a partially decoded bitmap; the
+        // validity probe must preserve the original full decoder's acceptance contract.
+        val corruptPng = png.copyOf()
+        var offset = 8
+        var corrupted = false
+        while (offset + 12 <= corruptPng.size) {
+            val length = java.nio.ByteBuffer.wrap(corruptPng, offset, 4).int
+            if (String(corruptPng, offset + 4, 4, Charsets.US_ASCII) == "IDAT") {
+                java.util.Arrays.fill(corruptPng, offset + 8, offset + 8 + length, 0.toByte())
+                val crc = java.util.zip.CRC32().apply { update(corruptPng, offset + 4, length + 4) }
+                java.nio.ByteBuffer.wrap(corruptPng, offset + 8 + length, 4).putInt(crc.value.toInt())
+                corrupted = true
+            }
+            offset += length + 12
+        }
+        assertTrue("fixture contains an IDAT chunk", corrupted)
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(corruptPng, 0, corruptPng.size, bounds)
+        assertTrue("fixture still has valid image bounds", bounds.outWidth > 0 && bounds.outHeight > 0)
+        val fullBitmap = BitmapFactory.decodeByteArray(corruptPng, 0, corruptPng.size)
+        val fullDecoderAccepts = fullBitmap != null
+        fullBitmap?.recycle()
+        assertEquals("sampled validation retains the platform's corrupt-image behavior",
+            fullDecoderAccepts, isValidRasterTileImage(corruptPng))
+        assertFalse("truncated headers are rejected", isValidRasterTileImage(png.copyOfRange(0, 33)))
+    }
+
+    private fun encodedTestImage(format: Bitmap.CompressFormat): ByteArray {
+        val bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888)
+        return try {
+            bitmap.eraseColor(0xff4a8060.toInt())
+            java.io.ByteArrayOutputStream().use { output ->
+                check(bitmap.compress(format, 92, output)) { "test image encoding failed for $format" }
+                output.toByteArray()
+            }
+        } finally { bitmap.recycle() }
+    }
 
     @Test
     fun `explicit no coverage is negatively cached while auth denial remains an error`() = runBlocking {
