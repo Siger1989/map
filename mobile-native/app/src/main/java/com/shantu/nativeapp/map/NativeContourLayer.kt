@@ -34,9 +34,11 @@ import java.util.LinkedHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.jvm.functions.Function1
 import kotlin.math.PI
 import kotlin.math.atan
 import kotlin.math.atan2
+import kotlin.math.roundToInt
 import kotlin.math.sinh
 
 /** Geographic conversion and vector styling for the legacy XYZ contour tiles. */
@@ -57,6 +59,12 @@ internal object NativeContourVectorGeometry {
     const val LABEL_HALO_WIDTH = 0.8f
     const val LABEL_SPACING_PIXELS = 900f
     const val MAX_VISIBLE_LABELS = 80
+    private val linearSrgb = DoubleArray(256) { encoded ->
+        val channel = encoded / 255.0
+        if (channel <= 0.04045) channel / 12.92 else Math.pow((channel + 0.055) / 1.055, 2.4)
+    }
+    /** Stable, non-capturing callback shared by contour batches while a pane renders. */
+    val contrastColorTransform: (Color) -> Unit = ::applyContrastColor
 
     fun levelSet(): LevelSet {
         val world = MercatorSector()
@@ -97,8 +105,29 @@ internal object NativeContourVectorGeometry {
     fun contourColor(elevationMeters: Int, interval: Int): Color =
         Color(NativeTerrainOverlayMath.elevationColor(elevationMeters.toDouble(), interval)).apply { alpha = LINE_OPACITY }
 
+    /** Mutates the per-draw-state color copy, selecting the stronger WCAG black/white contrast. */
+    fun applyContrastColor(color: Color) {
+        val luminance = 0.2126 * linearSrgb[(color.red * 255f).roundToInt().coerceIn(0, 255)] +
+            0.7152 * linearSrgb[(color.green * 255f).roundToInt().coerceIn(0, 255)] +
+            0.0722 * linearSrgb[(color.blue * 255f).roundToInt().coerceIn(0, 255)]
+        val blackContrast = (luminance + 0.05) / 0.05
+        val whiteContrast = 1.05 / (luminance + 0.05)
+        val alpha = color.alpha
+        val channel = if (whiteContrast >= blackContrast) 1f else 0f
+        color.set(channel, channel, channel, alpha)
+    }
+
     fun contourWidth(elevationMeters: Int, interval: Int): Float =
         if (Math.floorMod(elevationMeters / interval, 5) == 0) MAJOR_WIDTH else MINOR_WIDTH
+}
+
+/** Uses the additive public SDK setter without requiring new Kotlin module metadata. */
+private object NativeContourBatchColorHook {
+    private val setter = MvtBatchedLineTile::class.java.getMethod("setOutlineColorTransform", Function1::class.java)
+
+    fun apply(batch: MvtBatchedLineTile, enabled: Boolean) {
+        setter.invoke(batch, if (enabled) NativeContourVectorGeometry.contrastColorTransform else null)
+    }
 }
 
 /** A WorldWind vector layer using the same bounded DEM sampler as terrain/elevation colors. */
@@ -106,6 +135,7 @@ internal class NativeContourLayer(
     intervalMeters: Int,
     /** UI zoom visibility, not the SDK's source-level fetch floor. */
     private val minimumZoom: Int,
+    private val elevationFillEnabled: Boolean = false,
     private val loadSamples: suspend (z: Int, x: Int, y: Int) -> DoubleArray?,
 ) : TiledVectorLayer<NativeContourTileContent>(
     levelSet = NativeContourVectorGeometry.levelSet(),
@@ -207,7 +237,7 @@ internal class NativeContourLayer(
     }
 
     /** Clone configuration only; every copy owns a fresh SDK tile cache, scope and fetch jobs. */
-    override fun clone(): NativeContourLayer = NativeContourLayer(interval, minimumZoom, loadSamples).also { copy ->
+    override fun clone(): NativeContourLayer = NativeContourLayer(interval, minimumZoom, elevationFillEnabled, loadSamples).also { copy ->
         copy.displayName = displayName
         copy.isEnabled = isEnabled
         copy.isPickEnabled = isPickEnabled
@@ -375,6 +405,7 @@ internal class NativeContourLayer(
         synchronized(geometry.renderLock) {
             // Close/eviction may win between taking the snapshot and entering this lock.
             if (!content.ownsGeometry(geometry)) return
+            geometry.applyContourFillStyle(elevationFillEnabled)
             val cssScale = viewStyle.cssScale
             geometry.renderables.forEach { renderable ->
                 if (renderable is NativeContourCurvedLabel) {
@@ -459,7 +490,11 @@ internal class NativeContourLayer(
                 maxLatitude - minLatitude,
                 maxLongitude - minLongitude,
             ), "等高线接缝补线",
-        ).apply { isPickEnabled = false; assemble(null) }
+        ).apply {
+            isPickEnabled = false
+            NativeContourBatchColorHook.apply(this, elevationFillEnabled)
+            assemble(null)
+        }
         val maxPairs = NativeContourVectorGeometry.TILE_CACHE_SIZE * (NativeContourVectorGeometry.TILE_CACHE_SIZE - 1) / 2
         val createdBytes = created?.gpuByteEstimate?.toLong() ?: 0L
         val budgetBytes = 2L * 1024L * 1024L
@@ -579,6 +614,14 @@ internal class NativeContourSharedGeometry(
 ) : List<Renderable> by renderables {
     /** SDK batch and Label style fields are mutable per frame; panes serialize their use here. */
     val renderLock = Any()
+    private var appliedContourFillStyle: Boolean? = null
+
+    /** The batch is shared between panes; callers must hold renderLock while switching styles. */
+    fun applyContourFillStyle(enabled: Boolean) {
+        if (appliedContourFillStyle == enabled) return
+        batch?.let { NativeContourBatchColorHook.apply(it, enabled) }
+        appliedContourFillStyle = enabled
+    }
 }
 
 internal object NativeContourSharedGeometryStore {

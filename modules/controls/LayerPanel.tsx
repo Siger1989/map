@@ -31,7 +31,7 @@ const ITEMS = [
   {
     key: 'elevationColors',
     label: '海拔着色',
-    detail: '色阶间隔与等高线同步',
+    detail: '固定25米色带 · 不随等高距变化',
     icon: Palette,
     color: 'amber',
   },
@@ -107,7 +107,7 @@ export function LayerPanel({
                   id={`${key}-label`}
                   htmlFor={`${key}-toggle`}
                   title={key === 'elevationColors'
-                    ? `海拔着色 · 每${contourInterval(settings.contourInterval)}米一个色阶`
+                    ? '海拔着色 · 固定25米细分；等高距只控制等高线'
                     : detail}
                 >
                   {label}
@@ -194,7 +194,7 @@ export function LayerPanel({
                   ))}
                 </select>
                 <small>
-                  显示区域内保持所选高差；远景按间隔提高最低显示缩放级别。线旁数值为海拔米数，色阶同步。
+                  所选高差只控制等高线间隔和远景最低显示缩放级别；填色固定25米细分，不随等高距变化。线旁数值为海拔米数。
                 </small>
               </div>
             )}

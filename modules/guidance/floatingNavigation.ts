@@ -1,7 +1,7 @@
 import type { Coordinate } from '../navigation/types';
 import type { GuidanceSession } from './session';
 
-export type FloatingNavigationMode = 'north' | 'motion';
+export type FloatingNavigationMode = 'north' | 'motion' | 'compass';
 export type FloatingNavigationKind = 'position' | 'route';
 
 export type FloatingNavigationStatus = {
@@ -10,6 +10,8 @@ export type FloatingNavigationStatus = {
   visible: boolean;
   windowEnabled: boolean;
   lockscreenEnabled: boolean;
+  energySaving: boolean;
+  lockscreenKeepOn: boolean;
   mode: FloatingNavigationMode;
   message: string;
   kind: FloatingNavigationKind;
@@ -30,9 +32,11 @@ export type FloatingNavigationPayload = {
   color?: string;
   windowEnabled?: boolean;
   lockscreenEnabled?: boolean;
+  energySaving?: boolean;
+  lockscreenKeepOn?: boolean;
 };
 
-export type FloatingNavigationOptions = Partial<Pick<FloatingNavigationStatus, 'windowEnabled' | 'lockscreenEnabled' | 'mode'>>;
+export type FloatingNavigationOptions = Partial<Pick<FloatingNavigationStatus, 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn' | 'mode'>>;
 
 export type FloatingNavigationBridge = {
   status(): string;
@@ -72,9 +76,11 @@ export function buildFloatingNavigationPayload(
 
 export function serializeFloatingNavigationOptions(options: FloatingNavigationOptions) {
   if (!Object.keys(options).length) throw new Error('悬浮地图设置为空');
-  if (options.mode !== undefined && options.mode !== 'north' && options.mode !== 'motion') throw new Error('方向模式无效');
+  if (options.mode !== undefined && !(['north', 'motion', 'compass'] as string[]).includes(options.mode)) throw new Error('方向模式无效');
   if (options.windowEnabled !== undefined && typeof options.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
   if (options.lockscreenEnabled !== undefined && typeof options.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
+  if (options.energySaving !== undefined && typeof options.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
+  if (options.lockscreenKeepOn !== undefined && typeof options.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
   return JSON.stringify(options);
 }
 
@@ -84,7 +90,7 @@ export function validateFloatingNavigationInput(
   coordinates: readonly Coordinate[],
   kind: FloatingNavigationKind = 'route',
 ) {
-  if (mode !== 'north' && mode !== 'motion') throw new Error('方向模式无效');
+  if (!(['north', 'motion', 'compass'] as string[]).includes(mode)) throw new Error('方向模式无效');
   if (label.length > MAX_LABEL_LENGTH) throw new Error('路线名称过长');
   if (kind !== 'route' && kind !== 'position') throw new Error('悬浮地图类型无效');
   if (kind === 'position' && coordinates.length !== 0) throw new Error('定位小地图不应包含路线');
@@ -107,6 +113,8 @@ export function serializeFloatingNavigationPayload(payload: FloatingNavigationPa
     throw new Error('仅导航路线支持六位十六进制颜色');
   if (payload.windowEnabled !== undefined && typeof payload.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
   if (payload.lockscreenEnabled !== undefined && typeof payload.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
+  if (payload.energySaving !== undefined && typeof payload.energySaving !== 'boolean') throw new Error('energySaving必须为布尔值');
+  if (payload.lockscreenKeepOn !== undefined && typeof payload.lockscreenKeepOn !== 'boolean') throw new Error('lockscreenKeepOn必须为布尔值');
   const serialized = JSON.stringify(payload);
   validateFloatingNavigationPayloadBytes(serialized);
   return serialized;
@@ -132,7 +140,9 @@ export function parseFloatingNavigationStatus(raw: unknown): FloatingNavigationS
     visible: status.visible === true,
     windowEnabled: status.windowEnabled !== false,
     lockscreenEnabled: status.lockscreenEnabled !== false,
-    mode: status.mode === 'motion' ? 'motion' : 'north',
+    energySaving: status.energySaving === true,
+    lockscreenKeepOn: status.lockscreenKeepOn === true,
+    mode: status.mode === 'motion' || status.mode === 'compass' ? status.mode : 'north',
     message: typeof status.message === 'string' ? status.message : '',
     kind: status.kind === 'position' ? 'position' : 'route',
     ...(typeof status.locationAllowed === 'boolean' ? { locationAllowed: status.locationAllowed } : {}),

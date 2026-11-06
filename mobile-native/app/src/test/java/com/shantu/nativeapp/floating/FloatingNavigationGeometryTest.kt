@@ -55,6 +55,7 @@ class FloatingNavigationGeometryTest {
     @Test fun positionSessionNeedsNoRouteAndZoomIsBounded() {
         FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 0, 14)
         FloatingNavigationGeometry.validateSession("route", "motion", "路线", 2, 18)
+        FloatingNavigationGeometry.validateSession("route", "compass", "路线", 2, 18)
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 2) }
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("route", "north", "路线", 0) }
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.validateSession("position", "north", "定位小地图", 0, 19) }
@@ -114,6 +115,75 @@ class FloatingNavigationGeometryTest {
                 oldCenterX - 128, oldCenterY - 128, oldCenterX + 128, oldCenterY + 128,
                 0.0, 0.0, 180.0, 200.0, bearing,
             ))
+        }
+    }
+
+    @Test fun pathBudgetSharesRoadSkeletonAcrossVisibleCenterAndNeighborTiles() {
+        val center = FloatingTileIndex(100, 100)
+        val north = FloatingTileIndex(100, 99)
+        val east = FloatingTileIndex(101, 100)
+        val south = FloatingTileIndex(100, 101)
+        val west = FloatingTileIndex(99, 100)
+        val tiles = listOf(center, north, east, south, west)
+        val candidates = buildList {
+            // A dense center cannot consume the baseline quota before its neighbors.
+            repeat(20) { add(FloatingPathBudgetCandidate(center, 500, roadSkeleton = true)) }
+            listOf(north, east, south, west).forEach { add(FloatingPathBudgetCandidate(it, 500, roadSkeleton = true)) }
+            repeat(16) { add(FloatingPathBudgetCandidate(center, 400, roadSkeleton = false)) }
+            listOf(north, east, south, west).forEach { add(FloatingPathBudgetCandidate(it, 400, roadSkeleton = false)) }
+        }
+
+        val allocation = FloatingNavigationGeometry.allocatePathBudget(tiles, candidates, budget = 8_000)
+        val selectedIndices = allocation.selected.toSet()
+        tiles.forEach { tile ->
+            val skeleton = candidates.indexOfFirst { it.tile == tile && it.roadSkeleton }
+            assertTrue("$tile keeps its complete major-road path", skeleton in selectedIndices)
+        }
+        assertTrue("total accepted vertices remain within the hard cap", allocation.acceptedVertices <= 8_000)
+        assertEquals(allocation.acceptedVertices, allocation.selected.sumOf { candidates[it].vertexCount })
+        assertTrue("dense center detail is skipped instead of cutting paths", allocation.skippedPaths > 0)
+    }
+
+    @Test fun nonSkeletonPathsCannotLetOneCenterFeatureStarveNeighborTiles() {
+        val center = FloatingTileIndex(100, 100)
+        val neighbors = listOf(
+            FloatingTileIndex(100, 99), FloatingTileIndex(101, 100),
+            FloatingTileIndex(100, 101), FloatingTileIndex(99, 100),
+        )
+        val tiles = listOf(center) + neighbors
+        val candidates = listOf(FloatingPathBudgetCandidate(center, 8_000, roadSkeleton = false)) +
+            neighbors.map { FloatingPathBudgetCandidate(it, 100, roadSkeleton = false) }
+
+        val allocation = FloatingNavigationGeometry.allocatePathBudget(tiles, candidates, budget = 8_000)
+        val selectedIndices = allocation.selected.toSet()
+        assertTrue("each neighboring tile keeps its complete path", (1..4).all { it in selectedIndices })
+        assertFalse("the oversized center detail is skipped whole", 0 in selectedIndices)
+        assertEquals(400, allocation.acceptedVertices)
+        assertEquals(400, allocation.selected.sumOf { candidates[it].vertexCount })
+        assertTrue(allocation.acceptedVertices <= 8_000)
+    }
+
+    @Test fun pathBudgetNeverTruncatesAnOversizePathOrPolygonRing() {
+        val tile = FloatingTileIndex(7, 9)
+        val candidates = listOf(
+            FloatingPathBudgetCandidate(tile, 8_001, roadSkeleton = true),
+            FloatingPathBudgetCandidate(tile, 23_000, roadSkeleton = false),
+            FloatingPathBudgetCandidate(tile, 7_999, roadSkeleton = true),
+        )
+        val allocation = FloatingNavigationGeometry.allocatePathBudget(listOf(tile), candidates, budget = 8_000)
+        assertEquals(listOf(2), allocation.selected.toList())
+        assertEquals(7_999, allocation.acceptedVertices)
+        assertEquals(2, allocation.skippedPaths)
+    }
+
+    @Test fun candidateCollectionLimitIsHardAndDistributedAcrossVisibleTiles() {
+        for (visibleTiles in listOf(1, 5, 16, 32)) {
+            val limits = (0 until visibleTiles).map { FloatingNavigationGeometry.pathCandidateLimit(it, visibleTiles) }
+            assertTrue(limits.maxOrNull()!! - limits.minOrNull()!! <= 1)
+            assertTrue(limits.sum() <= FloatingNavigationGeometry.MAX_TILE_PATH_CANDIDATES)
+            if (visibleTiles <= FloatingNavigationGeometry.MAX_TILE_PATH_CANDIDATES) {
+                assertEquals(FloatingNavigationGeometry.MAX_TILE_PATH_CANDIDATES, limits.sum())
+            }
         }
     }
 

@@ -7,9 +7,22 @@ internal data class FloatingPoint(val x: Float, val y: Float)
 internal data class FloatingRouteProjection(val segmentIndex: Int, val fraction: Double, val distanceMeters: Double, val remainingMeters: Double, val offRoute: Boolean)
 internal data class FloatingWindowSize(val widthDp: Float, val heightDp: Float)
 internal data class FloatingTileIndex(val x: Int, val y: Int)
+internal data class FloatingPathBudgetCandidate(
+    val tile: FloatingTileIndex,
+    val vertexCount: Int,
+    val roadSkeleton: Boolean,
+)
+internal data class FloatingPathBudgetAllocation(
+    /** Indices into the input candidate list. Each selected path is kept whole. */
+    val selected: IntArray,
+    val acceptedVertices: Int,
+    val skippedPaths: Int,
+)
 
 /** Pure, bounded input and Web-Mercator geometry used by the compact overlay. */
 internal object FloatingNavigationGeometry {
+    const val MAX_TILE_DRAW_VERTICES = 8_000
+    const val MAX_TILE_PATH_CANDIDATES = 16_000
     const val MAX_ROUTE_POINTS = 100_000
     const val MAX_RECORDING_POINTS = 6_000
     const val MAX_PAYLOAD_BYTES = 4 * 1024 * 1024
@@ -24,7 +37,7 @@ internal object FloatingNavigationGeometry {
     }
 
     fun validate(mode: String, label: String, points: List<FloatingCoordinate>) {
-        require(mode == "north" || mode == "motion") { "方向模式无效" }
+        require(mode == "north" || mode == "motion" || mode == "compass") { "方向模式无效" }
         require(label.length <= 160) { "路线名称过长" }
         require(points.size in 2..MAX_ROUTE_POINTS) { "路线点数必须为2至100000" }
         require(points.all { it.longitude.isFinite() && it.longitude in -180.0..180.0 && it.latitude.isFinite() && it.latitude in -90.0..90.0 }) { "路线坐标无效" }
@@ -32,7 +45,7 @@ internal object FloatingNavigationGeometry {
 
     fun validateSession(kind: String, mode: String, label: String, pointCount: Int, zoom: Int? = null) {
         require(kind == "position" || kind == "route") { "悬浮窗会话类型无效" }
-        require(mode == "north" || mode == "motion") { "方向模式无效" }
+        require(mode == "north" || mode == "motion" || mode == "compass") { "方向模式无效" }
         require(label.length <= 160) { "路线名称过长" }
         if (kind == "position") require(pointCount == 0) { "定位小窗不能包含规划路线" }
         else require(pointCount in 2..MAX_ROUTE_POINTS) { "路线点数必须为2至100000" }
@@ -81,6 +94,96 @@ internal object FloatingNavigationGeometry {
                 .thenBy { it.y }
                 .thenBy { it.x },
         )
+    }
+
+    /**
+     * Fairly allocate a global path-vertex budget. Each visible tile first gets an
+     * equal share for major roads, then other complete paths within that same base
+     * share. Leftover capacity is filled round-robin across tiles.
+     */
+    fun allocatePathBudget(
+        visibleTiles: List<FloatingTileIndex>,
+        candidates: List<FloatingPathBudgetCandidate>,
+        budget: Int = MAX_TILE_DRAW_VERTICES,
+    ): FloatingPathBudgetAllocation {
+        require(budget >= 0)
+        // Callers pass a unique tile order, with that tile's candidates contiguous.
+        val tiles = visibleTiles
+        if (budget == 0 || tiles.isEmpty() || candidates.isEmpty()) {
+            return FloatingPathBudgetAllocation(IntArray(0), 0, candidates.count { it.vertexCount > 0 })
+        }
+        val tileOrdinals = HashMap<FloatingTileIndex, Int>(tiles.size)
+        tiles.forEachIndexed { ordinal, tile -> tileOrdinals[tile] = ordinal }
+        val starts = IntArray(tiles.size) { -1 }
+        val ends = IntArray(tiles.size)
+        candidates.forEachIndexed { index, candidate ->
+            val ordinal = tileOrdinals[candidate.tile] ?: return@forEachIndexed
+            if (starts[ordinal] < 0) starts[ordinal] = index
+            ends[ordinal] = index + 1
+        }
+        val selected = BooleanArray(candidates.size)
+        var remaining = budget
+        val base = budget / tiles.size
+        val extra = budget % tiles.size
+        for ((tileOrdinal, tile) in tiles.withIndex()) {
+            var tileRemaining = base + if (tileOrdinal < extra) 1 else 0
+            if (starts[tileOrdinal] < 0) continue
+            for (index in starts[tileOrdinal] until ends[tileOrdinal]) {
+                val path = candidates[index]
+                if (path.tile != tile) continue
+                if (!path.roadSkeleton || path.vertexCount > tileRemaining || path.vertexCount > remaining) continue
+                selected[index] = true
+                tileRemaining -= path.vertexCount
+                remaining -= path.vertexCount
+            }
+            // A tile with no major roads still receives useful detail before the
+            // center tile can spend the shared remainder on one large feature.
+            for (index in starts[tileOrdinal] until ends[tileOrdinal]) {
+                val path = candidates[index]
+                if (path.tile != tile || path.roadSkeleton || selected[index]) continue
+                if (path.vertexCount <= 0 || path.vertexCount > tileRemaining || path.vertexCount > remaining) continue
+                selected[index] = true
+                tileRemaining -= path.vertexCount
+                remaining -= path.vertexCount
+            }
+        }
+
+        // One path per tile per round prevents the center tile from consuming all
+        // remaining detail capacity. Over-budget paths are skipped whole.
+        val cursors = IntArray(tiles.size)
+        while (remaining > 0) {
+            var selectedInRound = false
+            for ((tileOrdinal, tile) in tiles.withIndex()) {
+                if (starts[tileOrdinal] < 0) continue
+                while (starts[tileOrdinal] + cursors[tileOrdinal] < ends[tileOrdinal]) {
+                    val index = starts[tileOrdinal] + cursors[tileOrdinal]++
+                    if (selected[index]) continue
+                    val path = candidates[index]
+                    if (path.tile != tile) continue
+                    if (path.vertexCount > remaining) continue
+                    selected[index] = true
+                    remaining -= path.vertexCount
+                    selectedInRound = true
+                    break
+                }
+            }
+            if (!selectedInRound) break
+        }
+        val selectedIndices = IntArray(selected.count { it })
+        var write = 0
+        selected.forEachIndexed { index, keep -> if (keep) selectedIndices[write++] = index }
+        return FloatingPathBudgetAllocation(
+            selectedIndices,
+            budget - remaining,
+            candidates.indices.count { candidates[it].vertexCount > 0 && !selected[it] },
+        )
+    }
+
+    /** Per-visible-tile cap whose sum never exceeds the frame-wide candidate bound. */
+    fun pathCandidateLimit(tileOrdinal: Int, visibleTileCount: Int): Int {
+        require(visibleTileCount > 0 && tileOrdinal in 0 until visibleTileCount)
+        val base = MAX_TILE_PATH_CANDIDATES / visibleTileCount
+        return base + if (tileOrdinal < MAX_TILE_PATH_CANDIDATES % visibleTileCount) 1 else 0
     }
 
     /** Conservative AABB test after applying the same clockwise camera bearing as the Canvas. */

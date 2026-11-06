@@ -1,0 +1,91 @@
+{
+  "artifactVersion": "0.2.176-test/code183",
+  "device": "ShantuPerf34 API34 emulator",
+  "syntheticOnly": true,
+  "testState": "PASS_SYNTHETIC_ONLY",
+  "sixDirectionsPass": true,
+  "yellowTrackVisible": true,
+  "mvtCurrentTileLabelsSurvive": true,
+  "fairBudgetCases": [
+    {
+      "bearing": 0,
+      "pass": true,
+      "counters": {
+        "visibleTiles": 5,
+        "candidatePaths": 5,
+        "acceptedPaths": 4,
+        "acceptedVertices": 400,
+        "pathsSkippedByBudget": 1,
+        "pathsSkippedByCandidateLimit": 0,
+        "available": true,
+        "source": "getter"
+      },
+      "allNeighborRoadsVisible": true,
+      "labelPixels": 26
+    },
+    {
+      "bearing": 45,
+      "pass": true,
+      "counters": {
+        "visibleTiles": 5,
+        "candidatePaths": 5,
+        "acceptedPaths": 4,
+        "acceptedVertices": 400,
+        "pathsSkippedByBudget": 1,
+        "pathsSkippedByCandidateLimit": 0,
+        "available": true,
+        "source": "getter"
+      },
+      "allNeighborRoadsVisible": true,
+      "labelPixels": 26
+    },
+    {
+      "bearing": 90,
+      "pass": true,
+      "counters": {
+        "visibleTiles": 5,
+        "candidatePaths": 5,
+        "acceptedPaths": 4,
+        "acceptedVertices": 400,
+        "pathsSkippedByBudget": 1,
+        "pathsSkippedByCandidateLimit": 0,
+        "available": true,
+        "source": "getter"
+      },
+      "allNeighborRoadsVisible": true,
+      "labelPixels": 26
+    },
+    {
+      "bearing": 180,
+      "pass": true,
+      "counters": {
+        "visibleTiles": 5,
+        "candidatePaths": 5,
+        "acceptedPaths": 4,
+        "acceptedVertices": 400,
+        "pathsSkippedByBudget": 1,
+        "pathsSkippedByCandidateLimit": 0,
+        "available": true,
+        "source": "getter"
+      },
+      "allNeighborRoadsVisible": true,
+      "labelPixels": 26
+    },
+    {
+      "bearing": 270,
+      "pass": true,
+      "counters": {
+        "visibleTiles": 5,
+        "candidatePaths": 5,
+        "acceptedPaths": 4,
+        "acceptedVertices": 400,
+        "pathsSkippedByBudget": 1,
+        "pathsSkippedByCandidateLimit": 0,
+        "available": true,
+        "source": "getter"
+      },
+      "allNeighborRoadsVisible": true,
+      "labelPixels": 26
+    }
+  ]
+}

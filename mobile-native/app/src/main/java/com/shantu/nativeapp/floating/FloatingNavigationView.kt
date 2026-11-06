@@ -11,6 +11,14 @@ import com.shantu.nativeapp.geology.NativeMvtFeature
 import kotlin.math.*
 
 internal data class FloatingTileGeometry(val z: Int, val x: Int, val y: Int, val features: List<NativeMvtFeature>)
+internal data class FloatingTileRenderCounters(
+    val visibleTiles: Int = 0,
+    val candidatePaths: Int = 0,
+    val acceptedPaths: Int = 0,
+    val acceptedVertices: Int = 0,
+    val pathsSkippedByBudget: Int = 0,
+    val pathsSkippedByCandidateLimit: Int = 0,
+)
 
 /** Small non-GL overlay. Geometry is supplied by a bounded service cache and drawn only when invalidated. */
 internal class FloatingNavigationView(context: Context) : View(context) {
@@ -43,7 +51,11 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     var routeRemainingMeters: Double? = null; set(value) { field = value; invalidate() }
     var routeOffRoute: Boolean = false; set(value) { field = value; invalidate() }
     var label: String = "路线"; set(value) { field = value; invalidate() }
-    var tiles: List<FloatingTileGeometry> = emptyList(); set(value) { field = value; invalidate() }
+    var tiles: List<FloatingTileGeometry> = emptyList(); set(value) {
+        field = value
+        rebuildTileSummaries(value)
+        invalidate()
+    }
     var onMode: (() -> Unit)? = null
     var onReturn: (() -> Unit)? = null
     var onClose: (() -> Unit)? = null
@@ -63,6 +75,38 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     private var recordedPath: Path? = null
     private var recordedPathCenter: FloatingCoordinate? = null
     private data class MapLabel(val text: String, val x: Float, val y: Float)
+    private data class TileCacheKey(val z: Int, val x: Int, val y: Int)
+    private data class TileLabelSummary(val text: String, val x: Int, val y: Int, val extent: Int)
+    private data class TilePathSummary(
+        val tile: FloatingTileGeometry,
+        val feature: NativeMvtFeature,
+        val points: List<Pair<Int, Int>>,
+        val candidate: FloatingPathBudgetCandidate,
+        val isBuilding: Boolean,
+        val isRoad: Boolean,
+        val isWater: Boolean,
+        val minX: Int,
+        val minY: Int,
+        val maxX: Int,
+        val maxY: Int,
+    )
+    private data class TileRenderSummary(
+        val tile: FloatingTileGeometry,
+        val index: FloatingTileIndex,
+        val labels: List<TileLabelSummary>,
+        val paths: List<TilePathSummary>,
+    )
+    private data class TilePlacement(val summary: TileRenderSummary, val dxTile: Double, val dyTile: Double)
+    private val tileSummaryCache = LinkedHashMap<TileCacheKey, TileRenderSummary>(40, .75f, true)
+    private var tileSummaries: List<TileRenderSummary> = emptyList()
+    private var tileSummaryByIndex: Map<FloatingTileIndex, TileRenderSummary> = emptyMap()
+    private var tileIndices: List<FloatingTileIndex> = emptyList()
+    private val visiblePathsScratch = ArrayList<TilePathSummary>()
+    private val budgetCandidatesScratch = ArrayList<FloatingPathBudgetCandidate>()
+    private val budgetTilesScratch = ArrayList<FloatingTileIndex>()
+    private val visibleTilePlacementsScratch = ArrayList<TilePlacement>()
+    internal var renderCounters: FloatingTileRenderCounters = FloatingTileRenderCounters()
+        private set
     private val mapLabels = ArrayList<MapLabel>(64)
     private fun px(dp: Float) = dp * density
     private fun text(canvas: Canvas, value: String, x: Float, baseline: Float, size: Float, color: Int, align: Paint.Align = Paint.Align.LEFT, maxWidthPx: Float = width - px(16f)) {
@@ -91,7 +135,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         if (navCenter != null) {
             val bearing = mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 }
             val cX = (left + right) / 2f; val cY = (top + bottom) / 2f
-            canvas.save(); if (mode == "motion" && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
+            canvas.save(); if ((mode == "motion" || mode == "compass") && bearing != null) canvas.rotate(-bearing.toFloat(), cX, cY)
             drawTiles(canvas, navCenter, cX, cY)
             drawRoute(canvas, navCenter, cX, cY)
             drawRecordedTrack(canvas, navCenter, cX, cY)
@@ -111,9 +155,12 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             canvas.restore()
             drawMapLabels(canvas, left, top, right, bottom)
         } else {
+            renderCounters = FloatingTileRenderCounters()
             text(canvas, "等待定位", (left + right) / 2f, (top + bottom) / 2f, 12f, 0xffbdff54.toInt(), Paint.Align.CENTER)
         }
         canvas.restore()
+        drawNorthReference(canvas, (left + right) / 2f, (top + bottom) / 2f,
+            min(right - left, bottom - top) * .32f)
         if (lockscreenPresentation) {
             // The activity fades the complete drawing, including text, into pure black.
             // Attribution remains available in Tools source details.
@@ -122,20 +169,21 @@ internal class FloatingNavigationView(context: Context) : View(context) {
             return
         }
         // Direction reference; never substitute route direction when heading is absent.
-        drawNorthReference(canvas, width - px(19f), (top + bottom) / 2f)
         drawResizeGrip(canvas)
     }
 
-    private fun drawNorthReference(canvas: Canvas, x: Float, y: Float) {
-        text(canvas, "N", x - px(9f), y + px(3f), 8f, 0xffe9f3eb.toInt(), Paint.Align.CENTER, px(10f))
-        val cameraBearing = if (mode == "motion") mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
-        canvas.save()
-        canvas.translate(x + px(3f), y)
-        canvas.rotate(-cameraBearing.toFloat())
-        canvas.scale(px(6f), px(6f))
-        p.color = 0xffe9f3eb.toInt()
-        canvas.drawPath(arrowPath, p)
-        canvas.restore()
+    private fun drawNorthReference(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
+        val cameraBearing = if (mode == "motion" || mode == "compass")
+            mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
+        val radians = Math.toRadians(cameraBearing)
+        val x = cx - (sin(radians) * radius).toFloat()
+        val y = cy - (cos(radians) * radius).toFloat()
+        p.style = Paint.Style.FILL; p.color = 0xc0000000.toInt()
+        canvas.drawCircle(x, y, px(11f), p)
+        p.style = Paint.Style.STROKE; p.strokeWidth = px(1f); p.color = 0xffbdff54.toInt()
+        canvas.drawCircle(x, y, px(11f), p)
+        p.style = Paint.Style.FILL
+        text(canvas, "N", x, y + px(5f), 14f, 0xffeaffc2.toInt(), Paint.Align.CENTER, px(20f))
     }
 
     /** Labels use screen coordinates after the map rotation, so text stays upright. */
@@ -162,7 +210,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
     private fun drawCompactToolbar(canvas: Canvas) {
         p.color = 0xff10251a.toInt()
         canvas.drawRect(0f, 0f, width.toFloat(), px(32f), p)
-        val symbols = arrayOf("‹", if (mode == "north") "N" else "↑",
+        val symbols = arrayOf("‹", when (mode) { "north" -> "N"; "compass" -> "罗"; else -> "↑" },
             when (recordingPhase) { "recording" -> "Ⅱ"; "paused" -> "▶"; "finished" -> "✓"; else -> "●" },
             "−", "+", "×")
         val slot = width / symbols.size.toFloat()
@@ -171,7 +219,7 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                 if (i == 2) 0xffffdf4f.toInt() else if (i == 5) 0xffd6c66e.toInt() else 0xffbdff54.toInt(),
                 Paint.Align.CENTER, slot - px(2f))
         }
-        contentDescription = "悬浮地图：返回应用，${if (mode == "north") "指北" else "运动朝上"}，轨迹${recordingPhase}，缩小，放大，关闭小窗。拖动地图移动窗口，拖右下角改变大小"
+        contentDescription = "悬浮地图：返回应用，${when (mode) { "north" -> "指北"; "compass" -> "罗盘朝上"; else -> "运动朝上" }}，轨迹${recordingPhase}，缩小，放大，关闭小窗。拖动地图移动窗口，拖右下角改变大小"
     }
 
     private fun drawResizeGrip(canvas: Canvas) {
@@ -204,21 +252,77 @@ internal class FloatingNavigationView(context: Context) : View(context) {
         return path
     }
 
+    private fun rebuildTileSummaries(value: List<FloatingTileGeometry>) {
+        val next = ArrayList<TileRenderSummary>()
+        val byIndex = HashMap<FloatingTileIndex, TileRenderSummary>()
+        for (tile in value) {
+            if (tile.z != 14) continue
+            val key = TileCacheKey(tile.z, tile.x, tile.y)
+            val summary = tileSummaryCache[key]?.takeIf { it.tile === tile } ?: summarizeTile(tile).also {
+                tileSummaryCache[key] = it
+                while (tileSummaryCache.size > 32) tileSummaryCache.entries.iterator().run { next(); remove() }
+            }
+            next += summary
+            byIndex[summary.index] = summary
+        }
+        tileSummaries = next
+        tileSummaryByIndex = byIndex
+        tileIndices = next.map { it.index }
+    }
+
+    /** Build immutable per-path bounds once per tile object, never by walking vertices on compass frames. */
+    private fun summarizeTile(tile: FloatingTileGeometry): TileRenderSummary {
+        val index = FloatingTileIndex(tile.x, tile.y)
+        val labels = ArrayList<TileLabelSummary>()
+        val paths = ArrayList<TilePathSummary>()
+        for (feature in tile.features) {
+            val layer = feature.layer.lowercase()
+            val isBuilding = layer.contains("building")
+            val isRoad = layer in setOf("transportation", "road", "roads") || layer.contains("transport") || layer.contains("road")
+            val isWater = layer in setOf("water", "waterway", "landuse") && (layer != "landuse" || feature.properties["class"]?.contains("water", true) == true)
+            val isLabel = layer.contains("label") || layer.contains("place") || layer.contains("poi")
+            if (isLabel) {
+                if (feature.type != 1) continue
+                val title = feature.properties["name:zh"] ?: feature.properties["name"] ?: feature.properties["name:en"] ?: feature.properties["name:latin"]
+                if (title.isNullOrBlank() || feature.extent <= 0) continue
+                feature.paths.forEach { points -> points.firstOrNull()?.let { labels += TileLabelSummary(title.take(16), it.first, it.second, feature.extent) } }
+                continue
+            }
+            if (!isBuilding && !isRoad && !isWater) continue
+            for (points in feature.paths) {
+                if (points.isEmpty() || feature.extent <= 0) continue
+                var minX = Int.MAX_VALUE; var minY = Int.MAX_VALUE; var maxX = Int.MIN_VALUE; var maxY = Int.MIN_VALUE
+                for (point in points) {
+                    minX = min(minX, point.first); minY = min(minY, point.second)
+                    maxX = max(maxX, point.first); maxY = max(maxY, point.second)
+                }
+                val roadClass = feature.properties["class"]
+                val skeleton = isRoad && roadClass in setOf("motorway", "trunk", "primary")
+                paths += TilePathSummary(
+                    tile, feature, points,
+                    FloatingPathBudgetCandidate(index, points.size, skeleton),
+                    isBuilding, isRoad, isWater, minX, minY, maxX, maxY,
+                )
+            }
+        }
+        return TileRenderSummary(tile, index, labels, paths)
+    }
+
     private fun drawTiles(canvas: Canvas, center: FloatingCoordinate, cx: Float, cy: Float) {
         val z = 14; val n = 1 shl z
         val worldX = (center.longitude + 180.0) / 360.0 * n
         val lat = Math.toRadians(center.latitude.coerceIn(-85.05112878, 85.05112878))
         val worldY = (1.0 - ln(tan(lat) + 1.0 / cos(lat)) / Math.PI) / 2.0 * n
         val scale = px(256f * FloatingNavigationGeometry.overzoomScale(zoom).toFloat())
-        val cameraBearing = if (mode == "motion") mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
+        val cameraBearing = if (mode == "motion" || mode == "compass") mapBearing?.takeIf { it.isFinite() && it in 0.0..<360.0 } ?: 0.0 else 0.0
         val viewportWidth = width.toFloat().coerceAtLeast(0f)
         val viewportHeight = (height - if (lockscreenPresentation) 0f else px(32f)).coerceAtLeast(0f)
-        val indices = tiles.asSequence().filter { it.z == z }.map { FloatingTileIndex(it.x, it.y) }.toList()
-        val tilesByIndex = tiles.asSequence().filter { it.z == z }.associateBy { it.x to it.y }
-        val orderedIndices = FloatingNavigationGeometry.prioritizeTileIndices(indices, worldX, worldY, n, cameraBearing)
-        var vertexBudget = 8_000
+        val orderedIndices = FloatingNavigationGeometry.prioritizeTileIndices(tileIndices, worldX, worldY, n, cameraBearing)
+        visiblePathsScratch.clear(); budgetCandidatesScratch.clear(); budgetTilesScratch.clear(); visibleTilePlacementsScratch.clear()
+        var visibleTileCount = 0
         for (tileIndex in orderedIndices) {
-            val tile = tilesByIndex[tileIndex.x to tileIndex.y] ?: continue
+            val summary = tileSummaryByIndex[tileIndex] ?: continue
+            val tile = summary.tile
             var dxTile = tile.x - worldX
             if (dxTile > n / 2.0) dxTile -= n
             if (dxTile < -n / 2.0) dxTile += n
@@ -231,62 +335,97 @@ internal class FloatingNavigationView(context: Context) : View(context) {
                     cy.toDouble() + (dyTile + 1.0) * scale.toDouble() + tileBuffer.toDouble(),
                     cx.toDouble(), cy.toDouble(), viewportWidth.toDouble(), viewportHeight.toDouble(), cameraBearing,
                 )) continue
-            for (feature in tile.features) {
-                val layer = feature.layer.lowercase()
-                val isBuilding = layer.contains("building")
-                val isRoad = layer in setOf("transportation", "road", "roads") || layer.contains("transport") || layer.contains("road")
-                val isWater = layer in setOf("water", "waterway", "landuse") && (layer != "landuse" || feature.properties["class"]?.contains("water", true) == true)
-                val isLabel = layer.contains("label") || layer.contains("place") || layer.contains("poi")
-                if (!isBuilding && !isRoad && !isWater && !isLabel) continue
-                if (isLabel) {
-                    if (feature.type != 1 || mapLabels.size >= 64) continue
-                    val title = feature.properties["name:zh"] ?: feature.properties["name"] ?:
-                        feature.properties["name:en"] ?: feature.properties["name:latin"]
-                    if (title.isNullOrBlank()) continue
-                    for (points in feature.paths) {
-                        val point = points.firstOrNull() ?: continue
-                        val x = ((dxTile + point.first.toDouble() / feature.extent) * scale).toFloat()
-                        val y = ((dyTile + point.second.toDouble() / feature.extent) * scale).toFloat()
-                        val radians = Math.toRadians(-cameraBearing)
-                        val sx = cx + (x * cos(radians) - y * sin(radians)).toFloat()
-                        val sy = cy + (x * sin(radians) + y * cos(radians)).toFloat()
-                        if (sx in 0f..width.toFloat() && sy in 0f..height.toFloat() && mapLabels.size < 64)
-                            mapLabels += MapLabel(title.take(16), sx, sy)
-                    }
+            visibleTileCount++
+            visibleTilePlacementsScratch += TilePlacement(summary, dxTile, dyTile)
+
+            // Labels use their own small cap and never consume geometry vertices.
+            for (label in summary.labels) {
+                if (mapLabels.size >= 64) break
+                val x = ((dxTile + label.x.toDouble() / label.extent) * scale).toFloat()
+                val y = ((dyTile + label.y.toDouble() / label.extent) * scale).toFloat()
+                val radians = Math.toRadians(-cameraBearing)
+                val sx = cx + (x * cos(radians) - y * sin(radians)).toFloat()
+                val sy = cy + (x * sin(radians) + y * cos(radians)).toFloat()
+                if (sx in 0f..width.toFloat() && sy in 0f..height.toFloat()) mapLabels += MapLabel(label.text, sx, sy)
+            }
+
+        }
+
+        var oversizePathCount = 0
+        var candidateLimitSkipped = 0
+        for ((tileOrdinal, placement) in visibleTilePlacementsScratch.withIndex()) {
+            val summary = placement.summary
+            val dxTile = placement.dxTile
+            val dyTile = placement.dyTile
+            val tileCandidateLimit = FloatingNavigationGeometry.pathCandidateLimit(tileOrdinal, visibleTilePlacementsScratch.size)
+            var tileCandidateCount = 0
+            var tileHasVisiblePath = false
+            for (path in summary.paths) {
+                val feature = path.feature
+                val minX = cx + ((dxTile + path.minX.toDouble() / feature.extent) * scale).toFloat()
+                val minY = cy + ((dyTile + path.minY.toDouble() / feature.extent) * scale).toFloat()
+                val maxX = cx + ((dxTile + path.maxX.toDouble() / feature.extent) * scale).toFloat()
+                val maxY = cy + ((dyTile + path.maxY.toDouble() / feature.extent) * scale).toFloat()
+                if (!FloatingNavigationGeometry.intersectsRotatedViewport(
+                        minX.toDouble(), minY.toDouble(), maxX.toDouble(), maxY.toDouble(),
+                        cx.toDouble(), cy.toDouble(), viewportWidth.toDouble(), viewportHeight.toDouble(), cameraBearing,
+                    )) continue
+                if (path.points.size > FloatingNavigationGeometry.MAX_TILE_DRAW_VERTICES) {
+                    oversizePathCount++
                     continue
                 }
-                if (vertexBudget <= 0) continue
-                if (isBuilding) { p.color = 0xff294331.toInt(); line.color = 0xff41604a.toInt(); line.strokeWidth = px(.45f) }
-                else if (isRoad) { line.color = if (feature.properties["class"] in setOf("motorway", "trunk", "primary")) 0xff78916b.toInt() else 0xff4d6651.toInt(); line.strokeWidth = px(if (feature.properties["class"] in setOf("motorway", "trunk", "primary")) 1.5f else .8f) }
-                else if (isWater) { p.color = 0xff12352e.toInt(); line.color = p.color; line.strokeWidth = px(1f) }
-                else { p.color = 0xffc7d4c9.toInt(); p.textSize = px(7f); p.textAlign = Paint.Align.CENTER }
-                for (points in feature.paths) {
-                    if (points.isEmpty() || vertexBudget <= 0) continue
-                    // Never cut a ring or road part at the budget edge; that would invent a false polygon closure.
-                    if (points.size > vertexBudget) continue
-                    val path = Path()
-                    var minX = Float.POSITIVE_INFINITY; var maxX = Float.NEGATIVE_INFINITY; var minY = Float.POSITIVE_INFINITY; var maxY = Float.NEGATIVE_INFINITY
-                    points.forEachIndexed { index, xy ->
-                        val x = cx + ((dxTile + xy.first.toDouble() / feature.extent) * scale).toFloat()
-                        val y = cy + ((dyTile + xy.second.toDouble() / feature.extent) * scale).toFloat()
-                        minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
-                        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
-                    }
-                    // Cull using the same camera rotation as Canvas; offscreen old tiles cannot
-                    // consume the shared vertex budget before geometry around the live center.
-                    if (!FloatingNavigationGeometry.intersectsRotatedViewport(
-                            minX.toDouble(), minY.toDouble(), maxX.toDouble(), maxY.toDouble(),
-                            cx.toDouble(), cy.toDouble(), viewportWidth.toDouble(), viewportHeight.toDouble(), cameraBearing,
-                        )) continue
-                    vertexBudget -= points.size
-                    when {
-                        isBuilding && feature.type == 3 -> { canvas.drawPath(path, p); canvas.drawPath(path, line) }
-                        isWater && feature.type == 3 -> { p.color = 0xff12352e.toInt(); line.color = 0xff1d463a.toInt(); line.strokeWidth = px(.6f); canvas.drawPath(path, p); canvas.drawPath(path, line) }
-                        (isRoad || isWater) && feature.type != 1 -> canvas.drawPath(path, line)
-                    }
+                if (tileCandidateCount >= tileCandidateLimit) {
+                    candidateLimitSkipped++
+                    continue
                 }
+                visiblePathsScratch += path
+                budgetCandidatesScratch += path.candidate
+                tileCandidateCount++
+                tileHasVisiblePath = true
+            }
+            if (tileHasVisiblePath) budgetTilesScratch += summary.index
+        }
+
+        val allocation = FloatingNavigationGeometry.allocatePathBudget(
+            budgetTilesScratch, budgetCandidatesScratch, FloatingNavigationGeometry.MAX_TILE_DRAW_VERTICES,
+        )
+        for (candidateIndex in allocation.selected) {
+            val pathSummary = visiblePathsScratch[candidateIndex]
+            val feature = pathSummary.feature
+            val tile = pathSummary.tile
+            var dxTile = tile.x - worldX
+            if (dxTile > n / 2.0) dxTile -= n
+            if (dxTile < -n / 2.0) dxTile += n
+            val dyTile = tile.y - worldY
+            when {
+                pathSummary.isBuilding -> { p.color = 0xff294331.toInt(); line.color = 0xff41604a.toInt(); line.strokeWidth = px(.45f) }
+                pathSummary.isRoad -> {
+                    val major = feature.properties["class"] in setOf("motorway", "trunk", "primary")
+                    line.color = if (major) 0xff78916b.toInt() else 0xff4d6651.toInt()
+                    line.strokeWidth = px(if (major) 1.5f else .8f)
+                }
+                pathSummary.isWater -> { p.color = 0xff12352e.toInt(); line.color = p.color; line.strokeWidth = px(1f) }
+            }
+            val path = Path()
+            pathSummary.points.forEachIndexed { pointIndex, xy ->
+                val x = cx + ((dxTile + xy.first.toDouble() / feature.extent) * scale).toFloat()
+                val y = cy + ((dyTile + xy.second.toDouble() / feature.extent) * scale).toFloat()
+                if (pointIndex == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            when {
+                pathSummary.isBuilding && feature.type == 3 -> { canvas.drawPath(path, p); canvas.drawPath(path, line) }
+                pathSummary.isWater && feature.type == 3 -> { p.color = 0xff12352e.toInt(); line.color = 0xff1d463a.toInt(); line.strokeWidth = px(.6f); canvas.drawPath(path, p); canvas.drawPath(path, line) }
+                (pathSummary.isRoad || pathSummary.isWater) && feature.type != 1 -> canvas.drawPath(path, line)
             }
         }
+        renderCounters = FloatingTileRenderCounters(
+            visibleTileCount,
+            budgetCandidatesScratch.size,
+            allocation.selected.size,
+            allocation.acceptedVertices,
+            allocation.skippedPaths + oversizePathCount,
+            candidateLimitSkipped,
+        )
     }
 
     private fun drawRoute(canvas: Canvas, c: FloatingCoordinate, cx: Float, cy: Float) {

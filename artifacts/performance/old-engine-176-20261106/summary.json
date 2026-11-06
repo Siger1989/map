@@ -1,0 +1,117 @@
+{
+  "packageIntegrity": {
+    "version": "0.2.176-test",
+    "versionCode": 183,
+    "package": "com.shantu.oldengine",
+    "sha256": "748c81fe91294f34c4394a740c42e73b8839ca0c364dca738ccdd0389eeff5fd",
+    "bytes": 165310581,
+    "originalSignature": true,
+    "identity": true,
+    "zipalign16KiB": true,
+    "crcAndUniqueEntries": true,
+    "seedCount": 39,
+    "privateSeedsMatch": true,
+    "tiandituKeyPresentAndUnchanged": true,
+    "freshWebAssetCount": 1925,
+    "nativeLibrariesUnchangedFrom175": [
+      "lib/arm64-v8a/libshantu_cad.so",
+      "lib/arm64-v8a/libsqliteX.so",
+      "lib/armeabi-v7a/libshantu_cad.so",
+      "lib/armeabi-v7a/libsqliteX.so",
+      "lib/x86/libshantu_cad.so",
+      "lib/x86/libsqliteX.so",
+      "lib/x86_64/libshantu_cad.so",
+      "lib/x86_64/libsqliteX.so"
+    ],
+    "actualSdkColorHookMethodsInDex": true
+  },
+  "nativeTargetTests": [
+    {
+      "name": "com.shantu.nativeapp.floating.FloatingCompassSamplePolicyTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.floating.FloatingNavigationGeometryTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.geology.NativeMvtDecoderTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.shantu.nativeapp.map.NativeTerrainOverlaysTest",
+      "tests": "35",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "nodeTests": {
+    "tests": 51,
+    "failures": 0
+  },
+  "typescript": "PASS",
+  "runtime": {
+    "device": "ShantuPerf34 emulator-5582 read-only Android14 API34",
+    "installedVersion": "0.2.176-test/code183",
+    "screenPx": [
+      390,
+      857
+    ],
+    "actualReactViewportCss": [
+      390,
+      673
+    ],
+    "fullPhoneSizeMatrix": "UNVERIFIED",
+    "terrainFillAndContourTogether": "VISIBLE - 20 actual native contour tiles; real SDK method present",
+    "syntheticSixDirectionGlyphLabelAndYellowTrack": "PASS",
+    "newDenseFairBudgetProbe": {
+      "status": "PASS_SYNTHETIC_ONLY",
+      "angles": [
+        0,
+        45,
+        90,
+        180,
+        270
+      ],
+      "acceptedVerticesPerCase": 400,
+      "acceptedNeighborPathsPerCase": 4,
+      "skippedWholeCenterPathVertices": 8000,
+      "actualPixelChecks": true,
+      "realPhoneProof": false
+    },
+    "backgroundWindow": {
+      "status": "PASS_SHORT_SAMPLE",
+      "seconds": 146,
+      "kind": "position",
+      "realFixAvailable": false,
+      "enabled": true,
+      "visible": true,
+      "returnToAppEnabled": true,
+      "returnToAppVisible": false,
+      "longDurationAndOppo": "UNVERIFIED"
+    },
+    "actualPhone": "UNVERIFIED - OPPO Find X8 not connected; exact Android/ColorOS unknown",
+    "routeCacheUiAndResume": "UNVERIFIED",
+    "amapAndWeChatOnPhone": "UNVERIFIED",
+    "lockscreenKeepOnAndCompassRealSensor": "UNVERIFIED",
+    "probeToolCorrections": [
+      "Removed invalid synthetic zoom5; correct supported base is14",
+      "Counted anti-aliased road pixels against sampled expected color; added strict numeric counter fallback; first failed reports retained"
+    ]
+  },
+  "formalApkUnchangedSha256": "89082cdea45b2224987eb75b9da104182ba020748c0b2a45d68f01f64c355d58",
+  "delivery": "PRIVATE_ONLY; local and temporary phone link sent before runtime verification",
+  "knownLimitations": [
+    "Original phone spontaneous exit cause not confirmed",
+    "32 tile count cache instead of byte-weighted LRU",
+    "Initial consent text still says no keep-awake although optional switch now exists; help text needs followup",
+    "No HarmonyOS6.1 native artifact; no AOD; manual screen-off remains effective",
+    "Budget does not create missing source tiles; HTTP errors/coverage may still leave gaps"
+  ]
+}

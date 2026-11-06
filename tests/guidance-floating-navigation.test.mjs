@@ -31,6 +31,7 @@ test('floating navigation validation enforces mode, coordinate bounds, and point
   assert.throws(() => validateFloatingNavigationInput('north', 'x', [[0, 0]]), /2至100000/);
   assert.throws(() => validateFloatingNavigationInput('north', 'x', Array.from({ length: 100_001 }, () => [0, 0])), /2至100000/);
   assert.equal(validateFloatingNavigationInput('north', 'x', coordinates), true);
+  assert.equal(validateFloatingNavigationInput('compass', 'x', coordinates), true);
 });
 
 test('serialized payload stays under the 4 MiB native bridge bound', () => {
@@ -41,8 +42,8 @@ test('serialized payload stays under the 4 MiB native bridge bound', () => {
 });
 
 test('native status parsing exposes only concrete fields and tolerates malformed status', () => {
-  assert.deepEqual(parseFloatingNavigationStatus('{"available":true,"enabled":true,"visible":false,"mode":"motion","message":"权限待确认"}'), {
-    available: true, enabled: true, visible: false, windowEnabled: true, lockscreenEnabled: true, mode: 'motion', kind: 'route', message: '权限待确认',
+  assert.deepEqual(parseFloatingNavigationStatus('{"available":true,"enabled":true,"visible":false,"mode":"compass","energySaving":true,"lockscreenKeepOn":true,"message":"权限待确认"}'), {
+    available: true, enabled: true, visible: false, windowEnabled: true, lockscreenEnabled: true, energySaving: true, lockscreenKeepOn: true, mode: 'compass', kind: 'route', message: '权限待确认',
   });
   assert.equal(parseFloatingNavigationStatus('{broken'), null);
   assert.equal(parseFloatingNavigationStatus(null), null);
@@ -55,19 +56,23 @@ test('ordinary positioning has no route dependency or fabricated route coordinat
   assert.throws(() => buildFloatingNavigationPayload(null, 'north', 'route'), /自动使用定位模式/);
   assert.throws(() => validateFloatingNavigationInput('north', 'x', coordinates, 'position'), /不应包含路线/);
   assert.deepEqual(parseFloatingNavigationStatus({ available: true, kind: 'position', zoom: 17, widthDp: 240, heightDp: 260 }), {
-    available: true, enabled: false, visible: false, windowEnabled: true, lockscreenEnabled: true, mode: 'north', kind: 'position', message: '', zoom: 17, widthDp: 240, heightDp: 260,
+    available: true, enabled: false, visible: false, windowEnabled: true, lockscreenEnabled: true, energySaving: false, lockscreenKeepOn: false, mode: 'north', kind: 'position', message: '', zoom: 17, widthDp: 240, heightDp: 260,
   });
 });
 
 test('native display options serialize the independent switches and direction', () => {
   assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ mode: 'motion' })), { mode: 'motion' });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ mode: 'compass' })), { mode: 'compass' });
   assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ windowEnabled: false })), { windowEnabled: false });
   assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ lockscreenEnabled: true })), { lockscreenEnabled: true });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ energySaving: true })), { energySaving: true });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ lockscreenKeepOn: true })), { lockscreenKeepOn: true });
   assert.throws(() => serializeFloatingNavigationOptions({}), /为空/);
   assert.throws(() => serializeFloatingNavigationOptions({ windowEnabled: 1 }), /布尔值/);
+  assert.throws(() => serializeFloatingNavigationOptions({ energySaving: 1 }), /布尔值/);
   assert.deepEqual(parseFloatingNavigationStatus({ available: true, windowEnabled: false, lockscreenEnabled: true, mode: 'motion' }), {
     available: true, enabled: false, visible: false, windowEnabled: false, lockscreenEnabled: true,
-    mode: 'motion', kind: 'route', message: '',
+    energySaving: false, lockscreenKeepOn: false, mode: 'motion', kind: 'route', message: '',
   });
 });
 

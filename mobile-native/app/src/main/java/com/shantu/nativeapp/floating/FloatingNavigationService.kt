@@ -53,12 +53,28 @@ class FloatingNavigationService : Service(), LocationListener {
         private const val EXTRA_VISIBLE = "visible"
         private const val EXTRA_WINDOW_ENABLED = "window_enabled"
         private const val EXTRA_LOCKSCREEN_ENABLED = "lockscreen_enabled"
+        private const val EXTRA_ENERGY_SAVING = "energy_saving"
+        private const val EXTRA_LOCKSCREEN_KEEP_ON = "lockscreen_keep_on"
         private const val EXTRA_MODE = "mode"
         private const val STATE_PREFS = "floating_navigation_state"
         private const val PREF_WINDOW_ENABLED = "windowEnabled"
         private const val PREF_LOCKSCREEN_ENABLED = "lockscreenEnabled"
         private const val PREF_MODE = "mode"
+        private const val PREF_ENERGY_SAVING = "energySaving"
+        private const val PREF_LOCKSCREEN_KEEP_ON = "lockscreenKeepOn"
         private const val PREF_OPTIONS_CONFIGURED = "optionsConfigured"
+        private const val PREF_LAST_PROCESS_EXIT_REASON = "diagnosticProcessExitReason"
+        private const val PREF_LAST_PROCESS_EXIT_CODE = "diagnosticProcessExitCode"
+        private const val PREF_LAST_PROCESS_EXIT_AT = "diagnosticProcessExitAtMillis"
+        private const val PREF_LAST_SERVICE_END_REASON = "diagnosticServiceEndReason"
+        private const val PREF_LAST_SERVICE_END_AT = "diagnosticServiceEndAtMillis"
+        private const val PREF_LAST_TASK_REMOVED_AT = "diagnosticTaskRemovedAtMillis"
+        private const val PREF_LAST_START_ERROR = "diagnosticLastStartError"
+        private const val PREF_LAST_START_ERROR_AT = "diagnosticLastStartErrorAtMillis"
+        private const val PREF_LAST_UPDATE_ERROR = "diagnosticLastUpdateError"
+        private const val PREF_LAST_UPDATE_ERROR_AT = "diagnosticLastUpdateErrorAtMillis"
+        private const val PREF_LAST_DISPLAY_ACTION = "diagnosticLastDisplayAction"
+        private const val PREF_LAST_DISPLAY_ACTION_AT = "diagnosticLastDisplayActionAtMillis"
         internal const val LOCKSCREEN_TOKEN_EXTRA = "floating_lock_session"
         private const val CHANNEL = "floating_navigation"
         private const val NOTIFICATION_ID = 7821
@@ -90,16 +106,98 @@ class FloatingNavigationService : Service(), LocationListener {
         @Volatile private var windowY = 0
         @Volatile private var windowWidth = 0
         @Volatile private var windowHeight = 0
+        @Volatile private var lastProcessExitQueryAtMillis = 0L
+        @Volatile private var mvtDecodeDiagnostics = JSONObject()
+
+        private fun refreshProcessExitDiagnostic(context: Context) {
+            if (Build.VERSION.SDK_INT < 30) return
+            val now = System.currentTimeMillis()
+            if (now - lastProcessExitQueryAtMillis < 10_000L) return
+            lastProcessExitQueryAtMillis = now
+            val prefs = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
+            val lastRecordedExit = prefs.getLong(PREF_LAST_PROCESS_EXIT_AT, 0L)
+            try {
+                val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                manager.getHistoricalProcessExitReasons(context.packageName, 0, 32)
+                    .filter { it.processName == context.applicationInfo.processName && it.timestamp > lastRecordedExit }
+                    .maxByOrNull { it.timestamp }
+                    ?.let { exit ->
+                        prefs.edit()
+                            .putInt(PREF_LAST_PROCESS_EXIT_CODE, exit.reason)
+                            .putString(PREF_LAST_PROCESS_EXIT_REASON, processExitReasonName(exit.reason))
+                            .putLong(PREF_LAST_PROCESS_EXIT_AT, exit.timestamp)
+                            .apply()
+                    }
+            } catch (_: Exception) { /* Diagnostics must never expose framework details. */ }
+        }
+
+        private fun processExitReasonName(reason: Int): String = when (reason) {
+            ApplicationExitInfo.REASON_EXIT_SELF -> "EXIT_SELF"
+            ApplicationExitInfo.REASON_SIGNALED -> "SIGNALED"
+            ApplicationExitInfo.REASON_LOW_MEMORY -> "LOW_MEMORY"
+            ApplicationExitInfo.REASON_CRASH -> "CRASH"
+            ApplicationExitInfo.REASON_CRASH_NATIVE -> "CRASH_NATIVE"
+            ApplicationExitInfo.REASON_ANR -> "ANR"
+            ApplicationExitInfo.REASON_INITIALIZATION_FAILURE -> "INITIALIZATION_FAILURE"
+            ApplicationExitInfo.REASON_PERMISSION_CHANGE -> "PERMISSION_CHANGE"
+            ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE -> "EXCESSIVE_RESOURCE_USAGE"
+            ApplicationExitInfo.REASON_USER_REQUESTED -> "USER_REQUESTED_SYSTEM_REASON"
+            ApplicationExitInfo.REASON_USER_STOPPED -> "USER_STOPPED_SYSTEM_REASON"
+            ApplicationExitInfo.REASON_DEPENDENCY_DIED -> "DEPENDENCY_DIED"
+            ApplicationExitInfo.REASON_OTHER -> "OTHER"
+            else -> "UNKNOWN_${reason}"
+        }
+
+        private fun lifecycleDiagnostics(context: Context?): JSONObject {
+            if (context != null) refreshProcessExitDiagnostic(context.applicationContext)
+            val prefs = context?.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
+            return JSONObject()
+                .put("lastServiceEndReason", prefs?.getString(PREF_LAST_SERVICE_END_REASON, "") ?: "")
+                .put("lastServiceEndAtMillis", prefs?.getLong(PREF_LAST_SERVICE_END_AT, 0L) ?: 0L)
+                .put("lastProcessExitReason", prefs?.getString(PREF_LAST_PROCESS_EXIT_REASON, "") ?: "")
+                .put("lastProcessExitReasonCode", prefs?.getInt(PREF_LAST_PROCESS_EXIT_CODE, 0) ?: 0)
+                .put("lastProcessExitAtMillis", prefs?.getLong(PREF_LAST_PROCESS_EXIT_AT, 0L) ?: 0L)
+                .put("lastTaskRemovedAtMillis", prefs?.getLong(PREF_LAST_TASK_REMOVED_AT, 0L) ?: 0L)
+                .put("lastStartError", prefs?.getString(PREF_LAST_START_ERROR, "") ?: "")
+                .put("lastStartErrorAtMillis", prefs?.getLong(PREF_LAST_START_ERROR_AT, 0L) ?: 0L)
+                .put("lastUpdateError", prefs?.getString(PREF_LAST_UPDATE_ERROR, "") ?: "")
+                .put("lastUpdateErrorAtMillis", prefs?.getLong(PREF_LAST_UPDATE_ERROR_AT, 0L) ?: 0L)
+                .put("lastDisplayAction", prefs?.getString(PREF_LAST_DISPLAY_ACTION, "") ?: "")
+                .put("lastDisplayActionAtMillis", prefs?.getLong(PREF_LAST_DISPLAY_ACTION_AT, 0L) ?: 0L)
+        }
+
         private fun snapshot(context: Context? = appContext) = JSONObject().put("enabled", enabledState).put("visible", visibleState).put("mode", context?.let(::storedMode) ?: modeState)
             .put("windowEnabled", context?.let(::storedWindowEnabled) ?: true)
             .put("lockscreenEnabled", context?.let(::storedLockscreenEnabled) ?: true)
+            .put("energySaving", context?.let(::storedEnergySaving) ?: false)
+            .put("lockscreenKeepOn", context?.let(::storedLockscreenKeepOn) ?: false)
             .put("optionsConfigured", context?.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)?.getBoolean(PREF_OPTIONS_CONFIGURED, false) ?: false)
             .put("kind", kindState).put("zoom", zoomState).put("widthDp", widthDpState).put("heightDp", heightDpState)
             .put("message", messageState.take(80))
             .put("lockscreen", JSONObject().put("screenOn", lockscreenScreenOnState).put("locked", lockscreenLockedState)
                 .put("launchPending", lockscreenLaunchPendingState).put("attached", lockscreenAttachedState)
-                .put("launchAttempted", lockscreenLaunchAttemptedState).put("message", lockscreenMessageState.take(100))).also {
+                .put("launchAttempted", lockscreenLaunchAttemptedState).put("message", lockscreenMessageState.take(100)))
+            .put("diagnostics", lifecycleDiagnostics(context).put("mvtDecode", JSONObject(mvtDecodeDiagnostics.toString()))).also {
             if (visibleState && windowWidth > 0 && windowHeight > 0) it.put("windowBounds", JSONObject().put("x", windowX).put("y", windowY).put("width", windowWidth).put("height", windowHeight))
+        }
+
+        private fun recordMvtDecode(stats: com.shantu.nativeapp.geology.NativeMvtDecodeStats) {
+            synchronized(stateLock) {
+                val previous = mvtDecodeDiagnostics
+                val values = JSONObject()
+                val names = listOf("inputBytes", "scannedLayers", "skippedLayers", "scannedFeatures", "irrelevantFeatures", "candidateCapSkipped", "commandLimitSkipped", "tagLimitSkipped", "geometryLimitSkipped", "dictionaryCapSkipped", "skippedByBudget", "acceptedFeatures", "acceptedPaths", "acceptedVertices", "skippedByLabelReserve", "propertyCapSkipped")
+                names.forEach { key -> values.put(key, (previous.optInt(key, 0).toLong() + when (key) {
+                    "inputBytes" -> stats.inputBytes; "scannedLayers" -> stats.scannedLayers; "skippedLayers" -> stats.skippedLayers
+                    "scannedFeatures" -> stats.scannedFeatures; "irrelevantFeatures" -> stats.irrelevantFeatures
+                    "candidateCapSkipped" -> stats.candidateCapSkipped; "commandLimitSkipped" -> stats.commandLimitSkipped; "tagLimitSkipped" -> stats.tagLimitSkipped
+                    "geometryLimitSkipped" -> stats.geometryLimitSkipped; "dictionaryCapSkipped" -> stats.dictionaryCapSkipped
+                    "skippedByBudget" -> stats.skippedByBudget; "acceptedFeatures" -> stats.acceptedFeatures
+                    "acceptedPaths" -> stats.acceptedPaths; "acceptedVertices" -> stats.acceptedVertices
+                    "skippedByLabelReserve" -> stats.skippedByLabelReserve; else -> stats.propertyCapSkipped
+                }).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
+                values.put("decodedTiles", (previous.optInt("decodedTiles", 0).toLong() + 1L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+                mvtDecodeDiagnostics = values
+            }
         }
 
         /** Call after all overlay/location permission gates have passed in the host Activity. */
@@ -116,17 +214,21 @@ class FloatingNavigationService : Service(), LocationListener {
         /** Persist an independent display preference and notify only an existing session. */
         fun setWindowEnabled(context: Context, enabled: Boolean) = setOptions(context, enabled, null, null)
         fun setLockscreenEnabled(context: Context, enabled: Boolean) = setOptions(context, null, enabled, null)
+        @JvmStatic fun energySaving(context: Context) = storedEnergySaving(context.applicationContext)
+        @JvmStatic fun lockscreenKeepOn(context: Context) = storedLockscreenKeepOn(context.applicationContext)
 
         /** Persist user options without launching a service or requesting platform permission. */
-        fun setOptions(context: Context, windowEnabled: Boolean?, lockscreenEnabled: Boolean?, mode: String?) {
-            require(windowEnabled != null || lockscreenEnabled != null || mode != null) { "没有可保存的悬浮地图设置" }
-            require(mode == null || mode == "north" || mode == "motion") { "方向模式无效" }
+        fun setOptions(context: Context, windowEnabled: Boolean?, lockscreenEnabled: Boolean?, mode: String?, energySaving: Boolean? = null, lockscreenKeepOn: Boolean? = null) {
+            require(windowEnabled != null || lockscreenEnabled != null || mode != null || energySaving != null || lockscreenKeepOn != null) { "没有可保存的悬浮地图设置" }
+            require(mode == null || mode in setOf("north", "motion", "compass")) { "方向模式无效" }
             val app = context.applicationContext
             val prefs = app.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
             val editor = prefs.edit()
             windowEnabled?.let { editor.putBoolean(PREF_WINDOW_ENABLED, it) }
             lockscreenEnabled?.let { editor.putBoolean(PREF_LOCKSCREEN_ENABLED, it) }
             mode?.let { editor.putString(PREF_MODE, it) }
+            energySaving?.let { editor.putBoolean(PREF_ENERGY_SAVING, it) }
+            lockscreenKeepOn?.let { editor.putBoolean(PREF_LOCKSCREEN_KEEP_ON, it) }
             editor.putBoolean(PREF_OPTIONS_CONFIGURED, true)
             editor.apply()
             val service = activeService
@@ -135,23 +237,29 @@ class FloatingNavigationService : Service(), LocationListener {
                 windowEnabled?.let { intent.putExtra(EXTRA_WINDOW_ENABLED, it) }
                 lockscreenEnabled?.let { intent.putExtra(EXTRA_LOCKSCREEN_ENABLED, it) }
                 mode?.let { intent.putExtra(EXTRA_MODE, it) }
+                energySaving?.let { intent.putExtra(EXTRA_ENERGY_SAVING, it) }
+                lockscreenKeepOn?.let { intent.putExtra(EXTRA_LOCKSCREEN_KEEP_ON, it) }
                 app.startService(intent)
             }
         }
 
         private fun storedWindowEnabled(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_WINDOW_ENABLED, true)
         private fun storedLockscreenEnabled(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_LOCKSCREEN_ENABLED, true)
-        private fun storedMode(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getString(PREF_MODE, "north")?.takeIf { it == "north" || it == "motion" } ?: "north"
+        private fun storedEnergySaving(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_ENERGY_SAVING, false)
+        private fun storedLockscreenKeepOn(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getBoolean(PREF_LOCKSCREEN_KEEP_ON, false)
+        private fun storedMode(context: Context) = context.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE).getString(PREF_MODE, "north")?.takeIf { it in setOf("north", "motion", "compass") } ?: "north"
 
         private fun mergePersistedOptions(context: Context, payload: JSONObject): JSONObject {
             val app = context.applicationContext
             val prefs = app.getSharedPreferences(STATE_PREFS, Context.MODE_PRIVATE)
             val configured = prefs.getBoolean(PREF_OPTIONS_CONFIGURED, false)
             val merged = JSONObject(payload.toString())
-            val payloadMode = payload.optString("mode").takeIf { it == "north" || it == "motion" }
+            val payloadMode = payload.optString("mode").takeIf { it in setOf("north", "motion", "compass") }
             merged.put("mode", if (configured) storedMode(app) else payloadMode ?: storedMode(app))
             merged.put(PREF_WINDOW_ENABLED, if (configured) storedWindowEnabled(app) else payload.optBoolean(PREF_WINDOW_ENABLED, storedWindowEnabled(app)))
             merged.put(PREF_LOCKSCREEN_ENABLED, if (configured) storedLockscreenEnabled(app) else payload.optBoolean(PREF_LOCKSCREEN_ENABLED, storedLockscreenEnabled(app)))
+            merged.put(PREF_ENERGY_SAVING, if (configured) storedEnergySaving(app) else payload.optBoolean(PREF_ENERGY_SAVING, storedEnergySaving(app)))
+            merged.put(PREF_LOCKSCREEN_KEEP_ON, if (configured) storedLockscreenKeepOn(app) else payload.optBoolean(PREF_LOCKSCREEN_KEEP_ON, storedLockscreenKeepOn(app)))
             return merged
         }
         /** Token is process-local and intentionally omitted from status/JS-facing data. */
@@ -223,6 +331,8 @@ class FloatingNavigationService : Service(), LocationListener {
                 prefs.edit().putString(PREF_MODE, safePayload.getString("mode"))
                     .putBoolean(PREF_WINDOW_ENABLED, safePayload.getBoolean(PREF_WINDOW_ENABLED))
                     .putBoolean(PREF_LOCKSCREEN_ENABLED, safePayload.getBoolean(PREF_LOCKSCREEN_ENABLED))
+                    .putBoolean(PREF_ENERGY_SAVING, safePayload.optBoolean(PREF_ENERGY_SAVING, storedEnergySaving(context.applicationContext)))
+                    .putBoolean(PREF_LOCKSCREEN_KEEP_ON, safePayload.optBoolean(PREF_LOCKSCREEN_KEEP_ON, storedLockscreenKeepOn(context.applicationContext)))
                     .putBoolean(PREF_OPTIONS_CONFIGURED, true)
                     .apply()
                 if (!storedWindowEnabled(context.applicationContext) && !storedLockscreenEnabled(context.applicationContext)) {
@@ -267,7 +377,7 @@ class FloatingNavigationService : Service(), LocationListener {
             val height = optionalDimension(payload, "heightDp", 100.0..400.0)
             val out = JSONObject().put("version", 1).put("kind", kind).put("mode", mode).put("label", label)
                 .put("coordinates", coordinates)
-            for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED)) if (payload.has(key)) {
+            for (key in listOf(PREF_WINDOW_ENABLED, PREF_LOCKSCREEN_ENABLED, PREF_ENERGY_SAVING, PREF_LOCKSCREEN_KEEP_ON)) if (payload.has(key)) {
                 require(payload.opt(key) is Boolean) { "$key 必须是布尔值" }
                 out.put(key, payload.getBoolean(key))
             }
@@ -305,6 +415,7 @@ class FloatingNavigationService : Service(), LocationListener {
 
     private val alive = AtomicBoolean(false)
     private val lockscreenToken = UUID.randomUUID().toString()
+    private var expectedStopReason: String? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val tileSemaphore = Semaphore(2)
     private val tileCache = object : LinkedHashMap<String, FloatingTileGeometry>(12, .75f, true) {
@@ -325,18 +436,27 @@ class FloatingNavigationService : Service(), LocationListener {
     private var windowHeightDp = 216f
     private var windowEnabled = true
     private var lockscreenEnabled = true
+    private var energySaving = false
+    private var lockscreenKeepOn = false
     private var routeLabel = "路线"
     private var mode = "north"
     private var lastFix: NativePositionFix? = null
     private var heading: Double? = null
     private var headingAt = 0L
     private var mapBearing: Double? = null
+    private var compassHeading: Double? = null
+    private var compassHeadingAtNanos = 0L
+    private var compassMessage = "等待罗盘方向"
+    private var compassSource: FloatingCompassSource? = null
+    private var lowPowerLocationRequests = false
+    private var locationRequestsStarted = false
     private var cachedRouteProjection: FloatingRouteProjection? = null
     private val headingFilter = NativeMotionHeading()
     private var refreshJob: Job? = null
     private var refreshAgain = false
     private var resizeRefreshJob: Job? = null
     private var appVisible = true
+    private var overlayFailureMessage = ""
     private var source: com.shantu.nativeapp.map.NativeFloatingVectorSource? = null
     private var screenOn = false
     private var keyguardLocked = false
@@ -349,12 +469,20 @@ class FloatingNavigationService : Service(), LocationListener {
 
     override fun onCreate() {
         super.onCreate()
+        refreshProcessExitDiagnostic(applicationContext)
         activeService = this
         appContext = applicationContext
         appVisible = appVisibleState
         createChannel()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+        compassSource = FloatingCompassSource(this) { value, message, sampleTimestampNanos ->
+            val previous = compassHeading
+            compassHeading = value
+            compassHeadingAtNanos = if (value != null) sampleTimestampNanos ?: 0L else 0L
+            compassMessage = message
+            if (value == null || previous == null || abs(value - previous) >= .5) updateView()
+        }
         screenOn = getSystemService(POWER_SERVICE)?.let { (it as PowerManager).isInteractive } ?: false
         keyguardLocked = (getSystemService(KEYGUARD_SERVICE) as? KeyguardManager)?.isKeyguardLocked ?: false
         registerScreenReceiver()
@@ -366,6 +494,8 @@ class FloatingNavigationService : Service(), LocationListener {
         mode = storedMode(applicationContext)
         windowEnabled = storedWindowEnabled(applicationContext)
         lockscreenEnabled = storedLockscreenEnabled(applicationContext)
+        energySaving = storedEnergySaving(applicationContext)
+        lockscreenKeepOn = storedLockscreenKeepOn(applicationContext)
         synchronized(stateLock) { modeState = mode }
         cleanupOwnedRouteFiles()
         synchronized(stateLock) { visibleState = false }
@@ -420,6 +550,8 @@ class FloatingNavigationService : Service(), LocationListener {
 
     private fun onScreenOff() {
         screenOn = false
+        updateLocationRequestPolicy()
+        reconcileCompassSource()
         lockscreenLaunchPending = false
         lockscreenLaunchAttempted = false
         lockscreenMessage = ""
@@ -432,6 +564,8 @@ class FloatingNavigationService : Service(), LocationListener {
 
     private fun onScreenOn() {
         screenOn = true
+        updateLocationRequestPolicy(requestFreshFix = true)
+        reconcileCompassSource()
         lockscreenLaunchAttempted = false
         lockscreenMessage = ""
         publishLockscreenStatus()
@@ -451,6 +585,8 @@ class FloatingNavigationService : Service(), LocationListener {
         sendBroadcast(Intent(FloatingLockMapActivity.ACTION_SESSION_ENDED).setPackage(packageName)
             .putExtra(LOCKSCREEN_TOKEN_EXTRA, lockscreenToken))
         screenOn = true
+        updateLocationRequestPolicy(requestFreshFix = true)
+        reconcileCompassSource()
         keyguardLocked = false
         lockscreenLaunchPending = false
         lockscreenLaunchAttempted = false
@@ -525,6 +661,7 @@ class FloatingNavigationService : Service(), LocationListener {
         installLockscreenViewCallbacks(view)
         view.onContentSizeChanged = { scheduleTileRefresh() }
         updateView(view)
+        reconcileCompassSource()
         // Activity.onStart may run before its content has final measured bounds.
         view.post { if (lockscreenView === view) scheduleTileRefresh() }
         lockscreenLaunchPending = false
@@ -541,12 +678,13 @@ class FloatingNavigationService : Service(), LocationListener {
         view.onDrag = null; view.onResize = null; view.onContentSizeChanged = null
         view.tiles = emptyList(); view.route = emptyList(); view.recordedSegments = emptyList(); view.center = null
         view.heading = null; view.mapBearing = null; view.hasRealLocation = false
+        reconcileCompassSource()
         publishLockscreenStatus()
         // A lifecycle detach is not a user close and never causes a launch retry in this lock cycle.
     }
 
     private fun installLockscreenViewCallbacks(view: FloatingNavigationView) {
-        view.onMode = { mode = if (mode == "north") "motion" else "north"; persistMode(); updateView() }
+        view.onMode = { mode = nextMode(mode); persistMode(); updateView(); reconcileCompassSource() }
         view.onZoom = { delta ->
             zoom = (zoom + delta).coerceIn(FloatingNavigationGeometry.MIN_ZOOM, FloatingNavigationGeometry.MAX_ZOOM)
             getSharedPreferences("floating_navigation_layout", MODE_PRIVATE).edit().putInt("zoom", zoom).apply()
@@ -565,57 +703,113 @@ class FloatingNavigationService : Service(), LocationListener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> { stopSelf(); return START_NOT_STICKY }
+            ACTION_STOP -> { expectedStopReason = "explicit_stop_action"; stopSelf(); return START_NOT_STICKY }
             ACTION_OPTIONS -> {
+                val wasWindowEnabled = windowEnabled
                 val wasLockscreenEnabled = lockscreenEnabled
+                val oldEnergySaving = energySaving
                 windowEnabled = storedWindowEnabled(this)
                 lockscreenEnabled = storedLockscreenEnabled(this)
+                energySaving = storedEnergySaving(this)
+                lockscreenKeepOn = storedLockscreenKeepOn(this)
+                if (wasWindowEnabled != windowEnabled || wasLockscreenEnabled != lockscreenEnabled) {
+                    val action = when {
+                        wasWindowEnabled && !windowEnabled -> "window_disabled"
+                        wasLockscreenEnabled && !lockscreenEnabled -> "lockscreen_disabled"
+                        !wasWindowEnabled && windowEnabled -> "window_enabled"
+                        else -> "lockscreen_enabled"
+                    }
+                    getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit()
+                        .putString(PREF_LAST_DISPLAY_ACTION, action)
+                        .putLong(PREF_LAST_DISPLAY_ACTION_AT, System.currentTimeMillis())
+                        .apply()
+                }
                 if (!wasLockscreenEnabled && lockscreenEnabled) lockscreenLaunchAttempted = false
+                if (oldEnergySaving != energySaving) updateLocationRequestPolicy(requestFreshFix = screenOn)
                 reconcileWindowOptions()
-                if (!windowEnabled && !lockscreenEnabled) { stopSelf(); return START_NOT_STICKY }
-                intent.getStringExtra(EXTRA_MODE)?.takeIf { it == "north" || it == "motion" }?.let {
-                    mode = it; persistMode(); updateView()
+                if (!windowEnabled && !lockscreenEnabled) { expectedStopReason = "both_displays_disabled"; stopSelf(); return START_NOT_STICKY }
+                intent.getStringExtra(EXTRA_MODE)?.takeIf { it in setOf("north", "motion", "compass") }?.let {
+                    mode = it; persistMode(); updateView(); reconcileCompassSource()
                 }
                 showOrHideOverlay()
                 publishLockscreenStatus(); publishLayoutStatus()
                 return START_NOT_STICKY
             }
             ACTION_VISIBILITY -> {
-                if (!alive.get()) { stopSelf(); return START_NOT_STICKY }
+                if (!alive.get()) { expectedStopReason = "visibility_without_active_session"; stopSelf(); return START_NOT_STICKY }
                 appVisible = intent.getBooleanExtra(EXTRA_VISIBLE, false); setOverlayVisible(!appVisible); return START_NOT_STICKY
             }
             ACTION_START, ACTION_UPDATE -> {
+                expectedStopReason = null
+                overlayFailureMessage = ""
+                val updating = intent.action == ACTION_UPDATE && alive.get()
+                val previousRouteFile = if (updating) routeFile else null
+                if (!updating) synchronized(stateLock) { mvtDecodeDiagnostics = JSONObject() }
                 val routePath = intent.getStringExtra(EXTRA_ROUTE_FILE)
-                if (routePath == null) { reportError("路线数据缺失"); stopSelf(); return START_NOT_STICKY }
+                if (routePath == null) {
+                    if (updating && previousRouteFile?.exists() == true) {
+                        val now = System.currentTimeMillis()
+                        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_UPDATE_ERROR, "MISSING_PAYLOAD").putLong(PREF_LAST_UPDATE_ERROR_AT, now).apply()
+                        synchronized(stateLock) { messageState = "更新失败，继续使用上次会话（缺少数据）" }
+                    } else {
+                        expectedStopReason = "start_missing_payload"; reportError("悬浮地图数据缺失"); stopSelf()
+                        val now = System.currentTimeMillis()
+                        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_START_ERROR, "MISSING_PAYLOAD").putLong(PREF_LAST_START_ERROR_AT, now).apply()
+                    }
+                    return START_NOT_STICKY
+                }
                 try {
                     if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION_ID, buildNotification(), android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
                     else startForeground(NOTIFICATION_ID, buildNotification())
-                    loadSession(File(routePath))
+                    loadSession(File(routePath), deletePreviousFile = !updating)
                     val wasLockscreenEnabled = lockscreenEnabled
                     windowEnabled = storedWindowEnabled(this)
                     lockscreenEnabled = storedLockscreenEnabled(this)
+                    energySaving = storedEnergySaving(this)
+                    lockscreenKeepOn = storedLockscreenKeepOn(this)
                     if (!wasLockscreenEnabled && lockscreenEnabled) lockscreenLaunchAttempted = false
                     reconcileWindowOptions()
-                    if (!windowEnabled && !lockscreenEnabled) { stopSelf(); return START_NOT_STICKY }
+                    if (!windowEnabled && !lockscreenEnabled) { expectedStopReason = "both_displays_disabled"; stopSelf(); return START_NOT_STICKY }
                     ensureLocationUpdates()
                     showOrHideOverlay()
                     refreshTiles()
-                    synchronized(stateLock) { enabledState = true; modeState = mode; kindState = kind; zoomState = zoom; messageState = "" }
+                    if (updating) previousRouteFile?.takeIf { it != routeFile }?.delete()
+                    synchronized(stateLock) { enabledState = true; modeState = mode; kindState = kind; zoomState = zoom; messageState = overlayFailureMessage }
                     publishLayoutStatus()
                     if (screenOn && keyguardLocked) maybeLaunchLockscreenActivity()
-                } catch (e: Exception) { routePath.let { runCatching { File(it).delete() } }; reportError(e.message ?: "悬浮导航启动失败"); stopSelf() }
+                } catch (e: Exception) {
+                    try { File(routePath).delete() } catch (_: SecurityException) { }
+                    if (updating && previousRouteFile?.exists() == true) {
+                        val now = System.currentTimeMillis()
+                        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_UPDATE_ERROR, e.javaClass.simpleName.take(40)).putLong(PREF_LAST_UPDATE_ERROR_AT, now).apply()
+                        val restored = try { loadSession(previousRouteFile, deletePreviousFile = false); true } catch (_: Exception) { false }
+                        synchronized(stateLock) {
+                            enabledState = true
+                            visibleState = overlay?.parent != null
+                            messageState = if (restored) "更新失败，继续使用上次会话（${e.javaClass.simpleName.take(24)}）" else "更新失败，地图保留现有显示（${e.javaClass.simpleName.take(24)}）"
+                        }
+                        updateView()
+                    } else {
+                        expectedStopReason = "start_exception:${e.javaClass.simpleName.take(40)}"
+                        val now = System.currentTimeMillis()
+                        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit().putString(PREF_LAST_START_ERROR, e.javaClass.simpleName.take(40)).putLong(PREF_LAST_START_ERROR_AT, now).apply()
+                        reportError("悬浮地图启动失败（${e.javaClass.simpleName.take(24)}）")
+                        stopSelf()
+                    }
+                }
             }
-            else -> { if (!alive.get()) { stopSelf(); return START_NOT_STICKY } }
+            else -> { if (!alive.get()) { expectedStopReason = "unknown_action_without_session"; stopSelf(); return START_NOT_STICKY } }
         }
         return START_NOT_STICKY
     }
 
-    private fun loadSession(file: File) {
+    private fun loadSession(file: File, deletePreviousFile: Boolean = true) {
         require(file.canonicalFile.parentFile == cacheDir.canonicalFile) { "路线文件位置无效" }
+        require(file.length() in 1..(4L * 1024 * 1024)) { "悬浮地图数据大小无效" }
         val bytes = file.readBytes(); FloatingNavigationGeometry.validatePayloadBytes(bytes)
         val parsed = parseSession(JSONObject(bytes.toString(Charsets.UTF_8)))
         val routeChanged = kind != parsed.kind || route != parsed.points
-        routeFile?.takeIf { it != file }?.delete()
+        val previous = routeFile?.takeIf { it != file }
         routeFile = file
         kind = parsed.kind; mode = parsed.mode; routeLabel = parsed.label
         persistMode()
@@ -633,6 +827,7 @@ class FloatingNavigationService : Service(), LocationListener {
         if (overlay == null) createOverlay()
         params?.let { lp -> applyWindowSize(lp) }
         updateView()
+        if (deletePreviousFile) previous?.delete()
     }
 
     private fun ensureLocationUpdates() {
@@ -640,16 +835,41 @@ class FloatingNavigationService : Service(), LocationListener {
         if (!hasLocationPermission()) throw SecurityException("需由应用授予精确定位权限")
         val lm = locationManager ?: throw IllegalStateException("定位服务不可用")
         val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val providers = if (fine) listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER) else listOf(LocationManager.NETWORK_PROVIDER)
+        applyLocationUpdates(fine, lowPower = energySaving && !screenOn, requestFreshFix = true)
+    }
+
+    private fun updateLocationRequestPolicy(requestFreshFix: Boolean = false) {
+        if (!alive.get()) return
+        val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        applyLocationUpdates(fine, lowPower = energySaving && !screenOn, requestFreshFix = requestFreshFix)
+    }
+
+    @Suppress("MissingPermission")
+    private fun applyLocationUpdates(fine: Boolean, lowPower: Boolean, requestFreshFix: Boolean) {
+        val lm = locationManager ?: return
+        val providers = if (lowPower) listOf(LocationManager.NETWORK_PROVIDER)
+            else if (fine) listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            else listOf(LocationManager.NETWORK_PROVIDER)
+        val changed = lowPowerLocationRequests != lowPower || !locationRequestsStarted
+        if (changed) runCatching { lm.removeUpdates(this) }
+        lowPowerLocationRequests = lowPower
         for (provider in providers) {
             if (runCatching { lm.isProviderEnabled(provider) }.getOrDefault(false)) {
-                runCatching { lm.requestLocationUpdates(provider, 900L, 0f, this, android.os.Looper.getMainLooper()) }
+                if (changed) {
+                    val minTime = if (lowPower) 180_000L else 900L
+                    val minDistance = if (lowPower) 25f else 0f
+                    runCatching { lm.requestLocationUpdates(provider, minTime, minDistance, this, android.os.Looper.getMainLooper()) }
+                }
             }
         }
+        locationRequestsStarted = true
         // Seed from the providers actually requested. Coarse-only users can use
         // network fixes for a map center, but those fixes never feed headingFilter.
-        providers.forEach { provider ->
+        if (changed || requestFreshFix) providers.forEach { provider ->
             runCatching { lm.getLastKnownLocation(provider)?.let(::onLocationChanged) }
+            if (requestFreshFix && !lowPower && runCatching { lm.isProviderEnabled(provider) }.getOrDefault(false)) {
+                runCatching { lm.requestSingleUpdate(provider, this, android.os.Looper.getMainLooper()) }
+            }
         }
     }
 
@@ -664,7 +884,7 @@ class FloatingNavigationService : Service(), LocationListener {
         val height = (windowHeightDp * resources.displayMetrics.density).roundToInt()
         val type = if (Build.VERSION.SDK_INT >= 26) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
         val lp = WindowManager.LayoutParams(width, height, type, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, PixelFormat.TRANSLUCENT).apply { gravity = Gravity.TOP or Gravity.START; x = 12; y = 120 }
-        view.onMode = { mode = if (mode == "north") "motion" else "north"; persistMode(); updateView() }
+        view.onMode = { mode = nextMode(mode); persistMode(); updateView(); reconcileCompassSource() }
         view.onReturn = { returnToApp() }
         view.onClose = { setWindowEnabled(this, false) }
         view.onContentSizeChanged = { scheduleTileRefresh() }
@@ -692,6 +912,7 @@ class FloatingNavigationService : Service(), LocationListener {
         }
         overlay = view; params = lp
         if (windowEnabled && !appVisible && Settings.canDrawOverlays(this)) windowManager?.addView(view, lp)
+        reconcileCompassSource()
     }
 
     private fun showOrHideOverlay() {
@@ -699,11 +920,24 @@ class FloatingNavigationService : Service(), LocationListener {
         val wm = windowManager ?: return
         val shouldShow = windowEnabled && !appVisible && !(screenOn && keyguardLocked)
         val attached = view.parent != null
-        if (shouldShow && Settings.canDrawOverlays(this) && !attached) runCatching { wm.addView(view, params) }.onFailure { reportError("悬浮窗权限不可用") }
+        if (shouldShow && !Settings.canDrawOverlays(this)) {
+            overlayFailureMessage = "悬浮窗权限不可用"
+        } else if (shouldShow && !attached) {
+            val attachedNow = runCatching { wm.addView(view, params); view.parent != null }.getOrDefault(false)
+            overlayFailureMessage = if (attachedNow) "" else "悬浮窗窗口未能显示"
+        } else if (!shouldShow || attached) {
+            overlayFailureMessage = ""
+        }
         if (!shouldShow && attached) runCatching { wm.removeView(view) }
-        synchronized(stateLock) { visibleState = shouldShow && view.parent != null }
+        synchronized(stateLock) {
+            visibleState = shouldShow && view.parent != null
+            if (overlayFailureMessage.isNotEmpty() || messageState == "悬浮窗权限不可用" || messageState == "悬浮窗窗口未能显示") {
+                messageState = overlayFailureMessage
+            }
+        }
         publishWindowBounds(params, shouldShow && view.parent != null)
         if (shouldShow) updateView()
+        reconcileCompassSource()
     }
 
     private fun reconcileWindowOptions() {
@@ -732,6 +966,18 @@ class FloatingNavigationService : Service(), LocationListener {
         targets.forEach(::updateView)
     }
 
+    private fun reconcileCompassSource() {
+        val hasDisplayedMap = overlay?.parent != null || lockscreenView != null
+        if (alive.get() && screenOn && mode == "compass" && hasDisplayedMap) compassSource?.start()
+        else compassSource?.stop()
+    }
+
+    private fun nextMode(current: String): String = when (current) {
+        "north" -> "motion"
+        "motion" -> "compass"
+        else -> "north"
+    }
+
     private fun updateView(view: FloatingNavigationView) {
         val fix = lastFix
         val state = NativePositionState(fix, System.currentTimeMillis(), heading, if (heading != null) NativeHeadingSource.MOTION else null, headingAt.takeIf { heading != null }, if (heading != null) 20.0 else null, NativeDirectionMode.MOTION)
@@ -748,12 +994,19 @@ class FloatingNavigationService : Service(), LocationListener {
         // NativePositionPolicy allows a course from a still-visible 30s fix.
         // A direction glyph is stricter: require a current fix no older than 3s.
         val freshHeading = presentation.headingDegrees?.takeIf { fixAge != null && fixAge in -3_000..3_000 }
-        view.mapBearing = mapBearing
-        view.heading = freshHeading
+        val compassAgeNanos = android.os.SystemClock.elapsedRealtimeNanos() - compassHeadingAtNanos
+        val freshCompass = compassHeading?.takeIf { compassHeadingAtNanos > 0L && compassAgeNanos in 0..3_000_000_000L }
+        view.mapBearing = when (mode) {
+            "compass" -> freshCompass
+            "motion" -> mapBearing
+            else -> null
+        }
+        view.heading = if (mode == "compass") freshCompass else freshHeading
         view.stateText = when {
             !presentation.visible -> "等待定位"
             !reliable -> "定位精度不足"
             mode == "motion" && freshHeading == null -> "等待移动方向"
+            mode == "compass" && freshCompass == null -> compassMessage.ifBlank { "等待罗盘方向" }
             kind == "position" -> "定位中"
             else -> "导航中"
         }
@@ -814,6 +1067,7 @@ class FloatingNavigationService : Service(), LocationListener {
             }
         }
         lastFix = fix
+        compassSource?.updateLocation(fix.latitude, fix.longitude, location.altitude.takeIf { location.hasAltitude() } ?: 0.0)
         val state = NativePositionState(fix, now)
         cachedRouteProjection = if (NativePositionPolicy.present(state).visible) FloatingNavigationGeometry.routeProjection(FloatingCoordinate(fix.longitude, fix.latitude), route) else null
         updateView(); refreshTiles()
@@ -890,7 +1144,11 @@ class FloatingNavigationService : Service(), LocationListener {
                         tileSemaphore.withPermit {
                             val tileSource = source ?: synchronized(this@FloatingNavigationService) { source ?: com.shantu.nativeapp.map.NativeFloatingVectorSource().also { source = it } }
                             val bytes = tileSource.read(tile.z, tile.x, tile.y) ?: return@withPermit null
-                            try { withContext(Dispatchers.Default) { FloatingTileGeometry(tile.z, tile.x, tile.y, boundedFeatures(NativeMvtDecoder.decode(bytes).filter(::relevantFeature))) } }
+                            try { withContext(Dispatchers.Default) {
+                                val decoded = NativeMvtDecoder.decodeForFloatingMap(bytes)
+                                recordMvtDecode(decoded.stats)
+                                FloatingTileGeometry(tile.z, tile.x, tile.y, decoded.features)
+                            } }
                             catch (cancelled: CancellationException) { throw cancelled }
                             catch (_: Exception) { null }
                         }
@@ -907,29 +1165,6 @@ class FloatingNavigationService : Service(), LocationListener {
                 refreshTiles()
             } else refreshJob = null
         }
-    }
-
-    private fun relevantFeature(feature: com.shantu.nativeapp.geology.NativeMvtFeature): Boolean {
-        val layer = feature.layer.lowercase()
-        return layer.contains("transport") || layer.contains("road") || layer.contains("building") || layer.contains("water") || layer.contains("place") || layer.contains("label") || layer.contains("poi")
-    }
-
-    private fun boundedFeatures(features: List<com.shantu.nativeapp.geology.NativeMvtFeature>): List<com.shantu.nativeapp.geology.NativeMvtFeature> {
-        val out = ArrayList<com.shantu.nativeapp.geology.NativeMvtFeature>(min(features.size, 1200))
-        var vertices = 0; var labels = 0
-        fun priority(feature: com.shantu.nativeapp.geology.NativeMvtFeature): Int {
-            val layer = feature.layer.lowercase()
-            return when { layer.contains("transport") || layer.contains("road") -> 0; layer.contains("water") -> 1; layer.contains("building") -> 2; else -> 3 }
-        }
-        for (feature in features.sortedBy(::priority)) {
-            val layer = feature.layer.lowercase()
-            val isLabel = layer.contains("label") || layer.contains("place") || layer.contains("poi")
-            if (isLabel && labels >= 48) continue
-            val count = feature.paths.sumOf { it.size }
-            if (count == 0 || out.size >= 1200 || vertices + count > 24_000) continue
-            out += feature; vertices += count; if (isLabel) labels++
-        }
-        return out
     }
 
     private data class TileId(val z: Int, val x: Int, val y: Int) { val key get() = "$z/$x/$y" }
@@ -983,15 +1218,30 @@ class FloatingNavigationService : Service(), LocationListener {
         cacheDir.listFiles()?.filter { it.name.startsWith(ROUTE_PREFIX) && (it.name.endsWith(".json") || it.name.endsWith(".tmp")) && it.lastModified() < staleBefore }?.forEach { runCatching { it.delete() } }
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit()
+            .putLong(PREF_LAST_TASK_REMOVED_AT, System.currentTimeMillis())
+            .apply()
+        // Task removal is only a diagnostic event. The location session and FGS remain active.
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
+        val endReason = expectedStopReason ?: "destroyed_without_explicit_stop_action"
+        getSharedPreferences(STATE_PREFS, MODE_PRIVATE).edit()
+            .putString(PREF_LAST_SERVICE_END_REASON, endReason.take(80))
+            .putLong(PREF_LAST_SERVICE_END_AT, System.currentTimeMillis())
+            .apply()
         sendBroadcast(Intent(FloatingLockMapActivity.ACTION_SESSION_ENDED).setPackage(packageName)
             .putExtra(LOCKSCREEN_TOKEN_EXTRA, lockscreenToken))
         alive.set(false); refreshJob?.cancel(); resizeRefreshJob?.cancel()
         lockscreenLaunchAckJob?.cancel(); screenCheckJob?.cancel()
         screenReceiver?.let { runCatching { unregisterReceiver(it) } }; screenReceiver = null
+        compassSource?.stop(); compassSource = null
         lockscreenView?.let(::detachLockscreenViewInternal)
         scope.cancel()
         runCatching { locationManager?.removeUpdates(this) }
+        locationRequestsStarted = false
         runCatching { if (overlay?.parent != null) windowManager?.removeView(overlay) }
         overlay = null; synchronized(tileCache) { tileCache.clear() }
         runCatching { synchronized(this) { source?.close(); source = null } }

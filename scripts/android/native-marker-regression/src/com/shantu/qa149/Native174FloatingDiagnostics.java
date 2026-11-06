@@ -252,7 +252,11 @@ public final class Native174FloatingDiagnostics {
             .put("currentTileSurvives", currentTileSurvives)
             .put("orientationCases", mvtOrientationReports));
 
-        boolean pass = directionChecksPass && trackPixels > 0 && currentTileSurvives;
+        JSONObject lockscreenFairBudget = renderLockscreenFairBudgetCases(view, context, evidence, loader);
+        report.put("lockscreenFairBudget", lockscreenFairBudget);
+
+        boolean pass = directionChecksPass && trackPixels > 0 && currentTileSurvives &&
+            lockscreenFairBudget.optBoolean("pass", false);
         report.put("testState", pass ? "PASS_SYNTHETIC_ONLY" : "FAIL_SYNTHETIC_RENDER_CHECK")
             .put("note", "Synthetic View rendering only; does not prove live navigation, location, or device behavior.");
         try (FileOutputStream output = new FileOutputStream(new File(evidence, "report.json"))) {
@@ -307,6 +311,212 @@ public final class Native174FloatingDiagnostics {
         Map<String, String> properties = new HashMap<>();
         properties.put("class", "residential");
         return feature(loader, "transportation", 2, 4096, properties, paths);
+    }
+
+    /** Lockscreen-only dense tile fixture; no service or persisted state is involved. */
+    private static JSONObject renderLockscreenFairBudgetCases(View view, Context context, File evidence,
+                                                               ClassLoader loader) throws Exception {
+        final int z = 14;
+        final int n = 1 << z;
+        int cxTile = (int) Math.floor((CENTER_LON + 180.0) / 360.0 * n);
+        int cyTile = (int) Math.floor((1.0 - Math.log(Math.tan(Math.toRadians(CENTER_LAT)) +
+            1.0 / Math.cos(Math.toRadians(CENTER_LAT))) / Math.PI) / 2.0 * n);
+        double centerLat = Math.toDegrees(Math.atan(Math.sinh(Math.PI * (1.0 - 2.0 * (cyTile + .5) / n))));
+        double centerLon = ((cxTile + .5) / n) * 360.0 - 180.0;
+        Object center = coordinate(loader, centerLon, centerLat);
+
+        int width = Math.max(1200, view.getWidth());
+        int height = Math.max(1200, view.getHeight());
+        view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        view.layout(0, 0, width, height);
+        set(view, "setLockscreenPresentation", true);
+        set(view, "setCenter", center);
+        set(view, "setZoom", 14); // z14 is the supported base scale; neighbors fit in the large synthetic canvas.
+        set(view, "setHasRealLocation", false);
+        set(view, "setHeading", null);
+        set(view, "setMode", "compass");
+        set(view, "setRoute", Collections.emptyList());
+        set(view, "setRecordedSegments", Collections.emptyList());
+        set(view, "setStateText", "合成锁屏预算测试");
+
+        ArrayList<Object> labelFeatures = new ArrayList<>();
+        labelFeatures.add(feature(loader, "place", 1, 4096, Collections.singletonMap("name", "LOCK MAP"),
+            Collections.singletonList(Collections.singletonList(pair(loader, 2048, 2048)))));
+        ArrayList<Object> densePath = new ArrayList<>(8000);
+        for (int i = 0; i < 8000; i++) {
+            int offset = i - 4000;
+            densePath.add(pair(loader, 3500 + offset / 10, 500 + ((i % 5) - 2)));
+        }
+        Map<String, String> residential = Collections.singletonMap("class", "residential");
+        labelFeatures.add(feature(loader, "transportation", 2, 4096, residential,
+            Collections.singletonList(densePath)));
+        ArrayList<Object> fixtureTiles = new ArrayList<>(5);
+        fixtureTiles.add(tile(loader, z, cxTile, cyTile, labelFeatures));
+
+        String[] neighborNames = {"north", "east", "south", "west"};
+        int[] dxs = {0, 1, 0, -1};
+        int[] dys = {-1, 0, 1, 0};
+        int[] localXs = {2048, 8, 2048, 4088};
+        int[] localYs = {4088, 2048, 8, 2048};
+        for (int i = 0; i < neighborNames.length; i++) {
+            ArrayList<Object> path = new ArrayList<>(100);
+            for (int j = 0; j < 100; j++) {
+                int delta = j * 3 - 148;
+                int px = localXs[i] + (dxs[i] == 0 ? delta : 0);
+                int py = localYs[i] + (dys[i] == 0 ? delta : 0);
+                path.add(pair(loader, px, py));
+            }
+            Object road = feature(loader, "transportation", 2, 4096, residential,
+                Collections.singletonList(path));
+            fixtureTiles.add(tile(loader, z, Math.floorMod(cxTile + dxs[i], n), cyTile + dys[i],
+                Collections.singletonList(road)));
+        }
+
+        JSONArray orientations = new JSONArray();
+        boolean allOrientationsPass = true;
+        for (int bearing : new int[]{0, 45, 90, 180, 270}) {
+            set(view, "setMapBearing", (double) bearing);
+            set(view, "setTiles", fixtureTiles);
+            Bitmap bitmap = draw(view, width, height);
+            JSONObject counters = readRenderCounters(view);
+            JSONObject neighborPixels = new JSONObject();
+            boolean everyNeighborVisible = true;
+            for (int i = 0; i < neighborNames.length; i++) {
+                JSONArray samples = new JSONArray();
+                int pixels = 0;
+                int[] sampleVertexIndices = {5, 28, 50, 72, 94};
+                boolean allPathSamplesVisible = true;
+                for (int sampleIndex : sampleVertexIndices) {
+                    int delta = sampleIndex * 3 - 148;
+                    int sampleX = localXs[i] + (dxs[i] == 0 ? delta : 0);
+                    int sampleY = localYs[i] + (dys[i] == 0 ? delta : 0);
+                    double localX = (sampleX + 1.5) / 4096.0;
+                    double localY = (sampleY + 1.5) / 4096.0;
+                    double tileDx = dxs[i] + localX - .5;
+                    double tileDy = dys[i] + localY - .5;
+                    double scale = 256.0 * context.getResources().getDisplayMetrics().density;
+                    double x = tileDx * scale, y = tileDy * scale;
+                    double radians = Math.toRadians(-bearing);
+                    int sx = (int) Math.round(width / 2.0 + x * Math.cos(radians) - y * Math.sin(radians));
+                    int sy = (int) Math.round(height / 2.0 + x * Math.sin(radians) + y * Math.cos(radians));
+                    int samplePixels = countResidentialNear(bitmap, sx, sy, 8);
+                    pixels += samplePixels;
+                    boolean sampleVisible = samplePixels > 0;
+                    allPathSamplesVisible &= sampleVisible;
+                    samples.put(new JSONObject().put("vertexIndex", sampleIndex)
+                        .put("visiblePixels", samplePixels).put("visible", sampleVisible));
+                }
+                boolean visible = allPathSamplesVisible;
+                everyNeighborVisible &= visible;
+                neighborPixels.put(neighborNames[i], new JSONObject()
+                    .put("visiblePathPixels", pixels).put("sampledPathSections", samples).put("visible", visible));
+            }
+            int labelPixels = countNeutralNearCenter(bitmap);
+            boolean underBudget = counters.optBoolean("available", false) &&
+                counters.optInt("acceptedVertices", Integer.MAX_VALUE) <= 8000;
+            boolean passed = underBudget && everyNeighborVisible && labelPixels > 0;
+            allOrientationsPass &= passed;
+            String image = "lockscreen-dense-compass-" + bearing + ".png";
+            writePng(bitmap, new File(evidence, image));
+            bitmap.recycle();
+            orientations.put(new JSONObject().put("compassDegrees", bearing)
+                .put("neighborRoads", neighborPixels).put("labelPixels", labelPixels)
+                .put("renderCounters", counters).put("within8000VertexBudget", underBudget)
+                .put("allNeighborRoadsVisible", everyNeighborVisible).put("pass", passed).put("image", image));
+        }
+        return new JSONObject().put("syntheticFixture", true).put("lockscreenPresentation", true)
+            .put("tileFixture", "dense center residential path plus four neighboring residential paths")
+            .put("centerPathVertices", 8000).put("eachNeighborPathVertices", 100)
+            .put("canvasPx", new JSONObject().put("width", width).put("height", height))
+            .put("globalVertexBudget", 8000).put("orientationCases", orientations)
+            .put("pass", allOrientationsPass);
+    }
+
+    private static JSONObject readRenderCounters(View view) throws Exception {
+        Object counters = null;
+        String counterSource = null;
+        for (Method method : view.getClass().getMethods()) {
+            if (method.getName().startsWith("getRenderCounters") && method.getParameterTypes().length == 0) {
+                try {
+                    counters = method.invoke(view);
+                    counterSource = "getter";
+                    break;
+                } catch (Throwable ignored) { /* Try the retained data-class field below. */ }
+            }
+        }
+        JSONObject json = new JSONObject();
+        if (counters == null) {
+            for (Field field : view.getClass().getDeclaredFields()) {
+                try {
+                    field.setAccessible(true);
+                    Object candidate = field.get(view);
+                    String text = String.valueOf(candidate);
+                    if (text.contains("visibleTiles=") && text.contains("acceptedVertices=")) {
+                        counters = candidate;
+                        counterSource = "view-field";
+                        break;
+                    }
+                } catch (Throwable ignored) { /* Optimized builds may hide the field; try rendering toString. */ }
+            }
+        }
+        String printable = counters == null ? null : String.valueOf(counters);
+        if (counterSource == null && counters != null) counterSource = "toString";
+        for (String property : new String[]{"visibleTiles", "candidatePaths", "acceptedPaths", "acceptedVertices",
+            "pathsSkippedByBudget", "pathsSkippedByCandidateLimit"}) {
+            Integer value = null;
+            if (counters != null) {
+                String expected = "get" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
+                for (Method method : counters.getClass().getMethods()) {
+                    if (!method.getName().startsWith(expected) || method.getParameterTypes().length != 0) continue;
+                    try { value = ((Number) method.invoke(counters)).intValue(); break; }
+                    catch (Throwable ignored) { /* Continue to field/string fallback. */ }
+                }
+                if (value == null) {
+                    try {
+                        Field field = counters.getClass().getDeclaredField(property);
+                        field.setAccessible(true);
+                        Object raw = field.get(counters);
+                        if (raw instanceof Number) value = ((Number) raw).intValue();
+                    } catch (Throwable ignored) { /* R8 can remove the access path; parse data-class toString. */ }
+                }
+            }
+            if (value == null && printable != null) value = parseCounter(printable, property);
+            json.put(property, value == null ? JSONObject.NULL : value);
+        }
+        boolean complete = true;
+        for (String property : new String[]{"visibleTiles", "candidatePaths", "acceptedPaths", "acceptedVertices",
+            "pathsSkippedByBudget", "pathsSkippedByCandidateLimit"}) complete &= json.opt(property) instanceof Number;
+        json.put("available", complete).put("source", counterSource == null ? "unavailable" : counterSource);
+        return json;
+    }
+
+    private static Integer parseCounter(String text, String name) {
+        String token = name + "=";
+        int at = text.indexOf(token);
+        if (at < 0 || (at > 0 && Character.isLetterOrDigit(text.charAt(at - 1)))) return null;
+        at += token.length();
+        int end = at;
+        while (end < text.length() && Character.isDigit(text.charAt(end))) end++;
+        if (end == at) return null;
+        try { return Integer.parseInt(text.substring(at, end)); }
+        catch (NumberFormatException ignored) { return null; }
+    }
+
+    private static int countResidentialNear(Bitmap bitmap, int cx, int cy, int radius) {
+        int count = 0;
+        for (int y = Math.max(0, cy - radius); y <= Math.min(bitmap.getHeight() - 1, cy + radius); y++) {
+            for (int x = Math.max(0, cx - radius); x <= Math.min(bitmap.getWidth() - 1, cx + radius); x++) {
+                int color = bitmap.getPixel(x, y);
+                int r = (color >>> 16) & 255, g = (color >>> 8) & 255, b = color & 255;
+                // The line color is #4d6651, drawn at 0.8dp. On lockscreen black,
+                // pixel-center antialiasing contributes roughly half-strength RGB.
+                // Test the muted-green hue and minimum channel energy, not generic nonblack pixels.
+                if (r >= 20 && r <= 105 && g >= 30 && g <= 135 && b >= 18 &&
+                    g >= r * 1.12 && g <= r * 1.75 && b >= r * .78 && b <= g * 1.12) count++;
+            }
+        }
+        return count;
     }
 
     private static void set(Object target, String methodName, Object value) throws Exception {

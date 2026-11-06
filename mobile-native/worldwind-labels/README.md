@@ -1,6 +1,6 @@
 # WorldWind 2.1.1 Android 注记修补
 
-本目录仅包含四个小范围 SDK 替换源码、数学用例、构建脚本及 Apache 2.0 许可。原 SDK、编译输出、本地 Maven 仓库都放在当前 checkout 的 `.openai/`，不进入 Git，也不修改全局 Gradle 缓存。
+本目录包含五个小范围 SDK 替换源码、数学/渲染期线色用例、构建脚本及 Apache 2.0 许可。原 SDK、编译输出、本地 Maven 仓库都放在当前 checkout 的 `.openai/`，不进入 Git，也不修改全局 Gradle 缓存。
 
 修补沿用 WorldWind 2.1.1 的 MVT 弧长排字算法、GlyphRun 和 Label 渲染，增加可见重复筛选及逐次字串碰撞。它不更换引擎，不改变道路几何、图源、地名文字、中文回退、字号、加载 LOD 或功能开关。
 
@@ -14,6 +14,7 @@
 - 保留正确的旋转符号；局部朝左倒置、相邻字切线转角超过 **30°** 或整词角度跨度超过 **60°** 的字串整次跳过。不会逐字翻转或改写文字，其它合格重复及道路本体保留。这些是本补丁的待实景校准阈值，不是对奥维实现的断言。
 - 可见重复迭代器复用原中间顶点定位、重复间隔和逐字切线公式，以折线与扩展屏幕的交集直接计算重复索引区间，不先分配大量屏外 glyph。采用 Double 弧长以保护大倾角长屏外段的局部字距。投影失败的顶点断开连续段，不再连接两侧后跨不可见区排字。
 - 未被接受的候选只保存数值数组，Label 池只为实际获准的字符增长。碰撞累计数组按重复数扩容并保留已接受的点/线框。缓存仅持有轻量 pass token，不保存 RenderContext/WorldWindow；每次 collider 调用刷新 token，避免双图或同帧不同投影混用布局。
+- `MvtBatchedLineTile.outlineColorTransform` 是默认空值的绘制期颜色钩子。它在每个缓存 LineRange 颜色解包到本 Drawable 的 `drawState.color` 后、`drawElements` 复制颜色之前执行；不改已组装的 mesh/EBO，也不依赖已释放的 source coordinates。等高线填色同开时用它选择高对比黑/白，关闭填色时恢复原彩色线芯。双图共享 batch 时由几何渲染锁串行设置回调；回调为无 Context 捕获的静态函数引用。
 - 点注记优先级、现有远距门槛和点注记预算保留；没有缩小字体或隐藏道路来制造改善。
 
 ## 度量缓存为什么是 4096
@@ -107,26 +108,29 @@ Module 中保留原 `name: worldwind.aar` 与原下载 URL `worldwind-android-2.
 | classes.jar | `8b6ea302913e35d247b1a95012ebc24da7914f25dd9f5b072445bdf8cb8b9e30` |
 | sources.jar | `0c97de300c578bd73956ca498f4eed8b5d582f3715bc22d7360863247ce9dbdc` |
 
-脚本编译后必须得到以下 12 个类，全部位于 `earth/worldwind/layer/mvt/`；否则拒绝发布。
+脚本编译后必须得到精确 class 清单，全部位于 `earth/worldwind/layer/mvt/`；否则拒绝发布。
 
-替换 7 个原类：`LabelDedup`、`LabelGeoDedup`、`Math`、`MvtCurvedLineLabel`、`MvtLabelCollider`、`MvtLabelCollider$Companion`、`MvtLabelColliderKt`。其中去重辅助类、Math 和 top-level 配置类随原文件一同编译，没有改其逻辑。
+替换 14 个原类：原有 `LabelDedup`、`LabelGeoDedup`、`Math`、`MvtCurvedLineLabel`、`MvtLabelCollider`、`MvtLabelCollider$Companion`、`MvtLabelColliderKt`，以及 `MvtBatchedLineTile` 和它的六个嵌套/编译器类。去重辅助类、Math、top-level 配置类和 batch 其它逻辑保持上游实现。
 
 新增 5 个类：`AndroidMvtLabelMetrics`、`AndroidMvtLabelMetrics$cache$1`、`AndroidMvtLabelMetrics$Extent`、`AndroidMvtLabelMetrics$Key`、`MvtLabelCollisionMath`。
 
 每次构建核验：
 
-- 7 个原类的既有非 private JVM 签名全部保留，仅允许下文精确列出的 5 个新增方法；class header 和其它字段/方法不得变化。所有候选 classfile 为 Java 17。
-- classes.jar 无删除，只有上述 7 个既有类可变化、5 个类可新增；原完整 `META-INF/earth.worldwind_worldwind.kotlin_module` 字节不变。
+- 14 个原类的既有非 private JVM 签名全部保留，仅允许下文精确列出的新增方法；class header 和其它字段/方法不得变化。所有候选 classfile 为 Java 17。
+- classes.jar 无删除，只有上述 14 个既有类可变化、原有 5 个类可新增；原完整 `META-INF/earth.worldwind_worldwind.kotlin_module` 字节不变。
 - AAR 仅 `classes.jar` 条目内容变化，其余资源、manifest、R.txt、assets 等全部字节不变。
 - 原 POM 字节不变；module dependencies、attributes、variants、component 和 sources 记录不变，仅两处 AAR 文件 size/hash 更新。
-- 20 项数学及实际原排字器用例通过，包括与原公式的常规输出对比、独立重复碰撞和超长屏外段的可见重复筛选。测试直接读取校验过的原 SDK classes.jar，不创建 Android 窗口。
+- 数学用例、实际原排字器用例及 range-color hook 发出的 DrawShapeState 颜色用例通过；后者测试同一 `applyRangeColor` 路径，覆盖暗绿色转白、亮黄色转黑并保持线条透明度。测试直接读取校验过的原 SDK classes.jar，不创建 Android 窗口。
 - 加 `--verify-reproducible` 时，第二次全新 CLI 编译的全部类和重新打包 AAR 必须字节一致。
 
-`source_fingerprint_sha256` 是按路径排序的四个生产源码 SHA-256 列表的摘要；另有包含脚本、测试、许可的 `build_fingerprint_sha256`。新 AAR SHA、原始 SHA、编译工具 hash、精确类清单及 ZIP 差异全部写在 `build-manifest.json`。
+`source_fingerprint_sha256` 是按路径排序的五个生产源码 SHA-256 列表的摘要；另有包含脚本、测试、许可的 `build_fingerprint_sha256`。新 AAR SHA、原始 SHA、编译工具 hash、精确类清单及 ZIP 差异全部写在 `build-manifest.json`。
 
 精确新增 JVM 方法（原构造器、属性 getter/setter、doRender 等签名不变）：
 
 ```text
+MvtBatchedLineTile.getOutlineColorTransform() : Function1
+MvtBatchedLineTile.setOutlineColorTransform(Function1) : void
+MvtBatchedLineTile.applyRangeColor$earth_worldwind_worldwind(int, Color) : void
 MvtCurvedLineLabel.copyLayoutStatistics(long[]) : void
 MvtCurvedLineLabel.prepareCollision$earth_worldwind_worldwind(RenderContext, AndroidMvtLabelMetrics, Object) : int
 MvtCurvedLineLabel.copyRunBounds$earth_worldwind_worldwind(int, float[]) : void
@@ -134,7 +138,7 @@ MvtCurvedLineLabel.acceptCollisionRun$earth_worldwind_worldwind(int) : void
 MvtLabelCollider.copyLineLayoutStatistics(long[]) : void
 ```
 
-三个带 `$earth_worldwind_worldwind` 后缀的布局操作为 Kotlin internal，仅供 SDK 内部碰撞流程。构建脚本逐一比对上述完整声明和 JVM descriptor，不使用“允许任意新增方法”的宽泛规则。新增辅助类集合仍为原来 5 个，没有增加新的 glyph/窗口包装类。
+带 `$earth_worldwind_worldwind` 后缀的布局/颜色操作为 Kotlin internal，仅供 SDK 内部流程及同路径线色检查。构建脚本逐一比对上述完整声明和 JVM descriptor，不使用“允许任意新增方法”的宽泛规则。新增辅助类集合仍为原来 5 个，没有增加新的 glyph/窗口包装类。
 
 ## 主工程接入与验证边界
 

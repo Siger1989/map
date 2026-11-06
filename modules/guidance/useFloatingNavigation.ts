@@ -16,6 +16,8 @@ const emptyStatus: FloatingNavigationStatus = {
   visible: false,
   windowEnabled: true,
   lockscreenEnabled: true,
+  energySaving: false,
+  lockscreenKeepOn: false,
   mode: 'north',
   kind: 'position',
   message: '',
@@ -171,7 +173,7 @@ export function useFloatingNavigation(
     }
   }, [refresh, send, status]);
 
-  const setDisplayOption = useCallback((key: 'windowEnabled' | 'lockscreenEnabled', enabled: boolean) => {
+  const setBooleanOption = useCallback((key: 'windowEnabled' | 'lockscreenEnabled' | 'energySaving' | 'lockscreenKeepOn', enabled: boolean) => {
     const bridge = typeof window === 'undefined' ? undefined : window.ShantuFloatingNavigation;
     if (!bridge) { setLocalMessage('此平台不支持跨App悬浮地图'); return; }
     const changed = { [key]: enabled } as Pick<FloatingNavigationOptions, typeof key>;
@@ -182,16 +184,16 @@ export function useFloatingNavigation(
         refresh();
       } else if (enabled) {
         send('start', status.mode);
-        setLocalMessage('此原生版本不支持独立保存两项显示开关');
+        setLocalMessage('此原生版本不支持保存此项悬浮地图设置');
         return;
       } else {
-        setLocalMessage('当前原生桥接不支持保存独立显示开关');
+        setLocalMessage('当前原生桥接不支持保存此项悬浮地图设置');
         return;
       }
     } catch (error) {
       setLocalMessage(error instanceof Error ? error.message : '显示设置保存失败');
     }
-    if (enabled && !status.enabled) send('start', status.mode);
+    if ((key === 'windowEnabled' || key === 'lockscreenEnabled') && enabled && !status.enabled) send('start', status.mode);
   }, [refresh, send, status]);
 
   // Follow the live session automatically. Ending navigation changes the payload to position mode;
@@ -224,6 +226,8 @@ export function useFloatingNavigation(
     visible: status.visible,
     windowEnabled: status.windowEnabled,
     lockscreenEnabled: status.lockscreenEnabled,
+    energySaving: status.energySaving,
+    lockscreenKeepOn: status.lockscreenKeepOn,
     mode: status.mode,
     kind: session ? 'route' as const : 'position' as const,
     hasRoute: session !== null,
@@ -234,7 +238,9 @@ export function useFloatingNavigation(
     start,
     stop,
     setMode,
-    setWindowEnabled: (enabled: boolean) => setDisplayOption('windowEnabled', enabled),
-    setLockscreenEnabled: (enabled: boolean) => setDisplayOption('lockscreenEnabled', enabled),
+    setWindowEnabled: (enabled: boolean) => setBooleanOption('windowEnabled', enabled),
+    setLockscreenEnabled: (enabled: boolean) => setBooleanOption('lockscreenEnabled', enabled),
+    setEnergySaving: (enabled: boolean) => setBooleanOption('energySaving', enabled),
+    setLockscreenKeepOn: (enabled: boolean) => setBooleanOption('lockscreenKeepOn', enabled),
   };
 }

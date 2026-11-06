@@ -41,7 +41,7 @@ async function mountProbe(t, bridge) {
 }
 
 test('restore is used without permission prompts, session follows route then position, independent switches persist natively', async (t) => {
-  const native = { available: true, enabled: false, visible: false, mode: 'motion', kind: 'position', windowEnabled: true, lockscreenEnabled: true, message: '' };
+  const native = { available: true, enabled: false, visible: false, mode: 'motion', kind: 'position', windowEnabled: true, lockscreenEnabled: true, energySaving: false, lockscreenKeepOn: false, message: '' };
   const calls = { starts: [], updates: [], restores: [], options: [], stops: 0 };
   const bridge = {
     status: () => JSON.stringify(native),
@@ -81,6 +81,14 @@ test('restore is used without permission prompts, session follows route then pos
   assert.deepEqual(calls.options.at(-1), { lockscreenEnabled: false });
   assert.equal(calls.stops, 0, 'both-off is persisted with setOptions, not stop()');
 
+  await act(async () => mounted.controls.setEnergySaving(true));
+  assert.deepEqual(calls.options.at(-1), { energySaving: true });
+  await act(async () => mounted.controls.setLockscreenKeepOn(true));
+  assert.deepEqual(calls.options.at(-1), { lockscreenKeepOn: true });
+  assert.equal(calls.starts.length, 0, 'energy and keep-screen options never start the service');
+  await act(async () => mounted.controls.setMode('compass'));
+  assert.deepEqual(calls.options.at(-1), { mode: 'compass' });
+
   await act(async () => mounted.controls.setWindowEnabled(true));
   assert.equal(calls.starts.length, 1, 'turning a surface back on uses the explicit permission flow');
   assert.equal(calls.starts[0].kind, 'position');
@@ -105,7 +113,7 @@ test('legacy bridge never auto-starts; its explicit start remains available to t
 });
 
 test('rapid independent switch updates send only changed keys and preserve both final native values', async (t) => {
-  const native = { available: true, enabled: false, visible: false, mode: 'north', kind: 'position', windowEnabled: true, lockscreenEnabled: true, message: '' };
+  const native = { available: true, enabled: false, visible: false, mode: 'north', kind: 'position', windowEnabled: true, lockscreenEnabled: true, energySaving: false, lockscreenKeepOn: false, message: '' };
   const pendingOptions = [];
   const bridge = {
     status: () => JSON.stringify(native),
@@ -120,8 +128,12 @@ test('rapid independent switch updates send only changed keys and preserve both 
   assert.equal(pendingOptions.length, 0, 'legacy mode without restore is never auto-started');
   await React.act(async () => mounted.controls.setWindowEnabled(false));
   await React.act(async () => mounted.controls.setLockscreenEnabled(false));
-  assert.deepEqual(pendingOptions, [{ windowEnabled: false }, { lockscreenEnabled: false }]);
+  await React.act(async () => mounted.controls.setEnergySaving(true));
+  await React.act(async () => mounted.controls.setLockscreenKeepOn(true));
+  assert.deepEqual(pendingOptions, [{ windowEnabled: false }, { lockscreenEnabled: false }, { energySaving: true }, { lockscreenKeepOn: true }]);
   for (const update of pendingOptions) Object.assign(native, update);
   assert.equal(native.windowEnabled, false);
   assert.equal(native.lockscreenEnabled, false, 'delayed writes do not overwrite the other switch with stale React state');
+  assert.equal(native.energySaving, true);
+  assert.equal(native.lockscreenKeepOn, true);
 });

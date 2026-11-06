@@ -23,3 +23,15 @@ export function placeShareData(place: PlaceShareSource) {
     summary: place.shareSummary ?? '名称、坐标和地图链接',
   };
 }
+
+/** Navigation action for one marker. It deliberately has no origin: AMap chooses it. */
+export function placeNavigationData(place: PlaceShareSource) {
+  const shared = placeShareData(place);
+  const url = new URL(shared.url);
+  url.searchParams.set('callnative', '1');
+  return {
+    ...shared,
+    url: url.href,
+    text: shared.text.replace(shared.url, url.href),
+  };
+}

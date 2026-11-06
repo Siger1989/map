@@ -12,6 +12,7 @@ import earth.worldwind.render.image.ImageSource
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.hypot
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import java.util.LinkedHashMap
 
@@ -48,6 +49,7 @@ internal data class NativeContourPath(val elevationMeters: Int, val points: List
 /** CPU-side DEM overlay renderer. Missing DEM values remain transparent and break contour cells. */
 internal object NativeTerrainOverlayMath {
     val INTERVALS = setOf(30, 50, 100, 200)
+    const val ELEVATION_FILL_STEP_METERS = 25
     private const val MAX_LEVEL_CANDIDATES = 2_000_000
     private val anchors = listOf(
         -500 to rgb(0x07, 0x50, 0x43),
@@ -74,6 +76,30 @@ internal object NativeTerrainOverlayMath {
     fun elevationColor(heightMeters: Double, interval: Int): Int {
         require(heightMeters.isFinite() && interval in INTERVALS)
         val band = floor(heightMeters / interval) * interval
+        return paletteColor(band)
+    }
+
+    /** Fixed absolute-altitude fill bands stay stable when contour spacing changes with zoom. */
+    fun elevationFillColor(heightMeters: Double): Int {
+        require(heightMeters.isFinite())
+        val band = floor(heightMeters / ELEVATION_FILL_STEP_METERS) * ELEVATION_FILL_STEP_METERS
+        return paletteColor(band)
+    }
+
+    /** Chooses pure black or white against the fill RGB using WCAG relative luminance. */
+    fun contrastContourColor(heightMeters: Double): Int {
+        val color = elevationFillColor(heightMeters)
+        fun linear(channel: Int): Double {
+            val value = channel / 255.0
+            return if (value <= 0.04045) value / 12.92 else ((value + 0.055) / 1.055).pow(2.4)
+        }
+        val luminance = 0.2126 * linear(Color.red(color)) + 0.7152 * linear(Color.green(color)) + 0.0722 * linear(Color.blue(color))
+        val blackContrast = (luminance + 0.05) / 0.05
+        val whiteContrast = 1.05 / (luminance + 0.05)
+        return if (whiteContrast >= blackContrast) Color.WHITE else Color.BLACK
+    }
+
+    private fun paletteColor(band: Double): Int {
         val next = anchors.indexOfFirst { it.first > band }
         if (next == 0) return anchors.first().second
         if (next < 0) return anchors.last().second
@@ -262,13 +288,13 @@ internal object NativeTerrainOverlayMath {
         return paths
     }
 
-    fun renderElevationColors(values: DoubleArray, size: Int, interval: Int, opacity: Double = 1.0): Bitmap {
-        require(size > 0 && values.size == size * size && interval in INTERVALS && opacity.isFinite() && opacity in 0.0..1.0)
+    fun renderElevationColors(values: DoubleArray, size: Int, opacity: Double = 1.0): Bitmap {
+        require(size > 0 && values.size == size * size && opacity.isFinite() && opacity in 0.0..1.0)
         val pixels = IntArray(values.size) { index ->
             val elevation = values[index]
             if (!elevation.isFinite() || opacity <= 0.0) Color.TRANSPARENT
             else {
-                val color = elevationColor(elevation, interval)
+                val color = elevationFillColor(elevation)
                 Color.argb((255.0 * opacity).toInt(), Color.red(color), Color.green(color), Color.blue(color))
             }
         }
@@ -436,12 +462,13 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
 
     fun renderables(options: NativeTerrainOverlayOptions): List<Renderable> = buildList {
         if (options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0) {
-            add(createSurfaceImage(options.contourIntervalMeters, options.elevationColorsOpacity))
+            add(createSurfaceImage(options.elevationColorsOpacity))
         }
         if (options.contoursEnabled) {
             val layer = NativeContourLayer(
                 options.contourIntervalMeters,
                 NativeTerrainOverlayMath.contourMinimumZoom(options.contourIntervalMeters),
+                options.elevationColorsEnabled && options.elevationColorsOpacity > 0.0,
                 stableSampleFunction,
             )
             NativeContourLayerRenderable(layer).also {
@@ -453,11 +480,11 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
         }
     }
 
-    private fun createSurfaceImage(interval: Int, opacity: Double): MercatorTiledSurfaceImage {
+    private fun createSurfaceImage(opacity: Double): MercatorTiledSurfaceImage {
         val factory = object : MercatorTileFactory {
-            override val contentType = "Shantu terrain elevation colors $interval $opacity"
+            override val contentType = "Shantu terrain elevation colors ${NativeTerrainOverlayMath.ELEVATION_FILL_STEP_METERS}m $opacity"
             override fun getImageSource(x: Int, y: Int, z: Int): ImageSource = ImageSource.fromImageFactory(
-                TerrainOverlayImageFactory(stableSampleFunction, "elevation-colors", interval, opacity, x, y, z),
+                TerrainOverlayImageFactory(stableSampleFunction, "elevation-colors", opacity, x, y, z),
             )
         }
         return MercatorTiledImageLayer.buildTiledSurfaceImage(
@@ -474,7 +501,6 @@ internal class NativeTerrainOverlays(private val coverage: NativeTerrariumCovera
 internal data class TerrainOverlayImageFactory(
     private val sample: suspend (z: Int, x: Int, y: Int) -> DoubleArray?,
     private val style: String,
-    private val interval: Int,
     private val opacity: Double,
     private val x: Int,
     private val y: Int,
@@ -485,6 +511,6 @@ internal data class TerrainOverlayImageFactory(
     override suspend fun createBitmap(): Bitmap? {
         if (style != "elevation-colors") return null
         val samples = sample(z, x, y) ?: return null
-        return NativeTerrainOverlayMath.renderElevationColors(samples, NativeTerrainOverlays.TILE_SIZE, interval, opacity)
+        return NativeTerrainOverlayMath.renderElevationColors(samples, NativeTerrainOverlays.TILE_SIZE, opacity)
     }
 }

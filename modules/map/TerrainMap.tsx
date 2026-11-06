@@ -28,6 +28,8 @@ import { ovmapSourceIds } from '../mapSources/ovmapTiles';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { Map } from 'maplibre-gl';
 import { addContours, syncContourInterval, baseStyle } from '../terrain/terrain';
+import { contourInterval } from '../terrain/contourInterval';
+import { contourColorExpressionForInterval, elevationFillExpression, highContrastContourColorExpression } from '../terrain/elevationColors';
 import { readElevation } from '../terrain/elevation';
 import {
   loadLatestSatellite,
@@ -515,6 +517,16 @@ const WebTerrainMap = forwardRef<MapHandle, TerrainMapProps>(
             : null,
         );
       syncContourInterval(map, s.contourInterval);
+      if (map.getLayer('elevation-colors'))
+        map.setPaintProperty('elevation-colors', 'color-relief-color', elevationFillExpression);
+      if (map.getLayer('contours'))
+        map.setPaintProperty(
+          'contours',
+          'line-color',
+          s.contours && s.elevationColors
+            ? highContrastContourColorExpression
+            : contourColorExpressionForInterval(contourInterval(s.contourInterval)),
+        );
       for (const id of ['contours', 'contour-labels'])
         if (map.getLayer(id))
           map.setLayoutProperty(

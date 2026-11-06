@@ -16,6 +16,8 @@ import android.graphics.Shader
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -39,6 +41,16 @@ class FloatingLockMapActivity : Activity() {
     private var navigationView: FloatingNavigationView? = null
     private var attached = false
     private var receiverRegistered = false
+    private var resumed = false
+    private val displayHandler = Handler(Looper.getMainLooper())
+    private val displaySettingsTick = object : Runnable {
+        override fun run() {
+            if (!resumed || isFinishing) return
+            if (!isKeyguardLocked()) { finish(); return }
+            applyDisplaySettings()
+            displayHandler.postDelayed(this, 1_000)
+        }
+    }
 
     private val userPresentReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -105,9 +117,36 @@ class FloatingLockMapActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        resumed = true
         // Screen-off can detach the service's View while this singleTop Activity
         // stays resumed. Always re-establish the live-session lease on resume.
         attachCurrentSession()
+        displayHandler.removeCallbacks(displaySettingsTick)
+        if (!isFinishing) {
+            applyDisplaySettings()
+            displayHandler.postDelayed(displaySettingsTick, 1_000)
+        }
+    }
+
+    override fun onPause() {
+        resumed = false
+        displayHandler.removeCallbacks(displaySettingsTick)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.attributes = window.attributes.apply { screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE }
+        super.onPause()
+    }
+
+    private fun applyDisplaySettings() {
+        val state = FloatingNavigationService.status(this)
+        val keepOn = resumed && state.optBoolean("enabled", false) &&
+            state.optBoolean("lockscreenEnabled", true) && state.optBoolean("lockscreenKeepOn", false)
+        if (keepOn) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val brightness = if (keepOn && state.optBoolean("energySaving", false)) .15f
+            else WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        if (window.attributes.screenBrightness != brightness) {
+            window.attributes = window.attributes.apply { screenBrightness = brightness }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -140,6 +179,8 @@ class FloatingLockMapActivity : Activity() {
     }
 
     override fun onDestroy() {
+        resumed = false
+        displayHandler.removeCallbacks(displaySettingsTick)
         unregisterUserPresentReceiver()
         detachViewIfNeeded()
         navigationView = null

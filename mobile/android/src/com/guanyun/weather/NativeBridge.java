@@ -105,6 +105,44 @@ final class NativeBridge {
     @JavascriptInterface public String routeOutput(String name, String encoded, boolean share) { return RouteOutput.file(activity, files, name, encoded, share); }
     @JavascriptInterface public String routeLinkShare(String url) { return RouteOutput.link(activity, url); }
     @JavascriptInterface public String placeTextShare(String text) { return PlaceOutput.share(activity, text); }
+    /** Opens only a validated WGS84 AMap marker destination in the AMap app. */
+    @JavascriptInterface public String openAmapMarker(String rawUrl) {
+        if (!activity.trustedForeground()) return "请保持山兔在前台后打开高德";
+        if (rawUrl == null || rawUrl.length() > 2048) return "地点链接无效";
+        try {
+            android.net.Uri uri = android.net.Uri.parse(rawUrl);
+            if (!"https".equals(uri.getScheme()) || !"uri.amap.com".equals(uri.getHost()) ||
+                uri.getUserInfo() != null || uri.getPort() != -1 || uri.getFragment() != null ||
+                !"/marker".equals(uri.getPath()) || uri.getQueryParameters("position").size() != 1 ||
+                uri.getQueryParameters("coordinate").size() != 1 || uri.getQueryParameters("callnative").size() != 1 ||
+                !"wgs84".equals(uri.getQueryParameter("coordinate")) ||
+                !"1".equals(uri.getQueryParameter("callnative"))) return "地点链接无效";
+            String position = uri.getQueryParameter("position");
+            if (position == null) return "地点链接无效";
+            String[] pair = position.split(",", -1);
+            if (pair.length != 2) return "地点链接无效";
+            double lon = Double.parseDouble(pair[0]), lat = Double.parseDouble(pair[1]);
+            if (!Double.isFinite(lon) || !Double.isFinite(lat) || Math.abs(lon) > 180 || Math.abs(lat) > 90)
+                return "地点链接无效";
+            if (uri.getQueryParameters("name").size() > 1) return "地点链接无效";
+            String name = uri.getQueryParameter("name");
+            if (name == null) name = "地图位置";
+            name = name.replaceAll("[\\r\\n\\u0000-\\u001f\\u007f]", " ").trim();
+            if (name.length() > 120) name = name.substring(0, 120);
+            if (name.isEmpty()) name = "地图位置";
+            android.net.Uri navigationUri = android.net.Uri.parse(AmapNavigationUri.build(name, lat, lon));
+            Intent intent = new Intent(Intent.ACTION_VIEW, navigationUri).setPackage("com.autonavi.minimap");
+            if (intent.resolveActivity(activity.getPackageManager()) == null) return "unavailable";
+            activity.runOnUiThread(() -> {
+                if (!activity.trustedForeground()) return;
+                try { activity.startActivity(intent); }
+                catch (Exception failure) { android.widget.Toast.makeText(activity,"高德地图未能打开，请使用已复制的地点链接",android.widget.Toast.LENGTH_SHORT).show(); }
+            });
+            return "requested";
+        } catch (Exception failure) {
+            return "高德地图未能打开";
+        }
+    }
     @JavascriptInterface public String photoOutput(String name, String encoded, boolean share) {
         if (name == null || !name.matches("(?:Shantu|Guanyun)-(?:(?:photo|measurement)-[0-9]{1,16}|section-[0-9]{1,16}-[1-9][0-9]{0,3})\\.jpg") || encoded == null || encoded.length() > 12*1024*1024) return "分享图片过大或名称无效";
         final byte[] bytes;

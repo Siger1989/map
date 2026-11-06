@@ -132,6 +132,7 @@ export function GuidanceCard({
       ref={observeNavigationCard}
       className="guidance-card glass"
       data-compact={compact && !expanded && !displayPanel}
+      data-expanded={compact && expanded && !displayPanel}
       data-forward-navigation={forwardNavigation}
       data-camera-mode={cameraMode}
       data-content={displayPanel ? 'display' : 'navigation'}

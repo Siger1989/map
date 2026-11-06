@@ -88,7 +88,15 @@ export function canUseNativeRouteDownload(trip: TripPackage): boolean {
 export function applyNativeProgress(trip:TripPackage,state:State):TripPackage {
   if(state.id!==trip.id)return trip;
   const done=Math.min(trip.urls.length,Math.max(0,state.done??trip.done));
-  return {...trip, native:true, done, bytes:Math.max(0,state.bytes??trip.bytes),complete:done===trip.urls.length};
+  const phase: TripPackage['phase'] = state.state === 'complete' || done === trip.urls.length ? 'complete'
+    : state.state === 'waiting' ? 'waiting'
+    : state.state === 'paused' || state.state === 'cancelled' ? 'paused'
+    : state.state === 'error' ? 'failed' : 'running';
+  const phaseMessage = state.error || (phase === 'waiting' ? '等待网络恢复，已下载内容保留'
+    : phase === 'paused' ? '下载已暂停，可继续'
+    : phase === 'failed' ? '下载失败，可继续补齐'
+    : phase === 'complete' ? '缓存完成' : '缓存中');
+  return {...trip, native:true, done, bytes:Math.max(0,state.bytes??trip.bytes),complete:done===trip.urls.length,phase,phaseMessage};
 }
 export async function downloadNative(trip:TripPackage, signal:AbortSignal, progress:(trip:TripPackage)=>void) {
   if(!canDownloadTrip(trip))throw Error(TIANDITU_OFFLINE_DISABLED);

@@ -1,4 +1,4 @@
-WorldWind Kotlin 2.1.1 Android label review
+WorldWind Kotlin 2.1.1 Android label and contour-render review
 
 Original source: earth.worldwind:worldwind-android:2.1.1, published by the
 WorldWind Kotlin project, https://github.com/WorldWindEarth/WorldWindKotlin .
@@ -24,6 +24,16 @@ Local changes, 2026-11-05, for isolated Shantu Android research review:
   measured but not cached. Text content and road geometry are not changed.
 - Upside-down, excessively curved or inaccurately projected name repeats are
   omitted independently; other valid repeats of the same feature remain.
+
+Local change, 2026-11-06:
+- MvtBatchedLineTile.kt: added a default-null per-range render-time color
+  transform. It runs after unpacking the cached range color into the current
+  draw state's color and before DrawShapeState captures that color for its
+  primitive. It does not rebuild geometry or retain source coordinates.
+- MvtBatchedLineTileColorHookCheck.kt exercises the same range-to-draw-state
+  color method, including dark-to-white and bright-to-black output and alpha
+  preservation. The Android app supplies a stateless WCAG contrast callback
+  only while elevation fill and contours are both enabled.
 
 No Ovital source code or binary implementation is included in this patch.
 This patch alone is not an installed or visually validated APK.

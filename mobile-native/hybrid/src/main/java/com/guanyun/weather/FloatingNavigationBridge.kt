@@ -28,14 +28,14 @@ class FloatingNavigationBridge(
     fun status(): String {
         if (!trustedPage()) return JSONObject().put("available", false).put("enabled", false)
             .put("visible", false).put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "仅山兔前台页面可读取悬浮导航状态")
-            .put("windowEnabled", false).put("lockscreenEnabled", false)
+            .put("windowEnabled", false).put("lockscreenEnabled", false).put("energySaving", false).put("lockscreenKeepOn", false)
             .put("locationAllowed", false).put("notificationAllowed", false).put("overlayAllowed", false).toString()
         return try {
             statusJson().toString()
         } catch (_: Exception) {
             JSONObject().put("available", true).put("enabled", false).put("visible", false)
                 .put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "悬浮导航状态暂不可用")
-                .put("windowEnabled", false).put("lockscreenEnabled", false)
+                .put("windowEnabled", false).put("lockscreenEnabled", false).put("energySaving", false).put("lockscreenKeepOn", false)
                 .put("locationAllowed", hasLocationPermission()).put("notificationAllowed", hasNotificationPermission())
                 .put("overlayAllowed", canDrawOverlays()).toString()
         }
@@ -58,7 +58,7 @@ class FloatingNavigationBridge(
             try {
                 require(payload.toByteArray(Charsets.UTF_8).size <= 4096) { "悬浮地图设置过大" }
                 val input = JSONObject(payload)
-                val allowed = setOf("windowEnabled", "lockscreenEnabled", "mode")
+                val allowed = setOf("windowEnabled", "lockscreenEnabled", "mode", "energySaving", "lockscreenKeepOn")
                 val keys = input.keys()
                 while (keys.hasNext()) require(keys.next() in allowed) { "悬浮地图设置字段无效" }
                 val windowEnabled = if (input.has("windowEnabled")) {
@@ -70,8 +70,16 @@ class FloatingNavigationBridge(
                     input.getBoolean("lockscreenEnabled")
                 } else null
                 val mode = if (input.has("mode")) input.optString("mode") else null
-                require(mode == null || mode == "north" || mode == "motion") { "方向模式无效" }
-                FloatingNavigationService.setOptions(activity, windowEnabled, lockscreenEnabled, mode)
+                require(mode == null || mode in setOf("north", "motion", "compass")) { "方向模式无效" }
+                val energySaving = if (input.has("energySaving")) {
+                    require(input.opt("energySaving") is Boolean) { "energySaving 必须是布尔值" }
+                    input.getBoolean("energySaving")
+                } else null
+                val lockscreenKeepOn = if (input.has("lockscreenKeepOn")) {
+                    require(input.opt("lockscreenKeepOn") is Boolean) { "lockscreenKeepOn 必须是布尔值" }
+                    input.getBoolean("lockscreenKeepOn")
+                } else null
+                FloatingNavigationService.setOptions(activity, windowEnabled, lockscreenEnabled, mode, energySaving, lockscreenKeepOn)
                 val state = FloatingNavigationService.status(activity)
                 pendingStart?.let { pendingStart = mergeNativeOptions(it, state) }
                 if (!state.optBoolean("windowEnabled", true) && !state.optBoolean("lockscreenEnabled", true)) {
@@ -266,10 +274,12 @@ class FloatingNavigationBridge(
 
     /** Native SharedPreferences is authoritative over stale React/pending snapshots. */
     private fun mergeNativeOptions(payload: JSONObject, state: JSONObject, preferPersisted: Boolean = state.optBoolean("optionsConfigured", false)): JSONObject = payload.apply {
-        val storedMode = state.optString("mode").takeIf { it == "north" || it == "motion" } ?: "north"
-        put("mode", if (preferPersisted) storedMode else optString("mode").takeIf { it == "north" || it == "motion" } ?: storedMode)
+        val storedMode = state.optString("mode").takeIf { it in setOf("north", "motion", "compass") } ?: "north"
+        put("mode", if (preferPersisted) storedMode else optString("mode").takeIf { it in setOf("north", "motion", "compass") } ?: storedMode)
         put("windowEnabled", if (preferPersisted) state.optBoolean("windowEnabled", true) else optBoolean("windowEnabled", state.optBoolean("windowEnabled", true)))
         put("lockscreenEnabled", if (preferPersisted) state.optBoolean("lockscreenEnabled", true) else optBoolean("lockscreenEnabled", state.optBoolean("lockscreenEnabled", true)))
+        put("energySaving", if (preferPersisted) state.optBoolean("energySaving", false) else optBoolean("energySaving", state.optBoolean("energySaving", false)))
+        put("lockscreenKeepOn", if (preferPersisted) state.optBoolean("lockscreenKeepOn", false) else optBoolean("lockscreenKeepOn", state.optBoolean("lockscreenKeepOn", false)))
     }
 
     private fun validatePayload(raw: String?): JSONObject {
@@ -291,7 +301,9 @@ class FloatingNavigationBridge(
             .put("visible", service.optBoolean("visible", false))
             .put("windowEnabled", service.optBoolean("windowEnabled", true))
             .put("lockscreenEnabled", service.optBoolean("lockscreenEnabled", true))
-            .put("mode", service.optString("mode").takeIf { it == "north" || it == "motion" } ?: JSONObject.NULL)
+            .put("energySaving", service.optBoolean("energySaving", false))
+            .put("lockscreenKeepOn", service.optBoolean("lockscreenKeepOn", false))
+            .put("mode", service.optString("mode").takeIf { it in setOf("north", "motion", "compass") } ?: JSONObject.NULL)
             .put("kind", service.optString("kind").takeIf { it == "position" || it == "route" } ?: JSONObject.NULL)
             .put("message", serviceMessage.ifBlank { localMessage })
             .put("locationAllowed", hasLocationPermission())
@@ -299,7 +311,7 @@ class FloatingNavigationBridge(
             .put("overlayAllowed", canDrawOverlays())
         // Whitelist non-sensitive service state only. Route, coordinates, labels,
         // URLs, and keys are intentionally never returned to JavaScript here.
-        listOf("zoom", "widthDp", "heightDp", "windowBounds", "permissionRequired", "lastErrorCode", "lockscreen").forEach { key ->
+        listOf("zoom", "widthDp", "heightDp", "windowBounds", "permissionRequired", "lastErrorCode", "lockscreen", "diagnostics").forEach { key ->
             if (service.has(key)) root.put(key, service.opt(key))
         }
         return root

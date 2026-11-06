@@ -208,6 +208,21 @@ html[data-ui-theme] .observatory.home-map[data-ui-style='outdoor'] .guidance-car
 /* Keep the collapsed heading and location state on separate, readable rows. */
 .observatory.home-map .guidance-card { top: calc(var(--home-header-height) + var(--home-top) + 4px); left: var(--home-left); width: min(300px,calc(100vw - var(--home-left) - var(--home-right) - 80px)); border-radius: var(--ui-radius-card, 8px); box-sizing: border-box; max-height: min(280px, calc(100dvh - var(--home-top) - var(--home-header-height) - var(--home-footer) - 24px)); }
 .observatory.home-map .guidance-card[data-compact='false'] { min-height: 0; }
+.observatory.home-map .guidance-card[data-expanded='true'] {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible;
+}
+.observatory.home-map .guidance-card[data-expanded='true'] .guidance-content {
+  flex: 0 0 auto;
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+}
+.observatory.home-map .guidance-card[data-expanded='true'] .guidance-inline-status {
+  max-height: none;
+  overflow: visible;
+}
 .observatory.home-map .guidance-card[data-compact='false'] header { min-height: 44px; height: auto; padding: 4px 8px; }
 .observatory.home-map .guidance-card[data-compact='false'] .guidance-heading-row { min-height: 36px; }
 .observatory.home-map .guidance-card[data-compact='false'] header strong { flex: 1 1 auto; min-width: 0; font-size: 11px; gap: 4px; white-space: nowrap; }

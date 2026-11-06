@@ -8,6 +8,10 @@ const mocks = new Map([
     const s=()=>globalThis.__importedRouteCacheTest;
     export function nativeOffline(){s().nativeCalls++;return s().bridge;}
     export function nativeRouteOffline(){s().routeChecks++;return s().routeBridge??null;}
+    export function isNativeOfflineAvailable(){return false;}
+    export async function nativeOfflineAvailableBytes(){return undefined;}
+    export async function nativeOfflineVerify(){return {};}
+    export async function nativeOfflineRemove(){return true;}
     export function canUseNativeRouteDownload(trip){return !!s().routeBridge&&(trip.native||trip.done===0);}
     export async function downloadNative(){s().nativeDownloadCalls++;}
     export function applyNativeProgress(value){return value;}
@@ -17,6 +21,7 @@ const mocks = new Map([
     export function tripPackages(){try{return JSON.parse(localStorage.getItem(key)??'[]')}catch{return []}}
     export function putTrip(trip){const list=tripPackages(),i=list.findIndex(x=>x.id===trip.id);if(i<0)list.push(trip);else list[i]=trip;localStorage.setItem(key,JSON.stringify(list))}
     export async function persistTripManifest(trip){putTrip(trip)}
+    export async function persistTripPlanningTask(trip){putTrip(trip)}
     export async function loadTripManifest(trip){return trip}
     export async function removeTripManifest(){if(globalThis.__importedRouteCacheTest.failManifestRemoval)throw new Error('manifest deletion failed')}
     export function removeTripIndex(id){localStorage.setItem(key,JSON.stringify(tripPackages().filter(t=>t.id!==id)))}
@@ -341,6 +346,7 @@ test('route progress throttles index writes and reuses only validated cached ima
   const saved = JSON.parse(globalThis.localStorage.getItem('guanyun.trips.v1'))[0];
   assert.equal(saved.done, urls.length);
   assert.equal(saved.bytes, tileBytes.byteLength * urls.length);
+  assert.equal(saved.phase, 'complete');
 });
 
 test('failed manifest deletion restores the compact package index for recovery', async t => {
@@ -404,8 +410,25 @@ test('imported route package persists complete deduplicated route names and keep
   const names = [' Route A ', 'Route B', 'Route A', '', 'X'.repeat(75)];
   const trip = await api.prepareImportedRoutePackage('Batch cache', area, source, 14, new AbortController().signal, names);
   assert.deepEqual(trip.routeNames, ['Route A', 'Route B', 'X'.repeat(60)]);
+  assert.equal(trip.phase, 'queued');
+  assert.deepEqual(trip.routeSegments, area.segments);
   assert.deepEqual(api.tripPackages().find(item => item.id === trip.id)?.routeNames, trip.routeNames, 'route names are persisted in the existing package index');
 
   const legacyStyle = await api.prepareImportedRoutePackage('Single route', area, source, 14, new AbortController().signal);
   assert.deepEqual(legacyStyle.routeNames, ['Single route']);
+});
+
+test('preparing placeholder is replaced under its ID without consuming a ninth package slot', async t => {
+  await environment(t);
+  const source = { id: 'source-1', name: 'Imported XYZ', kind: 'online', tiles: ['https://tiles.example.test/{z}/{x}/{y}.png'], scheme: 'xyz', tileSize: 256, minzoom: 0, maxzoom: 18 };
+  globalThis.__importedRouteCacheTest.sources.set(source.id, source);
+  for (let i = 0; i < 7; i++) api.putTrip(makeTrip([], { id: `existing-${i}` }));
+  const area = { kind: 'route', segments: [[[0, 0], [1, 1]]], bufferKm: 4 };
+  const placeholder = makeTrip([], { id: 'planning-id', phase: 'preparing', routeSegments: area.segments });
+  api.putTrip(placeholder);
+  const prepared = await api.prepareImportedRoutePackage('Route', area, source, 14, new AbortController().signal, ['Route'], placeholder.id);
+  assert.equal(prepared.id, placeholder.id);
+  assert.equal(api.tripPackages().length, 8);
+  assert.equal(api.tripPackages().filter(item => item.id === placeholder.id).length, 1);
+  assert.equal(api.tripPackages().find(item => item.id === placeholder.id).phase, 'queued');
 });

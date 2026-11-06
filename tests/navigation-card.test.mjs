@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { parseHTML } from 'linkedom';
+import { readFile } from 'node:fs/promises';
 
 async function loadGuidanceCard() {
   await build({
@@ -84,6 +85,13 @@ function makeGuidance() {
   };
 }
 
+test('expanded navigation CSS removes card and detail-pane scrolling constraints', async () => {
+  const css = await readFile('modules/guidance/guidance.css', 'utf8');
+  assert.match(css, /guidance-card\[data-expanded='true'\][\s\S]*?max-height:\s*none\s*!important/);
+  assert.match(css, /guidance-card\[data-expanded='true'\] \.guidance-content[\s\S]*?overflow:\s*visible/);
+  assert.match(css, /guidance-card\[data-expanded='true'\] \.guidance-inline-status[\s\S]*?overflow:\s*visible/);
+});
+
 test('navigation display settings replace card data and return to expanded navigation', async t => {
   const dom = setupDom();
   const React = await import('react');
@@ -148,6 +156,7 @@ test('navigation display settings replace card data and return to expanded navig
   }
   await render();
   await act(async () => host.querySelector('[aria-label="展开导航详情"]').click());
+  assert.equal(host.querySelector('.guidance-card')?.getAttribute('data-expanded'), 'true', 'the full details state receives its dedicated unbounded layout mode');
   assert.equal(host.querySelector('.guidance-inline-status')?.textContent, '运动方向稳定', 'the motion notice remains available in expanded details');
   const followAction = [...host.querySelectorAll('.guidance-actions button')].find(button => button.textContent.includes('继续导航'));
   assert.ok(followAction, 'following can still be resumed from expanded details');
@@ -158,6 +167,7 @@ test('navigation display settings replace card data and return to expanded navig
   assert.ok(host.querySelector('.navigation-telemetry'), 'ordinary expansion shows telemetry');
   assert.equal(host.querySelector('[data-testid="compact-telemetry"]'), null, 'expanded details use the original telemetry slot without duplicating compact data');
   assert.ok(host.querySelector('[data-testid="guidance-travelled"]'), 'ordinary expansion shows route data');
+  assert.ok(host.querySelector('.guidance-actions button[aria-label="导航路线显示设置"]'), 'expanded actions remain directly in the card without a separate scroll gate');
 
   await act(async () => host.querySelector('[aria-label="导航路线显示设置"]').click());
   assert.equal(displayCalls, 1, 'the display action asks the parent to provide the embedded panel');

@@ -44,6 +44,45 @@ data class NativeGeologyUnit(val key:String,val name:String,val age:String,val l
 data class NativeGeologyState(val source:NativeGeologySource=NativeGeologySource.WORLD,val status:NativeGeologyStatus=NativeGeologyStatus.OFF,val message:String="",val units:List<NativeGeologyUnit> = emptyList(),val selected:NativeGeologyUnit?=null,val legendImage:ByteArray?=null,val opacity:Double=.85,val attribution:String="")
 data class NativeMvtFeature(val layer:String,val type:Int,val extent:Int,val properties:Map<String,String>,val paths:List<List<Pair<Int,Int>>>)
 
+/** Explicit work ceilings for the compact floating map; legacy geology decoding remains unchanged. */
+internal data class NativeMvtDecodeLimits(
+    val maxBytes: Int = 4 * 1024 * 1024,
+    val maxLayers: Int = 128,
+    val maxCandidatesPerPriority: Int = 4096,
+    val maxFeatures: Int = 1200,
+    val maxVertices: Int = 24_000,
+    val maxPaths: Int = 4_800,
+    val maxPathsPerFeature: Int = 512,
+    val maxGeometryCommandsPerFeature: Int = 16_384,
+    val maxTagPairsPerFeature: Int = 128,
+    val maxDictionaryEntries: Int = 8_192,
+    val maxProperties: Int = 8_192,
+    val maxLabelFeatures: Int = 48,
+    val maxLabelVertices: Int = 2_400,
+    val maxStringBytes: Int = 256,
+)
+
+internal data class NativeMvtDecodeStats(
+    val inputBytes: Int,
+    val scannedLayers: Int,
+    val skippedLayers: Int,
+    val scannedFeatures: Int,
+    val irrelevantFeatures: Int,
+    val candidateCapSkipped: Int,
+    val commandLimitSkipped: Int,
+    val tagLimitSkipped: Int,
+    val geometryLimitSkipped: Int,
+    val dictionaryCapSkipped: Int,
+    val skippedByBudget: Int,
+    val acceptedFeatures: Int,
+    val acceptedPaths: Int,
+    val acceptedVertices: Int,
+    val skippedByLabelReserve: Int,
+    val propertyCapSkipped: Int,
+)
+
+internal data class NativeMvtDecodeResult(val features: List<NativeMvtFeature>, val stats: NativeMvtDecodeStats)
+
 /** Small bounded shared protobuf/MVT decoder for geology and native road-snap geometry. */
 internal object NativeMvtDecoder {
     fun decode(bytes:ByteArray):List<NativeMvtFeature> {
@@ -51,6 +90,400 @@ internal object NativeMvtDecoder {
         val tile=Pb(bytes); val out=mutableListOf<NativeMvtFeature>()
         while(tile.more()) { val (field,wire)=tile.tag(); if(field==3&&wire==2) out+=layer(tile.blob(wire)) else tile.skip(wire) }
         return out
+    }
+
+    /**
+     * Bounded, two-stage decoder for the small Canvas map. It indexes only byte spans first,
+     * reserves room for labels, and materializes complete selected features in priority order.
+     * It never truncates a line or polygon ring. The original decode(bytes) contract is untouched.
+     */
+    fun decodeForFloatingMap(bytes: ByteArray, limits: NativeMvtDecodeLimits = NativeMvtDecodeLimits()): NativeMvtDecodeResult {
+        require(bytes.size <= minOf(limits.maxBytes, 4 * 1024 * 1024)) { "MVT payload size invalid" }
+        require(limits.maxBytes > 0 && limits.maxDictionaryEntries >= 0 && limits.maxProperties >= 0 &&
+            limits.maxLabelFeatures >= 0 && limits.maxLabelVertices >= 0 && limits.maxPathsPerFeature > 0)
+        require(limits.maxBytes <= 4 * 1024 * 1024 && limits.maxLayers <= 128 && limits.maxCandidatesPerPriority <= 4096 &&
+            limits.maxFeatures <= 1200 && limits.maxVertices <= 24_000 && limits.maxPaths <= 4_800 &&
+            limits.maxPathsPerFeature <= 512 && limits.maxGeometryCommandsPerFeature <= 16_384 &&
+            limits.maxTagPairsPerFeature <= 128 && limits.maxDictionaryEntries <= 8_192 &&
+            limits.maxProperties <= 8_192 && limits.maxLabelFeatures <= 48 && limits.maxLabelVertices <= 2_400 &&
+            limits.maxStringBytes <= 256) { "Floating map decode budget cannot exceed its hard ceiling" }
+        require(limits.maxLayers > 0 && limits.maxCandidatesPerPriority > 0 && limits.maxFeatures > 0 &&
+            limits.maxVertices > 0 && limits.maxPaths > 0 && limits.maxGeometryCommandsPerFeature > 0 &&
+            limits.maxTagPairsPerFeature > 0 && limits.maxStringBytes > 0)
+        val counters = BoundedDecodeCounters(bytes.size)
+        val tile = SpanReader(bytes, 0, bytes.size)
+        val layerSpans = ArrayList<ByteSpan>(minOf(limits.maxLayers, 16))
+        while (tile.hasNext()) {
+            val field = tile.nextField()
+            if (field == 3 && tile.wire == 2) {
+                counters.scannedLayers++
+                val span = tile.readSpan()
+                if (layerSpans.size < limits.maxLayers) layerSpans += span else {
+                    counters.skippedLayers++
+                    countSkippedLayerFeatures(bytes, span, counters)
+                }
+            } else tile.skip(tile.wire)
+        }
+
+        val candidates = Array(5) { ArrayList<FloatingCandidate>() }
+        val candidateScans = IntArray(5)
+        var dictionaryEntriesLeft = limits.maxDictionaryEntries
+        val headers = layerSpans.mapNotNull { span ->
+            val header = readFloatingLayerHeader(bytes, span, limits.maxStringBytes, 0)
+            header?.let { it to floatingLayerPriority(it.name) }
+        }.sortedWith(compareBy<Pair<FloatingLayer, Int?>> {
+            if (it.second == LABEL_BUCKET) -1 else it.second ?: Int.MAX_VALUE
+        })
+        for ((rawHeader, nullablePriority) in headers) {
+            if (nullablePriority == null) { countSkippedLayerFeatures(bytes, rawHeader.span, counters); continue }
+            val priority = nullablePriority
+            val headerWithDictionary = readFloatingLayerHeader(bytes, rawHeader.span, limits.maxStringBytes, dictionaryEntriesLeft) ?: continue
+            val admitted = minOf(headerWithDictionary.keys.size + headerWithDictionary.values.size, dictionaryEntriesLeft)
+            dictionaryEntriesLeft -= admitted
+            val header = headerWithDictionary
+            if (admitted == 0) counters.dictionaryCapSkipped++
+            scanFloatingLayer(bytes, header, priority, candidates, candidateScans, counters, limits)
+        }
+
+        val selected = ArrayList<FloatingCandidate>(limits.maxFeatures)
+        var verticesUsed = 0
+        var pathsUsed = 0
+        var labelsUsed = 0
+        var labelVerticesUsed = 0
+
+        // The compact map has a separate label density budget in the View. Reserve a small
+        // share here too, so dense road/building tiles cannot consume every decoded feature.
+        for (candidate in candidates[LABEL_BUCKET]) {
+            if (labelsUsed >= limits.maxLabelFeatures) { counters.skippedByLabelReserve++; continue }
+            val geometry = candidate.geometry
+            if (geometry.vertices > limits.maxLabelVertices - labelVerticesUsed ||
+                geometry.vertices > limits.maxVertices - verticesUsed ||
+                geometry.paths > limits.maxPaths - pathsUsed || selected.size >= limits.maxFeatures) {
+                counters.skippedByLabelReserve++
+                continue
+            }
+            selected += candidate
+            labelsUsed++
+            verticesUsed += geometry.vertices
+            pathsUsed += geometry.paths
+            labelVerticesUsed += geometry.vertices
+        }
+
+        for (priority in 0 until LABEL_BUCKET) {
+            for (candidate in candidates[priority]) {
+                val geometry = candidate.geometry
+                if (selected.size >= limits.maxFeatures ||
+                    geometry.vertices > limits.maxVertices - verticesUsed ||
+                    geometry.paths > limits.maxPaths - pathsUsed) {
+                    counters.skippedByBudget++
+                    continue
+                }
+                selected += candidate
+                verticesUsed += geometry.vertices
+                pathsUsed += geometry.paths
+            }
+        }
+        // Preserve the existing service's stable priority order for any non-label remainder.
+        for (candidate in candidates[OTHER_BUCKET]) {
+            if (candidate.isLabel) continue
+            val geometry = candidate.geometry
+            if (selected.size >= limits.maxFeatures ||
+                geometry.vertices > limits.maxVertices - verticesUsed ||
+                geometry.paths > limits.maxPaths - pathsUsed) {
+                counters.skippedByBudget++
+                continue
+            }
+            selected += candidate
+            verticesUsed += geometry.vertices
+            pathsUsed += geometry.paths
+        }
+
+        val built = ArrayList<NativeMvtFeature>(selected.size)
+        var propertiesLeft = limits.maxProperties
+        selected.forEach { candidate ->
+            val feature = materializeFloatingFeature(bytes, candidate, limits, propertiesLeft, counters)
+            propertiesLeft -= feature.second
+            built += feature.first
+        }
+        counters.acceptedFeatures = built.size
+        counters.acceptedPaths = pathsUsed
+        counters.acceptedVertices = verticesUsed
+        return NativeMvtDecodeResult(built, counters.freeze())
+    }
+
+    private const val ROAD_BUCKET = 0
+    private const val WATER_BUCKET = 1
+    private const val BUILDING_BUCKET = 2
+    private const val OTHER_BUCKET = 3
+    private const val LABEL_BUCKET = 4
+
+    private data class ByteSpan(val start: Int, val end: Int) { val size get() = end - start }
+    private data class FloatingLayer(val span: ByteSpan, val name: String, val extent: Int, val keys: List<ByteSpan>, val values: List<ByteSpan>)
+    private data class GeometrySummary(val paths: Int, val vertices: Int, val commandCount: Int)
+    private data class FloatingCandidate(
+        val layer: FloatingLayer,
+        val keySpans: List<ByteSpan>,
+        val valueSpans: List<ByteSpan>,
+        val featureSpan: ByteSpan,
+        val type: Int,
+        val tagSpan: ByteSpan,
+        val geometrySpan: ByteSpan,
+        val geometry: GeometrySummary,
+        val priority: Int,
+        val isLabel: Boolean,
+    )
+
+    private class BoundedDecodeCounters(val inputBytes: Int) {
+        var scannedLayers = 0; var skippedLayers = 0; var scannedFeatures = 0; var irrelevantFeatures = 0
+        var candidateCapSkipped = 0; var commandLimitSkipped = 0; var tagLimitSkipped = 0; var geometryLimitSkipped = 0; var dictionaryCapSkipped = 0
+        var skippedByBudget = 0; var acceptedFeatures = 0; var acceptedPaths = 0; var acceptedVertices = 0
+        var skippedByLabelReserve = 0; var propertyCapSkipped = 0
+        fun freeze() = NativeMvtDecodeStats(inputBytes, scannedLayers, skippedLayers, scannedFeatures, irrelevantFeatures,
+            candidateCapSkipped, commandLimitSkipped, tagLimitSkipped, geometryLimitSkipped, dictionaryCapSkipped, skippedByBudget, acceptedFeatures,
+            acceptedPaths, acceptedVertices, skippedByLabelReserve, propertyCapSkipped)
+    }
+
+    /** Minimal bounded reader over a byte span; length-delimited fields are never copied. */
+    private class SpanReader(private val bytes: ByteArray, start: Int, private val end: Int) {
+        var position: Int = start
+            private set
+        var wire: Int = 0
+            private set
+        fun hasNext() = position < end
+        fun nextField(): Int {
+            val tag = varint().toInt()
+            wire = tag and 7
+            val field = tag ushr 3
+            require(field > 0) { "Invalid protobuf field" }
+            return field
+        }
+        fun varint(): Long {
+            var value = 0L; var shift = 0
+            while (position < end && shift < 64) {
+                val byte = bytes[position++].toInt() and 255
+                value = value or ((byte and 127).toLong() shl shift)
+                if (byte < 128) return value
+                shift += 7
+            }
+            throw IllegalArgumentException("Invalid protobuf varint")
+        }
+        fun readSpan(): ByteSpan {
+            require(wire == 2) { "Invalid protobuf wire type" }
+            val length = varint()
+            require(length in 0..Int.MAX_VALUE.toLong())
+            val fieldEnd = position + length.toInt()
+            require(fieldEnd >= position && fieldEnd <= end) { "Invalid protobuf length" }
+            return ByteSpan(position, fieldEnd).also { position = fieldEnd }
+        }
+        fun skip(fieldWire: Int) {
+            when (fieldWire) {
+                0 -> varint()
+                1 -> { require(position + 8 <= end); position += 8 }
+                2 -> readSpan()
+                5 -> { require(position + 4 <= end); position += 4 }
+                else -> throw IllegalArgumentException("Invalid protobuf wire type")
+            }
+        }
+        fun slice(span: ByteSpan) = SpanReader(bytes, span.start, span.end)
+    }
+
+    private fun floatingLayerPriority(name: String): Int? {
+        val layer = name.lowercase()
+        return when {
+            layer.contains("place") || layer.contains("label") || layer.contains("poi") -> LABEL_BUCKET
+            layer.contains("transport") || layer.contains("road") -> ROAD_BUCKET
+            layer.contains("water") -> WATER_BUCKET
+            layer.contains("building") -> BUILDING_BUCKET
+            else -> null
+        }
+    }
+
+    private fun isFloatingLabel(name: String): Boolean {
+        val layer = name.lowercase()
+        return layer.contains("place") || layer.contains("label") || layer.contains("poi")
+    }
+
+    private fun readFloatingLayerHeader(bytes: ByteArray, span: ByteSpan, maxStringBytes: Int, maxDictionaryEntries: Int): FloatingLayer? {
+        val reader = SpanReader(bytes, span.start, span.end)
+        var name = ""; var extent = 4096
+        val keys = ArrayList<ByteSpan>(minOf(16, maxDictionaryEntries)); val values = ArrayList<ByteSpan>(minOf(16, maxDictionaryEntries))
+        while (reader.hasNext()) {
+            val field = reader.nextField()
+            when (field) {
+                1 -> { val value = reader.readSpan(); name = readUtf8(bytes, value, maxStringBytes) }
+                2 -> reader.skip(reader.wire)
+                3 -> { val value = reader.readSpan(); if (keys.size + values.size < maxDictionaryEntries) keys += value }
+                4 -> { val value = reader.readSpan(); if (keys.size + values.size < maxDictionaryEntries) values += value }
+                5 -> { if (reader.wire == 0) extent = reader.varint().toInt().coerceIn(1, 1_000_000) else reader.skip(reader.wire) }
+                else -> reader.skip(reader.wire)
+            }
+        }
+        if (name.isBlank()) return null
+        return FloatingLayer(span, name, extent, keys, values)
+    }
+
+    private fun scanFloatingLayer(
+        bytes: ByteArray, layer: FloatingLayer, priority: Int,
+        buckets: Array<ArrayList<FloatingCandidate>>, candidateScans: IntArray, counters: BoundedDecodeCounters,
+        limits: NativeMvtDecodeLimits,
+    ) {
+        // Layer header spans exist without payload copies. Bound the number of entries that can
+        // be referenced by selected feature candidates across the tile.
+        val keys = layer.keys
+        val values = layer.values
+        val reader = SpanReader(bytes, layer.span.start, layer.span.end)
+        val target = buckets[priority]
+        val bucketLimit = limits.maxCandidatesPerPriority
+        while (reader.hasNext()) {
+            val field = reader.nextField()
+            if (field != 2 || reader.wire != 2) { reader.skip(reader.wire); continue }
+            val featureSpan = reader.readSpan(); counters.scannedFeatures++
+            if (candidateScans[priority] >= bucketLimit) { counters.candidateCapSkipped++; continue }
+            candidateScans[priority]++
+            val candidate = scanFloatingFeature(bytes, featureSpan, layer, keys, values, priority, limits, counters)
+            if (candidate == null) counters.irrelevantFeatures++ else target += candidate
+        }
+    }
+
+    private fun countSkippedLayerFeatures(bytes: ByteArray, span: ByteSpan, counters: BoundedDecodeCounters) {
+        val reader = SpanReader(bytes, span.start, span.end)
+        while (reader.hasNext()) {
+            val field = reader.nextField()
+            if (field == 2 && reader.wire == 2) { reader.readSpan(); counters.scannedFeatures++; counters.irrelevantFeatures++ }
+            else reader.skip(reader.wire)
+        }
+    }
+
+    private fun scanFloatingFeature(
+        bytes: ByteArray, span: ByteSpan, layer: FloatingLayer, keys: List<ByteSpan>, values: List<ByteSpan>,
+        priority: Int, limits: NativeMvtDecodeLimits, counters: BoundedDecodeCounters,
+    ): FloatingCandidate? {
+        val reader = SpanReader(bytes, span.start, span.end)
+        var type = 0; var tags: ByteSpan? = null; var geometry: ByteSpan? = null
+        while (reader.hasNext()) {
+            val field = reader.nextField()
+            when {
+                field == 2 && reader.wire == 2 -> tags = reader.readSpan()
+                field == 3 && reader.wire == 0 -> type = reader.varint().toInt()
+                field == 4 && reader.wire == 2 -> geometry = reader.readSpan()
+                else -> reader.skip(reader.wire)
+            }
+        }
+        val tagSpan = tags ?: ByteSpan(span.start, span.start)
+        val geometrySpan = geometry ?: return null
+        if (type !in 1..3) return null
+        val tagReader = SpanReader(bytes, tagSpan.start, tagSpan.end)
+        var pairs = 0
+        while (tagReader.hasNext()) { tagReader.varint(); pairs++; if (pairs > limits.maxTagPairsPerFeature * 2) { counters.tagLimitSkipped++; return null } }
+        if (pairs % 2 != 0) { counters.geometryLimitSkipped++; return null }
+        val summary = summarizeGeometry(bytes, geometrySpan, type, limits, counters) ?: return null
+        if (summary.vertices <= 0 || summary.paths <= 0 || summary.paths > limits.maxPathsPerFeature) { counters.geometryLimitSkipped++; return null }
+        return FloatingCandidate(layer, keys, values, span, type, tagSpan, geometrySpan, summary, priority, priority == LABEL_BUCKET)
+    }
+
+    /** Count geometry without allocating coordinate pairs; reject whole features on any limit. */
+    private fun summarizeGeometry(bytes: ByteArray, span: ByteSpan, type: Int, limits: NativeMvtDecodeLimits, counters: BoundedDecodeCounters): GeometrySummary? {
+        val reader = SpanReader(bytes, span.start, span.end)
+        var x = 0L; var y = 0L; var firstX = 0L; var firstY = 0L
+        var commandCount = 0; var pending = 0; var command = 0
+        var vertices = 0; var paths = 0; var pathVertices = 0
+        fun finishPath() { if (pathVertices > 0) { paths++; pathVertices = 0 } }
+        while (reader.hasNext()) {
+            if (pending == 0) {
+                val rawPacked = reader.varint()
+                if (rawPacked !in 0..Int.MAX_VALUE.toLong()) { counters.geometryLimitSkipped++; return null }
+                val packed = rawPacked.toInt()
+                command = packed and 7; pending = packed ushr 3
+                commandCount += pending
+                if (commandCount > limits.maxGeometryCommandsPerFeature) { counters.commandLimitSkipped++; return null }
+                if (pending <= 0) { counters.geometryLimitSkipped++; return null }
+                when (command) {
+                    1, 2 -> Unit
+                    7 -> {
+                        if (type == 3 && pathVertices >= 3 && (x != firstX || y != firstY)) { vertices++; pathVertices++ }
+                        if (vertices > limits.maxVertices) { counters.geometryLimitSkipped++; return null }
+                        finishPath(); pending = 0; continue
+                    }
+                    else -> { counters.geometryLimitSkipped++; return null }
+                }
+                if (command == 1 && pathVertices > 0) finishPath()
+            }
+            if (command == 1 || command == 2) {
+                val dx = reader.varint(); val dy = reader.varint()
+                if (dx !in 0..0xFFFF_FFFFL || dy !in 0..0xFFFF_FFFFL) { counters.geometryLimitSkipped++; return null }
+                x += zig(dx.toInt()).toLong(); y += zig(dy.toInt()).toLong()
+                if (command == 1 && pathVertices == 0) { firstX = x; firstY = y }
+                vertices++; pathVertices++; pending--
+                if (vertices > limits.maxVertices) { counters.geometryLimitSkipped++; return null }
+            }
+        }
+        if (pathVertices > 0) finishPath()
+        if (paths > limits.maxPaths) { counters.geometryLimitSkipped++; return null }
+        return GeometrySummary(paths, vertices, commandCount)
+    }
+
+    private fun materializeFloatingFeature(
+        bytes: ByteArray, candidate: FloatingCandidate, limits: NativeMvtDecodeLimits,
+        propertiesLeft: Int, counters: BoundedDecodeCounters,
+    ): Pair<NativeMvtFeature, Int> {
+        val tagReader = SpanReader(bytes, candidate.tagSpan.start, candidate.tagSpan.end)
+        val props = LinkedHashMap<String, String>(); var count = 0
+        while (tagReader.hasNext()) {
+            val keyIndex = tagReader.varint().toInt(); if (!tagReader.hasNext()) break
+            val valueIndex = tagReader.varint().toInt()
+            if (keyIndex !in candidate.keySpans.indices || valueIndex !in candidate.valueSpans.indices) continue
+            if (count >= propertiesLeft) { counters.propertyCapSkipped++; continue }
+            val key = readUtf8(bytes, candidate.keySpans[keyIndex], limits.maxStringBytes)
+            val value = decodeValueBounded(bytes, candidate.valueSpans[valueIndex], limits.maxStringBytes)
+            if (key.isNotEmpty() && value.isNotEmpty() && key !in props) { props[key] = value; count++ }
+        }
+        val paths = ArrayList<List<Pair<Int, Int>>>(candidate.geometry.paths)
+        val reader = SpanReader(bytes, candidate.geometrySpan.start, candidate.geometrySpan.end)
+        var x = 0L; var y = 0L; var command = 0; var pending = 0; var path = ArrayList<Pair<Int, Int>>()
+        fun finish(close: Boolean = false) {
+            if (path.isNotEmpty()) {
+                if (close && path.size >= 3 && path.first() != path.last()) path += path.first()
+                paths += path; path = ArrayList()
+            }
+        }
+        while (reader.hasNext()) {
+            if (pending == 0) {
+                val packed = reader.varint().toInt(); command = packed and 7; pending = packed ushr 3
+                if (command == 7) { finish(candidate.type == 3); pending = 0; continue }
+                if (command == 1 && path.isNotEmpty()) finish()
+            }
+            if (command == 1 || command == 2) {
+                x += zig(reader.varint().toInt()).toLong(); y += zig(reader.varint().toInt()).toLong()
+                path += x.coerceIn(-candidate.layer.extent.toLong(), 2L * candidate.layer.extent).toInt() to
+                    y.coerceIn(-candidate.layer.extent.toLong(), 2L * candidate.layer.extent).toInt()
+                pending--
+            }
+        }
+        finish()
+        return NativeMvtFeature(candidate.layer.name, candidate.type, candidate.layer.extent, props, paths) to count
+    }
+
+    private fun readUtf8(bytes: ByteArray, span: ByteSpan, maxBytes: Int): String {
+        if (span.size > maxBytes) return ""
+        return bytes.copyOfRange(span.start, span.end).toString(Charsets.UTF_8)
+    }
+
+    private fun decodeValueBounded(bytes: ByteArray, span: ByteSpan, maxBytes: Int): String {
+        val r = SpanReader(bytes, span.start, span.end)
+        while (r.hasNext()) {
+            val field = r.nextField()
+            when (field) {
+                1 -> if (r.wire == 2) return readUtf8(bytes, r.readSpan(), maxBytes) else r.skip(r.wire)
+                in 2..7 -> return when (r.wire) {
+                    0 -> r.varint().toString()
+                    1, 5 -> { r.skip(r.wire); "" }
+                    2 -> readUtf8(bytes, r.readSpan(), maxBytes)
+                    else -> { r.skip(r.wire); "" }
+                }
+                else -> r.skip(r.wire)
+            }
+        }
+        return ""
     }
     private fun layer(data:ByteArray):List<NativeMvtFeature> {
         val p=Pb(data); var name="";var extent=4096;val features=mutableListOf<ByteArray>();val keys=mutableListOf<String>();val values=mutableListOf<String>()

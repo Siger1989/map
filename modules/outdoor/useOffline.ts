@@ -8,6 +8,7 @@ import {
   removeTrip,
   tripPackages,
   putTrip,
+  persistTripPlanningTask,
   verifyTrip,
   type TripPackage,
   type DownloadProvider,
@@ -17,6 +18,8 @@ import type { LayerSettings } from '../map/types';
 import { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy';
 import { fetchOnlineMapTile } from '../mapSources/tileTransport';
 import type { MapSource } from '../mapSources/types';
+import { readMap } from '../mapSources/storage';
+import { createImportedPlanningTrip, importedTaskPhase } from './offlineTaskState';
 export function useOffline() {
   const [packages, setPackages] = useState<TripPackage[]>([]),
     [busy, setBusy] = useState(false),
@@ -58,7 +61,15 @@ export function useOffline() {
   };
   useEffect(() => {
     let alive=true;
-    void hydrateTripPackages().then(items=>{if(alive)setPackages(items);}).catch(error=>{if(alive)setMessage((error as Error).message);});
+    void hydrateTripPackages().then(items=>{
+      const recovered = items.map((trip) => {
+        if (trip.phase !== 'preparing' || trip.urls.length) return trip;
+        const next = { ...trip, phase: 'failed' as const, phaseMessage: '上次路线规划未完成；可从收藏中继续规划' };
+        putTrip(next);
+        return next;
+      });
+      if(alive)setPackages(recovered);
+    }).catch(error=>{if(alive)setMessage((error as Error).message);});
     let nativeSignature="";
     let syncing=false;
     const syncNative=async()=>{
@@ -76,7 +87,10 @@ export function useOffline() {
         return;
       }
       nativeSignature=signature;
-      const next=applyNativeProgress(trip,state);putTrip(next);setPackages(tripPackages());setCurrent(next);
+      const phase = importedTaskPhase(state.state);
+      const nativeTrip = applyNativeProgress(trip,state);
+      const next={...nativeTrip, ...(phase ? { phase } : {})};
+      putTrip(next);setPackages(tripPackages());setCurrent(next);
        if(!task.current)setBusy(['queued','running','waiting','downloading'].includes(state.state??''));
        setMessage(state.state==='waiting' ? '等待网络恢复，已下载内容保留' : state.error || (next.complete?'缓存完成':state.state==='running' || state.state==='queued' || state.state==='downloading'?'缓存中':'已下载内容保留，可继续'));
       } catch(error) {if(alive)setMessage((error as Error).message);}
@@ -97,7 +111,14 @@ export function useOffline() {
       await work(controller.signal);
       setMessage('完成');
     } catch (e) {
-      setMessage((e as Error).message);
+      const reason = (e as Error).message || '路线缓存失败';
+      const saved = activeId.current ? tripPackages().find((trip) => trip.id === activeId.current) : current ?? undefined;
+      if (saved?.provider === 'imported' && !saved.complete) {
+        const phase: TripPackage['phase'] = controller.signal.aborted ? 'paused' : 'failed';
+        const next = { ...saved, phase, phaseMessage: reason };
+        putTrip(next);setCurrent(next);setPackages(tripPackages());
+      }
+      setMessage(reason);
     } finally {
       task.current = null;
       activeId.current = null;
@@ -112,11 +133,13 @@ export function useOffline() {
     activeId.current=trip.id;
     activeProvider.current=trip.provider;
     activeNative.current=isNativeOfflineAvailable() && (window.ShantuMac?.version === 1 || (trip.provider === 'imported' && canUseNativeRouteDownload(trip)));
-    setCurrent(trip);
+    const queued = { ...trip, phase: trip.complete ? 'complete' as const : 'running' as const, phaseMessage: trip.complete ? '缓存完成' : '缓存中' };
+    putTrip(queued);setPackages(tripPackages());setCurrent(queued);
     return downloadTrip(trip, signal, (progress) => {
       if(deleting.current.has(trip.id))return;
-      setPackages(tripPackages());
-      setCurrent(progress);
+      const next = { ...progress, phase: progress.phase ?? (progress.complete ? 'complete' as const : 'running' as const), phaseMessage: progress.phaseMessage ?? (progress.complete ? '缓存完成' : '缓存中') };
+      putTrip(next);setPackages(tripPackages());
+      setCurrent(next);
       setMessage(`${progress.done}/${progress.urls.length} 项 · ${(progress.bytes / 1048576).toFixed(1)} MB`);
     }, trip.provider === 'imported' ? fetchOnlineMapTile : undefined);
   };
@@ -133,8 +156,13 @@ export function useOffline() {
     },
     createImportedRoute: (name: string, area: Extract<DownloadArea, { kind: 'route' }>, source: MapSource, zoom: number, routeNames?: readonly string[]) => run(async signal => {
       activeProvider.current='imported';
-      setCurrent(null);
-      const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal,routeNames);
+      if (tripPackages().length >= 8) throw new Error('已达 8 个离线包，请先移除不用的包');
+      const id = crypto.randomUUID();
+      const placeholder = createImportedPlanningTrip(id, name, area, source, zoom, routeNames);
+      activeId.current = id;
+      await persistTripPlanningTask(placeholder);setPackages(tripPackages());setCurrent(placeholder);setMessage('正在规划路线缓存…');
+      const trip=await prepareImportedRoutePackage(name,area,source,zoom,signal,routeNames,id);
+      setPackages(tripPackages());setCurrent(trip);
       await download(trip,signal);
     }),
     createRegion: (_name: string, _bounds: TripPackage['bounds'], _zoom: number) => {
@@ -150,7 +178,22 @@ export function useOffline() {
         setMessage('旧版整区下载已停止续传；已有数据仍可查看或移除');
         return Promise.resolve();
       }
-      return deleting.current.has(trip.id) ? Promise.resolve() : run((signal) => download(trip, signal));
+      return deleting.current.has(trip.id) ? Promise.resolve() : run(async (signal) => {
+        activeId.current = trip.id;
+        activeProvider.current = trip.provider;
+        if (!trip.urls.length) {
+          if (!trip.sourceId || !trip.routeSegments?.length) throw new Error('该规划任务缺少路线信息，无法继续；请从路线页重新缓存');
+          const source = await readMap(trip.sourceId);
+          if (!source || source.kind !== 'online') throw new Error('导入图源已移除，无法继续规划该缓存');
+          const suffix = ` · ${source.name}`;
+          const name = trip.name.endsWith(suffix) ? trip.name.slice(0, -suffix.length) : trip.name;
+          const prepared = await prepareImportedRoutePackage(name, { kind: 'route', segments: trip.routeSegments, bufferKm: trip.bufferKm ?? 4 }, source, trip.zoom ?? 14, signal, trip.routeNames, trip.id);
+          setPackages(tripPackages());setCurrent(prepared);
+          await download(prepared, signal);
+          return;
+        }
+        await download(trip, signal);
+      });
     },
     verify: (trip: TripPackage) => deleting.current.has(trip.id) ? Promise.resolve() : run(() => {activeId.current=trip.id;return verifyTrip(trip);}),
     remove,

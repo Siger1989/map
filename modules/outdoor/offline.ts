@@ -14,8 +14,9 @@ import { validateImportedDownloadSource, validateImportedDownloadUrls, assertImp
 import { planImportedRouteDownloadAsync } from './asyncImportedRoutePlan.ts';
 export { canDownloadTrip, TIANDITU_OFFLINE_DISABLED } from './offlineDownloadPolicy.ts';
 import { planBounds } from '../offlineRouting/routeBounds.ts';
-import { tripPackages, putTrip as persistTripIndex, persistTripManifest, loadTripManifest, removeTripIndex, removeTripManifest, hydrateTripPackages } from './tripStorage.ts';
+import { tripPackages, putTrip as persistTripIndex, persistTripManifest, persistTripPlanningTask, loadTripManifest, removeTripIndex, removeTripManifest, hydrateTripPackages } from './tripStorage.ts';
 export { tripPackages } from './tripStorage.ts';
+export { persistTripPlanningTask } from './tripStorage.ts';
 export { planBounds } from '../offlineRouting/routeBounds.ts';
 export const TILEJSON = 'https://tiles.openfreemap.org/planet';
 const CACHE = 'guanyun-trips-v1';
@@ -32,6 +33,10 @@ export type TripPackage = {
   bufferKm?: number;
   detailCorridor?: boolean;
   routeNames?: string[];
+  /** Kept only in the local package index so an interrupted route plan can be retried. */
+  routeSegments?: Coordinate[][];
+  phase?: 'preparing' | 'queued' | 'running' | 'waiting' | 'paused' | 'failed' | 'complete';
+  phaseMessage?: string;
   display?: Partial<LayerSettings>;
   id: string;
   name: string;
@@ -81,6 +86,7 @@ export async function prepareImportedRoutePackage(
   zoom: number,
   signal: AbortSignal,
   routeNames?: readonly string[],
+  taskId?: string,
 ): Promise<TripPackage> {
   signal.throwIfAborted();
   if (routeNames && routeNames.length > 2000) throw new Error('路线名称数量不能超过 2000');
@@ -97,7 +103,7 @@ export async function prepareImportedRoutePackage(
   if (!stored || stored.kind !== 'online') throw new Error('此导入图源已移除，请重新选择');
   const signature = (item: MapSource) => JSON.stringify([item.tiles, item.scheme ?? 'xyz', item.tileSize, item.minzoom, item.maxzoom, item.bounds, item.ovmap?.layers]);
   if (signature(source) !== signature(stored)) throw new Error('导入图源已变化，请重新选择后再下载');
-  if (tripPackages().length >= 8) throw new Error('已达 8 个离线包，请先移除不用的包');
+  if (tripPackages().filter((item) => item.id !== taskId).length >= 8) throw new Error('已达 8 个离线包，请先移除不用的包');
   const plan = await planImportedRouteDownloadAsync(area, source, zoom, { signal });
   const routeBridge = nativeRouteOffline();
   let availableBytes: number | undefined;
@@ -114,7 +120,7 @@ export async function prepareImportedRoutePackage(
     throw new Error('可用存储空间不足，请降低清晰度或清理旧包');
   signal.throwIfAborted();
   const trip: TripPackage = {
-    id: crypto.randomUUID(),
+    id: taskId ?? crypto.randomUUID(),
     name: `${name.trim().slice(0, 30) || '路线'} · ${stored.name}`.slice(0, 60),
     bounds: plan.bounds,
     urls: plan.urls,
@@ -122,8 +128,10 @@ export async function prepareImportedRoutePackage(
     bytes: 0,
     createdAt: Date.now(),
     complete: false,
+    phase: 'queued',
     provider: 'imported',
     routeNames: names,
+    routeSegments: area.segments.map((segment) => segment.map((point) => [...point] as Coordinate)),
     sourceId: stored.id,
     sourceName: stored.name,
     datum: source.datum ?? 'wgs84',
@@ -326,7 +334,8 @@ export async function downloadTrip(
   const update = (force = false) => {
     if (!force && Date.now() - lastUpdate < 500) return;
     lastUpdate = Date.now();
-    const next = { ...trip, done, bytes, complete: done === trip.urls.length };
+    const complete = done === trip.urls.length;
+    const next = { ...trip, done, bytes, complete, phase: complete ? 'complete' as const : 'running' as const };
     putTrip(next);
     progress(next);
   };
@@ -420,7 +429,7 @@ export async function removeTrip(trip: TripPackage) {
     for(const url of trip.urls) if(!keep.has(resourceCacheKey(url)))await cache.delete(resourceCacheKey(url));
     // Re-read after awaits: another package may have received progress meanwhile.
     removeTripIndex(trip.id);
-    if (trip.manifest) {
+    if (trip.manifest || trip.phase || trip.routeSegments) {
       try { await removeTripManifest(trip.id); }
       catch (error) {
         // Keep the package recoverable if its IndexedDB manifest could not be removed.

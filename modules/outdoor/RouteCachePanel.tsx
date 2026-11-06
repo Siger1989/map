@@ -163,15 +163,15 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
           {showProgress && activeTrip ? (
             <div className="route-cache-progress" aria-live="polite">
               <strong>{activeTrip.name}</strong>
-              <progress value={activeTrip.done} max={Math.max(1, activeTrip.urls.length)} />
-              <span>{activeTrip.done}/{activeTrip.urls.length} 项 · {(activeTrip.bytes / 1048576).toFixed(1)} MB</span>
-              {offline.message && <small>{offline.message}</small>}
+              {activeTrip.urls.length ? <progress value={activeTrip.done} max={activeTrip.urls.length} /> : <progress aria-label="正在规划路线缓存" />}
+              {activeTrip.urls.length ? <span>{activeTrip.done}/{activeTrip.urls.length} 项 · {(activeTrip.bytes / 1048576).toFixed(1)} MB</span> : <span>{activeTrip.phaseMessage || '正在规划路线缓存…'}</span>}
+              {(activeTrip.phaseMessage || offline.message) && <small>{activeTrip.phaseMessage || offline.message}</small>}
               {activeTrip.complete ? <div className="route-cache-actions">
-                <button onClick={() => openTrip(activeTrip)} disabled={!availableTrip(activeTrip)}>查看缓存包</button>
+                <button onClick={() => openTrip(activeTrip)} disabled={!availableTrip(activeTrip) || !activeTrip.urls.length}>查看缓存包</button>
                 <button onClick={() => { setHiddenCompletedTripId(activeTrip.id); setSetupStep(batch ? 'selectRoutes' : 'route'); }}>新建缓存</button>
               </div> : offline.busy ? <button onClick={offline.pause}>暂停缓存</button> : (
                 <div className="route-cache-actions">
-                  <button disabled={!availableTrip(activeTrip)} onClick={() => openTrip(activeTrip)}>查看缓存包</button>
+                  <button disabled={!availableTrip(activeTrip) || !activeTrip.urls.length} onClick={() => openTrip(activeTrip)}>查看缓存包</button>
                   <button disabled={activeTrip.complete || !availableTrip(activeTrip)} onClick={() => void offline.resume(activeTrip)}>继续缓存</button>
                 </div>
               )}
@@ -268,20 +268,20 @@ export function RouteCachePanel({ routes, sources, offline, onOpenMap, onSources
           {packages.length === 0 ? <div className="route-cache-empty">还没有沿线缓存包</div> : (
             <div className="route-cache-package-list">
               {packages.map((trip) => {
-                const canOpen = availableTrip(trip) && trip.done > 0 && !offline.removing.includes(trip.id);
+                const canOpen = availableTrip(trip) && trip.urls.length > 0 && trip.done > 0 && !offline.removing.includes(trip.id);
                 const downloading = offline.busy && activeTrip?.id === trip.id;
                 const percent = trip.urls.length ? Math.min(100, Math.round(trip.done / trip.urls.length * 100)) : 0;
                 const routeName = cachedRouteName(trip);
                 return <article className="route-cache-package" key={trip.id}>
                   <button className="route-cache-package-open" disabled={!canOpen}
                     aria-label={`显示缓存地图：${routeName}`}
-                    title={!availableTrip(trip) ? '原图源不可用，请重新导入后再查看' : trip.done === 0 ? '尚未下载地图图像' : '点击显示缓存地图'}
+                    title={!availableTrip(trip) ? '原图源不可用，请重新导入后再查看' : !trip.urls.length ? '路线缓存清单尚未完成' : trip.done === 0 ? '尚未下载地图图像' : '点击显示缓存地图'}
                     onClick={() => openTrip(trip)}>
                     <strong>{routeName}</strong>
                     <span>图源：{trip.sourceName ?? '自定义图源'}</span>
                     <span title="本包已缓存瓦片大小；不同包共用的瓦片只存储一份">占用空间：{cachedSize(trip.bytes)}</span>
-                    <span>下载进度：{percent}% · {trip.done}/{trip.urls.length} · {trip.complete ? '已完成' : downloading ? '下载中' : '未完成'}</span>
-                    <progress aria-label="下载进度" value={trip.done} max={Math.max(1, trip.urls.length)} />
+                    <span>下载进度：{trip.phase === 'preparing' ? (trip.phaseMessage || '正在规划路线缓存…') : trip.phase === 'waiting' ? (trip.phaseMessage || '等待网络恢复，已下载内容保留') : `${percent}% · ${trip.done}/${trip.urls.length} · ${trip.complete ? '已完成' : downloading ? '下载中' : trip.phase === 'failed' ? '失败，可重试' : trip.phase === 'paused' ? '已暂停，可继续' : '未完成'}`}</span>
+                    {trip.phase === 'preparing' ? <progress aria-label="正在规划路线缓存" /> : <progress aria-label="下载进度" value={trip.done} max={Math.max(1, trip.urls.length)} />}
                   </button>
                   <div className="route-cache-actions">
                     {downloading ? <button onClick={offline.pause}>暂停</button> : !trip.complete && <button disabled={offline.busy || !availableTrip(trip)} onClick={() => void offline.resume(trip)}>继续</button>}

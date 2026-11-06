@@ -6,7 +6,7 @@ import { parseHTML } from 'linkedom';
 
 test('native bridge exposes the v2 imported-route chunk protocol', () => {
   const source=readFileSync('mobile/android/src/com/guanyun/weather/NativeBridge.java','utf8');
-  assert.match(source,/offlineCapabilities\(\)\s*\{\s*return "\{\\"version\\":2,\\"imported\\":true,\\"chunked\\":true\}";/);
+  assert.match(source,/offlineCapabilities\(\)\s*\{\s*return "\{\\"version\\":2,\\"imported\\":true,\\"chunked\\":true/);
   assert.match(source,/offlineBegin\(String id,String name,int total\).*OfflineStore\.begin\(activity,id,name,total\)/);
   assert.match(source,/offlineAppend\(String id,int offset,String rawUrls\).*OfflineStore\.append\(activity,id,offset,rawUrls\)/);
   assert.match(source,/offlineDiscard\(String id\).*OfflineStore\.discard\(activity,id\)/);

@@ -53,11 +53,12 @@ export function OfflineMapFolder({
                 <button
                   className="offline-map-open"
                   aria-label={`打开离线地图：${p.name}`}
+                  disabled={!p.urls.length || p.phase === 'preparing'}
                   onClick={() => onOpen(p)}
                 >
                   <strong>{p.name}</strong>
                   <small>
-                    {p.complete ? '已缓存' : '未完成'} ·{' '}
+                    {p.phase === 'preparing' ? '正在规划' : p.phase === 'failed' ? '失败，可重试' : p.phase === 'paused' ? '已暂停' : p.phase === 'waiting' ? '等待网络' : p.complete ? '已缓存' : p.phase === 'running' ? '缓存中' : '未完成'} ·{' '}
                     {p.provider === 'imported' ? p.sourceName ?? '导入图源' : p.provider === 'tianditu' ? '天地图' : '开源地图'} ·{' '}
                     {p.zoom ?? 14}级 · {(p.bytes / 1048576).toFixed(1)} MB
                   </small>
@@ -77,7 +78,7 @@ export function OfflineMapFolder({
               {active === p.id && (
                 <div className="offline-map-entry-tools">
                   <small>
-                    {p.done}/{p.urls.length} 项
+                    {p.phaseMessage ? `${p.phaseMessage} · ` : ''}{p.done}/{p.urls.length} 项
                     {p.bufferKm ? ` · 路线两侧各 ${p.bufferKm} 公里` : ''} ·{' '}
                     {new Date(p.createdAt).toLocaleDateString()}
                   </small>

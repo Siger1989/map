@@ -49,6 +49,7 @@ import { RouteStyleQuickControls } from '@/modules/navigation/RouteStyleQuickCon
 import { defaultRouteName } from '@/modules/navigation/routeName';
 import { samePlannedRoute } from '@/modules/navigation/routeVisibility';
 import { PlaceShare } from '@/modules/placeShare/PlaceShare';
+import { copyAndOpenPlaceNavigation } from '@/modules/placeShare/delivery';
 import { annotationSharePlace } from '@/modules/annotations/share';
 import { AnnotationCoordinateInfo } from '@/modules/annotations/AnnotationCoordinateInfo';
 import { useAnnotationCoordinateElevation } from '@/modules/annotations/useAnnotationCoordinateElevation';
@@ -486,6 +487,8 @@ export default function Home() {
   const [annotationTab, setAnnotationTab] = useState<MarkerTab>('basic');
   const [adjustingPinId, setAdjustingPinId] = useState<string | null>(null);
   const [confirmDeleteAnnotationId, setConfirmDeleteAnnotationId] = useState<string | null>(null);
+  const [markerNavigationBusy, setMarkerNavigationBusy] = useState(false);
+  const [markerNavigationStatus, setMarkerNavigationStatus] = useState('');
   const [sectionHistory, setSectionHistory] = useState<SectionSettings[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileData, setProfileData] = useState<SectionProfileData | null>(
@@ -968,6 +971,7 @@ export default function Home() {
     (item) => item.id === annotations.selected,
   );
   useEffect(() => setConfirmDeleteAnnotationId(null), [panel, selectedAnnotation?.id]);
+  useEffect(() => setMarkerNavigationStatus(''), [selectedAnnotation?.id]);
   const selectedCoordinatePreview = !!(featureMove?.target.kind === 'annotation' && featureMove.target.id === selectedAnnotation?.id);
   const selectedCoordinateSampler = useCallback((point: Coordinate) => map.current?.groundElevation(point) ?? null, []);
   const selectedCoordinateElevation = useAnnotationCoordinateElevation(
@@ -2825,6 +2829,15 @@ export default function Home() {
               </div>
               {selectedAnnotation && (
                 <div className="selection-tools-route-actions" aria-label="设置导航起终点">
+                  {selectedAnnotation.kind === 'pin' && <button type="button" disabled={!!featureMove || markerNavigationBusy} onClick={() => {
+                    if (!selectedAnnotation) return;
+                    setMarkerNavigationBusy(true);
+                    setMarkerNavigationStatus('');
+                    void copyAndOpenPlaceNavigation(annotationSharePlace(selectedAnnotation))
+                      .then(setMarkerNavigationStatus)
+                      .catch(error => setMarkerNavigationStatus((error as Error)?.message || '复制地点导航失败'))
+                      .finally(() => setMarkerNavigationBusy(false));
+                  }}>{markerNavigationBusy ? '正在复制…' : '复制导航'}</button>}
                   <button disabled={!!featureMove} onClick={() => navigateAnnotationTo(selectedAnnotation.id, 'start')}>
                     设为起点
                   </button>
@@ -2833,6 +2846,7 @@ export default function Home() {
                   </button>
                 </div>
               )}
+              {markerNavigationStatus && <p className="selection-tools-status" role="status" aria-live="polite">{markerNavigationStatus}</p>}
             </div>
           )}
         {markerCamera.input}

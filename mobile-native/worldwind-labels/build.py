@@ -32,6 +32,10 @@ PREFIX = "earth/worldwind/layer/mvt/"
 REPLACE = {PREFIX + name for name in (
     "LabelDedup.class", "LabelGeoDedup.class", "Math.class", "MvtCurvedLineLabel.class",
     "MvtLabelCollider.class", "MvtLabelCollider$Companion.class", "MvtLabelColliderKt.class",
+    "MvtBatchedLineTile.class", "MvtBatchedLineTile$BatchLineFeature.class",
+    "MvtBatchedLineTile$BucketKey.class", "MvtBatchedLineTile$Companion.class",
+    "MvtBatchedLineTile$LineRange.class", "MvtBatchedLineTile$TileData.class",
+    "MvtBatchedLineTile$assembleGeometry$$inlined$sortBy$1.class",
 )}
 ADD = {PREFIX + name for name in (
     "AndroidMvtLabelMetrics.class", "AndroidMvtLabelMetrics$cache$1.class",
@@ -50,6 +54,11 @@ ABI_ADDITIONS = {
     },
     PREFIX + "MvtLabelCollider.class": {
         "public final void copyLineLayoutStatistics(long[]);\ndescriptor: ([J)V",
+    },
+    PREFIX + "MvtBatchedLineTile.class": {
+        "public final kotlin.jvm.functions.Function1<earth.worldwind.render.Color, kotlin.Unit> getOutlineColorTransform();\ndescriptor: ()Lkotlin/jvm/functions/Function1;",
+        "public final void setOutlineColorTransform(kotlin.jvm.functions.Function1<? super earth.worldwind.render.Color, kotlin.Unit>);\ndescriptor: (Lkotlin/jvm/functions/Function1;)V",
+        "public final void applyRangeColor$earth_worldwind_worldwind(int, earth.worldwind.render.Color);\ndescriptor: (ILearth/worldwind/render/Color;)V",
     },
 }
 
@@ -250,13 +259,40 @@ def main() -> None:
     compiler = [str(java), "-cp", os.pathsep.join(map(str, compiler_jars)),
                 "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler"]
     sources = sorted((PATCH_ROOT / "src").rglob("*.kt"))
-    require(len(sources) == 4, "Only the four reviewed SDK source files may enter this overlay")
+    require(len(sources) == 5, "Only the five reviewed SDK source files may enter this overlay")
     source_fingerprint, source_records = fingerprint(sources)
     build_fingerprint, build_records = fingerprint(sources + sorted((PATCH_ROOT / "tests").glob("*.kt"))
                                                    + [Path(__file__).resolve(), PATCH_ROOT / "LICENSE", PATCH_ROOT / "NOTICE"])
     compile_flags = ["-no-stdlib", "-no-reflect", "-jvm-target", "17", "-module-name", "earth.worldwind_worldwind",
                      f"-Xfriend-paths={jar_path}", "-classpath",
                      os.pathsep.join(map(str, (jar_path, android, stdlib, annotations)))]
+
+    batch_source = (PATCH_ROOT / "src/earth/worldwind/layer/mvt/MvtBatchedLineTile.kt").read_text(encoding="utf-8")
+    emit_body = batch_source.split("private fun emitDrawable(", 1)[1].split("internal fun applyRangeColor(", 1)[0]
+    require("outlineColorTransform: ((Color) -> Unit)? = null" in batch_source,
+            "Range color hook must remain optional by default")
+    require("applyRangeColor(range.colorPacked, drawState.color)" in emit_body and
+            emit_body.index("applyRangeColor(range.colorPacked, drawState.color)") <
+            emit_body.index("drawState.drawElements(") < emit_body.index("rc.offerSurfaceDrawable(drawable, zOrder)"),
+            "Range color transform must run before drawElements captures the color and before enqueue")
+    # The checksum-locked upstream sources archive contains a duplicated, unrelated MR.kt entry.
+    # Keep the strict duplicate-entry gate for AAR/JAR binaries; select this audit source by its
+    # exact central-directory entry and require that the selected path itself is unique.
+    with zipfile.ZipFile(io.BytesIO(original["worldwind-android-2.1.1-sources.jar"])) as source_archive:
+        draw_state_entries = [info for info in source_archive.infolist()
+                              if info.filename == "commonMain/earth/worldwind/draw/DrawShapeState.kt"]
+        require(len(draw_state_entries) == 1,
+                "Expected exactly one upstream DrawShapeState.kt source for range-color capture audit")
+        draw_state_source = source_archive.read(draw_state_entries[0]).decode("utf-8")
+    draw_elements_body = draw_state_source.split("open fun drawElements(", 1)[1].split("\n    }", 1)[0]
+    require("prim.color.copy(color)" in draw_elements_body,
+            "Upstream DrawShapeState no longer copies the range color into each queued primitive")
+    range_color_hook_source_audit = {
+        "optional_default_null": True,
+        "transform_applied_before_draw_elements": True,
+        "upstream_draw_state_copies_color_per_primitive": True,
+        "drawable_enqueued_after_draw_state_capture": True,
+    }
 
     def compile_patch(label: str) -> tuple[Path, dict[str, bytes]]:
         output = work / label
@@ -276,6 +312,17 @@ def main() -> None:
                     str(PATCH_ROOT / "tests/LabelCollisionMathCheck.kt")], work / "math-compile.log")
     math_result = run([str(java), "-cp", os.pathsep.join(map(str, (math_dir, stdlib, jar_path))),
                        "earth.worldwind.layer.mvt.LabelCollisionMathCheckKt"], work / "math-tests.log")
+    color_dir = work / "color-hook-classes"
+    color_dir.mkdir()
+    color_classpath = os.pathsep.join(map(str, (classes_dir, jar_path, android, stdlib, annotations)))
+    run(compiler + ["-no-stdlib", "-no-reflect", "-jvm-target", "17",
+                    f"-Xfriend-paths={classes_dir}", "-classpath", color_classpath,
+                    "-d", str(color_dir), str(PATCH_ROOT / "tests/MvtBatchedLineTileColorHookCheck.kt")],
+        work / "color-hook-compile.log")
+    color_result = run([str(java), "-cp", os.pathsep.join(map(str,
+                       (color_dir, classes_dir, jar_path, android, stdlib))),
+                       "earth.worldwind.layer.mvt.MvtBatchedLineTileColorHookCheckKt"],
+                       work / "color-hook-tests.log")
     abi = []
     for name in sorted(REPLACE):
         class_name = name[:-6].replace("/", ".")
@@ -301,7 +348,7 @@ def main() -> None:
     aar_audit = zip_audit(original_aar, patched_aar, {"classes.jar"}, set())
     if args.verify_reproducible:
         _, second_classes = compile_patch("repro-classes")
-        require(class_bytes == second_classes, "Fresh compiler pass did not reproduce all 12 class bytes")
+        require(class_bytes == second_classes, "Fresh compiler pass did not reproduce all patch class bytes")
         second_aar = replace_zip(original_aar, {"classes.jar": replace_zip(original_jar, second_classes)})
         require(patched_aar == second_aar, "Second AAR packaging pass was not byte-reproducible")
     require(fingerprint(sources)[0] == source_fingerprint, "Source files changed while compiling")
@@ -347,6 +394,8 @@ def main() -> None:
         "module_dependencies_variants_preserved": True,
         "reproducible_second_compile_and_package": bool(args.verify_reproducible),
         "math_checks": math_result.strip(),
+        "range_color_hook_checks": color_result.strip(),
+        "range_color_hook_source_audit": range_color_hook_source_audit,
         "compiler": {"kotlin": "2.4.10", "java": str(java), "flags": compile_flags,
                      "jars": [{"path": str(p), "sha256": sha256(p.read_bytes())} for p in compiler_jars]},
         "python": sys.version, "work_directory": str(work),

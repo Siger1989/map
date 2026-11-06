@@ -70,6 +70,49 @@ class NativeTerrainOverlaysTest {
     }
 
     @Test
+    fun `elevation fill uses fixed 25 meter absolute bands with rich low elevation steps`() {
+        assertEquals(25, NativeTerrainOverlayMath.ELEVATION_FILL_STEP_METERS)
+        assertEquals(NativeTerrainOverlayMath.elevationFillColor(0.0), NativeTerrainOverlayMath.elevationFillColor(24.99))
+        assertEquals(NativeTerrainOverlayMath.elevationFillColor(-25.0), NativeTerrainOverlayMath.elevationFillColor(-0.01))
+        assertFalse(NativeTerrainOverlayMath.elevationFillColor(24.99) == NativeTerrainOverlayMath.elevationFillColor(25.0))
+        assertEquals(Color.rgb(0x07, 0x50, 0x43), NativeTerrainOverlayMath.elevationFillColor(-500.0))
+        assertEquals(Color.rgb(0xaf, 0xc5, 0xdb), NativeTerrainOverlayMath.elevationFillColor(9_000.0))
+        val lowAltitudeColors = (0..1_000 step NativeTerrainOverlayMath.ELEVATION_FILL_STEP_METERS)
+            .map { NativeTerrainOverlayMath.elevationFillColor(it.toDouble()) }.toSet()
+        assertEquals(41, lowAltitudeColors.size)
+        // At 500m the legacy contour palette changes with interval, while fill remains tied to
+        // its fixed absolute 25m bands and therefore independent of contour spacing.
+        assertFalse(
+            NativeTerrainOverlayMath.elevationColor(500.0, 30) == NativeTerrainOverlayMath.elevationColor(500.0, 50),
+        )
+        assertEquals(Color.rgb(0x47, 0xba, 0x42), NativeTerrainOverlayMath.elevationFillColor(500.0))
+    }
+
+    @Test
+    fun `render time contour color transform chooses black or white and preserves source opacity`() {
+        assertEquals(Color.WHITE, NativeTerrainOverlayMath.contrastContourColor(-500.0))
+        assertEquals(Color.BLACK, NativeTerrainOverlayMath.contrastContourColor(1_500.0))
+        val darkArgb = Color.rgb(0x13, 0x7b, 0x63)
+        val brightArgb = Color.rgb(0xff, 0xe0, 0x2e)
+        val darkRange = earth.worldwind.render.Color(
+            Color.red(darkArgb) / 255f, Color.green(darkArgb) / 255f, Color.blue(darkArgb) / 255f, 0.8f,
+        )
+        val brightRange = earth.worldwind.render.Color(
+            Color.red(brightArgb) / 255f, Color.green(brightArgb) / 255f, Color.blue(brightArgb) / 255f, 0.8f,
+        )
+        NativeContourVectorGeometry.applyContrastColor(darkRange)
+        NativeContourVectorGeometry.applyContrastColor(brightRange)
+        assertEquals(1f, darkRange.red, 1e-6f)
+        assertEquals(1f, darkRange.green, 1e-6f)
+        assertEquals(1f, darkRange.blue, 1e-6f)
+        assertEquals(0.8f, darkRange.alpha, 1e-6f)
+        assertEquals(0f, brightRange.red, 1e-6f)
+        assertEquals(0f, brightRange.green, 1e-6f)
+        assertEquals(0f, brightRange.blue, 1e-6f)
+        assertEquals(0.8f, brightRange.alpha, 1e-6f)
+    }
+
+    @Test
     fun `marching squares creates real 50 meter contours and skips nodata cells`() {
         val size = 8
         val ramp = DoubleArray(size * size) { index -> (index / size) * 50.0 }
@@ -306,7 +349,7 @@ class NativeTerrainOverlaysTest {
     @Test
     fun `raster overlays preserve opacity and make missing elevations transparent`() {
         val values = doubleArrayOf(0.0, Double.NaN, 500.0, 1_000.0)
-        val colors = NativeTerrainOverlayMath.renderElevationColors(values, 2, 50, 0.5)
+        val colors = NativeTerrainOverlayMath.renderElevationColors(values, 2, 0.5)
         try {
             assertEquals(127, Color.alpha(colors.getPixel(0, 0)))
             assertEquals(0, Color.alpha(colors.getPixel(1, 0)))
@@ -781,9 +824,9 @@ class NativeTerrainOverlaysTest {
     @Test
     fun `elevation image factory values compare stably for the same overlay tile`() {
         val sampler: suspend (Int, Int, Int) -> DoubleArray? = { _, _, _ -> null }
-        val first = TerrainOverlayImageFactory(sampler, "elevation-colors", 50, 0.7, 12, 2, 3)
-        val repeated = TerrainOverlayImageFactory(sampler, "elevation-colors", 50, 0.7, 12, 2, 3)
-        val changedStyle = TerrainOverlayImageFactory(sampler, "elevation-colors", 100, 0.7, 12, 2, 3)
+        val first = TerrainOverlayImageFactory(sampler, "elevation-colors", 0.7, 12, 2, 3)
+        val repeated = TerrainOverlayImageFactory(sampler, "elevation-colors", 0.7, 12, 2, 3)
+        val changedStyle = TerrainOverlayImageFactory(sampler, "elevation-colors", 0.8, 12, 2, 3)
         assertEquals(first, repeated)
         assertEquals(first.hashCode(), repeated.hashCode())
         assertFalse(first == changedStyle)
