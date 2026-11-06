@@ -86,4 +86,55 @@ class FloatingNavigationGeometryTest {
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.parseRouteColor("route", true, "#12345") }
         assertThrows(IllegalArgumentException::class.java) { FloatingNavigationGeometry.parseRouteColor("position", true, "#a1b2c3") }
     }
+
+    @Test fun motionTileBudgetPrioritizesCurrentTileOverOldHighVertexTilesAtAnyBearing() {
+        val old = FloatingTileIndex(15, 100)
+        val current = FloatingTileIndex(100, 100)
+        val oldFeatureVertexCounts = List(40) { 200 }
+        val currentFeatureVertexCounts = listOf(300)
+        val costs = mapOf(old to oldFeatureVertexCounts, current to currentFeatureVertexCounts)
+        for (bearing in listOf(0.0, 45.0, 90.0, 180.0, 270.0)) {
+            val order = FloatingNavigationGeometry.prioritizeTileIndices(
+                listOf(old, current), 100.5, 100.5, 1 shl 14, bearing,
+            )
+            assertEquals("current center tile must lead at $bearing degrees", current, order.first())
+
+            var budget = 8_000
+            val rendered = mutableListOf<FloatingTileIndex>()
+            for (tile in order) {
+                for (vertices in costs.getValue(tile)) {
+                    if (vertices <= budget) { budget -= vertices; rendered += tile }
+                }
+            }
+            assertTrue("current tile must survive old tile vertex pressure at $bearing degrees", current in rendered)
+
+            val oldCenterX = ((old.x + .5) - 100.5) * 256.0
+            val oldCenterY = ((old.y + .5) - 100.5) * 256.0
+            assertFalse(FloatingNavigationGeometry.intersectsRotatedViewport(
+                oldCenterX - 128, oldCenterY - 128, oldCenterX + 128, oldCenterY + 128,
+                0.0, 0.0, 180.0, 200.0, bearing,
+            ))
+        }
+    }
+
+    @Test fun rotatedFeatureBoundsAreCulledAgainstTheRotatedViewport() {
+        for (bearing in listOf(0.0, 45.0, 90.0, 180.0, 270.0)) {
+            assertFalse(FloatingNavigationGeometry.intersectsRotatedViewport(
+                700.0, -20.0, 760.0, 20.0, 0.0, 0.0, 180.0, 200.0, bearing,
+            ))
+            assertTrue(FloatingNavigationGeometry.intersectsRotatedViewport(
+                40.0, -10.0, 60.0, 10.0, 0.0, 0.0, 180.0, 200.0, bearing,
+            ))
+        }
+    }
+
+    @Test fun tilePriorityKeepsDatelineCenterTileAtTheRightEdge() {
+        val n = 1 shl 14
+        val edgeTile = FloatingTileIndex(n - 1, 200)
+        val wrappedTile = FloatingTileIndex(0, 200)
+        val ordered = FloatingNavigationGeometry.prioritizeTileIndices(
+            listOf(wrappedTile, edgeTile), n - .2, 200.5, n, 90.0,
+        )
+        assertEquals(edgeTile, ordered.first())
+    }
 }

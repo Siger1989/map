@@ -38,9 +38,20 @@ async function renderHarness(t) {
     jsx: 'automatic',
     plugins: [cssStub],
   });
+  await build({
+    entryPoints: ['modules/geology/GeologyPanel.tsx'],
+    outfile: '.openai/layer-window-test/GeologyPanel.js',
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+    packages: 'external',
+    jsx: 'automatic',
+    plugins: [cssStub],
+  });
   const React = await import('react');
   const { createRoot } = await import('react-dom/client');
   const { LayerWindow } = await import('../.openai/layer-window-test/LayerWindow.js');
+  const { GeologyPanel } = await import('../.openai/layer-window-test/GeologyPanel.js');
   const root = createRoot(document.getElementById('root'));
   t.after(async () => {
     await React.act(async () => root.unmount());
@@ -48,7 +59,7 @@ async function renderHarness(t) {
     delete globalThis.document;
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   });
-  return { React, root, LayerWindow };
+  return { React, root, LayerWindow, GeologyPanel };
 }
 
 function renderedProps(element) {
@@ -106,6 +117,44 @@ test('custom source hides satellite but retains the six applicable map switches'
   assert.equal(document.getElementById('satellite-toggle'), null);
   assert.ok(document.getElementById('roads-toggle'));
   assert.ok(document.getElementById('labels-toggle'));
+});
+
+test('geology layer controls keep opacity and legend access without a Cloud source selector', async (t) => {
+  const { React, root, LayerWindow } = await renderHarness(t);
+  await React.act(async () => root.render(React.createElement(LayerWindow, {
+    open: true,
+    onOpen() {},
+    settings: settings({ geology: true, geologySource: 'geocloud20w' }),
+    onChange() {},
+    onOpenSources() {},
+    onGeologyDetails() {},
+    mapStatus: 'ready',
+  })));
+  assert.ok(document.getElementById('geology-opacity'));
+  assert.ok(document.querySelector('.layer-geology-detail'), 'the global geology legend remains reachable');
+  assert.equal(document.querySelector('.geology-source-choice'), null);
+  assert.equal(document.body.textContent.includes('地质云'), false);
+  assert.equal(document.body.textContent.includes('1∶20'), false);
+});
+
+test('geology details cannot expose an authorization prompt or stale Cloud state', async (t) => {
+  const { React, root, GeologyPanel } = await renderHarness(t);
+  await React.act(async () => root.render(React.createElement(GeologyPanel, {
+    state: {
+      source: 'geocloud20w', status: 'authorization', message: '地质云需要授权',
+      serviceTitle: '1∶20 万地质图', legendUrl: '/api/geology/geocloud?request=legend',
+      legend: [], sources: [], selection: null, cursorSelection: null,
+    },
+    source: 'geocloud20w',
+    onSource() { throw new Error('source selection must not be available'); },
+    onRetry() { throw new Error('Cloud retry must not be available'); },
+  })));
+  assert.match(document.body.textContent, /全球地质/);
+  assert.equal(document.body.textContent.includes('地质云'), false);
+  assert.equal(document.body.textContent.includes('1∶20'), false);
+  assert.equal(document.querySelector('.geology-source-choice'), null);
+  assert.equal(document.querySelector('.geology-cloud-info'), null);
+  assert.equal(document.querySelector('img.geology-provider-legend'), null);
 });
 
 test('layer help hosts scene presets and the close button reports closed state', async (t) => {

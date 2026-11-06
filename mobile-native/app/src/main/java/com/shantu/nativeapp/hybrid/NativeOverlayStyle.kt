@@ -6,6 +6,11 @@ import org.json.JSONArray
 /** Converts CSS/MapLibre overlay paint values to the physical-pixel styles WorldWind consumes. */
 internal object NativeOverlayStyle {
     data class Dash(val factor: Int, val pattern: Short)
+    data class RoutePointPresentation(
+        val imageScale: Double,
+        val labelSizePixels: Float,
+        val haloWidthPixels: Float,
+    )
 
     private val routeWidthZoomStops = listOf(
         0.0 to 0.12, 6.0 to 0.12, 10.0 to 0.3, 14.0 to 0.7, 16.0 to 1.0,
@@ -60,6 +65,14 @@ internal object NativeOverlayStyle {
         val pixels = sourcePixels.coerceAtLeast(1)
         return widthInPixels(cssSize, cssScale).toDouble() / pixels
     }
+
+    /** Endpoint labels/icons are screen-sized; neither camera zoom nor pitch changes these values. */
+    fun routePointPresentation(cssScale: Double, sourcePixels: Int): RoutePointPresentation =
+        RoutePointPresentation(
+            imageScale = imageScaleForCssSize(18.0, cssScale, sourcePixels),
+            labelSizePixels = widthInPixels(14.0, cssScale),
+            haloWidthPixels = widthInPixels(2.0, cssScale),
+        )
 
     fun emphasizedPointCssSize(cssSize: Double, selected: Boolean, active: Boolean): Double {
         val size = cssSize.takeIf { it.isFinite() }?.coerceIn(0.1, 40.0) ?: 8.0

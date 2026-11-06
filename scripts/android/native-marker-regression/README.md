@@ -107,7 +107,8 @@ or credentials are read or emitted.
 ## 160 drawing and line diagnostics
 
 The `interactive-preview` loopback bridge also accepts the fixed actions
-`telemetry-start`, `telemetry-snapshot`, `telemetry-stop`, and `snap-targets`.
+`telemetry-start`, `telemetry-snapshot`, `telemetry-stop`, `snap-targets`,
+`native174-floating-render`, and `native174-floating-state`.
 It does not accept JavaScript, a URL, or a script path from the caller.
 Telemetry is bounded to 100 samples; it reports input-to-SVG attribute timing,
 capture dimensions/duration/encoded length, and actual magnifier `drawImage`
@@ -116,6 +117,21 @@ capture data URLs, geographic positions, route contents, or map credentials.
 `snap-targets` only projects cached real MVT geometry to screen coordinates;
 it neither fetches data nor commits a drawing. Use an empty QA-owned draft and
 undo only the points added by the test.
+
+The two `native174-floating-*` actions can also run directly as instrumentation
+modes. `native174-floating-render` reflectively constructs the real floating
+View and draws synthetic route, paused yellow track, heading cases, and baseline
+plus high-vertex MVT label fixtures in north and all five motion headings. It
+writes per-case PNGs and pixel counts. It does not start the navigation service or use GPS, a
+location provider, or the recording store. `native174-floating-state` reads
+only a whitelist of service status and lockscreen booleans; route/location data
+and recording contents are not returned. Both write a `report.json` under the
+target app's private Pictures evidence directory.
+
+```powershell
+adb -s <serial> shell am instrument -w -e mode native174-floating-render com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
+adb -s <serial> shell am instrument -w -e mode native174-floating-state com.shantu.qa149/com.shantu.qa149.Native149Instrumentation
+```
 
 Generate synthetic renderer-only line fixtures from the repository root:
 

@@ -66,6 +66,20 @@ class NativeOverlayStyleTest {
         assertEquals(16.0, NativeOverlayStyle.imageScaleForCssSize(8.0, 2.0, 0), 0.0001)
     }
 
+    @Test fun routePointPresentationUsesCssSizedIconLabelAndSingleScaledHalo() {
+        val css1 = NativeOverlayStyle.routePointPresentation(1.0, 32)
+        assertEquals(18.0 / 32.0, css1.imageScale, 0.0001)
+        assertEquals(14f, css1.labelSizePixels, 0.001f)
+        assertEquals(2f, css1.haloWidthPixels, 0.001f)
+
+        val css3 = NativeOverlayStyle.routePointPresentation(3.0, 32)
+        assertEquals(54.0 / 32.0, css3.imageScale, 0.0001)
+        assertEquals(42f, css3.labelSizePixels, 0.001f)
+        assertEquals(6f, css3.haloWidthPixels, 0.001f)
+        assertEquals("font and halo each receive cssScale exactly once",
+            css3.labelSizePixels / css1.labelSizePixels, css3.haloWidthPixels / css1.haloWidthPixels, 0.001f)
+    }
+
     @Test fun selectedAndActiveTrackNodesGetLegibleNativeSizesWithoutChangingSavedPointSize() {
         assertEquals(8.0, NativeOverlayStyle.emphasizedPointCssSize(8.0, false, false), 0.0)
         assertEquals(10.0, NativeOverlayStyle.emphasizedPointCssSize(8.0, true, false), 0.0)

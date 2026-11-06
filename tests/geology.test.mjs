@@ -86,8 +86,7 @@ test('geology style is valid; features drive legends and hidden layers cannot be
   assert.equal(handlers.size, 0);
 });
 
-test('unauthorized detailed source never reuses world legend; stale replies cannot overwrite a source switch', async () => {
-  const originalFetch = globalThis.fetch;
+test('legacy detailed source state is coerced to world and never requests the retired Cloud client', () => {
   globalThis.window = { location: { origin: 'http://localhost:3000' } };
   const layers = new Map(), sources = new Map();
   let emitted;
@@ -103,22 +102,18 @@ test('unauthorized detailed source never reuses world legend; stale replies cann
     },
   };
   const controller = new GeologyLayer(map, (state) => { emitted = state; });
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = () => { requests++; throw new Error('unexpected geology Cloud request'); };
   try {
-    globalThis.fetch = async () => Response.json({ message: '需要授权' }, { status: 503 });
     controller.sync({ ...DEFAULT_LAYERS, geology: true, geologySource: 'geocloud20w' });
-    await new Promise((resolve) => setImmediate(resolve));
-    assert.equal(emitted.source, 'geocloud20w');
-    assert.equal(emitted.status, 'authorization');
-    assert.deepEqual(emitted.legend, []);
-    assert.equal(sources.size, 0);
-    let reply;
-    globalThis.fetch = () => new Promise((resolve) => { reply = resolve; });
-    controller.retry();
-    controller.sync({ ...DEFAULT_LAYERS, geology: true, geologySource: 'world' });
-    reply(Response.json({ message: '旧请求失败' }, { status: 401 }));
-    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(requests, 0);
     assert.equal(emitted.source, 'world');
     assert.equal(emitted.status, 'ready');
     assert.equal(emitted.legend[0].name, 'World map');
+    assert.ok(sources.get('geology-source').tiles[0].includes('/api/geology/tiles/'));
+    assert.equal([...sources.keys()].some((id) => id.includes('geocloud')), false);
+    controller.retry();
+    assert.equal(requests, 0);
   } finally { controller.dispose(); globalThis.fetch = originalFetch; }
 });

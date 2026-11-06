@@ -43,4 +43,18 @@ class NativePickTouchTargetTest {
         assertEquals(44f, bounds.bottom - bounds.top, 0.001f)
     }
 
+    @Test fun editableTrackFallbackRunsWhenAnExactMarkerOrDifferentTrackNodeCoversTheTarget() {
+        assertEquals(true, NativePickTouchTarget.shouldQueryEditableTrackFallback("route-a", emptySet()))
+        assertEquals(true, NativePickTouchTarget.shouldQueryEditableTrackFallback("route-a", setOf("route-b")))
+    }
+
+    @Test fun editableTrackFallbackStopsWhenTheExactPixelAlreadyHitItsTargetNode() {
+        assertEquals(false, NativePickTouchTarget.shouldQueryEditableTrackFallback("route-a", setOf("route-a")))
+    }
+
+    @Test fun browsingDoesNotExpandAnExactPickForTrackEditing() {
+        assertEquals(false, NativePickTouchTarget.shouldQueryEditableTrackFallback(null, emptySet()))
+        assertEquals(false, NativePickTouchTarget.shouldQueryEditableTrackFallback("null", setOf("route-b")))
+    }
+
 }

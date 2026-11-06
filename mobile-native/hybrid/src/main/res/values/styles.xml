@@ -1,3 +1,11 @@
 <resources>
   <style name="ShantuHybridTheme" parent="AppTheme" />
+  <style name="ShantuLockMapTheme" parent="AppTheme">
+    <item name="android:windowBackground">#000000</item>
+    <item name="android:colorAccent">#BDFF54</item>
+    <item name="android:windowLightStatusBar">false</item>
+    <item name="android:windowLightNavigationBar">false</item>
+    <item name="android:statusBarColor">#000000</item>
+    <item name="android:navigationBarColor">#000000</item>
+  </style>
 </resources>

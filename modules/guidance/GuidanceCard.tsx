@@ -237,7 +237,7 @@ export function GuidanceCard({
         )}
         {(s.offRoute || s.departurePending) && !g.online && (
           <p className="guidance-error" role="status">
-            网络已断开，接回路线需要联网计算。
+            网络已断开，将尝试已下载的离线路网；覆盖不足或模式不支持时会显示实际错误。
           </p>
         )}
         {g.error && (
@@ -246,27 +246,26 @@ export function GuidanceCard({
           </p>
         )}
           <div className="guidance-actions">
-            {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划中…' : '当前位置重规划'}</button>}
+            {!s.arrived && <button onClick={() => void g.replan()} disabled={g.replanning}>{g.replanning ? '重新规划路线中…' : '重新规划路线'}</button>}
             <button onClick={onShare} disabled={s.departurePending}>分享</button>
             {onDisplay && <button aria-label="导航路线显示设置" onClick={() => { setExpanded(true); onDisplay(); }}>路线显示</button>}
             {!s.arrived && <button onClick={onFollow}>
               <LocateFixed size={16} />
               {following ? '当前位置' : '继续导航'}
             </button>}
-            {!s.arrived && (s.offRoute || s.departurePending) && (
+            {!s.arrived && (s.offRoute || s.departurePending || s.replanned || !!g.rejoin) && (
               <button
-                onClick={g.rejoin ? onShow : g.retry}
+                onClick={s.departurePending ? g.retry : g.rejoin ? onShow : g.returnToOriginal}
                 disabled={
-                  g.loading || (!s.departurePending && !!s.quality) || !g.online
+                  g.loading || (!s.departurePending && !!s.quality) || (!s.departurePending && !g.rejoin && !g.returnToOriginalSupported)
                 }
               >
-                {g.rejoin ? (
-                  '看接回路线'
+                {s.departurePending ? (
+                  <><RefreshCw size={15} />重新计算到起点</>
+                ) : g.rejoin ? (
+                  '查看返回路径'
                 ) : (
-                  <>
-                    <RefreshCw size={15} />
-                    重新计算
-                  </>
+                  g.returnToOriginalSupported ? '返回原路线' : '原路线进度无法映射'
                 )}
               </button>
             )}

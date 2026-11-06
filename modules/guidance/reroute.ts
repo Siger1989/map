@@ -18,7 +18,8 @@ export function shouldAutoReroute(
   options: {
     now?: number;
     locationError?: string;
-    online: boolean;
+    /** Connectivity is informational only; the planner owns online/offline fallback. */
+    online?: boolean;
     hidden: boolean;
     pending: boolean;
     nextRequestAt: number;
@@ -31,7 +32,6 @@ export function shouldAutoReroute(
     !session.departurePending &&
     !session.arrived &&
     !options.locationError &&
-    options.online &&
     !options.hidden &&
     !options.pending &&
     now >= options.nextRequestAt &&
@@ -46,6 +46,26 @@ export function shouldAutoReroute(
 
 export function shouldReplaceTrackOnDeviation(session: GuidanceSession) {
   return !session.route.trackNetwork && session.route.geometryKind !== 'track';
+}
+
+/** Project to the saved route, even after an automatic/manual replacement route was adopted. */
+export function projectOriginalRouteTarget(
+  session: GuidanceSession,
+  coordinates: PositionFix['coordinates'],
+  progress: Pick<GuidanceSession, 'progress' | 'nextCheckpoint' | 'checkpoints'> = session,
+) {
+  const path = pathOf(session.originalRoute.coordinates);
+  const floor = progress.nextCheckpoint > 0
+    ? progress.checkpoints[progress.nextCheckpoint - 1]?.distance ?? 0
+    : 0;
+  const ceiling = progress.checkpoints[progress.nextCheckpoint]?.distance ?? path.length;
+  return project(
+    path,
+    coordinates,
+    Math.max(floor, progress.progress - 30),
+    ceiling,
+    progress.progress,
+  );
 }
 
 export function replacementSession(

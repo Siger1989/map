@@ -90,7 +90,7 @@ class NativeRoadStyleTest {
         assertEquals(.695f * .5f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.PRIMARY_OUTLINE, 10.25), .0001f)
         assertEquals(.25f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RAIL, 9.0), .0001f)
         assertEquals(.78f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.RAIL, 9.0), .0001f)
-        assertEquals(1.5f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 13.0), .0001f)
+        assertEquals(.9f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 13.0), .0001f)
         assertEquals(1f, NativeRoadStyle.opacityScale(NativeRoadStyle.Group.RIVER, 10.0), .0001f)
         assertEquals(.18f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.SECONDARY, 6.0), .0001f)
         assertEquals(.42f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.PRIMARY, 10.0), .0001f)
@@ -102,7 +102,13 @@ class NativeRoadStyleTest {
             NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 16.0), .0001f)
         assertEquals(NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 14.0),
             NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
-        assertEquals(2f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 16.0), .0001f)
+        assertEquals(.8f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 12.0), .0001f)
+        assertEquals(1.2f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 14.0), .0001f)
+        assertEquals(1.2f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, 16.0), .0001f)
+        for (zoom in listOf(12.0, 14.0, 16.0)) {
+            assertTrue("Waterway must remain at least .35 CSS px at z$zoom",
+                NativeRoadStyle.widthCss(NativeRoadStyle.Group.RIVER, zoom) >= .35f)
+        }
         assertEquals(2.025f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.MAIN_OUTLINE, 16.0), .0001f)
         assertEquals(1.33f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.TERTIARY, 16.0), .0001f)
         assertEquals(1f, NativeRoadStyle.widthCss(NativeRoadStyle.Group.LOCAL, 16.0), .0001f)

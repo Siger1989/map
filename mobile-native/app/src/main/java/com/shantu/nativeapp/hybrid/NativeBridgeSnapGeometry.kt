@@ -130,14 +130,23 @@ class NativeBridgeSnapGeometry(
             if (request.enabledRiver && request.sourceLayerVisible) Status.LOADING else Status.HIDDEN, emptyList(), "visible_tiles_not_loaded"))
         val selection = NativeSnapTileSelector.select(tiles, request.bounds, MAX_DECODED_TILES)
         val decodedTiles = decodeCached(selection.tiles)
-        val roads = if (request.enabledRoad) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, false) else emptyList()
-        val rivers = if (request.enabledRiver) NativeSnapGeometryDecoder.lines(decodedTiles, request.bounds, true) else emptyList()
+        val roadResult = if (request.enabledRoad) NativeSnapGeometryDecoder.decodeLines(decodedTiles, request.bounds, false)
+            else NativeSnapGeometryDecodeResult(emptyList(), complete = true)
+        val riverResult = if (request.enabledRiver) NativeSnapGeometryDecoder.decodeLines(decodedTiles, request.bounds, true)
+            else NativeSnapGeometryDecodeResult(emptyList(), complete = true)
+        val roads = roadResult.lines
+        val rivers = riverResult.lines
+        val roadCoverageComplete = selection.coverageComplete && roadResult.complete
+        val riverCoverageComplete = selection.coverageComplete && riverResult.complete
         val roadStatus = Status.valueOf(NativeSnapGeometryState.status(
-            request.enabledRoad, request.sourceLayerVisible, true, tiles.isNotEmpty(), roads.size).uppercase())
+            request.enabledRoad, request.sourceLayerVisible, true, tiles.isNotEmpty(), roads.size,
+            roadCoverageComplete).uppercase())
         // River snapping consumes the same real tile cache independently of the road overlay toggle.
         val riverStatus = Status.valueOf(NativeSnapGeometryState.status(
-            request.enabledRiver, request.sourceLayerVisible, true, tiles.isNotEmpty(), rivers.size).uppercase())
-        return SnapshotResult(response(request.revision, roadStatus, roads, riverStatus, rivers, selection = selection))
+            request.enabledRiver, request.sourceLayerVisible, true, tiles.isNotEmpty(), rivers.size,
+            riverCoverageComplete).uppercase())
+        return SnapshotResult(response(request.revision, roadStatus, roads, riverStatus, rivers,
+            selection = selection, roadCoverageComplete = roadCoverageComplete, riverCoverageComplete = riverCoverageComplete))
     }
 
     private fun decodeCached(tiles: List<NativeCachedSnapTile>): List<Pair<NativeCachedSnapTile, List<NativeMvtFeature>>> {
@@ -186,17 +195,27 @@ class NativeBridgeSnapGeometry(
         b[0] >= -180 && b[2] <= 180 && b[1] >= -85.051129 && b[3] <= 85.051129 && b[0] <= b[2] && b[1] <= b[3]
 
     private fun response(revision: Long, roadStatus: Status, roads: List<NativeSnapLine>, riverStatus: Status,
-        rivers: List<NativeSnapLine>, reason: String? = null, selection: NativeSnapTileSelection? = null) = JSONObject().put("cameraRevision", revision)
-        .put("road", JSONObject().put("status", roadStatus.value).put("lines", linesJson(roads)))
-        .put("river", JSONObject().put("status", riverStatus.value).put("lines", linesJson(rivers)))
+        rivers: List<NativeSnapLine>, reason: String? = null, selection: NativeSnapTileSelection? = null,
+        roadCoverageComplete: Boolean? = null, riverCoverageComplete: Boolean? = null) = JSONObject().put("cameraRevision", revision)
+        .put("road", geometryJson(roadStatus, roads, selection, roadCoverageComplete))
+        .put("river", geometryJson(riverStatus, rivers, selection, riverCoverageComplete))
         .apply {
             if (reason != null) put("reason", reason)
             if (selection != null) {
+                // Keep the existing top-level diagnostics while making coverage local to
+                // each geometry state for consumers that process road and river separately.
                 put("sourceZoom", selection.sourceZoom ?: JSONObject.NULL)
                 put("selectedTileCount", selection.tiles.size)
-                put("coverageComplete", selection.coverageComplete)
+                put("coverageComplete", (roadCoverageComplete ?: selection.coverageComplete) &&
+                    (riverCoverageComplete ?: selection.coverageComplete))
             }
         }
+
+    private fun geometryJson(status: Status, lines: List<NativeSnapLine>, selection: NativeSnapTileSelection?, coverageComplete: Boolean?) =
+        JSONObject().put("status", status.value).put("lines", linesJson(lines))
+            .put("coverageComplete", coverageComplete ?: selection?.coverageComplete ?: JSONObject.NULL)
+            .put("sourceZoom", selection?.sourceZoom ?: JSONObject.NULL)
+            .put("selectedTileCount", selection?.tiles?.size ?: 0)
 
     private fun linesJson(lines: List<NativeSnapLine>) = JSONArray().also { array -> lines.forEach { line ->
         array.put(JSONObject().put("id", line.id).put("name", line.name).put("level", line.level)
@@ -215,7 +234,7 @@ class NativeBridgeSnapGeometry(
     }
 
     private enum class Status(val value: String) {
-        READY("ready"), LOADING("loading"), HIDDEN("hidden"), MISSING("missing"), BLOCKED("blocked")
+        READY("ready"), PARTIAL("partial"), LOADING("loading"), HIDDEN("hidden"), MISSING("missing"), BLOCKED("blocked")
     }
 
     private companion object { const val MAX_DECODED_TILES = 24 }
@@ -241,19 +260,33 @@ internal object NativeSnapTileSelector {
             .filter { intersectsBounds(it, bounds) }
             .distinctBy { "${it.z}/${it.x}/${it.y}" }
             .toList()
-        val highestZoom = candidates.maxOfOrNull { it.z } ?: return NativeSnapTileSelection(null, emptyList(), false)
+        if (candidates.isEmpty()) return NativeSnapTileSelection(null, emptyList(), false)
         val centerX = ((bounds[0] + bounds[2]) / 2.0 + 180.0) / 360.0
         val centerY = (mercatorY(bounds[1]) + mercatorY(bounds[3])) / 2.0
-        val selected = candidates.asSequence()
-            .filter { it.z == highestZoom }
-            .sortedWith(compareBy<NativeCachedSnapTile> {
+        val centerOrder = compareBy<NativeCachedSnapTile> {
                 val n = 1 shl it.z
                 val dx = (it.x + 0.5) / n - centerX
                 val dy = (it.y + 0.5) / n - centerY
                 dx * dx + dy * dy
-            }.thenBy { it.y }.thenBy { it.x })
-            .take(maxTiles)
-            .toList()
+            }.thenBy { it.y }.thenBy { it.x }
+        val byZoom = candidates.groupBy { it.z }
+
+        // Prefer the finest cached level that completely covers the viewport. This avoids
+        // discarding usable parent coverage when only a few child tiles have arrived.
+        for (zoom in byZoom.keys.sortedDescending()) {
+            val expected = expectedTileKeys(bounds, zoom, maxTiles) ?: continue
+            val tilesAtZoom = byZoom.getValue(zoom)
+            val byKey = tilesAtZoom.associateBy { "${it.z}/${it.x}/${it.y}" }
+            if (expected.all(byKey::containsKey)) {
+                val complete = expected.mapNotNull(byKey::get).sortedWith(centerOrder)
+                return NativeSnapTileSelection(zoom, complete, true)
+            }
+        }
+
+        // No cached resolution is complete: expose only the nearest bounded set from the
+        // finest available level, and preserve the incomplete-coverage fact for the UI.
+        val highestZoom = byZoom.keys.maxOrNull() ?: return NativeSnapTileSelection(null, emptyList(), false)
+        val selected = byZoom.getValue(highestZoom).sortedWith(centerOrder).take(maxTiles)
         val expected = expectedTileKeys(bounds, highestZoom, maxTiles)
         val selectedKeys = selected.mapTo(mutableSetOf()) { "${it.z}/${it.x}/${it.y}" }
         return NativeSnapTileSelection(highestZoom, selected, expected != null && selectedKeys == expected)
@@ -291,6 +324,7 @@ internal object NativeSnapTileSelector {
 }
 
 internal data class NativeSnapLine(val id: String, val name: String, val level: Int, val coordinates: List<Pair<Double, Double>>)
+internal data class NativeSnapGeometryDecodeResult(val lines: List<NativeSnapLine>, val complete: Boolean)
 
 /** Callback-only completion signal; it carries no fabricated tile identity or geometry payload. */
 internal class NativeSnapGeometryReadySignal : AutoCloseable {
@@ -375,9 +409,17 @@ internal object NativeSnapGeometryExecutors {
 }
 
 internal object NativeSnapGeometryState {
-    fun status(enabled: Boolean, layerVisible: Boolean, viewportKnown: Boolean, cacheAvailable: Boolean, lines: Int): String = when {
+    fun status(
+        enabled: Boolean,
+        layerVisible: Boolean,
+        viewportKnown: Boolean,
+        cacheAvailable: Boolean,
+        lines: Int,
+        coverageComplete: Boolean = true,
+    ): String = when {
         !enabled || !layerVisible -> "hidden"
         !viewportKnown || !cacheAvailable -> "loading"
+        !coverageComplete -> "partial"
         lines <= 0 -> "missing"
         else -> "ready"
     }
@@ -400,12 +442,19 @@ internal object NativeSnapGeometryDecoder {
         }
     }
 
-    fun lines(tiles: List<Pair<NativeCachedSnapTile, List<NativeMvtFeature>>>, bounds: List<Double>, river: Boolean): List<NativeSnapLine> {
+    fun lines(tiles: List<Pair<NativeCachedSnapTile, List<NativeMvtFeature>>>, bounds: List<Double>, river: Boolean): List<NativeSnapLine> =
+        decodeLines(tiles, bounds, river).lines
+
+    fun decodeLines(tiles: List<Pair<NativeCachedSnapTile, List<NativeMvtFeature>>>, bounds: List<Double>, river: Boolean): NativeSnapGeometryDecodeResult {
         val output = linkedMapOf<String, NativeSnapLine>(); var count = 0; var featuresScanned = 0; var pathsScanned = 0
+        var complete = true
         tileLoop@ for ((tile, features) in tiles) {
             val n = 1 shl tile.z
             for (feature in features) {
-                if (++featuresScanned > MAX_FEATURES_SCANNED || count >= MAX_POINTS) break@tileLoop
+                if (++featuresScanned > MAX_FEATURES_SCANNED || count >= MAX_POINTS) {
+                    complete = false
+                    break@tileLoop
+                }
                 val acceptedLayer = if (river) feature.layer == "waterway" else feature.layer == "transportation"
                 if (!acceptedLayer || feature.type != 2) continue
                 val clazz = feature.properties["class"].orEmpty()
@@ -413,8 +462,15 @@ internal object NativeSnapGeometryDecoder {
                 val level = feature.properties["layer"]?.toIntOrNull() ?: 0
                 val rawName = feature.properties["name:zh"]?.takeIf(String::isNotBlank) ?: feature.properties["name"].orEmpty()
                 for (path in feature.paths) {
-                    if (++pathsScanned > MAX_PATHS_SCANNED || count >= MAX_POINTS) break@tileLoop
-                    if (path.size < 2 || count + path.size > MAX_POINTS) continue
+                    if (++pathsScanned > MAX_PATHS_SCANNED || count >= MAX_POINTS) {
+                        complete = false
+                        break@tileLoop
+                    }
+                    if (path.size < 2) continue
+                    if (count + path.size > MAX_POINTS) {
+                        complete = false
+                        continue
+                    }
                     val coords = path.map { (x, y) ->
                         val gx = tile.x + x.toDouble() / feature.extent
                         val gy = tile.y + y.toDouble() / feature.extent
@@ -435,6 +491,6 @@ internal object NativeSnapGeometryDecoder {
                 }
             }
         }
-        return output.values.toList()
+        return NativeSnapGeometryDecodeResult(output.values.toList(), complete)
     }
 }

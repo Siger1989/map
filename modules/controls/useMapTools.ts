@@ -20,16 +20,17 @@ type Actions = {
 };
 export const MAP_TOOL_NAMES = ['get_map_view', 'configure_map_view'] as const;
 export const MAP_TOOL_BOOLEAN_FIELDS = ['terrain', 'satellite', 'contours', 'elevationColors', 'geology', 'roads', 'labels'] as const;
-const RETIRED_WEATHER_KEYS = ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity', 'weather', 'weatherTime', 'weatherError'];
+export const MAP_TOOL_CONFIGURABLE_FIELDS = [...MAP_TOOL_BOOLEAN_FIELDS, 'imageryMode', 'geologyOpacity', 'elevationColorsOpacity', 'pitch', 'bearing'] as const;
+const RETIRED_MAP_KEYS = ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity', 'weather', 'weatherTime', 'weatherError', 'geologySource'];
 
 /** Keep legacy host state and persisted layer fields out of the map-only WebMCP contract. */
 export function mapViewSnapshot(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const snapshot = { ...(value as Record<string, unknown>) };
-  for (const key of RETIRED_WEATHER_KEYS) delete snapshot[key];
+  for (const key of RETIRED_MAP_KEYS) delete snapshot[key];
   if (snapshot.layers && typeof snapshot.layers === 'object' && !Array.isArray(snapshot.layers)) {
     const layers = { ...(snapshot.layers as Record<string, unknown>) };
-    for (const key of RETIRED_WEATHER_KEYS) delete layers[key];
+    for (const key of RETIRED_MAP_KEYS) delete layers[key];
     snapshot.layers = layers;
   }
   return snapshot;
@@ -61,7 +62,6 @@ export function useMapTools(actions: Actions) {
           properties: {
             ...Object.fromEntries(booleans.map((k) => [k, { type: 'boolean' }])),
             imageryMode: { type: 'string', enum: ['detail', 'latest'] },
-            geologySource: { type: 'string', enum: ['world', 'geocloud20w'] },
             geologyOpacity: { type: 'number', minimum: 0.15, maximum: 1 },
             elevationColorsOpacity: { type: 'number', minimum: 0, maximum: 1 },
             pitch: { type: 'number', minimum: 0, maximum: 80 },
@@ -74,7 +74,7 @@ export function useMapTools(actions: Actions) {
           if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Expected a view configuration object');
           const args = input as Record<string, unknown>;
           const patch: Partial<LayerSettings> = {};
-          const allowed = [...booleans, 'imageryMode', 'geologySource', 'geologyOpacity', 'elevationColorsOpacity', 'pitch', 'bearing'];
+          const allowed = MAP_TOOL_CONFIGURABLE_FIELDS;
           for (const key of Object.keys(args)) if (!allowed.includes(key as typeof allowed[number])) throw new Error('Unknown view field: ' + key);
           for (const key of booleans) if (key in args) {
             if (typeof args[key] !== 'boolean') throw new Error(key + ' must be boolean');
@@ -83,10 +83,6 @@ export function useMapTools(actions: Actions) {
           if ('imageryMode' in args) {
             if (args.imageryMode !== 'detail' && args.imageryMode !== 'latest') throw new Error('Invalid imagery mode');
             patch.imageryMode = args.imageryMode;
-          }
-          if ('geologySource' in args) {
-            if (args.geologySource !== 'world' && args.geologySource !== 'geocloud20w') throw new Error('Invalid geology source');
-            patch.geologySource = args.geologySource;
           }
           for (const [key, min, max] of [
             ['geologyOpacity', 0.15, 1], ['elevationColorsOpacity', 0, 1], ['pitch', 0, 80], ['bearing', -180, 180],

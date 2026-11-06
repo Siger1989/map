@@ -139,6 +139,38 @@ test('native hit + real projection preserves FeatureDragBridge callback contract
   h.adapter.dispose();
 });
 
+test('a selected node drag keeps the newest pointer sample while native hit readback is pending', () => {
+  const h = harness({ direct: target => target.kind === 'track' && target.node.trackId === 'draft' });
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('touch', h.touch(2, 24, 30, { eventTime: 124 }));
+  assert.equal(h.callbacks.some(([kind]) => kind === 'commit'), false);
+  assert.equal(h.frames.size, 0, 'no coordinate is fabricated before the native target is known');
+
+  h.emit('hitTest', h.hit());
+  assert.deepEqual(h.callbacks.slice(0, 2), [
+    ['begin', h.target],
+    ['preview', { target: h.target, coordinate: [1, 2] }],
+  ]);
+  assert.equal(h.frames.size, 1, 'the latest pre-hit MOVE is queued once after direct activation');
+  h.flushFrames();
+  assert.deepEqual(h.callbacks.filter(([kind, value]) => kind === 'preview' && value).at(-1)[1].coordinate, [2.4, 3]);
+
+  h.emit('touch', h.touch(1, 25, 31, { eventTime: 140 }));
+  assert.deepEqual(h.callbacks.find(([kind]) => kind === 'commit')[1].coordinate, [2.5, 3.1]);
+  assert.equal(h.callbacks.filter(([kind]) => kind === 'commit').length, 1);
+  h.adapter.dispose();
+});
+
+test('a non-selected handle that moves before its hold resolves stays a map pan, not an accidental drag', () => {
+  const h = harness({ direct: () => false });
+  h.emit('touch', h.touch(0, 10, 20));
+  h.emit('touch', h.touch(2, 25, 30, { eventTime: 124 }));
+  h.emit('hitTest', h.hit());
+  assert.equal(h.callbacks.some(([kind]) => kind === 'begin' || kind === 'commit'), false);
+  assert.equal(h.notices.some(({ command }) => command === 'gestureCapture'), false);
+  h.adapter.dispose();
+});
+
 test('native node and annotation drags consume only the latest MOVE once per animation frame', () => {
   const cases = [
     { name: 'node', target: { kind: 'track', node: { trackId: 'draft', coordinate: [1, 2] } }, hitId: 'track-node', down: [10, 20], moves: [[20, 30], [35, 45], [50, 60]], expected: [5, 6] },

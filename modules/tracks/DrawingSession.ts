@@ -53,6 +53,7 @@ export function blockedSnapHint(
 ): string {
   const subject = strictNetwork ? '河流水系' : '道路';
   if (!status) return `${subject}吸附能力不可用 · 保留上一点`;
+  if (status === 'partial') return `${subject}数据未齐 · 正在加载，保留上一点，不判断断路`;
   if (status === 'loading') return `${subject}数据加载中 · 保留上一点，不连接`;
   if (status === 'unavailable') return `${subject}数据不可用 · 保留上一点，不连接`;
   if (status === 'limited') return '吸附计算受限 · 放大地图后重试';

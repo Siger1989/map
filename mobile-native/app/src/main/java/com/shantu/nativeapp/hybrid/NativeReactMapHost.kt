@@ -857,8 +857,9 @@ class NativeReactMapHost(
         val explicitBase = activeCustom || sourceId != "terrain"
         map.configureCartography(cartographySettings, activeCustom, explicitBase, boundedRasterCap)
         if (settings.has("geologyEnabled") || settings.has("geology") || settings.has("geologySource")) {
-            val source = if (settings.optString("geologySource", "world") == "geocloud20w") com.shantu.nativeapp.geology.NativeGeologySource.GEO_CLOUD_200K else com.shantu.nativeapp.geology.NativeGeologySource.WORLD
-            map.setGeology(NativeGeologySettings.enabled(settings), source, settings.optDouble("geologyOpacity", .85))
+            // Old React settings may still carry geologySource=geocloud20w.
+            // Native rendering now supports only the public global geology layer.
+            map.setGeology(NativeGeologySettings.enabled(settings), com.shantu.nativeapp.geology.NativeGeologySource.WORLD, settings.optDouble("geologyOpacity", .85))
         }
     }
 
@@ -2037,20 +2038,46 @@ class NativeReactMapHost(
         }
     }
 
-    /** Try the exact visible point first; only an empty GPU hit gets the 44 CSS px fallback. */
-    private fun pickTouchObjectIds(entry: MapEntry, x: Float, y: Float, finished: (List<String>, List<String>) -> Unit) {
+    /** Expand a pick during an active route edit only when the exact hit missed its movable track. */
+    private fun pickTouchObjectIds(
+        entry: MapEntry,
+        x: Float,
+        y: Float,
+        preferredTrackId: String? = null,
+        finished: (List<String>, List<String>) -> Unit,
+    ) {
         entry.controller.pickObjectIds(android.graphics.RectF(x, y, x, y)) { exactIds ->
             if (!isCurrent(entry)) return@pickObjectIds
             val exact = NativePickTouchTarget.normalizeMarkerIds(exactIds, entry.annotationIds)
-            if (exactIds.any { !it.startsWith("geology:") }) {
+            val exactTrackNodeIds = exactIds.mapNotNull(::trackNodePickTrackId).toSet()
+            val editableTrackMissed = NativePickTouchTarget.shouldQueryEditableTrackFallback(preferredTrackId, exactTrackNodeIds)
+            if (!editableTrackMissed && exactIds.any { !it.startsWith("geology:") }) {
                 finished(exact, exact)
                 return@pickObjectIds
             }
+            // Preserve exact IDs for tap/business handling; the editor filters nearby nodes by
+            // its current movableTrackId and picks the closest projected node to the touch.
             val bounds = NativePickTouchTarget.centered(x, y, cssScale(entry))
             entry.controller.pickObjectIds(android.graphics.RectF(bounds.left, bounds.top, bounds.right, bounds.bottom)) { nearbyIds ->
                 if (isCurrent(entry)) finished(NativePickTouchTarget.normalizeMarkerIds(nearbyIds + exactIds, entry.annotationIds), exact)
             }
         }
+    }
+
+    private fun preferredEditableTrackId(entry: MapEntry): String? {
+        if (entry.renderInteraction.drawingActive || entry.renderInteraction.readOnly) return null
+        val overlay = entry.renderState.optJSONObject("trackOverlay") ?: return null
+        if (!overlay.optBoolean("editing")) return null
+        return overlay.optString("movableTrackId").takeIf { it.isNotBlank() && it != "null" }
+    }
+
+    private fun trackNodePickTrackId(id: String): String? {
+        val prefix = "shantu-bridge:"
+        if (!id.startsWith(prefix)) return null
+        return runCatching {
+            JSONObject(id.substring(prefix.length)).takeIf { it.optString("kind") == "trackNode" }
+                ?.optString("trackId")?.takeIf { it.isNotBlank() && it != "null" }
+        }.getOrNull()
     }
 
     private fun installTouchBridge(entry: MapEntry) {
@@ -2120,7 +2147,7 @@ class NativeReactMapHost(
                     entry.capturedGestureId = if (captureByMode) gestureId else null
                     if (!captureByMode) {
                         val hitCoordinate = entry.controller.unprojectCoordinate(event.x, event.y)?.let { JSONArray().put(it.second).put(it.first) } ?: JSONObject.NULL
-                        pickTouchObjectIds(entry, event.x, event.y) { ids, exactIds ->
+                        pickTouchObjectIds(entry, event.x, event.y, preferredEditableTrackId(entry)) { ids, exactIds ->
                             if (isCurrent(entry) && entry.gestureSequence == gestureId) emitEvent(entry.id, "hitTest", JSONObject().put("gestureId", gestureId).put("pointerId", pointerId).put("downTime", downTime).put("eventTime", actionTime).put("point", JSONObject().put("x", x).put("y", y)).put("coordinate", hitCoordinate).put("ids", JSONArray(ids)).put("exactIds", JSONArray(exactIds)))
                         }
                     }

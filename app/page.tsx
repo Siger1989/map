@@ -15,6 +15,7 @@ import { readRasterDatums } from '@/modules/mapSources/coordinates';
 import { readContourInterval, saveContourInterval } from '@/modules/terrain/contourInterval';
 import { RouteImportDialog } from '@/modules/dataTransfer/RouteImportDialog';
 import { useIncomingRoute } from '@/modules/dataTransfer/useIncomingRoute';
+import { IncomingPlacePrompt } from '@/modules/incomingPlace/IncomingPlacePrompt';
 import {
   MapSourcesPanel,
   type MapSourcesNavigation,
@@ -362,7 +363,14 @@ export default function Home() {
     position.fix,
     position.locationError,
   );
-  const floatingNavigation = useFloatingNavigation(guidance.session);
+  const floatingSession = useMemo(() => {
+    const session = guidance.session;
+    const rejoin = guidance.rejoin;
+    if (!session || !rejoin) return session;
+    return { ...session, route: { ...session.route, coordinates: rejoin.route.coordinates,
+      stops: [{ name: '返回原路线', coordinates: rejoin.target.point }] } };
+  }, [guidance.session, guidance.rejoin]);
+  const floatingNavigation = useFloatingNavigation(floatingSession);
   useEffect(() => {
     if (!guidance.active) searchNavigationDraft.clear();
   }, [guidance.active, searchNavigationDraft]);
@@ -3042,10 +3050,10 @@ export default function Home() {
               </button>
             </div>
           )}
-        {layers.geology && !panel && <GeologyMapLegend state={geology} source={layers.geologySource} />}
+        {layers.geology && !panel && <GeologyMapLegend state={geology} source="world" />}
         <LayerWindow
           open={panel === 'layers'}
-          detail={geologyDetailsOpen ? <GeologyPanel state={geology} source={layers.geologySource} onSource={geologySource => update({ geologySource })} onRetry={() => map.current?.refreshGeology()} /> : undefined}
+          detail={geologyDetailsOpen ? <GeologyPanel state={geology} /> : undefined}
           onDetailBack={() => setGeologyDetailsOpen(false)}
           onGeologyDetails={() => setGeologyDetailsOpen(true)}
           onOpen={(open) => {
@@ -3948,6 +3956,11 @@ export default function Home() {
               }}
             />
           ) : null)}
+        <IncomingPlacePrompt onNavigate={(place) => {
+          navigation.clear();
+          navigation.place('end', place);
+          setPanel('route');
+        }} />
         {placeShareTarget && <PlaceShare place={placeShareTarget.place} onClose={() => setPlaceShareTarget(null)} onExport={placeShareTarget.markerId ? () => { setCollectionOutputKey(`annotation:${placeShareTarget.markerId}`); setPlaceShareTarget(null); setPanel('favorites'); } : undefined} />}
         {shareTarget && (
           <RouteShare

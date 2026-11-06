@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateReroute, remainingRoutePlaces, replacementSession, shouldAutoReroute, shouldReplaceTrackOnDeviation } from '../modules/guidance/reroute.ts';
+import { calculateReroute, projectOriginalRouteTarget, remainingRoutePlaces, replacementSession, shouldAutoReroute, shouldReplaceTrackOnDeviation } from '../modules/guidance/reroute.ts';
 import { createSession, advance } from '../modules/guidance/session.ts';
 import { advanceNetwork } from '../modules/guidance/networkSession.ts';
 
@@ -35,7 +35,7 @@ test('replanning during an approach skips the synthetic old start but preserves 
   assert.deepEqual(remainingRoutePlaces(session).via[0].coordinates, session.checkpoints[1].point);
 });
 
-test('automatic reroute waits for confirmed off-route evidence, fresh fixes, foreground network and cooldown', () => {
+test('automatic reroute waits for confirmed off-route evidence, fresh fixes, foreground and cooldown; planner may use offline routing', () => {
   const now = Date.now();
   const fix = { coordinates: [103.001, 30.001], timestamp: now, accuracy: 5 };
   const session = createSession(route(), now);
@@ -53,11 +53,26 @@ test('automatic reroute waits for confirmed off-route evidence, fresh fixes, for
   assert.equal(shouldAutoReroute(session, fix, { ...options, nextRequestAt: now + 1000 }), false);
   assert.equal(shouldAutoReroute(session, fix, { ...options, pending: true }), false);
   assert.equal(shouldAutoReroute(session, fix, { ...options, hidden: true }), false);
-  assert.equal(shouldAutoReroute(session, fix, { ...options, online: false }), false);
+  assert.equal(shouldAutoReroute(session, fix, { ...options, online: false }), true);
   assert.equal(shouldAutoReroute(session, fix, { ...options, locationError: '权限错误' }), false);
   assert.equal(shouldReplaceTrackOnDeviation({ ...session, route: { ...session.route, geometryKind: 'track' } }), false);
   assert.equal(shouldReplaceTrackOnDeviation({ ...session, route: { ...session.route, trackNetwork: [session.route.coordinates] } }), false);
   assert.equal(shouldReplaceTrackOnDeviation(session), true);
+});
+
+test('return target is projected to the saved original route after a replacement route was adopted', () => {
+  const original = route(), session = createSession(original);
+  session.progress = 1100;
+  session.nextCheckpoint = 1;
+  const replacement = { ...route(), coordinates: [[104, 30], [104.01, 30]], snapped: [[104, 30], [104.01, 30]] };
+  session.route = replacement;
+  const target = projectOriginalRouteTarget(session, [103.015, 30.001], session);
+  assert.ok(Math.abs(target.point[0] - 103.015) < 1e-5);
+  assert.ok(target.offset < 120);
+  assert.ok(target.distance >= session.progress - 30, 'return must not backtrack beyond the guidance tolerance');
+  assert.ok(target.distance <= session.checkpoints[session.nextCheckpoint].distance, 'return must not skip the next unvisited via');
+  assert.equal(session.route, replacement);
+  assert.equal(session.originalRoute, original);
 });
 
 test('confirmed deviation keeps rerouting through the 35m-to-20m hysteresis band only while still off route', () => {

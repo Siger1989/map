@@ -17,6 +17,7 @@
     <service android:name="com.guanyun.weather.RecordingService" android:exported="false" android:foregroundServiceType="location" />
     <service android:name="com.guanyun.weather.OfflineDownloadService" android:exported="false" android:foregroundServiceType="dataSync" />
     <service android:name="com.shantu.nativeapp.floating.FloatingNavigationService" android:exported="false" android:foregroundServiceType="location" />
+    <activity android:name="com.shantu.nativeapp.floating.FloatingLockMapActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTop" android:taskAffinity="${applicationId}.lockmap" android:theme="@style/ShantuLockMapTheme" />
     <provider android:name="com.guanyun.weather.PhotoShareProvider" android:authorities="${applicationId}.photos" android:exported="false" android:grantUriPermissions="true" />
     <provider android:name="com.guanyun.weather.CameraCaptureProvider" android:authorities="${applicationId}.capture" android:exported="false" android:grantUriPermissions="true" />
     <provider android:name="com.guanyun.weather.RouteShareProvider" android:authorities="${applicationId}.routes" android:exported="false" android:grantUriPermissions="true" />
@@ -60,6 +61,18 @@
         <data android:mimeType="text/xml" />
         <data android:mimeType="text/plain" />
         <data android:mimeType="application/octet-stream" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="geo" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="https" android:host="apis.map.qq.com" android:path="/uri/v1/marker" />
       </intent-filter>
     </activity>
   <activity-alias android:name="com.guanyun.weather.MainActivity" android:targetActivity="com.guanyun.weather.NativeReactActivity" android:exported="true">

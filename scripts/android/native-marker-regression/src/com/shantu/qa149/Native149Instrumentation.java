@@ -77,6 +77,8 @@ public final class Native149Instrumentation extends Instrumentation {
             try {
                 String mode = arguments == null ? "inspect" : arguments.getString("mode", "inspect");
                 JSONObject report = "native163-cache-scope".equals(mode) ? Native163CacheScope.run(this, arguments)
+                    : "native174-floating-render".equals(mode) ? Native174FloatingDiagnostics.render(this)
+                    : "native174-floating-state".equals(mode) ? Native174FloatingDiagnostics.state(this)
                     : "native-regression".equals(mode) ? runRegression()
                     : "interactive-preview".equals(mode) ? runInteractivePreview()
                     : "raster-diagnostics".equals(mode) ? runRasterDiagnostics()
@@ -221,6 +223,14 @@ public final class Native149Instrumentation extends Instrumentation {
                             }
                             if ("floating-position-regression".equals(action)) {
                                 reply = new JSONObject().put("ok", true).put("floatingNavigation", Native171FloatingNavigationRegression.runPosition(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("native174-floating-render".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("floatingDiagnostics", Native174FloatingDiagnostics.render(this));
+                                writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
+                            }
+                            if ("native174-floating-state".equals(action)) {
+                                reply = new JSONObject().put("ok", true).put("floatingState", Native174FloatingDiagnostics.state(this));
                                 writer.write(reply.toString()); writer.newLine(); writer.flush(); continue;
                             }
                             if ("interaction-status".equals(action)) {

@@ -14,6 +14,7 @@ import { CAD_CHANGED } from '../../cad/storage.ts';
 import { NativeMapInteractionAdapter, type NativeHitTest } from './interaction.ts';
 import { projectNativeLocal, unprojectNativeLocal } from './localGeometry.ts';
 import { prepareVisibleNodeMove } from '../../tracks/visibleNodeMove.ts';
+import { closestNativeTrackNodePick } from './trackNodePick.ts';
 import { readNativeOfflineDisplayPolicy, subscribeNativeOfflineDisplayPolicy } from './offlineMode.ts';
 import type { NativeOfflineDisplayPolicyPayload } from './offlineMode.ts';
 import { nativeAnchoredGesture, nativeFocusCamera, nativeFocusPositionCamera, nativeNavigationCamera, nativePreviewNavigationCamera, nativeRouteGapCamera, nativeRouteIssueCamera, nativeViewCamera } from './camera.ts';
@@ -393,17 +394,20 @@ function applySnapGeometry(runtime: Runtime, value: unknown) {
   const incomingRevision = Number.isSafeInteger(value.cameraRevision) ? value.cameraRevision as number : null;
   for (const kind of ['road', 'river'] as const) {
     const source = value[kind];
-    if (!isRecord(source) || !['ready', 'loading', 'hidden', 'blocked', 'missing'].includes(String(source.status))) continue;
-    const status = source.status as 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing';
+    if (!isRecord(source) || !['ready', 'partial', 'loading', 'hidden', 'blocked', 'missing'].includes(String(source.status))) continue;
+    const coverageComplete = typeof source.coverageComplete === 'boolean' ? source.coverageComplete : undefined;
+    const status = source.status === 'partial' || (source.status === 'ready' && coverageComplete === false)
+      ? 'partial'
+      : source.status as 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing';
     const lines = readLines({ lines: source.lines }, kind);
     if (kind === 'road') {
       const next = nextSnapGeometryState(previousRevision, runtime.frameSnapRevision, incomingRevision,
-        { status: runtime.roadGeometryStatus ?? 'loading', lines: runtime.roadLines }, status, lines);
+        { status: runtime.roadGeometryStatus ?? 'loading', lines: runtime.roadLines }, status, lines, coverageComplete);
       runtime.roadGeometryStatus = next.status;
       runtime.roadLines = next.lines;
     } else {
       const next = nextSnapGeometryState(previousRevision, runtime.frameSnapRevision, incomingRevision,
-        { status: runtime.riverGeometryStatus ?? 'loading', lines: runtime.riverLines }, status, lines);
+        { status: runtime.riverGeometryStatus ?? 'loading', lines: runtime.riverLines }, status, lines, coverageComplete);
       runtime.riverGeometryStatus = next.status;
       runtime.riverLines = next.lines;
     }
@@ -434,8 +438,8 @@ type Runtime = {
   waiters: Set<Waiter>;
   roadLines: RoadLine[] | null;
   riverLines: RoadLine[] | null;
-  roadGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
-  riverGeometryStatus: 'ready' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
+  roadGeometryStatus: 'ready' | 'partial' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
+  riverGeometryStatus: 'ready' | 'partial' | 'loading' | 'hidden' | 'blocked' | 'missing' | null;
   frameSnapRevision: number | null;
   snapGeometryRevision: number | null;
   pendingSnapGeometry: unknown;
@@ -1349,7 +1353,9 @@ function resolveNativeDragTarget(runtime: Runtime, hit: NativeHitTest): DragTarg
   const current = runtime.props;
   const metadata = nativePickMetadata(hit.ids);
   if (current.trackOverlay.editing && !current.drawingActive && current.trackOverlay.movableTrackId) {
-    const nodeHit = metadata.find((item) => item.kind === 'trackNode' && item.trackId === current.trackOverlay.movableTrackId);
+    const exactMetadata = nativePickMetadata(hit.exactIds ?? []);
+    const nodeHit = closestNativeTrackNodePick(metadata, exactMetadata, current.trackOverlay.movableTrackId,
+      hit.point, (coordinate) => pointFromProjection(runtime.client!, runtime.mapId!, coordinate));
     const coordinateValue = readPoint(nodeHit?.coordinate);
     if (nodeHit && coordinateValue) {
       const trackId = String(nodeHit.trackId);
@@ -1437,6 +1443,7 @@ function createNativeRoadSnapper(runtime: Runtime, kind: 'road' | 'river'): Road
     if (!geometryStatus || geometryStatus === 'loading') { clearAnchor(); return { status: 'loading', match: null }; }
     if (geometryStatus === 'blocked' || geometryStatus === 'missing') { clearAnchor(); return { status: 'unavailable', match: null }; }
     const lines = kind === 'road' ? runtime.roadLines : runtime.riverLines;
+    if (geometryStatus === 'partial' && !lines?.length) { clearAnchor(); return { status: 'partial', match: null }; }
     if (!lines) { clearAnchor(); return { status: 'unavailable', match: null }; }
     if (!runtime.client || !runtime.mapId) { clearAnchor(); return { status: 'unavailable', match: null }; }
     const project = (coordinateValue: Coordinate) => runtime.client && runtime.mapId
@@ -1476,7 +1483,12 @@ function createNativeRoadSnapper(runtime: Runtime, kind: 'road' | 'river'): Road
       pathStatus = path.status;
       section = path.status === 'ready' ? path.section : null;
     }
-    const result = roadSnapResult(match, from, section, pathStatus);
+    let result = roadSnapResult(match, from, section, pathStatus);
+    // An incomplete viewport cannot prove a no-match or disconnected network.
+    // Keep known candidates available, but report missing coverage honestly.
+    if (geometryStatus === 'partial' && (result.status === 'no-match' || result.status === 'disconnected')) {
+      result = { ...result, status: 'partial' };
+    }
     anchorState = rememberNativeRoadSnapCandidate(anchorState, kind, runtime.generation, result.match, anchor.trackCandidate);
     return result;
   };
@@ -1607,7 +1619,7 @@ function makeHandle(
     },
     refreshGeology: () => {
       void request('refreshGeology', {}).catch(() => {
-        safeCallback(() => runtime.props.onGeology({ ...INITIAL_GEOLOGY, source: 'geocloud20w', status: 'error', message: '原生地图宿主未提供地质图层刷新能力' }));
+        safeCallback(() => runtime.props.onGeology({ ...INITIAL_GEOLOGY, source: 'world', status: 'error', message: '原生地图宿主未提供全球地质图层刷新能力' }));
       });
     },
     inspect: () => {

@@ -47,6 +47,7 @@ class NativeBridgeOverlayRenderer(
     private val fingerprints = linkedMapOf<String, String>()
     private val minZooms = linkedMapOf<String, Double>()
     private val routePointImages = mutableMapOf<String, ImageSource>()
+    private val routePointImageSize = 32
     private val trackNodeImages = linkedMapOf<String, ImageSource>()
     private val trackNodeImageSize = 64
     private val arrow = ImageSource.fromBitmap(Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888).also { bitmap ->
@@ -143,9 +144,10 @@ class NativeBridgeOverlayRenderer(
             val nodeCssSize = NativeOverlayStyle.emphasizedPointCssSize(
                 properties.optDouble("pointSize", 8.0), selected, active,
             )
+            val routePointPresentation = NativeOverlayStyle.routePointPresentation(cssScale, routePointImageSize)
             val placemark = Placemark(position, PlacemarkAttributes().apply {
                 imageScale = when {
-                    role == "routePoint" -> 1.0
+                    role == "routePoint" -> routePointPresentation.imageScale
                     isTrackNode -> NativeOverlayStyle.imageScaleForCssSize(nodeCssSize, cssScale, trackNodeImageSize)
                     properties.optBoolean("arrow") -> NativeOverlayStyle.imageScaleForCssSize(
                         properties.optDouble("pointSize", 16.0), cssScale, 64,
@@ -155,10 +157,11 @@ class NativeBridgeOverlayRenderer(
                 if (role == "routePoint") {
                     imageSource = routePointImage(properties.optString("color", "#e34f4f"))
                     imageColor = Color(1f, 1f, 1f, 1f)
-                    labelAttributes.font = Font(12f)
+                    labelAttributes.font = Font(routePointPresentation.labelSizePixels)
+                    labelAttributes.scale = 1.0
                     labelAttributes.textColor = NativeOverlayStyle.color(properties.optString("labelColor", "#ffffff"), 1.0)
                     labelAttributes.outlineColor = NativeOverlayStyle.color(properties.optString("labelHaloColor", "#14392e"), 1.0)
-                    labelAttributes.outlineWidth = NativeOverlayStyle.widthInPixels(2.0, cssScale)
+                    labelAttributes.outlineWidth = routePointPresentation.haloWidthPixels
                     labelAttributes.textOffset = Offset.topCenter()
                 } else if (isTrackNode) {
                     imageSource = trackNodeImage(properties.optString("color", "#d0f76b"), selected, active)
@@ -175,6 +178,7 @@ class NativeBridgeOverlayRenderer(
                 isDepthTest = !isTrackNode
             }, text ?: "").apply {
                 altitudeMode = AltitudeMode.CLAMP_TO_GROUND; isAlwaysOnTop = false
+                if (role == "routePoint") isEyeDistanceScaling = false
                 pickDelegate = delegate
                 if (properties.optBoolean("arrow")) { imageRotation = properties.optDouble("rotation", 0.0).degrees; imageRotationReference = OrientationMode.RELATIVE_TO_GLOBE }
             }
@@ -218,13 +222,13 @@ class NativeBridgeOverlayRenderer(
     }
 
     private fun routePointImage(color: String): ImageSource = routePointImages.getOrPut(color) {
-        ImageSource.fromBitmap(Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888).also { bitmap ->
+        ImageSource.fromBitmap(Bitmap.createBitmap(routePointImageSize, routePointImageSize, Bitmap.Config.ARGB_8888).also { bitmap ->
             val canvas = Canvas(bitmap)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG)
             paint.color = runCatching { android.graphics.Color.parseColor(color) }.getOrDefault(android.graphics.Color.RED)
-            canvas.drawCircle(16f, 16f, 10f, paint)
+            canvas.drawCircle(routePointImageSize / 2f, routePointImageSize / 2f, 10f, paint)
             paint.color = android.graphics.Color.rgb(18, 49, 60); paint.style = Paint.Style.STROKE; paint.strokeWidth = 2f
-            canvas.drawCircle(16f, 16f, 10f, paint)
+            canvas.drawCircle(routePointImageSize / 2f, routePointImageSize / 2f, 10f, paint)
         })
     }
 

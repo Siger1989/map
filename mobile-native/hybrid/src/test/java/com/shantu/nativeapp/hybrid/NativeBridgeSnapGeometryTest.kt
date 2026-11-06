@@ -27,6 +27,7 @@ class NativeBridgeSnapGeometryTest {
         assertEquals(1, rivers.size)
         assertTrue(rivers.single().id.startsWith("waterway:"))
         assertEquals("Creek", rivers.single().name)
+        assertTrue(NativeSnapGeometryDecoder.decodeLines(decoded, bounds, false).complete)
     }
 
     @Test fun decodedMultilinestringComponentsReachSnapGeometryWithoutFalseConnector() {
@@ -96,6 +97,42 @@ class NativeBridgeSnapGeometryTest {
         assertTrue(fallback.coverageComplete)
     }
 
+    @Test fun snapTileSelectionPrefersCompleteParentUntilTheChildZoomIsComplete() {
+        // This viewport straddles the z=3 column boundary between child tiles 2 and 3,
+        // while remaining inside parent z=2 tile 1/1.
+        val bounds = boundsAcrossTileColumns(3, 2, 3, row = 3)
+        val parent = NativeCachedSnapTile(2, 1, 1, byteArrayOf(2), Any())
+        val leftChild = NativeCachedSnapTile(3, 2, 3, byteArrayOf(3), Any())
+        val rightChild = NativeCachedSnapTile(3, 3, 3, byteArrayOf(4), Any())
+
+        val whileLoading = NativeSnapTileSelector.select(listOf(parent, leftChild), bounds, maxTiles = 24)
+        assertEquals(2, whileLoading.sourceZoom)
+        assertEquals(listOf(parent), whileLoading.tiles)
+        assertTrue(whileLoading.coverageComplete)
+
+        val upgraded = NativeSnapTileSelector.select(listOf(parent, rightChild, leftChild), bounds, maxTiles = 24)
+        assertEquals(3, upgraded.sourceZoom)
+        assertEquals(listOf(leftChild, rightChild), upgraded.tiles)
+        assertTrue(upgraded.coverageComplete)
+    }
+
+    @Test fun snapTileSelectionCapsAllPartialLevelsAndReportsCoverageIncomplete() {
+        val bounds = listOf(-179.0, -80.0, 179.0, 80.0)
+        val z2 = (0..3).flatMap { y -> (0..3).map { x ->
+            NativeCachedSnapTile(2, x, y, byteArrayOf((y * 4 + x).toByte()), Any())
+        } }
+        val selection = NativeSnapTileSelector.select(z2, bounds, maxTiles = 8)
+
+        assertEquals(2, selection.sourceZoom)
+        assertEquals(8, selection.tiles.size)
+        assertFalse(selection.coverageComplete)
+        assertEquals(selection.tiles.sortedWith(compareBy<NativeCachedSnapTile> {
+            val dx = (it.x + .5) / 4.0 - .5
+            val dy = (it.y + .5) / 4.0 - .5
+            dx * dx + dy * dy
+        }.thenBy { it.y }.thenBy { it.x }), selection.tiles)
+    }
+
     @Test fun realDecoderSelectsFineRoadBeforeCoarseFeatureCanExhaustPointBudget() {
         val bounds = tileInteriorBounds(14, 8192, 8192)
         val coarse = NativeCachedSnapTile(9, 256, 256, singleRoadMvtTile("coarse", 6000, 1, 64), Any())
@@ -127,8 +164,10 @@ class NativeBridgeSnapGeometryTest {
         val decoded = listOf(tile to listOf(com.shantu.nativeapp.geology.NativeMvtFeature("transportation", 2, 4096,
             mapOf("class" to "path", "name" to "Fixture"), paths)))
         val lines = NativeSnapGeometryDecoder.lines(decoded, listOf(-180.0, -85.0, 180.0, 85.0), false)
+        val result = NativeSnapGeometryDecoder.decodeLines(decoded, listOf(-180.0, -85.0, 180.0, 85.0), false)
         assertTrue(lines.sumOf { it.coordinates.size } <= 6000)
         assertEquals(3000, lines.size)
+        assertFalse("point-budget truncation must invalidate full coverage", result.complete)
     }
 
     @Test fun hugeFeaturePathListStopsAtAnExplicitScanBudget() {
@@ -212,6 +251,8 @@ class NativeBridgeSnapGeometryTest {
         assertEquals("loading", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = false, lines = 0))
         assertEquals("missing", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 0))
         assertEquals("ready", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 1))
+        assertEquals("partial", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 1, coverageComplete = false))
+        assertEquals("partial", NativeSnapGeometryState.status(enabled = true, layerVisible = true, viewportKnown = true, cacheAvailable = true, lines = 0, coverageComplete = false))
     }
 
     @Test fun roadAndRiverSnappingShareBoundedMvtLayerWithoutDuplicatingVisibleRoadLayers() {

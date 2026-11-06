@@ -62,7 +62,9 @@ internal object NativeRoadStyle {
             else -> uiZoom
         }
         return when (group) {
-            Group.RIVER -> interpolate(widthZoom, 7.0 to .5f, 13.0 to 1.5f, 16.0 to 3f)
+            // Waterways stay visible, but use a restrained width at close UI zooms.
+            // The same z14 source-geometry cap applies when the UI overzooms.
+            Group.RIVER -> interpolate(widthZoom, 7.0 to .3f, 13.0 to .9f, 16.0 to 1.8f)
             // Draped strokes can occupy more screen space on near terrain. Keep the
             // casing narrow as well as the fill, especially in a distant overview.
             // At close zooms preserve the previous widths and retain continuous interpolation.

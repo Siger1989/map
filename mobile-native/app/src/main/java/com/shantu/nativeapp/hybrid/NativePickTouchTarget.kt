@@ -6,6 +6,12 @@ internal object NativePickTouchTarget {
 
     data class Bounds(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
+    /** Keep the larger fallback route-edit-only when the exact pixel misses the editable track. */
+    fun shouldQueryEditableTrackFallback(preferredTrackId: String?, exactTrackNodeIds: Collection<String>): Boolean {
+        val preferred = preferredTrackId?.takeIf { it.isNotBlank() && it != "null" } ?: return false
+        return preferred !in exactTrackNodeIds
+    }
+
     /** Legacy native picks use bare IDs; the React gesture adapter uses typed object delegates. */
     fun normalizeMarkerIds(ids: List<String>, annotationIds: Set<String>): List<String> =
         ids.map { if (it in annotationIds && !it.startsWith("shantu-object:")) "shantu-object:$it" else it }.distinct()

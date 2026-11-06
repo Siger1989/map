@@ -19,6 +19,7 @@ class FloatingNavigationBridge(
 ) : Closeable {
     private var pendingStart: JSONObject? = null
     private var waitingForOverlaySettings = false
+    private var guideShowing = false
     private var message = ""
     @Volatile private var trustedOrigin = false
     @Volatile private var closed = false
@@ -27,12 +28,14 @@ class FloatingNavigationBridge(
     fun status(): String {
         if (!trustedPage()) return JSONObject().put("available", false).put("enabled", false)
             .put("visible", false).put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "仅山兔前台页面可读取悬浮导航状态")
+            .put("windowEnabled", false).put("lockscreenEnabled", false)
             .put("locationAllowed", false).put("notificationAllowed", false).put("overlayAllowed", false).toString()
         return try {
             statusJson().toString()
         } catch (_: Exception) {
             JSONObject().put("available", true).put("enabled", false).put("visible", false)
                 .put("mode", JSONObject.NULL).put("kind", JSONObject.NULL).put("message", "悬浮导航状态暂不可用")
+                .put("windowEnabled", false).put("lockscreenEnabled", false)
                 .put("locationAllowed", hasLocationPermission()).put("notificationAllowed", hasNotificationPermission())
                 .put("overlayAllowed", canDrawOverlays()).toString()
         }
@@ -43,6 +46,46 @@ class FloatingNavigationBridge(
 
     @JavascriptInterface
     fun update(payload: String) = dispatch(payload, Action.UPDATE)
+
+    @JavascriptInterface
+    fun restore(payload: String) = dispatch(payload, Action.RESTORE)
+
+    /** Persist switches/mode without starting the service or invoking permission UI. */
+    @JavascriptInterface
+    fun setOptions(payload: String) {
+        activity.runOnUiThread {
+            if (!trustedPage()) return@runOnUiThread
+            try {
+                require(payload.toByteArray(Charsets.UTF_8).size <= 4096) { "悬浮地图设置过大" }
+                val input = JSONObject(payload)
+                val allowed = setOf("windowEnabled", "lockscreenEnabled", "mode")
+                val keys = input.keys()
+                while (keys.hasNext()) require(keys.next() in allowed) { "悬浮地图设置字段无效" }
+                val windowEnabled = if (input.has("windowEnabled")) {
+                    require(input.opt("windowEnabled") is Boolean) { "windowEnabled 必须是布尔值" }
+                    input.getBoolean("windowEnabled")
+                } else null
+                val lockscreenEnabled = if (input.has("lockscreenEnabled")) {
+                    require(input.opt("lockscreenEnabled") is Boolean) { "lockscreenEnabled 必须是布尔值" }
+                    input.getBoolean("lockscreenEnabled")
+                } else null
+                val mode = if (input.has("mode")) input.optString("mode") else null
+                require(mode == null || mode == "north" || mode == "motion") { "方向模式无效" }
+                FloatingNavigationService.setOptions(activity, windowEnabled, lockscreenEnabled, mode)
+                val state = FloatingNavigationService.status(activity)
+                pendingStart?.let { pendingStart = mergeNativeOptions(it, state) }
+                if (!state.optBoolean("windowEnabled", true) && !state.optBoolean("lockscreenEnabled", true)) {
+                    pendingStart = null
+                    waitingForOverlaySettings = false
+                }
+                message = if (!state.optBoolean("windowEnabled", true) && !state.optBoolean("lockscreenEnabled", true))
+                    "普通小窗与锁屏地图均已关闭" else "悬浮地图设置已保存"
+            } catch (e: Exception) {
+                message = e.message ?: "悬浮地图设置无效"
+            }
+            dispatchChange()
+        }
+    }
 
     @JavascriptInterface
     fun stop() {
@@ -60,7 +103,7 @@ class FloatingNavigationBridge(
         }
     }
 
-    private enum class Action { START, UPDATE }
+    private enum class Action { START, UPDATE, RESTORE }
 
     private fun dispatch(raw: String?, action: Action) {
         activity.runOnUiThread {
@@ -75,6 +118,7 @@ class FloatingNavigationBridge(
             when (action) {
                 Action.START -> beginStart(payload)
                 Action.UPDATE -> updateActive(payload)
+                Action.RESTORE -> restoreIfReady(payload)
             }
         }
     }
@@ -88,8 +132,55 @@ class FloatingNavigationBridge(
         continueStart()
     }
 
+    /** Restore a previous session without starting a permission prompt or guide. */
+    private fun restoreIfReady(payload: JSONObject) {
+        if (!trustedPage()) return
+        val missing = buildList {
+            if (!hasLocationPermission()) add("定位")
+            if (!hasNotificationPermission()) add("通知")
+            if (!canDrawOverlays()) add("悬浮窗")
+        }
+        if (missing.isNotEmpty()) {
+            message = "恢复待授权：请先在山兔中允许${missing.joinToString("、")}权限，再点开启"
+            dispatchChange(); return
+        }
+        val guide = activity.getSharedPreferences("floating_navigation_guide", android.content.Context.MODE_PRIVATE)
+        if (!guide.getBoolean("lock_map_v1", false)) {
+            message = "恢复待开启：请先主动开启悬浮地图并阅读使用说明"
+            dispatchChange(); return
+        }
+        val stored = try { FloatingNavigationService.status(activity) } catch (_: Exception) { JSONObject() }
+        val restoredPayload = mergeNativeOptions(JSONObject(payload.toString()), stored, preferPersisted = true)
+        val windowEnabled = stored.optBoolean("windowEnabled", true)
+        val lockscreenEnabled = stored.optBoolean("lockscreenEnabled", true)
+        if (!windowEnabled && !lockscreenEnabled) {
+            message = "普通小窗与锁屏地图均已关闭"
+            dispatchChange(); return
+        }
+        try {
+            FloatingNavigationService.setAppVisible(false)
+            if (FloatingNavigationService.status(activity).optBoolean("enabled", false)) FloatingNavigationService.update(activity, restoredPayload)
+            else FloatingNavigationService.start(activity, restoredPayload)
+            message = "悬浮地图已按上次设置恢复"
+        } catch (_: SecurityException) {
+            message = "恢复待授权：系统未允许定位前台服务，请回到山兔检查权限"
+        } catch (_: Exception) {
+            message = "悬浮地图恢复失败，请在前台重新开启"
+        }
+        dispatchChange()
+    }
+
     private fun continueStart() {
-        val payload = pendingStart ?: return
+        val pending = pendingStart ?: return
+        val optionState = try { FloatingNavigationService.status(activity) } catch (_: Exception) { JSONObject() }
+        val payload = mergeNativeOptions(pending, optionState)
+        pendingStart = payload
+        if (!optionState.optBoolean("windowEnabled", true) && !optionState.optBoolean("lockscreenEnabled", true)) {
+            pendingStart = null
+            waitingForOverlaySettings = false
+            message = "普通小窗与锁屏地图均已关闭"
+            dispatchChange(); return
+        }
         if (!trustedPage()) {
             clearPending("请回到山兔前台后重新点击悬浮导航")
             return
@@ -119,6 +210,23 @@ class FloatingNavigationBridge(
             }
             return
         }
+        val preferences = activity.getSharedPreferences("floating_navigation_guide", android.content.Context.MODE_PRIVATE)
+        if (!preferences.getBoolean("lock_map_v1", false)) {
+            if (guideShowing) return
+            guideShowing = true
+            android.app.AlertDialog.Builder(activity)
+                .setTitle("悬浮地图与锁屏地图")
+                .setMessage("切换到其他应用后可显示普通小窗；锁屏亮屏时可单独启用黑底渐隐地图，解锁后按普通小窗开关恢复。两个开关分别保存，并记住上次选择；关闭小窗不会结束定位或记录。锁屏地图会显示当前位置和路线，请注意隐私。锁屏地图不会主动唤醒屏幕，也不会保持屏幕常亮。\n\n部分系统可能限制锁屏地图自动打开，可点常驻通知返回地图。定位记录仍须精确定位权限。\n\n地图数据：OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors（ODbL），图源说明保留在工具页。")
+                .setPositiveButton("知道了，开启") { _, _ ->
+                    guideShowing = false
+                    preferences.edit().putBoolean("lock_map_v1", true).apply()
+                    continueStart()
+                }
+                .setNegativeButton("取消") { _, _ -> guideShowing = false; clearPending("已取消开启悬浮地图") }
+                .setOnCancelListener { guideShowing = false; clearPending("已取消开启悬浮地图") }
+                .show()
+            return
+        }
         try {
             // A direct user start should reveal the requested overlay even while
             // the host Activity remains on screen. Returning to the app uses the
@@ -141,7 +249,7 @@ class FloatingNavigationBridge(
 
     private fun updateActive(payload: JSONObject) {
         if (!trustedPage()) return
-        val current = try { FloatingNavigationService.status() } catch (_: Exception) { JSONObject() }
+        val current = try { FloatingNavigationService.status(activity) } catch (_: Exception) { JSONObject() }
         if (!current.optBoolean("enabled", false)) {
             message = "悬浮导航尚未启动，请先启动后再更新"
             dispatchChange()
@@ -156,6 +264,14 @@ class FloatingNavigationBridge(
         dispatchChange()
     }
 
+    /** Native SharedPreferences is authoritative over stale React/pending snapshots. */
+    private fun mergeNativeOptions(payload: JSONObject, state: JSONObject, preferPersisted: Boolean = state.optBoolean("optionsConfigured", false)): JSONObject = payload.apply {
+        val storedMode = state.optString("mode").takeIf { it == "north" || it == "motion" } ?: "north"
+        put("mode", if (preferPersisted) storedMode else optString("mode").takeIf { it == "north" || it == "motion" } ?: storedMode)
+        put("windowEnabled", if (preferPersisted) state.optBoolean("windowEnabled", true) else optBoolean("windowEnabled", state.optBoolean("windowEnabled", true)))
+        put("lockscreenEnabled", if (preferPersisted) state.optBoolean("lockscreenEnabled", true) else optBoolean("lockscreenEnabled", state.optBoolean("lockscreenEnabled", true)))
+    }
+
     private fun validatePayload(raw: String?): JSONObject {
         require(raw != null && raw.toByteArray(Charsets.UTF_8).size <= MAX_PAYLOAD_BYTES) { "路线数据超过4 MiB或为空" }
         val input = try { JSONObject(raw) } catch (_: Exception) { throw IllegalArgumentException("悬浮导航数据格式无效") }
@@ -165,7 +281,7 @@ class FloatingNavigationBridge(
     }
 
     private fun statusJson(): JSONObject {
-        val service = try { FloatingNavigationService.status() } catch (_: Exception) { JSONObject() }
+        val service = try { FloatingNavigationService.status(activity) } catch (_: Exception) { JSONObject() }
         val enabled = service.optBoolean("enabled", false)
         val serviceMessage = service.optString("message", "")
         val localMessage = if (!enabled && message == "正在停止悬浮导航") "悬浮导航已停止" else message
@@ -173,6 +289,8 @@ class FloatingNavigationBridge(
             .put("available", true)
             .put("enabled", enabled)
             .put("visible", service.optBoolean("visible", false))
+            .put("windowEnabled", service.optBoolean("windowEnabled", true))
+            .put("lockscreenEnabled", service.optBoolean("lockscreenEnabled", true))
             .put("mode", service.optString("mode").takeIf { it == "north" || it == "motion" } ?: JSONObject.NULL)
             .put("kind", service.optString("kind").takeIf { it == "position" || it == "route" } ?: JSONObject.NULL)
             .put("message", serviceMessage.ifBlank { localMessage })
@@ -181,7 +299,7 @@ class FloatingNavigationBridge(
             .put("overlayAllowed", canDrawOverlays())
         // Whitelist non-sensitive service state only. Route, coordinates, labels,
         // URLs, and keys are intentionally never returned to JavaScript here.
-        listOf("zoom", "widthDp", "heightDp", "windowBounds", "permissionRequired", "lastErrorCode").forEach { key ->
+        listOf("zoom", "widthDp", "heightDp", "windowBounds", "permissionRequired", "lastErrorCode", "lockscreen").forEach { key ->
             if (service.has(key)) root.put(key, service.opt(key))
         }
         return root

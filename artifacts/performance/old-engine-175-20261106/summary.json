@@ -1,0 +1,46 @@
+{
+  "version": "0.2.175-test",
+  "versionCode": 182,
+  "package": "com.shantu.oldengine",
+  "apk": {
+    "bytes": 165291517,
+    "sha256": "f8505cbbab7e714709d9477b5560bc0859476673c6c02ea3bdbc7f4f60c6f437",
+    "crc": true,
+    "seedCount": 39,
+    "privateSeedsMatch": true,
+    "freshWebAssetCount": 1925,
+    "nativeLibrariesUnchangedFrom174": [
+      "lib/arm64-v8a/libshantu_cad.so",
+      "lib/arm64-v8a/libsqliteX.so",
+      "lib/armeabi-v7a/libshantu_cad.so",
+      "lib/armeabi-v7a/libsqliteX.so",
+      "lib/x86/libshantu_cad.so",
+      "lib/x86/libsqliteX.so",
+      "lib/x86_64/libshantu_cad.so",
+      "lib/x86_64/libsqliteX.so"
+    ]
+  },
+  "latestNativeSuites": {
+    "suiteScope": "last targeted native edit-pick and snap suites",
+    "tests": 23,
+    "failures": 0,
+    "suites": [
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativeBridgeSnapGeometryTest",
+        "tests": 16
+      },
+      {
+        "name": "com.shantu.nativeapp.hybrid.NativePickTouchTargetTest",
+        "tests": 7
+      }
+    ]
+  },
+  "nodeTests": 96,
+  "typescript": "PASS",
+  "optimizedBuild": "PASS",
+  "deliveryOrder": "package-first-then-runtime-verification",
+  "runtime175": "NOT_YET_VERIFIED",
+  "phone": "OPPO X8 not connected; OS version unknown",
+  "formal166Unchanged": true,
+  "newElevationContourFeedback": "NOT_IN_175"
+}

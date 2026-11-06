@@ -19,7 +19,7 @@ export type RoadMatch = {
 export type RoadSnapResult = {
   match: RoadMatch | null;
   section?: Coordinate[] | null;
-  status: 'ready' | 'hidden' | 'loading' | 'unavailable' | 'no-match' | 'disconnected' | 'limited';
+  status: 'ready' | 'partial' | 'hidden' | 'loading' | 'unavailable' | 'no-match' | 'disconnected' | 'limited';
 };
 export type RoadSnapper = (
   point: ScreenPoint,
@@ -283,6 +283,9 @@ export function roadSection(
 
 export function roadHint(result: RoadSnapResult) {
   if (result.status === 'limited') return '吸附计算受限 · 放大地图后重试';
+  if (result.status === 'partial') return result.match
+    ? `已吸附道路 · ${result.match.line.name || '小路'} · 路网未齐，连通性未确认`
+    : '路网数据未齐 · 正在加载，暂不判断附近是否有路';
   if (result.status === 'disconnected') return '道路已吸附 · 与上一个点不连通';
   if (result.status === 'no-match') return '附近没有可吸附道路 · 保留原始点';
   if (result.match)

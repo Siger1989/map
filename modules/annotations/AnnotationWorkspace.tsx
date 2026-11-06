@@ -4,6 +4,7 @@ import {
   Camera,
   ChevronLeft,
   Clipboard,
+  Copy,
   FileText,
   Navigation,
   Pencil,
@@ -32,6 +33,9 @@ import {
   MarkerData,
 } from './AnnotationFields';
 import './markerWorkspace.css';
+import { annotationSharePlace } from './share';
+import { placeShareData } from '../placeShare/data';
+import { writeClipboard } from '../platform/macNative';
 
 export type MarkerTab = 'basic' | 'position' | 'data';
 export function AnnotationWorkspace({
@@ -75,11 +79,18 @@ export function AnnotationWorkspace({
   onCameraRetry?: () => void;
   onAddModel?: (kind: Exclude<AnnotationChoice, 'pin'>, coordinates: Coordinate) => boolean;
 }) {
+  const [copyInfoStatus, setCopyInfoStatus] = useState('');
+  const [copyInfoText, setCopyInfoText] = useState('');
   const [view, setView] = useState<'summary' | 'details'>('summary');
   const [confirm, setConfirm] = useState<'delete' | null>(null);
   const root = useRef<HTMLElement>(null);
   const editing = !!state.edit;
   const item = shownItem;
+  const copyInfo = async () => {
+    const text = placeShareData(annotationSharePlace(item)).text;
+    try { await writeClipboard(text); setCopyInfoText(''); setCopyInfoStatus('完整标记信息已复制'); }
+    catch { setCopyInfoText(text); setCopyInfoStatus('请长按下方信息复制'); }
+  };
   const base = state.edit?.base ?? item;
   const back = () => {
     if (confirm === 'delete') {
@@ -288,6 +299,7 @@ export function AnnotationWorkspace({
             </span>
           </div>
           <div className="marker-summary-actions">
+            <button type="button" aria-label="复制信息" onClick={() => void copyInfo()}><Copy size={16}/>复制信息</button>
             <button className="marker-primary" onClick={() => onNavigate(item)}>
               <Navigation size={17} />
               导航
@@ -324,6 +336,8 @@ export function AnnotationWorkspace({
           </button>
         </header>
       )}
+      {copyInfoStatus && <p role="status" className="marker-error">{copyInfoStatus}</p>}
+      {copyInfoText && <textarea readOnly aria-label="待复制的标记信息" value={copyInfoText} onFocus={event => event.currentTarget.select()} />}
       {state.error && (
         <p className="marker-error" role="status">
           {state.error}

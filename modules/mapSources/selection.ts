@@ -36,7 +36,7 @@ export function settingsForBasemapSource(
     elevationColors: current.elevationColors,
     elevationColorsOpacity: current.elevationColorsOpacity,
     geology: current.geology,
-    geologySource: current.geologySource,
+    geologySource: 'world',
     geologyOpacity: current.geologyOpacity,
     roads: current.roads,
     roadsOpacity: current.roadsOpacity,

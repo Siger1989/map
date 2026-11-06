@@ -8,9 +8,14 @@ export type FloatingNavigationStatus = {
   available: boolean;
   enabled: boolean;
   visible: boolean;
+  windowEnabled: boolean;
+  lockscreenEnabled: boolean;
   mode: FloatingNavigationMode;
   message: string;
   kind: FloatingNavigationKind;
+  locationAllowed?: boolean;
+  notificationAllowed?: boolean;
+  overlayAllowed?: boolean;
   zoom?: number;
   widthDp?: number;
   heightDp?: number;
@@ -23,13 +28,19 @@ export type FloatingNavigationPayload = {
   coordinates: Coordinate[];
   kind?: FloatingNavigationKind;
   color?: string;
+  windowEnabled?: boolean;
+  lockscreenEnabled?: boolean;
 };
+
+export type FloatingNavigationOptions = Partial<Pick<FloatingNavigationStatus, 'windowEnabled' | 'lockscreenEnabled' | 'mode'>>;
 
 export type FloatingNavigationBridge = {
   status(): string;
   start(payload: string): void;
   update(payload: string): void;
   stop(): void;
+  restore?(payload: string): void;
+  setOptions?(payload: string): void;
 };
 
 declare global {
@@ -46,15 +57,25 @@ export function buildFloatingNavigationPayload(
   session: GuidanceSession | null,
   mode: FloatingNavigationMode,
   kind: FloatingNavigationKind = session ? 'route' : 'position',
+  options?: Pick<FloatingNavigationOptions, 'windowEnabled' | 'lockscreenEnabled'>,
 ): FloatingNavigationPayload {
-  if (kind === 'position') return { version: 1, kind, mode, label: '定位小地图', coordinates: [] };
-  if (!session) throw new Error('请先开始导航，或选择定位小地图');
+  const displayOptions = options ? { windowEnabled: options.windowEnabled, lockscreenEnabled: options.lockscreenEnabled } : {};
+  if (kind === 'position') return { version: 1, kind, mode, label: '定位小地图', coordinates: [], ...displayOptions };
+  if (!session) throw new Error('无导航路线时悬浮地图自动使用定位模式');
   const coordinates = session.route.coordinates;
   const label = session.route.stops?.at(-1)?.name?.trim() || '导航路线';
   validateFloatingNavigationInput(mode, label, coordinates);
   const color = session.route.style?.color;
   if (color !== undefined && !/^#[0-9a-f]{6}$/i.test(color)) throw new Error('路线颜色必须为六位十六进制');
-  return { version: 1, kind, mode, label, coordinates, ...(color ? { color: color.toUpperCase() } : {}) };
+  return { version: 1, kind, mode, label, coordinates, ...(color ? { color: color.toUpperCase() } : {}), ...displayOptions };
+}
+
+export function serializeFloatingNavigationOptions(options: FloatingNavigationOptions) {
+  if (!Object.keys(options).length) throw new Error('悬浮地图设置为空');
+  if (options.mode !== undefined && options.mode !== 'north' && options.mode !== 'motion') throw new Error('方向模式无效');
+  if (options.windowEnabled !== undefined && typeof options.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
+  if (options.lockscreenEnabled !== undefined && typeof options.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
+  return JSON.stringify(options);
 }
 
 export function validateFloatingNavigationInput(
@@ -84,6 +105,8 @@ export function serializeFloatingNavigationPayload(payload: FloatingNavigationPa
   validateFloatingNavigationInput(payload.mode, payload.label, payload.coordinates, payload.kind);
   if (payload.color !== undefined && (payload.kind === 'position' || !/^#[0-9a-f]{6}$/i.test(payload.color)))
     throw new Error('仅导航路线支持六位十六进制颜色');
+  if (payload.windowEnabled !== undefined && typeof payload.windowEnabled !== 'boolean') throw new Error('windowEnabled必须为布尔值');
+  if (payload.lockscreenEnabled !== undefined && typeof payload.lockscreenEnabled !== 'boolean') throw new Error('lockscreenEnabled必须为布尔值');
   const serialized = JSON.stringify(payload);
   validateFloatingNavigationPayloadBytes(serialized);
   return serialized;
@@ -107,9 +130,14 @@ export function parseFloatingNavigationStatus(raw: unknown): FloatingNavigationS
     available: status.available === true,
     enabled: status.enabled === true,
     visible: status.visible === true,
+    windowEnabled: status.windowEnabled !== false,
+    lockscreenEnabled: status.lockscreenEnabled !== false,
     mode: status.mode === 'motion' ? 'motion' : 'north',
     message: typeof status.message === 'string' ? status.message : '',
     kind: status.kind === 'position' ? 'position' : 'route',
+    ...(typeof status.locationAllowed === 'boolean' ? { locationAllowed: status.locationAllowed } : {}),
+    ...(typeof status.notificationAllowed === 'boolean' ? { notificationAllowed: status.notificationAllowed } : {}),
+    ...(typeof status.overlayAllowed === 'boolean' ? { overlayAllowed: status.overlayAllowed } : {}),
     ...(typeof status.zoom === 'number' && Number.isFinite(status.zoom) ? { zoom: status.zoom } : {}),
     ...(typeof status.widthDp === 'number' && Number.isFinite(status.widthDp) ? { widthDp: status.widthDp } : {}),
     ...(typeof status.heightDp === 'number' && Number.isFinite(status.heightDp) ? { heightDp: status.heightDp } : {}),

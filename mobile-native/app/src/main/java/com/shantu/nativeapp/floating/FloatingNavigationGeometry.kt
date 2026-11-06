@@ -6,10 +6,12 @@ internal data class FloatingCoordinate(val longitude: Double, val latitude: Doub
 internal data class FloatingPoint(val x: Float, val y: Float)
 internal data class FloatingRouteProjection(val segmentIndex: Int, val fraction: Double, val distanceMeters: Double, val remainingMeters: Double, val offRoute: Boolean)
 internal data class FloatingWindowSize(val widthDp: Float, val heightDp: Float)
+internal data class FloatingTileIndex(val x: Int, val y: Int)
 
 /** Pure, bounded input and Web-Mercator geometry used by the compact overlay. */
 internal object FloatingNavigationGeometry {
     const val MAX_ROUTE_POINTS = 100_000
+    const val MAX_RECORDING_POINTS = 6_000
     const val MAX_PAYLOAD_BYTES = 4 * 1024 * 1024
     const val MIN_ZOOM = 14
     const val MAX_ZOOM = 18
@@ -50,6 +52,64 @@ internal object FloatingNavigationGeometry {
     }
 
     fun formatRouteColor(color: Int): String = "#" + (color and 0x00ffffff).toString(16).padStart(6, '0').uppercase()
+
+    /** Keep the tile containing the current camera center ahead of cached neighbors. */
+    fun prioritizeTileIndices(
+        candidates: List<FloatingTileIndex>,
+        centerWorldX: Double,
+        centerWorldY: Double,
+        worldTileCount: Int,
+        bearingDegrees: Double,
+    ): List<FloatingTileIndex> {
+        require(centerWorldX.isFinite() && centerWorldY.isFinite() && worldTileCount > 0 && bearingDegrees.isFinite())
+        val centerX = floor(centerWorldX).toInt().coerceIn(0, worldTileCount - 1)
+        val centerY = floor(centerWorldY).toInt().coerceIn(0, worldTileCount - 1)
+        val radians = Math.toRadians(-bearingDegrees)
+        val cos = cos(radians); val sin = sin(radians)
+        fun distanceSquared(tile: FloatingTileIndex): Double {
+            var dx = tile.x + .5 - centerWorldX
+            if (dx > worldTileCount / 2.0) dx -= worldTileCount
+            if (dx < -worldTileCount / 2.0) dx += worldTileCount
+            val dy = tile.y + .5 - centerWorldY
+            val rotatedX = dx * cos - dy * sin
+            val rotatedY = dx * sin + dy * cos
+            return rotatedX * rotatedX + rotatedY * rotatedY
+        }
+        return candidates.distinct().sortedWith(
+            compareBy<FloatingTileIndex> { if (it.x == centerX && it.y == centerY) 0 else 1 }
+                .thenBy { distanceSquared(it) }
+                .thenBy { it.y }
+                .thenBy { it.x },
+        )
+    }
+
+    /** Conservative AABB test after applying the same clockwise camera bearing as the Canvas. */
+    fun intersectsRotatedViewport(
+        minX: Double,
+        minY: Double,
+        maxX: Double,
+        maxY: Double,
+        centerX: Double,
+        centerY: Double,
+        viewportWidth: Double,
+        viewportHeight: Double,
+        bearingDegrees: Double,
+    ): Boolean {
+        require(listOf(minX, minY, maxX, maxY, centerX, centerY, viewportWidth, viewportHeight, bearingDegrees).all { it.isFinite() })
+        require(minX <= maxX && minY <= maxY && viewportWidth >= 0 && viewportHeight >= 0)
+        val radians = Math.toRadians(-bearingDegrees)
+        val cos = cos(radians); val sin = sin(radians)
+        val dx = (minX + maxX) / 2.0 - centerX
+        val dy = (minY + maxY) / 2.0 - centerY
+        val rotatedX = dx * cos - dy * sin
+        val rotatedY = dx * sin + dy * cos
+        val halfWidth = (maxX - minX) / 2.0
+        val halfHeight = (maxY - minY) / 2.0
+        val rotatedHalfWidth = abs(cos) * halfWidth + abs(sin) * halfHeight
+        val rotatedHalfHeight = abs(sin) * halfWidth + abs(cos) * halfHeight
+        return abs(rotatedX) <= viewportWidth / 2.0 + rotatedHalfWidth &&
+            abs(rotatedY) <= viewportHeight / 2.0 + rotatedHalfHeight
+    }
 
     /** Clamp to screen-safe dp limits even when the device is smaller than the nominal minimum. */
     fun windowSize(widthDp: Float, heightDp: Float, screenWidthDp: Float, screenHeightDp: Float): FloatingWindowSize {

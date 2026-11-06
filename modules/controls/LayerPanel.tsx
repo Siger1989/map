@@ -219,26 +219,6 @@ export function LayerPanel({
                 正常显示。天地图道路/地名注记一起变化；矢量底图内的道路不能单独分离。
               </p>
             </div>
-            {settings.geology && (
-              <div
-                className="elevation-opacity geology-source-choice"
-                role="group"
-                aria-label="地质图源"
-              >
-                <button
-                  aria-pressed={settings.geologySource === 'world'}
-                  onClick={() => onChange({ geologySource: 'world' })}
-                >
-                  全球地质
-                </button>
-                <button
-                  aria-pressed={settings.geologySource === 'geocloud20w'}
-                  onClick={() => onChange({ geologySource: 'geocloud20w' })}
-                >
-                  1∶20 万 · 地质云
-                </button>
-              </div>
-            )}
             {!customSource && settings.satellite && (
               <div className="imagery-selector" aria-label="卫星影像类型">
                 <button

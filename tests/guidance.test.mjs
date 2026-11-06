@@ -319,6 +319,17 @@ test('road snapping may not invent a connection over a large gap or stop short o
   const r = route(),
     target = { point: [0.01, 0], distance: 1112, offset: 0 };
   validateRejoinEndpoints(r, fix(0), target);
+  // `planRoute` adds the requested endpoints back around access segments.
+  // A distant provider snap must still fail even when route.coordinates starts
+  // and ends exactly at those requested coordinates.
+  assert.throws(
+    () => validateRejoinEndpoints({ ...r, snapped: [[0.001, 0], [0.009, 0]] }, fix(0), target),
+    /无法接到/,
+  );
+  assert.throws(
+    () => validateRejoinEndpoints({ ...r, snapped: [[0, 0], [0.01, 0.00025]] }, fix(0), target),
+    /无法接到/,
+  );
   assert.throws(
     () => validateRejoinEndpoints(r, fix(0, 0.001), target),
     /无法接到/,

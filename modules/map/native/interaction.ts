@@ -70,6 +70,7 @@ type Pending = {
   pointerId: number;
   downTime?: number;
   point: { x: number; y: number };
+  lastPoint: { x: number; y: number };
   target: DragTarget | null;
   hit: NativeHitTest | null;
   hitResolved: boolean;
@@ -135,7 +136,7 @@ export class NativeMapInteractionAdapter {
       this.cancel(this.pending ? { ...touch, gestureId: this.pending.gestureId } : touch, pointerId);
       this.pending = {
         gestureId: touch.gestureId, pointerId, downTime: touch.downTime ?? touch.eventTime,
-        point, target: null, hit: null, hitResolved: false, occupied: false, active: false,
+        point, lastPoint: point, target: null, hit: null, hitResolved: false, occupied: false, active: false,
         cancelled: false, offset: { x: 0, y: 0 }, last: null, released: false, queuedLongPress: null,
       };
       this.emitGesture(touch, pointerId, 'start');
@@ -146,8 +147,12 @@ export class NativeMapInteractionAdapter {
     if (!pending || pending.gestureId !== touch.gestureId || pending.pointerId !== pointerId) return;
     if (touch.action === 2) {
       if (!this.options.enabled()) { this.cancel(touch, pointerId); return; }
+      pending.lastPoint = point;
       const distance = Math.hypot(point.x - pending.point.x, point.y - pending.point.y);
-      if (!pending.active && distance > MOVE_CANCEL_PX) { this.cancel(touch, pointerId); return; }
+      // Native pick-buffer readback is asynchronous. Keep the most recent point
+      // while it resolves so a fast drag of an already-selected edit node does
+      // not get discarded before the direct-drag target can be activated.
+      if (!pending.active && pending.hitResolved && distance > MOVE_CANCEL_PX) { this.cancel(touch, pointerId); return; }
       if (pending.active) this.moveFrame.push({ pending, point });
       return;
     }
@@ -180,8 +185,15 @@ export class NativeMapInteractionAdapter {
       return;
     }
     if (!pending.target || pending.released) return;
-    if (this.options.direct?.(pending.target)) this.activate(pending);
-    else this.timer = setTimeout(() => { this.timer = null; if (this.pending === pending) this.activate(pending); }, HOLD_MS);
+    const moved = Math.hypot(pending.lastPoint.x - pending.point.x, pending.lastPoint.y - pending.point.y);
+    if (this.options.direct?.(pending.target)) {
+      this.activate(pending);
+      if (pending.active && moved >= DRAG_MIN_PX) this.moveFrame.push({ pending, point: pending.lastPoint });
+    } else if (moved > MOVE_CANCEL_PX) {
+      // A non-selected handle still requires a stationary hold. Preserve normal
+      // map pan when the user has already moved past the click/hold threshold.
+      this.cancel({ gestureId: pending.gestureId, action: 3, x: pending.lastPoint.x, y: pending.lastPoint.y, pointerCount: 1 }, pending.pointerId);
+    } else this.timer = setTimeout(() => { this.timer = null; if (this.pending === pending) this.activate(pending); }, HOLD_MS);
   };
 
   private onGestureCancel: NativeMapEventHandler = (value) => {

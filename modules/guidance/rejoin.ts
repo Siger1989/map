@@ -29,11 +29,18 @@ export function validateRejoinEndpoints(
   origin: PositionFix,
   target: Projection,
 ) {
-  // The route provider can snap hundreds of metres to a road. Never hide that gap as navigation.
+  // `planRoute()` runs `connectRoadAccess()`, which adds requested coordinates
+  // back to route.coordinates around the snapped road path. Validate the raw
+  // snapped endpoints instead, or a long straight access segment looks like an
+  // exact road connection here.
+  const snappedStart = route.snapped?.[0];
+  const snappedEnd = route.snapped?.at(-1);
   if (
-    metresBetween(route.coordinates[0], origin.coordinates) >
+    !snappedStart ||
+    !snappedEnd ||
+    metresBetween(snappedStart, origin.coordinates) >
       Math.max(20, origin.accuracy) ||
-    metresBetween(route.coordinates.at(-1)!, target.point) > 20
+    metresBetween(snappedEnd, target.point) > 20
   )
     throw new Error('附近道路无法接到当前位置或原路线，请移动到道路后重试。');
 }

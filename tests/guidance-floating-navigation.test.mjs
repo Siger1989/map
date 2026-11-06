@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildFloatingNavigationPayload,
   parseFloatingNavigationStatus,
+  serializeFloatingNavigationOptions,
   serializeFloatingNavigationPayload,
   validateFloatingNavigationPayloadBytes,
   validateFloatingNavigationInput,
@@ -14,8 +15,8 @@ const session = {
 };
 
 test('floating navigation payload uses the live route, destination label, and selected direction', () => {
-  const payload = buildFloatingNavigationPayload(session, 'motion');
-  assert.deepEqual(payload, { version: 1, kind: 'route', mode: 'motion', label: '目的地', coordinates });
+  const payload = buildFloatingNavigationPayload(session, 'motion', 'route', { windowEnabled: true, lockscreenEnabled: false });
+  assert.deepEqual(payload, { version: 1, kind: 'route', mode: 'motion', label: '目的地', coordinates, windowEnabled: true, lockscreenEnabled: false });
   assert.deepEqual(JSON.parse(serializeFloatingNavigationPayload(payload)).coordinates, coordinates);
 });
 
@@ -41,7 +42,7 @@ test('serialized payload stays under the 4 MiB native bridge bound', () => {
 
 test('native status parsing exposes only concrete fields and tolerates malformed status', () => {
   assert.deepEqual(parseFloatingNavigationStatus('{"available":true,"enabled":true,"visible":false,"mode":"motion","message":"权限待确认"}'), {
-    available: true, enabled: true, visible: false, mode: 'motion', kind: 'route', message: '权限待确认',
+    available: true, enabled: true, visible: false, windowEnabled: true, lockscreenEnabled: true, mode: 'motion', kind: 'route', message: '权限待确认',
   });
   assert.equal(parseFloatingNavigationStatus('{broken'), null);
   assert.equal(parseFloatingNavigationStatus(null), null);
@@ -51,10 +52,22 @@ test('ordinary positioning has no route dependency or fabricated route coordinat
   const payload = buildFloatingNavigationPayload(null, 'north');
   assert.deepEqual(payload, { version: 1, kind: 'position', mode: 'north', label: '定位小地图', coordinates: [] });
   assert.deepEqual(JSON.parse(serializeFloatingNavigationPayload(payload)), payload);
-  assert.throws(() => buildFloatingNavigationPayload(null, 'north', 'route'), /请先开始导航/);
+  assert.throws(() => buildFloatingNavigationPayload(null, 'north', 'route'), /自动使用定位模式/);
   assert.throws(() => validateFloatingNavigationInput('north', 'x', coordinates, 'position'), /不应包含路线/);
   assert.deepEqual(parseFloatingNavigationStatus({ available: true, kind: 'position', zoom: 17, widthDp: 240, heightDp: 260 }), {
-    available: true, enabled: false, visible: false, mode: 'north', kind: 'position', message: '', zoom: 17, widthDp: 240, heightDp: 260,
+    available: true, enabled: false, visible: false, windowEnabled: true, lockscreenEnabled: true, mode: 'north', kind: 'position', message: '', zoom: 17, widthDp: 240, heightDp: 260,
+  });
+});
+
+test('native display options serialize the independent switches and direction', () => {
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ mode: 'motion' })), { mode: 'motion' });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ windowEnabled: false })), { windowEnabled: false });
+  assert.deepEqual(JSON.parse(serializeFloatingNavigationOptions({ lockscreenEnabled: true })), { lockscreenEnabled: true });
+  assert.throws(() => serializeFloatingNavigationOptions({}), /为空/);
+  assert.throws(() => serializeFloatingNavigationOptions({ windowEnabled: 1 }), /布尔值/);
+  assert.deepEqual(parseFloatingNavigationStatus({ available: true, windowEnabled: false, lockscreenEnabled: true, mode: 'motion' }), {
+    available: true, enabled: false, visible: false, windowEnabled: false, lockscreenEnabled: true,
+    mode: 'motion', kind: 'route', message: '',
   });
 });
 

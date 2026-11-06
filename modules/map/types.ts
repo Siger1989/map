@@ -55,6 +55,9 @@ export function applyLayerPatch(
 ): LayerSettings {
   const next = { ...current, ...patch } as LayerSettings & Record<string, unknown>;
   for (const key of ['clouds', 'cloudOpacity', 'cloudTime', 'rain', 'temperature', 'opacity']) delete next[key];
+  // Geology source selection is retired; old settings/clients always resolve
+  // to the public global geology layer.
+  next.geologySource = 'world';
   if (patch.tiandituBase) {
     next.satelliteProvider = patch.satelliteProvider ?? 'tianditu';
     next.satellite = patch.tiandituBase === 'img';

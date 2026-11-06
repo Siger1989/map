@@ -33,6 +33,7 @@ class NativeReactActivity : MainActivity() {
 
     override fun onContentReady(root: FrameLayout, content: WebView) {
         this.content = content
+        FloatingRecordingCoordinator.install(this)
         // Isolated probe only; production package and existing Android host are unaffected.
         if (packageName == "com.shantu.hybridprobe" && applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
             WebView.setWebContentsDebuggingEnabled(true)
@@ -80,6 +81,7 @@ class NativeReactActivity : MainActivity() {
     override fun onResume() {
         super.onResume()
         floatingNavigation?.onHostResume()
+        FloatingRecordingCoordinator.onHostResume(this)
         maps?.onHostResume()
         // A permission/system sheet can reject region updates while backgrounded.
         // Re-publish current DOM geometry even when the layout did not change.
@@ -88,10 +90,11 @@ class NativeReactActivity : MainActivity() {
         if (trustedForeground()) content?.evaluateJavascript(
             "window.dispatchEvent(new Event('shantu:floating-navigation'))", null)
     }
-    override fun onPause() { floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
+    override fun onPause() { FloatingRecordingCoordinator.onHostPause(this); floatingNavigation?.onHostPause(); maps?.onHostPause(); super.onPause() }
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         floatingNavigation?.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        FloatingRecordingCoordinator.onRequestPermissionsResult(requestCode)
     }
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
         super.onActivityResult(requestCode, resultCode, data)

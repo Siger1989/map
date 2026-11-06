@@ -14,7 +14,7 @@ import { nextInstruction, project, pathOf } from './geometry';
 import { planRoute } from '../navigation/provider';
 import { atStart, connectDeparture, isNoPassableRoute, referenceDeparture } from './departure';
 import { advanceNetwork } from './networkSession';
-import { calculateReroute, replacementSession, shouldAutoReroute, shouldReplaceTrackOnDeviation } from './reroute';
+import { calculateReroute, projectOriginalRouteTarget, replacementSession, shouldAutoReroute, shouldReplaceTrackOnDeviation } from './reroute';
 
 export function useGuidance(
   route: PlannedRoute | null,
@@ -37,6 +37,8 @@ export function useGuidance(
     detourSince = useRef<number | null>(null);
   const departureRequest = useRef<AbortController | null>(null);
   const rerouteRequest = useRef<AbortController | null>(null);
+  const originalProgress = useRef<Pick<GuidanceSession, 'path' | 'checkpoints' | 'progress' | 'nextCheckpoint' | 'originalRoute'> | null>(null);
+  const returningToOriginal = useRef<PlannedRoute | null>(null);
   const [replanning, setReplanning] = useState(false);
   const clearRerouteWake = () => {
     if (rerouteWake.current !== null) window.clearTimeout(rerouteWake.current);
@@ -74,6 +76,8 @@ export function useGuidance(
     setLoading(false);
     setError('');
     detourSince.current = null;
+    originalProgress.current = null;
+    returningToOriginal.current = null;
   };
   useEffect(() => {
     const network = () => setOnline(navigator.onLine);
@@ -121,7 +125,6 @@ export function useGuidance(
       setError('');
       return;
     }
-    if (!online) return;
     const abort = new AbortController();
     departureRequest.current = abort;
     nextRequest.current = Date.now() + 30000;
@@ -216,7 +219,6 @@ export function useGuidance(
   useEffect(() => {
     const eligible = shouldAutoReroute(session, current.current.fix, {
       locationError,
-      online,
       hidden: document.hidden,
       pending: !!request.current || !!rerouteRequest.current,
       nextRequestAt: nextRequest.current,
@@ -230,13 +232,14 @@ export function useGuidance(
       setReplanning(false);
       if (!session?.departurePending) setLoading(false);
       if ((!session?.offRoute || session?.arrived) && !session?.departurePending) {
+        if (!session?.offRoute || session?.arrived) returningToOriginal.current = null;
         setRejoin(null);
         setError('');
         detourSince.current = null;
       }
       return;
     }
-    if (session.originalRoute !== route || session.departurePending || session.quality || locationError || !online || document.hidden) {
+    if (session.originalRoute !== route || session.departurePending || session.quality || locationError || document.hidden) {
       generation.current++;
       request.current?.abort();
       request.current = null;
@@ -245,6 +248,15 @@ export function useGuidance(
       setReplanning(false);
       setLoading(false);
       return;
+    }
+    if (returningToOriginal.current === session.originalRoute) return;
+    if (rejoin) {
+      const hit = project(rejoin.path, session.last?.coordinates ?? rejoin.origin.coordinates);
+      if (session.last && hit.offset <= deviationLimit(session.last)) {
+        detourSince.current = null;
+        return;
+      }
+      setRejoin(null);
     }
     if (!shouldReplaceTrackOnDeviation(session)) {
       if (!eligible || request.current || !session.last) return;
@@ -314,6 +326,13 @@ export function useGuidance(
         const live = current.current.session;
         if (token !== generation.current || abort.signal.aborted || !live?.offRoute || live.quality || live.arrived || live.route !== session.route || live.originalRoute !== session.originalRoute) return;
         rerouteFailures.current = 0;
+        if (live.route === live.originalRoute) originalProgress.current = {
+          originalRoute: live.originalRoute,
+          path: live.path,
+          checkpoints: live.checkpoints,
+          progress: live.progress,
+          nextCheckpoint: live.nextCheckpoint,
+        };
         setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: session.originalRoute, startedAt: session.startedAt, travelled: live.travelled, last: latestFix, anchor: latestFix });
         setRejoin(null);
       })
@@ -360,6 +379,8 @@ export function useGuidance(
     setLoading(false);
     setRejoin(null);
     setError('');
+    originalProgress.current = null;
+    returningToOriginal.current = null;
     setSession(next);
     return true;
   };
@@ -420,6 +441,13 @@ export function useGuidance(
         const live = current.current;
         if (!live.session || live.session.originalRoute !== s.originalRoute || live.session.route !== s.route) return;
         rerouteFailures.current = 0;
+        if (live.session.route === live.session.originalRoute) originalProgress.current = {
+          originalRoute: live.session.originalRoute,
+          path: live.session.path,
+          checkpoints: live.session.checkpoints,
+          progress: live.session.progress,
+          nextCheckpoint: live.session.nextCheckpoint,
+        };
         setSession({ ...advance(createSession(result), latestFix), replanned: true, originalRoute: s.originalRoute, startedAt: s.startedAt, travelled: live.session.travelled, last: latestFix, anchor: latestFix });
         setRejoin(null);
       } catch (e) {
@@ -435,6 +463,62 @@ export function useGuidance(
         }
       }
     },
+    returnToOriginal: async () => {
+      const s = current.current.session, origin = current.current.fix;
+      if (!s || s.arrived || request.current || rerouteRequest.current) return;
+      if (!origin || !freshFix(origin) || current.current.locationError) {
+        setError('请等待有效定位后返回原路线');
+        return;
+      }
+      clearRerouteWake();
+      generation.current++;
+      const abort = new AbortController(), token = generation.current;
+      request.current = abort;
+      nextRequest.current = Date.now() + 30000;
+      setLoading(true); setError('');
+      try {
+        const saved = originalProgress.current?.originalRoute === s.originalRoute
+          ? originalProgress.current
+          : s.route === s.originalRoute
+            ? s
+            : null;
+        if (!saved) throw new Error('当前路线已重规划，原路线进度无法可靠映射，暂不能安全返回。');
+        const target = projectOriginalRouteTarget(s, origin.coordinates, saved);
+        const result = await calculateRejoin(s.originalRoute, origin, target, abort.signal);
+        const live = current.current.session, latestFix = current.current.fix;
+        if (token !== generation.current || abort.signal.aborted || !live || live.originalRoute !== s.originalRoute) return;
+        if (!latestFix || !freshFix(latestFix) || project(result.path, latestFix.coordinates).offset > deviationLimit(latestFix))
+          throw new Error('位置已变化，请等待稳定定位后重新计算返回路径。');
+        returningToOriginal.current = s.originalRoute;
+        setSession({
+          ...live,
+          route: s.originalRoute,
+          path: saved.path,
+          checkpoints: saved.checkpoints,
+          progress: saved.progress,
+          nextCheckpoint: saved.nextCheckpoint,
+          replanned: false,
+          networkSwitched: false,
+          last: latestFix,
+          anchor: latestFix,
+          quality: '',
+          qualityFromLocationError: false,
+          offRoute: true,
+          offSince: latestFix.timestamp,
+          arriveSince: null,
+          arrived: false,
+        });
+        setRejoin(result);
+      } catch (e) {
+        if (token === generation.current && !abort.signal.aborted)
+          setError(e instanceof Error ? e.message : '返回原路线计算失败，当前导航已保留。');
+      } finally {
+        if (token === generation.current && request.current === abort) {
+          request.current = null;
+          setLoading(false);
+        }
+      }
+    },
     departureMessage:
       locationError ||
       (!fix
@@ -443,12 +527,11 @@ export function useGuidance(
           ? fix.accuracy > 50
             ? `定位精度约±${Math.round(fix.accuracy)}米，等待准确位置`
             : '定位已过期，等待更新'
-          : !online
-            ? '请联网后计算接入路线'
-            : '先前往路线起点'),
+          : '将尝试已下载的离线路网；无覆盖时显示实际错误'),
     active,
     session: active ? session : null,
     rejoin: active ? rejoin : null,
+    returnToOriginalSupported: !!active && (session.route === session.originalRoute || originalProgress.current?.originalRoute === session.originalRoute),
     loading,
     error,
     online,

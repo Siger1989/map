@@ -1,7 +1,6 @@
 import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { LayerSettings } from '../map/types';
 import { geologyUnit, INITIAL_GEOLOGY, type GeologyState } from './data';
-import { GeocloudLayer } from './geocloud/GeocloudLayer';
 
 export const GEOLOGY_SOURCE = 'geology-source';
 export const GEOLOGY_LAYER_IDS = ['geology-units', 'geology-boundaries', 'geology-structures', 'geology-faults'];
@@ -11,9 +10,7 @@ export class GeologyLayer {
   private state: GeologyState = INITIAL_GEOLOGY;
   private enabled = false;
   private lastEmission = '';
-  private cloud: GeocloudLayer;
   constructor(private map: MapLibreMap, private onChange: (state: GeologyState) => void) {
-    this.cloud = new GeocloudLayer(map, onChange);
     map.on('idle', this.inspect);
     map.on('moveend', this.inspectCursor);
     map.on('movestart', this.clearCursor);
@@ -57,7 +54,9 @@ export class GeologyLayer {
     }, before);
   }
   sync(settings: LayerSettings) {
-    const useWorld = settings.geology && settings.geologySource === 'world';
+    // Ignore legacy source values so persisted settings cannot start the
+    // retired authorization-gated Cloud client.
+    const useWorld = settings.geology;
     const newlyEnabled = useWorld && !this.enabled;
     this.enabled = useWorld;
     if (this.enabled) this.add();
@@ -68,12 +67,16 @@ export class GeologyLayer {
     if (newlyEnabled) this.state = { ...INITIAL_GEOLOGY, status: 'loading' };
     if (!this.enabled) this.state = { ...INITIAL_GEOLOGY };
     if (newlyEnabled) this.lastEmission = '';
-    if (settings.geologySource === 'world' || !settings.geology) this.emit();
-    this.cloud.sync(settings.geology && settings.geologySource === 'geocloud20w', settings.geologyOpacity);
+    this.emit();
     if (this.enabled) this.inspect();
   }
-  retry() { this.cloud.retry(); }
-  isReady() { return this.enabled ? this.state.status === 'ready' && Boolean(this.map.getSource(GEOLOGY_SOURCE)) && this.map.isSourceLoaded(GEOLOGY_SOURCE) : this.cloud.isReady(); }
+  retry() {
+    if (!this.enabled) return;
+    const source = this.map.getSource(GEOLOGY_SOURCE) as { reload?: () => void } | undefined;
+    source?.reload?.();
+    this.inspect();
+  }
+  isReady() { return this.enabled && this.state.status === 'ready' && Boolean(this.map.getSource(GEOLOGY_SOURCE)) && this.map.isSourceLoaded(GEOLOGY_SOURCE); }
   private inspect = () => {
     if (!this.enabled || !this.map.getSource(GEOLOGY_SOURCE) || !this.map.isSourceLoaded(GEOLOGY_SOURCE)) return;
     const features = this.map.queryRenderedFeatures(undefined, { layers: ['geology-units'] });
@@ -117,7 +120,6 @@ export class GeologyLayer {
     }
   };
   dispose() {
-    this.cloud.dispose();
     this.map.off('idle', this.inspect);
     this.map.off('moveend', this.inspectCursor);
     this.map.off('movestart', this.clearCursor);

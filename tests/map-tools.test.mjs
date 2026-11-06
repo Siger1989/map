@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAP_TOOL_BOOLEAN_FIELDS, MAP_TOOL_NAMES, mapViewSnapshot } from '../modules/controls/useMapTools.ts';
+import { MAP_TOOL_BOOLEAN_FIELDS, MAP_TOOL_CONFIGURABLE_FIELDS, MAP_TOOL_NAMES, mapViewSnapshot } from '../modules/controls/useMapTools.ts';
 
 test('WebMCP exposes map-only tools and removes weather state from legacy snapshots', () => {
   assert.deepEqual(MAP_TOOL_NAMES, ['get_map_view', 'configure_map_view']);
@@ -14,4 +14,12 @@ test('WebMCP exposes map-only tools and removes weather state from legacy snapsh
     layers: { terrain: true, roads: true },
     view: { zoom: 5 }, point: { lng: 1, lat: 2 },
   });
+});
+
+test('map tools do not expose geology source selection and suppress legacy source state', () => {
+  assert.equal(MAP_TOOL_CONFIGURABLE_FIELDS.includes('geologySource'), false);
+  assert.deepEqual(mapViewSnapshot({
+    geologySource: 'geocloud20w',
+    layers: { geology: true, geologySource: 'geocloud20w', geologyOpacity: 0.65 },
+  }), { layers: { geology: true, geologyOpacity: 0.65 } });
 });
